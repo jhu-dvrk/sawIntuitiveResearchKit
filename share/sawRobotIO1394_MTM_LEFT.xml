@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Author: klee , Zihan Chen  -->
+<!-- zihan.chen@jhu.edu -->
+<!-- Todo:  -->
+<!-- 1 Verify math & offset  -->
+<!-- 2 Check GearRatio and Ktorque on Manuall -->
+<Config>
+  <!-- Definition of da Vinci left PSM -->
+  <!-- This one is MODIFIED!!! -->
+  <!-- Check the conversion functions and values after -->
+
+  <!-- ========== Drive ============ -->
+  <!-- DACCNT = AmpsToBits * MCUR_A  16 bit DAC-->
+  <!-- AmpsToBits = (2^16) / (6.25 * 2) = 5242.88 bit/A -->
+
+  <!-- MCUR_A = BitsToFeedbackAmps * ADCCNT   16 bit ADC -->
+  <!-- BitsToFeedbackAmps = (6.25 * 2) / (2^16) = 0.000190737774 -->
+
+  <!-- Torque_Nm = GearRatio * Ktorque * MCUR_A -->
+  <!-- NmToAmps = 1 / GearRatio / Ktorque -->
+
+  <!-- MaxCurrent = 6.25 A    -->
+  <!-- Q1: Are we using this MaxCurrent to do limit check -->
+
+  <!-- ========= Encoder ========= -->
+  <!-- PosSI = (ENC_CNT - OFFSET) * 360 / CPT * Pitch / GearRatio   -->
+  <!-- Revolute: Pitch = 1     Prismatic: Pitch = m/deg  -->
+  <!-- BitsToPosSI = 360 / CPT * Pitch / GearRatio -->
+  <!-- Q2: BitsToDeltaPosSI ?   BitsToDeltaT -->
+
+  <!-- ======== AnalogIn ========= -->
+  <!-- 16 bit ADC to 0-4.5V (Ref Voltage) -->  
+  <!-- BitsToVolts = (4.5 - 0) / 2^16 = 0.0000686656 V/bit -->
+  <!-- AnalogInVolts = BitsToVolts * ADCCNT -->
+  <!-- PotSI = Slope * AnalogInVolts + Intercept -->
+  <!-- Slope: m/V   Intercept: m  HW specific -->
+
+  <Robot Name="MTML" NumOfActuator="8" NumOfJoint="8">
+    
+    <Actuator ActuatorID="0" BoardID="5" AxisID="0" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Scale="5242.880000" Offset="32768"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <NmToAmps Scale="0.359398"/>
+            <MaxCurrent Value="6.250000" Unit="A"/>
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Scale="-0.001419" Offset="0"/>
+            <BitsToDeltaPosSI Scale="-375.00" Offset="0"/>
+            <BitsToDeltaT Scale="0.125" Offset="0"/>
+            <CountsPerTurn Value="-4000"/>
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Scale="6.86656e-05" Offset="0"/>
+            <VoltsToPosSI Scale="0.075423" Offset="-0.155937"/>
+        </AnalogIn>
+    </Actuator>
+
+    <Actuator ActuatorID="1" BoardID="5" AxisID="1" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Scale="5242.880000" Offset="32768"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <NmToAmps Scale="0.456885"/>
+            <MaxCurrent Value="6.250000" Unit="A"/>
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Scale="0.001804" Offset="0"/>
+            <BitsToDeltaPosSI Scale="-750.00" Offset="0"/>
+            <BitsToDeltaT Scale="0.25" Offset="0"/>
+            <CountsPerTurn Value="4000"/>
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Scale="6.86656e-05" Offset="0"/>
+            <VoltsToPosSI Scale="0.075311" Offset="-0.150117"/>
+        </AnalogIn>
+    </Actuator>
+
+    <Actuator ActuatorID="2" BoardID="5" AxisID="2" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Scale="5242.880000" Offset="32768"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <NmToAmps Scale="0.381541"/>
+            <MaxCurrent Value="6.250000" Unit="A"/>
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Scale="0.001507" Offset="0"/>
+            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
+            <BitsToDeltaT Scale="1" Offset="0"/>
+            <CountsPerTurn Value="4000"/>
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Scale="6.86656e-05" Offset="0"/>
+            <VoltsToPosSI Scale="0.074977" Offset="-0.156924"/>
+        </AnalogIn>
+    </Actuator>
+
+    <Actuator ActuatorID="3" BoardID="5" AxisID="3" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Scale="5242.880000" Offset="32768"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <NmToAmps Scale="2.164238"/>
+            <MaxCurrent Value="6.250000" Unit="A"/>
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Scale="0.008547" Offset="0"/>
+            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
+            <BitsToDeltaT Scale="1" Offset="0"/>
+            <CountsPerTurn Value="4000"/>
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Scale="6.86656e-05" Offset="0"/>
+            <VoltsToPosSI Scale="-0.072644" Offset="0.297198"/>
+        </AnalogIn>
+    </Actuator>
+
+    <Actuator ActuatorID="4" BoardID="7" AxisID="0" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Scale="5242.880000" Offset="32768"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <NmToAmps Scale="6.092286"/>
+            <MaxCurrent Value="6.250000" Unit="A"/>
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Scale="0.169632" Offset="0"/>
+            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
+            <BitsToDeltaT Scale="1" Offset="0"/>
+            <CountsPerTurn Value="64"/>
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Scale="6.86656e-05" Offset="0"/>
+            <VoltsToPosSI Scale="0.078814" Offset="-0.224277"/>
+        </AnalogIn>
+    </Actuator>
+
+    <Actuator ActuatorID="5" BoardID="7" AxisID="1" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Scale="5242.880000" Offset="32768"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <NmToAmps Scale="-6.092286"/>
+            <MaxCurrent Value="6.250000" Unit="A"/>
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Scale="0.169632" Offset="0"/>
+            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
+            <BitsToDeltaT Scale="1" Offset="0"/>
+            <CountsPerTurn Value="64"/>
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Scale="6.86656e-05" Offset="0"/>
+            <VoltsToPosSI Scale="0.079003" Offset="0.011630"/>
+        </AnalogIn>
+    </Actuator>
+
+    <Actuator ActuatorID="6" BoardID="7" AxisID="2" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Scale="5242.880000" Offset="32768"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <NmToAmps Scale="-12.184572"/>
+            <MaxCurrent Value="6.250000" Unit="A"/>
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Scale="-0.339264" Offset="0"/>
+            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
+            <BitsToDeltaT Scale="1" Offset="0"/>
+            <CountsPerTurn Value="-64"/>
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Scale="6.86656e-05" Offset="0"/>
+            <VoltsToPosSI Scale="0.040000" Offset="-0.072160"/>
+        </AnalogIn>
+    </Actuator>
+
+    <Actuator ActuatorID="7" BoardID="7" AxisID="3" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Scale="5242.880000" Offset="32768"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <NmToAmps Scale="12.184572"/>
+            <MaxCurrent Value="6.250000" Unit="A"/>
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Scale="1.0" Offset="0"/>
+            <BitsToDeltaPosSI Scale="1.0" Offset="0"/>
+            <BitsToDeltaT Scale="1.0" Offset="0"/> <!-- the last actuator value is not encoder based, uses analog in for Hall effect -->
+            <CountsPerTurn Value="1.0"/>
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Scale="6.86656e-05" Offset="0"/>
+            <VoltsToPosSI Scale="-0.019311" Offset="0.082146"/>
+        </AnalogIn>
+    </Actuator>
+
+<!-- Coupling matrices for Actuator->Joint Transformation, Joint->Actuator Transformation    -->
+<!-- ActuatorTorque->JointTorque Transformation, and JointTorque->ActuatorTorque Transformation   -->
+
+<!-- This coupling matrices are based on the information provided on the following document -->
+<!-- User Guide: The da Vinci Research Kit by Intuitive Surgical, Inc. Revision: Unknown -->
+<!-- The following coupling information is for the Master Tool Manipulator only -->
+
+<!-- Gear ratio from Axis1 to Axis7 -->
+<!-- nt1:63.41, nt2:49.88 nt3:59.71 nt4:10.53 nt5:33.16 nt6:33.16 nt7:16.58 -->
+<!-- Radius of ilder on joint3(r43): 0.5515in, radius of idler on joint4(r44): 0.8235in -->
+
+<!-- q1=qa1, q2=qa2, q3=qa3 - qa2, q4=qa4 - (r43/r44) * (qa3 - qa2)
+     q5=qa5, q6=qa6, q7=qa7
+     r43 = 0.5515
+     r44 = 0.8235
+     r43/r44 = .66970248937462052216
+
+     NOTE: all matrices are from/to joint to/from actuators.  To get to the motor
+     level, you need to include the gear ratios.  When compared to the research kit
+     manual, note that we use ta1, not tm1, etc.
+      -->
+    <Coupling Value="1">
+        <ActuatorToJointPosition>
+            <Row Val="1.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 1.000 0.000 0.000 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 -1.00 1.000 0.000 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.6697 -0.6697 1.000 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 1.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 0.000 1.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 0.000 0.000 1.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 0.000 0.000 0.000 1.000"/>
+        </ActuatorToJointPosition>
+
+<!-- aq1 = q1, qa2 = q2, qa3 = q3+q2, qa4 = q4 + q3*r43/r44
+     qa5 = q5, qa6 = q6, qa7 = q7 -->
+        <JointToActuatorPosition>
+            <Row Val="1.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 1.000 0.000 0.000 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 1.000 1.000 0.000 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.6697 1.000 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 1.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 0.000 1.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 0.000 0.000 1.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 0.000 0.000 0.000 1.000"/>
+        </JointToActuatorPosition>
+
+<!-- t1 = ta1, t2 = ta2 + ta3, t3 = ta3 + (r43/r44)*ta4
+     t4 = ta4, t5 = ta5, t6 = ta6, t7 = ta7 -->
+        <ActuatorToJointTorque>
+            <Row Val="1.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 1.000 1.000 0.000 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 1.000 0.6697 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 1.000 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 1.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 0.000 1.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 0.000 0.000 1.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 0.000 0.000 0.000 1.000"/>
+        </ActuatorToJointTorque>
+
+<!-- ta1 = t1, ta2 = t2 - t3 + (r43/r44)*t4, ta3 = t3 -(r43/r44) * t4
+     ta4 = t4, ta5 = t5, ta6 = t6, ta7 = t7 -->
+        <JointToActuatorTorque>
+            <Row Val="1.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 1.000 -1.000 0.6697 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 1.000 -0.6697 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 1.000 0.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 1.000 0.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 0.000 1.000 0.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 0.000 0.000 1.000 0.000"/>
+            <Row Val="0.000 0.000 0.000 0.000 0.000 0.000 0.000 1.000"/>
+        </JointToActuatorTorque>
+    </Coupling>
+  </Robot>
+
+  <!-- It would be nice to be able to include other XML files -->
+  <!-- <Include FileName="MTM-Left.xml" /> -->
+
+  <!-- Definition of da Vinci Footpedal -->
+  <!-- Feb 26: We will not touch the digital IO for now.
+       Hello~ Backburner -->
+  <InputDevice Name="Footpedal" NumOfBoard="2">
+
+    <Input name="COAG" boardid="0" bit="0" active="high"/>
+    <Input name="Cam+" boardid="0" bit="4" active="low"/>
+    <Input name="Cam-" boardid="1" bit="5" active="low"/>
+
+  </InputDevice>
+
+
+</Config>
