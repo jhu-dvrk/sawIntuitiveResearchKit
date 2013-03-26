@@ -25,6 +25,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawRobotIO1394/mtsRobotIO1394QtWidget.h>
+#include <sawControllers/mtsPID.h>
+#include <sawControllers/mtsPIDQtWidget.h>
 
 int main(int argc, char ** argv)
 {
@@ -38,14 +40,17 @@ int main(int argc, char ** argv)
 
     // parse options
     cmnCommandLineOptions options;
-    int port;
-    std::string configFile;
-    options.AddOptionOneValue("c", "config",
-                              "configuration file, can be an absolute path or relative to CISST_ROOT share",
-                              cmnCommandLineOptions::REQUIRED, &configFile);
-    options.AddOptionOneValue("p", "port",
+    int firewirePort;
+    std::string ioConfigFile, pidConfigFile;
+    options.AddOptionOneValue("i", "io",
+                              "configuration file for robot IO (see sawRobotIO1394)",
+                              cmnCommandLineOptions::REQUIRED, &ioConfigFile);
+    options.AddOptionOneValue("p", "pid",
+                              "configuration file for PID controller (see sawControllers, mtsPID)",
+                              cmnCommandLineOptions::REQUIRED, &pidConfigFile);
+    options.AddOptionOneValue("f", "firewire",
                               "firefire port number(s)",
-                              cmnCommandLineOptions::REQUIRED, &port);
+                              cmnCommandLineOptions::REQUIRED, &firewirePort);
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
         std::cerr << "Error: " << errorMessage << std::endl;
@@ -53,57 +58,70 @@ int main(int argc, char ** argv)
         return -1;
     }
 
-    std::string fullFileName;
-    if (cmnPath::Exists(configFile)) {
-        fullFileName = configFile;
-    } else {
-        cmnPath path;
-        path.AddRelativeToCisstShare("sawRobotIO1394");
-        fullFileName = path.Find(configFile);
-        if (fullFileName == "") {
-            return 0;
-        }
+    if (!cmnPath::Exists(ioConfigFile)) {
+        std::cerr << "File not found: " << ioConfigFile << std::endl;
+        return -1;
     }
-    std::cout << "Configuration file: " << fullFileName << std::endl
-              << "Port: " << port << std::endl;
+    if (!cmnPath::Exists(pidConfigFile)) {
+        std::cerr << "File not found: " << pidConfigFile << std::endl;
+        return -1;
+    }
+    std::cout << "Configuration file for IO: " << ioConfigFile << std::endl
+              << "Configuration file for PID: " << pidConfigFile << std::endl
+              << "FirewirePort: " << firewirePort << std::endl;
 
-    mtsManagerLocal *LCM = mtsManagerLocal::GetInstance();
+    mtsManagerLocal * manager = mtsManagerLocal::GetInstance();
 
-    // Qt display task
-    mtsRobotIO1394QtWidget *disp = new mtsRobotIO1394QtWidget("disp");
-    disp->Configure();
-    LCM->AddComponent(disp);
+    // IO
+    mtsRobotIO1394QtWidget * ioGUI = new mtsRobotIO1394QtWidget("ioGUI");
+    ioGUI->Configure();
+    manager->AddComponent(ioGUI);
+    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1 * cmn_ms, firewirePort, ioGUI->GetOutputStream());
+    io->Configure(ioConfigFile);
+    manager->AddComponent(io);
+    // connect ioGUI to io
+    manager->Connect("ioGUI", "Robot", "io", "MTML");
+    manager->Connect("ioGUI", "RobotActuators", "io", "MTMLActuators");
 
-    // Robot
-    mtsRobotIO1394 *robot = new mtsRobotIO1394("robot", 1 * cmn_ms, port, disp->GetOutputStream());
-    robot->Configure(fullFileName);
-    LCM->AddComponent(robot);
+    // Qt PID Controller GUI
+    mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI");
+    pidGUI->Configure();
+    manager->AddComponent(pidGUI);
+    mtsPID * pid = new mtsPID("pid", 1 * cmn_ms);
+    pid->Configure(pidConfigFile);
+    manager->AddComponent(pid);
+    // connect pidGUI to pid
+    manager->Connect("pidGUI", "Controller", "pid", "Controller");
 
-    // connect disp to Robot & Controller interface
-    LCM->Connect("disp", "Robot", "robot", "MTML");
-    LCM->Connect("disp", "RobotActuators", "robot", "MTMLActuators");
+    // tie pid execution to io
+    manager->Connect("pid", "ExecIn", "io", "ExecOut");
+    // connect pid to io
+    manager->Connect("pid", "RobotJointTorqueInterface", "io", "MTML");
 
     //-------------- create the components ------------------
-    LCM->CreateAll();
-    LCM->WaitForStateAll(mtsComponentState::READY, 2.0 * cmn_s);
+    manager->CreateAll();
+    manager->WaitForStateAll(mtsComponentState::READY, 2.0 * cmn_s);
 
     // start the periodic Run
-    LCM->StartAll();
+    manager->StartAll();
 
     // create a main window to hold QWidget
-    disp->show();
+    ioGUI->show();
+    pidGUI->show();
 
     // run Qt app
     application.exec();
 
     // cleanup
-    LCM->KillAll();
-    LCM->WaitForStateAll(mtsComponentState::FINISHED, 2.0 * cmn_s);
-    LCM->Cleanup();
+    manager->KillAll();
+    manager->WaitForStateAll(mtsComponentState::FINISHED, 2.0 * cmn_s);
+    manager->Cleanup();
 
     // delete dvgc robot
-    delete disp;
-    delete robot;
+    delete pid;
+    delete pidGUI;
+    delete io;
+    delete ioGUI;
 
     // stop all logs
     cmnLogger::Kill();
