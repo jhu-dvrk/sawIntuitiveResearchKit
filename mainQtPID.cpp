@@ -112,7 +112,6 @@ int main(int argc, char ** argv)
     // run Qt app
     application.exec();
 
-    // cleanup
     manager->KillAll();
     manager->WaitForStateAll(mtsComponentState::FINISHED, 2.0 * cmn_s);
     manager->Cleanup();

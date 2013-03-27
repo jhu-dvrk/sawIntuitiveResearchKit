@@ -12,15 +12,15 @@
   <!-- ========== Drive ============ -->
   <!-- DACCNT = AmpsToBits * MCUR_A  16 bit DAC-->
   <!-- AmpsToBits = (2^16) / (6.25 * 2) = 5242.88 bit/A -->
+  <!-- Offset is 32768 for AmpIO firewire -->
 
   <!-- MCUR_A = BitsToFeedbackAmps * ADCCNT   16 bit ADC -->
   <!-- BitsToFeedbackAmps = (6.25 * 2) / (2^16) = 0.000190737774 -->
-
+  <!-- Offset is of AmpToBits offest / AmpsToBits scale = 32768 / 5242.88 = 6.25 Amps -->
   <!-- Torque_Nm = GearRatio * Ktorque * MCUR_A -->
   <!-- NmToAmps = 1 / GearRatio / Ktorque -->
 
-  <!-- MaxCurrent = 6.25 A    -->
-  <!-- Q1: Are we using this MaxCurrent to do limit check -->
+  <!-- MaxCurrent = see DaVinci manual -->
 
   <!-- ========= Encoder ========= -->
   <!-- PosSI = (ENC_CNT - OFFSET) * 360 / CPT * Pitch / GearRatio   -->
@@ -40,15 +40,15 @@
     <Actuator ActuatorID="0" BoardID="5" AxisID="0" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
-            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
             <NmToAmps Scale="0.359398"/>
-            <MaxCurrent Value="6.250000" Unit="A"/>
+            <MaxCurrent Value="0.67" Unit="A"/>
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="-0.001419" Offset="0"/>
             <BitsToDeltaPosSI Scale="-375.00" Offset="0"/>
             <BitsToDeltaT Scale="0.125" Offset="0"/>
-            <CountsPerTurn Value="-4000"/>
+            <CountsPerTurn Value="4000"/>
         </Encoder>
         <AnalogIn>
             <BitsToVolts Scale="6.86656e-05" Offset="0"/>
@@ -59,9 +59,9 @@
     <Actuator ActuatorID="1" BoardID="5" AxisID="1" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
-            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
             <NmToAmps Scale="0.456885"/>
-            <MaxCurrent Value="6.250000" Unit="A"/>
+            <MaxCurrent Value="0.67" Unit="A"/>
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="0.001804" Offset="0"/>
@@ -78,9 +78,9 @@
     <Actuator ActuatorID="2" BoardID="5" AxisID="2" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
-            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
             <NmToAmps Scale="0.381541"/>
-            <MaxCurrent Value="6.250000" Unit="A"/>
+            <MaxCurrent Value="0.67" Unit="A"/>
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="0.001507" Offset="0"/>
@@ -97,9 +97,9 @@
     <Actuator ActuatorID="3" BoardID="5" AxisID="3" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
-            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
             <NmToAmps Scale="2.164238"/>
-            <MaxCurrent Value="6.250000" Unit="A"/>
+            <MaxCurrent Value="0.67" Unit="A"/>
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="0.008547" Offset="0"/>
@@ -116,12 +116,12 @@
     <Actuator ActuatorID="4" BoardID="7" AxisID="0" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
-            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
             <NmToAmps Scale="6.092286"/>
-            <MaxCurrent Value="6.250000" Unit="A"/>
+            <MaxCurrent Value="0.59" Unit="A"/>
         </Drive>
         <Encoder>
-            <BitsToPosSI Scale="0.169632" Offset="0"/>
+            <BitsToPosSI Scale="-0.169632" Offset="0"/>
             <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
             <BitsToDeltaT Scale="1" Offset="0"/>
             <CountsPerTurn Value="64"/>
@@ -135,9 +135,9 @@
     <Actuator ActuatorID="5" BoardID="7" AxisID="1" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
-            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
             <NmToAmps Scale="-6.092286"/>
-            <MaxCurrent Value="6.250000" Unit="A"/>
+            <MaxCurrent Value="0.59" Unit="A"/>
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="0.169632" Offset="0"/>
@@ -154,15 +154,15 @@
     <Actuator ActuatorID="6" BoardID="7" AxisID="2" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
-            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
             <NmToAmps Scale="-12.184572"/>
-            <MaxCurrent Value="6.250000" Unit="A"/>
+            <MaxCurrent Value="0.407" Unit="A"/>
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="-0.339264" Offset="0"/>
             <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
             <BitsToDeltaT Scale="1" Offset="0"/>
-            <CountsPerTurn Value="-64"/>
+            <CountsPerTurn Value="64"/>
         </Encoder>
         <AnalogIn>
             <BitsToVolts Scale="6.86656e-05" Offset="0"/>
@@ -173,9 +173,9 @@
     <Actuator ActuatorID="7" BoardID="7" AxisID="3" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
-            <BitsToFeedbackAmps Scale="0.000190738" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
             <NmToAmps Scale="12.184572"/>
-            <MaxCurrent Value="6.250000" Unit="A"/>
+            <MaxCurrent Value="0.0" Unit="A"/>
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="1.0" Offset="0"/>
