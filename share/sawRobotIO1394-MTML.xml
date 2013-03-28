@@ -52,7 +52,7 @@
         </Encoder>
         <AnalogIn>
             <BitsToVolts Scale="6.86656e-05" Offset="0"/>
-            <VoltsToPosSI Scale="0.075423" Offset="-0.155937"/>
+            <VoltsToPosSI Scale="76.1417" Offset="-155.8559"/>
         </AnalogIn>
     </Actuator>
 
@@ -71,7 +71,7 @@
         </Encoder>
         <AnalogIn>
             <BitsToVolts Scale="6.86656e-05" Offset="0"/>
-            <VoltsToPosSI Scale="0.075311" Offset="-0.150117"/>
+            <VoltsToPosSI Scale="75.09872" Offset="-143.336851"/>
         </AnalogIn>
     </Actuator>
 
@@ -90,7 +90,7 @@
         </Encoder>
         <AnalogIn>
             <BitsToVolts Scale="6.86656e-05" Offset="0"/>
-            <VoltsToPosSI Scale="0.074977" Offset="-0.156924"/>
+            <VoltsToPosSI Scale="75.098727" Offset="-163.00649"/>
         </AnalogIn>
     </Actuator>
 
@@ -109,7 +109,7 @@
         </Encoder>
         <AnalogIn>
             <BitsToVolts Scale="6.86656e-05" Offset="0"/>
-            <VoltsToPosSI Scale="-0.072644" Offset="0.297198"/>
+            <VoltsToPosSI Scale="-75.62024" Offset="116.82609"/>
         </AnalogIn>
     </Actuator>
 
@@ -128,7 +128,7 @@
         </Encoder>
         <AnalogIn>
             <BitsToVolts Scale="6.86656e-05" Offset="0"/>
-            <VoltsToPosSI Scale="0.078814" Offset="-0.224277"/>
+            <VoltsToPosSI Scale="-79.27087" Offset="222.02687"/>
         </AnalogIn>
     </Actuator>
 
@@ -147,7 +147,7 @@
         </Encoder>
         <AnalogIn>
             <BitsToVolts Scale="6.86656e-05" Offset="0"/>
-            <VoltsToPosSI Scale="0.079003" Offset="0.011630"/>
+            <VoltsToPosSI Scale="78.22783" Offset="-173.13065"/>
         </AnalogIn>
     </Actuator>
 
@@ -166,7 +166,7 @@
         </Encoder>
         <AnalogIn>
             <BitsToVolts Scale="6.86656e-05" Offset="0"/>
-            <VoltsToPosSI Scale="0.040000" Offset="-0.072160"/>
+            <VoltsToPosSI Scale="41.72151" Offset="-69.28778"/>
         </AnalogIn>
     </Actuator>
 
