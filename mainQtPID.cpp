@@ -49,7 +49,7 @@ int main(int argc, char ** argv)
                               "configuration file for PID controller (see sawControllers, mtsPID)",
                               cmnCommandLineOptions::REQUIRED, &pidConfigFile);
     options.AddOptionOneValue("f", "firewire",
-                              "firefire port number(s)",
+                              "firewire port number(s)",
                               cmnCommandLineOptions::REQUIRED, &firewirePort);
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {

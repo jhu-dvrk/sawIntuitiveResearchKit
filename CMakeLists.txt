@@ -50,6 +50,6 @@ if (cisst_FOUND_AS_REQUIRED)
     # link against cisst libraries (and dependencies)
     cisst_target_link_libraries (sawIntuitiveResearchKitQtPID ${REQUIRED_CISST_LIBRARIES})
 
-  endif (sawRobotIO1394_FOUND)
+  endif (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
 endif (cisst_FOUND_AS_REQUIRED)
