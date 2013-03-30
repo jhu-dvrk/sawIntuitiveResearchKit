@@ -35,20 +35,37 @@ if (cisst_FOUND_AS_REQUIRED)
 
     # sawRobotIO1394 configuration
     include_directories (${sawRobotIO1394_INCLUDE_DIR}
-                         ${sawControllers_INCLUDE_DIR})
+                           ${sawControllers_INCLUDE_DIR})
     link_directories (${sawRobotIO1394_LIBRARY_DIR}
                       ${sawControllers_LIBRARY_DIR})
 
-    add_executable (sawIntuitiveResearchKitQtPID mainQtPID.cpp)
-    set_property (TARGET sawIntuitiveResearchKitQtPID PROPERTY FOLDER "sawIntuitiveResearchKit")
+    # examples using Qt
+    if (CISST_HAS_QT)
+      # main program used to configure PID
+      add_executable (sawIntuitiveResearchKitQtPID mainQtPID.cpp)
+      set_property (TARGET sawIntuitiveResearchKitQtPID PROPERTY FOLDER "sawIntuitiveResearchKit")
 
-    # link against non cisst libraries and cisst components
-    target_link_libraries (sawIntuitiveResearchKitQtPID
-                           ${sawRobotIO1394_LIBRARIES}
-                           ${sawControllers_LIBRARIES})
+      # link against non cisst libraries and cisst components
+      target_link_libraries (sawIntuitiveResearchKitQtPID
+                             ${sawRobotIO1394_LIBRARIES}
+                             ${sawControllers_LIBRARIES})
 
-    # link against cisst libraries (and dependencies)
-    cisst_target_link_libraries (sawIntuitiveResearchKitQtPID ${REQUIRED_CISST_LIBRARIES})
+      # link against cisst libraries (and dependencies)
+      cisst_target_link_libraries (sawIntuitiveResearchKitQtPID ${REQUIRED_CISST_LIBRARIES})
+
+      # main program used to configure TeleOperation
+      add_executable (sawIntuitiveResearchKitQtTeleOperation mainQtTeleOperation.cpp)
+      set_property (TARGET sawIntuitiveResearchKitQtTeleOperation PROPERTY FOLDER "sawIntuitiveResearchKit")
+
+      # link against non cisst libraries and cisst components
+      target_link_libraries (sawIntuitiveResearchKitQtTeleOperation
+                             ${sawRobotIO1394_LIBRARIES}
+                             ${sawControllers_LIBRARIES})
+
+      # link against cisst libraries (and dependencies)
+      cisst_target_link_libraries (sawIntuitiveResearchKitQtTeleOperation ${REQUIRED_CISST_LIBRARIES})
+
+    endif (CISST_HAS_QT)
 
   endif (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 

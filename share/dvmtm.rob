@@ -1,0 +1,10 @@
+7
+standard  1.5708  0.0000 0.0 0.0000 revolute active -1.5708 -2.6179 2.6179
+standard  0.0000  0.2857 0.0 0.0000 revolute active -1.3603 -2.6179 2.6179
+standard -1.5708  0.3048 0.0 0.0000 revolute active  1.3603 -2.6179 2.6197
+standard  1.5708  0.0000 0.0 0.1506 revolute active  0.0000 -2.6179 2.6179
+standard -1.5708  0.0000 0.0 0.0000 revolute active  0.0000 -2.6179 2.6179
+standard  1.5708  0.0000 0.0 0.0000 revolute active -1.5708 -2.6179 2.6179
+standard  0.0000  0.0000 0.0 0.0000 revolute active  0.0000 -2.6179 2.6179
+
+mod/std   alpha      a  theta   d   rev/pris act/pas offset   qmin   qmax
