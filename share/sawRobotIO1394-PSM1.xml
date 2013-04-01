@@ -1,0 +1,210 @@
+<Config>
+
+  <Robot Name="PSM1" NumOfActuator="7" NumOfJoint="7">
+    
+    <Actuator ActuatorID="0" AxisID="0" BoardID="8" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Offset="32768.0" Scale="-5242.88" />
+            <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738" />
+            <NmToAmps Scale="0.404089384572" />
+            <MaxCurrent Unit="A" Value="1.34" />
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Offset="0.0" Scale="-0.000442477876106" />
+            <BitsToDeltaPosSI Offset="0" Scale="-375.00" />
+            <BitsToDeltaT Offset="0" Scale="0.125" />
+            <CountsPerTurn Value="14400" />
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Offset="0.0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="99.4425549229" Scale="-44.3291079895" />
+        </AnalogIn>
+    </Actuator>
+
+    <Actuator ActuatorID="1" AxisID="1" BoardID="8" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Offset="32768.0" Scale="-5242.88" />
+            <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738" />
+            <NmToAmps Scale="0.404089384572" />
+            <MaxCurrent Unit="A" Value="1.34" />
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Offset="0.0" Scale="-0.000442477876106" />
+            <BitsToDeltaPosSI Offset="0" Scale="-750.00" />
+            <BitsToDeltaT Offset="0" Scale="0.25" />
+            <CountsPerTurn Value="14400" />
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Offset="0.0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="68.0330085938" Scale="-29.2050593813" />
+        </AnalogIn>
+    </Actuator>
+
+    <Actuator ActuatorID="2" AxisID="2" BoardID="8" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Offset="32768.0" Scale="5242.88" />
+            <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738" />
+            <NmToAmps Scale="0.0678284320508" />
+            <MaxCurrent Unit="A" Value="0.67" />
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Offset="0.0" Scale="0.00129629382056" />
+            <BitsToDeltaPosSI Offset="0" Scale="-3000.00" />
+            <BitsToDeltaT Offset="0" Scale="1" />
+            <CountsPerTurn Value="14400" />
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Offset="0.0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="-0.810907167449" Scale="3.41594890978" />
+        </AnalogIn>
+    </Actuator>
+
+    <Actuator ActuatorID="3" AxisID="3" BoardID="8" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Offset="32768.0" Scale="-5242.88" />
+            <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738" />
+            <NmToAmps Scale="1.94970539951" />
+            <MaxCurrent Unit="A" Value="0.67" />
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Offset="0.0" Scale="-0.00768573868488" />
+            <BitsToDeltaPosSI Offset="0" Scale="-3000.00" />
+            <BitsToDeltaT Offset="0" Scale="1" />
+            <CountsPerTurn Value="4000" />
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Offset="0.0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="176.339220607" Scale="-78.2278376285" />
+        </AnalogIn>
+    </Actuator>
+
+    <Actuator ActuatorID="4" AxisID="0" BoardID="9" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Offset="32768.0" Scale="-5242.88" />
+            <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738" />
+            <NmToAmps Scale="1.94970539951" />
+            <MaxCurrent Unit="A" Value="0.67" />
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Offset="0.0" Scale="-0.00768573868488" />
+            <BitsToDeltaPosSI Offset="0" Scale="-3000.00" />
+            <BitsToDeltaT Offset="0" Scale="1" />
+            <CountsPerTurn Value="4000" />
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Offset="0.0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="176.608510771" Scale="-79.1144197883" />
+        </AnalogIn>
+    </Actuator>
+
+    <Actuator ActuatorID="5" AxisID="1" BoardID="9" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Offset="32768.0" Scale="5242.88" />
+            <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738" />
+            <NmToAmps Scale="1.94970539951" />
+            <MaxCurrent Unit="A" Value="0.67" />
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Offset="0.0" Scale="0.00768573868488" />
+            <BitsToDeltaPosSI Offset="0" Scale="-3000.00" />
+            <BitsToDeltaT Offset="0" Scale="1" />
+            <CountsPerTurn Value="4000" />
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Offset="0.0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="174.918285275" Scale="-78.2278376285" />
+        </AnalogIn>
+    </Actuator>
+
+    <Actuator ActuatorID="6" AxisID="2" BoardID="9" Pos1="ENC" Pos2="POT">
+        <Drive>
+            <AmpsToBits Offset="32768.0" Scale="5242.88" />
+            <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738" />
+            <NmToAmps Scale="1.94970539951" />
+            <MaxCurrent Unit="A" Value="0.67" />
+        </Drive>
+        <Encoder>
+            <BitsToPosSI Offset="0.0" Scale="0.00768573868488" />
+            <BitsToDeltaPosSI Offset="0" Scale="-3000.00" />
+            <BitsToDeltaT Offset="0" Scale="1" />
+            <CountsPerTurn Value="4000" />
+        </Encoder>
+        <AnalogIn>
+            <BitsToVolts Offset="0.0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="179.925936405" Scale="-78.2278376285" />
+        </AnalogIn>
+    </Actuator>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <Coupling Value="1">
+        <ActuatorToJointPosition>
+            <Row Val="1.000 0.000 0.000 0.000 0.000 0.000 0.000" />
+            <Row Val="0.000 1.000 0.000 0.000 0.000 0.000 0.000" />
+            <Row Val="0.000 0.000 1.000 0.000 0.000 0.000 0.000" />
+            <Row Val="0.000 0.000 0.000 1.000 0.000 0.000 0.000" />
+            <Row Val="0.000 0.000 0.000 0.000 1.000 0.000 0.000" />
+            <Row Val="0.000 0.000 0.000 0.000 0.000 1.000 0.000" />
+            <Row Val="0.000 0.000 0.000 0.000 0.000 0.000 1.000" />
+        </ActuatorToJointPosition>
+
+
+        <JointToActuatorPosition>
+            <Row Val="1.000 0.000 0.000 0.000 0.000 0.000 0.000" />
+            <Row Val="0.000 1.000 0.000 0.000 0.000 0.000 0.000" />
+            <Row Val="0.000 0.000 1.000 0.000 0.000 0.000 0.000" />
+            <Row Val="0.000 0.000 0.000 1.000 0.000 0.000 0.000" />
+            <Row Val="0.000 0.000 0.000 0.000 1.000 0.000 0.000" />
+            <Row Val="0.000 0.000 0.000 0.000 0.000 1.000 0.000" />
+            <Row Val="0.000 0.000 0.000 0.000 0.000 0.000 1.000" />
+        </JointToActuatorPosition>
+
+
+        <ActuatorToJointTorque>
+            <Row Val="1.000 0.000 0.000 0.000 0.000 0.000 0.000" />
+            <Row Val="0.000 1.000 0.000 0.000 0.000 0.000 0.000" />
+            <Row Val="0.000 0.000 1.000 0.000 0.000 0.000 0.000" />
+            <Row Val="0.000 0.000 0.000 1.000 0.000 0.000 0.000" />
+            <Row Val="0.000 0.000 0.000 0.000 1.000 0.000 0.000" />
+            <Row Val="0.000 0.000 0.000 0.000 0.000 1.000 0.000" />
+            <Row Val="0.000 0.000 0.000 0.000 0.000 0.000 1.000" />
+        </ActuatorToJointTorque>
+
+
+        <JointToActuatorTorque>
+            <Row Val="1.000 0.000 0.000 0.000 0.000 0.000 0.000" />
+            <Row Val="0.000 1.000 0.000 0.000 0.000 0.000 0.000" />
+            <Row Val="0.000 0.000 1.000 0.000 0.000 0.000 0.000" />
+            <Row Val="0.000 0.000 0.000 1.000 0.000 0.000 0.000" />
+            <Row Val="0.000 0.000 0.000 0.000 1.000 0.000 0.000" />
+            <Row Val="0.000 0.000 0.000 0.000 0.000 1.000 0.000" />
+            <Row Val="0.000 0.000 0.000 0.000 0.000 0.000 1.000" />
+        </JointToActuatorTorque>
+    </Coupling>
+  </Robot>
+
+  
+  
+
+  
+  
+  <InputDevice Name="Footpedal" NumOfBoard="2">
+
+    <Input active="high" bit="0" boardid="0" name="COAG" />
+    <Input active="low" bit="4" boardid="0" name="Cam+" />
+    <Input active="low" bit="5" boardid="1" name="Cam-" />
+
+  </InputDevice>
+
+
+</Config>
