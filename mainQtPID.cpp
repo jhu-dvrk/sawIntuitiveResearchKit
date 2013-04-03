@@ -73,7 +73,7 @@ int main(int argc, char ** argv)
     mtsManagerLocal * manager = mtsManagerLocal::GetInstance();
 
     // IO
-    mtsRobotIO1394QtWidget * ioGUI = new mtsRobotIO1394QtWidget("ioGUI");
+    mtsRobotIO1394QtWidget * ioGUI = new mtsRobotIO1394QtWidget("ioGUI", 8);
     ioGUI->Configure();
     manager->AddComponent(ioGUI);
     mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1 * cmn_ms, firewirePort, ioGUI->GetOutputStream());

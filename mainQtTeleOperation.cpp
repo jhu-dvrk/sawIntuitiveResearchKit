@@ -20,6 +20,8 @@ http://www.cisst.org/cisst/license.txt.
 
 // system
 #include <iostream>
+#include <map>
+
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
@@ -43,16 +45,30 @@ int main(int argc, char ** argv)
     // parse options
     cmnCommandLineOptions options;
     int firewirePort;
-    std::string ioConfigFile, pidConfigFile, kinConfigFile;
-    options.AddOptionOneValue("i", "io",
-                              "configuration file for robot IO (see sawRobotIO1394)",
-                              cmnCommandLineOptions::REQUIRED, &ioConfigFile);
-    options.AddOptionOneValue("p", "pid",
-                              "configuration file for PID controller (see sawControllers, mtsPID)",
-                              cmnCommandLineOptions::REQUIRED, &pidConfigFile);
-    options.AddOptionOneValue("k", "kinematic",
-                              "configuration file for kinematic (see cisstRobot, robManipulator)",
-                              cmnCommandLineOptions::REQUIRED, &kinConfigFile);
+    typedef std::map<std::string, std::string> ConfigFilesType;
+    ConfigFilesType configFiles;
+
+    std::string ioConfigFileMaster, pidConfigFileMaster, kinConfigFileMaster;
+    std::string ioConfigFileSlave, pidConfigFileSlave, kinConfigFileSlave;
+    options.AddOptionOneValue("i", "io-master",
+                              "configuration file for master robot IO (see sawRobotIO1394)",
+                              cmnCommandLineOptions::REQUIRED, &configFiles["io-master"]);
+    options.AddOptionOneValue("p", "pid-master",
+                              "configuration file for master PID controller (see sawControllers, mtsPID)",
+                              cmnCommandLineOptions::REQUIRED, &configFiles["pid-master"]);
+    options.AddOptionOneValue("k", "kinematic-master",
+                              "configuration file for master kinematic (see cisstRobot, robManipulator)",
+                              cmnCommandLineOptions::REQUIRED, &configFiles["kinematic-master"]);
+    options.AddOptionOneValue("I", "io-slave",
+                              "configuration file for slave robot IO (see sawRobotIO1394)",
+                              cmnCommandLineOptions::REQUIRED, &configFiles["io-slave"]);
+    options.AddOptionOneValue("P", "pid-slave",
+                              "configuration file for slave PID controller (see sawControllers, mtsPID)",
+                              cmnCommandLineOptions::REQUIRED, &configFiles["pid-slave"]);
+    options.AddOptionOneValue("K", "kinematic-slave",
+                              "configuration file for slave kinematic (see cisstRobot, robManipulator)",
+                              cmnCommandLineOptions::REQUIRED, &configFiles["kinematic-slave"]);
+
     options.AddOptionOneValue("f", "firewire",
                               "firewire port number(s)",
                               cmnCommandLineOptions::REQUIRED, &firewirePort);
@@ -63,42 +79,46 @@ int main(int argc, char ** argv)
         return -1;
     }
 
-    if (!cmnPath::Exists(ioConfigFile)) {
-        std::cerr << "File not found: " << ioConfigFile << std::endl;
-        return -1;
+    for (ConfigFilesType::const_iterator iter = configFiles.begin();
+         iter != configFiles.end();
+         ++iter) {
+        if (!cmnPath::Exists(iter->second)) {
+            std::cerr << "File not found for " << iter->first
+                      << ": " << iter->second << std::endl;
+            return -1;
+        } else {
+            std::cout << "Configuration file for " << iter->first
+                      << ": " << iter->second << std::endl;
+        }
     }
-    if (!cmnPath::Exists(pidConfigFile)) {
-        std::cerr << "File not found: " << pidConfigFile << std::endl;
-        return -1;
-    }
-    if (!cmnPath::Exists(kinConfigFile)) {
-        std::cerr << "File not found: " << kinConfigFile << std::endl;
-        return -1;
-    }
-    std::cout << "Configuration file for IO: " << ioConfigFile << std::endl
-              << "Configuration file for PID: " << pidConfigFile << std::endl
-              << "Configuration file for kin: " << kinConfigFile << std::endl
-              << "FirewirePort: " << firewirePort << std::endl;
+    std::cout << "FirewirePort: " << firewirePort << std::endl;
 
     mtsManagerLocal * manager = mtsManagerLocal::GetInstance();
 
     // IO
-    mtsRobotIO1394QtWidget * ioGUI = new mtsRobotIO1394QtWidget("ioGUI");
-    ioGUI->Configure();
-    manager->AddComponent(ioGUI);
-    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1.0 * cmn_ms, firewirePort, ioGUI->GetOutputStream());
-    io->Configure(ioConfigFile);
+    mtsRobotIO1394QtWidget * ioGUIMaster = new mtsRobotIO1394QtWidget("ioGUIMaster", 8);
+    ioGUIMaster->Configure();
+    manager->AddComponent(ioGUIMaster);
+    mtsRobotIO1394QtWidget * ioGUISlave = new mtsRobotIO1394QtWidget("ioGUISlave", 7);
+    ioGUISlave->Configure();
+    manager->AddComponent(ioGUISlave);
+    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1.0 * cmn_ms, firewirePort, ioGUIMaster->GetOutputStream());
+    io->Configure(configFiles["io-master"]);
+    io->Configure(configFiles["io-slave"]);
     manager->AddComponent(io);
-    // connect ioGUI to io
-    manager->Connect("ioGUI", "Robot", "io", "MTML");
-    manager->Connect("ioGUI", "RobotActuators", "io", "MTMLActuators");
+    // connect ioGUIMaster to io
+    manager->Connect("ioGUIMaster", "Robot", "io", "MTML");
+    manager->Connect("ioGUIMaster", "RobotActuators", "io", "MTMLActuators");
+    // connect ioGUISlave to io
+    manager->Connect("ioGUISlave", "Robot", "io", "PSM1");
+    manager->Connect("ioGUISlave", "RobotActuators", "io", "PSM1Actuators");
 
     // PID
     mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI");
     pidGUI->Configure();
     manager->AddComponent(pidGUI);
     mtsPID * pid = new mtsPID("pid", 1 * cmn_ms);
-    pid->Configure(pidConfigFile);
+    pid->Configure(configFiles["pid-master"]);
     manager->AddComponent(pid);
     // connect pidGUI to pid
     manager->Connect("pidGUI", "Controller", "pid", "Controller");
@@ -108,7 +128,7 @@ int main(int argc, char ** argv)
     teleGUI->Configure();
     manager->AddComponent(teleGUI);
     mtsTeleOperation * tele = new mtsTeleOperation("tele", 1.0 * cmn_ms);
-    tele->ConfigureMaster(kinConfigFile);
+    tele->ConfigureMaster(configFiles["kinematic-master"]);
     manager->AddComponent(tele);
     // connect teleGUI to tele
     manager->Connect("teleGUI", "TeleOperation", "tele", "Setting");
@@ -129,7 +149,8 @@ int main(int argc, char ** argv)
     manager->StartAll();
 
     // create a main window to hold QWidget
-    ioGUI->show();
+    ioGUIMaster->show();
+    ioGUISlave->show();
     pidGUI->show();
     teleGUI->show();
 
@@ -144,7 +165,8 @@ int main(int argc, char ** argv)
     delete pid;
     delete pidGUI;
     delete io;
-    delete ioGUI;
+    delete ioGUIMaster;
+    delete ioGUISlave;
 
     // stop all logs
     cmnLogger::Kill();
