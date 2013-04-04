@@ -193,18 +193,34 @@
     </Coupling>
   </Robot>
 
-  
-  
+  <DigitalIn Name="D00" BoardID="8" BitID="0" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D01" BoardID="8" BitID="1" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D02" BoardID="8" BitID="2" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D03" BoardID="8" BitID="3" Pressed="0" Trigger="all" />
 
-  
-  
-  <InputDevice Name="Footpedal" NumOfBoard="2">
+  <DigitalIn Name="D10" BoardID="8" BitID="4" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D11" BoardID="8" BitID="5" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D12" BoardID="8" BitID="6" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D13" BoardID="8" BitID="7" Pressed="0" Trigger="all" />
 
-    <Input active="high" bit="0" boardid="0" name="COAG" />
-    <Input active="low" bit="4" boardid="0" name="Cam+" />
-    <Input active="low" bit="5" boardid="1" name="Cam-" />
+  <DigitalIn Name="D20" BoardID="8" BitID="8" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D21" BoardID="8" BitID="9" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D22" BoardID="8" BitID="10" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D23" BoardID="8" BitID="11" Pressed="0" Trigger="all" />
 
-  </InputDevice>
+  <DigitalIn Name="D30" BoardID="9" BitID="0" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D31" BoardID="9" BitID="1" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D32" BoardID="9" BitID="2" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D33" BoardID="9" BitID="3" Pressed="0" Trigger="all" />
 
+  <DigitalIn Name="D40" BoardID="9" BitID="4" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D41" BoardID="9" BitID="5" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D42" BoardID="9" BitID="6" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D43" BoardID="9" BitID="7" Pressed="0" Trigger="all" />
+
+  <DigitalIn Name="D50" BoardID="9" BitID="8" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D51" BoardID="9" BitID="9" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D52" BoardID="9" BitID="10" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D53" BoardID="9" BitID="11" Pressed="0" Trigger="all" />
 
 </Config>

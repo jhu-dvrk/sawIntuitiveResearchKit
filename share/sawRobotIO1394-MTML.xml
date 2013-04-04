@@ -263,19 +263,39 @@
     </Coupling>
   </Robot>
 
-  <!-- It would be nice to be able to include other XML files -->
-  <!-- <Include FileName="MTM-Left.xml" /> -->
+<!-- List of Digital Inputs related to MTML, mostly the foot pedal.
+     The 2nd right pedal does not work. 
+     Their names do not represent provided interface yet. -->
+<!-- Board 5 Digital Input list -->
+  <DigitalIn Name="D30" BoardID="5" BitID="0" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D31" BoardID="5" BitID="1" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D32" BoardID="5" BitID="2" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D33" BoardID="5" BitID="3" Pressed="0" Trigger="all" />
 
-  <!-- Definition of da Vinci Footpedal -->
-  <!-- Feb 26: We will not touch the digital IO for now.
-       Hello~ Backburner -->
-  <InputDevice Name="Footpedal" NumOfBoard="2">
+  <DigitalIn Name="D40" BoardID="5" BitID="4" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D41" BoardID="5" BitID="5" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D42" BoardID="5" BitID="6" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D43" BoardID="5" BitID="7" Pressed="0" Trigger="all" />
 
-    <Input name="COAG" boardid="0" bit="0" active="high"/>
-    <Input name="Cam+" boardid="0" bit="4" active="low"/>
-    <Input name="Cam-" boardid="1" bit="5" active="low"/>
+  <DigitalIn Name="D50" BoardID="5" BitID="8" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D51" BoardID="5" BitID="9" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D52" BoardID="5" BitID="10" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D53" BoardID="5" BitID="11" Pressed="0" Trigger="all" />
 
-  </InputDevice>
+<!-- Board 7 Digital Input list -->
+  <DigitalIn Name="CLUTCH" BoardID="7" BitID="0" Pressed="0" Trigger="all" />
+  <DigitalIn Name="CAM-" BoardID="7" BitID="1" Pressed="0" Trigger="all" />
+  <DigitalIn Name="CAM+" BoardID="7" BitID="2" Pressed="0" Trigger="all" />
+  <DigitalIn Name="COAG" BoardID="7" BitID="3" Pressed="0" Trigger="all" />
 
+  <DigitalIn Name="CAMERA" BoardID="7" BitID="4" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D11" BoardID="7" BitID="5" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D12" BoardID="7" BitID="6" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D13" BoardID="7" BitID="7" Pressed="0" Trigger="all" />
+
+  <DigitalIn Name="D20" BoardID="7" BitID="8" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D21" BoardID="7" BitID="9" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D22" BoardID="7" BitID="10" Pressed="0" Trigger="all" />
+  <DigitalIn Name="D23" BoardID="7" BitID="11" Pressed="1" Trigger="all" />
 
 </Config>
