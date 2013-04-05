@@ -46,7 +46,7 @@
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="-0.001419" Offset="0"/>
-            <BitsToDeltaPosSI Scale="-375.00" Offset="0"/>
+            <BitsToDeltaPosSI Scale="-4360.20" Offset="0"/>
             <BitsToDeltaT Scale="0.125" Offset="0"/>
             <CountsPerTurn Value="4000"/>
         </Encoder>
@@ -65,7 +65,7 @@
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="0.001804" Offset="0"/>
-            <BitsToDeltaPosSI Scale="-750.00" Offset="0"/>
+            <BitsToDeltaPosSI Scale="5542.90" Offset="0"/>
             <BitsToDeltaT Scale="0.25" Offset="0"/>
             <CountsPerTurn Value="4000"/>
         </Encoder>
@@ -84,7 +84,7 @@
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="0.001507" Offset="0"/>
-            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
+            <BitsToDeltaPosSI Scale="4628.83" Offset="0"/>
             <BitsToDeltaT Scale="1" Offset="0"/>
             <CountsPerTurn Value="4000"/>
         </Encoder>
@@ -103,7 +103,7 @@
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="0.008547" Offset="0"/>
-            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
+            <BitsToDeltaPosSI Scale="26256.41" Offset="0"/>
             <BitsToDeltaT Scale="1" Offset="0"/>
             <CountsPerTurn Value="4000"/>
         </Encoder>
@@ -122,7 +122,7 @@
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="-0.169632" Offset="0"/>
-            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
+            <BitsToDeltaPosSI Scale="-521109.711" Offset="0"/>
             <BitsToDeltaT Scale="1" Offset="0"/>
             <CountsPerTurn Value="64"/>
         </Encoder>
@@ -141,7 +141,7 @@
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="0.169632" Offset="0"/>
-            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
+            <BitsToDeltaPosSI Scale="521109.771" Offset="0"/>
             <BitsToDeltaT Scale="1" Offset="0"/>
             <CountsPerTurn Value="64"/>
         </Encoder>
@@ -160,7 +160,7 @@
         </Drive>
         <Encoder>
             <BitsToPosSI Scale="-0.339264" Offset="0"/>
-            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
+            <BitsToDeltaPosSI Scale="-104221.954" Offset="0"/>
             <BitsToDeltaT Scale="1" Offset="0"/>
             <CountsPerTurn Value="64"/>
         </Encoder>
