@@ -2,7 +2,7 @@
 
   <Robot Name="PSM1" NumOfActuator="7" NumOfJoint="7">
     
-    <Actuator ActuatorID="0" AxisID="0" BoardID="8" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="0" AxisID="0" BoardID="6" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Offset="32768.0" Scale="-5242.88" />
             <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738" />
@@ -21,7 +21,7 @@
         </AnalogIn>
     </Actuator>
 
-    <Actuator ActuatorID="1" AxisID="1" BoardID="8" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="1" AxisID="1" BoardID="6" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Offset="32768.0" Scale="-5242.88" />
             <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738" />
@@ -40,7 +40,7 @@
         </AnalogIn>
     </Actuator>
 
-    <Actuator ActuatorID="2" AxisID="2" BoardID="8" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="2" AxisID="2" BoardID="6" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Offset="32768.0" Scale="5242.88" />
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738" />
@@ -59,7 +59,7 @@
         </AnalogIn>
     </Actuator>
 
-    <Actuator ActuatorID="3" AxisID="3" BoardID="8" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="3" AxisID="3" BoardID="6" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Offset="32768.0" Scale="-5242.88" />
             <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738" />
@@ -78,7 +78,7 @@
         </AnalogIn>
     </Actuator>
 
-    <Actuator ActuatorID="4" AxisID="0" BoardID="9" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="4" AxisID="0" BoardID="7" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Offset="32768.0" Scale="-5242.88" />
             <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738" />
@@ -97,7 +97,7 @@
         </AnalogIn>
     </Actuator>
 
-    <Actuator ActuatorID="5" AxisID="1" BoardID="9" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="5" AxisID="1" BoardID="7" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Offset="32768.0" Scale="5242.88" />
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738" />
@@ -116,7 +116,7 @@
         </AnalogIn>
     </Actuator>
 
-    <Actuator ActuatorID="6" AxisID="2" BoardID="9" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="6" AxisID="2" BoardID="7" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Offset="32768.0" Scale="5242.88" />
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738" />
@@ -182,34 +182,34 @@
     </Coupling>
   </Robot>
 
-  <DigitalIn BitID="0" BoardID="8" Name="PSM1-D00" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="1" BoardID="8" Name="PSM1-D01" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="2" BoardID="8" Name="PSM1-D02" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="3" BoardID="8" Name="PSM1-D03" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="0" BoardID="6" Name="PSM1-D00" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="1" BoardID="6" Name="PSM1-D01" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="2" BoardID="6" Name="PSM1-D02" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="3" BoardID="6" Name="PSM1-D03" Pressed="0" Trigger="all" />
 
-  <DigitalIn BitID="4" BoardID="8" Name="PSM1-D10" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="5" BoardID="8" Name="PSM1-D11" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="6" BoardID="8" Name="PSM1-D12" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="7" BoardID="8" Name="PSM1-D13" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="4" BoardID="6" Name="PSM1-D10" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="5" BoardID="6" Name="PSM1-D11" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="6" BoardID="6" Name="PSM1-D12" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="7" BoardID="6" Name="PSM1-D13" Pressed="0" Trigger="all" />
 
-  <DigitalIn BitID="8" BoardID="8" Name="PSM1-D20" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="9" BoardID="8" Name="PSM1-D21" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="10" BoardID="8" Name="PSM1-D22" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="11" BoardID="8" Name="PSM1-D23" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="8" BoardID="6" Name="PSM1-D20" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="9" BoardID="6" Name="PSM1-D21" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="10" BoardID="6" Name="PSM1-D22" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="11" BoardID="6" Name="PSM1-D23" Pressed="0" Trigger="all" />
 
-  <DigitalIn BitID="0" BoardID="9" Name="PSM1-D30" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="1" BoardID="9" Name="PSM1-D31" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="2" BoardID="9" Name="PSM1-D32" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="3" BoardID="9" Name="PSM1-D33" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="0" BoardID="7" Name="PSM1-D30" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="1" BoardID="7" Name="PSM1-D31" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="2" BoardID="7" Name="PSM1-D32" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="3" BoardID="7" Name="PSM1-D33" Pressed="0" Trigger="all" />
 
-  <DigitalIn BitID="4" BoardID="9" Name="PSM1-D40" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="5" BoardID="9" Name="PSM1-D41" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="6" BoardID="9" Name="PSM1-D42" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="7" BoardID="9" Name="PSM1-D43" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="4" BoardID="7" Name="PSM1-D40" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="5" BoardID="7" Name="PSM1-D41" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="6" BoardID="7" Name="PSM1-D42" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="7" BoardID="7" Name="PSM1-D43" Pressed="0" Trigger="all" />
 
-  <DigitalIn BitID="8" BoardID="9" Name="PSM1-D50" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="9" BoardID="9" Name="PSM1-D51" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="10" BoardID="9" Name="PSM1-D52" Pressed="0" Trigger="all" />
-  <DigitalIn BitID="11" BoardID="9" Name="PSM1-D53" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="8" BoardID="7" Name="PSM1-D50" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="9" BoardID="7" Name="PSM1-D51" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="10" BoardID="7" Name="PSM1-D52" Pressed="0" Trigger="all" />
+  <DigitalIn BitID="11" BoardID="7" Name="PSM1-D53" Pressed="0" Trigger="all" />
 
 </Config>

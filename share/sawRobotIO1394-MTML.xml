@@ -37,7 +37,7 @@
 
   <Robot Name="MTML" NumOfActuator="8" NumOfJoint="8">
     
-    <Actuator ActuatorID="0" BoardID="5" AxisID="0" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="0" BoardID="0" AxisID="0" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="-5242.880000" Offset="32768"/>
             <BitsToFeedbackAmps Scale="-0.000190738" Offset="6.25"/>
@@ -56,7 +56,7 @@
         </AnalogIn>
     </Actuator>
 
-    <Actuator ActuatorID="1" BoardID="5" AxisID="1" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="1" BoardID="0" AxisID="1" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
             <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
@@ -75,7 +75,7 @@
         </AnalogIn>
     </Actuator>
 
-    <Actuator ActuatorID="2" BoardID="5" AxisID="2" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="2" BoardID="0" AxisID="2" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
             <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
@@ -94,7 +94,7 @@
         </AnalogIn>
     </Actuator>
 
-    <Actuator ActuatorID="3" BoardID="5" AxisID="3" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="3" BoardID="0" AxisID="3" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
             <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
@@ -113,7 +113,7 @@
         </AnalogIn>
     </Actuator>
 
-    <Actuator ActuatorID="4" BoardID="7" AxisID="0" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="4" BoardID="1" AxisID="0" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="-5242.880000" Offset="32768"/>
             <BitsToFeedbackAmps Scale="-0.000190738" Offset="6.25"/>
@@ -132,7 +132,7 @@
         </AnalogIn>
     </Actuator>
 
-    <Actuator ActuatorID="5" BoardID="7" AxisID="1" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="5" BoardID="1" AxisID="1" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
             <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
@@ -151,7 +151,7 @@
         </AnalogIn>
     </Actuator>
 
-    <Actuator ActuatorID="6" BoardID="7" AxisID="2" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="6" BoardID="1" AxisID="2" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="-5242.880000" Offset="32768"/>
             <BitsToFeedbackAmps Scale="-0.000190738" Offset="6.25"/>
@@ -170,7 +170,7 @@
         </AnalogIn>
     </Actuator>
 
-    <Actuator ActuatorID="7" BoardID="7" AxisID="3" Pos1="ENC" Pos2="POT">
+    <Actuator ActuatorID="7" BoardID="1" AxisID="3" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
             <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
@@ -267,35 +267,35 @@
      The 2nd right pedal does not work. 
      Their names do not represent provided interface yet. -->
 <!-- Board 5 Digital Input list -->
-  <DigitalIn Name="MTML-D30" BoardID="5" BitID="0" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D31" BoardID="5" BitID="1" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D32" BoardID="5" BitID="2" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D33" BoardID="5" BitID="3" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D30" BoardID="0" BitID="0" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D31" BoardID="0" BitID="1" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D32" BoardID="0" BitID="2" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D33" BoardID="0" BitID="3" Pressed="0" Trigger="all" />
 
-  <DigitalIn Name="MTML-D40" BoardID="5" BitID="4" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D41" BoardID="5" BitID="5" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D42" BoardID="5" BitID="6" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D43" BoardID="5" BitID="7" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D40" BoardID="0" BitID="4" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D41" BoardID="0" BitID="5" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D42" BoardID="0" BitID="6" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D43" BoardID="0" BitID="7" Pressed="0" Trigger="all" />
 
-  <DigitalIn Name="MTML-D50" BoardID="5" BitID="8" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D51" BoardID="5" BitID="9" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D52" BoardID="5" BitID="10" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D53" BoardID="5" BitID="11" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D50" BoardID="0" BitID="8" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D51" BoardID="0" BitID="9" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D52" BoardID="0" BitID="10" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D53" BoardID="0" BitID="11" Pressed="0" Trigger="all" />
 
 <!-- Board 7 Digital Input list -->
-  <DigitalIn Name="CLUTCH" BoardID="7" BitID="0" Pressed="0" Trigger="all" />
-  <DigitalIn Name="CAM-" BoardID="7" BitID="1" Pressed="0" Trigger="all" />
-  <DigitalIn Name="CAM+" BoardID="7" BitID="2" Pressed="0" Trigger="all" />
-  <DigitalIn Name="COAG" BoardID="7" BitID="3" Pressed="0" Trigger="all" />
+  <DigitalIn Name="CLUTCH" BoardID="1" BitID="0" Pressed="0" Trigger="all" />
+  <DigitalIn Name="CAM-" BoardID="1" BitID="1" Pressed="0" Trigger="all" />
+  <DigitalIn Name="CAM+" BoardID="1" BitID="2" Pressed="0" Trigger="all" />
+  <DigitalIn Name="COAG" BoardID="1" BitID="3" Pressed="0" Trigger="all" />
 
-  <DigitalIn Name="CAMERA" BoardID="7" BitID="4" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D11" BoardID="7" BitID="5" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D12" BoardID="7" BitID="6" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D13" BoardID="7" BitID="7" Pressed="0" Trigger="all" />
+  <DigitalIn Name="CAMERA" BoardID="1" BitID="4" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D11" BoardID="1" BitID="5" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D12" BoardID="1" BitID="6" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D13" BoardID="1" BitID="7" Pressed="0" Trigger="all" />
 
-  <DigitalIn Name="MTML-D20" BoardID="7" BitID="8" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D21" BoardID="7" BitID="9" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D22" BoardID="7" BitID="10" Pressed="0" Trigger="all" />
-  <DigitalIn Name="MTML-D23" BoardID="7" BitID="11" Pressed="1" Trigger="all" />
+  <DigitalIn Name="MTML-D20" BoardID="1" BitID="8" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D21" BoardID="1" BitID="9" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D22" BoardID="1" BitID="10" Pressed="0" Trigger="all" />
+  <DigitalIn Name="MTML-D23" BoardID="1" BitID="11" Pressed="1" Trigger="all" />
 
 </Config>
