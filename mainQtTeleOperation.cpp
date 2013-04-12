@@ -45,6 +45,7 @@ int main(int argc, char ** argv)
     // parse options
     cmnCommandLineOptions options;
     int firewirePort;
+    std::string gcmip = "-1";
     typedef std::map<std::string, std::string> ConfigFilesType;
     ConfigFilesType configFiles;
 
@@ -72,6 +73,12 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("f", "firewire",
                               "firewire port number(s)",
                               cmnCommandLineOptions::REQUIRED, &firewirePort);
+
+    options.AddOptionOneValue("g", "gcmip",
+                              "global component manager IP addrress",
+                              cmnCommandLineOptions::OPTIONAL, &gcmip);
+
+
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
         std::cerr << "Error: " << errorMessage << std::endl;
@@ -93,7 +100,21 @@ int main(int argc, char ** argv)
     }
     std::cout << "FirewirePort: " << firewirePort << std::endl;
 
-    mtsManagerLocal * manager = mtsManagerLocal::GetInstance();
+    std::string processname = "dvTeleop";
+    mtsManagerLocal *manager = NULL;
+    if(gcmip != "-1"){
+        try{
+            manager = mtsManagerLocal::GetInstance( gcmip, processname );
+        }catch(...){
+            std::cerr << "Failed to get GCM instance." << std::endl;
+            return -1;
+        }
+    }else{
+        manager = mtsManagerLocal::GetInstance();
+    }
+
+
+
 
     // IO
     mtsRobotIO1394QtWidget * ioGUIMaster = new mtsRobotIO1394QtWidget("ioGUIMaster", 8);
