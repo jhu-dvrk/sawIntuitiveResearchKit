@@ -1,0 +1,47 @@
+# Create and run the sawIntuitiveResearchKitQtPID example
+# using cisstComponentManager.
+# From command line:  cisstComponentManager -e sawIntuitiveResearchKitQtPID.cisst
+# From component manager:  execute sawIntuitiveResearchKitQtPID.cisst
+
+load cisstCommonXML
+load cisstMultiTaskQt
+load sawRobotIO1394
+load sawRobotIO1394Qt
+load sawControllers
+load sawControllersQt
+
+create mtsQtApplication "QtApp QtApp"
+
+#Create Qt widget (hard-coded to 8 actuators)
+create mtsRobotIO1394QtWidget "ioGUI"
+configure ioGUI " "
+
+# Create task with 0.001 sec (1 ms) period, using firewire port 0 (hard-coded)
+create mtsRobotIO1394 "io 0.001"
+configure io "sawRobotIO1394-MTML.xml"
+
+connect ioGUI Robot io MTML
+connect ioGUI RobotActuators io MTMLActuators
+
+create mtsPIDQtWidget "pidGUI"
+configure pidGUI " "
+
+create mtsPID "pid 0.001"
+configure pid "sawControllersPID-MTML.xml"
+
+# connect pidGUI to pid
+connect pidGUI Controller pid Controller
+
+# tie pid execution to io
+connect pid ExecIn io ExecOut
+# connect pid to io
+connect pid RobotJointTorqueInterface io MTML
+
+# start the tasks
+
+start io
+start ioGUI
+start pid
+start pidGUI
+start QtApp
+
