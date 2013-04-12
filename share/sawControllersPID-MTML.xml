@@ -31,12 +31,12 @@
     </joint>
 
     <joint index="5" name="roll"> 
-      <pid PGain="-2.0" DGain="-0.15" IGain="0.0" OffsetTorque="0.0"/>      
+      <pid PGain="2.0" DGain="0.15" IGain="0.0" OffsetTorque="0.0"/>      
       <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9" DeadZone="0.35"/>
     </joint>
 
     <joint index="6" name="roll"> 
-      <pid PGain="-0.5" DGain="-0.05" IGain="0.0" OffsetTorque="0.0"/>      
+      <pid PGain="0.5" DGain="0.05" IGain="0.0" OffsetTorque="0.0"/>      
       <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9" DeadZone="0.70"/>
     </joint>
 

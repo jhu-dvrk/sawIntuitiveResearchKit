@@ -136,7 +136,7 @@
         <Drive>
             <AmpsToBits Scale="5242.880000" Offset="32768"/>
             <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
-            <NmToAmps Scale="-6.092286"/>
+            <NmToAmps Scale="6.092286"/>
             <MaxCurrent Value="0.59" Unit="A"/>
         </Drive>
         <Encoder>
@@ -155,7 +155,7 @@
         <Drive>
             <AmpsToBits Scale="-5242.880000" Offset="32768"/>
             <BitsToFeedbackAmps Scale="-0.000190738" Offset="6.25"/>
-            <NmToAmps Scale="-12.184572"/>
+            <NmToAmps Scale="12.184572"/>
             <MaxCurrent Value="0.407" Unit="A"/>
         </Drive>
         <Encoder>
