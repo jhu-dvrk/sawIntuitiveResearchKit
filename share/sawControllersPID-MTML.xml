@@ -7,42 +7,42 @@
   <joints>
     <joint index="0" name="yaw"> 
       <pid PGain="100.0" DGain="10.0" IGain="1.0" OffsetTorque="0.0"/>
-      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9"/>
+      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9" DeadZone="0.003"/>
     </joint>
 
     <joint index="1" name="pitch"> 
       <pid PGain="100.0" DGain="10.0" IGain="1.0" OffsetTorque="0.0"/>
-      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9"/>
+      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9" DeadZone="0.004"/>
     </joint>
 
     <joint index="2" name="roll"> 
       <pid PGain="40.0" DGain="5.5" IGain="1.0" OffsetTorque="0.0"/>
-      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9"/>
+      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9" DeadZone="0.004"/>
     </joint>
 
     <joint index="3" name="roll"> 
       <pid PGain="2.0" DGain="0.15" IGain="0.0" OffsetTorque="0.0"/>
-      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9"/>
+      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9" DeadZone="0.018"/>
     </joint>
 
     <joint index="4" name="roll"> 
       <pid PGain="2.0" DGain="0.0" IGain="0.0" OffsetTorque="0.0"/>
-      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9"/>
+      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9" DeadZone="0.35"/>
     </joint>
 
     <joint index="5" name="roll"> 
       <pid PGain="-2.0" DGain="-0.15" IGain="0.0" OffsetTorque="0.0"/>      
-      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9"/>
+      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9" DeadZone="0.35"/>
     </joint>
 
     <joint index="6" name="roll"> 
       <pid PGain="-0.5" DGain="-0.05" IGain="0.0" OffsetTorque="0.0"/>      
-      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9"/>
+      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9" DeadZone="0.70"/>
     </joint>
 
     <joint index="7" name="roll"> 
       <pid PGain="0.00" DGain="0.00" IGain="0.0" OffsetTorque="0.0"/>      
-      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9"/>
+      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Forget="0.9" DeadZone="0.0"/>
     </joint>
 
   </joints>
