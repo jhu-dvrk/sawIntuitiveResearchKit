@@ -3,7 +3,6 @@
 # From command line:  cisstComponentManager -e sawIntuitiveResearchKitQtPID.cisst
 # From component manager:  execute sawIntuitiveResearchKitQtPID.cisst
 
-load cisstCommonXML
 load cisstMultiTaskQt
 load sawRobotIO1394
 load sawRobotIO1394Qt
