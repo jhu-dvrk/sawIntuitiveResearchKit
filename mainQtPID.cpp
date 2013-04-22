@@ -28,6 +28,10 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawControllers/mtsPID.h>
 #include <sawControllers/mtsPIDQtWidget.h>
 
+#define PSM1 1
+#define MTML 0
+
+
 int main(int argc, char ** argv)
 {
     // log configuration
@@ -40,7 +44,7 @@ int main(int argc, char ** argv)
 
     // parse options
     cmnCommandLineOptions options;
-    int firewirePort;
+    int firewirePort = 0;
     std::string ioConfigFile, pidConfigFile;
     options.AddOptionOneValue("i", "io",
                               "configuration file for robot IO (see sawRobotIO1394)",
@@ -50,7 +54,7 @@ int main(int argc, char ** argv)
                               cmnCommandLineOptions::REQUIRED, &pidConfigFile);
     options.AddOptionOneValue("f", "firewire",
                               "firewire port number(s)",
-                              cmnCommandLineOptions::REQUIRED, &firewirePort);
+                              cmnCommandLineOptions::OPTIONAL, &firewirePort);
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
         std::cerr << "Error: " << errorMessage << std::endl;
@@ -73,18 +77,28 @@ int main(int argc, char ** argv)
     mtsManagerLocal * manager = mtsManagerLocal::GetInstance();
 
     // IO
+#if MTML
     mtsRobotIO1394QtWidget * ioGUI = new mtsRobotIO1394QtWidget("ioGUI", 8);
+#elif PSM1
+    mtsRobotIO1394QtWidget * ioGUI = new mtsRobotIO1394QtWidget("ioGUI", 7);
+#endif
     ioGUI->Configure();
     manager->AddComponent(ioGUI);
     mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1 * cmn_ms, firewirePort, ioGUI->GetOutputStream());
     io->Configure(ioConfigFile);
     manager->AddComponent(io);
     // connect ioGUI to io
+
+#if MTML
     manager->Connect("ioGUI", "Robot", "io", "MTML");
     manager->Connect("ioGUI", "RobotActuators", "io", "MTMLActuators");
+#elif PSM1
+    manager->Connect("ioGUI", "Robot", "io", "PSM1");
+    manager->Connect("ioGUI", "RobotActuators", "io", "PSM1Actuators");
+#endif
 
     // Qt PID Controller GUI
-    mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI");
+    mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI", 7);
     pidGUI->Configure();
     manager->AddComponent(pidGUI);
     mtsPID * pid = new mtsPID("pid", 1 * cmn_ms);
@@ -96,7 +110,11 @@ int main(int argc, char ** argv)
     // tie pid execution to io
     manager->Connect("pid", "ExecIn", "io", "ExecOut");
     // connect pid to io
+#if MTML
     manager->Connect("pid", "RobotJointTorqueInterface", "io", "MTML");
+#elif PSM1
+    manager->Connect("pid", "RobotJointTorqueInterface", "io", "PSM1");
+#endif
 
     //-------------- create the components ------------------
     manager->CreateAll();

@@ -2,47 +2,42 @@
 
 <controller type="PID" 
             interface="JointTorqueInterface"
-            numofjoints="8">
+            numofjoints="7">
 
   <joints>
-    <joint index="0" name="yaw"> 
-      <pid PGain="0.09" DGain="0.05" IGain="0.0" OffsetTorque="0.0" Forget="0.9"/>      
-      <limit MinILimit="-1" MaxILimit="1" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+    <joint index="0" name="outeryaw"> 
+      <pid PGain="50.0" DGain="5.0" IGain="0.1" OffsetTorque="0.0" Forget="1.0"/>      
+      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
-    <joint index="1" name="pitch"> 
-      <pid PGain="0.20" DGain="0.05" IGain="0.0" OffsetTorque="0.0" Forget="0.9"/>      
-      <limit MinILimit="-1" MaxILimit="1" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+    <joint index="1" name="outerpitch"> 
+      <pid PGain="40.0" DGain="4.0" IGain="0.08" OffsetTorque="0.0" Forget="1.0"/>      
+      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
-    <joint index="2" name="roll"> 
-      <pid PGain="0.30" DGain="0.10" IGain="0.0" OffsetTorque="0.0" Forget="0.9"/>      
-      <limit MinILimit="-1" MaxILimit="1" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+    <joint index="2" name="insertion"> 
+      <pid PGain="30.0" DGain="3.0" IGain="0.10" OffsetTorque="0.0" Forget="1.0"/>      
+      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
-    <joint index="3" name="roll"> 
-      <pid PGain="0.05" DGain="0.00" IGain="0.0" OffsetTorque="0.0" Forget="0.9"/>      
-      <limit MinILimit="-1" MaxILimit="1" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+    <joint index="3" name="outerroll"> 
+      <pid PGain="0.05" DGain="0.00" IGain="0.0" OffsetTorque="0.0" Forget="1.0"/>      
+      <limit MinILimit="-10" MaxILimit="10" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
-    <joint index="4" name="roll"> 
-      <pid PGain="0.005" DGain="0.00" IGain="0.0" OffsetTorque="0.0" Forget="0.9"/>      
-      <limit MinILimit="-1" MaxILimit="1" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+    <joint index="4" name="wristpitch"> 
+      <pid PGain="0.005" DGain="0.00" IGain="0.0" OffsetTorque="0.0" Forget="1.0"/>      
+      <limit MinILimit="-10" MaxILimit="10" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
-    <joint index="5" name="roll"> 
-      <pid PGain="0.003" DGain="0.00" IGain="0.0" OffsetTorque="0.0" Forget="0.9"/>      
-      <limit MinILimit="-1" MaxILimit="1" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+    <joint index="5" name="wristyaw"> 
+      <pid PGain="0.003" DGain="0.00" IGain="0.0" OffsetTorque="0.0" Forget="1.0"/>      
+      <limit MinILimit="-10" MaxILimit="10" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
-    <joint index="6" name="roll"> 
-      <pid PGain="0.001" DGain="0.00" IGain="0.0" OffsetTorque="0.0" Forget="0.9"/>      
-      <limit MinILimit="-1" MaxILimit="1" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
-    </joint>
-
-    <joint index="7" name="roll"> 
-      <pid PGain="0.00" DGain="0.00" IGain="0.0" OffsetTorque="0.0" Forget="0.9"/>      
-      <limit MinILimit="-1" MaxILimit="1" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+    <joint index="6" name="endeffector"> 
+      <pid PGain="0.001" DGain="0.00" IGain="0.0" OffsetTorque="0.0" Forget="1.0"/>      
+      <limit MinILimit="-10" MaxILimit="10" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
   </joints>
