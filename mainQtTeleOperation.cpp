@@ -26,7 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
-#include <sawRobotIO1394/mtsRobotIO1394QtWidget.h>
+#include <sawRobotIO1394/mtsRobotIO1394QtManager.h>
 #include <sawControllers/mtsPID.h>
 #include <sawControllers/mtsPIDQtWidget.h>
 #include <sawControllers/mtsTeleOperation.h>
@@ -117,22 +117,15 @@ int main(int argc, char ** argv)
 
 
     // IO
-    mtsRobotIO1394QtWidget * ioGUIMaster = new mtsRobotIO1394QtWidget("ioGUIMaster", 8);
-    ioGUIMaster->Configure();
-    manager->AddComponent(ioGUIMaster);
-    mtsRobotIO1394QtWidget * ioGUISlave = new mtsRobotIO1394QtWidget("ioGUISlave", 7);
-    ioGUISlave->Configure();
-    manager->AddComponent(ioGUISlave);
-    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1.0 * cmn_ms, firewirePort, ioGUIMaster->GetOutputStream());
+    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1.0 * cmn_ms, firewirePort);
     io->Configure(configFiles["io-master"]);
     io->Configure(configFiles["io-slave"]);
     manager->AddComponent(io);
     // connect ioGUIMaster to io
-    manager->Connect("ioGUIMaster", "Robot", "io", "MTML");
-    manager->Connect("ioGUIMaster", "RobotActuators", "io", "MTMLActuators");
-    // connect ioGUISlave to io
-    manager->Connect("ioGUISlave", "Robot", "io", "PSM1");
-    manager->Connect("ioGUISlave", "RobotActuators", "io", "PSM1Actuators");
+    mtsRobotIO1394QtManager * qtManager = new mtsRobotIO1394QtManager("qtManager");
+    manager->AddComponent(qtManager);
+    manager->Connect("qtManager","Configuration_Qt","io","Configuration");
+    qtManager->BuildWidgets();
 
     // PID
     mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI");
@@ -170,8 +163,6 @@ int main(int argc, char ** argv)
     manager->StartAll();
 
     // create a main window to hold QWidget
-    ioGUIMaster->show();
-    ioGUISlave->show();
     pidGUI->show();
     teleGUI->show();
 
@@ -186,8 +177,7 @@ int main(int argc, char ** argv)
     delete pid;
     delete pidGUI;
     delete io;
-    delete ioGUIMaster;
-    delete ioGUISlave;
+    delete qtManager;
 
     // stop all logs
     cmnLogger::Kill();

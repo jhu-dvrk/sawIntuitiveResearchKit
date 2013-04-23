@@ -24,9 +24,10 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
-#include <sawRobotIO1394/mtsRobotIO1394QtWidget.h>
+#include <sawRobotIO1394/mtsRobotIO1394QtManager.h>
 #include <sawControllers/mtsPID.h>
 #include <sawControllers/mtsPIDQtWidget.h>
+
 
 #define PSM1 1
 #define MTML 0
@@ -77,25 +78,14 @@ int main(int argc, char ** argv)
     mtsManagerLocal * manager = mtsManagerLocal::GetInstance();
 
     // IO
-#if MTML
-    mtsRobotIO1394QtWidget * ioGUI = new mtsRobotIO1394QtWidget("ioGUI", 8);
-#elif PSM1
-    mtsRobotIO1394QtWidget * ioGUI = new mtsRobotIO1394QtWidget("ioGUI", 7);
-#endif
-    ioGUI->Configure();
-    manager->AddComponent(ioGUI);
-    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1 * cmn_ms, firewirePort, ioGUI->GetOutputStream());
+    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1 * cmn_ms, firewirePort);
     io->Configure(ioConfigFile);
     manager->AddComponent(io);
-    // connect ioGUI to io
 
-#if MTML
-    manager->Connect("ioGUI", "Robot", "io", "MTML");
-    manager->Connect("ioGUI", "RobotActuators", "io", "MTMLActuators");
-#elif PSM1
-    manager->Connect("ioGUI", "Robot", "io", "PSM1");
-    manager->Connect("ioGUI", "RobotActuators", "io", "PSM1Actuators");
-#endif
+    mtsRobotIO1394QtManager * qtManager = new mtsRobotIO1394QtManager("qtManager");
+    manager->AddComponent(qtManager);
+    manager->Connect("qtManager","Configuration_Qt","io","Configuration");
+    qtManager->BuildWidgets();
 
     // Qt PID Controller GUI
     mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI", 7);
@@ -124,7 +114,6 @@ int main(int argc, char ** argv)
     manager->StartAll();
 
     // create a main window to hold QWidget
-    ioGUI->show();
     pidGUI->show();
 
     // run Qt app
@@ -138,7 +127,7 @@ int main(int argc, char ** argv)
     delete pid;
     delete pidGUI;
     delete io;
-    delete ioGUI;
+    delete qtManager;
 
     // stop all logs
     cmnLogger::Kill();
