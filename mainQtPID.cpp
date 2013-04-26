@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
+#include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsQtApplication.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawRobotIO1394/mtsRobotIO1394QtManager.h>
@@ -88,7 +89,9 @@ int main(int argc, char ** argv)
     mtsRobotIO1394QtManager * qtManager = new mtsRobotIO1394QtManager("qtManager");
     manager->AddComponent(qtManager);
     manager->Connect("qtManager","Configuration_Qt","io","Configuration");
-    qtManager->BuildWidgets();
+    osaSleep(2.0);
+    qtManager->Configure();
+    //qtManager->BuildWidgets();
 
     // Qt PID Controller GUI
     mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI", 7);
