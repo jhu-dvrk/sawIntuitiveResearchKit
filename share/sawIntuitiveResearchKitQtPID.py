@@ -33,9 +33,9 @@ Manager.ComponentStart('Viewer')
 print 'Creating Qt application'
 Manager.ComponentCreate('mtsQtApplication', 'QtApp QtApp')
 
-#Create Qt widget (hard-coded to 8 actuators)
+#Create Qt widget
 print 'Creating Robot I/O Qt widget'
-Manager.ComponentCreate('mtsRobotIO1394QtWidget', 'ioGUI')
+Manager.ComponentCreate('mtsRobotIO1394QtWidget', mtsComponentConstructorNameAndUInt('ioGUI', 8))
 Manager.ComponentConfigure('ioGUI', ' ')
 
 # Create task with 0.001 sec (1 ms) period, using firewire port 0 (hard-coded)
@@ -44,7 +44,7 @@ Manager.ComponentCreate('mtsRobotIO1394', mtsTaskPeriodicConstructorArg('io', 0.
 Manager.ComponentConfigure('io', 'sawRobotIO1394-MTML.xml')
 
 print 'Creating PID Qt widget'
-Manager.ComponentCreate('mtsPIDQtWidget', 'pidGUI')
+Manager.ComponentCreate('mtsPIDQtWidget', mtsComponentConstructorNameAndUInt('pidGUI', 8))
 Manager.ComponentConfigure('pidGUI', ' ')
 
 print 'Creating PID task'

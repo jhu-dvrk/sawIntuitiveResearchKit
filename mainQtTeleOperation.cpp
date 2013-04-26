@@ -128,7 +128,7 @@ int main(int argc, char ** argv)
     qtManager->BuildWidgets();
 
     // PID
-    mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI");
+    mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI", 8);
     pidGUI->Configure();
     manager->AddComponent(pidGUI);
     mtsPID * pid = new mtsPID("pid", 1 * cmn_ms);
