@@ -1,0 +1,59 @@
+# Create and run the sawIntuitiveResearchKitQtTeleOperation example
+# using cisstComponentManager.
+# From command line:  cisstComponentManager -e sawIntuitiveResearchKitQtTeleOperation.cisst
+# From component manager:  execute sawIntuitiveResearchKitQtTeleOperation.cisst
+
+load cisstMultiTaskQt
+load sawRobotIO1394
+load sawRobotIO1394Qt
+load sawControllers
+load sawControllersQt
+
+create mtsQtApplication "QtApp QtApp"
+
+# Create task with 0.001 sec (1 ms) period, using firewire port 0 (hard-coded)
+create mtsRobotIO1394 "io 0.001"
+configure io "sawRobotIO1394-MTML.xml"
+configure io "sawRobotIO1394-PSM1.xml"
+
+# Create qtManager, which will create an instance of mtsRobotIO1394QtWidget
+# for each robot
+create mtsRobotIO1394QtManager "qtManager"
+connect qtManager Configuration_Qt io Configuration
+
+create mtsPIDQtWidget "pidGUI 8"
+configure pidGUI " "
+
+create mtsPID "pid 0.001"
+configure pid "sawControllersPID-MTML.xml"
+
+# connect pidGUI to pid
+connect pidGUI Controller pid Controller
+
+# create mtsTeleOperation components
+create mtsTeleOperationQtWidget "teleGUI"
+configure teleGUI " "
+create mtsTeleOperation "tele 0.001"
+configure tele "dvmtm.rob"
+
+# connect teleGUI to tele
+connect teleGUI TeleOperation tele Setting
+
+# connect interfaces
+connect pid RobotJointTorqueInterface io MTML
+connect tele Master io MTML
+
+# execute in following order using a single thread
+connect pid ExecIn io ExecOut
+connect tele ExecIn pid ExecOut
+
+# start the tasks
+
+start io
+#pid and tele should be started when io starts
+start pid
+start tele
+start qtManager
+start pidGUI
+start teleGUI
+start QtApp
