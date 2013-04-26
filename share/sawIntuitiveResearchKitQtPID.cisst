@@ -11,16 +11,14 @@ load sawControllersQt
 
 create mtsQtApplication "QtApp QtApp"
 
-#Create Qt widget
-create mtsRobotIO1394QtWidget "ioGUI 8"
-configure ioGUI " "
-
 # Create task with 0.001 sec (1 ms) period, using firewire port 0 (hard-coded)
 create mtsRobotIO1394 "io 0.001"
 configure io "sawRobotIO1394-MTML.xml"
 
-connect ioGUI Robot io MTML
-connect ioGUI RobotActuators io MTMLActuators
+# Create qtManager, which will create an instance of mtsRobotIO1394QtWidget
+# for each robot
+create mtsRobotIO1394QtManager "qtManager"
+connect qtManager Configuration_Qt io Configuration
 
 create mtsPIDQtWidget "pidGUI 8"
 configure pidGUI " "
@@ -39,8 +37,9 @@ connect pid RobotJointTorqueInterface io MTML
 # start the tasks
 
 start io
-start ioGUI
-start pid
+start qtManager
+#(pid will be started when io starts)
+#start pid
 start pidGUI
 start QtApp
 
