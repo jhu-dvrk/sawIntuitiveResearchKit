@@ -89,7 +89,7 @@ int main(int argc, char ** argv)
     mtsRobotIO1394QtManager * qtManager = new mtsRobotIO1394QtManager("qtManager");
     manager->AddComponent(qtManager);
     manager->Connect("qtManager","Configuration_Qt","io","Configuration");
-    qtManager->BuildWidgets();
+    qtManager->Configure();
 
     // Qt PID Controller GUI
     mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI", 7);
