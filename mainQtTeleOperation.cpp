@@ -154,6 +154,7 @@ int main(int argc, char ** argv)
     manager->AddComponent(teleGUI);
     mtsTeleOperation * tele = new mtsTeleOperation("tele", 1.0 * cmn_ms);
     tele->ConfigureMaster(configFiles["kinematic-master"]);
+    tele->ConfigureSlave(configFiles["kinematic-slave"]);
     manager->AddComponent(tele);
     // connect teleGUI to tele
     manager->Connect("teleGUI", "TeleOperation", "tele", "Setting");
@@ -163,6 +164,8 @@ int main(int argc, char ** argv)
     manager->Connect(pidSlave->GetName(), "RobotJointTorqueInterface", "io", "PSM1");
 
     manager->Connect("tele", "Master", "io", "MTML");
+    manager->Connect("tele", "Slave", "io", "PSM1");
+    manager->Connect("tele", "Clutch", "io", "CLUTCH");
 
     // execute in following order using a single thread
     manager->Connect(pidMaster->GetName(), "ExecIn", "io", "ExecOut");
