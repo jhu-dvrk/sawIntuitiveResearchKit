@@ -99,15 +99,15 @@ int main(int argc, char ** argv)
     std::cout << "FirewirePort: " << firewirePort << std::endl;
 
     std::string processname = "dvTeleop";
-    mtsManagerLocal *manager = NULL;
-    if(gcmip != "-1"){
-        try{
-            manager = mtsManagerLocal::GetInstance( gcmip, processname );
-        }catch(...){
+    mtsManagerLocal * manager = 0;
+    if (gcmip != "-1") {
+        try {
+            manager = mtsManagerLocal::GetInstance(gcmip, processname);
+        } catch(...) {
             std::cerr << "Failed to get GCM instance." << std::endl;
             return -1;
         }
-    }else{
+    } else {
         manager = mtsManagerLocal::GetInstance();
     }
 
@@ -128,15 +128,25 @@ int main(int argc, char ** argv)
     manager->Connect("qtManager","Configuration_Qt","io","Configuration");
     qtManager->Configure();
 
-    // PID
-    mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI", 8);
-    pidGUI->Configure();
-    manager->AddComponent(pidGUI);
-    mtsPID * pid = new mtsPID("pid", 1 * cmn_ms);
-    pid->Configure(configFiles["pid-master"]);
-    manager->AddComponent(pid);
+    // PID Master
+    mtsPIDQtWidget * pidMasterGUI = new mtsPIDQtWidget("PID Master", 8);
+    pidMasterGUI->Configure();
+    manager->AddComponent(pidMasterGUI);
+    mtsPID * pidMaster = new mtsPID("pid-master", 1.0 * cmn_ms);
+    pidMaster->Configure(configFiles["pid-master"]);
+    manager->AddComponent(pidMaster);
     // connect pidGUI to pid
-    manager->Connect("pidGUI", "Controller", "pid", "Controller");
+    manager->Connect(pidMasterGUI->GetName(), "Controller", pidMaster->GetName(), "Controller");
+
+    // PID Slave
+    mtsPIDQtWidget * pidSlaveGUI = new mtsPIDQtWidget("PID Slave", 7);
+    pidSlaveGUI->Configure();
+    manager->AddComponent(pidSlaveGUI);
+    mtsPID * pidSlave = new mtsPID("pid-slave", 1.0 * cmn_ms);
+    pidSlave->Configure(configFiles["pid-slave"]);
+    manager->AddComponent(pidSlave);
+    // connect pidGUI to pid
+    manager->Connect(pidSlaveGUI->GetName(), "Controller", pidSlave->GetName(), "Controller");
 
     // Teleoperation
     mtsTeleOperationQtWidget * teleGUI = new mtsTeleOperationQtWidget("teleGUI");
@@ -149,11 +159,14 @@ int main(int argc, char ** argv)
     manager->Connect("teleGUI", "TeleOperation", "tele", "Setting");
 
     // connect interfaces
-    manager->Connect("pid", "RobotJointTorqueInterface", "io", "MTML");
+    manager->Connect(pidMaster->GetName(), "RobotJointTorqueInterface", "io", "MTML");
+    manager->Connect(pidSlave->GetName(), "RobotJointTorqueInterface", "io", "PSM1");
+
     manager->Connect("tele", "Master", "io", "MTML");
 
     // execute in following order using a single thread
-    manager->Connect("pid", "ExecIn", "io", "ExecOut");
+    manager->Connect(pidMaster->GetName(), "ExecIn", "io", "ExecOut");
+    manager->Connect(pidSlave->GetName(), "ExecIn", "io", "ExecOut");
     manager->Connect("tele", "ExecIn", "pid", "ExecOut");
 
     //-------------- create the components ------------------
@@ -171,8 +184,10 @@ int main(int argc, char ** argv)
     manager->Cleanup();
 
     // delete dvgc robot
-    delete pid;
-    delete pidGUI;
+    delete pidMaster;
+    delete pidSlave;
+    delete pidMasterGUI;
+    delete pidSlaveGUI;
     delete io;
     delete qtManager;
 

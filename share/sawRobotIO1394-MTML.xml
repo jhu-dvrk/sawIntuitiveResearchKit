@@ -189,6 +189,9 @@
         </AnalogIn>
     </Actuator>
 
+    <Potentiometers Position="Joints">
+    </Potentiometers>
+
 <!-- Coupling matrices for Actuator->Joint Transformation, Joint->Actuator Transformation    -->
 <!-- ActuatorTorque->JointTorque Transformation, and JointTorque->ActuatorTorque Transformation   -->
 

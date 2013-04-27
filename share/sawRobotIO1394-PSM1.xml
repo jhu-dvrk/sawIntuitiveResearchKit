@@ -135,6 +135,8 @@
         </AnalogIn>
     </Actuator>
 
+    <Potentiometers Position="Actuators">
+    </Potentiometers>
 
     <Coupling Value="1">
         <ActuatorToJointPosition>
