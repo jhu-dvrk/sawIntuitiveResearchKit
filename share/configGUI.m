@@ -240,13 +240,13 @@ end
 val = get(handles.digiBidMenu, 'Value');
 set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val)); 
 
-% update default bid
-bidDefaultButton_Callback(handles.bidDefaultButton, eventdata, handles);
-
 % update default output file name
 handles.m_out_filename = [handles.m_type, '.xml'];
 set(handles.out_name, 'String', handles.m_out_filename);
 guidata(hObject, handles);
+
+% update default bid
+bidDefaultButton_Callback(handles.bidDefaultButton, eventdata, handles);
 
 
 % --- Executes when entered data in editable cell(s) in tblDigital.
