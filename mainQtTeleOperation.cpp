@@ -163,14 +163,14 @@ int main(int argc, char ** argv)
     manager->Connect(pidMaster->GetName(), "RobotJointTorqueInterface", "io", "MTML");
     manager->Connect(pidSlave->GetName(), "RobotJointTorqueInterface", "io", "PSM1");
 
-    manager->Connect("tele", "Master", "io", "MTML");
-    manager->Connect("tele", "Slave", "io", "PSM1");
+    manager->Connect("tele", "Master", pidMaster->GetName(), "Controller");
+    manager->Connect("tele", "Slave", pidSlave->GetName(), "Controller");
     manager->Connect("tele", "Clutch", "io", "CLUTCH");
 
     // execute in following order using a single thread
     manager->Connect(pidMaster->GetName(), "ExecIn", "io", "ExecOut");
     manager->Connect(pidSlave->GetName(), "ExecIn", "io", "ExecOut");
-    manager->Connect("tele", "ExecIn", "pid", "ExecOut");
+    manager->Connect("tele", "ExecIn", pidSlave->GetName(), "ExecOut");
 
     //-------------- create the components ------------------
     manager->CreateAll();
