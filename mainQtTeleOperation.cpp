@@ -152,7 +152,7 @@ int main(int argc, char ** argv)
     mtsTeleOperationQtWidget * teleGUI = new mtsTeleOperationQtWidget("teleGUI");
     teleGUI->Configure();
     manager->AddComponent(teleGUI);
-    mtsTeleOperation * tele = new mtsTeleOperation("tele", 1.0 * cmn_ms);
+    mtsTeleOperation * tele = new mtsTeleOperation("tele", 10.0 * cmn_ms);
     tele->ConfigureMaster(configFiles["kinematic-master"]);
     tele->ConfigureSlave(configFiles["kinematic-slave"]);
     manager->AddComponent(tele);
@@ -170,7 +170,6 @@ int main(int argc, char ** argv)
     // execute in following order using a single thread
     manager->Connect(pidMaster->GetName(), "ExecIn", "io", "ExecOut");
     manager->Connect(pidSlave->GetName(), "ExecIn", "io", "ExecOut");
-    manager->Connect("tele", "ExecIn", pidSlave->GetName(), "ExecOut");
 
     //-------------- create the components ------------------
     manager->CreateAll();
