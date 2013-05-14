@@ -90,7 +90,7 @@ motorTor(CONST_SLV,:) = [0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 1.0];
 gearRatio(CONST_MST,:) = [63.41 49.88 59.73 10.53 33.16 33.16 16.58 1.0];
 gearRatio(CONST_SLV,:) = [56.50 56.50 336.6 11.71 11.71 11.71 11.71 1.0];
 
-% Encoder counts per turn
+% Encoder counts per turn (quadrature encoder)
 % NOTE: no encoder for last axis
 encCPT(CONST_MST,:) = [ 4000  4000  4000 4000   64   64   64 1];
 encCPT(CONST_SLV,:) = [14400 14400 14400 4000 4000 4000 4000 1];
@@ -98,7 +98,20 @@ encCPT(CONST_SLV,:) = [14400 14400 14400 4000 4000 4000 4000 1];
 % Pitch
 % 1 for revolute, mm/deg for prismatic
 pitch(CONST_MST,:) = [1 1 1 1 1 1 1 1];
-pitch(CONST_SLV,:) = [1 1 1 1 1 1 1 1];
+pitch(CONST_SLV,:) = [1 1 17.4533 1 1 1 1 1];
+
+% Actuator Type (Prismatic/Revolute)
+
+if (rType == CONST_MST)
+    actuatorType = {'Revolute', 'Revolute', 'Revolute', 'Revolute', ...
+                    'Revolute', 'Revolute', 'Revolute', 'Revolute'};
+
+elseif (rType == CONST_SLV)
+    actuatorType = {'Revolute', 'Revolute', 'Prismatic', 'Revolute', ...
+                    'Revolute', 'Revolute', 'Revolute', 'Revolute'};    
+end
+
+
 
 % ==== POT =======
 % raw value from Intuitive Surgical Inc mXXXX.cal file
@@ -135,6 +148,7 @@ NmToAmps = ones(1,numOfActuator) ./ gearRatio(rType,1:numOfActuator) ./ motorTor
 MaxCurrent = motorDefCur(rType,1:numOfActuator);
 
 % === Encoder ======
+% EncPos = (360.0 * EncCounts / encCPT) / gearRatio * pitch 
 BitsToPosSIScale = driveDirection(1:numOfActuator) .* 360 ./ encCPT(rType,1:numOfActuator) .* pitch(rType,1:numOfActuator) ./ gearRatio(rType,1:numOfActuator);
 
 % AmpIO buff = buff + MIDRANGE_VEL
@@ -210,6 +224,7 @@ Robot = docNode.createElement('Robot');
 Robot.setAttribute('Name', aRobotName);
 Robot.setAttribute('NumOfActuator', num2str(numOfActuator));
 Robot.setAttribute('NumOfJoint', num2str(numOfJoint));
+Robot.setAttribute('SN', num2str(serial_number));
 Config.appendChild(Robot);
 
 % Acutator array
@@ -219,8 +234,9 @@ for i = 1:numOfActuator
     % set to boardID1 & boardID2
     Actuator.setAttribute('BoardID', num2str(boardID( idivide(i-1, int32(4))+1 )));
     Actuator.setAttribute('AxisID', num2str(mod(i-1,4)));
-    Actuator.setAttribute('Pos1', 'ENC');
-    Actuator.setAttribute('Pos2', 'POT');
+    Actuator.setAttribute('Type', actuatorType{i});
+    % Actuator.setAttribute('Pos1', 'ENC');
+    % Actuator.setAttribute('Pos2', 'POT');
     Robot.appendChild(Actuator);
     
     % Drive
@@ -354,6 +370,7 @@ for b = 1:2
 end
 
 % generate xml file
+fileName = [fileName '-' num2str(serial_number) '.xml'];
 xmlwrite(fileName,docNode);
 
 isOK = true;

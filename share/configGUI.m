@@ -69,7 +69,7 @@ set(handles.bidPopup2,'Value', handles.m_boardID(2) + 1);
 % set default type
 handles.m_type = 'MTML';
 set(handles.typeBtnGroup, 'SelectedObject', handles.mtmlButton);
-handles.m_out_filename = [handles.m_type, '.xml'];
+handles.m_out_filename = ['sawRobotIO1394-' handles.m_type];
 set(handles.out_name, 'String', handles.m_out_filename);
 
 % set default digitalIn data
@@ -241,7 +241,7 @@ val = get(handles.digiBidMenu, 'Value');
 set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val)); 
 
 % update default output file name
-handles.m_out_filename = [handles.m_type, '.xml'];
+handles.m_out_filename = ['sawRobotIO1394-' handles.m_type];
 set(handles.out_name, 'String', handles.m_out_filename);
 guidata(hObject, handles);
 
@@ -338,9 +338,9 @@ if (strcmp(handles.m_type,'MTML'))
 elseif (strcmp(handles.m_type,'MTMR'))
     handles.m_boardID = [2 3];
 elseif (strcmp(handles.m_type,'PSM1'))
-    handles.m_boardID = [4 5];
-elseif (strcmp(handles.m_type,'PSM2'))
     handles.m_boardID = [6 7];
+elseif (strcmp(handles.m_type,'PSM2'))
+    handles.m_boardID = [8 9];
 else
     disp('ERROR: unknown hardware type');
 end
