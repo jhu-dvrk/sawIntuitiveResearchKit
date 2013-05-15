@@ -11,6 +11,9 @@
 #
 # --- end cisst license ---
 
+# project name
+project (sawIntuitiveResearchKit)
+
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstVector
@@ -28,6 +31,9 @@ if (cisst_FOUND_AS_REQUIRED)
 
   # load cisst configuration
   include (${CISST_USE_FILE})
+
+  # load sawIntuitiveResearchKit
+  add_subdirectory (code)
 
   # sawRobotIO1394 has been compiled within cisst, we should find it automatically
   cisst_find_saw_component (sawRobotIO1394 REQUIRED)

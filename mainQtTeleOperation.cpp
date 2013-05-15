@@ -152,7 +152,7 @@ int main(int argc, char ** argv)
     mtsTeleOperationQtWidget * teleGUI = new mtsTeleOperationQtWidget("teleGUI");
     teleGUI->Configure();
     manager->AddComponent(teleGUI);
-    mtsTeleOperation * tele = new mtsTeleOperation("tele", 10.0 * cmn_ms);
+    mtsTeleOperation * tele = new mtsTeleOperation("tele", 5.0 * cmn_ms);
     tele->ConfigureMaster(configFiles["kinematic-master"]);
     tele->ConfigureSlave(configFiles["kinematic-slave"]);
     manager->AddComponent(tele);

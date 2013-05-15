@@ -1,0 +1,14 @@
+#
+# $Id$
+
+# Author(s):  Anton Deguet
+# Created on: 2011-01-20
+#
+# (C) Copyright 2011 Johns Hopkins University (JHU), All Rights
+# Reserved.
+#
+
+
+set (sawIntuitiveResearchKit_INCLUDE_DIR "@sawIntuitiveResearchKit_INCLUDE_DIR@")
+set (sawIntuitiveResearchKit_LIBRARY_DIR "@sawIntuitiveResearchKit_LIBRARY_DIR@")
+set (sawIntuitiveResearchKit_LIBRARIES   "@sawIntuitiveResearchKit_LIBRARIES@")
