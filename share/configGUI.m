@@ -22,7 +22,7 @@ function varargout = configGUI(varargin)
 
 % Edit the above text to modify the response to help configGUI
 
-% Last Modified by GUIDE v2.5 29-Apr-2013 19:18:59
+% Last Modified by GUIDE v2.5 15-May-2013 15:38:50
 
 % Date: 2013-04-28
 % Author: Zihan Chen
@@ -397,4 +397,3 @@ function tblDirection_CellEditCallback(hObject, eventdata, handles)
 handles.m_direction = get(handles.tblDirection, 'data');
 disp(handles.m_direction);
 guidata(hObject, handles);
-

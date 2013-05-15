@@ -80,7 +80,7 @@ motorDefCur(CONST_SLV,:) = [1.34 1.34 0.67 0.67 0.67 0.67 0.670 0.0];
 motorMaxCur(CONST_MST,:) = [0.67 0.67 0.67 0.92 0.75 0.59 0.407 0.0];
 motorMaxCur(CONST_SLV,:) = [2.01 2.01 1.005 1.005 1.005 1.005 1.005 0.0];
 
-% motor toruqe const  Unit: Nm/A
+% motor torque const  Unit: Nm/A
 % NOTE: no motor on axis 8, set value to 1 
 motorTor(CONST_MST,:) = [0.0438 0.0438 0.0438 0.0438 0.00495 0.00495 0.00339 1.0];
 motorTor(CONST_SLV,:) = [0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 1.0];
