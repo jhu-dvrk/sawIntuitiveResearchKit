@@ -296,9 +296,9 @@ end
 
 % ---------- Potentiometers ---------
 Potentiometers = docNode.createElement('Potentiometers');
-if (strcmp(rType, 'MTM'))
+if (rType == CONST_MST)
     Potentiometers.setAttribute('Position', 'Joints');
-elseif (strcmp(rType, 'PSM'))
+elseif (rType == CONST_SLV)
     Potentiometers.setAttribute('Position', 'Actuators');
 end
 

@@ -375,8 +375,10 @@ function dirDefaultButton_Callback(hObject, eventdata, handles)
 
 % NOTE: this default is based on JHU's hardware, you might have 
 % different drive direction
-if (strcmp(handles.m_type,'MTML') || strcmp(handles.m_type,'MTMR'))
+if (strcmp(handles.m_type,'MTML'))
     handles.m_direction = {-1; 1; 1; 1; -1; 1; -1; 1};
+elseif (strcmp(handles.m_type,'MTMR'))
+    handles.m_direction = {-1; 1; 1; 1; 1; 1; -1; 1};
 elseif (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2'))
     handles.m_direction = {-1; -1; 1; -1; -1; 1; 1; 1};
 end

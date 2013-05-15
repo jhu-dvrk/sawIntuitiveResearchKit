@@ -145,7 +145,7 @@
             <VoltsToPosSI Offset="0.082146" Scale="-0.019311"/>
          </AnalogIn>
       </Actuator>
-      <Potentiometers/>
+      <Potentiometers Position="Joints"/>
       <Coupling Value="1">
          <ActuatorToJointPosition>
             <Row Val="1.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000"/>
