@@ -30,11 +30,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawControllers/mtsPID.h>
 #include <sawControllers/mtsPIDQtWidget.h>
 
-
-#define PSM1 1
-#define MTML 0
-
-
 int main(int argc, char ** argv)
 {
     // log configuration
@@ -46,6 +41,8 @@ int main(int argc, char ** argv)
     cmnCommandLineOptions options;
     int firewirePort = 0;
     std::string ioConfigFile, pidConfigFile;
+    std::string armName;
+
     options.AddOptionOneValue("i", "io",
                               "configuration file for robot IO (see sawRobotIO1394)",
                               cmnCommandLineOptions::REQUIRED, &ioConfigFile);
@@ -55,6 +52,10 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("f", "firewire",
                               "firewire port number(s)",
                               cmnCommandLineOptions::OPTIONAL, &firewirePort);
+    options.AddOptionOneValue("a", "arm name",
+                              "arm name (i.e. PSM1, PSM2, MTML or MTMR) as defined in the sawRobotIO1394 file",
+                              cmnCommandLineOptions::REQUIRED, &armName);
+
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
         std::cerr << "Error: " << errorMessage << std::endl;
@@ -70,8 +71,18 @@ int main(int argc, char ** argv)
         std::cerr << "File not found: " << pidConfigFile << std::endl;
         return -1;
     }
+
+    unsigned int numberOfJoints;
+    if ((armName == "PSM1") || (armName == "PSM2")) {
+        numberOfJoints = 7;
+    } else {
+        numberOfJoints = 8;
+    }
+
     std::cout << "Configuration file for IO: " << ioConfigFile << std::endl
               << "Configuration file for PID: " << pidConfigFile << std::endl
+              << "Arm name: " << armName << std::endl
+              << "Number of joints: " << numberOfJoints << std::endl
               << "FirewirePort: " << firewirePort << std::endl;
 
     mtsManagerLocal * manager = mtsManagerLocal::GetInstance();
@@ -92,7 +103,7 @@ int main(int argc, char ** argv)
     qtManager->Configure();
 
     // Qt PID Controller GUI
-    mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI", 7);
+    mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI", numberOfJoints);
     pidGUI->Configure();
     manager->AddComponent(pidGUI);
     mtsPID * pid = new mtsPID("pid", 1 * cmn_ms);
@@ -104,11 +115,7 @@ int main(int argc, char ** argv)
     // tie pid execution to io
     manager->Connect("pid", "ExecIn", "io", "ExecOut");
     // connect pid to io
-#if MTML
-    manager->Connect("pid", "RobotJointTorqueInterface", "io", "MTML");
-#elif PSM1
-    manager->Connect("pid", "RobotJointTorqueInterface", "io", "PSM1");
-#endif
+    manager->Connect("pid", "RobotJointTorqueInterface", "io", armName);  // see const std::string defined before main()
 
     //-------------- create the components ------------------
     manager->CreateAll();
