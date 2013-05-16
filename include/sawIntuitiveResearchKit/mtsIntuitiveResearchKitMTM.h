@@ -19,8 +19,8 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 
-#ifndef _mtsIntuitiveResearchKitPSM_h
-#define _mtsIntuitiveResearchKitPSM_h
+#ifndef _mtsIntuitiveResearchKitMTM_h
+#define _mtsIntuitiveResearchKitMTM_h
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
@@ -29,14 +29,14 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstRobot/robManipulator.h>
 
-class mtsIntuitiveResearchKitPSM: public mtsTaskPeriodic
+class mtsIntuitiveResearchKitMTM: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds);
-    mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
-    inline ~mtsIntuitiveResearchKitPSM() {}
+    mtsIntuitiveResearchKitMTM(const std::string & componentName, const double periodInSeconds);
+    mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
+    inline ~mtsIntuitiveResearchKitMTM() {}
 
     void Configure(const std::string & filename);
     void Startup(void);
@@ -61,6 +61,6 @@ protected:
     robManipulator Manipulator;
 };
 
-CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitPSM);
+CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);
 
-#endif // _mtsIntuitiveResearchKitPSM_h
+#endif // _mtsIntuitiveResearchKitMTM_h

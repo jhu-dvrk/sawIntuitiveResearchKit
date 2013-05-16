@@ -25,11 +25,14 @@ http://www.cisst.org/cisst/license.txt.
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
+#include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsQtApplication.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawRobotIO1394/mtsRobotIO1394QtManager.h>
 #include <sawControllers/mtsPID.h>
 #include <sawControllers/mtsPIDQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <sawControllers/mtsTeleOperation.h>
 #include <sawControllers/mtsTeleOperationQtWidget.h>
 
@@ -148,13 +151,20 @@ int main(int argc, char ** argv)
     // connect pidGUI to pid
     manager->Connect(pidSlaveGUI->GetName(), "Controller", pidSlave->GetName(), "Controller");
 
+    // PSM
+    mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM("MTML", 5.0 * cmn_ms);
+    master->Configure(configFiles["kinematic-master"]);
+    manager->AddComponent(master);
+
+    mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM("PSM1", 5.0 * cmn_ms);
+    slave->Configure(configFiles["kinematic-slave"]);
+    manager->AddComponent(slave);
+
     // Teleoperation
     mtsTeleOperationQtWidget * teleGUI = new mtsTeleOperationQtWidget("teleGUI");
     teleGUI->Configure();
     manager->AddComponent(teleGUI);
     mtsTeleOperation * tele = new mtsTeleOperation("tele", 5.0 * cmn_ms);
-    tele->ConfigureMaster(configFiles["kinematic-master"]);
-    tele->ConfigureSlave(configFiles["kinematic-slave"]);
     manager->AddComponent(tele);
     // connect teleGUI to tele
     manager->Connect("teleGUI", "TeleOperation", "tele", "Setting");
@@ -163,13 +173,20 @@ int main(int argc, char ** argv)
     manager->Connect(pidMaster->GetName(), "RobotJointTorqueInterface", "io", "MTML");
     manager->Connect(pidSlave->GetName(), "RobotJointTorqueInterface", "io", "PSM1");
 
-    manager->Connect("tele", "Master", pidMaster->GetName(), "Controller");
-    manager->Connect("tele", "Slave", pidSlave->GetName(), "Controller");
+    manager->Connect(master->GetName(), "PID", pidMaster->GetName(), "Controller");
+    manager->Connect(slave->GetName(), "PID", pidSlave->GetName(), "Controller");
+
+    manager->Connect("tele", "Master", master->GetName(), "Robot");
+    manager->Connect("tele", "Slave", slave->GetName(), "Robot");
     manager->Connect("tele", "Clutch", "io", "CLUTCH");
 
     // execute in following order using a single thread
     manager->Connect(pidMaster->GetName(), "ExecIn", "io", "ExecOut");
     manager->Connect(pidSlave->GetName(), "ExecIn", "io", "ExecOut");
+
+    // execute in following order using a single thread
+    // manager->Connect(slave->GetName(), "ExecIn", master->GetName(), "ExecOut");
+    // manager->Connect(tele->GetName(), "ExecIn", slave->GetName(), "ExecOut");
 
     //-------------- create the components ------------------
     manager->CreateAll();
@@ -186,6 +203,9 @@ int main(int argc, char ** argv)
     manager->Cleanup();
 
     // delete dvgc robot
+    delete tele;
+    delete master;
+    delete slave;
     delete pidMaster;
     delete pidSlave;
     delete pidMasterGUI;

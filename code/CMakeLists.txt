@@ -38,10 +38,12 @@ if (cisst_FOUND)
   set (sawIntuitiveResearchKit_HEADER_DIR "${sawIntuitiveResearchKit_INCLUDE_DIR}/sawIntuitiveResearchKit")
 
   set (HEADER_FILES
+       ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitMTM.h
        ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSM.h
       )
 
   set (SOURCE_FILES
+       mtsIntuitiveResearchKitMTM.cpp
        mtsIntuitiveResearchKitPSM.cpp
       )
 

@@ -23,26 +23,26 @@ http://www.cisst.org/cisst/license.txt.
 #include <iostream>
 
 // cisst
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 
 
-CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
+CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitMTM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
-mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds):
+mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds)
 {
     Init();
 }
 
-mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg):
+mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg)
 {
     Init();
 }
 
-void mtsIntuitiveResearchKitPSM::Init(void)
+void mtsIntuitiveResearchKitMTM::Init(void)
 {
     this->StateTable.AddData(CartesianCurrent, "CartesianPosition");
 
@@ -57,11 +57,11 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mtsInterfaceProvided * prov = AddInterfaceProvided("Robot");
     if (prov) {
         prov->AddCommandReadState(this->StateTable, CartesianCurrent, "GetPositionCartesian");
-        prov->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionCartesian, this, "SetPositionCartesian");
+        prov->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetPositionCartesian, this, "SetPositionCartesian");
     }
 }
 
-void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
+void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
 {
     robManipulator::Errno result;
     result = this->Manipulator.LoadRobot(filename);
@@ -71,11 +71,11 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
     }
 }
 
-void mtsIntuitiveResearchKitPSM::Startup(void)
+void mtsIntuitiveResearchKitMTM::Startup(void)
 {
 }
 
-void mtsIntuitiveResearchKitPSM::Run(void)
+void mtsIntuitiveResearchKitMTM::Run(void)
 {
     ProcessQueuedEvents();
 
@@ -85,7 +85,6 @@ void mtsIntuitiveResearchKitPSM::Run(void)
         CMN_LOG_CLASS_RUN_ERROR << "Call to GetJointPosition failed \""
                                 << executionResult << "\"" << std::endl;
     }
-    JointCurrent.Position()[2] = JointCurrent.Position()[2] * cmn180_PI / 1000.0; // ugly hack to convert radians to degrees to meters
     vctFrm4x4 position;
     position = Manipulator.ForwardKinematics(JointCurrent.Position());
     position.Rotation().NormalizedSelf();
@@ -96,18 +95,15 @@ void mtsIntuitiveResearchKitPSM::Run(void)
     ProcessQueuedCommands();
 }
 
-void mtsIntuitiveResearchKitPSM::Cleanup(void)
+void mtsIntuitiveResearchKitMTM::Cleanup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
 }
 
-void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
+void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    vctDoubleVec jointDesired(6);
+    vctDoubleVec jointDesired(8);
     Manipulator.InverseKinematics(jointDesired, newPosition.Goal());
-    jointDesired[2] = jointDesired[2] / cmn180_PI * 1000.0; // ugly hack for translation
-    jointDesired.resize(7);
-    jointDesired.Element(6) = 0.5; // temporary hack to set gripper opening
     JointDesired.Goal().ForceAssign(jointDesired);
     // note: this directly calls the lower level to set position,
     // maybe we should cache the request in this component and later
