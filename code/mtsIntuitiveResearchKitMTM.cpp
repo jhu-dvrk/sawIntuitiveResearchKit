@@ -102,7 +102,8 @@ void mtsIntuitiveResearchKitMTM::Cleanup(void)
 
 void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    vctDoubleVec jointDesired(8);
+    vctDoubleVec jointDesired;
+    jointDesired.ForceAssign(JointCurrent.Position());
     Manipulator.InverseKinematics(jointDesired, newPosition.Goal());
     JointDesired.Goal().ForceAssign(jointDesired);
     // note: this directly calls the lower level to set position,

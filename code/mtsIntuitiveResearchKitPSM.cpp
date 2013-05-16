@@ -85,7 +85,7 @@ void mtsIntuitiveResearchKitPSM::Run(void)
         CMN_LOG_CLASS_RUN_ERROR << "Call to GetJointPosition failed \""
                                 << executionResult << "\"" << std::endl;
     }
-    JointCurrent.Position()[2] = JointCurrent.Position()[2] * cmn180_PI / 1000.0; // ugly hack to convert radians to degrees to meters
+    // JointCurrent.Position()[2] = JointCurrent.Position()[2] * cmn180_PI / 1000.0; // ugly hack to convert radians to degrees to meters   - Zihan to check
     vctFrm4x4 position;
     position = Manipulator.ForwardKinematics(JointCurrent.Position());
     position.Rotation().NormalizedSelf();
@@ -103,9 +103,11 @@ void mtsIntuitiveResearchKitPSM::Cleanup(void)
 
 void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    vctDoubleVec jointDesired(6);
+    vctDoubleVec jointDesired;
+    jointDesired.ForceAssign(JointCurrent.Position());
+    jointDesired.resize(6);
     Manipulator.InverseKinematics(jointDesired, newPosition.Goal());
-    jointDesired[2] = jointDesired[2] / cmn180_PI * 1000.0; // ugly hack for translation
+    // jointDesired[2] = jointDesired[2] / cmn180_PI * 1000.0; // ugly hack for translation   -   Zihan to check
     jointDesired.resize(7);
     jointDesired.Element(6) = 0.5; // temporary hack to set gripper opening
     JointDesired.Goal().ForceAssign(jointDesired);
