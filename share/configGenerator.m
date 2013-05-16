@@ -1,4 +1,6 @@
 function [ isOK ] = configGenerator( aCalName, aOutName, aRobotName, aBoardID, aDigital, aDirection)
+% $Id$
+
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
 
