@@ -173,6 +173,13 @@ int main(int argc, char ** argv)
     manager->Connect(pidMaster->GetName(), "RobotJointTorqueInterface", "io", "MTML");
     manager->Connect(pidSlave->GetName(), "RobotJointTorqueInterface", "io", "PSM1");
 
+    // hack
+    osaSleep(2.0 * cmn_s);
+    pidMaster->Create();
+    pidSlave->Create();
+    pidMaster->Start();
+    pidSlave->Start();
+
     manager->Connect(master->GetName(), "PID", pidMaster->GetName(), "Controller");
     manager->Connect(slave->GetName(), "PID", pidSlave->GetName(), "Controller");
 
@@ -185,8 +192,8 @@ int main(int argc, char ** argv)
     manager->Connect(pidSlave->GetName(), "ExecIn", "io", "ExecOut");
 
     // execute in following order using a single thread
-    // manager->Connect(slave->GetName(), "ExecIn", master->GetName(), "ExecOut");
-    // manager->Connect(tele->GetName(), "ExecIn", slave->GetName(), "ExecOut");
+    manager->Connect(slave->GetName(), "ExecIn", master->GetName(), "ExecOut");
+    manager->Connect(tele->GetName(), "ExecIn", slave->GetName(), "ExecOut");
 
     //-------------- create the components ------------------
     manager->CreateAll();

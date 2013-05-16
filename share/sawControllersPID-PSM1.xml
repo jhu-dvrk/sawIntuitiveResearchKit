@@ -6,37 +6,37 @@
 
   <joints>
     <joint index="0" name="outeryaw"> 
-      <pid PGain="50.0" DGain="5.0" IGain="0.1" OffsetTorque="0.0" Forget="1.0"/>      
+      <pid PGain="50.0" DGain="5.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0"/>
       <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
     <joint index="1" name="outerpitch"> 
-      <pid PGain="40.0" DGain="4.0" IGain="0.08" OffsetTorque="0.0" Forget="1.0"/>      
+      <pid PGain="40.0" DGain="4.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0"/>
       <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
     <joint index="2" name="insertion"> 
-      <pid PGain="30.0" DGain="3.0" IGain="0.10" OffsetTorque="0.0" Forget="1.0"/>      
+      <pid PGain="10.0" DGain="1.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0"/>
       <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
     <joint index="3" name="outerroll"> 
-      <pid PGain="0.500" DGain="0.050" IGain="0.030" OffsetTorque="0.0" Forget="1.0"/>      
+      <pid PGain="0.500" DGain="0.050" IGain="0.0" OffsetTorque="0.0" Forget="1.0"/>
       <limit MinILimit="-10" MaxILimit="10" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
     <joint index="4" name="wristpitch"> 
-      <pid PGain="0.300" DGain="0.03" IGain="0.015" OffsetTorque="0.0" Forget="1.0"/>      
+      <pid PGain="0.300" DGain="0.03" IGain="0.0" OffsetTorque="0.0" Forget="1.0"/>
       <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
     <joint index="5" name="wristyaw"> 
-      <pid PGain="0.200" DGain="0.010" IGain="0.010" OffsetTorque="0.0" Forget="1.0"/>      
+      <pid PGain="0.200" DGain="0.010" IGain="0.0" OffsetTorque="0.0" Forget="1.0"/>
       <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
     <joint index="6" name="endeffector"> 
-      <pid PGain="0.200" DGain="0.010" IGain="0.002" OffsetTorque="0.0" Forget="1.0"/>      
+      <pid PGain="0.200" DGain="0.010" IGain="0.0" OffsetTorque="0.0" Forget="1.0"/>
       <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
     </joint>
 
