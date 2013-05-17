@@ -86,6 +86,7 @@ void mtsIntuitiveResearchKitPSM::Run(void)
                                 << executionResult << "\"" << std::endl;
     }
     // JointCurrent.Position()[2] = JointCurrent.Position()[2] * cmn180_PI / 1000.0; // ugly hack to convert radians to degrees to meters   - Zihan to check
+    JointCurrent.Position()[2] = JointCurrent.Position()[2] / 1000.0; // ugly hack to convert mm to meters
     vctFrm4x4 position;
     position = Manipulator.ForwardKinematics(JointCurrent.Position());
     position.Rotation().NormalizedSelf();
@@ -108,6 +109,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
     jointDesired.resize(6);
     Manipulator.InverseKinematics(jointDesired, newPosition.Goal());
     // jointDesired[2] = jointDesired[2] / cmn180_PI * 1000.0; // ugly hack for translation   -   Zihan to check
+    jointDesired[2] = jointDesired[2] * 1000.0; //ugly hack for translation
     jointDesired.resize(7);
     jointDesired.Element(6) = 0.5; // temporary hack to set gripper opening
     JointDesired.Goal().ForceAssign(jointDesired);
