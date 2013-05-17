@@ -45,7 +45,15 @@ public:
 
 protected:
 
+    enum PSM_MODE {
+        HOME
+    };
+
     void Init(void);
+    void EventHandlerAdapter(const prmEventButton & button);
+    void EventHandlerTool(const prmEventButton & button);
+    void EventHandlerManipClutch(const prmEventButton & button);
+    void EventHandlerSUJClutch(const prmEventButton & button);
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
 

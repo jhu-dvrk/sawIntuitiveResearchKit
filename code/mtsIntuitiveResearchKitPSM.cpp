@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstParameterTypes/prmEventButton.h>
 
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -53,6 +54,31 @@ void mtsIntuitiveResearchKitPSM::Init(void)
         req->AddFunction("GetPositionJoint", PID.GetPositionJoint);
         req->AddFunction("SetPositionJoint", PID.SetPositionJoint);
     }
+
+    // Event Adapter (Sterile Adatper Event)
+    req = AddInterfaceRequired("Adapter");
+    if (req) {
+        req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerAdapter, this, "Button");
+    }
+
+    // Event Tool engaged
+    req = AddInterfaceRequired("Tool");
+    if (req) {
+        req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerTool, this, "Button");
+    }
+
+    // ManipClutch
+    req = AddInterfaceRequired("ManipClutch");
+    if (req) {
+        req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerManipClutch, this, "Button");
+    }
+
+    // SUJClutch
+    req = AddInterfaceRequired("SUJClutch");
+    if (req) {
+        req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch, this, "Button");
+    }
+
 
     mtsInterfaceProvided * prov = AddInterfaceProvided("Robot");
     if (prov) {
@@ -119,3 +145,51 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
     // request would be pushed if multiple are queued.
     PID.SetPositionJoint(JointDesired);
 }
+
+
+
+
+void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton &button)
+{
+    if(button.Type() == prmEventButton::PRESSED){
+        CMN_LOG_RUN_ERROR << "Adapter engaged" << std::endl;
+    }else{
+        CMN_LOG_RUN_ERROR << "Adapter disengaged" << std::endl;
+    }
+}
+
+
+void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton &button)
+{
+    if(button.Type() == prmEventButton::PRESSED){
+        CMN_LOG_RUN_ERROR << "Tool engaged" << std::endl;
+    }else{
+        CMN_LOG_RUN_ERROR << "Tool disengaged" << std::endl;
+    }
+}
+
+
+void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton &button)
+{
+    if(button.Type() == prmEventButton::PRESSED){
+        CMN_LOG_RUN_ERROR << "ManipClutch press" << std::endl;
+    }else{
+        CMN_LOG_RUN_ERROR << "ManipClutch release" << std::endl;
+    }
+}
+
+
+void mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch(const prmEventButton &button)
+{
+    if(button.Type() == prmEventButton::PRESSED){
+        CMN_LOG_RUN_ERROR << "SUJClutch press" << std::endl;
+    }else{
+        CMN_LOG_RUN_ERROR << "SUJClutch release" << std::endl;
+    }
+}
+
+
+
+
+
+
