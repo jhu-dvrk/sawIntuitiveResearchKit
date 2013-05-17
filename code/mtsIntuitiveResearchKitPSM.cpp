@@ -53,6 +53,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     if (req) {
         req->AddFunction("GetPositionJoint", PID.GetPositionJoint);
         req->AddFunction("SetPositionJoint", PID.SetPositionJoint);
+        req->AddFunction("SetIsCheckJointLimit", PID.SetIsCheckJointLimit);
     }
 
     // Event Adapter (Sterile Adatper Event)
@@ -101,6 +102,8 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
 void mtsIntuitiveResearchKitPSM::Startup(void)
 {
     RobotCurrentState = STATE_START;
+    IsAdapterEngaged = false;
+    IsToolEngaged = false;
 }
 
 void mtsIntuitiveResearchKitPSM::Run(void)
@@ -127,38 +130,91 @@ void mtsIntuitiveResearchKitPSM::Run(void)
     case STATE_TELEOP:
         break;
     case STATE_ADAPTER:
-        if (AdapterStopwatch.GetElapsedTime() > (2000 * cmn_ms)){
+        // PSM tool last 4 actuator coupling matrix
+        // psm_m2jpos = [-1.5632  0.0000  0.0000  0.0000;
+        //                0.0000  1.0186  0.0000  0.0000;
+        //                0.0000 -0.8306  0.6089  0.6089;
+        //                0.0000  0.0000 -1.2177  1.2177];
+        // each actuator has -180 to 180 deg limits
+        // these joint limit is computed as
+        // joint_lim = psm_m2jpos * actuator_lim
+
+        if (AdapterStopwatch.GetElapsedTime() > (3500 * cmn_ms)){
             AdapterJointSet[2] = 0.0;
             AdapterJointSet[3] = 0.0;
             AdapterJointSet[4] = 0.0;
             AdapterJointSet[5] = 0.0;
             AdapterJointSet[6] = 0.0;
             JointDesired.Goal().ForceAssign(AdapterJointSet);
+            PID.SetIsCheckJointLimit(true);
             PID.SetPositionJoint(JointDesired);
 
             RobotCurrentState = STATE_START;
             AdapterStopwatch.Reset();
+            IsAdapterEngaged = true;
 
-        }else if (AdapterStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
-            AdapterJointSet[3] = -4.0;
-            AdapterJointSet[4] = 2.67;
-            AdapterJointSet[5] = 1.01;
-            AdapterJointSet[6] = 0.0;
+        }else if (AdapterStopwatch.GetElapsedTime() > (2500 * cmn_ms)){
+            AdapterJointSet[3] = -300.0 * cmnPI / 180.0;
+            AdapterJointSet[4] =  170.0 * cmnPI / 180.0;
+            AdapterJointSet[5] =   65.0 * cmnPI / 180.0;
+            AdapterJointSet[6] =    0.0 * cmnPI / 180.0;
             JointDesired.Goal().ForceAssign(AdapterJointSet);
             PID.SetPositionJoint(JointDesired);
-        }else if (AdapterStopwatch.GetElapsedTime() > (1000 * cmn_ms)){
-            AdapterJointSet[3] = 4.0;
-            AdapterJointSet[4] = -2.67;
-            AdapterJointSet[5] = -1.01;
-            AdapterJointSet[6] = 0.0;
+        }else if (AdapterStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
+            AdapterJointSet[3] =  300.0 * cmnPI / 180.0;
+            AdapterJointSet[4] = -170.0 * cmnPI / 180.0;
+            AdapterJointSet[5] =  -65.0 * cmnPI / 180.0;
+            AdapterJointSet[6] =    0.0 * cmnPI / 180.0;
             JointDesired.Goal().ForceAssign(AdapterJointSet);
             PID.SetPositionJoint(JointDesired);
         }else if (AdapterStopwatch.GetElapsedTime() > (500 * cmn_ms)){
-            AdapterJointSet[3] = -4.0;
-            AdapterJointSet[4] = 2.67;
-            AdapterJointSet[5] = 1.01;
-            AdapterJointSet[6] = 0.0;
+            AdapterJointSet[3] = -300.0 * cmnPI / 180.0;
+            AdapterJointSet[4] =  170.0 * cmnPI / 180.0;
+            AdapterJointSet[5] =   65.0 * cmnPI / 180.0;
+            AdapterJointSet[6] =    0.0 * cmnPI / 180.0;
             JointDesired.Goal().ForceAssign(AdapterJointSet);
+            PID.SetPositionJoint(JointDesired);
+        }
+        break;
+
+    case STATE_TOOL:
+        if (ToolStopwatch.GetElapsedTime() > (2500 * cmn_ms)){
+            ToolJointSet.SetAll(0.0);
+            ToolJointSet[6] = 10.0 * cmnPI / 180.0;
+            JointDesired.Goal().ForceAssign(ToolJointSet);
+            PID.SetIsCheckJointLimit(true);
+            PID.SetPositionJoint(JointDesired);
+
+            RobotCurrentState = STATE_START;
+            ToolStopwatch.Reset();
+            IsToolEngaged = true;
+        }else if (ToolStopwatch.GetElapsedTime() > (2000 * cmn_ms)){
+            ToolJointSet[3] = -280.0 * cmnPI / 180.0;
+            ToolJointSet[4] =  10.0 * cmnPI / 180.0;
+            ToolJointSet[5] =  10.0 * cmnPI / 180.0;
+            ToolJointSet[6] =  10.0 * cmnPI / 180.0;
+            JointDesired.Goal().ForceAssign(ToolJointSet);
+            PID.SetPositionJoint(JointDesired);
+        }else if (ToolStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
+            ToolJointSet[3] = -280.0 * cmnPI / 180.0;
+            ToolJointSet[4] =  10.0 * cmnPI / 180.0;
+            ToolJointSet[5] = -10.0 * cmnPI / 180.0;
+            ToolJointSet[6] =  10.0 * cmnPI / 180.0;
+            JointDesired.Goal().ForceAssign(ToolJointSet);
+            PID.SetPositionJoint(JointDesired);
+        }else if (ToolStopwatch.GetElapsedTime() > (1000 * cmn_ms)){
+            ToolJointSet[3] =  280.0 * cmnPI / 180.0;
+            ToolJointSet[4] = -10.0 * cmnPI / 180.0;
+            ToolJointSet[5] =  10.0 * cmnPI / 180.0;
+            ToolJointSet[6] =  10.0 * cmnPI / 180.0;
+            JointDesired.Goal().ForceAssign(ToolJointSet);
+            PID.SetPositionJoint(JointDesired);
+        }else if (ToolStopwatch.GetElapsedTime() > (500 * cmn_ms)){
+            ToolJointSet[3] = -280.0 * cmnPI / 180.0;
+            ToolJointSet[4] = -10.0 * cmnPI / 180.0;
+            ToolJointSet[5] = -10.0 * cmnPI / 180.0;
+            ToolJointSet[6] =  10.0 * cmnPI / 180.0;
+            JointDesired.Goal().ForceAssign(ToolJointSet);
             PID.SetPositionJoint(JointDesired);
         }
         break;
@@ -223,10 +279,11 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton &butto
         AdapterStopwatch.Start();
         PID.GetPositionJoint(JointCurrent);
         AdapterJointSet.ForceAssign(JointCurrent.Position());
+        PID.SetIsCheckJointLimit(false);
     }else{
+        CMN_LOG_RUN_ERROR << "Adapter disengaged" << std::endl;
         RobotCurrentState = STATE_START;
         AdapterStopwatch.Reset();
-        CMN_LOG_RUN_ERROR << "Adapter disengaged" << std::endl;
     }
 }
 
@@ -235,11 +292,23 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton &button)
 {
     if(button.Type() == prmEventButton::PRESSED){
         CMN_LOG_RUN_ERROR << "Tool engaged" << std::endl;
+        if (!IsAdapterEngaged){
+            // ZC: might be redundant, because of the mechanical limit
+            CMN_LOG_RUN_ERROR << "Adapter is not engaged" << std::endl;
+        }else{
+            RobotCurrentState = STATE_TOOL;
+            ToolStopwatch.Reset();
+            ToolStopwatch.Start();
+            PID.GetPositionJoint(JointCurrent);
+            ToolJointSet.ForceAssign(JointCurrent.Position());
+            PID.SetIsCheckJointLimit(false);
+        }
     }else{
         CMN_LOG_RUN_ERROR << "Tool disengaged" << std::endl;
+        RobotCurrentState = STATE_START;
+        ToolStopwatch.Reset();
     }
 }
-
 
 void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton &button)
 {

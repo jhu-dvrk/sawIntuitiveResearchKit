@@ -68,6 +68,7 @@ protected:
     struct {
         mtsFunctionRead GetPositionJoint;
         mtsFunctionWrite SetPositionJoint;
+        mtsFunctionWrite SetIsCheckJointLimit;
     } PID;
 
 
@@ -86,11 +87,15 @@ protected:
 
     PSM_STATE RobotCurrentState;
 
-    // Adapter Engage
+    // Adapter engage
     osaStopwatch AdapterStopwatch;
     vctDoubleVec AdapterJointSet;
     bool IsAdapterEngaged;
 
+    // Tool engage
+    osaStopwatch ToolStopwatch;
+    vctDoubleVec ToolJointSet;
+    bool IsToolEngaged;
 
 };
 
