@@ -20,7 +20,8 @@ set (REQUIRED_CISST_LIBRARIES
      cisstMultiTask
      cisstParameterTypes
      cisstRobot
-     cisstNumerical)
+     cisstNumerical
+     cisstQt)
 
 find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
@@ -37,14 +38,22 @@ if (cisst_FOUND)
   include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
   set (sawIntuitiveResearchKit_HEADER_DIR "${sawIntuitiveResearchKit_INCLUDE_DIR}/sawIntuitiveResearchKit")
 
+  # for Qt generated header files
+  include_directories (${CMAKE_CURRENT_BINARY_DIR})
+  qt4_wrap_cpp (SAW_INTUITIVE_RESEARCH_KIT_QT_WRAP_CPP
+                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h)
+
   set (HEADER_FILES
        ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitMTM.h
        ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSM.h
+       ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h
       )
 
   set (SOURCE_FILES
        mtsIntuitiveResearchKitMTM.cpp
        mtsIntuitiveResearchKitPSM.cpp
+       mtsIntuitiveResearchKitConsoleQtWidget.cpp
+       ${SAW_INTUITIVE_RESEARCH_KIT_QT_WRAP_CPP}
       )
 
   add_library (sawIntuitiveResearchKit ${HEADER_FILES} ${SOURCE_FILES})

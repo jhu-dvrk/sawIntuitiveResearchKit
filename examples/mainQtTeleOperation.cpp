@@ -33,6 +33,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawControllers/mtsPIDQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 #include <sawControllers/mtsTeleOperation.h>
 #include <sawControllers/mtsTeleOperationQtWidget.h>
 
@@ -49,9 +50,8 @@ int main(int argc, char ** argv)
     std::string gcmip = "-1";
     typedef std::map<std::string, std::string> ConfigFilesType;
     ConfigFilesType configFiles;
+    std::string masterName, slaveName;
 
-    std::string ioConfigFileMaster, pidConfigFileMaster, kinConfigFileMaster;
-    std::string ioConfigFileSlave, pidConfigFileSlave, kinConfigFileSlave;
     options.AddOptionOneValue("i", "io-master",
                               "configuration file for master robot IO (see sawRobotIO1394)",
                               cmnCommandLineOptions::REQUIRED, &configFiles["io-master"]);
@@ -71,6 +71,14 @@ int main(int argc, char ** argv)
                               "configuration file for slave kinematic (see cisstRobot, robManipulator)",
                               cmnCommandLineOptions::REQUIRED, &configFiles["kinematic-slave"]);
 
+    options.AddOptionOneValue("n", "name-master",
+                              "MTML or MTMR",
+                              cmnCommandLineOptions::REQUIRED, &masterName);
+
+    options.AddOptionOneValue("N", "name-slave",
+                              "PSM1 or PSM2",
+                              cmnCommandLineOptions::REQUIRED, &slaveName);
+
     options.AddOptionOneValue("f", "firewire",
                               "firewire port number(s)",
                               cmnCommandLineOptions::OPTIONAL, &firewirePort);
@@ -78,7 +86,6 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("g", "gcmip",
                               "global component manager IP address",
                               cmnCommandLineOptions::OPTIONAL, &gcmip);
-
 
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
@@ -152,11 +159,11 @@ int main(int argc, char ** argv)
     manager->Connect(pidSlaveGUI->GetName(), "Controller", pidSlave->GetName(), "Controller");
 
     // PSM
-    mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM("MTMR", 5.0 * cmn_ms);
+    mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(slaveName, 5.0 * cmn_ms);
     master->Configure(configFiles["kinematic-master"]);
     manager->AddComponent(master);
 
-    mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM("PSM1", 5.0 * cmn_ms);
+    mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(masterName, 5.0 * cmn_ms);
     slave->Configure(configFiles["kinematic-slave"]);
     manager->AddComponent(slave);
 
@@ -170,8 +177,12 @@ int main(int argc, char ** argv)
     manager->Connect("teleGUI", "TeleOperation", "tele", "Setting");
 
     // connect interfaces
-    manager->Connect(pidMaster->GetName(), "RobotJointTorqueInterface", "io", "MTMR");
-    manager->Connect(pidSlave->GetName(), "RobotJointTorqueInterface", "io", "PSM1");
+    manager->Connect(pidMaster->GetName(), "RobotJointTorqueInterface", "io", masterName);
+    manager->Connect(pidSlave->GetName(), "RobotJointTorqueInterface", "io", slaveName);
+
+    // Qt console
+    mtsIntuitiveResearchKitConsoleQtWidget * console = new mtsIntuitiveResearchKitConsoleQtWidget("console");
+    manager->AddComponent(console);
 
     // hack
     osaSleep(2.0 * cmn_s);
@@ -182,10 +193,10 @@ int main(int argc, char ** argv)
 
     manager->Connect(master->GetName(), "PID", pidMaster->GetName(), "Controller");
     manager->Connect(slave->GetName(), "PID", pidSlave->GetName(), "Controller");
-    manager->Connect(slave->GetName(), "Adapter", "io", "PSM1-Adapter");
-    manager->Connect(slave->GetName(), "Tool", "io", "PSM1-Tool");
-    manager->Connect(slave->GetName(), "ManipClutch", "io", "PSM1-ManipClutch");
-    manager->Connect(slave->GetName(), "SUJClutch", "io", "PSM1-SUJClutch");
+    manager->Connect(slave->GetName(), "Adapter", "io", slaveName + "-Adapter");
+    manager->Connect(slave->GetName(), "Tool", "io", slaveName + "-Tool");
+    manager->Connect(slave->GetName(), "ManipClutch", "io", slaveName + "-ManipClutch");
+    manager->Connect(slave->GetName(), "SUJClutch", "io", slaveName + "-SUJClutch");
 
 
     manager->Connect("tele", "Master", master->GetName(), "Robot");
