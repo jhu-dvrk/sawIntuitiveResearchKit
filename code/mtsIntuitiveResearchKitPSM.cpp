@@ -84,6 +84,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     if (prov) {
         prov->AddCommandReadState(this->StateTable, CartesianCurrent, "GetPositionCartesian");
         prov->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionCartesian, this, "SetPositionCartesian");
+        prov->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetRobotControlState, this, "SetRobotControlState", mtsInt());
     }
 }
 
@@ -99,11 +100,14 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
 
 void mtsIntuitiveResearchKitPSM::Startup(void)
 {
+    RobotCurrentState = STATE_START;
 }
 
 void mtsIntuitiveResearchKitPSM::Run(void)
 {
     ProcessQueuedEvents();
+
+    // ------ Start ----------------------
 
     mtsExecutionResult executionResult;
     executionResult = PID.GetPositionJoint(JointCurrent);
@@ -118,6 +122,54 @@ void mtsIntuitiveResearchKitPSM::Run(void)
     position.Rotation().NormalizedSelf();
     CartesianCurrent.Position().From(position);
 
+
+    switch (RobotCurrentState) {
+    case STATE_TELEOP:
+        break;
+    case STATE_ADAPTER:
+        if (AdapterStopwatch.GetElapsedTime() > (2000 * cmn_ms)){
+            AdapterJointSet[2] = 0.0;
+            AdapterJointSet[3] = 0.0;
+            AdapterJointSet[4] = 0.0;
+            AdapterJointSet[5] = 0.0;
+            AdapterJointSet[6] = 0.0;
+            JointDesired.Goal().ForceAssign(AdapterJointSet);
+            PID.SetPositionJoint(JointDesired);
+
+            RobotCurrentState = STATE_START;
+            AdapterStopwatch.Reset();
+
+        }else if (AdapterStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
+            AdapterJointSet[3] = -4.0;
+            AdapterJointSet[4] = 2.67;
+            AdapterJointSet[5] = 1.01;
+            AdapterJointSet[6] = 0.0;
+            JointDesired.Goal().ForceAssign(AdapterJointSet);
+            PID.SetPositionJoint(JointDesired);
+        }else if (AdapterStopwatch.GetElapsedTime() > (1000 * cmn_ms)){
+            AdapterJointSet[3] = 4.0;
+            AdapterJointSet[4] = -2.67;
+            AdapterJointSet[5] = -1.01;
+            AdapterJointSet[6] = 0.0;
+            JointDesired.Goal().ForceAssign(AdapterJointSet);
+            PID.SetPositionJoint(JointDesired);
+        }else if (AdapterStopwatch.GetElapsedTime() > (500 * cmn_ms)){
+            AdapterJointSet[3] = -4.0;
+            AdapterJointSet[4] = 2.67;
+            AdapterJointSet[5] = 1.01;
+            AdapterJointSet[6] = 0.0;
+            JointDesired.Goal().ForceAssign(AdapterJointSet);
+            PID.SetPositionJoint(JointDesired);
+        }
+        break;
+    default:
+//        cmnThrow("mtsIntuitiveResearchKitPSM: Unknown control state");
+        break;
+    }
+
+
+
+    // ------ Stop call teleop ------------
     RunEvent();
 
     ProcessQueuedCommands();
@@ -130,30 +182,50 @@ void mtsIntuitiveResearchKitPSM::Cleanup(void)
 
 void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    vctDoubleVec jointDesired;
-    jointDesired.ForceAssign(JointCurrent.Position());
-    jointDesired.resize(6);
-    Manipulator.InverseKinematics(jointDesired, newPosition.Goal());
-    // jointDesired[2] = jointDesired[2] / cmn180_PI * 1000.0; // ugly hack for translation   -   Zihan to check
-    jointDesired[2] = jointDesired[2] * 1000.0; //ugly hack for translation
-    jointDesired.resize(7);
-    jointDesired.Element(6) = 0.5; // temporary hack to set gripper opening
-    JointDesired.Goal().ForceAssign(jointDesired);
-    // note: this directly calls the lower level to set position,
-    // maybe we should cache the request in this component and later
-    // in the Run method push the request.  This way, only the latest
-    // request would be pushed if multiple are queued.
-    PID.SetPositionJoint(JointDesired);
+    if (RobotCurrentState == STATE_READY){
+        vctDoubleVec jointDesired;
+        jointDesired.ForceAssign(JointCurrent.Position());
+        jointDesired.resize(6);
+        Manipulator.InverseKinematics(jointDesired, newPosition.Goal());
+        // jointDesired[2] = jointDesired[2] / cmn180_PI * 1000.0; // ugly hack for translation   -   Zihan to check
+        jointDesired[2] = jointDesired[2] * 1000.0; //ugly hack for translation
+        jointDesired.resize(7);
+        jointDesired.Element(6) = 0.5; // temporary hack to set gripper opening
+        JointDesired.Goal().ForceAssign(jointDesired);
+        // note: this directly calls the lower level to set position,
+        // maybe we should cache the request in this component and later
+        // in the Run method push the request.  This way, only the latest
+        // request would be pushed if multiple are queued.
+        PID.SetPositionJoint(JointDesired);
+    }else{
+        CMN_LOG_RUN_WARNING << "PSM not ready" << std::endl;
+    }
 }
 
 
 
+void mtsIntuitiveResearchKitPSM::SetRobotControlState(const mtsInt &state)
+{
+    if(state.Data == STATE_ADAPTER){
+        RobotCurrentState = STATE_ADAPTER;
+    }
+}
+
+
+// -------------- Event Handlers ------------------------------
 
 void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton &button)
 {
     if(button.Type() == prmEventButton::PRESSED){
         CMN_LOG_RUN_ERROR << "Adapter engaged" << std::endl;
+        RobotCurrentState = STATE_ADAPTER;
+        AdapterStopwatch.Reset();
+        AdapterStopwatch.Start();
+        PID.GetPositionJoint(JointCurrent);
+        AdapterJointSet.ForceAssign(JointCurrent.Position());
     }else{
+        RobotCurrentState = STATE_START;
+        AdapterStopwatch.Reset();
         CMN_LOG_RUN_ERROR << "Adapter disengaged" << std::endl;
     }
 }

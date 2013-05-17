@@ -28,6 +28,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstRobot/robManipulator.h>
+#include <cisstOSAbstraction/osaStopwatch.h>
+
 
 class mtsIntuitiveResearchKitPSM: public mtsTaskPeriodic
 {
@@ -45,8 +47,13 @@ public:
 
 protected:
 
-    enum PSM_MODE {
-        HOME
+    enum PSM_STATE {
+        STATE_START = 0,
+        STATE_HOME,
+        STATE_TELEOP,
+        STATE_ADAPTER,
+        STATE_TOOL,
+        STATE_READY
     };
 
     void Init(void);
@@ -56,17 +63,35 @@ protected:
     void EventHandlerSUJClutch(const prmEventButton & button);
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
+    void SetRobotControlState(const mtsInt & state);
 
     struct {
         mtsFunctionRead GetPositionJoint;
         mtsFunctionWrite SetPositionJoint;
     } PID;
 
+
+//    // Required interface
+//    struct InterfaceRobotTorque {
+//        //! Enable Robot Power
+//        mtsFunctionVoid EnablePower;
+//        mtsFunctionVoid DisablePower;
+//    } Robot;
+
     prmPositionCartesianGet CartesianCurrent;
     vctFrm4x4 CartesianPrevious;
     prmPositionJointGet JointCurrent;
     prmPositionJointSet JointDesired;
     robManipulator Manipulator;
+
+    PSM_STATE RobotCurrentState;
+
+    // Adapter Engage
+    osaStopwatch AdapterStopwatch;
+    vctDoubleVec AdapterJointSet;
+    bool IsAdapterEngaged;
+
+
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitPSM);
