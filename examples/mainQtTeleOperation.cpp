@@ -182,10 +182,10 @@ int main(int argc, char ** argv)
 
     manager->Connect(master->GetName(), "PID", pidMaster->GetName(), "Controller");
     manager->Connect(slave->GetName(), "PID", pidSlave->GetName(), "Controller");
-    manager->Connect(slave->GetName(), "Adapter", "io", "Adapter");
-    manager->Connect(slave->GetName(), "Tool", "io", "Tool");
-    manager->Connect(slave->GetName(), "ManipClutch", "io", "ManipClutch");
-    manager->Connect(slave->GetName(), "SUJClutch", "io", "SUJClutch");
+    manager->Connect(slave->GetName(), "Adapter", "io", "PSM1-Adapter");
+    manager->Connect(slave->GetName(), "Tool", "io", "PSM1-Tool");
+    manager->Connect(slave->GetName(), "ManipClutch", "io", "PSM1-ManipClutch");
+    manager->Connect(slave->GetName(), "SUJClutch", "io", "PSM1-SUJClutch");
 
 
     manager->Connect("tele", "Master", master->GetName(), "Robot");

@@ -240,10 +240,10 @@ end
 
 % set default PSM DigitalIn
 if (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2'))
-    handles.m_digiIn{1,2,1} = 'SUJClutch';
-    handles.m_digiIn{3,2,1} = 'ManipClutch';
-    handles.m_digiIn{8,2,2} = 'Tool';
-    handles.m_digiIn{11,2,2} = 'Adapter';
+    handles.m_digiIn{1,2,1} = [handles.m_type '-SUJClutch'];
+    handles.m_digiIn{3,2,1} = [handles.m_type '-ManipClutch'];
+    handles.m_digiIn{8,2,2} = [handles.m_type '-Tool'];
+    handles.m_digiIn{11,2,2} = [handles.m_type '-Adapter'];
 end
 
 val = get(handles.digiBidMenu, 'Value');
