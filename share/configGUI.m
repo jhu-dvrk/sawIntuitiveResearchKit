@@ -237,6 +237,15 @@ for i = 1:12
                               num2str(idivide(i-1, int32(4))+3), ...
                               num2str(mod(i-1,4)) ];
 end
+
+% set default PSM DigitalIn
+if (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2'))
+    handles.m_digiIn{1,2,1} = 'SUJClutch';
+    handles.m_digiIn{3,2,1} = 'ManipClutch';
+    handles.m_digiIn{8,2,2} = 'Tool';
+    handles.m_digiIn{11,2,2} = 'Adapter';
+end
+
 val = get(handles.digiBidMenu, 'Value');
 set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val)); 
 

@@ -167,9 +167,9 @@
          </JointToActuatorTorque>
       </Coupling>
    </Robot><!--Digital Input Configuration-->
-   <DigitalIn BitID="0" BoardID="6" Name="PSM1-D00" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="0" BoardID="6" Name="SUJClutch" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="1" BoardID="6" Name="PSM1-D01" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="2" BoardID="6" Name="PSM1-D02" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="2" BoardID="6" Name="ManipClutch" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="3" BoardID="6" Name="PSM1-D03" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="4" BoardID="6" Name="PSM1-D10" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="5" BoardID="6" Name="PSM1-D11" Pressed="0" Trigger="all"/>
@@ -186,9 +186,9 @@
    <DigitalIn BitID="4" BoardID="7" Name="PSM1-D40" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="5" BoardID="7" Name="PSM1-D41" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="6" BoardID="7" Name="PSM1-D42" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="7" BoardID="7" Name="PSM1-D43" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="7" BoardID="7" Name="Tool" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="8" BoardID="7" Name="PSM1-D50" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="9" BoardID="7" Name="PSM1-D51" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="10" BoardID="7" Name="PSM1-D52" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="10" BoardID="7" Name="Adapter" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="11" BoardID="7" Name="PSM1-D53" Pressed="0" Trigger="all"/>
 </Config>
