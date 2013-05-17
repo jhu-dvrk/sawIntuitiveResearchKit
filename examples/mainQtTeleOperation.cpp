@@ -152,7 +152,7 @@ int main(int argc, char ** argv)
     manager->Connect(pidSlaveGUI->GetName(), "Controller", pidSlave->GetName(), "Controller");
 
     // PSM
-    mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM("MTML", 5.0 * cmn_ms);
+    mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM("MTMR", 5.0 * cmn_ms);
     master->Configure(configFiles["kinematic-master"]);
     manager->AddComponent(master);
 
@@ -170,7 +170,7 @@ int main(int argc, char ** argv)
     manager->Connect("teleGUI", "TeleOperation", "tele", "Setting");
 
     // connect interfaces
-    manager->Connect(pidMaster->GetName(), "RobotJointTorqueInterface", "io", "MTML");
+    manager->Connect(pidMaster->GetName(), "RobotJointTorqueInterface", "io", "MTMR");
     manager->Connect(pidSlave->GetName(), "RobotJointTorqueInterface", "io", "PSM1");
 
     // hack
