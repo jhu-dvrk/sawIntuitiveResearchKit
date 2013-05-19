@@ -33,16 +33,20 @@ if (cisst_FOUND_AS_REQUIRED)
   cisst_find_saw_component (sawRobotIO1394 REQUIRED)
   cisst_find_saw_component (sawIntuitiveResearchKit REQUIRED)
   cisst_find_saw_component (sawControllers REQUIRED)
+  cisst_find_saw_component (sawTextToSpeech REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
     # sawRobotIO1394 configuration
     include_directories (${sawRobotIO1394_INCLUDE_DIR}
                          ${sawIntuitiveResearchKit_INCLUDE_DIR}
-                         ${sawControllers_INCLUDE_DIR})
+                         ${sawControllers_INCLUDE_DIR}
+                         ${sawTextToSpeech_INCLUDE_DIR})
+                       
     link_directories (${sawRobotIO1394_LIBRARY_DIR}
                       ${sawIntuitiveResearchKit_LIBRARY_DIR}
-                      ${sawControllers_LIBRARY_DIR})
+                      ${sawControllers_LIBRARY_DIR}
+                      ${sawTextToSpeech_LIBRARY_DIR})
 
     # examples using Qt
     if (CISST_HAS_QT)
@@ -67,7 +71,8 @@ if (cisst_FOUND_AS_REQUIRED)
       target_link_libraries (sawIntuitiveResearchKitQtTeleOperation
                              ${sawRobotIO1394_LIBRARIES}
                              ${sawIntuitiveResearchKit_LIBRARIES}
-                             ${sawControllers_LIBRARIES})
+                             ${sawControllers_LIBRARIES}
+                             ${sawTextToSpeech_LIBRARIES})
 
       # link against cisst libraries (and dependencies)
       cisst_target_link_libraries (sawIntuitiveResearchKitQtTeleOperation ${REQUIRED_CISST_LIBRARIES})

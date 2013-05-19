@@ -223,7 +223,6 @@ void mtsIntuitiveResearchKitMTM::EventHandlerHome(void)
 
 void mtsIntuitiveResearchKitMTM::EventHandlerTeleop(void)
 {
-    std::cout << "YES Teleop " << std::endl;
     if(!IsHomed){
         EventTriggers.RobotErrorMsg(mtsStdString("ERROR: Robot is not Homed"));
     }else{

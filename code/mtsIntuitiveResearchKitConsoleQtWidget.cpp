@@ -48,8 +48,6 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
     mtsInterfaceRequired* reqPSM = AddInterfaceRequired("PSM");
     if (reqPSM) {
         reqPSM->AddFunction("SetRobotControlState", PSM.SetRobotControlState);
-//        reqPSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler, this, "State");
-
         reqPSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler,
                                      this, "RobotStatusMsg");
         reqPSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandler,
@@ -90,12 +88,6 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
     event->accept();
 }
 
-//void mtsIntuitiveResearchKitConsoleQtWidget::slot_SetStateButton(int id)
-//{
-//    std::cerr << "----- " << id << std::endl;
-//    std::string newState = "state";
-//    MTM.SetState(newState);
-//}
 
 void mtsIntuitiveResearchKitConsoleQtWidget::slot_SetStateButton(QAbstractButton *radioButton)
 {
@@ -115,6 +107,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     CurrentStateLabel = new QLabel("undefined");
     frameLayout->addWidget(CurrentStateLabel, 0, 0);
 
+    // MTM
     QGroupBox * groupBox = new QGroupBox("Desired state");
     QRadioButton * homeState = new QRadioButton("Home");
     QRadioButton * teleOpMode = new QRadioButton("Teleop");

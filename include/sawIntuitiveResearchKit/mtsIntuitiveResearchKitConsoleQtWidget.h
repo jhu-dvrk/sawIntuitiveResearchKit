@@ -43,7 +43,6 @@ public:
 
 
 private slots:
-//    void slot_SetStateButton(int);
     void slot_SetStateButton(QAbstractButton* radioButton);
 
 protected:

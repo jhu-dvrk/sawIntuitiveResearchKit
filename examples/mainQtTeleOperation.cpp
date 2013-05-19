@@ -36,6 +36,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 #include <sawControllers/mtsTeleOperation.h>
 #include <sawControllers/mtsTeleOperationQtWidget.h>
+#include <sawTextToSpeech/mtsTextToSpeech.h>
 
 int main(int argc, char ** argv)
 {
@@ -158,15 +159,13 @@ int main(int argc, char ** argv)
     // connect pidGUI to pid
     manager->Connect(pidSlaveGUI->GetName(), "Controller", pidSlave->GetName(), "Controller");
 
-    // PSM
+    // MTM
     mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(masterName, 5.0 * cmn_ms);
     master->Configure(configFiles["kinematic-master"]);
     manager->AddComponent(master);
     manager->Connect(master->GetName(), "RobotIO", "io", masterName);
 
-//    std::cerr << (*io) << std::endl;
-
-
+    // PSM
     mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(slaveName, 5.0 * cmn_ms);
     slave->Configure(configFiles["kinematic-slave"]);
     manager->AddComponent(slave);
@@ -180,6 +179,14 @@ int main(int argc, char ** argv)
     manager->AddComponent(tele);
     // connect teleGUI to tele
     manager->Connect("teleGUI", "TeleOperation", "tele", "Setting");
+
+    // TextToSpeech
+    // ZC: make this optional based on CMake option (TODO)
+    mtsTextToSpeech* textToSpeech = new mtsTextToSpeech;
+    textToSpeech->AddInterfaceRequiredForEventString("ErrorMsg", "RobotErrorMsg");
+    manager->AddComponent(textToSpeech);
+    manager->Connect(textToSpeech->GetName(), "ErrorMsg", slave->GetName(), "Robot");
+
 
     // connect interfaces
     manager->Connect(pidMaster->GetName(), "RobotJointTorqueInterface", "io", masterName);

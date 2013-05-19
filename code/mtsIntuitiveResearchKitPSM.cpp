@@ -377,7 +377,6 @@ void mtsIntuitiveResearchKitPSM::EventHandlerHome(void)
 
 void mtsIntuitiveResearchKitPSM::EventHandlerTeleop(void)
 {
-    std::cout << "YES Teleop " << std::endl;
     if( (!IsAdapterEngaged) || (!IsToolEngaged) ){
         EventTriggers.RobotErrorMsg(mtsStdString("ERROR: Adapter or Tool NOT ready"));
     }else{
