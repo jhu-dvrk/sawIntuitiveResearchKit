@@ -167,8 +167,8 @@ CountsPerTurn = encCPT(rType,1:numOfActuator);
 
 % === AnalogIn =====
 BitsToVolts = ones(1,numOfActuator) * 0.0000686656;
-VoltsToPosSIScale = potGain * 2^12 / (4.5 - 0.0) * 180.0 / pi;
-VoltsToPosSIOffset = potOffset * 180.0 / pi;
+VoltsToPosSIScale = potGain * 2^12 / (4.5 - 0.0) * 180.0 / pi .* pitch(rType,1:numOfActuator);
+VoltsToPosSIOffset = potOffset * 180.0 / pi .* pitch(rType,1:numOfActuator);
 
 % special case for master last joint (Hall effect sensor)
 if (rType == CONST_MST)
