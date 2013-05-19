@@ -4,7 +4,7 @@
 /*
   $Id$
 
-  Author(s):  Anton Deguet
+  Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
   (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
@@ -51,30 +51,39 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mtsInterfaceRequired * req;
     req = AddInterfaceRequired("PID");
     if (req) {
+        req->AddFunction("Enable", PID.Enable);
         req->AddFunction("GetPositionJoint", PID.GetPositionJoint);
         req->AddFunction("SetPositionJoint", PID.SetPositionJoint);
         req->AddFunction("SetIsCheckJointLimit", PID.SetIsCheckJointLimit);
     }
 
-    // Event Adapter (Sterile Adatper Event)
+    // Robot IO
+    req = AddInterfaceRequired("RobotIO");
+    if (req) {
+        req->AddFunction("EnablePower", RobotIO.EnablePower);
+        req->AddFunction("DisablePower", RobotIO.DisablePower);
+        req->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
+    }
+
+    // Event Adapter engage: digital input button event from PSM
     req = AddInterfaceRequired("Adapter");
     if (req) {
         req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerAdapter, this, "Button");
     }
 
-    // Event Tool engaged
+    // Event Tool engage: digital input button event from PSM
     req = AddInterfaceRequired("Tool");
     if (req) {
         req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerTool, this, "Button");
     }
 
-    // ManipClutch
+    // ManipClutch: digital input button event from PSM
     req = AddInterfaceRequired("ManipClutch");
     if (req) {
         req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerManipClutch, this, "Button");
     }
 
-    // SUJClutch
+    // SUJClutch: digital input button event from PSM
     req = AddInterfaceRequired("SUJClutch");
     if (req) {
         req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch, this, "Button");
@@ -85,7 +94,11 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     if (prov) {
         prov->AddCommandReadState(this->StateTable, CartesianCurrent, "GetPositionCartesian");
         prov->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionCartesian, this, "SetPositionCartesian");
-        prov->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetRobotControlState, this, "SetRobotControlState", mtsInt());
+
+        prov->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetRobotControlState,
+                              this, "SetRobotControlState", mtsStdString());
+        prov->AddEventWrite(EventTriggers.RobotStatusMsg, "RobotStatusMsg", mtsStdString());
+        prov->AddEventWrite(EventTriggers.RobotErrorMsg, "RobotErrorMsg", mtsStdString());
     }
 }
 
@@ -101,7 +114,8 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
 
 void mtsIntuitiveResearchKitPSM::Startup(void)
 {
-    RobotCurrentState = STATE_START;
+    RobotCurrentState = STATE_IDLE;
+    IsHomed = false;
     IsAdapterEngaged = false;
     IsToolEngaged = false;
 }
@@ -117,7 +131,8 @@ void mtsIntuitiveResearchKitPSM::Run(void)
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Call to GetJointPosition failed \""
                                 << executionResult << "\"" << std::endl;
-    }
+    }    
+
     // JointCurrent.Position()[2] = JointCurrent.Position()[2] * cmn180_PI / 1000.0; // ugly hack to convert radians to degrees to meters   - Zihan to check
     JointCurrent.Position()[2] = JointCurrent.Position()[2] / 1000.0; // ugly hack to convert mm to meters
     vctFrm4x4 position;
@@ -125,10 +140,45 @@ void mtsIntuitiveResearchKitPSM::Run(void)
     position.Rotation().NormalizedSelf();
     CartesianCurrent.Position().From(position);
 
-
     switch (RobotCurrentState) {
     case STATE_TELEOP:
+        // ZC: no thing for teleop
         break;
+
+    case STATE_START:
+
+        break;
+    case STATE_HOME:
+    {
+        // ZC: assume no adapter & no tool for now
+        vctDoubleVec HomeError;
+        vctDoubleVec HomeErrorLimit;
+
+        // check position
+        PID.GetPositionJoint(JointCurrent);
+        HomeError.SetSize(HomeJointSet.size());
+        HomeError.DifferenceOf(HomeJointSet, JointCurrent.Position());
+        HomeError.AbsSelf();
+
+        HomeErrorLimit.SetSize(HomeJointSet.size());
+        HomeErrorLimit.SetAll(2.0 * cmnPI_180);
+        HomeErrorLimit[2] = 1.0;  // 1mm
+        IsHomed = true;
+        for(size_t i = 0; i < HomeJointSet.size(); i++){
+            if ( HomeError[i] > HomeErrorLimit[i]){
+                IsHomed = false;
+            }
+        }
+        if(IsHomed){
+            RobotCurrentState = STATE_IDLE;
+            EventTriggers.RobotStatusMsg(mtsStdString("PSM Homed"));
+            std::cerr << "DONE" << std::endl;
+        }else{
+            JointDesired.Goal().ForceAssign(HomeJointSet);
+            PID.SetPositionJoint(JointDesired);
+        }
+        break;
+    }
     case STATE_ADAPTER:
         // PSM tool last 4 actuator coupling matrix
         // psm_m2jpos = [-1.5632  0.0000  0.0000  0.0000;
@@ -149,25 +199,29 @@ void mtsIntuitiveResearchKitPSM::Run(void)
             PID.SetIsCheckJointLimit(true);
             PID.SetPositionJoint(JointDesired);
 
-            RobotCurrentState = STATE_START;
+            // Adapter engage done
+            RobotCurrentState = STATE_IDLE;
             AdapterStopwatch.Reset();
             IsAdapterEngaged = true;
-
-        }else if (AdapterStopwatch.GetElapsedTime() > (2500 * cmn_ms)){
+            EventTriggers.RobotStatusMsg(mtsStdString("PSM Adapter Engaged"));
+        }
+        else if (AdapterStopwatch.GetElapsedTime() > (2500 * cmn_ms)){
             AdapterJointSet[3] = -300.0 * cmnPI / 180.0;
             AdapterJointSet[4] =  170.0 * cmnPI / 180.0;
             AdapterJointSet[5] =   65.0 * cmnPI / 180.0;
             AdapterJointSet[6] =    0.0 * cmnPI / 180.0;
             JointDesired.Goal().ForceAssign(AdapterJointSet);
             PID.SetPositionJoint(JointDesired);
-        }else if (AdapterStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
+        }
+        else if (AdapterStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
             AdapterJointSet[3] =  300.0 * cmnPI / 180.0;
             AdapterJointSet[4] = -170.0 * cmnPI / 180.0;
             AdapterJointSet[5] =  -65.0 * cmnPI / 180.0;
             AdapterJointSet[6] =    0.0 * cmnPI / 180.0;
             JointDesired.Goal().ForceAssign(AdapterJointSet);
             PID.SetPositionJoint(JointDesired);
-        }else if (AdapterStopwatch.GetElapsedTime() > (500 * cmn_ms)){
+        }
+        else if (AdapterStopwatch.GetElapsedTime() > (500 * cmn_ms)){
             AdapterJointSet[3] = -300.0 * cmnPI / 180.0;
             AdapterJointSet[4] =  170.0 * cmnPI / 180.0;
             AdapterJointSet[5] =   65.0 * cmnPI / 180.0;
@@ -185,31 +239,36 @@ void mtsIntuitiveResearchKitPSM::Run(void)
             PID.SetIsCheckJointLimit(true);
             PID.SetPositionJoint(JointDesired);
 
-            RobotCurrentState = STATE_START;
+            RobotCurrentState = STATE_IDLE;
             ToolStopwatch.Reset();
             IsToolEngaged = true;
-        }else if (ToolStopwatch.GetElapsedTime() > (2000 * cmn_ms)){
+            EventTriggers.RobotStatusMsg(mtsStdString("PSM Tool Engaged"));
+        }
+        else if (ToolStopwatch.GetElapsedTime() > (2000 * cmn_ms)){
             ToolJointSet[3] = -280.0 * cmnPI / 180.0;
             ToolJointSet[4] =  10.0 * cmnPI / 180.0;
             ToolJointSet[5] =  10.0 * cmnPI / 180.0;
             ToolJointSet[6] =  10.0 * cmnPI / 180.0;
             JointDesired.Goal().ForceAssign(ToolJointSet);
             PID.SetPositionJoint(JointDesired);
-        }else if (ToolStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
+        }
+        else if (ToolStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
             ToolJointSet[3] = -280.0 * cmnPI / 180.0;
             ToolJointSet[4] =  10.0 * cmnPI / 180.0;
             ToolJointSet[5] = -10.0 * cmnPI / 180.0;
             ToolJointSet[6] =  10.0 * cmnPI / 180.0;
             JointDesired.Goal().ForceAssign(ToolJointSet);
             PID.SetPositionJoint(JointDesired);
-        }else if (ToolStopwatch.GetElapsedTime() > (1000 * cmn_ms)){
+        }
+        else if (ToolStopwatch.GetElapsedTime() > (1000 * cmn_ms)){
             ToolJointSet[3] =  280.0 * cmnPI / 180.0;
             ToolJointSet[4] = -10.0 * cmnPI / 180.0;
             ToolJointSet[5] =  10.0 * cmnPI / 180.0;
             ToolJointSet[6] =  10.0 * cmnPI / 180.0;
             JointDesired.Goal().ForceAssign(ToolJointSet);
             PID.SetPositionJoint(JointDesired);
-        }else if (ToolStopwatch.GetElapsedTime() > (500 * cmn_ms)){
+        }
+        else if (ToolStopwatch.GetElapsedTime() > (500 * cmn_ms)){
             ToolJointSet[3] = -280.0 * cmnPI / 180.0;
             ToolJointSet[4] = -10.0 * cmnPI / 180.0;
             ToolJointSet[5] = -10.0 * cmnPI / 180.0;
@@ -260,15 +319,50 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
 
 
 
-void mtsIntuitiveResearchKitPSM::SetRobotControlState(const mtsInt &state)
+void mtsIntuitiveResearchKitPSM::SetRobotControlState(const mtsStdString &state)
 {
-    if(state.Data == STATE_ADAPTER){
-        RobotCurrentState = STATE_ADAPTER;
+    if (RobotCurrentState != STATE_IDLE){
+        EventTriggers.RobotErrorMsg(mtsStdString("ERROR: NOT in IDLE mode, Action cancelled"));
+        return;
+    }
+
+    if (state.Data == "Start"){
+        std::cout << "YES Start" << std::endl;
+
+    }
+    else if (state.Data == "Home"){
+        RobotCurrentState = STATE_HOME;
+        EventHandlerHome();
+    }
+    else if (state.Data == "Teleop"){
+        std::cout << "YES Teleop " << std::endl;
+        if( (!IsAdapterEngaged) || (!IsToolEngaged) ){
+            EventTriggers.RobotErrorMsg(mtsStdString("ERROR: Adapter or Tool NOT ready"));
+        }else{
+            RobotCurrentState = STATE_TELEOP;
+        }
     }
 }
 
 
 // -------------- Event Handlers ------------------------------
+
+
+void mtsIntuitiveResearchKitPSM::EventHandlerHome(void)
+{
+    // Start homing here
+    RobotIO.EnablePower();
+    RobotIO.BiasEncoder();
+
+    // ZC: TEMP home position all 0
+    PID.GetPositionJoint(JointCurrent);
+    HomeJointSet.ForceAssign(JointCurrent.Position());
+    HomeJointSet.SetAll(0.0);
+
+    // Enable PID
+    PID.Enable(true);
+}
+
 
 void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton &button)
 {
@@ -282,7 +376,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton &butto
         PID.SetIsCheckJointLimit(false);
     }else{
         CMN_LOG_RUN_ERROR << "Adapter disengaged" << std::endl;
-        RobotCurrentState = STATE_START;
+        RobotCurrentState = STATE_IDLE;
         AdapterStopwatch.Reset();
     }
 }
@@ -305,7 +399,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton &button)
         }
     }else{
         CMN_LOG_RUN_ERROR << "Tool disengaged" << std::endl;
-        RobotCurrentState = STATE_START;
+        RobotCurrentState = STATE_IDLE;
         ToolStopwatch.Reset();
     }
 }

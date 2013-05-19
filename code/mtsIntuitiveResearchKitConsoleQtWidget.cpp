@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
@@ -41,12 +42,20 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
     if (requiredInterface) {
         requiredInterface->AddFunction("Enable", TeleOperation.Enable);
     }
-    requiredInterface = AddInterfaceRequired("MTM");
-    if (requiredInterface) {
-        requiredInterface->AddFunction("SetState", MTM.SetState);
-        requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateEventHandler, this, "State");
-    }
 #endif
+
+
+    mtsInterfaceRequired* reqPSM = AddInterfaceRequired("PSM");
+    if (reqPSM) {
+        reqPSM->AddFunction("SetRobotControlState", PSM.SetRobotControlState);
+        reqPSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler, this, "State");
+
+        reqPSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler,
+                                     this, "RobotStatusMsg");
+        reqPSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandler,
+                                     this, "RobotErrorMsg");
+    }
+
     setupUi();
 }
 
@@ -71,12 +80,22 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
     event->accept();
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::slot_SetStateButton(int id)
+//void mtsIntuitiveResearchKitConsoleQtWidget::slot_SetStateButton(int id)
+//{
+//    std::cerr << "----- " << id << std::endl;
+//    std::string newState = "state";
+//    MTM.SetState(newState);
+//}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::slot_SetStateButton(QAbstractButton *radioButton)
 {
-    std::cerr << "----- " << id << std::endl;
-    std::string newState = "state";
-    MTM.SetState(newState);
+    std::cout << "---- Radio Button " << radioButton->text().toStdString() << std::endl;
+    std::string state = radioButton->text().toStdString();
+    PSM.SetRobotControlState(mtsStdString(state));
 }
+
+
+
 
 void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 {
@@ -87,7 +106,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 
     QGroupBox * groupBox = new QGroupBox("Desired state");
     QRadioButton * homeState = new QRadioButton("Home");
-    QRadioButton * teleOpMode = new QRadioButton("Tele-op");
+    QRadioButton * teleOpMode = new QRadioButton("Teleop");
     homeState->setChecked(true);
     QButtonGroup * group = new QButtonGroup;
 	group->addButton(homeState);
@@ -107,10 +126,22 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     setWindowTitle("Intuitive Research Kit");
     resize(sizeHint());
 
-    connect(group, SIGNAL(buttonClicked(int)), this, SLOT(slot_SetStateButton(int)));
+//    connect(group, SIGNAL(buttonClicked(int)), this, SLOT(slot_SetStateButton(int)));
+
+    connect(group, SIGNAL(buttonClicked(QAbstractButton*)),
+            this, SLOT(slot_SetStateButton(QAbstractButton*)));
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::StateEventHandler(const std::string & newState)
+void mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler(const std::string & newState)
 {
     CurrentStateLabel->setText(newState.c_str());
 }
+
+void mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandler(const std::string &newMsg)
+{
+    // ZC: temp for testing
+    std::cerr << newMsg << std::endl;
+}
+
+
+

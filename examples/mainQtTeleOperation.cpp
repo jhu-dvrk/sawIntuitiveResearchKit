@@ -166,6 +166,7 @@ int main(int argc, char ** argv)
     mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(masterName, 5.0 * cmn_ms);
     slave->Configure(configFiles["kinematic-slave"]);
     manager->AddComponent(slave);
+    manager->Connect(slave->GetName(), "RobotIO", "io", slaveName);
 
     // Teleoperation
     mtsTeleOperationQtWidget * teleGUI = new mtsTeleOperationQtWidget("teleGUI");
@@ -199,6 +200,11 @@ int main(int argc, char ** argv)
     manager->Connect(slave->GetName(), "SUJClutch", "io", slaveName + "-SUJClutch");
 
 
+    // connect console to Master & Slave
+//    manager->Connect("console", "MTM", master->GetName(), "Robot");
+    manager->Connect("console", "PSM", slave->GetName(), "Robot");
+
+    // connect teleop to Master + Slave + Clutch
     manager->Connect("tele", "Master", master->GetName(), "Robot");
     manager->Connect("tele", "Slave", slave->GetName(), "Robot");
     manager->Connect("tele", "Clutch", "io", "CLUTCH");

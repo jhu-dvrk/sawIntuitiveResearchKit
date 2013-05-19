@@ -43,7 +43,8 @@ public:
 
 
 private slots:
-    void slot_SetStateButton(int);
+//    void slot_SetStateButton(int);
+    void slot_SetStateButton(QAbstractButton* radioButton);
 
 protected:
     void closeEvent(QCloseEvent * event);
@@ -58,7 +59,12 @@ protected:
         mtsFunctionWrite SetState;
     } MTM;
 
-    void StateEventHandler(const std::string & newState);
+    struct PSMStruct {
+        mtsFunctionWrite SetRobotControlState;
+    } PSM;
+
+    void StateMsgEventHandler(const std::string & newState);
+    void ErrorMsgEventHandler(const std::string & newMsg);
 
     QLabel * CurrentStateLabel;    
 };

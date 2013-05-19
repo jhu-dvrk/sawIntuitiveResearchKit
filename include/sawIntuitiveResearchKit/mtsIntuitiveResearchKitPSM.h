@@ -31,6 +31,15 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstOSAbstraction/osaStopwatch.h>
 
 
+
+
+
+/**
+ * \todo Add Enable Power
+ * \todo Add HOME
+ */
+
+
 class mtsIntuitiveResearchKitPSM: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -50,34 +59,43 @@ protected:
     enum PSM_STATE {
         STATE_START = 0,
         STATE_HOME,
-        STATE_TELEOP,
-        STATE_ADAPTER,
-        STATE_TOOL,
-        STATE_READY
+        STATE_TELEOP,   // DONE
+        STATE_ADAPTER,  // DONE
+        STATE_TOOL,     // DONE
+        STATE_READY,
+        STATE_IDLE
     };
 
     void Init(void);
+    void EventHandlerHome(void);
     void EventHandlerAdapter(const prmEventButton & button);
     void EventHandlerTool(const prmEventButton & button);
     void EventHandlerManipClutch(const prmEventButton & button);
     void EventHandlerSUJClutch(const prmEventButton & button);
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
-    void SetRobotControlState(const mtsInt & state);
+    void SetRobotControlState(const mtsStdString & state);
 
     struct {
+        mtsFunctionWrite Enable;
         mtsFunctionRead GetPositionJoint;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetIsCheckJointLimit;
     } PID;
 
+    // Required interface
+    struct InterfaceRobotTorque {
+        //! Enable Robot Power
+        mtsFunctionVoid EnablePower;
+        mtsFunctionVoid DisablePower;
+        mtsFunctionVoid BiasEncoder;
+    } RobotIO;
 
-//    // Required interface
-//    struct InterfaceRobotTorque {
-//        //! Enable Robot Power
-//        mtsFunctionVoid EnablePower;
-//        mtsFunctionVoid DisablePower;
-//    } Robot;
+    // Functions for events
+    struct {
+        mtsFunctionWrite RobotStatusMsg;
+        mtsFunctionWrite RobotErrorMsg;
+    } EventTriggers;
 
     prmPositionCartesianGet CartesianCurrent;
     vctFrm4x4 CartesianPrevious;
@@ -86,6 +104,12 @@ protected:
     robManipulator Manipulator;
 
     PSM_STATE RobotCurrentState;
+    std::string StatusMsg;
+    std::string ErrorMsg;
+
+    // Home Action
+    vctDoubleVec HomeJointSet;
+    bool IsHomed;
 
     // Adapter engage
     osaStopwatch AdapterStopwatch;
