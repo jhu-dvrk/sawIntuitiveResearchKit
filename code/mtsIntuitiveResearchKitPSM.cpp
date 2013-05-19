@@ -68,12 +68,14 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // Event Adapter engage: digital input button event from PSM
     req = AddInterfaceRequired("Adapter");
     if (req) {
+        req->AddFunction("GetButton", Adapter.GetButton);
         req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerAdapter, this, "Button");
     }
 
     // Event Tool engage: digital input button event from PSM
     req = AddInterfaceRequired("Tool");
     if (req) {
+        req->AddFunction("GetButton", Tool.GetButton);
         req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerTool, this, "Button");
     }
 
@@ -172,7 +174,22 @@ void mtsIntuitiveResearchKitPSM::Run(void)
         if(IsHomed){
             RobotCurrentState = STATE_IDLE;
             EventTriggers.RobotStatusMsg(mtsStdString("PSM Homed"));
-            std::cerr << "DONE" << std::endl;
+
+            Adapter.GetButton(Adapter.IsPresent);
+            Tool.GetButton(Tool.IsPresent);
+            std::cerr << "HOME DONE" << std::endl;
+
+            if(Adapter.IsPresent && !Tool.IsPresent){
+                prmEventButton button;
+                button.Type() = prmEventButton::PRESSED;
+                EventHandlerAdapter(button);
+            }else if (Adapter.IsPresent && Tool.IsPresent){
+                IsAdapterEngaged = true;
+                prmEventButton button;
+                button.Type() = prmEventButton::PRESSED;
+                EventHandlerTool(button);
+            }
+
         }else{
             JointDesired.Goal().ForceAssign(HomeJointSet);
             PID.SetPositionJoint(JointDesired);

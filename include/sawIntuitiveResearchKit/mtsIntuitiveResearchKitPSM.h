@@ -92,6 +92,16 @@ protected:
         mtsFunctionVoid BiasEncoder;
     } RobotIO;
 
+    struct {
+        mtsFunctionRead GetButton;
+        bool IsPresent;
+    } Adapter;
+
+    struct {
+        mtsFunctionRead GetButton;
+        bool IsPresent;
+    } Tool;
+
     // Functions for events
     struct {
         mtsFunctionWrite RobotStatusMsg;
