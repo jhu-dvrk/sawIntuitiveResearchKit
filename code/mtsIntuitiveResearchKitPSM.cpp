@@ -147,14 +147,10 @@ void mtsIntuitiveResearchKitPSM::Run(void)
         // ZC: no thing for teleop
         break;
 
-    case STATE_START:
-
-        break;
     case STATE_HOME:
     {
-        // ZC: assume no adapter & no tool for now
         vctDoubleVec HomeError;
-        vctDoubleVec HomeErrorLimit;
+        vctDoubleVec HomeErrorTolerance;
 
         // check position
         PID.GetPositionJoint(JointCurrent);
@@ -162,12 +158,12 @@ void mtsIntuitiveResearchKitPSM::Run(void)
         HomeError.DifferenceOf(HomeJointSet, JointCurrent.Position());
         HomeError.AbsSelf();
 
-        HomeErrorLimit.SetSize(HomeJointSet.size());
-        HomeErrorLimit.SetAll(2.0 * cmnPI_180);
-        HomeErrorLimit[2] = 1.0;  // 1mm
+        HomeErrorTolerance.SetSize(HomeJointSet.size());
+        HomeErrorTolerance.SetAll(2.0 * cmnPI_180);
+        HomeErrorTolerance[2] = 1.0;  // 1mm
         IsHomed = true;
         for(size_t i = 0; i < HomeJointSet.size(); i++){
-            if ( HomeError[i] > HomeErrorLimit[i]){
+            if ( HomeError[i] > HomeErrorTolerance[i]){
                 IsHomed = false;
             }
         }
@@ -294,8 +290,10 @@ void mtsIntuitiveResearchKitPSM::Run(void)
             PID.SetPositionJoint(JointDesired);
         }
         break;
+    case STATE_IDLE:
+        break;
     default:
-//        cmnThrow("mtsIntuitiveResearchKitPSM: Unknown control state");
+        CMN_LOG_RUN_ERROR << "Unknown control state" << std::endl;
         break;
     }
 
@@ -314,7 +312,7 @@ void mtsIntuitiveResearchKitPSM::Cleanup(void)
 
 void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (RobotCurrentState == STATE_READY){
+    if (RobotCurrentState == STATE_TELEOP){
         vctDoubleVec jointDesired;
         jointDesired.ForceAssign(JointCurrent.Position());
         jointDesired.resize(6);
@@ -339,26 +337,19 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
 void mtsIntuitiveResearchKitPSM::SetRobotControlState(const mtsStdString &state)
 {
     if (RobotCurrentState != STATE_IDLE){
-        EventTriggers.RobotErrorMsg(mtsStdString("ERROR: NOT in IDLE mode, Action cancelled"));
+        EventTriggers.RobotErrorMsg(
+                    mtsStdString("ERROR: PSM NOT in IDLE mode, Action cancelled"));
         return;
     }
 
     if (state.Data == "Start"){
         std::cout << "YES Start" << std::endl;
-
     }
     else if (state.Data == "Home"){
-        RobotCurrentState = STATE_HOME;
         EventHandlerHome();
     }
     else if (state.Data == "Teleop"){
-        std::cout << "YES Teleop " << std::endl;
-        if( (!IsAdapterEngaged) || (!IsToolEngaged) ){
-            EventTriggers.RobotErrorMsg(mtsStdString("ERROR: Adapter or Tool NOT ready"));
-        }else{
-            RobotCurrentState = STATE_TELEOP;
-            EventHandlerTeleop();
-        }
+        EventHandlerTeleop();
     }
 }
 
@@ -368,6 +359,9 @@ void mtsIntuitiveResearchKitPSM::SetRobotControlState(const mtsStdString &state)
 
 void mtsIntuitiveResearchKitPSM::EventHandlerHome(void)
 {
+    // Set state to HOME
+    RobotCurrentState = STATE_HOME;
+
     // Start homing here
     RobotIO.EnablePower();
     RobotIO.BiasEncoder();
@@ -383,11 +377,17 @@ void mtsIntuitiveResearchKitPSM::EventHandlerHome(void)
 
 void mtsIntuitiveResearchKitPSM::EventHandlerTeleop(void)
 {
-    // Move J3 to > 80 mm
-    PID.GetPositionJoint(JointCurrent);
-    JointCurrent.Position()[2] = 80.0;
-    JointDesired.Goal().ForceAssign(JointCurrent.Position());
-    PID.SetPositionJoint(JointDesired);
+    std::cout << "YES Teleop " << std::endl;
+    if( (!IsAdapterEngaged) || (!IsToolEngaged) ){
+        EventTriggers.RobotErrorMsg(mtsStdString("ERROR: Adapter or Tool NOT ready"));
+    }else{
+        RobotCurrentState = STATE_TELEOP;
+        // Move J3 to > 80 mm
+        PID.GetPositionJoint(JointCurrent);
+        JointCurrent.Position()[2] = 80.0;
+        JointDesired.Goal().ForceAssign(JointCurrent.Position());
+        PID.SetPositionJoint(JointDesired);
+    }
 }
 
 

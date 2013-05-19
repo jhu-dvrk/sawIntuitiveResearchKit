@@ -57,12 +57,10 @@ public:
 protected:
 
     enum PSM_STATE {
-        STATE_START = 0,
-        STATE_HOME,
-        STATE_TELEOP,   // DONE
-        STATE_ADAPTER,  // DONE
-        STATE_TOOL,     // DONE
-        STATE_READY,
+        STATE_HOME = 0,
+        STATE_TELEOP,
+        STATE_ADAPTER,
+        STATE_TOOL,
         STATE_IDLE
     };
 
@@ -115,8 +113,6 @@ protected:
     robManipulator Manipulator;
 
     PSM_STATE RobotCurrentState;
-    std::string StatusMsg;
-    std::string ErrorMsg;
 
     // Home Action
     vctDoubleVec HomeJointSet;

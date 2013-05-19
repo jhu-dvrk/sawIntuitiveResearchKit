@@ -48,13 +48,23 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
     mtsInterfaceRequired* reqPSM = AddInterfaceRequired("PSM");
     if (reqPSM) {
         reqPSM->AddFunction("SetRobotControlState", PSM.SetRobotControlState);
-        reqPSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler, this, "State");
+//        reqPSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler, this, "State");
 
         reqPSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler,
                                      this, "RobotStatusMsg");
         reqPSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandler,
                                      this, "RobotErrorMsg");
     }
+
+    mtsInterfaceRequired* reqMTM = AddInterfaceRequired("MTM");
+    if (reqMTM) {
+        reqMTM->AddFunction("SetRobotControlState", MTM.SetRobotControlState);
+        reqMTM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler,
+                                     this, "RobotStatusMsg");
+        reqMTM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandler,
+                                     this, "RobotErrorMsg");
+    }
+
 
     setupUi();
 }
@@ -92,6 +102,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::slot_SetStateButton(QAbstractButton
     std::cout << "---- Radio Button " << radioButton->text().toStdString() << std::endl;
     std::string state = radioButton->text().toStdString();
     PSM.SetRobotControlState(mtsStdString(state));
+    MTM.SetRobotControlState(mtsStdString(state));
 }
 
 

@@ -159,11 +159,15 @@ int main(int argc, char ** argv)
     manager->Connect(pidSlaveGUI->GetName(), "Controller", pidSlave->GetName(), "Controller");
 
     // PSM
-    mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(slaveName, 5.0 * cmn_ms);
+    mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(masterName, 5.0 * cmn_ms);
     master->Configure(configFiles["kinematic-master"]);
     manager->AddComponent(master);
+    manager->Connect(master->GetName(), "RobotIO", "io", masterName);
 
-    mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(masterName, 5.0 * cmn_ms);
+//    std::cerr << (*io) << std::endl;
+
+
+    mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(slaveName, 5.0 * cmn_ms);
     slave->Configure(configFiles["kinematic-slave"]);
     manager->AddComponent(slave);
     manager->Connect(slave->GetName(), "RobotIO", "io", slaveName);
@@ -201,7 +205,7 @@ int main(int argc, char ** argv)
 
 
     // connect console to Master & Slave
-//    manager->Connect("console", "MTM", master->GetName(), "Robot");
+    manager->Connect("console", "MTM", master->GetName(), "Robot");
     manager->Connect("console", "PSM", slave->GetName(), "Robot");
 
     // connect teleop to Master + Slave + Clutch

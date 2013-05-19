@@ -56,7 +56,7 @@ protected:
     } TeleOperation;
 
     struct MTMStruct {
-        mtsFunctionWrite SetState;
+        mtsFunctionWrite SetRobotControlState;
     } MTM;
 
     struct PSMStruct {

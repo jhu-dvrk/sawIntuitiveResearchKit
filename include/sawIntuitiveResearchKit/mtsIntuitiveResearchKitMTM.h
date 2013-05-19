@@ -45,20 +45,53 @@ public:
 
 protected:
 
+    enum MTM_STATE {
+        STATE_HOME = 0,
+        STATE_TELEOP,
+        STATE_IDLE
+    };
+
+
     void Init(void);
+    void EventHandlerHome(void);
+    void EventHandlerTeleop(void);
+
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
+    void SetRobotControlState(const mtsStdString & state);
 
     struct {
+        mtsFunctionWrite Enable;
         mtsFunctionRead GetPositionJoint;
         mtsFunctionWrite SetPositionJoint;
+        mtsFunctionWrite SetIsCheckJointLimit;
     } PID;
+
+    // Required interface
+    struct InterfaceRobotTorque {
+        //! Enable Robot Power
+        mtsFunctionVoid EnablePower;
+        mtsFunctionVoid DisablePower;
+        mtsFunctionVoid BiasEncoder;
+    } RobotIO;
+
+    // Functions for events
+    struct {
+        mtsFunctionWrite RobotStatusMsg;
+        mtsFunctionWrite RobotErrorMsg;
+    } EventTriggers;
 
     prmPositionCartesianGet CartesianCurrent;
     vctFrm4x4 CartesianPrevious;
     prmPositionJointGet JointCurrent;
     prmPositionJointSet JointDesired;
     robManipulator Manipulator;
+
+    MTM_STATE RobotCurrentState;
+
+    // Home Action
+    vctDoubleVec HomeJointSet;
+    bool IsHomed;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);
