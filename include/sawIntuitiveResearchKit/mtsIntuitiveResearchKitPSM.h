@@ -68,6 +68,7 @@ protected:
 
     void Init(void);
     void EventHandlerHome(void);
+    void EventHandlerTeleop(void);
     void EventHandlerAdapter(const prmEventButton & button);
     void EventHandlerTool(const prmEventButton & button);
     void EventHandlerManipClutch(const prmEventButton & button);

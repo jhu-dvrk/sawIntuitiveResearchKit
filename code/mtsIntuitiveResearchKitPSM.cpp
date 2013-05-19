@@ -340,6 +340,7 @@ void mtsIntuitiveResearchKitPSM::SetRobotControlState(const mtsStdString &state)
             EventTriggers.RobotErrorMsg(mtsStdString("ERROR: Adapter or Tool NOT ready"));
         }else{
             RobotCurrentState = STATE_TELEOP;
+            EventHandlerTeleop();
         }
     }
 }
@@ -363,17 +364,31 @@ void mtsIntuitiveResearchKitPSM::EventHandlerHome(void)
     PID.Enable(true);
 }
 
+void mtsIntuitiveResearchKitPSM::EventHandlerTeleop(void)
+{
+    // Move J3 to > 80 mm
+    PID.GetPositionJoint(JointCurrent);
+    JointCurrent.Position()[2] = 80.0;
+    JointDesired.Goal().ForceAssign(JointCurrent.Position());
+    PID.SetPositionJoint(JointDesired);
+}
+
 
 void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton &button)
 {
     if(button.Type() == prmEventButton::PRESSED){
         CMN_LOG_RUN_ERROR << "Adapter engaged" << std::endl;
-        RobotCurrentState = STATE_ADAPTER;
-        AdapterStopwatch.Reset();
-        AdapterStopwatch.Start();
-        PID.GetPositionJoint(JointCurrent);
-        AdapterJointSet.ForceAssign(JointCurrent.Position());
-        PID.SetIsCheckJointLimit(false);
+        if (!IsHomed){
+            // ZC: might be redundant, because of the mechanical limit
+            CMN_LOG_RUN_ERROR << "Robot is not HOMED" << std::endl;
+        }else{
+            RobotCurrentState = STATE_ADAPTER;
+            AdapterStopwatch.Reset();
+            AdapterStopwatch.Start();
+            PID.GetPositionJoint(JointCurrent);
+            AdapterJointSet.ForceAssign(JointCurrent.Position());
+            PID.SetIsCheckJointLimit(false);
+        }
     }else{
         CMN_LOG_RUN_ERROR << "Adapter disengaged" << std::endl;
         RobotCurrentState = STATE_IDLE;
