@@ -163,13 +163,22 @@ void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesian
     if (RobotCurrentState == STATE_TELEOP){
         vctDoubleVec jointDesired;
         jointDesired.ForceAssign(JointCurrent.Position());
+        const double angle = jointDesired[7];
+        jointDesired.resize(7);
         Manipulator.InverseKinematics(jointDesired, newPosition.Goal());
+        jointDesired.resize(8);
+        jointDesired[7] = angle;
         JointDesired.Goal().ForceAssign(jointDesired);
+
+
         // note: this directly calls the lower level to set position,
         // maybe we should cache the request in this component and later
         // in the Run method push the request.  This way, only the latest
         // request would be pushed if multiple are queued.
         PID.SetPositionJoint(JointDesired);
+
+        CMN_LOG_RUN_ERROR << "STATE_TELEOP" << std::endl;
+
     }else{
         CMN_LOG_RUN_WARNING << "MTM not ready" << std::endl;
     }

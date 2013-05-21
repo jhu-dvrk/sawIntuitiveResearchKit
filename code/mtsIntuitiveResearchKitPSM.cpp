@@ -120,6 +120,11 @@ void mtsIntuitiveResearchKitPSM::Startup(void)
     IsHomed = false;
     IsAdapterEngaged = false;
     IsToolEngaged = false;
+
+    frame6to7.Assign(0.0, -1.0,  0.0, 0.0,
+                     0.0,  0.0,  1.0, 0.0102,
+                     -1.0, 0.0,  0.0, 0.0,
+                     0.0,  0.0,  0.0, 1.0);
 }
 
 void mtsIntuitiveResearchKitPSM::Run(void)
@@ -139,6 +144,8 @@ void mtsIntuitiveResearchKitPSM::Run(void)
     JointCurrent.Position()[2] = JointCurrent.Position()[2] / 1000.0; // ugly hack to convert mm to meters
     vctFrm4x4 position;
     position = Manipulator.ForwardKinematics(JointCurrent.Position());
+    position = position * frame6to7;
+
     position.Rotation().NormalizedSelf();
     CartesianCurrent.Position().From(position);
 
@@ -316,7 +323,17 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
         vctDoubleVec jointDesired;
         jointDesired.ForceAssign(JointCurrent.Position());
         jointDesired.resize(6);
-        Manipulator.InverseKinematics(jointDesired, newPosition.Goal());
+
+        // compute desired slave position
+        vctFrm4x4 newPositionFrm;
+        newPositionFrm.FromNormalized(newPosition.Goal());
+
+        vctMatRot3 newPositionRotation;
+        newPositionRotation.From(newPosition.Goal().Rotation());
+        newPositionRotation = newPositionRotation * frame6to7.Rotation().Inverse();
+        newPositionFrm.Rotation().FromNormalized(newPositionRotation);
+
+        Manipulator.InverseKinematics(jointDesired, newPositionFrm);
         // jointDesired[2] = jointDesired[2] / cmn180_PI * 1000.0; // ugly hack for translation   -   Zihan to check
         jointDesired[2] = jointDesired[2] * 1000.0; //ugly hack for translation
         jointDesired.resize(7);
@@ -377,6 +394,10 @@ void mtsIntuitiveResearchKitPSM::EventHandlerHome(void)
 
 void mtsIntuitiveResearchKitPSM::EventHandlerTeleop(void)
 {
+
+    // Anton: should not allow tele-op if tool in canula, i.e. j3 < 80 mm
+    // send error message asking user to insert tool manually.   This will require
+    // to have the Manipclutch working.
     if( (!IsAdapterEngaged) || (!IsToolEngaged) ){
         EventTriggers.RobotErrorMsg(mtsStdString("ERROR: Adapter or Tool NOT ready"));
     }else{

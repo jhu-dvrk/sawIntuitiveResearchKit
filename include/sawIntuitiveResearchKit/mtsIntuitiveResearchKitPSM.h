@@ -111,6 +111,7 @@ protected:
     prmPositionJointGet JointCurrent;
     prmPositionJointSet JointDesired;
     robManipulator Manipulator;
+    vctFrm4x4 frame6to7;
 
     PSM_STATE RobotCurrentState;
 
