@@ -73,6 +73,7 @@ protected:
         mtsFunctionVoid EnablePower;
         mtsFunctionVoid DisablePower;
         mtsFunctionVoid BiasEncoder;
+        mtsFunctionRead GetAnalogInputPosSI;
     } RobotIO;
 
     // Functions for events
@@ -86,6 +87,8 @@ protected:
     prmPositionJointGet JointCurrent;
     prmPositionJointSet JointDesired;
     robManipulator Manipulator;
+    vctDoubleVec AnalogInputPosSI;
+    double GripperPosition;
 
     MTM_STATE RobotCurrentState;
 

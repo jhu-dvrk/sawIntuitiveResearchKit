@@ -73,6 +73,7 @@ protected:
     void EventHandlerSUJClutch(const prmEventButton & button);
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
+    void SetGripperPosition(const double & gripperPosition);
     void SetRobotControlState(const mtsStdString & state);
 
     struct {

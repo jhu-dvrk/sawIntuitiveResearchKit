@@ -97,6 +97,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     if (prov) {
         prov->AddCommandReadState(this->StateTable, CartesianCurrent, "GetPositionCartesian");
         prov->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionCartesian, this, "SetPositionCartesian");
+        prov->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetGripperPosition, this, "SetGripperPosition");
 
         prov->AddCommandReadState(this->StateTable, JointCurrent, "GetPositionJoint");
 
@@ -340,19 +341,22 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
         // jointDesired[2] = jointDesired[2] / cmn180_PI * 1000.0; // ugly hack for translation   -   Zihan to check
         jointDesired[2] = jointDesired[2] * 1000.0; //ugly hack for translation
         jointDesired.resize(7);
-        jointDesired.Element(6) = 0.5; // temporary hack to set gripper opening
+        jointDesired.Element(6) = JointDesired.Goal().Element(6);
         JointDesired.Goal().ForceAssign(jointDesired);
         // note: this directly calls the lower level to set position,
         // maybe we should cache the request in this component and later
         // in the Run method push the request.  This way, only the latest
         // request would be pushed if multiple are queued.
         PID.SetPositionJoint(JointDesired);
-    }else{
+    } else {
         CMN_LOG_RUN_WARNING << "PSM not ready" << std::endl;
     }
 }
 
-
+void mtsIntuitiveResearchKitPSM::SetGripperPosition(const double & gripperPosition)
+{
+    JointDesired.Goal().Element(6) = gripperPosition;
+}
 
 void mtsIntuitiveResearchKitPSM::SetRobotControlState(const mtsStdString &state)
 {

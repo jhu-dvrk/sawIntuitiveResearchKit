@@ -45,6 +45,7 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
 void mtsIntuitiveResearchKitMTM::Init(void)
 {
     this->StateTable.AddData(CartesianCurrent, "CartesianPosition");
+    this->StateTable.AddData(GripperPosition, "GripperAngle");
 
     // Setup CISST Interface
     mtsInterfaceRequired * req;
@@ -62,13 +63,15 @@ void mtsIntuitiveResearchKitMTM::Init(void)
         req->AddFunction("EnablePower", RobotIO.EnablePower);
         req->AddFunction("DisablePower", RobotIO.DisablePower);
         req->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
+        req->AddFunction("GetAnalogInputPosSI", RobotIO.GetAnalogInputPosSI);
     }
-
 
     mtsInterfaceProvided * prov = AddInterfaceProvided("Robot");
     if (prov) {
         prov->AddCommandReadState(this->StateTable, CartesianCurrent, "GetPositionCartesian");
         prov->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetPositionCartesian, this, "SetPositionCartesian");
+
+        prov->AddCommandReadState(this->StateTable, GripperPosition, "GetGripperPosition");
 
         prov->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetRobotControlState,
                               this, "SetRobotControlState", mtsStdString());
@@ -107,6 +110,13 @@ void mtsIntuitiveResearchKitMTM::Run(void)
     position = Manipulator.ForwardKinematics(JointCurrent.Position());
     position.Rotation().NormalizedSelf();
     CartesianCurrent.Position().From(position);
+
+    executionResult = RobotIO.GetAnalogInputPosSI(AnalogInputPosSI);
+    if (!executionResult.IsOK()) {
+        CMN_LOG_CLASS_RUN_ERROR << "Call to GetAnalogInputPosSI failed \""
+                                << executionResult << "\"" << std::endl;
+    }
+    GripperPosition = AnalogInputPosSI.Element(7);
 
     switch (RobotCurrentState) {
     case STATE_TELEOP:
