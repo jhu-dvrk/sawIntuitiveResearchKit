@@ -46,6 +46,7 @@ mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicCons
 void mtsIntuitiveResearchKitPSM::Init(void)
 {
     this->StateTable.AddData(CartesianCurrent, "CartesianPosition");
+    this->StateTable.AddData(JointCurrent, "JointPosition");
 
     // Setup CISST Interface
     mtsInterfaceRequired * req;
@@ -96,6 +97,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     if (prov) {
         prov->AddCommandReadState(this->StateTable, CartesianCurrent, "GetPositionCartesian");
         prov->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionCartesian, this, "SetPositionCartesian");
+
+        prov->AddCommandReadState(this->StateTable, JointCurrent, "GetPositionJoint");
 
         prov->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetRobotControlState,
                               this, "SetRobotControlState", mtsStdString());

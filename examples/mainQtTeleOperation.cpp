@@ -197,7 +197,6 @@ int main(int argc, char ** argv)
     manager->AddComponent(console);
 
     // hack
-    osaSleep(2.0 * cmn_s);
     pidMaster->Create();
     pidSlave->Create();
     pidMaster->Start();
