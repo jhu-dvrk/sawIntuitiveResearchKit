@@ -196,12 +196,6 @@ int main(int argc, char ** argv)
     mtsIntuitiveResearchKitConsoleQtWidget * console = new mtsIntuitiveResearchKitConsoleQtWidget("console");
     manager->AddComponent(console);
 
-    // hack
-    pidMaster->Create();
-    pidSlave->Create();
-    pidMaster->Start();
-    pidSlave->Start();
-
     manager->Connect(master->GetName(), "PID", pidMaster->GetName(), "Controller");
     manager->Connect(slave->GetName(), "PID", pidSlave->GetName(), "Controller");
     manager->Connect(slave->GetName(), "Adapter", "io", slaveName + "-Adapter");
@@ -228,17 +222,19 @@ int main(int argc, char ** argv)
     manager->Connect(tele->GetName(), "ExecIn", slave->GetName(), "ExecOut");
 
     //-------------- create the components ------------------
-    manager->CreateAll();
-    manager->WaitForStateAll(mtsComponentState::READY, 2.0 * cmn_s);
+    io->CreateAndWait(2.0 * cmn_s); // this will also create the pids as they are in same thread
+    io->StartAndWait(2.0 * cmn_s);
+    pidMaster->StartAndWait(2.0 * cmn_s);
+    pidSlave->StartAndWait(2.0 * cmn_s);
 
-    // start the periodic Run
-    manager->StartAll();
+    // start all other components
+    manager->CreateAllAndWait(2.0 * cmn_s);
+    manager->StartAllAndWait(2.0 * cmn_s);
 
     // QtApplication will run in main thread and return control
     // when exited.
 
-    manager->KillAll();
-    manager->WaitForStateAll(mtsComponentState::FINISHED, 2.0 * cmn_s);
+    manager->KillAllAndWait(2.0 * cmn_s);
     manager->Cleanup();
 
     // delete dvgc robot
