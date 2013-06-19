@@ -26,7 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsQtApplication.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
-#include <sawRobotIO1394/mtsRobotIO1394QtManager.h>
+#include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
 #include <sawControllers/mtsPID.h>
 #include <sawControllers/mtsPIDQtWidget.h>
 
@@ -85,57 +85,57 @@ int main(int argc, char ** argv)
               << "Number of joints: " << numberOfJoints << std::endl
               << "FirewirePort: " << firewirePort << std::endl;
 
-    mtsManagerLocal * manager = mtsManagerLocal::GetInstance();
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
     // create a Qt application
     mtsQtApplication *qtAppTask = new mtsQtApplication("QtApplication", argc, argv);
     qtAppTask->Configure();
-    manager->AddComponent(qtAppTask);
+    componentManager->AddComponent(qtAppTask);
 
     // IO
     mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1 * cmn_ms, firewirePort);
     io->Configure(ioConfigFile);
-    manager->AddComponent(io);
+    componentManager->AddComponent(io);
 
-    mtsRobotIO1394QtManager * qtManager = new mtsRobotIO1394QtManager("qtManager");
-    manager->AddComponent(qtManager);
-    manager->Connect("qtManager","Configuration_Qt","io","Configuration");
-    qtManager->Configure();
+    mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");
+    componentManager->AddComponent(robotWidgetFactory);
+    componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "io", "Configuration");
+    robotWidgetFactory->Configure();
 
     // Qt PID Controller GUI
     mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI", numberOfJoints);
     pidGUI->Configure();
-    manager->AddComponent(pidGUI);
+    componentManager->AddComponent(pidGUI);
     mtsPID * pid = new mtsPID("pid", 1 * cmn_ms);
     pid->Configure(pidConfigFile);
-    manager->AddComponent(pid);
+    componentManager->AddComponent(pid);
     // connect pidGUI to pid
-    manager->Connect("pidGUI", "Controller", "pid", "Controller");
+    componentManager->Connect("pidGUI", "Controller", "pid", "Controller");
 
     // tie pid execution to io
-    manager->Connect("pid", "ExecIn", "io", "ExecOut");
+    componentManager->Connect("pid", "ExecIn", "io", "ExecOut");
     // connect pid to io
-    manager->Connect("pid", "RobotJointTorqueInterface", "io", armName);  // see const std::string defined before main()
+    componentManager->Connect("pid", "RobotJointTorqueInterface", "io", armName);  // see const std::string defined before main()
 
     //-------------- create the components ------------------
-    manager->CreateAll();
-    manager->WaitForStateAll(mtsComponentState::READY, 2.0 * cmn_s);
+    componentManager->CreateAll();
+    componentManager->WaitForStateAll(mtsComponentState::READY, 2.0 * cmn_s);
 
     // start the periodic Run
-    manager->StartAll();
+    componentManager->StartAll();
 
     // QtApplication will run in main thread and return control
     // when exited.
 
-    manager->KillAll();
-    manager->WaitForStateAll(mtsComponentState::FINISHED, 2.0 * cmn_s);
-    manager->Cleanup();
+    componentManager->KillAll();
+    componentManager->WaitForStateAll(mtsComponentState::FINISHED, 2.0 * cmn_s);
+    componentManager->Cleanup();
 
     // delete dvgc robot
     delete pid;
     delete pidGUI;
     delete io;
-    delete qtManager;
+    delete robotWidgetFactory;
 
     // stop all logs
     cmnLogger::Kill();

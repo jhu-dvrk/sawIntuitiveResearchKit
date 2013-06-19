@@ -28,7 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsQtApplication.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
-#include <sawRobotIO1394/mtsRobotIO1394QtManager.h>
+#include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
 #include <sawControllers/mtsPID.h>
 #include <sawControllers/mtsPIDQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
@@ -71,19 +71,15 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("K", "kinematic-slave",
                               "configuration file for slave kinematic (see cisstRobot, robManipulator)",
                               cmnCommandLineOptions::REQUIRED, &configFiles["kinematic-slave"]);
-
     options.AddOptionOneValue("n", "name-master",
                               "MTML or MTMR",
                               cmnCommandLineOptions::REQUIRED, &masterName);
-
     options.AddOptionOneValue("N", "name-slave",
                               "PSM1 or PSM2",
                               cmnCommandLineOptions::REQUIRED, &slaveName);
-
     options.AddOptionOneValue("f", "firewire",
                               "firewire port number(s)",
                               cmnCommandLineOptions::OPTIONAL, &firewirePort);
-
     options.AddOptionOneValue("g", "gcmip",
                               "global component manager IP address",
                               cmnCommandLineOptions::OPTIONAL, &gcmip);
@@ -110,116 +106,113 @@ int main(int argc, char ** argv)
     std::cout << "FirewirePort: " << firewirePort << std::endl;
 
     std::string processname = "dvTeleop";
-    mtsManagerLocal * manager = 0;
+    mtsManagerLocal * componentManager = 0;
     if (gcmip != "-1") {
         try {
-            manager = mtsManagerLocal::GetInstance(gcmip, processname);
+            componentManager = mtsManagerLocal::GetInstance(gcmip, processname);
         } catch(...) {
             std::cerr << "Failed to get GCM instance." << std::endl;
             return -1;
         }
     } else {
-        manager = mtsManagerLocal::GetInstance();
+        componentManager = mtsManagerLocal::GetInstance();
     }
-
 
     // create a Qt application
     mtsQtApplication *qtAppTask = new mtsQtApplication("QtApplication", argc, argv);
     qtAppTask->Configure();
-    manager->AddComponent(qtAppTask);
+    componentManager->AddComponent(qtAppTask);
 
     // IO
     mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1.0 * cmn_ms, firewirePort);
     io->Configure(configFiles["io-master"]);
     io->Configure(configFiles["io-slave"]);
-    manager->AddComponent(io);
+    componentManager->AddComponent(io);
     // connect ioGUIMaster to io
-    mtsRobotIO1394QtManager * qtManager = new mtsRobotIO1394QtManager("qtManager");
-    manager->AddComponent(qtManager);
-    manager->Connect("qtManager","Configuration_Qt","io","Configuration");
-    qtManager->Configure();
+    mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");
+    componentManager->AddComponent(robotWidgetFactory);
+    componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "io", "Configuration");
+    robotWidgetFactory->Configure();
 
     // PID Master
     mtsPIDQtWidget * pidMasterGUI = new mtsPIDQtWidget("PID Master", 8);
     pidMasterGUI->Configure();
-    manager->AddComponent(pidMasterGUI);
+    componentManager->AddComponent(pidMasterGUI);
     mtsPID * pidMaster = new mtsPID("pid-master", 1.0 * cmn_ms);
     pidMaster->Configure(configFiles["pid-master"]);
-    manager->AddComponent(pidMaster);
+    componentManager->AddComponent(pidMaster);
     // connect pidGUI to pid
-    manager->Connect(pidMasterGUI->GetName(), "Controller", pidMaster->GetName(), "Controller");
+    componentManager->Connect(pidMasterGUI->GetName(), "Controller", pidMaster->GetName(), "Controller");
 
     // PID Slave
     mtsPIDQtWidget * pidSlaveGUI = new mtsPIDQtWidget("PID Slave", 7);
     pidSlaveGUI->Configure();
-    manager->AddComponent(pidSlaveGUI);
+    componentManager->AddComponent(pidSlaveGUI);
     mtsPID * pidSlave = new mtsPID("pid-slave", 1.0 * cmn_ms);
     pidSlave->Configure(configFiles["pid-slave"]);
-    manager->AddComponent(pidSlave);
+    componentManager->AddComponent(pidSlave);
     // connect pidGUI to pid
-    manager->Connect(pidSlaveGUI->GetName(), "Controller", pidSlave->GetName(), "Controller");
+    componentManager->Connect(pidSlaveGUI->GetName(), "Controller", pidSlave->GetName(), "Controller");
 
     // MTM
     mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(masterName, 5.0 * cmn_ms);
     master->Configure(configFiles["kinematic-master"]);
-    manager->AddComponent(master);
-    manager->Connect(master->GetName(), "RobotIO", "io", masterName);
+    componentManager->AddComponent(master);
+    componentManager->Connect(master->GetName(), "RobotIO", "io", masterName);
 
     // PSM
     mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(slaveName, 5.0 * cmn_ms);
     slave->Configure(configFiles["kinematic-slave"]);
-    manager->AddComponent(slave);
-    manager->Connect(slave->GetName(), "RobotIO", "io", slaveName);
+    componentManager->AddComponent(slave);
+    componentManager->Connect(slave->GetName(), "RobotIO", "io", slaveName);
 
     // Teleoperation
     mtsTeleOperationQtWidget * teleGUI = new mtsTeleOperationQtWidget("teleGUI");
     teleGUI->Configure();
-    manager->AddComponent(teleGUI);
+    componentManager->AddComponent(teleGUI);
     mtsTeleOperation * tele = new mtsTeleOperation("tele", 5.0 * cmn_ms);
-    manager->AddComponent(tele);
+    componentManager->AddComponent(tele);
     // connect teleGUI to tele
-    manager->Connect("teleGUI", "TeleOperation", "tele", "Setting");
+    componentManager->Connect("teleGUI", "TeleOperation", "tele", "Setting");
 
     // TextToSpeech
     // ZC: make this optional based on CMake option (TODO)
     mtsTextToSpeech* textToSpeech = new mtsTextToSpeech;
     textToSpeech->AddInterfaceRequiredForEventString("ErrorMsg", "RobotErrorMsg");
-    manager->AddComponent(textToSpeech);
-    manager->Connect(textToSpeech->GetName(), "ErrorMsg", slave->GetName(), "Robot");
-
+    componentManager->AddComponent(textToSpeech);
+    componentManager->Connect(textToSpeech->GetName(), "ErrorMsg", slave->GetName(), "Robot");
 
     // connect interfaces
-    manager->Connect(pidMaster->GetName(), "RobotJointTorqueInterface", "io", masterName);
-    manager->Connect(pidSlave->GetName(), "RobotJointTorqueInterface", "io", slaveName);
+    componentManager->Connect(pidMaster->GetName(), "RobotJointTorqueInterface", "io", masterName);
+    componentManager->Connect(pidSlave->GetName(), "RobotJointTorqueInterface", "io", slaveName);
 
     // Qt console
     mtsIntuitiveResearchKitConsoleQtWidget * console = new mtsIntuitiveResearchKitConsoleQtWidget("console");
-    manager->AddComponent(console);
+    componentManager->AddComponent(console);
 
-    manager->Connect(master->GetName(), "PID", pidMaster->GetName(), "Controller");
-    manager->Connect(slave->GetName(), "PID", pidSlave->GetName(), "Controller");
-    manager->Connect(slave->GetName(), "Adapter", "io", slaveName + "-Adapter");
-    manager->Connect(slave->GetName(), "Tool", "io", slaveName + "-Tool");
-    manager->Connect(slave->GetName(), "ManipClutch", "io", slaveName + "-ManipClutch");
-    manager->Connect(slave->GetName(), "SUJClutch", "io", slaveName + "-SUJClutch");
-
+    componentManager->Connect(master->GetName(), "PID", pidMaster->GetName(), "Controller");
+    componentManager->Connect(slave->GetName(), "PID", pidSlave->GetName(), "Controller");
+    componentManager->Connect(slave->GetName(), "Adapter", "io", slaveName + "-Adapter");
+    componentManager->Connect(slave->GetName(), "Tool", "io", slaveName + "-Tool");
+    componentManager->Connect(slave->GetName(), "ManipClutch", "io", slaveName + "-ManipClutch");
+    componentManager->Connect(slave->GetName(), "SUJClutch", "io", slaveName + "-SUJClutch");
 
     // connect console to Master & Slave
-    manager->Connect("console", "MTM", master->GetName(), "Robot");
-    manager->Connect("console", "PSM", slave->GetName(), "Robot");
+    componentManager->Connect("console", "MTM", master->GetName(), "Robot");
+    componentManager->Connect("console", "PSM", slave->GetName(), "Robot");
 
     // connect teleop to Master + Slave + Clutch
-    manager->Connect("tele", "Master", master->GetName(), "Robot");
-    manager->Connect("tele", "Slave", slave->GetName(), "Robot");
-    manager->Connect("tele", "Clutch", "io", "CLUTCH");
+    componentManager->Connect("tele", "Master", master->GetName(), "Robot");
+    componentManager->Connect("tele", "Slave", slave->GetName(), "Robot");
+    componentManager->Connect("tele", "Clutch", "io", "CLUTCH");
 
     // execute in following order using a single thread
-    manager->Connect(pidMaster->GetName(), "ExecIn", "io", "ExecOut");
-    manager->Connect(pidSlave->GetName(), "ExecIn", "io", "ExecOut");
+    componentManager->Connect(pidMaster->GetName(), "ExecIn", "io", "ExecOut");
+    componentManager->Connect(pidSlave->GetName(), "ExecIn", "io", "ExecOut");
 
     // execute in following order using a single thread
-    manager->Connect(slave->GetName(), "ExecIn", master->GetName(), "ExecOut");
-    manager->Connect(tele->GetName(), "ExecIn", slave->GetName(), "ExecOut");
+    componentManager->Connect(slave->GetName(), "ExecIn", master->GetName(), "ExecOut");
+    componentManager->Connect(tele->GetName(), "ExecIn", slave->GetName(), "ExecOut");
 
     //-------------- create the components ------------------
     io->CreateAndWait(2.0 * cmn_s); // this will also create the pids as they are in same thread
@@ -228,14 +221,14 @@ int main(int argc, char ** argv)
     pidSlave->StartAndWait(2.0 * cmn_s);
 
     // start all other components
-    manager->CreateAllAndWait(2.0 * cmn_s);
-    manager->StartAllAndWait(2.0 * cmn_s);
+    componentManager->CreateAllAndWait(2.0 * cmn_s);
+    componentManager->StartAllAndWait(2.0 * cmn_s);
 
     // QtApplication will run in main thread and return control
     // when exited.
 
-    manager->KillAllAndWait(2.0 * cmn_s);
-    manager->Cleanup();
+    componentManager->KillAllAndWait(2.0 * cmn_s);
+    componentManager->Cleanup();
 
     // delete dvgc robot
     delete tele;
@@ -246,7 +239,7 @@ int main(int argc, char ** argv)
     delete pidMasterGUI;
     delete pidSlaveGUI;
     delete io;
-    delete qtManager;
+    delete robotWidgetFactory;
 
     // stop all logs
     cmnLogger::Kill();
