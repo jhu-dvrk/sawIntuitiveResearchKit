@@ -74,7 +74,7 @@ protected:
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     void SetGripperPosition(const double & gripperPosition);
-    void SetRobotControlState(const mtsStdString & state);
+    void SetRobotControlState(const std::string & state);
 
     struct {
         mtsFunctionWrite Enable;

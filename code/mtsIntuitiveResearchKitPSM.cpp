@@ -49,62 +49,62 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     this->StateTable.AddData(JointCurrent, "JointPosition");
 
     // Setup CISST Interface
-    mtsInterfaceRequired * req;
-    req = AddInterfaceRequired("PID");
-    if (req) {
-        req->AddFunction("Enable", PID.Enable);
-        req->AddFunction("GetPositionJoint", PID.GetPositionJoint);
-        req->AddFunction("SetPositionJoint", PID.SetPositionJoint);
-        req->AddFunction("SetIsCheckJointLimit", PID.SetIsCheckJointLimit);
+    mtsInterfaceRequired * interfaceRequired;
+    interfaceRequired = AddInterfaceRequired("PID");
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("Enable", PID.Enable);
+        interfaceRequired->AddFunction("GetPositionJoint", PID.GetPositionJoint);
+        interfaceRequired->AddFunction("SetPositionJoint", PID.SetPositionJoint);
+        interfaceRequired->AddFunction("SetIsCheckJointLimit", PID.SetIsCheckJointLimit);
     }
 
     // Robot IO
-    req = AddInterfaceRequired("RobotIO");
-    if (req) {
-        req->AddFunction("EnablePower", RobotIO.EnablePower);
-        req->AddFunction("DisablePower", RobotIO.DisablePower);
-        req->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
+    interfaceRequired = AddInterfaceRequired("RobotIO");
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("EnablePower", RobotIO.EnablePower);
+        interfaceRequired->AddFunction("DisablePower", RobotIO.DisablePower);
+        interfaceRequired->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
     }
 
     // Event Adapter engage: digital input button event from PSM
-    req = AddInterfaceRequired("Adapter");
-    if (req) {
-        req->AddFunction("GetButton", Adapter.GetButton);
-        req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerAdapter, this, "Button");
+    interfaceRequired = AddInterfaceRequired("Adapter");
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("GetButton", Adapter.GetButton);
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerAdapter, this, "Button");
     }
 
     // Event Tool engage: digital input button event from PSM
-    req = AddInterfaceRequired("Tool");
-    if (req) {
-        req->AddFunction("GetButton", Tool.GetButton);
-        req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerTool, this, "Button");
+    interfaceRequired = AddInterfaceRequired("Tool");
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("GetButton", Tool.GetButton);
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerTool, this, "Button");
     }
 
     // ManipClutch: digital input button event from PSM
-    req = AddInterfaceRequired("ManipClutch");
-    if (req) {
-        req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerManipClutch, this, "Button");
+    interfaceRequired = AddInterfaceRequired("ManipClutch");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerManipClutch, this, "Button");
     }
 
     // SUJClutch: digital input button event from PSM
-    req = AddInterfaceRequired("SUJClutch");
-    if (req) {
-        req->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch, this, "Button");
+    interfaceRequired = AddInterfaceRequired("SUJClutch");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch, this, "Button");
     }
 
 
-    mtsInterfaceProvided * prov = AddInterfaceProvided("Robot");
-    if (prov) {
-        prov->AddCommandReadState(this->StateTable, CartesianCurrent, "GetPositionCartesian");
-        prov->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionCartesian, this, "SetPositionCartesian");
-        prov->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetGripperPosition, this, "SetGripperPosition");
+    mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
+    if (interfaceProvided) {
+        interfaceProvided->AddCommandReadState(this->StateTable, CartesianCurrent, "GetPositionCartesian");
+        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionCartesian, this, "SetPositionCartesian");
+        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetGripperPosition, this, "SetGripperPosition");
 
-        prov->AddCommandReadState(this->StateTable, JointCurrent, "GetPositionJoint");
+        interfaceProvided->AddCommandReadState(this->StateTable, JointCurrent, "GetPositionJoint");
 
-        prov->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetRobotControlState,
-                              this, "SetRobotControlState", mtsStdString());
-        prov->AddEventWrite(EventTriggers.RobotStatusMsg, "RobotStatusMsg", mtsStdString());
-        prov->AddEventWrite(EventTriggers.RobotErrorMsg, "RobotErrorMsg", mtsStdString());
+        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetRobotControlState,
+                                           this, "SetRobotControlState", std::string(""));
+        interfaceProvided->AddEventWrite(EventTriggers.RobotStatusMsg, "RobotStatusMsg", std::string(""));
+        interfaceProvided->AddEventWrite(EventTriggers.RobotErrorMsg, "RobotErrorMsg", std::string(""));
     }
 }
 
@@ -136,7 +136,6 @@ void mtsIntuitiveResearchKitPSM::Run(void)
     ProcessQueuedEvents();
 
     // ------ Start ----------------------
-
     mtsExecutionResult executionResult;
     executionResult = PID.GetPositionJoint(JointCurrent);
     if (!executionResult.IsOK()) {
@@ -144,7 +143,6 @@ void mtsIntuitiveResearchKitPSM::Run(void)
                                 << executionResult << "\"" << std::endl;
     }    
 
-    // JointCurrent.Position()[2] = JointCurrent.Position()[2] * cmn180_PI / 1000.0; // ugly hack to convert radians to degrees to meters   - Zihan to check
     JointCurrent.Position()[2] = JointCurrent.Position()[2] / 1000.0; // ugly hack to convert mm to meters
     vctFrm4x4 position;
     position = Manipulator.ForwardKinematics(JointCurrent.Position());
@@ -160,44 +158,43 @@ void mtsIntuitiveResearchKitPSM::Run(void)
 
     case STATE_HOME:
     {
-        vctDoubleVec HomeError;
-        vctDoubleVec HomeErrorTolerance;
+        vctDoubleVec homeError;
+        vctDoubleVec homeErrorTolerance;
 
         // check position
         PID.GetPositionJoint(JointCurrent);
-        HomeError.SetSize(HomeJointSet.size());
-        HomeError.DifferenceOf(HomeJointSet, JointCurrent.Position());
-        HomeError.AbsSelf();
+        homeError.SetSize(HomeJointSet.size());
+        homeError.DifferenceOf(HomeJointSet, JointCurrent.Position());
+        homeError.AbsSelf();
 
-        HomeErrorTolerance.SetSize(HomeJointSet.size());
-        HomeErrorTolerance.SetAll(2.0 * cmnPI_180);
-        HomeErrorTolerance[2] = 1.0;  // 1mm
+        homeErrorTolerance.SetSize(HomeJointSet.size());
+        homeErrorTolerance.SetAll(2.0 * cmnPI_180);
+        homeErrorTolerance[2] = 1.0;  // 1mm
         IsHomed = true;
-        for(size_t i = 0; i < HomeJointSet.size(); i++){
-            if ( HomeError[i] > HomeErrorTolerance[i]){
+        for (size_t i = 0; i < HomeJointSet.size(); i++) {
+            if (homeError[i] > homeErrorTolerance[i]) {
                 IsHomed = false;
             }
         }
-        if(IsHomed){
+        if (IsHomed) {
             RobotCurrentState = STATE_IDLE;
             EventTriggers.RobotStatusMsg(mtsStdString("PSM Homed"));
 
             Adapter.GetButton(Adapter.IsPresent);
             Tool.GetButton(Tool.IsPresent);
-            std::cerr << "HOME DONE" << std::endl;
 
-            if(Adapter.IsPresent && !Tool.IsPresent){
+            if (Adapter.IsPresent && !Tool.IsPresent) {
                 prmEventButton button;
                 button.Type() = prmEventButton::PRESSED;
                 EventHandlerAdapter(button);
-            }else if (Adapter.IsPresent && Tool.IsPresent){
+            } else if (Adapter.IsPresent && Tool.IsPresent) {
                 IsAdapterEngaged = true;
                 prmEventButton button;
                 button.Type() = prmEventButton::PRESSED;
                 EventHandlerTool(button);
             }
 
-        }else{
+        } else {
             JointDesired.Goal().ForceAssign(HomeJointSet);
             PID.SetPositionJoint(JointDesired);
         }
@@ -304,10 +301,9 @@ void mtsIntuitiveResearchKitPSM::Run(void)
     case STATE_IDLE:
         break;
     default:
-        CMN_LOG_RUN_ERROR << "Unknown control state" << std::endl;
+        CMN_LOG_CLASS_RUN_ERROR << "Unknown control state" << std::endl;
         break;
     }
-
 
 
     // ------ Stop call teleop ------------
@@ -323,7 +319,7 @@ void mtsIntuitiveResearchKitPSM::Cleanup(void)
 
 void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (RobotCurrentState == STATE_TELEOP){
+    if (RobotCurrentState == STATE_TELEOP) {
         vctDoubleVec jointDesired;
         jointDesired.ForceAssign(JointCurrent.Position());
         jointDesired.resize(6);
@@ -358,28 +354,23 @@ void mtsIntuitiveResearchKitPSM::SetGripperPosition(const double & gripperPositi
     JointDesired.Goal().Element(6) = gripperPosition;
 }
 
-void mtsIntuitiveResearchKitPSM::SetRobotControlState(const mtsStdString &state)
+void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
 {
-    if (RobotCurrentState != STATE_IDLE){
-        EventTriggers.RobotErrorMsg(
-                    mtsStdString("ERROR: PSM NOT in IDLE mode, Action cancelled"));
+    if (RobotCurrentState != STATE_IDLE) {
+        EventTriggers.RobotErrorMsg(std::string("ERROR: PSM NOT in IDLE mode, Action cancelled"));
         return;
     }
 
-    if (state.Data == "Start"){
+    if (state == "Start"){
         std::cout << "YES Start" << std::endl;
     }
-    else if (state.Data == "Home"){
+    else if (state == "Home"){
         EventHandlerHome();
     }
-    else if (state.Data == "Teleop"){
+    else if (state == "Teleop"){
         EventHandlerTeleop();
     }
 }
-
-
-// -------------- Event Handlers ------------------------------
-
 
 void mtsIntuitiveResearchKitPSM::EventHandlerHome(void)
 {
@@ -405,9 +396,9 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTeleop(void)
     // Anton: should not allow tele-op if tool in canula, i.e. j3 < 80 mm
     // send error message asking user to insert tool manually.   This will require
     // to have the Manipclutch working.
-    if( (!IsAdapterEngaged) || (!IsToolEngaged) ){
+    if ((!IsAdapterEngaged) || (!IsToolEngaged)) {
         EventTriggers.RobotErrorMsg(mtsStdString("ERROR: Adapter or Tool NOT ready"));
-    }else{
+    } else {
         RobotCurrentState = STATE_TELEOP;
         // Move J3 to > 80 mm
         PID.GetPositionJoint(JointCurrent);
@@ -417,15 +408,14 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTeleop(void)
     }
 }
 
-
 void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton &button)
 {
-    if(button.Type() == prmEventButton::PRESSED){
-        CMN_LOG_RUN_ERROR << "Adapter engaged" << std::endl;
-        if (!IsHomed){
+    if (button.Type() == prmEventButton::PRESSED) {
+        CMN_LOG_CLASS_RUN_VERBOSE << "EventHandlerAdapter: adapter engaged" << std::endl;
+        if (!IsHomed) {
             // ZC: might be redundant, because of the mechanical limit
-            CMN_LOG_RUN_ERROR << "Robot is not HOMED" << std::endl;
-        }else{
+            CMN_LOG_CLASS_RUN_WARNING << "EventHandlerAdapter: robot is not HOMED" << std::endl;
+        } else {
             RobotCurrentState = STATE_ADAPTER;
             AdapterStopwatch.Reset();
             AdapterStopwatch.Start();
@@ -433,22 +423,21 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton &butto
             AdapterJointSet.ForceAssign(JointCurrent.Position());
             PID.SetIsCheckJointLimit(false);
         }
-    }else{
-        CMN_LOG_RUN_ERROR << "Adapter disengaged" << std::endl;
+    } else {
+        CMN_LOG_CLASS_RUN_VERBOSE << "EventHandlerAdapter: adapter disengaged" << std::endl;
         RobotCurrentState = STATE_IDLE;
         AdapterStopwatch.Reset();
     }
 }
 
-
 void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton &button)
 {
-    if(button.Type() == prmEventButton::PRESSED){
+    if (button.Type() == prmEventButton::PRESSED) {
         CMN_LOG_RUN_ERROR << "Tool engaged" << std::endl;
-        if (!IsAdapterEngaged){
+        if (!IsAdapterEngaged) {
             // ZC: might be redundant, because of the mechanical limit
-            CMN_LOG_RUN_ERROR << "Adapter is not engaged" << std::endl;
-        }else{
+            CMN_LOG_CLASS_RUN_ERROR << "EventHandlerTool: adapter is not engaged" << std::endl;
+        } else {
             RobotCurrentState = STATE_TOOL;
             ToolStopwatch.Reset();
             ToolStopwatch.Start();
@@ -456,8 +445,8 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton &button)
             ToolJointSet.ForceAssign(JointCurrent.Position());
             PID.SetIsCheckJointLimit(false);
         }
-    }else{
-        CMN_LOG_RUN_ERROR << "Tool disengaged" << std::endl;
+    } else {
+        CMN_LOG_CLASS_RUN_VERBOSE << "EventHandlerTool: tool disengaged" << std::endl;
         RobotCurrentState = STATE_IDLE;
         ToolStopwatch.Reset();
     }
@@ -465,25 +454,18 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton &button)
 
 void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton &button)
 {
-    if(button.Type() == prmEventButton::PRESSED){
-        CMN_LOG_RUN_ERROR << "ManipClutch press" << std::endl;
-    }else{
-        CMN_LOG_RUN_ERROR << "ManipClutch release" << std::endl;
+    if (button.Type() == prmEventButton::PRESSED) {
+        CMN_LOG_CLASS_RUN_ERROR << "ManipClutch press" << std::endl;
+    } else {
+        CMN_LOG_CLASS_RUN_ERROR << "ManipClutch release" << std::endl;
     }
 }
-
 
 void mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch(const prmEventButton &button)
 {
-    if(button.Type() == prmEventButton::PRESSED){
-        CMN_LOG_RUN_ERROR << "SUJClutch press" << std::endl;
-    }else{
-        CMN_LOG_RUN_ERROR << "SUJClutch release" << std::endl;
+    if (button.Type() == prmEventButton::PRESSED) {
+        CMN_LOG_CLASS_RUN_ERROR << "SUJClutch press" << std::endl;
+    } else {
+        CMN_LOG_CLASS_RUN_ERROR << "SUJClutch release" << std::endl;
     }
 }
-
-
-
-
-
-

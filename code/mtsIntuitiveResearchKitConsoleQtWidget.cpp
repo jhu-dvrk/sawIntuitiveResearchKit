@@ -90,7 +90,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
     }
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetStateButton(QAbstractButton *radioButton)
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetStateButton(QAbstractButton * radioButton)
 {
     std::cout << "---- Radio Button " << radioButton->text().toStdString() << std::endl;
     std::string state = radioButton->text().toStdString();
