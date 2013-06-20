@@ -18,13 +18,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-
 // system include
 #include <iostream>
-
-// Qt include
-#include <QString>
-#include <QtGui>
 
 // cisst
 #include <cisstMultiTask/mtsInterfaceRequired.h>
@@ -44,25 +39,23 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
     }
 #endif
 
-
-    mtsInterfaceRequired* reqPSM = AddInterfaceRequired("PSM");
-    if (reqPSM) {
-        reqPSM->AddFunction("SetRobotControlState", PSM.SetRobotControlState);
-        reqPSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler,
-                                     this, "RobotStatusMsg");
-        reqPSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandler,
-                                     this, "RobotErrorMsg");
+    mtsInterfaceRequired * interfaceRequirePSM = AddInterfaceRequired("PSM");
+    if (interfaceRequirePSM) {
+        interfaceRequirePSM->AddFunction("SetRobotControlState", PSM.SetRobotControlState);
+        interfaceRequirePSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler,
+                                                  this, "RobotStatusMsg");
+        interfaceRequirePSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandler,
+                                                  this, "RobotErrorMsg");
     }
 
-    mtsInterfaceRequired* reqMTM = AddInterfaceRequired("MTM");
-    if (reqMTM) {
-        reqMTM->AddFunction("SetRobotControlState", MTM.SetRobotControlState);
-        reqMTM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler,
-                                     this, "RobotStatusMsg");
-        reqMTM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandler,
-                                     this, "RobotErrorMsg");
+    mtsInterfaceRequired * interfaceRequiredMTM = AddInterfaceRequired("MTM");
+    if (interfaceRequiredMTM) {
+        interfaceRequiredMTM->AddFunction("SetRobotControlState", MTM.SetRobotControlState);
+        interfaceRequiredMTM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler,
+                                                   this, "RobotStatusMsg");
+        interfaceRequiredMTM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandler,
+                                                   this, "RobotErrorMsg");
     }
-
 
     setupUi();
 }
@@ -80,16 +73,24 @@ void mtsIntuitiveResearchKitConsoleQtWidget::Startup(void)
 
 void mtsIntuitiveResearchKitConsoleQtWidget::Cleanup(void)
 {
+    this->hide();
     CMN_LOG_CLASS_INIT_VERBOSE << "mtsIntuitiveResearchKitConsoleQtWidget::Cleanup" << std::endl;
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
 {
-    event->accept();
+    int answer = QMessageBox::warning(this, tr("mtsIntuitiveResearchKitConsoleQtWidget"),
+                                      tr("Do you really want to quit this application?"),
+                                      QMessageBox::No | QMessageBox::Yes);
+    if (answer == QMessageBox::Yes) {
+        event->accept();
+        QCoreApplication::exit();
+    } else {
+        event->ignore();
+    }
 }
 
-
-void mtsIntuitiveResearchKitConsoleQtWidget::slot_SetStateButton(QAbstractButton *radioButton)
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetStateButton(QAbstractButton *radioButton)
 {
     std::cout << "---- Radio Button " << radioButton->text().toStdString() << std::endl;
     std::string state = radioButton->text().toStdString();
@@ -97,15 +98,12 @@ void mtsIntuitiveResearchKitConsoleQtWidget::slot_SetStateButton(QAbstractButton
     MTM.SetRobotControlState(mtsStdString(state));
 }
 
-
-
-
 void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 {
     QGridLayout * frameLayout = new QGridLayout;
 
-    CurrentStateLabel = new QLabel("undefined");
-    frameLayout->addWidget(CurrentStateLabel, 0, 0);
+    QLabelCurrentState = new QLabel("undefined");
+    frameLayout->addWidget(QLabelCurrentState, 0, 0);
 
     // MTM
     QGroupBox * groupBox = new QGroupBox("Desired state");
@@ -116,36 +114,31 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 	group->addButton(homeState);
 	group->addButton(teleOpMode);
 	group->setExclusive(true);
-    QVBoxLayout *vbox = new QVBoxLayout;
+    QVBoxLayout * vbox = new QVBoxLayout;
     vbox->addWidget(homeState);
     vbox->addWidget(teleOpMode);
     vbox->addStretch(1);
     groupBox->setLayout(vbox);
     frameLayout->addWidget(groupBox, 1, 0);
 
-    QVBoxLayout* mainLayout = new QVBoxLayout;
+    QVBoxLayout * mainLayout = new QVBoxLayout;
     mainLayout->addLayout(frameLayout);
     setLayout(mainLayout);
 
     setWindowTitle("Intuitive Research Kit");
     resize(sizeHint());
 
-//    connect(group, SIGNAL(buttonClicked(int)), this, SLOT(slot_SetStateButton(int)));
-
     connect(group, SIGNAL(buttonClicked(QAbstractButton*)),
-            this, SLOT(slot_SetStateButton(QAbstractButton*)));
+            this, SLOT(SlotSetStateButton(QAbstractButton*)));
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandler(const std::string & newState)
 {
-    CurrentStateLabel->setText(newState.c_str());
+    QLabelCurrentState->setText(newState.c_str());
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandler(const std::string &newMsg)
+void mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandler(const std::string & newMsg)
 {
     // ZC: temp for testing
     std::cerr << newMsg << std::endl;
 }
-
-
-

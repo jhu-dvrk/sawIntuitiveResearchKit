@@ -43,7 +43,7 @@ public:
 
 
 private slots:
-    void slot_SetStateButton(QAbstractButton* radioButton);
+    void SlotSetStateButton(QAbstractButton* radioButton);
 
 protected:
     void closeEvent(QCloseEvent * event);
@@ -65,7 +65,7 @@ protected:
     void StateMsgEventHandler(const std::string & newState);
     void ErrorMsgEventHandler(const std::string & newMsg);
 
-    QLabel * CurrentStateLabel;    
+    QLabel * QLabelCurrentState;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsoleQtWidget);
