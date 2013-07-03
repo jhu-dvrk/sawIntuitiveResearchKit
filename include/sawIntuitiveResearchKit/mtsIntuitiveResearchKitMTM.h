@@ -28,12 +28,16 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstRobot/robManipulator.h>
+#include <cisstRobot/robQuintic.h>
 
 class mtsIntuitiveResearchKitMTM: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
+
+    static const size_t NumberOfJoints = 8;
+
     mtsIntuitiveResearchKitMTM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitMTM() {}
@@ -45,20 +49,42 @@ public:
 
 protected:
 
-    enum MTM_STATE {
-        STATE_HOME = 0,
-        STATE_TELEOP,
-        STATE_IDLE
+    enum RobotStateType {
+        MTM_UNINITIALIZED, /*! State when constructed */
+        MTM_HOMING_POWERING, /*! Turn power on, calibrate encoders and current */
+        MTM_HOMING_CALIBRATING_POTS, /*! Calibrate using pots and move to zero position for all joints except last one */
+        MTM_HOMING_CALIBRATING_LIMITS, /*! Calibrate last joint using hardware limit and tracking errors. */
+        MTM_READY,
+        MTM_POSITION_CARTESIAN
     };
 
-
     void Init(void);
-    void EventHandlerHome(void);
-    void EventHandlerTeleop(void);
 
+    /*! Get data from the PID level based on current state. */
+    void GetRobotData(void);
+
+    /*! Verify that the state transition is possible, initialize global
+      variables for the desired state and finally set the state. */
+    void SetState(const RobotStateType & newState);
+
+    /*! Homing procedure, will check the homing state and call the required method. */
+    void RunHoming(void);
+
+    /*! Homing procedure, power the robot and initial current and encoder calibration. */
+    void RunHomingPower(void);
+
+    /*! Homing procedure, home all joints except last one using potentiometers as reference. */
+    void RunHomingCalibrateOnPots(void);
+
+    /*! Homing procedure, calibrate last joint based on hardware limits. */
+    void RunHomingCalibrateOnLimits(void);
+
+    /*! Ready state. */
+    void RunReady(void);
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     void SetRobotControlState(const std::string & state);
+
 
     struct {
         mtsFunctionWrite Enable;
@@ -73,6 +99,8 @@ protected:
         mtsFunctionVoid EnablePower;
         mtsFunctionVoid DisablePower;
         mtsFunctionVoid BiasEncoder;
+        mtsFunctionWrite BiasCurrent;
+        mtsFunctionWrite SetActuatorCurrent;
         mtsFunctionRead GetAnalogInputPosSI;
     } RobotIO;
 
@@ -90,9 +118,14 @@ protected:
     vctDoubleVec AnalogInputPosSI;
     double GripperPosition;
 
-    MTM_STATE RobotCurrentState;
+    RobotStateType RobotState;
+
+    robQuintic * Trajectory;
 
     // Home Action
+    double RunHomingPowerTimer;
+    bool RunHomingPowerRequested, RunHomingPowerCurrentBiasRequested;
+    bool RunHomingCalibrateOnPotsStarted;
     vctDoubleVec HomeJointSet;
     bool IsHomed;
 };

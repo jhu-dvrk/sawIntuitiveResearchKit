@@ -44,6 +44,9 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
 
 void mtsIntuitiveResearchKitMTM::Init(void)
 {
+    SetState(MTM_UNINITIALIZED);
+    Trajectory = 0;
+
     this->StateTable.AddData(CartesianCurrent, "CartesianPosition");
     this->StateTable.AddData(GripperPosition, "GripperAngle");
 
@@ -63,6 +66,8 @@ void mtsIntuitiveResearchKitMTM::Init(void)
         interfaceRequired->AddFunction("EnablePower", RobotIO.EnablePower);
         interfaceRequired->AddFunction("DisablePower", RobotIO.DisablePower);
         interfaceRequired->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
+        interfaceRequired->AddFunction("BiasCurrent", RobotIO.BiasCurrent);
+        interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
         interfaceRequired->AddFunction("GetAnalogInputPosSI", RobotIO.GetAnalogInputPosSI);
     }
 
@@ -70,9 +75,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     if (interfaceProvided) {
         interfaceProvided->AddCommandReadState(this->StateTable, CartesianCurrent, "GetPositionCartesian");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetPositionCartesian, this, "SetPositionCartesian");
-
         interfaceProvided->AddCommandReadState(this->StateTable, GripperPosition, "GetGripperPosition");
-
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetRobotControlState,
                                            this, "SetRobotControlState", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotStatusMsg, "RobotStatusMsg", std::string(""));
@@ -92,68 +95,31 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
 
 void mtsIntuitiveResearchKitMTM::Startup(void)
 {
-    RobotCurrentState = STATE_IDLE;
-    IsHomed = false;
+    RobotState = MTM_UNINITIALIZED;
 }
 
 void mtsIntuitiveResearchKitMTM::Run(void)
 {
     ProcessQueuedEvents();
 
-    mtsExecutionResult executionResult;
-    executionResult = PID.GetPositionJoint(JointCurrent);
-    if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Call to GetJointPosition failed \""
-                                << executionResult << "\"" << std::endl;
-    }
-    vctFrm4x4 position;
-    position = Manipulator.ForwardKinematics(JointCurrent.Position());
-    position.Rotation().NormalizedSelf();
-    CartesianCurrent.Position().From(position);
+    GetRobotData();
 
-    executionResult = RobotIO.GetAnalogInputPosSI(AnalogInputPosSI);
-    if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Call to GetAnalogInputPosSI failed \""
-                                << executionResult << "\"" << std::endl;
-    }
-    GripperPosition = AnalogInputPosSI.Element(7);
-
-    switch (RobotCurrentState) {
-    case STATE_TELEOP:
+    switch (RobotState) {
+    case MTM_UNINITIALIZED:
         break;
-    case STATE_HOME:
-    {
-        // ZC: assume no adapter & no tool for now
-        vctDoubleVec homeError;
-        vctDoubleVec homeErrorTolerance;
-
-        // check position
-        PID.GetPositionJoint(JointCurrent);
-        homeError.SetSize(HomeJointSet.size());
-        homeError.DifferenceOf(HomeJointSet, JointCurrent.Position());
-        homeError.AbsSelf();
-
-        homeErrorTolerance.SetSize(HomeJointSet.size());
-        homeErrorTolerance.SetAll(2.0 * cmnPI_180); // 2 deg tolerence
-        IsHomed = true;
-        for (size_t i = 0; i < HomeJointSet.size(); i++) {
-            if (homeError[i] > homeErrorTolerance[i]) {
-                IsHomed = false;
-            }
-        }
-        if (IsHomed) {
-            RobotCurrentState = STATE_IDLE;
-            EventTriggers.RobotStatusMsg(mtsStdString("MTM Homed"));
-        } else {
-            JointDesired.Goal().ForceAssign(HomeJointSet);
-            PID.SetPositionJoint(JointDesired);
-        }
-    }
+    case MTM_HOMING_POWERING:
+        RunHomingPower();
         break;
-    case STATE_IDLE:
+    case MTM_HOMING_CALIBRATING_POTS:
+        RunHomingCalibrateOnPots();
+        break;
+    case MTM_HOMING_CALIBRATING_LIMITS:
+        RunHomingCalibrateOnLimits();
+        break;
+    case MTM_READY:
+    case MTM_POSITION_CARTESIAN:
         break;
     default:
-        CMN_LOG_CLASS_RUN_ERROR << "Unknown control state" << std::endl;
         break;
     }
 
@@ -166,9 +132,174 @@ void mtsIntuitiveResearchKitMTM::Cleanup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
 }
 
+void mtsIntuitiveResearchKitMTM::GetRobotData(void)
+{
+    // we can start reporting some joint values after the robot is powered
+    if (this->RobotState > MTM_HOMING_POWERING) {
+        mtsExecutionResult executionResult;
+        executionResult = PID.GetPositionJoint(JointCurrent);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << "GetRobotData: call to GetJointPosition failed \""
+                                    << executionResult << "\"" << std::endl;
+            return;
+        }
+        // when the robot is ready, we can comput cartesian position
+        if (this->RobotState >= MTM_READY) {
+            vctFrm4x4 position;
+            position = Manipulator.ForwardKinematics(JointCurrent.Position());
+            position.Rotation().NormalizedSelf();
+            CartesianCurrent.Position().From(position);
+        } else {
+            CartesianCurrent.Position().Assign(vctFrm3::Identity());
+        }
+        // get gripper based on analog inputs
+        executionResult = RobotIO.GetAnalogInputPosSI(AnalogInputPosSI);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << "GetRobotData: call to GetAnalogInputPosSI failed \""
+                                    << executionResult << "\"" << std::endl;
+            return;
+        }
+        GripperPosition = AnalogInputPosSI.Element(7);
+    } else {
+        JointCurrent.Position().Zeros();
+    }
+}
+
+void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
+{
+    switch (newState) {
+    case MTM_UNINITIALIZED:
+        break;
+    case MTM_HOMING_POWERING:
+        RunHomingPowerTimer = 0.0;
+        RunHomingPowerRequested = false;
+        RunHomingPowerCurrentBiasRequested = false;
+        EventTriggers.RobotStatusMsg(this->GetName() + " powering");
+        break;
+    case MTM_HOMING_CALIBRATING_POTS:
+        RunHomingCalibrateOnPotsStarted = false;
+        this->EventTriggers.RobotStatusMsg(this->GetName() + " calibrating pots");
+        break;
+    case MTM_HOMING_CALIBRATING_LIMITS:
+        break;
+    case MTM_READY:
+        break;
+    case MTM_POSITION_CARTESIAN:
+        if (this->RobotState < MTM_READY) {
+            EventTriggers.RobotErrorMsg(this->GetName() + " is not homed");
+            return;
+        }
+        EventTriggers.RobotStatusMsg(this->GetName() + " position cartesian");
+        break;
+    default:
+        break;
+    }
+    RobotState = newState;
+}
+
+void mtsIntuitiveResearchKitMTM::RunHomingPower(void)
+{
+    const double currentTime = this->StateTable.GetTic();
+    // first, request power to be turned on
+    if (!RunHomingPowerRequested) {
+        RobotIO.BiasEncoder();
+        RunHomingPowerTimer = currentTime;
+        // make sure the PID are not sending currents
+        PID.Enable(false);
+        // pre-load the boards with zero current
+        RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints, 0.0));
+        // enable power and set a flags to move to next step
+        RobotIO.EnablePower();
+        RunHomingPowerRequested = true;
+        RunHomingPowerCurrentBiasRequested = false;
+        return;
+    }
+
+    // second, request current bias, we leave 1 second for power to stabilize
+    if (!RunHomingPowerCurrentBiasRequested
+        && ((currentTime - RunHomingPowerTimer) > 1.0 * cmn_s)) {
+        RunHomingPowerTimer = currentTime;
+        RobotIO.BiasCurrent(500); // 500 samples, this API should be changed to use time
+        RunHomingPowerCurrentBiasRequested = true;
+        return;
+    }
+
+    // wait another second to be ready
+    if ((currentTime - RunHomingPowerTimer) > 1.0 * cmn_s) {
+        this->RobotState = MTM_HOMING_CALIBRATING_POTS;
+        this->EventTriggers.RobotStatusMsg(this->GetName() + " powered");
+    }
+}
+
+void mtsIntuitiveResearchKitMTM::RunHomingCalibrateOnPots(void)
+{
+    const double currentTime = this->StateTable.GetTic();
+
+    if (!RunHomingCalibrateOnPotsStarted) {
+        // enable PID and start from current position
+        JointDesired.Goal().ForceAssign(JointCurrent.Position());
+        PID.SetPositionJoint(JointDesired);
+        PID.Enable(true);
+
+        // compute joint goal position
+        HomeJointSet.SetSize(NumberOfJoints);
+        HomeJointSet.SetAll(0.0);
+        // last joint is not motorized and we don't want to move the last motorized so - 2
+        HomeJointSet.Element(NumberOfJoints - 2) = JointCurrent.Position().Element(NumberOfJoints - 2);
+        // set flag to indicate that homing has started
+        RunHomingCalibrateOnPotsStarted = true;
+
+        // this is to be replaced by trajectory generator
+#ifdef OLD_PID
+        JointDesired.Goal().ForceAssign(HomeJointSet);
+        PID.SetPositionJoint(JointDesired);
+#else
+        vctDoubleVec zeros(NumberOfJoints, 0.0);
+        if (Trajectory) {
+            delete Trajectory;
+        }
+        Trajectory = new robQuintic(currentTime,
+                                    JointCurrent.Position(), zeros, zeros,
+                                    currentTime + 2.0 * cmn_s,
+                                    HomeJointSet, zeros, zeros);
+#endif
+    }
+
+    // compute a new set point based on time
+    vctDoubleVec desiredJointPosition(NumberOfJoints);
+    vctDoubleVec desiredJointVelocity(NumberOfJoints);
+    vctDoubleVec desiredJointAcceleration(NumberOfJoints);
+
+    if (currentTime <= Trajectory->StopTime()) {
+        Trajectory->Evaluate(currentTime, desiredJointPosition, desiredJointVelocity, desiredJointAcceleration);
+        JointDesired.Goal().ForceAssign(desiredJointPosition);
+        PID.SetPositionJoint(JointDesired);
+    }
+
+    // check position
+    vctDoubleVec homeError;
+    vctDoubleVec homeErrorTolerance;
+    homeError.SetSize(NumberOfJoints);
+    homeError.DifferenceOf(HomeJointSet, JointCurrent.Position());
+    homeError.resize(NumberOfJoints - 1);
+    homeError.AbsSelf();
+
+    homeErrorTolerance.SetSize(NumberOfJoints - 1);
+    homeErrorTolerance.SetAll(2.0 * cmnPI_180); // 2 deg tolerence
+
+    bool isHomed = !homeError.ElementwiseGreaterOrEqual(homeErrorTolerance).Any();
+    if (isHomed) {
+        SetState(MTM_READY);
+    }
+}
+
+void mtsIntuitiveResearchKitMTM::RunHomingCalibrateOnLimits(void)
+{
+}
+
 void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (RobotCurrentState == STATE_TELEOP) {
+    if (RobotState == MTM_POSITION_CARTESIAN) {
         vctDoubleVec jointDesired;
         jointDesired.ForceAssign(JointCurrent.Position());
         const double angle = jointDesired[7];
@@ -190,53 +321,11 @@ void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesian
 
 void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
 {
-    if (RobotCurrentState != STATE_IDLE) {
-        EventTriggers.RobotErrorMsg(std::string("ERROR: MTM NOT in IDLE mode, Action cancelled"));
-        return;
-    }
-
-    if (state == "Start") {
-        std::cout << "YES Start" << std::endl;
-    }
-    else if (state == "Home"){
-        EventHandlerHome();
-    }
-    else if (state == "Teleop"){
-        EventHandlerTeleop();
-    }
-}
-
-
-// -------------- Event Handlers ------------------------------
-void mtsIntuitiveResearchKitMTM::EventHandlerHome(void)
-{
-    std::cerr << "MTM HOME" << std::endl;
-
-    // Set state to HOME
-    RobotCurrentState = STATE_HOME;
-
-    // Start homing here
-    RobotIO.EnablePower();
-    RobotIO.BiasEncoder();
-
-    // Home position all but last joint to 0
-    PID.GetPositionJoint(JointCurrent);
-    const size_t numberOfJoints = JointCurrent.Position().size();
-    HomeJointSet.SetSize(numberOfJoints);
-    HomeJointSet.SetAll(0.0);
-    HomeJointSet.Element(numberOfJoints - 2) = JointCurrent.Position().Element(numberOfJoints - 2);
-
-    // Enable PID
-    PID.Enable(true);
-}
-
-void mtsIntuitiveResearchKitMTM::EventHandlerTeleop(void)
-{
-    if (!IsHomed) {
-        EventTriggers.RobotErrorMsg(std::string("ERROR: Robot is not Homed"));
+    if (state == "Home") {
+        SetState(MTM_HOMING_POWERING);
+    } else if ((state == "Cartesian position") || (state == "Teleop")) {
+        SetState(MTM_POSITION_CARTESIAN);
     } else {
-        RobotCurrentState = STATE_TELEOP;
-        // ZC: nothing now
-        // Could be to set position & orientation to follow slave
+        EventTriggers.RobotErrorMsg(this->GetName() + ": unsupported state " + state);
     }
 }
