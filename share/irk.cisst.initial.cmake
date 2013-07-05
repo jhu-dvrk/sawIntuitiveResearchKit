@@ -1,4 +1,4 @@
-1;2802;0c########################
+########################
 # Initial cache settings for cisst for sawIntuitiveResearchKit
 # run cmake with:
 # cmake -C 
