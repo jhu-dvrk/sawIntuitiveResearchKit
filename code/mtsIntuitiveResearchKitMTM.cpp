@@ -45,7 +45,6 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
 void mtsIntuitiveResearchKitMTM::Init(void)
 {
     SetState(MTM_UNINITIALIZED);
-    Trajectory = 0;
 
     this->StateTable.AddData(CartesianCurrent, "CartesianPosition");
     this->StateTable.AddData(GripperPosition, "GripperAngle");
@@ -250,19 +249,11 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateOnPots(void)
         RunHomingCalibrateOnPotsStarted = true;
 
         // this is to be replaced by trajectory generator
-#ifdef OLD_PID
-        JointDesired.Goal().ForceAssign(HomeJointSet);
-        PID.SetPositionJoint(JointDesired);
-#else
         vctDoubleVec zeros(NumberOfJoints, 0.0);
-        if (Trajectory) {
-            delete Trajectory;
-        }
-        Trajectory = new robQuintic(currentTime,
-                                    JointCurrent.Position(), zeros, zeros,
-                                    currentTime + 2.0 * cmn_s,
-                                    HomeJointSet, zeros, zeros);
-#endif
+        Trajectory.Set(currentTime,
+                       JointCurrent.Position(), zeros, zeros,
+                       currentTime + 1.0 * cmn_s,
+                       HomeJointSet, zeros, zeros);
     }
 
     // compute a new set point based on time
@@ -270,8 +261,8 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateOnPots(void)
     vctDoubleVec desiredJointVelocity(NumberOfJoints);
     vctDoubleVec desiredJointAcceleration(NumberOfJoints);
 
-    if (currentTime <= Trajectory->StopTime()) {
-        Trajectory->Evaluate(currentTime, desiredJointPosition, desiredJointVelocity, desiredJointAcceleration);
+    if (currentTime <= Trajectory.StopTime()) {
+        Trajectory.Evaluate(currentTime, desiredJointPosition, desiredJointVelocity, desiredJointAcceleration);
         JointDesired.Goal().ForceAssign(desiredJointPosition);
         PID.SetPositionJoint(JointDesired);
     }

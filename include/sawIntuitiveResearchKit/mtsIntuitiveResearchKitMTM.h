@@ -120,7 +120,7 @@ protected:
 
     RobotStateType RobotState;
 
-    robQuintic * Trajectory;
+    robQuintic Trajectory;
 
     // Home Action
     double RunHomingPowerTimer;
