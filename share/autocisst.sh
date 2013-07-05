@@ -29,7 +29,7 @@ rm cisstNetlib-Linux-*-2007-04-09.tar.gz
 # to build & cmake
 cd build
 # download cisst initial-cache
-wget https://trac.lcsr.jhu.edu/cisst/raw-attachment/wiki/sawIntuitiveResearchKitTutorial/irk.cisst.initial.cmake
+wget https://svn.lcsr.jhu.edu/cisst/trunk/saw/applications/sawIntuitiveResearchKit/share/irk.cisst.initial.cmake
 # cmake
 cmake -C irk.cisst.initial.cmake ../source
 # build
