@@ -36,7 +36,7 @@ class mtsIntuitiveResearchKitMTM: public mtsTaskPeriodic
 
 public:
 
-    static const size_t NumberOfJoints = 8;
+    static const size_t NumberOfJoints = 7;
 
     mtsIntuitiveResearchKitMTM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
@@ -82,6 +82,9 @@ protected:
     /*! Ready state. */
     void RunReady(void);
 
+    /*! Wrapper to convert vector of 7 values to prmPositionJointSet and send to PID */
+    void SetPositionJoint(const vctDoubleVec & newPosition);
+
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     void SetRobotControlState(const std::string & state);
 
@@ -110,24 +113,37 @@ protected:
         mtsFunctionWrite RobotErrorMsg;
     } EventTriggers;
 
-    prmPositionCartesianGet CartesianCurrent;
+    prmPositionCartesianGet CartesianCurrentParam;
+    vctFrm4x4 CartesianCurrent;
     vctFrm4x4 CartesianPrevious;
-    prmPositionJointGet JointCurrent;
-    prmPositionJointSet JointDesired;
+    prmPositionJointGet JointCurrentParam;
+    vctDoubleVec JointCurrent;
+    prmPositionJointSet JointDesiredParam;
+    vctDoubleVec JointDesired;
     robManipulator Manipulator;
     vctDoubleVec AnalogInputPosSI;
     double GripperPosition;
 
     RobotStateType RobotState;
 
-    robQuintic Trajectory;
+    struct {
+        robQuintic Quintic;
+        vctDoubleVec Velocity;
+        vctDoubleVec Acceleration;
+        vctDoubleVec Goal;
+        vctDoubleVec GoalError;
+        vctDoubleVec GoalTolerance;
+        vctDoubleVec Zero;
+    } JointTrajectory;
 
     // Home Action
     double RunHomingPowerTimer;
     bool RunHomingPowerRequested, RunHomingPowerCurrentBiasRequested;
     bool RunHomingCalibrateOnPotsStarted;
-    vctDoubleVec HomeJointSet;
-    bool IsHomed;
+    bool RunHomingCalibrateOnLimitsSeekLower, RunHomingCalibrateOnLimitsSeekUpper;
+    double RunHomingCalibrateOnLimitsLower, RunHomingCalibrateOnLimitsUpper;
+
+    static const double GimbalMaxRange = 3.0 * 3.14159; // that actual device is limited to ~2.6 turns
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);

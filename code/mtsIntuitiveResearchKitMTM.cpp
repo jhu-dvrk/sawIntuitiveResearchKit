@@ -46,7 +46,20 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 {
     SetState(MTM_UNINITIALIZED);
 
-    this->StateTable.AddData(CartesianCurrent, "CartesianPosition");
+    // initialize trajectory data
+    JointCurrent.SetSize(NumberOfJoints);
+    JointDesired.SetSize(NumberOfJoints);
+    JointDesiredParam.Goal().SetSize(NumberOfJoints + 1); // PID treats gripper as joint
+    JointTrajectory.Velocity.SetSize(NumberOfJoints);
+    JointTrajectory.Acceleration.SetSize(NumberOfJoints);
+    JointTrajectory.Goal.SetSize(NumberOfJoints);
+    JointTrajectory.GoalError.SetSize(NumberOfJoints);
+    JointTrajectory.GoalTolerance.SetSize(NumberOfJoints);
+    JointTrajectory.GoalTolerance.SetAll(2.0 * cmnPI / 180.0); // hard coded to 2 degrees
+    JointTrajectory.Zero.SetSize(NumberOfJoints);
+
+    this->StateTable.AddData(CartesianCurrentParam, "CartesianPosition");
+    this->StateTable.AddData(JointCurrentParam, "JointPosition");
     this->StateTable.AddData(GripperPosition, "GripperAngle");
 
     // Setup cisst interfaces
@@ -72,7 +85,8 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
     if (interfaceProvided) {
-        interfaceProvided->AddCommandReadState(this->StateTable, CartesianCurrent, "GetPositionCartesian");
+        interfaceProvided->AddCommandReadState(this->StateTable, JointCurrentParam, "GetPositionJoint");
+        interfaceProvided->AddCommandReadState(this->StateTable, CartesianCurrentParam, "GetPositionCartesian");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetPositionCartesian, this, "SetPositionCartesian");
         interfaceProvided->AddCommandReadState(this->StateTable, GripperPosition, "GetGripperPosition");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetRobotControlState,
@@ -94,7 +108,7 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
 
 void mtsIntuitiveResearchKitMTM::Startup(void)
 {
-    RobotState = MTM_UNINITIALIZED;
+    this->SetState(MTM_UNINITIALIZED);
 }
 
 void mtsIntuitiveResearchKitMTM::Run(void)
@@ -136,21 +150,24 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
     // we can start reporting some joint values after the robot is powered
     if (this->RobotState > MTM_HOMING_POWERING) {
         mtsExecutionResult executionResult;
-        executionResult = PID.GetPositionJoint(JointCurrent);
+        executionResult = PID.GetPositionJoint(JointCurrentParam);
         if (!executionResult.IsOK()) {
             CMN_LOG_CLASS_RUN_ERROR << "GetRobotData: call to GetJointPosition failed \""
                                     << executionResult << "\"" << std::endl;
             return;
         }
+        // the lower level report 8 joints, we need 7 only
+        JointCurrent.Assign(JointCurrentParam.Position(), 0, NumberOfJoints);
+
         // when the robot is ready, we can comput cartesian position
         if (this->RobotState >= MTM_READY) {
-            vctFrm4x4 position;
-            position = Manipulator.ForwardKinematics(JointCurrent.Position());
-            position.Rotation().NormalizedSelf();
-            CartesianCurrent.Position().From(position);
+            CartesianCurrent = Manipulator.ForwardKinematics(JointCurrent);
+            CartesianCurrent.Rotation().NormalizedSelf();
         } else {
-            CartesianCurrent.Position().Assign(vctFrm3::Identity());
+            CartesianCurrent.Assign(vctFrm4x4::Identity());
         }
+        CartesianCurrentParam.Position().From(CartesianCurrent);
+
         // get gripper based on analog inputs
         executionResult = RobotIO.GetAnalogInputPosSI(AnalogInputPosSI);
         if (!executionResult.IsOK()) {
@@ -160,7 +177,8 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
         }
         GripperPosition = AnalogInputPosSI.Element(7);
     } else {
-        JointCurrent.Position().Zeros();
+        JointCurrent.Zeros();
+        JointCurrentParam.Position().Zeros();
     }
 }
 
@@ -168,6 +186,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
 {
     switch (newState) {
     case MTM_UNINITIALIZED:
+        EventTriggers.RobotStatusMsg(this->GetName() + " not initialized");
         break;
     case MTM_HOMING_POWERING:
         RunHomingPowerTimer = 0.0;
@@ -180,8 +199,14 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
         this->EventTriggers.RobotStatusMsg(this->GetName() + " calibrating pots");
         break;
     case MTM_HOMING_CALIBRATING_LIMITS:
+        RunHomingCalibrateOnLimitsSeekLower = false;
+        RunHomingCalibrateOnLimitsSeekUpper = false;
+        RunHomingCalibrateOnLimitsLower = cmnTypeTraits<double>::MaxPositiveValue();
+        RunHomingCalibrateOnLimitsUpper = cmnTypeTraits<double>::MinNegativeValue();
+        this->EventTriggers.RobotStatusMsg(this->GetName() + " calibrating gimbal");
         break;
     case MTM_READY:
+        EventTriggers.RobotStatusMsg(this->GetName() + " ready");
         break;
     case MTM_POSITION_CARTESIAN:
         if (this->RobotState < MTM_READY) {
@@ -225,8 +250,8 @@ void mtsIntuitiveResearchKitMTM::RunHomingPower(void)
 
     // wait another second to be ready
     if ((currentTime - RunHomingPowerTimer) > 1.0 * cmn_s) {
-        this->RobotState = MTM_HOMING_CALIBRATING_POTS;
-        this->EventTriggers.RobotStatusMsg(this->GetName() + " powered");
+        std::cerr << CMN_LOG_DETAILS << " - need to add test to make sure power is OK from sawRobotIO" << std::endl;
+        this->SetState(MTM_HOMING_CALIBRATING_POTS);
     }
 }
 
@@ -234,77 +259,81 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateOnPots(void)
 {
     const double currentTime = this->StateTable.GetTic();
 
+    // trigger motion
     if (!RunHomingCalibrateOnPotsStarted) {
         // enable PID and start from current position
-        JointDesired.Goal().ForceAssign(JointCurrent.Position());
-        PID.SetPositionJoint(JointDesired);
+        JointDesired.ForceAssign(JointCurrent);
+        SetPositionJoint(JointDesired);
         PID.Enable(true);
 
         // compute joint goal position
-        HomeJointSet.SetSize(NumberOfJoints);
-        HomeJointSet.SetAll(0.0);
-        // last joint is not motorized and we don't want to move the last motorized so - 2
-        HomeJointSet.Element(NumberOfJoints - 2) = JointCurrent.Position().Element(NumberOfJoints - 2);
+        JointTrajectory.Goal.SetSize(NumberOfJoints);
+        JointTrajectory.Goal.SetAll(0.0);
+        // last joint is calibrated later
+        JointTrajectory.Goal.Element(NumberOfJoints - 2) = JointCurrent.Element(NumberOfJoints - 2);
+        JointTrajectory.Quintic.Set(currentTime,
+                                    JointCurrent, JointTrajectory.Zero, JointTrajectory.Zero,
+                                    currentTime + 2.0 * cmn_s,
+                                    JointTrajectory.Goal, JointTrajectory.Zero, JointTrajectory.Zero);
         // set flag to indicate that homing has started
         RunHomingCalibrateOnPotsStarted = true;
-
-        // this is to be replaced by trajectory generator
-        vctDoubleVec zeros(NumberOfJoints, 0.0);
-        Trajectory.Set(currentTime,
-                       JointCurrent.Position(), zeros, zeros,
-                       currentTime + 1.0 * cmn_s,
-                       HomeJointSet, zeros, zeros);
     }
 
     // compute a new set point based on time
-    vctDoubleVec desiredJointPosition(NumberOfJoints);
-    vctDoubleVec desiredJointVelocity(NumberOfJoints);
-    vctDoubleVec desiredJointAcceleration(NumberOfJoints);
+    if (currentTime <= JointTrajectory.Quintic.StopTime()) {
+        JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
+                                         JointTrajectory.Velocity, JointTrajectory.Acceleration);
+        SetPositionJoint(JointDesired);
+    } else {
+        // check position
+        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointCurrent);
+        JointTrajectory.GoalError.AbsSelf();
 
-    if (currentTime <= Trajectory.StopTime()) {
-        Trajectory.Evaluate(currentTime, desiredJointPosition, desiredJointVelocity, desiredJointAcceleration);
-        JointDesired.Goal().ForceAssign(desiredJointPosition);
-        PID.SetPositionJoint(JointDesired);
-    }
-
-    // check position
-    vctDoubleVec homeError;
-    vctDoubleVec homeErrorTolerance;
-    homeError.SetSize(NumberOfJoints);
-    homeError.DifferenceOf(HomeJointSet, JointCurrent.Position());
-    homeError.resize(NumberOfJoints - 1);
-    homeError.AbsSelf();
-
-    homeErrorTolerance.SetSize(NumberOfJoints - 1);
-    homeErrorTolerance.SetAll(2.0 * cmnPI_180); // 2 deg tolerence
-
-    bool isHomed = !homeError.ElementwiseGreaterOrEqual(homeErrorTolerance).Any();
-    if (isHomed) {
-        SetState(MTM_READY);
+        bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
+        if (isHomed) {
+            SetState(MTM_READY);
+        }
     }
 }
 
 void mtsIntuitiveResearchKitMTM::RunHomingCalibrateOnLimits(void)
 {
+    const double currentTime = this->StateTable.GetTic();
+
+    // trigger search of lower limit
+    if (!RunHomingCalibrateOnLimitsSeekLower) {
+        // compute joint goal position, we assume PID is on from previous state
+        JointTrajectory.Goal.Assign(JointCurrent);
+        // gimbal joint is before last
+        JointTrajectory.Goal.Element(NumberOfJoints - 2) -= GimbalMaxRange;
+        JointTrajectory.Quintic.Set(currentTime,
+                                    JointCurrent, JointTrajectory.Zero, JointTrajectory.Zero,
+                                    currentTime + 2.0 * cmn_s,
+                                    JointTrajectory.Goal, JointTrajectory.Zero, JointTrajectory.Zero);
+        // set flag to indicate that homing has started
+        RunHomingCalibrateOnLimitsSeekLower = true;
+        return;
+    }
+
+}
+
+void mtsIntuitiveResearchKitMTM::SetPositionJoint(const vctDoubleVec & newPosition)
+{
+    JointDesiredParam.Goal().Assign(newPosition, 0, NumberOfJoints);
+    JointDesiredParam.Goal().Element(7) = 0.0;
+    PID.SetPositionJoint(JointDesiredParam);
 }
 
 void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
     if (RobotState == MTM_POSITION_CARTESIAN) {
-        vctDoubleVec jointDesired;
-        jointDesired.ForceAssign(JointCurrent.Position());
-        const double angle = jointDesired[7];
-        jointDesired.resize(7);
-        Manipulator.InverseKinematics(jointDesired, newPosition.Goal());
-        jointDesired.resize(8);
-        jointDesired[7] = angle;
-        JointDesired.Goal().ForceAssign(jointDesired);
-
+        JointDesired.Assign(JointCurrent);
+        Manipulator.InverseKinematics(JointDesired, newPosition.Goal());
         // note: this directly calls the lower level to set position,
         // maybe we should cache the request in this component and later
         // in the Run method push the request.  This way, only the latest
         // request would be pushed if multiple are queued.
-        PID.SetPositionJoint(JointDesired);
+        SetPositionJoint(JointDesired);
     } else {
         CMN_LOG_CLASS_RUN_WARNING << "SetPositionCartesian: MTM not ready" << std::endl;
     }
