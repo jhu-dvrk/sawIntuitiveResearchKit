@@ -80,7 +80,7 @@ protected:
         mtsFunctionWrite Enable;
         mtsFunctionRead GetPositionJoint;
         mtsFunctionWrite SetPositionJoint;
-        mtsFunctionWrite SetIsCheckJointLimit;
+        mtsFunctionWrite SetCheckJointLimit;
     } PID;
 
     // Required interface

@@ -37,6 +37,7 @@ class mtsIntuitiveResearchKitMTM: public mtsTaskPeriodic
 public:
 
     static const size_t NumberOfJoints = 7;
+    static const size_t RollIndex = 6;
 
     mtsIntuitiveResearchKitMTM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
@@ -52,8 +53,8 @@ protected:
     enum RobotStateType {
         MTM_UNINITIALIZED, /*! State when constructed */
         MTM_HOMING_POWERING, /*! Turn power on, calibrate encoders and current */
-        MTM_HOMING_CALIBRATING_POTS, /*! Calibrate using pots and move to zero position for all joints except last one */
-        MTM_HOMING_CALIBRATING_LIMITS, /*! Calibrate last joint using hardware limit and tracking errors. */
+        MTM_HOMING_CALIBRATING_ARM, /*! Calibrate using pots and move to zero position for all joints except last one */
+        MTM_HOMING_CALIBRATING_ROLL, /*! Calibrate last joint using hardware limit and tracking errors. */
         MTM_READY,
         MTM_POSITION_CARTESIAN
     };
@@ -74,10 +75,10 @@ protected:
     void RunHomingPower(void);
 
     /*! Homing procedure, home all joints except last one using potentiometers as reference. */
-    void RunHomingCalibrateOnPots(void);
+    void RunHomingCalibrateArm(void);
 
     /*! Homing procedure, calibrate last joint based on hardware limits. */
-    void RunHomingCalibrateOnLimits(void);
+    void RunHomingCalibrateRoll(void);
 
     /*! Ready state. */
     void RunReady(void);
@@ -93,7 +94,7 @@ protected:
         mtsFunctionWrite Enable;
         mtsFunctionRead GetPositionJoint;
         mtsFunctionWrite SetPositionJoint;
-        mtsFunctionWrite SetIsCheckJointLimit;
+        mtsFunctionWrite SetCheckJointLimit;
     } PID;
 
     // Required interface
@@ -104,6 +105,7 @@ protected:
         mtsFunctionVoid BiasEncoder;
         mtsFunctionWrite BiasCurrent;
         mtsFunctionWrite SetActuatorCurrent;
+        mtsFunctionWrite ResetSingleEncoder;
         mtsFunctionRead GetAnalogInputPosSI;
     } RobotIO;
 
@@ -137,13 +139,13 @@ protected:
     } JointTrajectory;
 
     // Home Action
-    double RunHomingPowerTimer;
-    bool RunHomingPowerRequested, RunHomingPowerCurrentBiasRequested;
-    bool RunHomingCalibrateOnPotsStarted;
-    bool RunHomingCalibrateOnLimitsSeekLower, RunHomingCalibrateOnLimitsSeekUpper;
-    double RunHomingCalibrateOnLimitsLower, RunHomingCalibrateOnLimitsUpper;
-
-    static const double GimbalMaxRange = 3.0 * 3.14159; // that actual device is limited to ~2.6 turns
+    double HomingTimer;
+    bool HomingPowerRequested, HomingPowerCurrentBiasRequested;
+    bool HomingCalibrateArmStarted;
+    bool HomingCalibrateRollSeekLower,
+         HomingCalibrateRollSeekUpper,
+         HomingCalibrateRollSeekCenter;
+    double HomingCalibrateRollLower, HomingCalibrateRollUpper;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);

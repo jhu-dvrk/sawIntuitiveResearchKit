@@ -55,7 +55,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
         interfaceRequired->AddFunction("Enable", PID.Enable);
         interfaceRequired->AddFunction("GetPositionJoint", PID.GetPositionJoint);
         interfaceRequired->AddFunction("SetPositionJoint", PID.SetPositionJoint);
-        interfaceRequired->AddFunction("SetIsCheckJointLimit", PID.SetIsCheckJointLimit);
+        interfaceRequired->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
     }
 
     // Robot IO
@@ -217,7 +217,7 @@ void mtsIntuitiveResearchKitPSM::Run(void)
             AdapterJointSet[5] = 0.0;
             AdapterJointSet[6] = 0.0;
             JointDesired.Goal().ForceAssign(AdapterJointSet);
-            PID.SetIsCheckJointLimit(true);
+            PID.SetCheckJointLimit(true);
             PID.SetPositionJoint(JointDesired);
 
             // Adapter engage done
@@ -257,7 +257,7 @@ void mtsIntuitiveResearchKitPSM::Run(void)
             ToolJointSet.SetAll(0.0);
             ToolJointSet[6] = 10.0 * cmnPI / 180.0;
             JointDesired.Goal().ForceAssign(ToolJointSet);
-            PID.SetIsCheckJointLimit(true);
+            PID.SetCheckJointLimit(true);
             PID.SetPositionJoint(JointDesired);
 
             RobotCurrentState = STATE_IDLE;
@@ -421,7 +421,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton &butto
             AdapterStopwatch.Start();
             PID.GetPositionJoint(JointCurrent);
             AdapterJointSet.ForceAssign(JointCurrent.Position());
-            PID.SetIsCheckJointLimit(false);
+            PID.SetCheckJointLimit(false);
         }
     } else {
         CMN_LOG_CLASS_RUN_VERBOSE << "EventHandlerAdapter: adapter disengaged" << std::endl;
@@ -443,7 +443,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton &button)
             ToolStopwatch.Start();
             PID.GetPositionJoint(JointCurrent);
             ToolJointSet.ForceAssign(JointCurrent.Position());
-            PID.SetIsCheckJointLimit(false);
+            PID.SetCheckJointLimit(false);
         }
     } else {
         CMN_LOG_CLASS_RUN_VERBOSE << "EventHandlerTool: tool disengaged" << std::endl;

@@ -62,10 +62,14 @@ protected:
         mtsFunctionWrite SetRobotControlState;
     } PSM;
 
-    void StateMsgEventHandler(const std::string & newState);
-    void ErrorMsgEventHandler(const std::string & newMsg);
+    void StateMsgEventHandlerMaster(const std::string & newState);
+    void ErrorMsgEventHandlerMaster(const std::string & newMsg);
 
-    QLabel * QLabelCurrentState;
+    void StateMsgEventHandlerSlave(const std::string & newState);
+    void ErrorMsgEventHandlerSlave(const std::string & newMsg);
+
+    QLabel * QLabelCurrentStateMaster;
+    QLabel * QLabelCurrentStateSlave;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsoleQtWidget);
