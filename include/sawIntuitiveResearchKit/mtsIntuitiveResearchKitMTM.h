@@ -102,6 +102,7 @@ protected:
         //! Enable Robot Power
         mtsFunctionVoid EnablePower;
         mtsFunctionVoid DisablePower;
+        mtsFunctionRead GetAmpStatus;
         mtsFunctionVoid BiasEncoder;
         mtsFunctionWrite BiasCurrent;
         mtsFunctionWrite SetActuatorCurrent;

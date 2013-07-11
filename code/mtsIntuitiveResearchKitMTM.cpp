@@ -78,6 +78,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddFunction("EnablePower", RobotIO.EnablePower);
         interfaceRequired->AddFunction("DisablePower", RobotIO.DisablePower);
+        interfaceRequired->AddFunction("GetAmpStatus", RobotIO.GetAmpStatus);
         interfaceRequired->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
         interfaceRequired->AddFunction("BiasCurrent", RobotIO.BiasCurrent);
         interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
@@ -231,7 +232,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingPower(void)
     if (!HomingPowerRequested) {
         RobotIO.BiasEncoder();
         HomingTimer = currentTime;
-        // make sure the PID are not sending currents
+        // make sure the PID is not sending currents
         PID.Enable(false);
         // pre-load the boards with zero current
         RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints, 0.0));
@@ -253,8 +254,14 @@ void mtsIntuitiveResearchKitMTM::RunHomingPower(void)
 
     // wait another second to be ready
     if ((currentTime - HomingTimer) > 1.0 * cmn_s) {
-        std::cerr << CMN_LOG_DETAILS << " - need to add test to make sure power is OK from sawRobotIO" << std::endl;
-        this->SetState(MTM_HOMING_CALIBRATING_ARM);
+        vctBoolVec amplifiersStatus(NumberOfJoints + 1);
+        RobotIO.GetAmpStatus(amplifiersStatus);
+        if (amplifiersStatus.All()) {
+            this->SetState(MTM_HOMING_CALIBRATING_ARM);
+        } else {
+            EventTriggers.RobotErrorMsg(this->GetName() + " failed to enable power.");
+            this->SetState(MTM_UNINITIALIZED);
+        }
     }
 }
 
@@ -301,9 +308,6 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         JointTrajectory.GoalError.AbsSelf();
         bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
-            RobotIO.ResetSingleEncoder(static_cast<int>(RollIndex));
-            JointDesired.SetAll(0.0);
-            SetPositionJoint(JointDesired);
             PID.SetCheckJointLimit(true);
             this->SetState(MTM_HOMING_CALIBRATING_ROLL);
         } else {
@@ -312,6 +316,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
                 CMN_LOG_CLASS_INIT_WARNING << "RunHomingCalibrateArm: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
                 EventTriggers.RobotErrorMsg(this->GetName() + " unable to reach home position during calibration on pots.");
+                PID.Enable(false);
                 PID.SetCheckJointLimit(true);
                 this->SetState(MTM_UNINITIALIZED);
             }
@@ -361,6 +366,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
             // time out
             if (currentTime > HomingTimer + extraTime) {
                 EventTriggers.RobotErrorMsg(this->GetName() + " unable to hit roll lower limit");
+                PID.Enable(false);
                 PID.SetCheckJointLimit(true);
                 this->SetState(MTM_UNINITIALIZED);
             }
@@ -399,6 +405,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
             // time out
             if (currentTime > HomingTimer + extraTime) {
                 EventTriggers.RobotErrorMsg(this->GetName() + " unable to hit roll upper limit");
+                PID.Enable(false);
                 PID.SetCheckJointLimit(true);
                 this->SetState(MTM_UNINITIALIZED);
             }
@@ -436,6 +443,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         JointTrajectory.GoalError.AbsSelf();
         bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
+            // reset encoder on last joint as well as PID target position to reflect new roll position = 0
+            RobotIO.ResetSingleEncoder(static_cast<int>(RollIndex));
+            JointDesired.SetAll(0.0);
+            SetPositionJoint(JointDesired);
             PID.SetCheckJointLimit(true);
             this->SetState(MTM_READY);
         } else {
@@ -444,6 +455,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
                 CMN_LOG_CLASS_INIT_WARNING << "RunHomingCalibrateRoll: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
                 EventTriggers.RobotErrorMsg(this->GetName() + " unable to reach home position during calibration on pots.");
+                PID.Enable(false);
                 PID.SetCheckJointLimit(true);
                 this->SetState(MTM_UNINITIALIZED);
             }
