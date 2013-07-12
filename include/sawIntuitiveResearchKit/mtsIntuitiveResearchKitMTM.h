@@ -105,7 +105,7 @@ protected:
         mtsFunctionRead GetAmpStatus;
         mtsFunctionVoid BiasEncoder;
         mtsFunctionWrite BiasCurrent;
-        mtsFunctionWrite SetActuatorCurrent;
+        mtsFunctionWrite SetMotorCurrent;
         mtsFunctionWrite ResetSingleEncoder;
         mtsFunctionRead GetAnalogInputPosSI;
     } RobotIO;

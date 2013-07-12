@@ -81,7 +81,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
         interfaceRequired->AddFunction("GetAmpStatus", RobotIO.GetAmpStatus);
         interfaceRequired->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
         interfaceRequired->AddFunction("BiasCurrent", RobotIO.BiasCurrent);
-        interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
+        interfaceRequired->AddFunction("SetMotorCurrent", RobotIO.SetMotorCurrent);
         interfaceRequired->AddFunction("ResetSingleEncoder", RobotIO.ResetSingleEncoder);
         interfaceRequired->AddFunction("GetAnalogInputPosSI", RobotIO.GetAnalogInputPosSI);
     }
@@ -235,7 +235,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingPower(void)
         // make sure the PID is not sending currents
         PID.Enable(false);
         // pre-load the boards with zero current
-        RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints, 0.0));
+        RobotIO.SetMotorCurrent(vctDoubleVec(NumberOfJoints + 1, 0.0));
         // enable power and set a flags to move to next step
         RobotIO.EnablePower();
         HomingPowerRequested = true;

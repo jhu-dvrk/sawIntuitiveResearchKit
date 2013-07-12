@@ -31,14 +31,13 @@ CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
 mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(const std::string & componentName):
     mtsComponent(componentName)
 {
-    // Setup CISST Interface
-#if 0
-    mtsInterfaceRequired * requiredInterface = AddInterfaceRequired("TeleOperation");
-    if (requiredInterface) {
-        requiredInterface->AddFunction("Enable", TeleOperation.Enable);
+    mtsInterfaceRequired * interfaceRequiredMain = AddInterfaceRequired("Main");
+    if (interfaceRequiredMain) {
+        interfaceRequiredMain->AddFunction("SetRobotControlState", Main.SetRobotControlState);
     }
-#endif
 
+#if 0
+    // Setup CISST Interface
     mtsInterfaceRequired * interfaceRequirePSM = AddInterfaceRequired("PSM");
     if (interfaceRequirePSM) {
         interfaceRequirePSM->AddFunction("SetRobotControlState", PSM.SetRobotControlState);
@@ -56,7 +55,7 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequiredMTM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandlerSlave,
                                                    this, "RobotErrorMsg");
     }
-
+#endif
     setupUi();
 }
 
@@ -94,10 +93,8 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetStateButton(QAbstractButton * radioButton)
 {
-    std::cout << "---- Radio Button " << radioButton->text().toStdString() << std::endl;
     std::string state = radioButton->text().toStdString();
-    PSM.SetRobotControlState(mtsStdString(state));
-    MTM.SetRobotControlState(mtsStdString(state));
+    Main.SetRobotControlState(mtsStdString(state));
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
@@ -137,24 +134,22 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotSetStateButton(QAbstractButton*)));
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandlerMaster(const std::string & newState)
+void mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandlerMaster(const std::string & message)
 {
-    QLabelCurrentStateMaster->setText(newState.c_str());
+    QLabelCurrentStateMaster->setText(message.c_str());
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandlerMaster(const std::string & newMsg)
+void mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandlerMaster(const std::string & message)
 {
-    // ZC: temp for testing
-    std::cerr << newMsg << std::endl;
+    std::cerr << message << std::endl;
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandlerSlave(const std::string & newState)
+void mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandlerSlave(const std::string & message)
 {
-    QLabelCurrentStateSlave->setText(newState.c_str());
+    QLabelCurrentStateSlave->setText(message.c_str());
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandlerSlave(const std::string & newMsg)
+void mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandlerSlave(const std::string & message)
 {
-    // ZC: temp for testing
-    std::cerr << newMsg << std::endl;
+    std::cerr << message << std::endl;
 }

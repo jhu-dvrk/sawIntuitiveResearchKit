@@ -20,8 +20,7 @@ set (REQUIRED_CISST_LIBRARIES
      cisstMultiTask
      cisstParameterTypes
      cisstRobot
-     cisstNumerical
-     cisstQt)
+     cisstNumerical)
 
 find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
@@ -30,57 +29,71 @@ if (cisst_FOUND)
   # load cisst configuration
   include (${CISST_USE_FILE})
 
-  # create/configure file for find_package (sawIntuitiveResearchKit)
-  set (sawIntuitiveResearchKit_INCLUDE_DIR "${sawIntuitiveResearchKit_SOURCE_DIR}/include")
-  set (sawIntuitiveResearchKit_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
-  set (sawIntuitiveResearchKit_LIBRARIES sawIntuitiveResearchKit)
+  # sawRobotIO1394 has been compiled within cisst, we should find it automatically
+  cisst_find_saw_component (sawRobotIO1394 REQUIRED)
+  cisst_find_saw_component (sawControllers REQUIRED)
 
-  include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
-  set (sawIntuitiveResearchKit_HEADER_DIR "${sawIntuitiveResearchKit_INCLUDE_DIR}/sawIntuitiveResearchKit")
+  if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
-  # for Qt generated header files
-  include_directories (${CMAKE_CURRENT_BINARY_DIR})
-  qt4_wrap_cpp (SAW_INTUITIVE_RESEARCH_KIT_QT_WRAP_CPP
-                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h)
+    # sawRobotIO1394 configuration
+    include_directories (${sawRobotIO1394_INCLUDE_DIR}
+                         ${sawControllers_INCLUDE_DIR})
+                       
+    link_directories (${sawRobotIO1394_LIBRARY_DIR}
+                      ${sawControllers_LIBRARY_DIR})
 
-  set (HEADER_FILES
-       ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitMTM.h
-       ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSM.h
-       ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h
-      )
+    # create/configure file for find_package (sawIntuitiveResearchKit)
+    set (sawIntuitiveResearchKit_INCLUDE_DIR "${sawIntuitiveResearchKit_SOURCE_DIR}/include")
+    set (sawIntuitiveResearchKit_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
+    set (sawIntuitiveResearchKit_LIBRARIES sawIntuitiveResearchKit)
 
-  set (SOURCE_FILES
-       mtsIntuitiveResearchKitMTM.cpp
-       mtsIntuitiveResearchKitPSM.cpp
-       mtsIntuitiveResearchKitConsoleQtWidget.cpp
-       ${SAW_INTUITIVE_RESEARCH_KIT_QT_WRAP_CPP}
-      )
+    include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
+    set (sawIntuitiveResearchKit_HEADER_DIR "${sawIntuitiveResearchKit_INCLUDE_DIR}/sawIntuitiveResearchKit")
 
-  add_library (sawIntuitiveResearchKit ${HEADER_FILES} ${SOURCE_FILES})
-  cisst_target_link_libraries (sawIntuitiveResearchKit ${REQUIRED_CISST_LIBRARIES})
-  set_property (TARGET sawIntuitiveResearchKit PROPERTY FOLDER "sawIntuitiveResearchKit")
+    set (HEADER_FILES
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitMTM.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSM.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
+        )
 
-  # add Qt code
-  # add_subdirectory (Qt)
-  # set (sawIntuitiveResearchKit_LIBRARIES ${sawIntuitiveResearchKit_LIBRARIES} ${sawIntuitiveResearchKitQt_LIBRARIES})
+    set (SOURCE_FILES
+         mtsIntuitiveResearchKitMTM.cpp
+         mtsIntuitiveResearchKitPSM.cpp
+         mtsIntuitiveResearchKitConsole.cpp
+        )
 
-  configure_file (
-    "${CMAKE_CURRENT_SOURCE_DIR}/sawIntuitiveResearchKitConfig.cmake.in"
-    "${sawIntuitiveResearchKit_BINARY_DIR}/sawIntuitiveResearchKitConfig.cmake"
-    @ONLY@)
+    add_library (sawIntuitiveResearchKit ${HEADER_FILES} ${SOURCE_FILES})
+    cisst_target_link_libraries (sawIntuitiveResearchKit ${REQUIRED_CISST_LIBRARIES})
+    set_property (TARGET sawIntuitiveResearchKit PROPERTY FOLDER "sawIntuitiveResearchKit")
 
-  # Install targets for headers and library
-  install (DIRECTORY
-           ${sawIntuitiveResearchKit_INCLUDE_DIR}/sawIntuitiveResearchKit
-           DESTINATION include
-           PATTERN .svn EXCLUDE)
+    # link against non cisst libraries and cisst components
+    target_link_libraries (sawIntuitiveResearchKit
+                           ${sawRobotIO1394_LIBRARIES}
+                           ${sawControllers_LIBRARIES})
 
-  install (TARGETS sawIntuitiveResearchKit
-           RUNTIME DESTINATION bin
-           LIBRARY DESTINATION lib
-           ARCHIVE DESTINATION lib)
+    # add Qt code
+    add_subdirectory (Qt)
+    set (sawIntuitiveResearchKit_LIBRARIES ${sawIntuitiveResearchKit_LIBRARIES} ${sawIntuitiveResearchKitQt_LIBRARIES})
 
-  install (FILES "${sawIntuitiveResearchKit_BINARY_DIR}/sawIntuitiveResearchKitConfig.cmake"
-           DESTINATION "${CISST_CMAKE_INSTALL_SUFFIX}/saw")
+    configure_file (
+      "${CMAKE_CURRENT_SOURCE_DIR}/sawIntuitiveResearchKitConfig.cmake.in"
+      "${sawIntuitiveResearchKit_BINARY_DIR}/sawIntuitiveResearchKitConfig.cmake"
+      @ONLY@)
+
+    # Install targets for headers and library
+    install (DIRECTORY
+             ${sawIntuitiveResearchKit_INCLUDE_DIR}/sawIntuitiveResearchKit
+             DESTINATION include
+             PATTERN .svn EXCLUDE)
+
+    install (TARGETS sawIntuitiveResearchKit
+             RUNTIME DESTINATION bin
+             LIBRARY DESTINATION lib
+             ARCHIVE DESTINATION lib)
+
+    install (FILES "${sawIntuitiveResearchKit_BINARY_DIR}/sawIntuitiveResearchKitConfig.cmake"
+             DESTINATION "${CISST_CMAKE_INSTALL_SUFFIX}/saw")
+
+  endif (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
 endif (cisst_FOUND)

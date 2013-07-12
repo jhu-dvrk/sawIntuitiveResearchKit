@@ -50,9 +50,9 @@ protected:
 
     void setupUi(void);
 
-    struct TeleOperationStruct {
-        mtsFunctionWrite Enable;
-    } TeleOperation;
+    struct MainStruct {
+        mtsFunctionWrite SetRobotControlState;
+    } Main;
 
     struct MTMStruct {
         mtsFunctionWrite SetRobotControlState;
@@ -62,11 +62,11 @@ protected:
         mtsFunctionWrite SetRobotControlState;
     } PSM;
 
-    void StateMsgEventHandlerMaster(const std::string & newState);
-    void ErrorMsgEventHandlerMaster(const std::string & newMsg);
+    void StateMsgEventHandlerMaster(const std::string & message);
+    void ErrorMsgEventHandlerMaster(const std::string & message);
 
-    void StateMsgEventHandlerSlave(const std::string & newState);
-    void ErrorMsgEventHandlerSlave(const std::string & newMsg);
+    void StateMsgEventHandlerSlave(const std::string & message);
+    void ErrorMsgEventHandlerSlave(const std::string & message);
 
     QLabel * QLabelCurrentStateMaster;
     QLabel * QLabelCurrentStateSlave;
