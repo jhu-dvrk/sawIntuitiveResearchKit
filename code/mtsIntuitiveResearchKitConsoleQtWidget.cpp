@@ -68,7 +68,9 @@ void mtsIntuitiveResearchKitConsoleQtWidget::Configure(const std::string & filen
 void mtsIntuitiveResearchKitConsoleQtWidget::Startup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "mtsIntuitiveResearchKitConsoleQtWidget::Startup" << std::endl;
-    show();
+    if (!parent()) {
+        show();
+    }
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::Cleanup(void)

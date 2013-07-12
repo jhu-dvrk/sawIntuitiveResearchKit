@@ -38,6 +38,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawControllers/mtsTeleOperationQtWidget.h>
 #include <sawTextToSpeech/mtsTextToSpeech.h>
 
+#include <QTabWidget>
+
 int main(int argc, char ** argv)
 {
     // log configuration
@@ -118,7 +120,7 @@ int main(int argc, char ** argv)
         componentManager = mtsManagerLocal::GetInstance();
     }
 
-    // create a Qt application
+    // create a Qt application and tab to hold all widgets
     mtsQtApplication *qtAppTask = new mtsQtApplication("QtApplication", argc, argv);
     qtAppTask->Configure();
     componentManager->AddComponent(qtAppTask);
@@ -213,6 +215,20 @@ int main(int argc, char ** argv)
     // execute in following order using a single thread
     componentManager->Connect(slave->GetName(), "ExecIn", master->GetName(), "ExecOut");
     componentManager->Connect(tele->GetName(), "ExecIn", slave->GetName(), "ExecOut");
+
+    // organize all widgets in a tab widget
+    QTabWidget * tabWidget = new QTabWidget;
+    tabWidget->addTab(console, "Main");
+    tabWidget->addTab(teleGUI, "Tele-op");
+    tabWidget->addTab(pidMasterGUI, "PID Master");
+    tabWidget->addTab(pidSlaveGUI, "PID Slave");
+    mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
+    for (iterator = robotWidgetFactory->Widgets().begin();
+         iterator != robotWidgetFactory->Widgets().end();
+         ++iterator) {
+        tabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
+    }
+    tabWidget->show();
 
     //-------------- create the components ------------------
     io->CreateAndWait(2.0 * cmn_s); // this will also create the pids as they are in same thread
