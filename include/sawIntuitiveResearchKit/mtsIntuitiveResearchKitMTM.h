@@ -25,6 +25,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
+#include <cisstParameterTypes/prmForceCartesianSet.h>
+#include <cisstParameterTypes/prmForceTorqueJointSet.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstRobot/robManipulator.h>
@@ -87,6 +89,7 @@ protected:
     void SetPositionJoint(const vctDoubleVec & newPosition);
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
+    void SetWrench(const prmForceCartesianSet & newForce);
     void SetRobotControlState(const std::string & state);
 
 
@@ -94,6 +97,7 @@ protected:
         mtsFunctionWrite Enable;
         mtsFunctionRead GetPositionJoint;
         mtsFunctionWrite SetPositionJoint;
+        mtsFunctionWrite SetTorqueJoint;
         mtsFunctionWrite SetCheckJointLimit;
     } PID;
 
@@ -123,6 +127,7 @@ protected:
     vctDoubleVec JointCurrent;
     prmPositionJointSet JointDesiredParam;
     vctDoubleVec JointDesired;
+    prmForceTorqueJointSet TorqueDesired;
     robManipulator Manipulator;
     vctDoubleVec AnalogInputPosSI;
     double GripperPosition;

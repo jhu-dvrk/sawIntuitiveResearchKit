@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstNumerical/nmrLSMinNorm.h>
 
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitMTM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -70,6 +71,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
         interfaceRequired->AddFunction("Enable", PID.Enable);
         interfaceRequired->AddFunction("GetPositionJoint", PID.GetPositionJoint);
         interfaceRequired->AddFunction("SetPositionJoint", PID.SetPositionJoint);
+        interfaceRequired->AddFunction("SetTorqueJoint", PID.SetTorqueJoint);
         interfaceRequired->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
     }
 
@@ -91,6 +93,8 @@ void mtsIntuitiveResearchKitMTM::Init(void)
         interfaceProvided->AddCommandReadState(this->StateTable, JointCurrentParam, "GetPositionJoint");
         interfaceProvided->AddCommandReadState(this->StateTable, CartesianCurrentParam, "GetPositionCartesian");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetPositionCartesian, this, "SetPositionCartesian");
+        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetWrench, this, "SetWrench");
+
         interfaceProvided->AddCommandReadState(this->StateTable, GripperPosition, "GetGripperPosition");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetRobotControlState,
                                            this, "SetRobotControlState", std::string(""));
@@ -134,6 +138,17 @@ void mtsIntuitiveResearchKitMTM::Run(void)
         break;
     case MTM_READY:
     case MTM_POSITION_CARTESIAN:
+        {
+            /*
+            vctFixedSizeVector<double,6> vctFT(0.0);
+            vctFT[0] = 0.5;
+            
+            prmForceCartesianSet prmFT;
+            prmFT.SetForce( vctFT );
+            prmFT.SetValid( true );
+            SetWrench( prmFT );
+            */
+        }
         break;
     default:
         break;
@@ -468,6 +483,59 @@ void mtsIntuitiveResearchKitMTM::SetPositionJoint(const vctDoubleVec & newPositi
     JointDesiredParam.Goal().Assign(newPosition, NumberOfJoints);
     JointDesiredParam.Goal().Element(7) = 0.0;
     PID.SetPositionJoint(JointDesiredParam);
+}
+
+void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce)
+{
+
+    if (RobotState == MTM_POSITION_CARTESIAN) {
+
+        vctDoubleVec jointDesired( 7, 0.0 );
+        for( size_t i=0; i<jointDesired.size(); i++ )
+            { jointDesired[i] = JointCurrent[i]; }
+        
+        Manipulator.JacobianBody( jointDesired );
+        vctDynamicMatrix<double> J( 6, Manipulator.links.size(), VCT_COL_MAJOR );
+        for( size_t r=0; r<6; r++ ){
+            for( size_t c=0; c<Manipulator.links.size(); c++ ){
+                J[r][c] = Manipulator.Jn[c][r];
+            }
+        }
+        
+        prmForceCartesianSet tmp = newForce;
+        prmForceCartesianSet::ForceType tmpft;
+        tmp.GetForce( tmpft );
+        vctDynamicMatrix<double> ft( tmpft.size(), 1, 0.0, VCT_COL_MAJOR );
+        for( size_t i=0; i<ft.size(); i++ )
+            { ft[i][0] = tmpft[i]; }
+        vctDynamicMatrix<double> t = nmrLSMinNorm( J, ft );
+
+
+        vctDoubleVec torqueDesired(8, 0.0);
+        for( size_t i=0; i<3; i++ )
+            { torqueDesired[i] = t[i][0]; }
+
+        if( torqueDesired[0] < -2.0 ) { torqueDesired[0] = -2.0; }
+        if( 2.0 < torqueDesired[0]  ) { torqueDesired[0] =  2.0; }
+        if( torqueDesired[1] < -2.0 ) { torqueDesired[1] = -2.0; }
+        if( 2.0 < torqueDesired[1]  ) { torqueDesired[1] =  2.0; }
+        if( torqueDesired[2] < -2.0 ) { torqueDesired[2] = -2.0; }
+        if( 2.0 < torqueDesired[2]  ) { torqueDesired[2] =  2.0; }
+
+        if( torqueDesired[3] < -1.0 ) { torqueDesired[3] = -0.05; }
+        if( 1.0 < torqueDesired[3]  ) { torqueDesired[3] =  0.05; }
+        if( torqueDesired[4] < -1.0 ) { torqueDesired[4] = -0.05; }
+        if( 1.0 < torqueDesired[4]  ) { torqueDesired[4] =  0.05; }
+        if( torqueDesired[5] < -1.0 ) { torqueDesired[5] = -0.05; }
+        if( 1.0 < torqueDesired[5]  ) { torqueDesired[5] =  0.05; }
+        if( torqueDesired[6] < -1.0 ) { torqueDesired[6] = -0.05; }
+        if( 1.0 < torqueDesired[6]  ) { torqueDesired[6] =  0.05; }
+
+        TorqueDesired.SetForceTorque(torqueDesired);
+        PID.SetTorqueJoint(TorqueDesired);
+
+    }
+
 }
 
 void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
