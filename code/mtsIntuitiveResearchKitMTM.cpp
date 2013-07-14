@@ -138,17 +138,6 @@ void mtsIntuitiveResearchKitMTM::Run(void)
         break;
     case MTM_READY:
     case MTM_POSITION_CARTESIAN:
-        {
-            /*
-            vctFixedSizeVector<double,6> vctFT(0.0);
-            vctFT[0] = 0.5;
-            
-            prmForceCartesianSet prmFT;
-            prmFT.SetForce( vctFT );
-            prmFT.SetValid( true );
-            SetWrench( prmFT );
-            */
-        }
         break;
     default:
         break;
