@@ -34,28 +34,11 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
     mtsInterfaceRequired * interfaceRequiredMain = AddInterfaceRequired("Main");
     if (interfaceRequiredMain) {
         interfaceRequiredMain->AddFunction("SetRobotControlState", Main.SetRobotControlState);
+        interfaceRequiredMain->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorMessageEventHandler,
+                                                    this, "RobotErrorMsg");
+        interfaceRequiredMain->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StatusMessageEventHandler,
+                                                    this, "RobotStatusMsg");
     }
-
-#if 0
-    // Setup CISST Interface
-    mtsInterfaceRequired * interfaceRequirePSM = AddInterfaceRequired("PSM");
-    if (interfaceRequirePSM) {
-        interfaceRequirePSM->AddFunction("SetRobotControlState", PSM.SetRobotControlState);
-        interfaceRequirePSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandlerMaster,
-                                                  this, "RobotStatusMsg");
-        interfaceRequirePSM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandlerMaster,
-                                                  this, "RobotErrorMsg");
-    }
-
-    mtsInterfaceRequired * interfaceRequiredMTM = AddInterfaceRequired("MTM");
-    if (interfaceRequiredMTM) {
-        interfaceRequiredMTM->AddFunction("SetRobotControlState", MTM.SetRobotControlState);
-        interfaceRequiredMTM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandlerSlave,
-                                                   this, "RobotStatusMsg");
-        interfaceRequiredMTM->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandlerSlave,
-                                                   this, "RobotErrorMsg");
-    }
-#endif
     setupUi();
 }
 
@@ -97,17 +80,15 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetStateButton(QAbstractButton 
     Main.SetRobotControlState(mtsStdString(state));
 }
 
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotTextChanged(void)
+{
+    QTEMessages->verticalScrollBar()->setSliderPosition(QTEMessages->verticalScrollBar()->maximum());
+}
+
 void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 {
     QGridLayout * frameLayout = new QGridLayout;
 
-    QLabelCurrentStateMaster = new QLabel("undefined");
-    frameLayout->addWidget(QLabelCurrentStateMaster, 0, 0);
-
-    QLabelCurrentStateSlave = new QLabel("undefined");
-    frameLayout->addWidget(QLabelCurrentStateSlave, 1, 0);
-
-    // MTM
     QGroupBox * groupBox = new QGroupBox("Desired state");
     QRadioButton * homeState = new QRadioButton("Home");
     QRadioButton * teleOpMode = new QRadioButton("Teleop");
@@ -121,7 +102,12 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     vbox->addWidget(teleOpMode);
     vbox->addStretch(1);
     groupBox->setLayout(vbox);
-    frameLayout->addWidget(groupBox, 2, 0);
+    frameLayout->addWidget(groupBox, 0, 0);
+
+    QTEMessages = new QTextEdit();
+    QTEMessages->setReadOnly(true);
+    QTEMessages->ensureCursorVisible();
+    frameLayout->addWidget(QTEMessages, 0, 1);
 
     QVBoxLayout * mainLayout = new QVBoxLayout;
     mainLayout->addLayout(frameLayout);
@@ -132,24 +118,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 
     connect(group, SIGNAL(buttonClicked(QAbstractButton*)),
             this, SLOT(SlotSetStateButton(QAbstractButton*)));
+    connect(QTEMessages, SIGNAL(textChanged()),
+            this, SLOT(SlotTextChanged()));
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandlerMaster(const std::string & message)
-{
-    QLabelCurrentStateMaster->setText(message.c_str());
+void mtsIntuitiveResearchKitConsoleQtWidget::ErrorMessageEventHandler(const std::string & message) {
+    QTEMessages->append(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandlerMaster(const std::string & message)
-{
-    std::cerr << message << std::endl;
-}
-
-void mtsIntuitiveResearchKitConsoleQtWidget::StateMsgEventHandlerSlave(const std::string & message)
-{
-    QLabelCurrentStateSlave->setText(message.c_str());
-}
-
-void mtsIntuitiveResearchKitConsoleQtWidget::ErrorMsgEventHandlerSlave(const std::string & message)
-{
-    std::cerr << message << std::endl;
+void mtsIntuitiveResearchKitConsoleQtWidget::StatusMessageEventHandler(const std::string & message) {
+    QTEMessages->append(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
 }

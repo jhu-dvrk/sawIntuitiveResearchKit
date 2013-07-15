@@ -244,6 +244,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingPower(void)
         RobotIO.EnablePower();
         HomingPowerRequested = true;
         HomingPowerCurrentBiasRequested = false;
+        EventTriggers.RobotStatusMsg(this->GetName() + " power requested");
         return;
     }
 
@@ -261,6 +262,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingPower(void)
         vctBoolVec amplifiersStatus(NumberOfJoints + 1);
         RobotIO.GetAmpStatus(amplifiersStatus);
         if (amplifiersStatus.All()) {
+            EventTriggers.RobotStatusMsg(this->GetName() + " power on");
             this->SetState(MTM_HOMING_CALIBRATING_ARM);
         } else {
             EventTriggers.RobotErrorMsg(this->GetName() + " failed to enable power.");
@@ -313,6 +315,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
             PID.SetCheckJointLimit(true);
+            EventTriggers.RobotStatusMsg(this->GetName() + " arm calibrated");
             this->SetState(MTM_HOMING_CALIBRATING_ROLL);
         } else {
             // time out
@@ -366,6 +369,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
                 std::abs(JointCurrent.Element(RollIndex) - JointDesired.Element(RollIndex));
         if (trackingError > maxTrackingError) {
             HomingCalibrateRollLower = JointCurrent.Element(RollIndex);
+            EventTriggers.RobotStatusMsg(this->GetName() + " found roll lower limit");
         } else {
             // time out
             if (currentTime > HomingTimer + extraTime) {
@@ -405,6 +409,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
                 std::abs(JointCurrent.Element(RollIndex) - JointDesired.Element(RollIndex));
         if (trackingError > maxTrackingError) {
             HomingCalibrateRollUpper = JointCurrent.Element(RollIndex);
+            EventTriggers.RobotStatusMsg(this->GetName() + " found roll upper limit");
         } else {
             // time out
             if (currentTime > HomingTimer + extraTime) {
@@ -421,7 +426,6 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
     if (!HomingCalibrateRollSeekCenter) {
         // compute joint goal position, we assume PID is on from previous state
         JointTrajectory.Goal.SetAll(0.0);
-//        JointTrajectory.Goal.Element(RollIndex) = (HomingCalibrateRollUpper + HomingCalibrateRollLower) * 0.5;
         JointTrajectory.Goal.Element(RollIndex) = HomingCalibrateRollLower + 480.0 * cmnPI_180;
         JointTrajectory.Quintic.Set(currentTime,
                                     JointCurrent, JointTrajectory.Zero, JointTrajectory.Zero,
@@ -452,6 +456,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
             JointDesired.SetAll(0.0);
             SetPositionJoint(JointDesired);
             PID.SetCheckJointLimit(true);
+            EventTriggers.RobotStatusMsg(this->GetName() + " roll calibrated");
             this->SetState(MTM_READY);
         } else {
             // time out
@@ -480,7 +485,7 @@ void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce
     if (RobotState == MTM_POSITION_CARTESIAN) {
 
         vctDoubleVec jointDesired( 7, 0.0 );
-        for( size_t i=0; i<jointDesired.size(); i++ )
+        for ( size_t i=0; i<jointDesired.size(); i++ )
             { jointDesired[i] = JointCurrent[i]; }
         
         Manipulator.JacobianBody( jointDesired );

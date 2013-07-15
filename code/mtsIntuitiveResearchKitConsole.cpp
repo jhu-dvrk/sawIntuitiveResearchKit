@@ -107,6 +107,8 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     if (interfaceProvided) {
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetRobotControlState, this,
                                            "SetRobotControlState", std::string(""));
+        interfaceProvided->AddEventWrite(ErrorMessageEventTrigger, "RobotErrorMsg", std::string(""));
+        interfaceProvided->AddEventWrite(StatusMessageEventTrigger, "RobotStatusMsg", std::string(""));
     }
 }
 
@@ -141,6 +143,8 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
     newArm->InterfaceRequired = this->AddInterfaceRequired(newArm->Name());
     if (newArm->InterfaceRequired) {
         newArm->InterfaceRequired->AddFunction("SetRobotControlState", newArm->SetRobotControlState);
+        newArm->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorMessageEventHandler, this, "RobotErrorMsg");
+        newArm->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusMessageEventHandler, this, "RobotStatusMsg");
         mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
         componentManager->Connect(this->GetName(), newArm->Name(),
                                   newArm->Name(), "Robot");
@@ -155,10 +159,24 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
 
 void mtsIntuitiveResearchKitConsole::SetRobotControlState(const std::string & newState)
 {
+    mtsExecutionResult result;
     const MTMList::iterator end = Arms.end();
-    for (MTMList::iterator mtm = Arms.begin();
-         mtm != end;
-         ++mtm) {
-        std::cerr << (*mtm)->SetRobotControlState(newState);
+    for (MTMList::iterator arm = Arms.begin();
+         arm != end;
+         ++arm) {
+        result = (*arm)->SetRobotControlState(newState);
+        if (!result) {
+            CMN_LOG_CLASS_RUN_ERROR << "SetRobotControlState: failed to set state \""
+                                    << newState << "\" for arm \"" << (*arm)->Name()
+                                    << "\"" << std::endl;
+        }
     }
+}
+
+void mtsIntuitiveResearchKitConsole::ErrorMessageEventHandler(const std::string & message) {
+    ErrorMessageEventTrigger(message);
+}
+
+void mtsIntuitiveResearchKitConsole::StatusMessageEventHandler(const std::string & message) {
+    StatusMessageEventTrigger(message);
 }

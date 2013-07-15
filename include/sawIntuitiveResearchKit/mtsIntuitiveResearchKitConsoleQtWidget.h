@@ -44,6 +44,7 @@ public:
 
 private slots:
     void SlotSetStateButton(QAbstractButton* radioButton);
+    void SlotTextChanged(void);
 
 protected:
     void closeEvent(QCloseEvent * event);
@@ -62,14 +63,10 @@ protected:
         mtsFunctionWrite SetRobotControlState;
     } PSM;
 
-    void StateMsgEventHandlerMaster(const std::string & message);
-    void ErrorMsgEventHandlerMaster(const std::string & message);
+    void ErrorMessageEventHandler(const std::string & message);
+    void StatusMessageEventHandler(const std::string & message);
 
-    void StateMsgEventHandlerSlave(const std::string & message);
-    void ErrorMsgEventHandlerSlave(const std::string & message);
-
-    QLabel * QLabelCurrentStateMaster;
-    QLabel * QLabelCurrentStateSlave;
+    QTextEdit * QTEMessages;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsoleQtWidget);

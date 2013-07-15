@@ -85,11 +85,10 @@ protected:
 
     void SetRobotControlState(const std::string & newState);
 
-    void StateMsgEventHandlerMaster(const std::string & message);
-    void ErrorMsgEventHandlerMaster(const std::string & message);
-
-    void StateMsgEventHandlerSlave(const std::string & message);
-    void ErrorMsgEventHandlerSlave(const std::string & message);
+    void ErrorMessageEventHandler(const std::string & message);
+    mtsFunctionWrite ErrorMessageEventTrigger;
+    void StatusMessageEventHandler(const std::string & message);
+    mtsFunctionWrite StatusMessageEventTrigger;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsole);
