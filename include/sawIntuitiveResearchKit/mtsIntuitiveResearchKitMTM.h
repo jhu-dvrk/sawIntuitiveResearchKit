@@ -92,7 +92,6 @@ protected:
     void SetWrench(const prmForceCartesianSet & newForce);
     void SetRobotControlState(const std::string & state);
 
-
     struct {
         mtsFunctionWrite Enable;
         mtsFunctionRead GetPositionJoint;

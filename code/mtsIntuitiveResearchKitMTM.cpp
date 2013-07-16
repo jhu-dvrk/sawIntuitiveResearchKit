@@ -64,7 +64,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     this->StateTable.AddData(JointCurrentParam, "JointPosition");
     this->StateTable.AddData(GripperPosition, "GripperAngle");
 
-    // Setup cisst interfaces
+    // setup cisst interfaces
     mtsInterfaceRequired * interfaceRequired;
     interfaceRequired = AddInterfaceRequired("PID");
     if (interfaceRequired) {
@@ -121,7 +121,6 @@ void mtsIntuitiveResearchKitMTM::Startup(void)
 void mtsIntuitiveResearchKitMTM::Run(void)
 {
     ProcessQueuedEvents();
-
     GetRobotData();
 
     switch (RobotState) {
@@ -168,13 +167,13 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
 
         // when the robot is ready, we can comput cartesian position
         if (this->RobotState >= MTM_READY) {
+            CartesianCurrent = Manipulator.ForwardKinematics(JointCurrent);
             CartesianCurrent.Rotation().NormalizedSelf();
         } else {
             CartesianCurrent.Assign(vctFrm4x4::Identity());
         }
         CartesianCurrentParam.Position().From(CartesianCurrent);
 
-        CartesianCurrent = Manipulator.ForwardKinematics(JointCurrent);
         // get gripper based on analog inputs
         executionResult = RobotIO.GetAnalogInputPosSI(AnalogInputPosSI);
         if (!executionResult.IsOK()) {
