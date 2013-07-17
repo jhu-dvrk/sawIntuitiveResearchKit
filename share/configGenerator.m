@@ -172,8 +172,8 @@ VoltsToPosSIOffset = potOffset * 180.0 / pi .* pitch(rType,1:numOfActuator);
 
 % special case for master last joint (Hall effect sensor)
 if (rType == CONST_MST)
-    VoltsToPosSIScale(8) = -0.019311;
-    VoltsToPosSIOffset(8) = 0.082146;
+    VoltsToPosSIScale(8) = -23.1788;
+    VoltsToPosSIOffset(8) = 91.4238;
 end
 
 
