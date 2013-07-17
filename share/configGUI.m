@@ -131,53 +131,7 @@ else
    disp(filename);
    set(handles.cal_name,'String', fullfile(pathname, filename));
    handles.m_cal_filename = fullfile(pathname, filename);
-   
-   % parse style 
-   fid = fopen(handles.m_cal_filename, 'r');
-   
-   tline = fgetl(fid);
-   styleNo = -1;   % hardware model number
-   while ischar(tline)
-       %     disp(tline);
-       tline = fgetl(fid);
-       token = strtok(tline);
-       if (strcmp(token, 'style'))
-           disp('style');
-           styleNo = sscanf(tline, 'style = [ %d ]');
-           break;
-       end
-   end
-   
-   % check types 
-   % psm: 3014 
-   % mtml: 5013 
-   % mtmr: 5014
-   if (styleNo == 5013)
-       set(handles.mtmlButton, 'Enable', 'on');
-       set(handles.mtmrButton, 'Enable', 'off');
-       set(handles.psm1Button, 'Enable', 'off');
-       set(handles.psm2Button, 'Enable', 'off');
-       set(handles.typeBtnGroup, 'SelectedObject', handles.mtmlButton);
-       typeBtnGroup_SelectionChangeFcn(handles.mtmlButton, eventdata, handles);
-   elseif(styleNo == 5014)
-       set(handles.mtmlButton, 'Enable', 'off');
-       set(handles.mtmrButton, 'Enable', 'on');
-       set(handles.psm1Button, 'Enable', 'off');
-       set(handles.psm2Button, 'Enable', 'off');
-       set(handles.typeBtnGroup, 'SelectedObject', handles.mtmrButton);
-       typeBtnGroup_SelectionChangeFcn(handles.mtmrButton, eventdata, handles);
-   elseif(styleNo == 3014)
-       set(handles.mtmlButton, 'Enable', 'off');
-       set(handles.mtmrButton, 'Enable', 'off');
-       set(handles.psm1Button, 'Enable', 'on');
-       set(handles.psm2Button, 'Enable', 'on');
-       set(handles.typeBtnGroup, 'SelectedObject', handles.psm1Button);
-       typeBtnGroup_SelectionChangeFcn(handles.psm1Button, eventdata, handles);
-   else
-       disp('ERROR: unknown hardware type, please check cal file');
-   end
 end
-
 % save values
 guidata(hObject, handles);
 
@@ -271,8 +225,6 @@ function typeBtnGroup_SelectionChangeFcn(hObject, eventdata, handles)
 %	NewValue: handle of the currently selected object
 % handles    structure with handles and user data (see GUIDATA)
 
-disp('----- changed -----');
-
 handles.m_type = get(hObject, 'String');
 disp(handles.m_type);
 % update DigitalIn
@@ -304,9 +256,6 @@ guidata(hObject, handles);
 
 % update default bid
 bidDefaultButton_Callback(handles.bidDefaultButton, eventdata, handles);
-
-% update default drive direction
-dirDefaultButton_Callback(handles.dirDefaultButton, eventdata, handles);
 
 
 % --- Executes when entered data in editable cell(s) in tblDigital.
