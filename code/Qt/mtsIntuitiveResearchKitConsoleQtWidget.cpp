@@ -90,16 +90,23 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QGridLayout * frameLayout = new QGridLayout;
 
     QGroupBox * groupBox = new QGroupBox("Desired state");
-    QRadioButton * homeState = new QRadioButton("Home");
-    QRadioButton * teleOpMode = new QRadioButton("Teleop");
-    homeState->setChecked(true);
+    QRadioButton * idleButton = new QRadioButton("Idle");
+    QRadioButton * homeButton = new QRadioButton("Home");
+    QRadioButton * teleOpButton = new QRadioButton("Teleop");
+    QRadioButton * gcButton = new QRadioButton("Gravity");
+    idleButton->setChecked(true);
     QButtonGroup * group = new QButtonGroup;
-	group->addButton(homeState);
-	group->addButton(teleOpMode);
+    group->addButton(idleButton);
+    group->addButton(homeButton);
+    group->addButton(teleOpButton);
+    group->addButton(gcButton);
 	group->setExclusive(true);
+
     QVBoxLayout * vbox = new QVBoxLayout;
-    vbox->addWidget(homeState);
-    vbox->addWidget(teleOpMode);
+    vbox->addWidget(idleButton);
+    vbox->addWidget(homeButton);
+    vbox->addWidget(teleOpButton);
+    vbox->addWidget(gcButton);
     vbox->addStretch(1);
     groupBox->setLayout(vbox);
     frameLayout->addWidget(groupBox, 0, 0);

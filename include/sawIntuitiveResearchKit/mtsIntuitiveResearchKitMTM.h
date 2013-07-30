@@ -58,7 +58,8 @@ protected:
         MTM_HOMING_CALIBRATING_ARM, /*! Calibrate using pots and move to zero position for all joints except last one */
         MTM_HOMING_CALIBRATING_ROLL, /*! Calibrate last joint using hardware limit and tracking errors. */
         MTM_READY,
-        MTM_POSITION_CARTESIAN
+        MTM_POSITION_CARTESIAN,
+        MTM_GRAVITY_COMPENSATION
     };
 
     void Init(void);
@@ -83,7 +84,7 @@ protected:
     void RunHomingCalibrateRoll(void);
 
     /*! Ready state. */
-    void RunReady(void);
+    void RunGravityCompensation(void);
 
     /*! Wrapper to convert vector of 7 values to prmPositionJointSet and send to PID */
     void SetPositionJoint(const vctDoubleVec & newPosition);
@@ -94,10 +95,12 @@ protected:
 
     struct {
         mtsFunctionWrite Enable;
+        mtsFunctionWrite EnableTrqMode;
         mtsFunctionRead GetPositionJoint;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetTorqueJoint;
         mtsFunctionWrite SetCheckJointLimit;
+        mtsFunctionWrite SetTorqueOffset;
     } PID;
 
     // Required interface

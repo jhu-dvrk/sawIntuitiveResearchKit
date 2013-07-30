@@ -69,10 +69,12 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     interfaceRequired = AddInterfaceRequired("PID");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("Enable", PID.Enable);
+        interfaceRequired->AddFunction("EnableTrqMode", PID.EnableTrqMode);
         interfaceRequired->AddFunction("GetPositionJoint", PID.GetPositionJoint);
         interfaceRequired->AddFunction("SetPositionJoint", PID.SetPositionJoint);
         interfaceRequired->AddFunction("SetTorqueJoint", PID.SetTorqueJoint);
         interfaceRequired->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
+        interfaceRequired->AddFunction("SetTorqueOffset", PID.SetTorqueOffset);
     }
 
     // Robot IO
@@ -137,6 +139,9 @@ void mtsIntuitiveResearchKitMTM::Run(void)
         break;
     case MTM_READY:
     case MTM_POSITION_CARTESIAN:
+        break;
+    case MTM_GRAVITY_COMPENSATION:
+        RunGravityCompensation();
         break;
     default:
         break;
@@ -221,6 +226,16 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
             return;
         }
         EventTriggers.RobotStatusMsg(this->GetName() + " position cartesian");
+        break;
+    case MTM_GRAVITY_COMPENSATION:
+        if (this->RobotState < MTM_READY) {
+            EventTriggers.RobotErrorMsg(this->GetName() + " is not homed");
+            return;
+        }
+        EventTriggers.RobotStatusMsg(this->GetName() + " gravity compensation");
+        PID.EnableTrqMode(true);
+        PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
+        std::cerr << "Set gravity comp" << std::endl;
         break;
     default:
         break;
@@ -471,6 +486,30 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
     }
 }
 
+void mtsIntuitiveResearchKitMTM::RunGravityCompensation(void)
+{
+    vctDoubleVec q(7, 0.0);
+    vctDoubleVec qd(7, 0.0);
+    vctDoubleVec tau(7, 0.0);
+    std::copy(JointCurrent.begin(), JointCurrent.begin() + 7 , q.begin());
+
+    vctDoubleVec torqueDesired(8, 0.0);
+    tau.ForceAssign(Manipulator.CCG(q, qd));
+    tau[0] = q(0) * 0.0564 + 0.08;
+    std::copy(tau.begin(), tau.end() , torqueDesired.begin());
+
+
+    torqueDesired[3]=0.0;
+    torqueDesired[4]=0.0;
+    torqueDesired[5]=0.0;
+    torqueDesired[6]=0.0;
+
+    TorqueDesired.SetForceTorque(torqueDesired);
+    PID.SetTorqueJoint(TorqueDesired);
+}
+
+
+
 void mtsIntuitiveResearchKitMTM::SetPositionJoint(const vctDoubleVec & newPosition)
 {
     JointDesiredParam.Goal().Assign(newPosition, NumberOfJoints);
@@ -552,6 +591,10 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
         SetState(MTM_HOMING_POWERING);
     } else if ((state == "Cartesian position") || (state == "Teleop")) {
         SetState(MTM_POSITION_CARTESIAN);
+        std::cerr << "set to teleop state" << std::endl;
+    } else if (state == "Gravity") {
+        SetState(MTM_GRAVITY_COMPENSATION);
+        std::cerr << "set to gravity compensation" << std::endl;
     } else {
         EventTriggers.RobotErrorMsg(this->GetName() + ": unsupported state " + state);
     }
