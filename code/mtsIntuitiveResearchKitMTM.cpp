@@ -567,7 +567,6 @@ void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce
         PID.SetTorqueJoint(TorqueDesired);
 
     }
-
 }
 
 void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
