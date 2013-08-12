@@ -266,7 +266,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
         // is not too close to the RCM otherwise small cartesian motions lead to large joint motions
         if (JointCurrent.Element(2) < 80.0) {
             JointDesired.Element(2) = 85.0;
-            SetPositionJoint(JointDesired);
+            SetPositionJointLocal(JointDesired);
         }
 
         EventTriggers.RobotStatusMsg(this->GetName() + " position cartesian");
@@ -331,7 +331,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         PID.SetCheckJointLimit(false);
         // enable PID and start from current position
         JointDesired.ForceAssign(JointCurrent);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
         PID.Enable(true);
 
         // compute joint goal position
@@ -350,10 +350,10 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
     if (currentTime <= HomingTimer) {
         JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
                                          JointTrajectory.Velocity, JointTrajectory.Acceleration);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
     } else {
         // request final position in case trajectory rounding prevent us to get there
-        SetPositionJoint(JointTrajectory.Goal);
+        SetPositionJointLocal(JointTrajectory.Goal);
 
         // check position
         JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointCurrent);
@@ -404,7 +404,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         EngagingJointSet[6] = 0.0;
         JointDesired.ForceAssign(EngagingJointSet);
         PID.SetCheckJointLimit(true);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
 
         // Adapter engage done
         EngagingStopwatch.Reset();
@@ -416,7 +416,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         EngagingJointSet[5] =   65.0 * cmnPI / 180.0;
         EngagingJointSet[6] =    0.0 * cmnPI / 180.0;
         JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
         EngagingJointSet[3] =  300.0 * cmnPI / 180.0;
@@ -424,7 +424,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         EngagingJointSet[5] =  -65.0 * cmnPI / 180.0;
         EngagingJointSet[6] =    0.0 * cmnPI / 180.0;
         JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (500 * cmn_ms)){
         EngagingJointSet[3] = -300.0 * cmnPI / 180.0;
@@ -432,7 +432,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         EngagingJointSet[5] =   65.0 * cmnPI / 180.0;
         EngagingJointSet[6] =    0.0 * cmnPI / 180.0;
         JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
     }
 }
 
@@ -452,7 +452,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         EngagingJointSet[6] = 10.0 * cmnPI / 180.0;
         JointDesired.ForceAssign(EngagingJointSet);
         PID.SetCheckJointLimit(true);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
 
         // Adapter engage done
         EngagingStopwatch.Reset();
@@ -464,7 +464,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         EngagingJointSet[5] =  10.0 * cmnPI / 180.0;
         EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
         JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
         EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
@@ -472,7 +472,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         EngagingJointSet[5] = -10.0 * cmnPI / 180.0;
         EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
         JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (1000 * cmn_ms)){
         EngagingJointSet[3] =  280.0 * cmnPI / 180.0;
@@ -480,7 +480,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         EngagingJointSet[5] =  10.0 * cmnPI / 180.0;
         EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
         JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (500 * cmn_ms)){
         EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
@@ -488,7 +488,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         EngagingJointSet[5] = -10.0 * cmnPI / 180.0;
         EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
         JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
     }
 
 }
@@ -498,7 +498,7 @@ void mtsIntuitiveResearchKitPSM::RunPositionCartesian(void)
     // should prevent user to go to close to RCM
 }
 
-void mtsIntuitiveResearchKitPSM::SetPositionJoint(const vctDoubleVec & newPosition)
+void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
     JointDesiredParam.Goal().Assign(newPosition, NumberOfJoints);
     JointDesiredParam.Goal().Element(7) = 0.0;
@@ -529,7 +529,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
         // maybe we should cache the request in this component and later
         // in the Run method push the request.  This way, only the latest
         // request would be pushed if multiple are queued.
-        SetPositionJoint(jointDesired);
+        SetPositionJointLocal(jointDesired);
     } else {
         CMN_LOG_CLASS_RUN_WARNING << "PSM not ready" << std::endl;
     }

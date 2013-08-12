@@ -91,7 +91,7 @@ protected:
     void RunPositionCartesian(void);
 
     /*! Wrapper to convert vector of 7 values to prmPositionJointSet and send to PID */
-    void SetPositionJoint(const vctDoubleVec & newPosition);
+    void SetPositionJointLocal(const vctDoubleVec & newPosition);
 
     void EventHandlerAdapter(const prmEventButton & button);
     void EventHandlerTool(const prmEventButton & button);
