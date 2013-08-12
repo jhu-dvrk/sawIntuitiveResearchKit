@@ -95,7 +95,7 @@ protected:
 
     struct {
         mtsFunctionWrite Enable;
-        mtsFunctionWrite EnableTrqMode;
+        mtsFunctionWrite EnableTorqueMode;
         mtsFunctionRead GetPositionJoint;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetTorqueJoint;
@@ -122,19 +122,28 @@ protected:
         mtsFunctionWrite RobotErrorMsg;
     } EventTriggers;
 
+
+    //! robot cartesian position
     prmPositionCartesianGet CartesianCurrentParam;
     vctFrm4x4 CartesianCurrent;
-    vctFrm4x4 CartesianPrevious;
+    //! robot current joint position
     prmPositionJointGet JointCurrentParam;
     vctDoubleVec JointCurrent;
+    //! robot desired joint position
     prmPositionJointSet JointDesiredParam;
     vctDoubleVec JointDesired;
+    //! desired torque for torque mode
     prmForceTorqueJointSet TorqueDesired;
-    robManipulator Manipulator;
+
+    //! Analog Input from Hardware for Gripper
     vctDoubleVec AnalogInputPosSI;
+    //! Gripper angle (deg)
     double GripperPosition;
 
+    //! robot control mode
     RobotStateType RobotState;
+    //! robot kinematics
+    robManipulator Manipulator;
 
     struct {
         robQuintic Quintic;

@@ -69,7 +69,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     interfaceRequired = AddInterfaceRequired("PID");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("Enable", PID.Enable);
-        interfaceRequired->AddFunction("EnableTrqMode", PID.EnableTrqMode);
+        interfaceRequired->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
         interfaceRequired->AddFunction("GetPositionJoint", PID.GetPositionJoint);
         interfaceRequired->AddFunction("SetPositionJoint", PID.SetPositionJoint);
         interfaceRequired->AddFunction("SetTorqueJoint", PID.SetTorqueJoint);
@@ -233,7 +233,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
             return;
         }
         EventTriggers.RobotStatusMsg(this->GetName() + " gravity compensation");
-        PID.EnableTrqMode(true);
+        PID.EnableTorqueMode(true);
         PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
         std::cerr << "Set gravity comp" << std::endl;
         break;
