@@ -131,6 +131,7 @@ protected:
 
     // Functions for events
     struct {
+        mtsFunctionVoid GripperPinch;
         mtsFunctionWrite RobotStatusMsg;
         mtsFunctionWrite RobotErrorMsg;
     } EventTriggers;
@@ -145,8 +146,8 @@ protected:
     //! robot desired joint position
     prmPositionJointSet JointDesiredParam;
     vctDoubleVec JointDesired;
-    //! robot joint position when cluthed
-    vctDoubleVec JointClutch;
+    //! robot cartesian position when cluthed
+    vctFrm4x4 CartesianClutched;
 
     //! desired torque for torque mode
     prmForceTorqueJointSet TorqueDesired;

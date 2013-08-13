@@ -191,8 +191,8 @@ int main(int argc, char ** argv)
                               mtm->Name(), "Robot");
     componentManager->Connect("tele", "Slave",
                               psm->Name(), "Robot");
-    componentManager->Connect("tele", "Clutch",
-                              "io", "CLUTCH");
+    componentManager->Connect("tele", "CLUTCH", "io", "CLUTCH");
+    componentManager->Connect("tele", "COAG", "io", "COAG");
 
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;

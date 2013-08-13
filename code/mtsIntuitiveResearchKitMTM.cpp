@@ -92,12 +92,15 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
     if (interfaceProvided) {
+        // Cartesian
         interfaceProvided->AddCommandReadState(this->StateTable, JointCurrentParam, "GetPositionJoint");
         interfaceProvided->AddCommandReadState(this->StateTable, CartesianCurrentParam, "GetPositionCartesian");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetPositionCartesian, this, "SetPositionCartesian");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetWrench, this, "SetWrench");
-
+        // Gripper
         interfaceProvided->AddCommandReadState(this->StateTable, GripperPosition, "GetGripperPosition");
+        interfaceProvided->AddEventVoid(EventTriggers.GripperPinch, "GripperPinchEvent");
+        // Robot State
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetRobotControlState,
                                            this, "SetRobotControlState", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotStatusMsg, "RobotStatusMsg", std::string(""));
@@ -250,8 +253,8 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
         }
         EventTriggers.RobotStatusMsg(this->GetName() + " clutch mode");
 
-        // save current joint to JointClutch
-        JointClutch.ForceAssign(JointCurrent);
+        // save current cartesian position to CartesianCluted
+        CartesianClutched.Assign(CartesianCurrent);
         // set J1-J3 to torque mode (GC) and J4-J7 to PID mode
         torqueMode.SetAll(false);
         std::fill(torqueMode.begin(), torqueMode.begin() + 3, true);
@@ -552,7 +555,9 @@ void mtsIntuitiveResearchKitMTM::RunClutch(void)
     PID.SetTorqueJoint(TorqueDesired);
 
     // J4-J7
-    SetPositionJoint(JointClutch);
+    JointDesired.Assign(JointCurrent);
+    Manipulator.InverseKinematics(JointDesired, CartesianClutched);
+    SetPositionJoint(JointDesired);
 }
 
 
