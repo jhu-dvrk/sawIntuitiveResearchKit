@@ -187,10 +187,8 @@ int main(int argc, char ** argv)
     componentManager->Connect(textToSpeech->GetName(), "ErrorMsg", psm->Name(), "Robot");
 
     // connect teleop to Master + Slave + Clutch
-    componentManager->Connect("tele", "Master",
-                              mtm->Name(), "Robot");
-    componentManager->Connect("tele", "Slave",
-                              psm->Name(), "Robot");
+    componentManager->Connect("tele", "Master", mtm->Name(), "Robot");
+    componentManager->Connect("tele", "Slave", psm->Name(), "Robot");
     componentManager->Connect("tele", "CLUTCH", "io", "CLUTCH");
     componentManager->Connect("tele", "COAG", "io", "COAG");
 

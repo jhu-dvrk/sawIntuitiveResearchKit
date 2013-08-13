@@ -120,6 +120,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
                                            this, "SetRobotControlState", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotStatusMsg, "RobotStatusMsg", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotErrorMsg, "RobotErrorMsg", std::string(""));
+        interfaceProvided->AddEventWrite(EventTriggers.ManipClutchBtn, "ManipClutchBtn", prmEventButton());
+        interfaceProvided->AddEventWrite(EventTriggers.SUJClutchBtn, "SUJClutchBtn", prmEventButton());
     }
 }
 
@@ -289,6 +291,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
         }
         // Disable PID to allow mannual move
         PID.Enable(mtsBool(false));
+        EventTriggers.RobotStatusMsg(this->GetName() + " in manual mode");
         break;
     default:
         break;
@@ -568,6 +571,8 @@ void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
         SetState(PSM_HOMING_POWERING);
     } else if ((state == "Cartesian position") || (state == "Teleop")) {
         SetState(PSM_POSITION_CARTESIAN);
+    } else if (state == "Manual") {
+        SetState(PSM_MANUAL);
     } else {
         EventTriggers.RobotErrorMsg(this->GetName() + ": unsupported state " + state);
     }
@@ -601,24 +606,26 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton &button)
 
 void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton &button)
 {
+    // Pass events
+    EventTriggers.ManipClutchBtn(button);
+
+    // Log events
     if (button.Type() == prmEventButton::PRESSED) {
-        if (RobotState >= PSM_READY) {
-            SetState(PSM_MANUAL);
-            EventTriggers.RobotStatusMsg(this->GetName() + " manual mode, ManipClutch Pressed");
-        }
+        CMN_LOG_CLASS_RUN_DEBUG << "ManipClutch pressed" << std::endl;
     } else {
-        if (RobotState >= PSM_READY) {
-            SetState(PSM_POSITION_CARTESIAN);
-            EventTriggers.RobotStatusMsg(this->GetName() + " position mode, ManipClutch Released");
-        }
+        CMN_LOG_CLASS_RUN_DEBUG << "ManipClutch released" << std::endl;
     }
 }
 
 void mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch(const prmEventButton &button)
 {
+    // Pass events
+    EventTriggers.SUJClutchBtn(button);
+
+    // Log events
     if (button.Type() == prmEventButton::PRESSED) {
-        CMN_LOG_CLASS_RUN_ERROR << "SUJClutch press" << std::endl;
+        CMN_LOG_CLASS_RUN_DEBUG << "SUJClutch pressed" << std::endl;
     } else {
-        CMN_LOG_CLASS_RUN_ERROR << "SUJClutch release" << std::endl;
+        CMN_LOG_CLASS_RUN_DEBUG << "SUJClutch released" << std::endl;
     }
 }

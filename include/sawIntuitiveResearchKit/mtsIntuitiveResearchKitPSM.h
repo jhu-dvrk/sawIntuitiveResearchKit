@@ -131,10 +131,22 @@ protected:
         bool IsPresent;
     } Tool;
 
+    struct {
+        mtsFunctionRead GetButton;
+        bool IsPressed;
+    } ManipClutch;
+
+    struct {
+        mtsFunctionRead GetButton;
+        bool IsPressed;
+    } SUJClutch;
+
     // Functions for events
     struct {
         mtsFunctionWrite RobotStatusMsg;
         mtsFunctionWrite RobotErrorMsg;
+        mtsFunctionWrite ManipClutchBtn;
+        mtsFunctionWrite SUJClutchBtn;
     } EventTriggers;
 
     prmPositionCartesianGet CartesianCurrentParam;
