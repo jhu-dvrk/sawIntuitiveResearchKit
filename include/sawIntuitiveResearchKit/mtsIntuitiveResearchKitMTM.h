@@ -59,7 +59,8 @@ protected:
         MTM_HOMING_CALIBRATING_ROLL, /*! Calibrate last joint using hardware limit and tracking errors. */
         MTM_READY,
         MTM_POSITION_CARTESIAN,
-        MTM_GRAVITY_COMPENSATION
+        MTM_GRAVITY_COMPENSATION,
+        MTM_CLUTCH
     };
 
     void Init(void);
@@ -85,6 +86,9 @@ protected:
 
     /*! Ready state. */
     void RunGravityCompensation(void);
+
+    /*! Run Clutch */
+    void RunClutch(void);
 
     /*! Wrapper to convert vector of 7 values to prmPositionJointSet and send to PID */
     void SetPositionJoint(const vctDoubleVec & newPosition);

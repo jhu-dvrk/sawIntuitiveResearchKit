@@ -143,6 +143,8 @@ void mtsIntuitiveResearchKitMTM::Run(void)
     case MTM_GRAVITY_COMPENSATION:
         RunGravityCompensation();
         break;
+    case MTM_CLUTCH:
+        RunClutch();
     default:
         break;
     }
@@ -195,6 +197,8 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
 
 void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
 {
+    vctBoolVec torqueMode(8, true);
+
     switch (newState) {
     case MTM_UNINITIALIZED:
         EventTriggers.RobotStatusMsg(this->GetName() + " not initialized");
@@ -233,9 +237,12 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
             return;
         }
         EventTriggers.RobotStatusMsg(this->GetName() + " gravity compensation");
-        PID.EnableTorqueMode(true);
+
+        PID.EnableTorqueMode(torqueMode);
         PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
         std::cerr << "Set gravity comp" << std::endl;
+        break;
+    case MTM_CLUTCH:
         break;
     default:
         break;
@@ -508,6 +515,10 @@ void mtsIntuitiveResearchKitMTM::RunGravityCompensation(void)
     PID.SetTorqueJoint(TorqueDesired);
 }
 
+void mtsIntuitiveResearchKitMTM::RunClutch(void)
+{
+    // run clutch
+}
 
 
 void mtsIntuitiveResearchKitMTM::SetPositionJoint(const vctDoubleVec & newPosition)
@@ -590,11 +601,13 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
         SetState(MTM_HOMING_POWERING);
     } else if ((state == "Cartesian position") || (state == "Teleop")) {
         SetState(MTM_POSITION_CARTESIAN);
-        std::cerr << "set to teleop state" << std::endl;
     } else if (state == "Gravity") {
         SetState(MTM_GRAVITY_COMPENSATION);
-        std::cerr << "set to gravity compensation" << std::endl;
+    } else if (state == "Clutch") {
+        SetState(MTM_CLUTCH);
     } else {
         EventTriggers.RobotErrorMsg(this->GetName() + ": unsupported state " + state);
     }
+
+    CMN_LOG_CLASS_RUN_DEBUG << "SetRobotControlState: " << state << std::endl;
 }
