@@ -51,6 +51,15 @@ public:
     void Cleanup(void);
 
 protected:
+    enum JointName {
+        JNT_OUTER_YAW = 0,
+        JNT_OUTER_PITCH_1 = 1,
+        JNT_OUTER_PITCH_2 = 2,
+        JNT_SETUP_JNT = 3,
+        JNT_WRIST_PITCH = 4,
+        JNT_WRIST_YAW = 5,
+        JNT_WRIST_ROLL = 6
+    };
 
     enum RobotStateType {
         MTM_UNINITIALIZED, /*! State when constructed */
@@ -136,6 +145,9 @@ protected:
     //! robot desired joint position
     prmPositionJointSet JointDesiredParam;
     vctDoubleVec JointDesired;
+    //! robot joint position when cluthed
+    vctDoubleVec JointClutch;
+
     //! desired torque for torque mode
     prmForceTorqueJointSet TorqueDesired;
 

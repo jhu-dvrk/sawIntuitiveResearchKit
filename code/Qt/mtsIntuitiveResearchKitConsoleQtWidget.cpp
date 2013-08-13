@@ -94,12 +94,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QRadioButton * homeButton = new QRadioButton("Home");
     QRadioButton * teleOpButton = new QRadioButton("Teleop");
     QRadioButton * gcButton = new QRadioButton("Gravity");
+    QRadioButton * clutchButton = new QRadioButton("Clutch");
     idleButton->setChecked(true);
     QButtonGroup * group = new QButtonGroup;
     group->addButton(idleButton);
     group->addButton(homeButton);
     group->addButton(teleOpButton);
     group->addButton(gcButton);
+    group->addButton(clutchButton);
 	group->setExclusive(true);
 
     QVBoxLayout * vbox = new QVBoxLayout;
@@ -107,6 +109,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     vbox->addWidget(homeButton);
     vbox->addWidget(teleOpButton);
     vbox->addWidget(gcButton);
+    vbox->addWidget(clutchButton);
     vbox->addStretch(1);
     groupBox->setLayout(vbox);
     frameLayout->addWidget(groupBox, 0, 0);

@@ -243,6 +243,19 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
         std::cerr << "Set gravity comp" << std::endl;
         break;
     case MTM_CLUTCH:
+        // check if MTM is ready
+        if (this->RobotState < MTM_READY) {
+            EventTriggers.RobotErrorMsg(this->GetName() + " is not homed");
+            return;
+        }
+        EventTriggers.RobotStatusMsg(this->GetName() + " clutch mode");
+
+        // save current joint to JointClutch
+        JointClutch.ForceAssign(JointCurrent);
+        // set J1-J3 to torque mode (GC) and J4-J7 to PID mode
+        torqueMode.SetAll(false);
+        std::fill(torqueMode.begin(), torqueMode.begin() + 3, true);
+        PID.EnableTorqueMode(torqueMode);
         break;
     default:
         break;
@@ -505,11 +518,18 @@ void mtsIntuitiveResearchKitMTM::RunGravityCompensation(void)
     tau[0] = q(0) * 0.0564 + 0.08;
     std::copy(tau.begin(), tau.end() , torqueDesired.begin());
 
-
     torqueDesired[3]=0.0;
     torqueDesired[4]=0.0;
     torqueDesired[5]=0.0;
     torqueDesired[6]=0.0;
+
+    // For J7 (wrist roll) to -1.5 PI to 1.5 PI
+    double gain = 0.05;
+    if (JointCurrent[JNT_WRIST_ROLL] > 1.5 * cmnPI) {
+        torqueDesired = (1.5 * cmnPI - JointCurrent[JNT_WRIST_ROLL]) * gain;
+    } else if (JointCurrent[JNT_WRIST_ROLL] < -1.5 * cmnPI) {
+        torqueDesired = (-1.5 * cmnPI - JointCurrent[JNT_WRIST_ROLL]) * gain;
+    }
 
     TorqueDesired.SetForceTorque(torqueDesired);
     PID.SetTorqueJoint(TorqueDesired);
@@ -517,7 +537,22 @@ void mtsIntuitiveResearchKitMTM::RunGravityCompensation(void)
 
 void mtsIntuitiveResearchKitMTM::RunClutch(void)
 {
-    // run clutch
+    // J1-J3
+    vctDoubleVec q(7, 0.0);
+    vctDoubleVec qd(7, 0.0);
+    vctDoubleVec tau(7, 0.0);
+    std::copy(JointCurrent.begin(), JointCurrent.begin() + 7 , q.begin());
+
+    vctDoubleVec torqueDesired(8, 0.0);
+    tau.ForceAssign(Manipulator.CCG(q, qd));
+    tau[0] = q(0) * 0.0564 + 0.08;
+    std::copy(tau.begin(), tau.end() , torqueDesired.begin());
+
+    TorqueDesired.SetForceTorque(torqueDesired);
+    PID.SetTorqueJoint(TorqueDesired);
+
+    // J4-J7
+    SetPositionJoint(JointClutch);
 }
 
 
