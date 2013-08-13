@@ -233,6 +233,11 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
             return;
         }
         EventTriggers.RobotStatusMsg(this->GetName() + " position cartesian");
+
+        // Disable torque mode for all joints
+        torqueMode.SetAll(false);
+        PID.EnableTorqueMode(torqueMode);
+        PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
         break;
     case MTM_GRAVITY_COMPENSATION:
         if (this->RobotState < MTM_READY) {
@@ -243,7 +248,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
 
         PID.EnableTorqueMode(torqueMode);
         PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
-        std::cerr << "Set gravity comp" << std::endl;
+        CMN_LOG_CLASS_RUN_DEBUG << "Set gravity comp" << std::endl;
         break;
     case MTM_CLUTCH:
         // check if MTM is ready

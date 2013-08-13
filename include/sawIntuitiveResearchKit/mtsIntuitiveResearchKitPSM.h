@@ -60,7 +60,8 @@ protected:
         PSM_ADAPTER_ENGAGED, /*! Do nothing, just wait for tool.  Fall back state when tool is removed. */ 
         PSM_ENGAGING_TOOL,
         PSM_READY,
-        PSM_POSITION_CARTESIAN
+        PSM_POSITION_CARTESIAN, /**< Go to command cartesian position */
+        PSM_MANUAL /**< User manually move robot */
     };
 
     void Init(void);

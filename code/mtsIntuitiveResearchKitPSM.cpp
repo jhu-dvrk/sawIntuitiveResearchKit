@@ -171,6 +171,8 @@ void mtsIntuitiveResearchKitPSM::Run(void)
     case PSM_POSITION_CARTESIAN:
         RunPositionCartesian();
         break;
+    case PSM_MANUAL:
+        break;
     default:
         break;
     }
@@ -262,14 +264,31 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
             EventTriggers.RobotErrorMsg(this->GetName() + " is not homed");
             return;
         }
+
+        // Enable PID
+        PID.Enable(mtsBool(true));
+
+        // set command joint position to joint current
+        JointDesired.ForceAssign(JointCurrent);
+
         // not really where this should be on the long run but we need to ensure that tool tip
         // is not too close to the RCM otherwise small cartesian motions lead to large joint motions
-        if (JointCurrent.Element(2) < 80.0) {
-            JointDesired.Element(2) = 85.0;
-            SetPositionJointLocal(JointDesired);
+        if (JointCurrent.Element(2) < 80.0 / 1000) {
+            JointDesired.Element(2) = 85.0;  // NOTE: divide 1000 is an ugly hack
+        } else {
+            JointDesired.Element(2) *= 1000;
         }
+        SetPositionJointLocal(JointDesired);
 
         EventTriggers.RobotStatusMsg(this->GetName() + " position cartesian");
+        break;
+    case PSM_MANUAL:
+        if (this->RobotState < PSM_READY) {
+            EventTriggers.RobotErrorMsg(this->GetName() + " is not homed");
+            return;
+        }
+        // Disable PID to allow mannual move
+        PID.Enable(mtsBool(false));
         break;
     default:
         break;
@@ -498,6 +517,8 @@ void mtsIntuitiveResearchKitPSM::RunPositionCartesian(void)
     // should prevent user to go to close to RCM
 }
 
+
+
 void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
     JointDesiredParam.Goal().Assign(newPosition, NumberOfJoints);
@@ -581,9 +602,15 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton &button)
 void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton &button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
-        CMN_LOG_CLASS_RUN_ERROR << "ManipClutch press" << std::endl;
+        if (RobotState >= PSM_READY) {
+            SetState(PSM_MANUAL);
+            EventTriggers.RobotStatusMsg(this->GetName() + " manual mode, ManipClutch Pressed");
+        }
     } else {
-        CMN_LOG_CLASS_RUN_ERROR << "ManipClutch release" << std::endl;
+        if (RobotState >= PSM_READY) {
+            SetState(PSM_POSITION_CARTESIAN);
+            EventTriggers.RobotStatusMsg(this->GetName() + " position mode, ManipClutch Released");
+        }
     }
 }
 
