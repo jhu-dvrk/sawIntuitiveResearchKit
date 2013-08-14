@@ -100,7 +100,7 @@ protected:
     void EventHandlerSUJClutch(const prmEventButton & button);
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
-    void SetGripperPosition(const double & gripperPosition);
+    void SetOpenAngle(const double & openAngle);
     void SetRobotControlState(const std::string & state);
 
     struct {
@@ -158,7 +158,10 @@ protected:
     vctDoubleVec JointDesired;
     robManipulator Manipulator;
     vctFrm4x4 Frame6to7;
+    vctFrm4x4 Frame6to7Inverse;
 
+    vctFrm4x4 CartesianPositionFrm;
+    double DesiredOpenAngle;
     RobotStateType RobotState;
 
     struct {

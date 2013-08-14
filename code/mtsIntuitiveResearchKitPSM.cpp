@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 
 // system include
 #include <iostream>
+#include <time.h>
 
 // cisst
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
@@ -46,6 +47,7 @@ mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicCons
 void mtsIntuitiveResearchKitPSM::Init(void)
 {
     SetState(PSM_UNINITIALIZED);
+    DesiredOpenAngle = 0 * cmnPI_180;
 
     // initialize trajectory data
     JointCurrent.SetSize(NumberOfJoints);
@@ -86,6 +88,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // Event Adapter engage: digital input button event from PSM
     interfaceRequired = AddInterfaceRequired("Adapter");
     if (interfaceRequired) {
+        Adapter.IsPresent = false;
         interfaceRequired->AddFunction("GetButton", Adapter.GetButton);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerAdapter, this, "Button");
     }
@@ -93,6 +96,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // Event Tool engage: digital input button event from PSM
     interfaceRequired = AddInterfaceRequired("Tool");
     if (interfaceRequired) {
+        Tool.IsPresent = false;
         interfaceRequired->AddFunction("GetButton", Tool.GetButton);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerTool, this, "Button");
     }
@@ -114,7 +118,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
         interfaceProvided->AddCommandReadState(this->StateTable, JointCurrentParam, "GetPositionJoint");
         interfaceProvided->AddCommandReadState(this->StateTable, CartesianCurrentParam, "GetPositionCartesian");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionCartesian, this, "SetPositionCartesian");
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetGripperPosition, this, "SetGripperPosition");
+        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetOpenAngle, this, "SetOpenAngle");
 
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetRobotControlState,
                                            this, "SetRobotControlState", std::string(""));
@@ -143,10 +147,14 @@ void mtsIntuitiveResearchKitPSM::Startup(void)
                      0.0,  0.0,  1.0, 0.0102,
                      -1.0, 0.0,  0.0, 0.0,
                      0.0,  0.0,  0.0, 1.0);
+    Frame6to7Inverse = Frame6to7.Inverse();
 }
 
 void mtsIntuitiveResearchKitPSM::Run(void)
 {
+    struct timespec startTime, stopTime;
+    clock_gettime(CLOCK_MONOTONIC, &startTime);
+
     ProcessQueuedEvents();
     GetRobotData();
 
@@ -160,11 +168,17 @@ void mtsIntuitiveResearchKitPSM::Run(void)
         RunHomingCalibrateArm();
         break;
     case PSM_ARM_CALIBRATED:
+        if (Adapter.IsPresent && !Tool.IsPresent) {
+            SetState(PSM_ENGAGING_ADAPTER);
+        } else if (Adapter.IsPresent && Tool.IsPresent) {
+            SetState(PSM_ENGAGING_TOOL);
+        }
         break;
     case PSM_ENGAGING_ADAPTER:
         RunEngagingAdapter();
         break;
     case PSM_ADAPTER_ENGAGED:
+        // choose next state
         break;
     case PSM_ENGAGING_TOOL:
         RunEngagingTool();
@@ -181,6 +195,12 @@ void mtsIntuitiveResearchKitPSM::Run(void)
 
     RunEvent();
     ProcessQueuedCommands();
+
+    clock_gettime(CLOCK_MONOTONIC, &stopTime);
+    double timeDif = ((double)startTime.tv_sec + 1.0e-9*startTime.tv_nsec) -
+            ((double)stopTime.tv_sec + 1.0e-9*stopTime.tv_nsec);
+//    CMN_LOG_CLASS_RUN_WARNING << "period = " << -timeDif << std::endl;
+
 }
 
 void mtsIntuitiveResearchKitPSM::Cleanup(void)
@@ -197,7 +217,7 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
         if (!executionResult.IsOK()) {
             CMN_LOG_CLASS_RUN_ERROR << "GetRobotData: call to GetJointPosition failed \""
                                     << executionResult << "\"" << std::endl;
-        }    
+        }
         
         // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
         JointCurrentParam.Position().Element(2) /= 1000.0;
@@ -238,6 +258,12 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
         break;
     case PSM_ARM_CALIBRATED:
         this->EventTriggers.RobotStatusMsg(this->GetName() + " arm calibrated");
+        // check if adpater & tool are present
+        Adapter.GetButton(Adapter.IsPresent);
+        Adapter.IsPresent = !Adapter.IsPresent;
+        Tool.GetButton(Tool.IsPresent);
+        Tool.IsPresent = !Tool.IsPresent;
+        CMN_LOG_CLASS_RUN_DEBUG << "Adapter: " << Adapter.IsPresent << " Tool: " << Tool.IsPresent << std::endl;
         break;
     case PSM_ENGAGING_ADAPTER:
         EngagingAdapterStarted = false;
@@ -532,37 +558,45 @@ void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newP
 void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
     if (RobotState == PSM_POSITION_CARTESIAN) {
-        vctDoubleVec jointDesired;
-        jointDesired.ForceAssign(JointCurrent);
-        jointDesired.resize(6);
+        vctDoubleVec jointSet(6, 0.0);
+        jointSet.Assign(JointCurrent, 6);
 
         // compute desired slave position
-        vctFrm4x4 newPositionFrm;
-        newPositionFrm.FromNormalized(newPosition.Goal());
+//        CartesianPositionFrm.From(newPosition.Goal());
+//        CartesianPositionFrm = CartesianPositionFrm * Frame6to7Inverse;
 
-        vctMatRot3 newPositionRotation;
-        newPositionRotation.From(newPosition.Goal().Rotation());
-        newPositionRotation = newPositionRotation * Frame6to7.Rotation().Inverse();
-        newPositionFrm.Rotation().FromNormalized(newPositionRotation);
+//        Manipulator.InverseKinematics(JointDesired, CartesianPositionFrm);
+//        JointDesired[2] *= 1000.0;  // ugly hack for translation
+//        JointDesired.resize(7);
+//        JointDesired[6] = DesiredOpenAngle;
 
-        Manipulator.InverseKinematics(jointDesired, newPositionFrm);
-        jointDesired[2] *= 1000.0; //ugly hack for translation
-        jointDesired.resize(7);
-        jointDesired.Element(6) = JointDesired.Element(6);
+//        CMN_LOG_CLASS_RUN_WARNING << "cur = " << JointCurrent[3] << " cmd = " << JointDesired[3]
+//                                  << " " << StateTable.Tic.Timestamp() << std::endl;
+
+        // deals with J4: outer roll
+//        double j4compensate = (jointDesired[3] - JointCurrent[3])/cmnPI;
+//        if (j4compensate >= 0) {
+//            j4compensate = (int)(j4compensate + 0.5);
+//        } else {
+//            j4compensate = (int)(j4compensate - 0.5);
+//        }
+//        jointDesired[3] -= (j4compensate * cmnPI);
+
+//        CMN_LOG_CLASS_RUN_ERROR << " cmdfix = " << jointDesired[3] << std::endl;
+
         // note: this directly calls the lower level to set position,
         // maybe we should cache the request in this component and later
         // in the Run method push the request.  This way, only the latest
         // request would be pushed if multiple are queued.
-        SetPositionJointLocal(jointDesired);
+//        SetPositionJointLocal(JointDesired);
     } else {
         CMN_LOG_CLASS_RUN_WARNING << "PSM not ready" << std::endl;
     }
 }
 
-void mtsIntuitiveResearchKitPSM::SetGripperPosition(const double & gripperPosition)
+void mtsIntuitiveResearchKitPSM::SetOpenAngle(const double & openAngle)
 {
-    JointDesiredParam.Goal().Element(6) = gripperPosition;
-    JointDesired.Element(6) = gripperPosition;
+    DesiredOpenAngle = openAngle;
 }
 
 void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
@@ -585,7 +619,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton &butto
     } else {
         // this is "down" transition so we have to
         // make sure we had an adapter properly engaged before
-        if (RobotState >= PSM_ADAPTER_ENGAGED) { 
+        if (RobotState >= PSM_ADAPTER_ENGAGED) {
             SetState(PSM_ARM_CALIBRATED);
         }
     }
@@ -598,7 +632,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton &button)
     } else {
         // this is "down" transition so we have to
         // make sure we had a tool properly engaged before
-        if (RobotState >= PSM_READY) { 
+        if (RobotState >= PSM_READY) {
             SetState(PSM_ADAPTER_ENGAGED);
         }
     }

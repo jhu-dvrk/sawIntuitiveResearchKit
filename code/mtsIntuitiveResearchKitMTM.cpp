@@ -561,6 +561,7 @@ void mtsIntuitiveResearchKitMTM::RunClutch(void)
 
     // J4-J7
     JointDesired.Assign(JointCurrent);
+    CartesianClutched.Translation().Assign(CartesianCurrent.Translation());
     Manipulator.InverseKinematics(JointDesired, CartesianClutched);
     SetPositionJoint(JointDesired);
 }
