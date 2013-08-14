@@ -41,6 +41,8 @@ public:
     void Startup(void);
     void Cleanup(void);
 
+signals:
+    void SignalAppendMessage(QString);
 
 private slots:
     void SlotSetStateButton(QAbstractButton* radioButton);

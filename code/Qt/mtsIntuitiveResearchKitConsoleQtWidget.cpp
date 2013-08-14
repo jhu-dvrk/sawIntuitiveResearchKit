@@ -128,14 +128,18 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 
     connect(group, SIGNAL(buttonClicked(QAbstractButton*)),
             this, SLOT(SlotSetStateButton(QAbstractButton*)));
+    connect(this, SIGNAL(SignalAppendMessage(QString)),
+            QTEMessages, SLOT(append(QString)));
     connect(QTEMessages, SIGNAL(textChanged()),
             this, SLOT(SlotTextChanged()));
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::ErrorMessageEventHandler(const std::string & message) {
-    QTEMessages->append(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
+void mtsIntuitiveResearchKitConsoleQtWidget::ErrorMessageEventHandler(const std::string & message)
+{
+    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::StatusMessageEventHandler(const std::string & message) {
-    QTEMessages->append(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
+void mtsIntuitiveResearchKitConsoleQtWidget::StatusMessageEventHandler(const std::string & message)
+{
+    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
 }
