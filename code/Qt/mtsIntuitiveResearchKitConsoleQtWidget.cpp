@@ -4,7 +4,7 @@
 /*
   $Id: mtsIntuitiveResearchKitConsoleQtWidget.cpp 4138 2013-04-27 21:48:29Z adeguet1 $
 
-  Author(s):  Anton Deguet
+  Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-17
 
   (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.

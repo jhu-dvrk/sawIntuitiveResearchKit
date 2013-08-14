@@ -46,6 +46,8 @@ mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicCons
 
 void mtsIntuitiveResearchKitPSM::Init(void)
 {
+    counter = 0;
+
     SetState(PSM_UNINITIALIZED);
     DesiredOpenAngle = 0 * cmnPI_180;
 
@@ -152,8 +154,7 @@ void mtsIntuitiveResearchKitPSM::Startup(void)
 
 void mtsIntuitiveResearchKitPSM::Run(void)
 {
-    struct timespec startTime, stopTime;
-    clock_gettime(CLOCK_MONOTONIC, &startTime);
+    counter++;
 
     ProcessQueuedEvents();
     GetRobotData();
@@ -195,12 +196,6 @@ void mtsIntuitiveResearchKitPSM::Run(void)
 
     RunEvent();
     ProcessQueuedCommands();
-
-    clock_gettime(CLOCK_MONOTONIC, &stopTime);
-    double timeDif = ((double)startTime.tv_sec + 1.0e-9*startTime.tv_nsec) -
-            ((double)stopTime.tv_sec + 1.0e-9*stopTime.tv_nsec);
-//    CMN_LOG_CLASS_RUN_WARNING << "period = " << -timeDif << std::endl;
-
 }
 
 void mtsIntuitiveResearchKitPSM::Cleanup(void)
@@ -562,33 +557,34 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
         jointSet.Assign(JointCurrent, 6);
 
         // compute desired slave position
-//        CartesianPositionFrm.From(newPosition.Goal());
-//        CartesianPositionFrm = CartesianPositionFrm * Frame6to7Inverse;
+        CartesianPositionFrm.From(newPosition.Goal());
+        CartesianPositionFrm = CartesianPositionFrm * Frame6to7Inverse;
 
-//        Manipulator.InverseKinematics(JointDesired, CartesianPositionFrm);
-//        JointDesired[2] *= 1000.0;  // ugly hack for translation
-//        JointDesired.resize(7);
-//        JointDesired[6] = DesiredOpenAngle;
-
-//        CMN_LOG_CLASS_RUN_WARNING << "cur = " << JointCurrent[3] << " cmd = " << JointDesired[3]
-//                                  << " " << StateTable.Tic.Timestamp() << std::endl;
+        Manipulator.InverseKinematics(jointSet, CartesianPositionFrm);
+        jointSet[2] *= 1000.0;  // ugly hack for translation
+        jointSet.resize(7);
+        jointSet[6] = DesiredOpenAngle;
 
         // deals with J4: outer roll
-//        double j4compensate = (jointDesired[3] - JointCurrent[3])/cmnPI;
-//        if (j4compensate >= 0) {
-//            j4compensate = (int)(j4compensate + 0.5);
-//        } else {
-//            j4compensate = (int)(j4compensate - 0.5);
-//        }
-//        jointDesired[3] -= (j4compensate * cmnPI);
+        double j4compensate = (jointSet[3] - JointCurrent[3])/(2.0*cmnPI);
+        if (j4compensate >= 0) {
+            j4compensate = (int)(j4compensate + 0.5);
+        } else {
+            j4compensate = (int)(j4compensate - 0.5);
+        }
+        jointSet[3] -= (j4compensate * cmnPI * 2.0);
 
-//        CMN_LOG_CLASS_RUN_ERROR << " cmdfix = " << jointDesired[3] << std::endl;
+        if (counter%5) {
+            CMN_LOG_CLASS_RUN_DEBUG << "cur = " << JointCurrent[3]
+                                    << " cmd = " << jointSet[3] + j4compensate * cmnPI * 2.0
+                                    << " cmdfix = " << jointSet[3] << std::endl;
+        }
 
         // note: this directly calls the lower level to set position,
         // maybe we should cache the request in this component and later
         // in the Run method push the request.  This way, only the latest
         // request would be pushed if multiple are queued.
-//        SetPositionJointLocal(JointDesired);
+        SetPositionJointLocal(jointSet);
     } else {
         CMN_LOG_CLASS_RUN_WARNING << "PSM not ready" << std::endl;
     }
