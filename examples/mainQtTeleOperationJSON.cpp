@@ -54,6 +54,11 @@ void fileExists(const std::string & description, const std::string & filename)
 
 int main(int argc, char ** argv)
 {
+    // configuration
+    const double periodIO = 0.5 * cmn_ms;
+    const double periodKinematics = 0.5 * cmn_ms;
+    const double periodTeleop = 0.5 * cmn_ms;
+
     // log configuration
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
@@ -136,7 +141,7 @@ int main(int argc, char ** argv)
     tabWidget->addTab(consoleGUI, "Main");
 
     // IO is shared accross components
-    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1.0 * cmn_ms, firewirePort);
+    mtsRobotIO1394 * io = new mtsRobotIO1394("io", periodIO, firewirePort);
 
     // setup io defined in the json configuration file
     const Json::Value pairs = jsonConfig["pairs"];
@@ -183,7 +188,7 @@ int main(int argc, char ** argv)
                 = new mtsIntuitiveResearchKitConsole::Arm(masterName, io->GetName());
         mtm->ConfigurePID(masterPIDFile);
         mtm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_MTM,
-                          masterKinematicFile, 3.0 * cmn_ms);
+                          masterKinematicFile, periodKinematics);
         console->AddArm(mtm);
 
         Json::Value jsonSlave = pairs[index]["slave"];
@@ -196,7 +201,7 @@ int main(int argc, char ** argv)
                 = new mtsIntuitiveResearchKitConsole::Arm(slaveName, io->GetName());
         psm->ConfigurePID(slavePIDFile);
         psm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_PSM,
-                          slaveKinematicFile, 3.0 * cmn_ms);
+                          slaveKinematicFile, periodKinematics);
         console->AddArm(psm);
 
         // PID Master GUI
@@ -221,7 +226,7 @@ int main(int argc, char ** argv)
         teleGUI->Configure();
         componentManager->AddComponent(teleGUI);
         tabWidget->addTab(teleGUI, teleName.c_str());
-        mtsTeleOperation * tele = new mtsTeleOperation(teleName, 5.0 * cmn_ms);
+        mtsTeleOperation * tele = new mtsTeleOperation(teleName, periodTeleop);
         componentManager->AddComponent(tele);
         // connect teleGUI to tele
         componentManager->Connect(teleGUI->GetName(), "TeleOperation", tele->GetName(), "Setting");
@@ -238,8 +243,6 @@ int main(int argc, char ** argv)
     //-------------- create the components ------------------
     io->CreateAndWait(2.0 * cmn_s); // this will also create the pids as they are in same thread
     io->StartAndWait(2.0 * cmn_s);
-//    componentManager->GetComponent(mtm->PIDComponentName())->StartAndWait(2.0 * cmn_s);
-//    componentManager->GetComponent(psm->PIDComponentName())->StartAndWait(2.0 * cmn_s);
 
     // start all other components
     componentManager->CreateAllAndWait(2.0 * cmn_s);
