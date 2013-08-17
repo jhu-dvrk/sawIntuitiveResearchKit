@@ -78,7 +78,7 @@
             <AmpsToBits Offset="32768" Scale="-5242.88"/>
             <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738"/>
             <NmToAmps Scale="6.092286"/>
-            <MaxCurrent Unit="A" Value="0.590"/>
+            <MaxCurrent Unit="A" Value="0.800"/>
          </Drive>
          <Encoder>
             <BitsToPosSI Offset="0" Scale="-0.16963209"/>

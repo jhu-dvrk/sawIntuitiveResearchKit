@@ -253,11 +253,6 @@ int main(int argc, char ** argv)
 
     //-------------- create the components ------------------
     io->CreateAndWait(2.0 * cmn_s); // this will also create the pids as they are in same thread
-    io->StartAndWait(2.0 * cmn_s);
-    componentManager->GetComponent(mtm->PIDComponentName())->StartAndWait(1.0 * cmn_s);
-    componentManager->GetComponent(psm->PIDComponentName())->StartAndWait(1.0 * cmn_s);
-    componentManager->GetComponent(mtml->PIDComponentName())->StartAndWait(1.0 * cmn_s);
-    componentManager->GetComponent(psm2->PIDComponentName())->StartAndWait(1.0 * cmn_s);
 
     // start all other components
     componentManager->CreateAllAndWait(2.0 * cmn_s);
