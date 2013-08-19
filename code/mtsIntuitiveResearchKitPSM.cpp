@@ -237,6 +237,8 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
 
 void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
 {
+    CMN_LOG_CLASS_RUN_DEBUG << GetName() << " set state to " << newState << std::endl;
+
     switch (newState) {
     case PSM_UNINITIALIZED:
         EventTriggers.RobotStatusMsg(this->GetName() + " not initialized");
@@ -379,7 +381,10 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
 
         // compute joint goal position
         JointTrajectory.Goal.SetSize(NumberOfJoints);
-        JointTrajectory.Goal.SetAll(0.0);
+        JointTrajectory.Goal.ForceAssign(JointCurrent);
+        JointTrajectory.Goal.at(0) = 0.0;
+        JointTrajectory.Goal.at(1) = 0.0;
+        JointTrajectory.Goal.at(2) = 0.0;
         JointTrajectory.Quintic.Set(currentTime,
                                     JointCurrent, JointTrajectory.Zero, JointTrajectory.Zero,
                                     currentTime + timeToHome,

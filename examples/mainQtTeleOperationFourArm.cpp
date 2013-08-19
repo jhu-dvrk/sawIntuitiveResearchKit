@@ -45,6 +45,7 @@ int main(int argc, char ** argv)
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskFunction(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskClass("mtsIntuitiveResearchKitPSM", CMN_LOG_ALLOW_ALL);
+    cmnLogger::SetMaskClass("mtsPID", CMN_LOG_ALLOW_ALL);
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
     // parse options
@@ -121,9 +122,7 @@ int main(int argc, char ** argv)
     }
 
     // create a Qt application and tab to hold all widgets
-    mtsQtApplication *qtAppTask = new mtsQtApplication("QtApplication", argc, argv);
-    qtAppTask->Configure();
-    componentManager->AddComponent(qtAppTask);
+    QApplication qtAppTask(argc, argv);
 
 
     // console
@@ -260,6 +259,7 @@ int main(int argc, char ** argv)
 
     // QtApplication will run in main thread and return control
     // when exited.
+    qtAppTask.exec();
 
     componentManager->KillAllAndWait(2.0 * cmn_s);
     componentManager->Cleanup();
