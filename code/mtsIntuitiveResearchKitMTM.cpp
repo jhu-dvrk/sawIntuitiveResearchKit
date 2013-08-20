@@ -113,7 +113,7 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
     robManipulator::Errno result;
     result = this->Manipulator.LoadRobot(filename);
     if (result == robManipulator::EFAILURE) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to load manipulator configuration file \""
+        CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
                                  << filename << "\"" << std::endl;
     }
 }
@@ -158,7 +158,7 @@ void mtsIntuitiveResearchKitMTM::Run(void)
 
 void mtsIntuitiveResearchKitMTM::Cleanup(void)
 {
-    CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
 }
 
 void mtsIntuitiveResearchKitMTM::GetRobotData(void)
@@ -168,7 +168,7 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
         mtsExecutionResult executionResult;
         executionResult = PID.GetPositionJoint(JointCurrentParam);
         if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << "GetRobotData: call to GetJointPosition failed \""
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPosition failed \""
                                     << executionResult << "\"" << std::endl;
             return;
         }
@@ -187,7 +187,7 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
         // get gripper based on analog inputs
         executionResult = RobotIO.GetAnalogInputPosSI(AnalogInputPosSI);
         if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << "GetRobotData: call to GetAnalogInputPosSI failed \""
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetAnalogInputPosSI failed \""
                                     << executionResult << "\"" << std::endl;
             return;
         }
@@ -248,7 +248,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
 
         PID.EnableTorqueMode(torqueMode);
         PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
-        CMN_LOG_CLASS_RUN_DEBUG << "Set gravity comp" << std::endl;
+        CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: set gravity compensation" << std::endl;
         break;
     case MTM_CLUTCH:
         // check if MTM is ready
@@ -362,7 +362,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         } else {
             // time out
             if (currentTime > HomingTimer + extraTime) {
-                CMN_LOG_CLASS_INIT_WARNING << "RunHomingCalibrateArm: unable to reach home position, error in degrees is "
+                CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
                 EventTriggers.RobotErrorMsg(this->GetName() + " unable to reach home position during calibration on pots.");
                 PID.Enable(false);
@@ -503,7 +503,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         } else {
             // time out
             if (currentTime > HomingTimer + extraTime) {
-                CMN_LOG_CLASS_INIT_WARNING << "RunHomingCalibrateRoll: unable to reach home position, error in degrees is "
+                CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateRoll: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
                 EventTriggers.RobotErrorMsg(this->GetName() + " unable to reach home position during calibration on pots.");
                 PID.Enable(false);
@@ -637,7 +637,7 @@ void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesian
         // request would be pushed if multiple are queued.
         SetPositionJoint(JointDesired);
     } else {
-        CMN_LOG_CLASS_RUN_WARNING << "SetPositionCartesian: MTM not ready" << std::endl;
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: MTM not ready" << std::endl;
     }
 }
 
@@ -655,5 +655,5 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
         EventTriggers.RobotErrorMsg(this->GetName() + ": unsupported state " + state);
     }
 
-    CMN_LOG_CLASS_RUN_DEBUG << "SetRobotControlState: " << state << std::endl;
+    CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetRobotControlState: " << state << std::endl;
 }

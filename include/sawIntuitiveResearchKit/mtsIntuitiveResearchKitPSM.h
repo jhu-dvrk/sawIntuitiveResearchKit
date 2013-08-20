@@ -185,7 +185,7 @@ protected:
     osaStopwatch EngagingStopwatch;
     vctDoubleVec EngagingJointSet;
 
-    int counter;
+    int Counter;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitPSM);

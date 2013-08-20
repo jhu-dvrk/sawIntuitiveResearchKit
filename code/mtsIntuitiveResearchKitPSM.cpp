@@ -46,7 +46,7 @@ mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicCons
 
 void mtsIntuitiveResearchKitPSM::Init(void)
 {
-    counter = 0;
+    Counter = 0;
 
     SetState(PSM_UNINITIALIZED);
     DesiredOpenAngle = 0 * cmnPI_180;
@@ -136,7 +136,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
     robManipulator::Errno result;
     result = this->Manipulator.LoadRobot(filename);
     if (result == robManipulator::EFAILURE) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to load manipulator configuration file \""
+        CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
                                  << filename << "\"" << std::endl;
     }
 }
@@ -154,7 +154,7 @@ void mtsIntuitiveResearchKitPSM::Startup(void)
 
 void mtsIntuitiveResearchKitPSM::Run(void)
 {
-    counter++;
+    Counter++;
 
     ProcessQueuedEvents();
     GetRobotData();
@@ -200,7 +200,7 @@ void mtsIntuitiveResearchKitPSM::Run(void)
 
 void mtsIntuitiveResearchKitPSM::Cleanup(void)
 {
-    CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
 }
 
 void mtsIntuitiveResearchKitPSM::GetRobotData(void)
@@ -210,7 +210,7 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
         mtsExecutionResult executionResult;
         executionResult = PID.GetPositionJoint(JointCurrentParam);
         if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << "GetRobotData: call to GetJointPosition failed \""
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPosition failed \""
                                     << executionResult << "\"" << std::endl;
         }
         
@@ -237,7 +237,7 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
 
 void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
 {
-    CMN_LOG_CLASS_RUN_DEBUG << GetName() << " set state to " << newState << std::endl;
+    CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state " << newState << std::endl;
 
     switch (newState) {
     case PSM_UNINITIALIZED:
@@ -260,7 +260,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
         Adapter.IsPresent = !Adapter.IsPresent;
         Tool.GetButton(Tool.IsPresent);
         Tool.IsPresent = !Tool.IsPresent;
-        CMN_LOG_CLASS_RUN_DEBUG << "Adapter: " << Adapter.IsPresent << " Tool: " << Tool.IsPresent << std::endl;
+        CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": Adapter: " << Adapter.IsPresent << " Tool: " << Tool.IsPresent << std::endl;
         break;
     case PSM_ENGAGING_ADAPTER:
         EngagingAdapterStarted = false;
@@ -414,7 +414,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         } else {
             // time out
             if (currentTime > HomingTimer + extraTime) {
-                CMN_LOG_CLASS_INIT_WARNING << "RunHomingCalibrateArm: unable to reach home position, error in degrees is "
+                CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
                 EventTriggers.RobotErrorMsg(this->GetName() + " unable to reach home position during calibration on pots.");
                 PID.Enable(false);
@@ -579,8 +579,8 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
         }
         jointSet[3] -= (j4compensate * cmnPI * 2.0);
 
-        if (counter%5) {
-            CMN_LOG_CLASS_RUN_DEBUG << "cur = " << JointCurrent[3]
+        if (Counter%5) {
+            CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": cur = " << JointCurrent[3]
                                     << " cmd = " << jointSet[3] + j4compensate * cmnPI * 2.0
                                     << " cmdfix = " << jointSet[3] << std::endl;
         }
@@ -591,7 +591,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
         // request would be pushed if multiple are queued.
         SetPositionJointLocal(jointSet);
     } else {
-        CMN_LOG_CLASS_RUN_WARNING << "PSM not ready" << std::endl;
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: PSM not ready" << std::endl;
     }
 }
 
@@ -646,9 +646,9 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton &b
 
     // Log events
     if (button.Type() == prmEventButton::PRESSED) {
-        CMN_LOG_CLASS_RUN_DEBUG << "ManipClutch pressed" << std::endl;
+        CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": EventHandlerManipClutch: pressed" << std::endl;
     } else {
-        CMN_LOG_CLASS_RUN_DEBUG << "ManipClutch released" << std::endl;
+        CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": EventHandlerManipClutch: released" << std::endl;
     }
 }
 
@@ -659,8 +659,8 @@ void mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch(const prmEventButton &but
 
     // Log events
     if (button.Type() == prmEventButton::PRESSED) {
-        CMN_LOG_CLASS_RUN_DEBUG << "SUJClutch pressed" << std::endl;
+        CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": EventHandlerSUJClutch: pressed" << std::endl;
     } else {
-        CMN_LOG_CLASS_RUN_DEBUG << "SUJClutch released" << std::endl;
+        CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": EventHandlerSUJClutch: released" << std::endl;
     }
 }

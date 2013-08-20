@@ -119,7 +119,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
 void mtsIntuitiveResearchKitConsole::Startup(void)
 {
-    CMN_LOG_CLASS_INIT_VERBOSE << "mtsIntuitiveResearchKitConsole::Startup" << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
 }
 
 void mtsIntuitiveResearchKitConsole::Run(void)
@@ -130,13 +130,14 @@ void mtsIntuitiveResearchKitConsole::Run(void)
 
 void mtsIntuitiveResearchKitConsole::Cleanup(void)
 {
-    CMN_LOG_CLASS_INIT_VERBOSE << "mtsIntuitiveResearchKitConsole::Cleanup" << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
 }
 
 bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
 {
     if (newArm->PIDConfigurationFile_.empty() || newArm->ArmConfigurationFile_.empty()) {
-        CMN_LOG_CLASS_INIT_ERROR << "AddArm, " << newArm->Name() << " must be configured first (PID and Arm config)." << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
+                                 << newArm->Name() << " must be configured first (PID and Arm config)." << std::endl;
         return false;
     }
     // create new required interfaces to communicate with the components we created
@@ -152,7 +153,7 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
         this->Arms.push_back(newArm);
         return true;
     }
-    CMN_LOG_CLASS_INIT_ERROR << "AddArm, unable to add new arm.  Are you adding two arms with the same name? "
+    CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, unable to add new arm.  Are you adding two arms with the same name? "
                              << newArm->Name() << std::endl;
     return false;
 }
@@ -166,7 +167,7 @@ void mtsIntuitiveResearchKitConsole::SetRobotControlState(const std::string & ne
          ++arm) {
         result = (*arm)->SetRobotControlState(newState);
         if (!result) {
-            CMN_LOG_CLASS_RUN_ERROR << "SetRobotControlState: failed to set state \""
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": SetRobotControlState: failed to set state \""
                                     << newState << "\" for arm \"" << (*arm)->Name()
                                     << "\"" << std::endl;
         }
