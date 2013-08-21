@@ -293,7 +293,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingPower(void)
         return;
     }
 
-    // second, request current bias, we leave 1 second for power to stabilize
+    // second, request current bias, we leave some time for power to stabilize
     if (!HomingPowerCurrentBiasRequested
         && ((currentTime - HomingTimer) > timeToPower)) {
         HomingTimer = currentTime;
@@ -302,8 +302,9 @@ void mtsIntuitiveResearchKitMTM::RunHomingPower(void)
         return;
     }
 
-    // wait another second to be ready
-    if ((currentTime - HomingTimer) > timeToCalibrateCurrent) {
+    // wait some more to be ready
+    if (HomingPowerCurrentBiasRequested
+        && (currentTime - HomingTimer) > timeToCalibrateCurrent) {
         vctBoolVec amplifiersStatus(NumberOfJoints + 1);
         RobotIO.GetAmpStatus(amplifiersStatus);
         if (amplifiersStatus.All()) {
