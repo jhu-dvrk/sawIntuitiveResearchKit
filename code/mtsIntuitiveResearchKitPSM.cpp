@@ -324,6 +324,9 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
 
 void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
 {
+    const double timeToPower = 3.0 * cmn_s;
+    const double timeToCalibrateCurrent = 1.0 * cmn_s;
+
     const double currentTime = this->StateTable.GetTic();
     // first, request power to be turned on
     if (!HomingPowerRequested) {
@@ -343,7 +346,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
 
     // second, request current bias, we leave 1 second for power to stabilize
     if (!HomingPowerCurrentBiasRequested
-        && ((currentTime - HomingTimer) > 1.0 * cmn_s)) {
+        && ((currentTime - HomingTimer) > timeToPower)) {
         HomingTimer = currentTime;
         RobotIO.BiasCurrent(500); // 500 samples, this API should be changed to use time
         HomingPowerCurrentBiasRequested = true;
@@ -351,7 +354,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
     }
 
     // wait another second to be ready
-    if ((currentTime - HomingTimer) > 1.0 * cmn_s) {
+    if ((currentTime - HomingTimer) > timeToCalibrateCurrent) {
         vctBoolVec amplifiersStatus(NumberOfJoints);
         RobotIO.GetAmpStatus(amplifiersStatus);
         if (amplifiersStatus.All()) {
