@@ -128,6 +128,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
         interfaceProvided->AddEventWrite(EventTriggers.RobotErrorMsg, "RobotErrorMsg", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.ManipClutchBtn, "ManipClutchBtn", prmEventButton());
         interfaceProvided->AddEventWrite(EventTriggers.SUJClutchBtn, "SUJClutchBtn", prmEventButton());
+        // Stats
+        interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
+                                               "GetPeriodStatistics");
     }
 }
 

@@ -105,6 +105,9 @@ void mtsIntuitiveResearchKitMTM::Init(void)
                                            this, "SetRobotControlState", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotStatusMsg, "RobotStatusMsg", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotErrorMsg, "RobotErrorMsg", std::string(""));
+        // Stats
+        interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
+                                               "GetPeriodStatistics");
     }
 }
 
