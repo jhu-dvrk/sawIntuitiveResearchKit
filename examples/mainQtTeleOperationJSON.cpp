@@ -32,6 +32,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawControllers/mtsPIDQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
 #include <sawControllers/mtsTeleOperation.h>
 #include <sawControllers/mtsTeleOperationQtWidget.h>
 
@@ -219,6 +220,22 @@ int main(int argc, char ** argv)
         componentManager->AddComponent(pidSlaveGUI);
         componentManager->Connect(pidSlaveGUI->GetName(), "Controller", psm->PIDComponentName(), "Controller");
         tabWidget->addTab(pidSlaveGUI, slavePIDName.c_str());
+
+        // Master GUI
+        mtsIntuitiveResearchKitArmQtWidget * masterGUI = new mtsIntuitiveResearchKitArmQtWidget(mtm->Name() + "GUI");
+        masterGUI->Configure();
+        componentManager->AddComponent(masterGUI);
+        tabWidget->addTab(masterGUI, mtm->Name().c_str());
+        // connect masterGUI to master
+        componentManager->Connect(masterGUI->GetName(), "Manipulator", mtm->Name(), "Robot");
+
+        // Slave GUI
+        mtsIntuitiveResearchKitArmQtWidget * slaveGUI = new mtsIntuitiveResearchKitArmQtWidget(psm->Name() + "GUI");
+        slaveGUI->Configure();
+        componentManager->AddComponent(slaveGUI);
+        tabWidget->addTab(slaveGUI, psm->Name().c_str());
+        // connect slaveGUI to slave
+        componentManager->Connect(slaveGUI->GetName(), "Manipulator", psm->Name(), "Robot");
 
         // Teleoperation
         std::string teleName = masterName + "-" + slaveName;

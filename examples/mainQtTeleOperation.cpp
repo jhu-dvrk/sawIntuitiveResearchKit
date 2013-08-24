@@ -32,6 +32,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawControllers/mtsPIDQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
 #include <sawControllers/mtsTeleOperation.h>
 #include <sawControllers/mtsTeleOperationQtWidget.h>
 #include <sawTextToSpeech/mtsTextToSpeech.h>
@@ -172,6 +173,18 @@ int main(int argc, char ** argv)
     componentManager->AddComponent(pidSlaveGUI);
     componentManager->Connect(pidSlaveGUI->GetName(), "Controller", psm->PIDComponentName(), "Controller");
 
+    // Master GUI
+    mtsIntuitiveResearchKitArmQtWidget * masterGUI = new mtsIntuitiveResearchKitArmQtWidget(mtm->Name() + "GUI");
+    masterGUI->Configure();
+    componentManager->AddComponent(masterGUI);
+    componentManager->Connect(masterGUI->GetName(), "Manipulator", mtm->Name(), "Robot");
+
+    // Slave GUI
+    mtsIntuitiveResearchKitArmQtWidget * slaveGUI = new mtsIntuitiveResearchKitArmQtWidget(psm->Name() + "GUI");
+    slaveGUI->Configure();
+    componentManager->AddComponent(slaveGUI);
+    componentManager->Connect(slaveGUI->GetName(), "Manipulator", psm->Name(), "Robot");
+
     // Teleoperation
     mtsTeleOperationQtWidget * teleGUI = new mtsTeleOperationQtWidget("teleGUI");
     teleGUI->Configure();
@@ -197,6 +210,8 @@ int main(int argc, char ** argv)
     QTabWidget * tabWidget = new QTabWidget;
     tabWidget->addTab(consoleGUI, "Main");
     tabWidget->addTab(teleGUI, "Tele-op");
+    tabWidget->addTab(masterGUI, "Master");
+    tabWidget->addTab(slaveGUI, "Slave");
     tabWidget->addTab(pidMasterGUI, "PID Master");
     tabWidget->addTab(pidSlaveGUI, "PID Slave");
     mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
