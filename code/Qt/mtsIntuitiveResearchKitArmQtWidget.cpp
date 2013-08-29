@@ -115,10 +115,11 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     topLayout->addWidget(QFRPositionWidget, 0, 0);
 
     // Timing
+    QVBoxLayout * timingLayout = new QVBoxLayout();
     QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
-    topLayout->addWidget(QMIntervalStatistics);
-
-    topLayout->addStretch();
+    timingLayout->addWidget(QMIntervalStatistics);
+    timingLayout->addStretch();
+    topLayout->addLayout(timingLayout);
 
     // Messages
     QTEMessages = new QTextEdit();
@@ -132,16 +133,20 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
 
     connect(this, SIGNAL(SignalAppendMessage(QString)),
             QTEMessages, SLOT(append(QString)));
+    connect(this, SIGNAL(SignalSetColor(QColor)),
+            QTEMessages, SLOT(setTextColor(QColor)));
     connect(QTEMessages, SIGNAL(textChanged()),
             this, SLOT(SlotTextChanged()));
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::ErrorMessageEventHandler(const std::string & message)
 {
+    emit SignalSetColor(QColor("red"));
     emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::StatusMessageEventHandler(const std::string & message)
 {
+    emit SignalSetColor(QColor("black"));
     emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
 }

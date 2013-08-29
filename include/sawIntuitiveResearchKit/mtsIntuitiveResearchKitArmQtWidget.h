@@ -49,6 +49,7 @@ protected:
 
 signals:
     void SignalAppendMessage(QString);
+    void SignalSetColor(QColor);
 
 private slots:
     void timerEvent(QTimerEvent * event);

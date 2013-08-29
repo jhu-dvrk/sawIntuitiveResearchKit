@@ -43,6 +43,7 @@ public:
 
 signals:
     void SignalAppendMessage(QString);
+    void SignalSetColor(QColor);
 
 private slots:
     void SlotSetStateButton(QAbstractButton* radioButton);
