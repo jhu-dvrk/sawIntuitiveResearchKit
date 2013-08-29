@@ -166,6 +166,7 @@ protected:
 
     struct {
         robQuintic Quintic;
+        vctDoubleVec Start;
         vctDoubleVec Velocity;
         vctDoubleVec Acceleration;
         vctDoubleVec Goal;

@@ -55,6 +55,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     JointCurrent.SetSize(NumberOfJoints);
     JointDesired.SetSize(NumberOfJoints);
     JointDesiredParam.Goal().SetSize(NumberOfJoints);
+    JointTrajectory.Start.SetSize(NumberOfJoints);
     JointTrajectory.Velocity.SetSize(NumberOfJoints);
     JointTrajectory.Acceleration.SetSize(NumberOfJoints);
     JointTrajectory.Goal.SetSize(NumberOfJoints);
@@ -62,6 +63,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints);
     JointTrajectory.GoalTolerance.SetAll(10.0 * cmnPI / 180.0); // hard coded to 3 degrees
     JointTrajectory.Zero.SetSize(NumberOfJoints);
+
+    EngagingJointSet.SetSize(NumberOfJoints);
 
     this->StateTable.AddData(CartesianCurrentParam, "CartesianPosition");
     this->StateTable.AddData(JointCurrentParam, "JointPosition");
@@ -409,9 +412,9 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         // compute joint goal position
         JointTrajectory.Goal.SetSize(NumberOfJoints);
         JointTrajectory.Goal.ForceAssign(JointCurrent);
-        JointTrajectory.Goal.at(0) = 0.0;
-        JointTrajectory.Goal.at(1) = 0.0;
-        JointTrajectory.Goal.at(2) = 0.0;
+        JointTrajectory.Goal.Element(0) = 0.0;
+        JointTrajectory.Goal.Element(1) = 0.0;
+        JointTrajectory.Goal.Element(2) = 0.0;
         JointTrajectory.Quintic.Set(currentTime,
                                     JointCurrent, JointTrajectory.Zero, JointTrajectory.Zero,
                                     currentTime + timeToHome,
@@ -459,7 +462,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
     if (!EngagingAdapterStarted) {
         EngagingStopwatch.Reset();
         EngagingStopwatch.Start();
-        EngagingJointSet.ForceAssign(JointCurrent);
+        EngagingJointSet.SetAll(0.0);
         PID.SetCheckJointLimit(false);
         EngagingAdapterStarted = true;
         return;        if (this->RobotState < PSM_ARM_CALIBRATED) {
@@ -522,7 +525,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
     if (!EngagingToolStarted) {
         EngagingStopwatch.Reset();
         EngagingStopwatch.Start();
-        EngagingJointSet.ForceAssign(JointCurrent);
+        EngagingJointSet.SetAll(0.0);
         PID.SetCheckJointLimit(false);
         EngagingToolStarted = true;
         return;

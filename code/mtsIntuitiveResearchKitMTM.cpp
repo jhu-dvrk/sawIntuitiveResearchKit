@@ -52,6 +52,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     JointCurrent.SetSize(NumberOfJoints);
     JointDesired.SetSize(NumberOfJoints);
     JointDesiredParam.Goal().SetSize(NumberOfJoints + 1); // PID treats gripper as joint
+    JointTrajectory.Start.SetSize(NumberOfJoints);
     JointTrajectory.Velocity.SetSize(NumberOfJoints);
     JointTrajectory.Acceleration.SetSize(NumberOfJoints);
     JointTrajectory.Goal.SetSize(NumberOfJoints);
@@ -394,11 +395,13 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         // disable joint limits on PID
         PID.SetCheckJointLimit(false);
         // compute joint goal position, we assume PID is on from previous state
-        double currentRoll = JointCurrent.Element(RollIndex);
+        const double currentRoll = JointCurrent.Element(RollIndex);
+        JointTrajectory.Start.SetAll(0.0);
+        JointTrajectory.Start.Element(RollIndex) = currentRoll;
         JointTrajectory.Goal.SetAll(0.0);
         JointTrajectory.Goal.Element(RollIndex) = currentRoll - maxRollRange;
         JointTrajectory.Quintic.Set(currentTime,
-                                    JointCurrent, JointTrajectory.Zero, JointTrajectory.Zero,
+                                    JointTrajectory.Start, JointTrajectory.Zero, JointTrajectory.Zero,
                                     currentTime + timeToHitLimit,
                                     JointTrajectory.Goal, JointTrajectory.Zero, JointTrajectory.Zero);
         HomingTimer = JointTrajectory.Quintic.StopTime();
@@ -414,7 +417,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
                                          JointTrajectory.Velocity, JointTrajectory.Acceleration);
         SetPositionJoint(JointDesired);
         // detect tracking error and set lower limit
-        double trackingError =
+        const double trackingError =
                 std::abs(JointCurrent.Element(RollIndex) - JointDesired.Element(RollIndex));
         if (trackingError > maxTrackingError) {
             HomingCalibrateRollLower = JointCurrent.Element(RollIndex);
@@ -434,11 +437,13 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
     // trigger search of upper limit
     if (!HomingCalibrateRollSeekUpper) {
         // compute joint goal position, we assume PID is on from previous state
-        double currentRoll = JointCurrent.Element(RollIndex);
+        const double currentRoll = JointCurrent.Element(RollIndex);
+        JointTrajectory.Start.SetAll(0.0);
+        JointTrajectory.Start.Element(RollIndex) = currentRoll;
         JointTrajectory.Goal.SetAll(0.0);
         JointTrajectory.Goal.Element(RollIndex) = currentRoll + maxRollRange;
         JointTrajectory.Quintic.Set(currentTime,
-                                    JointCurrent, JointTrajectory.Zero, JointTrajectory.Zero,
+                                    JointTrajectory.Start, JointTrajectory.Zero, JointTrajectory.Zero,
                                     currentTime + timeToHitLimit,
                                     JointTrajectory.Goal, JointTrajectory.Zero, JointTrajectory.Zero);
         HomingTimer = JointTrajectory.Quintic.StopTime();
@@ -454,7 +459,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
                                          JointTrajectory.Velocity, JointTrajectory.Acceleration);
         SetPositionJoint(JointDesired);
         // detect tracking error and set lower limit
-        double trackingError =
+        const double trackingError =
                 std::abs(JointCurrent.Element(RollIndex) - JointDesired.Element(RollIndex));
         if (trackingError > maxTrackingError) {
             HomingCalibrateRollUpper = JointCurrent.Element(RollIndex);
@@ -474,10 +479,12 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
     // compute trajectory to go to center point
     if (!HomingCalibrateRollSeekCenter) {
         // compute joint goal position, we assume PID is on from previous state
+        JointTrajectory.Start.SetAll(0.0);
+        JointTrajectory.Start.Element(RollIndex) = JointCurrent.Element(RollIndex);
         JointTrajectory.Goal.SetAll(0.0);
         JointTrajectory.Goal.Element(RollIndex) = HomingCalibrateRollLower + 480.0 * cmnPI_180;
         JointTrajectory.Quintic.Set(currentTime,
-                                    JointCurrent, JointTrajectory.Zero, JointTrajectory.Zero,
+                                    JointTrajectory.Start, JointTrajectory.Zero, JointTrajectory.Zero,
                                     currentTime + (timeToHitLimit / 2.0),
                                     JointTrajectory.Goal, JointTrajectory.Zero, JointTrajectory.Zero);
         HomingTimer = JointTrajectory.Quintic.StopTime();
