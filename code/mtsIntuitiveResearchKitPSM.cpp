@@ -172,11 +172,6 @@ void mtsIntuitiveResearchKitPSM::Run(void)
         RunHomingCalibrateArm();
         break;
     case PSM_ARM_CALIBRATED:
-        if (Adapter.IsPresent && !Tool.IsPresent) {
-            SetState(PSM_ENGAGING_ADAPTER);
-        } else if (Adapter.IsPresent && Tool.IsPresent) {
-            SetState(PSM_ENGAGING_TOOL);
-        }
         break;
     case PSM_ENGAGING_ADAPTER:
         RunEngagingAdapter();
@@ -218,7 +213,7 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
         }
         
         // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
-        JointCurrentParam.Position().Element(2) /= 1000.0;
+        JointCurrentParam.Position().Element(2) /= 1000.0;  // convert from mm to m
 
         // assign to a more convenient vctDoubleVEc
         JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
@@ -243,73 +238,98 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state " << newState << std::endl;
 
     switch (newState) {
+
     case PSM_UNINITIALIZED:
         EventTriggers.RobotStatusMsg(this->GetName() + " not initialized");
         break;
+
     case PSM_HOMING_POWERING:
         HomingTimer = 0.0;
         HomingPowerRequested = false;
         HomingPowerCurrentBiasRequested = false;
+        RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " powering");
         break;
+
     case PSM_HOMING_CALIBRATING_ARM:
         HomingCalibrateArmStarted = false;
+        RobotState = newState;
         this->EventTriggers.RobotStatusMsg(this->GetName() + " calibrating arm");
         break;
+
     case PSM_ARM_CALIBRATED:
+        RobotState = newState;
         this->EventTriggers.RobotStatusMsg(this->GetName() + " arm calibrated");
-        // check if adpater & tool are present
+        // check if adpater is present and trigger new state
         Adapter.GetButton(Adapter.IsPresent);
         Adapter.IsPresent = !Adapter.IsPresent;
-        Tool.GetButton(Tool.IsPresent);
-        Tool.IsPresent = !Tool.IsPresent;
-        CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": Adapter: " << Adapter.IsPresent << " Tool: " << Tool.IsPresent << std::endl;
+        if (Adapter.IsPresent) {
+            SetState(PSM_ENGAGING_ADAPTER);
+        }
         break;
+
     case PSM_ENGAGING_ADAPTER:
         EngagingAdapterStarted = false;
         if (this->RobotState < PSM_ARM_CALIBRATED) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not calibrated yet");
             return;
         }
-        this->EventTriggers.RobotStatusMsg(this->GetName() + " engaging adapter");
+        // if the tool is present, the adapter is already engadged
+        Tool.GetButton(Tool.IsPresent);
+        Tool.IsPresent = !Tool.IsPresent;
+        if (Tool.IsPresent) {
+            SetState(PSM_ADAPTER_ENGAGED);
+        } else {
+            RobotState = newState;
+            this->EventTriggers.RobotStatusMsg(this->GetName() + " engaging adapter");
+        }
         break;
+
     case PSM_ADAPTER_ENGAGED:
-        if (this->RobotState < PSM_ARM_CALIBRATED) {
+        RobotState = newState;
+        this->EventTriggers.RobotStatusMsg(this->GetName() + " adapter engaged");
+        // check if tool is present and trigger new state
+        Tool.GetButton(Tool.IsPresent);
+        Tool.IsPresent = !Tool.IsPresent;
+        if (Tool.IsPresent) {
+            SetState(PSM_ENGAGING_TOOL);
+        }
+        break;
+
+    case PSM_ENGAGING_TOOL:
+        EngagingToolStarted = false;
+        if (this->RobotState < PSM_ADAPTER_ENGAGED) {
             EventTriggers.RobotErrorMsg(this->GetName() + " adapter is not engaged yet");
             return;
         }
-        this->EventTriggers.RobotStatusMsg(this->GetName() + " adapter engaged");
-        break;
-    case PSM_ENGAGING_TOOL:
-        EngagingToolStarted = false;
+        RobotState = newState;
         this->EventTriggers.RobotStatusMsg(this->GetName() + " engaging tool");
         break;
+
     case PSM_READY:
+        RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " ready");
         break;
+
     case PSM_POSITION_CARTESIAN:
         if (this->RobotState < PSM_READY) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not homed");
             return;
         }
-
         // Enable PID
         PID.Enable(mtsBool(true));
-
         // set command joint position to joint current
         JointDesired.ForceAssign(JointCurrent);
-
         // not really where this should be on the long run but we need to ensure that tool tip
         // is not too close to the RCM otherwise small cartesian motions lead to large joint motions
-        if (JointCurrent.Element(2) < 80.0 / 1000) {
-            JointDesired.Element(2) = 85.0;  // NOTE: divide 1000 is an ugly hack
-        } else {
-            JointDesired.Element(2) *= 1000;
+        if (JointCurrent.Element(2) < 80.0 / 1000.0) {
+            JointDesired.Element(2) = 85.0 / 1000.0;  // 85 mm depth
         }
         SetPositionJointLocal(JointDesired);
-
+        RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " position cartesian");
         break;
+
     case PSM_MANUAL:
         if (this->RobotState < PSM_READY) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not homed");
@@ -317,12 +337,12 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
         }
         // Disable PID to allow mannual move
         PID.Enable(mtsBool(false));
+        RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " in manual mode");
         break;
     default:
         break;
-    }
-    RobotState = newState;
+    }   
 }
 
 void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
@@ -399,6 +419,8 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         HomingTimer = JointTrajectory.Quintic.StopTime();
         // set flag to indicate that homing has started
         HomingCalibrateArmStarted = true;
+        std::cerr << "current = " << JointCurrent << std::endl
+                  << "goal    = " << JointTrajectory.Goal << std::endl;
     }
 
     // compute a new set point based on time
@@ -440,7 +462,11 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         EngagingJointSet.ForceAssign(JointCurrent);
         PID.SetCheckJointLimit(false);
         EngagingAdapterStarted = true;
-        return;
+        return;        if (this->RobotState < PSM_ARM_CALIBRATED) {
+            EventTriggers.RobotErrorMsg(this->GetName() + " is not calibrated yet");
+            return;
+        }
+
     }
 
     // PSM tool last 4 actuator coupling matrix
@@ -553,11 +579,10 @@ void mtsIntuitiveResearchKitPSM::RunPositionCartesian(void)
     // should prevent user to go to close to RCM
 }
 
-
-
 void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
     JointDesiredParam.Goal().Assign(newPosition, NumberOfJoints);
+    JointDesiredParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
     JointDesiredParam.Goal().Element(7) = 0.0;
     PID.SetPositionJoint(JointDesiredParam);
 }
@@ -573,7 +598,6 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
         CartesianPositionFrm = CartesianPositionFrm * Frame6to7Inverse;
 
         Manipulator.InverseKinematics(jointSet, CartesianPositionFrm);
-        jointSet[2] *= 1000.0;  // ugly hack for translation
         jointSet.resize(7);
         jointSet[6] = DesiredOpenAngle;
 
@@ -586,11 +610,13 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
         }
         jointSet[3] -= (j4compensate * cmnPI * 2.0);
 
+        /*
         if (Counter%5) {
             CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": cur = " << JointCurrent[3]
                                     << " cmd = " << jointSet[3] + j4compensate * cmnPI * 2.0
                                     << " cmdfix = " << jointSet[3] << std::endl;
         }
+*/
 
         // note: this directly calls the lower level to set position,
         // maybe we should cache the request in this component and later
