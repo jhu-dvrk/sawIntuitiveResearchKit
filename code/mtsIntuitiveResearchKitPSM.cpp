@@ -61,7 +61,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     JointTrajectory.Goal.SetSize(NumberOfJoints);
     JointTrajectory.GoalError.SetSize(NumberOfJoints);
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints);
-    JointTrajectory.GoalTolerance.SetAll(10.0 * cmnPI / 180.0); // hard coded to 3 degrees
+    JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
     JointTrajectory.Zero.SetSize(NumberOfJoints);
 
     EngagingJointSet.SetSize(NumberOfJoints);
@@ -75,6 +75,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddFunction("Enable", PID.Enable);
         interfaceRequired->AddFunction("GetPositionJoint", PID.GetPositionJoint);
+        interfaceRequired->AddFunction("GetPositionJointDesired", PID.GetPositionJointDesired);
         interfaceRequired->AddFunction("SetPositionJoint", PID.SetPositionJoint);
         interfaceRequired->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
     }
@@ -129,8 +130,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
                                            this, "SetRobotControlState", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotStatusMsg, "RobotStatusMsg", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotErrorMsg, "RobotErrorMsg", std::string(""));
-        interfaceProvided->AddEventWrite(EventTriggers.ManipClutchBtn, "ManipClutchBtn", prmEventButton());
-        interfaceProvided->AddEventWrite(EventTriggers.SUJClutchBtn, "SUJClutchBtn", prmEventButton());
+        interfaceProvided->AddEventWrite(EventTriggers.ManipClutch, "ManipClutchBtn", prmEventButton());
+        interfaceProvided->AddEventWrite(EventTriggers.SUJClutch, "SUJClutchBtn", prmEventButton());
         // Stats
         interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                                "GetPeriodStatistics");
@@ -310,36 +311,32 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
         break;
 
     case PSM_READY:
+        // when returning from manual mode, need to re-enable PID
         RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " ready");
         break;
 
     case PSM_POSITION_CARTESIAN:
-        if (this->RobotState < PSM_READY) {
-            EventTriggers.RobotErrorMsg(this->GetName() + " is not homed");
+        if (this->RobotState < PSM_ARM_CALIBRATED) {
+            EventTriggers.RobotErrorMsg(this->GetName() + " is not calibrated");
             return;
         }
-        // Enable PID
-        PID.Enable(mtsBool(true));
-        // set command joint position to joint current
-        JointDesired.ForceAssign(JointCurrent);
-        // not really where this should be on the long run but we need to ensure that tool tip
-        // is not too close to the RCM otherwise small cartesian motions lead to large joint motions
+        // check that the tool is inserted deep enough
         if (JointCurrent.Element(2) < 80.0 / 1000.0) {
-            JointDesired.Element(2) = 85.0 / 1000.0;  // 85 mm depth
+            EventTriggers.RobotErrorMsg(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
+            break;
         }
-        SetPositionJointLocal(JointDesired);
         RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " position cartesian");
         break;
 
     case PSM_MANUAL:
-        if (this->RobotState < PSM_READY) {
-            EventTriggers.RobotErrorMsg(this->GetName() + " is not homed");
+        if (this->RobotState < PSM_ARM_CALIBRATED) {
+            EventTriggers.RobotErrorMsg(this->GetName() + " is not ready yet");
             return;
         }
-        // Disable PID to allow mannual move
-        PID.Enable(mtsBool(false));
+        // disable PID to allow manual move
+        PID.Enable(false);
         RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " in manual mode");
         break;
@@ -422,8 +419,6 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         HomingTimer = JointTrajectory.Quintic.StopTime();
         // set flag to indicate that homing has started
         HomingCalibrateArmStarted = true;
-        std::cerr << "current = " << JointCurrent << std::endl
-                  << "goal    = " << JointTrajectory.Goal << std::endl;
     }
 
     // compute a new set point based on time
@@ -462,14 +457,13 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
     if (!EngagingAdapterStarted) {
         EngagingStopwatch.Reset();
         EngagingStopwatch.Start();
-        EngagingJointSet.SetAll(0.0);
+        // get current joint desired position from PID
+        PID.GetPositionJointDesired(JointDesired);
+        EngagingJointSet.ForceAssign(JointDesired);
+        // disable joint limits
         PID.SetCheckJointLimit(false);
         EngagingAdapterStarted = true;
-        return;        if (this->RobotState < PSM_ARM_CALIBRATED) {
-            EventTriggers.RobotErrorMsg(this->GetName() + " is not calibrated yet");
-            return;
-        }
-
+        return;
     }
 
     // PSM tool last 4 actuator coupling matrix
@@ -525,16 +519,20 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
     if (!EngagingToolStarted) {
         EngagingStopwatch.Reset();
         EngagingStopwatch.Start();
-        EngagingJointSet.SetAll(0.0);
+        // get current joint desired position from PID
+        PID.GetPositionJointDesired(JointDesired);
+        EngagingJointSet.ForceAssign(JointDesired);
+        // disable joint limits
         PID.SetCheckJointLimit(false);
         EngagingToolStarted = true;
         return;
     }
 
     if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)){
-        EngagingJointSet.SetAll(0.0);
-        EngagingJointSet[6] = 10.0 * cmnPI / 180.0;
-        JointDesired.ForceAssign(EngagingJointSet);
+        // get current joint desired position from PID
+        PID.GetPositionJointDesired(JointDesired);
+        // open gripper
+        JointDesired[6] = 10.0 * cmnPI / 180.0;
         PID.SetCheckJointLimit(true);
         SetPositionJointLocal(JointDesired);
 
@@ -678,20 +676,30 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton &button)
 void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton &button)
 {
     // Pass events
-    EventTriggers.ManipClutchBtn(button);
+    EventTriggers.ManipClutch(button);
 
-    // Log events
+    // Start manual mode but save the previous state
     if (button.Type() == prmEventButton::PRESSED) {
-        CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": EventHandlerManipClutch: pressed" << std::endl;
+        EventTriggers.ManipClutchPreviousState = this->RobotState;
+        SetState(PSM_MANUAL);
     } else {
-        CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": EventHandlerManipClutch: released" << std::endl;
+        if (RobotState == PSM_MANUAL) {
+            // Enable PID
+            PID.Enable(true);
+            // set command joint position to joint current
+            JointDesired.ForceAssign(JointCurrent);
+            SetPositionJointLocal(JointDesired);
+            // go back to state before clutching
+            SetState(EventTriggers.ManipClutchPreviousState);
+
+        }
     }
 }
 
 void mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch(const prmEventButton &button)
 {
     // Pass events
-    EventTriggers.SUJClutchBtn(button);
+    EventTriggers.SUJClutch(button);
 
     // Log events
     if (button.Type() == prmEventButton::PRESSED) {

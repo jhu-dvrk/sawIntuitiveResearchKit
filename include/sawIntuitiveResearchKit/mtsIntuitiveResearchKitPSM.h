@@ -106,6 +106,7 @@ protected:
     struct {
         mtsFunctionWrite Enable;
         mtsFunctionRead GetPositionJoint;
+        mtsFunctionRead GetPositionJointDesired;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetCheckJointLimit;
     } PID;
@@ -145,8 +146,9 @@ protected:
     struct {
         mtsFunctionWrite RobotStatusMsg;
         mtsFunctionWrite RobotErrorMsg;
-        mtsFunctionWrite ManipClutchBtn;
-        mtsFunctionWrite SUJClutchBtn;
+        mtsFunctionWrite ManipClutch;
+        RobotStateType ManipClutchPreviousState;
+        mtsFunctionWrite SUJClutch;
     } EventTriggers;
 
     prmPositionCartesianGet CartesianCurrentParam;

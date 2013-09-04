@@ -58,7 +58,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     JointTrajectory.Goal.SetSize(NumberOfJoints);
     JointTrajectory.GoalError.SetSize(NumberOfJoints);
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints);
-    JointTrajectory.GoalTolerance.SetAll(10.0 * cmnPI / 180.0); // hard coded to 3 degrees
+    JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
     JointTrajectory.Zero.SetSize(NumberOfJoints);
 
     this->StateTable.AddData(CartesianCurrentParam, "CartesianPosition");
