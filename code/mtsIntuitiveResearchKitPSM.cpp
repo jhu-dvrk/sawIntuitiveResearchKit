@@ -244,6 +244,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
     switch (newState) {
 
     case PSM_UNINITIALIZED:
+        RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " not initialized");
         break;
 

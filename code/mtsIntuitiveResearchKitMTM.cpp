@@ -208,34 +208,45 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
 
     switch (newState) {
     case MTM_UNINITIALIZED:
+        RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " not initialized");
         break;
+
     case MTM_HOMING_POWERING:
         HomingTimer = 0.0;
         HomingPowerRequested = false;
         HomingPowerCurrentBiasRequested = false;
+        RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " powering");
         break;
+
     case MTM_HOMING_CALIBRATING_ARM:
         HomingCalibrateArmStarted = false;
+        RobotState = newState;
         this->EventTriggers.RobotStatusMsg(this->GetName() + " calibrating arm");
         break;
+
     case MTM_HOMING_CALIBRATING_ROLL:
         HomingCalibrateRollSeekLower = false;
         HomingCalibrateRollSeekUpper = false;
         HomingCalibrateRollSeekCenter = false;
         HomingCalibrateRollLower = cmnTypeTraits<double>::MaxPositiveValue();
         HomingCalibrateRollUpper = cmnTypeTraits<double>::MinNegativeValue();
+        RobotState = newState;
         this->EventTriggers.RobotStatusMsg(this->GetName() + " calibrating roll");
         break;
+
     case MTM_READY:
+        RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " ready");
         break;
+
     case MTM_POSITION_CARTESIAN:
         if (this->RobotState < MTM_READY) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not homed");
             return;
         }
+        RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " position cartesian");
 
         // Disable torque mode for all joints
@@ -243,25 +254,27 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
         PID.EnableTorqueMode(torqueMode);
         PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
         break;
+
     case MTM_GRAVITY_COMPENSATION:
         if (this->RobotState < MTM_READY) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not homed");
             return;
         }
+        RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " gravity compensation");
-
         PID.EnableTorqueMode(torqueMode);
         PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
         CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: set gravity compensation" << std::endl;
         break;
+
     case MTM_CLUTCH:
         // check if MTM is ready
         if (this->RobotState < MTM_READY) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not homed");
             return;
         }
+        RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " clutch mode");
-
         // save current cartesian position to CartesianCluted
         CartesianClutched.Assign(CartesianCurrent);
         // set J1-J3 to torque mode (GC) and J4-J7 to PID mode
@@ -269,10 +282,10 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
         std::fill(torqueMode.begin(), torqueMode.begin() + 3, true);
         PID.EnableTorqueMode(torqueMode);
         break;
+
     default:
         break;
     }
-    RobotState = newState;
 }
 
 void mtsIntuitiveResearchKitMTM::RunHomingPower(void)
