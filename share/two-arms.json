@@ -14,19 +14,19 @@
 		"pid": "sawControllersPID-PSM.xml",
 		"kinematic": "dvpsm.rob"}
         }
-	// ,
-        // {
-        //     "master": {
-	// 	"name": "MTMR",
-	// 	"io": "sawRobotIO1394-MTMR-28247.xml",
-	// 	"pid": "sawControllersPID-MTM.xml",
-	// 	"kinematic": "dvmtm.rob"}
-        //     ,
-        //     "slave": {
-	// 	"name": "PSM1",
-	// 	"io": "sawRobotIO1394-PSM1-28007.xml",
-	// 	"pid": "sawControllersPID-PSM.xml",
-	// 	"kinematic": "dvpsm.rob"}
-        // }
+	,
+        {
+            "master": {
+		"name": "MTMR",
+		"io": "sawRobotIO1394-MTMR-28247.xml",
+		"pid": "sawControllersPID-MTM.xml",
+		"kinematic": "dvmtm.rob"}
+            ,
+            "slave": {
+		"name": "PSM1",
+		"io": "sawRobotIO1394-PSM1-28007.xml",
+		"pid": "sawControllersPID-PSM.xml",
+		"kinematic": "dvpsm.rob"}
+        }
     ]
 }
