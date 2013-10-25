@@ -25,6 +25,8 @@ set(CISST_BUILD_SAW ON CACHE BOOL "")
 set(SAW_RobotIO1394 ON CACHE BOOL "")
 # sawController (PID / GC / Teleoperation)
 set(SAW_Controllers ON CACHE BOOL "")
+# sawTrajectory (Trajectory Generation)
+set(SAW_Trajectories ON CACHE BOOL "")
 # sawTextToSpeech (For Error Messaging)
 set(SAW_TextToSpeech ON CACHE BOOL "")
 # sawIntuitiveResearchKit
