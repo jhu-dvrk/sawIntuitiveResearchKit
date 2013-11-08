@@ -15,7 +15,10 @@ set(CISST_HAS_CISSTNETLIB ON CACHE BOOL "" )
 set(CISSTNETLIB_DIR ${CMAKE_BINARY_DIR}/../cisstNetlib-Linux/ CACHE PATH "")
 
 # -------- CISST -----------
+# XML parsing
 set(CISST_cisstCommonXML ON CACHE BOOL "" )
+# JSON 
+set(CISST_HAS_JSON ON CACHE BOOL "" )
 
 
 # -------- SAW -----------
