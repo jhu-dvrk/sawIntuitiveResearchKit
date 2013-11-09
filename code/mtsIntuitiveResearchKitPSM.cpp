@@ -219,7 +219,7 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
         // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
         JointCurrentParam.Position().Element(2) /= 1000.0;  // convert from mm to m
 
-        // assign to a more convenient vctDoubleVEc
+        // assign to a more convenient vctDoubleVec
         JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
 
         // when the robot is ready, we can comput cartesian position
@@ -374,6 +374,15 @@ void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
         HomingTimer = currentTime;
         RobotIO.BiasCurrent(500); // 500 samples, this API should be changed to use time
         HomingPowerCurrentBiasRequested = true;
+
+        // pre-load PID to make sure desired position has some reasonable values
+        PID.GetPositionJoint(JointCurrentParam);
+        // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
+        JointCurrentParam.Position().Element(2) /= 1000.0;  // convert from mm to m
+        // assign to a more convenient vctDoubleVec
+        JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
+        SetPositionJointLocal(JointCurrent);
+
         return;
     }
 
@@ -410,9 +419,14 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         // compute joint goal position
         JointTrajectory.Goal.SetSize(NumberOfJoints);
         JointTrajectory.Goal.ForceAssign(JointCurrent);
-        JointTrajectory.Goal.Element(0) = 0.0;
-        JointTrajectory.Goal.Element(1) = 0.0;
-        JointTrajectory.Goal.Element(2) = 0.0;
+        // move to zero position only there is no tool present
+        Tool.GetButton(Tool.IsPresent);
+        Tool.IsPresent = !Tool.IsPresent;
+        if (!Tool.IsPresent) {
+            JointTrajectory.Goal.Element(0) = 0.0;
+            JointTrajectory.Goal.Element(1) = 0.0;
+            JointTrajectory.Goal.Element(2) = 0.0;
+        }
         JointTrajectory.Quintic.Set(currentTime,
                                     JointCurrent, JointTrajectory.Zero, JointTrajectory.Zero,
                                     currentTime + timeToHome,
@@ -460,6 +474,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         EngagingStopwatch.Start();
         // get current joint desired position from PID
         PID.GetPositionJointDesired(JointDesired);
+        // PID has data in mm, we are working in meters here
+        JointDesired.Element(2) /= 1000.0;
         EngagingJointSet.ForceAssign(JointDesired);
         // disable joint limits
         PID.SetCheckJointLimit(false);
@@ -522,6 +538,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         EngagingStopwatch.Start();
         // get current joint desired position from PID
         PID.GetPositionJointDesired(JointDesired);
+        // PID has data in mm, we are working in meters here
+        JointDesired.Element(2) /= 1000.0;
         EngagingJointSet.ForceAssign(JointDesired);
         // disable joint limits
         PID.SetCheckJointLimit(false);
@@ -532,6 +550,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
     if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)){
         // get current joint desired position from PID
         PID.GetPositionJointDesired(JointDesired);
+        // PID has data in mm, we are working in meters here
+        JointDesired.Element(2) /= 1000.0;
         // open gripper
         JointDesired[6] = 10.0 * cmnPI / 180.0;
         PID.SetCheckJointLimit(true);
