@@ -176,6 +176,7 @@ int main(int argc, char ** argv)
          ++iterator) {
         tabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
     }
+    tabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
 
     // setup arms defined in the json configuration file
     for (unsigned int index = 0; index < pairs.size(); ++index) {

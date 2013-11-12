@@ -248,6 +248,7 @@ int main(int argc, char ** argv)
          ++iterator) {
         tabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
     }
+    tabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
     tabWidget->show();
 
     //-------------- create the components ------------------

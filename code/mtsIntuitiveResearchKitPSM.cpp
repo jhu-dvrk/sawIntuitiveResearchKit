@@ -622,8 +622,22 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
         Manipulator.InverseKinematics(jointSet, CartesianPositionFrm);
         jointSet.resize(7);
         jointSet[6] = DesiredOpenAngle;
+#if 1 // Anton
+        const double difference = JointCurrent[3] - jointSet[3];
+        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
+        jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
+        /*
+        if (differenceInTurns != 0.0) {
+            CMN_LOG_CLASS_RUN_DEBUG << GetName()
+                                    << " diff = " << difference
+                                    << " turns = " << difference / (2.0 * cmnPI)
+                                    << " corr = " << differenceInTurns
+                                    << " res = " << jointSet[3] << std::endl;
+        }
+        */
+#endif // Anton
 
-        // deals with J4: outer roll
+#if 0 // Zihan
         double j4compensate = (jointSet[3] - JointCurrent[3])/(2.0*cmnPI);
         if (j4compensate >= 0) {
             j4compensate = (int)(j4compensate + 0.5);
@@ -631,14 +645,14 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
             j4compensate = (int)(j4compensate - 0.5);
         }
         jointSet[3] -= (j4compensate * cmnPI * 2.0);
-
+#endif // Zihan
         /*
         if (Counter%5) {
             CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": cur = " << JointCurrent[3]
                                     << " cmd = " << jointSet[3] + j4compensate * cmnPI * 2.0
                                     << " cmdfix = " << jointSet[3] << std::endl;
         }
-*/
+        */
 
         // note: this directly calls the lower level to set position,
         // maybe we should cache the request in this component and later

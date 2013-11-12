@@ -21,6 +21,7 @@ set (REQUIRED_CISST_LIBRARIES
      cisstOSAbstraction
      cisstMultiTask
      cisstParameterTypes
+     cisstParameterTypesQt
      cisstQt)
 
 # cisst
