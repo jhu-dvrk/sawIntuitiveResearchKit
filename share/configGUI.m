@@ -81,6 +81,7 @@ for i = 1:12
                               num2str(mod(i-1,4)) ];
     handles.m_digiIn{i,3,1} = '0';
     handles.m_digiIn{i,4,1} = 'all';
+    handles.m_digiIn{i,5,1} = 0.0;
     
     handles.m_digiIn{i,1,2} = i-1;
     handles.m_digiIn{i,2,2} = [handles.m_type, '-D', ...
@@ -88,6 +89,7 @@ for i = 1:12
                               num2str(mod(i-1,4)) ];
     handles.m_digiIn{i,3,2} = '0';
     handles.m_digiIn{i,4,2} = 'all';
+    handles.m_digiIn{i,5,2} = 0.0;
 end
 set(handles.digiBidMenu, 'Value', 1);
 set(handles.tblDigital, 'data', handles.m_digiIn(:,:,1));
@@ -231,19 +233,23 @@ disp(handles.m_type);
 for i = 1:12
     handles.m_digiIn{i,2,1} = [handles.m_type, '-D', ...
                               num2str(idivide(i-1, int32(4))), ...
-                              num2str(mod(i-1,4)) ];
+                              num2str(mod(i-1,4)), 0.0 ];
     
     handles.m_digiIn{i,2,2} = [handles.m_type, '-D', ...
                               num2str(idivide(i-1, int32(4))+3), ...
-                              num2str(mod(i-1,4)) ];
+                              num2str(mod(i-1,4)), 0.0 ];
 end
 
 % set default PSM DigitalIn
 if (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2'))
     handles.m_digiIn{1,2,1} = [handles.m_type '-SUJClutch'];
+    handles.m_digiIn{1,5,1} = 0.2;
     handles.m_digiIn{3,2,1} = [handles.m_type '-ManipClutch'];
+    handles.m_digiIn{3,5,1} = 0.2;
     handles.m_digiIn{8,2,2} = [handles.m_type '-Tool'];
+    handles.m_digiIn{8,5,2} = 1.5;
     handles.m_digiIn{11,2,2} = [handles.m_type '-Adapter'];
+    handles.m_digiIn{11,5,2} = 1.5;
 end
 
 val = get(handles.digiBidMenu, 'Value');
@@ -366,10 +372,15 @@ function footButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 handles.m_digiIn{1,2,2} = 'CLUTCH';
+handles.m_digiIn{1,5,2} = 0.2;
 handles.m_digiIn{2,2,2} = 'CAM-';
+handles.m_digiIn{2,5,2} = 0.2;
 handles.m_digiIn{3,2,2} = 'CAM+';
+handles.m_digiIn{3,5,2} = 0.2;
 handles.m_digiIn{4,2,2} = 'COAG';
+handles.m_digiIn{4,5,2} = 0.2;
 handles.m_digiIn{5,2,2} = 'CAMERA';
+handles.m_digiIn{5,5,2} = 0.2;
 
 val = get(handles.digiBidMenu, 'Value');
 set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val));

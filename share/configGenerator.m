@@ -367,6 +367,7 @@ for b = 1:2
         DigitalIn.setAttribute('BoardID', num2str(boardID(b)));
         DigitalIn.setAttribute('Pressed', aDigital{i,3,b});
         DigitalIn.setAttribute('Trigger', aDigital{i,4,b});
+        DigitalIn.setAttribute('Debounce', num2str(aDigital{i,5,b}));
         Config.appendChild(DigitalIn);
     end
 end
