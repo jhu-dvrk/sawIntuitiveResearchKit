@@ -42,7 +42,7 @@ mtsIntuitiveResearchKitUDPStreamer::mtsIntuitiveResearchKitUDPStreamer(const std
         required->AddFunction("GetPositionCartesian", GetPositionCartesian);
         required->AddFunction("GetGripperPosition", GetGripperPosition);
     }
-    required = AddInterfaceRequired("ManipClutch");
+    required = AddInterfaceRequired("Clutch");
     if (required) {
         required->AddEventHandlerWrite(&mtsIntuitiveResearchKitUDPStreamer::EventHandlerManipClutch, this, "Button");
     }
@@ -73,10 +73,11 @@ void mtsIntuitiveResearchKitUDPStreamer::Run(void)
     if (SocketConfigured) {
         // Packet format (9 doubles): button1 (clutch), gripper, x, y, z, q0, qx, qy, qz
         double packet[9];
-        if (Clutch)
+        if (Clutch) {
             packet[0] = 1.0;
-        else
+        } else {
             packet[0] = 0.0;
+        }
         GetGripperPosition(packet[1]);
         prmPositionCartesianGet posCart;
         GetPositionCartesian(posCart);

@@ -1,7 +1,7 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 /*
-  $Id: mainQtTeleOperation.cpp 4400 2013-08-14 05:26:04Z zchen24 $
+  $Id$
 
   Author(s):  Zihan Chen
   Created on: 2013-02-07

@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  $Id: mtsTeleOperationQtWidget.cpp 4423 2013-08-21 16:43:57Z adeguet1 $
+  $Id$
 
   Author(s):  Anton Deguet
   Created on: 2013-08-24

@@ -3,7 +3,7 @@
 /*
   $Id$
 
-  Author(s):  Zihan Chen
+  Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
   (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
@@ -33,6 +33,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitUDPStreamer.h>
 #include <sawControllers/mtsTeleOperation.h>
 #include <sawControllers/mtsTeleOperationQtWidget.h>
 
@@ -59,7 +60,8 @@ int main(int argc, char ** argv)
     const double periodIO = 0.5 * cmn_ms;
     const double periodKinematics = 2.0 * cmn_ms;
     const double periodTeleop = 2.0 * cmn_ms;
-
+    const double periodUDP = 20.0 * cmn_ms;
+ 
     // log configuration
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
@@ -184,6 +186,9 @@ int main(int argc, char ** argv)
         std::string masterName =  jsonMaster["name"].asString();
         std::string masterPIDFile = jsonMaster["pid"].asString();
         std::string masterKinematicFile = jsonMaster["kinematic"].asString();
+        std::string masterUDPIP = jsonMaster["UDP-IP"].asString();
+        short masterUDPPort = jsonMaster["UDP-port"].asInt();
+
         fileExists(masterName + " PID", masterPIDFile);
         fileExists(masterName + " kinematic", masterKinematicFile);
         mtsIntuitiveResearchKitConsole::Arm * mtm
@@ -193,10 +198,27 @@ int main(int argc, char ** argv)
                           masterKinematicFile, periodKinematics);
         console->AddArm(mtm);
 
+        if (masterUDPIP != "" || masterUDPPort != 0) {
+            if (masterUDPIP != "" && masterUDPPort != 0) {
+                std::cout << "Adding UDPStream component for master " << masterName << " to " << masterUDPIP << ":" << masterUDPPort << std::endl;
+                mtsIntuitiveResearchKitUDPStreamer * streamer =
+                    new mtsIntuitiveResearchKitUDPStreamer(masterName + "UDP", periodUDP, masterUDPIP, masterUDPPort);
+                componentManager->AddComponent(streamer);
+                // connect to mtm interface to get cartesian position
+                componentManager->Connect(streamer->GetName(), "Robot", mtm->Name(), "Robot");
+                // connect to io to get clutch events
+                componentManager->Connect(streamer->GetName(), "Clutch", "io", "CLUTCH");
+            } else {
+                std::cerr << "Error for master arm " << masterName << ", you can provided UDP-IP w/o UDP-port" << std::endl;
+                exit(-1);
+            }
+        }
+
         Json::Value jsonSlave = pairs[index]["slave"];
         std::string slaveName =  jsonSlave["name"].asString();
         std::string slavePIDFile = jsonSlave["pid"].asString();
         std::string slaveKinematicFile = jsonSlave["kinematic"].asString();
+
         fileExists(slaveName + " PID", slavePIDFile);
         fileExists(slaveName + " kinematic", slaveKinematicFile);
         mtsIntuitiveResearchKitConsole::Arm * psm
