@@ -37,7 +37,7 @@ class mtsIntuitiveResearchKitArmQtWidget: public QWidget, public mtsComponent
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsIntuitiveResearchKitArmQtWidget(const std::string & componentName);
+    mtsIntuitiveResearchKitArmQtWidget(const std::string & componentName, double periodInSeconds = 50.0 * cmn_ms);
     ~mtsIntuitiveResearchKitArmQtWidget() {}
 
     void Configure(const std::string & filename = "");
@@ -58,6 +58,7 @@ private slots:
 private:
     //! setup GUI
     void setupUi(void);
+    int TimerPeriodInMilliseconds;
 
 protected:
     struct ArmStruct {

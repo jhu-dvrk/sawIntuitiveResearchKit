@@ -35,8 +35,9 @@ http://www.cisst.org/cisst/license.txt.
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArmQtWidget, mtsComponent, std::string);
 
-mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std::string & componentName)
-    :mtsComponent(componentName)
+mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std::string & componentName, double periodInSeconds):
+    mtsComponent(componentName),
+    TimerPeriodInMilliseconds(periodInSeconds)
 {
     // Setup CISST Interface
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Manipulator");
@@ -49,7 +50,7 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
                                                 this, "RobotStatusMsg");
     }
     setupUi();
-    startTimer(50); // ms
+    startTimer(TimerPeriodInMilliseconds); // ms
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::Configure(const std::string &filename)
@@ -86,6 +87,11 @@ void mtsIntuitiveResearchKitArmQtWidget::closeEvent(QCloseEvent * event)
 
 void mtsIntuitiveResearchKitArmQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 {
+    // make sure we should update the display
+    if (this->isHidden()) {
+        return;
+    }
+
     mtsExecutionResult executionResult;
     executionResult = Arm.GetPositionCartesian(Position);
     if (!executionResult) {
