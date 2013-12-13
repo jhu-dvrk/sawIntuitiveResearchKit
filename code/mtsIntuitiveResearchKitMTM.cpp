@@ -336,7 +336,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingPower(void)
 
 void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
 {
-    static const double timeToHome = 2.0 * cmn_s;
+    static const double timeToHome = 1.0 * cmn_s;
     static const double extraTime = 5.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
@@ -396,10 +396,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
 
 void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
 {
-    static const double maxTrackingError = 0.5 * cmnPI; // 1/4 turn
-    static const double maxRollRange = 8.0 * cmnPI; // that actual device is limited to ~2.6 turns
-    static const double timeToHitLimit = 4.0 * cmn_s;
-    static const double extraTime = 2.0 * cmn_s;
+    static const double maxTrackingError = 2.0 * cmnPI; // 1 turn
+    static const double maxRollRange = 6.0 * cmnPI + maxTrackingError; // that actual device is limited to ~2.6 turns
+    static const double timeToHitLimit = 3.0 * cmn_s;
+    static const double extraTime = 4.0 * cmn_s;
 
     const double currentTime = this->StateTable.GetTic();
 
