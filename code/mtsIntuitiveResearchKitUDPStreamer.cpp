@@ -27,7 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 CMN_IMPLEMENT_SERVICES_DERIVED(mtsIntuitiveResearchKitUDPStreamer, mtsTaskPeriodic)
 
 mtsIntuitiveResearchKitUDPStreamer::mtsIntuitiveResearchKitUDPStreamer(const std::string & name,
-                                                                       double period, const std::string & ip, short port) :
+                                                                       double period, const std::string & ip, unsigned short port) :
     mtsTaskPeriodic(name, period),
     Socket(osaSocket::UDP),
     SocketConfigured(false),
@@ -105,8 +105,8 @@ void mtsIntuitiveResearchKitUDPStreamer::SetDestination(const std::string &ipPor
     if (colon == std::string::npos)
         CMN_LOG_CLASS_RUN_ERROR << "SetDestination: invalid address:port " << ipPort << std::endl;
     else {
-        short port;
-        if (sscanf(ipPort.c_str()+colon+1, "%hd", &port) != 1)
+        unsigned short port;
+        if (sscanf(ipPort.c_str()+colon+1, "%hu", &port) != 1)
             CMN_LOG_CLASS_RUN_ERROR << "SetDestination: invalid port " << ipPort << std::endl;
         else {
             Socket.SetDestination(ipPort.substr(0, colon), port);
