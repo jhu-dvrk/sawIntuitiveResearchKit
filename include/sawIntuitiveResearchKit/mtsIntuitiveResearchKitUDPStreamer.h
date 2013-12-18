@@ -51,7 +51,7 @@ class mtsIntuitiveResearchKitUDPStreamer : public mtsTaskPeriodic
         \param ip IP address for streaming UDP packets
         \param port Port for streaming UDP packets
     */
-    mtsIntuitiveResearchKitUDPStreamer(const std::string &name, double period, const std::string &ip = "", short port = 0);
+    mtsIntuitiveResearchKitUDPStreamer(const std::string &name, double period, const std::string &ip = "", unsigned short port = 0);
 
     /*! Destructor */
     virtual ~mtsIntuitiveResearchKitUDPStreamer();
