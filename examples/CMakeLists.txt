@@ -49,6 +49,17 @@ if (cisst_FOUND_AS_REQUIRED)
                       ${sawControllers_LIBRARY_DIR}
                       ${sawTextToSpeech_LIBRARY_DIR})
 
+    # main program used to configure PID
+    add_executable (sawIntuitiveResearchGripperCalibration GripperCalibration.cpp)
+    set_property (TARGET sawIntuitiveResearchGripperCalibration PROPERTY FOLDER "sawIntuitiveResearchKit")
+
+    # link against non cisst libraries and cisst components
+    target_link_libraries (sawIntuitiveResearchGripperCalibration
+                           ${sawRobotIO1394_LIBRARIES})
+
+    # link against cisst libraries (and dependencies)
+    cisst_target_link_libraries (sawIntuitiveResearchGripperCalibration ${REQUIRED_CISST_LIBRARIES})
+
     # examples using Qt
     if (CISST_HAS_QT)
       # main program used to configure PID
@@ -74,20 +85,6 @@ if (cisst_FOUND_AS_REQUIRED)
                              ${sawIntuitiveResearchKit_LIBRARIES}
                              ${sawControllers_LIBRARIES}
                              ${sawTextToSpeech_LIBRARIES})
-
-      # main program used to configure TeleOperation Four ard ----------
-      add_executable (sawIntuitiveResearchKitQtTeleOperation4 mainQtTeleOperationFourArm.cpp)
-      set_property (TARGET sawIntuitiveResearchKitQtTeleOperation4 PROPERTY FOLDER "sawIntuitiveResearchKit")
-
-      # link against non cisst libraries and cisst components
-      target_link_libraries (sawIntuitiveResearchKitQtTeleOperation4
-                             ${sawRobotIO1394_LIBRARIES}
-                             ${sawIntuitiveResearchKit_LIBRARIES}
-                             ${sawControllers_LIBRARIES}
-                             ${sawTextToSpeech_LIBRARIES})
-
-      # link against cisst libraries (and dependencies)
-      cisst_target_link_libraries (sawIntuitiveResearchKitQtTeleOperation4 ${REQUIRED_CISST_LIBRARIES})
 
       # main program used to configure TeleOperation
       add_executable (sawIntuitiveResearchKitQtHaptics mainQtHaptics.cpp)
