@@ -6,7 +6,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-12-20
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -94,7 +94,8 @@ int main(int argc, char * argv[])
     std::cout << std::endl
               << "Press any key to start collecting data." << std::endl;
     cmnGetChar();
-    std::cout << "Fully open and close the gripper on the MTM multiple times." << std::endl
+    std::cout << "Fully open and close the gripper up to the second spring on the MTM multiple times." << std::endl
+              << "NOTE: It is very important to not close the gripper all the way, stop when you feel some resitance from the second spring." << std::endl
               << "+ indicates a new maximum, - indicates a new minimum." << std::endl
               << "Press any key to stop collecting data." << std::endl;
 
@@ -140,7 +141,7 @@ int main(int argc, char * argv[])
 
         // compute new offsets assuming a range [0, user-max]
         double userMaxDeg;
-        std::cout << "Enter the new desired max for the gripper, 90 (degrees) is recommended." << std::endl;
+        std::cout << "Enter the new desired max for the gripper, 60 (degrees) is recommended to match the maximum tool opening." << std::endl;
         std::cin >> userMaxDeg;
         cmnGetChar(); // to get the CR
         double userMaxRad = userMaxDeg * cmnPI / 180.0;

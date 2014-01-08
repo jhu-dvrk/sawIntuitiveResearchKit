@@ -7,7 +7,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -118,7 +118,6 @@ protected:
         mtsFunctionVoid DisablePower;
         mtsFunctionRead GetAmpStatus;
         mtsFunctionVoid BiasEncoder;
-        mtsFunctionWrite BiasCurrent;
         mtsFunctionWrite SetMotorCurrent;
     } RobotIO;
 
@@ -179,7 +178,7 @@ protected:
 
     // Home Action
     double HomingTimer;
-    bool HomingPowerRequested, HomingPowerCurrentBiasRequested;
+    bool HomingPowerRequested;
     bool HomingCalibrateArmStarted;
     bool EngagingAdapterStarted;
     bool EngagingToolStarted;

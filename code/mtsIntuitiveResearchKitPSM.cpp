@@ -7,7 +7,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -87,7 +87,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
         interfaceRequired->AddFunction("DisablePower", RobotIO.DisablePower);
         interfaceRequired->AddFunction("GetAmpStatus", RobotIO.GetAmpStatus);
         interfaceRequired->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
-        interfaceRequired->AddFunction("BiasCurrent", RobotIO.BiasCurrent);
         interfaceRequired->AddFunction("SetMotorCurrent", RobotIO.SetMotorCurrent);
     }
 
@@ -251,7 +250,6 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
     case PSM_HOMING_POWERING:
         HomingTimer = 0.0;
         HomingPowerRequested = false;
-        HomingPowerCurrentBiasRequested = false;
         RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " powering");
         break;
@@ -349,7 +347,6 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
 void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
 {
     const double timeToPower = 3.0 * cmn_s;
-    const double timeToCalibrateCurrent = 1.0 * cmn_s;
 
     const double currentTime = this->StateTable.GetTic();
     // first, request power to be turned on
@@ -363,17 +360,13 @@ void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
         // enable power and set a flags to move to next step
         RobotIO.EnablePower();
         HomingPowerRequested = true;
-        HomingPowerCurrentBiasRequested = false;
         EventTriggers.RobotStatusMsg(this->GetName() + " power requested");
         return;
     }
 
-    // second, request current bias, we leave some time for power to stabilize
-    if (!HomingPowerCurrentBiasRequested
+    // second, check status
+    if (HomingPowerRequested
         && ((currentTime - HomingTimer) > timeToPower)) {
-        HomingTimer = currentTime;
-        RobotIO.BiasCurrent(500); // 500 samples, this API should be changed to use time
-        HomingPowerCurrentBiasRequested = true;
 
         // pre-load PID to make sure desired position has some reasonable values
         PID.GetPositionJoint(JointCurrentParam);
@@ -383,12 +376,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
         JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
         SetPositionJointLocal(JointCurrent);
 
-        return;
-    }
-
-    // wait some more to be ready
-    if (HomingPowerCurrentBiasRequested
-        && (currentTime - HomingTimer) > timeToCalibrateCurrent) {
+        // check power status
         vctBoolVec amplifiersStatus(NumberOfJoints);
         RobotIO.GetAmpStatus(amplifiersStatus);
         if (amplifiersStatus.All()) {
