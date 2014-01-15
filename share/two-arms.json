@@ -1,25 +1,25 @@
 {
     "pairs":
     [
-        {
-            "master": {
-                "name": "MTML",
-                "io": "sawRobotIO1394-MTML-22723.xml",
-                "pid": "sawControllersPID-MTM.xml",
-                "kinematic": "dvmtm.rob"
-		// ,
-                // "UDP-IP": "localhost",
-                // "UDP-port": 10001
-		}
-            ,
-            "slave": {
-                "name": "PSM2",
-                "io": "sawRobotIO1394-PSM2-27374.xml",
-                "pid": "sawControllersPID-PSM.xml",
-                "kinematic": "dvpsm.rob"
-            }
-	}
-        ,
+        // {
+        //     "master": {
+        //         "name": "MTML",
+        //         "io": "sawRobotIO1394-MTML-22723.xml",
+        //         "pid": "sawControllersPID-MTM.xml",
+        //         "kinematic": "dvmtm.rob"
+	// 	// ,
+        //         // "UDP-IP": "localhost",
+        //         // "UDP-port": 10001
+	// 	}
+        //     ,
+        //     "slave": {
+        //         "name": "PSM2",
+        //         "io": "sawRobotIO1394-PSM2-27374.xml",
+        //         "pid": "sawControllersPID-PSM.xml",
+        //         "kinematic": "dvpsm.rob"
+        //     }
+	// }
+        // ,
         {
             "master": {
                 "name": "MTMR",
