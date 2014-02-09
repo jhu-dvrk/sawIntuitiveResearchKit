@@ -46,6 +46,7 @@ mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicCons
 
 void mtsIntuitiveResearchKitPSM::Init(void)
 {
+    IsCartesianGoalSet = false;
     Counter = 0;
 
     SetState(PSM_UNINITIALIZED);
@@ -581,30 +582,18 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         JointDesired.ForceAssign(EngagingJointSet);
         SetPositionJointLocal(JointDesired);
     }
-
 }
 
 void mtsIntuitiveResearchKitPSM::RunPositionCartesian(void)
 {
-    // should prevent user to go to close to RCM
-}
+    //! \todo: should prevent user to go to close to RCM!
 
-void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
-{
-    JointDesiredParam.Goal().Assign(newPosition, NumberOfJoints);
-    JointDesiredParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
-    JointDesiredParam.Goal().Element(7) = 0.0;
-    PID.SetPositionJoint(JointDesiredParam);
-}
-
-void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
-{
-    if (RobotState == PSM_POSITION_CARTESIAN) {
+    if (IsCartesianGoalSet == true) {
         vctDoubleVec jointSet(6, 0.0);
         jointSet.Assign(JointCurrent, 6);
 
         // compute desired slave position
-        CartesianPositionFrm.From(newPosition.Goal());
+        CartesianPositionFrm.From(CartesianGoalSet.Goal());
         CartesianPositionFrm = CartesianPositionFrm * Frame6to7Inverse;
 
         Manipulator.InverseKinematics(jointSet, CartesianPositionFrm);
@@ -624,29 +613,26 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
         }
         */
 #endif // Anton
-
-#if 0 // Zihan
-        double j4compensate = (jointSet[3] - JointCurrent[3])/(2.0*cmnPI);
-        if (j4compensate >= 0) {
-            j4compensate = (int)(j4compensate + 0.5);
-        } else {
-            j4compensate = (int)(j4compensate - 0.5);
-        }
-        jointSet[3] -= (j4compensate * cmnPI * 2.0);
-#endif // Zihan
-        /*
-        if (Counter%5) {
-            CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": cur = " << JointCurrent[3]
-                                    << " cmd = " << jointSet[3] + j4compensate * cmnPI * 2.0
-                                    << " cmdfix = " << jointSet[3] << std::endl;
-        }
-        */
-
-        // note: this directly calls the lower level to set position,
-        // maybe we should cache the request in this component and later
-        // in the Run method push the request.  This way, only the latest
-        // request would be pushed if multiple are queued.
         SetPositionJointLocal(jointSet);
+
+        // reset flag
+        IsCartesianGoalSet = false;
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
+{
+    JointDesiredParam.Goal().Assign(newPosition, NumberOfJoints);
+    JointDesiredParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
+//    JointDesiredParam.Goal().Element(7) = 0.0;   // ZC: PSM only has 7 joints
+    PID.SetPositionJoint(JointDesiredParam);
+}
+
+void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
+{
+    if (RobotState == PSM_POSITION_CARTESIAN) {
+        CartesianGoalSet = newPosition;
+        IsCartesianGoalSet = true;
     } else {
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: PSM not ready" << std::endl;
     }
