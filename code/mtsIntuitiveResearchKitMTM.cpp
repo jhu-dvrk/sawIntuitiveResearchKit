@@ -335,7 +335,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         PID.SetCheckJointLimit(false);
         // enable PID and start from current position
         JointDesired.ForceAssign(JointCurrent);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
         PID.Enable(true);
 
         // compute joint goal position
@@ -356,10 +356,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
     if (currentTime <= HomingTimer) {
         JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
                                          JointTrajectory.Velocity, JointTrajectory.Acceleration);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
     } else {
         // request final position in case trajectory rounding prevent us to get there
-        SetPositionJoint(JointTrajectory.Goal);
+        SetPositionJointLocal(JointTrajectory.Goal);
 
         // check position
         JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointCurrent);
@@ -417,7 +417,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         && (HomingCalibrateRollLower == cmnTypeTraits<double>::MaxPositiveValue())) {
         JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
                                          JointTrajectory.Velocity, JointTrajectory.Acceleration);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
         // detect tracking error and set lower limit
         const double trackingError =
                 std::abs(JointCurrent.Element(RollIndex) - JointDesired.Element(RollIndex));
@@ -459,7 +459,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         && (HomingCalibrateRollUpper == cmnTypeTraits<double>::MinNegativeValue())) {
         JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
                                          JointTrajectory.Velocity, JointTrajectory.Acceleration);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
         // detect tracking error and set lower limit
         const double trackingError =
                 std::abs(JointCurrent.Element(RollIndex) - JointDesired.Element(RollIndex));
@@ -499,10 +499,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
     if (currentTime <= HomingTimer) {
         JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
                                          JointTrajectory.Velocity, JointTrajectory.Acceleration);
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
     } else {
         // request final position in case trajectory rounding prevent us to get there
-        SetPositionJoint(JointTrajectory.Goal);
+        SetPositionJointLocal(JointTrajectory.Goal);
 
         // check position
         JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointCurrent);
@@ -512,7 +512,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
             // reset encoder on last joint as well as PID target position to reflect new roll position = 0
             RobotIO.ResetSingleEncoder(static_cast<int>(RollIndex));
             JointDesired.SetAll(0.0);
-            SetPositionJoint(JointDesired);
+            SetPositionJointLocal(JointDesired);
             PID.SetCheckJointLimit(true);
             EventTriggers.RobotStatusMsg(this->GetName() + " roll calibrated");
             this->SetState(MTM_READY);
@@ -579,11 +579,11 @@ void mtsIntuitiveResearchKitMTM::RunClutch(void)
     JointDesired.Assign(JointCurrent);
     CartesianClutched.Translation().Assign(CartesianCurrent.Translation());
     Manipulator.InverseKinematics(JointDesired, CartesianClutched);
-    SetPositionJoint(JointDesired);
+    SetPositionJointLocal(JointDesired);
 }
 
 
-void mtsIntuitiveResearchKitMTM::SetPositionJoint(const vctDoubleVec & newPosition)
+void mtsIntuitiveResearchKitMTM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
     JointDesiredParam.Goal().Assign(newPosition, NumberOfJoints);
     JointDesiredParam.Goal().Element(7) = 0.0;
@@ -651,7 +651,7 @@ void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesian
         // maybe we should cache the request in this component and later
         // in the Run method push the request.  This way, only the latest
         // request would be pushed if multiple are queued.
-        SetPositionJoint(JointDesired);
+        SetPositionJointLocal(JointDesired);
     } else {
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: MTM not ready" << std::endl;
     }
