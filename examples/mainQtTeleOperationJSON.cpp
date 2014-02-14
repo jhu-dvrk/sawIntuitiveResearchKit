@@ -6,7 +6,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -208,6 +208,8 @@ int main(int argc, char ** argv)
                 componentManager->Connect(streamer->GetName(), "Robot", mtm->Name(), "Robot");
                 // connect to io to get clutch events
                 componentManager->Connect(streamer->GetName(), "Clutch", "io", "CLUTCH");
+                // connect to io to get coag events
+                componentManager->Connect(streamer->GetName(), "Coag", "io", "COAG");
             } else {
                 std::cerr << "Error for master arm " << masterName << ", you can provided UDP-IP w/o UDP-port" << std::endl;
                 exit(-1);

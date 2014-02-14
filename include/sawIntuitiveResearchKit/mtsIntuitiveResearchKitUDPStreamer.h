@@ -7,7 +7,7 @@
   Author(s):  Peter Kazanzides
   Created on: 2013-12-02
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -40,9 +40,11 @@ class mtsIntuitiveResearchKitUDPStreamer : public mtsTaskPeriodic
     mtsFunctionRead GetPositionCartesian;
     mtsFunctionRead GetGripperPosition;
     bool Clutch;
+    bool Coag;
 
     void SetDestination(const std::string &ipPort);
     void EventHandlerManipClutch(const prmEventButton &button);
+    void EventHandlerCoag(const prmEventButton &button);
 
  public:
     /*! Constructor

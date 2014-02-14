@@ -7,7 +7,7 @@
   Author(s):  Peter Kazanzides
   Created on: 2013-12-02
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -31,7 +31,8 @@ mtsIntuitiveResearchKitUDPStreamer::mtsIntuitiveResearchKitUDPStreamer(const std
     mtsTaskPeriodic(name, period),
     Socket(osaSocket::UDP),
     SocketConfigured(false),
-    Clutch(false)
+    Clutch(false),
+    Coag(false)
 {
     mtsInterfaceProvided * provided = AddInterfaceProvided("Configuration");
     if (provided) {
@@ -45,6 +46,10 @@ mtsIntuitiveResearchKitUDPStreamer::mtsIntuitiveResearchKitUDPStreamer(const std
     required = AddInterfaceRequired("Clutch");
     if (required) {
         required->AddEventHandlerWrite(&mtsIntuitiveResearchKitUDPStreamer::EventHandlerManipClutch, this, "Button");
+    }
+    required = AddInterfaceRequired("Coag");
+    if (required) {
+        required->AddEventHandlerWrite(&mtsIntuitiveResearchKitUDPStreamer::EventHandlerCoag, this, "Button");
     }
     if (!ip.empty()) {
         Socket.SetDestination(ip, port);
@@ -71,13 +76,16 @@ void mtsIntuitiveResearchKitUDPStreamer::Run(void)
     ProcessQueuedEvents();
 
     if (SocketConfigured) {
-        // Packet format (9 doubles): button1 (clutch), gripper, x, y, z, q0, qx, qy, qz
+        // Packet format (9 doubles): buttons (clutch, coag), gripper, x, y, z, q0, qx, qy, qz
+        // For the buttons: 0=None, 1=Clutch, 2=Coag, 3=Both
         double packet[9];
         if (Clutch) {
             packet[0] = 1.0;
         } else {
             packet[0] = 0.0;
         }
+        if (Coag)
+            packet[0] += 2.0;
         GetGripperPosition(packet[1]);
         prmPositionCartesianGet posCart;
         GetPositionCartesian(posCart);
@@ -118,4 +126,9 @@ void mtsIntuitiveResearchKitUDPStreamer::SetDestination(const std::string &ipPor
 void mtsIntuitiveResearchKitUDPStreamer::EventHandlerManipClutch(const prmEventButton &button)
 {
     Clutch = (button.Type() == prmEventButton::PRESSED);
+}
+
+void mtsIntuitiveResearchKitUDPStreamer::EventHandlerCoag(const prmEventButton &button)
+{
+    Coag = (button.Type() == prmEventButton::PRESSED);
 }
