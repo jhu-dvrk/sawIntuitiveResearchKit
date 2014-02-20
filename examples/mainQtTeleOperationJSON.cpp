@@ -80,14 +80,14 @@ int main(int argc, char ** argv)
 
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
-                              cmnCommandLineOptions::REQUIRED, &jsonMainConfigFile);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
 
     options.AddOptionOneValue("f", "firewire",
                               "firewire port number(s)",
-                              cmnCommandLineOptions::OPTIONAL, &firewirePort);
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &firewirePort);
     options.AddOptionOneValue("g", "gcmip",
                               "global component manager IP address",
-                              cmnCommandLineOptions::OPTIONAL, &gcmip);
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &gcmip);
 
     // check that all required options have been provided
     std::string errorMessage;

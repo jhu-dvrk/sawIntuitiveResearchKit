@@ -43,10 +43,10 @@ int main(int argc, char * argv[])
     std::string configFile;
     options.AddOptionOneValue("c", "config",
                               "configuration file",
-                              cmnCommandLineOptions::REQUIRED, &configFile);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &configFile);
     options.AddOptionOneValue("p", "port",
                               "firewire port number(s)",
-                              cmnCommandLineOptions::OPTIONAL, &portNumber);
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &portNumber);
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
         std::cerr << "Error: " << errorMessage << std::endl;

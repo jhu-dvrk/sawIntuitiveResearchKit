@@ -6,7 +6,7 @@
   Author(s):  Zihan Chen
   Created on: 2013-02-07
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -47,16 +47,16 @@ int main(int argc, char ** argv)
 
     options.AddOptionOneValue("i", "io",
                               "configuration file for robot IO (see sawRobotIO1394)",
-                              cmnCommandLineOptions::REQUIRED, &ioConfigFile);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &ioConfigFile);
     options.AddOptionOneValue("p", "pid",
                               "configuration file for PID controller (see sawControllers, mtsPID)",
-                              cmnCommandLineOptions::REQUIRED, &pidConfigFile);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &pidConfigFile);
     options.AddOptionOneValue("f", "firewire",
                               "firewire port number(s)",
-                              cmnCommandLineOptions::OPTIONAL, &firewirePort);
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &firewirePort);
     options.AddOptionOneValue("a", "arm name",
                               "arm name (i.e. PSM1, PSM2, MTML or MTMR) as defined in the sawRobotIO1394 file",
-                              cmnCommandLineOptions::REQUIRED, &armName);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &armName);
 
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {

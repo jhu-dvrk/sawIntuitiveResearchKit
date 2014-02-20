@@ -6,7 +6,7 @@
   Author(s):  Zihan Chen
   Created on: 2013-02-07
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -58,34 +58,34 @@ int main(int argc, char ** argv)
 
     options.AddOptionOneValue("i", "io-master",
                               "configuration file for master robot IO (see sawRobotIO1394)",
-                              cmnCommandLineOptions::REQUIRED, &configFiles["io-master"]);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["io-master"]);
     options.AddOptionOneValue("p", "pid-master",
                               "configuration file for master PID controller (see sawControllers, mtsPID)",
-                              cmnCommandLineOptions::REQUIRED, &configFiles["pid-master"]);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["pid-master"]);
     options.AddOptionOneValue("k", "kinematic-master",
                               "configuration file for master kinematic (see cisstRobot, robManipulator)",
-                              cmnCommandLineOptions::REQUIRED, &configFiles["kinematic-master"]);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["kinematic-master"]);
     options.AddOptionOneValue("I", "io-slave",
                               "configuration file for slave robot IO (see sawRobotIO1394)",
-                              cmnCommandLineOptions::REQUIRED, &configFiles["io-slave"]);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["io-slave"]);
     options.AddOptionOneValue("P", "pid-slave",
                               "configuration file for slave PID controller (see sawControllers, mtsPID)",
-                              cmnCommandLineOptions::REQUIRED, &configFiles["pid-slave"]);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["pid-slave"]);
     options.AddOptionOneValue("K", "kinematic-slave",
                               "configuration file for slave kinematic (see cisstRobot, robManipulator)",
-                              cmnCommandLineOptions::REQUIRED, &configFiles["kinematic-slave"]);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["kinematic-slave"]);
     options.AddOptionOneValue("n", "name-master",
                               "MTML or MTMR",
-                              cmnCommandLineOptions::REQUIRED, &masterName);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &masterName);
     options.AddOptionOneValue("N", "name-slave",
                               "PSM1 or PSM2",
-                              cmnCommandLineOptions::REQUIRED, &slaveName);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &slaveName);
     options.AddOptionOneValue("f", "firewire",
                               "firewire port number(s)",
-                              cmnCommandLineOptions::OPTIONAL, &firewirePort);
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &firewirePort);
     options.AddOptionOneValue("g", "gcmip",
                               "global component manager IP address",
-                              cmnCommandLineOptions::OPTIONAL, &gcmip);
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &gcmip);
 
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
