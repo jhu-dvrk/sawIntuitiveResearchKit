@@ -7,7 +7,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -39,7 +39,7 @@ public:
 
     class Arm {
     public:
-        typedef enum {ARM_MTM, ARM_PSM} ArmType;
+        typedef enum {ARM_MTM, ARM_PSM, ARM_GENERIC_MTM, ARM_GENERIC_PSM} ArmType;
 
         friend class mtsIntuitiveResearchKitConsole;
 
@@ -62,26 +62,27 @@ public:
         const std::string & PIDComponentName(void) const;
 
     protected:
-        std::string Name_;
+        std::string mName;
         // low level
-        std::string IOComponentName_;
-        std::string IOConfigurationFile_;
+        std::string mIOComponentName;
+        std::string mIOConfigurationFile;
         // PID
-        std::string PIDComponentName_;
-        std::string PIDConfigurationFile_;
+        std::string mPIDComponentName;
+        std::string mPIDConfigurationFile;
         // arm
-        std::string ArmConfigurationFile_;
+        std::string mArmConfigurationFile;
 
         mtsFunctionWrite SetRobotControlState;
         mtsInterfaceRequired * InterfaceRequired;
     };
 
     bool AddArm(Arm * newMTM);
+    bool AddArm(mtsComponent * genericArm, const Arm::ArmType armType);
 
 protected:
 
-    typedef std::list<Arm *> MTMList;
-    MTMList Arms;
+    typedef std::list<Arm *> ArmList;
+    ArmList mArms;
 
     void SetRobotControlState(const std::string & newState);
 

@@ -7,7 +7,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -36,20 +36,20 @@ CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsole);
 
 
 mtsIntuitiveResearchKitConsole::Arm::Arm(const std::string & name, const std::string & ioComponentName):
-    Name_(name),
-    IOComponentName_(ioComponentName)
+    mName(name),
+    mIOComponentName(ioComponentName)
 {}
 
 void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & configFile,
                                                        const double & periodInSeconds)
 {
-    PIDComponentName_ = Name_ + "-PID";
-    PIDConfigurationFile_ = configFile;
+    mPIDComponentName = mName + "-PID";
+    mPIDConfigurationFile = configFile;
 
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    mtsPID * pidMaster = new mtsPID(PIDComponentName_,
+    mtsPID * pidMaster = new mtsPID(mPIDComponentName,
                                     (periodInSeconds != 0.0) ? periodInSeconds : 1.0 * cmn_s);
-    pidMaster->Configure(PIDConfigurationFile_);
+    pidMaster->Configure(mPIDConfigurationFile);
     componentManager->AddComponent(pidMaster);
     componentManager->Connect(PIDComponentName(), "RobotJointTorqueInterface", IOComponentName(), Name());
     if (periodInSeconds == 0.0) {
@@ -63,41 +63,55 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                                        const double & periodInSeconds)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    ArmConfigurationFile_ = configFile;
-    if (armType == ARM_MTM) {
-        mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
-        master->Configure(ArmConfigurationFile_);
-        componentManager->AddComponent(master);
-    } else {
-        mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
-        slave->Configure(ArmConfigurationFile_);
-        componentManager->AddComponent(slave);
-        componentManager->Connect(Name(), "Adapter",
-                                  IOComponentName(), Name() + "-Adapter");
-        componentManager->Connect(Name(), "Tool",
-                                  IOComponentName(), Name() + "-Tool");
-        componentManager->Connect(Name(), "ManipClutch",
-                                  IOComponentName(), Name() + "-ManipClutch");
-        componentManager->Connect(Name(), "SUJClutch",
-                                  IOComponentName(), Name() + "-SUJClutch");
+    mArmConfigurationFile = configFile;
+    // for research kit arms, create, add to manager and connect to
+    // extra IO, PID, etc.  For generic arms, do nothing.
+    switch (armType) {
+    case ARM_MTM:
+        {
+            mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
+            master->Configure(mArmConfigurationFile);
+            componentManager->AddComponent(master);
+        }
+        break;
+    case ARM_PSM:
+        {
+            mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
+            slave->Configure(mArmConfigurationFile);
+            componentManager->AddComponent(slave);
+            componentManager->Connect(Name(), "Adapter",
+                                      IOComponentName(), Name() + "-Adapter");
+            componentManager->Connect(Name(), "Tool",
+                                      IOComponentName(), Name() + "-Tool");
+            componentManager->Connect(Name(), "ManipClutch",
+                                      IOComponentName(), Name() + "-ManipClutch");
+            componentManager->Connect(Name(), "SUJClutch",
+                                      IOComponentName(), Name() + "-SUJClutch");
+        }
+        break;
+    default:
+        break;
     }
 
-    componentManager->Connect(Name(), "PID",
-                              PIDComponentName(), "Controller");
-    componentManager->Connect(Name(), "RobotIO",
-                              IOComponentName(), Name());
+    // if the arm is a research kit arm, also connect to PID and IO
+    if ((armType == ARM_PSM) || (armType == ARM_MTM)) {
+        componentManager->Connect(Name(), "PID",
+                                  PIDComponentName(), "Controller");
+        componentManager->Connect(Name(), "RobotIO",
+                                  IOComponentName(), Name());
+    }
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::Arm::Name(void) const {
-    return Name_;
+    return mName;
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::Arm::IOComponentName(void) const {
-    return IOComponentName_;
+    return mIOComponentName;
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::Arm::PIDComponentName(void) const {
-    return PIDComponentName_;
+    return mPIDComponentName;
 }
 
 mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string & componentName):
@@ -135,7 +149,7 @@ void mtsIntuitiveResearchKitConsole::Cleanup(void)
 
 bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
 {
-    if (newArm->PIDConfigurationFile_.empty() || newArm->ArmConfigurationFile_.empty()) {
+    if (newArm->mPIDConfigurationFile.empty() || newArm->mArmConfigurationFile.empty()) {
         CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
                                  << newArm->Name() << " must be configured first (PID and Arm config)." << std::endl;
         return false;
@@ -150,7 +164,7 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
         componentManager->Connect(this->GetName(), newArm->Name(),
                                   newArm->Name(), "Robot");
 
-        this->Arms.push_back(newArm);
+        this->mArms.push_back(newArm);
         return true;
     }
     CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, unable to add new arm.  Are you adding two arms with the same name? "
@@ -158,11 +172,31 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
     return false;
 }
 
+bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mtsIntuitiveResearchKitConsole::Arm::ArmType armType)
+{
+    // create new required interfaces to communicate with the components we created
+    Arm * newArm = new Arm(genericArm->GetName(), "");
+    newArm->InterfaceRequired = this->AddInterfaceRequired(genericArm->GetName());
+    if (newArm->InterfaceRequired) {
+        newArm->InterfaceRequired->AddFunction("SetRobotControlState", newArm->SetRobotControlState);
+        newArm->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorMessageEventHandler, this, "RobotErrorMsg");
+        newArm->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusMessageEventHandler, this, "RobotStatusMsg");
+        mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+        componentManager->Connect(this->GetName(), newArm->Name(),
+                                  genericArm->GetName(), "Robot");
+        this->mArms.push_back(newArm);
+        return true;
+    }
+    CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, unable to add new arm.  Are you adding two arms with the same name? "
+                             << genericArm->GetName() << std::endl;
+    return false;
+}
+
 void mtsIntuitiveResearchKitConsole::SetRobotControlState(const std::string & newState)
 {
     mtsExecutionResult result;
-    const MTMList::iterator end = Arms.end();
-    for (MTMList::iterator arm = Arms.begin();
+    const ArmList::iterator end = mArms.end();
+    for (ArmList::iterator arm = mArms.begin();
          arm != end;
          ++arm) {
         result = (*arm)->SetRobotControlState(newState);
