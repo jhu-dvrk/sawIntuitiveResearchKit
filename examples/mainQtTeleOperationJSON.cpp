@@ -37,6 +37,10 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawControllers/mtsTeleOperation.h>
 #include <sawControllers/mtsTeleOperationQtWidget.h>
 
+#include <cisstMultiTask/mtsCollectorState.h>
+#include <cisstMultiTask/mtsCollectorQtComponent.h>
+#include <cisstMultiTask/mtsCollectorQtWidget.h>
+
 #include <QTabWidget>
 
 #include <json/json.h>
@@ -278,6 +282,22 @@ int main(int argc, char ** argv)
         componentManager->Connect(tele->GetName(), "CLUTCH", "io", "CLUTCH");
         componentManager->Connect(tele->GetName(), "COAG", "io", "COAG");
     }
+
+    // hacky collection
+    mtsCollectorState * stateCollector = new mtsCollectorState("io", "MTMLRead", mtsCollectorBase::COLLECTOR_FILE_FORMAT_CSV);
+    componentManager->AddComponent(stateCollector);
+    stateCollector->AddSignal("PositionJointGet");
+    stateCollector->Connect();
+
+    // add QComponent to control the event collector
+    mtsCollectorQtWidget * collectorQtWidget = new mtsCollectorQtWidget();
+    mtsCollectorQtComponent * collectorQtComponent = new mtsCollectorQtComponent("StateCollectorQComponent");
+    componentManager->AddComponent(collectorQtComponent);
+    // connect to the existing widget
+    collectorQtComponent->ConnectToWidget(collectorQtWidget);
+    componentManager->Connect(collectorQtComponent->GetName(), "DataCollection",
+                              stateCollector->GetName(), "Control");
+    tabWidget->addTab(collectorQtWidget, "Collection");
 
     // show all widgets
     tabWidget->show();
