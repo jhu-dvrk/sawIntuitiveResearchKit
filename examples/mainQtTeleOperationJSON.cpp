@@ -273,6 +273,12 @@ int main(int argc, char ** argv)
         componentManager->AddComponent(teleGUI);
         tabWidget->addTab(teleGUI, teleName.c_str());
         mtsTeleOperation * tele = new mtsTeleOperation(teleName, periodTeleop);
+        // Default orientation between master and slave
+        vctMatRot3 master2slave;
+        master2slave.Assign(-1.0, 0.0, 0.0,
+                             0.0,-1.0, 0.0,
+                             0.0, 0.0, 1.0);
+        tele->SetRegistrationRotation(master2slave);
         componentManager->AddComponent(tele);
         // connect teleGUI to tele
         componentManager->Connect(teleGUI->GetName(), "TeleOperation", tele->GetName(), "Setting");

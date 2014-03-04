@@ -190,6 +190,12 @@ int main(int argc, char ** argv)
     teleGUI->Configure();
     componentManager->AddComponent(teleGUI);
     mtsTeleOperation * tele = new mtsTeleOperation("tele", 5.0 * cmn_ms);
+    // Default orientation between master and slave
+    vctMatRot3 master2slave;
+    master2slave.Assign(-1.0, 0.0, 0.0,
+                         0.0,-1.0, 0.0,
+                         0.0, 0.0, 1.0);
+    tele->SetRegistrationRotation(master2slave);
     componentManager->AddComponent(tele);
     // connect teleGUI to tele
     componentManager->Connect("teleGUI", "TeleOperation", "tele", "Setting");
