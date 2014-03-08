@@ -1,0 +1,46 @@
+{
+    "state-collectors":
+    [
+        {
+            "component": "io",
+            "tables":
+            [
+                {
+                    "sampling": 20,
+                    "table": "MTMLRead",
+                    "signals": ["PositionJointGet"]
+                }
+                ,
+                {
+                    "sampling": 20,
+                    "table": "MTMRRead",
+                    "signals": ["PositionJointGet"]
+                }
+            ]
+        }
+        ,
+        {
+            "component": "MTML",
+            "tables":
+            [
+                {
+                    "sampling": 5,
+                    "table": "StateTable",
+                    "signals": ["CartesianPosition"]
+                }
+            ]
+        }
+        ,
+        {
+            "component": "MTMR",
+            "tables":
+            [
+                {
+                    "sampling": 5,
+                    "table": "StateTable",
+                    "signals": ["CartesianPosition"]
+                }
+            ]
+        }
+    ]
+}

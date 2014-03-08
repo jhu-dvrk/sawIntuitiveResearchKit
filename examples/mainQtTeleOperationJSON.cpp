@@ -37,8 +37,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawControllers/mtsTeleOperation.h>
 #include <sawControllers/mtsTeleOperationQtWidget.h>
 
-#include <cisstMultiTask/mtsCollectorState.h>
-#include <cisstMultiTask/mtsCollectorQtComponent.h>
+#include <cisstMultiTask/mtsCollectorFactory.h>
+#include <cisstMultiTask/mtsCollectorQtFactory.h>
 #include <cisstMultiTask/mtsCollectorQtWidget.h>
 
 #include <QTabWidget>
@@ -78,6 +78,7 @@ int main(int argc, char ** argv)
     int firewirePort = 0;
     std::string gcmip = "-1";
     std::string jsonMainConfigFile;
+    std::string jsonCollectionConfigFile;
     typedef std::map<std::string, std::string> ConfigFilesType;
     ConfigFilesType configFiles;
     std::string masterName, slaveName;
@@ -92,6 +93,10 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("g", "gcmip",
                               "global component manager IP address",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &gcmip);
+
+    options.AddOptionOneValue("c", "collection-config",
+                              "json configuration file for data collection",
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &jsonCollectionConfigFile);
 
     // check that all required options have been provided
     std::string errorMessage;
@@ -131,7 +136,7 @@ int main(int argc, char ** argv)
     }
 
     // create a Qt application and tab to hold all widgets
-    mtsQtApplication *qtAppTask = new mtsQtApplication("QtApplication", argc, argv);
+    mtsQtApplication * qtAppTask = new mtsQtApplication("QtApplication", argc, argv);
     qtAppTask->Configure();
     componentManager->AddComponent(qtAppTask);
 
@@ -289,21 +294,25 @@ int main(int argc, char ** argv)
         componentManager->Connect(tele->GetName(), "COAG", "io", "COAG");
     }
 
-    // hacky collection
-    mtsCollectorState * stateCollector = new mtsCollectorState("io", "MTMLRead", mtsCollectorBase::COLLECTOR_FILE_FORMAT_CSV);
-    componentManager->AddComponent(stateCollector);
-    stateCollector->AddSignal("PositionJointGet");
-    stateCollector->Connect();
+    // configure data collection if needed
+    if (options.IsSet("collection-config")) {
+        // make sure the json config file exists
+        fileExists("JSON data collection configuration", jsonCollectionConfigFile);
 
-    // add QComponent to control the event collector
-    mtsCollectorQtWidget * collectorQtWidget = new mtsCollectorQtWidget();
-    mtsCollectorQtComponent * collectorQtComponent = new mtsCollectorQtComponent("StateCollectorQComponent");
-    componentManager->AddComponent(collectorQtComponent);
-    // connect to the existing widget
-    collectorQtComponent->ConnectToWidget(collectorQtWidget);
-    componentManager->Connect(collectorQtComponent->GetName(), "DataCollection",
-                              stateCollector->GetName(), "Control");
-    tabWidget->addTab(collectorQtWidget, "Collection");
+        mtsCollectorFactory * collectorFactory = new mtsCollectorFactory("collectors");
+        collectorFactory->Configure(jsonCollectionConfigFile);
+        componentManager->AddComponent(collectorFactory);
+        collectorFactory->Connect();
+
+        mtsCollectorQtWidget * collectorQtWidget = new mtsCollectorQtWidget();
+        tabWidget->addTab(collectorQtWidget, "Collection");
+
+        mtsCollectorQtFactory * collectorQtFactory = new mtsCollectorQtFactory("collectorsQt");
+        collectorQtFactory->SetFactory("collectors");
+        componentManager->AddComponent(collectorQtFactory);
+        collectorQtFactory->Connect();
+        collectorQtFactory->ConnectToWidget(collectorQtWidget);
+    }
 
     // show all widgets
     tabWidget->show();
