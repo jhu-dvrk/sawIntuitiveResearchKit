@@ -47,6 +47,7 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
 void mtsIntuitiveResearchKitMTM::Init(void)
 {
     SetState(MTM_UNINITIALIZED);
+    RobotType = MTM_NULL; SetMTMType();
 
     // initialize trajectory data
     JointCurrent.SetSize(NumberOfJoints);
@@ -60,6 +61,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints);
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
     JointTrajectory.Zero.SetSize(NumberOfJoints);
+    JointTrajectory.GoalToleranceNorm = 0.1;
 
     this->StateTable.AddData(CartesianCurrentParam, "CartesianPosition");
     this->StateTable.AddData(JointCurrentParam, "JointPosition");
@@ -118,7 +120,10 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
     if (result == robManipulator::EFAILURE) {
         CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
                                  << filename << "\"" << std::endl;
-    }
+        return;
+    }       
+    // setup trajectory
+//    traj = new osaTrajectory(filename, vctFrame4x4<double>(), JointCurrent);
 }
 
 void mtsIntuitiveResearchKitMTM::Startup(void)
@@ -144,7 +149,9 @@ void mtsIntuitiveResearchKitMTM::Run(void)
         RunHomingCalibrateRoll();
         break;
     case MTM_READY:
+        break;
     case MTM_POSITION_CARTESIAN:
+        RunPositionCartesian();
         break;
     case MTM_GRAVITY_COMPENSATION:
         RunGravityCompensation();
@@ -157,11 +164,26 @@ void mtsIntuitiveResearchKitMTM::Run(void)
 
     RunEvent();
     ProcessQueuedCommands();
+
+    // update previous value
+    CartesianPrevious = CartesianCurrent;
 }
 
 void mtsIntuitiveResearchKitMTM::Cleanup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
+}
+
+void mtsIntuitiveResearchKitMTM::SetMTMType(const bool autodetect, const MTM_TYPE type)
+{
+    if (autodetect) {
+        if (GetName() == "MTML") RobotType = MTM_LEFT;
+        else if (GetName() == "MTMR") RobotType = MTM_RIGHT;
+        else CMN_LOG_INIT_WARNING << "Auto set type failed, Please set type manually" << std::endl;
+    }
+    else {
+        RobotType = type;
+    }
 }
 
 void mtsIntuitiveResearchKitMTM::GetRobotData(void)
@@ -182,6 +204,13 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
         if (this->RobotState >= MTM_READY) {
             CartesianCurrent = Manipulator.ForwardKinematics(JointCurrent);
             CartesianCurrent.Rotation().NormalizedSelf();
+            CartesianVelocityLinear = (CartesianCurrent.Translation() - CartesianPrevious.Translation()).Divide(StateTable.Period);
+//            vctAxAnRot3 rotvel;
+//            rotvel.FromRaw(CartesianPrevious.Rotation().Inverse() * CartesianCurrent.Rotation());
+//            CartesianVelocityAngular = rotvel.Axis() * rotvel.Angle() / StateTable.Period;
+            CartesianVelocityAngular.SetAll(0.0);
+            CartesianVelocityParam.SetVelocityLinear(CartesianVelocityLinear);
+            CartesianVelocityParam.SetVelocityAngular(CartesianVelocityAngular);
         } else {
             CartesianCurrent.Assign(vctFrm4x4::Identity());
         }
@@ -196,6 +225,7 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
         }
         GripperPosition = AnalogInputPosSI.Element(7);
     } else {
+        // set joint to zeros
         JointCurrent.Zeros();
         JointCurrentParam.Position().Zeros();
     }
@@ -251,6 +281,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const RobotStateType & newState)
         torqueMode.SetAll(false);
         PID.EnableTorqueMode(torqueMode);
         PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
+        SetPositionJointLocal(JointCurrent);
         break;
 
     case MTM_GRAVITY_COMPENSATION:
@@ -530,6 +561,42 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
     }
 }
 
+
+
+void mtsIntuitiveResearchKitMTM::RunPositionCartesian(void)
+{
+    // sanity check
+    if (RobotState != MTM_POSITION_CARTESIAN) {
+        CMN_LOG_CLASS_RUN_ERROR << GetName() << ": SetPositionCartesian: MTM not ready" << std::endl;
+        return;
+    }
+
+    // send goal position
+    if (IsCartesianGoalSet) {
+
+        // Check Error
+        // compute the translation error
+        const double currentTime = this->StateTable.GetTic();
+
+        // check error
+        double error = (JointCurrent - JointTrajectory.Goal).Norm();
+        if (error < JointTrajectory.GoalToleranceNorm) {
+            IsCartesianGoalSet = false;
+            CMN_LOG_CLASS_RUN_DEBUG << "Reached Goal" << std::endl;
+        }
+        else if (currentTime > (JointTrajectory.Quintic.StartTime() + 5)) {
+            CMN_LOG_CLASS_RUN_WARNING << "Orientation not reachable" << std::endl;
+            IsCartesianGoalSet = false;
+        }
+        else {
+            JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
+                                             JointTrajectory.Velocity, JointTrajectory.Acceleration);
+            SetPositionJointLocal(JointDesired);
+        }
+    }
+}
+
+
 void mtsIntuitiveResearchKitMTM::RunGravityCompensation(void)
 {
     vctDoubleVec q(7, 0.0);
@@ -638,20 +705,27 @@ void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce
 
         TorqueDesired.SetForceTorque(torqueDesired);
         PID.SetTorqueJoint(TorqueDesired);
-
     }
 }
 
 void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
     if (RobotState == MTM_POSITION_CARTESIAN) {
-        JointDesired.Assign(JointCurrent);
-        Manipulator.InverseKinematics(JointDesired, newPosition.Goal());
-        // note: this directly calls the lower level to set position,
-        // maybe we should cache the request in this component and later
-        // in the Run method push the request.  This way, only the latest
-        // request would be pushed if multiple are queued.
-        SetPositionJointLocal(JointDesired);
+        IsCartesianGoalSet = true;
+
+        const double currentTime = this->StateTable.GetTic();
+        JointTrajectory.Goal.Assign(JointCurrent);
+        if (RobotType == MTM_LEFT) JointTrajectory.Goal[3] = - cmnPI_4;
+        else if (RobotType == MTM_RIGHT) JointTrajectory.Goal[3] = cmnPI_4;
+        Manipulator.InverseKinematics(JointTrajectory.Goal, newPosition.Goal());
+
+        // joint trajectory version
+        JointTrajectory.Start = JointCurrent;
+        JointTrajectory.Quintic.Set(currentTime,
+                                    JointTrajectory.Start, JointTrajectory.Zero, JointTrajectory.Zero,
+                                    currentTime + 1.0,
+                                    JointTrajectory.Goal, JointTrajectory.Zero, JointTrajectory.Zero);
+
     } else {
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: MTM not ready" << std::endl;
     }
@@ -662,7 +736,7 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
     if (state == "Home") {
         SetState(MTM_HOMING_POWERING);
     } else if ((state == "Cartesian position") || (state == "Teleop")) {
-        SetState(MTM_POSITION_CARTESIAN);
+        SetState(MTM_POSITION_CARTESIAN);                
     } else if (state == "Gravity") {
         SetState(MTM_GRAVITY_COMPENSATION);
     } else if (state == "Clutch") {

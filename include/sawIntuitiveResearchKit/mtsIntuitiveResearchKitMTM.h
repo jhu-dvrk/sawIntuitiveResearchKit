@@ -29,6 +29,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robQuintic.h>
 
@@ -37,6 +38,9 @@ class mtsIntuitiveResearchKitMTM: public mtsTaskPeriodic
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
+    enum MTM_TYPE{
+        MTM_NULL, MTM_LEFT, MTM_RIGHT
+    };
 
     static const size_t NumberOfJoints = 7;
     static const size_t RollIndex = 6;
@@ -49,6 +53,14 @@ public:
     void Startup(void);
     void Run(void);
     void Cleanup(void);
+
+    /*!
+     \brief Set MTM type, either MTM_LEFT or MTM_RIGHT
+     \param autodetect TRUE by default, will set type based on MTM name, otherwise
+                       manually sepcify MTM type
+     \param type MTM type either MTM_LEFT or MTM_RIGHT
+    */
+    void SetMTMType(const bool autodetect = true, const MTM_TYPE type = MTM_NULL);
 
 protected:
     enum JointName {
@@ -93,7 +105,10 @@ protected:
     /*! Homing procedure, calibrate last joint based on hardware limits. */
     void RunHomingCalibrateRoll(void);
 
-    /*! Ready state. */
+    /*! Position Cartesian. */
+    void RunPositionCartesian(void);
+
+    /*! Gravity Compensation. */
     void RunGravityCompensation(void);
 
     /*! Run Clutch */
@@ -103,7 +118,7 @@ protected:
     void SetPositionJointLocal(const vctDoubleVec & newPosition);
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
-    void SetWrench(const prmForceCartesianSet & newForce);
+    void SetWrench(const prmForceCartesianSet & newForce);  // NOTE: in body frame
     void SetRobotControlState(const std::string & state);
 
     struct {
@@ -139,6 +154,15 @@ protected:
     //! robot cartesian position
     prmPositionCartesianGet CartesianCurrentParam;
     vctFrm4x4 CartesianCurrent;
+    vctFrm4x4 CartesianPrevious;
+    //! robot cartesian velocity
+    prmVelocityCartesianGet CartesianVelocityParam;
+    vct3 CartesianVelocityLinear;
+    vct3 CartesianVelocityAngular;
+    //! robot cartesian goal
+    prmPositionCartesianSet CartesianGoalSet;
+    bool IsCartesianGoalSet;
+
     //! robot current joint position
     prmPositionJointGet JointCurrentParam;
     vctDoubleVec JointCurrent;
@@ -160,6 +184,8 @@ protected:
     RobotStateType RobotState;
     //! robot kinematics
     robManipulator Manipulator;
+    //! robot type
+    MTM_TYPE RobotType;
 
     struct {
         robQuintic Quintic;
@@ -170,6 +196,7 @@ protected:
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
         vctDoubleVec Zero;
+        double GoalToleranceNorm;   // Error norm tolerance, hard coded to 0.1
     } JointTrajectory;
 
     // Home Action

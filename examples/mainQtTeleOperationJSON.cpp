@@ -105,6 +105,9 @@ int main(int argc, char ** argv)
         options.PrintUsage(std::cerr);
         return -1;
     }
+    std::string arguments;
+    options.PrintParsedArguments(arguments);
+    std::cout << "Options provided:" << std::endl << arguments << std::endl;
 
     // make sure the json config file exists and can be parsed
     fileExists("JSON configuration", jsonMainConfigFile);

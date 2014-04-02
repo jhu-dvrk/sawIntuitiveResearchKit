@@ -371,6 +371,8 @@ function footButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+handles.m_digiIn{4,2,1} = 'HEAD';
+handles.m_digiIn{4,5,1} = 0.2;
 handles.m_digiIn{1,2,2} = 'CLUTCH';
 handles.m_digiIn{1,5,2} = 0.2;
 handles.m_digiIn{2,2,2} = 'CAM-';

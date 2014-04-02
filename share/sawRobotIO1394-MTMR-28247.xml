@@ -192,7 +192,7 @@
    <DigitalIn BitID="0" BoardID="2" Debounce="0" Name="MTMR-D00" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="1" BoardID="2" Debounce="0" Name="MTMR-D01" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="2" BoardID="2" Debounce="0" Name="MTMR-D02" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="3" BoardID="2" Debounce="0" Name="MTMR-D03" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="3" BoardID="2" Debounce="0" Name="HEAD" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="4" BoardID="2" Debounce="0" Name="MTMR-D10" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="5" BoardID="2" Debounce="0" Name="MTMR-D11" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="6" BoardID="2" Debounce="0" Name="MTMR-D12" Pressed="0" Trigger="all"/>

@@ -58,10 +58,6 @@ if (cisst_FOUND_AS_REQUIRED)
 
   if (sawRobotIO1394_FOUND)
 
-    # sawRobotIO1394 configuration
-#    include_directories (${sawRobotIO1394_INCLUDE_DIR})
-#    link_directories (${sawRobotIO1394_LIBRARY_DIR})
-
     include_directories (${sawRobotIO1394_INCLUDE_DIR}
                          ${sawIntuitiveResearchKit_INCLUDE_DIR}
                          ${sawControllers_INCLUDE_DIR})

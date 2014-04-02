@@ -61,7 +61,7 @@ if (cisst_FOUND)
          mtsIntuitiveResearchKitMTM.cpp
          mtsIntuitiveResearchKitPSM.cpp
          mtsIntuitiveResearchKitConsole.cpp
-	 mtsIntuitiveResearchKitUDPStreamer.cpp
+         mtsIntuitiveResearchKitUDPStreamer.cpp
         )
 
     add_library (sawIntuitiveResearchKit ${HEADER_FILES} ${SOURCE_FILES})

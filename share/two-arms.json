@@ -18,7 +18,7 @@
                 "pid": "sawControllersPID-PSM.xml",
                 "kinematic": "dvpsm.rob"
             }
-	}
+        }
         ,
         {
             "master": {
