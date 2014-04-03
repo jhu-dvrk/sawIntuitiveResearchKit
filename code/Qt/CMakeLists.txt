@@ -1,5 +1,4 @@
 #
-# $Id$
 #
 # (C) Copyright 2013 Johns Hopkins University (JHU), All Rights
 # Reserved.
