@@ -5,12 +5,10 @@
 # EmaiL: zihan.chen@jhu.edu
 
 # create source & build dir
-mkdir source
 mkdir build
 
-# svn checkout source
-svn co https://svn.lcsr.jhu.edu/cisst/trunk ./source
-
+# git clone source
+git clone https://github.com/jhu-cisst/cisst-saw.git --recursive
 
 # download cisstNetlib based on system architecture
 if [ $(uname -m) == "x86_64" ]; then
@@ -29,22 +27,12 @@ rm cisstNetlib-Linux-*-2007-04-09.tar.gz
 # to build & cmake
 cd build
 # download cisst initial-cache
-wget https://svn.lcsr.jhu.edu/cisst/trunk/saw/applications/sawIntuitiveResearchKit/share/irk.cisst.initial.cmake
-# cmake
-cmake -C irk.cisst.initial.cmake ../source
-# build
-make -j8 -l
+wget https://raw.githubusercontent.com/jhu-dvrk/sawIntuitiveResearchKit/master/share/dvrk.cisst.initial.cmake
 
+# cmake
+cmake -C dvrk.cisst.initial.cmake ../cisst-saw
+# build
+make -j4 -l
 
 # source cisstvar.sh
-source ./cisstvars.sh
-
-
-# OPTIONAL
-
-# load cisstvar.sh by default
-echo "if [ -f ~/dev/cisst/build/cisstvars.sh ]; then" >> ~/.bashrc
-echo "    . ~/dev/cisst/build/cisstvars.sh" >> ~/.bashrc
-echo "fi" >> ~/.bashrc
-
-
+source ./cisst/cisstvars.sh

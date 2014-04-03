@@ -22,16 +22,12 @@ set(CISST_HAS_JSON ON CACHE BOOL "" )
 
 
 # -------- SAW -----------
-# build saw (Surgical Assistant Workstation)
-set(CISST_BUILD_SAW ON CACHE BOOL "")
 # sawRobotIO1394
-set(SAW_RobotIO1394 ON CACHE BOOL "")
+set(SAW_sawRobotIO1394 ON CACHE BOOL "")
 # sawController (PID / GC / Teleoperation)
-set(SAW_Controllers ON CACHE BOOL "")
-# sawTrajectory (Trajectory Generation)
-set(SAW_Trajectories ON CACHE BOOL "")
+set(SAW_sawControllers ON CACHE BOOL "")
 # sawTextToSpeech (For Error Messaging)
-set(SAW_TextToSpeech ON CACHE BOOL "")
+set(SAW_sawTextToSpeech ON CACHE BOOL "")
 # sawIntuitiveResearchKit
-set(SAW_IntuitiveResearchKit ON CACHE BOOL "")
+set(SAW_sawIntuitiveResearchKit ON CACHE BOOL "")
 
