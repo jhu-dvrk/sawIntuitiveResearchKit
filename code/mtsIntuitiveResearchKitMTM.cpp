@@ -617,9 +617,9 @@ void mtsIntuitiveResearchKitMTM::RunGravityCompensation(void)
     // For J7 (wrist roll) to -1.5 PI to 1.5 PI
     double gain = 0.05;
     if (JointCurrent[JNT_WRIST_ROLL] > 1.5 * cmnPI) {
-        torqueDesired = (1.5 * cmnPI - JointCurrent[JNT_WRIST_ROLL]) * gain;
+        torqueDesired[JNT_WRIST_ROLL] = (1.5 * cmnPI - JointCurrent[JNT_WRIST_ROLL]) * gain;
     } else if (JointCurrent[JNT_WRIST_ROLL] < -1.5 * cmnPI) {
-        torqueDesired = (-1.5 * cmnPI - JointCurrent[JNT_WRIST_ROLL]) * gain;
+        torqueDesired[JNT_WRIST_ROLL] = (-1.5 * cmnPI - JointCurrent[JNT_WRIST_ROLL]) * gain;
     }
 
     TorqueDesired.SetForceTorque(torqueDesired);

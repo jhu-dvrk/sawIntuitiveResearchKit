@@ -275,7 +275,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
     case PSM_ENGAGING_ADAPTER:
         EngagingAdapterStarted = false;
         if (this->RobotState < PSM_ARM_CALIBRATED) {
-            EventTriggers.RobotErrorMsg(this->GetName() + " is not calibrated yet");
+            EventTriggers.RobotStatusMsg(this->GetName() + " is not calibrated yet, will engage adapter later");
             return;
         }
         // if the tool is present, the adapter is already engadged
@@ -303,7 +303,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
     case PSM_ENGAGING_TOOL:
         EngagingToolStarted = false;
         if (this->RobotState < PSM_ADAPTER_ENGAGED) {
-            EventTriggers.RobotErrorMsg(this->GetName() + " adapter is not engaged yet");
+            EventTriggers.RobotStatusMsg(this->GetName() + " adapter is not engaged yet, will engage tool later");
             return;
         }
         RobotState = newState;
