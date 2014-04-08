@@ -208,8 +208,8 @@ int main(int argc, char ** argv)
     // connect teleop to Master + Slave + Clutch
     componentManager->Connect("tele", "Master", mtm->Name(), "Robot");
     componentManager->Connect("tele", "Slave", psm->Name(), "Robot");
-    componentManager->Connect("tele", "CLUTCH", "io", "CLUTCH");
-    componentManager->Connect("tele", "COAG", "io", "COAG");
+    componentManager->Connect("tele", "Clutch", "io", "CLUTCH");
+    componentManager->Connect("tele", "OperatorPresent", "io", "COAG");
 
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
