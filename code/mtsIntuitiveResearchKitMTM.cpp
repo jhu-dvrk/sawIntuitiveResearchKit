@@ -198,11 +198,17 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
         }
         // the lower level report 8 joints, we need 7 only
         JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
+        {
+            bool valid = true;
+            JointCurrentParam.SetValid( valid );
+        }
 
         // when the robot is ready, we can comput cartesian position
         if (this->RobotState >= MTM_READY) {
             CartesianCurrent = Manipulator.ForwardKinematics(JointCurrent);
             CartesianCurrent.Rotation().NormalizedSelf();
+            bool valid = true;
+            CartesianCurrentParam.SetValid( valid );
             CartesianVelocityLinear = (CartesianCurrent.Translation() - CartesianPrevious.Translation()).Divide(StateTable.Period);
 //            vctAxAnRot3 rotvel;
 //            rotvel.FromRaw(CartesianPrevious.Rotation().Inverse() * CartesianCurrent.Rotation());
