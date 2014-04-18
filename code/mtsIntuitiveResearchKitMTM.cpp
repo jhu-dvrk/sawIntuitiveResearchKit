@@ -48,6 +48,9 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     SetState(MTM_UNINITIALIZED);
     RobotType = MTM_NULL; SetMTMType();
 
+    // initialize gripper state
+    GripperClosed = false;
+
     // initialize trajectory data
     JointCurrent.SetSize(NumberOfJoints);
     JointDesired.SetSize(NumberOfJoints);
@@ -101,6 +104,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
         // Gripper
         interfaceProvided->AddCommandReadState(this->StateTable, GripperPosition, "GetGripperPosition");
         interfaceProvided->AddEventVoid(EventTriggers.GripperPinch, "GripperPinchEvent");
+        interfaceProvided->AddEventWrite(EventTriggers.GripperClosed, "GripperClosedEvent", true);
         // Robot State
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetRobotControlState,
                                            this, "SetRobotControlState", std::string(""));
@@ -120,7 +124,7 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
         CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
                                  << filename << "\"" << std::endl;
         return;
-    }       
+    }
     // setup trajectory
 //    traj = new osaTrajectory(filename, vctFrame4x4<double>(), JointCurrent);
 }
@@ -200,7 +204,7 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
         JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
         {
             bool valid = true;
-            JointCurrentParam.SetValid( valid );
+            JointCurrentParam.SetValid(valid);
         }
 
         // when the robot is ready, we can comput cartesian position
@@ -208,7 +212,7 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
             CartesianCurrent = Manipulator.ForwardKinematics(JointCurrent);
             CartesianCurrent.Rotation().NormalizedSelf();
             bool valid = true;
-            CartesianCurrentParam.SetValid( valid );
+            CartesianCurrentParam.SetValid(valid);
             CartesianVelocityLinear = (CartesianCurrent.Translation() - CartesianPrevious.Translation()).Divide(StateTable.Period);
 //            vctAxAnRot3 rotvel;
 //            rotvel.FromRaw(CartesianPrevious.Rotation().Inverse() * CartesianCurrent.Rotation());
@@ -229,6 +233,18 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
             return;
         }
         GripperPosition = AnalogInputPosSI.Element(7);
+        if (GripperClosed) {
+            if (GripperPosition > 0.0) {
+                GripperClosed = false;
+                EventTriggers.GripperClosed(false);
+            }
+        } else {
+            if (GripperPosition < 0.0) {
+                GripperClosed = true;
+                EventTriggers.GripperClosed(true);
+                EventTriggers.GripperPinch.Execute();
+            }
+        }
     } else {
         // set joint to zeros
         JointCurrent.Zeros();

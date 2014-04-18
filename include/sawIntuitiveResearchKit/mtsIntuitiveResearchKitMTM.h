@@ -145,6 +145,7 @@ protected:
     // Functions for events
     struct {
         mtsFunctionVoid GripperPinch;
+        mtsFunctionWrite GripperClosed;
         mtsFunctionWrite RobotStatusMsg;
         mtsFunctionWrite RobotErrorMsg;
     } EventTriggers;
@@ -178,6 +179,7 @@ protected:
     vctDoubleVec AnalogInputPosSI;
     //! Gripper angle (deg)
     double GripperPosition;
+    bool GripperClosed;
 
     //! robot control mode
     RobotStateType RobotState;
