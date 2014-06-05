@@ -171,7 +171,7 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
     return false;
 }
 
-bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mtsIntuitiveResearchKitConsole::Arm::ArmType armType)
+bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mtsIntuitiveResearchKitConsole::Arm::ArmType CMN_UNUSED(armType))
 {
     // create new required interfaces to communicate with the components we created
     Arm * newArm = new Arm(genericArm->GetName(), "");
