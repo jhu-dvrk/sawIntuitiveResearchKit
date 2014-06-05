@@ -49,15 +49,15 @@ if (cisst_FOUND_AS_REQUIRED)
                       ${sawTextToSpeech_LIBRARY_DIR})
 
     # main program used to configure PID
-    add_executable (sawIntuitiveResearchGripperCalibration GripperCalibration.cpp)
-    set_property (TARGET sawIntuitiveResearchGripperCalibration PROPERTY FOLDER "sawIntuitiveResearchKit")
+    add_executable (sawIntuitiveResearchKitGripperCalibration GripperCalibration.cpp)
+    set_property (TARGET sawIntuitiveResearchKitGripperCalibration PROPERTY FOLDER "sawIntuitiveResearchKit")
 
     # link against non cisst libraries and cisst components
-    target_link_libraries (sawIntuitiveResearchGripperCalibration
+    target_link_libraries (sawIntuitiveResearchKitGripperCalibration
                            ${sawRobotIO1394_LIBRARIES})
 
     # link against cisst libraries (and dependencies)
-    cisst_target_link_libraries (sawIntuitiveResearchGripperCalibration ${REQUIRED_CISST_LIBRARIES})
+    cisst_target_link_libraries (sawIntuitiveResearchKitGripperCalibration ${REQUIRED_CISST_LIBRARIES})
 
     # examples using Qt
     if (CISST_HAS_QT)

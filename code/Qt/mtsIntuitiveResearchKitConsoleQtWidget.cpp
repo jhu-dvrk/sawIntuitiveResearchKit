@@ -6,7 +6,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-17
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -24,6 +24,16 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
+
+#include <QMessageBox>
+#include <QCloseEvent>
+#include <QCoreApplication>
+#include <QScrollBar>
+#include <QGridLayout>
+#include <QGroupBox>
+#include <QRadioButton>
+#include <QButtonGroup>
+#include <QTime>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
 
