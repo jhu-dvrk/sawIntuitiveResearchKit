@@ -48,9 +48,6 @@ if (cisst_FOUND_AS_REQUIRED)
                ${SAW_INTUITIVE_RESEARCH_KIT_QT_WRAP_CPP})
   set_property (TARGET sawIntuitiveResearchKitQt PROPERTY FOLDER "sawIntuitiveResearchKit")
   cisst_target_link_libraries (sawIntuitiveResearchKitQt ${REQUIRED_CISST_LIBRARIES})
-  if (CISST_HAS_QT5)
-    qt5_use_modules (sawIntuitiveResearchKitQt Core Widgets OpenGL)
-  endif (CISST_HAS_QT5)
 
   # make sure the new library is known by the parent folder to add to the config file
   set (sawIntuitiveResearchKitQt_LIBRARIES sawIntuitiveResearchKitQt PARENT_SCOPE)
