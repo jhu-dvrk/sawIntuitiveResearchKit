@@ -22,7 +22,7 @@ function varargout = configGUI(varargin)
 
 % Edit the above text to modify the response to help configGUI
 
-% Last Modified by GUIDE v2.5 15-May-2013 15:38:50
+% Last Modified by GUIDE v2.5 18-Jul-2014 11:30:46
 
 % Date: 2013-04-28
 % Author: Zihan Chen
@@ -82,7 +82,7 @@ for i = 1:12
     handles.m_digiIn{i,3,1} = '0';
     handles.m_digiIn{i,4,1} = 'all';
     handles.m_digiIn{i,5,1} = 0.0;
-    
+
     handles.m_digiIn{i,1,2} = i-1;
     handles.m_digiIn{i,2,2} = [handles.m_type, '-D', ...
                               num2str(idivide(i-1, int32(4))+3), ...
@@ -110,7 +110,7 @@ guidata(hObject, handles);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = configGUI_OutputFcn(hObject, eventdata, handles) 
+function varargout = configGUI_OutputFcn(hObject, eventdata, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -163,7 +163,7 @@ if (isOK)
 else
     disp('ERROR: failed to generate config file');
 end
-            
+
 
 
 % --- Executes on selection change in bidPopup1.
@@ -220,7 +220,7 @@ end
 
 % --- Executes when selected object is changed in typeBtnGroup.
 function typeBtnGroup_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in typeBtnGroup 
+% hObject    handle to the selected object in typeBtnGroup
 % eventdata  structure with the following fields (see UIBUTTONGROUP)
 %	EventName: string 'SelectionChanged' (read only)
 %	OldValue: handle of the previously selected object or empty if none was selected
@@ -234,14 +234,14 @@ for i = 1:12
     handles.m_digiIn{i,2,1} = [handles.m_type, '-D', ...
                               num2str(idivide(i-1, int32(4))), ...
                               num2str(mod(i-1,4)), 0.0 ];
-    
+
     handles.m_digiIn{i,2,2} = [handles.m_type, '-D', ...
                               num2str(idivide(i-1, int32(4))+3), ...
                               num2str(mod(i-1,4)), 0.0 ];
 end
 
 % set default PSM DigitalIn
-if (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2'))
+if (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2') || strcmp(handles.m_type,'PSM3'))
     handles.m_digiIn{1,2,1} = [handles.m_type '-SUJClutch'];
     handles.m_digiIn{1,5,1} = 0.2;
     handles.m_digiIn{3,2,1} = [handles.m_type '-ManipClutch'];
@@ -253,7 +253,7 @@ if (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2'))
 end
 
 val = get(handles.digiBidMenu, 'Value');
-set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val)); 
+set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val));
 
 % update default output file name
 handles.m_out_filename = ['sawRobotIO1394-' handles.m_type];
@@ -299,7 +299,7 @@ function digiBidMenu_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from digiBidMenu
 
 val = get(hObject, 'Value');
-set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val)); 
+set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val));
 % guidata(hObject, handles);
 
 
@@ -356,6 +356,8 @@ elseif (strcmp(handles.m_type,'PSM1'))
     handles.m_boardID = [6 7];
 elseif (strcmp(handles.m_type,'PSM2'))
     handles.m_boardID = [8 9];
+elseif (strcmp(handles.m_type,'PSM3'))
+    handles.m_boardID = [10 11];
 else
     disp('ERROR: unknown hardware type');
 end
@@ -395,7 +397,7 @@ function dirDefaultButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% NOTE: this default is based on JHU's hardware, you might have 
+% NOTE: this default is based on JHU's hardware, you might have
 % different drive direction
 if (strcmp(handles.m_type,'MTML'))
     handles.m_direction = {-1; 1; 1; 1; -1; 1; -1; 1};
