@@ -352,6 +352,8 @@ if (strcmp(handles.m_type,'MTML'))
     handles.m_boardID = [0 1];
 elseif (strcmp(handles.m_type,'MTMR'))
     handles.m_boardID = [2 3];
+elseif (strcmp(handles.m_type,'ECM'))
+    handles.m_boardID = [4 5];
 elseif (strcmp(handles.m_type,'PSM1'))
     handles.m_boardID = [6 7];
 elseif (strcmp(handles.m_type,'PSM2'))
@@ -405,6 +407,8 @@ elseif (strcmp(handles.m_type,'MTMR'))
     handles.m_direction = {-1; 1; 1; 1; 1; 1; -1; 1};
 elseif (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2'))
     handles.m_direction = {-1; -1; 1; -1; -1; 1; 1; 1};
+elseif (strcmp(handles.m_type,'ECM'));
+    handles.m_direction = {-1; -1; 1; -1};
 end
 set(handles.tblDirection, 'data', handles.m_direction);
 guidata(hObject, handles);

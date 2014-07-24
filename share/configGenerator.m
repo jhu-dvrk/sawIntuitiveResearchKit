@@ -1,6 +1,4 @@
 function [ isOK ] = configGenerator( aCalName, aOutName, aRobotName, aBoardID, aDigital, aDirection)
-% $Id$
-
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -29,15 +27,21 @@ boardID = aBoardID; % save to local variable
 % the configuration file uses matlab syntax, save them to temp.m
 copyfile(aCalName, 'temp.m');
 
-% define some constants for mXXX.cal/pXXX.cal file
+% define some constants for mXXX.cal/pXXX.cal/eXXX.cal file
 UPPER_LIMIT = 1; LOWER_LIMIT = 2;
+
 % constants for master configuration file
 MST_JNT_POS_GR_DOFS = 8;
 MST_MOT_DOFS = 8;
 MST_JNT_POS_DOFS = 7;
+
 % constants for slave configuration file
 SLV_JNT_POS_GR_DOFS = 7;
 SLV_MOT_DOFS = 7;
+
+% constants for ECM configuration file
+ECM_JNT_POS_GR_DOFS = 4;
+ECM_MOT_DOFS = 4;
 
 % load temp file, this will load all constants in ***.cal file
 temp;
@@ -46,6 +50,7 @@ temp;
 % rType = robot type
 CONST_MST = 1;
 CONST_SLV = 2;
+CONST_ECM = 3;
 if (strcmp(aRobotName(1:3), FileType(1:3)) == 0)
     disp(' ERROR: robot type and calibration file mismatch');
     cleanUp;
@@ -55,6 +60,8 @@ else
         rType = CONST_MST;
     elseif (strcmp(aRobotName(1:3), 'PSM'))
         rType = CONST_SLV;
+    elseif (strcmp(aRobotName(1:3), 'ECM'))
+        rType = CONST_ECM;
     end
 end
 
@@ -65,6 +72,9 @@ if (rType == CONST_MST)
 elseif (rType == CONST_SLV)
     numOfActuator = SLV_MOT_DOFS;
     numOfJoint = SLV_JNT_POS_GR_DOFS;
+elseif (rType == CONST_ECM)
+    numOfActuator = ECM_MOT_DOFS;
+    numOfJoint = ECM_JNT_POS_GR_DOFS;
 end
 
 
@@ -73,44 +83,54 @@ end
 % motor constants Unit: V
 motorVol(CONST_MST,:) = [24 24 24 24  9  9  6 0]; % motor const for master
 motorVol(CONST_SLV,:) = [24 24 24 24 24 24 24 0]; % motor const for slave
+motorVol(CONST_ECM,:) = [48 48 24 9   0  0  0 0]; % motor const for camera arm
 
 % motor default current Unit: A
 motorDefCur(CONST_MST,:) = [0.67 0.67 0.67 0.67 0.59 0.59 0.407 0.0];
 motorDefCur(CONST_SLV,:) = [1.34 1.34 0.67 0.67 0.67 0.67 0.670 0.0];
+motorDefCur(CONST_ECM,:) = [0.943 0.943 0.67 0.59 0.0 0.0 0.0 0.0];
 
 % motor max current Unit: A
 motorMaxCur(CONST_MST,:) = [0.67 0.67 0.67 0.92 0.75 0.59 0.407 0.0];
 motorMaxCur(CONST_SLV,:) = [2.01 2.01 1.005 1.005 1.005 1.005 1.005 0.0];
+motorMaxCur(CONST_ECM,:) = [1.4145 1.4145 1.005 0.885 0.0 0.0 0.0 0.0];
 
 % motor torque const  Unit: Nm/A
 % NOTE: no motor on axis 8, set value to 1 
 motorTor(CONST_MST,:) = [0.0438 0.0438 0.0438 0.0438 0.00495 0.00495 0.00339 1.0];
 motorTor(CONST_SLV,:) = [0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 1.0];
+motorTor(CONST_ECM,:) = [0.1190 0.1190 0.0438 0.00495 1.0 1.0 1.0 1.0];
 
 % Gear ratio
 % NOTE: gear ratio for axis 8 is set to 1 
 gearRatio(CONST_MST,:) = [63.41 49.88 59.73 10.53 33.16 33.16 16.58 1.0];
 gearRatio(CONST_SLV,:) = [56.50 56.50 336.6 11.71 11.71 11.71 11.71 1.0];
+gearRatio(CONST_ECM,:) = [240 240 2748.55 300.15    1.0   1.0   1.0 1.0];
 
 % Encoder counts per turn (quadrature encoder)
 % NOTE: no encoder for last axis
 encCPT(CONST_MST,:) = [ 4000  4000  4000 4000   64   64   64 1];
 encCPT(CONST_SLV,:) = [14400 14400 14400 4000 4000 4000 4000 1];
+encCPT(CONST_ECM,:) = [ 4000  4000   640   64    1    1    1 1];
 
 % Pitch
 % 1 for revolute, mm/deg for prismatic
 pitch(CONST_MST,:) = [1 1 1 1 1 1 1 1];
 pitch(CONST_SLV,:) = [1 1 17.4533 1 1 1 1 1];
+pitch(CONST_ECM,:) = [1 1 1 1 1 1 1 1];
 
 % Actuator Type (Prismatic/Revolute)
 
 if (rType == CONST_MST)
     actuatorType = {'Revolute', 'Revolute', 'Revolute', 'Revolute', ...
                     'Revolute', 'Revolute', 'Revolute', 'Revolute'};
-
 elseif (rType == CONST_SLV)
     actuatorType = {'Revolute', 'Revolute', 'Prismatic', 'Revolute', ...
-                    'Revolute', 'Revolute', 'Revolute', 'Revolute'};    
+                    'Revolute', 'Revolute', 'Revolute', 'Revolute'};
+elseif (rType == CONST_ECM)
+    actuatorType = {'Revolute', 'Revolute', 'Prismatic', 'Revolute', ...
+                    'Revolute', 'Revolute', 'Prismatic', 'Revolute'};  
+
 end
 
 
@@ -198,6 +218,13 @@ elseif (rType == CONST_SLV)
         0.00  0.00   0.00  0.00 1.0186 0.00 0.00;  ...
         0.00  0.00   0.00  0.00 -0.8306 0.6089 0.6089; ...
         0.00  0.00   0.00 0.00 0.00 -1.2177 1.2177; ...
+        ];
+elseif (rType == CONST_ECM)
+    ActuatorToJointPosition = [ ...
+        1.00  0.00   0.00  0.00 ; ...
+        0.00  1.00   0.00  0.00; ...
+        0.00  0.00   1.00  0.00 ; ...
+        0.00  0.00   0.00  1.00 ; ...
         ];
 end
 
@@ -301,6 +328,8 @@ Potentiometers = docNode.createElement('Potentiometers');
 if (rType == CONST_MST)
     Potentiometers.setAttribute('Position', 'Joints');
 elseif (rType == CONST_SLV)
+    Potentiometers.setAttribute('Position', 'Actuators');
+elseif (rType == CONST_ECM)
     Potentiometers.setAttribute('Position', 'Actuators');
 end
 
