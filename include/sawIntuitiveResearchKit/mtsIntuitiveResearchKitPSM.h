@@ -2,7 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
@@ -28,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robQuintic.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitOptimizer.h>
 
 // temporary
 #include <cisstOSAbstraction/osaStopwatch.h>
@@ -50,16 +50,20 @@ public:
 
 protected:
 
+    // PSM Optimizer
+    mtsIntuitiveResearchKitOptimizer *Optimizer;
+
     enum RobotStateType {
         PSM_UNINITIALIZED, /*! State when constructed */
         PSM_HOMING_POWERING, /*! Turn power on, calibrate encoders and current */
         PSM_HOMING_CALIBRATING_ARM, /*! Calibrate using pots and move to zero position for all joints except last one */
         PSM_ARM_CALIBRATED, /*! Do nothing, just wait for adapter.  Fall back state when adapter is removed. */
         PSM_ENGAGING_ADAPTER,
-        PSM_ADAPTER_ENGAGED, /*! Do nothing, just wait for tool.  Fall back state when tool is removed. */ 
+        PSM_ADAPTER_ENGAGED, /*! Do nothing, just wait for tool.  Fall back state when tool is removed. */
         PSM_ENGAGING_TOOL,
         PSM_READY,
         PSM_POSITION_CARTESIAN, /**< Go to command cartesian position */
+        PSM_CONSTRAINT_CONTROLLER_CARTESIAN,
         PSM_MANUAL /**< User manually move robot */
     };
 
@@ -89,6 +93,9 @@ protected:
 
     /*! Cartesian state. */
     void RunPositionCartesian(void);
+
+    /*! Cartesian constraint controller. */
+    void RunConstraintControllerCartesian(void);
 
     /*! Wrapper to convert vector of 7 values to prmPositionJointSet and send to PID */
     void SetPositionJointLocal(const vctDoubleVec & newPosition);
@@ -155,7 +162,6 @@ protected:
 
     prmPositionCartesianGet CartesianCurrentParam;
     vctFrm4x4 CartesianCurrent;
-    vctFrm4x4 CartesianPrevious;
     prmPositionJointGet JointCurrentParam;
     vctDoubleVec JointCurrent;
     prmPositionJointSet JointDesiredParam;

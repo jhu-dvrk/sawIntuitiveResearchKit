@@ -31,12 +31,14 @@ if (cisst_FOUND)
   # sawRobotIO1394 has been compiled within cisst, we should find it automatically
   cisst_find_saw_component (sawRobotIO1394 REQUIRED)
   cisst_find_saw_component (sawControllers REQUIRED)
+  cisst_find_saw_component (sawConstraintController REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
     # sawRobotIO1394 configuration
     include_directories (${sawRobotIO1394_INCLUDE_DIR}
-                         ${sawControllers_INCLUDE_DIR})
+                         ${sawControllers_INCLUDE_DIR}
+                         ${sawConstraintController_INCLUDE_DIR})
                        
     link_directories (${sawRobotIO1394_LIBRARY_DIR}
                       ${sawControllers_LIBRARY_DIR})
@@ -52,6 +54,7 @@ if (cisst_FOUND)
     set (HEADER_FILES
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitMTM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSM.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitOptimizer.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitUDPStreamer.h
         )
@@ -59,6 +62,7 @@ if (cisst_FOUND)
     set (SOURCE_FILES
          mtsIntuitiveResearchKitMTM.cpp
          mtsIntuitiveResearchKitPSM.cpp
+         mtsIntuitiveResearchKitOptimizer.cpp
          mtsIntuitiveResearchKitConsole.cpp
          mtsIntuitiveResearchKitUDPStreamer.cpp
         )
@@ -70,7 +74,8 @@ if (cisst_FOUND)
     # link against non cisst libraries and cisst components
     target_link_libraries (sawIntuitiveResearchKit
                            ${sawRobotIO1394_LIBRARIES}
-                           ${sawControllers_LIBRARIES})
+                           ${sawControllers_LIBRARIES}
+                           ${sawConstraintController_LIBRARIES})
 
     # add Qt code
     add_subdirectory (Qt)

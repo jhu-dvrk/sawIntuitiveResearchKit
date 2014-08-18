@@ -2,7 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
@@ -49,7 +48,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     Counter = 0;
 
     SetState(PSM_UNINITIALIZED);
-    DesiredOpenAngle = 0 * cmnPI_180;
+    DesiredOpenAngle = 0.0 * cmnPI_180;
 
     // initialize trajectory data
     JointCurrent.SetSize(NumberOfJoints);
@@ -135,6 +134,13 @@ void mtsIntuitiveResearchKitPSM::Init(void)
         interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                                "GetPeriodStatistics");
     }
+
+    // Initialize the optimizer
+    Optimizer = new mtsIntuitiveResearchKitOptimizer(6);
+    Optimizer->InitializeFollowVF(6,
+                                  "FollowVFSlave",
+                                  "CurrentSlaveKinematics",
+                                  "DesiredSlaveKinematics");
 }
 
 void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
@@ -189,6 +195,9 @@ void mtsIntuitiveResearchKitPSM::Run(void)
     case PSM_POSITION_CARTESIAN:
         RunPositionCartesian();
         break;
+    case PSM_CONSTRAINT_CONTROLLER_CARTESIAN:
+        RunConstraintControllerCartesian();
+        break;
     case PSM_MANUAL:
         break;
     default:
@@ -214,7 +223,7 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPosition failed \""
                                     << executionResult << "\"" << std::endl;
         }
-        
+
         // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
         JointCurrentParam.Position().Element(2) /= 1000.0;  // convert from mm to m
 
@@ -329,6 +338,20 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
         EventTriggers.RobotStatusMsg(this->GetName() + " position cartesian");
         break;
 
+    case PSM_CONSTRAINT_CONTROLLER_CARTESIAN:
+        if (this->RobotState < PSM_ARM_CALIBRATED) {
+            EventTriggers.RobotErrorMsg(this->GetName() + " is not calibrated");
+            return;
+        }
+        // check that the tool is inserted deep enough
+        if (JointCurrent.Element(2) < 80.0 / 1000.0) {
+            EventTriggers.RobotErrorMsg(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
+            break;
+        }
+        RobotState = newState;
+        EventTriggers.RobotStatusMsg(this->GetName() + " constraint controller cartesian");
+        break;
+
     case PSM_MANUAL:
         if (this->RobotState < PSM_ARM_CALIBRATED) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not ready yet");
@@ -341,7 +364,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
         break;
     default:
         break;
-    }   
+    }
 }
 
 void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
@@ -598,24 +621,57 @@ void mtsIntuitiveResearchKitPSM::RunPositionCartesian(void)
         Manipulator.InverseKinematics(jointSet, CartesianPositionFrm);
         jointSet.resize(7);
         jointSet[6] = DesiredOpenAngle;
-#if 1 // Anton
+
+        // find closest solution mod 2 pi
         const double difference = JointCurrent[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
-        /*
-        if (differenceInTurns != 0.0) {
-            CMN_LOG_CLASS_RUN_DEBUG << GetName()
-                                    << " diff = " << difference
-                                    << " turns = " << difference / (2.0 * cmnPI)
-                                    << " corr = " << differenceInTurns
-                                    << " res = " << jointSet[3] << std::endl;
-        }
-        */
-#endif // Anton
+
+        // finally send new joint values
         SetPositionJointLocal(jointSet);
 
         // reset flag
         IsCartesianGoalSet = false;
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
+{
+    // Update the optimizer
+    // Go through the VF list, update state data pointers, assign tableau references, and fill in the references
+    if (IsCartesianGoalSet) {
+        IsCartesianGoalSet = false;
+
+        // Update kinematics and VF data objects
+        Optimizer->UpdateParams(JointCurrent,
+                                   Manipulator,
+                                   this->GetPeriodicity(),
+                                   CartesianCurrent * Frame6to7Inverse,
+                                   vctFrm4x4(CartesianGoalSet.Goal()) * Frame6to7Inverse
+                                   );
+
+        vctDoubleVec dq;
+        // Make sure the return value is meaningful
+        if (Optimizer->Solve(dq)) {
+            // make appropriate adjustments to incremental motion specific to davinci
+
+            // send command to move to specified position
+            vctDoubleVec FinalJoint(6);
+            FinalJoint.Assign(JointCurrent,6);
+            FinalJoint = FinalJoint + dq;
+            FinalJoint.resize(7);
+            FinalJoint[6] = DesiredOpenAngle;
+
+            // find closest solution mod 2 pi
+            double diffTurns = nearbyint(-dq[3] / (2.0 * cmnPI));
+            FinalJoint[3] = FinalJoint[3] + diffTurns * 2.0 * cmnPI;
+
+            // Send the final joint commands to the LLC
+            SetPositionJointLocal(FinalJoint);
+        }
+        else {
+            CMN_LOG_CLASS_RUN_ERROR << "Control Optimizer failed " << std::endl;
+        }
     }
 }
 
@@ -629,7 +685,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newP
 
 void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (RobotState == PSM_POSITION_CARTESIAN) {
+    if ((RobotState == PSM_POSITION_CARTESIAN) || (RobotState == PSM_CONSTRAINT_CONTROLLER_CARTESIAN)) {
         CartesianGoalSet = newPosition;
         IsCartesianGoalSet = true;
     } else {
@@ -648,6 +704,8 @@ void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
         SetState(PSM_HOMING_POWERING);
     } else if ((state == "Cartesian position") || (state == "Teleop")) {
         SetState(PSM_POSITION_CARTESIAN);
+    } else if (state == "Cartesian constraint controller") {
+        SetState(PSM_CONSTRAINT_CONTROLLER_CARTESIAN);
     } else if (state == "Manual") {
         SetState(PSM_MANUAL);
     } else {
