@@ -20,34 +20,35 @@ http://www.cisst.org/cisst/license.txt.
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitOptimizer);
 
-vctDynamicMatrix<double> AdjointMatrix(const vctFrame4x4<double> & Rt) {
+vctReturnDynamicMatrix<double> ComputeAdjointMatrix(const vctFrame4x4<double> & Rt)
+{
+    vctDynamicMatrix<double> Ad(6, 6);
+    Ad.Zeros(); // fast zero using memset
 
-  vctDynamicMatrix<double> Ad(6, 6, 0.0);
+    // upper left block
+    Ad[0][0] = Rt[0][0];     Ad[0][1] = Rt[0][1];     Ad[0][2] = Rt[0][2];
+    Ad[1][0] = Rt[1][0];     Ad[1][1] = Rt[1][1];     Ad[1][2] = Rt[1][2];
+    Ad[2][0] = Rt[2][0];     Ad[2][1] = Rt[2][1];     Ad[2][2] = Rt[2][2];
 
-  // upper left block
-  Ad[0][0] = Rt[0][0];     Ad[0][1] = Rt[0][1];     Ad[0][2] = Rt[0][2];
-  Ad[1][0] = Rt[1][0];     Ad[1][1] = Rt[1][1];     Ad[1][2] = Rt[1][2];
-  Ad[2][0] = Rt[2][0];     Ad[2][1] = Rt[2][1];     Ad[2][2] = Rt[2][2];
+    // upper right block
+    Ad[0][3] = 0.0;
+    Ad[0][4] = 0.0;
+    Ad[0][5] = 0.0;
 
-  // upper right block
-  Ad[0][3] = 0.0;
-  Ad[0][4] = 0.0;
-  Ad[0][5] = 0.0;
+    Ad[1][3] = 0.0;
+    Ad[1][4] = 0.0;
+    Ad[1][5] = 0.0;
 
-  Ad[1][3] = 0.0;
-  Ad[1][4] = 0.0;
-  Ad[1][5] = 0.0;
+    Ad[2][3] = 0.0;
+    Ad[2][4] = 0.0;
+    Ad[2][5] = 0.0;
 
-  Ad[2][3] = 0.0;
-  Ad[2][4] = 0.0;
-  Ad[2][5] = 0.0;
+    // lower right block
+    Ad[3][3] = Rt[0][0];     Ad[3][4] = Rt[0][1];     Ad[3][5] = Rt[0][2];
+    Ad[4][3] = Rt[1][0];     Ad[4][4] = Rt[1][1];     Ad[4][5] = Rt[1][2];
+    Ad[5][3] = Rt[2][0];     Ad[5][4] = Rt[2][1];     Ad[5][5] = Rt[2][2];
 
-  // lower right block
-  Ad[3][3] = Rt[0][0];     Ad[3][4] = Rt[0][1];     Ad[3][5] = Rt[0][2];
-  Ad[4][3] = Rt[1][0];     Ad[4][4] = Rt[1][1];     Ad[4][5] = Rt[1][2];
-  Ad[5][3] = Rt[2][0];     Ad[5][4] = Rt[2][1];     Ad[5][5] = Rt[2][2];
-
-  return Ad;
+    return vctReturnDynamicMatrix<double>(Ad);
 }
 
 mtsIntuitiveResearchKitOptimizer::mtsIntuitiveResearchKitOptimizer(const size_t numOfJoints)
@@ -117,24 +118,22 @@ void mtsIntuitiveResearchKitOptimizer::UpdateKinematics(vctDoubleVec & qCurr,
 
 void mtsIntuitiveResearchKitOptimizer::UpdateJacobian(const robManipulator & manip)
 {
+    // ask manipulator to compute body jacobian
     manip.JacobianBody(CurrentJointState.JointPosition);
 
-    vctDoubleMat BodyJac(6,6);
-
-    // Copyin the body jacobian
-    // By default cisstManipulator stores in column major order
-    for (int i = 0; i < 6; ++i)
-        for (int j = 0; j < 6; ++j)
-            BodyJac.at(j,i) = manip.Jn[i][j];
+    // to make sure we have the right size
+    Cached.BodyJacobian.SetSize(6, 6);
+    // get a copy of the body jacobian
+    Cached.BodyJacobian.Assign(manip.Jn[0], VCT_COL_MAJOR);
 
     // Base of the body jacobian is the tip frame and the ref point is the tip
     // Have to convert the base to the world frame
 
-    vctFrame4x4<double> Rt0n = manip.ForwardKinematics( CurrentJointState.JointPosition );
+    vctFrame4x4<double> Rt0n = manip.ForwardKinematics(CurrentJointState.JointPosition);
 
-    vctDoubleMat Ad(AdjointMatrix(Rt0n));
+    Cached.Adjoint = ComputeAdjointMatrix(Rt0n);
 
-    CurrentSlaveKinematics.Jacobian = Ad * BodyJac;
+    CurrentSlaveKinematics.Jacobian = Cached.Adjoint * Cached.BodyJacobian;
 }
 
 bool mtsIntuitiveResearchKitOptimizer::Solve(vctDoubleVec & dq)

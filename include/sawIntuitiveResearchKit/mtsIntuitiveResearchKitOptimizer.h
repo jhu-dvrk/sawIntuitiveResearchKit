@@ -80,6 +80,11 @@ public:
     prmJointState CurrentJointState;
 
     size_t NumOfJoints;
+
+    struct {
+        vctDoubleMat BodyJacobian;
+        vctDoubleMat Adjoint;
+    } Cached;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitOptimizer);
