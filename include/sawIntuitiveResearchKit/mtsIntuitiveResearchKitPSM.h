@@ -167,8 +167,8 @@ protected:
     prmPositionJointSet JointDesiredParam;
     vctDoubleVec JointDesired;
     robManipulator Manipulator;
-    vctFrm4x4 Frame6to7;
-    vctFrm4x4 Frame6to7Inverse;
+    robManipulator * ToolOffset;
+    vctFrm4x4 ToolOffsetTransformation;
 
     vctFrm4x4 CartesianPositionFrm;
     double DesiredOpenAngle;

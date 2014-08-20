@@ -150,18 +150,20 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
     if (result == robManipulator::EFAILURE) {
         CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
                                  << filename << "\"" << std::endl;
+    } else {
+        // tool tip transform, this should come from a configuration file
+        ToolOffsetTransformation.Assign(0.0, -1.0,  0.0, 0.0,
+                                        0.0,  0.0,  1.0, 0.0102,
+                                        -1.0, 0.0,  0.0, 0.0,
+                                        0.0,  0.0,  0.0, 1.0);
+        ToolOffset = new robManipulator(ToolOffsetTransformation);
+        Manipulator.Attach(ToolOffset);
     }
 }
 
 void mtsIntuitiveResearchKitPSM::Startup(void)
 {
     this->SetState(PSM_UNINITIALIZED);
-    // tool tip transform
-    Frame6to7.Assign(0.0, -1.0,  0.0, 0.0,
-                     0.0,  0.0,  1.0, 0.0102,
-                     -1.0, 0.0,  0.0, 0.0,
-                     0.0,  0.0,  0.0, 1.0);
-    Frame6to7Inverse = Frame6to7.Inverse();
 }
 
 void mtsIntuitiveResearchKitPSM::Run(void)
@@ -235,7 +237,6 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
             // apply tool tip transform
             vctFrm4x4 position;
             position = Manipulator.ForwardKinematics(JointCurrent);
-            position = position * Frame6to7;
             position.Rotation().NormalizedSelf();
             CartesianCurrent.Assign(position);
         } else {
@@ -616,8 +617,6 @@ void mtsIntuitiveResearchKitPSM::RunPositionCartesian(void)
 
         // compute desired slave position
         CartesianPositionFrm.From(CartesianGoalSet.Goal());
-        CartesianPositionFrm = CartesianPositionFrm * Frame6to7Inverse;
-
         Manipulator.InverseKinematics(jointSet, CartesianPositionFrm);
         jointSet.resize(7);
         jointSet[6] = DesiredOpenAngle;
@@ -646,8 +645,8 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
         Optimizer->UpdateParams(JointCurrent,
                                    Manipulator,
                                    this->GetPeriodicity(),
-                                   CartesianCurrent * Frame6to7Inverse,
-                                   vctFrm4x4(CartesianGoalSet.Goal()) * Frame6to7Inverse
+                                   CartesianCurrent,
+                                   vctFrm4x4(CartesianGoalSet.Goal())
                                    );
 
         vctDoubleVec dq;
