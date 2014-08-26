@@ -405,7 +405,7 @@ if (strcmp(handles.m_type,'MTML'))
     handles.m_direction = {-1; 1; 1; 1; -1; 1; -1; 1};
 elseif (strcmp(handles.m_type,'MTMR'))
     handles.m_direction = {-1; 1; 1; 1; 1; 1; -1; 1};
-elseif (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2'))
+elseif (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2') || strcmp(handles.m_type,'PSM3'))
     handles.m_direction = {-1; -1; 1; -1; -1; 1; 1; 1};
 elseif (strcmp(handles.m_type,'ECM'));
     handles.m_direction = {-1; -1; 1; -1};
