@@ -88,6 +88,18 @@ if (cisst_FOUND_AS_REQUIRED)
       # link against cisst libraries (and dependencies)
       cisst_target_link_libraries (sawIntuitiveResearchKitQtTeleOperation ${REQUIRED_CISST_LIBRARIES})
 
+      # main program used to test a single arm
+      add_executable (sawIntuitiveResearchKitQtArm mainQtArm.cpp)
+      set_property (TARGET sawIntuitiveResearchKitQtArm PROPERTY FOLDER "sawIntuitiveResearchKit")
+      # link against non cisst libraries and cisst components
+      target_link_libraries (sawIntuitiveResearchKitQtArm
+                             ${sawRobotIO1394_LIBRARIES}
+                             ${sawIntuitiveResearchKit_LIBRARIES}
+                             ${sawControllers_LIBRARIES}
+                             ${sawTextToSpeech_LIBRARIES})
+      # link against cisst libraries (and dependencies)
+      cisst_target_link_libraries (sawIntuitiveResearchKitQtArm ${REQUIRED_CISST_LIBRARIES})
+
       # main program used to configure Haptics
       add_executable (sawIntuitiveResearchKitQtHaptics mainQtHaptics.cpp)
       set_property (TARGET sawIntuitiveResearchKitQtHaptics PROPERTY FOLDER "sawIntuitiveResearchKit")

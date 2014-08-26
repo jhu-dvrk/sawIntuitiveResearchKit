@@ -1,7 +1,7 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
-/*
 
+/*
   Author(s):  Zihan Chen
   Created on: 2013-02-07
 
@@ -32,9 +32,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
-#include <sawControllers/mtsTeleOperation.h>
-#include <sawControllers/mtsTeleOperationQtWidget.h>
-#include <sawTextToSpeech/mtsTextToSpeech.h>
 
 #include <QTabWidget>
 
@@ -53,32 +50,20 @@ int main(int argc, char ** argv)
     std::string gcmip = "-1";
     typedef std::map<std::string, std::string> ConfigFilesType;
     ConfigFilesType configFiles;
-    std::string masterName, slaveName;
+    std::string armName;
 
-    options.AddOptionOneValue("i", "io-master",
-                              "configuration file for master robot IO (see sawRobotIO1394)",
-                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["io-master"]);
-    options.AddOptionOneValue("p", "pid-master",
-                              "configuration file for master PID controller (see sawControllers, mtsPID)",
-                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["pid-master"]);
-    options.AddOptionOneValue("k", "kinematic-master",
-                              "configuration file for master kinematic (see cisstRobot, robManipulator)",
-                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["kinematic-master"]);
-    options.AddOptionOneValue("I", "io-slave",
-                              "configuration file for slave robot IO (see sawRobotIO1394)",
-                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["io-slave"]);
-    options.AddOptionOneValue("P", "pid-slave",
-                              "configuration file for slave PID controller (see sawControllers, mtsPID)",
-                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["pid-slave"]);
-    options.AddOptionOneValue("K", "kinematic-slave",
-                              "configuration file for slave kinematic (see cisstRobot, robManipulator)",
-                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["kinematic-slave"]);
-    options.AddOptionOneValue("n", "name-master",
-                              "MTML or MTMR",
-                              cmnCommandLineOptions::REQUIRED_OPTION, &masterName);
-    options.AddOptionOneValue("N", "name-slave",
-                              "PSM1 or PSM2",
-                              cmnCommandLineOptions::REQUIRED_OPTION, &slaveName);
+    options.AddOptionOneValue("i", "io",
+                              "configuration file for robot IO (see sawRobotIO1394)",
+                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["io"]);
+    options.AddOptionOneValue("p", "pid",
+                              "configuration file for PID controller (see sawControllers, mtsPID)",
+                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["pid"]);
+    options.AddOptionOneValue("k", "kinematic",
+                              "configuration file for kinematic (see cisstRobot, robManipulator)",
+                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["kinematic"]);
+    options.AddOptionOneValue("n", "arm-name",
+                              "arm name, i.e. PSM1, ... as found in sawRobotIO configuration file",
+                              cmnCommandLineOptions::REQUIRED_OPTION, &armName);
     options.AddOptionOneValue("f", "firewire",
                               "firewire port number(s)",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &firewirePort);
@@ -107,7 +92,7 @@ int main(int argc, char ** argv)
     }
     std::cout << "FirewirePort: " << firewirePort << std::endl;
 
-    std::string processname = "dvTeleop";
+    std::string processname = "dv-arm";
     mtsManagerLocal * componentManager = 0;
     if (gcmip != "-1") {
         try {
@@ -121,7 +106,7 @@ int main(int argc, char ** argv)
     }
 
     // create a Qt application and tab to hold all widgets
-    mtsQtApplication *qtAppTask = new mtsQtApplication("QtApplication", argc, argv);
+    mtsQtApplication * qtAppTask = new mtsQtApplication("QtApplication", argc, argv);
     qtAppTask->Configure();
     componentManager->AddComponent(qtAppTask);
 
@@ -136,22 +121,14 @@ int main(int argc, char ** argv)
 
     // IO
     mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1.0 * cmn_ms, firewirePort);
-    io->Configure(configFiles["io-master"]);
-    io->Configure(configFiles["io-slave"]);
+    io->Configure(configFiles["io"]);
     componentManager->AddComponent(io);
 
-    mtsIntuitiveResearchKitConsole::Arm * mtm
-            = new mtsIntuitiveResearchKitConsole::Arm(masterName, io->GetName());
-    mtm->ConfigurePID(configFiles["pid-master"]);
-    mtm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_MTM,
-                               configFiles["kinematic-master"], 3.0 * cmn_ms);
-    console->AddArm(mtm);
-
     mtsIntuitiveResearchKitConsole::Arm * psm
-            = new mtsIntuitiveResearchKitConsole::Arm(slaveName, io->GetName());
-    psm->ConfigurePID(configFiles["pid-slave"]);
+            = new mtsIntuitiveResearchKitConsole::Arm(armName, io->GetName());
+    psm->ConfigurePID(configFiles["pid"]);
     psm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_PSM,
-                               configFiles["kinematic-slave"], 3.0 * cmn_ms);
+                               configFiles["kinematic"], 3.0 * cmn_ms);
     console->AddArm(psm);
 
     // connect ioGUIMaster to io
@@ -160,23 +137,11 @@ int main(int argc, char ** argv)
     componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "io", "Configuration");
     robotWidgetFactory->Configure();
 
-    // PID Master GUI
-    mtsPIDQtWidget * pidMasterGUI = new mtsPIDQtWidget("PID Master", 8);
-    pidMasterGUI->Configure();
-    componentManager->AddComponent(pidMasterGUI);
-    componentManager->Connect(pidMasterGUI->GetName(), "Controller", mtm->PIDComponentName(), "Controller");
-
     // PID Slave GUI
     mtsPIDQtWidget * pidSlaveGUI = new mtsPIDQtWidget("PID Slave", 7);
     pidSlaveGUI->Configure();
     componentManager->AddComponent(pidSlaveGUI);
     componentManager->Connect(pidSlaveGUI->GetName(), "Controller", psm->PIDComponentName(), "Controller");
-
-    // Master GUI
-    mtsIntuitiveResearchKitArmQtWidget * masterGUI = new mtsIntuitiveResearchKitArmQtWidget(mtm->Name() + "GUI");
-    masterGUI->Configure();
-    componentManager->AddComponent(masterGUI);
-    componentManager->Connect(masterGUI->GetName(), "Manipulator", mtm->Name(), "Robot");
 
     // Slave GUI
     mtsIntuitiveResearchKitArmQtWidget * slaveGUI = new mtsIntuitiveResearchKitArmQtWidget(psm->Name() + "GUI");
@@ -184,40 +149,10 @@ int main(int argc, char ** argv)
     componentManager->AddComponent(slaveGUI);
     componentManager->Connect(slaveGUI->GetName(), "Manipulator", psm->Name(), "Robot");
 
-    // Teleoperation
-    mtsTeleOperationQtWidget * teleGUI = new mtsTeleOperationQtWidget("teleGUI");
-    teleGUI->Configure();
-    componentManager->AddComponent(teleGUI);
-    mtsTeleOperation * tele = new mtsTeleOperation("tele", 5.0 * cmn_ms);
-    // Default orientation between master and slave
-    vctMatRot3 master2slave;
-    master2slave.Assign(-1.0, 0.0, 0.0,
-                         0.0,-1.0, 0.0,
-                         0.0, 0.0, 1.0);
-    tele->SetRegistrationRotation(master2slave);
-    componentManager->AddComponent(tele);
-    // connect teleGUI to tele
-    componentManager->Connect("teleGUI", "TeleOperation", "tele", "Setting");
-
-    // TextToSpeech
-    mtsTextToSpeech* textToSpeech = new mtsTextToSpeech;
-    textToSpeech->AddInterfaceRequiredForEventString("ErrorMsg", "RobotErrorMsg");
-    componentManager->AddComponent(textToSpeech);
-    componentManager->Connect(textToSpeech->GetName(), "ErrorMsg", psm->Name(), "Robot");
-
-    // connect teleop to Master + Slave + Clutch
-    componentManager->Connect("tele", "Master", mtm->Name(), "Robot");
-    componentManager->Connect("tele", "Slave", psm->Name(), "Robot");
-    componentManager->Connect("tele", "Clutch", "io", "CLUTCH");
-    componentManager->Connect("tele", "OperatorPresent", "io", "COAG");
-
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
     tabWidget->addTab(consoleGUI, "Main");
-    tabWidget->addTab(teleGUI, "Tele-op");
-    tabWidget->addTab(masterGUI, "Master");
     tabWidget->addTab(slaveGUI, "Slave");
-    tabWidget->addTab(pidMasterGUI, "PID Master");
     tabWidget->addTab(pidSlaveGUI, "PID Slave");
     mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
     for (iterator = robotWidgetFactory->Widgets().begin();
@@ -231,7 +166,6 @@ int main(int argc, char ** argv)
     //-------------- create the components ------------------
     io->CreateAndWait(2.0 * cmn_s); // this will also create the pids as they are in same thread
     io->StartAndWait(2.0 * cmn_s);
-    componentManager->GetComponent(mtm->PIDComponentName())->StartAndWait(2.0 * cmn_s);
     componentManager->GetComponent(psm->PIDComponentName())->StartAndWait(2.0 * cmn_s);
 
     // start all other components
@@ -245,8 +179,6 @@ int main(int argc, char ** argv)
     componentManager->Cleanup();
 
     // delete dvgc robot
-    delete tele;
-    delete pidMasterGUI;
     delete pidSlaveGUI;
     delete io;
     delete robotWidgetFactory;
