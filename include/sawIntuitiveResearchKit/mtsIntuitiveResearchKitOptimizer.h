@@ -33,12 +33,12 @@ http://www.cisst.org/cisst/license.txt.
 // sawConstraintController
 #include <sawConstraintController/prmKinematicsState.h>
 #include <sawConstraintController/mtsVFController.h>
-#include <sawConstraintController/mtsVFDataFollow.h>
 #include <sawConstraintController/mtsVFDataPlane.h>
-#include <sawConstraintController/mtsVFFollow.h>
-#include <sawConstraintController/mtsVFFollowJacobian.h>
+#include <sawIntuitiveResearchKit/mtsVFDataFollow.h>
+#include <sawIntuitiveResearchKit/mtsVFFollow.h>
+#include <sawIntuitiveResearchKit/mtsVFFollowJacobian.h>
 
-class mtsIntuitiveResearchKitOptimizer : public cmnGenericObject
+class mtsIntuitiveResearchKitOptimizer : public mtsVFController
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION, CMN_LOG_LOD_RUN_ERROR);
 
@@ -70,11 +70,10 @@ public:
 
     bool Solve(vctDoubleVec & dq);
 
-    protected:
-        // VF variables
+protected:
+    // VF variables
     prmKinematicsState CurrentSlaveKinematics;
     prmKinematicsState DesiredSlaveKinematics;
-    mtsVFController VFController;
     mtsVFDataFollow FollowData;
     vctDoubleVec ControllerOutput;
     prmJointState CurrentJointState;
@@ -85,6 +84,15 @@ public:
         vctDoubleMat BodyJacobian;
         vctDoubleMat Adjoint;
     } Cached;
+
+private:
+
+    //! Adds/Updates a vf data object
+    void AddVFFollow(const mtsVFDataBase & vf);
+
+    //! Adds/Updates a vf data object
+    void AddVFFollowJacobian(const mtsVFDataBase & vf);
+
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitOptimizer);

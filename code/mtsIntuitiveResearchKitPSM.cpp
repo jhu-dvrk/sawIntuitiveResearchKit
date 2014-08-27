@@ -118,7 +118,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     }
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
-    if (interfaceProvided) {
+    if (interfaceProvided) {        
         interfaceProvided->AddCommandReadState(this->StateTable, JointCurrentParam, "GetPositionJoint");
         interfaceProvided->AddCommandReadState(this->StateTable, CartesianCurrentParam, "GetPositionCartesian");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionCartesian, this, "SetPositionCartesian");

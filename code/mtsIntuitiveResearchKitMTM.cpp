@@ -686,7 +686,7 @@ void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce
         vctDoubleVec jointDesired( 7, 0.0 );
         for ( size_t i=0; i<jointDesired.size(); i++ )
             { jointDesired[i] = JointCurrent[i]; }
-        
+
         Manipulator.JacobianBody( jointDesired );
         vctDynamicMatrix<double> J( 6, Manipulator.links.size(), VCT_COL_MAJOR );
         for( size_t r=0; r<6; r++ ){
@@ -694,7 +694,7 @@ void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce
                 J[r][c] = Manipulator.Jn[c][r];
             }
         }
-        
+
         prmForceCartesianSet tmp = newForce;
         prmForceCartesianSet::ForceType tmpft;
         tmp.GetForce( tmpft );
@@ -757,7 +757,7 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
     if (state == "Home") {
         SetState(MTM_HOMING_POWERING);
     } else if ((state == "Cartesian position") || (state == "Teleop")) {
-        SetState(MTM_POSITION_CARTESIAN);                
+        SetState(MTM_POSITION_CARTESIAN);
     } else if (state == "Gravity") {
         SetState(MTM_GRAVITY_COMPENSATION);
     } else if (state == "Clutch") {

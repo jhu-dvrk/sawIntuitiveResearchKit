@@ -51,11 +51,10 @@ vctReturnDynamicMatrix<double> ComputeAdjointMatrix(const vctFrame4x4<double> & 
     return vctReturnDynamicMatrix<double>(Ad);
 }
 
-mtsIntuitiveResearchKitOptimizer::mtsIntuitiveResearchKitOptimizer(const size_t numOfJoints)
+mtsIntuitiveResearchKitOptimizer::mtsIntuitiveResearchKitOptimizer(const size_t numOfJoints) :
+    mtsVFController(numOfJoints, mtsVFBase::JPOS)
 {
     NumOfJoints = numOfJoints;
-
-    VFController = mtsVFController(NumOfJoints, mtsVFBase::JPOS);
     CurrentJointState.JointPosition.SetSize(NumOfJoints);
 }
 
@@ -74,8 +73,7 @@ void mtsIntuitiveResearchKitOptimizer::InitializeFollowVF(const size_t rows,
     FollowData.KinNames.clear();
     FollowData.KinNames.push_back(currentKinName);
     FollowData.KinNames.push_back(desiredKinName);
-
-    VFController.AddVFFollowJacobian(FollowData);
+    AddVFFollowJacobian(FollowData);
 
     CurrentSlaveKinematics.Jacobian.SetSize(rows, NumOfJoints, VCT_COL_MAJOR);
 }
@@ -87,7 +85,7 @@ void mtsIntuitiveResearchKitOptimizer::InitializePlaneVF(size_t rows,
 {
     planeData.KinNames.push_back(currentKinName);
     planeData.IneqConstraintRows = rows;
-    VFController.AddVFPlane(planeData);
+    AddVFPlane(planeData);
 }
 
 void mtsIntuitiveResearchKitOptimizer::UpdateParams(vctDoubleVec & qCurr,
@@ -98,7 +96,7 @@ void mtsIntuitiveResearchKitOptimizer::UpdateParams(vctDoubleVec & qCurr,
 {
     UpdateKinematics(qCurr, cartesianCurrent, cartesianDesired);
     UpdateJacobian(manip);
-    VFController.UpdateOptimizer(tickTime);
+    UpdateOptimizer(tickTime);
 }
 
 void mtsIntuitiveResearchKitOptimizer::UpdateKinematics(vctDoubleVec & qCurr,
@@ -109,11 +107,11 @@ void mtsIntuitiveResearchKitOptimizer::UpdateKinematics(vctDoubleVec & qCurr,
 
     // Populating the currest slave kinematics object
     CurrentSlaveKinematics.Frame.FromNormalized(cartesianCurrent);
-    VFController.SetKinematics(CurrentSlaveKinematics);
+    SetKinematics(CurrentSlaveKinematics);
 
     // Populating the desired slave kinematics object
     DesiredSlaveKinematics.Frame.FromNormalized(cartesianDesired);
-    VFController.SetKinematics(DesiredSlaveKinematics);
+    SetKinematics(DesiredSlaveKinematics);
 }
 
 void mtsIntuitiveResearchKitOptimizer::UpdateJacobian(const robManipulator & manip)
@@ -139,7 +137,7 @@ void mtsIntuitiveResearchKitOptimizer::UpdateJacobian(const robManipulator & man
 bool mtsIntuitiveResearchKitOptimizer::Solve(vctDoubleVec & dq)
 {
     nmrConstraintOptimizer::STATUS OptimizerStatus;
-    OptimizerStatus = VFController.Solve(dq);
+    OptimizerStatus = mtsVFController::Solve(dq);
 
     if (OptimizerStatus == nmrConstraintOptimizer::NMR_OK) {
         return true;
@@ -148,6 +146,38 @@ bool mtsIntuitiveResearchKitOptimizer::Solve(vctDoubleVec & dq)
     // If the optimizer fails set the value of dq to be 0
     // This will make sure the robot doesn't move
     dq.SetAll(0);
-    CMN_LOG_CLASS_RUN_ERROR << "Control Optimizer returned status:  " << VFController.Optimizer.GetStatusString(OptimizerStatus) << std::endl;
+    CMN_LOG_CLASS_RUN_ERROR << "Control Optimizer returned status:  " << GetOptimizer().GetStatusString(OptimizerStatus) << std::endl;
     return false;
+}
+
+//! Adds/updates a sensor compliance virtual fixture in the map and increments users of kinematics and sensors
+/*! AddVFFollow
+@param vf virtual fixture to be added
+*/
+void mtsIntuitiveResearchKitOptimizer::AddVFFollow(const mtsVFDataBase & vf)
+{
+    // If we can find the VF, only change its data. Otherwise, create a new VF object.
+    if (!SetVFData(vf, typeid(mtsVFFollow)))
+    {
+        // Adds a new virtual fixture to the active vector
+        VFMap.insert(std::pair<std::string,mtsVFFollow *>(vf.Name,new mtsVFFollow(vf.Name,new mtsVFDataBase(vf))));
+        // Increment users of each kinematics and sensor object found
+        IncrementUsers(vf.KinNames,vf.SensorNames);
+    }
+}
+
+//! Adds/updates a sensor compliance virtual fixture in the map and increments users of kinematics and sensors
+/*! AddVFFollow
+@param vf virtual fixture to be added
+*/
+void mtsIntuitiveResearchKitOptimizer::AddVFFollowJacobian(const mtsVFDataBase & vf)
+{
+    // If we can find the VF, only change its data. Otherwise, create a new VF object.
+    if (!SetVFData(vf, typeid(mtsVFFollowJacobian)))
+    {
+        // Adds a new virtual fixture to the active vector
+        VFMap.insert(std::pair<std::string,mtsVFFollowJacobian *>(vf.Name,new mtsVFFollowJacobian(vf.Name,new mtsVFDataBase(vf))));
+        // Increment users of each kinematics and sensor object found
+        IncrementUsers(vf.KinNames,vf.SensorNames);
+    }
 }

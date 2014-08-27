@@ -48,6 +48,12 @@ if (cisst_FOUND)
     set (sawIntuitiveResearchKit_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
     set (sawIntuitiveResearchKit_LIBRARIES sawIntuitiveResearchKit)
 
+  # create data type using the data generator
+  cisst_data_generator (sawIntuitiveResearchKit
+                        "${CISST_BINARY_DIR}/include" # where to save the file
+                        "sawIntuitiveResearchKit/"    # sub directory for include
+                        mtsVFDataFollow.cdg)
+
     include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
     set (sawIntuitiveResearchKit_HEADER_DIR "${sawIntuitiveResearchKit_INCLUDE_DIR}/sawIntuitiveResearchKit")
 
@@ -57,6 +63,8 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitOptimizer.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitUDPStreamer.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsVFFollow.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsVFFollowJacobian.h
         )
 
     set (SOURCE_FILES
@@ -65,9 +73,14 @@ if (cisst_FOUND)
          mtsIntuitiveResearchKitOptimizer.cpp
          mtsIntuitiveResearchKitConsole.cpp
          mtsIntuitiveResearchKitUDPStreamer.cpp
+         mtsVFFollow.cpp
+         mtsVFFollowJacobian.cpp
         )
 
-    add_library (sawIntuitiveResearchKit ${HEADER_FILES} ${SOURCE_FILES})
+    add_library (sawIntuitiveResearchKit
+                ${HEADER_FILES} ${SOURCE_FILES}
+                ${sawIntuitiveResearchKit_CISST_DG_SRCS}
+                ${sawIntuitiveResearchKit_CISST_DG_HDRS})
     cisst_target_link_libraries (sawIntuitiveResearchKit ${REQUIRED_CISST_LIBRARIES})
     set_property (TARGET sawIntuitiveResearchKit PROPERTY FOLDER "sawIntuitiveResearchKit")
 
