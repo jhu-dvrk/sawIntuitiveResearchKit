@@ -22,6 +22,8 @@ set(CISST_HAS_JSON ON CACHE BOOL "" )
 
 
 # -------- SAW -----------
+# sawConstraintController
+set(SAW_sawConstraintController ON CACHE BOOL "")
 # sawRobotIO1394
 set(SAW_sawRobotIO1394 ON CACHE BOOL "")
 # sawController (PID / GC / Teleoperation)
