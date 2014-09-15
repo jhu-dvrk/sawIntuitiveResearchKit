@@ -255,6 +255,9 @@ end
 val = get(handles.digiBidMenu, 'Value');
 set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val));
 
+% update default directions
+dirDefaultButton_Callback(hObject, 0, handles);
+
 % update default output file name
 handles.m_out_filename = ['sawRobotIO1394-' handles.m_type];
 set(handles.out_name, 'String', handles.m_out_filename);
