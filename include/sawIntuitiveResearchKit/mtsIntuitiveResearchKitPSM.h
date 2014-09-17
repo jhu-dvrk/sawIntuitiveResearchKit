@@ -122,9 +122,9 @@ protected:
         //! Enable Robot Power
         mtsFunctionVoid EnablePower;
         mtsFunctionVoid DisablePower;
-        mtsFunctionRead GetAmpStatus;
+        mtsFunctionRead GetActuatorAmpStatus;
         mtsFunctionVoid BiasEncoder;
-        mtsFunctionWrite SetMotorCurrent;
+        mtsFunctionWrite SetActuatorCurrent;
     } RobotIO;
 
     struct {

@@ -84,9 +84,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddFunction("EnablePower", RobotIO.EnablePower);
         interfaceRequired->AddFunction("DisablePower", RobotIO.DisablePower);
-        interfaceRequired->AddFunction("GetAmpStatus", RobotIO.GetAmpStatus);
+        interfaceRequired->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
         interfaceRequired->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
-        interfaceRequired->AddFunction("SetMotorCurrent", RobotIO.SetMotorCurrent);
+        interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
     }
 
     // Event Adapter engage: digital input button event from PSM
@@ -380,7 +380,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
         // make sure the PID is not sending currents
         PID.Enable(false);
         // pre-load the boards with zero current
-        RobotIO.SetMotorCurrent(vctDoubleVec(NumberOfJoints, 0.0));
+        RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints, 0.0));
         // enable power and set a flags to move to next step
         RobotIO.EnablePower();
         HomingPowerRequested = true;
@@ -402,7 +402,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
 
         // check power status
         vctBoolVec amplifiersStatus(NumberOfJoints);
-        RobotIO.GetAmpStatus(amplifiersStatus);
+        RobotIO.GetActuatorAmpStatus(amplifiersStatus);
         if (amplifiersStatus.All()) {
             EventTriggers.RobotStatusMsg(this->GetName() + " power on");
             this->SetState(PSM_HOMING_CALIBRATING_ARM);
