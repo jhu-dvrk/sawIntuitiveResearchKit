@@ -163,6 +163,9 @@ driveDirection = aDirection;
 AmpsToBitsScale = driveDirection(1:numOfActuator) .* 5242.8800;
 AmpsToBitsOffset = ones(1, numOfActuator) .* (2^15);
 
+BrakeAmpsToBitsScale = ones(1, numOfActuator) .* 5242.8800;
+BrakeAmpsToBitsOffset = ones(1, numOfActuator) .* (2^15);
+
 BitsToFbAmpsScale = driveDirection(1:numOfActuator) .* 0.000190738;
 BitsToFbAmpsOffset = driveDirection(1:numOfActuator) .* (-6.25);
 
@@ -287,6 +290,22 @@ for i = 1:numOfActuator
     X_MaxCurrent.setAttribute('Value', num2str(MaxCurrent(i), '%5.3f'));
     X_MaxCurrent.setAttribute('Unit', 'A');
     Drive.appendChild(X_MaxCurrent);
+    
+    % Brake
+    if (rType == CONST_ECM)
+        Brake = docNode.createElement('AnalogBrake');
+        Brake.setAttribute('BoardID', num2str(boardID(2)));
+        Brake.setAttribute('AxisID', num2str(i-1));
+        Actuator.appendChild(Brake);
+        X_BrakeAmps2Bits = docNode.createElement('AmpsToBits');
+        X_BrakeAmps2Bits.setAttribute('Scale', num2str(BrakeAmpsToBitsScale(i), '%5.2f'));
+        X_BrakeAmps2Bits.setAttribute('Offset', num2str(BrakeAmpsToBitsOffset(i), '%5.0f'));
+        Brake.appendChild(X_BrakeAmps2Bits);
+        X_BrakeBitsToFeedbackAmps = docNode.createElement('BitsToFeedbackAmps');
+        X_BrakeBitsToFeedbackAmps.setAttribute('Scale', num2str(BitsToFbAmpsScale(i), '%5.9f'));
+        X_BrakeBitsToFeedbackAmps.setAttribute('Offset', num2str(BitsToFbAmpsOffset(i), '%5.2f'));
+        Brake.appendChild(X_BrakeBitsToFeedbackAmps);
+    end
     
     % Encoder
     Enc = docNode.createElement('Encoder');
