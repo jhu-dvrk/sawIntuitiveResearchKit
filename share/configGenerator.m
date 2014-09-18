@@ -119,6 +119,13 @@ pitch(CONST_MST,:) = [1 1 1 1 1 1 1 1];
 pitch(CONST_SLV,:) = [1 1 17.4533 1 1 1 1 1];
 pitch(CONST_ECM,:) = [1 1 1 1 1 1 1 1];
 
+% Brake constants for ECM
+hasBrake = [1 1 1 0];
+brakeReleaseCurrent = [0.3 0.3 0.9];
+brakeReleaseTime = [2.0 2.0 2.0];
+brakeReleasedCurrent = [0.08 0.07 0.2];
+brakeEngagedCurrent = [0.0 0.0 0.0];
+
 % Actuator Type (Prismatic/Revolute)
 
 if (rType == CONST_MST)
@@ -292,7 +299,7 @@ for i = 1:numOfActuator
     Drive.appendChild(X_MaxCurrent);
     
     % Brake
-    if (rType == CONST_ECM)
+    if ((rType == CONST_ECM) && (hasBrake(i) == 1))
         Brake = docNode.createElement('AnalogBrake');
         Brake.setAttribute('BoardID', num2str(boardID(2)));
         Brake.setAttribute('AxisID', num2str(i-1));
@@ -305,6 +312,21 @@ for i = 1:numOfActuator
         X_BrakeBitsToFeedbackAmps.setAttribute('Scale', num2str(BitsToFbAmpsScale(i), '%5.9f'));
         X_BrakeBitsToFeedbackAmps.setAttribute('Offset', num2str(BitsToFbAmpsOffset(i), '%5.2f'));
         Brake.appendChild(X_BrakeBitsToFeedbackAmps);
+        X_BrakeReleaseCurrent = docNode.createElement('ReleaseCurrent');
+        X_BrakeReleaseCurrent.setAttribute('Unit', 'A');
+        X_BrakeReleaseCurrent.setAttribute('Value', num2str(brakeReleaseCurrent(i), '%5.3f'));
+        Brake.appendChild(X_BrakeReleaseCurrent);
+        X_BrakeReleaseTime = docNode.createElement('ReleaseTime');
+        X_BrakeReleaseTime.setAttribute('Value', num2str(brakeReleaseTime(i), '%5.3f'));
+        Brake.appendChild(X_BrakeReleaseTime);
+        X_BrakeReleasedCurrent = docNode.createElement('ReleasedCurrent');
+        X_BrakeReleasedCurrent.setAttribute('Unit', 'A');
+        X_BrakeReleasedCurrent.setAttribute('Value', num2str(brakeReleasedCurrent(i), '%5.3f'));
+        Brake.appendChild(X_BrakeReleasedCurrent);
+        X_BrakeEngagedCurrent = docNode.createElement('EngagedCurrent');
+        X_BrakeEngagedCurrent.setAttribute('Unit', 'A');
+        X_BrakeEngagedCurrent.setAttribute('Value', num2str(brakeEngagedCurrent(i), '%5.3f'));
+        Brake.appendChild(X_BrakeEngagedCurrent);
     end
     
     % Encoder
