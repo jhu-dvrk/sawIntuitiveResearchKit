@@ -255,9 +255,6 @@ end
 val = get(handles.digiBidMenu, 'Value');
 set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val));
 
-% update default directions
-dirDefaultButton_Callback(hObject, 0, handles);
-
 % update default output file name
 handles.m_out_filename = ['sawRobotIO1394-' handles.m_type];
 set(handles.out_name, 'String', handles.m_out_filename);
@@ -265,6 +262,7 @@ guidata(hObject, handles);
 
 % update default bid
 bidDefaultButton_Callback(handles.bidDefaultButton, eventdata, handles);
+
 
 
 % --- Executes when entered data in editable cell(s) in tblDigital.
@@ -411,7 +409,7 @@ elseif (strcmp(handles.m_type,'MTMR'))
 elseif (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2') || strcmp(handles.m_type,'PSM3'))
     handles.m_direction = {-1; -1; 1; -1; -1; 1; 1; 1};
 elseif (strcmp(handles.m_type,'ECM'));
-    handles.m_direction = {-1; -1; 1; -1};
+    handles.m_direction = {1; 1; -1; 1};
 end
 set(handles.tblDirection, 'data', handles.m_direction);
 guidata(hObject, handles);

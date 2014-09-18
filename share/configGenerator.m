@@ -117,10 +117,11 @@ encCPT(CONST_ECM,:) = [ 4000  4000   640   64    1    1    1 1];
 % 1 for revolute, mm/deg for prismatic
 pitch(CONST_MST,:) = [1 1 1 1 1 1 1 1];
 pitch(CONST_SLV,:) = [1 1 17.4533 1 1 1 1 1];
-pitch(CONST_ECM,:) = [1 1 1 1 1 1 1 1];
+pitch(CONST_ECM,:) = [1 1 17.4533 1 1 1 1 1];
 
 % Brake constants for ECM
 hasBrake = [1 1 1 0];
+brakeMaxCurrent = [0.3 0.3 1.0];
 brakeReleaseCurrent = [0.3 0.3 0.9];
 brakeReleaseTime = [2.0 2.0 2.0];
 brakeReleasedCurrent = [0.08 0.07 0.2];
@@ -136,7 +137,7 @@ elseif (rType == CONST_SLV)
                     'Revolute', 'Revolute', 'Revolute', 'Revolute'};
 elseif (rType == CONST_ECM)
     actuatorType = {'Revolute', 'Revolute', 'Prismatic', 'Revolute', ...
-                    'Revolute', 'Revolute', 'Prismatic', 'Revolute'};  
+                    'Null',     'Null',     'Null',      'Null'};
 
 end
 
@@ -166,15 +167,18 @@ potOffset = motor.pot_input_offset;
 % =============================================
 % === Drive =======
 % Direction
-driveDirection = aDirection;
+driveDirection = aDirection
 AmpsToBitsScale = driveDirection(1:numOfActuator) .* 5242.8800;
 AmpsToBitsOffset = ones(1, numOfActuator) .* (2^15);
 
-BrakeAmpsToBitsScale = ones(1, numOfActuator) .* 5242.8800;
-BrakeAmpsToBitsOffset = ones(1, numOfActuator) .* (2^15);
+BrakeAmpsToBitsScale = 5242.8800;
+BrakeAmpsToBitsOffset = 2^15;
 
 BitsToFbAmpsScale = driveDirection(1:numOfActuator) .* 0.000190738;
 BitsToFbAmpsOffset = driveDirection(1:numOfActuator) .* (-6.25);
+
+BrakeBitsToFbAmpsScale = 0.000190738;
+BrakeBitsToFbAmpsOffset = -6.25;
 
 NmToAmps = ones(1,numOfActuator) ./ gearRatio(rType,1:numOfActuator) ./ motorTor(rType,1:numOfActuator);
 MaxCurrent = motorDefCur(rType,1:numOfActuator);
@@ -305,13 +309,17 @@ for i = 1:numOfActuator
         Brake.setAttribute('AxisID', num2str(i-1));
         Actuator.appendChild(Brake);
         X_BrakeAmps2Bits = docNode.createElement('AmpsToBits');
-        X_BrakeAmps2Bits.setAttribute('Scale', num2str(BrakeAmpsToBitsScale(i), '%5.2f'));
-        X_BrakeAmps2Bits.setAttribute('Offset', num2str(BrakeAmpsToBitsOffset(i), '%5.0f'));
+        X_BrakeAmps2Bits.setAttribute('Scale', num2str(BrakeAmpsToBitsScale, '%5.2f'));
+        X_BrakeAmps2Bits.setAttribute('Offset', num2str(BrakeAmpsToBitsOffset, '%5.0f'));
         Brake.appendChild(X_BrakeAmps2Bits);
         X_BrakeBitsToFeedbackAmps = docNode.createElement('BitsToFeedbackAmps');
-        X_BrakeBitsToFeedbackAmps.setAttribute('Scale', num2str(BitsToFbAmpsScale(i), '%5.9f'));
-        X_BrakeBitsToFeedbackAmps.setAttribute('Offset', num2str(BitsToFbAmpsOffset(i), '%5.2f'));
+        X_BrakeBitsToFeedbackAmps.setAttribute('Scale', num2str(BrakeBitsToFbAmpsScale, '%5.9f'));
+        X_BrakeBitsToFeedbackAmps.setAttribute('Offset', num2str(BrakeBitsToFbAmpsOffset, '%5.2f'));
         Brake.appendChild(X_BrakeBitsToFeedbackAmps);
+        X_BrakeMaxCurrent = docNode.createElement('MaxCurrent');
+        X_BrakeMaxCurrent.setAttribute('Value', num2str(brakeMaxCurrent(i), '%5.3f'));
+        X_BrakeMaxCurrent.setAttribute('Unit', 'A');
+        Brake.appendChild(X_BrakeMaxCurrent);
         X_BrakeReleaseCurrent = docNode.createElement('ReleaseCurrent');
         X_BrakeReleaseCurrent.setAttribute('Unit', 'A');
         X_BrakeReleaseCurrent.setAttribute('Value', num2str(brakeReleaseCurrent(i), '%5.3f'));
