@@ -1,8 +1,8 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
-/*
 
-  Author(s):  Zihan Chen
+/*
+  Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
   (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
@@ -31,6 +31,9 @@ http://www.cisst.org/cisst/license.txt.
 
 int main(int argc, char ** argv)
 {
+    // period used for IO and PID
+    const double periodIOPID = 0.5 * cmn_ms;
+
     // log configuration
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
@@ -73,10 +76,15 @@ int main(int argc, char ** argv)
     }
 
     unsigned int numberOfJoints;
-    if ((armName == "PSM1") || (armName == "PSM2")) {
+    if ((armName == "PSM1") || (armName == "PSM2") || (armName == "PSM3")) {
         numberOfJoints = 7;
-    } else {
+    } else if ((armName == "MTML") || (armName == "MTMR")) {
         numberOfJoints = 8;
+    } else if (armName == "ECM") {
+        numberOfJoints = 4;
+    } else {
+        std::cerr << "Unknown arm name: " << armName << ", should be one one PSM1, PSM2, PSM3, MTML, MTMR or ECM" << std::endl;
+        return -1;
     }
 
     std::cout << "Configuration file for IO: " << ioConfigFile << std::endl
@@ -93,7 +101,7 @@ int main(int argc, char ** argv)
     componentManager->AddComponent(qtAppTask);
 
     // IO
-    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1 * cmn_ms, firewirePort);
+    mtsRobotIO1394 * io = new mtsRobotIO1394("io", periodIOPID, firewirePort);
     io->Configure(ioConfigFile);
     componentManager->AddComponent(io);
 
@@ -106,7 +114,7 @@ int main(int argc, char ** argv)
     mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI", numberOfJoints);
     pidGUI->Configure();
     componentManager->AddComponent(pidGUI);
-    mtsPID * pid = new mtsPID("pid", 1 * cmn_ms);
+    mtsPID * pid = new mtsPID("pid", periodIOPID);
     pid->Configure(pidConfigFile);
     componentManager->AddComponent(pid);
     // connect pidGUI to pid
