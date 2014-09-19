@@ -167,6 +167,7 @@ potOffset = motor.pot_input_offset;
 % =============================================
 % === Drive =======
 % Direction
+boardID
 driveDirection = aDirection
 AmpsToBitsScale = driveDirection(1:numOfActuator) .* 5242.8800;
 AmpsToBitsOffset = ones(1, numOfActuator) .* (2^15);

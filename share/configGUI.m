@@ -165,7 +165,6 @@ else
 end
 
 
-
 % --- Executes on selection change in bidPopup1.
 function bidPopup1_Callback(hObject, eventdata, handles)
 % hObject    handle to bidPopup1 (see GCBO)
@@ -177,7 +176,6 @@ function bidPopup1_Callback(hObject, eventdata, handles)
 val = get(hObject, 'Value');
 handles.m_boardID(1) = val - 1;
 guidata(hObject, handles);
-
 
 
 % --- Executes during object creation, after setting all properties.
@@ -204,6 +202,7 @@ function bidPopup2_Callback(hObject, eventdata, handles)
 val = get(hObject, 'Value');
 handles.m_boardID(2) = val - 1;
 guidata(hObject, handles);
+
 
 % --- Executes during object creation, after setting all properties.
 function bidPopup2_CreateFcn(hObject, eventdata, handles)
@@ -261,8 +260,10 @@ set(handles.out_name, 'String', handles.m_out_filename);
 guidata(hObject, handles);
 
 % update default bid
-bidDefaultButton_Callback(handles.bidDefaultButton, eventdata, handles);
+handles = bidSetDefault(handles);
 
+% update default direction
+dirDefaultButton_Callback(handles.dirDefaultButton, eventdata, handles);
 
 
 % --- Executes when entered data in editable cell(s) in tblDigital.
@@ -286,8 +287,6 @@ end
 
 disp(handles.m_digiIn);
 guidata(hObject, handles);
-
-
 
 
 % --- Executes on selection change in digiBidMenu.
@@ -317,7 +316,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
 function out_name_Callback(hObject, eventdata, handles)
 % hObject    handle to out_name (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -340,15 +338,12 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-function [ newDigiData ] = updateDigitalData( oldDigiData )
-disp('updateDigiData');
+% function [ newDigiData ] = updateDigitalData(oldDigiData)
+% disp('updateDigiData');
 
 
-% --- Executes on button press in bidDefaultButton.
-function bidDefaultButton_Callback(hObject, eventdata, handles)
-% hObject    handle to bidDefaultButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+% --- Update handles default bid
+function handles = bidSetDefault(handles)
 if (strcmp(handles.m_type,'MTML'))
     handles.m_boardID = [0 1];
 elseif (strcmp(handles.m_type,'MTMR'))
@@ -364,9 +359,17 @@ elseif (strcmp(handles.m_type,'PSM3'))
 else
     disp('ERROR: unknown hardware type');
 end
-
 set(handles.bidPopup1, 'Value', handles.m_boardID(1) + 1);
 set(handles.bidPopup2, 'Value', handles.m_boardID(2) + 1);
+
+
+% --- Executes on button press in bidDefaultButton.
+function bidDefaultButton_Callback(hObject, eventdata, handles)
+% hObject    handle to bidDefaultButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles = bidSetDefault(handles);
+
 guidata(hObject, handles);
 
 
