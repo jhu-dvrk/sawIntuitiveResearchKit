@@ -124,12 +124,25 @@ int main(int argc, char ** argv)
     io->Configure(configFiles["io"]);
     componentManager->AddComponent(io);
 
-    mtsIntuitiveResearchKitConsole::Arm * psm
+    // Create the arm
+    mtsIntuitiveResearchKitConsole::Arm * arm
             = new mtsIntuitiveResearchKitConsole::Arm(armName, io->GetName());
-    psm->ConfigurePID(configFiles["pid"]);
-    psm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_PSM,
-                               configFiles["kinematic"], 3.0 * cmn_ms);
-    console->AddArm(psm);
+    arm->ConfigurePID(configFiles["pid"]);
+    // Configure based on arm type assuming name
+    if ((armName == "PSM1") || (armName == "PSM2") || (armName == "PSM3")) {
+        arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_PSM,
+                          configFiles["kinematic"], 3.0 * cmn_ms);
+    } else if ((armName == "MTML") || (armName == "MTMR")) {
+        arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_MTM,
+                          configFiles["kinematic"], 3.0 * cmn_ms);
+    } else if (armName == "ECM") {
+        arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_ECM,
+                          configFiles["kinematic"], 3.0 * cmn_ms);
+    } else {
+        std::cerr << "Arm name should be either PSM1, PSM2, PSM3, MTML, MTMR or ECM, not " << armName << std::endl;
+        return -1;
+    }
+    console->AddArm(arm);
 
     // connect ioGUIMaster to io
     mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");
@@ -141,13 +154,13 @@ int main(int argc, char ** argv)
     mtsPIDQtWidget * pidSlaveGUI = new mtsPIDQtWidget("PID Slave", 7);
     pidSlaveGUI->Configure();
     componentManager->AddComponent(pidSlaveGUI);
-    componentManager->Connect(pidSlaveGUI->GetName(), "Controller", psm->PIDComponentName(), "Controller");
+    componentManager->Connect(pidSlaveGUI->GetName(), "Controller", arm->PIDComponentName(), "Controller");
 
     // Slave GUI
-    mtsIntuitiveResearchKitArmQtWidget * slaveGUI = new mtsIntuitiveResearchKitArmQtWidget(psm->Name() + "GUI");
+    mtsIntuitiveResearchKitArmQtWidget * slaveGUI = new mtsIntuitiveResearchKitArmQtWidget(arm->Name() + "GUI");
     slaveGUI->Configure();
     componentManager->AddComponent(slaveGUI);
-    componentManager->Connect(slaveGUI->GetName(), "Manipulator", psm->Name(), "Robot");
+    componentManager->Connect(slaveGUI->GetName(), "Manipulator", arm->Name(), "Robot");
 
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
@@ -166,7 +179,7 @@ int main(int argc, char ** argv)
     //-------------- create the components ------------------
     io->CreateAndWait(2.0 * cmn_s); // this will also create the pids as they are in same thread
     io->StartAndWait(2.0 * cmn_s);
-    componentManager->GetComponent(psm->PIDComponentName())->StartAndWait(2.0 * cmn_s);
+    componentManager->GetComponent(arm->PIDComponentName())->StartAndWait(2.0 * cmn_s);
 
     // start all other components
     componentManager->CreateAllAndWait(2.0 * cmn_s);

@@ -2,7 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
@@ -38,7 +37,7 @@ public:
 
     class Arm {
     public:
-        typedef enum {ARM_MTM, ARM_PSM, ARM_GENERIC_MTM, ARM_GENERIC_PSM} ArmType;
+        typedef enum {ARM_MTM, ARM_PSM, ARM_ECM, ARM_GENERIC_MTM, ARM_GENERIC_PSM} ArmType;
 
         friend class mtsIntuitiveResearchKitConsole;
 

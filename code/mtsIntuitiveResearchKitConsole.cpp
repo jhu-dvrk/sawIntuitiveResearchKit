@@ -2,7 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
@@ -29,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsole);
@@ -88,12 +88,23 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                       IOComponentName(), Name() + "-SUJClutch");
         }
         break;
+    case ARM_ECM:
+        {
+            mtsIntuitiveResearchKitECM * slave = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
+            slave->Configure(mArmConfigurationFile);
+            componentManager->AddComponent(slave);
+            componentManager->Connect(Name(), "ManipClutch",
+                                      IOComponentName(), Name() + "-ManipClutch");
+            componentManager->Connect(Name(), "SUJClutch",
+                                      IOComponentName(), Name() + "-SUJClutch");
+        }
+        break;
     default:
         break;
     }
 
     // if the arm is a research kit arm, also connect to PID and IO
-    if ((armType == ARM_PSM) || (armType == ARM_MTM)) {
+    if ((armType == ARM_PSM) || (armType == ARM_MTM) || (armType == ARM_ECM)) {
         componentManager->Connect(Name(), "PID",
                                   PIDComponentName(), "Controller");
         componentManager->Connect(Name(), "RobotIO",

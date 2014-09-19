@@ -60,6 +60,7 @@ if (cisst_FOUND)
     set (HEADER_FILES
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitMTM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSM.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitECM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitOptimizer.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitUDPStreamer.h
@@ -70,6 +71,7 @@ if (cisst_FOUND)
     set (SOURCE_FILES
          mtsIntuitiveResearchKitMTM.cpp
          mtsIntuitiveResearchKitPSM.cpp
+         mtsIntuitiveResearchKitECM.cpp
          mtsIntuitiveResearchKitOptimizer.cpp
          mtsIntuitiveResearchKitConsole.cpp
          mtsIntuitiveResearchKitUDPStreamer.cpp
