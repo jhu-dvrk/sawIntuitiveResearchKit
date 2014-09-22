@@ -125,6 +125,7 @@ int main(int argc, char ** argv)
     componentManager->AddComponent(io);
 
     // Create the arm
+    unsigned int numberOfAxis = 0;
     mtsIntuitiveResearchKitConsole::Arm * arm
             = new mtsIntuitiveResearchKitConsole::Arm(armName, io->GetName());
     arm->ConfigurePID(configFiles["pid"]);
@@ -132,12 +133,15 @@ int main(int argc, char ** argv)
     if ((armName == "PSM1") || (armName == "PSM2") || (armName == "PSM3")) {
         arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_PSM,
                           configFiles["kinematic"], 3.0 * cmn_ms);
+        numberOfAxis = 7;
     } else if ((armName == "MTML") || (armName == "MTMR")) {
         arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_MTM,
                           configFiles["kinematic"], 3.0 * cmn_ms);
+        numberOfAxis = 8;
     } else if (armName == "ECM") {
         arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_ECM,
                           configFiles["kinematic"], 3.0 * cmn_ms);
+        numberOfAxis = 4;
     } else {
         std::cerr << "Arm name should be either PSM1, PSM2, PSM3, MTML, MTMR or ECM, not " << armName << std::endl;
         return -1;
@@ -151,7 +155,7 @@ int main(int argc, char ** argv)
     robotWidgetFactory->Configure();
 
     // PID Slave GUI
-    mtsPIDQtWidget * pidSlaveGUI = new mtsPIDQtWidget("PID Slave", 7);
+    mtsPIDQtWidget * pidSlaveGUI = new mtsPIDQtWidget("PID Slave", numberOfAxis);
     pidSlaveGUI->Configure();
     componentManager->AddComponent(pidSlaveGUI);
     componentManager->Connect(pidSlaveGUI->GetName(), "Controller", arm->PIDComponentName(), "Controller");

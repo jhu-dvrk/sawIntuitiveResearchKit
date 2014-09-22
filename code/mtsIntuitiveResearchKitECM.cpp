@@ -320,8 +320,6 @@ void mtsIntuitiveResearchKitECM::RunHomingPower(void)
         if (actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All()) {
             EventTriggers.RobotStatusMsg(this->GetName() + " power on");
             RobotIO.BrakeRelease();
-            std::cerr << CMN_LOG_DETAILS << " --- this needs to be updated to factor in time.  RobotIO should have an event for brake released/engaged + state read"
-                      << std::endl;
             this->SetState(ECM_HOMING_CALIBRATING_ARM);
         } else {
             EventTriggers.RobotErrorMsg(this->GetName() + " failed to enable power.");
