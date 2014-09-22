@@ -9,7 +9,7 @@
             <MaxCurrent Unit="A" Value="0.943"/>
          </Drive>
          <AnalogBrake AxisID="0" BoardID="5">
-            <AmpsToBits Offset="32821" Scale="5242.88"/>
+            <AmpsToBits Offset="32819" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <MaxCurrent Unit="A" Value="0.300"/>
             <ReleaseCurrent Unit="A" Value="0.300"/>
@@ -30,13 +30,13 @@
       </Actuator>
       <Actuator ActuatorID="1" AxisID="1" BoardID="4" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32745" Scale="5242.88"/>
+            <AmpsToBits Offset="32744" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <NmToAmps Scale="0.035014"/>
             <MaxCurrent Unit="A" Value="0.943"/>
          </Drive>
          <AnalogBrake AxisID="1" BoardID="5">
-            <AmpsToBits Offset="32917" Scale="5242.88"/>
+            <AmpsToBits Offset="32915" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <MaxCurrent Unit="A" Value="0.300"/>
             <ReleaseCurrent Unit="A" Value="0.300"/>
@@ -63,7 +63,7 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <AnalogBrake AxisID="2" BoardID="5">
-            <AmpsToBits Offset="32849" Scale="5242.88"/>
+            <AmpsToBits Offset="32851" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <MaxCurrent Unit="A" Value="1.000"/>
             <ReleaseCurrent Unit="A" Value="0.900"/>
@@ -84,7 +84,7 @@
       </Actuator>
       <Actuator ActuatorID="3" AxisID="3" BoardID="4" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32888" Scale="5242.88"/>
+            <AmpsToBits Offset="32885" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <NmToAmps Scale="0.673064"/>
             <MaxCurrent Unit="A" Value="0.590"/>
@@ -128,9 +128,9 @@
          </JointToActuatorTorque>
       </Coupling>
    </Robot><!--Digital Input Configuration-->
-   <DigitalIn BitID="0" BoardID="4" Debounce="0" Name="ECM-D00" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="0" BoardID="4" Debounce="0.2" Name="ECM-ManipClutch" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="1" BoardID="4" Debounce="0" Name="ECM-D01" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="2" BoardID="4" Debounce="0" Name="ECM-D02" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="2" BoardID="4" Debounce="0.2" Name="ECM-SUJClutch" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="3" BoardID="4" Debounce="0" Name="ECM-D03" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="4" BoardID="4" Debounce="0" Name="ECM-D10" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="5" BoardID="4" Debounce="0" Name="ECM-D11" Pressed="0" Trigger="all"/>

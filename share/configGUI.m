@@ -159,9 +159,9 @@ isOK = configGenerator(...
     handles.m_digiIn, ...
     cell2mat(handles.m_direction)'); % change to horizontal num array
 if (isOK)
-    disp('Config file generated successfully');
+    msgbox('Config file generated successfully');
 else
-    disp('ERROR: failed to generate config file');
+    msgbox('ERROR: failed to generate config file');
 end
 
 
@@ -249,6 +249,13 @@ if (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2') || strcmp(han
     handles.m_digiIn{8,5,2} = 1.5;
     handles.m_digiIn{11,2,2} = [handles.m_type '-Adapter'];
     handles.m_digiIn{11,5,2} = 1.5;
+end
+
+if (strcmp(handles.m_type,'ECM'))
+    handles.m_digiIn{1,2,1} = [handles.m_type '-ManipClutch'];
+    handles.m_digiIn{1,5,1} = 0.2;
+    handles.m_digiIn{3,2,1} = [handles.m_type '-SUJClutch'];
+    handles.m_digiIn{3,5,1} = 0.2;
 end
 
 val = get(handles.digiBidMenu, 'Value');
