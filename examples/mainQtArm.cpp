@@ -154,23 +154,23 @@ int main(int argc, char ** argv)
     componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "io", "Configuration");
     robotWidgetFactory->Configure();
 
-    // PID Slave GUI
-    mtsPIDQtWidget * pidSlaveGUI = new mtsPIDQtWidget("PID Slave", numberOfAxis);
-    pidSlaveGUI->Configure();
-    componentManager->AddComponent(pidSlaveGUI);
-    componentManager->Connect(pidSlaveGUI->GetName(), "Controller", arm->PIDComponentName(), "Controller");
+    // PID GUI
+    mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("PID", numberOfAxis);
+    pidGUI->Configure();
+    componentManager->AddComponent(pidGUI);
+    componentManager->Connect(pidGUI->GetName(), "Controller", arm->PIDComponentName(), "Controller");
 
-    // Slave GUI
-    mtsIntuitiveResearchKitArmQtWidget * slaveGUI = new mtsIntuitiveResearchKitArmQtWidget(arm->Name() + "GUI");
-    slaveGUI->Configure();
-    componentManager->AddComponent(slaveGUI);
-    componentManager->Connect(slaveGUI->GetName(), "Manipulator", arm->Name(), "Robot");
+    // GUI
+    mtsIntuitiveResearchKitArmQtWidget * armGUI = new mtsIntuitiveResearchKitArmQtWidget("Arm");
+    armGUI->Configure();
+    componentManager->AddComponent(armGUI);
+    componentManager->Connect(armGUI->GetName(), "Manipulator", arm->Name(), "Robot");
 
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
     tabWidget->addTab(consoleGUI, "Main");
-    tabWidget->addTab(slaveGUI, "Slave");
-    tabWidget->addTab(pidSlaveGUI, "PID Slave");
+    tabWidget->addTab(armGUI, "Arm");
+    tabWidget->addTab(pidGUI, "PID");
     mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
     for (iterator = robotWidgetFactory->Widgets().begin();
          iterator != robotWidgetFactory->Widgets().end();
@@ -196,7 +196,7 @@ int main(int argc, char ** argv)
     componentManager->Cleanup();
 
     // delete dvgc robot
-    delete pidSlaveGUI;
+    delete pidGUI;
     delete io;
     delete robotWidgetFactory;
 
