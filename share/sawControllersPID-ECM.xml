@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<controller type="PID" 
+            interface="JointTorqueInterface"
+            numofjoints="4">
+
+  <joints>
+    <joint index="0" name="outeryaw"> 
+      <pid PGain="400.0" DGain="30.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
+      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+      <pos LowerLimit="-90" UpperLimit="90" Units="deg"/>
+    </joint>
+
+    <joint index="1" name="outerpitch"> 
+      <pid PGain="1000.0" DGain="80.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
+      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+      <pos LowerLimit="-45" UpperLimit="65" Units="deg"/>
+    </joint>
+
+    <joint index="2" name="insertion"> 
+      <pid PGain="25.0" DGain="3.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
+      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+      <pos LowerLimit="0" UpperLimit="235" Units="mm"/>
+    </joint>
+
+    <joint index="3" name="outerroll"> 
+      <pid PGain="20.0" DGain="2.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
+      <limit MinILimit="-10" MaxILimit="10" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+      <pos LowerLimit="-90" UpperLimit="90" Units="deg"/>
+    </joint>
+
+  </joints>
+
+ </controller>
