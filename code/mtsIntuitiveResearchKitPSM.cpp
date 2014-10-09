@@ -232,9 +232,9 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
         // assign to a more convenient vctDoubleVec
         JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
 
-        // when the robot is ready, we can comput cartesian position
+        // when the robot is ready, we can compute cartesian position
         if (this->RobotState >= PSM_READY) {
-            // apply tool tip transform
+            // update cartesian position
             vctFrm4x4 position;
             position = Manipulator.ForwardKinematics(JointCurrent);
             position.Rotation().NormalizedSelf();
@@ -678,7 +678,6 @@ void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newP
 {
     JointDesiredParam.Goal().Assign(newPosition, NumberOfJoints);
     JointDesiredParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
-//    JointDesiredParam.Goal().Element(7) = 0.0;   // ZC: PSM only has 7 joints
     PID.SetPositionJoint(JointDesiredParam);
 }
 
@@ -756,7 +755,6 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton &b
             SetPositionJointLocal(JointDesired);
             // go back to state before clutching
             SetState(EventTriggers.ManipClutchPreviousState);
-
         }
     }
 }

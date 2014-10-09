@@ -54,7 +54,6 @@ protected:
         ECM_UNINITIALIZED, /*! State when constructed */
         ECM_HOMING_POWERING, /*! Turn power on, calibrate encoders and current */
         ECM_HOMING_CALIBRATING_ARM, /*! Calibrate using pots and move to zero position for all joints except last one */
-        ECM_ARM_CALIBRATED, /*! Do nothing, just wait for adapter.  Fall back state when adapter is removed. */
         ECM_READY,
         ECM_POSITION_CARTESIAN, /**< Go to command cartesian position */
         ECM_CONSTRAINT_CONTROLLER_CARTESIAN,

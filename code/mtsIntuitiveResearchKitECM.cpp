@@ -150,8 +150,6 @@ void mtsIntuitiveResearchKitECM::Run(void)
     case ECM_HOMING_CALIBRATING_ARM:
         RunHomingCalibrateArm();
         break;
-    case ECM_ARM_CALIBRATED:
-        break;
     case ECM_READY:
     case ECM_POSITION_CARTESIAN:
         RunPositionCartesian();
@@ -188,9 +186,9 @@ void mtsIntuitiveResearchKitECM::GetRobotData(void)
         // assign to a more convenient vctDoubleVec
         JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
 
-        // when the robot is ready, we can comput cartesian position
+        // when the robot is ready, we can compute cartesian position
         if (this->RobotState >= ECM_READY) {
-            // apply tool tip transform
+            // update cartesian position
             vctFrm4x4 position;
             position = Manipulator.ForwardKinematics(JointCurrent);
             position.Rotation().NormalizedSelf();
@@ -226,11 +224,6 @@ void mtsIntuitiveResearchKitECM::SetState(const RobotStateType & newState)
         this->EventTriggers.RobotStatusMsg(this->GetName() + " calibrating arm");
         break;
 
-    case ECM_ARM_CALIBRATED:
-        RobotState = newState;
-        this->EventTriggers.RobotStatusMsg(this->GetName() + " arm calibrated");
-        break;
-
     case ECM_READY:
         // when returning from manual mode, need to re-enable PID
         RobotState = newState;
@@ -238,8 +231,8 @@ void mtsIntuitiveResearchKitECM::SetState(const RobotStateType & newState)
         break;
 
     case ECM_POSITION_CARTESIAN:
-        if (this->RobotState < ECM_ARM_CALIBRATED) {
-            EventTriggers.RobotErrorMsg(this->GetName() + " is not calibrated");
+        if (this->RobotState < ECM_READY) {
+            EventTriggers.RobotErrorMsg(this->GetName() + " is not ready");
             return;
         }
         // check that the tool is inserted deep enough
@@ -252,8 +245,8 @@ void mtsIntuitiveResearchKitECM::SetState(const RobotStateType & newState)
         break;
 
     case ECM_CONSTRAINT_CONTROLLER_CARTESIAN:
-        if (this->RobotState < ECM_ARM_CALIBRATED) {
-            EventTriggers.RobotErrorMsg(this->GetName() + " is not calibrated");
+        if (this->RobotState < ECM_READY) {
+            EventTriggers.RobotErrorMsg(this->GetName() + " is not ready");
             return;
         }
         // check that the tool is inserted deep enough
@@ -266,7 +259,7 @@ void mtsIntuitiveResearchKitECM::SetState(const RobotStateType & newState)
         break;
 
     case ECM_MANUAL:
-        if (this->RobotState < ECM_ARM_CALIBRATED) {
+        if (this->RobotState < ECM_READY) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not ready yet");
             return;
         }
@@ -371,8 +364,8 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
         bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
             PID.SetCheckJointLimit(true);
-            EventTriggers.RobotStatusMsg(this->GetName() + " arm calibrated");
-            this->SetState(ECM_ARM_CALIBRATED);
+            EventTriggers.RobotStatusMsg(this->GetName() + " arm ready");
+            this->SetState(ECM_READY);
         } else {
             // time out
             if (currentTime > HomingTimer + extraTime) {
@@ -386,7 +379,6 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
         }
     }
 }
-
 
 void mtsIntuitiveResearchKitECM::RunPositionCartesian(void)
 {
@@ -417,7 +409,6 @@ void mtsIntuitiveResearchKitECM::SetPositionJointLocal(const vctDoubleVec & newP
 {
     JointDesiredParam.Goal().Assign(newPosition, NumberOfJoints);
     JointDesiredParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
-//    JointDesiredParam.Goal().Element(7) = 0.0;   // ZC: ECM only has 7 joints
     PID.SetPositionJoint(JointDesiredParam);
 }
 
@@ -462,7 +453,6 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton &b
             SetPositionJointLocal(JointDesired);
             // go back to state before clutching
             SetState(EventTriggers.ManipClutchPreviousState);
-
         }
     }
 }
