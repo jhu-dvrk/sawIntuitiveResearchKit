@@ -28,6 +28,8 @@ set(SAW_sawConstraintController ON CACHE BOOL "")
 set(SAW_sawRobotIO1394 ON CACHE BOOL "")
 # sawController (PID / GC / Teleoperation)
 set(SAW_sawControllers ON CACHE BOOL "")
+# sawConstraintController
+set(SAW_sawConstraintController ON CACHE BOOL "")
 # sawTextToSpeech (For Error Messaging)
 set(SAW_sawTextToSpeech ON CACHE BOOL "")
 # sawIntuitiveResearchKit
