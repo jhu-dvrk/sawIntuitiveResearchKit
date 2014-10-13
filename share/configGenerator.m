@@ -128,11 +128,11 @@ pitch(CONST_ECM,:) = [1 1 17.4533 1 1 1 1 1];
 
 % Brake constants for ECM
 hasBrake = [1 1 1 0];
-brakeMaxCurrent = [0.3 0.3 1.0];
-brakeReleaseCurrent = [0.3 0.3 0.9];
-brakeReleaseTime = [2.0 2.0 2.0];
-brakeReleasedCurrent = [0.08 0.07 0.2];
-brakeEngagedCurrent = [0.0 0.0 0.0];
+brakeMaxCurrent =      [0.25 0.22 0.90];
+brakeReleaseCurrent =  [0.25 0.22 0.90];
+brakeReleaseTime =     [2.00 2.00 2.00];
+brakeReleasedCurrent = [0.08 0.07 0.20];
+brakeEngagedCurrent =  [0.0 0.0 0.0];
 
 % Actuator Type (Prismatic/Revolute)
 
