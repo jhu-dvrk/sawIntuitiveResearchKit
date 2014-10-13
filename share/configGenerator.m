@@ -25,7 +25,7 @@ boardID = aBoardID; % save to local variable
 
 % create temporary .m file
 % the configuration file uses matlab syntax, save them to temp.m
-copyfile(aCalName, 'temp.m');
+copyfile(aCalName, 'calibration_file_temp.m');
 
 % define some constants for mXXX.cal/pXXX.cal/eXXX.cal file
 UPPER_LIMIT = 1; LOWER_LIMIT = 2;
@@ -44,7 +44,14 @@ ECM_JNT_POS_GR_DOFS = 4;
 ECM_MOT_DOFS = 4;
 
 % load temp file, this will load all constants in ***.cal file
-temp;
+try
+    calibration_file_temp;
+catch err
+    msgbox('ERROR: syntax error in calibration file - check Matlab console');
+    msgbox(err.message);
+    err.message
+    cleanUp;
+end % try/catch error loading cal file
 
 % sanity check for RobotName/Type
 % rType = robot type
@@ -465,8 +472,8 @@ end  % configGenerator
 
 
 function cleanUp
-if (exist('temp.m', 'file') == 2)
-    delete('temp.m');
+if (exist('calibration_file_temp.m', 'file') == 2)
+    delete('calibration_file_temp.m');
 end
 end  % cleanUp
 
