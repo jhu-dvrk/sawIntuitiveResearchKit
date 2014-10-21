@@ -85,6 +85,9 @@ void mtsIntuitiveResearchKitECM::Init(void)
         interfaceRequired->AddFunction("GetBrakeAmpStatus", RobotIO.GetBrakeAmpStatus);
         interfaceRequired->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
         interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
+        interfaceRequired->AddFunction("UsePotsForSafetyCheck", RobotIO.UsePotsForSafetyCheck);
+        interfaceRequired->AddFunction("SetPotsToEncodersTolerance", RobotIO.SetPotsToEncodersTolerance);
+
         interfaceRequired->AddFunction("BrakeRelease", RobotIO.BrakeRelease);
         interfaceRequired->AddFunction("BrakeEngage", RobotIO.BrakeEngage);
     }
@@ -166,6 +169,7 @@ void mtsIntuitiveResearchKitECM::Run(void)
 
 void mtsIntuitiveResearchKitECM::Cleanup(void)
 {
+    RobotIO.BrakeEngage();
     CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
 }
 
@@ -281,6 +285,13 @@ void mtsIntuitiveResearchKitECM::RunHomingPower(void)
     // first, request power to be turned on
     if (!HomingPowerRequested) {
         RobotIO.BiasEncoder();
+        { // use pots for redundancy
+            vctDoubleVec potsToEncodersTolerance(this->NumberOfJoints);
+            potsToEncodersTolerance.SetAll(2.0 * cmnPI_180); // 2 degrees for rotations
+            potsToEncodersTolerance.Element(2) = 10.0; // 10 mm
+            RobotIO.SetPotsToEncodersTolerance(potsToEncodersTolerance);
+            RobotIO.UsePotsForSafetyCheck(true);
+        }
         HomingTimer = currentTime;
         // make sure the PID is not sending currents
         PID.Enable(false);

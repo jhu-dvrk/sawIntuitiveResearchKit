@@ -107,6 +107,8 @@ protected:
         mtsFunctionRead GetBrakeAmpStatus;
         mtsFunctionVoid BiasEncoder;
         mtsFunctionWrite SetActuatorCurrent;
+        mtsFunctionWrite UsePotsForSafetyCheck;
+        mtsFunctionWrite SetPotsToEncodersTolerance;
         mtsFunctionVoid BrakeRelease;
         mtsFunctionVoid BrakeEngage;
     } RobotIO;
