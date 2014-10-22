@@ -87,6 +87,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
         interfaceRequired->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
         interfaceRequired->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
         interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
+        interfaceRequired->AddFunction("UsePotsForSafetyCheck", RobotIO.UsePotsForSafetyCheck);
+        interfaceRequired->AddFunction("SetPotsToEncodersTolerance", RobotIO.SetPotsToEncodersTolerance);
     }
 
     // Event Adapter engage: digital input button event from PSM
@@ -376,6 +378,13 @@ void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
     // first, request power to be turned on
     if (!HomingPowerRequested) {
         RobotIO.BiasEncoder();
+        if (0) { // use pots for redundancy
+            vctDoubleVec potsToEncodersTolerance(this->NumberOfJoints);
+            potsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
+            potsToEncodersTolerance.Element(2) = 20.0; // 20 mm
+            RobotIO.SetPotsToEncodersTolerance(potsToEncodersTolerance);
+            RobotIO.UsePotsForSafetyCheck(true);
+        }
         HomingTimer = currentTime;
         // make sure the PID is not sending currents
         PID.Enable(false);

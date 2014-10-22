@@ -87,7 +87,6 @@ void mtsIntuitiveResearchKitECM::Init(void)
         interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
         interfaceRequired->AddFunction("UsePotsForSafetyCheck", RobotIO.UsePotsForSafetyCheck);
         interfaceRequired->AddFunction("SetPotsToEncodersTolerance", RobotIO.SetPotsToEncodersTolerance);
-
         interfaceRequired->AddFunction("BrakeRelease", RobotIO.BrakeRelease);
         interfaceRequired->AddFunction("BrakeEngage", RobotIO.BrakeEngage);
     }
@@ -287,8 +286,8 @@ void mtsIntuitiveResearchKitECM::RunHomingPower(void)
         RobotIO.BiasEncoder();
         { // use pots for redundancy
             vctDoubleVec potsToEncodersTolerance(this->NumberOfJoints);
-            potsToEncodersTolerance.SetAll(2.0 * cmnPI_180); // 2 degrees for rotations
-            potsToEncodersTolerance.Element(2) = 10.0; // 10 mm
+            potsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
+            potsToEncodersTolerance.Element(2) = 20.0; // 20 mm
             RobotIO.SetPotsToEncodersTolerance(potsToEncodersTolerance);
             RobotIO.UsePotsForSafetyCheck(true);
         }

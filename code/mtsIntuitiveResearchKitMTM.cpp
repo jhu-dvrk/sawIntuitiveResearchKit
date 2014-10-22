@@ -89,6 +89,8 @@ void mtsIntuitiveResearchKitMTM::Init(void)
         interfaceRequired->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
         interfaceRequired->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
         interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
+        interfaceRequired->AddFunction("UsePotsForSafetyCheck", RobotIO.UsePotsForSafetyCheck);
+        interfaceRequired->AddFunction("SetPotsToEncodersTolerance", RobotIO.SetPotsToEncodersTolerance);
         interfaceRequired->AddFunction("ResetSingleEncoder", RobotIO.ResetSingleEncoder);
         interfaceRequired->AddFunction("GetAnalogInputPosSI", RobotIO.GetAnalogInputPosSI);
     }
@@ -345,6 +347,16 @@ void mtsIntuitiveResearchKitMTM::RunHomingPower(void)
     // first, request power to be turned on
     if (!HomingPowerRequested) {
         RobotIO.BiasEncoder();
+        { // use pots for redundancy
+            vctDoubleVec potsToEncodersTolerance(this->NumberOfJoints + 1); // IO level treats the gripper as joint :-)
+            potsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
+            // pots on gripper rotation are not directly mapped to encoders
+            potsToEncodersTolerance.Element(6) = cmnTypeTraits<double>::PlusInfinityOrMax();
+            // last joint is gripper, encoders can be anything
+            potsToEncodersTolerance.Element(7) = cmnTypeTraits<double>::PlusInfinityOrMax();
+            RobotIO.SetPotsToEncodersTolerance(potsToEncodersTolerance);
+            RobotIO.UsePotsForSafetyCheck(true);
+        }
         HomingTimer = currentTime;
         // make sure the PID is not sending currents
         PID.Enable(false);

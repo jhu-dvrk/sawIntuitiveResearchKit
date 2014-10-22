@@ -125,6 +125,8 @@ protected:
         mtsFunctionRead GetActuatorAmpStatus;
         mtsFunctionVoid BiasEncoder;
         mtsFunctionWrite SetActuatorCurrent;
+        mtsFunctionWrite UsePotsForSafetyCheck;
+        mtsFunctionWrite SetPotsToEncodersTolerance;
     } RobotIO;
 
     struct {
