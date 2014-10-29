@@ -53,14 +53,21 @@ void mtsIntuitiveResearchKitECM::Init(void)
     JointCurrent.SetSize(NumberOfJoints);
     JointDesired.SetSize(NumberOfJoints);
     JointDesiredParam.Goal().SetSize(NumberOfJoints);
-    JointTrajectory.Start.SetSize(NumberOfJoints);
     JointTrajectory.Velocity.SetSize(NumberOfJoints);
+    JointTrajectory.Velocity.Assign(30.0 * cmnPI_180, // degrees per second
+                                    30.0 * cmnPI_180,
+                                     0.05,            // m per second
+                                    20.0 * cmnPI_180);
     JointTrajectory.Acceleration.SetSize(NumberOfJoints);
+    JointTrajectory.Acceleration.Assign(30.0 * cmnPI_180,
+                                        30.0 * cmnPI_180,
+                                         0.05,
+                                        30.0 * cmnPI_180);
+    JointTrajectory.Start.SetSize(NumberOfJoints);
     JointTrajectory.Goal.SetSize(NumberOfJoints);
     JointTrajectory.GoalError.SetSize(NumberOfJoints);
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints);
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
-    JointTrajectory.Zero.SetSize(NumberOfJoints);
 
     this->StateTable.AddData(CartesianCurrentParam, "CartesianPosition");
     this->StateTable.AddData(JointCurrentParam, "JointPosition");
@@ -74,6 +81,9 @@ void mtsIntuitiveResearchKitECM::Init(void)
         interfaceRequired->AddFunction("GetPositionJointDesired", PID.GetPositionJointDesired);
         interfaceRequired->AddFunction("SetPositionJoint", PID.SetPositionJoint);
         interfaceRequired->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
+        interfaceRequired->AddFunction("EnableTrackingError", PID.EnableTrackingError);
+        interfaceRequired->AddFunction("SetTrackingErrorTolerances", PID.SetTrackingErrorTolerance);
+        interfaceRequired->AddEventHandlerVoid(&mtsIntuitiveResearchKitECM::EventHandlerTrackingError, this, "TrackingError");
     }
 
     // Robot IO
@@ -283,6 +293,9 @@ void mtsIntuitiveResearchKitECM::RunHomingPower(void)
     const double currentTime = this->StateTable.GetTic();
     // first, request power to be turned on
     if (!HomingPowerRequested) {
+        // in case we still have power but brakes are not engaged
+        RobotIO.BrakeEngage();
+        // bias encoders based on pots
         RobotIO.BiasEncoder();
         { // use pots for redundancy
             vctDoubleVec potsToEncodersTolerance(this->NumberOfJoints);
@@ -333,7 +346,6 @@ void mtsIntuitiveResearchKitECM::RunHomingPower(void)
 
 void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
 {
-    static const double timeToHome = 2.0 * cmn_s;
     static const double extraTime = 5.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
@@ -344,25 +356,30 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
         // enable PID and start from current position
         JointDesired.ForceAssign(JointCurrent);
         SetPositionJointLocal(JointDesired);
+        // configure PID to fail in case of tracking error
+        vctDoubleVec tolerances(NumberOfJoints);
+        tolerances.SetAll(7.0 * cmnPI_180); // 5 degrees on angles
+        tolerances.Element(2) = 10.0; // 5 mm
+        PID.SetTrackingErrorTolerance(tolerances);
+        PID.EnableTrackingError(true);
+        // finally enable PID
         PID.Enable(true);
 
         // compute joint goal position
         JointTrajectory.Goal.SetSize(NumberOfJoints);
         JointTrajectory.Goal.ForceAssign(JointCurrent);
         JointTrajectory.Goal.SetAll(0.0);
-        JointTrajectory.Quintic.Set(currentTime,
-                                    JointCurrent, JointTrajectory.Zero, JointTrajectory.Zero,
-                                    currentTime + timeToHome,
-                                    JointTrajectory.Goal, JointTrajectory.Zero, JointTrajectory.Zero);
-        HomingTimer = JointTrajectory.Quintic.StopTime();
+        JointTrajectory.LSPB.Set(JointCurrent, JointTrajectory.Goal,
+                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                 currentTime, robLSPB::LSPB_DURATION);
+        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
         // set flag to indicate that homing has started
         HomingCalibrateArmStarted = true;
     }
 
     // compute a new set point based on time
     if (currentTime <= HomingTimer) {
-        JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
-                                         JointTrajectory.Velocity, JointTrajectory.Acceleration);
+        JointTrajectory.LSPB.Evaluate(currentTime, JointDesired);
         SetPositionJointLocal(JointDesired);
     } else {
         // request final position in case trajectory rounding prevent us to get there
@@ -443,6 +460,13 @@ void mtsIntuitiveResearchKitECM::SetRobotControlState(const std::string & state)
     } else {
         EventTriggers.RobotErrorMsg(this->GetName() + ": unsupported state " + state);
     }
+}
+
+void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)
+{
+    RobotIO.DisablePower();
+    EventTriggers.RobotErrorMsg(this->GetName() + ": PID tracking error");
+    SetState(ECM_UNINITIALIZED);
 }
 
 void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton &button)

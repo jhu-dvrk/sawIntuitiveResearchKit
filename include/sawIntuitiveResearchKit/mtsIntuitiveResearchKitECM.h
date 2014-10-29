@@ -26,7 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstRobot/robManipulator.h>
-#include <cisstRobot/robQuintic.h>
+#include <cisstRobot/robLSPB.h>
 
 // temporary
 #include <cisstOSAbstraction/osaStopwatch.h>
@@ -84,6 +84,7 @@ protected:
     /*! Wrapper to convert vector of 7 values to prmPositionJointSet and send to PID */
     void SetPositionJointLocal(const vctDoubleVec & newPosition);
 
+    void EventHandlerTrackingError(void);
     void EventHandlerManipClutch(const prmEventButton & button);
     void EventHandlerSUJClutch(const prmEventButton & button);
 
@@ -96,6 +97,8 @@ protected:
         mtsFunctionRead GetPositionJointDesired;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetCheckJointLimit;
+        mtsFunctionWrite EnableTrackingError;
+        mtsFunctionWrite SetTrackingErrorTolerance;
     } PID;
 
     // Required interface
@@ -148,14 +151,13 @@ protected:
     RobotStateType RobotState;
 
     struct {
-        robQuintic Quintic;
-        vctDoubleVec Start;
+        robLSPB LSPB;
         vctDoubleVec Velocity;
         vctDoubleVec Acceleration;
+        vctDoubleVec Start;
         vctDoubleVec Goal;
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
-        vctDoubleVec Zero;
     } JointTrajectory;
 
     // Home Action
