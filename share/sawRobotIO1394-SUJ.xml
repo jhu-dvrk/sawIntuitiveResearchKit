@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Config>
+   <Robot Name="SUJ" NumOfActuator="4" NumOfJoint="4" Type="io-only">
+      <Actuator ActuatorID="0" AxisID="0" BoardID="12">
+         <Drive>
+            <AmpsToBits Offset="32840" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
+            <MaxCurrent Unit="A" Value="2.0"/>
+         </Drive>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+         </AnalogIn>
+      </Actuator>
+      <Actuator ActuatorID="1" AxisID="1" BoardID="12">
+         <Drive>
+            <AmpsToBits Offset="32744" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
+            <MaxCurrent Unit="A" Value="2.0"/>
+         </Drive>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+         </AnalogIn>
+      </Actuator>
+      <Actuator ActuatorID="2" AxisID="2" BoardID="12">
+         <Drive>
+            <AmpsToBits Offset="32941" Scale="-5242.88"/>
+            <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738"/>
+            <MaxCurrent Unit="A" Value="2.0"/>
+         </Drive>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+         </AnalogIn>
+      </Actuator>
+      <Actuator ActuatorID="3" AxisID="3" BoardID="12">
+         <Drive>
+            <AmpsToBits Offset="32885" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
+            <MaxCurrent Unit="A" Value="2.0"/>
+         </Drive>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+         </AnalogIn>
+      </Actuator>
+   </Robot><!--Digital Input Configuration-->
+   <DigitalIn BitID="0" BoardID="12" Debounce="0" Name="SUJ-Clutch1" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="1" BoardID="12" Debounce="0" Name="SUJ-D01" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="2" BoardID="12" Debounce="0" Name="SUJ-D02" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="3" BoardID="12" Debounce="0" Name="SUJ-D03" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="4" BoardID="12" Debounce="0" Name="SUJ-D10" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="5" BoardID="12" Debounce="0" Name="SUJ-D11" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="6" BoardID="12" Debounce="0" Name="SUJ-D12" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="7" BoardID="12" Debounce="0" Name="SUJ-D13" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="8" BoardID="12" Debounce="0" Name="SUJ-D20" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="9" BoardID="12" Debounce="0" Name="SUJ-D21" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="10" BoardID="12" Debounce="0" Name="SUJ-D22" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="11" BoardID="12" Debounce="0" Name="SUJ-D23" Pressed="0" Trigger="all"/>
+</Config>
