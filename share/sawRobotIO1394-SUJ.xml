@@ -41,7 +41,8 @@
             <BitsToVolts Offset="0" Scale="6.86656e-05"/>
          </AnalogIn>
       </Actuator>
-   </Robot><!--Digital Input Configuration-->
+   </Robot>
+   <!-- Digital Input Configuration -->
    <DigitalIn BitID="0" BoardID="12" Debounce="0" Name="SUJ-Clutch1" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="1" BoardID="12" Debounce="0" Name="SUJ-D01" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="2" BoardID="12" Debounce="0" Name="SUJ-D02" Pressed="0" Trigger="all"/>
@@ -54,4 +55,9 @@
    <DigitalIn BitID="9" BoardID="12" Debounce="0" Name="SUJ-D21" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="10" BoardID="12" Debounce="0" Name="SUJ-D22" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="11" BoardID="12" Debounce="0" Name="SUJ-D23" Pressed="0" Trigger="all"/>
+   <!-- Digital Output Configuration -->
+   <DigitalOut BitID="0" BoardID="12" Name="SUJ-DOUT-00"/>
+   <DigitalOut BitID="1" BoardID="12" Name="SUJ-DOUT-01"/>
+   <DigitalOut BitID="2" BoardID="12" Name="SUJ-DOUT-02"/>
+   <DigitalOut BitID="3" BoardID="12" Name="SUJ-DOUT-03"/>
 </Config>
