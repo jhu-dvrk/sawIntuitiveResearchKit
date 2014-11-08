@@ -1,6 +1,5 @@
 #
-#
-# (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights
+# (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights
 # Reserved.
 #
 # --- begin cisst license - do not edit ---
@@ -61,6 +60,7 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitMTM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitECM.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJ.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitOptimizer.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitUDPStreamer.h
@@ -72,6 +72,7 @@ if (cisst_FOUND)
          mtsIntuitiveResearchKitMTM.cpp
          mtsIntuitiveResearchKitPSM.cpp
          mtsIntuitiveResearchKitECM.cpp
+         mtsIntuitiveResearchKitSUJ.cpp
          mtsIntuitiveResearchKitOptimizer.cpp
          mtsIntuitiveResearchKitConsole.cpp
          mtsIntuitiveResearchKitUDPStreamer.cpp

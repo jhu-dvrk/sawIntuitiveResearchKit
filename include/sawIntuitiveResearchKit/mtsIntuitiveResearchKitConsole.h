@@ -37,7 +37,7 @@ public:
 
     class Arm {
     public:
-        typedef enum {ARM_MTM, ARM_PSM, ARM_ECM, ARM_GENERIC_MTM, ARM_GENERIC_PSM} ArmType;
+        typedef enum {ARM_MTM, ARM_PSM, ARM_ECM, ARM_SUJ, ARM_GENERIC_MTM, ARM_GENERIC_PSM} ArmType;
 
         friend class mtsIntuitiveResearchKitConsole;
 
@@ -61,6 +61,8 @@ public:
 
     protected:
         std::string mName;
+        ArmType mType;
+
         // low level
         std::string mIOComponentName;
         std::string mIOConfigurationFile;
@@ -74,7 +76,7 @@ public:
         mtsInterfaceRequired * InterfaceRequired;
     };
 
-    bool AddArm(Arm * newMTM);
+    bool AddArm(Arm * newArm);
     bool AddArm(mtsComponent * genericArm, const Arm::ArmType armType);
 
 protected:

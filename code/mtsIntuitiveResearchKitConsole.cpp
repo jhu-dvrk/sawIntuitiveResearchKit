@@ -29,6 +29,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsole);
@@ -42,6 +43,7 @@ mtsIntuitiveResearchKitConsole::Arm::Arm(const std::string & name, const std::st
 void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & configFile,
                                                        const double & periodInSeconds)
 {
+    mPIDConfigurationFile = configFile;
     mPIDComponentName = mName + "-PID";
     mPIDConfigurationFile = configFile;
 
@@ -61,6 +63,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                                        const std::string & configFile,
                                                        const double & periodInSeconds)
 {
+    mType = armType;
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     mArmConfigurationFile = configFile;
     // for research kit arms, create, add to manager and connect to
@@ -90,15 +93,23 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         break;
     case ARM_ECM:
         {
-            mtsIntuitiveResearchKitECM * slave = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
-            slave->Configure(mArmConfigurationFile);
-            componentManager->AddComponent(slave);
+            mtsIntuitiveResearchKitECM * ecm = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
+            ecm->Configure(mArmConfigurationFile);
+            componentManager->AddComponent(ecm);
             componentManager->Connect(Name(), "ManipClutch",
                                       IOComponentName(), Name() + "-ManipClutch");
             componentManager->Connect(Name(), "SUJClutch",
                                       IOComponentName(), Name() + "-SUJClutch");
         }
         break;
+    case ARM_SUJ:
+        {
+            mtsIntuitiveResearchKitSUJ * suj = new mtsIntuitiveResearchKitSUJ(Name(), periodInSeconds);
+            suj->Configure(mArmConfigurationFile);
+            componentManager->AddComponent(suj);
+        }
+        break;
+
     default:
         break;
     }
@@ -107,6 +118,9 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     if ((armType == ARM_PSM) || (armType == ARM_MTM) || (armType == ARM_ECM)) {
         componentManager->Connect(Name(), "PID",
                                   PIDComponentName(), "Controller");
+        componentManager->Connect(Name(), "RobotIO",
+                                  IOComponentName(), Name());
+    } else if (armType == ARM_SUJ) {
         componentManager->Connect(Name(), "RobotIO",
                                   IOComponentName(), Name());
     }
@@ -159,9 +173,16 @@ void mtsIntuitiveResearchKitConsole::Cleanup(void)
 
 bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
 {
-    if (newArm->mPIDConfigurationFile.empty() || newArm->mArmConfigurationFile.empty()) {
+    if (newArm->mType != Arm::ARM_SUJ) {
+        if (newArm->mPIDConfigurationFile.empty()) {
+            CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
+                                     << newArm->Name() << " must be configured first (PID)." << std::endl;
+            return false;
+        }
+    }
+    if (newArm->mArmConfigurationFile.empty()) {
         CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
-                                 << newArm->Name() << " must be configured first (PID and Arm config)." << std::endl;
+                                 << newArm->Name() << " must be configured first (Arm config)." << std::endl;
         return false;
     }
     // create new required interfaces to communicate with the components we created
