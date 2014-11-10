@@ -696,7 +696,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
         CartesianGoalSet = newPosition;
         IsCartesianGoalSet = true;
     } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: PSM not ready" << std::endl;
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: PSM not in CARTESIAN control mode" << std::endl;
     }
 }
 
