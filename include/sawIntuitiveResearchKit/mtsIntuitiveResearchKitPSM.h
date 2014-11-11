@@ -118,7 +118,7 @@ protected:
     } PID;
 
     // Required interface
-    struct InterfaceRobotTorque {
+    struct {
         //! Enable Robot Power
         mtsFunctionVoid EnablePower;
         mtsFunctionVoid DisablePower;

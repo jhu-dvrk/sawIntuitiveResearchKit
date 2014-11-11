@@ -123,6 +123,10 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     } else if (armType == ARM_SUJ) {
         componentManager->Connect(Name(), "RobotIO",
                                   IOComponentName(), Name());
+        componentManager->Connect(Name(), "MuxReset",
+                                  IOComponentName(), "MuxReset");
+        componentManager->Connect(Name(), "MuxIncrement",
+                                  IOComponentName(), "MuxIncrement");
     }
 }
 

@@ -75,10 +75,11 @@ protected:
     void SetRobotControlState(const std::string & state);
 
     // Required interface
-    struct InterfaceRobotTorque {
+    struct {
         //! Enable Robot Power
         mtsFunctionVoid EnablePower;
         mtsFunctionVoid DisablePower;
+        mtsFunctionRead GetEncoderChannelA;
         mtsFunctionRead GetActuatorAmpStatus;
         mtsFunctionWrite SetActuatorCurrent;
     } RobotIO;
@@ -89,13 +90,25 @@ protected:
         mtsFunctionWrite RobotErrorMsg;
     } EventTriggers;
 
-    RobotStateType RobotState;
+    // Functions to control MUX
+    struct {
+        mtsFunctionRead GetValue;
+        mtsFunctionWrite SetValue;
+    } MuxReset;
+    struct {
+        mtsFunctionRead GetValue;
+        mtsFunctionWrite SetValue;
+    } MuxIncrement;
+    double mMuxTimer;
+    bool mMuxUp;
+
+    RobotStateType mRobotState;
 
     // Home Action
-    double HomingTimer;
-    bool HomingPowerRequested;
+    double mHomingTimer;
+    bool mHomingPowerRequested;
 
-    int Counter;
+    int mCounter;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJ);

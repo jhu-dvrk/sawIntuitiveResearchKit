@@ -42,7 +42,9 @@ mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicCons
 
 void mtsIntuitiveResearchKitSUJ::Init(void)
 {
-    Counter = 0;
+    mCounter = 0;
+    mMuxTimer = 0.0;
+    mMuxUp = false;
 
     SetState(SUJ_UNINITIALIZED);
 
@@ -51,8 +53,19 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddFunction("EnablePower", RobotIO.EnablePower);
         interfaceRequired->AddFunction("DisablePower", RobotIO.DisablePower);
+        interfaceRequired->AddFunction("GetEncoderChannelA", RobotIO.GetEncoderChannelA);
         interfaceRequired->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
         interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
+    }
+    interfaceRequired = AddInterfaceRequired("MuxReset");
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("GetValue", MuxReset.GetValue);
+        interfaceRequired->AddFunction("SetValue", MuxReset.SetValue);
+    }
+    interfaceRequired = AddInterfaceRequired("MuxIncrement");
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("GetValue", MuxIncrement.GetValue);
+        interfaceRequired->AddFunction("SetValue", MuxIncrement.SetValue);
     }
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
@@ -79,12 +92,12 @@ void mtsIntuitiveResearchKitSUJ::Startup(void)
 
 void mtsIntuitiveResearchKitSUJ::Run(void)
 {
-    Counter++;
+    mCounter++;
 
     ProcessQueuedEvents();
     GetRobotData();
 
-    switch (RobotState) {
+    switch (mRobotState) {
     case SUJ_UNINITIALIZED:
         break;
     case SUJ_HOMING_POWERING:
@@ -110,10 +123,30 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
 
 void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
 {
+    const double muxCycle = 0.5 * cmn_s;
+    const double muxIncrementDownTime = 0.1 * cmn_s;
+
     // we can start reporting some joint values after the robot is powered
-    if (this->RobotState > SUJ_HOMING_POWERING) {
+    if (this->mRobotState > SUJ_HOMING_POWERING) {
+        const double currentTime = this->StateTable.GetTic();
         mtsExecutionResult executionResult;
-        std::cerr << CMN_LOG_DETAILS << " - toggle mux when needed, read pots and calculate kinematics" << std::endl;
+
+        // toggle
+        if (currentTime > mMuxTimer) {
+            mMuxTimer = currentTime + muxCycle;
+            executionResult = MuxIncrement.SetValue(true);
+            mMuxUp = true;
+        } else {
+            if (mMuxUp && (currentTime > (mMuxTimer - muxIncrementDownTime))) {
+                executionResult = MuxIncrement.SetValue(false);
+                mMuxUp = false;
+            }
+        }
+    }
+    if (mCounter%100 == 0) {
+        vctBoolVec encA(4);
+        RobotIO.GetEncoderChannelA(encA);
+        std::cerr << "enc A: " << encA << std::endl;
     }
 }
 
@@ -124,30 +157,30 @@ void mtsIntuitiveResearchKitSUJ::SetState(const RobotStateType & newState)
     switch (newState) {
 
     case SUJ_UNINITIALIZED:
-        RobotState = newState;
+        mRobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " not initialized");
         break;
 
     case SUJ_HOMING_POWERING:
-        HomingTimer = 0.0;
-        HomingPowerRequested = false;
-        RobotState = newState;
+        mHomingTimer = 0.0;
+        mHomingPowerRequested = false;
+        mRobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " powering");
         break;
 
     case SUJ_READY:
         // when returning from manual mode, need to re-enable PID
-        RobotState = newState;
+        mRobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " ready");
         break;
 
     case SUJ_MANUAL:
-        if (this->RobotState < SUJ_READY) {
+        if (this->mRobotState < SUJ_READY) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not ready yet");
             return;
         }
         std::cerr << CMN_LOG_DETAILS << " should release breaks now" << std::endl;
-        RobotState = newState;
+        mRobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " in manual mode");
         break;
     default:
@@ -161,20 +194,20 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
 
     const double currentTime = this->StateTable.GetTic();
     // first, request power to be turned on
-    if (!HomingPowerRequested) {
-        HomingTimer = currentTime;
+    if (!mHomingPowerRequested) {
+        mHomingTimer = currentTime;
         // pre-load the boards with zero current
         RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints, 0.0));
         // enable power and set a flags to move to next step
         RobotIO.EnablePower();
-        HomingPowerRequested = true;
+        mHomingPowerRequested = true;
         EventTriggers.RobotStatusMsg(this->GetName() + " power requested");
         return;
     }
 
     // second, check status
-    if (HomingPowerRequested
-        && ((currentTime - HomingTimer) > timeToPower)) {
+    if (mHomingPowerRequested
+        && ((currentTime - mHomingTimer) > timeToPower)) {
         // check power status
         vctBoolVec actuatorAmplifiersStatus(NumberOfJoints);
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);

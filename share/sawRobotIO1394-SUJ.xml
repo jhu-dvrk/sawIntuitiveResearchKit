@@ -58,6 +58,6 @@
    <!-- Digital Output Configuration -->
    <DigitalOut BitID="0" BoardID="12" Name="SUJ-DOUT-00"/>
    <DigitalOut BitID="1" BoardID="12" Name="SUJ-DOUT-01"/>
-   <DigitalOut BitID="2" BoardID="12" Name="SUJ-DOUT-02"/>
-   <DigitalOut BitID="3" BoardID="12" Name="SUJ-DOUT-03"/>
+   <DigitalOut BitID="2" BoardID="12" Name="MuxIncrement"/>
+   <DigitalOut BitID="3" BoardID="12" Name="MuxReset"/>
 </Config>
