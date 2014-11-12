@@ -28,6 +28,25 @@ http://www.cisst.org/cisst/license.txt.
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJ, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
+class mtsIntuitiveResearchKitSUJArmData
+{
+public:
+    mtsIntuitiveResearchKitSUJArmData(void) {
+        for (size_t potArray = 0; potArray < 2; ++potArray) {
+            mVoltages[potArray].SetSize(8);
+            mPositions[potArray].SetSize(8);
+            mVoltageToPositionScales[potArray].SetSize(8);
+            mVoltageToPositionOffsets[potArray].SetSize(8);
+        }
+    }
+
+    vctFixedSizeVector<vctDoubleVec, 2>
+        mVoltages,
+        mPositions,
+        mVoltageToPositionScales,
+        mVoltageToPositionOffsets;
+};
+
 mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds)
 {
@@ -45,6 +64,8 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     mCounter = 0;
     mMuxTimer = 0.0;
     mMuxUp = false;
+    mMuxState.SetSize(4);
+    mVoltages.SetSize(4);
 
     SetState(SUJ_UNINITIALIZED);
 
@@ -56,6 +77,7 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
         interfaceRequired->AddFunction("GetEncoderChannelA", RobotIO.GetEncoderChannelA);
         interfaceRequired->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
         interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
+        interfaceRequired->AddFunction("GetAnalogInputVolts", RobotIO.GetAnalogInputVolts);
     }
     interfaceRequired = AddInterfaceRequired("MuxReset");
     if (interfaceRequired) {
@@ -77,6 +99,11 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
         // Stats
         interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                                "GetPeriodStatistics");
+    }
+
+    // allocate data for each SUJ and setup interfaces
+    for (size_t i = 0; i < 4; ++i) {
+        Arms[i] = new mtsIntuitiveResearchKitSUJArmData;
     }
 }
 
@@ -117,19 +144,23 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
 
 void mtsIntuitiveResearchKitSUJ::Cleanup(void)
 {
-    std::cerr << CMN_LOG_DETAILS << " we should make sure current is turned off and brakes are engaged" << std::endl;
-    CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
+    // make sure requested current is back to 0
+    vctDoubleVec zero(4, 0.0);
+    RobotIO.SetActuatorCurrent(zero);
+    // turn off amplifiers
+    RobotIO.DisablePower();
 }
 
 void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
 {
-    const double muxCycle = 0.5 * cmn_s;
-    const double muxIncrementDownTime = 0.1 * cmn_s;
+    const double muxCycle = 20.0 * cmn_ms;
+    const double muxIncrementDownTime = 3.0 * cmn_ms;
+
+    mtsExecutionResult executionResult;
 
     // we can start reporting some joint values after the robot is powered
     if (this->mRobotState > SUJ_HOMING_POWERING) {
         const double currentTime = this->StateTable.GetTic();
-        mtsExecutionResult executionResult;
 
         // toggle
         if (currentTime > mMuxTimer) {
@@ -142,11 +173,16 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
                 mMuxUp = false;
             }
         }
-    }
-    if (mCounter%100 == 0) {
-        vctBoolVec encA(4);
-        RobotIO.GetEncoderChannelA(encA);
-        std::cerr << "enc A: " << encA << std::endl;
+        // read encoder channel A to get the mux state
+        executionResult = RobotIO.GetEncoderChannelA(mMuxState);
+        // compute pot index
+        mMuxIndex = (mMuxState[0]?1:0) + (mMuxState[1]?2:0) + (mMuxState[2]?4:0) + (mMuxState[3]?8:0);
+        const size_t potArray = mMuxIndex / 8;
+        executionResult = RobotIO.GetAnalogInputVolts(mVoltages);
+        for (size_t arm = 0; arm < 4; ++arm) {
+            Arms[arm]->mVoltages[potArray][mMuxIndex%8] = mVoltages[arm];
+        }
+        std::cerr << "array: " << potArray << " -> " << Arms[0]->mVoltages[0] << std::endl;
     }
 }
 

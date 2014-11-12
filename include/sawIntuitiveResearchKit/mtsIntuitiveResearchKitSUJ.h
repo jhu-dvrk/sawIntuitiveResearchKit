@@ -21,15 +21,9 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitSUJ_h
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
-#include <cisstParameterTypes/prmPositionJointSet.h>
-#include <cisstParameterTypes/prmPositionJointGet.h>
-#include <cisstParameterTypes/prmPositionCartesianGet.h>
-#include <cisstParameterTypes/prmPositionCartesianSet.h>
-#include <cisstRobot/robManipulator.h>
-#include <cisstRobot/robLSPB.h>
 
-// temporary
-#include <cisstOSAbstraction/osaStopwatch.h>
+// forward declaration
+class mtsIntuitiveResearchKitSUJArmData;
 
 class mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
 {
@@ -82,6 +76,7 @@ protected:
         mtsFunctionRead GetEncoderChannelA;
         mtsFunctionRead GetActuatorAmpStatus;
         mtsFunctionWrite SetActuatorCurrent;
+        mtsFunctionRead GetAnalogInputVolts;
     } RobotIO;
 
     // Functions for events
@@ -99,8 +94,11 @@ protected:
         mtsFunctionRead GetValue;
         mtsFunctionWrite SetValue;
     } MuxIncrement;
+
     double mMuxTimer;
     bool mMuxUp;
+    vctBoolVec mMuxState;
+    size_t mMuxIndex;
 
     RobotStateType mRobotState;
 
@@ -109,6 +107,9 @@ protected:
     bool mHomingPowerRequested;
 
     int mCounter;
+    vctDoubleVec mVoltages;
+
+    vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> Arms;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJ);

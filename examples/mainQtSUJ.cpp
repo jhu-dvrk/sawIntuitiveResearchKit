@@ -126,6 +126,7 @@ int main(int argc, char ** argv)
 
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
+    tabWidget->addTab(consoleGUI, "Main");
     mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
     for (iterator = robotWidgetFactory->Widgets().begin();
          iterator != robotWidgetFactory->Widgets().end();
