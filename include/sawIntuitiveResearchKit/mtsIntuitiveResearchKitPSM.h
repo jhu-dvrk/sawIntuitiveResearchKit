@@ -158,12 +158,15 @@ protected:
         mtsFunctionWrite SUJClutch;
     } EventTriggers;
 
-    // ZC: cache Cartesian Goal posiiton
+    // Cache cartesian goal position
     prmPositionCartesianSet CartesianGoalSet;
     bool IsCartesianGoalSet;
+    bool IsCartesianGoalEverSet;
 
     prmPositionCartesianGet CartesianCurrentParam;
     vctFrm4x4 CartesianCurrent;
+    prmPositionCartesianGet CartesianDesiredParam;
+    vctFrm4x4 CartesianDesired;
     prmPositionJointGet JointCurrentParam;
     vctDoubleVec JointCurrent;
     prmPositionJointSet JointDesiredParam;

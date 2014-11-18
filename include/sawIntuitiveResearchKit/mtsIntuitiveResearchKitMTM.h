@@ -29,7 +29,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstRobot/robManipulator.h>
-#include <cisstRobot/robQuintic.h>
+#include <cisstRobot/robLSPB.h>
 
 class mtsIntuitiveResearchKitMTM: public mtsTaskPeriodic
 {
@@ -190,15 +190,14 @@ protected:
     MTM_TYPE RobotType;
 
     struct {
-        robQuintic Quintic;
-        vctDoubleVec Start;
+        robLSPB LSPB;
         vctDoubleVec Velocity;
         vctDoubleVec Acceleration;
+        vctDoubleVec Start;
         vctDoubleVec Goal;
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
-        vctDoubleVec Zero;
-        double GoalToleranceNorm;   // Error norm tolerance, hard coded to 0.1
+        double EndTime;
     } JointTrajectory;
 
     // Home Action

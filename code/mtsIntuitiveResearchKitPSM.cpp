@@ -66,6 +66,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     EngagingJointSet.SetSize(NumberOfJoints);
 
     this->StateTable.AddData(CartesianCurrentParam, "CartesianPosition");
+    this->StateTable.AddData(CartesianDesiredParam, "CartesianDesired");
     this->StateTable.AddData(JointCurrentParam, "JointPosition");
 
     // setup CISST Interface
@@ -123,6 +124,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     if (interfaceProvided) {        
         interfaceProvided->AddCommandReadState(this->StateTable, JointCurrentParam, "GetPositionJoint");
         interfaceProvided->AddCommandReadState(this->StateTable, CartesianCurrentParam, "GetPositionCartesian");
+        interfaceProvided->AddCommandReadState(this->StateTable, CartesianDesiredParam, "GetPositionCartesianDesired");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionCartesian, this, "SetPositionCartesian");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetOpenAngle, this, "SetOpenAngle");
 
@@ -251,6 +253,7 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
 void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
 {
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state " << newState << std::endl;
+    IsCartesianGoalEverSet = false;
 
     switch (newState) {
 
@@ -688,6 +691,20 @@ void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newP
     JointDesiredParam.Goal().Assign(newPosition, NumberOfJoints);
     JointDesiredParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
     PID.SetPositionJoint(JointDesiredParam);
+    // updated desired frame position from user specified if possible
+    if ((RobotState == PSM_POSITION_CARTESIAN) && (IsCartesianGoalEverSet)) {
+        CartesianDesiredParam.Position().Assign(CartesianGoalSet.Goal());
+    } else {
+        // compute from desired joints
+        if (this->RobotState >= PSM_READY) {
+            CartesianDesired = Manipulator.ForwardKinematics(newPosition);
+            CartesianDesired.Rotation().NormalizedSelf();
+            CartesianDesiredParam.Position().From(CartesianDesired);
+        } else {
+            CartesianDesired.Assign(vctFrm4x4::Identity());
+            CartesianDesiredParam.Position().Assign(vctFrm3::Identity());
+        }
+    }
 }
 
 void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
@@ -695,6 +712,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
     if ((RobotState == PSM_POSITION_CARTESIAN) || (RobotState == PSM_CONSTRAINT_CONTROLLER_CARTESIAN)) {
         CartesianGoalSet = newPosition;
         IsCartesianGoalSet = true;
+        IsCartesianGoalEverSet = true;
     } else {
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: PSM not in CARTESIAN control mode" << std::endl;
     }

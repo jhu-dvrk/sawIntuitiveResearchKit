@@ -54,15 +54,16 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     JointCurrent.SetSize(NumberOfJoints);
     JointDesired.SetSize(NumberOfJoints);
     JointDesiredParam.Goal().SetSize(NumberOfJoints + 1); // PID treats gripper as joint
-    JointTrajectory.Start.SetSize(NumberOfJoints);
     JointTrajectory.Velocity.SetSize(NumberOfJoints);
+    JointTrajectory.Velocity.SetAll(720.0 * cmnPI_180); // degrees per second
     JointTrajectory.Acceleration.SetSize(NumberOfJoints);
+    JointTrajectory.Acceleration.SetAll(720.0 * cmnPI_180);
+    JointTrajectory.Start.SetSize(NumberOfJoints);
     JointTrajectory.Goal.SetSize(NumberOfJoints);
     JointTrajectory.GoalError.SetSize(NumberOfJoints);
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints);
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
-    JointTrajectory.Zero.SetSize(NumberOfJoints);
-    JointTrajectory.GoalToleranceNorm = 0.1;
+    JointTrajectory.EndTime = 0.0;
 
     this->StateTable.AddData(CartesianCurrentParam, "CartesianPosition");
     this->StateTable.AddData(JointCurrentParam, "JointPosition");
@@ -126,8 +127,6 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
                                  << filename << "\"" << std::endl;
         return;
     }
-    // setup trajectory
-//    traj = new osaTrajectory(filename, vctFrame4x4<double>(), JointCurrent);
 }
 
 void mtsIntuitiveResearchKitMTM::Startup(void)
@@ -203,21 +202,15 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
         }
         // the lower level report 8 joints, we need 7 only
         JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
-        {
-            bool valid = true;
-            JointCurrentParam.SetValid(valid);
-        }
+        JointCurrentParam.SetValid(true);
+
 
         // when the robot is ready, we can comput cartesian position
         if (this->RobotState >= MTM_READY) {
             CartesianCurrent = Manipulator.ForwardKinematics(JointCurrent);
             CartesianCurrent.Rotation().NormalizedSelf();
-            bool valid = true;
-            CartesianCurrentParam.SetValid(valid);
+            CartesianCurrentParam.SetValid(true);
             CartesianVelocityLinear = (CartesianCurrent.Translation() - CartesianPrevious.Translation()).Divide(StateTable.Period);
-//            vctAxAnRot3 rotvel;
-//            rotvel.FromRaw(CartesianPrevious.Rotation().Inverse() * CartesianCurrent.Rotation());
-//            CartesianVelocityAngular = rotvel.Axis() * rotvel.Angle() / StateTable.Period;
             CartesianVelocityAngular.SetAll(0.0);
             CartesianVelocityParam.SetVelocityLinear(CartesianVelocityLinear);
             CartesianVelocityParam.SetVelocityAngular(CartesianVelocityAngular);
@@ -388,8 +381,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingPower(void)
 
 void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
 {
-    static const double timeToHome = 1.0 * cmn_s;
-    static const double extraTime = 5.0 * cmn_s;
+    static const double extraTime = 2.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
     // trigger motion
@@ -406,19 +398,17 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         JointTrajectory.Goal.SetAll(0.0);
         // last joint is calibrated later
         JointTrajectory.Goal.Element(RollIndex) = JointCurrent.Element(RollIndex);
-        JointTrajectory.Quintic.Set(currentTime,
-                                    JointCurrent, JointTrajectory.Zero, JointTrajectory.Zero,
-                                    currentTime + timeToHome,
-                                    JointTrajectory.Goal, JointTrajectory.Zero, JointTrajectory.Zero);
-        HomingTimer = JointTrajectory.Quintic.StopTime();
+        JointTrajectory.LSPB.Set(JointCurrent, JointTrajectory.Goal,
+                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                 currentTime, robLSPB::LSPB_DURATION);
+        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
         // set flag to indicate that homing has started
         HomingCalibrateArmStarted = true;
     }
 
     // compute a new set point based on time
     if (currentTime <= HomingTimer) {
-        JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
-                                         JointTrajectory.Velocity, JointTrajectory.Acceleration);
+        JointTrajectory.LSPB.Evaluate(currentTime, JointDesired);
         SetPositionJointLocal(JointDesired);
     } else {
         // request final position in case trajectory rounding prevent us to get there
@@ -448,10 +438,9 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
 
 void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
 {
-    static const double maxTrackingError = 2.0 * cmnPI; // 1 turn
+    static const double maxTrackingError = 1.0 * cmnPI; // 1/2 turn
     static const double maxRollRange = 6.0 * cmnPI + maxTrackingError; // that actual device is limited to ~2.6 turns
-    static const double timeToHitLimit = 3.0 * cmn_s;
-    static const double extraTime = 4.0 * cmn_s;
+    static const double extraTime = 2.0 * cmn_s;
 
     const double currentTime = this->StateTable.GetTic();
 
@@ -465,11 +454,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         JointTrajectory.Start.Element(RollIndex) = currentRoll;
         JointTrajectory.Goal.SetAll(0.0);
         JointTrajectory.Goal.Element(RollIndex) = currentRoll - maxRollRange;
-        JointTrajectory.Quintic.Set(currentTime,
-                                    JointTrajectory.Start, JointTrajectory.Zero, JointTrajectory.Zero,
-                                    currentTime + timeToHitLimit,
-                                    JointTrajectory.Goal, JointTrajectory.Zero, JointTrajectory.Zero);
-        HomingTimer = JointTrajectory.Quintic.StopTime();
+        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
+                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                 currentTime, robLSPB::LSPB_DURATION);
+        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
         // set flag to indicate that homing has started
         HomingCalibrateRollSeekLower = true;
         return;
@@ -478,8 +466,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
     // looking for lower limit has start but not found yet
     if (HomingCalibrateRollSeekLower
         && (HomingCalibrateRollLower == cmnTypeTraits<double>::MaxPositiveValue())) {
-        JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
-                                         JointTrajectory.Velocity, JointTrajectory.Acceleration);
+        JointTrajectory.LSPB.Evaluate(currentTime, JointDesired);
         SetPositionJointLocal(JointDesired);
         // detect tracking error and set lower limit
         const double trackingError =
@@ -507,11 +494,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         JointTrajectory.Start.Element(RollIndex) = currentRoll;
         JointTrajectory.Goal.SetAll(0.0);
         JointTrajectory.Goal.Element(RollIndex) = currentRoll + maxRollRange;
-        JointTrajectory.Quintic.Set(currentTime,
-                                    JointTrajectory.Start, JointTrajectory.Zero, JointTrajectory.Zero,
-                                    currentTime + timeToHitLimit,
-                                    JointTrajectory.Goal, JointTrajectory.Zero, JointTrajectory.Zero);
-        HomingTimer = JointTrajectory.Quintic.StopTime();
+        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
+                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                 currentTime, robLSPB::LSPB_DURATION);
+        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
         // set flag to indicate that homing has started
         HomingCalibrateRollSeekUpper = true;
         return;
@@ -520,8 +506,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
     // looking for lower limit has start but not found yet
     if (HomingCalibrateRollSeekUpper
         && (HomingCalibrateRollUpper == cmnTypeTraits<double>::MinNegativeValue())) {
-        JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
-                                         JointTrajectory.Velocity, JointTrajectory.Acceleration);
+        JointTrajectory.LSPB.Evaluate(currentTime, JointDesired);
         SetPositionJointLocal(JointDesired);
         // detect tracking error and set lower limit
         const double trackingError =
@@ -548,11 +533,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         JointTrajectory.Start.Element(RollIndex) = JointCurrent.Element(RollIndex);
         JointTrajectory.Goal.SetAll(0.0);
         JointTrajectory.Goal.Element(RollIndex) = HomingCalibrateRollLower + 480.0 * cmnPI_180;
-        JointTrajectory.Quintic.Set(currentTime,
-                                    JointTrajectory.Start, JointTrajectory.Zero, JointTrajectory.Zero,
-                                    currentTime + (timeToHitLimit / 2.0),
-                                    JointTrajectory.Goal, JointTrajectory.Zero, JointTrajectory.Zero);
-        HomingTimer = JointTrajectory.Quintic.StopTime();
+        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
+                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                 currentTime, robLSPB::LSPB_DURATION);
+        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
         // set flag to indicate that homing has started
         HomingCalibrateRollSeekCenter = true;
         return;
@@ -560,8 +544,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
 
     // going to center position and check we have arrived
     if (currentTime <= HomingTimer) {
-        JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
-                                         JointTrajectory.Velocity, JointTrajectory.Acceleration);
+        JointTrajectory.LSPB.Evaluate(currentTime, JointDesired);
         SetPositionJointLocal(JointDesired);
     } else {
         // request final position in case trajectory rounding prevent us to get there
@@ -603,28 +586,10 @@ void mtsIntuitiveResearchKitMTM::RunPositionCartesian(void)
         return;
     }
 
-    // send goal position
-    if (IsCartesianGoalSet) {
-
-        // Check Error
-        // compute the translation error
-        const double currentTime = this->StateTable.GetTic();
-
-        // check error
-        double error = (JointCurrent - JointTrajectory.Goal).Norm();
-        if (error < JointTrajectory.GoalToleranceNorm) {
-            IsCartesianGoalSet = false;
-            CMN_LOG_CLASS_RUN_DEBUG << "Reached Goal" << std::endl;
-        }
-        else if (currentTime > (JointTrajectory.Quintic.StartTime() + 5)) {
-            CMN_LOG_CLASS_RUN_WARNING << "Orientation not reachable" << std::endl;
-            IsCartesianGoalSet = false;
-        }
-        else {
-            JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
-                                             JointTrajectory.Velocity, JointTrajectory.Acceleration);
-            SetPositionJointLocal(JointDesired);
-        }
+    const double currentTime = this->StateTable.GetTic();
+    if (currentTime <= JointTrajectory.EndTime) {
+        JointTrajectory.LSPB.Evaluate(currentTime, JointDesired);
+        SetPositionJointLocal(JointDesired);
     }
 }
 
@@ -743,21 +708,22 @@ void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce
 void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
     if (RobotState == MTM_POSITION_CARTESIAN) {
-        IsCartesianGoalSet = true;
-
         const double currentTime = this->StateTable.GetTic();
+        // starting point is last requested to PID component
+        JointTrajectory.Start.Assign(JointCurrent);
+        // end point is defined by inverse kinematics but initialize optimizer to start from current
+        // and try to push L platform away from user's hand
         JointTrajectory.Goal.Assign(JointCurrent);
-        if (RobotType == MTM_LEFT) JointTrajectory.Goal[3] = - cmnPI_4;
-        else if (RobotType == MTM_RIGHT) JointTrajectory.Goal[3] = cmnPI_4;
+        if (RobotType == MTM_LEFT) {
+            JointTrajectory.Goal[3] = -cmnPI_4;
+        } else if (RobotType == MTM_RIGHT) {
+            JointTrajectory.Goal[3] = cmnPI_4;
+        }
         Manipulator.InverseKinematics(JointTrajectory.Goal, newPosition.Goal());
-
-        // joint trajectory version
-        JointTrajectory.Start = JointCurrent;
-        JointTrajectory.Quintic.Set(currentTime,
-                                    JointTrajectory.Start, JointTrajectory.Zero, JointTrajectory.Zero,
-                                    currentTime + 1.0,
-                                    JointTrajectory.Goal, JointTrajectory.Zero, JointTrajectory.Zero);
-
+        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
+                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                 currentTime, robLSPB::LSPB_DURATION);
+        JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
     } else {
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: MTM not ready" << std::endl;
     }
