@@ -26,7 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstRobot/robManipulator.h>
-#include <cisstRobot/robQuintic.h>
+#include <cisstRobot/robLSPB.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitOptimizer.h>
 
 // temporary
@@ -159,18 +159,18 @@ protected:
     } EventTriggers;
 
     // Cache cartesian goal position
-    prmPositionCartesianSet CartesianGoalSet;
+    prmPositionCartesianSet CartesianSetParam;
     bool IsCartesianGoalSet;
-    bool IsCartesianGoalEverSet;
 
-    prmPositionCartesianGet CartesianCurrentParam;
-    vctFrm4x4 CartesianCurrent;
-    prmPositionCartesianGet CartesianDesiredParam;
-    vctFrm4x4 CartesianDesired;
-    prmPositionJointGet JointCurrentParam;
-    vctDoubleVec JointCurrent;
-    prmPositionJointSet JointDesiredParam;
-    vctDoubleVec JointDesired;
+    prmPositionCartesianGet CartesianGetParam;
+    vctFrm4x4 CartesianGet;
+    prmPositionCartesianGet CartesianGetDesiredParam;
+    vctFrm4x4 CartesianGetDesired;
+    prmPositionJointGet JointGetParam;
+    vctDoubleVec JointGet;
+    vctDoubleVec JointGetDesired;
+    prmPositionJointSet JointSetParam;
+    vctDoubleVec JointSet;
     robManipulator Manipulator;
     robManipulator * ToolOffset;
     vctFrm4x4 ToolOffsetTransformation;
@@ -180,14 +180,14 @@ protected:
     RobotStateType RobotState;
 
     struct {
-        robQuintic Quintic;
-        vctDoubleVec Start;
+        robLSPB LSPB;
         vctDoubleVec Velocity;
         vctDoubleVec Acceleration;
+        vctDoubleVec Start;
         vctDoubleVec Goal;
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
-        vctDoubleVec Zero;
+        double EndTime;
     } JointTrajectory;
 
     // Home Action

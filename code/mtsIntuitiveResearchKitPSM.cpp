@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
 
+#define TRAJECTORY_FOR_POSITION_CARTESIAN 0 // adeguet1, testing trajectory for all cartesian set position
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -51,23 +52,26 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     DesiredOpenAngle = 0.0 * cmnPI_180;
 
     // initialize trajectory data
-    JointCurrent.SetSize(NumberOfJoints);
-    JointDesired.SetSize(NumberOfJoints);
-    JointDesiredParam.Goal().SetSize(NumberOfJoints);
-    JointTrajectory.Start.SetSize(NumberOfJoints);
+    JointGet.SetSize(NumberOfJoints);
+    JointSet.SetSize(NumberOfJoints);
+    JointSetParam.Goal().SetSize(NumberOfJoints);
     JointTrajectory.Velocity.SetSize(NumberOfJoints);
+    JointTrajectory.Velocity.SetAll(360.0 * cmnPI_180); // degrees per second
+    JointTrajectory.Velocity.Element(2) = 0.2; // m per second
     JointTrajectory.Acceleration.SetSize(NumberOfJoints);
+    JointTrajectory.Acceleration.SetAll(720.0 * cmnPI_180);
+    JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
+    JointTrajectory.Start.SetSize(NumberOfJoints);
     JointTrajectory.Goal.SetSize(NumberOfJoints);
     JointTrajectory.GoalError.SetSize(NumberOfJoints);
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints);
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
-    JointTrajectory.Zero.SetSize(NumberOfJoints);
-
+    JointTrajectory.EndTime = 0.0;
     EngagingJointSet.SetSize(NumberOfJoints);
 
-    this->StateTable.AddData(CartesianCurrentParam, "CartesianPosition");
-    this->StateTable.AddData(CartesianDesiredParam, "CartesianDesired");
-    this->StateTable.AddData(JointCurrentParam, "JointPosition");
+    this->StateTable.AddData(CartesianGetParam, "CartesianPosition");
+    this->StateTable.AddData(CartesianGetDesiredParam, "CartesianDesired");
+    this->StateTable.AddData(JointGetParam, "JointPosition");
 
     // setup CISST Interface
     mtsInterfaceRequired * interfaceRequired;
@@ -122,9 +126,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
     if (interfaceProvided) {        
-        interfaceProvided->AddCommandReadState(this->StateTable, JointCurrentParam, "GetPositionJoint");
-        interfaceProvided->AddCommandReadState(this->StateTable, CartesianCurrentParam, "GetPositionCartesian");
-        interfaceProvided->AddCommandReadState(this->StateTable, CartesianDesiredParam, "GetPositionCartesianDesired");
+        interfaceProvided->AddCommandReadState(this->StateTable, JointGetParam, "GetPositionJoint");
+        interfaceProvided->AddCommandReadState(this->StateTable, CartesianGetParam, "GetPositionCartesian");
+        interfaceProvided->AddCommandReadState(this->StateTable, CartesianGetDesiredParam, "GetPositionCartesianDesired");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionCartesian, this, "SetPositionCartesian");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetOpenAngle, this, "SetOpenAngle");
 
@@ -198,6 +202,7 @@ void mtsIntuitiveResearchKitPSM::Run(void)
         RunEngagingTool();
         break;
     case PSM_READY:
+        break;
     case PSM_POSITION_CARTESIAN:
         RunPositionCartesian();
         break;
@@ -224,36 +229,46 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
     // we can start reporting some joint values after the robot is powered
     if (this->RobotState > PSM_HOMING_POWERING) {
         mtsExecutionResult executionResult;
-        executionResult = PID.GetPositionJoint(JointCurrentParam);
+        // actual joints
+        executionResult = PID.GetPositionJoint(JointGetParam);
         if (!executionResult.IsOK()) {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPosition failed \""
                                     << executionResult << "\"" << std::endl;
         }
-
         // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
-        JointCurrentParam.Position().Element(2) /= 1000.0;  // convert from mm to m
-
+        JointGetParam.Position().Element(2) /= 1000.0;  // convert from mm to m
         // assign to a more convenient vctDoubleVec
-        JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
+        JointGet.Assign(JointGetParam.Position(), NumberOfJoints);
+
+        // desired joints
+        executionResult = PID.GetPositionJointDesired(JointGetDesired);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPositionDesired failed \""
+                                    << executionResult << "\"" << std::endl;
+        }
+        // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
+        JointGetDesired.Element(2) /= 1000.0;  // convert from mm to m
 
         // when the robot is ready, we can compute cartesian position
         if (this->RobotState >= PSM_READY) {
             // update cartesian position
-            vctFrm4x4 position;
-            position = Manipulator.ForwardKinematics(JointCurrent);
-            position.Rotation().NormalizedSelf();
-            CartesianCurrent.Assign(position);
+            CartesianGet = Manipulator.ForwardKinematics(JointGet);
+            CartesianGet.Rotation().NormalizedSelf();
+            // update cartesian position desired based on joint desired
+            CartesianGetDesired = Manipulator.ForwardKinematics(JointSet);
+            CartesianGetDesired.Rotation().NormalizedSelf();
         } else {
-            CartesianCurrent.Assign(vctFrm4x4::Identity());
+            CartesianGet.Assign(vctFrm4x4::Identity());
+            CartesianGetDesired.Assign(vctFrm4x4::Identity());
         }
-        CartesianCurrentParam.Position().From(CartesianCurrent);
+        CartesianGetParam.Position().From(CartesianGet);
+        CartesianGetDesiredParam.Position().From(CartesianGetDesired);
     }
 }
 
 void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
 {
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state " << newState << std::endl;
-    IsCartesianGoalEverSet = false;
 
     switch (newState) {
 
@@ -336,7 +351,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
             return;
         }
         // check that the tool is inserted deep enough
-        if (JointCurrent.Element(2) < 80.0 / 1000.0) {
+        if (JointGet.Element(2) < 80.0 / 1000.0) {
             EventTriggers.RobotErrorMsg(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
@@ -350,7 +365,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
             return;
         }
         // check that the tool is inserted deep enough
-        if (JointCurrent.Element(2) < 80.0 / 1000.0) {
+        if (JointGet.Element(2) < 80.0 / 1000.0) {
             EventTriggers.RobotErrorMsg(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
@@ -405,12 +420,12 @@ void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
         && ((currentTime - HomingTimer) > timeToPower)) {
 
         // pre-load PID to make sure desired position has some reasonable values
-        PID.GetPositionJoint(JointCurrentParam);
+        PID.GetPositionJoint(JointGetParam);
         // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
-        JointCurrentParam.Position().Element(2) /= 1000.0;  // convert from mm to m
+        JointGetParam.Position().Element(2) /= 1000.0;  // convert from mm to m
         // assign to a more convenient vctDoubleVec
-        JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
-        SetPositionJointLocal(JointCurrent);
+        JointGet.Assign(JointGetParam.Position(), NumberOfJoints);
+        SetPositionJointLocal(JointGet);
 
         // check power status
         vctBoolVec amplifiersStatus(NumberOfJoints);
@@ -427,7 +442,6 @@ void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
 
 void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
 {
-    static const double timeToHome = 2.0 * cmn_s;
     static const double extraTime = 5.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
@@ -436,13 +450,13 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         // disable joint limits
         PID.SetCheckJointLimit(false);
         // enable PID and start from current position
-        JointDesired.ForceAssign(JointCurrent);
-        SetPositionJointLocal(JointDesired);
+        JointSet.ForceAssign(JointGet);
+        SetPositionJointLocal(JointSet);
         PID.Enable(true);
 
         // compute joint goal position
         JointTrajectory.Goal.SetSize(NumberOfJoints);
-        JointTrajectory.Goal.ForceAssign(JointCurrent);
+        JointTrajectory.Goal.ForceAssign(JointGet);
         // move to zero position only there is no tool present
         Tool.GetButton(Tool.IsPresent);
         Tool.IsPresent = !Tool.IsPresent;
@@ -451,26 +465,24 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
             JointTrajectory.Goal.Element(1) = 0.0;
             JointTrajectory.Goal.Element(2) = 0.0;
         }
-        JointTrajectory.Quintic.Set(currentTime,
-                                    JointCurrent, JointTrajectory.Zero, JointTrajectory.Zero,
-                                    currentTime + timeToHome,
-                                    JointTrajectory.Goal, JointTrajectory.Zero, JointTrajectory.Zero);
-        HomingTimer = JointTrajectory.Quintic.StopTime();
+        JointTrajectory.LSPB.Set(JointGet, JointTrajectory.Goal,
+                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                 currentTime, robLSPB::LSPB_DURATION);
+        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
         // set flag to indicate that homing has started
         HomingCalibrateArmStarted = true;
     }
 
     // compute a new set point based on time
     if (currentTime <= HomingTimer) {
-        JointTrajectory.Quintic.Evaluate(currentTime, JointDesired,
-                                         JointTrajectory.Velocity, JointTrajectory.Acceleration);
-        SetPositionJointLocal(JointDesired);
+        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
+        SetPositionJointLocal(JointSet);
     } else {
         // request final position in case trajectory rounding prevent us to get there
         SetPositionJointLocal(JointTrajectory.Goal);
 
         // check position
-        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointCurrent);
+        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
         JointTrajectory.GoalError.AbsSelf();
         bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
@@ -497,10 +509,10 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         EngagingStopwatch.Reset();
         EngagingStopwatch.Start();
         // get current joint desired position from PID
-        PID.GetPositionJointDesired(JointDesired);
+        PID.GetPositionJointDesired(JointSet);
         // PID has data in mm, we are working in meters here
-        JointDesired.Element(2) /= 1000.0;
-        EngagingJointSet.ForceAssign(JointDesired);
+        JointSet.Element(2) /= 1000.0;
+        EngagingJointSet.ForceAssign(JointSet);
         // disable joint limits
         PID.SetCheckJointLimit(false);
         EngagingAdapterStarted = true;
@@ -521,9 +533,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         EngagingJointSet[4] = 0.0;
         EngagingJointSet[5] = 0.0;
         EngagingJointSet[6] = 0.0;
-        JointDesired.ForceAssign(EngagingJointSet);
+        JointSet.ForceAssign(EngagingJointSet);
         PID.SetCheckJointLimit(true);
-        SetPositionJointLocal(JointDesired);
+        SetPositionJointLocal(JointSet);
 
         // Adapter engage done
         EngagingStopwatch.Reset();
@@ -534,24 +546,24 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         EngagingJointSet[4] =  170.0 * cmnPI / 180.0;
         EngagingJointSet[5] =   65.0 * cmnPI / 180.0;
         EngagingJointSet[6] =    0.0 * cmnPI / 180.0;
-        JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJointLocal(JointDesired);
+        JointSet.ForceAssign(EngagingJointSet);
+        SetPositionJointLocal(JointSet);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
         EngagingJointSet[3] =  300.0 * cmnPI / 180.0;
         EngagingJointSet[4] = -170.0 * cmnPI / 180.0;
         EngagingJointSet[5] =  -65.0 * cmnPI / 180.0;
         EngagingJointSet[6] =    0.0 * cmnPI / 180.0;
-        JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJointLocal(JointDesired);
+        JointSet.ForceAssign(EngagingJointSet);
+        SetPositionJointLocal(JointSet);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (500 * cmn_ms)){
         EngagingJointSet[3] = -300.0 * cmnPI / 180.0;
         EngagingJointSet[4] =  170.0 * cmnPI / 180.0;
         EngagingJointSet[5] =   65.0 * cmnPI / 180.0;
         EngagingJointSet[6] =    0.0 * cmnPI / 180.0;
-        JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJointLocal(JointDesired);
+        JointSet.ForceAssign(EngagingJointSet);
+        SetPositionJointLocal(JointSet);
     }
 }
 
@@ -561,10 +573,10 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         EngagingStopwatch.Reset();
         EngagingStopwatch.Start();
         // get current joint desired position from PID
-        PID.GetPositionJointDesired(JointDesired);
+        PID.GetPositionJointDesired(JointSet);
         // PID has data in mm, we are working in meters here
-        JointDesired.Element(2) /= 1000.0;
-        EngagingJointSet.ForceAssign(JointDesired);
+        JointSet.Element(2) /= 1000.0;
+        EngagingJointSet.ForceAssign(JointSet);
         // disable joint limits
         PID.SetCheckJointLimit(false);
         EngagingToolStarted = true;
@@ -573,13 +585,13 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 
     if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)){
         // get current joint desired position from PID
-        PID.GetPositionJointDesired(JointDesired);
+        PID.GetPositionJointDesired(JointSet);
         // PID has data in mm, we are working in meters here
-        JointDesired.Element(2) /= 1000.0;
+        JointSet.Element(2) /= 1000.0;
         // open gripper
-        JointDesired[6] = 10.0 * cmnPI / 180.0;
+        JointSet[6] = 10.0 * cmnPI / 180.0;
         PID.SetCheckJointLimit(true);
-        SetPositionJointLocal(JointDesired);
+        SetPositionJointLocal(JointSet);
 
         // Adapter engage done
         EngagingStopwatch.Reset();
@@ -590,32 +602,32 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         EngagingJointSet[4] =  10.0 * cmnPI / 180.0;
         EngagingJointSet[5] =  10.0 * cmnPI / 180.0;
         EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
-        JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJointLocal(JointDesired);
+        JointSet.ForceAssign(EngagingJointSet);
+        SetPositionJointLocal(JointSet);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
         EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
         EngagingJointSet[4] =  10.0 * cmnPI / 180.0;
         EngagingJointSet[5] = -10.0 * cmnPI / 180.0;
         EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
-        JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJointLocal(JointDesired);
+        JointSet.ForceAssign(EngagingJointSet);
+        SetPositionJointLocal(JointSet);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (1000 * cmn_ms)){
         EngagingJointSet[3] =  280.0 * cmnPI / 180.0;
         EngagingJointSet[4] = -10.0 * cmnPI / 180.0;
         EngagingJointSet[5] =  10.0 * cmnPI / 180.0;
         EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
-        JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJointLocal(JointDesired);
+        JointSet.ForceAssign(EngagingJointSet);
+        SetPositionJointLocal(JointSet);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (500 * cmn_ms)){
         EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
         EngagingJointSet[4] = -10.0 * cmnPI / 180.0;
         EngagingJointSet[5] = -10.0 * cmnPI / 180.0;
         EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
-        JointDesired.ForceAssign(EngagingJointSet);
-        SetPositionJointLocal(JointDesired);
+        JointSet.ForceAssign(EngagingJointSet);
+        SetPositionJointLocal(JointSet);
     }
 }
 
@@ -623,27 +635,38 @@ void mtsIntuitiveResearchKitPSM::RunPositionCartesian(void)
 {
     //! \todo: should prevent user to go to close to RCM!
 
+    // sanity check
+    if (RobotState != PSM_POSITION_CARTESIAN) {
+        CMN_LOG_CLASS_RUN_ERROR << GetName() << ": SetPositionCartesian: PSM not ready" << std::endl;
+        return;
+    }
+
+#if TRAJECTORY_FOR_POSITION_CARTESIAN
+    const double currentTime = this->StateTable.GetTic();
+    if (currentTime <= JointTrajectory.EndTime) {
+        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
+        SetPositionJointLocal(JointSet);
+    }
+#else
     if (IsCartesianGoalSet == true) {
         vctDoubleVec jointSet(6, 0.0);
-        jointSet.Assign(JointCurrent, 6);
+        jointSet.Assign(JointGetDesired, 6);
 
         // compute desired slave position
-        CartesianPositionFrm.From(CartesianGoalSet.Goal());
+        CartesianPositionFrm.From(CartesianSetParam.Goal());
         Manipulator.InverseKinematics(jointSet, CartesianPositionFrm);
         jointSet.resize(7);
         jointSet[6] = DesiredOpenAngle;
 
         // find closest solution mod 2 pi
-        const double difference = JointCurrent[3] - jointSet[3];
+        const double difference = JointGetDesired[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
 
         // finally send new joint values
         SetPositionJointLocal(jointSet);
-
-        // reset flag
-        IsCartesianGoalSet = false;
     }
+#endif
 }
 
 void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
@@ -654,11 +677,11 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
         IsCartesianGoalSet = false;
 
         // Update kinematics and VF data objects
-        Optimizer->UpdateParams(JointCurrent,
+        Optimizer->UpdateParams(JointGet,
                                    Manipulator,
                                    this->GetPeriodicity(),
-                                   CartesianCurrent,
-                                   vctFrm4x4(CartesianGoalSet.Goal())
+                                   CartesianGet,
+                                   vctFrm4x4(CartesianSetParam.Goal())
                                    );
 
         vctDoubleVec dq;
@@ -668,7 +691,7 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
 
             // send command to move to specified position
             vctDoubleVec FinalJoint(6);
-            FinalJoint.Assign(JointCurrent,6);
+            FinalJoint.Assign(JointGet,6);
             FinalJoint = FinalJoint + dq;
             FinalJoint.resize(7);
             FinalJoint[6] = DesiredOpenAngle;
@@ -688,33 +711,44 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
 
 void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
-    JointDesiredParam.Goal().Assign(newPosition, NumberOfJoints);
-    JointDesiredParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
-    PID.SetPositionJoint(JointDesiredParam);
-    // updated desired frame position from user specified if possible
-    if ((RobotState == PSM_POSITION_CARTESIAN) && (IsCartesianGoalEverSet)) {
-        CartesianDesiredParam.Position().Assign(CartesianGoalSet.Goal());
-    } else {
-        // compute from desired joints
-        if (this->RobotState >= PSM_READY) {
-            CartesianDesired = Manipulator.ForwardKinematics(newPosition);
-            CartesianDesired.Rotation().NormalizedSelf();
-            CartesianDesiredParam.Position().From(CartesianDesired);
-        } else {
-            CartesianDesired.Assign(vctFrm4x4::Identity());
-            CartesianDesiredParam.Position().Assign(vctFrm3::Identity());
-        }
-    }
+    JointSetParam.Goal().Assign(newPosition, NumberOfJoints);
+    JointSetParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
+    PID.SetPositionJoint(JointSetParam);
 }
 
 void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if ((RobotState == PSM_POSITION_CARTESIAN) || (RobotState == PSM_CONSTRAINT_CONTROLLER_CARTESIAN)) {
-        CartesianGoalSet = newPosition;
+    if (RobotState == PSM_POSITION_CARTESIAN) {
+#if TRAJECTORY_FOR_POSITION_CARTESIAN
+        // first compute inverse kinematics on first 6 joints
+        vctDoubleVec joints(6);
+        joints.Assign(JointGet, 6);
+        Manipulator.InverseKinematics(joints, newPosition.Goal());
+        // find closest solution mod 2 pi for rotation along tool shaft
+        const double difference = JointGet[3] - joints[3];
+        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
+        joints[3] = joints[3] + differenceInTurns * 2.0 * cmnPI;
+
+        // trajectory in joint space
+        const double currentTime = this->StateTable.GetTic();
+        // starting point is last requested to PID component
+        JointTrajectory.Start.Assign(JointGet);
+        // assign inverse kinematics joints and angle to goal
+        JointTrajectory.Goal.Assign(joints, 6);
+        JointTrajectory.Goal.Element(6) = DesiredOpenAngle;
+        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
+                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                 currentTime, robLSPB::LSPB_NONE); // LSPB_DURATION);
+        JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
+#else
+        CartesianSetParam = newPosition;
         IsCartesianGoalSet = true;
-        IsCartesianGoalEverSet = true;
+#endif
+    } else if (RobotState == PSM_CONSTRAINT_CONTROLLER_CARTESIAN) {
+        CartesianSetParam = newPosition;
+        IsCartesianGoalSet = true;
     } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: PSM not in CARTESIAN control mode" << std::endl;
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: PSM not ready" << std::endl;
     }
 }
 
@@ -778,8 +812,8 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton &b
             // Enable PID
             PID.Enable(true);
             // set command joint position to joint current
-            JointDesired.ForceAssign(JointCurrent);
-            SetPositionJointLocal(JointDesired);
+            JointSet.ForceAssign(JointGet);
+            SetPositionJointLocal(JointSet);
             // go back to state before clutching
             SetState(EventTriggers.ManipClutchPreviousState);
         }

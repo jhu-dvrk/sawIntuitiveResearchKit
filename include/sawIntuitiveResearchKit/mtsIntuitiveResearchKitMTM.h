@@ -153,28 +153,29 @@ protected:
 
 
     //! robot cartesian position
-    prmPositionCartesianGet CartesianCurrentParam;
-    vctFrm4x4 CartesianCurrent;
-    vctFrm4x4 CartesianPrevious;
+    prmPositionCartesianGet CartesianGetParam;
+    vctFrm4x4 CartesianGet;
+    vctFrm4x4 CartesianGetPrevious;
     //! robot cartesian velocity
     prmVelocityCartesianGet CartesianVelocityParam;
     vct3 CartesianVelocityLinear;
     vct3 CartesianVelocityAngular;
     //! robot cartesian goal
-    prmPositionCartesianSet CartesianGoalSet;
+    prmPositionCartesianSet CartesianSet;
     bool IsCartesianGoalSet;
 
     //! robot current joint position
-    prmPositionJointGet JointCurrentParam;
-    vctDoubleVec JointCurrent;
+    prmPositionJointGet JointGetParam;
+    vctDoubleVec JointGet;
+    vctDoubleVec JointGetDesired;
     //! robot desired joint position
-    prmPositionJointSet JointDesiredParam;
-    vctDoubleVec JointDesired;
+    prmPositionJointSet JointSetParam;
+    vctDoubleVec JointSet;
     //! robot cartesian position when cluthed
     vctFrm4x4 CartesianClutched;
 
     //! desired torque for torque mode
-    prmForceTorqueJointSet TorqueDesired;
+    prmForceTorqueJointSet TorqueSet;
 
     //! Analog Input from Hardware for Gripper
     vctDoubleVec AnalogInputPosSI;
