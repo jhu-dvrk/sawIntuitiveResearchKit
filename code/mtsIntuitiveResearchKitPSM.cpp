@@ -59,7 +59,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     JointTrajectory.Velocity.SetAll(360.0 * cmnPI_180); // degrees per second
     JointTrajectory.Velocity.Element(2) = 0.2; // m per second
     JointTrajectory.Acceleration.SetSize(NumberOfJoints);
-    JointTrajectory.Acceleration.SetAll(720.0 * cmnPI_180);
+    JointTrajectory.Acceleration.SetAll(360.0 * cmnPI_180);
     JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
     JointTrajectory.Start.SetSize(NumberOfJoints);
     JointTrajectory.Goal.SetSize(NumberOfJoints);
@@ -467,7 +467,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         }
         JointTrajectory.LSPB.Set(JointGet, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime, robLSPB::LSPB_DURATION);
+                                 currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
         HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
         // set flag to indicate that homing has started
         HomingCalibrateArmStarted = true;
@@ -738,7 +738,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
         JointTrajectory.Goal.Element(6) = DesiredOpenAngle;
         JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime, robLSPB::LSPB_NONE); // LSPB_DURATION);
+                                 currentTime - this->GetPeriodicity(), robLSPB::LSPB_NONE); // LSPB_DURATION);
         JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
 #else
         CartesianSetParam = newPosition;
