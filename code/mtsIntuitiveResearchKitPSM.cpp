@@ -487,7 +487,6 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
             PID.SetCheckJointLimit(true);
-            EventTriggers.RobotStatusMsg(this->GetName() + " arm calibrated");
             this->SetState(PSM_ARM_CALIBRATED);
         } else {
             // time out
@@ -508,11 +507,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
     if (!EngagingAdapterStarted) {
         EngagingStopwatch.Reset();
         EngagingStopwatch.Start();
-        // get current joint desired position from PID
-        PID.GetPositionJointDesired(JointSet);
-        // PID has data in mm, we are working in meters here
-        JointSet.Element(2) /= 1000.0;
-        EngagingJointSet.ForceAssign(JointSet);
+        EngagingJointSet.ForceAssign(JointGetDesired);
         // disable joint limits
         PID.SetCheckJointLimit(false);
         EngagingAdapterStarted = true;
@@ -520,6 +515,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
     }
 
     // PSM tool last 4 actuator coupling matrix
+
     // psm_m2jpos = [-1.5632  0.0000  0.0000  0.0000;
     //                0.0000  1.0186  0.0000  0.0000;
     //                0.0000 -0.8306  0.6089  0.6089;
@@ -528,7 +524,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
     // these joint limit is computed as
     // joint_lim = psm_m2jpos * actuator_lim
 
-    if (EngagingStopwatch.GetElapsedTime() > (3500 * cmn_ms)){
+    if (EngagingStopwatch.GetElapsedTime() > (3500 * cmn_ms)) {
         EngagingJointSet[3] = 0.0;
         EngagingJointSet[4] = 0.0;
         EngagingJointSet[5] = 0.0;
@@ -541,7 +537,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         EngagingStopwatch.Reset();
         SetState(PSM_ADAPTER_ENGAGED);
     }
-    else if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)){
+    else if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)) {
         EngagingJointSet[3] = -300.0 * cmnPI / 180.0;
         EngagingJointSet[4] =  170.0 * cmnPI / 180.0;
         EngagingJointSet[5] =   65.0 * cmnPI / 180.0;
@@ -549,7 +545,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         JointSet.ForceAssign(EngagingJointSet);
         SetPositionJointLocal(JointSet);
     }
-    else if (EngagingStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
+    else if (EngagingStopwatch.GetElapsedTime() > (1500 * cmn_ms)) {
         EngagingJointSet[3] =  300.0 * cmnPI / 180.0;
         EngagingJointSet[4] = -170.0 * cmnPI / 180.0;
         EngagingJointSet[5] =  -65.0 * cmnPI / 180.0;
@@ -557,7 +553,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         JointSet.ForceAssign(EngagingJointSet);
         SetPositionJointLocal(JointSet);
     }
-    else if (EngagingStopwatch.GetElapsedTime() > (500 * cmn_ms)){
+    else if (EngagingStopwatch.GetElapsedTime() > (500 * cmn_ms)) {
         EngagingJointSet[3] = -300.0 * cmnPI / 180.0;
         EngagingJointSet[4] =  170.0 * cmnPI / 180.0;
         EngagingJointSet[5] =   65.0 * cmnPI / 180.0;
@@ -572,61 +568,56 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
     if (!EngagingToolStarted) {
         EngagingStopwatch.Reset();
         EngagingStopwatch.Start();
-        // get current joint desired position from PID
-        PID.GetPositionJointDesired(JointSet);
-        // PID has data in mm, we are working in meters here
-        JointSet.Element(2) /= 1000.0;
-        EngagingJointSet.ForceAssign(JointSet);
+        EngagingJointSet.ForceAssign(JointGetDesired);
         // disable joint limits
         PID.SetCheckJointLimit(false);
         EngagingToolStarted = true;
         return;
     }
 
-    if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)){
-        // get current joint desired position from PID
-        PID.GetPositionJointDesired(JointSet);
-        // PID has data in mm, we are working in meters here
-        JointSet.Element(2) /= 1000.0;
-        // open gripper
-        JointSet[6] = 10.0 * cmnPI / 180.0;
+    if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)) {
+        // straight wrist open gripper
+        EngagingJointSet[3] = 0.0;
+        EngagingJointSet[4] = 0.0;
+        EngagingJointSet[5] = 0.0;
+        EngagingJointSet[6] = 10.0 * cmnPI / 180.0;
         PID.SetCheckJointLimit(true);
+        JointSet.Assign(EngagingJointSet);
         SetPositionJointLocal(JointSet);
-
         // Adapter engage done
         EngagingStopwatch.Reset();
         SetState(PSM_READY);
     }
-    else if (EngagingStopwatch.GetElapsedTime() > (2000 * cmn_ms)){
+    else if (EngagingStopwatch.GetElapsedTime() > (2000 * cmn_ms)) {
         EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
         EngagingJointSet[4] =  10.0 * cmnPI / 180.0;
         EngagingJointSet[5] =  10.0 * cmnPI / 180.0;
         EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
-        JointSet.ForceAssign(EngagingJointSet);
+        JointSet.Assign(EngagingJointSet);
         SetPositionJointLocal(JointSet);
     }
-    else if (EngagingStopwatch.GetElapsedTime() > (1500 * cmn_ms)){
+    else if (EngagingStopwatch.GetElapsedTime() > (1500 * cmn_ms)) {
         EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
         EngagingJointSet[4] =  10.0 * cmnPI / 180.0;
         EngagingJointSet[5] = -10.0 * cmnPI / 180.0;
         EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
-        JointSet.ForceAssign(EngagingJointSet);
+        JointSet.Assign(EngagingJointSet);
         SetPositionJointLocal(JointSet);
     }
-    else if (EngagingStopwatch.GetElapsedTime() > (1000 * cmn_ms)){
+    else if (EngagingStopwatch.GetElapsedTime() > (1000 * cmn_ms)) {
         EngagingJointSet[3] =  280.0 * cmnPI / 180.0;
         EngagingJointSet[4] = -10.0 * cmnPI / 180.0;
         EngagingJointSet[5] =  10.0 * cmnPI / 180.0;
         EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
-        JointSet.ForceAssign(EngagingJointSet);
+        JointSet.Assign(EngagingJointSet);
         SetPositionJointLocal(JointSet);
     }
-    else if (EngagingStopwatch.GetElapsedTime() > (500 * cmn_ms)){
+    else if (EngagingStopwatch.GetElapsedTime() > (500 * cmn_ms)) {
         EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
         EngagingJointSet[4] = -10.0 * cmnPI / 180.0;
         EngagingJointSet[5] = -10.0 * cmnPI / 180.0;
         EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
-        JointSet.ForceAssign(EngagingJointSet);
+        JointSet.Assign(EngagingJointSet);
         SetPositionJointLocal(JointSet);
     }
 }
@@ -711,6 +702,7 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
 
 void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
+    CMN_LOG_CLASS_RUN_DEBUG << "SetPositionJointLocal: " << newPosition << std::endl;
     JointSetParam.Goal().Assign(newPosition, NumberOfJoints);
     JointSetParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
     PID.SetPositionJoint(JointSetParam);
