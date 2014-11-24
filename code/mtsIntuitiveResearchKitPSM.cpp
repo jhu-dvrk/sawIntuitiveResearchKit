@@ -255,7 +255,7 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
             CartesianGet = Manipulator.ForwardKinematics(JointGet);
             CartesianGet.Rotation().NormalizedSelf();
             // update cartesian position desired based on joint desired
-            CartesianGetDesired = Manipulator.ForwardKinematics(JointSet);
+            CartesianGetDesired = Manipulator.ForwardKinematics(JointGetDesired);
             CartesianGetDesired.Rotation().NormalizedSelf();
         } else {
             CartesianGet.Assign(vctFrm4x4::Identity());
