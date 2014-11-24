@@ -161,7 +161,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
     } else {
         // tool tip transform, this should come from a configuration file
         ToolOffsetTransformation.Assign(0.0, -1.0,  0.0, 0.0,
-                                        0.0,  0.0,  1.0, 0.0102,
+                                        0.0,  0.0,  1.0, 0.0,
                                         -1.0, 0.0,  0.0, 0.0,
                                         0.0,  0.0,  0.0, 1.0);
         ToolOffset = new robManipulator(ToolOffsetTransformation);
