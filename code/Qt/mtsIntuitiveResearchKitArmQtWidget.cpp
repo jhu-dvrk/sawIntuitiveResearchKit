@@ -2,11 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -119,14 +118,24 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     QFRPositionWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
     topLayout->addWidget(QFRPositionWidget, 0, 0);
 
-    // Timing
+    // timing
     QVBoxLayout * timingLayout = new QVBoxLayout();
     QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
     timingLayout->addWidget(QMIntervalStatistics);
     timingLayout->addStretch();
     topLayout->addLayout(timingLayout);
 
-    // Messages
+    // state
+#if 0
+    QHBoxLayout * stateLayout = new QHBoxLayout;
+    mainLayout->addLayout(stateLayout);
+    QPBHome = new QPushButton("Home");
+    stateLayout->addWidget(QPBHome);
+    QLState = new QLabel("State");
+    stateLayout->addWidget(QLState);
+#endif
+
+    // messages
     QTEMessages = new QTextEdit();
     QTEMessages->setReadOnly(true);
     QTEMessages->ensureCursorVisible();

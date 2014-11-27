@@ -254,15 +254,26 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
             // update cartesian position
             CartesianGet = Manipulator.ForwardKinematics(JointGet);
             CartesianGet.Rotation().NormalizedSelf();
+            CartesianGetParam.SetValid(true);
             // update cartesian position desired based on joint desired
             CartesianGetDesired = Manipulator.ForwardKinematics(JointGetDesired);
             CartesianGetDesired.Rotation().NormalizedSelf();
+            CartesianGetDesiredParam.SetValid(true);
         } else {
+            // update cartesian position
             CartesianGet.Assign(vctFrm4x4::Identity());
+            CartesianGetParam.SetValid(false);
+            // update cartesian position desired
             CartesianGetDesired.Assign(vctFrm4x4::Identity());
+            CartesianGetDesiredParam.SetValid(false);
         }
         CartesianGetParam.Position().From(CartesianGet);
         CartesianGetDesiredParam.Position().From(CartesianGetDesired);
+    } else {
+        // set joint to zeros
+        JointGet.Zeros();
+        JointGetParam.Position().Zeros();
+        JointGetParam.SetValid(false);
     }
 }
 

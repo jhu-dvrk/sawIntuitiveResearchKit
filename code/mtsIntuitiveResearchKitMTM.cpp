@@ -66,6 +66,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     JointTrajectory.EndTime = 0.0;
 
     this->StateTable.AddData(CartesianGetParam, "CartesianPosition");
+    this->StateTable.AddData(CartesianGetDesiredParam, "CartesianDesired");
     this->StateTable.AddData(JointGetParam, "JointPosition");
     this->StateTable.AddData(GripperPosition, "GripperAngle");
 
@@ -76,6 +77,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
         interfaceRequired->AddFunction("Enable", PID.Enable);
         interfaceRequired->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
         interfaceRequired->AddFunction("GetPositionJoint", PID.GetPositionJoint);
+        interfaceRequired->AddFunction("GetPositionJointDesired", PID.GetPositionJointDesired);
         interfaceRequired->AddFunction("SetPositionJoint", PID.SetPositionJoint);
         interfaceRequired->AddFunction("SetTorqueJoint", PID.SetTorqueJoint);
         interfaceRequired->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
@@ -101,6 +103,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
         // Cartesian
         interfaceProvided->AddCommandReadState(this->StateTable, JointGetParam, "GetPositionJoint");
         interfaceProvided->AddCommandReadState(this->StateTable, CartesianGetParam, "GetPositionCartesian");
+        interfaceProvided->AddCommandReadState(this->StateTable, CartesianGetDesiredParam, "GetPositionCartesianDesired");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetPositionCartesian, this, "SetPositionCartesian");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetWrench, this, "SetWrench");
         // Gripper
@@ -208,20 +211,38 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
         JointGet.Assign(JointGetParam.Position(), NumberOfJoints);
         JointGetParam.SetValid(true);
 
+        // desired joints
+        executionResult = PID.GetPositionJointDesired(JointGetDesired);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPositionDesired failed \""
+                                    << executionResult << "\"" << std::endl;
+        }
 
         // when the robot is ready, we can comput cartesian position
         if (this->RobotState >= mtsIntuitiveResearchKitMTMTypes::MTM_READY) {
+            // update cartesian position
             CartesianGet = Manipulator.ForwardKinematics(JointGet);
             CartesianGet.Rotation().NormalizedSelf();
             CartesianGetParam.SetValid(true);
+            // update cartesian position desired based on joint desired
+            CartesianGetDesired = Manipulator.ForwardKinematics(JointGetDesired);
+            CartesianGetDesired.Rotation().NormalizedSelf();
+            CartesianGetDesiredParam.SetValid(true);
+            // update velocities
             CartesianVelocityLinear = (CartesianGet.Translation() - CartesianGetPrevious.Translation()).Divide(StateTable.Period);
             CartesianVelocityAngular.SetAll(0.0);
             CartesianVelocityParam.SetVelocityLinear(CartesianVelocityLinear);
             CartesianVelocityParam.SetVelocityAngular(CartesianVelocityAngular);
         } else {
+            // update cartesian position
             CartesianGet.Assign(vctFrm4x4::Identity());
+            CartesianGetParam.SetValid(false);
+            // update cartesian position desired
+            CartesianGetDesired.Assign(vctFrm4x4::Identity());
+            CartesianGetDesiredParam.SetValid(false);
         }
         CartesianGetParam.Position().From(CartesianGet);
+        CartesianGetDesiredParam.Position().From(CartesianGetDesired);
 
         // get gripper based on analog inputs
         executionResult = RobotIO.GetAnalogInputPosSI(AnalogInputPosSI);
@@ -247,6 +268,7 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
         // set joint to zeros
         JointGet.Zeros();
         JointGetParam.Position().Zeros();
+        JointGetParam.SetValid(false);
     }
 }
 

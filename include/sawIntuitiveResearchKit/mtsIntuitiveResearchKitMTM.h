@@ -113,6 +113,7 @@ protected:
         mtsFunctionWrite Enable;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionRead GetPositionJoint;
+        mtsFunctionRead GetPositionJointDesired;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetTorqueJoint;
         mtsFunctionWrite SetCheckJointLimit;
@@ -145,6 +146,9 @@ protected:
     //! robot cartesian position
     prmPositionCartesianGet CartesianGetParam;
     vctFrm4x4 CartesianGet;
+    prmPositionCartesianGet CartesianGetDesiredParam;
+    vctFrm4x4 CartesianGetDesired;
+
     vctFrm4x4 CartesianGetPrevious;
     //! robot cartesian velocity
     prmVelocityCartesianGet CartesianVelocityParam;
