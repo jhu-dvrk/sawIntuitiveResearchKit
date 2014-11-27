@@ -61,15 +61,15 @@ int main(int argc, char ** argv)
 {
     // configuration
     const double periodIO = 0.5 * cmn_ms;
-    const double periodKinematics = 2.0 * cmn_ms;
-    const double periodTeleop = 2.0 * cmn_ms;
+    const double periodKinematics = 1.0 * cmn_ms;
+    const double periodTeleop = 1.0 * cmn_ms;
     const double periodUDP = 20.0 * cmn_ms;
  
     // log configuration
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskFunction(CMN_LOG_ALLOW_ALL);
-    cmnLogger::SetMaskClassMatching("mtsIntuitiveResearchKit", CMN_LOG_ALLOW_VERBOSE);
+    cmnLogger::SetMaskClassMatching("mtsIntuitiveResearchKit", CMN_LOG_ALLOW_ALL);
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
     // parse options
