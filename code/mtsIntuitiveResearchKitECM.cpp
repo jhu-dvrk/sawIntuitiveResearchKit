@@ -115,14 +115,17 @@ void mtsIntuitiveResearchKitECM::Init(void)
     }
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
-    if (interfaceProvided) {        
+    if (interfaceProvided) {
+        // Cartesian
         interfaceProvided->AddCommandReadState(this->StateTable, JointGetParam, "GetPositionJoint");
         interfaceProvided->AddCommandReadState(this->StateTable, CartesianGetParam, "GetPositionCartesian");
         interfaceProvided->AddCommandReadState(this->StateTable, CartesianGetDesiredParam, "GetPositionCartesianDesired");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitECM::SetPositionCartesian, this, "SetPositionCartesian");
-
+        // Robot State
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitECM::SetRobotControlState,
                                            this, "SetRobotControlState", std::string(""));
+        interfaceProvided->AddCommandRead(&mtsIntuitiveResearchKitECM::GetRobotControlState,
+                                          this, "GetRobotControlState", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotStatusMsg, "RobotStatusMsg", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotErrorMsg, "RobotErrorMsg", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.ManipClutch, "ManipClutchBtn", prmEventButton());
@@ -294,6 +297,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitECMTypes:
             break;
         }
         RobotState = newState;
+        IsCartesianGoalSet = false;
         EventTriggers.RobotStatusMsg(this->GetName() + " constraint controller cartesian");
         break;
 
@@ -529,4 +533,10 @@ void mtsIntuitiveResearchKitECM::EventHandlerSUJClutch(const prmEventButton &but
     } else {
         CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": EventHandlerSUJClutch: released" << std::endl;
     }
+}
+
+
+void mtsIntuitiveResearchKitECM::GetRobotControlState(std::string & state) const
+{
+    state = mtsIntuitiveResearchKitECMTypes::RobotStateTypeToString(this->RobotState);
 }

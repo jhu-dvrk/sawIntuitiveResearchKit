@@ -113,6 +113,8 @@ void mtsIntuitiveResearchKitMTM::Init(void)
         // Robot State
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetRobotControlState,
                                            this, "SetRobotControlState", std::string(""));
+        interfaceProvided->AddCommandRead(&mtsIntuitiveResearchKitMTM::GetRobotControlState,
+                                          this, "GetRobotControlState", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotStatusMsg, "RobotStatusMsg", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotErrorMsg, "RobotErrorMsg", std::string(""));
         // Stats
@@ -773,4 +775,9 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
     }
 
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetRobotControlState: " << state << std::endl;
+}
+
+void mtsIntuitiveResearchKitMTM::GetRobotControlState(std::string & state) const
+{
+    state = mtsIntuitiveResearchKitMTMTypes::RobotStateTypeToString(this->RobotState);
 }

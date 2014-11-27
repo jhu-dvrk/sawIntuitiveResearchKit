@@ -28,7 +28,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QTextEdit>
 #include <QPushButton>
-#include <QLabel>
+#include <QCheckBox>
+#include <QLineEdit>
 
 
 class mtsIntuitiveResearchKitArmQtWidget: public QWidget, public mtsComponent
@@ -54,6 +55,8 @@ signals:
 private slots:
     void timerEvent(QTimerEvent * event);
     void SlotTextChanged(void);
+    void SlotEnableDirectControl(bool toggle);
+    void SlotHome(void);
 
 private:
     //! setup GUI
@@ -64,10 +67,13 @@ protected:
     struct ArmStruct {
         mtsFunctionRead GetPositionCartesian;
         mtsFunctionRead GetRobotControlState;
+        mtsFunctionWrite SetRobotControlState;
         mtsFunctionRead GetPeriodStatistics;
     } Arm;
 
 private:
+    bool DirectControl;
+
     prmPositionCartesianGet Position;
     vctQtWidgetFrameDoubleRead * QFRPositionWidget;
 
@@ -76,8 +82,9 @@ private:
     mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
 
     // state
+    QCheckBox * QCBEnableDirectControl;
     QPushButton * QPBHome;
-    QLabel * QLState;
+    QLineEdit * QLEState;
 
     // messages
     void ErrorMessageEventHandler(const std::string & message);

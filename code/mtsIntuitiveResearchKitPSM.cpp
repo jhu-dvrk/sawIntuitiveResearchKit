@@ -125,15 +125,18 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     }
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
-    if (interfaceProvided) {        
+    if (interfaceProvided) {
+        // Cartesian
         interfaceProvided->AddCommandReadState(this->StateTable, JointGetParam, "GetPositionJoint");
         interfaceProvided->AddCommandReadState(this->StateTable, CartesianGetParam, "GetPositionCartesian");
         interfaceProvided->AddCommandReadState(this->StateTable, CartesianGetDesiredParam, "GetPositionCartesianDesired");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionCartesian, this, "SetPositionCartesian");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetOpenAngle, this, "SetOpenAngle");
-
+        // Robot State
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetRobotControlState,
                                            this, "SetRobotControlState", std::string(""));
+        interfaceProvided->AddCommandRead(&mtsIntuitiveResearchKitPSM::GetRobotControlState,
+                                          this, "GetRobotControlState", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotStatusMsg, "RobotStatusMsg", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.RobotErrorMsg, "RobotErrorMsg", std::string(""));
         interfaceProvided->AddEventWrite(EventTriggers.ManipClutch, "ManipClutchBtn", prmEventButton());
@@ -367,7 +370,8 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitPSMTypes:
             EventTriggers.RobotErrorMsg(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
-        RobotState = newState;
+        RobotState = newState;   
+        IsCartesianGoalSet = false;
         EventTriggers.RobotStatusMsg(this->GetName() + " position cartesian");
         break;
 
@@ -382,6 +386,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitPSMTypes:
             break;
         }
         RobotState = newState;
+        IsCartesianGoalSet = false;
         EventTriggers.RobotStatusMsg(this->GetName() + " constraint controller cartesian");
         break;
 
@@ -834,4 +839,10 @@ void mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch(const prmEventButton & bu
     } else {
         CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": EventHandlerSUJClutch: released" << std::endl;
     }
+}
+
+
+void mtsIntuitiveResearchKitPSM::GetRobotControlState(std::string & state) const
+{
+    state = mtsIntuitiveResearchKitPSMTypes::RobotStateTypeToString(this->RobotState);
 }
