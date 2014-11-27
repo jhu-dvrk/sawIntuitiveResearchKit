@@ -50,9 +50,9 @@ void mtsIntuitiveResearchKitECM::Init(void)
     SetState(mtsIntuitiveResearchKitECMTypes::ECM_UNINITIALIZED);
 
     // initialize trajectory data
-    JointCurrent.SetSize(NumberOfJoints);
-    JointDesired.SetSize(NumberOfJoints);
-    JointDesiredParam.Goal().SetSize(NumberOfJoints);
+    JointGet.SetSize(NumberOfJoints);
+    JointSet.SetSize(NumberOfJoints);
+    JointSetParam.Goal().SetSize(NumberOfJoints);
     JointTrajectory.Velocity.SetSize(NumberOfJoints);
     JointTrajectory.Velocity.Assign(30.0 * cmnPI_180, // degrees per second
                                     30.0 * cmnPI_180,
@@ -69,8 +69,9 @@ void mtsIntuitiveResearchKitECM::Init(void)
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints);
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
 
-    this->StateTable.AddData(CartesianCurrentParam, "CartesianPosition");
-    this->StateTable.AddData(JointCurrentParam, "JointPosition");
+    this->StateTable.AddData(CartesianGetParam, "CartesianPosition");
+    this->StateTable.AddData(CartesianGetDesiredParam, "CartesianDesired");
+    this->StateTable.AddData(JointGetParam, "JointPosition");
 
     // setup CISST Interface
     mtsInterfaceRequired * interfaceRequired;
@@ -115,8 +116,9 @@ void mtsIntuitiveResearchKitECM::Init(void)
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
     if (interfaceProvided) {        
-        interfaceProvided->AddCommandReadState(this->StateTable, JointCurrentParam, "GetPositionJoint");
-        interfaceProvided->AddCommandReadState(this->StateTable, CartesianCurrentParam, "GetPositionCartesian");
+        interfaceProvided->AddCommandReadState(this->StateTable, JointGetParam, "GetPositionJoint");
+        interfaceProvided->AddCommandReadState(this->StateTable, CartesianGetParam, "GetPositionCartesian");
+        interfaceProvided->AddCommandReadState(this->StateTable, CartesianGetDesiredParam, "GetPositionCartesianDesired");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitECM::SetPositionCartesian, this, "SetPositionCartesian");
 
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitECM::SetRobotControlState,
@@ -187,29 +189,52 @@ void mtsIntuitiveResearchKitECM::GetRobotData(void)
     // we can start reporting some joint values after the robot is powered
     if (this->RobotState > mtsIntuitiveResearchKitECMTypes::ECM_HOMING_POWERING) {
         mtsExecutionResult executionResult;
-        executionResult = PID.GetPositionJoint(JointCurrentParam);
+        executionResult = PID.GetPositionJoint(JointGetParam);
         if (!executionResult.IsOK()) {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPosition failed \""
                                     << executionResult << "\"" << std::endl;
         }
 
         // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
-        JointCurrentParam.Position().Element(2) /= 1000.0;  // convert from mm to m
+        JointGetParam.Position().Element(2) /= 1000.0;  // convert from mm to m
 
         // assign to a more convenient vctDoubleVec
-        JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
+        JointGet.Assign(JointGetParam.Position(), NumberOfJoints);
+
+        // desired joints
+        executionResult = PID.GetPositionJointDesired(JointGetDesired);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPositionDesired failed \""
+                                    << executionResult << "\"" << std::endl;
+        }
+        // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
+        JointGetDesired.Element(2) /= 1000.0;  // convert from mm to m
 
         // when the robot is ready, we can compute cartesian position
         if (this->RobotState >= mtsIntuitiveResearchKitECMTypes::ECM_READY) {
             // update cartesian position
-            vctFrm4x4 position;
-            position = Manipulator.ForwardKinematics(JointCurrent);
-            position.Rotation().NormalizedSelf();
-            CartesianCurrent.Assign(position);
+            CartesianGet = Manipulator.ForwardKinematics(JointGet);
+            CartesianGet.Rotation().NormalizedSelf();
+            CartesianGetParam.SetValid(true);
+            // update cartesian position desired based on joint desired
+            CartesianGetDesired = Manipulator.ForwardKinematics(JointGetDesired);
+            CartesianGetDesired.Rotation().NormalizedSelf();
+            CartesianGetDesiredParam.SetValid(true);
         } else {
-            CartesianCurrent.Assign(vctFrm4x4::Identity());
+            // update cartesian position
+            CartesianGet.Assign(vctFrm4x4::Identity());
+            CartesianGetParam.SetValid(false);
+            // update cartesian position desired
+            CartesianGetDesired.Assign(vctFrm4x4::Identity());
+            CartesianGetDesiredParam.SetValid(false);
         }
-        CartesianCurrentParam.Position().From(CartesianCurrent);
+        CartesianGetParam.Position().From(CartesianGet);
+        CartesianGetDesiredParam.Position().From(CartesianGetDesired);
+    } else {
+        // set joint to zeros
+        JointGet.Zeros();
+        JointGetParam.Position().Zeros();
+        JointGetParam.SetValid(false);
     }
 }
 
@@ -250,7 +275,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitECMTypes:
             return;
         }
         // check that the tool is inserted deep enough
-        if (JointCurrent.Element(2) < 80.0 / 1000.0) {
+        if (JointGet.Element(2) < 80.0 / 1000.0) {
             EventTriggers.RobotErrorMsg(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
@@ -264,7 +289,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitECMTypes:
             return;
         }
         // check that the tool is inserted deep enough
-        if (JointCurrent.Element(2) < 80.0 / 1000.0) {
+        if (JointGet.Element(2) < 80.0 / 1000.0) {
             EventTriggers.RobotErrorMsg(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
@@ -322,12 +347,12 @@ void mtsIntuitiveResearchKitECM::RunHomingPower(void)
         && ((currentTime - HomingTimer) > timeToPower)) {
 
         // pre-load PID to make sure desired position has some reasonable values
-        PID.GetPositionJoint(JointCurrentParam);
+        PID.GetPositionJoint(JointGetParam);
         // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
-        JointCurrentParam.Position().Element(2) /= 1000.0;  // convert from mm to m
+        JointGetParam.Position().Element(2) /= 1000.0;  // convert from mm to m
         // assign to a more convenient vctDoubleVec
-        JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
-        SetPositionJointLocal(JointCurrent);
+        JointGet.Assign(JointGetParam.Position(), NumberOfJoints);
+        SetPositionJointLocal(JointGet);
 
         // check power status
         vctBoolVec actuatorAmplifiersStatus(NumberOfJoints);
@@ -355,8 +380,8 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
         // disable joint limits
         PID.SetCheckJointLimit(false);
         // enable PID and start from current position
-        JointDesired.ForceAssign(JointCurrent);
-        SetPositionJointLocal(JointDesired);
+        JointSet.ForceAssign(JointGet);
+        SetPositionJointLocal(JointSet);
         // configure PID to fail in case of tracking error
         vctDoubleVec tolerances(NumberOfJoints);
         tolerances.SetAll(7.0 * cmnPI_180); // 5 degrees on angles
@@ -368,9 +393,9 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
 
         // compute joint goal position
         JointTrajectory.Goal.SetSize(NumberOfJoints);
-        JointTrajectory.Goal.ForceAssign(JointCurrent);
+        JointTrajectory.Goal.ForceAssign(JointGet);
         JointTrajectory.Goal.SetAll(0.0);
-        JointTrajectory.LSPB.Set(JointCurrent, JointTrajectory.Goal,
+        JointTrajectory.LSPB.Set(JointGet, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
                                  currentTime, robLSPB::LSPB_DURATION);
         HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
@@ -380,14 +405,14 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
 
     // compute a new set point based on time
     if (currentTime <= HomingTimer) {
-        JointTrajectory.LSPB.Evaluate(currentTime, JointDesired);
-        SetPositionJointLocal(JointDesired);
+        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
+        SetPositionJointLocal(JointSet);
     } else {
         // request final position in case trajectory rounding prevent us to get there
         SetPositionJointLocal(JointTrajectory.Goal);
 
         // check position
-        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointCurrent);
+        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
         JointTrajectory.GoalError.AbsSelf();
         bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
@@ -413,15 +438,15 @@ void mtsIntuitiveResearchKitECM::RunPositionCartesian(void)
     //! \todo: should prevent user to go to close to RCM!
 
     if (IsCartesianGoalSet == true) {
-        vctDoubleVec jointSet(JointCurrent);
+        vctDoubleVec jointSet(JointGet);
 
         // compute desired slave position
-        CartesianPositionFrm.From(CartesianGoalSet.Goal());
+        CartesianPositionFrm.From(CartesianSetParam.Goal());
         Manipulator.InverseKinematics(jointSet, CartesianPositionFrm);
         jointSet.resize(4);
 
         // find closest solution mod 2 pi
-        const double difference = JointCurrent[3] - jointSet[3];
+        const double difference = JointGet[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
 
@@ -435,16 +460,16 @@ void mtsIntuitiveResearchKitECM::RunPositionCartesian(void)
 
 void mtsIntuitiveResearchKitECM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
-    JointDesiredParam.Goal().Assign(newPosition, NumberOfJoints);
-    JointDesiredParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
-    PID.SetPositionJoint(JointDesiredParam);
+    JointSetParam.Goal().Assign(newPosition, NumberOfJoints);
+    JointSetParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
+    PID.SetPositionJoint(JointSetParam);
 }
 
 void mtsIntuitiveResearchKitECM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
     if ((RobotState == mtsIntuitiveResearchKitECMTypes::ECM_POSITION_CARTESIAN)
         || (RobotState == mtsIntuitiveResearchKitECMTypes::ECM_CONSTRAINT_CONTROLLER_CARTESIAN)) {
-        CartesianGoalSet = newPosition;
+        CartesianSetParam = newPosition;
         IsCartesianGoalSet = true;
     } else {
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: ECM not ready" << std::endl;
@@ -485,8 +510,8 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton &b
             // Enable PID
             PID.Enable(true);
             // set command joint position to joint current
-            JointDesired.ForceAssign(JointCurrent);
-            SetPositionJointLocal(JointDesired);
+            JointSet.ForceAssign(JointGet);
+            SetPositionJointLocal(JointSet);
             // go back to state before clutching
             SetState(EventTriggers.ManipClutchPreviousState);
         }
