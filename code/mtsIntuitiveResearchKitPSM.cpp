@@ -48,7 +48,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     IsCartesianGoalSet = false;
     Counter = 0;
 
-    SetState(PSM_UNINITIALIZED);
+    SetState(mtsIntuitiveResearchKitPSMTypes::PSM_UNINITIALIZED);
     DesiredOpenAngle = 0.0 * cmnPI_180;
 
     // initialize trajectory data
@@ -171,7 +171,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
 
 void mtsIntuitiveResearchKitPSM::Startup(void)
 {
-    this->SetState(PSM_UNINITIALIZED);
+    this->SetState(mtsIntuitiveResearchKitPSMTypes::PSM_UNINITIALIZED);
 }
 
 void mtsIntuitiveResearchKitPSM::Run(void)
@@ -182,34 +182,34 @@ void mtsIntuitiveResearchKitPSM::Run(void)
     GetRobotData();
 
     switch (RobotState) {
-    case PSM_UNINITIALIZED:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_UNINITIALIZED:
         break;
-    case PSM_HOMING_POWERING:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_POWERING:
         RunHomingPower();
         break;
-    case PSM_HOMING_CALIBRATING_ARM:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_CALIBRATING_ARM:
         RunHomingCalibrateArm();
         break;
-    case PSM_ARM_CALIBRATED:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED:
         break;
-    case PSM_ENGAGING_ADAPTER:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_ADAPTER:
         RunEngagingAdapter();
         break;
-    case PSM_ADAPTER_ENGAGED:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED:
         // choose next state
         break;
-    case PSM_ENGAGING_TOOL:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_TOOL:
         RunEngagingTool();
         break;
-    case PSM_READY:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_READY:
         break;
-    case PSM_POSITION_CARTESIAN:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_POSITION_CARTESIAN:
         RunPositionCartesian();
         break;
-    case PSM_CONSTRAINT_CONTROLLER_CARTESIAN:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_CONSTRAINT_CONTROLLER_CARTESIAN:
         RunConstraintControllerCartesian();
         break;
-    case PSM_MANUAL:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_MANUAL:
         break;
     default:
         break;
@@ -227,7 +227,7 @@ void mtsIntuitiveResearchKitPSM::Cleanup(void)
 void mtsIntuitiveResearchKitPSM::GetRobotData(void)
 {
     // we can start reporting some joint values after the robot is powered
-    if (this->RobotState > PSM_HOMING_POWERING) {
+    if (this->RobotState > mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_POWERING) {
         mtsExecutionResult executionResult;
         // actual joints
         executionResult = PID.GetPositionJoint(JointGetParam);
@@ -250,7 +250,7 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
         JointGetDesired.Element(2) /= 1000.0;  // convert from mm to m
 
         // when the robot is ready, we can compute cartesian position
-        if (this->RobotState >= PSM_READY) {
+        if (this->RobotState >= mtsIntuitiveResearchKitPSMTypes::PSM_READY) {
             // update cartesian position
             CartesianGet = Manipulator.ForwardKinematics(JointGet);
             CartesianGet.Rotation().NormalizedSelf();
@@ -266,44 +266,45 @@ void mtsIntuitiveResearchKitPSM::GetRobotData(void)
     }
 }
 
-void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
+void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitPSMTypes::RobotStateType & newState)
 {
-    CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state " << newState << std::endl;
+    CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
+                            << mtsIntuitiveResearchKitPSMTypes::RobotStateTypeToString(newState) << std::endl;
 
     switch (newState) {
 
-    case PSM_UNINITIALIZED:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_UNINITIALIZED:
         RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " not initialized");
         break;
 
-    case PSM_HOMING_POWERING:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_POWERING:
         HomingTimer = 0.0;
         HomingPowerRequested = false;
         RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " powering");
         break;
 
-    case PSM_HOMING_CALIBRATING_ARM:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_CALIBRATING_ARM:
         HomingCalibrateArmStarted = false;
         RobotState = newState;
         this->EventTriggers.RobotStatusMsg(this->GetName() + " calibrating arm");
         break;
 
-    case PSM_ARM_CALIBRATED:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED:
         RobotState = newState;
         this->EventTriggers.RobotStatusMsg(this->GetName() + " arm calibrated");
         // check if adpater is present and trigger new state
         Adapter.GetButton(Adapter.IsPresent);
         Adapter.IsPresent = !Adapter.IsPresent;
         if (Adapter.IsPresent) {
-            SetState(PSM_ENGAGING_ADAPTER);
+            SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_ADAPTER);
         }
         break;
 
-    case PSM_ENGAGING_ADAPTER:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_ADAPTER:
         EngagingAdapterStarted = false;
-        if (this->RobotState < PSM_ARM_CALIBRATED) {
+        if (this->RobotState < mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED) {
             EventTriggers.RobotStatusMsg(this->GetName() + " is not calibrated yet, will engage adapter later");
             return;
         }
@@ -311,27 +312,27 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
         Tool.GetButton(Tool.IsPresent);
         Tool.IsPresent = !Tool.IsPresent;
         if (Tool.IsPresent) {
-            SetState(PSM_ADAPTER_ENGAGED);
+            SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED);
         } else {
             RobotState = newState;
             this->EventTriggers.RobotStatusMsg(this->GetName() + " engaging adapter");
         }
         break;
 
-    case PSM_ADAPTER_ENGAGED:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED:
         RobotState = newState;
         this->EventTriggers.RobotStatusMsg(this->GetName() + " adapter engaged");
         // check if tool is present and trigger new state
         Tool.GetButton(Tool.IsPresent);
         Tool.IsPresent = !Tool.IsPresent;
         if (Tool.IsPresent) {
-            SetState(PSM_ENGAGING_TOOL);
+            SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_TOOL);
         }
         break;
 
-    case PSM_ENGAGING_TOOL:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_TOOL:
         EngagingToolStarted = false;
-        if (this->RobotState < PSM_ADAPTER_ENGAGED) {
+        if (this->RobotState < mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED) {
             EventTriggers.RobotStatusMsg(this->GetName() + " adapter is not engaged yet, will engage tool later");
             return;
         }
@@ -339,14 +340,14 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
         this->EventTriggers.RobotStatusMsg(this->GetName() + " engaging tool");
         break;
 
-    case PSM_READY:
+    case mtsIntuitiveResearchKitPSMTypes::PSM_READY:
         // when returning from manual mode, need to re-enable PID
         RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " ready");
         break;
 
-    case PSM_POSITION_CARTESIAN:
-        if (this->RobotState < PSM_ARM_CALIBRATED) {
+    case mtsIntuitiveResearchKitPSMTypes::PSM_POSITION_CARTESIAN:
+        if (this->RobotState < mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not calibrated");
             return;
         }
@@ -359,8 +360,8 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
         EventTriggers.RobotStatusMsg(this->GetName() + " position cartesian");
         break;
 
-    case PSM_CONSTRAINT_CONTROLLER_CARTESIAN:
-        if (this->RobotState < PSM_ARM_CALIBRATED) {
+    case mtsIntuitiveResearchKitPSMTypes::PSM_CONSTRAINT_CONTROLLER_CARTESIAN:
+        if (this->RobotState < mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not calibrated");
             return;
         }
@@ -373,8 +374,8 @@ void mtsIntuitiveResearchKitPSM::SetState(const RobotStateType & newState)
         EventTriggers.RobotStatusMsg(this->GetName() + " constraint controller cartesian");
         break;
 
-    case PSM_MANUAL:
-        if (this->RobotState < PSM_ARM_CALIBRATED) {
+    case mtsIntuitiveResearchKitPSMTypes::PSM_MANUAL:
+        if (this->RobotState < mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not ready yet");
             return;
         }
@@ -432,10 +433,10 @@ void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
         RobotIO.GetActuatorAmpStatus(amplifiersStatus);
         if (amplifiersStatus.All()) {
             EventTriggers.RobotStatusMsg(this->GetName() + " power on");
-            this->SetState(PSM_HOMING_CALIBRATING_ARM);
+            this->SetState(mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_CALIBRATING_ARM);
         } else {
             EventTriggers.RobotErrorMsg(this->GetName() + " failed to enable power.");
-            this->SetState(PSM_UNINITIALIZED);
+            this->SetState(mtsIntuitiveResearchKitPSMTypes::PSM_UNINITIALIZED);
         }
     }
 }
@@ -487,7 +488,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
             PID.SetCheckJointLimit(true);
-            this->SetState(PSM_ARM_CALIBRATED);
+            this->SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED);
         } else {
             // time out
             if (currentTime > HomingTimer + extraTime) {
@@ -496,7 +497,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
                 EventTriggers.RobotErrorMsg(this->GetName() + " unable to reach home position during calibration on pots.");
                 PID.Enable(false);
                 PID.SetCheckJointLimit(true);
-                this->SetState(PSM_UNINITIALIZED);
+                this->SetState(mtsIntuitiveResearchKitPSMTypes::PSM_UNINITIALIZED);
             }
         }
     }
@@ -535,7 +536,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
         // Adapter engage done
         EngagingStopwatch.Reset();
-        SetState(PSM_ADAPTER_ENGAGED);
+        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)) {
         EngagingJointSet[3] = -300.0 * cmnPI / 180.0;
@@ -586,7 +587,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         SetPositionJointLocal(JointSet);
         // Adapter engage done
         EngagingStopwatch.Reset();
-        SetState(PSM_READY);
+        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_READY);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (2000 * cmn_ms)) {
         EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
@@ -627,7 +628,7 @@ void mtsIntuitiveResearchKitPSM::RunPositionCartesian(void)
     //! \todo: should prevent user to go to close to RCM!
 
     // sanity check
-    if (RobotState != PSM_POSITION_CARTESIAN) {
+    if (RobotState != mtsIntuitiveResearchKitPSMTypes::PSM_POSITION_CARTESIAN) {
         CMN_LOG_CLASS_RUN_ERROR << GetName() << ": SetPositionCartesian: PSM not ready" << std::endl;
         return;
     }
@@ -702,7 +703,6 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
 
 void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
-    CMN_LOG_CLASS_RUN_DEBUG << "SetPositionJointLocal: " << newPosition << std::endl;
     JointSetParam.Goal().Assign(newPosition, NumberOfJoints);
     JointSetParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
     PID.SetPositionJoint(JointSetParam);
@@ -710,7 +710,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newP
 
 void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (RobotState == PSM_POSITION_CARTESIAN) {
+    if (RobotState == mtsIntuitiveResearchKitPSMTypes::PSM_POSITION_CARTESIAN) {
 #if TRAJECTORY_FOR_POSITION_CARTESIAN
         // first compute inverse kinematics on first 6 joints
         vctDoubleVec joints(6);
@@ -736,7 +736,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
         CartesianSetParam = newPosition;
         IsCartesianGoalSet = true;
 #endif
-    } else if (RobotState == PSM_CONSTRAINT_CONTROLLER_CARTESIAN) {
+    } else if (RobotState == mtsIntuitiveResearchKitPSMTypes::PSM_CONSTRAINT_CONTROLLER_CARTESIAN) {
         CartesianSetParam = newPosition;
         IsCartesianGoalSet = true;
     } else {
@@ -752,45 +752,45 @@ void mtsIntuitiveResearchKitPSM::SetOpenAngle(const double & openAngle)
 void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
 {
     if (state == "Home") {
-        SetState(PSM_HOMING_POWERING);
+        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_POWERING);
     } else if ((state == "Cartesian position") || (state == "Teleop")) {
-        SetState(PSM_POSITION_CARTESIAN);
+        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_POSITION_CARTESIAN);
     } else if (state == "Cartesian constraint controller") {
-        SetState(PSM_CONSTRAINT_CONTROLLER_CARTESIAN);
+        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_CONSTRAINT_CONTROLLER_CARTESIAN);
     } else if (state == "Manual") {
-        SetState(PSM_MANUAL);
+        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_MANUAL);
     } else {
         EventTriggers.RobotErrorMsg(this->GetName() + ": unsupported state " + state);
     }
 }
 
-void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton &button)
+void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
-        SetState(PSM_ENGAGING_ADAPTER);
+        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_ADAPTER);
     } else {
         // this is "down" transition so we have to
         // make sure we had an adapter properly engaged before
-        if (RobotState >= PSM_ADAPTER_ENGAGED) {
-            SetState(PSM_ARM_CALIBRATED);
+        if (RobotState >= mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED) {
+            SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED);
         }
     }
 }
 
-void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton &button)
+void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
-        SetState(PSM_ENGAGING_TOOL);
+        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_TOOL);
     } else {
         // this is "down" transition so we have to
         // make sure we had a tool properly engaged before
-        if (RobotState >= PSM_READY) {
-            SetState(PSM_ADAPTER_ENGAGED);
+        if (RobotState >= mtsIntuitiveResearchKitPSMTypes::PSM_READY) {
+            SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED);
         }
     }
 }
 
-void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton &button)
+void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & button)
 {
     // Pass events
     EventTriggers.ManipClutch(button);
@@ -798,9 +798,9 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton &b
     // Start manual mode but save the previous state
     if (button.Type() == prmEventButton::PRESSED) {
         EventTriggers.ManipClutchPreviousState = this->RobotState;
-        SetState(PSM_MANUAL);
+        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_MANUAL);
     } else {
-        if (RobotState == PSM_MANUAL) {
+        if (RobotState == mtsIntuitiveResearchKitPSMTypes::PSM_MANUAL) {
             // Enable PID
             PID.Enable(true);
             // set command joint position to joint current
@@ -812,7 +812,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton &b
     }
 }
 
-void mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch(const prmEventButton &button)
+void mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch(const prmEventButton & button)
 {
     // Pass events
     EventTriggers.SUJClutch(button);

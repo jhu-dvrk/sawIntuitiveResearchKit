@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECMTypes.h>
 
 // temporary
 #include <cisstOSAbstraction/osaStopwatch.h>
@@ -50,16 +51,6 @@ public:
 
 protected:
 
-    enum RobotStateType {
-        ECM_UNINITIALIZED, /*! State when constructed */
-        ECM_HOMING_POWERING, /*! Turn power on, calibrate encoders and current */
-        ECM_HOMING_CALIBRATING_ARM, /*! Calibrate using pots and move to zero position for all joints except last one */
-        ECM_READY,
-        ECM_POSITION_CARTESIAN, /**< Go to command cartesian position */
-        ECM_CONSTRAINT_CONTROLLER_CARTESIAN,
-        ECM_MANUAL /**< User manually move robot */
-    };
-
     void Init(void);
 
     /*! Get data from the PID level based on current state. */
@@ -67,7 +58,7 @@ protected:
 
     /*! Verify that the state transition is possible, initialize global
       variables for the desired state and finally set the state. */
-    void SetState(const RobotStateType & newState);
+    void SetState(const mtsIntuitiveResearchKitECMTypes::RobotStateType & newState);
 
     /*! Homing procedure, will check the homing state and call the required method. */
     void RunHoming(void);
@@ -131,7 +122,7 @@ protected:
         mtsFunctionWrite RobotStatusMsg;
         mtsFunctionWrite RobotErrorMsg;
         mtsFunctionWrite ManipClutch;
-        RobotStateType ManipClutchPreviousState;
+        mtsIntuitiveResearchKitECMTypes::RobotStateType ManipClutchPreviousState;
         mtsFunctionWrite SUJClutch;
     } EventTriggers;
 
@@ -148,7 +139,7 @@ protected:
     robManipulator Manipulator;
 
     vctFrm4x4 CartesianPositionFrm;
-    RobotStateType RobotState;
+    mtsIntuitiveResearchKitECMTypes::RobotStateType RobotState;
 
     struct {
         robLSPB LSPB;

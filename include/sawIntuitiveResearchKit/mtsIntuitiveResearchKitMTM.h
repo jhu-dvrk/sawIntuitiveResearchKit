@@ -30,13 +30,14 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTMTypes.h>
 
 class mtsIntuitiveResearchKitMTM: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    enum MTM_TYPE{
+    enum MTM_TYPE {
         MTM_NULL, MTM_LEFT, MTM_RIGHT
     };
 
@@ -71,17 +72,6 @@ protected:
         JNT_WRIST_ROLL = 6
     };
 
-    enum RobotStateType {
-        MTM_UNINITIALIZED, /*! State when constructed */
-        MTM_HOMING_POWERING, /*! Turn power on, calibrate encoders and current */
-        MTM_HOMING_CALIBRATING_ARM, /*! Calibrate using pots and move to zero position for all joints except last one */
-        MTM_HOMING_CALIBRATING_ROLL, /*! Calibrate last joint using hardware limit and tracking errors. */
-        MTM_READY,
-        MTM_POSITION_CARTESIAN,
-        MTM_GRAVITY_COMPENSATION,
-        MTM_CLUTCH
-    };
-
     void Init(void);
 
     /*! Get data from the PID level based on current state. */
@@ -89,7 +79,7 @@ protected:
 
     /*! Verify that the state transition is possible, initialize global
       variables for the desired state and finally set the state. */
-    void SetState(const RobotStateType & newState);
+    void SetState(const mtsIntuitiveResearchKitMTMTypes::RobotStateType & newState);
 
     /*! Homing procedure, will check the homing state and call the required method. */
     void RunHoming(void);
@@ -184,7 +174,7 @@ protected:
     bool GripperClosed;
 
     //! robot control mode
-    RobotStateType RobotState;
+    mtsIntuitiveResearchKitMTMTypes::RobotStateType RobotState;
     //! robot kinematics
     robManipulator Manipulator;
     //! robot type

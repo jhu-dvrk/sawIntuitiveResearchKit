@@ -47,7 +47,7 @@ void mtsIntuitiveResearchKitECM::Init(void)
     IsCartesianGoalSet = false;
     Counter = 0;
 
-    SetState(ECM_UNINITIALIZED);
+    SetState(mtsIntuitiveResearchKitECMTypes::ECM_UNINITIALIZED);
 
     // initialize trajectory data
     JointCurrent.SetSize(NumberOfJoints);
@@ -143,7 +143,7 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
 
 void mtsIntuitiveResearchKitECM::Startup(void)
 {
-    this->SetState(ECM_UNINITIALIZED);
+    this->SetState(mtsIntuitiveResearchKitECMTypes::ECM_UNINITIALIZED);
 }
 
 void mtsIntuitiveResearchKitECM::Run(void)
@@ -154,19 +154,19 @@ void mtsIntuitiveResearchKitECM::Run(void)
     GetRobotData();
 
     switch (RobotState) {
-    case ECM_UNINITIALIZED:
+    case mtsIntuitiveResearchKitECMTypes::ECM_UNINITIALIZED:
         break;
-    case ECM_HOMING_POWERING:
+    case mtsIntuitiveResearchKitECMTypes::ECM_HOMING_POWERING:
         RunHomingPower();
         break;
-    case ECM_HOMING_CALIBRATING_ARM:
+    case mtsIntuitiveResearchKitECMTypes::ECM_HOMING_CALIBRATING_ARM:
         RunHomingCalibrateArm();
         break;
-    case ECM_READY:
-    case ECM_POSITION_CARTESIAN:
+    case mtsIntuitiveResearchKitECMTypes::ECM_READY:
+    case mtsIntuitiveResearchKitECMTypes::ECM_POSITION_CARTESIAN:
         RunPositionCartesian();
         break;
-    case ECM_MANUAL:
+    case mtsIntuitiveResearchKitECMTypes::ECM_MANUAL:
         break;
     default:
         break;
@@ -185,7 +185,7 @@ void mtsIntuitiveResearchKitECM::Cleanup(void)
 void mtsIntuitiveResearchKitECM::GetRobotData(void)
 {
     // we can start reporting some joint values after the robot is powered
-    if (this->RobotState > ECM_HOMING_POWERING) {
+    if (this->RobotState > mtsIntuitiveResearchKitECMTypes::ECM_HOMING_POWERING) {
         mtsExecutionResult executionResult;
         executionResult = PID.GetPositionJoint(JointCurrentParam);
         if (!executionResult.IsOK()) {
@@ -200,7 +200,7 @@ void mtsIntuitiveResearchKitECM::GetRobotData(void)
         JointCurrent.Assign(JointCurrentParam.Position(), NumberOfJoints);
 
         // when the robot is ready, we can compute cartesian position
-        if (this->RobotState >= ECM_READY) {
+        if (this->RobotState >= mtsIntuitiveResearchKitECMTypes::ECM_READY) {
             // update cartesian position
             vctFrm4x4 position;
             position = Manipulator.ForwardKinematics(JointCurrent);
@@ -213,38 +213,39 @@ void mtsIntuitiveResearchKitECM::GetRobotData(void)
     }
 }
 
-void mtsIntuitiveResearchKitECM::SetState(const RobotStateType & newState)
+void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitECMTypes::RobotStateType & newState)
 {
-    CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state " << newState << std::endl;
+    CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
+                            << mtsIntuitiveResearchKitECMTypes::RobotStateTypeToString(newState) << std::endl;
 
     switch (newState) {
 
-    case ECM_UNINITIALIZED:
+    case mtsIntuitiveResearchKitECMTypes::ECM_UNINITIALIZED:
         RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " not initialized");
         break;
 
-    case ECM_HOMING_POWERING:
+    case mtsIntuitiveResearchKitECMTypes::ECM_HOMING_POWERING:
         HomingTimer = 0.0;
         HomingPowerRequested = false;
         RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " powering");
         break;
 
-    case ECM_HOMING_CALIBRATING_ARM:
+    case mtsIntuitiveResearchKitECMTypes::ECM_HOMING_CALIBRATING_ARM:
         HomingCalibrateArmStarted = false;
         RobotState = newState;
         this->EventTriggers.RobotStatusMsg(this->GetName() + " calibrating arm");
         break;
 
-    case ECM_READY:
+    case mtsIntuitiveResearchKitECMTypes::ECM_READY:
         // when returning from manual mode, need to re-enable PID
         RobotState = newState;
         EventTriggers.RobotStatusMsg(this->GetName() + " ready");
         break;
 
-    case ECM_POSITION_CARTESIAN:
-        if (this->RobotState < ECM_READY) {
+    case mtsIntuitiveResearchKitECMTypes::ECM_POSITION_CARTESIAN:
+        if (this->RobotState < mtsIntuitiveResearchKitECMTypes::ECM_READY) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not ready");
             return;
         }
@@ -257,8 +258,8 @@ void mtsIntuitiveResearchKitECM::SetState(const RobotStateType & newState)
         EventTriggers.RobotStatusMsg(this->GetName() + " position cartesian");
         break;
 
-    case ECM_CONSTRAINT_CONTROLLER_CARTESIAN:
-        if (this->RobotState < ECM_READY) {
+    case mtsIntuitiveResearchKitECMTypes::ECM_CONSTRAINT_CONTROLLER_CARTESIAN:
+        if (this->RobotState < mtsIntuitiveResearchKitECMTypes::ECM_READY) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not ready");
             return;
         }
@@ -271,8 +272,8 @@ void mtsIntuitiveResearchKitECM::SetState(const RobotStateType & newState)
         EventTriggers.RobotStatusMsg(this->GetName() + " constraint controller cartesian");
         break;
 
-    case ECM_MANUAL:
-        if (this->RobotState < ECM_READY) {
+    case mtsIntuitiveResearchKitECMTypes::ECM_MANUAL:
+        if (this->RobotState < mtsIntuitiveResearchKitECMTypes::ECM_READY) {
             EventTriggers.RobotErrorMsg(this->GetName() + " is not ready yet");
             return;
         }
@@ -336,10 +337,10 @@ void mtsIntuitiveResearchKitECM::RunHomingPower(void)
         if (actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All()) {
             EventTriggers.RobotStatusMsg(this->GetName() + " power on");
             RobotIO.BrakeRelease();
-            this->SetState(ECM_HOMING_CALIBRATING_ARM);
+            this->SetState(mtsIntuitiveResearchKitECMTypes::ECM_HOMING_CALIBRATING_ARM);
         } else {
             EventTriggers.RobotErrorMsg(this->GetName() + " failed to enable power.");
-            this->SetState(ECM_UNINITIALIZED);
+            this->SetState(mtsIntuitiveResearchKitECMTypes::ECM_UNINITIALIZED);
         }
     }
 }
@@ -392,7 +393,7 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
         if (isHomed) {
             PID.SetCheckJointLimit(true);
             EventTriggers.RobotStatusMsg(this->GetName() + " arm ready");
-            this->SetState(ECM_READY);
+            this->SetState(mtsIntuitiveResearchKitECMTypes::ECM_READY);
         } else {
             // time out
             if (currentTime > HomingTimer + extraTime) {
@@ -401,7 +402,7 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
                 EventTriggers.RobotErrorMsg(this->GetName() + " unable to reach home position during calibration on pots.");
                 PID.Enable(false);
                 PID.SetCheckJointLimit(true);
-                this->SetState(ECM_UNINITIALIZED);
+                this->SetState(mtsIntuitiveResearchKitECMTypes::ECM_UNINITIALIZED);
             }
         }
     }
@@ -441,7 +442,8 @@ void mtsIntuitiveResearchKitECM::SetPositionJointLocal(const vctDoubleVec & newP
 
 void mtsIntuitiveResearchKitECM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if ((RobotState == ECM_POSITION_CARTESIAN) || (RobotState == ECM_CONSTRAINT_CONTROLLER_CARTESIAN)) {
+    if ((RobotState == mtsIntuitiveResearchKitECMTypes::ECM_POSITION_CARTESIAN)
+        || (RobotState == mtsIntuitiveResearchKitECMTypes::ECM_CONSTRAINT_CONTROLLER_CARTESIAN)) {
         CartesianGoalSet = newPosition;
         IsCartesianGoalSet = true;
     } else {
@@ -452,11 +454,11 @@ void mtsIntuitiveResearchKitECM::SetPositionCartesian(const prmPositionCartesian
 void mtsIntuitiveResearchKitECM::SetRobotControlState(const std::string & state)
 {
     if (state == "Home") {
-        SetState(ECM_HOMING_POWERING);
+        SetState(mtsIntuitiveResearchKitECMTypes::ECM_HOMING_POWERING);
     } else if ((state == "Cartesian position") || (state == "Teleop")) {
-        SetState(ECM_POSITION_CARTESIAN);
+        SetState(mtsIntuitiveResearchKitECMTypes::ECM_POSITION_CARTESIAN);
     } else if (state == "Manual") {
-        SetState(ECM_MANUAL);
+        SetState(mtsIntuitiveResearchKitECMTypes::ECM_MANUAL);
     } else {
         EventTriggers.RobotErrorMsg(this->GetName() + ": unsupported state " + state);
     }
@@ -466,7 +468,7 @@ void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)
 {
     RobotIO.DisablePower();
     EventTriggers.RobotErrorMsg(this->GetName() + ": PID tracking error");
-    SetState(ECM_UNINITIALIZED);
+    SetState(mtsIntuitiveResearchKitECMTypes::ECM_UNINITIALIZED);
 }
 
 void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton &button)
@@ -477,9 +479,9 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton &b
     // Start manual mode but save the previous state
     if (button.Type() == prmEventButton::PRESSED) {
         EventTriggers.ManipClutchPreviousState = this->RobotState;
-        SetState(ECM_MANUAL);
+        SetState(mtsIntuitiveResearchKitECMTypes::ECM_MANUAL);
     } else {
-        if (RobotState == ECM_MANUAL) {
+        if (RobotState == mtsIntuitiveResearchKitECMTypes::ECM_MANUAL) {
             // Enable PID
             PID.Enable(true);
             // set command joint position to joint current

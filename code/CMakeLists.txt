@@ -1,6 +1,5 @@
 #
-#
-# (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights
+# (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights
 # Reserved.
 #
 # --- begin cisst license - do not edit ---
@@ -39,7 +38,7 @@ if (cisst_FOUND)
     include_directories (${sawRobotIO1394_INCLUDE_DIR}
                          ${sawControllers_INCLUDE_DIR}
                          ${sawConstraintController_INCLUDE_DIR})
-                       
+
     link_directories (${sawRobotIO1394_LIBRARY_DIR}
                       ${sawControllers_LIBRARY_DIR})
 
@@ -48,11 +47,14 @@ if (cisst_FOUND)
     set (sawIntuitiveResearchKit_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
     set (sawIntuitiveResearchKit_LIBRARIES sawIntuitiveResearchKit)
 
-  # create data type using the data generator
-  cisst_data_generator (sawIntuitiveResearchKit
-                        "${CISST_BINARY_DIR}/include" # where to save the file
-                        "sawIntuitiveResearchKit/"    # sub directory for include
-                        mtsVFDataFollow.cdg)
+    # create data type using the data generator
+    cisst_data_generator (sawIntuitiveResearchKit
+                          "${CISST_BINARY_DIR}/include" # where to save the file
+                          "sawIntuitiveResearchKit/"    # sub directory for include
+                          mtsIntuitiveResearchKitMTMTypes.cdg
+                          mtsIntuitiveResearchKitPSMTypes.cdg
+                          mtsIntuitiveResearchKitECMTypes.cdg
+                          mtsVFDataFollow.cdg)
 
     include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
     set (sawIntuitiveResearchKit_HEADER_DIR "${sawIntuitiveResearchKit_INCLUDE_DIR}/sawIntuitiveResearchKit")

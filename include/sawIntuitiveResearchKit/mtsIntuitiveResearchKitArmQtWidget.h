@@ -26,8 +26,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
-#include <QtCore>
-#include <QtGui>
+#include <QTextEdit>
+#include <QPushButton>
+#include <QLabel>
 
 
 class mtsIntuitiveResearchKitArmQtWidget: public QWidget, public mtsComponent
@@ -62,6 +63,7 @@ private:
 protected:
     struct ArmStruct {
         mtsFunctionRead GetPositionCartesian;
+        mtsFunctionRead GetRobotControlState;
         mtsFunctionRead GetPeriodStatistics;
     } Arm;
 
@@ -69,11 +71,15 @@ private:
     prmPositionCartesianGet Position;
     vctQtWidgetFrameDoubleRead * QFRPositionWidget;
 
-    // Timing
+    // timing
     mtsIntervalStatistics IntervalStatistics;
     mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
 
-    // Messages
+    // state
+    QPushButton * QPBHome;
+    QLabel * QLState;
+
+    // messages
     void ErrorMessageEventHandler(const std::string & message);
     void StatusMessageEventHandler(const std::string & message);
     QTextEdit * QTEMessages;

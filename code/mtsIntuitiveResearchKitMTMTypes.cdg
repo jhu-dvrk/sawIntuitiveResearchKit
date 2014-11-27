@@ -1,0 +1,38 @@
+class {
+    name mtsIntuitiveResearchKitMTMTypes;
+    enum {
+        name RobotStateType;
+        enum-value {
+            name MTM_UNINITIALIZED;
+            description Uninitialized;
+        }
+        enum-value {
+            name MTM_HOMING_POWERING;
+            description Powering;
+        }
+        enum-value {
+            name MTM_HOMING_CALIBRATING_ARM;
+            description Calibrating arm;
+        }
+        enum-value {
+            name MTM_HOMING_CALIBRATING_ROLL;
+            description Calibrating gripper roll;
+        }
+        enum-value {
+            name MTM_READY;
+            description Arm ready;
+        }
+        enum-value {
+            name MTM_POSITION_CARTESIAN;
+            description Cartesian position mode;
+        }
+        enum-value {
+            name MTM_GRAVITY_COMPENSATION;
+            description Gravity compensation mode;
+        }
+        enum-value {
+            name MTM_CLUTCH;
+            description Clutch mode;
+        }
+    }
+}

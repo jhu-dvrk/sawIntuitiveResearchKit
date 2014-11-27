@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSMTypes.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitOptimizer.h>
 
 // temporary
@@ -51,21 +52,7 @@ public:
 protected:
 
     // PSM Optimizer
-    mtsIntuitiveResearchKitOptimizer *Optimizer;
-
-    enum RobotStateType {
-        PSM_UNINITIALIZED, /*! State when constructed */
-        PSM_HOMING_POWERING, /*! Turn power on, calibrate encoders and current */
-        PSM_HOMING_CALIBRATING_ARM, /*! Calibrate using pots and move to zero position for all joints except last one */
-        PSM_ARM_CALIBRATED, /*! Do nothing, just wait for adapter.  Fall back state when adapter is removed. */
-        PSM_ENGAGING_ADAPTER,
-        PSM_ADAPTER_ENGAGED, /*! Do nothing, just wait for tool.  Fall back state when tool is removed. */
-        PSM_ENGAGING_TOOL,
-        PSM_READY,
-        PSM_POSITION_CARTESIAN, /**< Go to command cartesian position */
-        PSM_CONSTRAINT_CONTROLLER_CARTESIAN,
-        PSM_MANUAL /**< User manually move robot */
-    };
+    mtsIntuitiveResearchKitOptimizer * Optimizer;
 
     void Init(void);
 
@@ -74,7 +61,7 @@ protected:
 
     /*! Verify that the state transition is possible, initialize global
       variables for the desired state and finally set the state. */
-    void SetState(const RobotStateType & newState);
+    void SetState(const mtsIntuitiveResearchKitPSMTypes::RobotStateType & newState);
 
     /*! Homing procedure, will check the homing state and call the required method. */
     void RunHoming(void);
@@ -154,7 +141,7 @@ protected:
         mtsFunctionWrite RobotStatusMsg;
         mtsFunctionWrite RobotErrorMsg;
         mtsFunctionWrite ManipClutch;
-        RobotStateType ManipClutchPreviousState;
+        mtsIntuitiveResearchKitPSMTypes::RobotStateType ManipClutchPreviousState;
         mtsFunctionWrite SUJClutch;
     } EventTriggers;
 
@@ -177,7 +164,7 @@ protected:
 
     vctFrm4x4 CartesianPositionFrm;
     double DesiredOpenAngle;
-    RobotStateType RobotState;
+    mtsIntuitiveResearchKitPSMTypes::RobotStateType RobotState;
 
     struct {
         robLSPB LSPB;
