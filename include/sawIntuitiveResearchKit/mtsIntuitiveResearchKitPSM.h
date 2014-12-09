@@ -69,9 +69,6 @@ protected:
     /*! Engaging tool procedure. */
     void RunEngagingTool(void);
 
-    /*! Cartesian state. */
-    void RunPositionCartesian(void);
-
     /*! Cartesian constraint controller. */
     void RunConstraintControllerCartesian(void);
 
@@ -124,8 +121,6 @@ protected:
 
     robManipulator * ToolOffset;
     vctFrm4x4 ToolOffsetTransformation;
-
-    vctFrm4x4 CartesianPositionFrm;
     double DesiredOpenAngle;
 
     // Home Action

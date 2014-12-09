@@ -32,13 +32,11 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodi
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds)
 {
-    Init();
 }
 
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg)
 {
-    Init();
 }
 
 void mtsIntuitiveResearchKitArm::Init(void)
@@ -57,6 +55,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     JointTrajectory.GoalError.SetSize(NumberOfJoints());
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints());
     JointTrajectory.EndTime = 0.0;
+    PotsToEncodersTolerance.SetSize(NumberOfJoints());
 
     this->StateTable.AddData(CartesianGetParam, "CartesianPosition");
     this->StateTable.AddData(CartesianGetDesiredParam, "CartesianDesired");
@@ -246,11 +245,7 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
         RobotIO.BiasEncoder();
         // use pots for redundancy
         if (UsePotsForSafetyCheck()) {
-            vctDoubleVec potsToEncodersTolerance(this->NumberOfJoints());
-            potsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
-            std::cerr << CMN_LOG_DETAILS << " --- this is ECM copy/paste, need to be generic" << std::endl;
-            potsToEncodersTolerance.Element(2) = 20.0; // 20 mm
-            RobotIO.SetPotsToEncodersTolerance(potsToEncodersTolerance);
+            RobotIO.SetPotsToEncodersTolerance(PotsToEncodersTolerance);
             RobotIO.UsePotsForSafetyCheck(true);
         }
         HomingTimer = currentTime;

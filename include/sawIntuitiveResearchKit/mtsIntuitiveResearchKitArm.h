@@ -137,9 +137,10 @@ protected:
     vctDoubleVec JointGetDesired;
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
-    robManipulator Manipulator;
 
+    robManipulator Manipulator;
     vctFrm4x4 CartesianPositionFrm;
+
     mtsIntuitiveResearchKitArmTypes::RobotStateType RobotState;
 
     struct {
@@ -152,6 +153,8 @@ protected:
         vctDoubleVec GoalTolerance;
         double EndTime;
     } JointTrajectory;
+
+    vctDoubleVec PotsToEncodersTolerance;
 
     // Home Action
     double HomingTimer;

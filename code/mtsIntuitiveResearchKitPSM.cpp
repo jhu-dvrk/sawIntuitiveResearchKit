@@ -54,6 +54,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     JointTrajectory.Acceleration.SetAll(360.0 * cmnPI_180);
     JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
+    PotsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
+    PotsToEncodersTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm
 
     // for tool/adapter engage procedure
     EngagingJointSet.SetSize(NumberOfJoints());
@@ -435,36 +437,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
         JointSet.Assign(EngagingJointSet);
         SetPositionJointLocal(JointSet);
-    }
-}
-
-void mtsIntuitiveResearchKitPSM::RunPositionCartesian(void)
-{
-    //! \todo: should prevent user to go to close to RCM!
-
-    // sanity check
-    if (RobotState != mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
-        CMN_LOG_CLASS_RUN_ERROR << GetName() << ": SetPositionCartesian: PSM not ready" << std::endl;
-        return;
-    }
-
-    if (IsCartesianGoalSet == true) {
-        vctDoubleVec jointSet(6, 0.0);
-        jointSet.Assign(JointGetDesired, 6);
-
-        // compute desired slave position
-        CartesianPositionFrm.From(CartesianSetParam.Goal());
-        Manipulator.InverseKinematics(jointSet, CartesianPositionFrm);
-        jointSet.resize(7);
-        jointSet[6] = DesiredOpenAngle;
-
-        // find closest solution mod 2 pi
-        const double difference = JointGetDesired[3] - jointSet[3];
-        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
-
-        // finally send new joint values
-        SetPositionJointLocal(jointSet);
     }
 }
 
