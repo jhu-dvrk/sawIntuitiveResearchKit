@@ -22,79 +22,43 @@ http://www.cisst.org/cisst/license.txt.
 #include <time.h>
 
 // cisst
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
-
-#define TRAJECTORY_FOR_POSITION_CARTESIAN 0 // adeguet1, testing trajectory for all cartesian set position
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
 mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds):
-    mtsTaskPeriodic(componentName, periodInSeconds)
+    mtsIntuitiveResearchKitArm(componentName, periodInSeconds)
 {
     Init();
 }
 
 mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg):
-    mtsTaskPeriodic(arg)
+    mtsIntuitiveResearchKitArm(arg)
 {
     Init();
 }
 
 void mtsIntuitiveResearchKitPSM::Init(void)
 {
-    IsCartesianGoalSet = false;
-    Counter = 0;
+    // main initialization from base type
+    mtsIntuitiveResearchKitArm::Init();
 
-    SetState(mtsIntuitiveResearchKitPSMTypes::PSM_UNINITIALIZED);
     DesiredOpenAngle = 0.0 * cmnPI_180;
 
     // initialize trajectory data
-    JointGet.SetSize(NumberOfJoints);
-    JointSet.SetSize(NumberOfJoints);
-    JointSetParam.Goal().SetSize(NumberOfJoints);
-    JointTrajectory.Velocity.SetSize(NumberOfJoints);
     JointTrajectory.Velocity.SetAll(360.0 * cmnPI_180); // degrees per second
     JointTrajectory.Velocity.Element(2) = 0.2; // m per second
-    JointTrajectory.Acceleration.SetSize(NumberOfJoints);
     JointTrajectory.Acceleration.SetAll(360.0 * cmnPI_180);
     JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
-    JointTrajectory.Start.SetSize(NumberOfJoints);
-    JointTrajectory.Goal.SetSize(NumberOfJoints);
-    JointTrajectory.GoalError.SetSize(NumberOfJoints);
-    JointTrajectory.GoalTolerance.SetSize(NumberOfJoints);
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
-    JointTrajectory.EndTime = 0.0;
-    EngagingJointSet.SetSize(NumberOfJoints);
 
-    this->StateTable.AddData(CartesianGetParam, "CartesianPosition");
-    this->StateTable.AddData(CartesianGetDesiredParam, "CartesianDesired");
-    this->StateTable.AddData(JointGetParam, "JointPosition");
+    // for tool/adapter engage procedure
+    EngagingJointSet.SetSize(NumberOfJoints());
 
-    // setup CISST Interface
     mtsInterfaceRequired * interfaceRequired;
-    interfaceRequired = AddInterfaceRequired("PID");
-    if (interfaceRequired) {
-        interfaceRequired->AddFunction("Enable", PID.Enable);
-        interfaceRequired->AddFunction("GetPositionJoint", PID.GetPositionJoint);
-        interfaceRequired->AddFunction("GetPositionJointDesired", PID.GetPositionJointDesired);
-        interfaceRequired->AddFunction("SetPositionJoint", PID.SetPositionJoint);
-        interfaceRequired->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
-    }
-
-    // Robot IO
-    interfaceRequired = AddInterfaceRequired("RobotIO");
-    if (interfaceRequired) {
-        interfaceRequired->AddFunction("EnablePower", RobotIO.EnablePower);
-        interfaceRequired->AddFunction("DisablePower", RobotIO.DisablePower);
-        interfaceRequired->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
-        interfaceRequired->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
-        interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
-        interfaceRequired->AddFunction("UsePotsForSafetyCheck", RobotIO.UsePotsForSafetyCheck);
-        interfaceRequired->AddFunction("SetPotsToEncodersTolerance", RobotIO.SetPotsToEncodersTolerance);
-    }
 
     // Event Adapter engage: digital input button event from PSM
     interfaceRequired = AddInterfaceRequired("Adapter");
@@ -118,33 +82,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerManipClutch, this, "Button");
     }
 
-    // SUJClutch: digital input button event from PSM
-    interfaceRequired = AddInterfaceRequired("SUJClutch");
-    if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch, this, "Button");
-    }
-
-    mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
-    if (interfaceProvided) {
-        // Cartesian
-        interfaceProvided->AddCommandReadState(this->StateTable, JointGetParam, "GetPositionJoint");
-        interfaceProvided->AddCommandReadState(this->StateTable, CartesianGetParam, "GetPositionCartesian");
-        interfaceProvided->AddCommandReadState(this->StateTable, CartesianGetDesiredParam, "GetPositionCartesianDesired");
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionCartesian, this, "SetPositionCartesian");
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetOpenAngle, this, "SetOpenAngle");
-        // Robot State
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetRobotControlState,
-                                           this, "SetRobotControlState", std::string(""));
-        interfaceProvided->AddCommandRead(&mtsIntuitiveResearchKitPSM::GetRobotControlState,
-                                          this, "GetRobotControlState", std::string(""));
-        interfaceProvided->AddEventWrite(EventTriggers.RobotStatusMsg, "RobotStatusMsg", std::string(""));
-        interfaceProvided->AddEventWrite(EventTriggers.RobotErrorMsg, "RobotErrorMsg", std::string(""));
-        interfaceProvided->AddEventWrite(EventTriggers.ManipClutch, "ManipClutchBtn", prmEventButton());
-        interfaceProvided->AddEventWrite(EventTriggers.SUJClutch, "SUJClutchBtn", prmEventButton());
-        // Stats
-        interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
-                                               "GetPeriodStatistics");
-    }
+    // Main interface should have been created by base class init
+    CMN_ASSERT(RobotInterface);
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetOpenAngle, this, "SetOpenAngle");
 
     // Initialize the optimizer
     Optimizer = new mtsIntuitiveResearchKitOptimizer(6);
@@ -172,288 +112,147 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
     }
 }
 
-void mtsIntuitiveResearchKitPSM::Startup(void)
+void mtsIntuitiveResearchKitPSM::RunUserMode(void)
 {
-    this->SetState(mtsIntuitiveResearchKitPSMTypes::PSM_UNINITIALIZED);
-}
-
-void mtsIntuitiveResearchKitPSM::Run(void)
-{
-    Counter++;
-
-    ProcessQueuedEvents();
-    GetRobotData();
-
     switch (RobotState) {
-    case mtsIntuitiveResearchKitPSMTypes::PSM_UNINITIALIZED:
-        break;
-    case mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_POWERING:
-        RunHomingPower();
-        break;
-    case mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_CALIBRATING_ARM:
-        RunHomingCalibrateArm();
-        break;
-    case mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED:
-        break;
-    case mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_ADAPTER:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER:
         RunEngagingAdapter();
         break;
-    case mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED:
-        // choose next state
+    case mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED:
         break;
-    case mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_TOOL:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL:
         RunEngagingTool();
         break;
-    case mtsIntuitiveResearchKitPSMTypes::PSM_READY:
-        break;
-    case mtsIntuitiveResearchKitPSMTypes::PSM_POSITION_CARTESIAN:
-        RunPositionCartesian();
-        break;
-    case mtsIntuitiveResearchKitPSMTypes::PSM_CONSTRAINT_CONTROLLER_CARTESIAN:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
         RunConstraintControllerCartesian();
-        break;
-    case mtsIntuitiveResearchKitPSMTypes::PSM_MANUAL:
         break;
     default:
         break;
     }
-
-    RunEvent();
-    ProcessQueuedCommands();
 }
 
-void mtsIntuitiveResearchKitPSM::Cleanup(void)
-{
-    CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
-}
-
-void mtsIntuitiveResearchKitPSM::GetRobotData(void)
-{
-    // we can start reporting some joint values after the robot is powered
-    if (this->RobotState > mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_POWERING) {
-        mtsExecutionResult executionResult;
-        // actual joints
-        executionResult = PID.GetPositionJoint(JointGetParam);
-        if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPosition failed \""
-                                    << executionResult << "\"" << std::endl;
-        }
-        // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
-        JointGetParam.Position().Element(2) /= 1000.0;  // convert from mm to m
-        // assign to a more convenient vctDoubleVec
-        JointGet.Assign(JointGetParam.Position(), NumberOfJoints);
-
-        // desired joints
-        executionResult = PID.GetPositionJointDesired(JointGetDesired);
-        if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPositionDesired failed \""
-                                    << executionResult << "\"" << std::endl;
-        }
-        // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
-        JointGetDesired.Element(2) /= 1000.0;  // convert from mm to m
-
-        // when the robot is ready, we can compute cartesian position
-        if (this->RobotState >= mtsIntuitiveResearchKitPSMTypes::PSM_READY) {
-            // update cartesian position
-            CartesianGet = Manipulator.ForwardKinematics(JointGet);
-            CartesianGet.Rotation().NormalizedSelf();
-            CartesianGetParam.SetValid(true);
-            // update cartesian position desired based on joint desired
-            CartesianGetDesired = Manipulator.ForwardKinematics(JointGetDesired);
-            CartesianGetDesired.Rotation().NormalizedSelf();
-            CartesianGetDesiredParam.SetValid(true);
-        } else {
-            // update cartesian position
-            CartesianGet.Assign(vctFrm4x4::Identity());
-            CartesianGetParam.SetValid(false);
-            // update cartesian position desired
-            CartesianGetDesired.Assign(vctFrm4x4::Identity());
-            CartesianGetDesiredParam.SetValid(false);
-        }
-        CartesianGetParam.Position().From(CartesianGet);
-        CartesianGetDesiredParam.Position().From(CartesianGetDesired);
-    } else {
-        // set joint to zeros
-        JointGet.Zeros();
-        JointGetParam.Position().Zeros();
-        JointGetParam.SetValid(false);
-    }
-}
-
-void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitPSMTypes::RobotStateType & newState)
+void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState)
 {
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
-                            << mtsIntuitiveResearchKitPSMTypes::RobotStateTypeToString(newState) << std::endl;
+                            << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(newState) << std::endl;
 
     switch (newState) {
 
-    case mtsIntuitiveResearchKitPSMTypes::PSM_UNINITIALIZED:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
         RobotState = newState;
-        EventTriggers.RobotStatusMsg(this->GetName() + " not initialized");
+        MessageEvents.RobotStatus(this->GetName() + " not initialized");
         break;
 
-    case mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_POWERING:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:
         HomingTimer = 0.0;
         HomingPowerRequested = false;
         RobotState = newState;
-        EventTriggers.RobotStatusMsg(this->GetName() + " powering");
+        MessageEvents.RobotStatus(this->GetName() + " powering");
         break;
 
-    case mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_CALIBRATING_ARM:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM:
         HomingCalibrateArmStarted = false;
         RobotState = newState;
-        this->EventTriggers.RobotStatusMsg(this->GetName() + " calibrating arm");
+        this->MessageEvents.RobotStatus(this->GetName() + " calibrating arm");
         break;
 
-    case mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED:
         RobotState = newState;
-        this->EventTriggers.RobotStatusMsg(this->GetName() + " arm calibrated");
+        this->MessageEvents.RobotStatus(this->GetName() + " arm calibrated");
         // check if adpater is present and trigger new state
         Adapter.GetButton(Adapter.IsPresent);
         Adapter.IsPresent = !Adapter.IsPresent;
         if (Adapter.IsPresent) {
-            SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_ADAPTER);
+            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER);
         }
         break;
 
-    case mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_ADAPTER:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER:
         EngagingAdapterStarted = false;
-        if (this->RobotState < mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED) {
-            EventTriggers.RobotStatusMsg(this->GetName() + " is not calibrated yet, will engage adapter later");
+        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+            MessageEvents.RobotStatus(this->GetName() + " is not calibrated yet, will engage adapter later");
             return;
         }
         // if the tool is present, the adapter is already engadged
         Tool.GetButton(Tool.IsPresent);
         Tool.IsPresent = !Tool.IsPresent;
         if (Tool.IsPresent) {
-            SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED);
+            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
         } else {
             RobotState = newState;
-            this->EventTriggers.RobotStatusMsg(this->GetName() + " engaging adapter");
+            this->MessageEvents.RobotStatus(this->GetName() + " engaging adapter");
         }
         break;
 
-    case mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED:
         RobotState = newState;
-        this->EventTriggers.RobotStatusMsg(this->GetName() + " adapter engaged");
+        this->MessageEvents.RobotStatus(this->GetName() + " adapter engaged");
         // check if tool is present and trigger new state
         Tool.GetButton(Tool.IsPresent);
         Tool.IsPresent = !Tool.IsPresent;
         if (Tool.IsPresent) {
-            SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_TOOL);
+            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL);
         }
         break;
 
-    case mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_TOOL:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL:
         EngagingToolStarted = false;
-        if (this->RobotState < mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED) {
-            EventTriggers.RobotStatusMsg(this->GetName() + " adapter is not engaged yet, will engage tool later");
+        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED) {
+            MessageEvents.RobotStatus(this->GetName() + " adapter is not engaged yet, will engage tool later");
             return;
         }
         RobotState = newState;
-        this->EventTriggers.RobotStatusMsg(this->GetName() + " engaging tool");
+        this->MessageEvents.RobotStatus(this->GetName() + " engaging tool");
         break;
 
-    case mtsIntuitiveResearchKitPSMTypes::PSM_READY:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
         // when returning from manual mode, need to re-enable PID
         RobotState = newState;
-        EventTriggers.RobotStatusMsg(this->GetName() + " ready");
+        MessageEvents.RobotStatus(this->GetName() + " ready");
         break;
 
-    case mtsIntuitiveResearchKitPSMTypes::PSM_POSITION_CARTESIAN:
-        if (this->RobotState < mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED) {
-            EventTriggers.RobotErrorMsg(this->GetName() + " is not calibrated");
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
+        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+            MessageEvents.RobotError(this->GetName() + " is not calibrated");
             return;
         }
         // check that the tool is inserted deep enough
         if (JointGet.Element(2) < 80.0 / 1000.0) {
-            EventTriggers.RobotErrorMsg(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
+            MessageEvents.RobotError(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
         RobotState = newState;   
         IsCartesianGoalSet = false;
-        EventTriggers.RobotStatusMsg(this->GetName() + " position cartesian");
+        MessageEvents.RobotStatus(this->GetName() + " position cartesian");
         break;
 
-    case mtsIntuitiveResearchKitPSMTypes::PSM_CONSTRAINT_CONTROLLER_CARTESIAN:
-        if (this->RobotState < mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED) {
-            EventTriggers.RobotErrorMsg(this->GetName() + " is not calibrated");
+    case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
+        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+            MessageEvents.RobotError(this->GetName() + " is not calibrated");
             return;
         }
         // check that the tool is inserted deep enough
         if (JointGet.Element(2) < 80.0 / 1000.0) {
-            EventTriggers.RobotErrorMsg(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
+            MessageEvents.RobotError(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
         RobotState = newState;
         IsCartesianGoalSet = false;
-        EventTriggers.RobotStatusMsg(this->GetName() + " constraint controller cartesian");
+        MessageEvents.RobotStatus(this->GetName() + " constraint controller cartesian");
         break;
 
-    case mtsIntuitiveResearchKitPSMTypes::PSM_MANUAL:
-        if (this->RobotState < mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED) {
-            EventTriggers.RobotErrorMsg(this->GetName() + " is not ready yet");
+    case mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL:
+        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+            MessageEvents.RobotError(this->GetName() + " is not ready yet");
             return;
         }
         // disable PID to allow manual move
         PID.Enable(false);
         RobotState = newState;
-        EventTriggers.RobotStatusMsg(this->GetName() + " in manual mode");
+        MessageEvents.RobotStatus(this->GetName() + " in manual mode");
         break;
     default:
         break;
-    }
-}
-
-void mtsIntuitiveResearchKitPSM::RunHomingPower(void)
-{
-    const double timeToPower = 3.0 * cmn_s;
-
-    const double currentTime = this->StateTable.GetTic();
-    // first, request power to be turned on
-    if (!HomingPowerRequested) {
-        RobotIO.BiasEncoder();
-        if (0) { // use pots for redundancy
-            vctDoubleVec potsToEncodersTolerance(this->NumberOfJoints);
-            potsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
-            potsToEncodersTolerance.Element(2) = 20.0; // 20 mm
-            RobotIO.SetPotsToEncodersTolerance(potsToEncodersTolerance);
-            RobotIO.UsePotsForSafetyCheck(true);
-        }
-        HomingTimer = currentTime;
-        // make sure the PID is not sending currents
-        PID.Enable(false);
-        // pre-load the boards with zero current
-        RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints, 0.0));
-        // enable power and set a flags to move to next step
-        RobotIO.EnablePower();
-        HomingPowerRequested = true;
-        EventTriggers.RobotStatusMsg(this->GetName() + " power requested");
-        return;
-    }
-
-    // second, check status
-    if (HomingPowerRequested
-        && ((currentTime - HomingTimer) > timeToPower)) {
-
-        // pre-load PID to make sure desired position has some reasonable values
-        PID.GetPositionJoint(JointGetParam);
-        // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
-        JointGetParam.Position().Element(2) /= 1000.0;  // convert from mm to m
-        // assign to a more convenient vctDoubleVec
-        JointGet.Assign(JointGetParam.Position(), NumberOfJoints);
-        SetPositionJointLocal(JointGet);
-
-        // check power status
-        vctBoolVec amplifiersStatus(NumberOfJoints);
-        RobotIO.GetActuatorAmpStatus(amplifiersStatus);
-        if (amplifiersStatus.All()) {
-            EventTriggers.RobotStatusMsg(this->GetName() + " power on");
-            this->SetState(mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_CALIBRATING_ARM);
-        } else {
-            EventTriggers.RobotErrorMsg(this->GetName() + " failed to enable power.");
-            this->SetState(mtsIntuitiveResearchKitPSMTypes::PSM_UNINITIALIZED);
-        }
     }
 }
 
@@ -472,7 +271,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         PID.Enable(true);
 
         // compute joint goal position
-        JointTrajectory.Goal.SetSize(NumberOfJoints);
+        JointTrajectory.Goal.SetSize(NumberOfJoints());
         JointTrajectory.Goal.ForceAssign(JointGet);
         // move to zero position only there is no tool present
         Tool.GetButton(Tool.IsPresent);
@@ -504,16 +303,16 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
             PID.SetCheckJointLimit(true);
-            this->SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED);
+            this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
         } else {
             // time out
             if (currentTime > HomingTimer + extraTime) {
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                EventTriggers.RobotErrorMsg(this->GetName() + " unable to reach home position during calibration on pots.");
+                MessageEvents.RobotError(this->GetName() + " unable to reach home position during calibration on pots.");
                 PID.Enable(false);
                 PID.SetCheckJointLimit(true);
-                this->SetState(mtsIntuitiveResearchKitPSMTypes::PSM_UNINITIALIZED);
+                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
             }
         }
     }
@@ -552,7 +351,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
         // Adapter engage done
         EngagingStopwatch.Reset();
-        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED);
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)) {
         EngagingJointSet[3] = -300.0 * cmnPI / 180.0;
@@ -603,7 +402,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         SetPositionJointLocal(JointSet);
         // Adapter engage done
         EngagingStopwatch.Reset();
-        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_READY);
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (2000 * cmn_ms)) {
         EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
@@ -644,18 +443,11 @@ void mtsIntuitiveResearchKitPSM::RunPositionCartesian(void)
     //! \todo: should prevent user to go to close to RCM!
 
     // sanity check
-    if (RobotState != mtsIntuitiveResearchKitPSMTypes::PSM_POSITION_CARTESIAN) {
+    if (RobotState != mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
         CMN_LOG_CLASS_RUN_ERROR << GetName() << ": SetPositionCartesian: PSM not ready" << std::endl;
         return;
     }
 
-#if TRAJECTORY_FOR_POSITION_CARTESIAN
-    const double currentTime = this->StateTable.GetTic();
-    if (currentTime <= JointTrajectory.EndTime) {
-        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
-        SetPositionJointLocal(JointSet);
-    }
-#else
     if (IsCartesianGoalSet == true) {
         vctDoubleVec jointSet(6, 0.0);
         jointSet.Assign(JointGetDesired, 6);
@@ -674,7 +466,6 @@ void mtsIntuitiveResearchKitPSM::RunPositionCartesian(void)
         // finally send new joint values
         SetPositionJointLocal(jointSet);
     }
-#endif
 }
 
 void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
@@ -719,40 +510,16 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
 
 void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
-    JointSetParam.Goal().Assign(newPosition, NumberOfJoints);
-    JointSetParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
+    JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
     PID.SetPositionJoint(JointSetParam);
 }
 
 void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (RobotState == mtsIntuitiveResearchKitPSMTypes::PSM_POSITION_CARTESIAN) {
-#if TRAJECTORY_FOR_POSITION_CARTESIAN
-        // first compute inverse kinematics on first 6 joints
-        vctDoubleVec joints(6);
-        joints.Assign(JointGet, 6);
-        Manipulator.InverseKinematics(joints, newPosition.Goal());
-        // find closest solution mod 2 pi for rotation along tool shaft
-        const double difference = JointGet[3] - joints[3];
-        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        joints[3] = joints[3] + differenceInTurns * 2.0 * cmnPI;
-
-        // trajectory in joint space
-        const double currentTime = this->StateTable.GetTic();
-        // starting point is last requested to PID component
-        JointTrajectory.Start.Assign(JointGet);
-        // assign inverse kinematics joints and angle to goal
-        JointTrajectory.Goal.Assign(joints, 6);
-        JointTrajectory.Goal.Element(6) = DesiredOpenAngle;
-        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime - this->GetPeriodicity(), robLSPB::LSPB_NONE); // LSPB_DURATION);
-        JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
-#else
+    if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
         CartesianSetParam = newPosition;
         IsCartesianGoalSet = true;
-#endif
-    } else if (RobotState == mtsIntuitiveResearchKitPSMTypes::PSM_CONSTRAINT_CONTROLLER_CARTESIAN) {
+    } else if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN) {
         CartesianSetParam = newPosition;
         IsCartesianGoalSet = true;
     } else {
@@ -768,27 +535,27 @@ void mtsIntuitiveResearchKitPSM::SetOpenAngle(const double & openAngle)
 void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
 {
     if (state == "Home") {
-        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_HOMING_POWERING);
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
     } else if ((state == "Cartesian position") || (state == "Teleop")) {
-        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_POSITION_CARTESIAN);
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN);
     } else if (state == "Cartesian constraint controller") {
-        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_CONSTRAINT_CONTROLLER_CARTESIAN);
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN);
     } else if (state == "Manual") {
-        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_MANUAL);
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
     } else {
-        EventTriggers.RobotErrorMsg(this->GetName() + ": unsupported state " + state);
+        MessageEvents.RobotError(this->GetName() + ": unsupported state " + state);
     }
 }
 
 void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
-        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_ADAPTER);
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER);
     } else {
         // this is "down" transition so we have to
         // make sure we had an adapter properly engaged before
-        if (RobotState >= mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED) {
-            SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ARM_CALIBRATED);
+        if (RobotState >= mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED) {
+            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
         }
     }
 }
@@ -796,12 +563,12 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & butt
 void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
-        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ENGAGING_TOOL);
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL);
     } else {
         // this is "down" transition so we have to
         // make sure we had a tool properly engaged before
-        if (RobotState >= mtsIntuitiveResearchKitPSMTypes::PSM_READY) {
-            SetState(mtsIntuitiveResearchKitPSMTypes::PSM_ADAPTER_ENGAGED);
+        if (RobotState >= mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
         }
     }
 }
@@ -809,40 +576,21 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
 void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & button)
 {
     // Pass events
-    EventTriggers.ManipClutch(button);
+    ClutchEvents.ManipClutch(button);
 
     // Start manual mode but save the previous state
     if (button.Type() == prmEventButton::PRESSED) {
-        EventTriggers.ManipClutchPreviousState = this->RobotState;
-        SetState(mtsIntuitiveResearchKitPSMTypes::PSM_MANUAL);
+        ClutchEvents.ManipClutchPreviousState = this->RobotState;
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
     } else {
-        if (RobotState == mtsIntuitiveResearchKitPSMTypes::PSM_MANUAL) {
+        if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL) {
             // Enable PID
             PID.Enable(true);
             // set command joint position to joint current
             JointSet.ForceAssign(JointGet);
             SetPositionJointLocal(JointSet);
             // go back to state before clutching
-            SetState(EventTriggers.ManipClutchPreviousState);
+            SetState(ClutchEvents.ManipClutchPreviousState);
         }
     }
-}
-
-void mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch(const prmEventButton & button)
-{
-    // Pass events
-    EventTriggers.SUJClutch(button);
-
-    // Log events
-    if (button.Type() == prmEventButton::PRESSED) {
-        CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": EventHandlerSUJClutch: pressed" << std::endl;
-    } else {
-        CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": EventHandlerSUJClutch: released" << std::endl;
-    }
-}
-
-
-void mtsIntuitiveResearchKitPSM::GetRobotControlState(std::string & state) const
-{
-    state = mtsIntuitiveResearchKitPSMTypes::RobotStateTypeToString(this->RobotState);
 }

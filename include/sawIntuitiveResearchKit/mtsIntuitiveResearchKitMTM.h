@@ -30,7 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTMTypes.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 
 class mtsIntuitiveResearchKitMTM: public mtsTaskPeriodic
 {
@@ -79,7 +79,7 @@ protected:
 
     /*! Verify that the state transition is possible, initialize global
       variables for the desired state and finally set the state. */
-    void SetState(const mtsIntuitiveResearchKitMTMTypes::RobotStateType & newState);
+    void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState);
 
     /*! Homing procedure, will check the homing state and call the required method. */
     void RunHoming(void);
@@ -179,7 +179,7 @@ protected:
     bool GripperClosed;
 
     //! robot control mode
-    mtsIntuitiveResearchKitMTMTypes::RobotStateType RobotState;
+    mtsIntuitiveResearchKitArmTypes::RobotStateType RobotState;
     //! robot kinematics
     robManipulator Manipulator;
     //! robot type

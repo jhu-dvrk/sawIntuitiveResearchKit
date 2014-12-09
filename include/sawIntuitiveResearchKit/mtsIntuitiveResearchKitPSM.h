@@ -27,27 +27,22 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSMTypes.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitOptimizer.h>
 
 // temporary
 #include <cisstOSAbstraction/osaStopwatch.h>
 
-class mtsIntuitiveResearchKitPSM: public mtsTaskPeriodic
+class mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    static const size_t NumberOfJoints = 7;
-
     mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitPSM() {}
 
     void Configure(const std::string & filename);
-    void Startup(void);
-    void Run(void);
-    void Cleanup(void);
 
 protected:
 
@@ -56,18 +51,14 @@ protected:
 
     void Init(void);
 
-    /*! Get data from the PID level based on current state. */
-    void GetRobotData(void);
-
     /*! Verify that the state transition is possible, initialize global
       variables for the desired state and finally set the state. */
-    void SetState(const mtsIntuitiveResearchKitPSMTypes::RobotStateType & newState);
+    void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState);
 
-    /*! Homing procedure, will check the homing state and call the required method. */
-    void RunHoming(void);
+    void SetRobotControlState(const std::string & state);
 
-    /*! Homing procedure, power the robot and initial current and encoder calibration. */
-    void RunHomingPower(void);
+    /*! Switch case for user mode. */
+    void RunUserMode(void);
 
     /*! Homing procedure, home all joints except last one using potentiometers as reference. */
     void RunHomingCalibrateArm(void);
@@ -90,33 +81,25 @@ protected:
     void EventHandlerAdapter(const prmEventButton & button);
     void EventHandlerTool(const prmEventButton & button);
     void EventHandlerManipClutch(const prmEventButton & button);
-    void EventHandlerSUJClutch(const prmEventButton & button);
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     void SetOpenAngle(const double & openAngle);
-    void SetRobotControlState(const std::string & state);
-    void GetRobotControlState(std::string & state) const;
 
-    struct {
-        mtsFunctionWrite Enable;
-        mtsFunctionRead GetPositionJoint;
-        mtsFunctionRead GetPositionJointDesired;
-        mtsFunctionWrite SetPositionJoint;
-        mtsFunctionWrite SetCheckJointLimit;
-    } PID;
+    /*! Configuration methods */
+    inline size_t NumberOfJoints(void) const {
+        return 7;
+    }
 
-    // Required interface
-    struct InterfaceRobotTorque {
-        //! Enable Robot Power
-        mtsFunctionVoid EnablePower;
-        mtsFunctionVoid DisablePower;
-        mtsFunctionRead GetActuatorAmpStatus;
-        mtsFunctionVoid BiasEncoder;
-        mtsFunctionWrite SetActuatorCurrent;
-        mtsFunctionWrite UsePotsForSafetyCheck;
-        mtsFunctionWrite SetPotsToEncodersTolerance;
-    } RobotIO;
+    inline size_t NumberOfBrakes(void) const {
+        return 0;
+    }
 
+    inline bool UsePIDTrackingError(void) const {
+        return false;
+    }
+
+    /*! Event handlers for tools */
+    //@{
     struct {
         mtsFunctionRead GetButton;
         bool IsPresent;
@@ -126,70 +109,32 @@ protected:
         mtsFunctionRead GetButton;
         bool IsPresent;
     } Tool;
+    //@}
 
     struct {
         mtsFunctionRead GetButton;
         bool IsPressed;
     } ManipClutch;
 
-    struct {
-        mtsFunctionRead GetButton;
-        bool IsPressed;
-    } SUJClutch;
-
     // Functions for events
     struct {
-        mtsFunctionWrite RobotStatusMsg;
-        mtsFunctionWrite RobotErrorMsg;
         mtsFunctionWrite ManipClutch;
-        mtsIntuitiveResearchKitPSMTypes::RobotStateType ManipClutchPreviousState;
-        mtsFunctionWrite SUJClutch;
-    } EventTriggers;
+        mtsIntuitiveResearchKitArmTypes::RobotStateType ManipClutchPreviousState;
+    } ClutchEvents;
 
-    // Cache cartesian goal position
-    prmPositionCartesianSet CartesianSetParam;
-    bool IsCartesianGoalSet;
-
-    prmPositionCartesianGet CartesianGetParam;
-    vctFrm4x4 CartesianGet;
-    prmPositionCartesianGet CartesianGetDesiredParam;
-    vctFrm4x4 CartesianGetDesired;
-    prmPositionJointGet JointGetParam;
-    vctDoubleVec JointGet;
-    vctDoubleVec JointGetDesired;
-    prmPositionJointSet JointSetParam;
-    vctDoubleVec JointSet;
-    robManipulator Manipulator;
     robManipulator * ToolOffset;
     vctFrm4x4 ToolOffsetTransformation;
 
     vctFrm4x4 CartesianPositionFrm;
     double DesiredOpenAngle;
-    mtsIntuitiveResearchKitPSMTypes::RobotStateType RobotState;
-
-    struct {
-        robLSPB LSPB;
-        vctDoubleVec Velocity;
-        vctDoubleVec Acceleration;
-        vctDoubleVec Start;
-        vctDoubleVec Goal;
-        vctDoubleVec GoalError;
-        vctDoubleVec GoalTolerance;
-        double EndTime;
-    } JointTrajectory;
 
     // Home Action
-    double HomingTimer;
-    bool HomingPowerRequested;
-    bool HomingCalibrateArmStarted;
     bool EngagingAdapterStarted;
     bool EngagingToolStarted;
 
     // temporary
     osaStopwatch EngagingStopwatch;
     vctDoubleVec EngagingJointSet;
-
-    int Counter;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitPSM);

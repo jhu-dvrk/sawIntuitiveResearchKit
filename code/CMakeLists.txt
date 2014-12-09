@@ -51,15 +51,14 @@ if (cisst_FOUND)
     cisst_data_generator (sawIntuitiveResearchKit
                           "${CISST_BINARY_DIR}/include" # where to save the file
                           "sawIntuitiveResearchKit/"    # sub directory for include
-                          mtsIntuitiveResearchKitMTMTypes.cdg
-                          mtsIntuitiveResearchKitPSMTypes.cdg
-                          mtsIntuitiveResearchKitECMTypes.cdg
+                          mtsIntuitiveResearchKitArmTypes.cdg
                           mtsVFDataFollow.cdg)
 
     include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
     set (sawIntuitiveResearchKit_HEADER_DIR "${sawIntuitiveResearchKit_INCLUDE_DIR}/sawIntuitiveResearchKit")
 
     set (HEADER_FILES
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArm.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitMTM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitECM.h
@@ -71,6 +70,7 @@ if (cisst_FOUND)
         )
 
     set (SOURCE_FILES
+         mtsIntuitiveResearchKitArm.cpp
          mtsIntuitiveResearchKitMTM.cpp
          mtsIntuitiveResearchKitPSM.cpp
          mtsIntuitiveResearchKitECM.cpp
