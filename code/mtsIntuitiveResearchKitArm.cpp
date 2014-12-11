@@ -321,7 +321,6 @@ void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
 void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
     JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
-    JointSetParam.Goal().Element(2) *= 1000.0; // convert from meters to mm
     PID.SetPositionJoint(JointSetParam);
 }
 

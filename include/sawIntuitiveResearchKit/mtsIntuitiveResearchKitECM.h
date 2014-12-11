@@ -58,15 +58,15 @@ protected:
 
     /*! Configuration methods */
     inline size_t NumberOfJoints(void) const {
-        return 7;
+        return 4;
     }
 
     inline size_t NumberOfBrakes(void) const {
-        return 0;
+        return 3;
     }
 
     inline bool UsePIDTrackingError(void) const {
-        return false;
+        return true;
     }
 
     struct {
