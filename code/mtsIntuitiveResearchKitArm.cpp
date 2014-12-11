@@ -57,6 +57,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
     JointTrajectory.EndTime = 0.0;
     PotsToEncodersTolerance.SetSize(NumberOfJoints());
 
+    // cartesian position are timestamped using timestamps provided by PID
+    CartesianGetParam.SetAutomaticTimestamp(false);
+    CartesianGetDesiredParam.SetAutomaticTimestamp(false);
     this->StateTable.AddData(CartesianGetParam, "CartesianPosition");
     this->StateTable.AddData(CartesianGetDesiredParam, "CartesianDesired");
     this->StateTable.AddData(JointGetParam, "JointPosition");
@@ -69,6 +72,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("GetPositionJointDesired", PID.GetPositionJointDesired);
         PIDInterface->AddFunction("SetPositionJoint", PID.SetPositionJoint);
         PIDInterface->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
+        PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
+        PIDInterface->AddFunction("SetTorqueJoint", PID.SetTorqueJoint);
+        PIDInterface->AddFunction("SetTorqueOffset", PID.SetTorqueOffset);
         PIDInterface->AddFunction("EnableTrackingError", PID.EnableTrackingError);
         PIDInterface->AddFunction("SetTrackingErrorTolerances", PID.SetTrackingErrorTolerance);
         PIDInterface->AddEventHandlerVoid(&mtsIntuitiveResearchKitArm::EventHandlerTrackingError, this, "TrackingError");
@@ -82,6 +88,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         IOInterface->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
         IOInterface->AddFunction("GetBrakeAmpStatus", RobotIO.GetBrakeAmpStatus);
         IOInterface->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
+        IOInterface->AddFunction("ResetSingleEncoder", RobotIO.ResetSingleEncoder);
+        IOInterface->AddFunction("GetAnalogInputPosSI", RobotIO.GetAnalogInputPosSI);
         IOInterface->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
         IOInterface->AddFunction("UsePotsForSafetyCheck", RobotIO.UsePotsForSafetyCheck);
         IOInterface->AddFunction("SetPotsToEncodersTolerance", RobotIO.SetPotsToEncodersTolerance);
@@ -148,12 +156,14 @@ void mtsIntuitiveResearchKitArm::Run(void)
     case mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL:
         break;
     default:
-        RunUserMode();
+        RunArmSpecific();
         break;
     }
 
     RunEvent();
     ProcessQueuedCommands();
+
+    CartesianGetPreviousParam = CartesianGetParam;
 }
 
 void mtsIntuitiveResearchKitArm::Cleanup(void)
@@ -207,10 +217,21 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             // update cartesian position
             CartesianGet = Manipulator.ForwardKinematics(JointGet);
             CartesianGet.Rotation().NormalizedSelf();
+            CartesianGetParam.SetTimestamp(JointGetParam.Timestamp());
             CartesianGetParam.SetValid(true);
+            // update cartesian velocity (caveat, velocities are not updated)
+            vct3 linearVelocity;
+            linearVelocity.DifferenceOf(CartesianGetParam.Position().Translation(),
+                                        CartesianGetPreviousParam.Position().Translation());
+            linearVelocity.Divide(CartesianGetParam.Timestamp() - CartesianGetPreviousParam.Timestamp());
+            CartesianVelocityGetParam.SetVelocityLinear(linearVelocity);
+            CartesianVelocityGetParam.SetVelocityAngular(vct3(0.0));
+            CartesianVelocityGetParam.SetTimestamp(CartesianGetParam.Timestamp());
+            CartesianVelocityGetParam.SetValid(true);
             // update cartesian position desired based on joint desired
             CartesianGetDesired = Manipulator.ForwardKinematics(JointGetDesired);
             CartesianGetDesired.Rotation().NormalizedSelf();
+            CartesianGetDesiredParam.SetTimestamp(JointGetParam.Timestamp());
             CartesianGetDesiredParam.SetValid(true);
         } else {
             // update cartesian position

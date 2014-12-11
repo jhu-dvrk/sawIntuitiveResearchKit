@@ -114,7 +114,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
     }
 }
 
-void mtsIntuitiveResearchKitPSM::RunUserMode(void)
+void mtsIntuitiveResearchKitPSM::RunArmSpecific(void)
 {
     switch (RobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER:

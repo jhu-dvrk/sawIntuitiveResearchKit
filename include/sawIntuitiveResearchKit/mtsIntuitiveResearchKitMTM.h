@@ -20,19 +20,10 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitMTM_h
 #define _mtsIntuitiveResearchKitMTM_h
 
-#include <cisstMultiTask/mtsTaskPeriodic.h>
-#include <cisstParameterTypes/prmPositionJointSet.h>
-#include <cisstParameterTypes/prmPositionJointGet.h>
-#include <cisstParameterTypes/prmForceCartesianSet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
-#include <cisstParameterTypes/prmPositionCartesianGet.h>
-#include <cisstParameterTypes/prmPositionCartesianSet.h>
-#include <cisstParameterTypes/prmVelocityCartesianGet.h>
-#include <cisstRobot/robManipulator.h>
-#include <cisstRobot/robLSPB.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 
-class mtsIntuitiveResearchKitMTM: public mtsTaskPeriodic
+class mtsIntuitiveResearchKitMTM: public mtsIntuitiveResearchKitArm
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
@@ -41,17 +32,11 @@ public:
         MTM_NULL, MTM_LEFT, MTM_RIGHT
     };
 
-    static const size_t NumberOfJoints = 7;
-    static const size_t RollIndex = 6;
-
     mtsIntuitiveResearchKitMTM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitMTM() {}
 
     void Configure(const std::string & filename);
-    void Startup(void);
-    void Run(void);
-    void Cleanup(void);
 
     /*!
      \brief Set MTM type, either MTM_LEFT or MTM_RIGHT
@@ -72,29 +57,39 @@ protected:
         JNT_WRIST_ROLL = 6
     };
 
+    /*! Configuration methods */
+    inline size_t NumberOfJoints(void) const {
+        return 7;
+    }
+
+    inline size_t NumberOfBrakes(void) const {
+        return 0;
+    }
+
+    inline bool UsePIDTrackingError(void) const {
+        return false;
+    }
+
     void Init(void);
 
-    /*! Get data from the PID level based on current state. */
+    /*! Get data specific to the MTM (gripper angle using analog inputs) after
+      calling mtsIntuitiveResearchKitArm::GetRobotData. */
     void GetRobotData(void);
 
     /*! Verify that the state transition is possible, initialize global
       variables for the desired state and finally set the state. */
     void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState);
 
-    /*! Homing procedure, will check the homing state and call the required method. */
-    void RunHoming(void);
+    void SetRobotControlState(const std::string & state);
 
-    /*! Homing procedure, power the robot and initial current and encoder calibration. */
-    void RunHomingPower(void);
+    /*! Switch case for user mode. */
+    void RunArmSpecific(void);
 
     /*! Homing procedure, home all joints except last one using potentiometers as reference. */
     void RunHomingCalibrateArm(void);
 
     /*! Homing procedure, calibrate last joint based on hardware limits. */
     void RunHomingCalibrateRoll(void);
-
-    /*! Position Cartesian. */
-    void RunPositionCartesian(void);
 
     /*! Gravity Compensation. */
     void RunGravityCompensation(void);
@@ -107,65 +102,16 @@ protected:
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     void SetWrench(const prmForceCartesianSet & newForce);  // NOTE: in body frame
-    void SetRobotControlState(const std::string & state);
-    void GetRobotControlState(std::string & state) const;
-
-    struct {
-        mtsFunctionWrite Enable;
-        mtsFunctionWrite EnableTorqueMode;
-        mtsFunctionRead GetPositionJoint;
-        mtsFunctionRead GetPositionJointDesired;
-        mtsFunctionWrite SetPositionJoint;
-        mtsFunctionWrite SetTorqueJoint;
-        mtsFunctionWrite SetCheckJointLimit;
-        mtsFunctionWrite SetTorqueOffset;
-    } PID;
-
-    // Required interface
-    struct InterfaceRobotTorque {
-        //! Enable Robot Power
-        mtsFunctionVoid EnablePower;
-        mtsFunctionVoid DisablePower;
-        mtsFunctionRead GetActuatorAmpStatus;
-        mtsFunctionVoid BiasEncoder;
-        mtsFunctionWrite SetActuatorCurrent;
-        mtsFunctionWrite UsePotsForSafetyCheck;
-        mtsFunctionWrite SetPotsToEncodersTolerance;
-        mtsFunctionWrite ResetSingleEncoder;
-        mtsFunctionRead GetAnalogInputPosSI;
-    } RobotIO;
 
     // Functions for events
     struct {
         mtsFunctionVoid GripperPinch;
         mtsFunctionWrite GripperClosed;
-        mtsFunctionWrite RobotStatusMsg;
-        mtsFunctionWrite RobotErrorMsg;
-    } EventTriggers;
+    } GripperEvents;
 
-
-    //! robot cartesian position
-    prmPositionCartesianGet CartesianGetParam;
-    vctFrm4x4 CartesianGet;
-    prmPositionCartesianGet CartesianGetDesiredParam;
-    vctFrm4x4 CartesianGetDesired;
-
-    vctFrm4x4 CartesianGetPrevious;
     //! robot cartesian velocity
     prmVelocityCartesianGet CartesianVelocityParam;
-    vct3 CartesianVelocityLinear;
-    vct3 CartesianVelocityAngular;
-    //! robot cartesian goal
-    prmPositionCartesianSet CartesianSet;
-    bool IsCartesianGoalSet;
 
-    //! robot current joint position
-    prmPositionJointGet JointGetParam;
-    vctDoubleVec JointGet;
-    vctDoubleVec JointGetDesired;
-    //! robot desired joint position
-    prmPositionJointSet JointSetParam;
-    vctDoubleVec JointSet;
     //! robot cartesian position when cluthed
     vctFrm4x4 CartesianClutched;
 
@@ -174,32 +120,14 @@ protected:
 
     //! Analog Input from Hardware for Gripper
     vctDoubleVec AnalogInputPosSI;
-    //! Gripper angle (deg)
+    //! Gripper angle
     double GripperPosition;
     bool GripperClosed;
 
-    //! robot control mode
-    mtsIntuitiveResearchKitArmTypes::RobotStateType RobotState;
-    //! robot kinematics
-    robManipulator Manipulator;
     //! robot type
     MTM_TYPE RobotType;
 
-    struct {
-        robLSPB LSPB;
-        vctDoubleVec Velocity;
-        vctDoubleVec Acceleration;
-        vctDoubleVec Start;
-        vctDoubleVec Goal;
-        vctDoubleVec GoalError;
-        vctDoubleVec GoalTolerance;
-        double EndTime;
-    } JointTrajectory;
-
     // Home Action
-    double HomingTimer;
-    bool HomingPowerRequested;
-    bool HomingCalibrateArmStarted;
     bool HomingCalibrateRollSeekLower,
          HomingCalibrateRollSeekUpper,
          HomingCalibrateRollSeekCenter;

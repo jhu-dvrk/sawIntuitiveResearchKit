@@ -24,6 +24,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionJointGet.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmVelocityCartesianGet.h>
+
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
 
@@ -70,7 +72,7 @@ protected:
     virtual void RunPositionCartesian(void);
 
     /*! Run method called for all states not handled in base class. */
-    inline virtual void RunUserMode(void) {};
+    inline virtual void RunArmSpecific(void) {};
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
@@ -96,6 +98,9 @@ protected:
         mtsFunctionRead  GetPositionJointDesired;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetCheckJointLimit;
+        mtsFunctionWrite EnableTorqueMode;
+        mtsFunctionWrite SetTorqueJoint;
+        mtsFunctionWrite SetTorqueOffset;
         mtsFunctionWrite EnableTrackingError;
         mtsFunctionWrite SetTrackingErrorTolerance;
     } PID;
@@ -108,6 +113,8 @@ protected:
         mtsFunctionRead  GetActuatorAmpStatus;
         mtsFunctionRead  GetBrakeAmpStatus;
         mtsFunctionVoid  BiasEncoder;
+        mtsFunctionWrite ResetSingleEncoder;
+        mtsFunctionRead  GetAnalogInputPosSI;
         mtsFunctionWrite SetActuatorCurrent;
         mtsFunctionWrite UsePotsForSafetyCheck;
         mtsFunctionWrite SetPotsToEncodersTolerance;
@@ -137,6 +144,10 @@ protected:
     vctDoubleVec JointGetDesired;
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
+
+    // Velocities
+    prmPositionCartesianGet CartesianGetPreviousParam;
+    prmVelocityCartesianGet CartesianVelocityGetParam;
 
     robManipulator Manipulator;
     vctFrm4x4 CartesianPositionFrm;
