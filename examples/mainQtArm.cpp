@@ -120,7 +120,7 @@ int main(int argc, char ** argv)
     componentManager->Connect("console", "Main", "consoleGUI", "Main");
 
     // IO
-    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1.0 * cmn_ms, firewirePort);
+    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 2.0 * cmn_ms, firewirePort);
     io->Configure(configFiles["io"]);
     componentManager->AddComponent(io);
 

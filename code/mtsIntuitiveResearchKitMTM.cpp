@@ -52,12 +52,10 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // initialize gripper state
     GripperClosed = false;
 
-    JointSetParam.Goal().SetSize(NumberOfJoints() + 1); // PID treats gripper as joint
     JointTrajectory.Velocity.SetAll(720.0 * cmnPI_180); // degrees per second
     JointTrajectory.Acceleration.SetAll(720.0 * cmnPI_180);
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
      // IO level treats the gripper as joint :-)
-    PotsToEncodersTolerance(NumberOfJoints() + 1); // IO level treats the gripper as joint :-)
     PotsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
     // pots on gripper rotation are not directly mapped to encoders
     PotsToEncodersTolerance.Element(6) = cmnTypeTraits<double>::PlusInfinityOrMax();

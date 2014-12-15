@@ -84,6 +84,7 @@ protected:
 
     /*! Configuration methods specific to derived classes. */
     virtual size_t NumberOfJoints(void) const = 0;
+    virtual size_t NumberOfAxes(void) const = 0;
     virtual size_t NumberOfBrakes(void) const = 0;
     virtual bool UsePIDTrackingError(void) const = 0;
     inline virtual bool UsePotsForSafetyCheck(void) const {

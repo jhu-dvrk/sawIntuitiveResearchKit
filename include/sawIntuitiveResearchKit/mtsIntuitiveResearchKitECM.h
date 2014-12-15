@@ -39,6 +39,10 @@ protected:
         return 4;
     }
 
+    inline size_t NumberOfAxes(void) const {
+        return 4;
+    }
+
     inline size_t NumberOfBrakes(void) const {
         return 3;
     }

@@ -47,7 +47,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     // initialize trajectory data
     JointGet.SetSize(NumberOfJoints());
     JointSet.SetSize(NumberOfJoints());
-    JointSetParam.Goal().SetSize(NumberOfJoints());
+    JointSetParam.Goal().SetSize(NumberOfAxes());
     JointTrajectory.Velocity.SetSize(NumberOfJoints());
     JointTrajectory.Acceleration.SetSize(NumberOfJoints());
     JointTrajectory.Start.SetSize(NumberOfJoints());
@@ -55,7 +55,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     JointTrajectory.GoalError.SetSize(NumberOfJoints());
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints());
     JointTrajectory.EndTime = 0.0;
-    PotsToEncodersTolerance.SetSize(NumberOfJoints());
+    PotsToEncodersTolerance.SetSize(NumberOfAxes());
 
     // cartesian position are timestamped using timestamps provided by PID
     CartesianGetParam.SetAutomaticTimestamp(false);
@@ -273,7 +273,7 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
         // make sure the PID is not sending currents
         PID.Enable(false);
         // pre-load the boards with zero current
-        RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints(), 0.0));
+        RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
         // enable power and set a flags to move to next step
         RobotIO.EnablePower();
         HomingPowerRequested = true;

@@ -62,6 +62,10 @@ protected:
         return 7;
     }
 
+    inline size_t NumberOfAxes(void) const {
+        return 8;
+    }
+
     inline size_t NumberOfBrakes(void) const {
         return 0;
     }
