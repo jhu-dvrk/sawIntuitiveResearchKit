@@ -69,7 +69,10 @@ protected:
     virtual void RunHomingCalibrateArm(void) = 0;
 
     /*! Cartesian state. */
+    virtual void RunPositionJoint(void);
+    virtual void RunPositionGoalJoint(void);
     virtual void RunPositionCartesian(void);
+    virtual void RunPositionGoalCartesian(void);
 
     /*! Run method called for all states not handled in base class. */
     inline virtual void RunArmSpecific(void) {};
@@ -77,8 +80,12 @@ protected:
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
 
-    virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);    
-    
+    /*! Methods used for commands */
+    virtual void SetPositionJoint(const prmPositionJointSet & newPosition);
+    virtual void SetPositionGoalJoint(const prmPositionJointSet & newPosition);
+    virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
+    virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
+
     /*! Event handler for PID tracking error. */
     virtual void EventHandlerTrackingError(void);
 
@@ -134,7 +141,7 @@ protected:
 
     // Cache cartesian goal position
     prmPositionCartesianSet CartesianSetParam;
-    bool IsCartesianGoalSet;
+    bool IsGoalSet;
 
     prmPositionCartesianGet CartesianGetParam;
     vctFrm4x4 CartesianGet;

@@ -189,6 +189,22 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         MessageEvents.RobotStatus(this->GetName() + " ready");
         break;
 
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
+        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+            MessageEvents.RobotError(this->GetName() + " is not homed");
+            return;
+        }
+        RobotState = newState;
+        MessageEvents.RobotStatus(this->GetName() + " position joint");
+
+        // Disable torque mode for all joints
+        torqueMode.SetAll(false);
+        PID.EnableTorqueMode(torqueMode);
+        PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
+        SetPositionJointLocal(JointGet);
+        IsGoalSet = false;
+        break;
+
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
             MessageEvents.RobotError(this->GetName() + " is not homed");
@@ -202,6 +218,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         PID.EnableTorqueMode(torqueMode);
         PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
         SetPositionJointLocal(JointGet);
+        IsGoalSet = false;
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:

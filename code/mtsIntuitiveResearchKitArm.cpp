@@ -41,7 +41,7 @@ mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicCons
 
 void mtsIntuitiveResearchKitArm::Init(void)
 {
-    IsCartesianGoalSet = false;
+    IsGoalSet = false;
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 
     // initialize trajectory data
@@ -99,11 +99,16 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     RobotInterface = AddInterfaceProvided("Robot");
     if (RobotInterface) {
-        // Cartesian
+        // Get
         RobotInterface->AddCommandReadState(this->StateTable, JointGetParam, "GetPositionJoint");
+        RobotInterface->AddCommandReadState(this->StateTable, JointGetDesired, "GetPositionJointDesired");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianGetParam, "GetPositionCartesian");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianGetDesiredParam, "GetPositionCartesianDesired");
+        // Set
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionJoint, this, "SetPositionJoint");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalJoint, this, "SetPositionGoalJoint");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionCartesian, this, "SetPositionCartesian");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalCartesian, this, "SetPositionGoalCartesian");
         // Robot State
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetRobotControlState,
                                            this, "SetRobotControlState", std::string(""));
@@ -150,8 +155,17 @@ void mtsIntuitiveResearchKitArm::Run(void)
         break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
         break;
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
+        RunPositionJoint();
+        break;
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
+        RunPositionGoalJoint();
+        break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
         RunPositionCartesian();
+        break;
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
+        RunPositionGoalCartesian();
         break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL:
         break;
@@ -313,11 +327,27 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
     }
 }
 
+void mtsIntuitiveResearchKitArm::RunPositionJoint(void)
+{
+    if (IsGoalSet == true) {
+        SetPositionJointLocal(JointSet);
+    }
+}
+
+void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
+{
+    const double currentTime = this->StateTable.GetTic();
+    if (currentTime <= JointTrajectory.EndTime) {
+        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
+        SetPositionJointLocal(JointSet);
+    }
+}
+
 void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
 {
     //! \todo: should prevent user to go to close to RCM!
 
-    if (IsCartesianGoalSet == true) {
+    if (IsGoalSet == true) {
         vctDoubleVec jointSet(JointGet);
 
         // compute desired slave position
@@ -335,8 +365,14 @@ void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
         SetPositionJointLocal(jointSet);
 
         // reset flag
-        IsCartesianGoalSet = false;
+        IsGoalSet = false;
     }
+}
+
+void mtsIntuitiveResearchKitArm::RunPositionGoalCartesian(void)
+{
+    // trajectory are computed in joint space for now
+    RunPositionGoalJoint();
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newPosition)
@@ -345,17 +381,57 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
     PID.SetPositionJoint(JointSetParam);
 }
 
+void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
+{
+    if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
+        JointSet.Assign(newPosition.Goal());
+        IsGoalSet = true;
+    } else {
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionJoint: arm not in "
+                                  << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT)
+                                  << ", current state is " << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState) << std::endl;
+    }
+}
+
+void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet & newPosition)
+{
+    if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT) {
+        const double currentTime = this->StateTable.GetTic();
+        // starting point is last requested to PID component
+        JointTrajectory.Start.Assign(JointGet);
+        JointTrajectory.Goal.Assign(newPosition.Goal());
+        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
+                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                 currentTime, robLSPB::LSPB_DURATION);
+        JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
+    } else {
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionGoalJoint: arm not in "
+                                  << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT)
+                                  << ", current state is " << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState) << std::endl;
+    }
+}
+
 void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
     if ((RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN)
         || (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN)) {
         CartesianSetParam = newPosition;
-        IsCartesianGoalSet = true;
+        IsGoalSet = true;
     } else {
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: Arm not ready" << std::endl;
     }
 }
 
+void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition)
+{
+    if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN) {
+        std::cerr << CMN_LOG_DETAILS << " ------------ needs to be implemented " << std::endl;
+    } else {
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionGoalJoint: arm not in "
+                                  << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN)
+                                  << ", current state is " << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState) << std::endl;
+    }
+}
 
 void mtsIntuitiveResearchKitArm::EventHandlerTrackingError(void)
 {
