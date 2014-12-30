@@ -1,6 +1,5 @@
 #
-#
-# (C) Copyright 2009-2013 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2014 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
