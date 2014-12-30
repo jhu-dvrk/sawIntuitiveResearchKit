@@ -32,7 +32,7 @@ if (cisst_FOUND)
   cisst_find_saw_component (sawControllers REQUIRED)
   cisst_find_saw_component (sawConstraintController REQUIRED)
 
-  if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
+  if (sawRobotIO1394_FOUND AND sawControllers_FOUND AND sawConstraintController_FOUND)
 
     # sawRobotIO1394 configuration
     include_directories (${sawRobotIO1394_INCLUDE_DIR}
@@ -40,12 +40,24 @@ if (cisst_FOUND)
                          ${sawConstraintController_INCLUDE_DIR})
 
     link_directories (${sawRobotIO1394_LIBRARY_DIR}
-                      ${sawControllers_LIBRARY_DIR})
+                      ${sawControllers_LIBRARY_DIR}
+                      ${sawConstraintController_LIBRARY_DIR})
 
     # create/configure file for find_package (sawIntuitiveResearchKit)
-    set (sawIntuitiveResearchKit_INCLUDE_DIR "${sawIntuitiveResearchKit_SOURCE_DIR}/include")
+    set (sawIntuitiveResearchKit_INCLUDE_DIR "${sawIntuitiveResearchKit_SOURCE_DIR}/include"
+                                             "${sawIntuitiveResearchKit_BINARY_DIR}/include")
     set (sawIntuitiveResearchKit_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
     set (sawIntuitiveResearchKit_LIBRARIES sawIntuitiveResearchKit)
+
+    # Set the version number
+    set (sawIntuitiveResearchKit_VERSION_MAJOR "1")
+    set (sawIntuitiveResearchKit_VERSION_MINOR "0")
+    set (sawIntuitiveResearchKit_VERSION_PATCH "1")
+    set (sawIntuitiveResearchKit_VERSION "${sawIntuitiveResearchKit_VERSION_MAJOR}.${sawIntuitiveResearchKit_VERSION_MINOR}.${sawIntuitiveResearchKit_VERSION_PATCH}")
+
+    # Generate sawIntuitiveResearchKitRevision.h
+    configure_file ("${sawIntuitiveResearchKit_SOURCE_DIR}/code/sawIntuitiveResearchKitRevision.h.in"
+                    "${sawIntuitiveResearchKit_BINARY_DIR}/include/sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h")
 
     # create data type using the data generator
     cisst_data_generator (sawIntuitiveResearchKit
@@ -57,7 +69,8 @@ if (cisst_FOUND)
                           mtsVFDataFollow.cdg)
 
     include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
-    set (sawIntuitiveResearchKit_HEADER_DIR "${sawIntuitiveResearchKit_INCLUDE_DIR}/sawIntuitiveResearchKit")
+    set (sawIntuitiveResearchKit_HEADER_DIR
+         "${sawIntuitiveResearchKit_SOURCE_DIR}/include/sawIntuitiveResearchKit")
 
     set (HEADER_FILES
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitMTM.h
@@ -98,14 +111,19 @@ if (cisst_FOUND)
     add_subdirectory (Qt)
     set (sawIntuitiveResearchKit_LIBRARIES ${sawIntuitiveResearchKit_LIBRARIES} ${sawIntuitiveResearchKitQt_LIBRARIES})
 
-    configure_file (
-      "${CMAKE_CURRENT_SOURCE_DIR}/sawIntuitiveResearchKitConfig.cmake.in"
-      "${sawIntuitiveResearchKit_BINARY_DIR}/sawIntuitiveResearchKitConfig.cmake"
-      @ONLY@)
+    configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/sawIntuitiveResearchKitConfig.cmake.in"
+                    "${sawIntuitiveResearchKit_BINARY_DIR}/sawIntuitiveResearchKitConfig.cmake"
+                    @ONLY@)
+
+    cisst_add_config_version ("${sawIntuitiveResearchKit_BINARY_DIR}/sawIntuitiveResearchKitConfigVersion.cmake"
+                              VERSION ${sawIntuitiveResearchKit_VERSION}
+                              DESTINATION ${CISST_CMAKE_INSTALL_SUFFIX}/saw
+                              COMPONENT sawIntuitiveResearchKit)
 
     # Install targets for headers and library
     install (DIRECTORY
-             ${sawIntuitiveResearchKit_INCLUDE_DIR}/sawIntuitiveResearchKit
+             ${sawIntuitiveResearchKit_SOURCE_DIR}/include/sawIntuitiveResearchKit
+             ${sawIntuitiveResearchKit_BINARY_DIR}/include/sawIntuitiveResearchKit
              DESTINATION include
              PATTERN .svn EXCLUDE)
 
@@ -117,6 +135,6 @@ if (cisst_FOUND)
     install (FILES "${sawIntuitiveResearchKit_BINARY_DIR}/sawIntuitiveResearchKitConfig.cmake"
              DESTINATION "${CISST_CMAKE_INSTALL_SUFFIX}/saw")
 
-  endif (sawRobotIO1394_FOUND AND sawControllers_FOUND)
+  endif (sawRobotIO1394_FOUND AND sawControllers_FOUND AND sawConstraintController_FOUND)
 
 endif (cisst_FOUND)
