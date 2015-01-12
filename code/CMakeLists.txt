@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights
+# (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights
 # Reserved.
 #
 # --- begin cisst license - do not edit ---
@@ -27,14 +27,14 @@ if (cisst_FOUND)
   # load cisst configuration
   include (${CISST_USE_FILE})
 
-  # sawRobotIO1394 has been compiled within cisst, we should find it automatically
+  # saw components have been compiled within cisst, we should find them automatically
   cisst_find_saw_component (sawRobotIO1394 REQUIRED)
   cisst_find_saw_component (sawControllers REQUIRED)
   cisst_find_saw_component (sawConstraintController REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND AND sawConstraintController_FOUND)
 
-    # sawRobotIO1394 configuration
+    # saw components configuration
     include_directories (${sawRobotIO1394_INCLUDE_DIR}
                          ${sawControllers_INCLUDE_DIR}
                          ${sawConstraintController_INCLUDE_DIR})
@@ -42,6 +42,11 @@ if (cisst_FOUND)
     link_directories (${sawRobotIO1394_LIBRARY_DIR}
                       ${sawControllers_LIBRARY_DIR}
                       ${sawConstraintController_LIBRARY_DIR})
+
+    # where to save the libraries
+    if (NOT DEFINED LIBRARY_OUTPUT_PATH)
+      set (LIBRARY_OUTPUT_PATH "${sawIntuitiveResearchKit_BINARY_DIR}/lib")
+    endif ()
 
     # create/configure file for find_package (sawIntuitiveResearchKit)
     set (sawIntuitiveResearchKit_INCLUDE_DIR "${sawIntuitiveResearchKit_SOURCE_DIR}/include"
@@ -111,11 +116,18 @@ if (cisst_FOUND)
     add_subdirectory (Qt)
     set (sawIntuitiveResearchKit_LIBRARIES ${sawIntuitiveResearchKit_LIBRARIES} ${sawIntuitiveResearchKitQt_LIBRARIES})
 
+    cisst_is_catkin_build (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
+    if (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
+      set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/cmake")
+    else ()
+      set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${sawIntuitiveResearchKit_BINARY_DIR}")
+    endif ()
+
     configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/sawIntuitiveResearchKitConfig.cmake.in"
-                    "${sawIntuitiveResearchKit_BINARY_DIR}/sawIntuitiveResearchKitConfig.cmake"
+                    "${sawIntuitiveResearchKit_CONFIG_FILE_DIR}/sawIntuitiveResearchKitConfig.cmake"
                     @ONLY@)
 
-    cisst_add_config_version ("${sawIntuitiveResearchKit_BINARY_DIR}/sawIntuitiveResearchKitConfigVersion.cmake"
+    cisst_add_config_version ("${sawIntuitiveResearchKit_CONFIG_FILE_DIR}/sawIntuitiveResearchKitConfigVersion.cmake"
                               VERSION ${sawIntuitiveResearchKit_VERSION}
                               DESTINATION ${CISST_CMAKE_INSTALL_SUFFIX}/saw
                               COMPONENT sawIntuitiveResearchKit)
