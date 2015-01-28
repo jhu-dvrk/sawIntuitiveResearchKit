@@ -53,6 +53,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 
     // initialize trajectory data
     JointGet.SetSize(NumberOfJoints);
+    JointGetParam.SetSize(NumberOfJoints);
     JointSet.SetSize(NumberOfJoints);
     JointSetParam.Goal().SetSize(NumberOfJoints);
     JointTrajectory.Velocity.SetSize(NumberOfJoints);

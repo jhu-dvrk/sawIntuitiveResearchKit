@@ -52,6 +52,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 
     // initialize trajectory data
     JointGet.SetSize(NumberOfJoints);
+    JointGetParam.SetSize(NumberOfJoints + 1); // PID treats gripper as joint
     JointSet.SetSize(NumberOfJoints);
     JointSetParam.Goal().SetSize(NumberOfJoints + 1); // PID treats gripper as joint
     JointTrajectory.Velocity.SetSize(NumberOfJoints);
