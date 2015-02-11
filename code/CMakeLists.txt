@@ -43,9 +43,13 @@ if (cisst_FOUND)
                       ${sawControllers_LIBRARY_DIR}
                       ${sawConstraintController_LIBRARY_DIR})
 
-    # where to save the libraries
-    if (NOT DEFINED LIBRARY_OUTPUT_PATH)
+    # catkin/ROS paths
+    cisst_is_catkin_build (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
+    if (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
+      set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/cmake")
       set (LIBRARY_OUTPUT_PATH "${sawIntuitiveResearchKit_BINARY_DIR}/lib")
+    else ()
+      set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${sawIntuitiveResearchKit_BINARY_DIR}")
     endif ()
 
     # create/configure file for find_package (sawIntuitiveResearchKit)
@@ -115,13 +119,6 @@ if (cisst_FOUND)
     # add Qt code
     add_subdirectory (Qt)
     set (sawIntuitiveResearchKit_LIBRARIES ${sawIntuitiveResearchKit_LIBRARIES} ${sawIntuitiveResearchKitQt_LIBRARIES})
-
-    cisst_is_catkin_build (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
-    if (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
-      set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/cmake")
-    else ()
-      set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${sawIntuitiveResearchKit_BINARY_DIR}")
-    endif ()
 
     configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/sawIntuitiveResearchKitConfig.cmake.in"
                     "${sawIntuitiveResearchKit_CONFIG_FILE_DIR}/sawIntuitiveResearchKitConfig.cmake"
