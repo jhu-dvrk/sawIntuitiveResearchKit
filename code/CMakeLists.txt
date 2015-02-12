@@ -27,6 +27,14 @@ if (cisst_FOUND)
   # load cisst configuration
   include (${CISST_USE_FILE})
 
+  # make sure CISST_USE_SI_UNITS is defined and set to 1
+  if (NOT DEFINED CISST_USE_SI_UNITS)
+    message (FATAL_ERROR "You need to upgrade to a version of cisst that defines CISST_USE_SI_UNITS (and set CISST_USE_SI_UNITS to ON)")
+  endif ()
+  if (NOT CISST_USE_SI_UNITS)
+    message (FATAL_ERROR "You need to make sure CISST_USE_SI_UNITS to ON")
+  endif ()
+
   # saw components have been compiled within cisst, we should find them automatically
   cisst_find_saw_component (sawRobotIO1394 REQUIRED)
   cisst_find_saw_component (sawControllers REQUIRED)
