@@ -20,13 +20,6 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitPSM_h
 #define _mtsIntuitiveResearchKitPSM_h
 
-#include <cisstMultiTask/mtsTaskPeriodic.h>
-#include <cisstParameterTypes/prmPositionJointSet.h>
-#include <cisstParameterTypes/prmPositionJointGet.h>
-#include <cisstParameterTypes/prmPositionCartesianGet.h>
-#include <cisstParameterTypes/prmPositionCartesianSet.h>
-#include <cisstRobot/robManipulator.h>
-#include <cisstRobot/robLSPB.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitOptimizer.h>
 
@@ -49,6 +42,23 @@ protected:
     // PSM Optimizer
     mtsIntuitiveResearchKitOptimizer * Optimizer;
 
+    /*! Configuration methods */
+    inline size_t NumberOfJoints(void) const {
+        return 7;
+    }
+
+    inline size_t NumberOfAxes(void) const {
+        return 7;
+    }
+
+    inline size_t NumberOfBrakes(void) const {
+        return 0;
+    }
+
+    inline bool UsePIDTrackingError(void) const {
+        return false;
+    }
+
     void Init(void);
 
     /*! Verify that the state transition is possible, initialize global
@@ -58,7 +68,7 @@ protected:
     void SetRobotControlState(const std::string & state);
 
     /*! Switch case for user mode. */
-    void RunUserMode(void);
+    void RunArmSpecific(void);
 
     /*! Homing procedure, home all joints except last one using potentiometers as reference. */
     void RunHomingCalibrateArm(void);
@@ -81,19 +91,6 @@ protected:
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     void SetOpenAngle(const double & openAngle);
-
-    /*! Configuration methods */
-    inline size_t NumberOfJoints(void) const {
-        return 7;
-    }
-
-    inline size_t NumberOfBrakes(void) const {
-        return 0;
-    }
-
-    inline bool UsePIDTrackingError(void) const {
-        return false;
-    }
 
     /*! Event handlers for tools */
     //@{

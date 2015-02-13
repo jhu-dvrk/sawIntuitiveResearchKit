@@ -20,13 +20,6 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitECM_h
 #define _mtsIntuitiveResearchKitECM_h
 
-#include <cisstMultiTask/mtsTaskPeriodic.h>
-#include <cisstParameterTypes/prmPositionJointSet.h>
-#include <cisstParameterTypes/prmPositionJointGet.h>
-#include <cisstParameterTypes/prmPositionCartesianGet.h>
-#include <cisstParameterTypes/prmPositionCartesianSet.h>
-#include <cisstRobot/robManipulator.h>
-#include <cisstRobot/robLSPB.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 
 
@@ -40,6 +33,23 @@ public:
     inline ~mtsIntuitiveResearchKitECM() {}
 
 protected:
+
+    /*! Configuration methods */
+    inline size_t NumberOfJoints(void) const {
+        return 4;
+    }
+
+    inline size_t NumberOfAxes(void) const {
+        return 4;
+    }
+
+    inline size_t NumberOfBrakes(void) const {
+        return 3;
+    }
+
+    inline bool UsePIDTrackingError(void) const {
+        return true;
+    }
 
     void Init(void);
 
@@ -55,19 +65,6 @@ protected:
     void EventHandlerTrackingError(void);
 
     void EventHandlerManipClutch(const prmEventButton & button);
-
-    /*! Configuration methods */
-    inline size_t NumberOfJoints(void) const {
-        return 4;
-    }
-
-    inline size_t NumberOfBrakes(void) const {
-        return 3;
-    }
-
-    inline bool UsePIDTrackingError(void) const {
-        return true;
-    }
 
     struct {
         mtsFunctionRead GetButton;

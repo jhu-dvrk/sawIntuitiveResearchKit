@@ -114,7 +114,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
     }
 }
 
-void mtsIntuitiveResearchKitPSM::RunUserMode(void)
+void mtsIntuitiveResearchKitPSM::RunArmSpecific(void)
 {
     switch (RobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER:
@@ -224,7 +224,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             break;
         }
         RobotState = newState;   
-        IsCartesianGoalSet = false;
+        IsGoalSet = false;
         MessageEvents.RobotStatus(this->GetName() + " position cartesian");
         break;
 
@@ -239,7 +239,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             break;
         }
         RobotState = newState;
-        IsCartesianGoalSet = false;
+        IsGoalSet = false;
         MessageEvents.RobotStatus(this->GetName() + " constraint controller cartesian");
         break;
 
@@ -444,8 +444,8 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
 {
     // Update the optimizer
     // Go through the VF list, update state data pointers, assign tableau references, and fill in the references
-    if (IsCartesianGoalSet) {
-        IsCartesianGoalSet = false;
+    if (IsGoalSet) {
+        IsGoalSet = false;
 
         // Update kinematics and VF data objects
         Optimizer->UpdateParams(JointGet,
@@ -490,10 +490,10 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
 {
     if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
         CartesianSetParam = newPosition;
-        IsCartesianGoalSet = true;
+        IsGoalSet = true;
     } else if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN) {
         CartesianSetParam = newPosition;
-        IsCartesianGoalSet = true;
+        IsGoalSet = true;
     } else {
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: PSM not ready" << std::endl;
     }

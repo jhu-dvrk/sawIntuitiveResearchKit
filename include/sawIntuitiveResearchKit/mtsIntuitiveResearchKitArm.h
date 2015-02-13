@@ -24,6 +24,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionJointGet.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmVelocityCartesianGet.h>
+
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
 
@@ -67,21 +69,29 @@ protected:
     virtual void RunHomingCalibrateArm(void) = 0;
 
     /*! Cartesian state. */
+    virtual void RunPositionJoint(void);
+    virtual void RunPositionGoalJoint(void);
     virtual void RunPositionCartesian(void);
+    virtual void RunPositionGoalCartesian(void);
 
     /*! Run method called for all states not handled in base class. */
-    inline virtual void RunUserMode(void) {};
+    inline virtual void RunArmSpecific(void) {};
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
 
-    virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);    
-    
+    /*! Methods used for commands */
+    virtual void SetPositionJoint(const prmPositionJointSet & newPosition);
+    virtual void SetPositionGoalJoint(const prmPositionJointSet & newPosition);
+    virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
+    virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
+
     /*! Event handler for PID tracking error. */
     virtual void EventHandlerTrackingError(void);
 
     /*! Configuration methods specific to derived classes. */
     virtual size_t NumberOfJoints(void) const = 0;
+    virtual size_t NumberOfAxes(void) const = 0;
     virtual size_t NumberOfBrakes(void) const = 0;
     virtual bool UsePIDTrackingError(void) const = 0;
     inline virtual bool UsePotsForSafetyCheck(void) const {
@@ -96,6 +106,9 @@ protected:
         mtsFunctionRead  GetPositionJointDesired;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetCheckJointLimit;
+        mtsFunctionWrite EnableTorqueMode;
+        mtsFunctionWrite SetTorqueJoint;
+        mtsFunctionWrite SetTorqueOffset;
         mtsFunctionWrite EnableTrackingError;
         mtsFunctionWrite SetTrackingErrorTolerance;
     } PID;
@@ -108,6 +121,8 @@ protected:
         mtsFunctionRead  GetActuatorAmpStatus;
         mtsFunctionRead  GetBrakeAmpStatus;
         mtsFunctionVoid  BiasEncoder;
+        mtsFunctionWrite ResetSingleEncoder;
+        mtsFunctionRead  GetAnalogInputPosSI;
         mtsFunctionWrite SetActuatorCurrent;
         mtsFunctionWrite UsePotsForSafetyCheck;
         mtsFunctionWrite SetPotsToEncodersTolerance;
@@ -126,7 +141,7 @@ protected:
 
     // Cache cartesian goal position
     prmPositionCartesianSet CartesianSetParam;
-    bool IsCartesianGoalSet;
+    bool IsGoalSet;
 
     prmPositionCartesianGet CartesianGetParam;
     vctFrm4x4 CartesianGet;
@@ -137,6 +152,10 @@ protected:
     vctDoubleVec JointGetDesired;
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
+
+    // Velocities
+    prmPositionCartesianGet CartesianGetPreviousParam;
+    prmVelocityCartesianGet CartesianVelocityGetParam;
 
     robManipulator Manipulator;
     vctFrm4x4 CartesianPositionFrm;

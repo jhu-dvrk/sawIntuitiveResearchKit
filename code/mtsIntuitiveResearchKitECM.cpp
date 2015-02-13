@@ -124,7 +124,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             break;
         }
         RobotState = newState;
-        IsCartesianGoalSet = false;
+        IsGoalSet = false;
         MessageEvents.RobotStatus(this->GetName() + " constraint controller cartesian");
         break;
 
