@@ -41,7 +41,7 @@
             <MaxCurrent Unit="A" Value="0.300"/>
             <ReleaseCurrent Unit="A" Value="0.300"/>
             <ReleaseTime Value="2.000"/>
-            <ReleasedCurrent Unit="A" Value="0.070"/>
+            <ReleasedCurrent Unit="A" Value="0.090"/>
             <EngagedCurrent Unit="A" Value="0.000"/>
          </AnalogBrake>
          <Encoder>
