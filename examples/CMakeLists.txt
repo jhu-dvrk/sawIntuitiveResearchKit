@@ -31,6 +31,12 @@ if (cisst_FOUND_AS_REQUIRED)
   # load cisst configuration
   include (${CISST_USE_FILE})
 
+  # catkin/ROS paths
+  cisst_is_catkin_build (sawIntuitiveResearchKitExamples_IS_CATKIN_BUILT)
+  if (sawIntuitiveResearchKitExamples_IS_CATKIN_BUILT)
+    set (EXECUTABLE_OUTPUT_PATH "${CATKIN_DEVEL_PREFIX}/bin")
+  endif ()
+
   # saw components have been compiled within cisst, we should find them automatically
   cisst_find_saw_component (sawRobotIO1394 REQUIRED)
   cisst_find_saw_component (sawIntuitiveResearchKit REQUIRED)
