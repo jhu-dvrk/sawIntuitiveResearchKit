@@ -61,8 +61,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianGetParam.SetAutomaticTimestamp(false);
     CartesianGetDesiredParam.SetAutomaticTimestamp(false);
     this->StateTable.AddData(CartesianGetParam, "CartesianPosition");
-    this->StateTable.AddData(CartesianGetDesiredParam, "CartesianDesired");
+    this->StateTable.AddData(CartesianGetDesiredParam, "CartesianPositionDesired");
     this->StateTable.AddData(JointGetParam, "JointPosition");
+    this->StateTable.AddData(JointGetDesired, "JointPositionDesired");
 
     // setup CISST Interface
     PIDInterface = AddInterfaceRequired("PID");
