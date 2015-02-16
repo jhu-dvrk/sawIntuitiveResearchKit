@@ -35,6 +35,15 @@ if (cisst_FOUND)
     message (FATAL_ERROR "You need to make sure CISST_USE_SI_UNITS to ON")
   endif ()
 
+  # catkin/ROS paths
+  cisst_is_catkin_build (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
+  if (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
+    set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/cmake")
+    set (LIBRARY_OUTPUT_PATH "${sawIntuitiveResearchKit_BINARY_DIR}/lib")
+  else ()
+    set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${sawIntuitiveResearchKit_BINARY_DIR}")
+  endif ()
+
   # saw components have been compiled within cisst, we should find them automatically
   cisst_find_saw_component (sawRobotIO1394 REQUIRED)
   cisst_find_saw_component (sawControllers REQUIRED)
@@ -123,13 +132,6 @@ if (cisst_FOUND)
     # add Qt code
     add_subdirectory (Qt)
     set (sawIntuitiveResearchKit_LIBRARIES ${sawIntuitiveResearchKit_LIBRARIES} ${sawIntuitiveResearchKitQt_LIBRARIES})
-
-    cisst_is_catkin_build (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
-    if (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
-      set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/cmake")
-    else ()
-      set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${sawIntuitiveResearchKit_BINARY_DIR}")
-    endif ()
 
     configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/sawIntuitiveResearchKitConfig.cmake.in"
                     "${sawIntuitiveResearchKit_CONFIG_FILE_DIR}/sawIntuitiveResearchKitConfig.cmake"
