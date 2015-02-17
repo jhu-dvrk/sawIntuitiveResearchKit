@@ -3,18 +3,18 @@
    <Robot Name="ECM" NumOfActuator="4" NumOfJoint="4" SN="29738">
       <Actuator ActuatorID="0" AxisID="0" BoardID="4" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32838" Scale="5242.88"/>
+            <AmpsToBits Offset="32840" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <NmToAmps Scale="0.035014"/>
             <MaxCurrent Unit="A" Value="0.943"/>
          </Drive>
          <AnalogBrake AxisID="0" BoardID="5">
-            <AmpsToBits Offset="32768" Scale="5242.88"/>
+            <AmpsToBits Offset="32819" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
-            <MaxCurrent Unit="A" Value="0.300"/>
-            <ReleaseCurrent Unit="A" Value="0.300"/>
+            <MaxCurrent Unit="A" Value="0.250"/>
+            <ReleaseCurrent Unit="A" Value="0.250"/>
             <ReleaseTime Value="2.000"/>
-            <ReleasedCurrent Unit="A" Value="0.090"/>
+            <ReleasedCurrent Unit="A" Value="0.110"/>
             <EngagedCurrent Unit="A" Value="0.000"/>
          </AnalogBrake>
          <Encoder>
@@ -30,16 +30,16 @@
       </Actuator>
       <Actuator ActuatorID="1" AxisID="1" BoardID="4" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32739" Scale="5242.88"/>
+            <AmpsToBits Offset="32744" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <NmToAmps Scale="0.035014"/>
             <MaxCurrent Unit="A" Value="0.943"/>
          </Drive>
          <AnalogBrake AxisID="1" BoardID="5">
-            <AmpsToBits Offset="32768" Scale="5242.88"/>
+            <AmpsToBits Offset="32915" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
-            <MaxCurrent Unit="A" Value="0.300"/>
-            <ReleaseCurrent Unit="A" Value="0.300"/>
+            <MaxCurrent Unit="A" Value="0.220"/>
+            <ReleaseCurrent Unit="A" Value="0.220"/>
             <ReleaseTime Value="2.000"/>
             <ReleasedCurrent Unit="A" Value="0.090"/>
             <EngagedCurrent Unit="A" Value="0.000"/>
@@ -57,18 +57,18 @@
       </Actuator>
       <Actuator ActuatorID="2" AxisID="2" BoardID="4" Type="Prismatic">
          <Drive>
-            <AmpsToBits Offset="32938" Scale="-5242.88"/>
+            <AmpsToBits Offset="32941" Scale="-5242.88"/>
             <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738"/>
             <NmToAmps Scale="0.008307"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <AnalogBrake AxisID="2" BoardID="5">
-            <AmpsToBits Offset="32768" Scale="5242.88"/>
+            <AmpsToBits Offset="32851" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <MaxCurrent Unit="A" Value="1.000"/>
             <ReleaseCurrent Unit="A" Value="0.900"/>
             <ReleaseTime Value="2.000"/>
-            <ReleasedCurrent Unit="A" Value="0.200"/>
+            <ReleasedCurrent Unit="A" Value="0.220"/>
             <EngagedCurrent Unit="A" Value="0.000"/>
          </AnalogBrake>
          <Encoder>
@@ -84,7 +84,7 @@
       </Actuator>
       <Actuator ActuatorID="3" AxisID="3" BoardID="4" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32878" Scale="5242.88"/>
+            <AmpsToBits Offset="32885" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <NmToAmps Scale="0.673064"/>
             <MaxCurrent Unit="A" Value="0.590"/>
