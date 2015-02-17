@@ -137,6 +137,7 @@ protected:
     struct {
         mtsFunctionWrite RobotStatus;
         mtsFunctionWrite RobotError;
+        mtsFunctionWrite RobotState;
     } MessageEvents;
 
     // Cache cartesian goal position

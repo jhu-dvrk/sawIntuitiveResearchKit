@@ -74,6 +74,7 @@ protected:
     // Functions for events
     struct {
         mtsFunctionWrite ManipClutch;
+        mtsFunctionWrite SUJClutch;
         mtsIntuitiveResearchKitArmTypes::RobotStateType ManipClutchPreviousState;
     } ClutchEvents;
 };

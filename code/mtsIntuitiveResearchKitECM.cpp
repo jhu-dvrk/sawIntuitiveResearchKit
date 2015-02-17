@@ -61,6 +61,11 @@ void mtsIntuitiveResearchKitECM::Init(void)
 
     mtsInterfaceRequired * interfaceRequired;
 
+    // Main interface should have been created by base class init
+    CMN_ASSERT(RobotInterface);
+    RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
+    RobotInterface->AddEventWrite(ClutchEvents.SUJClutch, "SUJClutch", prmEventButton());
+    
     // ManipClutch: digital input button event from ECM
     interfaceRequired = AddInterfaceRequired("ManipClutch");
     if (interfaceRequired) {
@@ -141,6 +146,9 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
     default:
         break;
     }
+
+    // Emit event with current state
+    MessageEvents.RobotState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->RobotState));
 }
 
 void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
@@ -226,7 +234,7 @@ void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 }
 
-void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton &button)
+void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & button)
 {
     // Pass events
     ClutchEvents.ManipClutch(button);
