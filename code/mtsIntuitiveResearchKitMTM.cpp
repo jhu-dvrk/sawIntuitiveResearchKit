@@ -596,7 +596,7 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
     } else if (state == "Clutch") {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CLUTCH);
     } else {
-        MessageEvents.RobotError(this->GetName() + ": unsupported state " + state);
+        MessageEvents.RobotError(this->GetName() + ": MTM unsupported state " + state);
     }
 
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetRobotControlState: " << state << std::endl;

@@ -515,7 +515,7 @@ void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
     } else if (state == "Manual") {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
     } else {
-        MessageEvents.RobotError(this->GetName() + ": unsupported state " + state);
+        MessageEvents.RobotError(this->GetName() + ": PSM unsupported state " + state);
     }
 }
 

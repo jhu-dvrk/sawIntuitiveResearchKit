@@ -216,6 +216,7 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
 
 void mtsIntuitiveResearchKitECM::SetRobotControlState(const std::string & state)
 {
+    CMN_LOG_CLASS_INIT_ERROR << "Set control state: " << state << std::endl;
     if (state == "Home") {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
     } else if ((state == "Cartesian position") || (state == "Teleop")) {
@@ -223,7 +224,11 @@ void mtsIntuitiveResearchKitECM::SetRobotControlState(const std::string & state)
     } else if (state == "Manual") {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
     } else {
-        MessageEvents.RobotError(this->GetName() + ": unsupported state " + state);
+        try {
+            SetState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state));
+        } catch (std::exception e) {
+            MessageEvents.RobotError(this->GetName() + ": ECM unsupported state " + state + " " + e.what());
+        }
     }
 }
 

@@ -192,19 +192,6 @@ void mtsIntuitiveResearchKitArm::Cleanup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
 }
 
-void mtsIntuitiveResearchKitArm::SetRobotControlState(const std::string & state)
-{
-    if (state == "Home") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
-    } else if ((state == "Cartesian position") || (state == "Teleop")) {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN);
-    } else if (state == "Manual") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
-    } else {
-        MessageEvents.RobotError(this->GetName() + ": unsupported state " + state);
-    }
-}
-
 void mtsIntuitiveResearchKitArm::GetRobotControlState(std::string & state) const
 {
     state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->RobotState);
