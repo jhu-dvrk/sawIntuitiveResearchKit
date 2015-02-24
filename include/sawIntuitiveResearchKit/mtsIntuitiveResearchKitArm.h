@@ -171,7 +171,8 @@ protected:
         vctDoubleVec Goal;
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
-        double EndTime;
+        double EndTime; // time should be set to 0.0 if there is no on-going trajectory 
+        mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
     } JointTrajectory;
 
     vctDoubleVec PotsToEncodersTolerance;

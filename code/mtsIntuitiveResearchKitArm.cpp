@@ -110,6 +110,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalJoint, this, "SetPositionGoalJoint");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionCartesian, this, "SetPositionCartesian");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalCartesian, this, "SetPositionGoalCartesian");
+        // Trajectory events
+        RobotInterface->AddEventWrite(JointTrajectory.GoalReachedEvent, "GoalReached", bool());
         // Robot State
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetRobotControlState,
                                         this, "SetRobotControlState", std::string(""));
@@ -333,7 +335,7 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
         SetPositionJointLocal(JointSet);
     } else {
         if (JointTrajectory.EndTime != 0.0) {
-            CMN_LOG_CLASS_RUN_ERROR << "Need to emit end of motion event" << std::endl;
+            JointTrajectory.GoalReachedEvent(true);
             JointTrajectory.EndTime = 0.0;
         }
     }
