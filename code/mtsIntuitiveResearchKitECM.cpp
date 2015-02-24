@@ -104,6 +104,24 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
         MessageEvents.RobotStatus(this->GetName() + " ready");
         break;
 
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
+        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+            MessageEvents.RobotError(this->GetName() + " is not ready");
+            return;
+        }
+        RobotState = newState;
+        MessageEvents.RobotStatus(this->GetName() + " position joint");
+        break;
+
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
+        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+            MessageEvents.RobotError(this->GetName() + " is not ready");
+            return;
+        }
+        RobotState = newState;
+        MessageEvents.RobotStatus(this->GetName() + " position goal joint");
+        break;
+
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
             MessageEvents.RobotError(this->GetName() + " is not ready");
@@ -216,7 +234,6 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
 
 void mtsIntuitiveResearchKitECM::SetRobotControlState(const std::string & state)
 {
-    CMN_LOG_CLASS_INIT_ERROR << "Set control state: " << state << std::endl;
     if (state == "Home") {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
     } else if ((state == "Cartesian position") || (state == "Teleop")) {

@@ -331,6 +331,11 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
     if (currentTime <= JointTrajectory.EndTime) {
         JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
         SetPositionJointLocal(JointSet);
+    } else {
+        if (JointTrajectory.EndTime != 0.0) {
+            CMN_LOG_CLASS_RUN_ERROR << "Need to emit end of motion event" << std::endl;
+            JointTrajectory.EndTime = 0.0;
+        }
     }
 }
 
