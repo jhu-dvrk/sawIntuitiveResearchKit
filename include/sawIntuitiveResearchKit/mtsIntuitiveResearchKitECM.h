@@ -35,11 +35,15 @@ public:
 protected:
 
     /*! Configuration methods */
+    inline size_t NumberOfAxes(void) const {
+        return 4;
+    }
+
     inline size_t NumberOfJoints(void) const {
         return 4;
     }
 
-    inline size_t NumberOfAxes(void) const {
+    inline size_t NumberOfJointsKinematics(void) const {
         return 4;
     }
 

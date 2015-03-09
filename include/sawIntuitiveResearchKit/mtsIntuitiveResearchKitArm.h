@@ -58,6 +58,7 @@ protected:
     virtual void SetRobotControlState(const std::string & state) = 0;
     /*! Convert enum to string using function provided by cisstDataGenerator. */
     void GetRobotControlState(std::string & state) const;
+    bool CurrentStateIs(const mtsIntuitiveResearchKitArmTypes::RobotStateType & state);
 
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
@@ -90,10 +91,11 @@ protected:
     virtual void EventHandlerTrackingError(void);
 
     /*! Configuration methods specific to derived classes. */
-    virtual size_t NumberOfJoints(void) const = 0;
-    virtual size_t NumberOfAxes(void) const = 0;
-    virtual size_t NumberOfBrakes(void) const = 0;
-    virtual bool UsePIDTrackingError(void) const = 0;
+    virtual size_t NumberOfAxes(void) const = 0;           // used IO: ECM 4, PSM 7, MTM 8
+    virtual size_t NumberOfJoints(void) const = 0;         // used PID: ECM 4, PSM 7, MTM 7
+    virtual size_t NumberOfJointsKinematics(void) const = 0; // used for inverse kinematics: ECM 4, PSM 6, MTM 7
+    virtual size_t NumberOfBrakes(void) const = 0;         // ECM 3, PSM 0, MTM 0 
+    virtual bool UsePIDTrackingError(void) const = 0;      // ECM true, PSM false, MTM false
     inline virtual bool UsePotsForSafetyCheck(void) const {
         return true;
     }

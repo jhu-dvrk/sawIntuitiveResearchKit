@@ -43,12 +43,16 @@ protected:
     mtsIntuitiveResearchKitOptimizer * Optimizer;
 
     /*! Configuration methods */
+    inline size_t NumberOfAxes(void) const {
+        return 7;
+    }
+
     inline size_t NumberOfJoints(void) const {
         return 7;
     }
 
-    inline size_t NumberOfAxes(void) const {
-        return 7;
+    inline size_t NumberOfJointsKinematics(void) const {
+        return 6;
     }
 
     inline size_t NumberOfBrakes(void) const {

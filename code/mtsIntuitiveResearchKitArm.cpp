@@ -199,6 +199,17 @@ void mtsIntuitiveResearchKitArm::GetRobotControlState(std::string & state) const
     state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->RobotState);
 }
 
+bool mtsIntuitiveResearchKitArm::CurrentStateIs(const mtsIntuitiveResearchKitArmTypes::RobotStateType & state)
+{
+    if (RobotState == state) {
+        return true;
+    }
+    CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionGoalJoint: arm not in "
+                              << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN)
+                              << ", current state is " << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState) << std::endl;
+    return false;
+}
+
 void mtsIntuitiveResearchKitArm::GetRobotData(void)
 {
     // we can start reporting some joint values after the robot is powered
@@ -322,7 +333,7 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
 
 void mtsIntuitiveResearchKitArm::RunPositionJoint(void)
 {
-    if (IsGoalSet == true) {
+    if (IsGoalSet) {
         SetPositionJointLocal(JointSet);
     }
 }
@@ -343,24 +354,24 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
 
 void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
 {
-    //! \todo: should prevent user to go to close to RCM!
-
-    if (IsGoalSet == true) {
-        vctDoubleVec jointSet(JointGet);
+    if (IsGoalSet) {
+        // copy current position
+        vctDoubleVec jointSet(JointGet.Ref(NumberOfJointsKinematics()));
 
         // compute desired slave position
         CartesianPositionFrm.From(CartesianSetParam.Goal());
         Manipulator.InverseKinematics(jointSet, CartesianPositionFrm);
-        jointSet.resize(4);
 
         // find closest solution mod 2 pi
-        std::cerr << CMN_LOG_DETAILS << " ---- this is PSM/ECM specific.  Should apply to all rotation joints.  robManipulator should do that." << std::endl;
         const double difference = JointGet[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
 
+        // assign to joints used for kinematics
+        JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
+
         // finally send new joint values
-        SetPositionJointLocal(jointSet);
+        SetPositionJointLocal(JointSet);
 
         // reset flag
         IsGoalSet = false;
@@ -381,31 +392,23 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
 
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
 {
-    if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
+    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT)) {
         JointSet.Assign(newPosition.Goal());
         IsGoalSet = true;
-    } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionJoint: arm not in "
-                                  << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT)
-                                  << ", current state is " << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState) << std::endl;
     }
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet & newPosition)
 {
-    if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT) {
+    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT)) {
         const double currentTime = this->StateTable.GetTic();
         // starting point is last requested to PID component
-        JointTrajectory.Start.Assign(JointGet);
+        JointTrajectory.Start.Assign(JointGetDesired);
         JointTrajectory.Goal.Assign(newPosition.Goal());
         JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
                                  currentTime, robLSPB::LSPB_DURATION);
         JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
-    } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionGoalJoint: arm not in "
-                                  << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT)
-                                  << ", current state is " << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState) << std::endl;
     }
 }
 
@@ -422,12 +425,32 @@ void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesian
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN) {
-        std::cerr << CMN_LOG_DETAILS << " ------------ needs to be implemented " << std::endl;
-    } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionGoalJoint: arm not in "
-                                  << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN)
-                                  << ", current state is " << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState) << std::endl;
+    std::cerr << CMN_LOG_DETAILS << std::endl;
+    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN)) {
+        // copy current position
+        vctDoubleVec jointSet(JointGet.Ref(NumberOfJointsKinematics()));
+
+        // compute desired slave position
+        CartesianPositionFrm.From(newPosition.Goal());
+        Manipulator.InverseKinematics(jointSet, CartesianPositionFrm);
+
+        // find closest solution mod 2 pi
+        std::cerr << CMN_LOG_DETAILS << " ---- this is PSM/ECM specific.  Should apply to all rotation joints.  robManipulator should do that." << std::endl;
+        const double difference = JointGet[3] - jointSet[3];
+        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
+        jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
+
+        // resize to proper number of joints
+        jointSet.resize(NumberOfJoints());
+
+        const double currentTime = this->StateTable.GetTic();
+        // starting point is last requested to PID component
+        JointTrajectory.Start.Assign(JointGetDesired);
+        JointTrajectory.Goal.Assign(jointSet);
+        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
+                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                 currentTime, robLSPB::LSPB_DURATION);
+        JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
     }
 }
 

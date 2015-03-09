@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -49,9 +49,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     DesiredOpenAngle = 0.0 * cmnPI_180;
 
     // initialize trajectory data
-    JointTrajectory.Velocity.SetAll(360.0 * cmnPI_180); // degrees per second
+    JointTrajectory.Velocity.SetAll(180.0 * cmnPI_180); // degrees per second
     JointTrajectory.Velocity.Element(2) = 0.2; // m per second
-    JointTrajectory.Acceleration.SetAll(360.0 * cmnPI_180);
+    JointTrajectory.Acceleration.SetAll(180.0 * cmnPI_180);
     JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
     PotsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
@@ -213,7 +213,24 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         MessageEvents.RobotStatus(this->GetName() + " ready");
         break;
 
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
+        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+            MessageEvents.RobotError(this->GetName() + " is not ready");
+            return;
+        }
+        RobotState = newState;
+        IsGoalSet = false; // for direct mode
+        JointTrajectory.EndTime = 0.0; // for joint mode
+        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
+            MessageEvents.RobotStatus(this->GetName() + " position joint");
+        } else {
+            MessageEvents.RobotStatus(this->GetName() + " position goal joint");
+        }
+        break;
+
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
             MessageEvents.RobotError(this->GetName() + " is not calibrated");
             return;
@@ -223,9 +240,14 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             MessageEvents.RobotError(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
-        RobotState = newState;   
-        IsGoalSet = false;
-        MessageEvents.RobotStatus(this->GetName() + " position cartesian");
+        RobotState = newState;
+        IsGoalSet = false; // for direct mode
+        JointTrajectory.EndTime = 0.0; // for joint mode
+        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
+            MessageEvents.RobotStatus(this->GetName() + " position cartesian");
+        } else {
+            MessageEvents.RobotStatus(this->GetName() + " position goal cartesian");
+        }
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
@@ -256,6 +278,9 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     default:
         break;
     }
+
+    // Emit event with current state
+    MessageEvents.RobotState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->RobotState));
 }
 
 void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
@@ -515,7 +540,11 @@ void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
     } else if (state == "Manual") {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
     } else {
-        MessageEvents.RobotError(this->GetName() + ": PSM unsupported state " + state);
+        try {
+            SetState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state));
+        } catch (std::exception e) {
+            MessageEvents.RobotError(this->GetName() + ": ECM unsupported state " + state + " " + e.what());
+        }
     }
 }
 

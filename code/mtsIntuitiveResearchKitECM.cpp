@@ -110,6 +110,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
+        IsGoalSet = false;
         MessageEvents.RobotStatus(this->GetName() + " position joint");
         break;
 
@@ -119,6 +120,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
+        JointTrajectory.EndTime = 0.0;
         MessageEvents.RobotStatus(this->GetName() + " position goal joint");
         break;
 
@@ -133,6 +135,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             break;
         }
         RobotState = newState;
+        IsGoalSet = false;
         MessageEvents.RobotStatus(this->GetName() + " position cartesian");
         break;
 
