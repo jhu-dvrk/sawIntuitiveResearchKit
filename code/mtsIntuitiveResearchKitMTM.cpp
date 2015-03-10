@@ -86,15 +86,9 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
 
 void mtsIntuitiveResearchKitMTM::RunArmSpecific(void)
 {
-    ProcessQueuedEvents();
-    GetRobotData();
-
     switch (RobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ROLL:
         RunHomingCalibrateRoll();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
-        RunPositionCartesian();
         break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
         RunGravityCompensation();
@@ -155,6 +149,21 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     vctBoolVec torqueMode(8, true);
 
+    // first cleanup from previous state
+    switch (RobotState) {
+    case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_CLUTCH:
+        // Disable torque mode for all joints
+        torqueMode.SetAll(false);
+        PID.EnableTorqueMode(torqueMode);
+        PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
+        SetPositionJointLocal(JointGetDesired);
+        break;
+    default:
+        break;
+    }
+
+    // setup transition
     switch (newState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
         RobotState = newState;
@@ -190,35 +199,35 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.RobotError(this->GetName() + " is not homed");
+            MessageEvents.RobotError(this->GetName() + " is not ready");
             return;
         }
         RobotState = newState;
-        MessageEvents.RobotStatus(this->GetName() + " position joint");
-
-        // Disable torque mode for all joints
-        torqueMode.SetAll(false);
-        PID.EnableTorqueMode(torqueMode);
-        PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
-        SetPositionJointLocal(JointGet);
-        IsGoalSet = false;
+        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
+            IsGoalSet = false;
+            MessageEvents.RobotStatus(this->GetName() + " position joint");
+        } else {
+            JointTrajectory.EndTime = 0.0;
+            MessageEvents.RobotStatus(this->GetName() + " position goal joint");
+        }
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.RobotError(this->GetName() + " is not homed");
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
+        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+            MessageEvents.RobotError(this->GetName() + " is not calibrated");
             return;
         }
         RobotState = newState;
-        MessageEvents.RobotStatus(this->GetName() + " position cartesian");
-
-        // Disable torque mode for all joints
-        torqueMode.SetAll(false);
-        PID.EnableTorqueMode(torqueMode);
-        PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
-        SetPositionJointLocal(JointGet);
-        IsGoalSet = false;
+        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
+            IsGoalSet = false;
+            MessageEvents.RobotStatus(this->GetName() + " position cartesian");
+        } else {
+            JointTrajectory.EndTime = 0.0;
+            MessageEvents.RobotStatus(this->GetName() + " position goal cartesian");
+        }
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
@@ -252,6 +261,9 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
     default:
         break;
     }
+
+    // Emit event with current state
+    MessageEvents.RobotState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->RobotState));
 }
 
 void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
@@ -502,14 +514,6 @@ void mtsIntuitiveResearchKitMTM::RunClutch(void)
     SetPositionJointLocal(JointSet);
 }
 
-
-void mtsIntuitiveResearchKitMTM::SetPositionJointLocal(const vctDoubleVec & newPosition)
-{
-    JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
-    JointSetParam.Goal().Element(7) = 0.0;
-    PID.SetPositionJoint(JointSetParam);
-}
-
 void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce)
 {
 
@@ -561,8 +565,10 @@ void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce
     }
 }
 
+
 void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
+    std::cerr << CMN_LOG_DETAILS << " --- we should not use this, see base class method ... " << std::endl;
     if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
         const double currentTime = this->StateTable.GetTic();
         // starting point is last requested to PID component
@@ -596,8 +602,10 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
     } else if (state == "Clutch") {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CLUTCH);
     } else {
-        MessageEvents.RobotError(this->GetName() + ": MTM unsupported state " + state);
+        try {
+            SetState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state));
+        } catch (std::exception e) {
+            MessageEvents.RobotError(this->GetName() + ": MTM unsupported state " + state + " " + e.what());
+        }
     }
-
-    CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetRobotControlState: " << state << std::endl;
 }

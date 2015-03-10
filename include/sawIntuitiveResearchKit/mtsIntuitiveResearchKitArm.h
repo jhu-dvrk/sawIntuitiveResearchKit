@@ -79,7 +79,7 @@ protected:
     inline virtual void RunArmSpecific(void) {};
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
-    virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
+    void SetPositionJointLocal(const vctDoubleVec & newPosition);
 
     /*! Methods used for commands */
     virtual void SetPositionJoint(const prmPositionJointSet & newPosition);

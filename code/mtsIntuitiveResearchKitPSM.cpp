@@ -505,18 +505,10 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
     }
 }
 
-void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
-{
-    JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
-    PID.SetPositionJoint(JointSetParam);
-}
-
 void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
-        CartesianSetParam = newPosition;
-        IsGoalSet = true;
-    } else if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN) {
+    if ((RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN)
+        || (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN)) {
         CartesianSetParam = newPosition;
         IsGoalSet = true;
     } else {
@@ -543,7 +535,7 @@ void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
         try {
             SetState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state));
         } catch (std::exception e) {
-            MessageEvents.RobotError(this->GetName() + ": ECM unsupported state " + state + " " + e.what());
+            MessageEvents.RobotError(this->GetName() + ": PSM unsupported state " + state + " " + e.what());
         }
     }
 }

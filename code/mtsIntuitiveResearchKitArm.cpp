@@ -386,6 +386,7 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalCartesian(void)
 
 void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
+    JointSetParam.Goal().Zeros();
     JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
     PID.SetPositionJoint(JointSetParam);
 }
@@ -393,7 +394,7 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
 {
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT)) {
-        JointSet.Assign(newPosition.Goal());
+        JointSet.Assign(newPosition.Goal(), NumberOfJoints());
         IsGoalSet = true;
     }
 }
@@ -403,8 +404,8 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet 
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT)) {
         const double currentTime = this->StateTable.GetTic();
         // starting point is last requested to PID component
-        JointTrajectory.Start.Assign(JointGetDesired);
-        JointTrajectory.Goal.Assign(newPosition.Goal());
+        JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
+        JointTrajectory.Goal.Assign(newPosition.Goal(), NumberOfJoints());
         JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
                                  currentTime, robLSPB::LSPB_DURATION);
@@ -445,7 +446,7 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
 
         const double currentTime = this->StateTable.GetTic();
         // starting point is last requested to PID component
-        JointTrajectory.Start.Assign(JointGetDesired);
+        JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
         JointTrajectory.Goal.Assign(jointSet);
         JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
