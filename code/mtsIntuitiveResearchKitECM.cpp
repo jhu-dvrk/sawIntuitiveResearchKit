@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -44,11 +44,31 @@ mtsIntuitiveResearchKitECM::mtsIntuitiveResearchKitECM(const mtsTaskPeriodicCons
 robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
-    if (Manipulator.InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
+    // re-align desired frame to 4 axis direction to reduce free space
+    vctDouble3 shaft = cartesianGoal.Translation();
+    shaft.NormalizedSelf();
+    const vctDouble3 z = cartesianGoal.Rotation().Row(2).Ref<3>(); // last column of rotation matrix
+    vctDouble3 axis;
+    axis.CrossProductOf(z, shaft);
+    const double angle = acos(vctDotProduct(z, shaft));
+
+    const vctMatRot3 reAlign(vctAxAnRot3(axis, angle, VCT_NORMALIZE));
+    vctFrm4x4 newGoal;
+    newGoal.Translation().Assign(cartesianGoal.Translation());
+    newGoal.Rotation().ProductOf(reAlign, cartesianGoal.Rotation());
+
+    if (Manipulator.InverseKinematics(jointSet, newGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = JointGet[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
+#if 0
+        vctFrm4x4 forward = Manipulator.ForwardKinematics(jointSet);
+        vctDouble3 diff;
+        diff.DifferenceOf(forward.Translation(), newGoal.Translation());
+        std::cerr << diff.Norm() * 1000.0 << "mm ";
+#endif
+
         return robManipulator::ESUCCESS;
     }
     return robManipulator::EFAILURE;
@@ -78,7 +98,7 @@ void mtsIntuitiveResearchKitECM::Init(void)
     CMN_ASSERT(RobotInterface);
     RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
     RobotInterface->AddEventWrite(ClutchEvents.SUJClutch, "SUJClutch", prmEventButton());
-    
+
     // ManipClutch: digital input button event from ECM
     interfaceRequired = AddInterfaceRequired("ManipClutch");
     if (interfaceRequired) {
