@@ -360,19 +360,14 @@ void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
 
         // compute desired slave position
         CartesianPositionFrm.From(CartesianSetParam.Goal());
-        Manipulator.InverseKinematics(jointSet, CartesianPositionFrm);
-
-        // find closest solution mod 2 pi
-        const double difference = JointGet[3] - jointSet[3];
-        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
-
-        // assign to joints used for kinematics
-        JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
-
-        // finally send new joint values
-        SetPositionJointLocal(JointSet);
-
+        if (this->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
+            // assign to joints used for kinematics
+            JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);            
+            // finally send new joint values
+            SetPositionJointLocal(JointSet);
+        } else {
+            MessageEvents.RobotError(this->GetName() + " unable to solve inverse kinematics.");
+        }
         // reset flag
         IsGoalSet = false;
     }
@@ -426,32 +421,29 @@ void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesian
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition)
 {
-    std::cerr << CMN_LOG_DETAILS << std::endl;
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN)) {
         // copy current position
         vctDoubleVec jointSet(JointGet.Ref(NumberOfJointsKinematics()));
 
         // compute desired slave position
         CartesianPositionFrm.From(newPosition.Goal());
-        Manipulator.InverseKinematics(jointSet, CartesianPositionFrm);
+        
+        if (this->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
+            // resize to proper number of joints
+            jointSet.resize(NumberOfJoints());
 
-        // find closest solution mod 2 pi
-        std::cerr << CMN_LOG_DETAILS << " ---- this is PSM/ECM specific.  Should apply to all rotation joints.  robManipulator should do that." << std::endl;
-        const double difference = JointGet[3] - jointSet[3];
-        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
-
-        // resize to proper number of joints
-        jointSet.resize(NumberOfJoints());
-
-        const double currentTime = this->StateTable.GetTic();
-        // starting point is last requested to PID component
-        JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
-        JointTrajectory.Goal.Assign(jointSet);
-        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime, robLSPB::LSPB_DURATION);
-        JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
+            const double currentTime = this->StateTable.GetTic();
+            // starting point is last requested to PID component
+            JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
+            JointTrajectory.Goal.Assign(jointSet);
+            JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
+                                     JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                     currentTime, robLSPB::LSPB_DURATION);
+            JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
+        } else {
+            MessageEvents.RobotError(this->GetName() + " unable to solve inverse kinematics.");
+            JointTrajectory.GoalReachedEvent(false);
+        }
     }
 }
 

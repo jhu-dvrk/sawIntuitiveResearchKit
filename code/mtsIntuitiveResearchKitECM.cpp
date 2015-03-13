@@ -41,6 +41,19 @@ mtsIntuitiveResearchKitECM::mtsIntuitiveResearchKitECM(const mtsTaskPeriodicCons
     Init();
 }
 
+robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec & jointSet,
+                                                                    const vctFrm4x4 & cartesianGoal)
+{
+    if (Manipulator.InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
+        // find closest solution mod 2 pi
+        const double difference = JointGet[3] - jointSet[3];
+        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
+        jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
+        return robManipulator::ESUCCESS;
+    }
+    return robManipulator::EFAILURE;
+}
+
 void mtsIntuitiveResearchKitECM::Init(void)
 {
     // main initialization from base type
@@ -105,38 +118,35 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.RobotError(this->GetName() + " is not ready");
-            return;
-        }
-        RobotState = newState;
-        IsGoalSet = false;
-        MessageEvents.RobotStatus(this->GetName() + " position joint");
-        break;
-
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
             MessageEvents.RobotError(this->GetName() + " is not ready");
             return;
         }
         RobotState = newState;
-        JointTrajectory.EndTime = 0.0;
-        MessageEvents.RobotStatus(this->GetName() + " position goal joint");
+        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
+            IsGoalSet = false;
+            MessageEvents.RobotStatus(this->GetName() + " position joint");
+        } else {
+            JointTrajectory.EndTime = 0.0;
+            MessageEvents.RobotStatus(this->GetName() + " position goal joint");
+        }
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.RobotError(this->GetName() + " is not ready");
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
+        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+            MessageEvents.RobotError(this->GetName() + " is not calibrated");
             return;
         }
-        // check that the tool is inserted deep enough
-        if (JointGet.Element(2) < 80.0 / 1000.0) {
-            MessageEvents.RobotError(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
-            break;
-        }
         RobotState = newState;
-        IsGoalSet = false;
-        MessageEvents.RobotStatus(this->GetName() + " position cartesian");
+        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
+            IsGoalSet = false;
+            MessageEvents.RobotStatus(this->GetName() + " position cartesian");
+        } else {
+            JointTrajectory.EndTime = 0.0;
+            MessageEvents.RobotStatus(this->GetName() + " position goal cartesian");
+        }
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:

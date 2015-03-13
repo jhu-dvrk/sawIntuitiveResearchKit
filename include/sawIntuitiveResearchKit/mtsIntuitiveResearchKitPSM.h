@@ -63,6 +63,9 @@ protected:
         return false;
     }
 
+    robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
+                                            const vctFrm4x4 & cartesianGoal);
+
     void Init(void);
 
     /*! Verify that the state transition is possible, initialize global

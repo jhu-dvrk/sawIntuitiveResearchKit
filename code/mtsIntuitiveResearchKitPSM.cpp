@@ -41,6 +41,19 @@ mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicCons
     Init();
 }
 
+robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec & jointSet,
+                                                                    const vctFrm4x4 & cartesianGoal)
+{
+    if (Manipulator.InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
+        // find closest solution mod 2 pi
+        const double difference = JointGet[3] - jointSet[3];
+        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
+        jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
+        return robManipulator::ESUCCESS;
+    }
+    return robManipulator::EFAILURE;
+}
+
 void mtsIntuitiveResearchKitPSM::Init(void)
 {
     // main initialization from base type

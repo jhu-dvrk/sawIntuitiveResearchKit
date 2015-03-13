@@ -78,6 +78,9 @@ protected:
         return false;
     }
 
+    robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
+                                            const vctFrm4x4 & cartesianGoal);
+
     void Init(void);
 
     /*! Get data specific to the MTM (gripper angle using analog inputs) after
@@ -105,7 +108,6 @@ protected:
     /*! Run Clutch */
     void RunClutch(void);
 
-    void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     void SetWrench(const prmForceCartesianSet & newForce);  // NOTE: in body frame
 
     // Functions for events

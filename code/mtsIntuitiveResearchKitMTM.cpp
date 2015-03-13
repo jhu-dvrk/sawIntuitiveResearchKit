@@ -42,6 +42,18 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
     Init();
 }
 
+robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec & jointSet,
+                                                                    const vctFrm4x4 & cartesianGoal)
+{
+    // pre-feed inverse kinematics with preferred values for joint 4
+    if (RobotType == MTM_LEFT) {
+        jointSet[3] = -cmnPI_4;
+    } else if (RobotType == MTM_RIGHT) {
+        jointSet[3] = cmnPI_4;
+    }
+    return Manipulator.InverseKinematics(jointSet, cartesianGoal);
+}
+
 void mtsIntuitiveResearchKitMTM::Init(void)
 {
     mtsIntuitiveResearchKitArm::Init();
@@ -562,32 +574,6 @@ void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce
 
         TorqueSet.SetForceTorque(torqueDesired);
         PID.SetTorqueJoint(TorqueSet);
-    }
-}
-
-
-void mtsIntuitiveResearchKitMTM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
-{
-    std::cerr << CMN_LOG_DETAILS << " --- we should not use this, see base class method ... " << std::endl;
-    if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
-        const double currentTime = this->StateTable.GetTic();
-        // starting point is last requested to PID component
-        JointTrajectory.Start.Assign(JointGet);
-        // end point is defined by inverse kinematics but initialize optimizer to start from current
-        // and try to push L platform away from user's hand
-        JointTrajectory.Goal.Assign(JointGet);
-        if (RobotType == MTM_LEFT) {
-            JointTrajectory.Goal[3] = -cmnPI_4;
-        } else if (RobotType == MTM_RIGHT) {
-            JointTrajectory.Goal[3] = cmnPI_4;
-        }
-        Manipulator.InverseKinematics(JointTrajectory.Goal, newPosition.Goal());
-        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime, robLSPB::LSPB_DURATION);
-        JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
-    } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: MTM not ready" << std::endl;
     }
 }
 
