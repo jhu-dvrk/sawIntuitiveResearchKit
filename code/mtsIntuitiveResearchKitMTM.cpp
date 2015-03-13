@@ -45,12 +45,8 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
 robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
-    // pre-feed inverse kinematics with preferred values for joint 4
-    if (RobotType == MTM_LEFT) {
-        jointSet[3] = -cmnPI_4;
-    } else if (RobotType == MTM_RIGHT) {
-        jointSet[3] = cmnPI_4;
-    }
+    // pre-feed inverse kinematics with preferred values for joint 6
+    jointSet[5] = 0.0;
     return Manipulator.InverseKinematics(jointSet, cartesianGoal);
 }
 
