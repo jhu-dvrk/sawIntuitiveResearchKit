@@ -144,6 +144,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
+        JointSet.Assign(JointGetDesired);
         if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
             IsGoalSet = false;
             MessageEvents.RobotStatus(this->GetName() + " position joint");

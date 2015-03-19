@@ -94,7 +94,7 @@ protected:
     void EventHandlerManipClutch(const prmEventButton & button);
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
-    void SetOpenAngle(const double & openAngle);
+    void SetJawPosition(const double & openAngle);
 
     /*! Event handlers for tools */
     //@{
@@ -117,12 +117,12 @@ protected:
     // Functions for events
     struct {
         mtsFunctionWrite ManipClutch;
+        mtsFunctionWrite SUJClutch;
         mtsIntuitiveResearchKitArmTypes::RobotStateType ManipClutchPreviousState;
     } ClutchEvents;
 
     robManipulator * ToolOffset;
     vctFrm4x4 ToolOffsetTransformation;
-    double DesiredOpenAngle;
 
     // Home Action
     bool EngagingAdapterStarted;

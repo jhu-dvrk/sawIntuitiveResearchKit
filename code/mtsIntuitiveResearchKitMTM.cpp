@@ -155,7 +155,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
                             << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(newState) << std::endl;
 
-    vctBoolVec torqueMode(8, true);
+    vctBoolVec torqueMode(8);
 
     // first cleanup from previous state
     switch (RobotState) {
@@ -213,6 +213,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
+        JointSet.Assign(JointGetDesired);
         if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
             IsGoalSet = false;
             MessageEvents.RobotStatus(this->GetName() + " position joint");
@@ -245,6 +246,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         }
         RobotState = newState;
         MessageEvents.RobotStatus(this->GetName() + " gravity compensation");
+        torqueMode.SetAll(true);
         PID.EnableTorqueMode(torqueMode);
         PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
         CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: set gravity compensation" << std::endl;
@@ -505,12 +507,12 @@ void mtsIntuitiveResearchKitMTM::RunClutch(void)
     vctDoubleVec q(7, 0.0);
     vctDoubleVec qd(7, 0.0);
     vctDoubleVec tau(7, 0.0);
-    std::copy(JointGet.begin(), JointGet.begin() + 7 , q.begin());
+    q.Assign(JointGet.Ref(7));
 
     vctDoubleVec torqueDesired(8, 0.0);
     tau.ForceAssign(Manipulator.CCG(q, qd));
     tau[0] = q(0) * 0.0564 + 0.08;
-    std::copy(tau.begin(), tau.end() , torqueDesired.begin());
+    torqueDesired.Ref(7).Assign(tau);
 
     TorqueSet.SetForceTorque(torqueDesired);
     PID.SetTorqueJoint(TorqueSet);
@@ -577,8 +579,10 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
 {
     if (state == "Home") {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
-    } else if ((state == "Cartesian position") || (state == "Teleop")) {
+    } else if (state == "Cartesian position") {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN);
+    } else if (state == "Teleop") {
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN);
     } else if (state == "Gravity") {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION);
     } else if (state == "Clutch") {

@@ -59,8 +59,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // main initialization from base type
     mtsIntuitiveResearchKitArm::Init();
 
-    DesiredOpenAngle = 0.0 * cmnPI_180;
-
     // initialize trajectory data
     JointTrajectory.Velocity.SetAll(180.0 * cmnPI_180); // degrees per second
     JointTrajectory.Velocity.Element(2) = 0.2; // m per second
@@ -74,6 +72,11 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     EngagingJointSet.SetSize(NumberOfJoints());
 
     mtsInterfaceRequired * interfaceRequired;
+
+    // Main interface should have been created by base class init
+    CMN_ASSERT(RobotInterface);
+    RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
+    RobotInterface->AddEventWrite(ClutchEvents.SUJClutch, "SUJClutch", prmEventButton());
 
     // Event Adapter engage: digital input button event from PSM
     interfaceRequired = AddInterfaceRequired("Adapter");
@@ -99,7 +102,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 
     // Main interface should have been created by base class init
     CMN_ASSERT(RobotInterface);
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetOpenAngle, this, "SetOpenAngle");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetJawPosition, this, "SetJawPosition");
 
     // Initialize the optimizer
     Optimizer = new mtsIntuitiveResearchKitOptimizer(6);
@@ -233,11 +236,12 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
-        IsGoalSet = false; // for direct mode
-        JointTrajectory.EndTime = 0.0; // for joint mode
+        JointSet.Assign(JointGetDesired);
         if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
+            IsGoalSet = false;
             MessageEvents.RobotStatus(this->GetName() + " position joint");
         } else {
+            JointTrajectory.EndTime = 0.0;
             MessageEvents.RobotStatus(this->GetName() + " position goal joint");
         }
         break;
@@ -254,11 +258,11 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             break;
         }
         RobotState = newState;
-        IsGoalSet = false; // for direct mode
-        JointTrajectory.EndTime = 0.0; // for joint mode
         if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
+            IsGoalSet = false;
             MessageEvents.RobotStatus(this->GetName() + " position cartesian");
         } else {
+            JointTrajectory.EndTime = 0.0;
             MessageEvents.RobotStatus(this->GetName() + " position goal cartesian");
         }
         break;
@@ -503,7 +507,6 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
             FinalJoint.Assign(JointGet,6);
             FinalJoint = FinalJoint + dq;
             FinalJoint.resize(7);
-            FinalJoint[6] = DesiredOpenAngle;
 
             // find closest solution mod 2 pi
             double diffTurns = nearbyint(-dq[3] / (2.0 * cmnPI));
@@ -529,9 +532,16 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
     }
 }
 
-void mtsIntuitiveResearchKitPSM::SetOpenAngle(const double & openAngle)
+void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 {
-    DesiredOpenAngle = openAngle;
+    if ((RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN)
+        || (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN)
+        || (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN)) {
+        JointSet[6] = jawPosition;
+        IsGoalSet = true;
+    } else {
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetJawPosition: PSM not ready" << std::endl;
+    }
 }
 
 void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
