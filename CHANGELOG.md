@@ -30,6 +30,7 @@ Change log
   * Commands using the inverse kinematics now check the result of `robManipulator::InverseKinematics`.
   * Inverse kinematics for the ECM has been fixed.
   * Examples now build properly with catkin/ROS, i.e. they can be found in ROS path
+  * For MTM, when caalling inverse kinematics, set joint 5 to 0 instead of joint 3 to pi/4 to try to move the wrist platform away from the user's hand.  The idea is to use the joint on top of the L bracket to move the L at 90 deg off gripper.
 
 1.0.1 (2015-01-30)
 ==================
