@@ -13,7 +13,7 @@ Change log
   * Joint 7 on PSM is now referred as "jaw", e.g. `SetPositionJaw` instead of `angle` or `gripper`.  On MTM, the last joint is still called "gripper"
 * Deprecated features:
   * For all derived classes, the enum used to encode states are now shared across arm types, you will need to replace the ECM, MTM or PSM part by DVRK (e.g. `PSM_HOMING_POWERING` is now `DVRK_HOMING_POWERING`).
-  * In C++ class, events are now defined in two different scopes, `EventTriggers` is now split into `ClutchEvents`, `GripperEvents` and `MessageEvents`.
+  * In C++ class, events are now defined in different scopes, `EventTriggers` is now split into `ClutchEvents`, `GripperEvents` and `MessageEvents`.
 * New features:
   * A new base class has been introduced to share the code between all arms, now all arms are derived from `mtsIntuititiveResearchKitArm`.  The base class implements most of the homing procedure as well as most control modes.  There is still some code duplicated code in the derived classes that should be ported to the base class. 
   * All arms now feature four control modes:
