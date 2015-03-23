@@ -13,7 +13,7 @@ Change log
   * Joint 7 on PSM is now referred as "jaw", e.g. `SetPositionJaw` instead of `angle` or `gripper`.  On MTM, the last joint is still called "gripper"
 * Deprecated features:
   * For all derived classes, the enum used to encode states are now shared across arm types, you will need to replace the ECM, MTM or PSM part by DVRK (e.g. `PSM_HOMING_POWERING` is now `DVRK_HOMING_POWERING`).
-  * In C++ class, events are now defined in two different scopes, `EventTriggers` is now split into `ClutchEvents` and `MessageEvents`.
+  * In C++ class, events are now defined in two different scopes, `EventTriggers` is now split into `ClutchEvents`, `GripperEvents` and `MessageEvents`.
 * New features:
   * A new base class has been introduced to share the code between all arms, now all arms are derived from `mtsIntuititiveResearchKitArm`.  The base class implements most of the homing procedure as well as most control modes.  There is still some code duplicated code in the derived classes that should be ported to the base class. 
   * All arms now feature four control modes:
@@ -21,6 +21,7 @@ Change log
     * Direct cartesian: This mode checks current arm state to make sure is powered and tool (for ECM and PSM) is past cannula.  Inverse kinematics is computed and new joints goal sent to PID.
     * Joint goal: Same pre-condition as direct joit but the robLSPB trajectory generator is called to make sure the robot moves smoothly to goal.
     * Cartesian goal: Same pre-condition as direct cartesian but the inverse kinematic is calculated for current and goal positions then trajectory in sent as joint goal.   NOTE: interpolation is performed in joint space.
+  * Added commands to retrieve measured vs. desired positions, both for joints and cartesian.
   * Two new events have been added:
     * `RobotState` with payload `std::string` with the `DVRK_xyz` value corresponding to the current state.
     * `GoalReached` with payload `bool` to indicate if the trajectory has been fully executed. 
