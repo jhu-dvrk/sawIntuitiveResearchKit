@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -87,6 +87,9 @@ protected:
     virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
 
+    /*! Event handler for PID joint limit. */
+    virtual void EventHandlerJointLimit(void);
+
     /*! Event handler for PID tracking error. */
     virtual void EventHandlerTrackingError(void);
 
@@ -94,7 +97,7 @@ protected:
     virtual size_t NumberOfAxes(void) const = 0;           // used IO: ECM 4, PSM 7, MTM 8
     virtual size_t NumberOfJoints(void) const = 0;         // used PID: ECM 4, PSM 7, MTM 7
     virtual size_t NumberOfJointsKinematics(void) const = 0; // used for inverse kinematics: ECM 4, PSM 6, MTM 7
-    virtual size_t NumberOfBrakes(void) const = 0;         // ECM 3, PSM 0, MTM 0 
+    virtual size_t NumberOfBrakes(void) const = 0;         // ECM 3, PSM 0, MTM 0
 
     virtual bool UsePIDTrackingError(void) const = 0;      // ECM true, PSM false, MTM false
     inline virtual bool UsePotsForSafetyCheck(void) const {
@@ -177,7 +180,7 @@ protected:
         vctDoubleVec Goal;
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
-        double EndTime; // time should be set to 0.0 if there is no on-going trajectory 
+        double EndTime; // time should be set to 0.0 if there is no on-going trajectory
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
     } JointTrajectory;
 

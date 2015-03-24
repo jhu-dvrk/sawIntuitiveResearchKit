@@ -78,6 +78,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("SetTorqueOffset", PID.SetTorqueOffset);
         PIDInterface->AddFunction("EnableTrackingError", PID.EnableTrackingError);
         PIDInterface->AddFunction("SetTrackingErrorTolerances", PID.SetTrackingErrorTolerance);
+        PIDInterface->AddEventHandlerVoid(&mtsIntuitiveResearchKitArm::EventHandlerJointLimit, this, "JointLimit");
         PIDInterface->AddEventHandlerVoid(&mtsIntuitiveResearchKitArm::EventHandlerTrackingError, this, "TrackingError");
     }
 
@@ -305,8 +306,6 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
 
         // pre-load PID to make sure desired position has some reasonable values
         PID.GetPositionJoint(JointGetParam);
-        // angles are radians but cisst uses mm.   robManipulator uses SI, so we need meters
-        JointGetParam.Position().Element(2) /= 1000.0;  // convert from mm to m
         // assign to a more convenient vctDoubleVec
         JointGet.Assign(JointGetParam.Position(), NumberOfJoints());
         SetPositionJointLocal(JointGet);
@@ -362,7 +361,7 @@ void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
         CartesianPositionFrm.From(CartesianSetParam.Goal());
         if (this->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
             // assign to joints used for kinematics
-            JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);            
+            JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
             // finally send new joint values
             SetPositionJointLocal(JointSet);
         } else {
@@ -427,7 +426,7 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
 
         // compute desired slave position
         CartesianPositionFrm.From(newPosition.Goal());
-        
+
         if (this->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
             // resize to proper number of joints
             jointSet.resize(NumberOfJoints());
@@ -450,6 +449,21 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
 void mtsIntuitiveResearchKitArm::EventHandlerTrackingError(void)
 {
     RobotIO.DisablePower();
+    // in case there was a trajectory going on
+    if (JointTrajectory.EndTime != 0.0) {
+        JointTrajectory.GoalReachedEvent(false);
+        JointTrajectory.EndTime = 0.0;
+    }
     MessageEvents.RobotError(this->GetName() + ": PID tracking error");
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+}
+
+void mtsIntuitiveResearchKitArm::EventHandlerJointLimit(void)
+{
+    // in case there was a trajectory going on
+    if (JointTrajectory.EndTime != 0.0) {
+        JointTrajectory.GoalReachedEvent(false);
+        JointTrajectory.EndTime = 0.0;
+    }
+    MessageEvents.RobotError(this->GetName() + ": PID joint limit");
 }
