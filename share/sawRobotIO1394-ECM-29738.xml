@@ -11,17 +11,10 @@
          <AnalogBrake AxisID="0" BoardID="5">
             <AmpsToBits Offset="32819" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
-<<<<<<< HEAD
-            <MaxCurrent Unit="A" Value="0.300"/>
-            <ReleaseCurrent Unit="A" Value="0.250"/>
-            <ReleaseTime Value="2.0"/>
-            <ReleasedCurrent Unit="A" Value="0.090"/>
-=======
             <MaxCurrent Unit="A" Value="0.250"/>
             <ReleaseCurrent Unit="A" Value="0.250"/>
             <ReleaseTime Value="2.000"/>
             <ReleasedCurrent Unit="A" Value="0.110"/>
->>>>>>> devel
             <EngagedCurrent Unit="A" Value="0.000"/>
          </AnalogBrake>
          <Encoder>
@@ -45,17 +38,10 @@
          <AnalogBrake AxisID="1" BoardID="5">
             <AmpsToBits Offset="32915" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
-<<<<<<< HEAD
-            <MaxCurrent Unit="A" Value="0.300"/>
-            <ReleaseCurrent Unit="A" Value="0.250"/>
-            <ReleaseTime Value="2.0"/>
-            <ReleasedCurrent Unit="A" Value="0.080"/>
-=======
             <MaxCurrent Unit="A" Value="0.220"/>
             <ReleaseCurrent Unit="A" Value="0.220"/>
             <ReleaseTime Value="2.000"/>
             <ReleasedCurrent Unit="A" Value="0.090"/>
->>>>>>> devel
             <EngagedCurrent Unit="A" Value="0.000"/>
          </AnalogBrake>
          <Encoder>
@@ -79,17 +65,10 @@
          <AnalogBrake AxisID="2" BoardID="5">
             <AmpsToBits Offset="32851" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
-<<<<<<< HEAD
-            <MaxCurrent Unit="A" Value="1.000"/>
-            <ReleaseCurrent Unit="A" Value="0.900"/>
-            <ReleaseTime Value="2.0"/>
-            <ReleasedCurrent Unit="A" Value="0.200"/>
-=======
             <MaxCurrent Unit="A" Value="1.200"/>
             <ReleaseCurrent Unit="A" Value="1.000"/>
             <ReleaseTime Value="2.000"/>
             <ReleasedCurrent Unit="A" Value="0.220"/>
->>>>>>> devel
             <EngagedCurrent Unit="A" Value="0.000"/>
          </AnalogBrake>
          <Encoder>
