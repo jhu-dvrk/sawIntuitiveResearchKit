@@ -56,6 +56,10 @@ protected:
     /*! Get data from the PID level based on current state. */
     void GetRobotData(void);
 
+    /*! Logic used to read the potentiometer values and updated the
+      appropriate joint values based on the mux state. */
+    void GetAndConvertPotentiometerValues(void);
+
     /*! Verify that the state transition is possible, initialize global
       variables for the desired state and finally set the state. */
     void SetState(const RobotStateType & newState);
@@ -81,9 +85,9 @@ protected:
 
     // Functions for events
     struct {
-        mtsFunctionWrite RobotStatusMsg;
-        mtsFunctionWrite RobotErrorMsg;
-    } EventTriggers;
+        mtsFunctionWrite RobotStatus;
+        mtsFunctionWrite RobotError;
+    } MessagesEvents;
 
     // Functions to control MUX
     struct {

@@ -31,15 +31,35 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJ, mtsTaskPeriodi
 class mtsIntuitiveResearchKitSUJArmData
 {
 public:
-    mtsIntuitiveResearchKitSUJArmData(void) {
+    mtsIntuitiveResearchKitSUJArmData(const std::string & name,
+                                      mtsInterfaceProvided * interfaceProvided):
+        mName(name),
+        mStateTable(500, name)
+    {
+        // state table doesn't always advance, only when pots are stable
+        mStateTable.SetAutomaticAdvance(false);
+
         for (size_t potArray = 0; potArray < 2; ++potArray) {
             mVoltages[potArray].SetSize(8);
             mPositions[potArray].SetSize(8);
             mVoltageToPositionScales[potArray].SetSize(8);
             mVoltageToPositionOffsets[potArray].SetSize(8);
         }
+
+        mStateTable.AddData(this->mVoltages[0], "Voltages[0]");
+        mStateTable.AddData(this->mVoltages[1], "Voltages[1]");
+        CMN_ASSERT(interfaceProvided);
+        interfaceProvided->AddCommandReadState(mStateTable, mVoltages[0], "Voltages[0]");
+        interfaceProvided->AddCommandReadState(mStateTable, mVoltages[1], "Voltages[1]");
     }
 
+    // name of this SUJ arm
+    std::string mName;
+
+    // state of this SUJ arm
+    mtsStateTable mStateTable;
+
+    // 2 arrays, one for each set of potentiometers
     vctFixedSizeVector<vctDoubleVec, 2>
         mVoltages,
         mPositions,
@@ -94,8 +114,8 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     if (interfaceProvided) {
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetRobotControlState,
                                            this, "SetRobotControlState", std::string(""));
-        interfaceProvided->AddEventWrite(EventTriggers.RobotStatusMsg, "RobotStatusMsg", std::string(""));
-        interfaceProvided->AddEventWrite(EventTriggers.RobotErrorMsg, "RobotErrorMsg", std::string(""));
+        interfaceProvided->AddEventWrite(MessagesEvents.RobotStatus, "RobotStatusMsg", std::string(""));
+        interfaceProvided->AddEventWrite(MessagesEvents.RobotError, "RobotErrorMsg", std::string(""));
         // Stats
         interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                                "GetPeriodStatistics");
@@ -103,7 +123,11 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
 
     // allocate data for each SUJ and setup interfaces
     for (size_t i = 0; i < 4; ++i) {
-        Arms[i] = new mtsIntuitiveResearchKitSUJArmData;
+        std::stringstream interfaceNameStream;
+        interfaceNameStream << "SUJ" << i + 1;
+        std::string interfaceName = interfaceNameStream.str();
+        mtsInterfaceProvided * interface = this->AddInterfaceProvided(interfaceName);
+        Arms[i] = new mtsIntuitiveResearchKitSUJArmData(interfaceName, interface);
     }
 }
 
@@ -153,6 +177,7 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
 
 void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
 {
+    // every 20 ms, set mux increment signal up for 3 ms
     const double muxCycle = 20.0 * cmn_ms;
     const double muxIncrementDownTime = 3.0 * cmn_ms;
 
@@ -164,26 +189,38 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
 
         // toggle
         if (currentTime > mMuxTimer) {
+            // time to raise signal to increment mux
             mMuxTimer = currentTime + muxCycle;
             executionResult = MuxIncrement.SetValue(true);
             mMuxUp = true;
+            // pot values should be stable by now, get pots values
+            GetAndConvertPotentiometerValues();
         } else {
+            // time to lower signal to increment mux
             if (mMuxUp && (currentTime > (mMuxTimer - muxIncrementDownTime))) {
                 executionResult = MuxIncrement.SetValue(false);
                 mMuxUp = false;
             }
         }
-        // read encoder channel A to get the mux state
-        executionResult = RobotIO.GetEncoderChannelA(mMuxState);
-        // compute pot index
-        mMuxIndex = (mMuxState[0]?1:0) + (mMuxState[1]?2:0) + (mMuxState[2]?4:0) + (mMuxState[3]?8:0);
-        const size_t potArray = mMuxIndex / 8;
-        executionResult = RobotIO.GetAnalogInputVolts(mVoltages);
-        for (size_t arm = 0; arm < 4; ++arm) {
-            Arms[arm]->mVoltages[potArray][mMuxIndex%8] = mVoltages[arm];
-        }
-        std::cerr << "array: " << potArray << " -> " << Arms[0]->mVoltages[0] << std::endl;
     }
+}
+
+void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
+{
+    // read encoder channel A to get the mux state
+    mtsExecutionResult executionResult = RobotIO.GetEncoderChannelA(mMuxState);
+    // compute pot index
+    mMuxIndex = (mMuxState[0]?1:0) + (mMuxState[1]?2:0) + (mMuxState[2]?4:0) + (mMuxState[3]?8:0);
+    // array index, 0 or 1, primary or secondary pots
+    const size_t arrayIndex = mMuxIndex / 8;
+    executionResult = RobotIO.GetAnalogInputVolts(mVoltages);
+    // for each arm, i.e. SUJ1, SUJ2, SUJ3, ...
+    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        Arms[armIndex]->mStateTable.Start();
+        Arms[armIndex]->mVoltages[arrayIndex][mMuxIndex%8] = mVoltages[armIndex];
+        Arms[armIndex]->mStateTable.Advance();
+    }
+    std::cerr << "array: " << arrayIndex << " -> " << Arms[0]->mVoltages[0] << std::endl;
 }
 
 void mtsIntuitiveResearchKitSUJ::SetState(const RobotStateType & newState)
@@ -194,30 +231,30 @@ void mtsIntuitiveResearchKitSUJ::SetState(const RobotStateType & newState)
 
     case SUJ_UNINITIALIZED:
         mRobotState = newState;
-        EventTriggers.RobotStatusMsg(this->GetName() + " not initialized");
+        MessagesEvents.RobotStatus(this->GetName() + " not initialized");
         break;
 
     case SUJ_HOMING_POWERING:
         mHomingTimer = 0.0;
         mHomingPowerRequested = false;
         mRobotState = newState;
-        EventTriggers.RobotStatusMsg(this->GetName() + " powering");
+        MessagesEvents.RobotStatus(this->GetName() + " powering");
         break;
 
     case SUJ_READY:
         // when returning from manual mode, need to re-enable PID
         mRobotState = newState;
-        EventTriggers.RobotStatusMsg(this->GetName() + " ready");
+        MessagesEvents.RobotStatus(this->GetName() + " ready");
         break;
 
     case SUJ_MANUAL:
         if (this->mRobotState < SUJ_READY) {
-            EventTriggers.RobotErrorMsg(this->GetName() + " is not ready yet");
+            MessagesEvents.RobotError(this->GetName() + " is not ready yet");
             return;
         }
         std::cerr << CMN_LOG_DETAILS << " should release breaks now" << std::endl;
         mRobotState = newState;
-        EventTriggers.RobotStatusMsg(this->GetName() + " in manual mode");
+        MessagesEvents.RobotStatus(this->GetName() + " in manual mode");
         break;
     default:
         break;
@@ -237,7 +274,7 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
         // enable power and set a flags to move to next step
         RobotIO.EnablePower();
         mHomingPowerRequested = true;
-        EventTriggers.RobotStatusMsg(this->GetName() + " power requested");
+        MessagesEvents.RobotStatus(this->GetName() + " power requested");
         return;
     }
 
@@ -248,10 +285,10 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
         vctBoolVec actuatorAmplifiersStatus(NumberOfJoints);
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         if (actuatorAmplifiersStatus.All()) {
-            EventTriggers.RobotStatusMsg(this->GetName() + " power on");
+            MessagesEvents.RobotStatus(this->GetName() + " power on");
             this->SetState(SUJ_READY);
         } else {
-            EventTriggers.RobotErrorMsg(this->GetName() + " failed to enable power.");
+            MessagesEvents.RobotError(this->GetName() + " failed to enable power.");
             this->SetState(SUJ_UNINITIALIZED);
         }
     }
@@ -264,6 +301,6 @@ void mtsIntuitiveResearchKitSUJ::SetRobotControlState(const std::string & state)
     } else if (state == "Manual") {
         SetState(SUJ_MANUAL);
     } else {
-        EventTriggers.RobotErrorMsg(this->GetName() + ": unsupported state " + state);
+        MessagesEvents.RobotError(this->GetName() + ": unsupported state " + state);
     }
 }

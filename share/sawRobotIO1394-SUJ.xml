@@ -43,10 +43,10 @@
       </Actuator>
    </Robot>
    <!-- Digital Input Configuration -->
-   <DigitalIn BitID="0" BoardID="12" Debounce="0" Name="SUJ-Clutch1" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="1" BoardID="12" Debounce="0" Name="SUJ-D01" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="2" BoardID="12" Debounce="0" Name="SUJ-D02" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="3" BoardID="12" Debounce="0" Name="SUJ-D03" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="0" BoardID="12" Debounce="0" Name="SUJ-Clutch-01" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="1" BoardID="12" Debounce="0" Name="SUJ-Clutch-02" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="2" BoardID="12" Debounce="0" Name="SUJ-Clutch-03" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="3" BoardID="12" Debounce="0" Name="SUJ-Clutch-04" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="4" BoardID="12" Debounce="0" Name="SUJ-D10" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="5" BoardID="12" Debounce="0" Name="SUJ-D11" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="6" BoardID="12" Debounce="0" Name="SUJ-D12" Pressed="0" Trigger="all"/>
