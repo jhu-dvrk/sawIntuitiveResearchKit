@@ -18,7 +18,7 @@
     </joint>
 
     <joint index="2" name="insertion"> 
-      <pid PGain="10.0" DGain="0.5" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
+      <pid PGain="3000.0" DGain="100.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
       <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="0" UpperLimit="235" Units="mm"/>
     </joint>

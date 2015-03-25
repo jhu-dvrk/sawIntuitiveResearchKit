@@ -1,0 +1,74 @@
+class {
+    name mtsIntuitiveResearchKitArmTypes;
+    enum {
+        name RobotStateType;
+        enum-value {
+            name DVRK_UNINITIALIZED;
+            description Uninitialized;
+        }
+        enum-value {
+            name DVRK_HOMING_POWERING;
+            description Powering;
+        }
+        enum-value {
+            name DVRK_HOMING_CALIBRATING_ARM;
+            description Calibrating arm;
+        }
+        enum-value {
+            name DVRK_HOMING_CALIBRATING_ROLL;
+            description Calibrating gripper roll;
+        }
+        enum-value {
+            name DVRK_ARM_CALIBRATED;
+            description DVRK calibrated;
+        }
+        enum-value {
+            name DVRK_ENGAGING_ADAPTER;
+            description Engaging adapter for PSM;
+        }
+        enum-value {
+            name DVRK_ADAPTER_ENGAGED;
+            description Adapter engaged for PSM;
+        }
+        enum-value {
+            name DVRK_ENGAGING_TOOL;
+            description Engaging tool for PSM;
+        }
+        enum-value {
+            name DVRK_READY;
+            description DVRK ready;
+        }
+        enum-value {
+            name DVRK_POSITION_JOINT;
+            description Joint position mode;
+        }
+        enum-value {
+            name DVRK_POSITION_GOAL_JOINT;
+            description Joint position goal mode;
+        }
+        enum-value {
+            name DVRK_POSITION_CARTESIAN;
+            description Cartesian position mode;
+        }
+        enum-value {
+            name DVRK_POSITION_GOAL_CARTESIAN;
+            description Cartesian position goal mode;
+        }
+        enum-value {
+            name DVRK_CONSTRAINT_CONTROLLER_CARTESIAN;
+            description Constraint controller mode;
+        }
+        enum-value {
+            name DVRK_GRAVITY_COMPENSATION;
+            description Gravity compensation mode;
+        }
+        enum-value {
+            name DVRK_MANUAL;
+            description Manual mode for slave arm;
+        }
+        enum-value {
+            name DVRK_CLUTCH;
+            description Clutch mode for master arm;
+        }
+    }
+}

@@ -47,12 +47,12 @@ public:
           interface.  If the period in seconds is zero, the PID will be tied to
           IO using the ExecIn/ExecOut interfaces. */
         void ConfigurePID(const std::string & configFile,
-                                   const double & periodInSeconds = 0.0 * cmn_ms);
+                          const double & periodInSeconds = 0.0 * cmn_ms);
 
         /*! Create and configure the robot arm. */
         void ConfigureArm(const ArmType armType,
-                                   const std::string & configFile,
-                                   const double & periodInSeconds = 0.0 * cmn_ms);
+                          const std::string & configFile,
+                          const double & periodInSeconds = 0.0 * cmn_ms);
 
         /*! Accessors */
         const std::string & Name(void) const;

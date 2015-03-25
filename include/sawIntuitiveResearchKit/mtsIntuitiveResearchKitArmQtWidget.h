@@ -26,8 +26,10 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
-#include <QtCore>
-#include <QtGui>
+#include <QTextEdit>
+#include <QPushButton>
+#include <QCheckBox>
+#include <QLineEdit>
 
 
 class mtsIntuitiveResearchKitArmQtWidget: public QWidget, public mtsComponent
@@ -53,6 +55,8 @@ signals:
 private slots:
     void timerEvent(QTimerEvent * event);
     void SlotTextChanged(void);
+    void SlotEnableDirectControl(bool toggle);
+    void SlotHome(void);
 
 private:
     //! setup GUI
@@ -62,18 +66,27 @@ private:
 protected:
     struct ArmStruct {
         mtsFunctionRead GetPositionCartesian;
+        mtsFunctionRead GetRobotControlState;
+        mtsFunctionWrite SetRobotControlState;
         mtsFunctionRead GetPeriodStatistics;
     } Arm;
 
 private:
+    bool DirectControl;
+
     prmPositionCartesianGet Position;
     vctQtWidgetFrameDoubleRead * QFRPositionWidget;
 
-    // Timing
+    // timing
     mtsIntervalStatistics IntervalStatistics;
     mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
 
-    // Messages
+    // state
+    QCheckBox * QCBEnableDirectControl;
+    QPushButton * QPBHome;
+    QLineEdit * QLEState;
+
+    // messages
     void ErrorMessageEventHandler(const std::string & message);
     void StatusMessageEventHandler(const std::string & message);
     QTextEdit * QTEMessages;

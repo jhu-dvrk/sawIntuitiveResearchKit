@@ -41,7 +41,7 @@ int main(int argc, char ** argv)
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskFunction(CMN_LOG_ALLOW_ALL);
-    cmnLogger::SetMaskClass("mtsIntuitiveResearchKitPSM", CMN_LOG_ALLOW_ALL);
+    cmnLogger::SetMaskClassMatching("mtsIntuitiveResearchKit", CMN_LOG_ALLOW_ALL);
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
     // parse options
@@ -120,7 +120,7 @@ int main(int argc, char ** argv)
     componentManager->Connect("console", "Main", "consoleGUI", "Main");
 
     // IO
-    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1.0 * cmn_ms, firewirePort);
+    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 2.0 * cmn_ms, firewirePort);
     io->Configure(configFiles["io"]);
     componentManager->AddComponent(io);
 

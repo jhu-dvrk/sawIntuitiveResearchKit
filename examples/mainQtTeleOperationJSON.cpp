@@ -1,7 +1,7 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
-/*
 
+/*
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
@@ -61,15 +61,15 @@ int main(int argc, char ** argv)
 {
     // configuration
     const double periodIO = 0.5 * cmn_ms;
-    const double periodKinematics = 2.0 * cmn_ms;
-    const double periodTeleop = 2.0 * cmn_ms;
+    const double periodKinematics = 1.0 * cmn_ms;
+    const double periodTeleop = 1.0 * cmn_ms;
     const double periodUDP = 20.0 * cmn_ms;
  
     // log configuration
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskFunction(CMN_LOG_ALLOW_ALL);
-    cmnLogger::SetMaskClass("mtsIntuitiveResearchKit", CMN_LOG_ALLOW_VERBOSE);
+    cmnLogger::SetMaskClassMatching("mtsIntuitiveResearchKit", CMN_LOG_ALLOW_ALL);
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
     // parse options
@@ -295,9 +295,7 @@ int main(int argc, char ** argv)
         mtsTeleOperation * tele = new mtsTeleOperation(teleName, periodTeleop);
         // Default orientation between master and slave
         vctMatRot3 master2slave;
-        master2slave.Assign(-1.0, 0.0, 0.0,
-                             0.0,-1.0, 0.0,
-                             0.0, 0.0, 1.0);
+        master2slave.From(vctAxAnRot3(vct3(0.0, 0.0, 1.0), 180.0 * cmnPI_180));
         tele->SetRegistrationRotation(master2slave);
         componentManager->AddComponent(tele);
         // connect teleGUI to tele

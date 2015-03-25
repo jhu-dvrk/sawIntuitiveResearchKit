@@ -2,11 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -38,10 +37,14 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
     mtsComponent(componentName),
     TimerPeriodInMilliseconds(periodInSeconds)
 {
+    DirectControl = false;
+
     // Setup CISST Interface
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Manipulator");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", Arm.GetPositionCartesian);
+        interfaceRequired->AddFunction("GetRobotControlState", Arm.GetRobotControlState);
+        interfaceRequired->AddFunction("SetRobotControlState", Arm.SetRobotControlState);
         interfaceRequired->AddFunction("GetPeriodStatistics", Arm.GetPeriodStatistics);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::ErrorMessageEventHandler,
                                                 this, "RobotErrorMsg");
@@ -99,6 +102,10 @@ void mtsIntuitiveResearchKitArmQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(eve
     }
     QFRPositionWidget->SetValue(Position.Position());
 
+    std::string state;
+    Arm.GetRobotControlState(state);
+    QLEState->setText(state.c_str());
+
     Arm.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
@@ -106,6 +113,17 @@ void mtsIntuitiveResearchKitArmQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(eve
 void mtsIntuitiveResearchKitArmQtWidget::SlotTextChanged(void)
 {
     QTEMessages->verticalScrollBar()->setSliderPosition(QTEMessages->verticalScrollBar()->maximum());
+}
+
+void mtsIntuitiveResearchKitArmQtWidget::SlotEnableDirectControl(bool toggle)
+{
+    DirectControl = toggle;
+    QPBHome->setEnabled(toggle);
+}
+
+void mtsIntuitiveResearchKitArmQtWidget::SlotHome(void)
+{
+    Arm.SetRobotControlState(std::string("Home"));
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
@@ -119,14 +137,27 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     QFRPositionWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
     topLayout->addWidget(QFRPositionWidget, 0, 0);
 
-    // Timing
+    // timing
     QVBoxLayout * timingLayout = new QVBoxLayout();
     QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
     timingLayout->addWidget(QMIntervalStatistics);
     timingLayout->addStretch();
     topLayout->addLayout(timingLayout);
 
-    // Messages
+    // state
+    QHBoxLayout * stateLayout = new QHBoxLayout;
+    mainLayout->addLayout(stateLayout);
+    QCBEnableDirectControl = new QCheckBox("Direct control");
+    stateLayout->addWidget(QCBEnableDirectControl);
+    QPBHome = new QPushButton("Home");
+    stateLayout->addWidget(QPBHome);
+    QLabel * stateLabel = new QLabel("State:");
+    stateLayout->addWidget(stateLabel);
+    QLEState = new QLineEdit("");
+    QLEState->setReadOnly(true);
+    stateLayout->addWidget(QLEState);
+
+    // messages
     QTEMessages = new QTextEdit();
     QTEMessages->setReadOnly(true);
     QTEMessages->ensureCursorVisible();
@@ -142,6 +173,14 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
             QTEMessages, SLOT(setTextColor(QColor)));
     connect(QTEMessages, SIGNAL(textChanged()),
             this, SLOT(SlotTextChanged()));
+    connect(QCBEnableDirectControl, SIGNAL(toggled(bool)),
+            this, SLOT(SlotEnableDirectControl(bool)));
+    connect(QPBHome, SIGNAL(clicked()),
+            this, SLOT(SlotHome()));
+
+    // set initial values
+    QCBEnableDirectControl->setChecked(DirectControl);
+    SlotEnableDirectControl(DirectControl);
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::ErrorMessageEventHandler(const std::string & message)

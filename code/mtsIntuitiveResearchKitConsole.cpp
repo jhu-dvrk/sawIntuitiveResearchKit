@@ -87,8 +87,6 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                       IOComponentName(), Name() + "-Tool");
             componentManager->Connect(Name(), "ManipClutch",
                                       IOComponentName(), Name() + "-ManipClutch");
-            componentManager->Connect(Name(), "SUJClutch",
-                                      IOComponentName(), Name() + "-SUJClutch");
         }
         break;
     case ARM_ECM:
@@ -98,8 +96,6 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             componentManager->AddComponent(ecm);
             componentManager->Connect(Name(), "ManipClutch",
                                       IOComponentName(), Name() + "-ManipClutch");
-            componentManager->Connect(Name(), "SUJClutch",
-                                      IOComponentName(), Name() + "-SUJClutch");
         }
         break;
     case ARM_SUJ:

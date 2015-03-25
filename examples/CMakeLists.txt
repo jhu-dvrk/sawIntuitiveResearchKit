@@ -1,6 +1,5 @@
 #
-#
-# (C) Copyright 2009-2013 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2015 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -32,23 +31,34 @@ if (cisst_FOUND_AS_REQUIRED)
   # load cisst configuration
   include (${CISST_USE_FILE})
 
-  # sawRobotIO1394 has been compiled within cisst, we should find it automatically
+  # catkin/ROS paths
+  cisst_is_catkin_build (sawIntuitiveResearchKitExamples_IS_CATKIN_BUILT)
+  if (sawIntuitiveResearchKitExamples_IS_CATKIN_BUILT)
+    set (EXECUTABLE_OUTPUT_PATH "${CATKIN_DEVEL_PREFIX}/bin")
+  endif ()
+
+  # saw components have been compiled within cisst, we should find them automatically
   cisst_find_saw_component (sawRobotIO1394 REQUIRED)
   cisst_find_saw_component (sawIntuitiveResearchKit REQUIRED)
   cisst_find_saw_component (sawControllers REQUIRED)
+  cisst_find_saw_component (sawConstraintController REQUIRED)
   cisst_find_saw_component (sawTextToSpeech REQUIRED)
 
-  if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
+  if (sawRobotIO1394_FOUND AND sawControllers_FOUND
+      AND sawIntuitiveResearchKit_FOUND AND sawTextToSpeech_FOUND
+      AND sawConstraintController_FOUND)
 
-    # sawRobotIO1394 configuration
+    # saw components configuration
     include_directories (${sawRobotIO1394_INCLUDE_DIR}
                          ${sawIntuitiveResearchKit_INCLUDE_DIR}
                          ${sawControllers_INCLUDE_DIR}
+                         ${sawConstrainController_INCLUDE_DIR}
                          ${sawTextToSpeech_INCLUDE_DIR})
 
     link_directories (${sawRobotIO1394_LIBRARY_DIR}
                       ${sawIntuitiveResearchKit_LIBRARY_DIR}
                       ${sawControllers_LIBRARY_DIR}
+                      ${sawConstraintController_LIBRARY_DIR}
                       ${sawTextToSpeech_LIBRARY_DIR})
 
     # main program used to configure PID
@@ -152,6 +162,6 @@ if (cisst_FOUND_AS_REQUIRED)
 
     endif (CISST_HAS_QT)
 
-  endif (sawRobotIO1394_FOUND AND sawControllers_FOUND)
+  endif () # components found
 
 endif (cisst_FOUND_AS_REQUIRED)

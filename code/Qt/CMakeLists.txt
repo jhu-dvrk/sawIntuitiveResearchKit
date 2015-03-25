@@ -1,6 +1,5 @@
 #
-# (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights
-# Reserved.
+# (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -51,6 +50,11 @@ if (cisst_FOUND_AS_REQUIRED)
 
   # make sure the new library is known by the parent folder to add to the config file
   set (sawIntuitiveResearchKitQt_LIBRARIES sawIntuitiveResearchKitQt PARENT_SCOPE)
+
+  install (TARGETS sawIntuitiveResearchKitQt
+           RUNTIME DESTINATION bin
+           LIBRARY DESTINATION lib
+           ARCHIVE DESTINATION lib)
 
 else (cisst_FOUND_AS_REQUIRED)
   message ("Information: code will not be compiled, it requires ${REQUIRED_CISST_LIBRARIES}")
