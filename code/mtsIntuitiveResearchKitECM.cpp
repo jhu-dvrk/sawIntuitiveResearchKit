@@ -66,7 +66,7 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
         vctFrm4x4 forward = Manipulator.ForwardKinematics(jointSet);
         vctDouble3 diff;
         diff.DifferenceOf(forward.Translation(), newGoal.Translation());
-        std::cerr << diff.Norm() * 1000.0 << "mm ";
+        std::cerr << cmnInternalTo_mm(diff.Norm()) << "mm ";
 #endif
 
         return robManipulator::ESUCCESS;
@@ -176,7 +176,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         // check that the tool is inserted deep enough
-        if (JointGet.Element(2) < 80.0 / 1000.0) {
+        if (JointGet.Element(2) < 80.0 * cmn_mm) {
             MessageEvents.RobotError(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }

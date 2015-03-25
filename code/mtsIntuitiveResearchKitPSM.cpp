@@ -253,7 +253,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         // check that the tool is inserted deep enough
-        if (JointGet.Element(2) < 80.0 / 1000.0) {
+        if (JointGet.Element(2) < 80.0 * cmn_mm) {
             MessageEvents.RobotError(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
@@ -273,7 +273,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         // check that the tool is inserted deep enough
-        if (JointGet.Element(2) < 80.0 / 1000.0) {
+        if (JointGet.Element(2) < 80.0 * cmn_mm) {
             MessageEvents.RobotError(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
@@ -312,6 +312,14 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         // enable PID and start from current position
         JointSet.ForceAssign(JointGet);
         SetPositionJointLocal(JointSet);
+        // configure PID to fail in case of tracking error
+        vctDoubleVec tolerances(NumberOfJoints());
+        tolerances.Ref(2, 0).SetAll(20.0 * cmnPI_180);
+        tolerances.Element(2) = 20.0 * cmn_mm; // 20 mm
+        tolerances.Ref(4, 3).SetAll(5.0 * cmnPI); // we request positions that can't be reached when the adapter/tool engage
+        PID.SetTrackingErrorTolerance(tolerances);
+        PID.EnableTrackingError(true);
+        // finally enable PID
         PID.Enable(true);
 
         // compute joint goal position
