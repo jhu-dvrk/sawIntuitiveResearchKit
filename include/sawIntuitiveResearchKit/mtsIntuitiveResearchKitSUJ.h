@@ -102,7 +102,7 @@ protected:
     double mMuxTimer;
     bool mMuxUp;
     vctBoolVec mMuxState;
-    size_t mMuxIndex;
+    size_t mMuxIndex, mMuxIndexExpected;
 
     RobotStateType mRobotState;
 

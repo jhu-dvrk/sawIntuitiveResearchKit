@@ -177,9 +177,10 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
 
 void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
 {
-    // every 20 ms, set mux increment signal up for 3 ms
-    const double muxCycle = 20.0 * cmn_ms;
-    const double muxIncrementDownTime = 3.0 * cmn_ms;
+    // every 100 ms, set mux increment signal up for 1 ms, this is arbitrary slow, all we need is to make
+    // 100 ms is to make sure A2D stabilizes
+    const double muxCycle = 100.0 * cmn_ms;
+    const double muxIncrementDownTime = 1.0 * cmn_ms;
 
     mtsExecutionResult executionResult;
 
@@ -193,13 +194,14 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
             mMuxTimer = currentTime + muxCycle;
             executionResult = MuxIncrement.SetValue(true);
             mMuxUp = true;
-            // pot values should be stable by now, get pots values
-            GetAndConvertPotentiometerValues();
         } else {
             // time to lower signal to increment mux
             if (mMuxUp && (currentTime > (mMuxTimer - muxIncrementDownTime))) {
                 executionResult = MuxIncrement.SetValue(false);
                 mMuxUp = false;
+                mMuxIndexExpected = (mMuxIndexExpected + 1) % 16;
+                // pot values should be stable by now, get pots values
+                GetAndConvertPotentiometerValues();
             }
         }
     }
@@ -211,16 +213,30 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
     mtsExecutionResult executionResult = RobotIO.GetEncoderChannelA(mMuxState);
     // compute pot index
     mMuxIndex = (mMuxState[0]?1:0) + (mMuxState[1]?2:0) + (mMuxState[2]?4:0) + (mMuxState[3]?8:0);
+    if (mMuxIndex != mMuxIndexExpected) {
+        std::cerr << CMN_LOG_DETAILS << "mux from IO board: " << mMuxIndex << " expected: " << mMuxIndexExpected << std::endl;
+        return;
+    }
     // array index, 0 or 1, primary or secondary pots
     const size_t arrayIndex = mMuxIndex / 8;
     executionResult = RobotIO.GetAnalogInputVolts(mVoltages);
     // for each arm, i.e. SUJ1, SUJ2, SUJ3, ...
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->mStateTable.Start();
+        if (mMuxState.Equal(0)) {
+            Arms[armIndex]->mStateTable.Start();
+        }
         Arms[armIndex]->mVoltages[arrayIndex][mMuxIndex%8] = mVoltages[armIndex];
-        Arms[armIndex]->mStateTable.Advance();
+        if (mMuxState.Equal(1)) {
+            Arms[armIndex]->mStateTable.Advance();
+        }
     }
-    std::cerr << "array: " << arrayIndex << " -> " << Arms[0]->mVoltages[0] << std::endl;
+    // debug code
+    // for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        if (mMuxState.Equal(1)) {
+            size_t armIndex = 2;
+            std::cerr << "Arm " << armIndex << " A " << Arms[armIndex]->mVoltages[0] << " B " << Arms[armIndex]->mVoltages[1] << std::endl;
+        }
+    // }
 }
 
 void mtsIntuitiveResearchKitSUJ::SetState(const RobotStateType & newState)
@@ -287,6 +303,13 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
         if (actuatorAmplifiersStatus.All()) {
             MessagesEvents.RobotStatus(this->GetName() + " power on");
             this->SetState(SUJ_READY);
+
+            // hack to reset mux
+            std::cerr << "Add new state to reset mux? to avoid blocking code?" << std::endl;
+            MuxReset.SetValue(true);
+            this->Sleep(3.0 * cmn_ms);
+            MuxReset.SetValue(false);
+            mMuxIndexExpected = 0;
         } else {
             MessagesEvents.RobotError(this->GetName() + " failed to enable power.");
             this->SetState(SUJ_UNINITIALIZED);
