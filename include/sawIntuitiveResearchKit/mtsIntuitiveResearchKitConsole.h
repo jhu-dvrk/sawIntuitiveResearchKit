@@ -52,7 +52,8 @@ public:
         /*! Create and configure the robot arm. */
         void ConfigureArm(const ArmType armType,
                           const std::string & configFile,
-                          const double & periodInSeconds = 0.0 * cmn_ms);
+                          const double & periodInSeconds = 0.0 * cmn_ms,
+                          mtsComponent * existingArm = 0);
 
         /*! Accessors */
         const std::string & Name(void) const;
