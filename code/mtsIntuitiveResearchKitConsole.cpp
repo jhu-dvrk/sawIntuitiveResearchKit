@@ -59,7 +59,8 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & confi
 
 void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                                        const std::string & configFile,
-                                                       const double & periodInSeconds)
+                                                       const double & periodInSeconds,
+                                                       mtsComponent *existingArm)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     mArmConfigurationFile = configFile;
@@ -68,16 +69,20 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     switch (armType) {
     case ARM_MTM:
         {
-            mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
-            master->Configure(mArmConfigurationFile);
-            componentManager->AddComponent(master);
+            if (!existingArm) {
+                mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
+                master->Configure(mArmConfigurationFile);
+                componentManager->AddComponent(master);
+            }
         }
         break;
     case ARM_PSM:
         {
-            mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
-            slave->Configure(mArmConfigurationFile);
-            componentManager->AddComponent(slave);
+            if (!existingArm) {
+                mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
+                slave->Configure(mArmConfigurationFile);
+                componentManager->AddComponent(slave);
+            }
             componentManager->Connect(Name(), "Adapter",
                                       IOComponentName(), Name() + "-Adapter");
             componentManager->Connect(Name(), "Tool",
@@ -88,9 +93,11 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         break;
     case ARM_ECM:
         {
-            mtsIntuitiveResearchKitECM * slave = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
-            slave->Configure(mArmConfigurationFile);
-            componentManager->AddComponent(slave);
+            if (!existingArm) {
+                mtsIntuitiveResearchKitECM * slave = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
+                slave->Configure(mArmConfigurationFile);
+                componentManager->AddComponent(slave);
+            }
             componentManager->Connect(Name(), "ManipClutch",
                                       IOComponentName(), Name() + "-ManipClutch");
         }
