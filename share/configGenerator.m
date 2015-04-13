@@ -351,7 +351,6 @@ for i = 1:numOfActuator
     
     X_BitsToPosSI = docNode.createElement('BitsToPosSI');
     X_BitsToPosSI.setAttribute('Scale', num2str(BitsToPosSIScale(i), '%5.8f'));
-    X_BitsToPosSI.setAttribute('Offset', '0');
     Enc.appendChild(X_BitsToPosSI);
     X_BitsToDeltaPosSI = docNode.createElement('BitsToDeltaPosSI');
     X_BitsToDeltaPosSI.setAttribute('Scale', num2str(BitsToDeltaPosSI(i), '%5.2f'));
