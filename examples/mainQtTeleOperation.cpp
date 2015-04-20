@@ -201,9 +201,9 @@ int main(int argc, char ** argv)
 
     // TextToSpeech
     mtsTextToSpeech* textToSpeech = new mtsTextToSpeech;
-    textToSpeech->AddInterfaceRequiredForEventString("ErrorMsg", "RobotErrorMsg");
+    textToSpeech->AddInterfaceRequiredForEventString("Error", "Error");
     componentManager->AddComponent(textToSpeech);
-    componentManager->Connect(textToSpeech->GetName(), "ErrorMsg", psm->Name(), "Robot");
+    componentManager->Connect(textToSpeech->GetName(), "Error", psm->Name(), "Robot");
 
     // connect teleop to Master + Slave + Clutch
     componentManager->Connect("tele", "Master", mtm->Name(), "Robot");

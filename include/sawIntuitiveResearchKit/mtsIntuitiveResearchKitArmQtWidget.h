@@ -2,11 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -87,8 +86,9 @@ private:
     QLineEdit * QLEState;
 
     // messages
-    void ErrorMessageEventHandler(const std::string & message);
-    void StatusMessageEventHandler(const std::string & message);
+    void ErrorEventHandler(const std::string & message);
+    void WarningEventHandler(const std::string & message);
+    void StatusEventHandler(const std::string & message);
     QTextEdit * QTEMessages;
 };
 

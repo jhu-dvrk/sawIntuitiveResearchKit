@@ -88,10 +88,10 @@ protected:
     virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
 
     /*! Event handler for PID joint limit. */
-    virtual void EventHandlerJointLimit(void);
+    virtual void JointLimitEventHandler(const vctBoolVec & flags);
 
-    /*! Event handler for PID tracking error. */
-    virtual void EventHandlerTrackingError(void);
+    /*! Event handler for PID errors. */
+    void ErrorEventHandler(const std::string & message);
 
     /*! Configuration methods specific to derived classes. */
     virtual size_t NumberOfAxes(void) const = 0;           // used IO: ECM 4, PSM 7, MTM 8
@@ -144,8 +144,9 @@ protected:
 
     // Functions for events
     struct {
-        mtsFunctionWrite RobotStatus;
-        mtsFunctionWrite RobotError;
+        mtsFunctionWrite Status;
+        mtsFunctionWrite Warning;
+        mtsFunctionWrite Error;
         mtsFunctionWrite RobotState;
     } MessageEvents;
 

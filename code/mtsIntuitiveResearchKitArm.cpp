@@ -78,8 +78,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("SetTorqueOffset", PID.SetTorqueOffset);
         PIDInterface->AddFunction("EnableTrackingError", PID.EnableTrackingError);
         PIDInterface->AddFunction("SetTrackingErrorTolerances", PID.SetTrackingErrorTolerance);
-        PIDInterface->AddEventHandlerVoid(&mtsIntuitiveResearchKitArm::EventHandlerJointLimit, this, "JointLimit");
-        PIDInterface->AddEventHandlerVoid(&mtsIntuitiveResearchKitArm::EventHandlerTrackingError, this, "TrackingError");
+        PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::JointLimitEventHandler, this, "JointLimit");
+        PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler, this, "Error");
     }
 
     // Robot IO
@@ -119,8 +119,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandRead(&mtsIntuitiveResearchKitArm::GetRobotControlState,
                                        this, "GetRobotControlState", std::string(""));
         // Human readable messages
-        RobotInterface->AddEventWrite(MessageEvents.RobotStatus, "RobotStatusMsg", std::string(""));
-        RobotInterface->AddEventWrite(MessageEvents.RobotError, "RobotErrorMsg", std::string(""));
+        RobotInterface->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
+        RobotInterface->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
+        RobotInterface->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
         RobotInterface->AddEventWrite(MessageEvents.RobotState, "RobotState", std::string(""));
 
         // Stats
@@ -296,7 +297,7 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
         // enable power and set a flags to move to next step
         RobotIO.EnablePower();
         HomingPowerRequested = true;
-        MessageEvents.RobotStatus(this->GetName() + " power requested");
+        MessageEvents.Status(this->GetName() + " power requested");
         return;
     }
 
@@ -318,13 +319,17 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
             RobotIO.GetBrakeAmpStatus(brakeAmplifiersStatus);
         }
         if (actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All()) {
-            MessageEvents.RobotStatus(this->GetName() + " power on");
+            MessageEvents.Status(this->GetName() + " power on");
             if (NumberOfBrakes() > 0) {
                 RobotIO.BrakeRelease();
             }
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM);
         } else {
-            MessageEvents.RobotError(this->GetName() + " failed to enable power.");
+            // make sure the PID is not sending currents
+            PID.Enable(false);
+            RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
+            RobotIO.DisablePower();
+            MessageEvents.Error(this->GetName() + " failed to enable power.");
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
         }
     }
@@ -365,7 +370,7 @@ void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
             // finally send new joint values
             SetPositionJointLocal(JointSet);
         } else {
-            MessageEvents.RobotError(this->GetName() + " unable to solve inverse kinematics.");
+            MessageEvents.Error(this->GetName() + " unable to solve inverse kinematics.");
         }
         // reset flag
         IsGoalSet = false;
@@ -440,13 +445,13 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
                                      currentTime, robLSPB::LSPB_DURATION);
             JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
         } else {
-            MessageEvents.RobotError(this->GetName() + " unable to solve inverse kinematics.");
+            MessageEvents.Error(this->GetName() + " unable to solve inverse kinematics.");
             JointTrajectory.GoalReachedEvent(false);
         }
     }
 }
 
-void mtsIntuitiveResearchKitArm::EventHandlerTrackingError(void)
+void mtsIntuitiveResearchKitArm::ErrorEventHandler(const std::string & message)
 {
     RobotIO.DisablePower();
     // in case there was a trajectory going on
@@ -454,16 +459,16 @@ void mtsIntuitiveResearchKitArm::EventHandlerTrackingError(void)
         JointTrajectory.GoalReachedEvent(false);
         JointTrajectory.EndTime = 0.0;
     }
-    MessageEvents.RobotError(this->GetName() + ": PID tracking error");
+    MessageEvents.Error(this->GetName() + ", PID error: " + message);
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 }
 
-void mtsIntuitiveResearchKitArm::EventHandlerJointLimit(void)
+void mtsIntuitiveResearchKitArm::JointLimitEventHandler(const vctBoolVec & flags)
 {
     // in case there was a trajectory going on
     if (JointTrajectory.EndTime != 0.0) {
         JointTrajectory.GoalReachedEvent(false);
         JointTrajectory.EndTime = 0.0;
     }
-    MessageEvents.RobotError(this->GetName() + ": PID joint limit");
+    MessageEvents.Warning(this->GetName() + ": PID joint limit");
 }

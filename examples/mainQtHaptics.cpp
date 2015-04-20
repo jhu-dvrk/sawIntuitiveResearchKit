@@ -243,7 +243,7 @@ int main(int argc, char ** argv)
     // TextToSpeech
     // ZC: make this optional based on CMake option (TODO)
     mtsTextToSpeech* textToSpeech = new mtsTextToSpeech;
-    textToSpeech->AddInterfaceRequiredForEventString("ErrorMsg", "RobotErrorMsg");
+    textToSpeech->AddInterfaceRequiredForEventString("Error", "Error");
     componentManager->AddComponent(textToSpeech);
 
     // connect interfaces

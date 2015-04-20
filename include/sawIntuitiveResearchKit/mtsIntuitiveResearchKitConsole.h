@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -41,7 +41,8 @@ public:
 
         friend class mtsIntuitiveResearchKitConsole;
 
-        Arm(const std::string & name, const std::string & ioComponentName);
+        Arm(const std::string & name,
+            const std::string & ioComponentName);
 
         /*! Create a new PID component and connect it to the proper RobotIO
           interface.  If the period in seconds is zero, the PID will be tied to
@@ -72,7 +73,9 @@ public:
         std::string mArmConfigurationFile;
 
         mtsFunctionWrite SetRobotControlState;
-        mtsInterfaceRequired * InterfaceRequired;
+        mtsInterfaceRequired * IOInterfaceRequired;
+        mtsInterfaceRequired * PIDInterfaceRequired;
+        mtsInterfaceRequired * ArmInterfaceRequired;
     };
 
     bool AddArm(Arm * newMTM);
@@ -83,12 +86,20 @@ protected:
     typedef std::list<Arm *> ArmList;
     ArmList mArms;
 
+    bool SetupAndConnectInterfaces(Arm * arm);
+
     void SetRobotControlState(const std::string & newState);
 
-    void ErrorMessageEventHandler(const std::string & message);
-    mtsFunctionWrite ErrorMessageEventTrigger;
-    void StatusMessageEventHandler(const std::string & message);
-    mtsFunctionWrite StatusMessageEventTrigger;
+    // Functions for events
+    struct {
+        mtsFunctionWrite Status;
+        mtsFunctionWrite Warning;
+        mtsFunctionWrite Error;
+    } MessageEvents;
+
+    void ErrorEventHandler(const std::string & message);
+    void WarningEventHandler(const std::string & message);
+    void StatusEventHandler(const std::string & message);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsole);
