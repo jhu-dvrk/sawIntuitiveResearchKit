@@ -459,7 +459,7 @@ void mtsIntuitiveResearchKitArm::ErrorEventHandler(const std::string & message)
         JointTrajectory.GoalReachedEvent(false);
         JointTrajectory.EndTime = 0.0;
     }
-    MessageEvents.Error(this->GetName() + ", PID error: " + message);
+    MessageEvents.Error(this->GetName() + ": received [" + message + "]");
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 }
 
