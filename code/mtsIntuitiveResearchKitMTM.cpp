@@ -181,6 +181,10 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
     // setup transition
     switch (newState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
+        RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
+        RobotIO.DisablePower();
+        PID.Enable(false);
+        PID.SetCheckJointLimit(true);
         RobotState = newState;
         MessageEvents.Status(this->GetName() + " not initialized");
         break;
@@ -331,8 +335,6 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
                 MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
-                PID.Enable(false);
-                PID.SetCheckJointLimit(true);
                 this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
             }
         }
@@ -381,8 +383,6 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
             // time out
             if (currentTime > HomingTimer + extraTime) {
                 MessageEvents.Error(this->GetName() + " unable to hit roll lower limit");
-                PID.Enable(false);
-                PID.SetCheckJointLimit(true);
                 this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
             }
         }
@@ -421,8 +421,6 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
             // time out
             if (currentTime > HomingTimer + extraTime) {
                 MessageEvents.Error(this->GetName() + " unable to hit roll upper limit");
-                PID.Enable(false);
-                PID.SetCheckJointLimit(true);
                 this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
             }
         }
@@ -471,8 +469,6 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateRoll: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
                 MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
-                PID.Enable(false);
-                PID.SetCheckJointLimit(true);
                 this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
             }
         }
