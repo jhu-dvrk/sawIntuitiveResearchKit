@@ -68,7 +68,6 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
         diff.DifferenceOf(forward.Translation(), newGoal.Translation());
         std::cerr << cmnInternalTo_mm(diff.Norm()) << "mm ";
 #endif
-
         return robManipulator::ESUCCESS;
     }
     return robManipulator::EFAILURE;

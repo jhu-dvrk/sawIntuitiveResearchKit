@@ -47,7 +47,14 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
 {
     // pre-feed inverse kinematics with preferred values for joint 6
     jointSet[5] = 0.0;
-    return Manipulator.InverseKinematics(jointSet, cartesianGoal);
+    if (Manipulator.InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
+        // find closest solution mod 2 pi
+        const double difference = JointGet[6] - jointSet[6];
+        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
+        jointSet[6] = jointSet[6] + differenceInTurns * 2.0 * cmnPI;
+        return robManipulator::ESUCCESS;
+    }
+    return robManipulator::EFAILURE;
 }
 
 void mtsIntuitiveResearchKitMTM::Init(void)
