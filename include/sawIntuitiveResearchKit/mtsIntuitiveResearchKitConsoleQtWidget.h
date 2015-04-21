@@ -52,16 +52,9 @@ protected:
     void setupUi(void);
 
     struct MainStruct {
-        mtsFunctionWrite SetRobotControlState;
-    } Main;
-
-    struct MTMStruct {
-        mtsFunctionWrite SetRobotControlState;
-    } MTM;
-
-    struct PSMStruct {
-        mtsFunctionWrite SetRobotControlState;
-    } PSM;
+        mtsFunctionWrite SetRobotsControlState;
+        mtsFunctionWrite TeleopEnable;
+    } Console;
 
     void ErrorEventHandler(const std::string & message);
     void WarningEventHandler(const std::string & message);

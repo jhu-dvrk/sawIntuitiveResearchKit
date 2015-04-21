@@ -78,17 +78,37 @@ public:
         mtsInterfaceRequired * ArmInterfaceRequired;
     };
 
+    class TeleOp {
+    public:
+        friend class mtsIntuitiveResearchKitConsole;
+
+        TeleOp(const std::string & name);
+
+        /*! Accessors */
+        const std::string & Name(void) const;
+
+    protected:
+        std::string mName;
+        mtsFunctionWrite Enable;
+        mtsInterfaceRequired * InterfaceRequired;
+    };
+
     bool AddArm(Arm * newMTM);
     bool AddArm(mtsComponent * genericArm, const Arm::ArmType armType);
+    bool AddTeleOperation(const std::string & name);
 
 protected:
 
     typedef std::list<Arm *> ArmList;
     ArmList mArms;
 
+    typedef std::list<TeleOp *> TeleOpList;
+    TeleOpList mTeleOps;
+
     bool SetupAndConnectInterfaces(Arm * arm);
 
-    void SetRobotControlState(const std::string & newState);
+    void SetRobotsControlState(const std::string & newState);
+    void TeleopEnable(const bool & enable);
 
     // Functions for events
     struct {

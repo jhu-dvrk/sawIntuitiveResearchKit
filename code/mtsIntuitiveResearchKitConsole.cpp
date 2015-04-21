@@ -130,13 +130,28 @@ const std::string & mtsIntuitiveResearchKitConsole::Arm::PIDComponentName(void) 
     return mPIDComponentName;
 }
 
+
+
+mtsIntuitiveResearchKitConsole::TeleOp::TeleOp(const std::string & name):
+    mName(name)
+{
+}
+
+const std::string & mtsIntuitiveResearchKitConsole::TeleOp::Name(void) const {
+    return mName;
+}
+
+
+
 mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string & componentName):
     mtsTaskFromSignal(componentName, 100)
 {
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Main");
     if (interfaceProvided) {
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetRobotControlState, this,
-                                           "SetRobotControlState", std::string(""));
+        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetRobotsControlState, this,
+                                           "SetRobotsControlState", std::string(""));
+        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::TeleopEnable, this,
+                                           "TeleopEnable", false);
         interfaceProvided->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
         interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
         interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
@@ -190,6 +205,26 @@ bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mts
     }
     CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, unable to add new arm.  Are you adding two arms with the same name? "
                              << newArm->Name() << std::endl;
+    delete newArm;
+    return false;
+}
+
+bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name)
+{
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+    TeleOp * teleOp = new TeleOp(name);
+    teleOp->InterfaceRequired = this->AddInterfaceRequired(name);
+    if (teleOp->InterfaceRequired) {
+        teleOp->InterfaceRequired->AddFunction("Enable", teleOp->Enable);
+        teleOp->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
+        teleOp->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
+        teleOp->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
+        componentManager->Connect(this->GetName(), name,
+                                  name, "Setting");
+        mTeleOps.push_back(teleOp);
+        return true;
+    }
+    delete teleOp;
     return false;
 }
 
@@ -230,7 +265,7 @@ bool mtsIntuitiveResearchKitConsole::SetupAndConnectInterfaces(Arm * arm)
     return false;
 }
 
-void mtsIntuitiveResearchKitConsole::SetRobotControlState(const std::string & newState)
+void mtsIntuitiveResearchKitConsole::SetRobotsControlState(const std::string & newState)
 {
     mtsExecutionResult result;
     const ArmList::iterator end = mArms.end();
@@ -241,6 +276,22 @@ void mtsIntuitiveResearchKitConsole::SetRobotControlState(const std::string & ne
         if (!result) {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": SetRobotControlState: failed to set state \""
                                     << newState << "\" for arm \"" << (*arm)->Name()
+                                    << "\"" << std::endl;
+        }
+    }
+}
+
+void mtsIntuitiveResearchKitConsole::TeleopEnable(const bool & enable)
+{
+    mtsExecutionResult result;
+    const TeleOpList::iterator end = mTeleOps.end();
+    for (TeleOpList::iterator teleOp = mTeleOps.begin();
+         teleOp != end;
+         ++teleOp) {
+        result = (*teleOp)->Enable(enable);
+        if (!result) {
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": Enable: failed to set \""
+                                    << enable << "\" for tele-op \"" << (*teleOp)->Name()
                                     << "\"" << std::endl;
         }
     }

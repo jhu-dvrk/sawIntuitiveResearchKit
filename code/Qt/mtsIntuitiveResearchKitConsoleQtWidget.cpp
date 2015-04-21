@@ -41,7 +41,8 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
 {
     mtsInterfaceRequired * interfaceRequiredMain = AddInterfaceRequired("Main");
     if (interfaceRequiredMain) {
-        interfaceRequiredMain->AddFunction("SetRobotControlState", Main.SetRobotControlState);
+        interfaceRequiredMain->AddFunction("SetRobotsControlState", Console.SetRobotsControlState);
+        interfaceRequiredMain->AddFunction("TeleopEnable", Console.TeleopEnable);
         interfaceRequiredMain->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorEventHandler,
                                                     this, "Error");
         interfaceRequiredMain->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::WarningEventHandler,
@@ -86,8 +87,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetStateButton(QAbstractButton * radioButton)
 {
-    std::string state = radioButton->text().toStdString();
-    Main.SetRobotControlState(mtsStdString(state));
+    std::string request = radioButton->text().toStdString();
+    if (request == "Idle") {
+        Console.SetRobotsControlState(std::string("DVRK_UNINITIALIZED"));
+    } else if (request == "Home") {
+        Console.SetRobotsControlState(request);
+    } else if (request == "Teleop") {
+        Console.TeleopEnable(true);
+    }
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTextChanged(void)
@@ -102,14 +109,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QGroupBox * groupBox = new QGroupBox("Desired state");
     QRadioButton * idleButton = new QRadioButton("Idle");
     QRadioButton * homeButton = new QRadioButton("Home");
-    // QRadioButton * teleOpButton = new QRadioButton("Teleop");
+    QRadioButton * teleOpButton = new QRadioButton("Teleop");
     // QRadioButton * gcButton = new QRadioButton("Gravity");
     // QRadioButton * clutchButton = new QRadioButton("Clutch");
     idleButton->setChecked(true);
     QButtonGroup * group = new QButtonGroup;
     group->addButton(idleButton);
     group->addButton(homeButton);
-    // group->addButton(teleOpButton);
+    group->addButton(teleOpButton);
     // group->addButton(gcButton);
     // group->addButton(clutchButton);
 	group->setExclusive(true);
@@ -117,7 +124,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QVBoxLayout * vbox = new QVBoxLayout;
     vbox->addWidget(idleButton);
     vbox->addWidget(homeButton);
-    // vbox->addWidget(teleOpButton);
+    vbox->addWidget(teleOpButton);
     // vbox->addWidget(gcButton);
     // vbox->addWidget(clutchButton);
     vbox->addStretch(1);

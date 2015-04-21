@@ -305,6 +305,7 @@ int main(int argc, char ** argv)
         componentManager->Connect(tele->GetName(), "Slave", psm->Name(), "Robot");
         componentManager->Connect(tele->GetName(), "Clutch", "io", "CLUTCH");
         componentManager->Connect(tele->GetName(), "OperatorPresent", operatorPresentComponent, operatorPresentInterface);
+        console->AddTeleOperation(tele->GetName());
     }
 
     // configure data collection if needed
