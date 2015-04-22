@@ -60,9 +60,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mtsIntuitiveResearchKitArm::Init();
 
     // initialize trajectory data
-    JointTrajectory.Velocity.SetAll(180.0 * cmnPI_180); // degrees per second
+    JointTrajectory.Velocity.SetAll(90.0 * cmnPI_180); // degrees per second
     JointTrajectory.Velocity.Element(2) = 0.2; // m per second
-    JointTrajectory.Acceleration.SetAll(180.0 * cmnPI_180);
+    JointTrajectory.Acceleration.SetAll(90.0 * cmnPI_180);
     JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
     PotsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
@@ -195,6 +195,19 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             MessageEvents.Status(this->GetName() + " is not calibrated yet, will engage adapter later");
             return;
         }
+        // configure PID to fail in case of tracking error
+        {
+            PID.SetCheckJointLimit(false);
+            vctDoubleVec tolerances(NumberOfJoints());
+            // first two rotations
+            tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
+            // translation
+            tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
+            // tool/adapter gears
+            tolerances.Ref(4, 3).SetAll(5.0 * cmnPI); // we request positions that can't be reached when the adapter/tool engage
+            PID.SetTrackingErrorTolerance(tolerances);
+            PID.EnableTrackingError(true);
+        }
         // if the tool is present, the adapter is already engadged
         Tool.GetButton(Tool.IsPresent);
         Tool.IsPresent = !Tool.IsPresent;
@@ -228,7 +241,22 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
-        // when returning from manual mode, need to re-enable PID
+        {
+            PID.SetCheckJointLimit(true);
+            vctDoubleVec tolerances(NumberOfJoints());
+            // first two rotations
+            tolerances.Ref(2, 0).SetAll(20.0 * cmnPI_180);
+            // translation
+            tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
+            // shaft rotation
+            tolerances.Element(3) = 45.0 * cmnPI_180;
+            // tool orientation
+            tolerances.Ref(2, 4).SetAll(35.0 * cmnPI_180);
+            // gripper
+            tolerances.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
+            PID.SetTrackingErrorTolerance(tolerances);
+            PID.EnableTrackingError(true);
+        }
         RobotState = newState;
         MessageEvents.Status(this->GetName() + " ready");
         break;
@@ -316,13 +344,6 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         // enable PID and start from current position
         JointSet.ForceAssign(JointGet);
         SetPositionJointLocal(JointSet);
-        // configure PID to fail in case of tracking error
-        vctDoubleVec tolerances(NumberOfJoints());
-        tolerances.Ref(2, 0).SetAll(20.0 * cmnPI_180);
-        tolerances.Element(2) = 20.0 * cmn_mm; // 20 mm
-        tolerances.Ref(4, 3).SetAll(5.0 * cmnPI); // we request positions that can't be reached when the adapter/tool engage
-        PID.SetTrackingErrorTolerance(tolerances);
-        PID.EnableTrackingError(true);
         // finally enable PID
         PID.Enable(true);
 
@@ -445,18 +466,19 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         return;
     }
 
-    if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)) {
+    if (EngagingStopwatch.GetElapsedTime() > (3000 * cmn_ms)) {
+        EngagingStopwatch.Reset();
+        // Adapter engage done
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+    }
+    else if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)) {
         // straight wrist open gripper
         EngagingJointSet[3] = 0.0;
         EngagingJointSet[4] = 0.0;
         EngagingJointSet[5] = 0.0;
         EngagingJointSet[6] = 10.0 * cmnPI / 180.0;
-        PID.SetCheckJointLimit(true);
         JointSet.Assign(EngagingJointSet);
         SetPositionJointLocal(JointSet);
-        // Adapter engage done
-        EngagingStopwatch.Reset();
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (2000 * cmn_ms)) {
         EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
