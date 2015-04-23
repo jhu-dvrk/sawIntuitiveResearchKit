@@ -249,7 +249,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             // translation
             tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
             // shaft rotation
-            tolerances.Element(3) = 45.0 * cmnPI_180;
+            tolerances.Element(3) = 120.0 * cmnPI_180;
             // tool orientation
             tolerances.Ref(2, 4).SetAll(35.0 * cmnPI_180);
             // gripper
