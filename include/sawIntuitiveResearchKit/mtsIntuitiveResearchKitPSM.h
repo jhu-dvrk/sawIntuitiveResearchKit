@@ -72,10 +72,10 @@ protected:
       variables for the desired state and finally set the state. */
     void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState);
 
-    void SetRobotControlState(const std::string & state);
+    virtual void SetRobotControlState(const std::string & state);
 
     /*! Switch case for user mode. */
-    void RunArmSpecific(void);
+    virtual void RunArmSpecific(void);
 
     /*! Homing procedure, home all joints except last one using potentiometers as reference. */
     void RunHomingCalibrateArm(void);
@@ -87,7 +87,7 @@ protected:
     void RunEngagingTool(void);
 
     /*! Cartesian constraint controller. */
-    void RunConstraintControllerCartesian(void);
+    virtual void RunConstraintControllerCartesian(void);
 
     void EventHandlerAdapter(const prmEventButton & button);
     void EventHandlerTool(const prmEventButton & button);

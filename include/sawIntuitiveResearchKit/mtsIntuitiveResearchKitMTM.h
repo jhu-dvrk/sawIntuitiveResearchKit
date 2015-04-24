@@ -85,7 +85,7 @@ protected:
 
     /*! Get data specific to the MTM (gripper angle using analog inputs) after
       calling mtsIntuitiveResearchKitArm::GetRobotData. */
-    void GetRobotData(void);
+    virtual void GetRobotData(void);
 
     /*! Verify that the state transition is possible, initialize global
       variables for the desired state and finally set the state. */
@@ -103,12 +103,12 @@ protected:
     void RunHomingCalibrateRoll(void);
 
     /*! Gravity Compensation. */
-    void RunGravityCompensation(void);
+    virtual void RunGravityCompensation(void);
 
     /*! Run Clutch */
     void RunClutch(void);
 
-    void SetWrench(const prmForceCartesianSet & newForce);  // NOTE: in body frame
+    virtual void SetWrench(const prmForceCartesianSet & newForce);  // NOTE: in body frame
 
     // Functions for events
     struct {

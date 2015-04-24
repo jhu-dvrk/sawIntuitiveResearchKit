@@ -57,6 +57,12 @@ void mtsIntuitiveResearchKitArm::Init(void)
     JointTrajectory.EndTime = 0.0;
     PotsToEncodersTolerance.SetSize(NumberOfAxes());
 
+    // initialize velocity
+    CartesianVelocityGetParam.SetVelocityLinear(vct3(0.0));
+    CartesianVelocityGetParam.SetVelocityAngular(vct3(0.0));
+    CartesianVelocityGetParam.SetTimestamp(0.0);
+    CartesianVelocityGetParam.SetValid(false);
+
     // cartesian position are timestamped using timestamps provided by PID
     CartesianGetParam.SetAutomaticTimestamp(false);
     CartesianGetDesiredParam.SetAutomaticTimestamp(false);
@@ -240,14 +246,19 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             CartesianGetParam.SetTimestamp(JointGetParam.Timestamp());
             CartesianGetParam.SetValid(true);
             // update cartesian velocity (caveat, velocities are not updated)
-            vct3 linearVelocity;
-            linearVelocity.DifferenceOf(CartesianGetParam.Position().Translation(),
-                                        CartesianGetPreviousParam.Position().Translation());
-            linearVelocity.Divide(CartesianGetParam.Timestamp() - CartesianGetPreviousParam.Timestamp());
-            CartesianVelocityGetParam.SetVelocityLinear(linearVelocity);
-            CartesianVelocityGetParam.SetVelocityAngular(vct3(0.0));
-            CartesianVelocityGetParam.SetTimestamp(CartesianGetParam.Timestamp());
-            CartesianVelocityGetParam.SetValid(true);
+            const double dt = CartesianGetParam.Timestamp() - CartesianGetPreviousParam.Timestamp();
+            if (dt > 0.0) {
+                vct3 linearVelocity;
+                linearVelocity.DifferenceOf(CartesianGetParam.Position().Translation(),
+                                            CartesianGetPreviousParam.Position().Translation());
+                linearVelocity.Divide(dt);
+                CartesianVelocityGetParam.SetVelocityLinear(linearVelocity);
+                CartesianVelocityGetParam.SetVelocityAngular(vct3(0.0));
+                CartesianVelocityGetParam.SetTimestamp(CartesianGetParam.Timestamp());
+                CartesianVelocityGetParam.SetValid(true);
+            } else {
+                CartesianVelocityGetParam.SetValid(false);
+            }
             // update cartesian position desired based on joint desired
             CartesianGetDesired = Manipulator.ForwardKinematics(JointGetDesired);
             CartesianGetDesired.Rotation().NormalizedSelf();
