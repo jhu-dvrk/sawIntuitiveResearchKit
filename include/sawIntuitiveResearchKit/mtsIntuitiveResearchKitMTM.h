@@ -85,7 +85,7 @@ protected:
 
     /*! Get data specific to the MTM (gripper angle using analog inputs) after
       calling mtsIntuitiveResearchKitArm::GetRobotData. */
-    virtual void GetRobotData(void);
+    void GetRobotData(void);
 
     /*! Verify that the state transition is possible, initialize global
       variables for the desired state and finally set the state. */

@@ -268,7 +268,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
-        JointSet.Assign(JointGetDesired);
+        JointSet.Assign(JointGetDesired, this->NumberOfJoints());
         if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position joint");
@@ -587,11 +587,14 @@ void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
     } else if (state == "Manual") {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
     } else {
+        mtsIntuitiveResearchKitArmTypes::RobotStateType stateEnum;
         try {
-            SetState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state));
+            stateEnum = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state);
         } catch (std::exception e) {
-            MessageEvents.Error(this->GetName() + ": PSM unsupported state " + state + " " + e.what());
+            MessageEvents.Error(this->GetName() + ": PSM unsupported state " + state + ": " + e.what());
+            return;
         }
+        SetState(stateEnum);
     }
 }
 

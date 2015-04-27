@@ -72,10 +72,10 @@ protected:
       variables for the desired state and finally set the state. */
     void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState);
 
-    virtual void SetRobotControlState(const std::string & state);
+    void SetRobotControlState(const std::string & state);
 
     /*! Switch case for user mode. */
-    virtual void RunArmSpecific(void);
+    void RunArmSpecific(void);
 
     /*! Homing procedure, home all joints except last one using potentiometers as reference. */
     void RunHomingCalibrateArm(void);
