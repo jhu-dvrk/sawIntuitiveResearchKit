@@ -1,7 +1,7 @@
 Change log
 ==========
 
-1.1.0 (2015-03-xx)
+1.1.0 (2015-04-xx)
 ==================
 
 * API changes:
@@ -28,11 +28,32 @@ Change log
     * `GoalReached` with payload `bool` to indicate if the trajectory has been fully executed.
   * The command `SetRobotControlState` can now accept `std::string` matching all possible state values using `DVRK_xyz`
   * The base class for all arms now has event handlers for PID errors (tracking and limits).  If any error occurs, trajectories using LSPB are stopped and an event `GoalReached(false)` is sent to caller.
+  * All components now have three events for health status:
+    * `Error`, `Warning` and `Status`.  All events have a `std::string` payload.
+    * Most components used in the dVRK have been updated to act on error events (change to idle or safe state).  There is no automatic recovery, i.e. the user has to initiate the recovery using GUI and/or ROS interfaces.
+    * Errors currently handled:
+       * IO level: loss of power, watchdog timeout, firewire errors, pots to encoders discrepencies, encoder bit overflow.
+       * PID: tracking errors.  Commands outside joint limits are treated as warning (values are clamped and an event with vector of booleans is sent to user).  When receiving error event, disable PID.
+       * Arm: when receiving error event, goes to idle mode.  Need to re-home to use arm.
+       * TeleOp: When error is caught or if positions are invalid (`IsValid()`), disables tele-op.
+  * Console class is now connected to all IO, PID, arms and teleop components:
+    * Catch error/warning and status messages from all components.
+    * `Idle` button in Qt Widget allows to turn off all arms in software.
+    * `TeleOp` button in Qt Widget allows to turn on all tele-op pairs.
+  * Firewire communication now uses write broadcast by default when all FPGA-QLA boards have firmware 4.0 or higher.  For N boards, reduces packets from N reads + N writes to N reads and 1 write.  See `sawRobotIO1394` for details.
+  * Matlab XML config file generator now adds a `-foot-pedal` suffix to the generated config file so it's easier to see which controller is configured for the foot pedals.
+  * ROS interfaces have been updated to take advantage of new events and commands (see dvrk-ros repository).  Bridges can now be created in a more systematic way using the `dvrk_utilities` with the global functions `dvrk::add_mtm_topics`, ...
+  * Tele-op:
+    * Now handles error events and doesn't use cartesian positions for master/slave if marked as invalid
+    * Updated GUI with messages, labels for master/slave, enable check button based on component state
 * Bug fixes:
   * Commands using the inverse kinematics now check the result of `robManipulator::InverseKinematics`.
   * Inverse kinematics for the ECM has been fixed.
   * Examples now build properly with catkin/ROS, i.e. they can be found in ROS path
   * For MTM, when calling inverse kinematics with "current" joint position (initial guess for optimization), set joint 5 to 0 instead of joint 3 to pi/4 to try to move the wrist platform away from the user's hand.  The idea is to use the joint on top of the L bracket to move the L close to 90 deg off gripper.
+  * For MTM, inverse kinematics uses closest modulus 2 pi position for last joint.
+  * Encoders are now pre-loaded when the IO component starts.
+  * IO level now checks encoder bit overflow.
 
 1.0.1 (2015-01-30)
 ==================
