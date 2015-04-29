@@ -45,8 +45,8 @@ if (cisst_FOUND)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
-  cisst_find_saw_component (sawRobotIO1394 REQUIRED)
-  cisst_find_saw_component (sawControllers REQUIRED)
+  cisst_find_saw_component (sawRobotIO1394 1.1.0 REQUIRED)
+  cisst_find_saw_component (sawControllers 1.1.0 REQUIRED)
   cisst_find_saw_component (sawConstraintController REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND AND sawConstraintController_FOUND)
@@ -77,8 +77,8 @@ if (cisst_FOUND)
 
     # Set the version number
     set (sawIntuitiveResearchKit_VERSION_MAJOR "1")
-    set (sawIntuitiveResearchKit_VERSION_MINOR "0")
-    set (sawIntuitiveResearchKit_VERSION_PATCH "1")
+    set (sawIntuitiveResearchKit_VERSION_MINOR "1")
+    set (sawIntuitiveResearchKit_VERSION_PATCH "0")
     set (sawIntuitiveResearchKit_VERSION "${sawIntuitiveResearchKit_VERSION_MAJOR}.${sawIntuitiveResearchKit_VERSION_MINOR}.${sawIntuitiveResearchKit_VERSION_PATCH}")
 
     # Generate sawIntuitiveResearchKitRevision.h
