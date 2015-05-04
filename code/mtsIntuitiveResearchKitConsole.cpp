@@ -23,6 +23,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 
+#include <cisstParameterTypes/prmEventButton.h>
+
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawControllers/mtsPID.h>
 
@@ -155,6 +157,36 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
         interfaceProvided->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
         interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
         interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
+    }
+
+    // Footpedal events, receive
+    mtsInterfaceRequired * clutchRequired = AddInterfaceRequired("Clutch");
+    if (clutchRequired) {
+        clutchRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ClutchEventHandler, this, "Button");
+    }
+
+    mtsInterfaceRequired * cameraRequired = AddInterfaceRequired("Camera");
+    if (cameraRequired) {
+        cameraRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::CameraEventHandler, this, "Button");
+    }
+
+    mtsInterfaceRequired * headRequired = AddInterfaceRequired("OperatorPresent");
+    if (headRequired) {
+        headRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler, this, "Button");
+    }
+
+    // Console events, send
+    interfaceProvided = AddInterfaceProvided("Clutch");
+    if (interfaceProvided) {
+        interfaceProvided->AddEventWrite(ConsoleEvents.Clutch, "Button", prmEventButton());
+    }
+    interfaceProvided = AddInterfaceProvided("Camera");
+    if (interfaceProvided) {
+        interfaceProvided->AddEventWrite(ConsoleEvents.Camera, "Button", prmEventButton());
+    }
+    interfaceProvided = AddInterfaceProvided("OperatorPresent");
+    if (interfaceProvided) {
+        interfaceProvided->AddEventWrite(ConsoleEvents.OperatorPresent, "Button", prmEventButton());
     }
 }
 
@@ -294,6 +326,36 @@ void mtsIntuitiveResearchKitConsole::TeleopEnable(const bool & enable)
                                     << enable << "\" for tele-op \"" << (*teleOp)->Name()
                                     << "\"" << std::endl;
         }
+    }
+}
+
+void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & button)
+{
+    ConsoleEvents.Clutch(button);
+    if (button.Type() == prmEventButton::PRESSED) {
+        MessageEvents.Status(this->GetName() + ": clutch pressed");
+    } else {
+        MessageEvents.Status(this->GetName() + ": clutch released");
+    }
+}
+
+void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & button)
+{
+    ConsoleEvents.Camera(button);
+    if (button.Type() == prmEventButton::PRESSED) {
+        MessageEvents.Status(this->GetName() + ": camera pressed");
+    } else {
+        MessageEvents.Status(this->GetName() + ": camera released");
+    }
+}
+
+void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventButton & button)
+{
+    ConsoleEvents.OperatorPresent(button);
+    if (button.Type() == prmEventButton::PRESSED) {
+        MessageEvents.Status(this->GetName() + ": operator present");
+    } else {
+        MessageEvents.Status(this->GetName() + ": operator not present");
     }
 }
 

@@ -110,6 +110,15 @@ protected:
     void SetRobotsControlState(const std::string & newState);
     void TeleopEnable(const bool & enable);
 
+    void ClutchEventHandler(const prmEventButton & button);
+    void CameraEventHandler(const prmEventButton & button);
+    void OperatorPresentEventHandler(const prmEventButton & button);
+    struct {
+        mtsFunctionWrite Clutch;
+        mtsFunctionWrite Camera;
+        mtsFunctionWrite OperatorPresent;
+    } ConsoleEvents;
+
     // Functions for events
     struct {
         mtsFunctionWrite Status;
