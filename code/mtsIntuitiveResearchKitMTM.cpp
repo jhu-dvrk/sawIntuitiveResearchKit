@@ -88,17 +88,6 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     RobotInterface->AddEventWrite(GripperEvents.GripperClosed, "GripperClosedEvent", true);
 }
 
-void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
-{
-    robManipulator::Errno result;
-    result = this->Manipulator.LoadRobot(filename);
-    if (result == robManipulator::EFAILURE) {
-        CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
-                                 << filename << "\"" << std::endl;
-        return;
-    }
-}
-
 void mtsIntuitiveResearchKitMTM::RunArmSpecific(void)
 {
     switch (RobotState) {

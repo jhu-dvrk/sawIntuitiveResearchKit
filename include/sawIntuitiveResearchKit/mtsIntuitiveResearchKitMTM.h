@@ -36,8 +36,6 @@ public:
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitMTM() {}
 
-    void Configure(const std::string & filename);
-
     /*!
      \brief Set MTM type, either MTM_LEFT or MTM_RIGHT
      \param autodetect TRUE by default, will set type based on MTM name, otherwise
