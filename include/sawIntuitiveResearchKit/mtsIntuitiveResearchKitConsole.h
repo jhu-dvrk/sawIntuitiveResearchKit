@@ -27,13 +27,6 @@ class mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsIntuitiveResearchKitConsole(const std::string & componentName);
-    inline virtual ~mtsIntuitiveResearchKitConsole() {}
-
-    void Configure(const std::string & filename = "");
-    void Startup(void);
-    void Run(void);
-    void Cleanup(void);
 
     class Arm {
     public:
@@ -93,11 +86,24 @@ public:
         mtsInterfaceRequired * InterfaceRequired;
     };
 
+    mtsIntuitiveResearchKitConsole(const std::string & componentName);
+    inline virtual ~mtsIntuitiveResearchKitConsole() {}
+
+    /*! Configure console using JSON file.  To test is the configuration succeeded, used method Configured().
+      */
+    void Configure(const std::string & filename);
+    const bool & Configured(void) const;
+    void Startup(void);
+    void Run(void);
+    void Cleanup(void);
+
     bool AddArm(Arm * newMTM);
     bool AddArm(mtsComponent * genericArm, const Arm::ArmType armType);
     bool AddTeleOperation(const std::string & name);
 
 protected:
+
+    bool mConfigured;
 
     typedef std::list<Arm *> ArmList;
     ArmList mArms;

@@ -33,6 +33,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 
+#include <json/json.h>
+
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsole);
 
 
@@ -146,7 +148,8 @@ const std::string & mtsIntuitiveResearchKitConsole::TeleOp::Name(void) const {
 
 
 mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string & componentName):
-    mtsTaskFromSignal(componentName, 100)
+    mtsTaskFromSignal(componentName, 100),
+    mConfigured(false)
 {
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Main");
     if (interfaceProvided) {
@@ -192,7 +195,59 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
 
 void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 {
-    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << filename << std::endl;
+    std::ifstream jsonStream;
+    jsonStream.open(filename.c_str());
+
+    Json::Value jsonConfig, jsonValue;
+    Json::Reader jsonReader;
+    if (!jsonReader.parse(jsonStream, jsonConfig)) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to parse configuration\n"
+                                 << jsonReader.getFormattedErrorMessages();
+        this->mConfigured = false;
+        return;
+    }
+
+    // IO default settings
+    double periodIO = 0.5 * cmn_ms;
+    int firewirePort = 0;
+    // get user preferences
+    jsonValue = jsonConfig["io"]["period"];
+    if (!jsonValue.empty()) {
+        periodIO = jsonValue.asInt();
+    }
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: period IO is " << periodIO << std::endl;
+    jsonValue = jsonConfig["io"]["port"];
+    if (!jsonValue.empty()) {
+        firewirePort = jsonValue.asInt();
+    }
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: FireWire port is " << firewirePort << std::endl;
+    // create IO
+    mtsRobotIO1394 * io = new mtsRobotIO1394("io", periodIO, firewirePort);
+
+    // setup io defined in the json configuration file
+    const Json::Value pairs = jsonConfig["pairs"];
+    for (unsigned int index = 0; index < pairs.size(); ++index) {
+        // master
+        Json::Value jsonMaster = pairs[index]["master"];
+        std::string armName = jsonMaster["name"].asString();
+        std::string ioFile = jsonMaster["io"].asString();
+        fileExists(armName + " IO", ioFile);
+        io->Configure(ioFile);
+        // slave
+        Json::Value jsonSlave = pairs[index]["slave"];
+        armName = jsonSlave["name"].asString();
+        ioFile = jsonSlave["io"].asString();
+        fileExists(armName + " IO", ioFile);
+        io->Configure(ioFile);
+    }
+
+    componentManager->AddComponent(io);
+
+}
+
+const bool & mtsIntuitiveResearchKitConsole::Configured(void) const
+{
+    return mConfigured;
 }
 
 void mtsIntuitiveResearchKitConsole::Startup(void)

@@ -42,8 +42,6 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QTabWidget>
 
-#include <json/json.h>
-
 void fileExists(const std::string & description, const std::string & filename)
 {
     if (!cmnPath::Exists(filename)) {
@@ -74,7 +72,6 @@ int main(int argc, char ** argv)
 
     // parse options
     cmnCommandLineOptions options;
-    int firewirePort = 0;
     std::string gcmip = "-1";
     std::string jsonMainConfigFile;
     std::string jsonCollectionConfigFile;
@@ -110,19 +107,7 @@ int main(int argc, char ** argv)
 
     // make sure the json config file exists and can be parsed
     fileExists("JSON configuration", jsonMainConfigFile);
-    std::ifstream jsonStream;
-    jsonStream.open(jsonMainConfigFile.c_str());
 
-    Json::Value jsonConfig;
-    Json::Reader jsonReader;
-    if (!jsonReader.parse(jsonStream, jsonConfig)) {
-        std::cerr << "Error: failed to parse configuration\n"
-                  << jsonReader.getFormattedErrorMessages();
-        return -1;
-    }
-
-    // start initializing the cisstMultiTask manager
-    std::cout << "FirewirePort: " << firewirePort << std::endl;
 
     std::string processname = "dvTeleop";
     mtsManagerLocal * componentManager = 0;
@@ -144,7 +129,9 @@ int main(int argc, char ** argv)
 
     // console
     mtsIntuitiveResearchKitConsole * console = new mtsIntuitiveResearchKitConsole("console");
-    componentManager->AddComponent(console);
+    // configure will add the console to the component manager
+    console->Configure(jsonMainConfigFile);
+
     mtsIntuitiveResearchKitConsoleQtWidget * consoleGUI = new mtsIntuitiveResearchKitConsoleQtWidget("consoleGUI");
     componentManager->AddComponent(consoleGUI);
     // connect consoleGUI to console
@@ -153,9 +140,6 @@ int main(int argc, char ** argv)
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
     tabWidget->addTab(consoleGUI, "Main");
-
-    // IO is shared accross components
-    mtsRobotIO1394 * io = new mtsRobotIO1394("io", periodIO, firewirePort);
 
     // find name of button event used to detect if operator is present
     std::string operatorPresentComponent = jsonConfig["operator-present"]["component"].asString();
@@ -170,24 +154,13 @@ int main(int argc, char ** argv)
     std::cout << "Using \"" << operatorPresentComponent << "::" << operatorPresentInterface
               << "\" to detect if operator is present" << std::endl;
 
-    // setup io defined in the json configuration file
-    const Json::Value pairs = jsonConfig["pairs"];
-    for (unsigned int index = 0; index < pairs.size(); ++index) {
-        // master
-        Json::Value jsonMaster = pairs[index]["master"];
-        std::string armName = jsonMaster["name"].asString();
-        std::string ioFile = jsonMaster["io"].asString();
-        fileExists(armName + " IO", ioFile);
-        io->Configure(ioFile);
-        // slave
-        Json::Value jsonSlave = pairs[index]["slave"];
-        armName = jsonSlave["name"].asString();
-        ioFile = jsonSlave["io"].asString();
-        fileExists(armName + " IO", ioFile);
-        io->Configure(ioFile);
-    }
-
-    componentManager->AddComponent(io);
+    // connect console to IO
+    componentManager->Connect(console->GetName(), "Clutch",
+                              io->GetName(), "CLUTCH");
+    componentManager->Connect(console->GetName(), "Camera",
+                              io->GetName(), "CAMERA");
+    componentManager->Connect(console->GetName(), "OperatorPresent",
+                              operatorPresentComponent, operatorPresentInterface);
 
     // connect ioGUIMaster to io
     mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");
@@ -303,8 +276,8 @@ int main(int argc, char ** argv)
 
         componentManager->Connect(tele->GetName(), "Master", mtm->Name(), "Robot");
         componentManager->Connect(tele->GetName(), "Slave", psm->Name(), "Robot");
-        componentManager->Connect(tele->GetName(), "Clutch", "io", "CLUTCH");
-        componentManager->Connect(tele->GetName(), "OperatorPresent", operatorPresentComponent, operatorPresentInterface);
+        componentManager->Connect(tele->GetName(), "Clutch", console->GetName(), "Clutch");
+        componentManager->Connect(tele->GetName(), "OperatorPresent", console->GetName(), "OperatorPresent");
         console->AddTeleOperation(tele->GetName());
     }
 
