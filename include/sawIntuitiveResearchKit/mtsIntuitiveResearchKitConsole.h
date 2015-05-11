@@ -89,10 +89,16 @@ public:
     mtsIntuitiveResearchKitConsole(const std::string & componentName);
     inline virtual ~mtsIntuitiveResearchKitConsole() {}
 
-    /*! Configure console using JSON file.  To test is the configuration succeeded, used method Configured().
-      */
+    /*! Configure console using JSON file. To test is the configuration
+        succeeded, used method Configured().
+    */
     void Configure(const std::string & filename);
+
+    /*! Method to check if the configuration was successful, ideally called
+        after a call to Configure.
+    */
     const bool & Configured(void) const;
+
     void Startup(void);
     void Run(void);
     void Cleanup(void);
@@ -102,15 +108,16 @@ public:
     bool AddTeleOperation(const std::string & name);
 
 protected:
-
     bool mConfigured;
 
-    typedef std::list<Arm *> ArmList;
+    typedef std::map<std::string, Arm *> ArmList;
     ArmList mArms;
 
-    typedef std::list<TeleOp *> TeleOpList;
+    typedef std::map<std::string, TeleOp *> TeleOpList;
     TeleOpList mTeleOps;
 
+    /*! Utility function to test if a file exists and log the results */
+    bool FileExists(const std::string & description, const std::string & filename) const;
     bool SetupAndConnectInterfaces(Arm * arm);
 
     void SetRobotsControlState(const std::string & newState);

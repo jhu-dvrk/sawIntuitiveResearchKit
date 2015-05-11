@@ -224,12 +224,20 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // create IO
     mtsRobotIO1394 * io = new mtsRobotIO1394("io", periodIO, firewirePort);
 
-    // setup io defined in the json configuration file
+    // parse all file to find all arms and related settings, arms can be defined in pairs or as single arms
     const Json::Value pairs = jsonConfig["pairs"];
     for (unsigned int index = 0; index < pairs.size(); ++index) {
         // master
         Json::Value jsonMaster = pairs[index]["master"];
         std::string armName = jsonMaster["name"].asString();
+        ArmList::iterator armIterator = mArms.find(armName);
+        Arm * armPointer = 0;
+        if (armIterator == mArms.end()) {
+            // create a new arm if needed
+            armPointer = new Arm(armName, io->GetName());
+        } else {
+            armPointer = armIterator->second;
+        }
         std::string ioFile = jsonMaster["io"].asString();
         fileExists(armName + " IO", ioFile);
         io->Configure(ioFile);
@@ -242,6 +250,8 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     }
 
     componentManager->AddComponent(io);
+
+
 
 }
 
@@ -313,6 +323,19 @@ bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name)
     }
     delete teleOp;
     return false;
+}
+
+bool mtsIntuitiveResearchKitConsole::FileExists(const std::string & description, const std::string & filename) const
+{
+    if (!cmnPath::Exists(filename)) {
+        CMN_LOG_CLASS_INIT_ERROR << this->GetName() << ", file not found for " << description
+                                 << ": " << filename << std::endl;
+        return false;
+    } else {
+        CMN_LOG_CLASS_INIT_VERBOSE << this->GetName() << ", file found for " << description
+                                   << ": " << filename << std::endl;
+        return true;
+    }
 }
 
 bool mtsIntuitiveResearchKitConsole::SetupAndConnectInterfaces(Arm * arm)
