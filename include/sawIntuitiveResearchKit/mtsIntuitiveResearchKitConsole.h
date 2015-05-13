@@ -22,6 +22,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsTaskFromSignal.h>
 
+#include <json/json.h>
+
 class mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
@@ -30,7 +32,7 @@ public:
 
     class Arm {
     public:
-        typedef enum {ARM_MTM, ARM_PSM, ARM_ECM, ARM_GENERIC_MTM, ARM_GENERIC_PSM} ArmType;
+        typedef enum {ARM_UNDEFINED, ARM_MTM, ARM_PSM, ARM_ECM, ARM_GENERIC_MTM, ARM_GENERIC_PSM} ArmType;
 
         friend class mtsIntuitiveResearchKitConsole;
 
@@ -56,6 +58,7 @@ public:
 
     protected:
         std::string mName;
+        ArmType mType;
         // low level
         std::string mIOComponentName;
         std::string mIOConfigurationFile;
@@ -118,6 +121,12 @@ protected:
 
     /*! Utility function to test if a file exists and log the results */
     bool FileExists(const std::string & description, const std::string & filename) const;
+
+    /*! Find all arm data from JSON configuration. */
+    bool ConfigureArmJSON(const Json::Value & jsonArm,
+                          const std::string & ioComponentName,
+                          const Arm::ArmType & type = Arm::ARM_UNDEFINED);
+
     bool SetupAndConnectInterfaces(Arm * arm);
 
     void SetRobotsControlState(const std::string & newState);

@@ -56,13 +56,7 @@ void fileExists(const std::string & description, const std::string & filename)
 
 
 int main(int argc, char ** argv)
-{
-    // configuration
-    const double periodIO = 0.5 * cmn_ms;
-    const double periodKinematics = 1.0 * cmn_ms;
-    const double periodTeleop = 1.0 * cmn_ms;
-    const double periodUDP = 20.0 * cmn_ms;
- 
+{ 
     // log configuration
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
@@ -83,9 +77,6 @@ int main(int argc, char ** argv)
                               "json configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
 
-    options.AddOptionOneValue("f", "firewire",
-                              "firewire port number(s)",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &firewirePort);
     options.AddOptionOneValue("g", "gcmip",
                               "global component manager IP address",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &gcmip);
@@ -141,6 +132,7 @@ int main(int argc, char ** argv)
     QTabWidget * tabWidget = new QTabWidget;
     tabWidget->addTab(consoleGUI, "Main");
 
+#if 0
     // find name of button event used to detect if operator is present
     std::string operatorPresentComponent = jsonConfig["operator-present"]["component"].asString();
     std::string operatorPresentInterface = jsonConfig["operator-present"]["interface"].asString();
@@ -321,6 +313,8 @@ int main(int argc, char ** argv)
     // delete dvgc robot
     delete io;
     delete robotWidgetFactory;
+
+#endif
 
     // stop all logs
     cmnLogger::Kill();

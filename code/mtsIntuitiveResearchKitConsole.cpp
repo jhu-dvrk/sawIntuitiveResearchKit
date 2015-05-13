@@ -20,9 +20,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <iostream>
 
 // cisst
+#include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
-
 #include <cisstParameterTypes/prmEventButton.h>
 
 #include <sawRobotIO1394/mtsRobotIO1394.h>
@@ -33,7 +33,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 
-#include <json/json.h>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsole);
 
@@ -195,6 +194,8 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
 
 void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 {
+    mConfigured = false;
+
     std::ifstream jsonStream;
     jsonStream.open(filename.c_str());
 
@@ -213,7 +214,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // get user preferences
     jsonValue = jsonConfig["io"]["period"];
     if (!jsonValue.empty()) {
-        periodIO = jsonValue.asInt();
+        periodIO = jsonValue.asDouble();
     }
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: period IO is " << periodIO << std::endl;
     jsonValue = jsonConfig["io"]["port"];
@@ -229,30 +230,30 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     for (unsigned int index = 0; index < pairs.size(); ++index) {
         // master
         Json::Value jsonMaster = pairs[index]["master"];
-        std::string armName = jsonMaster["name"].asString();
-        ArmList::iterator armIterator = mArms.find(armName);
-        Arm * armPointer = 0;
-        if (armIterator == mArms.end()) {
-            // create a new arm if needed
-            armPointer = new Arm(armName, io->GetName());
-        } else {
-            armPointer = armIterator->second;
+        if (!ConfigureArmJSON(jsonMaster, io->GetName(), Arm::ARM_MTM)) {
+            return;
         }
-        std::string ioFile = jsonMaster["io"].asString();
-        fileExists(armName + " IO", ioFile);
-        io->Configure(ioFile);
         // slave
         Json::Value jsonSlave = pairs[index]["slave"];
-        armName = jsonSlave["name"].asString();
-        ioFile = jsonSlave["io"].asString();
-        fileExists(armName + " IO", ioFile);
-        io->Configure(ioFile);
+        if (!ConfigureArmJSON(jsonSlave, io->GetName(), Arm::ARM_PSM)) {
+            return;
+        }
     }
 
-    componentManager->AddComponent(io);
+    const Json::Value arms = jsonConfig["arms"];
+    for (unsigned int index = 0; index < arms.size(); ++index) {
+        if (!ConfigureArmJSON(arms[index], io->GetName())) {
+            return;
+        }
+    }
+
+    // loop over all arms to configure!
+    std::cerr << CMN_LOG_DETAILS << " need to loop over all arms to configure: io->Configure(ioFile); " << std::endl;
 
 
+    std::cerr << CMN_LOG_DETAILS << "componentManager->AddComponent(io);" << std::endl;
 
+    mConfigured = true;
 }
 
 const bool & mtsIntuitiveResearchKitConsole::Configured(void) const
@@ -284,8 +285,11 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
         return false;
     }
     if (SetupAndConnectInterfaces(newArm)) {
-        mArms.push_back(newArm);
-        return true;
+        ArmList::iterator armIterator = mArms.find(newArm->mName);
+        if (armIterator != mArms.end()) {
+            mArms[newArm->mName] = newArm;
+            return true;
+        }
     }
     CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, unable to add new arm.  Are you adding two arms with the same name? "
                              << newArm->Name() << std::endl;
@@ -297,8 +301,11 @@ bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mts
     // create new required interfaces to communicate with the components we created
     Arm * newArm = new Arm(genericArm->GetName(), "");
     if (SetupAndConnectInterfaces(newArm)) {
-        mArms.push_back(newArm);
-        return true;
+        ArmList::iterator armIterator = mArms.find(newArm->mName);
+        if (armIterator != mArms.end()) {
+            mArms[newArm->mName] = newArm;
+            return true;
+        }
     }
     CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, unable to add new arm.  Are you adding two arms with the same name? "
                              << newArm->Name() << std::endl;
@@ -318,9 +325,14 @@ bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name)
         teleOp->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
         componentManager->Connect(this->GetName(), name,
                                   name, "Setting");
-        mTeleOps.push_back(teleOp);
-        return true;
+        TeleOpList::iterator teleOpIterator = mTeleOps.find(name);
+        if (teleOpIterator != mTeleOps.end()) {
+            mTeleOps[name] = teleOp;
+            return true;
+        }
     }
+    CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddTeleOperation, unable to add new tele-op.  Are you adding two tele-ops with the same name? "
+                             << name << std::endl;
     delete teleOp;
     return false;
 }
@@ -336,6 +348,63 @@ bool mtsIntuitiveResearchKitConsole::FileExists(const std::string & description,
                                    << ": " << filename << std::endl;
         return true;
     }
+}
+
+bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonArm,
+                                                      const std::string & ioComponentName,
+                                                      const Arm::ArmType & type)
+{
+    std::string armName = jsonArm["name"].asString();
+    ArmList::iterator armIterator = mArms.find(armName);
+    Arm * armPointer = 0;
+    if (armIterator == mArms.end()) {
+        // create a new arm if needed
+        armPointer = new Arm(armName, ioComponentName);
+    } else {
+        armPointer = armIterator->second;
+        mArms[armName] = armPointer;
+    }
+    armPointer->mType = type;
+
+    // read from JSON and check if configuration files exist
+    Json::Value jsonValue;
+    jsonValue = jsonArm["type"];
+    if (!jsonValue.empty()) {
+        std::string typeString = jsonValue.asString();
+        if (typeString == "MTM") {
+            armPointer->mType = Arm::ARM_MTM;
+        } else if (typeString == "PSM") {
+            armPointer->mType = Arm::ARM_PSM;
+        } else if (typeString == "ECM") {
+            armPointer->mType = Arm::ARM_ECM;
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName << ": invalid type \""
+                                     << typeString << "\", needs to be MTM, PSM or ECM" << std::endl;
+            return false;
+        }
+    }
+    jsonValue = jsonArm["io"];
+    if (!jsonValue.empty()) {
+        armPointer->mIOConfigurationFile = jsonValue.asString();
+        if (!FileExists(armName + " io", armPointer->mIOConfigurationFile)) {
+            return false;
+        }
+    }
+    jsonValue = jsonArm["pid"];
+    if (!jsonValue.empty()) {
+        armPointer->mPIDConfigurationFile = jsonValue.asString();
+        if (!FileExists(armName + " PID", armPointer->mPIDConfigurationFile)) {
+            return false;
+        }
+    }
+    jsonValue = jsonArm["kinematic"];
+    if (!jsonValue.empty()) {
+        armPointer->mArmConfigurationFile = jsonValue.asString();
+        if (!FileExists(armName + " kinematic", armPointer->mArmConfigurationFile)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool mtsIntuitiveResearchKitConsole::SetupAndConnectInterfaces(Arm * arm)
@@ -382,10 +451,10 @@ void mtsIntuitiveResearchKitConsole::SetRobotsControlState(const std::string & n
     for (ArmList::iterator arm = mArms.begin();
          arm != end;
          ++arm) {
-        result = (*arm)->SetRobotControlState(newState);
+        result = arm->second->SetRobotControlState(newState);
         if (!result) {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": SetRobotControlState: failed to set state \""
-                                    << newState << "\" for arm \"" << (*arm)->Name()
+                                    << newState << "\" for arm \"" << arm->second->Name()
                                     << "\"" << std::endl;
         }
     }
@@ -398,10 +467,10 @@ void mtsIntuitiveResearchKitConsole::TeleopEnable(const bool & enable)
     for (TeleOpList::iterator teleOp = mTeleOps.begin();
          teleOp != end;
          ++teleOp) {
-        result = (*teleOp)->Enable(enable);
+        result = teleOp->second->Enable(enable);
         if (!result) {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": Enable: failed to set \""
-                                    << enable << "\" for tele-op \"" << (*teleOp)->Name()
+                                    << enable << "\" for tele-op \"" << teleOp->second->Name()
                                     << "\"" << std::endl;
         }
     }
