@@ -65,7 +65,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     JointTrajectory.Acceleration.SetAll(90.0 * cmnPI_180);
     JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
-    PotsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
+    // high values for engage adapter/tool until these use a proper trajectory generator
+    PotsToEncodersTolerance.SetAll(100.0 * cmnPI_180); // 100 degrees for rotations
     PotsToEncodersTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm
 
     // for tool/adapter engage procedure
@@ -256,6 +257,10 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             tolerances.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
             PID.SetTrackingErrorTolerance(tolerances);
             PID.EnableTrackingError(true);
+            // set tighter pots/encoder tolerances
+            PotsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
+            PotsToEncodersTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm
+            RobotIO.SetPotsToEncodersTolerance(PotsToEncodersTolerance);
         }
         RobotState = newState;
         MessageEvents.Status(this->GetName() + " ready");
