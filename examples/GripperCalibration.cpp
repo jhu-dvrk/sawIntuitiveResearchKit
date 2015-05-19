@@ -91,7 +91,11 @@ int main(int argc, char * argv[])
     port->AddRobot(robot);
 
     // make sure we have at least one set of pots values
-    port->Read();
+    try {
+        port->Read();
+    } catch (const std::runtime_error & e) {
+        std::cerr << "Caught exception: " << e.what() << std::endl;
+    }
     // preload encoders
     robot->CalibrateEncoderOffsetsFromPots();
 
