@@ -71,7 +71,9 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     JointTrajectory.Acceleration.SetAll(720.0 * cmnPI_180);
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
      // IO level treats the gripper as joint :-)
-    PotsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
+    PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
+    // Hack, pot reading is slower than encoder
+    PotsToEncodersTolerance.Element(5) = 50.0 * cmnPI_180;
     // pots on gripper rotation are not directly mapped to encoders
     PotsToEncodersTolerance.Element(6) = cmnTypeTraits<double>::PlusInfinityOrMax();
     // last joint is gripper, encoders can be anything
