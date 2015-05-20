@@ -71,6 +71,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     this->StateTable.AddData(CartesianGetDesiredParam, "CartesianPositionDesired");
     this->StateTable.AddData(JointGetParam, "JointPosition");
     this->StateTable.AddData(JointGetDesired, "JointPositionDesired");
+    this->StateTable.AddData(CartesianVelocityGetParam, "CartesianVelocity");
 
     // setup CISST Interface
     PIDInterface = AddInterfaceRequired("PID");
@@ -115,6 +116,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandReadState(this->StateTable, JointGetDesired, "GetPositionJointDesired");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianGetParam, "GetPositionCartesian");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianGetDesiredParam, "GetPositionCartesianDesired");
+        RobotInterface->AddCommandReadState(this->StateTable, CartesianVelocityGetParam, "GetVelocityCartesian");
         // Set
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionJoint, this, "SetPositionJoint");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalJoint, this, "SetPositionGoalJoint");
@@ -287,8 +289,8 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         CartesianGetDesiredParam.Position().From(CartesianGetDesired);
     } else {
         // set joint to zeros
-        JointGet.Zeros();
-        JointGetParam.Position().SetSize(NumberOfJoints());
+        JointGet.Zeros();       
+        PID.GetPositionJoint(JointGetParam); // get size right
         JointGetParam.Position().Zeros();
         JointGetParam.SetValid(false);
         JointVelocityGet.Zeros();
