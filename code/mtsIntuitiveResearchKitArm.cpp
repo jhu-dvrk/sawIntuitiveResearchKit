@@ -46,6 +46,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     // initialize trajectory data
     JointGet.SetSize(NumberOfJoints());
+    JointVelocityGet.SetSize(NumberOfJoints());
     JointSet.SetSize(NumberOfJoints());
     JointSetParam.Goal().SetSize(NumberOfAxes());
     JointTrajectory.Velocity.SetSize(NumberOfJoints());
@@ -79,6 +80,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("GetPositionJointDesired", PID.GetPositionJointDesired);
         PIDInterface->AddFunction("SetPositionJoint", PID.SetPositionJoint);
         PIDInterface->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
+        PIDInterface->AddFunction("GetVelocityJoint", PID.GetVelocityJoint);
         PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
         PIDInterface->AddFunction("SetTorqueJoint", PID.SetTorqueJoint);
         PIDInterface->AddFunction("SetTorqueOffset", PID.SetTorqueOffset);
@@ -239,6 +241,14 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
                                     << executionResult << "\"" << std::endl;
         }
 
+        // joint velocity
+        executionResult = PID.GetVelocityJoint(JointVelocityGetParam);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetVelocityJoint failed \""
+                                    << executionResult << "\"" << std::endl;
+        }
+        JointVelocityGet.Assign(JointVelocityGetParam.Velocity(), NumberOfJoints());
+
         // when the robot is ready, we can compute cartesian position
         if (this->RobotState >= mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
             // update cartesian position
@@ -280,6 +290,9 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         JointGet.Zeros();
         JointGetParam.Position().Zeros();
         JointGetParam.SetValid(false);
+        JointVelocityGet.Zeros();
+        JointVelocityGetParam.Velocity().Zeros();
+        JointVelocityGetParam.SetValid(false);
     }
 }
 

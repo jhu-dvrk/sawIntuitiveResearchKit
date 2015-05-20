@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
+#include <cisstParameterTypes/prmVelocityJointGet.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
@@ -115,6 +116,7 @@ protected:
         mtsFunctionRead  GetPositionJointDesired;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetCheckJointLimit;
+        mtsFunctionRead  GetVelocityJoint;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite SetTorqueJoint;
         mtsFunctionWrite SetTorqueOffset;
@@ -164,6 +166,9 @@ protected:
     vctDoubleVec JointGetDesired;
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
+    //! robot current joint velocity
+    prmVelocityJointGet JointVelocityGetParam;
+    vctDoubleVec JointVelocityGet;
 
     // Velocities
     prmPositionCartesianGet CartesianGetPreviousParam;
