@@ -285,25 +285,33 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            MessageEvents.Error(this->GetName() + " is not calibrated");
-            return;
-        }
-        // check that the tool is inserted deep enough
-        if (JointGet.Element(2) < 80.0 * cmn_mm) {
-            MessageEvents.Error(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
-            break;
-        }
-        RobotState = newState;
-        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
-            IsGoalSet = false;
-            MessageEvents.Status(this->GetName() + " position cartesian");
-        } else {
-            JointTrajectory.EndTime = 0.0;
-            MessageEvents.Status(this->GetName() + " position goal cartesian");
-        }
-        break;
+    {
+      if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+          MessageEvents.Error(this->GetName() + " is not calibrated");
+          return;
+      }
+      // check that the tool is inserted deep enough
+      if (JointGet.Element(2) < 80.0 * cmn_mm) {
+          MessageEvents.Error(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
+          break;
+      }
+      RobotState = newState;
 
+      // init CartesianSet to current pose
+      vctDoubleRot3 tmprot;
+      tmprot.FromNormalized(CartesianGet.Rotation());
+      CartesianSetParam.SetGoal(CartesianGet.Translation());
+      CartesianSetParam.SetGoal(tmprot);
+
+      if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
+          IsGoalSet = false;
+          MessageEvents.Status(this->GetName() + " position cartesian");
+      } else {
+          JointTrajectory.EndTime = 0.0;
+          MessageEvents.Status(this->GetName() + " position goal cartesian");
+      }
+      break;
+    }
     case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
             MessageEvents.Error(this->GetName() + " is not calibrated");
