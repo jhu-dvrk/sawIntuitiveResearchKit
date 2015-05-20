@@ -114,9 +114,6 @@ protected:
         mtsFunctionWrite GripperClosed;
     } GripperEvents;
 
-    //! robot cartesian velocity
-    prmVelocityCartesianGet CartesianVelocityParam;
-
     //! robot cartesian position when cluthed
     vctFrm4x4 CartesianClutched;
 

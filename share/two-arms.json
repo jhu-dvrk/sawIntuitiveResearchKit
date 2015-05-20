@@ -4,7 +4,7 @@
         {
             "master": {
                 "name": "MTML",
-                "io": "daVinci/sawRobotIO1394-MTML-34863.xml",
+                "io": "sawRobotIO1394-MTML-22723.xml",
                 "pid": "sawControllersPID-MTML.xml",
                 "kinematic": "dvmtm.rob"
 		}
@@ -20,7 +20,7 @@
         {
             "master": {
                 "name": "MTMR",
-                "io": "daVinci/sawRobotIO1394-MTMR-22403.xml",
+                "io": "sawRobotIO1394-MTMR-28247.xml",
                 "pid": "sawControllersPID-MTMR.xml",
                 "kinematic": "dvmtm.rob"
 	    }

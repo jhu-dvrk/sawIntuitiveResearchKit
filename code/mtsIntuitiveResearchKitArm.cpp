@@ -288,6 +288,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
     } else {
         // set joint to zeros
         JointGet.Zeros();
+        JointGetParam.Position().SetSize(NumberOfJoints());
         JointGetParam.Position().Zeros();
         JointGetParam.SetValid(false);
         JointVelocityGet.Zeros();
