@@ -4,12 +4,9 @@
         {
             "master": {
                 "name": "MTML",
-                "io": "sawRobotIO1394-MTML-22723.xml",
+                "io": "daVinci/sawRobotIO1394-MTML-34863.xml",
                 "pid": "sawControllersPID-MTML.xml",
                 "kinematic": "dvmtm.rob"
-		// ,
-                // "UDP-IP": "localhost",
-                // "UDP-port": 10001
 		}
             ,
             "slave": {
@@ -23,12 +20,9 @@
         {
             "master": {
                 "name": "MTMR",
-                "io": "sawRobotIO1394-MTMR-28247.xml",
+                "io": "daVinci/sawRobotIO1394-MTMR-22403.xml",
                 "pid": "sawControllersPID-MTMR.xml",
                 "kinematic": "dvmtm.rob"
-		// ,
-                // "UDP-IP": "localhost",
-                // "UDP-port": 10002
 	    }
             ,
             "slave": {

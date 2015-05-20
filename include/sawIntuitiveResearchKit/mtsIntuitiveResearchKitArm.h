@@ -125,6 +125,7 @@ protected:
     // Interface to IO component
     mtsInterfaceRequired * IOInterface;
     struct InterfaceRobotTorque {
+        mtsFunctionRead  GetSerialNumber;
         mtsFunctionVoid  EnablePower;
         mtsFunctionVoid  DisablePower;
         mtsFunctionRead  GetActuatorAmpStatus;
