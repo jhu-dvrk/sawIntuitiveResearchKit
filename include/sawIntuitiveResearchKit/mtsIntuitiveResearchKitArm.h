@@ -171,6 +171,7 @@ protected:
     vctDoubleVec JointVelocityGet;
 
     // Velocities
+    vctFrm4x4 CartesianGetPrevious;
     prmPositionCartesianGet CartesianGetPreviousParam;
     prmVelocityCartesianGet CartesianVelocityGetParam;
 
@@ -197,6 +198,8 @@ protected:
     double HomingTimer;
     bool HomingPowerRequested;
     bool HomingCalibrateArmStarted;
+
+    unsigned int mCounter;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitArm);

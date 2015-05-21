@@ -41,6 +41,8 @@ mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicCons
 
 void mtsIntuitiveResearchKitArm::Init(void)
 {
+    mCounter = 0;
+
     IsGoalSet = false;
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 
@@ -71,7 +73,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     this->StateTable.AddData(CartesianGetDesiredParam, "CartesianPositionDesired");
     this->StateTable.AddData(JointGetParam, "JointPosition");
     this->StateTable.AddData(JointGetDesired, "JointPositionDesired");
-    this->StateTable.AddData(CartesianVelocityGetParam, "CartesianVelocity");
+    this->StateTable.AddData(CartesianVelocityGetParam, "CartesianVelocityGetParam");
 
     // setup CISST Interface
     PIDInterface = AddInterfaceRequired("PID");
@@ -196,6 +198,8 @@ void mtsIntuitiveResearchKitArm::Run(void)
     RunEvent();
     ProcessQueuedCommands();
 
+    mCounter++;
+    CartesianGetPrevious = CartesianGet;
     CartesianGetPreviousParam = CartesianGetParam;
 }
 
@@ -258,6 +262,9 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             CartesianGet.Rotation().NormalizedSelf();
             CartesianGetParam.SetTimestamp(JointGetParam.Timestamp());
             CartesianGetParam.SetValid(true);
+
+#if 0
+            // FIXME: bug
             // update cartesian velocity (caveat, velocities are not updated)
             const double dt = CartesianGetParam.Timestamp() - CartesianGetPreviousParam.Timestamp();
             if (dt > 0.0) {
@@ -272,6 +279,15 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             } else {
                 CartesianVelocityGetParam.SetValid(false);
             }
+#else
+            vct3 linearVelocity;
+            linearVelocity = (CartesianGet.Translation() - CartesianGetPrevious.Translation()).Divide(StateTable.Period);
+            CartesianVelocityGetParam.SetVelocityLinear(linearVelocity);
+            CartesianVelocityGetParam.SetVelocityAngular(vct3(0.0));
+            CartesianVelocityGetParam.SetTimestamp(CartesianGetParam.Timestamp());
+            CartesianVelocityGetParam.SetValid(true);
+#endif
+
             // update cartesian position desired based on joint desired
             CartesianGetDesired = Manipulator.ForwardKinematics(JointGetDesired);
             CartesianGetDesired.Rotation().NormalizedSelf();
