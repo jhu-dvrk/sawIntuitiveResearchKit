@@ -227,12 +227,18 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
+    {
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
             MessageEvents.Error(this->GetName() + " is not calibrated");
             return;
         }
         RobotState = newState;
-        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
+        //set jnt to current pos, otherwise the robot will jump to previous setpoint
+        JointSet.ForceAssign(JointGet);
+        SetPositionJointLocal(JointSet);
+
+        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN)
+        {
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position cartesian");
         } else {
@@ -240,7 +246,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             MessageEvents.Status(this->GetName() + " position goal cartesian");
         }
         break;
-
+    }
     case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
             MessageEvents.Error(this->GetName() + " is not homed");
