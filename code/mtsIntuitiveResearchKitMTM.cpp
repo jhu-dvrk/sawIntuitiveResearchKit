@@ -67,8 +67,10 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // initialize gripper state
     GripperClosed = false;
 
-    JointTrajectory.Velocity.SetAll(720.0 * cmnPI_180); // degrees per second
-    JointTrajectory.Acceleration.SetAll(720.0 * cmnPI_180);
+    JointTrajectory.Velocity.SetAll(180.0 * cmnPI_180); // degrees per second
+    JointTrajectory.Acceleration.SetAll(180.0 * cmnPI_180);
+    JointTrajectory.Velocity.Element(6) = 1080.0 * cmnPI_180; // roll can go fast
+    JointTrajectory.Acceleration.Element(6) = 1080.0 * cmnPI_180;
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
      // IO level treats the gripper as joint :-)
     PotsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
