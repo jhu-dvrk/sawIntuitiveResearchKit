@@ -24,7 +24,7 @@
     </joint>
 
     <joint index="3" name="outerroll">
-      <pid PGain="20.0" DGain="2.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
+      <pid PGain="20.0" DGain="0.5" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
       <limit MinILimit="-10" MaxILimit="10" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-90" UpperLimit="90" Units="deg"/>
     </joint>
