@@ -66,7 +66,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
     // high values for engage adapter/tool until these use a proper trajectory generator
-    PotsToEncodersTolerance.SetAll(100.0 * cmnPI_180); // 100 degrees for rotations
+    PotsToEncodersTolerance.SetAll(180.0 * cmnPI_180); // 180 degrees for rotations
     PotsToEncodersTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm
 
     // for tool/adapter engage procedure
