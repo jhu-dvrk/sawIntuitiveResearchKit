@@ -5,13 +5,13 @@
             numofjoints="4">
 
   <joints>
-    <joint index="0" name="outeryaw">
+    <joint index="0" name="outer yaw">
       <pid PGain="400.0" DGain="30.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
       <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-90" UpperLimit="90" Units="deg"/>
     </joint>
 
-    <joint index="1" name="outerpitch">
+    <joint index="1" name="outer pitch">
       <pid PGain="1000.0" DGain="80.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
       <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-45" UpperLimit="65" Units="deg"/>
@@ -23,7 +23,7 @@
       <pos LowerLimit="0" UpperLimit="235" Units="mm"/>
     </joint>
 
-    <joint index="3" name="outerroll">
+    <joint index="3" name="outer roll">
       <pid PGain="20.0" DGain="0.5" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
       <limit MinILimit="-10" MaxILimit="10" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-90" UpperLimit="90" Units="deg"/>
