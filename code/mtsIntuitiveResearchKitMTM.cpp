@@ -67,9 +67,12 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // initialize gripper state
     GripperClosed = false;
 
-    JointTrajectory.Velocity.SetAll(720.0 * cmnPI_180); // degrees per second
-    JointTrajectory.Acceleration.SetAll(720.0 * cmnPI_180);
+    JointTrajectory.Velocity.SetAll(180.0 * cmnPI_180); // degrees per second
+    JointTrajectory.Acceleration.SetAll(180.0 * cmnPI_180);
+    JointTrajectory.Velocity.Element(6) = 1080.0 * cmnPI_180; // roll can go fast
+    JointTrajectory.Acceleration.Element(6) = 1080.0 * cmnPI_180;
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
+    JointTrajectory.GoalTolerance.Element(6) = 6.0 * cmnPI / 180.0; // roll has low encoder resolution
      // IO level treats the gripper as joint :-)
     PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
     // Hack, pot reading is slower than encoder
@@ -84,6 +87,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // Main interface should have been created by base class init
     CMN_ASSERT(RobotInterface);
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetWrench, this, "SetWrench");
+
     // Gripper
     RobotInterface->AddCommandReadState(this->StateTable, GripperPosition, "GetGripperPosition");
     RobotInterface->AddEventVoid(GripperEvents.GripperPinch, "GripperPinchEvent");

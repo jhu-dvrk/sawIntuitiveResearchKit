@@ -37,6 +37,9 @@ http://www.cisst.org/cisst/license.txt.
 
 int main(int argc, char ** argv)
 {
+    // period used for IO and PID
+    const double periodIOPID = 0.5 * cmn_ms;
+
     // log configuration
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
@@ -120,7 +123,7 @@ int main(int argc, char ** argv)
     componentManager->Connect("console", "Main", "consoleGUI", "Main");
 
     // IO
-    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 2.0 * cmn_ms, firewirePort);
+    mtsRobotIO1394 * io = new mtsRobotIO1394("io", periodIOPID, firewirePort);
     io->Configure(configFiles["io"]);
     componentManager->AddComponent(io);
 
