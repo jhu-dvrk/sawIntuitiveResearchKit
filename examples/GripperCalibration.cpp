@@ -1,11 +1,11 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
-/*
 
+/*
   Author(s):  Anton Deguet
   Created on: 2013-12-20
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -89,6 +89,15 @@ int main(int argc, char * argv[])
     std::cout << "Creating port ..." << std::endl;
     osaPort1394 * port = new osaPort1394(portNumber);
     port->AddRobot(robot);
+
+    // make sure we have at least one set of pots values
+    try {
+        port->Read();
+    } catch (const std::runtime_error & e) {
+        std::cerr << "Caught exception: " << e.what() << std::endl;
+    }
+    // preload encoders
+    robot->CalibrateEncoderOffsetsFromPots();
 
     std::cout << std::endl
               << "Press any key to start collecting data." << std::endl;

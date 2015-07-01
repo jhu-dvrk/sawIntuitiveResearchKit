@@ -57,7 +57,7 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("f", "firewire",
                               "firewire port number(s)",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &firewirePort);
-    options.AddOptionOneValue("a", "arm name",
+    options.AddOptionOneValue("n", "arm-name",
                               "arm name (i.e. PSM1, PSM2, MTML or MTMR) as defined in the sawRobotIO1394 file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &armName);
 

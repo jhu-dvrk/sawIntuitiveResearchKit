@@ -87,7 +87,7 @@ protected:
     void RunEngagingTool(void);
 
     /*! Cartesian constraint controller. */
-    void RunConstraintControllerCartesian(void);
+    virtual void RunConstraintControllerCartesian(void);
 
     void EventHandlerAdapter(const prmEventButton & button);
     void EventHandlerTool(const prmEventButton & button);

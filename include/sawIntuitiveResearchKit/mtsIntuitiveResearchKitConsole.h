@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -41,7 +41,8 @@ public:
 
         friend class mtsIntuitiveResearchKitConsole;
 
-        Arm(const std::string & name, const std::string & ioComponentName);
+        Arm(const std::string & name,
+            const std::string & ioComponentName);
 
         /*! Create a new PID component and connect it to the proper RobotIO
           interface.  If the period in seconds is zero, the PID will be tied to
@@ -52,7 +53,8 @@ public:
         /*! Create and configure the robot arm. */
         void ConfigureArm(const ArmType armType,
                           const std::string & configFile,
-                          const double & periodInSeconds = 0.0 * cmn_ms);
+                          const double & periodInSeconds = 0.0 * cmn_ms,
+                          mtsComponent * existingArm = 0);
 
         /*! Accessors */
         const std::string & Name(void) const;
@@ -73,23 +75,53 @@ public:
         std::string mArmConfigurationFile;
 
         mtsFunctionWrite SetRobotControlState;
+        mtsInterfaceRequired * IOInterfaceRequired;
+        mtsInterfaceRequired * PIDInterfaceRequired;
+        mtsInterfaceRequired * ArmInterfaceRequired;
+    };
+
+    class TeleOp {
+    public:
+        friend class mtsIntuitiveResearchKitConsole;
+
+        TeleOp(const std::string & name);
+
+        /*! Accessors */
+        const std::string & Name(void) const;
+
+    protected:
+        std::string mName;
+        mtsFunctionWrite Enable;
         mtsInterfaceRequired * InterfaceRequired;
     };
 
     bool AddArm(Arm * newArm);
     bool AddArm(mtsComponent * genericArm, const Arm::ArmType armType);
+    bool AddTeleOperation(const std::string & name);
 
 protected:
 
     typedef std::list<Arm *> ArmList;
     ArmList mArms;
 
-    void SetRobotControlState(const std::string & newState);
+    typedef std::list<TeleOp *> TeleOpList;
+    TeleOpList mTeleOps;
 
-    void ErrorMessageEventHandler(const std::string & message);
-    mtsFunctionWrite ErrorMessageEventTrigger;
-    void StatusMessageEventHandler(const std::string & message);
-    mtsFunctionWrite StatusMessageEventTrigger;
+    bool SetupAndConnectInterfaces(Arm * arm);
+
+    void SetRobotsControlState(const std::string & newState);
+    void TeleopEnable(const bool & enable);
+
+    // Functions for events
+    struct {
+        mtsFunctionWrite Status;
+        mtsFunctionWrite Warning;
+        mtsFunctionWrite Error;
+    } MessageEvents;
+
+    void ErrorEventHandler(const std::string & message);
+    void WarningEventHandler(const std::string & message);
+    void StatusEventHandler(const std::string & message);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsole);

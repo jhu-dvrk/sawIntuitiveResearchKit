@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
+#include <cisstParameterTypes/prmVelocityJointGet.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
@@ -88,10 +89,10 @@ protected:
     virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
 
     /*! Event handler for PID joint limit. */
-    virtual void EventHandlerJointLimit(void);
+    virtual void JointLimitEventHandler(const vctBoolVec & flags);
 
-    /*! Event handler for PID tracking error. */
-    virtual void EventHandlerTrackingError(void);
+    /*! Event handler for PID errors. */
+    void ErrorEventHandler(const std::string & message);
 
     /*! Configuration methods specific to derived classes. */
     virtual size_t NumberOfAxes(void) const = 0;           // used IO: ECM 4, PSM 7, MTM 8
@@ -115,6 +116,7 @@ protected:
         mtsFunctionRead  GetPositionJointDesired;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetCheckJointLimit;
+        mtsFunctionRead  GetVelocityJoint;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite SetTorqueJoint;
         mtsFunctionWrite SetTorqueOffset;
@@ -125,6 +127,7 @@ protected:
     // Interface to IO component
     mtsInterfaceRequired * IOInterface;
     struct InterfaceRobotTorque {
+        mtsFunctionRead  GetSerialNumber;
         mtsFunctionVoid  EnablePower;
         mtsFunctionVoid  DisablePower;
         mtsFunctionRead  GetActuatorAmpStatus;
@@ -144,8 +147,9 @@ protected:
 
     // Functions for events
     struct {
-        mtsFunctionWrite RobotStatus;
-        mtsFunctionWrite RobotError;
+        mtsFunctionWrite Status;
+        mtsFunctionWrite Warning;
+        mtsFunctionWrite Error;
         mtsFunctionWrite RobotState;
     } MessageEvents;
 
@@ -162,8 +166,12 @@ protected:
     vctDoubleVec JointGetDesired;
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
+    //! robot current joint velocity
+    prmVelocityJointGet JointVelocityGetParam;
+    vctDoubleVec JointVelocityGet;
 
     // Velocities
+    vctFrm4x4 CartesianGetPrevious;
     prmPositionCartesianGet CartesianGetPreviousParam;
     prmVelocityCartesianGet CartesianVelocityGetParam;
 
@@ -190,6 +198,8 @@ protected:
     double HomingTimer;
     bool HomingPowerRequested;
     bool HomingCalibrateArmStarted;
+
+    unsigned int mCounter;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitArm);

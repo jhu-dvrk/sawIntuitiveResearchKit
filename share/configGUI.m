@@ -22,7 +22,7 @@ function varargout = configGUI(varargin)
 
 % Edit the above text to modify the response to help configGUI
 
-% Last Modified by GUIDE v2.5 18-Jul-2014 11:30:46
+% Last Modified by GUIDE v2.5 22-Apr-2015 09:28:25
 
 % Date: 2013-04-28
 % Author: Zihan Chen
@@ -227,17 +227,19 @@ function typeBtnGroup_SelectionChangeFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 handles.m_type = get(hObject, 'String');
-disp(handles.m_type);
 % update DigitalIn
 for i = 1:12
     handles.m_digiIn{i,2,1} = [handles.m_type, '-D', ...
                               num2str(idivide(i-1, int32(4))), ...
                               num2str(mod(i-1,4)), 0.0 ];
+    handles.m_digiIn{i,5,1} = 0.0;
 
     handles.m_digiIn{i,2,2} = [handles.m_type, '-D', ...
                               num2str(idivide(i-1, int32(4))+3), ...
                               num2str(mod(i-1,4)), 0.0 ];
+    handles.m_digiIn{i,5,2} = 0.0;
 end
+
 
 % set default PSM DigitalIn
 if (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2') || strcmp(handles.m_type,'PSM3'))
@@ -401,6 +403,10 @@ handles.m_digiIn{5,5,2} = 0.2;
 
 val = get(handles.digiBidMenu, 'Value');
 set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val));
+
+% update default output file name
+handles.m_out_filename = ['sawRobotIO1394-' handles.m_type '-foot-pedal'];
+set(handles.out_name, 'String', handles.m_out_filename);
 guidata(hObject, handles);
 
 

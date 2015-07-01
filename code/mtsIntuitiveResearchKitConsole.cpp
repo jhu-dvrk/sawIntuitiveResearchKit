@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -35,7 +35,8 @@ http://www.cisst.org/cisst/license.txt.
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsole);
 
 
-mtsIntuitiveResearchKitConsole::Arm::Arm(const std::string & name, const std::string & ioComponentName):
+mtsIntuitiveResearchKitConsole::Arm::Arm(const std::string & name,
+                                         const std::string & ioComponentName):
     mName(name),
     mIOComponentName(ioComponentName)
 {}
@@ -61,7 +62,8 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & confi
 
 void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                                        const std::string & configFile,
-                                                       const double & periodInSeconds)
+                                                       const double & periodInSeconds,
+                                                       mtsComponent * existingArm)
 {
     mType = armType;
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
@@ -71,16 +73,20 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     switch (armType) {
     case ARM_MTM:
         {
-            mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
-            master->Configure(mArmConfigurationFile);
-            componentManager->AddComponent(master);
+            if (!existingArm) {
+                mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
+                master->Configure(mArmConfigurationFile);
+                componentManager->AddComponent(master);
+            }
         }
         break;
     case ARM_PSM:
         {
-            mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
-            slave->Configure(mArmConfigurationFile);
-            componentManager->AddComponent(slave);
+            if (!existingArm) {
+                mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
+                slave->Configure(mArmConfigurationFile);
+                componentManager->AddComponent(slave);
+            }
             componentManager->Connect(Name(), "Adapter",
                                       IOComponentName(), Name() + "-Adapter");
             componentManager->Connect(Name(), "Tool",
@@ -91,9 +97,11 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         break;
     case ARM_ECM:
         {
-            mtsIntuitiveResearchKitECM * ecm = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
-            ecm->Configure(mArmConfigurationFile);
-            componentManager->AddComponent(ecm);
+            if (!existingArm) {
+                mtsIntuitiveResearchKitECM * ecm = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
+                ecm->Configure(mArmConfigurationFile);
+                componentManager->AddComponent(ecm);
+            }
             componentManager->Connect(Name(), "ManipClutch",
                                       IOComponentName(), Name() + "-ManipClutch");
         }
@@ -110,12 +118,13 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         break;
     }
 
-    // if the arm is a research kit arm, also connect to PID and IO
+    // if the arm is a research kit arm
     if ((armType == ARM_PSM) || (armType == ARM_MTM) || (armType == ARM_ECM)) {
-        componentManager->Connect(Name(), "PID",
-                                  PIDComponentName(), "Controller");
+        // Connect arm to IO and PID
         componentManager->Connect(Name(), "RobotIO",
                                   IOComponentName(), Name());
+        componentManager->Connect(Name(), "PID",
+                                  PIDComponentName(), "Controller");
     } else if (armType == ARM_SUJ) {
         componentManager->Connect(Name(), "RobotIO",
                                   IOComponentName(), Name());
@@ -138,15 +147,31 @@ const std::string & mtsIntuitiveResearchKitConsole::Arm::PIDComponentName(void) 
     return mPIDComponentName;
 }
 
+
+
+mtsIntuitiveResearchKitConsole::TeleOp::TeleOp(const std::string & name):
+    mName(name)
+{
+}
+
+const std::string & mtsIntuitiveResearchKitConsole::TeleOp::Name(void) const {
+    return mName;
+}
+
+
+
 mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string & componentName):
     mtsTaskFromSignal(componentName, 100)
 {
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Main");
     if (interfaceProvided) {
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetRobotControlState, this,
-                                           "SetRobotControlState", std::string(""));
-        interfaceProvided->AddEventWrite(ErrorMessageEventTrigger, "RobotErrorMsg", std::string(""));
-        interfaceProvided->AddEventWrite(StatusMessageEventTrigger, "RobotStatusMsg", std::string(""));
+        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetRobotsControlState, this,
+                                           "SetRobotsControlState", std::string(""));
+        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::TeleopEnable, this,
+                                           "TeleopEnable", false);
+        interfaceProvided->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
+        interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
+        interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
     }
 }
 
@@ -185,17 +210,8 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
                                  << newArm->Name() << " must be configured first (Arm config)." << std::endl;
         return false;
     }
-    // create new required interfaces to communicate with the components we created
-    newArm->InterfaceRequired = this->AddInterfaceRequired(newArm->Name());
-    if (newArm->InterfaceRequired) {
-        newArm->InterfaceRequired->AddFunction("SetRobotControlState", newArm->SetRobotControlState);
-        newArm->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorMessageEventHandler, this, "RobotErrorMsg");
-        newArm->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusMessageEventHandler, this, "RobotStatusMsg");
-        mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-        componentManager->Connect(this->GetName(), newArm->Name(),
-                                  newArm->Name(), "Robot");
-
-        this->mArms.push_back(newArm);
+    if (SetupAndConnectInterfaces(newArm)) {
+        mArms.push_back(newArm);
         return true;
     }
     CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, unable to add new arm.  Are you adding two arms with the same name? "
@@ -207,23 +223,73 @@ bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mts
 {
     // create new required interfaces to communicate with the components we created
     Arm * newArm = new Arm(genericArm->GetName(), "");
-    newArm->InterfaceRequired = this->AddInterfaceRequired(genericArm->GetName());
-    if (newArm->InterfaceRequired) {
-        newArm->InterfaceRequired->AddFunction("SetRobotControlState", newArm->SetRobotControlState);
-        newArm->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorMessageEventHandler, this, "RobotErrorMsg");
-        newArm->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusMessageEventHandler, this, "RobotStatusMsg");
-        mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-        componentManager->Connect(this->GetName(), newArm->Name(),
-                                  genericArm->GetName(), "Robot");
-        this->mArms.push_back(newArm);
+    if (SetupAndConnectInterfaces(newArm)) {
+        mArms.push_back(newArm);
         return true;
     }
     CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, unable to add new arm.  Are you adding two arms with the same name? "
-                             << genericArm->GetName() << std::endl;
+                             << newArm->Name() << std::endl;
+    delete newArm;
     return false;
 }
 
-void mtsIntuitiveResearchKitConsole::SetRobotControlState(const std::string & newState)
+bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name)
+{
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+    TeleOp * teleOp = new TeleOp(name);
+    teleOp->InterfaceRequired = this->AddInterfaceRequired(name);
+    if (teleOp->InterfaceRequired) {
+        teleOp->InterfaceRequired->AddFunction("Enable", teleOp->Enable);
+        teleOp->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
+        teleOp->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
+        teleOp->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
+        componentManager->Connect(this->GetName(), name,
+                                  name, "Setting");
+        mTeleOps.push_back(teleOp);
+        return true;
+    }
+    delete teleOp;
+    return false;
+}
+
+bool mtsIntuitiveResearchKitConsole::SetupAndConnectInterfaces(Arm * arm)
+{
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+    // create interfaces
+    const std::string interfaceNameIO = "IO" + arm->Name();
+    arm->IOInterfaceRequired = AddInterfaceRequired(interfaceNameIO);
+    const std::string interfaceNamePID = "PID" + arm->Name();
+    arm->PIDInterfaceRequired = AddInterfaceRequired(interfaceNamePID);
+    const std::string interfaceNameArm = arm->Name();
+    arm->ArmInterfaceRequired = AddInterfaceRequired(interfaceNameArm);
+
+    // check if all interfaces are correct
+    if (arm->ArmInterfaceRequired && arm->PIDInterfaceRequired && arm->IOInterfaceRequired) {
+        // IO
+        arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
+        arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
+        arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
+        componentManager->Connect(this->GetName(), interfaceNameIO,
+                                  arm->IOComponentName(), arm->Name());
+        // PID
+        arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
+        arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
+        arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
+        componentManager->Connect(this->GetName(), interfaceNamePID,
+                                  arm->PIDComponentName(), "Controller");
+        // arm interface
+        arm->ArmInterfaceRequired->AddFunction("SetRobotControlState", arm->SetRobotControlState);
+        arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
+        arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
+        arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
+        componentManager->Connect(this->GetName(), interfaceNameArm,
+                                  arm->Name(), "Robot");
+        return true;
+    }
+    return false;
+}
+
+void mtsIntuitiveResearchKitConsole::SetRobotsControlState(const std::string & newState)
 {
     mtsExecutionResult result;
     const ArmList::iterator end = mArms.end();
@@ -239,10 +305,30 @@ void mtsIntuitiveResearchKitConsole::SetRobotControlState(const std::string & ne
     }
 }
 
-void mtsIntuitiveResearchKitConsole::ErrorMessageEventHandler(const std::string & message) {
-    ErrorMessageEventTrigger(message);
+void mtsIntuitiveResearchKitConsole::TeleopEnable(const bool & enable)
+{
+    mtsExecutionResult result;
+    const TeleOpList::iterator end = mTeleOps.end();
+    for (TeleOpList::iterator teleOp = mTeleOps.begin();
+         teleOp != end;
+         ++teleOp) {
+        result = (*teleOp)->Enable(enable);
+        if (!result) {
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": Enable: failed to set \""
+                                    << enable << "\" for tele-op \"" << (*teleOp)->Name()
+                                    << "\"" << std::endl;
+        }
+    }
 }
 
-void mtsIntuitiveResearchKitConsole::StatusMessageEventHandler(const std::string & message) {
-    StatusMessageEventTrigger(message);
+void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const std::string & message) {
+    MessageEvents.Error(message);
+}
+
+void mtsIntuitiveResearchKitConsole::WarningEventHandler(const std::string & message) {
+    MessageEvents.Warning(message);
+}
+
+void mtsIntuitiveResearchKitConsole::StatusEventHandler(const std::string & message) {
+    MessageEvents.Status(message);
 }

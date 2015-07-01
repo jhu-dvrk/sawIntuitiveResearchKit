@@ -36,8 +36,6 @@ public:
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitMTM() {}
 
-    void Configure(const std::string & filename);
-
     /*!
      \brief Set MTM type, either MTM_LEFT or MTM_RIGHT
      \param autodetect TRUE by default, will set type based on MTM name, otherwise
@@ -81,7 +79,7 @@ protected:
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
 
-    void Init(void);
+    virtual void Init(void);
 
     /*! Get data specific to the MTM (gripper angle using analog inputs) after
       calling mtsIntuitiveResearchKitArm::GetRobotData. */
@@ -103,21 +101,18 @@ protected:
     void RunHomingCalibrateRoll(void);
 
     /*! Gravity Compensation. */
-    void RunGravityCompensation(void);
+    virtual void RunGravityCompensation(void);
 
     /*! Run Clutch */
     void RunClutch(void);
 
-    void SetWrench(const prmForceCartesianSet & newForce);  // NOTE: in body frame
+    virtual void SetWrench(const prmForceCartesianSet & newForce);  // NOTE: in body frame
 
     // Functions for events
     struct {
         mtsFunctionVoid GripperPinch;
         mtsFunctionWrite GripperClosed;
     } GripperEvents;
-
-    //! robot cartesian velocity
-    prmVelocityCartesianGet CartesianVelocityParam;
 
     //! robot cartesian position when cluthed
     vctFrm4x4 CartesianClutched;

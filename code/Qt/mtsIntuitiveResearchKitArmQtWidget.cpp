@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -46,10 +46,12 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
         interfaceRequired->AddFunction("GetRobotControlState", Arm.GetRobotControlState);
         interfaceRequired->AddFunction("SetRobotControlState", Arm.SetRobotControlState);
         interfaceRequired->AddFunction("GetPeriodStatistics", Arm.GetPeriodStatistics);
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::ErrorMessageEventHandler,
-                                                this, "RobotErrorMsg");
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::StatusMessageEventHandler,
-                                                this, "RobotStatusMsg");
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::ErrorEventHandler,
+                                                this, "Error");
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::WarningEventHandler,
+                                                this, "Warning");
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::StatusEventHandler,
+                                                this, "Status");
     }
     setupUi();
     startTimer(TimerPeriodInMilliseconds); // ms
@@ -183,13 +185,19 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     SlotEnableDirectControl(DirectControl);
 }
 
-void mtsIntuitiveResearchKitArmQtWidget::ErrorMessageEventHandler(const std::string & message)
+void mtsIntuitiveResearchKitArmQtWidget::ErrorEventHandler(const std::string & message)
 {
     emit SignalSetColor(QColor("red"));
     emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
 }
 
-void mtsIntuitiveResearchKitArmQtWidget::StatusMessageEventHandler(const std::string & message)
+void mtsIntuitiveResearchKitArmQtWidget::WarningEventHandler(const std::string & message)
+{
+    emit SignalSetColor(QColor("darkRed"));
+    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Warning: ") + QString(message.c_str()));
+}
+
+void mtsIntuitiveResearchKitArmQtWidget::StatusEventHandler(const std::string & message)
 {
     emit SignalSetColor(QColor("black"));
     emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));

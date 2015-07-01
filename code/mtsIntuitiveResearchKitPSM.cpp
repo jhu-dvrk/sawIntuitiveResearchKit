@@ -60,12 +60,13 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mtsIntuitiveResearchKitArm::Init();
 
     // initialize trajectory data
-    JointTrajectory.Velocity.SetAll(180.0 * cmnPI_180); // degrees per second
+    JointTrajectory.Velocity.SetAll(90.0 * cmnPI_180); // degrees per second
     JointTrajectory.Velocity.Element(2) = 0.2; // m per second
-    JointTrajectory.Acceleration.SetAll(180.0 * cmnPI_180);
+    JointTrajectory.Acceleration.SetAll(90.0 * cmnPI_180);
     JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
-    PotsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
+    // high values for engage adapter/tool until these use a proper trajectory generator
+    PotsToEncodersTolerance.SetAll(180.0 * cmnPI_180); // 180 degrees for rotations
     PotsToEncodersTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm
 
     // for tool/adapter engage procedure
@@ -157,26 +158,30 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     switch (newState) {
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
+        RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
+        RobotIO.DisablePower();
+        PID.Enable(false);
+        PID.SetCheckJointLimit(true);
         RobotState = newState;
-        MessageEvents.RobotStatus(this->GetName() + " not initialized");
+        MessageEvents.Status(this->GetName() + " not initialized");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:
         HomingTimer = 0.0;
         HomingPowerRequested = false;
         RobotState = newState;
-        MessageEvents.RobotStatus(this->GetName() + " powering");
+        MessageEvents.Status(this->GetName() + " powering");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM:
         HomingCalibrateArmStarted = false;
         RobotState = newState;
-        this->MessageEvents.RobotStatus(this->GetName() + " calibrating arm");
+        this->MessageEvents.Status(this->GetName() + " calibrating arm");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED:
         RobotState = newState;
-        this->MessageEvents.RobotStatus(this->GetName() + " arm calibrated");
+        this->MessageEvents.Status(this->GetName() + " arm calibrated");
         // check if adpater is present and trigger new state
         Adapter.GetButton(Adapter.IsPresent);
         Adapter.IsPresent = !Adapter.IsPresent;
@@ -188,8 +193,21 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER:
         EngagingAdapterStarted = false;
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            MessageEvents.RobotStatus(this->GetName() + " is not calibrated yet, will engage adapter later");
+            MessageEvents.Status(this->GetName() + " is not calibrated yet, will engage adapter later");
             return;
+        }
+        // configure PID to fail in case of tracking error
+        {
+            PID.SetCheckJointLimit(false);
+            vctDoubleVec tolerances(NumberOfJoints());
+            // first two rotations
+            tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
+            // translation
+            tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
+            // tool/adapter gears
+            tolerances.Ref(4, 3).SetAll(5.0 * cmnPI); // we request positions that can't be reached when the adapter/tool engage
+            PID.SetTrackingErrorTolerance(tolerances);
+            PID.EnableTrackingError(true);
         }
         // if the tool is present, the adapter is already engadged
         Tool.GetButton(Tool.IsPresent);
@@ -198,13 +216,13 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
         } else {
             RobotState = newState;
-            this->MessageEvents.RobotStatus(this->GetName() + " engaging adapter");
+            this->MessageEvents.Status(this->GetName() + " engaging adapter");
         }
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED:
         RobotState = newState;
-        this->MessageEvents.RobotStatus(this->GetName() + " adapter engaged");
+        this->MessageEvents.Status(this->GetName() + " adapter engaged");
         // check if tool is present and trigger new state
         Tool.GetButton(Tool.IsPresent);
         Tool.IsPresent = !Tool.IsPresent;
@@ -216,81 +234,108 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL:
         EngagingToolStarted = false;
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED) {
-            MessageEvents.RobotStatus(this->GetName() + " adapter is not engaged yet, will engage tool later");
+            MessageEvents.Status(this->GetName() + " adapter is not engaged yet, will engage tool later");
             return;
         }
         RobotState = newState;
-        this->MessageEvents.RobotStatus(this->GetName() + " engaging tool");
+        this->MessageEvents.Status(this->GetName() + " engaging tool");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
-        // when returning from manual mode, need to re-enable PID
+        {
+            PID.SetCheckJointLimit(true);
+            vctDoubleVec tolerances(NumberOfJoints());
+            // first two rotations
+            tolerances.Ref(2, 0).SetAll(20.0 * cmnPI_180);
+            // translation
+            tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
+            // shaft rotation
+            tolerances.Element(3) = 120.0 * cmnPI_180;
+            // tool orientation
+            tolerances.Ref(2, 4).SetAll(35.0 * cmnPI_180);
+            // gripper
+            tolerances.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
+            PID.SetTrackingErrorTolerance(tolerances);
+            PID.EnableTrackingError(true);
+            // set tighter pots/encoder tolerances
+            PotsToEncodersTolerance.SetAll(20.0 * cmnPI_180); // 10 degrees for rotations
+            PotsToEncodersTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm
+            RobotIO.SetPotsToEncodersTolerance(PotsToEncodersTolerance);
+        }
         RobotState = newState;
-        MessageEvents.RobotStatus(this->GetName() + " ready");
+        MessageEvents.Status(this->GetName() + " ready");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.RobotError(this->GetName() + " is not ready");
+            MessageEvents.Error(this->GetName() + " is not ready");
             return;
         }
         RobotState = newState;
-        JointSet.Assign(JointGetDesired);
+        JointSet.Assign(JointGetDesired, this->NumberOfJoints());
         if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
             IsGoalSet = false;
-            MessageEvents.RobotStatus(this->GetName() + " position joint");
+            MessageEvents.Status(this->GetName() + " position joint");
         } else {
             JointTrajectory.EndTime = 0.0;
-            MessageEvents.RobotStatus(this->GetName() + " position goal joint");
+            MessageEvents.Status(this->GetName() + " position goal joint");
         }
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            MessageEvents.RobotError(this->GetName() + " is not calibrated");
-            return;
-        }
-        // check that the tool is inserted deep enough
-        if (JointGet.Element(2) < 80.0 * cmn_mm) {
-            MessageEvents.RobotError(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
-            break;
-        }
-        RobotState = newState;
-        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
-            IsGoalSet = false;
-            MessageEvents.RobotStatus(this->GetName() + " position cartesian");
-        } else {
-            JointTrajectory.EndTime = 0.0;
-            MessageEvents.RobotStatus(this->GetName() + " position goal cartesian");
-        }
-        break;
+    {
+      if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+          MessageEvents.Error(this->GetName() + " is not calibrated");
+          return;
+      }
+      // check that the tool is inserted deep enough
+      if (JointGet.Element(2) < 80.0 * cmn_mm) {
+          MessageEvents.Error(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
+          break;
+      }
+      RobotState = newState;
 
+      // init CartesianSet to current pose
+      vctDoubleRot3 tmprot;
+      tmprot.FromNormalized(CartesianGet.Rotation());
+      CartesianSetParam.SetGoal(CartesianGet.Translation());
+      CartesianSetParam.SetGoal(tmprot);
+
+      if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
+          IsGoalSet = false;
+          MessageEvents.Status(this->GetName() + " position cartesian");
+      } else {
+          JointTrajectory.EndTime = 0.0;
+          MessageEvents.Status(this->GetName() + " position goal cartesian");
+      }
+      break;
+    }
     case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            MessageEvents.RobotError(this->GetName() + " is not calibrated");
+            MessageEvents.Error(this->GetName() + " is not calibrated");
             return;
         }
         // check that the tool is inserted deep enough
         if (JointGet.Element(2) < 80.0 * cmn_mm) {
-            MessageEvents.RobotError(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
+            MessageEvents.Error(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
         RobotState = newState;
         IsGoalSet = false;
-        MessageEvents.RobotStatus(this->GetName() + " constraint controller cartesian");
+        MessageEvents.Status(this->GetName() + " constraint controller cartesian");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            MessageEvents.RobotError(this->GetName() + " is not ready yet");
+            MessageEvents.Error(this->GetName() + " is not ready yet");
             return;
         }
         // disable PID to allow manual move
         PID.Enable(false);
         RobotState = newState;
-        MessageEvents.RobotStatus(this->GetName() + " in manual mode");
+        MessageEvents.Status(this->GetName() + " in manual mode");
         break;
     default:
         break;
@@ -312,13 +357,6 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         // enable PID and start from current position
         JointSet.ForceAssign(JointGet);
         SetPositionJointLocal(JointSet);
-        // configure PID to fail in case of tracking error
-        vctDoubleVec tolerances(NumberOfJoints());
-        tolerances.Ref(2, 0).SetAll(20.0 * cmnPI_180);
-        tolerances.Element(2) = 20.0 * cmn_mm; // 20 mm
-        tolerances.Ref(4, 3).SetAll(5.0 * cmnPI); // we request positions that can't be reached when the adapter/tool engage
-        PID.SetTrackingErrorTolerance(tolerances);
-        PID.EnableTrackingError(true);
         // finally enable PID
         PID.Enable(true);
 
@@ -361,9 +399,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
             if (currentTime > HomingTimer + extraTime) {
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                MessageEvents.RobotError(this->GetName() + " unable to reach home position during calibration on pots.");
-                PID.Enable(false);
-                PID.SetCheckJointLimit(true);
+                MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
                 this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
             }
         }
@@ -443,18 +479,19 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         return;
     }
 
-    if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)) {
+    if (EngagingStopwatch.GetElapsedTime() > (3000 * cmn_ms)) {
+        EngagingStopwatch.Reset();
+        // Adapter engage done
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+    }
+    else if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)) {
         // straight wrist open gripper
         EngagingJointSet[3] = 0.0;
         EngagingJointSet[4] = 0.0;
         EngagingJointSet[5] = 0.0;
         EngagingJointSet[6] = 10.0 * cmnPI / 180.0;
-        PID.SetCheckJointLimit(true);
         JointSet.Assign(EngagingJointSet);
         SetPositionJointLocal(JointSet);
-        // Adapter engage done
-        EngagingStopwatch.Reset();
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
     }
     else if (EngagingStopwatch.GetElapsedTime() > (2000 * cmn_ms)) {
         EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
@@ -563,11 +600,14 @@ void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
     } else if (state == "Manual") {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
     } else {
+        mtsIntuitiveResearchKitArmTypes::RobotStateType stateEnum;
         try {
-            SetState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state));
+            stateEnum = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state);
         } catch (std::exception e) {
-            MessageEvents.RobotError(this->GetName() + ": PSM unsupported state " + state + " " + e.what());
+            MessageEvents.Error(this->GetName() + ": PSM unsupported state " + state + ": " + e.what());
+            return;
         }
+        SetState(stateEnum);
     }
 }
 

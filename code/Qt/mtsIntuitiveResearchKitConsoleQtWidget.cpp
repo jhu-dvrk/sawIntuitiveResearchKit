@@ -2,11 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -42,11 +41,14 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
 {
     mtsInterfaceRequired * interfaceRequiredMain = AddInterfaceRequired("Main");
     if (interfaceRequiredMain) {
-        interfaceRequiredMain->AddFunction("SetRobotControlState", Main.SetRobotControlState);
-        interfaceRequiredMain->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorMessageEventHandler,
-                                                    this, "RobotErrorMsg");
-        interfaceRequiredMain->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StatusMessageEventHandler,
-                                                    this, "RobotStatusMsg");
+        interfaceRequiredMain->AddFunction("SetRobotsControlState", Console.SetRobotsControlState);
+        interfaceRequiredMain->AddFunction("TeleopEnable", Console.TeleopEnable);
+        interfaceRequiredMain->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorEventHandler,
+                                                    this, "Error");
+        interfaceRequiredMain->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::WarningEventHandler,
+                                                    this, "Warning");
+        interfaceRequiredMain->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StatusEventHandler,
+                                                    this, "Status");
     }
     setupUi();
 }
@@ -85,8 +87,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetStateButton(QAbstractButton * radioButton)
 {
-    std::string state = radioButton->text().toStdString();
-    Main.SetRobotControlState(mtsStdString(state));
+    std::string request = radioButton->text().toStdString();
+    if (request == "Idle") {
+        Console.SetRobotsControlState(std::string("DVRK_UNINITIALIZED"));
+    } else if (request == "Home") {
+        Console.SetRobotsControlState(request);
+    } else if (request == "Teleop") {
+        Console.TeleopEnable(true);
+    }
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTextChanged(void)
@@ -101,14 +109,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QGroupBox * groupBox = new QGroupBox("Desired state");
     QRadioButton * idleButton = new QRadioButton("Idle");
     QRadioButton * homeButton = new QRadioButton("Home");
-    // QRadioButton * teleOpButton = new QRadioButton("Teleop");
+    QRadioButton * teleOpButton = new QRadioButton("Teleop");
     // QRadioButton * gcButton = new QRadioButton("Gravity");
     // QRadioButton * clutchButton = new QRadioButton("Clutch");
     idleButton->setChecked(true);
     QButtonGroup * group = new QButtonGroup;
     group->addButton(idleButton);
     group->addButton(homeButton);
-    // group->addButton(teleOpButton);
+    group->addButton(teleOpButton);
     // group->addButton(gcButton);
     // group->addButton(clutchButton);
 	group->setExclusive(true);
@@ -116,7 +124,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QVBoxLayout * vbox = new QVBoxLayout;
     vbox->addWidget(idleButton);
     vbox->addWidget(homeButton);
-    // vbox->addWidget(teleOpButton);
+    vbox->addWidget(teleOpButton);
     // vbox->addWidget(gcButton);
     // vbox->addWidget(clutchButton);
     vbox->addStretch(1);
@@ -145,13 +153,19 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotTextChanged()));
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::ErrorMessageEventHandler(const std::string & message)
+void mtsIntuitiveResearchKitConsoleQtWidget::ErrorEventHandler(const std::string & message)
 {
     emit SignalSetColor(QColor("red"));
     emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::StatusMessageEventHandler(const std::string & message)
+void mtsIntuitiveResearchKitConsoleQtWidget::WarningEventHandler(const std::string & message)
+{
+    emit SignalSetColor(QColor("darkRed"));
+    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Warning: ") + QString(message.c_str()));
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::StatusEventHandler(const std::string & message)
 {
     emit SignalSetColor(QColor("black"));
     emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
