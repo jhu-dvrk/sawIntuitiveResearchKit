@@ -255,38 +255,51 @@ bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name)
 bool mtsIntuitiveResearchKitConsole::SetupAndConnectInterfaces(Arm * arm)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    // create interfaces
+
+    // IO
     const std::string interfaceNameIO = "IO" + arm->Name();
     arm->IOInterfaceRequired = AddInterfaceRequired(interfaceNameIO);
-    const std::string interfaceNamePID = "PID" + arm->Name();
-    arm->PIDInterfaceRequired = AddInterfaceRequired(interfaceNamePID);
-    const std::string interfaceNameArm = arm->Name();
-    arm->ArmInterfaceRequired = AddInterfaceRequired(interfaceNameArm);
-
-    // check if all interfaces are correct
-    if (arm->ArmInterfaceRequired && arm->PIDInterfaceRequired && arm->IOInterfaceRequired) {
-        // IO
+    if (arm->IOInterfaceRequired) {
         arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
         arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
         arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
         componentManager->Connect(this->GetName(), interfaceNameIO,
                                   arm->IOComponentName(), arm->Name());
-        // PID
-        arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
-        arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
-        arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
-        componentManager->Connect(this->GetName(), interfaceNamePID,
-                                  arm->PIDComponentName(), "Controller");
-        // arm interface
+    } else {
+        return false;
+    }
+
+
+    // PID
+    if (arm->mType != Arm::ARM_SUJ) {
+        const std::string interfaceNamePID = "PID" + arm->Name();
+        arm->PIDInterfaceRequired = AddInterfaceRequired(interfaceNamePID);
+        if (arm->PIDInterfaceRequired) {
+            arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
+            arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
+            arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
+            componentManager->Connect(this->GetName(), interfaceNamePID,
+                                      arm->PIDComponentName(), "Controller");
+        } else {
+            return false;
+        }
+    }
+
+    // arm interface
+    const std::string interfaceNameArm = arm->Name();
+    arm->ArmInterfaceRequired = AddInterfaceRequired(interfaceNameArm);
+    if (arm->ArmInterfaceRequired) {
         arm->ArmInterfaceRequired->AddFunction("SetRobotControlState", arm->SetRobotControlState);
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
         componentManager->Connect(this->GetName(), interfaceNameArm,
                                   arm->Name(), "Robot");
-        return true;
+    } else {
+        return false;
     }
-    return false;
+
+    return true;
 }
 
 void mtsIntuitiveResearchKitConsole::SetRobotsControlState(const std::string & newState)

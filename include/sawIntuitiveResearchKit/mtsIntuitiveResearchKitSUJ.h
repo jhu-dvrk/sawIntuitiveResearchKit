@@ -72,6 +72,9 @@ protected:
 
     void SetRobotControlState(const std::string & state);
 
+    /*! Event handler for PID errors. */
+    void ErrorEventHandler(const std::string & message);
+
     // Required interface
     struct {
         //! Enable Robot Power
@@ -85,9 +88,11 @@ protected:
 
     // Functions for events
     struct {
-        mtsFunctionWrite RobotStatus;
-        mtsFunctionWrite RobotError;
-    } MessagesEvents;
+        mtsFunctionWrite Status;
+        mtsFunctionWrite Warning;
+        mtsFunctionWrite Error;
+        mtsFunctionWrite RobotState;
+    } MessageEvents;
 
     // Functions to control MUX
     struct {

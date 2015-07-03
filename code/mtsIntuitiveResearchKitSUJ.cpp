@@ -114,8 +114,10 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     if (interfaceProvided) {
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetRobotControlState,
                                            this, "SetRobotControlState", std::string(""));
-        interfaceProvided->AddEventWrite(MessagesEvents.RobotStatus, "RobotStatusMsg", std::string(""));
-        interfaceProvided->AddEventWrite(MessagesEvents.RobotError, "RobotErrorMsg", std::string(""));
+        interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
+        interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
+        interfaceProvided->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
+        interfaceProvided->AddEventWrite(MessageEvents.RobotState, "RobotState", std::string(""));
         // Stats
         interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                                "GetPeriodStatistics");
@@ -146,6 +148,7 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
     mCounter++;
 
     ProcessQueuedEvents();
+
     GetRobotData();
 
     switch (mRobotState) {
@@ -180,7 +183,7 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
     // every 100 ms, set mux increment signal up for 1 ms, this is arbitrary slow, all we need is to make
     // 100 ms is to make sure A2D stabilizes
     const double muxCycle = 100.0 * cmn_ms;
-    const double muxIncrementDownTime = 1.0 * cmn_ms;
+    const double muxIncrementDownTime = 20.0 * cmn_ms; // if only 1ms MUX fails to increment by 1, maybe 1ms not enough?
 
     mtsExecutionResult executionResult;
 
@@ -190,13 +193,16 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
 
         // toggle
         if (currentTime > mMuxTimer) {
+            std::cerr<<"high"<<std::endl;
             // time to raise signal to increment mux
             mMuxTimer = currentTime + muxCycle;
             executionResult = MuxIncrement.SetValue(true);
+            std::cerr<<executionResult<<std::endl;
             mMuxUp = true;
         } else {
             // time to lower signal to increment mux
             if (mMuxUp && (currentTime > (mMuxTimer - muxIncrementDownTime))) {
+                std::cerr<<"low"<<std::endl;
                 executionResult = MuxIncrement.SetValue(false);
                 mMuxUp = false;
                 mMuxIndexExpected = (mMuxIndexExpected + 1) % 16;
@@ -247,30 +253,30 @@ void mtsIntuitiveResearchKitSUJ::SetState(const RobotStateType & newState)
 
     case SUJ_UNINITIALIZED:
         mRobotState = newState;
-        MessagesEvents.RobotStatus(this->GetName() + " not initialized");
+        MessageEvents.Status(this->GetName() + " not initialized");
         break;
 
     case SUJ_HOMING_POWERING:
         mHomingTimer = 0.0;
         mHomingPowerRequested = false;
         mRobotState = newState;
-        MessagesEvents.RobotStatus(this->GetName() + " powering");
+        MessageEvents.Status(this->GetName() + " powering");
         break;
 
     case SUJ_READY:
         // when returning from manual mode, need to re-enable PID
         mRobotState = newState;
-        MessagesEvents.RobotStatus(this->GetName() + " ready");
+        MessageEvents.Status(this->GetName() + " ready");
         break;
 
     case SUJ_MANUAL:
         if (this->mRobotState < SUJ_READY) {
-            MessagesEvents.RobotError(this->GetName() + " is not ready yet");
+            MessageEvents.Error(this->GetName() + " is not ready yet");
             return;
         }
         std::cerr << CMN_LOG_DETAILS << " should release breaks now" << std::endl;
         mRobotState = newState;
-        MessagesEvents.RobotStatus(this->GetName() + " in manual mode");
+        MessageEvents.Status(this->GetName() + " in manual mode");
         break;
     default:
         break;
@@ -290,7 +296,7 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
         // enable power and set a flags to move to next step
         RobotIO.EnablePower();
         mHomingPowerRequested = true;
-        MessagesEvents.RobotStatus(this->GetName() + " power requested");
+        MessageEvents.Status(this->GetName() + " power requested");
         return;
     }
 
@@ -301,7 +307,7 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
         vctBoolVec actuatorAmplifiersStatus(NumberOfJoints);
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         if (actuatorAmplifiersStatus.All()) {
-            MessagesEvents.RobotStatus(this->GetName() + " power on");
+            MessageEvents.Status(this->GetName() + " power on");
             this->SetState(SUJ_READY);
 
             // hack to reset mux
@@ -311,7 +317,7 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
             MuxReset.SetValue(false);
             mMuxIndexExpected = 0;
         } else {
-            MessagesEvents.RobotError(this->GetName() + " failed to enable power.");
+            MessageEvents.Error(this->GetName() + " failed to enable power.");
             this->SetState(SUJ_UNINITIALIZED);
         }
     }
@@ -324,6 +330,6 @@ void mtsIntuitiveResearchKitSUJ::SetRobotControlState(const std::string & state)
     } else if (state == "Manual") {
         SetState(SUJ_MANUAL);
     } else {
-        MessagesEvents.RobotError(this->GetName() + ": unsupported state " + state);
+        MessageEvents.Error(this->GetName() + ": unsupported state " + state);
     }
 }
