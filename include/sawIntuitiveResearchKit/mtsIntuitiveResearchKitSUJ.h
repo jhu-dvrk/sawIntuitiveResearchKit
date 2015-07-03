@@ -98,14 +98,15 @@ protected:
     struct {
         mtsFunctionRead GetValue;
         mtsFunctionWrite SetValue;
+        mtsFunctionVoid DownUpDown;
     } MuxReset;
     struct {
         mtsFunctionRead GetValue;
         mtsFunctionWrite SetValue;
+        mtsFunctionVoid DownUpDown;
     } MuxIncrement;
 
     double mMuxTimer;
-    bool mMuxUp;
     vctBoolVec mMuxState;
     size_t mMuxIndex, mMuxIndexExpected;
 

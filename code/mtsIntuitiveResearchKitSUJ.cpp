@@ -83,7 +83,6 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
 {
     mCounter = 0;
     mMuxTimer = 0.0;
-    mMuxUp = false;
     mMuxState.SetSize(4);
     mVoltages.SetSize(4);
 
@@ -103,11 +102,13 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetValue", MuxReset.GetValue);
         interfaceRequired->AddFunction("SetValue", MuxReset.SetValue);
+        interfaceRequired->AddFunction("DownUpDown", MuxReset.DownUpDown);
     }
     interfaceRequired = AddInterfaceRequired("MuxIncrement");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetValue", MuxIncrement.GetValue);
         interfaceRequired->AddFunction("SetValue", MuxIncrement.SetValue);
+        interfaceRequired->AddFunction("DownUpDown", MuxIncrement.DownUpDown);
     }
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
@@ -180,34 +181,26 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
 
 void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
 {
-    // every 100 ms, set mux increment signal up for 1 ms, this is arbitrary slow, all we need is to make
+    // every 100 ms all we need is to make
     // 100 ms is to make sure A2D stabilizes
     const double muxCycle = 100.0 * cmn_ms;
-    const double muxIncrementDownTime = 20.0 * cmn_ms; // if only 1ms MUX fails to increment by 1, maybe 1ms not enough?
-
-    mtsExecutionResult executionResult;
 
     // we can start reporting some joint values after the robot is powered
     if (this->mRobotState > SUJ_HOMING_POWERING) {
         const double currentTime = this->StateTable.GetTic();
 
-        // toggle
+        // time to toggle
         if (currentTime > mMuxTimer) {
-            std::cerr<<"high"<<std::endl;
-            // time to raise signal to increment mux
+            // pot values should be stable by now, get pots values
+            GetAndConvertPotentiometerValues();
+            // toggle mux
             mMuxTimer = currentTime + muxCycle;
-            executionResult = MuxIncrement.SetValue(true);
-            std::cerr<<executionResult<<std::endl;
-            mMuxUp = true;
-        } else {
-            // time to lower signal to increment mux
-            if (mMuxUp && (currentTime > (mMuxTimer - muxIncrementDownTime))) {
-                std::cerr<<"low"<<std::endl;
-                executionResult = MuxIncrement.SetValue(false);
-                mMuxUp = false;
-                mMuxIndexExpected = (mMuxIndexExpected + 1) % 16;
-                // pot values should be stable by now, get pots values
-                GetAndConvertPotentiometerValues();
+            if (mMuxIndexExpected == 11) {
+                MuxReset.DownUpDown();
+                mMuxIndexExpected = 0;
+            } else {
+                MuxIncrement.DownUpDown();
+                mMuxIndexExpected += 1;
             }
         }
     }
@@ -219,10 +212,10 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
     mtsExecutionResult executionResult = RobotIO.GetEncoderChannelA(mMuxState);
     // compute pot index
     mMuxIndex = (mMuxState[0]?1:0) + (mMuxState[1]?2:0) + (mMuxState[2]?4:0) + (mMuxState[3]?8:0);
-    if (mMuxIndex != mMuxIndexExpected) {
+//     if (mMuxIndex != mMuxIndexExpected) {
         std::cerr << CMN_LOG_DETAILS << "mux from IO board: " << mMuxIndex << " expected: " << mMuxIndexExpected << std::endl;
-        return;
-    }
+//         return;
+//    }
     // array index, 0 or 1, primary or secondary pots
     const size_t arrayIndex = mMuxIndex / 8;
     executionResult = RobotIO.GetAnalogInputVolts(mVoltages);
@@ -310,11 +303,9 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
             MessageEvents.Status(this->GetName() + " power on");
             this->SetState(SUJ_READY);
 
-            // hack to reset mux
-            std::cerr << "Add new state to reset mux? to avoid blocking code?" << std::endl;
-            MuxReset.SetValue(true);
-            this->Sleep(3.0 * cmn_ms);
-            MuxReset.SetValue(false);
+            // reset mux
+            MuxReset.DownUpDown();
+            Sleep(10.0 * cmn_ms);
             mMuxIndexExpected = 0;
         } else {
             MessageEvents.Error(this->GetName() + " failed to enable power.");
