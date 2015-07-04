@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
+#include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
@@ -113,6 +114,8 @@ protected:
         mtsFunctionWrite Enable;
         mtsFunctionRead  GetPositionJoint;
         mtsFunctionRead  GetPositionJointDesired;
+        mtsFunctionRead  GetStateJoint;
+        mtsFunctionRead  GetStateJointDesired;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetCheckJointLimit;
         mtsFunctionWrite EnableTorqueMode;
@@ -163,6 +166,7 @@ protected:
     vctDoubleVec JointGetDesired;
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
+    prmStateJoint StateJointParam, StateJointDesiredParam;
 
     // Velocities
     prmPositionCartesianGet CartesianGetPreviousParam;

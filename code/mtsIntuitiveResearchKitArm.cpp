@@ -70,6 +70,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     this->StateTable.AddData(CartesianGetDesiredParam, "CartesianPositionDesired");
     this->StateTable.AddData(JointGetParam, "JointPosition");
     this->StateTable.AddData(JointGetDesired, "JointPositionDesired");
+    this->StateTable.AddData(StateJointParam, "StateJoint");
+    this->StateTable.AddData(StateJointDesiredParam, "StateJointDesired");
 
     // setup CISST Interface
     PIDInterface = AddInterfaceRequired("PID");
@@ -77,6 +79,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("Enable", PID.Enable);
         PIDInterface->AddFunction("GetPositionJoint", PID.GetPositionJoint);
         PIDInterface->AddFunction("GetPositionJointDesired", PID.GetPositionJointDesired);
+        PIDInterface->AddFunction("GetStateJoint", PID.GetStateJoint);
+        PIDInterface->AddFunction("GetStateJointDesired", PID.GetStateJointDesired);
         PIDInterface->AddFunction("SetPositionJoint", PID.SetPositionJoint);
         PIDInterface->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
         PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
@@ -110,6 +114,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         // Get
         RobotInterface->AddCommandReadState(this->StateTable, JointGetParam, "GetPositionJoint");
         RobotInterface->AddCommandReadState(this->StateTable, JointGetDesired, "GetPositionJointDesired");
+        RobotInterface->AddCommandReadState(this->StateTable, StateJointParam, "GetStateJoint");
+        RobotInterface->AddCommandReadState(this->StateTable, StateJointDesiredParam, "GetStateJointDesired");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianGetParam, "GetPositionCartesian");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianGetDesiredParam, "GetPositionCartesianDesired");
         // Set
@@ -235,6 +241,20 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         executionResult = PID.GetPositionJointDesired(JointGetDesired);
         if (!executionResult.IsOK()) {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPositionDesired failed \""
+                                    << executionResult << "\"" << std::endl;
+        }
+
+        // joint state, not used internally but available to users
+        executionResult = PID.GetStateJoint(StateJointParam);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointState failed \""
+                                    << executionResult << "\"" << std::endl;
+        }
+
+        // desired joint state
+        executionResult = PID.GetStateJointDesired(StateJointDesiredParam);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointStateDesired failed \""
                                     << executionResult << "\"" << std::endl;
         }
 
