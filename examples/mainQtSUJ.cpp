@@ -29,6 +29,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJQtWidget.h>
 
 #include <QTabWidget>
 
@@ -134,6 +135,18 @@ int main(int argc, char ** argv)
         tabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
     }
     tabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
+
+    // create widgets for SUJs
+    mtsIntuitiveResearchKitSUJQtWidget * psm1Widget = new mtsIntuitiveResearchKitSUJQtWidget("PSM1-SUJ");
+    componentManager->AddComponent(psm1Widget);
+    componentManager->Connect(psm1Widget->GetName(), "Manipulator", "SUJ", "PSM1");
+    tabWidget->addTab(psm1Widget, "PSM1-SUJ");
+
+    mtsIntuitiveResearchKitSUJQtWidget * psm2Widget = new mtsIntuitiveResearchKitSUJQtWidget("PSM2-SUJ");
+    componentManager->AddComponent(psm2Widget);
+    componentManager->Connect(psm2Widget->GetName(), "Manipulator", "SUJ", "PSM2");
+    tabWidget->addTab(psm2Widget, "PSM2-SUJ");
+
     tabWidget->show();
 
     //-------------- create the components ------------------

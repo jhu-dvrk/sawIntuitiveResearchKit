@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitSUJ_h
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 
 // forward declaration
 class mtsIntuitiveResearchKitSUJArmData;
@@ -44,13 +45,6 @@ public:
 
 protected:
 
-    enum RobotStateType {
-        SUJ_UNINITIALIZED, /*! State when constructed */
-        SUJ_HOMING_POWERING, /*! Turn power on, calibrate encoders and current */
-        SUJ_READY,
-        SUJ_MANUAL /**< User manually move robot */
-    };
-
     void Init(void);
 
     /*! Get data from the PID level based on current state. */
@@ -62,7 +56,7 @@ protected:
 
     /*! Verify that the state transition is possible, initialize global
       variables for the desired state and finally set the state. */
-    void SetState(const RobotStateType & newState);
+    void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState);
 
     /*! Homing procedure, will check the homing state and call the required method. */
     void RunHoming(void);
@@ -71,6 +65,9 @@ protected:
     void RunHomingPower(void);
 
     void SetRobotControlState(const std::string & state);
+
+    /*! Convert enum to string using function provided by cisstDataGenerator. */
+    void GetRobotControlState(std::string & state) const;
 
     /*! Event handler for PID errors. */
     void ErrorEventHandler(const std::string & message);
@@ -110,7 +107,7 @@ protected:
     vctBoolVec mMuxState;
     size_t mMuxIndex, mMuxIndexExpected;
 
-    RobotStateType mRobotState;
+     mtsIntuitiveResearchKitArmTypes::RobotStateType mRobotState;
 
     // Home Action
     double mHomingTimer;
