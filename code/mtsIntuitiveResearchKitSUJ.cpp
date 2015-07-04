@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstParameterTypes/prmPositionJointGet.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
 const size_t MUX_ARRAY_SIZE = 6;
@@ -50,17 +51,18 @@ public:
             mVoltageToPositionOffsets[potArray].SetSize(MUX_ARRAY_SIZE);
         }
 
-        mPositionJoint.SetSize(MUX_ARRAY_SIZE);
+        mPositionJointParam.Position().SetSize(MUX_ARRAY_SIZE);
 
         mStateTable.AddData(this->mVoltages[0], "Voltages[0]");
         mStateTable.AddData(this->mVoltages[1], "Voltages[1]");
-        mStateTable.AddData(this->mPositionJoint, "PositionJoint");
+        mStateTable.AddData(this->mPositionJointParam, "PositionJoint");
         mStateTable.AddData(this->mPositionCartesianParam, "PositionCartesian");
         mStateTableConfiguration.AddData(this->mName, "Name");
         mStateTableConfiguration.AddData(this->mSerialNumber, "SerialNumber");
         mStateTableConfiguration.AddData(this->mPlugNumber, "PlugNumber");
 
         CMN_ASSERT(interfaceProvided);
+        interfaceProvided->AddCommandReadState(mStateTable, mPositionJointParam, "GetPositionJoint");
         interfaceProvided->AddCommandReadState(mStateTable, mPositionCartesianParam, "GetPositionCartesian");
         interfaceProvided->AddCommandReadState(mStateTable, mVoltages[0], "GetVoltagesPrimary");
         interfaceProvided->AddCommandReadState(mStateTable, mVoltages[1], "GetVoltagesSecondary");
@@ -88,7 +90,7 @@ public:
     vctDoubleVec mPositions[2];
     vctDoubleVec mVoltageToPositionScales[2];
     vctDoubleVec mVoltageToPositionOffsets[2];
-    vctDoubleVec mPositionJoint;
+    prmPositionJointGet mPositionJointParam;
     prmPositionCartesianGet mPositionCartesianParam;
 };
 
@@ -322,12 +324,12 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
             arm->mPositions[1].Assign(arm->mVoltageToPositionOffsets[1]);
             arm->mPositions[1].AddElementwiseProductOf(arm->mVoltageToPositionScales[1], arm->mVoltages[1]);
             // temporary hack to build a vector of positions from pots that seem to work
-            arm->mPositionJoint[0] = arm->mPositions[1][0];
-            arm->mPositionJoint[1] = arm->mPositions[0][1];
-            arm->mPositionJoint[2] = arm->mPositions[0][2];
-            arm->mPositionJoint[3] = arm->mPositions[1][3];
-            arm->mPositionJoint[4] = arm->mPositions[0][4];
-            arm->mPositionJoint[5] = arm->mPositions[0][5];
+            arm->mPositionJointParam.Position()[0] = arm->mPositions[1][0];
+            arm->mPositionJointParam.Position()[1] = arm->mPositions[0][1];
+            arm->mPositionJointParam.Position()[2] = arm->mPositions[0][2];
+            arm->mPositionJointParam.Position()[3] = arm->mPositions[1][3];
+            arm->mPositionJointParam.Position()[4] = arm->mPositions[0][4];
+            arm->mPositionJointParam.Position()[5] = arm->mPositions[0][5];
             // advance this arm state table
             arm->mStateTable.Advance();
         }
@@ -339,7 +341,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
             //size_t armIndex = 2;
             std::cerr << "Arm " << armIndex << std::endl;
             //std::cerr << "A " << Arms[armIndex]->mVoltages[0] << std::endl << "B " << Arms[armIndex]->mVoltages[1] << std::endl;
-            std::cerr<< Arms[armIndex]->mPositionJoint * 180.0 / 3.14159 << std::endl;
+            std::cerr<< Arms[armIndex]->mPositionJointParam.Position() * 180.0 / 3.14159 << std::endl;
         }
     }
     if (mMuxIndex == MUX_MAX_INDEX) {

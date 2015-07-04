@@ -25,12 +25,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
-#include <QTextEdit>
-#include <QPushButton>
-#include <QCheckBox>
-#include <QLineEdit>
-
-
 class mtsIntuitiveResearchKitArmQtWidget: public QWidget, public mtsComponent
 {
     Q_OBJECT;
@@ -69,6 +63,12 @@ protected:
         mtsFunctionWrite SetRobotControlState;
         mtsFunctionRead GetPeriodStatistics;
     } Arm;
+
+    // so derived class has access to custom parts of widget
+    QVBoxLayout * MainLayout;
+    mtsInterfaceRequired * InterfaceRequired;
+    inline virtual void setupUiDerived(void) { std::cerr << "base setupUi" << std::endl; };
+    inline virtual void timerEventDerived(void) {};
 
 private:
     bool DirectControl;

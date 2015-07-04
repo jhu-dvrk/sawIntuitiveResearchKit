@@ -19,18 +19,10 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitSUJQtWidget_h
 #define _mtsIntuitiveResearchKitSUJQtWidget_h
 
-#include <cisstVector/vctQtWidgetFrame.h>
-#include <cisstMultiTask/mtsComponent.h>
-#include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
-#include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
+#include <cisstParameterTypes/prmPositionJointGet.h>
 
-#include <QTextEdit>
-#include <QPushButton>
-#include <QCheckBox>
-#include <QLineEdit>
-
-
-class mtsIntuitiveResearchKitSUJQtWidget: public QWidget, public mtsComponent
+class mtsIntuitiveResearchKitSUJQtWidget: public mtsIntuitiveResearchKitArmQtWidget
 {
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -39,56 +31,13 @@ public:
     mtsIntuitiveResearchKitSUJQtWidget(const std::string & componentName, double periodInSeconds = 50.0 * cmn_ms);
     ~mtsIntuitiveResearchKitSUJQtWidget() {}
 
-    void Configure(const std::string & filename = "");
-    void Startup(void);
-    void Cleanup(void);
-
 protected:
-    virtual void closeEvent(QCloseEvent * event);
+    void setupUiDerived(void);
+    void timerEventDerived(void);
 
-signals:
-    void SignalAppendMessage(QString);
-    void SignalSetColor(QColor);
-
-private slots:
-    void timerEvent(QTimerEvent * event);
-    void SlotTextChanged(void);
-    void SlotEnableDirectControl(bool toggle);
-    void SlotHome(void);
-
-private:
-    //! setup GUI
-    void setupUi(void);
-    int TimerPeriodInMilliseconds;
-
-protected:
-    struct ArmStruct {
-        mtsFunctionRead GetPositionCartesian;
-        mtsFunctionRead GetRobotControlState;
-        mtsFunctionWrite SetRobotControlState;
-        mtsFunctionRead GetPeriodStatistics;
-    } Arm;
-
-private:
-    bool DirectControl;
-
-    prmPositionCartesianGet Position;
-    vctQtWidgetFrameDoubleRead * QFRPositionWidget;
-
-    // timing
-    mtsIntervalStatistics IntervalStatistics;
-    mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
-
-    // state
-    QCheckBox * QCBEnableDirectControl;
-    QPushButton * QPBHome;
-    QLineEdit * QLEState;
-
-    // messages
-    void ErrorEventHandler(const std::string & message);
-    void WarningEventHandler(const std::string & message);
-    void StatusEventHandler(const std::string & message);
-    QTextEdit * QTEMessages;
+    vctQtWidgetDynamicVectorDoubleRead * QVJointWidget;
+    prmPositionJointGet PositionJointParam;
+    mtsFunctionRead GetPositionJoint;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJQtWidget);
