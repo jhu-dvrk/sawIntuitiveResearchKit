@@ -97,6 +97,7 @@ protected:
         mtsFunctionWrite SetValue;
         mtsFunctionVoid DownUpDown;
     } MuxReset;
+
     struct {
         mtsFunctionRead GetValue;
         mtsFunctionWrite SetValue;
@@ -117,6 +118,8 @@ protected:
     vctDoubleVec mVoltages;
 
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> Arms;
+
+    void DispatchStatus(const std::string & message);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJ);

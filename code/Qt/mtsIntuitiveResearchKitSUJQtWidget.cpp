@@ -38,28 +38,64 @@ mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std
 {
     CMN_ASSERT(InterfaceRequired);
     InterfaceRequired->AddFunction("GetPositionJoint", GetPositionJoint);
+    InterfaceRequired->AddFunction("GetPrimaryJointOffset", GetPrimaryJointOffset);
+    InterfaceRequired->AddFunction("GetSecondaryJointOffset", GetSecondaryJointOffset);
+    InterfaceRequired->AddFunction("RecalibrateOffsets", RecalibrateOffsets);
 }
-
 
 void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
 {
-    QLabel * label = new QLabel("Joints");
-    MainLayout->addWidget(label);
+    QLabel * labelJoints = new QLabel("Joints");
+    MainLayout->addWidget(labelJoints);
     QVJointWidget = new vctQtWidgetDynamicVectorDoubleRead();
     QVJointWidget->SetPrecision(5);
     MainLayout->addWidget(QVJointWidget);
+
+    QLabel * labelPrimaryOffsets = new QLabel("Primary Joint Offsets");
+    MainLayout->addWidget(labelPrimaryOffsets);
+    QVPrimaryJointOffsetWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    QVPrimaryJointOffsetWidget->SetPrecision(5);
+    MainLayout->addWidget(QVPrimaryJointOffsetWidget);
+
+    QLabel * labelSecondaryOffsets = new QLabel("Secondary Joint Offsets");
+    MainLayout->addWidget(labelSecondaryOffsets);
+    QVSecondaryJointOffsetWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    QVSecondaryJointOffsetWidget->SetPrecision(5);
+    MainLayout->addWidget(QVSecondaryJointOffsetWidget);
+
+    QHBoxLayout * offsetLayout = new QHBoxLayout;
+    MainLayout->addLayout(offsetLayout);
+    QPushButton * recalibrateOffsetsButton = new QPushButton("Recalibrate offsets");
+    offsetLayout->addWidget(recalibrateOffsetsButton);
+
+    connect(recalibrateOffsetsButton, SIGNAL(clicked()),
+            this, SLOT(SlotRecalibrateOffsets()));
 }
 
 void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)
 {
+    // get data
     GetPositionJoint(PositionJointParam);
     vctDoubleVec position(PositionJointParam.Position());
+    GetPrimaryJointOffset(PrimaryJointOffset);
+    GetSecondaryJointOffset(SecondaryJointOffset);
     // first axis is a translation, convert to mm
     position.Element(0) *= 1000.0;
-    // all others are angles
+    PrimaryJointOffset.Element(0) *= 1000.0;
+    SecondaryJointOffset.Element(0) *= 1000.0;
+    // all others are angles, convert to degrees
     for (size_t index = 1; index < position.size(); ++index) {
         position.Element(index) *= (180.0 / cmnPI);
+        PrimaryJointOffset.Element(index) *= (180.0 / cmnPI);
+        SecondaryJointOffset.Element(index) *= (180.0 / cmnPI);
     }
     // display
     QVJointWidget->SetValue(position);
+    QVPrimaryJointOffsetWidget->SetValue(PrimaryJointOffset);
+    QVSecondaryJointOffsetWidget->SetValue(SecondaryJointOffset);
+}
+
+void mtsIntuitiveResearchKitSUJQtWidget::SlotRecalibrateOffsets(void)
+{
+    RecalibrateOffsets();
 }

@@ -36,8 +36,21 @@ protected:
     void timerEventDerived(void);
 
     vctQtWidgetDynamicVectorDoubleRead * QVJointWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVPrimaryJointOffsetWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVSecondaryJointOffsetWidget;
+
+    mtsFunctionVoid RecalibrateOffsets;
+
     prmPositionJointGet PositionJointParam;
+    vctDoubleVec PrimaryJointOffset;
+    vctDoubleVec SecondaryJointOffset;
+
     mtsFunctionRead GetPositionJoint;
+    mtsFunctionRead GetPrimaryJointOffset;
+    mtsFunctionRead GetSecondaryJointOffset;
+
+protected slots:
+        void SlotRecalibrateOffsets(void);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJQtWidget);
