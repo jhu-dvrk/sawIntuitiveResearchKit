@@ -64,6 +64,9 @@ protected:
     /*! Homing procedure, power the robot and initial current and encoder calibration. */
     void RunHomingPower(void);
 
+    /*! Normal operations. */
+    void RunReady(void);
+
     void SetRobotControlState(const std::string & state);
 
     /*! Convert enum to string using function provided by cisstDataGenerator. */
@@ -113,6 +116,11 @@ protected:
     // Home Action
     double mHomingTimer;
     bool mHomingPowerRequested;
+
+    // Clutch / brake timer
+    double mPreviousTic;
+    vctDoubleVec mClutchCurrents;
+
 
     int mCounter;
     vctDoubleVec mVoltages;

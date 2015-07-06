@@ -26,24 +26,36 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmEventButton.h>
+
+const double MAX_BRAKE_CURRENT = 2.2;
+const double MIN_BRAKE_CURRENT = 0.0;
 
 const size_t MUX_ARRAY_SIZE = 6;
 const size_t MUX_MAX_INDEX = 11;
 
-CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJ, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
+CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJ, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
 
 class mtsIntuitiveResearchKitSUJArmData
 {
 public:
     inline mtsIntuitiveResearchKitSUJArmData(const std::string & name,
+                                             unsigned int plugNumber,
                                              mtsInterfaceProvided * interfaceProvided):
         mName(name),
+        mPlugNumber(plugNumber),
         mStateTable(500, name),
-        mStateTableConfiguration(100, name + "Configuration")
+        mStateTableConfiguration(100, name + "Configuration"),
+        mStateTableBrakeCurrent(100, name + "BrakeCurrent")
     {
+        // brake info
+        mClutched = false;
+        mBrakeCurrent = 0.0;
+
         // state table doesn't always advance, only when pots are stable
         mStateTable.SetAutomaticAdvance(false);
         mStateTableConfiguration.SetAutomaticAdvance(false);
+        mStateTableBrakeCurrent.SetAutomaticAdvance(false);
 
         for (size_t potArray = 0; potArray < 2; ++potArray) {
             mVoltages[potArray].SetSize(MUX_ARRAY_SIZE);
@@ -61,8 +73,9 @@ public:
         mStateTableConfiguration.AddData(this->mName, "Name");
         mStateTableConfiguration.AddData(this->mSerialNumber, "SerialNumber");
         mStateTableConfiguration.AddData(this->mPlugNumber, "PlugNumber");
-        mStateTableConfiguration.AddData(this->mVoltageToPositionOffsets[0], "GetPrimaryJointOffset");
-        mStateTableConfiguration.AddData(this->mVoltageToPositionOffsets[1], "GetSecondaryJointOffset");
+        mStateTableConfiguration.AddData(this->mVoltageToPositionOffsets[0], "PrimaryJointOffset");//"GetPrimaryJointOffset");
+        mStateTableConfiguration.AddData(this->mVoltageToPositionOffsets[1], "SecondaryJointOffset");//"GetSecondaryJointOffset");
+        mStateTableBrakeCurrent.AddData(this->mBrakeCurrent, "BrakeCurrent");
 
         CMN_ASSERT(interfaceProvided);
         interfaceProvided->AddCommandReadState(mStateTable, mPositionJointParam, "GetPositionJoint");
@@ -75,6 +88,7 @@ public:
         interfaceProvided->AddCommandReadState(mStateTableConfiguration, mSerialNumber, "GetSerialNumber");
         interfaceProvided->AddCommandReadState(mStateTableConfiguration, mPlugNumber, "GetPlugNumber");
         interfaceProvided->AddCommandVoid(&mtsIntuitiveResearchKitSUJArmData::RecalibrateOffsets, this, "RecalibrateOffsets");
+        interfaceProvided->AddCommandReadState(mStateTableBrakeCurrent, mBrakeCurrent, "GetBrakeCurrent");
         // Events
         interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
         interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
@@ -97,6 +111,16 @@ public:
         MessageEvents.Status(std::string("Offsets recalibrated"));
     }
 
+    inline void ClutchCallback(const prmEventButton & button) {
+        if (button.Type() == prmEventButton::PRESSED) {
+            mClutched = true;
+            MessageEvents.Status(mName.Data + ": clutch button pressed");
+        } else {
+            mClutched = false;
+            MessageEvents.Status(mName.Data + ": clutch button released");
+        }
+    }
+
     // name of this SUJ arm (ECM, PSM1, ...)
     mtsStdString mName;
     // serial number
@@ -105,8 +129,9 @@ public:
     unsigned int mPlugNumber;
 
     // state of this SUJ arm
-    mtsStateTable mStateTable;
-    mtsStateTable mStateTableConfiguration;
+    mtsStateTable mStateTable; // for positions, fairly slow, i.e 12 * delay for a2d
+    mtsStateTable mStateTableConfiguration; // changes only at config and if recalibrate
+    mtsStateTable mStateTableBrakeCurrent; // changes when requested current changes
 
     // 2 arrays, one for each set of potentiometers
     vctDoubleVec mVoltages[2];
@@ -115,6 +140,10 @@ public:
     vctDoubleVec mVoltageToPositionOffsets[2];
     prmPositionJointGet mPositionJointParam;
     prmPositionCartesianGet mPositionCartesianParam;
+
+    // clutch data
+    bool mClutched;
+    double mBrakeCurrent;
 
     // Functions for events
     struct {
@@ -143,6 +172,7 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     mMuxTimer = 0.0;
     mMuxState.SetSize(4);
     mVoltages.SetSize(4);
+    mClutchCurrents.SetSize(4);
 
     // Robot IO
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("RobotIO");
@@ -188,23 +218,41 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     for (size_t i = 0; i < 4; ++i) {
         std::cerr << CMN_LOG_DETAILS << " -- name need to be found in configuration file" << std::endl;
         std::string name;
+        int plugNumber;
         if (i == 0) {
             name = "PSM2";
+            plugNumber = 1;
         } else if (i == 1) {
             name = "ECM";
+            plugNumber = 2;
         } else if (i == 2) {
             name = "PSM1";
+            plugNumber = 3;
         } else {
             name = "PSM3";
+            plugNumber = 4;
         }
         mtsInterfaceProvided * armInterface = this->AddInterfaceProvided(name);
-        // Robot State
+        // Robot State so GUI widget for each arm can set/get state
         armInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetRobotControlState,
                                       this, "SetRobotControlState", std::string(""));
         armInterface->AddCommandRead(&mtsIntuitiveResearchKitSUJ::GetRobotControlState,
                                      this, "GetRobotControlState", std::string(""));
-        Arms[i] = new mtsIntuitiveResearchKitSUJArmData(name, armInterface);
-        Arms[i]->mPlugNumber = i + 1;
+        Arms[i] = new mtsIntuitiveResearchKitSUJArmData(name, plugNumber, armInterface);
+
+        // create a required interface for each arm to handle clutch button
+        std::stringstream interfaceName;
+        interfaceName << "SUJ-Clutch-" << plugNumber;
+        mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
+        if (requiredInterface) {
+            requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCallback, Arms[i],
+                                                    "Button");
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "Init: can't add required interface for SUJ \""
+                                     << name << "\" clutch button because this interface already exists: \""
+                                     << interfaceName.str() << "\".  Make sure all arms have a different plug number."
+                                     << std::endl;
+        }
     }
 
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
@@ -274,8 +322,7 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
         RunHomingPower();
         break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL:
+        RunReady();
         break;
     default:
         break;
@@ -398,20 +445,18 @@ void mtsIntuitiveResearchKitSUJ::SetState(const mtsIntuitiveResearchKitArmTypes:
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
-        // when returning from manual mode, need to re-enable PID
+        // when returning from manual mode, make sure brakes are not released
+        mtsIntuitiveResearchKitSUJArmData * arm;
+        for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+            arm = Arms[armIndex];
+            arm->mClutched = false;
+            arm->mBrakeCurrent = 0.0;
+            mPreviousTic = 0.0;
+        }
         mRobotState = newState;
         DispatchStatus(this->GetName() + " ready");
         break;
 
-    case mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL:
-        if (this->mRobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.Error(this->GetName() + " is not ready yet");
-            return;
-        }
-        std::cerr << CMN_LOG_DETAILS << " should release breaks now" << std::endl;
-        mRobotState = newState;
-        DispatchStatus(this->GetName() + " in manual mode");
-        break;
     default:
         break;
     }
@@ -456,6 +501,42 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
         }
     }
+}
+
+void mtsIntuitiveResearchKitSUJ::RunReady(void)
+{
+    double currentTic = this->StateTable.GetTic();
+    const double timeDelta = currentTic - mPreviousTic;
+
+    const double brakeCurrentRate = 4.0; // rate = 2000 mA / s
+
+    mtsIntuitiveResearchKitSUJArmData * arm;
+    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        arm = Arms[armIndex];
+        if (arm->mClutched) {
+            arm->mStateTableBrakeCurrent.Start();
+            if (((brakeCurrentRate * timeDelta) + arm->mBrakeCurrent) <= MAX_BRAKE_CURRENT) {
+                arm->mBrakeCurrent += brakeCurrentRate * timeDelta;
+            } else {
+                arm->mBrakeCurrent = MAX_BRAKE_CURRENT;
+            }
+            arm->mStateTableBrakeCurrent.Advance();
+        }
+        else {
+            if (arm->mBrakeCurrent != MIN_BRAKE_CURRENT) {
+                arm->mStateTableBrakeCurrent.Start();
+                if ((arm->mBrakeCurrent - (brakeCurrentRate * timeDelta)) >= MIN_BRAKE_CURRENT) {
+                    arm->mBrakeCurrent -= brakeCurrentRate * timeDelta;
+                } else {
+                    arm->mBrakeCurrent = MIN_BRAKE_CURRENT;
+                }
+                arm->mStateTableBrakeCurrent.Advance();
+            }
+        }
+        mClutchCurrents[armIndex] = -arm->mBrakeCurrent;
+    }
+    RobotIO.SetActuatorCurrent(mClutchCurrents);
+    mPreviousTic = currentTic;
 }
 
 void mtsIntuitiveResearchKitSUJ::SetRobotControlState(const std::string & state)

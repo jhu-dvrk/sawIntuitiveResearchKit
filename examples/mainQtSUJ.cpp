@@ -108,7 +108,7 @@ int main(int argc, char ** argv)
     componentManager->Connect("console", "Main", "consoleGUI", "Main");
 
     // IO
-    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 1.0 * cmn_ms, firewirePort);
+    mtsRobotIO1394 * io = new mtsRobotIO1394("io", 0.5 * cmn_ms, firewirePort);
     io->Configure(configFiles["io"]);
     componentManager->AddComponent(io);
 
@@ -116,8 +116,12 @@ int main(int argc, char ** argv)
     mtsIntuitiveResearchKitConsole::Arm * arm
             = new mtsIntuitiveResearchKitConsole::Arm("SUJ", io->GetName());
     arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ,
-                      "nothing-yet", 1.0 * cmn_ms);
+                      "nothing-yet", 5.0 * cmn_ms);
     console->AddArm(arm);
+    componentManager->Connect("SUJ", "SUJ-Clutch-1", io->GetName(), "SUJ-Clutch-1");
+    componentManager->Connect("SUJ", "SUJ-Clutch-2", io->GetName(), "SUJ-Clutch-2");
+    componentManager->Connect("SUJ", "SUJ-Clutch-3", io->GetName(), "SUJ-Clutch-3");
+    componentManager->Connect("SUJ", "SUJ-Clutch-4", io->GetName(), "SUJ-Clutch-4");
 
     // connect ioGUIMaster to io
     mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");

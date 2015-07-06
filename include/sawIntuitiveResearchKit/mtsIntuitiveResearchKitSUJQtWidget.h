@@ -38,16 +38,19 @@ protected:
     vctQtWidgetDynamicVectorDoubleRead * QVJointWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVPrimaryJointOffsetWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVSecondaryJointOffsetWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVBrakeCurrentWidget;
 
     mtsFunctionVoid RecalibrateOffsets;
 
     prmPositionJointGet PositionJointParam;
     vctDoubleVec PrimaryJointOffset;
     vctDoubleVec SecondaryJointOffset;
+    double BrakeCurrent;
 
     mtsFunctionRead GetPositionJoint;
     mtsFunctionRead GetPrimaryJointOffset;
     mtsFunctionRead GetSecondaryJointOffset;
+    mtsFunctionRead GetBrakeCurrent;
 
 protected slots:
         void SlotRecalibrateOffsets(void);

@@ -40,6 +40,7 @@ mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std
     InterfaceRequired->AddFunction("GetPositionJoint", GetPositionJoint);
     InterfaceRequired->AddFunction("GetPrimaryJointOffset", GetPrimaryJointOffset);
     InterfaceRequired->AddFunction("GetSecondaryJointOffset", GetSecondaryJointOffset);
+    InterfaceRequired->AddFunction("GetBrakeCurrent", GetBrakeCurrent);
     InterfaceRequired->AddFunction("RecalibrateOffsets", RecalibrateOffsets);
 }
 
@@ -70,6 +71,13 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
 
     connect(recalibrateOffsetsButton, SIGNAL(clicked()),
             this, SLOT(SlotRecalibrateOffsets()));
+
+    QLabel * labelBrakeCurrent = new QLabel("Break Current (mA)");
+    MainLayout->addWidget(labelBrakeCurrent);
+    QVBrakeCurrentWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    QVBrakeCurrentWidget->SetPrecision(5);
+    MainLayout->addWidget(QVBrakeCurrentWidget);
+
 }
 
 void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)
@@ -79,6 +87,7 @@ void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)
     vctDoubleVec position(PositionJointParam.Position());
     GetPrimaryJointOffset(PrimaryJointOffset);
     GetSecondaryJointOffset(SecondaryJointOffset);
+    GetBrakeCurrent(BrakeCurrent);
     // first axis is a translation, convert to mm
     position.Element(0) *= 1000.0;
     PrimaryJointOffset.Element(0) *= 1000.0;
@@ -93,6 +102,7 @@ void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)
     QVJointWidget->SetValue(position);
     QVPrimaryJointOffsetWidget->SetValue(PrimaryJointOffset);
     QVSecondaryJointOffsetWidget->SetValue(SecondaryJointOffset);
+    QVBrakeCurrentWidget->SetValue(vctDoubleVec(1, BrakeCurrent * 1000.0));
 }
 
 void mtsIntuitiveResearchKitSUJQtWidget::SlotRecalibrateOffsets(void)
