@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionJointGet.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmEventButton.h>
+#include <cisstRobot/robManipulator.h>
 
 const double MAX_BRAKE_CURRENT = 2.2;
 const double MIN_BRAKE_CURRENT = 0.0;
@@ -34,7 +35,21 @@ const double MIN_BRAKE_CURRENT = 0.0;
 const size_t MUX_ARRAY_SIZE = 6;
 const size_t MUX_MAX_INDEX = 11;
 
+#define NR_END 1
+
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJ, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
+
+
+class DHParameters {
+public:
+
+    std::string SUJ1;
+    std::string SUJ2;
+    std::string SUJ3;
+    std::string SUJ4;
+    std::string SUJ5;
+    std::string SUJ6;
+};
 
 class mtsIntuitiveResearchKitSUJArmData
 {
@@ -140,6 +155,10 @@ public:
     vctDoubleVec mVoltageToPositionOffsets[2];
     prmPositionJointGet mPositionJointParam;
     prmPositionCartesianGet mPositionCartesianParam;
+
+    // Kinematics
+    robManipulator SUJManipulator;
+    vctDoubleVec mJointGet;
 
     // clutch data
     bool mClutched;
@@ -294,6 +313,81 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
             Arms[armIndex]->mVoltageToPositionScales[potIndex].Multiply(1000.0 * 0.9); // 0.9 we assume IO suffers from less voltage loss than ISI controller???????
         }
         Arms[armIndex]->mStateTableConfiguration.Advance();
+    }
+
+    // Manually set DH paramters for each SUJ
+    for (size_t armIndex = 0; armIndex < 4; armIndex++) {
+        ArmsDHParameters[armIndex] = new DHParameters();
+        Arms[armIndex]->mJointGet.SetSize(6);
+        Arms[armIndex]->mJointGet.Zeros();
+    }
+
+    //PSM1 DH Parameters
+    ArmsDHParameters[0]->SUJ1 = "modified 0 0.0896 0.0 0.0000 prismatic active 0 -2.6179 2.6179";
+    ArmsDHParameters[0]->SUJ2 = "modified 0 0.0000 0.0 0.4166 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[0]->SUJ3 = "modified 0 0.4318 0.0 0.1429 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[0]->SUJ4 = "modified 0 0.4318 1.5708 -0.1302 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[0]->SUJ5 = "modified 1.5708 0.0000 0.0 0.4089 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[0]->SUJ6 = "modified -1.5708 0.0000 -1.5708 -0.1029 revolute active 0 -2.6179 2.6179";
+
+    //PSM2 DH Parameters
+    ArmsDHParameters[1]->SUJ1 = "modified 0 0.0896 0.0 0.0000 prismatic active 0 -2.6179 2.6179";
+    ArmsDHParameters[1]->SUJ2 = "modified 0 0.0000 0.0 0.4166 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[1]->SUJ3 = "modified 0 0.4318 0.0 0.1429 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[1]->SUJ4 = "modified 0 0.4318 1.5708 -0.1302 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[1]->SUJ5 = "modified 1.5708 0.0000 0.0 0.4089 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[1]->SUJ6 = "modified -1.5708 0.0000 -1.5708 -0.1029 revolute active 0 -2.6179 2.6179";
+
+    //PSM3 DH Parameters
+    ArmsDHParameters[2]->SUJ1 = "modified 0 0.0896 0.0 0.0000 prismatic active 0 -2.6179 2.6179";
+    ArmsDHParameters[2]->SUJ2 = "modified 0 0.0000 0.0 0.3404 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[2]->SUJ3 = "modified 0 0.5842 0.0 0.1429 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[2]->SUJ4 = "modified 0 0.4318 1.5708 0.2571 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[2]->SUJ5 = "modified 1.5708 0.0000 0.0 0.4089 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[2]->SUJ6 = "modified -1.5708 0.0000 -1.5708 -0.1029 revolute active 0 -2.6179 2.6179";
+
+    //ECM DH Parameters
+    ArmsDHParameters[3]->SUJ1 = "modified 0 0.0896 0.0 0.0000 prismatic active 0 -2.6179 2.6179";
+    ArmsDHParameters[3]->SUJ2 = "modified 0 0.0000 0.0 0.4166 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[3]->SUJ3 = "modified 0 0.4318 0.0 0.1429 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[3]->SUJ4 = "modified 0 0.4318 1.5708 -0.3459 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[3]->SUJ5 = "modified -0.7853 0.0000 1.5708 0.0000 revolute active 0 -2.6179 2.6179";
+    ArmsDHParameters[3]->SUJ6 = "modified 0 -0.0667 0.0 0.0000 revolute active 0 -2.6179 2.6179";
+
+    for( size_t i=0; i<4; i++ ){
+
+        std::vector<std::string> lines;
+        lines.push_back(ArmsDHParameters[i]->SUJ1);
+        lines.push_back(ArmsDHParameters[i]->SUJ2);
+        lines.push_back(ArmsDHParameters[i]->SUJ3);
+        lines.push_back(ArmsDHParameters[i]->SUJ4);
+        lines.push_back(ArmsDHParameters[i]->SUJ5);
+        lines.push_back(ArmsDHParameters[i]->SUJ6);
+
+        for(size_t j=0; j<lines.size(); j++){
+            std::istringstream stringstream(lines[j]);
+
+            // Find the type of kinematics convention
+            std::string convention;
+            stringstream >> convention;
+
+            robKinematics* kinematics = NULL;
+            try{ kinematics = robKinematics::Instantiate( convention ); }
+            catch( std::bad_alloc& ){
+                CMN_LOG_RUN_ERROR << CMN_LOG_DETAILS
+                                  << "Failed to allocate a kinematics of type: "
+                                  << convention
+                                  << std::endl;
+            }
+
+            CMN_ASSERT( kinematics != NULL );
+            robLink li( kinematics, robMass() );
+            li.Read( stringstream );
+            Arms[i]->SUJManipulator.links.push_back( li );
+
+        }
+        Arms[i]->SUJManipulator.Js = rmatrix(0, Arms[i]->SUJManipulator.links.size()-1, 0, 5);
+        Arms[i]->SUJManipulator.Jn = rmatrix(0, Arms[i]->SUJManipulator.links.size()-1, 0, 5);
     }
 }
 
@@ -534,9 +628,13 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
             }
         }
         mClutchCurrents[armIndex] = -arm->mBrakeCurrent;
+        arm->mJointGet.Assign(arm->mPositionJointParam.Position(),arm->SUJManipulator.links.size());
     }
     RobotIO.SetActuatorCurrent(mClutchCurrents);
     mPreviousTic = currentTic;
+
+    vctFrame4x4<double> position = Arms[2]->SUJManipulator.ForwardKinematics(Arms[2]->mJointGet, Arms[2]->SUJManipulator.links.size());
+    Arms[2]->mPositionCartesianParam.Position().From(position);
 }
 
 void mtsIntuitiveResearchKitSUJ::SetRobotControlState(const std::string & state)
@@ -568,4 +666,23 @@ void mtsIntuitiveResearchKitSUJ::DispatchStatus(const std::string & message)
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
         Arms[armIndex]->MessageEvents.Status(message);
     }
+}
+
+double** mtsIntuitiveResearchKitSUJ::rmatrix(long nrl, long nrh, long ncl, long nch){
+  long i, nrow=nrh-nrl+1, ncol=nch-ncl+1;
+  double **m;
+
+  m=(double **)malloc((size_t)((nrow+NR_END)*sizeof(double*)));
+  //if(!m) nrerror("allocation failure 1 in matrix()");
+  m += NR_END;
+  m -= nrl;
+
+  m[nrl]=(double *)malloc((size_t)((nrow*ncol+NR_END)*sizeof(double)));
+  //if(!m[nrl]) nrerror("allocation failure 2 in matrix()");
+  m[nrl] += NR_END;
+  m[nrl] -= ncl;
+
+  for(i=nrl+1; i<=nrh; i++) m[i]=m[i-1]+ncol;
+
+  return m;
 }

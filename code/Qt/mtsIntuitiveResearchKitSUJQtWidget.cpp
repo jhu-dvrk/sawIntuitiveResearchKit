@@ -46,38 +46,42 @@ mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std
 
 void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
 {
+    QGridLayout * jointLayout = new QGridLayout;
+    MainLayout->addLayout(jointLayout);
+
+
     QLabel * labelJoints = new QLabel("Joints");
-    MainLayout->addWidget(labelJoints);
     QVJointWidget = new vctQtWidgetDynamicVectorDoubleRead();
     QVJointWidget->SetPrecision(5);
-    MainLayout->addWidget(QVJointWidget);
 
     QLabel * labelPrimaryOffsets = new QLabel("Primary Joint Offsets");
-    MainLayout->addWidget(labelPrimaryOffsets);
     QVPrimaryJointOffsetWidget = new vctQtWidgetDynamicVectorDoubleRead();
     QVPrimaryJointOffsetWidget->SetPrecision(5);
-    MainLayout->addWidget(QVPrimaryJointOffsetWidget);
 
     QLabel * labelSecondaryOffsets = new QLabel("Secondary Joint Offsets");
-    MainLayout->addWidget(labelSecondaryOffsets);
     QVSecondaryJointOffsetWidget = new vctQtWidgetDynamicVectorDoubleRead();
     QVSecondaryJointOffsetWidget->SetPrecision(5);
-    MainLayout->addWidget(QVSecondaryJointOffsetWidget);
 
-    QHBoxLayout * offsetLayout = new QHBoxLayout;
-    MainLayout->addLayout(offsetLayout);
+
     QPushButton * recalibrateOffsetsButton = new QPushButton("Recalibrate offsets");
-    offsetLayout->addWidget(recalibrateOffsetsButton);
+
+    QLabel * labelBrakeCurrent = new QLabel("Brake Current (mA)");
+    QVBrakeCurrentWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    QVBrakeCurrentWidget->SetPrecision(5);
+
+    jointLayout->addWidget(labelJoints,1,0);
+    jointLayout->addWidget(QVJointWidget,1,1);
+    jointLayout->addItem(new QSpacerItem(250,0),2,0);
+    jointLayout->addWidget(recalibrateOffsetsButton,3,1);
+    jointLayout->addWidget(labelPrimaryOffsets,5,0);
+    jointLayout->addWidget(QVPrimaryJointOffsetWidget,5,1);
+    jointLayout->addWidget(labelSecondaryOffsets,6,0);
+    jointLayout->addWidget(QVSecondaryJointOffsetWidget,6,1);
+    jointLayout->addWidget(labelBrakeCurrent,2,0);
+    jointLayout->addWidget(QVBrakeCurrentWidget,2,1);
 
     connect(recalibrateOffsetsButton, SIGNAL(clicked()),
             this, SLOT(SlotRecalibrateOffsets()));
-
-    QLabel * labelBrakeCurrent = new QLabel("Break Current (mA)");
-    MainLayout->addWidget(labelBrakeCurrent);
-    QVBrakeCurrentWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    QVBrakeCurrentWidget->SetPrecision(5);
-    MainLayout->addWidget(QVBrakeCurrentWidget);
-
 }
 
 void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)

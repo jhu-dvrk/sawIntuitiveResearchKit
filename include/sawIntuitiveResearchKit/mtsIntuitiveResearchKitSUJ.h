@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 
 // forward declaration
+class DHParameters;
 class mtsIntuitiveResearchKitSUJArmData;
 
 class mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
@@ -125,9 +126,14 @@ protected:
     int mCounter;
     vctDoubleVec mVoltages;
 
+    vctFixedSizeVector<DHParameters*, 4> ArmsDHParameters;
+
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> Arms;
 
     void DispatchStatus(const std::string & message);
+
+    double** rmatrix(long nrl, long nrh, long ncl, long nch);
+
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJ);
