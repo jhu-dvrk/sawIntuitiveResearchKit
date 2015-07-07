@@ -35,21 +35,7 @@ const double MIN_BRAKE_CURRENT = 0.0;
 const size_t MUX_ARRAY_SIZE = 6;
 const size_t MUX_MAX_INDEX = 11;
 
-#define NR_END 1
-
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJ, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
-
-
-class DHParameters {
-public:
-
-    std::string SUJ1;
-    std::string SUJ2;
-    std::string SUJ3;
-    std::string SUJ4;
-    std::string SUJ5;
-    std::string SUJ6;
-};
 
 class mtsIntuitiveResearchKitSUJArmData
 {
@@ -66,6 +52,10 @@ public:
         // brake info
         mClutched = false;
         mBrakeCurrent = 0.0;
+
+        // joints
+        mJointGet.SetSize(6);
+        mJointGet.Zeros();
 
         // state table doesn't always advance, only when pots are stable
         mStateTable.SetAutomaticAdvance(false);
@@ -157,7 +147,7 @@ public:
     prmPositionCartesianGet mPositionCartesianParam;
 
     // Kinematics
-    robManipulator SUJManipulator;
+    robManipulator mManipulator;
     vctDoubleVec mJointGet;
 
     // clutch data
@@ -232,168 +222,75 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
         interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                                "GetPeriodStatistics");
     }
+}
 
-    // allocate data for each SUJ and setup interfaces
-    for (size_t i = 0; i < 4; ++i) {
-        std::cerr << CMN_LOG_DETAILS << " -- name need to be found in configuration file" << std::endl;
-        std::string name;
-        int plugNumber;
-        if (i == 0) {
-            name = "PSM2";
-            plugNumber = 1;
-        } else if (i == 1) {
-            name = "ECM";
-            plugNumber = 2;
-        } else if (i == 2) {
-            name = "PSM1";
-            plugNumber = 3;
-        } else {
-            name = "PSM3";
-            plugNumber = 4;
-        }
+
+void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
+{
+    std::ifstream jsonStream;
+    jsonStream.open(filename.c_str());
+
+    Json::Value jsonConfig;
+    Json::Reader jsonReader;
+    if (!jsonReader.parse(jsonStream, jsonConfig)) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to parse configuration\n"
+                                 << jsonReader.getFormattedErrorMessages();
+        return;
+    }
+
+    // find all arms, there should be 4 of them
+    const Json::Value jsonArms = jsonConfig["arms"];
+    if (jsonArms.size() != 4) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to find 4 SUJ arms" << std::endl;
+        return;
+    }
+    for (unsigned int index = 0; index < jsonArms.size(); ++index) {
+        // name
+        Json::Value jsonArm = jsonArms[index];
+        std::string name = jsonArm["name"].asString();
+        unsigned int plugNumber = jsonArm["plug-number"].asInt();
+        unsigned int armIndex = plugNumber - 1;
+
         mtsInterfaceProvided * armInterface = this->AddInterfaceProvided(name);
         // Robot State so GUI widget for each arm can set/get state
         armInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetRobotControlState,
                                       this, "SetRobotControlState", std::string(""));
         armInterface->AddCommandRead(&mtsIntuitiveResearchKitSUJ::GetRobotControlState,
                                      this, "GetRobotControlState", std::string(""));
-        Arms[i] = new mtsIntuitiveResearchKitSUJArmData(name, plugNumber, armInterface);
+        Arms[armIndex] = new mtsIntuitiveResearchKitSUJArmData(name, plugNumber, armInterface);
 
         // create a required interface for each arm to handle clutch button
         std::stringstream interfaceName;
         interfaceName << "SUJ-Clutch-" << plugNumber;
         mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
         if (requiredInterface) {
-            requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCallback, Arms[i],
+            requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCallback, Arms[armIndex],
                                                     "Button");
         } else {
-            CMN_LOG_CLASS_INIT_ERROR << "Init: can't add required interface for SUJ \""
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: can't add required interface for SUJ \""
                                      << name << "\" clutch button because this interface already exists: \""
                                      << interfaceName.str() << "\".  Make sure all arms have a different plug number."
                                      << std::endl;
+            return;
         }
-    }
 
-    SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+        // find serial number and potentiometer configurations
+        Arms[armIndex]->mSerialNumber = jsonArm["serial-number"].asString();
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(Arms[armIndex]->mVoltageToPositionOffsets[0], jsonArm["primary-offsets"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(Arms[armIndex]->mVoltageToPositionOffsets[1], jsonArm["secondary-offsets"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(Arms[armIndex]->mVoltageToPositionScales[0], jsonArm["primary-scales"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(Arms[armIndex]->mVoltageToPositionScales[1], jsonArm["secondary-scales"]);
 
-    std::cerr << CMN_LOG_DETAILS << " -- arm settings need to be loaded from configuration file" << std::endl;
+        // look for DH
+        Arms[armIndex]->mManipulator.LoadRobot(jsonArm["DH"]);
 
-    // ARM ID: SE054270 (a.k.a. PSM 2 - RIGHT PSM SUJ)
-    Arms[0]->mSerialNumber = "SE054270";
-    Arms[0]->mVoltageToPositionOffsets[0].Assign( -0.043291, -2.3611, -3.0623, 3.069, -3.0623, -3.0564 );
-    Arms[0]->mVoltageToPositionScales[0].Assign( 0.00027822, 0.0011525, 0.0014967, -0.0014975, 0.0014944, 0.0014902 );
-    Arms[0]->mVoltageToPositionOffsets[1].Assign(  -0.043744, -2.3726, -3.0707, 3.072, -3.0734, -3.0697 );
-    Arms[0]->mVoltageToPositionScales[1].Assign( 0.00027827, 0.0011578, 0.0015001, -0.0015, 0.0014992, 0.0014984 );
-
-    // ARM ID: SE054269 (a.k.a. ECM - ECM SUJ)
-    Arms[1]->mSerialNumber = "SE054269";
-    Arms[1]->mVoltageToPositionOffsets[0].Assign(-0.098202, -2.3641, -3.0619, 6.2089, 0.0, 0.0 );
-    Arms[1]->mVoltageToPositionScales[0].Assign( 0.00027813, 0.0011549, 0.0014946, -0.0014971, 0.0, 0.0 );
-    Arms[1]->mVoltageToPositionOffsets[1].Assign( -0.097423, -2.3663, -3.0692, 6.2094, 0.0, 0.0 );
-    Arms[1]->mVoltageToPositionScales[1].Assign(0.00027794, 0.0011545, 0.0014989, -0.0014968, 0.0, 0.0 );
-
-    // ARM ID: SE054268 (a.k.a. PSM1 - LEFT PSM SUJ)
-    Arms[2]->mSerialNumber = "SE054268";
-    Arms[2]->mVoltageToPositionOffsets[0].Assign( -0.043675, -2.3642, -3.0699, 3.068, -3.0613, -3.0712 );
-    Arms[2]->mVoltageToPositionScales[0].Assign( 0.00027819, 0.0011544, 0.001499, -0.0014988, 0.0014943, 0.0014989 );
-    Arms[2]->mVoltageToPositionOffsets[1].Assign( -0.044521, -2.3689, -3.0687, 3.0611, -3.0717, -3.0692 );
-    Arms[2]->mVoltageToPositionScales[1].Assign( 0.00027826, 0.0011544, 0.0014972, -0.0014935, 0.0014991, 0.001498 );
-
-    // ARM ID: SE054271 (a.k.a. PSM 3 - AUX PSM SUJ)
-    Arms[3]->mSerialNumber = "SE054271";
-    Arms[3]->mVoltageToPositionOffsets[0].Assign( -0.035785, -2.3599, 3.0577, -3.0829, -3.0683, -3.0628 );
-    Arms[3]->mVoltageToPositionScales[0].Assign( 0.00027957, 0.0011502, -0.0014949, 0.0015033, 0.0014982, 0.0014955 );
-    Arms[3]->mVoltageToPositionOffsets[1].Assign(  -0.29097, -2.3539, 3.0768, -3.0571, -3.0675, -3.0686 );
-    Arms[3]->mVoltageToPositionScales[1].Assign(  0.00027978, 0.0011505, -0.0014994, 0.0014929, 0.0014978, 0.0014979 );
-
-    // mV vs V?
-    for (size_t armIndex = 0; armIndex < 4; armIndex++) {
+        // mV vs V?
         Arms[armIndex]->mStateTableConfiguration.Start();
         for (size_t potIndex = 0; potIndex < 2; potIndex++) {
             Arms[armIndex]->mVoltageToPositionScales[potIndex].Multiply(1000.0 * 0.9); // 0.9 we assume IO suffers from less voltage loss than ISI controller???????
         }
         Arms[armIndex]->mStateTableConfiguration.Advance();
     }
-
-    // Manually set DH paramters for each SUJ
-    for (size_t armIndex = 0; armIndex < 4; armIndex++) {
-        ArmsDHParameters[armIndex] = new DHParameters();
-        Arms[armIndex]->mJointGet.SetSize(6);
-        Arms[armIndex]->mJointGet.Zeros();
-    }
-
-    //PSM1 DH Parameters
-    ArmsDHParameters[0]->SUJ1 = "modified 0 0.0896 0.0 0.0000 prismatic active 0 -2.6179 2.6179";
-    ArmsDHParameters[0]->SUJ2 = "modified 0 0.0000 0.0 0.4166 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[0]->SUJ3 = "modified 0 0.4318 0.0 0.1429 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[0]->SUJ4 = "modified 0 0.4318 1.5708 -0.1302 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[0]->SUJ5 = "modified 1.5708 0.0000 0.0 0.4089 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[0]->SUJ6 = "modified -1.5708 0.0000 -1.5708 -0.1029 revolute active 0 -2.6179 2.6179";
-
-    //PSM2 DH Parameters
-    ArmsDHParameters[1]->SUJ1 = "modified 0 0.0896 0.0 0.0000 prismatic active 0 -2.6179 2.6179";
-    ArmsDHParameters[1]->SUJ2 = "modified 0 0.0000 0.0 0.4166 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[1]->SUJ3 = "modified 0 0.4318 0.0 0.1429 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[1]->SUJ4 = "modified 0 0.4318 1.5708 -0.1302 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[1]->SUJ5 = "modified 1.5708 0.0000 0.0 0.4089 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[1]->SUJ6 = "modified -1.5708 0.0000 -1.5708 -0.1029 revolute active 0 -2.6179 2.6179";
-
-    //PSM3 DH Parameters
-    ArmsDHParameters[2]->SUJ1 = "modified 0 0.0896 0.0 0.0000 prismatic active 0 -2.6179 2.6179";
-    ArmsDHParameters[2]->SUJ2 = "modified 0 0.0000 0.0 0.3404 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[2]->SUJ3 = "modified 0 0.5842 0.0 0.1429 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[2]->SUJ4 = "modified 0 0.4318 1.5708 0.2571 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[2]->SUJ5 = "modified 1.5708 0.0000 0.0 0.4089 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[2]->SUJ6 = "modified -1.5708 0.0000 -1.5708 -0.1029 revolute active 0 -2.6179 2.6179";
-
-    //ECM DH Parameters
-    ArmsDHParameters[3]->SUJ1 = "modified 0 0.0896 0.0 0.0000 prismatic active 0 -2.6179 2.6179";
-    ArmsDHParameters[3]->SUJ2 = "modified 0 0.0000 0.0 0.4166 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[3]->SUJ3 = "modified 0 0.4318 0.0 0.1429 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[3]->SUJ4 = "modified 0 0.4318 1.5708 -0.3459 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[3]->SUJ5 = "modified -0.7853 0.0000 1.5708 0.0000 revolute active 0 -2.6179 2.6179";
-    ArmsDHParameters[3]->SUJ6 = "modified 0 -0.0667 0.0 0.0000 revolute active 0 -2.6179 2.6179";
-
-    for( size_t i=0; i<4; i++ ){
-
-        std::vector<std::string> lines;
-        lines.push_back(ArmsDHParameters[i]->SUJ1);
-        lines.push_back(ArmsDHParameters[i]->SUJ2);
-        lines.push_back(ArmsDHParameters[i]->SUJ3);
-        lines.push_back(ArmsDHParameters[i]->SUJ4);
-        lines.push_back(ArmsDHParameters[i]->SUJ5);
-        lines.push_back(ArmsDHParameters[i]->SUJ6);
-
-        for(size_t j=0; j<lines.size(); j++){
-            std::istringstream stringstream(lines[j]);
-
-            // Find the type of kinematics convention
-            std::string convention;
-            stringstream >> convention;
-
-            robKinematics* kinematics = NULL;
-            try{ kinematics = robKinematics::Instantiate( convention ); }
-            catch( std::bad_alloc& ){
-                CMN_LOG_RUN_ERROR << CMN_LOG_DETAILS
-                                  << "Failed to allocate a kinematics of type: "
-                                  << convention
-                                  << std::endl;
-            }
-
-            CMN_ASSERT( kinematics != NULL );
-            robLink li( kinematics, robMass() );
-            li.Read( stringstream );
-            Arms[i]->SUJManipulator.links.push_back( li );
-
-        }
-        Arms[i]->SUJManipulator.Js = rmatrix(0, Arms[i]->SUJManipulator.links.size()-1, 0, 5);
-        Arms[i]->SUJManipulator.Jn = rmatrix(0, Arms[i]->SUJManipulator.links.size()-1, 0, 5);
-    }
-}
-
-void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
-{
-    std::cerr << CMN_LOG_DETAILS << " - need to load JSON config file with DH and ..." << std::endl;
 }
 
 void mtsIntuitiveResearchKitSUJ::Startup(void)
@@ -602,11 +499,12 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
     double currentTic = this->StateTable.GetTic();
     const double timeDelta = currentTic - mPreviousTic;
 
-    const double brakeCurrentRate = 4.0; // rate = 2000 mA / s
+    const double brakeCurrentRate = 4.0; // rate = 4 A/s, about 1/2 second to get up/down
 
     mtsIntuitiveResearchKitSUJArmData * arm;
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
         arm = Arms[armIndex];
+        // brakes
         if (arm->mClutched) {
             arm->mStateTableBrakeCurrent.Start();
             if (((brakeCurrentRate * timeDelta) + arm->mBrakeCurrent) <= MAX_BRAKE_CURRENT) {
@@ -628,13 +526,14 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
             }
         }
         mClutchCurrents[armIndex] = -arm->mBrakeCurrent;
-        arm->mJointGet.Assign(arm->mPositionJointParam.Position(),arm->SUJManipulator.links.size());
+
+        // position
+        arm->mJointGet.Assign(arm->mPositionJointParam.Position(),arm->mManipulator.links.size());
+        vctFrame4x4<double> position = arm->mManipulator.ForwardKinematics(arm->mJointGet, arm->mManipulator.links.size());
+        arm->mPositionCartesianParam.Position().From(position);
     }
     RobotIO.SetActuatorCurrent(mClutchCurrents);
     mPreviousTic = currentTic;
-
-    vctFrame4x4<double> position = Arms[2]->SUJManipulator.ForwardKinematics(Arms[2]->mJointGet, Arms[2]->SUJManipulator.links.size());
-    Arms[2]->mPositionCartesianParam.Position().From(position);
 }
 
 void mtsIntuitiveResearchKitSUJ::SetRobotControlState(const std::string & state)
@@ -666,23 +565,4 @@ void mtsIntuitiveResearchKitSUJ::DispatchStatus(const std::string & message)
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
         Arms[armIndex]->MessageEvents.Status(message);
     }
-}
-
-double** mtsIntuitiveResearchKitSUJ::rmatrix(long nrl, long nrh, long ncl, long nch){
-  long i, nrow=nrh-nrl+1, ncol=nch-ncl+1;
-  double **m;
-
-  m=(double **)malloc((size_t)((nrow+NR_END)*sizeof(double*)));
-  //if(!m) nrerror("allocation failure 1 in matrix()");
-  m += NR_END;
-  m -= nrl;
-
-  m[nrl]=(double *)malloc((size_t)((nrow*ncol+NR_END)*sizeof(double)));
-  //if(!m[nrl]) nrerror("allocation failure 2 in matrix()");
-  m[nrl] += NR_END;
-  m[nrl] -= ncl;
-
-  for(i=nrl+1; i<=nrh; i++) m[i]=m[i-1]+ncol;
-
-  return m;
 }

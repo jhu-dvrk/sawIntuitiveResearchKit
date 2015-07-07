@@ -4,41 +4,225 @@
         {
             "name": "PSM1",
             "plug-number": 3,
-            "serial": "SE054268",
-            "primary-offsets": [-0.043675, -2.3642, -3.0699, 3.068, -3.0613, -3.0712];
-            "primary-scales": [0.00027819, 0.0011544, 0.001499, -0.0014988, 0.0014943, 0.0014989];
-            "secondary-offsets": [-0.044521, -2.3689, -3.0687, 3.0611, -3.0717, -3.0692];
-            "secondary-scales": [0.00027826, 0.0011544, 0.0014972, -0.0014935, 0.0014991, 0.001498];
+            "serial-number": "SE054268",
+            "primary-offsets": [-0.043675, -2.3642, -3.0699, 3.068, -3.0613, -3.0712],
+            "primary-scales": [0.00027819, 0.0011544, 0.001499, -0.0014988, 0.0014943, 0.0014989],
+            "secondary-offsets": [-0.044521, -2.3689, -3.0687, 3.0611, -3.0717, -3.0692],
+            "secondary-scales": [0.00027826, 0.0011544, 0.0014972, -0.0014935, 0.0014991, 0.001498],
+	    "DH": {
+		"links":[
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.0896, "theta":0.0000, "D":0.0000,
+			"type":"prismatic",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.0000, "theta":0.0000, "D":0.4166,
+			"type":"revolute",
+			"mode":"active",
+			"offset":1.5708
+		    },
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.4318, "theta":0.0000, "D":0.1429,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.4318, "theta":1.5708, "D":-0.1302,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":1.5708, "A":0.0000, "theta":0.0000, "D":0.4089,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":-1.5708, "A":0.0000, "theta":-1.5708, "D":-0.1029,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    }
+		]
+	    }
 	}
 	,
         {
-            "name": "PSM2",
-            "plug-number": 1,
-            "serial": "SE054270",
-            "primary-offsets": [-0.043675, -2.3642, -3.0699, 3.068, -3.0613, -3.0712];
-            "primary-scales": [0.00027819, 0.0011544, 0.001499, -0.0014988, 0.0014943, 0.0014989];
-            "secondary-offsets": [-0.044521, -2.3689, -3.0687, 3.0611, -3.0717, -3.0692];
-            "secondary-scales": [0.00027826, 0.0011544, 0.0014972, -0.0014935, 0.0014991, 0.001498];
+	    "name": "PSM2",
+	    "plug-number": 1,
+	    "serial-number": "SE054270",
+	    "primary-offsets": [-0.043291, -2.3611, -3.0623, 3.069, -3.0623, -3.0564],
+	    "primary-scales": [0.00027822, 0.0011525, 0.0014967, -0.0014975, 0.0014944, 0.0014902],
+	    "secondary-offsets": [-0.043744, -2.3726, -3.0707, 3.072, -3.0734, -3.0697],
+	    "secondary-scales": [0.00027827, 0.0011578, 0.0015001, -0.0015, 0.0014992, 0.0014984],
+ 	    "DH": {
+		"links":[
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.0896, "theta":0.0000, "D":0.0000,
+			"type":"prismatic",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.0000, "theta":0.0000, "D":0.4166,
+			"type":"revolute",
+			"mode":"active",
+			"offset":1.5708
+		    },
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.4318, "theta":0.0000, "D":0.1429,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.4318, "theta":1.5708, "D":-0.1302,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":1.5708, "A":0.0000, "theta":0.0000, "D":0.4089,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":-1.5708, "A":0.0000, "theta":-1.5708, "D":-0.1029,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    }
+		]
+	    }
 	}
 	,
         {
-            "name": "PSM3",
-            "plug-number": 4,
-            "serial": "SE054271"
-            "primary-offsets": [-0.043675, -2.3642, -3.0699, 3.068, -3.0613, -3.0712];
-            "primary-scales": [0.00027819, 0.0011544, 0.001499, -0.0014988, 0.0014943, 0.0014989];
-            "secondary-offsets": [-0.044521, -2.3689, -3.0687, 3.0611, -3.0717, -3.0692];
-            "secondary-scales": [0.00027826, 0.0011544, 0.0014972, -0.0014935, 0.0014991, 0.001498];
+	    "name": "PSM3",
+	    "plug-number": 4,
+	    "serial-number": "SE054271",
+	    "primary-offsets": [-0.035785, -2.3599, 3.0577, -3.0829, -3.0683, -3.0628],
+	    "primary-scales": [0.00027957, 0.0011502, -0.0014949, 0.0015033, 0.0014982, 0.0014955],
+	    "secondary-offsets": [-0.29097, -2.3539, 3.0768, -3.0571, -3.0675, -3.0686],
+	    "secondary-scales": [0.00027978, 0.0011505, -0.0014994, 0.0014929, 0.0014978, 0.0014979],
+ 	    "DH": {
+		"links":[
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.0896, "theta":0.0000, "D":0.0000,
+			"type":"prismatic",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.0000, "theta":0.0000, "D":0.3404,
+			"type":"revolute",
+			"mode":"active",
+			"offset":1.5708
+		    },
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.5842, "theta":0.0000, "D":0.1429,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.4318, "theta":1.5708, "D":0.2571,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":1.5708, "A":0.0000, "theta":0.0000, "D":0.4089,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":-1.5708, "A":0.0000, "theta":-1.5708, "D":-0.1029,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    }
+		]
+	    }
 	}
 	,
         {
-            "name": "ECM",
-            "plug-number": 2,
-            "serial": "SE054269",
-            "primary-offsets": [-0.043675, -2.3642, -3.0699, 3.068, -3.0613, -3.0712];
-            "primary-scales": [0.00027819, 0.0011544, 0.001499, -0.0014988, 0.0014943, 0.0014989];
-            "secondary-offsets": [-0.044521, -2.3689, -3.0687, 3.0611, -3.0717, -3.0692];
-            "secondary-scales": [0.00027826, 0.0011544, 0.0014972, -0.0014935, 0.0014991, 0.001498];
+	    "name": "ECM",
+	    "plug-number": 2,
+	    "serial-number": "SE054269",
+	    "primary-offsets": [-0.098202, -2.3641, -3.0619, 6.2089, 0.0, 0.0],
+	    "primary-scales": [0.00027813, 0.0011549, 0.0014946, -0.0014971, 0.0, 0.0],
+	    "secondary-offsets": [-0.097423, -2.3663, -3.0692, 6.2094, 0.0, 0.0],
+	    "secondary-scales": [0.00027794, 0.0011545, 0.0014989, -0.0014968, 0.0, 0.0],
+ 	    "DH": {
+		"links":[
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.0896, "theta":0.0000, "D":0.0000,
+			"type":"prismatic",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.0000, "theta":0.0000, "D":0.4166,
+			"type":"revolute",
+			"mode":"active",
+			"offset":1.5708
+		    },
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.4318, "theta":0.0000, "D":0.1429,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":0.4318, "theta":1.5708, "D":-0.3459,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":-0.7853, "A":0.0000, "theta":1.5708, "D":0.0000,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    },
+		    {
+			"convention":"modified",
+			"alpha":0.0000, "A":-0.0667, "theta":0.0000, "D":0.0000,
+			"type":"revolute",
+			"mode":"active",
+			"offset":0.00
+		    }
+		]
+	    }
 	}
     ]
 }

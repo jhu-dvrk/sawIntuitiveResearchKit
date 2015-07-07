@@ -53,6 +53,9 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("i", "io",
                               "configuration file for robot IO (see sawRobotIO1394)",
                               cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["io"]);
+    options.AddOptionOneValue("a", "arm",
+                              "configuration file for the arm (JSON file)",
+                              cmnCommandLineOptions::REQUIRED_OPTION, &configFiles["arm"]);
     options.AddOptionOneValue("f", "firewire",
                               "firewire port number(s)",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &firewirePort);
@@ -116,7 +119,7 @@ int main(int argc, char ** argv)
     mtsIntuitiveResearchKitConsole::Arm * arm
             = new mtsIntuitiveResearchKitConsole::Arm("SUJ", io->GetName());
     arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ,
-                      "nothing-yet", 5.0 * cmn_ms);
+                      configFiles["arm"], 5.0 * cmn_ms);
     console->AddArm(arm);
     componentManager->Connect("SUJ", "SUJ-Clutch-1", io->GetName(), "SUJ-Clutch-1");
     componentManager->Connect("SUJ", "SUJ-Clutch-2", io->GetName(), "SUJ-Clutch-2");
