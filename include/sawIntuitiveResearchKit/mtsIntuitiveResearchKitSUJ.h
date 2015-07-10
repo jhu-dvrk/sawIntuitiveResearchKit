@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet
+  Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
   (C) Copyright 2014 Johns Hopkins University (JHU), All Rights Reserved.
@@ -121,8 +121,6 @@ protected:
     double mPreviousTic;
     vctDoubleVec mClutchCurrents;
 
-
-    int mCounter;
     vctDoubleVec mVoltages;
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> Arms;
 

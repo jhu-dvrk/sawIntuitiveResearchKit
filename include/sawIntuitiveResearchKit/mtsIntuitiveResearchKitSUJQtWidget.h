@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet
+  Author(s):  Anton Deguet, Youri Tan
   Created on: 2013-08-24
 
   (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
@@ -36,24 +36,38 @@ protected:
     void timerEventDerived(void);
 
     vctQtWidgetDynamicVectorDoubleRead * QVJointWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVPrimaryJointOffsetWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVSecondaryJointOffsetWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVBrakeCurrentWidget;
 
-    mtsFunctionVoid RecalibrateOffsets;
+    vctQtWidgetDynamicVectorDoubleWrite * QVPotentiometerRecalibrationStartWidget;
+    vctQtWidgetDynamicVectorDoubleWrite * QVPotentiometerRecalibrationFinishWidget;
+
+    mtsFunctionWrite Clutch;
 
     prmPositionJointGet PositionJointParam;
     vctDoubleVec PrimaryJointOffset;
     vctDoubleVec SecondaryJointOffset;
+    vctDoubleVec JointPositionStart;
+    vctDoubleVec JointPositionFinish;
+    vctDoubleVec JointVoltageStart;
+    vctDoubleVec JointVoltageFinish;
     double BrakeCurrent;
 
     mtsFunctionRead GetPositionJoint;
-    mtsFunctionRead GetPrimaryJointOffset;
-    mtsFunctionRead GetSecondaryJointOffset;
     mtsFunctionRead GetBrakeCurrent;
 
+    mtsFunctionRead GetPrimaryVoltages;
+    mtsFunctionRead GetSecondaryVoltages;
+    vctDoubleMat mJointsRecalibrationMatrix;
+    vctDoubleVec mVoltages[2];
+    mtsFunctionWrite SetRecalibratioMatrix;
+
 protected slots:
-        void SlotRecalibrateOffsets(void);
+    void SlotManualRecalibration(void);
+    void SlotClutchPressed(void);
+    void SlotClutchReleased(void);
+    void SlotRecalibrationStartChanged(void);
+    void SlotRecalibrationFinishChanged(void);
+
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJQtWidget);

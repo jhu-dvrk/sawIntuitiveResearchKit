@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet
+  Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
   (C) Copyright 2014 Johns Hopkins University (JHU), All Rights Reserved.
@@ -29,7 +29,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstRobot/robManipulator.h>
 
-const double MAX_BRAKE_CURRENT = 2.2;
 const double MIN_BRAKE_CURRENT = 0.0;
 
 const size_t MUX_ARRAY_SIZE = 6;
@@ -50,12 +49,25 @@ public:
         mStateTableBrakeCurrent(100, name + "BrakeCurrent")
     {
         // brake info
-        mClutched = false;
-        mBrakeCurrent = 0.0;
+        mClutched = 0;
+        mBrakeDesiredCurrent = 0.0;
 
         // joints
         mJointGet.SetSize(6);
         mJointGet.Zeros();
+
+        // recalibration matrix
+        mRecalibrationMatrix.SetSize(6,6);
+        mRecalibrationMatrix.Zeros();
+        mNewJointScales[0].SetSize(6);
+        mNewJointScales[0].Zeros();
+        mNewJointScales[1].SetSize(6);
+        mNewJointScales[1].Zeros();
+
+        mNewJointOffsets[0].SetSize(6);
+        mNewJointOffsets[0].Zeros();
+        mNewJointOffsets[1].SetSize(6);
+        mNewJointOffsets[1].Zeros();
 
         // state table doesn't always advance, only when pots are stable
         mStateTable.SetAutomaticAdvance(false);
@@ -80,9 +92,10 @@ public:
         mStateTableConfiguration.AddData(this->mPlugNumber, "PlugNumber");
         mStateTableConfiguration.AddData(this->mVoltageToPositionOffsets[0], "PrimaryJointOffset");//"GetPrimaryJointOffset");
         mStateTableConfiguration.AddData(this->mVoltageToPositionOffsets[1], "SecondaryJointOffset");//"GetSecondaryJointOffset");
-        mStateTableBrakeCurrent.AddData(this->mBrakeCurrent, "BrakeCurrent");
+        mStateTableBrakeCurrent.AddData(this->mBrakeDesiredCurrent, "BrakeCurrent");
 
         CMN_ASSERT(interfaceProvided);
+        // read commands
         interfaceProvided->AddCommandReadState(mStateTable, mPositionJointParam, "GetPositionJoint");
         interfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0], "GetPrimaryJointOffset");
         interfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[1], "GetSecondaryJointOffset");
@@ -92,8 +105,14 @@ public:
         interfaceProvided->AddCommandReadState(mStateTableConfiguration, mName, "GetName");
         interfaceProvided->AddCommandReadState(mStateTableConfiguration, mSerialNumber, "GetSerialNumber");
         interfaceProvided->AddCommandReadState(mStateTableConfiguration, mPlugNumber, "GetPlugNumber");
-        interfaceProvided->AddCommandVoid(&mtsIntuitiveResearchKitSUJArmData::RecalibrateOffsets, this, "RecalibrateOffsets");
-        interfaceProvided->AddCommandReadState(mStateTableBrakeCurrent, mBrakeCurrent, "GetBrakeCurrent");
+        interfaceProvided->AddCommandReadState(mStateTableBrakeCurrent, mBrakeDesiredCurrent, "GetBrakeCurrent");
+
+        // write commands
+        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCommand, this,
+                                           "Clutch", false);
+        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::CalibratePotentiometers, this,
+                                           "SetRecalibrationMatrix", mRecalibrationMatrix);
+
         // Events
         interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
         interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
@@ -104,26 +123,80 @@ public:
                                                "GetPeriodStatistics");
     }
 
-    inline void RecalibrateOffsets(void) {
-        mStateTableConfiguration.Start();
-        mVoltageToPositionOffsets[0].ElementwiseProductOf(mVoltages[0], mVoltageToPositionScales[0]);
-        mVoltageToPositionOffsets[0].NegationSelf();
-        mVoltageToPositionOffsets[1].ElementwiseProductOf(mVoltages[1], mVoltageToPositionScales[1]);
-        mVoltageToPositionOffsets[1].NegationSelf();
-        std::cerr << "Primary offsets:   " << mVoltageToPositionOffsets[0] << std::endl
-                  << "Secondary offsets: " << mVoltageToPositionOffsets[1] << std::endl;
-        mStateTableConfiguration.Advance();
-        MessageEvents.Status(std::string("Offsets recalibrated"));
-    }
-
     inline void ClutchCallback(const prmEventButton & button) {
         if (button.Type() == prmEventButton::PRESSED) {
-            mClutched = true;
+            mClutched += 1;
             MessageEvents.Status(mName.Data + ": clutch button pressed");
         } else {
-            mClutched = false;
+            mClutched -= 1;
             MessageEvents.Status(mName.Data + ": clutch button released");
         }
+    }
+
+    inline void ClutchCommand(const bool & clutch) {
+        prmEventButton button;
+        if (clutch) {
+            button.SetType(prmEventButton::PRESSED);
+        } else {
+            button.SetType(prmEventButton::RELEASED);
+        }
+        ClutchCallback(button);
+    }
+
+    inline void CalibratePotentiometers(const vctMat & mat) {
+        for (size_t cols = 0; cols < 6;cols++)
+        {
+            // IF:                                      Pi = Offset + Vi * Scale
+            // Given P1 / V1 & P2 / V2, THEN:           Scale = (P1 - P2) / (V1 - V2)
+
+            // Delta_P = P1 - P2
+            const double deltaJointPosition = mat.Element(0,cols) - mat.Element(3,cols);
+
+            // Delta_V = V1 - V2 (primary)
+            const double deltaPrimaryVoltage = mat.Element(1,cols) - mat.Element(4,cols);
+
+            // V1 - V2 (secondary)
+            const double deltaSecondaryVoltage = mat.Element(2,cols) - mat.Element(5,cols);
+
+            // Scale = Delta_P / Delta_V
+            mNewJointScales[0][cols] = deltaJointPosition / deltaPrimaryVoltage;
+            mNewJointScales[1][cols] = deltaJointPosition / deltaSecondaryVoltage;
+
+            mNewJointOffsets[0][cols] = mat.Element(0,cols) - mat.Element(1,cols) * mNewJointScales[0][cols];
+            mNewJointOffsets[1][cols] = mat.Element(0,cols) - mat.Element(2,cols) * mNewJointScales[1][cols];
+            mNewJointScales[0][cols] /= 1000.0;
+            mNewJointScales[1][cols] /= 1000.0;
+        }
+
+        std::cerr << "----------- SUJ scales and offsets for arm: " << mName << std::endl;
+        std::cerr << "\"primary-offsets\": [ " <<
+                     mNewJointOffsets[0][0] << ", " <<
+                     mNewJointOffsets[0][1] << ", " <<
+                     mNewJointOffsets[0][2] << ", " <<
+                     mNewJointOffsets[0][3] << ", " <<
+                     mNewJointOffsets[0][4] << ", " <<
+                     mNewJointOffsets[0][5] << "],"  << std::endl;
+        std::cerr << "\"primary-scales\": [ " <<
+                     mNewJointScales[0][0] << ", " <<
+                     mNewJointScales[0][1] << ", " <<
+                     mNewJointScales[0][2] << ", " <<
+                     mNewJointScales[0][3] << ", " <<
+                     mNewJointScales[0][4] << ", " <<
+                     mNewJointScales[0][5] << "],"  << std::endl;
+        std::cerr << "\"secondary-offsets\": [ " <<
+                     mNewJointOffsets[1][0] << ", " <<
+                     mNewJointOffsets[1][1] << ", " <<
+                     mNewJointOffsets[1][2] << ", " <<
+                     mNewJointOffsets[1][3] << ", " <<
+                     mNewJointOffsets[1][4] << ", " <<
+                     mNewJointOffsets[1][5] << "],"  << std::endl;
+        std::cerr << "\"secondary-scales\": [ " <<
+                     mNewJointScales[1][0] << ", " <<
+                     mNewJointScales[1][1] << ", " <<
+                     mNewJointScales[1][2] << ", " <<
+                     mNewJointScales[1][3] << ", " <<
+                     mNewJointScales[1][4] << ", " <<
+                     mNewJointScales[1][5] << "],"  << std::endl;
     }
 
     // name of this SUJ arm (ECM, PSM1, ...)
@@ -149,10 +222,15 @@ public:
     // Kinematics
     robManipulator mManipulator;
     vctDoubleVec mJointGet;
+    vctMat mRecalibrationMatrix;
+    vctDoubleVec mNewJointScales[2];
+    vctDoubleVec mNewJointOffsets[2];
 
     // clutch data
-    bool mClutched;
-    double mBrakeCurrent;
+    unsigned int mClutched;
+    double mBrakeDesiredCurrent;
+    double mBrakeReleaseCurrent;
+    double mBrakeDirectionCurrent;
 
     // Functions for events
     struct {
@@ -177,7 +255,6 @@ mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicCons
 
 void mtsIntuitiveResearchKitSUJ::Init(void)
 {
-    mCounter = 0;
     mMuxTimer = 0.0;
     mMuxState.SetSize(4);
     mVoltages.SetSize(4);
@@ -252,12 +329,12 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         unsigned int armIndex = plugNumber - 1;
 
         mtsInterfaceProvided * armInterface = this->AddInterfaceProvided(name);
+        Arms[armIndex] = new mtsIntuitiveResearchKitSUJArmData(name, plugNumber, armInterface);
         // Robot State so GUI widget for each arm can set/get state
         armInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetRobotControlState,
                                       this, "SetRobotControlState", std::string(""));
         armInterface->AddCommandRead(&mtsIntuitiveResearchKitSUJ::GetRobotControlState,
                                      this, "GetRobotControlState", std::string(""));
-        Arms[armIndex] = new mtsIntuitiveResearchKitSUJArmData(name, plugNumber, armInterface);
 
         // create a required interface for each arm to handle clutch button
         std::stringstream interfaceName;
@@ -274,8 +351,22 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
             return;
         }
 
-        // find serial number and potentiometer configurations
+        // find serial number
         Arms[armIndex]->mSerialNumber = jsonArm["serial-number"].asString();
+
+        // read brake current configuration
+        // all math for ramping up/down current is done on positive values
+        // negate only when applying
+        double brakeCurrent = jsonArm["brake-release-current"].asFloat();
+        if (brakeCurrent > 0.0) {
+            Arms[armIndex]->mBrakeReleaseCurrent = brakeCurrent;
+            Arms[armIndex]->mBrakeDirectionCurrent = 1.0;
+        } else {
+            Arms[armIndex]->mBrakeReleaseCurrent = -brakeCurrent;
+            Arms[armIndex]->mBrakeDirectionCurrent = -1.0;
+        }
+
+        // read pot settings
         cmnDataJSON<vctDoubleVec>::DeSerializeText(Arms[armIndex]->mVoltageToPositionOffsets[0], jsonArm["primary-offsets"]);
         cmnDataJSON<vctDoubleVec>::DeSerializeText(Arms[armIndex]->mVoltageToPositionOffsets[1], jsonArm["secondary-offsets"]);
         cmnDataJSON<vctDoubleVec>::DeSerializeText(Arms[armIndex]->mVoltageToPositionScales[0], jsonArm["primary-scales"]);
@@ -287,7 +378,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         // mV vs V?
         Arms[armIndex]->mStateTableConfiguration.Start();
         for (size_t potIndex = 0; potIndex < 2; potIndex++) {
-            Arms[armIndex]->mVoltageToPositionScales[potIndex].Multiply(1000.0 * 0.9); // 0.9 we assume IO suffers from less voltage loss than ISI controller???????
+            Arms[armIndex]->mVoltageToPositionScales[potIndex].Multiply(1000.0);
         }
         Arms[armIndex]->mStateTableConfiguration.Advance();
     }
@@ -300,10 +391,7 @@ void mtsIntuitiveResearchKitSUJ::Startup(void)
 
 void mtsIntuitiveResearchKitSUJ::Run(void)
 {
-    mCounter++;
-
     ProcessQueuedEvents();
-
     GetRobotData();
 
     switch (mRobotState) {
@@ -400,21 +488,6 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
             arm->mStateTable.Advance();
         }
     }
-#if 0
-    // debug code
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        //std::cerr << "Arm " << armIndex << std::endl;
-        if (mMuxIndex == MUX_MAX_INDEX) {
-            //size_t armIndex = 2;
-            std::cerr << "Arm " << armIndex << std::endl;
-            //std::cerr << "A " << Arms[armIndex]->mVoltages[0] << std::endl << "B " << Arms[armIndex]->mVoltages[1] << std::endl;
-            std::cerr<< Arms[armIndex]->mPositionJointParam.Position() * 180.0 / 3.14159 << std::endl;
-        }
-    }
-    if (mMuxIndex == MUX_MAX_INDEX) {
-        std::cerr<<std::endl;
-    }
-#endif
 }
 
 void mtsIntuitiveResearchKitSUJ::SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState)
@@ -440,8 +513,8 @@ void mtsIntuitiveResearchKitSUJ::SetState(const mtsIntuitiveResearchKitArmTypes:
         mtsIntuitiveResearchKitSUJArmData * arm;
         for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
             arm = Arms[armIndex];
-            arm->mClutched = false;
-            arm->mBrakeCurrent = 0.0;
+            arm->mClutched = 0;
+            arm->mBrakeDesiredCurrent = 0.0;
             mPreviousTic = 0.0;
         }
         mRobotState = newState;
@@ -505,27 +578,27 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
         arm = Arms[armIndex];
         // brakes
-        if (arm->mClutched) {
+        if (arm->mClutched > 0) {
             arm->mStateTableBrakeCurrent.Start();
-            if (((brakeCurrentRate * timeDelta) + arm->mBrakeCurrent) <= MAX_BRAKE_CURRENT) {
-                arm->mBrakeCurrent += brakeCurrentRate * timeDelta;
+            if (((brakeCurrentRate * timeDelta) + arm->mBrakeDesiredCurrent) < arm->mBrakeReleaseCurrent) {
+                arm->mBrakeDesiredCurrent += brakeCurrentRate * timeDelta;
             } else {
-                arm->mBrakeCurrent = MAX_BRAKE_CURRENT;
+                arm->mBrakeDesiredCurrent = arm->mBrakeReleaseCurrent;
             }
             arm->mStateTableBrakeCurrent.Advance();
         }
         else {
-            if (arm->mBrakeCurrent != MIN_BRAKE_CURRENT) {
+            if (arm->mBrakeDesiredCurrent != MIN_BRAKE_CURRENT) {
                 arm->mStateTableBrakeCurrent.Start();
-                if ((arm->mBrakeCurrent - (brakeCurrentRate * timeDelta)) >= MIN_BRAKE_CURRENT) {
-                    arm->mBrakeCurrent -= brakeCurrentRate * timeDelta;
+                if ((arm->mBrakeDesiredCurrent - (brakeCurrentRate * timeDelta)) >= MIN_BRAKE_CURRENT) {
+                    arm->mBrakeDesiredCurrent -= brakeCurrentRate * timeDelta;
                 } else {
-                    arm->mBrakeCurrent = MIN_BRAKE_CURRENT;
+                    arm->mBrakeDesiredCurrent = MIN_BRAKE_CURRENT;
                 }
                 arm->mStateTableBrakeCurrent.Advance();
             }
         }
-        mClutchCurrents[armIndex] = -arm->mBrakeCurrent;
+        mClutchCurrents[armIndex] = arm->mBrakeDirectionCurrent * arm->mBrakeDesiredCurrent;
 
         // position
         arm->mJointGet.Assign(arm->mPositionJointParam.Position(),arm->mManipulator.links.size());
