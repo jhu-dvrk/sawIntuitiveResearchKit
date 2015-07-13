@@ -24,23 +24,17 @@ http://www.cisst.org/cisst/license.txt.
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
-#include <cisstOSAbstraction/osaSleep.h>
-#include <cisstMultiTask/mtsQtApplication.h>
-#include <sawRobotIO1394/mtsRobotIO1394.h>
-#include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
-#include <sawControllers/mtsPIDQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitUDPStreamer.h>
-#include <sawControllers/mtsTeleOperation.h>
-#include <sawControllers/mtsTeleOperationQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQt.h>
 
-#include <cisstMultiTask/mtsCollectorFactory.h>
-#include <cisstMultiTask/mtsCollectorQtFactory.h>
-#include <cisstMultiTask/mtsCollectorQtWidget.h>
+// #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitUDPStreamer.h>
+// #include <sawControllers/mtsTeleOperation.h>
 
-#include <QTabWidget>
+//#include <cisstMultiTask/mtsCollectorFactory.h>
+//#include <cisstMultiTask/mtsCollectorQtFactory.h>
+//#include <cisstMultiTask/mtsCollectorQtWidget.h>
+
+#include <QApplication>
 
 void fileExists(const std::string & description, const std::string & filename)
 {
@@ -113,24 +107,16 @@ int main(int argc, char ** argv)
         componentManager = mtsManagerLocal::GetInstance();
     }
 
-    // create a Qt application and tab to hold all widgets
-    mtsQtApplication * qtAppTask = new mtsQtApplication("QtApplication", argc, argv);
-    qtAppTask->Configure();
-    componentManager->AddComponent(qtAppTask);
 
     // console
     mtsIntuitiveResearchKitConsole * console = new mtsIntuitiveResearchKitConsole("console");
-    // configure will add the console to the component manager
+    // the configure method adds the console to the manager so it can connect components properly
     console->Configure(jsonMainConfigFile);
 
-    mtsIntuitiveResearchKitConsoleQtWidget * consoleGUI = new mtsIntuitiveResearchKitConsoleQtWidget("consoleGUI");
-    componentManager->AddComponent(consoleGUI);
-    // connect consoleGUI to console
-    componentManager->Connect("console", "Main", "consoleGUI", "Main");
+    // add all Qt widgets
+    QApplication application(argc, argv);
 
-    // organize all widgets in a tab widget
-    QTabWidget * tabWidget = new QTabWidget;
-    tabWidget->addTab(consoleGUI, "Main");
+    mtsIntuitiveResearchKitConsoleQt * consoleQt = new mtsIntuitiveResearchKitConsoleQt();
 
 #if 0
     // find name of button event used to detect if operator is present
@@ -153,22 +139,9 @@ int main(int argc, char ** argv)
                               io->GetName(), "CAMERA");
     componentManager->Connect(console->GetName(), "OperatorPresent",
                               operatorPresentComponent, operatorPresentInterface);
+#endif
 
-    // connect ioGUIMaster to io
-    mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");
-    componentManager->AddComponent(robotWidgetFactory);
-    componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "io", "Configuration");
-    robotWidgetFactory->Configure();
-
-    // add all IO GUI to tab
-    mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
-    for (iterator = robotWidgetFactory->Widgets().begin();
-         iterator != robotWidgetFactory->Widgets().end();
-         ++iterator) {
-        tabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
-    }
-    tabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
-
+#if 0
     // setup arms defined in the json configuration file
     for (unsigned int index = 0; index < pairs.size(); ++index) {
         Json::Value jsonMaster = pairs[index]["master"];
@@ -204,20 +177,6 @@ int main(int argc, char ** argv)
                 exit(-1);
             }
         }
-
-        Json::Value jsonSlave = pairs[index]["slave"];
-        std::string slaveName =  jsonSlave["name"].asString();
-        std::string slavePIDFile = jsonSlave["pid"].asString();
-        std::string slaveKinematicFile = jsonSlave["kinematic"].asString();
-
-        fileExists(slaveName + " PID", slavePIDFile);
-        fileExists(slaveName + " kinematic", slaveKinematicFile);
-        mtsIntuitiveResearchKitConsole::Arm * psm
-                = new mtsIntuitiveResearchKitConsole::Arm(slaveName, io->GetName());
-        psm->ConfigurePID(slavePIDFile);
-        psm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_PSM,
-                          slaveKinematicFile, periodKinematics);
-        console->AddArm(psm);
 
         // PID Master GUI
         std::string masterPIDName = masterName + " PID";
@@ -292,32 +251,26 @@ int main(int argc, char ** argv)
         collectorQtFactory->Connect();
         collectorQtFactory->ConnectToWidget(collectorQtWidget);
     }
+#endif
 
-    // show all widgets
-    tabWidget->show();
 
     //-------------- create the components ------------------
-    io->CreateAndWait(2.0 * cmn_s); // this will also create the pids as they are in same thread
-    io->StartAndWait(2.0 * cmn_s);
+    // io->CreateAndWait(2.0 * cmn_s); // this will also create the pids as they are in same thread
+    // io->StartAndWait(2.0 * cmn_s);
 
     // start all other components
     componentManager->CreateAllAndWait(2.0 * cmn_s);
     componentManager->StartAllAndWait(2.0 * cmn_s);
 
-    // QtApplication will run in main thread and return control
-    // when exited.
+    application.exec();
 
     componentManager->KillAllAndWait(2.0 * cmn_s);
     componentManager->Cleanup();
 
-    // delete dvgc robot
-    delete io;
-    delete robotWidgetFactory;
-
-#endif
-
     // stop all logs
     cmnLogger::Kill();
+
+    delete consoleQt;
 
     return 0;
 }

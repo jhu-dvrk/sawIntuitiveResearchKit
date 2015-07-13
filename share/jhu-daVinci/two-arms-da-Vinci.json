@@ -1,0 +1,50 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+
+{
+    "io": {
+        "period": 0.005, // in seconds
+        "port": 0 // default is 0
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "io": "jhu-daVinci/sawRobotIO1394-PSM1-49695.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "dvpsm.rob"
+        }
+        ,
+        {
+            "name": "SUJ",
+            "type": "SUJ",
+            "io": "jhu-daVinci/sawRobotIO1394-SUJ.xml",
+            "kinematic": "jhu-daVinci/suj_modified.json"
+        }
+        // {
+        //     "name": "MTML",
+        //     "type": "MTM",
+        //     "io": "sawRobotIO1394-MTMR-22403.xml",
+        //     //         "io": "sawRobotIO1394-MTML-22723.xml",
+        //     "pid": "sawControllersPID-MTM.xml",
+        //     "kinematic": "dvmtm.rob"
+        // }
+    ]
+    // ,
+    // "pairs":
+    // [
+    //     {
+    //         "master": {
+    //             "name": "MTML"
+    //         }
+    //         ,
+    //         "slave": {
+    //             "name": "PSM1",
+    //             "io": "sawRobotIO1394-PSM1-49695.xml",
+    //             "pid": "sawControllersPID-PSM.xml",
+    //             "kinematic": "dvpsm.rob"
+    //         }
+    //     }
+    // ]
+}

@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitConsole_h
 
 #include <cisstMultiTask/mtsTaskFromSignal.h>
+#include <cisstParameterTypes/prmEventButton.h>
 
 #include <json/json.h>
 
@@ -29,12 +30,14 @@ class mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
 public:
+    friend class mtsIntuitiveResearchKitConsoleQt;
 
     class Arm {
     public:
         typedef enum {ARM_UNDEFINED, ARM_MTM, ARM_PSM, ARM_ECM, ARM_SUJ, ARM_GENERIC_MTM, ARM_GENERIC_PSM} ArmType;
 
         friend class mtsIntuitiveResearchKitConsole;
+        friend class mtsIntuitiveResearchKitConsoleQt;
 
         Arm(const std::string & name,
             const std::string & ioComponentName);
@@ -48,7 +51,7 @@ public:
         /*! Create and configure the robot arm. */
         void ConfigureArm(const ArmType armType,
                           const std::string & configFile,
-                          const double & periodInSeconds = 0.0 * cmn_ms,
+                          const double & periodInSeconds = 0.5 * cmn_ms,
                           mtsComponent * existingArm = 0);
 
         /*! Accessors */
@@ -78,6 +81,7 @@ public:
     class TeleOp {
     public:
         friend class mtsIntuitiveResearchKitConsole;
+        friend class mtsIntuitiveResearchKitConsoleQt;
 
         TeleOp(const std::string & name);
 
@@ -110,6 +114,9 @@ public:
     bool AddArm(Arm * newArm);
     bool AddArm(mtsComponent * genericArm, const Arm::ArmType armType);
     bool AddTeleOperation(const std::string & name);
+
+    bool AddFootpedalInterfaces(void);
+    bool ConnectFootpedalInterfaces(void);
 
 protected:
     bool mConfigured;

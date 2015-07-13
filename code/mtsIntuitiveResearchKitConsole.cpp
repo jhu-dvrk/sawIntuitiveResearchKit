@@ -49,7 +49,6 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & confi
 {
     mPIDConfigurationFile = configFile;
     mPIDComponentName = mName + "-PID";
-    mPIDConfigurationFile = configFile;
 
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     mtsPID * pidMaster = new mtsPID(mPIDComponentName,
@@ -135,6 +134,14 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                   IOComponentName(), "MuxReset");
         componentManager->Connect(Name(), "MuxIncrement",
                                   IOComponentName(), "MuxIncrement");
+        componentManager->Connect(Name(), "SUJ-Clutch-1",
+                                  IOComponentName(), "SUJ-Clutch-1");
+        componentManager->Connect(Name(), "SUJ-Clutch-2",
+                                  IOComponentName(), "SUJ-Clutch-2");
+        componentManager->Connect(Name(), "SUJ-Clutch-3",
+                                  IOComponentName(), "SUJ-Clutch-3");
+        componentManager->Connect(Name(), "SUJ-Clutch-4",
+                                  IOComponentName(), "SUJ-Clutch-4");
     }
 }
 
@@ -149,7 +156,6 @@ const std::string & mtsIntuitiveResearchKitConsole::Arm::IOComponentName(void) c
 const std::string & mtsIntuitiveResearchKitConsole::Arm::PIDComponentName(void) const {
     return mPIDComponentName;
 }
-
 
 
 mtsIntuitiveResearchKitConsole::TeleOp::TeleOp(const std::string & name):
@@ -176,36 +182,6 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
         interfaceProvided->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
         interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
         interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
-    }
-
-    // Footpedal events, receive
-    mtsInterfaceRequired * clutchRequired = AddInterfaceRequired("Clutch");
-    if (clutchRequired) {
-        clutchRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ClutchEventHandler, this, "Button");
-    }
-
-    mtsInterfaceRequired * cameraRequired = AddInterfaceRequired("Camera");
-    if (cameraRequired) {
-        cameraRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::CameraEventHandler, this, "Button");
-    }
-
-    mtsInterfaceRequired * headRequired = AddInterfaceRequired("OperatorPresent");
-    if (headRequired) {
-        headRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler, this, "Button");
-    }
-
-    // Console events, send
-    interfaceProvided = AddInterfaceProvided("Clutch");
-    if (interfaceProvided) {
-        interfaceProvided->AddEventWrite(ConsoleEvents.Clutch, "Button", prmEventButton());
-    }
-    interfaceProvided = AddInterfaceProvided("Camera");
-    if (interfaceProvided) {
-        interfaceProvided->AddEventWrite(ConsoleEvents.Camera, "Button", prmEventButton());
-    }
-    interfaceProvided = AddInterfaceProvided("OperatorPresent");
-    if (interfaceProvided) {
-        interfaceProvided->AddEventWrite(ConsoleEvents.OperatorPresent, "Button", prmEventButton());
     }
 }
 
@@ -264,12 +240,32 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         }
     }
 
-    // loop over all arms to configure!
-    std::cerr << CMN_LOG_DETAILS << " need to loop over all arms to configure: io->Configure(ioFile); " << std::endl;
+    // loop over all arms to configure IO only
+    const ArmList::iterator end = mArms.end();
+    ArmList::iterator iter;
+    for (iter = mArms.begin(); iter != end; ++iter) {
+        std::string ioConfig = iter->second->mIOConfigurationFile;
+        std::cerr << "configuring io for " << iter->first << " with " << ioConfig << std::endl;
+        if (ioConfig != "") {
+            io->Configure(ioConfig);
+        }
+    }
+    mtsComponentManager::GetInstance()->AddComponent(io);
+    mtsComponentManager::GetInstance()->AddComponent(this);
 
-
-    std::cerr << CMN_LOG_DETAILS << "componentManager->AddComponent(io);" << std::endl;
-
+    // now can configure PID and Arms
+    for (iter = mArms.begin(); iter != end; ++iter) {
+        std::string pidConfig = iter->second->mPIDConfigurationFile;
+        if (pidConfig != "") {
+            iter->second->ConfigurePID(pidConfig);
+        }
+        std::string armConfig = iter->second->mArmConfigurationFile;
+        if (armConfig != "") {
+            iter->second->ConfigureArm(iter->second->mType, armConfig);
+        }
+        // "add" the arm to the manager
+        AddArm(iter->second);
+    }
     mConfigured = true;
 }
 
@@ -361,6 +357,50 @@ bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name)
     return false;
 }
 
+bool mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
+{
+    // Footpedal events, receive
+    mtsInterfaceRequired * clutchRequired = AddInterfaceRequired("Clutch");
+    if (clutchRequired) {
+        clutchRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ClutchEventHandler, this, "Button");
+    } else {
+        return false;
+    }
+    mtsInterfaceRequired * cameraRequired = AddInterfaceRequired("Camera");
+    if (cameraRequired) {
+        cameraRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::CameraEventHandler, this, "Button");
+    } else {
+        return false;
+    }
+    mtsInterfaceRequired * headRequired = AddInterfaceRequired("OperatorPresent");
+    if (headRequired) {
+        headRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler, this, "Button");
+    } else {
+        return false;
+    }
+
+    // Console events, send
+    mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Clutch");
+    if (interfaceProvided) {
+        interfaceProvided->AddEventWrite(ConsoleEvents.Clutch, "Button", prmEventButton());
+    } else {
+        return false;
+    }
+    interfaceProvided = AddInterfaceProvided("Camera");
+    if (interfaceProvided) {
+        interfaceProvided->AddEventWrite(ConsoleEvents.Camera, "Button", prmEventButton());
+    } else {
+        return false;
+    }
+    interfaceProvided = AddInterfaceProvided("OperatorPresent");
+    if (interfaceProvided) {
+        interfaceProvided->AddEventWrite(ConsoleEvents.OperatorPresent, "Button", prmEventButton());
+    } else {
+        return false;
+    }
+    return true;
+}
+
 bool mtsIntuitiveResearchKitConsole::FileExists(const std::string & description, const std::string & filename) const
 {
     if (!cmnPath::Exists(filename)) {
@@ -384,9 +424,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     if (armIterator == mArms.end()) {
         // create a new arm if needed
         armPointer = new Arm(armName, ioComponentName);
+        mArms[armName] = armPointer;
     } else {
         armPointer = armIterator->second;
-        mArms[armName] = armPointer;
     }
     armPointer->mType = type;
 
@@ -401,6 +441,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             armPointer->mType = Arm::ARM_PSM;
         } else if (typeString == "ECM") {
             armPointer->mType = Arm::ARM_ECM;
+        } else if (typeString == "SUJ") {
+            armPointer->mType = Arm::ARM_SUJ;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName << ": invalid type \""
                                      << typeString << "\", needs to be MTM, PSM or ECM" << std::endl;
@@ -413,12 +455,23 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         if (!FileExists(armName + " io", armPointer->mIOConfigurationFile)) {
             return false;
         }
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"io\" setting for arm \""
+                                 << armName << "\"" << std::endl;
     }
-    jsonValue = jsonArm["pid"];
-    if (!jsonValue.empty()) {
-        armPointer->mPIDConfigurationFile = jsonValue.asString();
-        if (!FileExists(armName + " PID", armPointer->mPIDConfigurationFile)) {
-            return false;
+    // PID only required for MTM, PSM and ECM
+    if ((armPointer->mType == Arm::ARM_MTM)
+        || (armPointer->mType == Arm::ARM_PSM)
+        || (armPointer->mType == Arm::ARM_ECM)) {
+        jsonValue = jsonArm["pid"];
+        if (!jsonValue.empty()) {
+            armPointer->mPIDConfigurationFile = jsonValue.asString();
+            if (!FileExists(armName + " PID", armPointer->mPIDConfigurationFile)) {
+                return false;
+            }
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"pid\" setting for arm \""
+                                     << armName << "\"" << std::endl;
         }
     }
     jsonValue = jsonArm["kinematic"];
@@ -427,6 +480,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         if (!FileExists(armName + " kinematic", armPointer->mArmConfigurationFile)) {
             return false;
         }
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"kinematic\" setting for arm \""
+                                 << armName << "\"" << std::endl;
     }
     return true;
 }
@@ -447,7 +503,6 @@ bool mtsIntuitiveResearchKitConsole::SetupAndConnectInterfaces(Arm * arm)
     } else {
         return false;
     }
-
 
     // PID
     if (arm->mType != Arm::ARM_SUJ) {
