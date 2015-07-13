@@ -226,6 +226,10 @@ public:
     vctDoubleVec mNewJointScales[2];
     vctDoubleVec mNewJointOffsets[2];
 
+    //Setup transformations
+    vctFrame4x4<double> mWorldToSUJ;
+    vctFrame4x4<double> mSUJToTool;
+
     // clutch data
     unsigned int mClutched;
     double mBrakeDesiredCurrent;
@@ -381,6 +385,28 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
             Arms[armIndex]->mVoltageToPositionScales[potIndex].Multiply(1000.0);
         }
         Arms[armIndex]->mStateTableConfiguration.Advance();
+
+        // Read setup transforms
+        vctDoubleVec setupTransforms[4];
+        setupTransforms[0].SetSize(3);
+        setupTransforms[1].SetSize(9);
+        setupTransforms[2].SetSize(3);
+        setupTransforms[3].SetSize(9);
+
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(setupTransforms[0], jsonArm["world-origin-to-suj-translation"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(setupTransforms[1], jsonArm["world-origin-to-suj-rotation"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(setupTransforms[2], jsonArm["suj-tip-to-tool-origin-translation"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(setupTransforms[3], jsonArm["suj-tip-to-tool-origin-rotation"]);
+
+        Arms[armIndex]->mWorldToSUJ.Translation().Assign(setupTransforms[0]);
+        Arms[armIndex]->mWorldToSUJ.Rotation().Assign(setupTransforms[1][0], setupTransforms[1][3], setupTransforms[1][6],
+                                                      setupTransforms[1][1], setupTransforms[1][4], setupTransforms[1][7],
+                                                      setupTransforms[1][2], setupTransforms[1][5], setupTransforms[1][8]);
+
+        Arms[armIndex]->mSUJToTool.Translation().Assign(setupTransforms[2]);
+        Arms[armIndex]->mSUJToTool.Rotation().Assign(setupTransforms[3][0], setupTransforms[3][3], setupTransforms[3][6],
+                                                     setupTransforms[3][1], setupTransforms[3][4], setupTransforms[3][7],
+                                                     setupTransforms[3][2], setupTransforms[3][5], setupTransforms[3][8]);
     }
 }
 
@@ -484,6 +510,13 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
             arm->mPositionJointParam.Position()[3] = arm->mPositions[1][3];
             arm->mPositionJointParam.Position()[4] = arm->mPositions[0][4];
             arm->mPositionJointParam.Position()[5] = arm->mPositions[0][5];
+
+            if (arm->mName.Data == "ECM") {
+                // ECM has only 4 joints
+                arm->mPositionJointParam.Position()[4] = 0.0;
+                arm->mPositionJointParam.Position()[5] = 0.0;
+            }
+
             // advance this arm state table
             arm->mStateTable.Advance();
         }
@@ -600,10 +633,18 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
         }
         mClutchCurrents[armIndex] = arm->mBrakeDirectionCurrent * arm->mBrakeDesiredCurrent;
 
-        // position
+        // Joint forward kinematics
         arm->mJointGet.Assign(arm->mPositionJointParam.Position(),arm->mManipulator.links.size());
-        vctFrame4x4<double> position = arm->mManipulator.ForwardKinematics(arm->mJointGet, arm->mManipulator.links.size());
-        arm->mPositionCartesianParam.Position().From(position);
+        vctFrame4x4<double> sujKinematics = arm->mManipulator.ForwardKinematics(arm->mJointGet, arm->mManipulator.links.size());
+
+        //std::cerr<<arm->mName.Data<<"\n"<<std::endl;
+        //std::cerr<<sujKinematics<<"\n"<<std::endl;
+        //std::cerr<<arm->mSUJToTool<<"\n"<<std::endl;
+        //std::cerr<<arm->mWorldToSUJ<<"\n"<<std::endl;
+
+        vctFrame4x4<double> baseOfTool = arm->mSUJToTool * sujKinematics * arm->mWorldToSUJ;
+        baseOfTool.Rotation().NormalizedSelf();
+        arm->mPositionCartesianParam.Position().From(baseOfTool);
     }
     RobotIO.SetActuatorCurrent(mClutchCurrents);
     mPreviousTic = currentTic;

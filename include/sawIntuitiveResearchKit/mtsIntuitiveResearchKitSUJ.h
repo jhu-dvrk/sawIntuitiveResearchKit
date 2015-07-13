@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
+#include <cisstParameterTypes/prmPositionCartesianGet.h>
 
 // forward declaration
 class mtsIntuitiveResearchKitSUJArmData;
