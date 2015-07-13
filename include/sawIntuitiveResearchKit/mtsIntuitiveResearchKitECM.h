@@ -70,7 +70,6 @@ protected:
     void RunHomingCalibrateArm(void);
 
     void EventHandlerTrackingError(void);
-
     void EventHandlerManipClutch(const prmEventButton & button);
 
     struct {

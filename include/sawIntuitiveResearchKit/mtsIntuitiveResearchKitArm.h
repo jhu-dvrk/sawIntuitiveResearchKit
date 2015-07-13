@@ -22,9 +22,11 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
+#include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
+#include <cisstParameterTypes/prmVelocityJointGet.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
@@ -113,8 +115,11 @@ protected:
         mtsFunctionWrite Enable;
         mtsFunctionRead  GetPositionJoint;
         mtsFunctionRead  GetPositionJointDesired;
+        mtsFunctionRead  GetStateJoint;
+        mtsFunctionRead  GetStateJointDesired;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetCheckJointLimit;
+        mtsFunctionRead  GetVelocityJoint;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite SetTorqueJoint;
         mtsFunctionWrite SetTorqueOffset;
@@ -125,6 +130,7 @@ protected:
     // Interface to IO component
     mtsInterfaceRequired * IOInterface;
     struct InterfaceRobotTorque {
+        mtsFunctionRead  GetSerialNumber;
         mtsFunctionVoid  EnablePower;
         mtsFunctionVoid  DisablePower;
         mtsFunctionRead  GetActuatorAmpStatus;
@@ -164,7 +170,14 @@ protected:
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
 
+    //! robot current joint velocity
+    prmVelocityJointGet JointVelocityGetParam;
+    vctDoubleVec JointVelocityGet;
+
+    prmStateJoint StateJointParam, StateJointDesiredParam;
+
     // Velocities
+    vctFrm4x4 CartesianGetPrevious;
     prmPositionCartesianGet CartesianGetPreviousParam;
     prmVelocityCartesianGet CartesianVelocityGetParam;
 
@@ -191,6 +204,8 @@ protected:
     double HomingTimer;
     bool HomingPowerRequested;
     bool HomingCalibrateArmStarted;
+
+    unsigned int mCounter;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitArm);

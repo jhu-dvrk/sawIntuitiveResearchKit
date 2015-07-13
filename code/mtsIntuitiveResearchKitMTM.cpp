@@ -67,11 +67,16 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // initialize gripper state
     GripperClosed = false;
 
-    JointTrajectory.Velocity.SetAll(720.0 * cmnPI_180); // degrees per second
-    JointTrajectory.Acceleration.SetAll(720.0 * cmnPI_180);
+    JointTrajectory.Velocity.SetAll(180.0 * cmnPI_180); // degrees per second
+    JointTrajectory.Acceleration.SetAll(180.0 * cmnPI_180);
+    JointTrajectory.Velocity.Element(6) = 1080.0 * cmnPI_180; // roll can go fast
+    JointTrajectory.Acceleration.Element(6) = 1080.0 * cmnPI_180;
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
+    JointTrajectory.GoalTolerance.Element(6) = 6.0 * cmnPI / 180.0; // roll has low encoder resolution
      // IO level treats the gripper as joint :-)
-    PotsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
+    PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
+    // Hack, pot reading is slower than encoder
+    PotsToEncodersTolerance.Element(5) = 50.0 * cmnPI_180;
     // pots on gripper rotation are not directly mapped to encoders
     PotsToEncodersTolerance.Element(6) = cmnTypeTraits<double>::PlusInfinityOrMax();
     // last joint is gripper, encoders can be anything
@@ -82,6 +87,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // Main interface should have been created by base class init
     CMN_ASSERT(RobotInterface);
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetWrench, this, "SetWrench");
+
     // Gripper
     RobotInterface->AddCommandReadState(this->StateTable, GripperPosition, "GetGripperPosition");
     RobotInterface->AddEventVoid(GripperEvents.GripperPinch, "GripperPinchEvent");
@@ -225,12 +231,18 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
+    {
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
             MessageEvents.Error(this->GetName() + " is not calibrated");
             return;
         }
         RobotState = newState;
-        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
+        //set jnt to current pos, otherwise the robot will jump to previous setpoint
+        JointSet.ForceAssign(JointGet);
+        SetPositionJointLocal(JointSet);
+
+        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN)
+        {
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position cartesian");
         } else {
@@ -238,7 +250,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             MessageEvents.Status(this->GetName() + " position goal cartesian");
         }
         break;
-
+    }
     case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
             MessageEvents.Error(this->GetName() + " is not homed");

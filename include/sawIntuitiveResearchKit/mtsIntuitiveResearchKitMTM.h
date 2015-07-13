@@ -79,7 +79,7 @@ protected:
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
 
-    void Init(void);
+    virtual void Init(void);
 
     /*! Get data specific to the MTM (gripper angle using analog inputs) after
       calling mtsIntuitiveResearchKitArm::GetRobotData. */
@@ -113,9 +113,6 @@ protected:
         mtsFunctionVoid GripperPinch;
         mtsFunctionWrite GripperClosed;
     } GripperEvents;
-
-    //! robot cartesian velocity
-    prmVelocityCartesianGet CartesianVelocityParam;
 
     //! robot cartesian position when cluthed
     vctFrm4x4 CartesianClutched;

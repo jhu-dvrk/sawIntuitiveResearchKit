@@ -65,7 +65,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     JointTrajectory.Acceleration.SetAll(90.0 * cmnPI_180);
     JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
-    PotsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
+    // high values for engage adapter/tool until these use a proper trajectory generator
+    PotsToEncodersTolerance.SetAll(180.0 * cmnPI_180); // 180 degrees for rotations
     PotsToEncodersTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm
 
     // for tool/adapter engage procedure
@@ -156,7 +157,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     switch (newState) {
 
-    case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:    
+    case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
         RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
         RobotIO.DisablePower();
         PID.Enable(false);
@@ -256,6 +257,10 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             tolerances.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
             PID.SetTrackingErrorTolerance(tolerances);
             PID.EnableTrackingError(true);
+            // set tighter pots/encoder tolerances
+            PotsToEncodersTolerance.SetAll(20.0 * cmnPI_180); // 10 degrees for rotations
+            PotsToEncodersTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm
+            RobotIO.SetPotsToEncodersTolerance(PotsToEncodersTolerance);
         }
         RobotState = newState;
         MessageEvents.Status(this->GetName() + " ready");
@@ -280,25 +285,33 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            MessageEvents.Error(this->GetName() + " is not calibrated");
-            return;
-        }
-        // check that the tool is inserted deep enough
-        if (JointGet.Element(2) < 80.0 * cmn_mm) {
-            MessageEvents.Error(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
-            break;
-        }
-        RobotState = newState;
-        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
-            IsGoalSet = false;
-            MessageEvents.Status(this->GetName() + " position cartesian");
-        } else {
-            JointTrajectory.EndTime = 0.0;
-            MessageEvents.Status(this->GetName() + " position goal cartesian");
-        }
-        break;
+    {
+      if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+          MessageEvents.Error(this->GetName() + " is not calibrated");
+          return;
+      }
+      // check that the tool is inserted deep enough
+      if (JointGet.Element(2) < 80.0 * cmn_mm) {
+          MessageEvents.Error(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
+          break;
+      }
+      RobotState = newState;
 
+      // init CartesianSet to current pose
+      vctDoubleRot3 tmprot;
+      tmprot.FromNormalized(CartesianGet.Rotation());
+      CartesianSetParam.SetGoal(CartesianGet.Translation());
+      CartesianSetParam.SetGoal(tmprot);
+
+      if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
+          IsGoalSet = false;
+          MessageEvents.Status(this->GetName() + " position cartesian");
+      } else {
+          JointTrajectory.EndTime = 0.0;
+          MessageEvents.Status(this->GetName() + " position goal cartesian");
+      }
+      break;
+    }
     case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
             MessageEvents.Error(this->GetName() + " is not calibrated");

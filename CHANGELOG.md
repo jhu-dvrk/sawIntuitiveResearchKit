@@ -1,6 +1,20 @@
 Change log
 ==========
 
+1.1.1 (2015-05-15)
+==================
+
+* API changes:
+  * None
+* Deprecated features:
+  * None
+* New features:
+  * None
+* Bug fixes:
+  * Removed duplicate method Configure in MTM (base class Arm method is used)
+  * PSM: increased pots to encoder tolerance during homing
+  * Gripper calibration example: added code to preload encoders to avoid encoder bit overflow
+
 1.1.0 (2015-04-28)
 ==================
 

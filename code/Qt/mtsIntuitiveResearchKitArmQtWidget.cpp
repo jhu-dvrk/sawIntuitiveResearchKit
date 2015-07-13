@@ -23,6 +23,10 @@ http://www.cisst.org/cisst/license.txt.
 // Qt include
 #include <QString>
 #include <QtGui>
+#include <QTextEdit>
+#include <QPushButton>
+#include <QCheckBox>
+#include <QLineEdit>
 
 // cisst
 #include <cisstMultiTask/mtsInterfaceRequired.h>
@@ -40,21 +44,19 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
     DirectControl = false;
 
     // Setup CISST Interface
-    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Manipulator");
-    if (interfaceRequired) {
-        interfaceRequired->AddFunction("GetPositionCartesian", Arm.GetPositionCartesian);
-        interfaceRequired->AddFunction("GetRobotControlState", Arm.GetRobotControlState);
-        interfaceRequired->AddFunction("SetRobotControlState", Arm.SetRobotControlState);
-        interfaceRequired->AddFunction("GetPeriodStatistics", Arm.GetPeriodStatistics);
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::ErrorEventHandler,
+    InterfaceRequired = AddInterfaceRequired("Manipulator");
+    if (InterfaceRequired) {
+        InterfaceRequired->AddFunction("GetPositionCartesian", Arm.GetPositionCartesian);
+        InterfaceRequired->AddFunction("GetRobotControlState", Arm.GetRobotControlState);
+        InterfaceRequired->AddFunction("SetRobotControlState", Arm.SetRobotControlState);
+        InterfaceRequired->AddFunction("GetPeriodStatistics", Arm.GetPeriodStatistics);
+        InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::ErrorEventHandler,
                                                 this, "Error");
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::WarningEventHandler,
+        InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::WarningEventHandler,
                                                 this, "Warning");
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::StatusEventHandler,
+        InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::StatusEventHandler,
                                                 this, "Status");
     }
-    setupUi();
-    startTimer(TimerPeriodInMilliseconds); // ms
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::Configure(const std::string &filename)
@@ -64,7 +66,8 @@ void mtsIntuitiveResearchKitArmQtWidget::Configure(const std::string &filename)
 
 void mtsIntuitiveResearchKitArmQtWidget::Startup(void)
 {
-    CMN_LOG_CLASS_INIT_VERBOSE << "mtsIntuitiveResearchKitManipulatorQtWidget::Startup" << std::endl;
+    setupUi();
+    startTimer(TimerPeriodInMilliseconds); // ms
     if (!parent()) {
         show();
     }
@@ -73,7 +76,6 @@ void mtsIntuitiveResearchKitArmQtWidget::Startup(void)
 void mtsIntuitiveResearchKitArmQtWidget::Cleanup(void)
 {
     this->hide();
-    CMN_LOG_CLASS_INIT_VERBOSE << "mtsIntuitiveResearchKitManipulatorQtWidget::Cleanup" << std::endl;
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::closeEvent(QCloseEvent * event)
@@ -110,6 +112,9 @@ void mtsIntuitiveResearchKitArmQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(eve
 
     Arm.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
+
+    // for derived classes
+    this->timerEventDerived();
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::SlotTextChanged(void)
@@ -130,10 +135,10 @@ void mtsIntuitiveResearchKitArmQtWidget::SlotHome(void)
 
 void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
 {
-    QVBoxLayout * mainLayout = new QVBoxLayout;
+    MainLayout = new QVBoxLayout;
 
     QHBoxLayout * topLayout = new QHBoxLayout;
-    mainLayout->addLayout(topLayout);
+    MainLayout->addLayout(topLayout);
 
     // 3D position
     QFRPositionWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
@@ -148,7 +153,7 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
 
     // state
     QHBoxLayout * stateLayout = new QHBoxLayout;
-    mainLayout->addLayout(stateLayout);
+    MainLayout->addLayout(stateLayout);
     QCBEnableDirectControl = new QCheckBox("Direct control");
     stateLayout->addWidget(QCBEnableDirectControl);
     QPBHome = new QPushButton("Home");
@@ -159,13 +164,16 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     QLEState->setReadOnly(true);
     stateLayout->addWidget(QLEState);
 
+    // for derived classes
+    this->setupUiDerived();
+
     // messages
     QTEMessages = new QTextEdit();
     QTEMessages->setReadOnly(true);
     QTEMessages->ensureCursorVisible();
-    mainLayout->addWidget(QTEMessages);
+    MainLayout->addWidget(QTEMessages);
 
-    setLayout(mainLayout);
+    setLayout(MainLayout);
     setWindowTitle("Manipulator");
     resize(sizeHint());
 
