@@ -1,5 +1,5 @@
 {
-    "arms":
+    "arms": 
     [
         {
             "name": "PSM1",
@@ -11,55 +11,63 @@
 	    "secondary-offsets": [ -0.035137, -1968.2, 285.57, 3.0228, 136.98, -3.0483],
 	    "secondary-scales": [ 0.00025495, 45.752, -6.8628, -0.001349, -0.031209, 0.0013577],
 	    "DH": {
-		"links":[
+		"links": [
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.0896, "theta":0.0000, "D":0.0000,
-			"type":"prismatic",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.0896, "theta": 0.0000, "D": 0.0000,
+			"type": "prismatic",
+			"mode": "active",
+			"offset": 0.0
 		    },
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.0000, "theta":0.0000, "D":0.4166,
-			"type":"revolute",
-			"mode":"active",
-			"offset":1.5708
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.0000, "theta": 0.0000, "D": 0.4166,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.0
 		    },
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.4318, "theta":0.0000, "D":0.1429,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.4318, "theta": 0.0000, "D": 0.1429,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.0
 		    },
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.4318, "theta":1.5708, "D":-0.1302,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.4318, "theta": 0.0000, "D": -0.1302,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 1.5708
 		    },
 		    {
-			"convention":"modified",
-			"alpha":1.5708, "A":0.0000, "theta":0.0000, "D":0.4089,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 1.5708, "A": 0.0000, "theta": 0.0000, "D": 0.4089,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.0
 		    },
 		    {
-			"convention":"modified",
-			"alpha":-1.5708, "A":0.0000, "theta":-1.5708, "D":-0.1029,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": -1.5708, "A": 0.0000, "theta": 0.0000, "D": -0.1029,
+			"type": "revolute",
+			"mode": "active",
+			"offset": -1.5708
 		    }
 		]
 	    },
-	    "world-origin-to-suj-translation": [-0.1016 , -0.1016, 0.4300],
-	    "world-origin-to-suj-rotation": [-1.0000, 0.0000, 0.0000, 0.0000, -1.0000, 0.0000, 0.0000, 0.0000, 1.0000],
-	    "suj-tip-to-tool-origin-translation": [0.4864, 0.0000, 0.1524],
-	    "suj-tip-to-tool-origin-rotation": [0.0000, 1.0000, 0.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000]
+	    "world-origin-to-suj": {
+	    	"Translation": [-0.1016 , -0.1016, 0.4300],
+		"Rotation" : [[-1.0000,  0.0000,  0.0000],
+			      [ 0.0000, -1.0000,  0.0000],
+			      [ 0.0000,  0.0000,  1.0000]]
+	    },
+	    "suj-tip-to-tool-origin": {
+		"Translation": [0.4864, 0.0000, 0.1524],
+		"Rotation" : [[ 0.0000, -1.0000,  0.0000],
+			      [ 1.0000,  0.0000,  0.0000],
+			      [ 0.0000,  0.0000,  1.0000]]
+	    }
 	}
 	,
         {
@@ -72,55 +80,63 @@
 	    "secondary-offsets": [-0.043744, -2.3726, -3.0707, 3.072, -3.0734, -3.0697],
 	    "secondary-scales": [0.00027827, 0.0011578, 0.0015001, -0.0015, 0.0014992, 0.0014984],
  	    "DH": {
-		"links":[
+		"links": [
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.0896, "theta":0.0000, "D":0.0000,
-			"type":"prismatic",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.0896, "theta": 0.0000, "D": 0.0000,
+			"type": "prismatic",
+			"mode": "active",
+			"offset": 0.00
 		    },
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.0000, "theta":0.0000, "D":0.4166,
-			"type":"revolute",
-			"mode":"active",
-			"offset":1.5708
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.0000, "theta": 0.0000, "D": 0.4166,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.0
 		    },
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.4318, "theta":0.0000, "D":0.1429,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.4318, "theta": 0.0000, "D": 0.1429,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.00
 		    },
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.4318, "theta":1.5708, "D":-0.1302,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.4318, "theta": 1.5708, "D": -0.1302,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.00
 		    },
 		    {
-			"convention":"modified",
-			"alpha":1.5708, "A":0.0000, "theta":0.0000, "D":0.4089,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 1.5708, "A": 0.0000, "theta": 0.0000, "D": 0.4089,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.00
 		    },
 		    {
-			"convention":"modified",
-			"alpha":-1.5708, "A":0.0000, "theta":-1.5708, "D":-0.1029,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": -1.5708, "A": 0.0000, "theta": -1.5708, "D": -0.1029,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.00
 		    }
 		]
 	    },
-	    "world-origin-to-suj-translation": [0.1016 , -0.1016, 0.4300],
-	    "world-origin-to-suj-rotation": [1.0000, 0.0000, 0.0000, 0.0000, 1.0000, 0.0000, 0.0000, 0.0000, 1.0000],
-	    "suj-tip-to-tool-origin-translation": [0.4864, 0.0000, 0.1524],
-	    "suj-tip-to-tool-origin-rotation": [0.0000, 1.0000, 0.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000]
+	    "world-origin-to-suj": {
+	    	"Translation": [0.1016 , -0.1016, 0.4300],
+		"Rotation" : [[ 1.0000,  0.0000,  0.0000],
+			      [ 0.0000,  1.0000,  0.0000],
+			      [ 0.0000,  0.0000,  1.0000]]
+	    },
+	    "suj-tip-to-tool-origin": {
+		"Translation": [0.4864, 0.0000, 0.1524],
+		"Rotation" : [[ 0.0000, -1.0000,  0.0000],
+			      [ 1.0000,  0.0000,  0.0000],
+			      [ 0.0000,  0.0000,  1.0000]]
+	    }
 	}
 	,
         {
@@ -133,55 +149,63 @@
 	    "secondary-offsets": [-0.29097, -2.3539, 3.0768, -3.0571, -3.0675, -3.0686],
 	    "secondary-scales": [0.00027978, 0.0011505, -0.0014994, 0.0014929, 0.0014978, 0.0014979],
  	    "DH": {
-		"links":[
+		"links": [
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.0896, "theta":0.0000, "D":0.0000,
-			"type":"prismatic",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.0896, "theta": 0.0000, "D": 0.0000,
+			"type": "prismatic",
+			"mode": "active",
+			"offset": 0.00
 		    },
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.0000, "theta":0.0000, "D":0.3404,
-			"type":"revolute",
-			"mode":"active",
-			"offset":1.5708
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.0000, "theta": 0.0000, "D": 0.3404,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.0
 		    },
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.5842, "theta":0.0000, "D":0.1429,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.5842, "theta": 0.0000, "D": 0.1429,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.00
 		    },
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.4318, "theta":1.5708, "D":0.2571,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.4318, "theta": 1.5708, "D": 0.2571,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.00
 		    },
 		    {
-			"convention":"modified",
-			"alpha":1.5708, "A":0.0000, "theta":0.0000, "D":0.4089,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 1.5708, "A": 0.0000, "theta": 0.0000, "D": 0.4089,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.00
 		    },
 		    {
-			"convention":"modified",
-			"alpha":-1.5708, "A":0.0000, "theta":-1.5708, "D":-0.1029,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": -1.5708, "A": 0.0000, "theta": -1.5708, "D": -0.1029,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.00
 		    }
 		]
 	    },
-	    "world-origin-to-suj-translation": [0.0000 , 0.0000, 0.1264],
-	    "world-origin-to-suj-rotation": [0.0000, -1.0000, 0.0000, 1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000],
-	    "suj-tip-to-tool-origin-translation": [0.4864, 0.0000, 0.1524],
-	    "suj-tip-to-tool-origin-rotation": [0.0000, 1.0000, 0.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000]
+	    "world-origin-to-suj": {
+	    	"Translation": [0.0000 , 0.0000, 0.1264],
+            "Rotation" : [[ 0.0000,  1.0000,  0.0000],
+			      [-1.0000,  0.0000,  0.0000],
+			      [ 0.0000,  0.0000,  1.0000]]
+	    },
+	    "suj-tip-to-tool-origin": {
+		"Translation": [0.4864, 0.0000, 0.1524],
+		"Rotation" : [[ 0.0000, -1.0000,  0.0000],
+			      [ 1.0000,  0.0000,  0.0000],
+			      [ 0.0000,  0.0000,  1.0000]]
+	    }
 	}
 	,
         {
@@ -194,55 +218,63 @@
 	    "secondary-offsets": [ 0.19937, -497.94, -362.85, 3.0371, 186.09, 372.75],
 	    "secondary-scales": [ 0.00025788, 11.438, 9.1504, -0.0011838, 0.0000, 0.0000],
  	    "DH": {
-		"links":[
+		"links": [
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.0896, "theta":0.0000, "D":0.0000,
-			"type":"prismatic",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.0896, "theta": 0.0000, "D": 0.0000,
+			"type": "prismatic",
+			"mode": "active",
+			"offset": 0.00
 		    },
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.0000, "theta":0.0000, "D":0.4166,
-			"type":"revolute",
-			"mode":"active",
-			"offset":1.5708
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.0000, "theta": 0.0000, "D": 0.4166,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.0
 		    },
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.4318, "theta":0.0000, "D":0.1429,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.4318, "theta": 0.0000, "D": 0.1429,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.00
 		    },
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":0.4318, "theta":1.5708, "D":-0.3459,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 0.0000, "A": 0.4318, "theta": 1.5708, "D": -0.3459,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.00
 		    },
 		    {
-			"convention":"modified",
-			"alpha":-0.7853, "A":0.0000, "theta":1.5708, "D":0.0000,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": -0.7853, "A": 0.0000, "theta": 1.5708, "D": 0.0000,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.00
 		    },
 		    {
-			"convention":"modified",
-			"alpha":0.0000, "A":-0.0667, "theta":0.0000, "D":0.0000,
-			"type":"revolute",
-			"mode":"active",
-			"offset":0.00
+			"convention": "modified",
+			"alpha": 0.0000, "A": -0.0667, "theta": 0.0000, "D": 0.0000,
+			"type": "revolute",
+			"mode": "active",
+			"offset": 0.00
 		    }
 		]
 	    },
-	    "world-origin-to-suj-translation": [0.0000 , 0.0000, 0.4300],
-	    "world-origin-to-suj-rotation": [0.0000, -1.0000, 0.0000, 1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000],
-	    "suj-tip-to-tool-origin-translation": [0.6126, 0.0000, 0.1016],
-	    "suj-tip-to-tool-origin-rotation": [0.0000, 1.0000, 0.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000]
+	    "world-origin-to-suj": {
+	    	"Translation": [0.0000 , 0.0000, 0.4300],
+		"Rotation" : [[ 0.0000,  1.0000,  0.0000],
+			      [-1.0000,  0.0000,  0.0000],
+			      [ 0.0000,  0.0000,  1.0000]]
+	    },
+	    "suj-tip-to-tool-origin": {
+		"Translation": [0.6126, 0.0000, 0.1016],
+		"Rotation" : [[ 0.0000, -1.0000,  0.0000],
+			      [ 1.0000,  0.0000,  0.0000],
+			      [ 0.0000,  0.0000,  1.0000]]
+	    }
 	}
     ]
 }

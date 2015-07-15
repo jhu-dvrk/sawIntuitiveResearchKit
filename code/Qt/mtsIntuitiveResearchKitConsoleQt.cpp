@@ -24,22 +24,24 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawControllers/mtsPIDQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJQtWidget.h>
+#include <sawControllers/mtsPIDQtWidget.h>
 #include <sawControllers/mtsTeleOperationQtWidget.h>
 #include <QTabWidget>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQt);
 
-mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(void)
+mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(mtsIntuitiveResearchKitConsole * console)
 {
     mtsComponentManager * componentManager = mtsComponentManager::GetInstance();
+
+    // organize all widgets in a tab widget
+    QTabWidget * tabWidget = new QTabWidget;
 
     mtsIntuitiveResearchKitConsoleQtWidget * consoleGUI = new mtsIntuitiveResearchKitConsoleQtWidget("consoleGUI");
     componentManager->AddComponent(consoleGUI);
     // connect consoleGUI to console
     componentManager->Connect("console", "Main", "consoleGUI", "Main");
-
-    // organize all widgets in a tab widget
-    QTabWidget * tabWidget = new QTabWidget;
     tabWidget->addTab(consoleGUI, "Main");
 
     // connect ioGUIMaster to io
@@ -56,6 +58,59 @@ mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(void)
         tabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
     }
     tabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
+
+    const mtsIntuitiveResearchKitConsole::ArmList::iterator end = console->mArms.end();
+    mtsIntuitiveResearchKitConsole::ArmList::iterator iter;
+    for (iter = console->mArms.begin(); iter != end; ++iter) {
+        mtsIntuitiveResearchKitArmQtWidget * armGUI;
+        mtsIntuitiveResearchKitSUJQtWidget * sujGUI;
+        mtsPIDQtWidget * pidGUI;
+
+        const std::string name = iter->first;
+
+        switch(iter->second->mType)
+        {
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM:
+            // PID widget
+            unsigned int numberOfJoints;
+            if (iter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM) {
+                numberOfJoints = 7;
+            } else if (iter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM) {
+                numberOfJoints = 8;
+            } else if (iter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM) {
+                numberOfJoints = 4;
+            }
+
+            pidGUI = new mtsPIDQtWidget(name + "-PID-GUI", numberOfJoints);
+            pidGUI->Configure();
+            componentManager->AddComponent(pidGUI);
+            componentManager->Connect(pidGUI->GetName(), "Controller", iter->second->PIDComponentName(), "Controller");
+            tabWidget->addTab(pidGUI, (name + " PID").c_str());
+
+            // Arm widget
+            armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");
+            armGUI->Configure();
+            componentManager->AddComponent(armGUI);
+            componentManager->Connect(armGUI->GetName(), "Manipulator", iter->second->mName, "Robot");
+            tabWidget->addTab(armGUI, name.c_str());
+            break;
+
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ:
+            sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1-SUJ");
+            componentManager->AddComponent(sujGUI);
+            componentManager->Connect(sujGUI->GetName(), "Manipulator", "SUJ", "PSM1");
+            tabWidget->addTab(sujGUI, "PSM1 SUJ");
+            break;
+
+        default:
+            CMN_LOG_CLASS_INIT_ERROR << "mtsIntuitiveResearchKitConsoleQt: arm "
+                                     << name
+                                     << ": unable to create appropriate Qt widgets for arm of this type"
+                                     << std::endl;
+        }
+    }
 
     // show all widgets
     tabWidget->show();

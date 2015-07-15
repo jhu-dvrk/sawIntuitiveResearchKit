@@ -21,13 +21,14 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitConsoleQt_h
 
 #include <cisstCommon/cmnGenericObject.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 
 class mtsIntuitiveResearchKitConsoleQt: public cmnGenericObject
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsIntuitiveResearchKitConsoleQt(void);
+    mtsIntuitiveResearchKitConsoleQt(mtsIntuitiveResearchKitConsole * console);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsoleQt);

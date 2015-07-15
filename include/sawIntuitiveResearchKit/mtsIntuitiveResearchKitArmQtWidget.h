@@ -67,7 +67,7 @@ protected:
     // so derived class has access to custom parts of widget
     QVBoxLayout * MainLayout;
     mtsInterfaceRequired * InterfaceRequired;
-    inline virtual void setupUiDerived(void) { std::cerr << "base setupUi" << std::endl; };
+    inline virtual void setupUiDerived(void) {};
     inline virtual void timerEventDerived(void) {};
 
 private:

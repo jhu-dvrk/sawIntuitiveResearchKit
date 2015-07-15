@@ -245,7 +245,6 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     ArmList::iterator iter;
     for (iter = mArms.begin(); iter != end; ++iter) {
         std::string ioConfig = iter->second->mIOConfigurationFile;
-        std::cerr << "configuring io for " << iter->first << " with " << ioConfig << std::endl;
         if (ioConfig != "") {
             io->Configure(ioConfig);
         }

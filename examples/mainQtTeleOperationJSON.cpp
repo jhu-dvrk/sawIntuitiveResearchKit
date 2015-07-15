@@ -116,7 +116,7 @@ int main(int argc, char ** argv)
     // add all Qt widgets
     QApplication application(argc, argv);
 
-    mtsIntuitiveResearchKitConsoleQt * consoleQt = new mtsIntuitiveResearchKitConsoleQt();
+    mtsIntuitiveResearchKitConsoleQt * consoleQt = new mtsIntuitiveResearchKitConsoleQt(console);
 
 #if 0
     // find name of button event used to detect if operator is present
@@ -144,21 +144,8 @@ int main(int argc, char ** argv)
 #if 0
     // setup arms defined in the json configuration file
     for (unsigned int index = 0; index < pairs.size(); ++index) {
-        Json::Value jsonMaster = pairs[index]["master"];
-        std::string masterName =  jsonMaster["name"].asString();
-        std::string masterPIDFile = jsonMaster["pid"].asString();
-        std::string masterKinematicFile = jsonMaster["kinematic"].asString();
         std::string masterUDPIP = jsonMaster["UDP-IP"].asString();
         short masterUDPPort = jsonMaster["UDP-port"].asInt();
-
-        fileExists(masterName + " PID", masterPIDFile);
-        fileExists(masterName + " kinematic", masterKinematicFile);
-        mtsIntuitiveResearchKitConsole::Arm * mtm
-                = new mtsIntuitiveResearchKitConsole::Arm(masterName, io->GetName());
-        mtm->ConfigurePID(masterPIDFile);
-        mtm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_MTM,
-                          masterKinematicFile, periodKinematics);
-        console->AddArm(mtm);
 
         if (masterUDPIP != "" || masterUDPPort != 0) {
             if (masterUDPIP != "" && masterUDPPort != 0) {
@@ -177,39 +164,6 @@ int main(int argc, char ** argv)
                 exit(-1);
             }
         }
-
-        // PID Master GUI
-        std::string masterPIDName = masterName + " PID";
-        mtsPIDQtWidget * pidMasterGUI = new mtsPIDQtWidget(masterPIDName, 8);
-        pidMasterGUI->Configure();
-        componentManager->AddComponent(pidMasterGUI);
-        componentManager->Connect(pidMasterGUI->GetName(), "Controller", mtm->PIDComponentName(), "Controller");
-        tabWidget->addTab(pidMasterGUI, masterPIDName.c_str());
-
-        // PID Slave GUI
-        std::string slavePIDName = slaveName + " PID";
-        mtsPIDQtWidget * pidSlaveGUI = new mtsPIDQtWidget(slavePIDName, 7);
-        pidSlaveGUI->Configure();
-        componentManager->AddComponent(pidSlaveGUI);
-        componentManager->Connect(pidSlaveGUI->GetName(), "Controller", psm->PIDComponentName(), "Controller");
-        tabWidget->addTab(pidSlaveGUI, slavePIDName.c_str());
-
-        // Master GUI
-        mtsIntuitiveResearchKitArmQtWidget * masterGUI = new mtsIntuitiveResearchKitArmQtWidget(mtm->Name() + "GUI");
-        masterGUI->Configure();
-        componentManager->AddComponent(masterGUI);
-        tabWidget->addTab(masterGUI, mtm->Name().c_str());
-        // connect masterGUI to master
-        componentManager->Connect(masterGUI->GetName(), "Manipulator", mtm->Name(), "Robot");
-
-        // Slave GUI
-        mtsIntuitiveResearchKitArmQtWidget * slaveGUI = new mtsIntuitiveResearchKitArmQtWidget(psm->Name() + "GUI");
-        slaveGUI->Configure();
-        componentManager->AddComponent(slaveGUI);
-        tabWidget->addTab(slaveGUI, psm->Name().c_str());
-        // connect slaveGUI to slave
-        componentManager->Connect(slaveGUI->GetName(), "Manipulator", psm->Name(), "Robot");
-
         // Teleoperation
         std::string teleName = masterName + "-" + slaveName;
         mtsTeleOperationQtWidget * teleGUI = new mtsTeleOperationQtWidget(teleName + "GUI");
@@ -253,12 +207,7 @@ int main(int argc, char ** argv)
     }
 #endif
 
-
     //-------------- create the components ------------------
-    // io->CreateAndWait(2.0 * cmn_s); // this will also create the pids as they are in same thread
-    // io->StartAndWait(2.0 * cmn_s);
-
-    // start all other components
     componentManager->CreateAllAndWait(2.0 * cmn_s);
     componentManager->StartAllAndWait(2.0 * cmn_s);
 

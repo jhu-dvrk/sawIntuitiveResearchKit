@@ -228,7 +228,7 @@ public:
 
     //Setup transformations
     vctFrame4x4<double> mWorldToSUJ;
-    vctFrame4x4<double> mSUJToTool;
+    vctFrame4x4<double> mSUJToArmBase;
 
     // clutch data
     unsigned int mClutched;
@@ -325,6 +325,8 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to find 4 SUJ arms" << std::endl;
         return;
     }
+
+    mtsIntuitiveResearchKitSUJArmData * arm;
     for (unsigned int index = 0; index < jsonArms.size(); ++index) {
         // name
         Json::Value jsonArm = jsonArms[index];
@@ -333,7 +335,9 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         unsigned int armIndex = plugNumber - 1;
 
         mtsInterfaceProvided * armInterface = this->AddInterfaceProvided(name);
-        Arms[armIndex] = new mtsIntuitiveResearchKitSUJArmData(name, plugNumber, armInterface);
+        arm = new mtsIntuitiveResearchKitSUJArmData(name, plugNumber, armInterface);
+        Arms[armIndex] = arm;
+
         // Robot State so GUI widget for each arm can set/get state
         armInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetRobotControlState,
                                       this, "SetRobotControlState", std::string(""));
@@ -345,7 +349,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         interfaceName << "SUJ-Clutch-" << plugNumber;
         mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
         if (requiredInterface) {
-            requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCallback, Arms[armIndex],
+            requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCallback, arm,
                                                     "Button");
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: can't add required interface for SUJ \""
@@ -356,57 +360,42 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         }
 
         // find serial number
-        Arms[armIndex]->mSerialNumber = jsonArm["serial-number"].asString();
+        arm->mSerialNumber = jsonArm["serial-number"].asString();
 
         // read brake current configuration
         // all math for ramping up/down current is done on positive values
         // negate only when applying
         double brakeCurrent = jsonArm["brake-release-current"].asFloat();
         if (brakeCurrent > 0.0) {
-            Arms[armIndex]->mBrakeReleaseCurrent = brakeCurrent;
-            Arms[armIndex]->mBrakeDirectionCurrent = 1.0;
+            arm->mBrakeReleaseCurrent = brakeCurrent;
+            arm->mBrakeDirectionCurrent = 1.0;
         } else {
-            Arms[armIndex]->mBrakeReleaseCurrent = -brakeCurrent;
-            Arms[armIndex]->mBrakeDirectionCurrent = -1.0;
+            arm->mBrakeReleaseCurrent = -brakeCurrent;
+            arm->mBrakeDirectionCurrent = -1.0;
         }
 
         // read pot settings
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(Arms[armIndex]->mVoltageToPositionOffsets[0], jsonArm["primary-offsets"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(Arms[armIndex]->mVoltageToPositionOffsets[1], jsonArm["secondary-offsets"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(Arms[armIndex]->mVoltageToPositionScales[0], jsonArm["primary-scales"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(Arms[armIndex]->mVoltageToPositionScales[1], jsonArm["secondary-scales"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionOffsets[0], jsonArm["primary-offsets"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionOffsets[1], jsonArm["secondary-offsets"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionScales[0], jsonArm["primary-scales"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionScales[1], jsonArm["secondary-scales"]);
 
         // look for DH
-        Arms[armIndex]->mManipulator.LoadRobot(jsonArm["DH"]);
+        arm->mManipulator.LoadRobot(jsonArm["DH"]);
 
         // mV vs V?
-        Arms[armIndex]->mStateTableConfiguration.Start();
+        arm->mStateTableConfiguration.Start();
         for (size_t potIndex = 0; potIndex < 2; potIndex++) {
-            Arms[armIndex]->mVoltageToPositionScales[potIndex].Multiply(1000.0);
+            arm->mVoltageToPositionScales[potIndex].Multiply(1000.0);
         }
-        Arms[armIndex]->mStateTableConfiguration.Advance();
+        arm->mStateTableConfiguration.Advance();
 
         // Read setup transforms
-        vctDoubleVec setupTransforms[4];
-        setupTransforms[0].SetSize(3);
-        setupTransforms[1].SetSize(9);
-        setupTransforms[2].SetSize(3);
-        setupTransforms[3].SetSize(9);
-
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(setupTransforms[0], jsonArm["world-origin-to-suj-translation"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(setupTransforms[1], jsonArm["world-origin-to-suj-rotation"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(setupTransforms[2], jsonArm["suj-tip-to-tool-origin-translation"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(setupTransforms[3], jsonArm["suj-tip-to-tool-origin-rotation"]);
-
-        Arms[armIndex]->mWorldToSUJ.Translation().Assign(setupTransforms[0]);
-        Arms[armIndex]->mWorldToSUJ.Rotation().Assign(setupTransforms[1][0], setupTransforms[1][3], setupTransforms[1][6],
-                                                      setupTransforms[1][1], setupTransforms[1][4], setupTransforms[1][7],
-                                                      setupTransforms[1][2], setupTransforms[1][5], setupTransforms[1][8]);
-
-        Arms[armIndex]->mSUJToTool.Translation().Assign(setupTransforms[2]);
-        Arms[armIndex]->mSUJToTool.Rotation().Assign(setupTransforms[3][0], setupTransforms[3][3], setupTransforms[3][6],
-                                                     setupTransforms[3][1], setupTransforms[3][4], setupTransforms[3][7],
-                                                     setupTransforms[3][2], setupTransforms[3][5], setupTransforms[3][8]);
+        vctFrm3 transform;
+        cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["world-origin-to-suj"]);
+        arm->mWorldToSUJ.From(transform);
+        cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["suj-tip-to-tool-origin"]);
+        arm->mSUJToArmBase.From(transform);
     }
 }
 
@@ -635,16 +624,17 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
 
         // Joint forward kinematics
         arm->mJointGet.Assign(arm->mPositionJointParam.Position(),arm->mManipulator.links.size());
-        vctFrame4x4<double> sujKinematics = arm->mManipulator.ForwardKinematics(arm->mJointGet, arm->mManipulator.links.size());
+        arm->mJointGet[5] *= -1.0;
+        vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet); // arm->mManipulator.links.size());
 
         //std::cerr<<arm->mName.Data<<"\n"<<std::endl;
         //std::cerr<<sujKinematics<<"\n"<<std::endl;
         //std::cerr<<arm->mSUJToTool<<"\n"<<std::endl;
         //std::cerr<<arm->mWorldToSUJ<<"\n"<<std::endl;
 
-        vctFrame4x4<double> baseOfTool = arm->mSUJToTool * sujKinematics * arm->mWorldToSUJ;
-        baseOfTool.Rotation().NormalizedSelf();
-        arm->mPositionCartesianParam.Position().From(baseOfTool);
+        vctFrame4x4<double> armBase = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
+        armBase.Rotation().NormalizedSelf();
+        arm->mPositionCartesianParam.Position().From(armBase);
     }
     RobotIO.SetActuatorCurrent(mClutchCurrents);
     mPreviousTic = currentTic;
