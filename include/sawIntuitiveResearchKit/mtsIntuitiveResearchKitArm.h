@@ -89,6 +89,9 @@ protected:
     virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
 
+    /*! Set base coordinate frame, this will be added to the kinematics */
+    virtual void SetBaseFrame(const prmPositionCartesianGet & newBaseFrame);
+
     /*! Event handler for PID joint limit. */
     virtual void JointLimitEventHandler(const vctBoolVec & flags);
 
@@ -144,6 +147,9 @@ protected:
         mtsFunctionVoid  BrakeRelease;
         mtsFunctionVoid  BrakeEngage;
     } RobotIO;
+
+    // Interface to SUJ component
+    mtsInterfaceRequired * SUJInterface;
 
     // Main provided interface
     mtsInterfaceProvided * RobotInterface;

@@ -98,10 +98,16 @@ mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(mtsIntuitiveR
             break;
 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ:
+
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1-SUJ");
             componentManager->AddComponent(sujGUI);
             componentManager->Connect(sujGUI->GetName(), "Manipulator", "SUJ", "PSM1");
             tabWidget->addTab(sujGUI, "PSM1 SUJ");
+
+            sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("ECM-SUJ");
+            componentManager->AddComponent(sujGUI);
+            componentManager->Connect(sujGUI->GetName(), "Manipulator", "SUJ", "ECM");
+            tabWidget->addTab(sujGUI, "ECM SUJ");
             break;
 
         default:

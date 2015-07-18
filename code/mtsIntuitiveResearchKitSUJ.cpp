@@ -113,6 +113,9 @@ public:
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::CalibratePotentiometers, this,
                                            "SetRecalibrationMatrix", mRecalibrationMatrix);
 
+        // cartesian position event
+        interfaceProvided->AddEventWrite(EventBaseFrame, "BaseFrame", prmPositionCartesianGet());
+
         // Events
         interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
         interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
@@ -237,6 +240,8 @@ public:
     double mBrakeDirectionCurrent;
 
     // Functions for events
+    mtsFunctionWrite EventBaseFrame;
+
     struct {
         mtsFunctionWrite Status;
         mtsFunctionWrite Warning;
@@ -506,8 +511,19 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                 arm->mPositionJointParam.Position()[5] = 0.0;
             }
 
+            // Joint forward kinematics
+            arm->mJointGet.Assign(arm->mPositionJointParam.Position(),arm->mManipulator.links.size());
+            // forward kinematic
+            vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet);
+            // pre and post transformations loaded from JSON file
+            vctFrame4x4<double> armBase = arm->mWorldToSUJ * suj* arm->mSUJToArmBase;
+            arm->mPositionCartesianParam.Position().From(armBase);
+
             // advance this arm state table
             arm->mStateTable.Advance();
+
+            // Emit event with new cartesian position
+            arm->EventBaseFrame(arm->mPositionCartesianParam);
         }
     }
 }
@@ -621,20 +637,6 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
             }
         }
         mClutchCurrents[armIndex] = arm->mBrakeDirectionCurrent * arm->mBrakeDesiredCurrent;
-
-        // Joint forward kinematics
-        arm->mJointGet.Assign(arm->mPositionJointParam.Position(),arm->mManipulator.links.size());
-        arm->mJointGet[5] *= -1.0;
-        vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet); // arm->mManipulator.links.size());
-
-        //std::cerr<<arm->mName.Data<<"\n"<<std::endl;
-        //std::cerr<<sujKinematics<<"\n"<<std::endl;
-        //std::cerr<<arm->mSUJToTool<<"\n"<<std::endl;
-        //std::cerr<<arm->mWorldToSUJ<<"\n"<<std::endl;
-
-        vctFrame4x4<double> armBase = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
-        armBase.Rotation().NormalizedSelf();
-        arm->mPositionCartesianParam.Position().From(armBase);
     }
     RobotIO.SetActuatorCurrent(mClutchCurrents);
     mPreviousTic = currentTic;

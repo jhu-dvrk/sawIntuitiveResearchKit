@@ -77,7 +77,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     this->StateTable.AddData(StateJointParam, "StateJoint");
     this->StateTable.AddData(StateJointDesiredParam, "StateJointDesired");
 
-    // setup CISST Interface
+    // PID
     PIDInterface = AddInterfaceRequired("PID");
     if (PIDInterface) {
         PIDInterface->AddFunction("Enable", PID.Enable);
@@ -115,6 +115,14 @@ void mtsIntuitiveResearchKitArm::Init(void)
         IOInterface->AddFunction("BrakeEngage", RobotIO.BrakeEngage);
     }
 
+    // Setup Joints
+    SUJInterface = AddInterfaceRequired("SUJ", MTS_OPTIONAL);
+    if (SUJInterface) {
+        SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame, this, "BaseFrame");
+        SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler, this, "Error");
+    }
+
+    // Arm
     RobotInterface = AddInterfaceProvided("Robot");
     if (RobotInterface) {
         // Get
@@ -512,6 +520,16 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
             MessageEvents.Error(this->GetName() + " unable to solve inverse kinematics.");
             JointTrajectory.GoalReachedEvent(false);
         }
+    }
+}
+
+void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianGet & newBaseFrame)
+{
+    if (newBaseFrame.Valid()) {
+        this->Manipulator.Rtw0.FromNormalized(newBaseFrame.Position());
+    } else {
+        this->Manipulator.Rtw0 = vctFrm4x4::Identity();
+        ErrorEventHandler("Received invalid base frame");
     }
 }
 

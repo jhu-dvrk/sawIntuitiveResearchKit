@@ -71,6 +71,9 @@ public:
         std::string mPIDConfigurationFile;
         // arm
         std::string mArmConfigurationFile;
+        // SUJ
+        std::string mSUJComponentName;
+        std::string mSUJInterfaceName;
 
         mtsFunctionWrite SetRobotControlState;
         mtsInterfaceRequired * IOInterfaceRequired;

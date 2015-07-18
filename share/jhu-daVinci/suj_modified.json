@@ -6,7 +6,7 @@
             "plug-number": 3,
             "serial-number": "SE054268",
             "brake-release-current": -2.2,
-	    "primary-offsets": [ -61.525, -2.3448, -3.073, -950.33, -6.4246, -3.0525],
+	    "primary-offsets": [ -61.525, -2.3448, -3.073, -950.33, -3.2831, -3.0525],
 	    "primary-scales": [ 1.4612, 0.0010508, 0.0013686, 22.876, 0.0014642, 0.0013593],
 	    "secondary-offsets": [ -0.035137, -1968.2, 285.57, 3.0228, 136.98, -3.0483],
 	    "secondary-scales": [ 0.00025495, 45.752, -6.8628, -0.001349, -0.031209, 0.0013577],
@@ -72,7 +72,7 @@
 	,
         {
 	    "name": "PSM2",
-	    "plug-number": 2,
+	    "plug-number": 4,
 	    "serial-number": "SE054270",
             "brake-release-current": 2.2,
 	    "primary-offsets": [-0.043291, -2.3611, -3.0623, 3.069, -3.0623, -3.0564],
@@ -104,10 +104,10 @@
 		    },
 		    {
 			"convention": "modified",
-			"alpha": 0.0000, "A": 0.4318, "theta": 1.5708, "D": -0.1302,
+			"alpha": 0.0000, "A": 0.4318, "theta": 0.0000, "D": -0.1302,
 			"type": "revolute",
 			"mode": "active",
-			"offset": 0.00
+			"offset": 1.5708
 		    },
 		    {
 			"convention": "modified",
@@ -118,10 +118,10 @@
 		    },
 		    {
 			"convention": "modified",
-			"alpha": -1.5708, "A": 0.0000, "theta": -1.5708, "D": -0.1029,
+			"alpha": -1.5708, "A": 0.0000, "theta": 0.0000, "D": -0.1029,
 			"type": "revolute",
 			"mode": "active",
-			"offset": 0.00
+			"offset": -1.5708
 		    }
 		]
 	    },
@@ -141,7 +141,7 @@
 	,
         {
 	    "name": "PSM3",
-	    "plug-number": 4,
+	    "plug-number": 2,
 	    "serial-number": "SE054271",
             "brake-release-current": 2.2,
 	    "primary-offsets": [-0.035785, -2.3599, 3.0577, -3.0829, -3.0683, -3.0628],
@@ -173,10 +173,10 @@
 		    },
 		    {
 			"convention": "modified",
-			"alpha": 0.0000, "A": 0.4318, "theta": 1.5708, "D": 0.2571,
+			"alpha": 0.0000, "A": 0.4318, "theta": 0.0000, "D": 0.2571,
 			"type": "revolute",
 			"mode": "active",
-			"offset": 0.00
+			"offset": 1.5708
 		    },
 		    {
 			"convention": "modified",
@@ -187,10 +187,10 @@
 		    },
 		    {
 			"convention": "modified",
-			"alpha": -1.5708, "A": 0.0000, "theta": -1.5708, "D": -0.1029,
+			"alpha": -1.5708, "A": 0.0000, "theta": 0.0000, "D": -0.1029,
 			"type": "revolute",
 			"mode": "active",
-			"offset": 0.00
+			"offset": -1.5708
 		    }
 		]
 	    },
@@ -213,9 +213,9 @@
 	    "plug-number": 1,
 	    "serial-number": "SE054269",
             "brake-release-current": 2.0,
-	    "primary-offsets": [ 8.2463, -2.353, -3.0642, 328.3, 139.7, -223.51],
+	    "primary-offsets": [ 7.9613, -2.353, -3.0642, 328.3, 139.7, -223.51],
 	    "primary-scales": [ -0.21238, 0.0010553, 0.0013591, -7.6253, 0.0000, 0.0000],
-	    "secondary-offsets": [ 0.19937, -497.94, -362.85, 3.0371, 186.09, 372.75],
+	    "secondary-offsets": [ -0.08563, -497.94, -362.85, 6.17869265, 186.09, 372.75],
 	    "secondary-scales": [ 0.00025788, 11.438, 9.1504, -0.0011838, 0.0000, 0.0000],
  	    "DH": {
 		"links": [
@@ -242,35 +242,35 @@
 		    },
 		    {
 			"convention": "modified",
-			"alpha": 0.0000, "A": 0.4318, "theta": 1.5708, "D": -0.3459,
+			"alpha": 0.0000, "A": 0.4318, "theta": 0.0000, "D": -0.3459,
 			"type": "revolute",
 			"mode": "active",
-			"offset": 0.00
+			"offset": 1.5708
 		    },
 		    {
 			"convention": "modified",
-			"alpha": -0.7853, "A": 0.0000, "theta": 1.5708, "D": 0.0000,
+			"alpha": -0.7853, "A": 0.0000, "theta": 0.0000, "D": 0.0000,
 			"type": "revolute",
 			"mode": "active",
-			"offset": 0.00
+			"offset": 1.5708
 		    },
 		    {
 			"convention": "modified",
 			"alpha": 0.0000, "A": -0.0667, "theta": 0.0000, "D": 0.0000,
 			"type": "revolute",
 			"mode": "active",
-			"offset": 0.00
+			"offset": 0.0000
 		    }
 		]
 	    },
 	    "world-origin-to-suj": {
 	    	"Translation": [0.0000 , 0.0000, 0.4300],
-		"Rotation" : [[ 0.0000,  1.0000,  0.0000],
-			      [-1.0000,  0.0000,  0.0000],
+		"Rotation" : [[ 0.0000,  -1.0000,  0.0000],
+			      [1.0000,  0.0000,  0.0000],
 			      [ 0.0000,  0.0000,  1.0000]]
 	    },
 	    "suj-tip-to-tool-origin": {
-		"Translation": [0.6126, 0.0000, 0.1016],
+		"Translation": [0.6126, 0.0000,   0.1016],
 		"Rotation" : [[ 0.0000, -1.0000,  0.0000],
 			      [ 1.0000,  0.0000,  0.0000],
 			      [ 0.0000,  0.0000,  1.0000]]

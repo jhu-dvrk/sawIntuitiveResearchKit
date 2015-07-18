@@ -127,6 +127,11 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                   IOComponentName(), Name());
         componentManager->Connect(Name(), "PID",
                                   PIDComponentName(), "Controller");
+        /*
+        if ((mSUJComponentName != "") && (mSUJInterfaceName != "")) {
+            componentManager->Connect(Name(), "SUJ", mSUJComponentName, mSUJInterfaceName);
+        }
+        */
     } else if (armType == ARM_SUJ) {
         componentManager->Connect(Name(), "RobotIO",
                                   IOComponentName(), Name());
@@ -457,6 +462,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"io\" setting for arm \""
                                  << armName << "\"" << std::endl;
+        return false;
     }
     // PID only required for MTM, PSM and ECM
     if ((armPointer->mType == Arm::ARM_MTM)
@@ -471,6 +477,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"pid\" setting for arm \""
                                      << armName << "\"" << std::endl;
+            return false;
         }
     }
     jsonValue = jsonArm["kinematic"];
@@ -482,6 +489,18 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"kinematic\" setting for arm \""
                                  << armName << "\"" << std::endl;
+        return false;
+    }
+    jsonValue = jsonArm["suj"];
+    if (!jsonValue.empty()) {
+        armPointer->mSUJComponentName = jsonValue.get("component", "").asString();
+        armPointer->mSUJInterfaceName = jsonValue.get("interface", "").asString();
+        if ((armPointer->mSUJComponentName == "")
+            || (armPointer->mSUJInterfaceName == "")) {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: both \"component\" and \"interface\" must be provided with \"suj\" for arm \""
+                                     << armName << "\"" << std::endl;
+            return false;
+        }
     }
     return true;
 }
