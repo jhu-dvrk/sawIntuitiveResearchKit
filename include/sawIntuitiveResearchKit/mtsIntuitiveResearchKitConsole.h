@@ -25,12 +25,17 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <json/json.h>
 
+namespace dvrk {
+    class console;
+}
+
 class mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
 public:
     friend class mtsIntuitiveResearchKitConsoleQt;
+    friend class dvrk::console;
 
     class Arm {
     public:
@@ -38,6 +43,7 @@ public:
 
         friend class mtsIntuitiveResearchKitConsole;
         friend class mtsIntuitiveResearchKitConsoleQt;
+        friend class dvrk::console;
 
         Arm(const std::string & name,
             const std::string & ioComponentName);
@@ -88,6 +94,7 @@ public:
     public:
         friend class mtsIntuitiveResearchKitConsole;
         friend class mtsIntuitiveResearchKitConsoleQt;
+        friend class dvrk::console;
 
         TeleOp(const std::string & name);
 
