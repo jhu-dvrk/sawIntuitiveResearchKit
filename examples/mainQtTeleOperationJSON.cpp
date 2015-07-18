@@ -110,8 +110,9 @@ int main(int argc, char ** argv)
 
     // console
     mtsIntuitiveResearchKitConsole * console = new mtsIntuitiveResearchKitConsole("console");
-    // the configure method adds the console to the manager so it can connect components properly
     console->Configure(jsonMainConfigFile);
+    componentManager->AddComponent(console);
+    console->Connect();
 
     // add all Qt widgets
     QApplication application(argc, argv);

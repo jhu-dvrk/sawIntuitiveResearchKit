@@ -54,6 +54,9 @@ public:
                           const double & periodInSeconds = 0.5 * cmn_ms,
                           mtsComponent * existingArm = 0);
 
+        /*! Connect all interfaces specific to this arm. */
+        bool Connect(void);
+
         /*! Accessors */
         const std::string & Name(void) const;
         const std::string & IOComponentName(void) const;
@@ -121,6 +124,8 @@ public:
     bool AddFootpedalInterfaces(void);
     bool ConnectFootpedalInterfaces(void);
 
+    bool Connect(void);
+
 protected:
     bool mConfigured;
 
@@ -138,7 +143,7 @@ protected:
                           const std::string & ioComponentName,
                           const Arm::ArmType & type = Arm::ARM_UNDEFINED);
 
-    bool SetupAndConnectInterfaces(Arm * arm);
+    bool AddArmInterfaces(Arm * arm);
 
     void SetRobotsControlState(const std::string & newState);
     void TeleopEnable(const bool & enable);

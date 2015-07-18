@@ -469,11 +469,19 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
 
 void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
 {
+    mtsIntuitiveResearchKitSUJArmData * arm;
+
     // read encoder channel A to get the mux state
     mtsExecutionResult executionResult = RobotIO.GetEncoderChannelA(mMuxState);
     // compute pot index
     mMuxIndex = (mMuxState[0]?1:0) + (mMuxState[1]?2:0) + (mMuxState[2]?4:0) + (mMuxState[3]?8:0);
     if (mMuxIndex != mMuxIndexExpected) {
+        for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+            arm = Arms[armIndex];
+            arm->mPositionJointParam.SetValid(false);
+            arm->mPositionCartesianParam.SetValid(false);
+        }
+        MessageEvents.Error(this->GetName() + " unexpected multiplexer value.");
         CMN_LOG_CLASS_RUN_ERROR << "GetAndConvertPotentiometerValues: mux from IO board: " << mMuxIndex << " expected: " << mMuxIndexExpected << std::endl;
         return;
     }
@@ -481,7 +489,6 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
     const size_t arrayIndex = mMuxIndex / MUX_ARRAY_SIZE; // 0 or 1: mux index 0 to 5 goes to first array of data, 6 to 11 goes to second array
     const size_t indexInArray = mMuxIndex % MUX_ARRAY_SIZE; // pot index in array, 0 to 5
     executionResult = RobotIO.GetAnalogInputVolts(mVoltages);
-    mtsIntuitiveResearchKitSUJArmData * arm;
     // for each arm, i.e. SUJ1, SUJ2, SUJ3, ...
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
         arm = Arms[armIndex];
@@ -504,12 +511,12 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
             arm->mPositionJointParam.Position()[3] = arm->mPositions[1][3];
             arm->mPositionJointParam.Position()[4] = arm->mPositions[0][4];
             arm->mPositionJointParam.Position()[5] = arm->mPositions[0][5];
-
             if (arm->mName.Data == "ECM") {
                 // ECM has only 4 joints
                 arm->mPositionJointParam.Position()[4] = 0.0;
                 arm->mPositionJointParam.Position()[5] = 0.0;
             }
+            arm->mPositionJointParam.SetValid(true);
 
             // Joint forward kinematics
             arm->mJointGet.Assign(arm->mPositionJointParam.Position(),arm->mManipulator.links.size());
@@ -518,6 +525,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
             // pre and post transformations loaded from JSON file
             vctFrame4x4<double> armBase = arm->mWorldToSUJ * suj* arm->mSUJToArmBase;
             arm->mPositionCartesianParam.Position().From(armBase);
+            arm->mPositionCartesianParam.SetValid(true);
 
             // advance this arm state table
             arm->mStateTable.Advance();

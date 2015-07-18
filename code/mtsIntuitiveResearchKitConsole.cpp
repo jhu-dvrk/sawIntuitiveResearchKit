@@ -41,7 +41,10 @@ CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsole);
 mtsIntuitiveResearchKitConsole::Arm::Arm(const std::string & name,
                                          const std::string & ioComponentName):
     mName(name),
-    mIOComponentName(ioComponentName)
+    mIOComponentName(ioComponentName),
+    IOInterfaceRequired(0),
+    PIDInterfaceRequired(0),
+    ArmInterfaceRequired(0)
 {}
 
 void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & configFile,
@@ -89,12 +92,6 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                 slave->Configure(mArmConfigurationFile);
                 componentManager->AddComponent(slave);
             }
-            componentManager->Connect(Name(), "Adapter",
-                                      IOComponentName(), Name() + "-Adapter");
-            componentManager->Connect(Name(), "Tool",
-                                      IOComponentName(), Name() + "-Tool");
-            componentManager->Connect(Name(), "ManipClutch",
-                                      IOComponentName(), Name() + "-ManipClutch");
         }
         break;
     case ARM_ECM:
@@ -104,8 +101,6 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                 ecm->Configure(mArmConfigurationFile);
                 componentManager->AddComponent(ecm);
             }
-            componentManager->Connect(Name(), "ManipClutch",
-                                      IOComponentName(), Name() + "-ManipClutch");
         }
         break;
     case ARM_SUJ:
@@ -119,20 +114,29 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     default:
         break;
     }
+}
 
-    // if the arm is a research kit arm
-    if ((armType == ARM_PSM) || (armType == ARM_MTM) || (armType == ARM_ECM)) {
-        // Connect arm to IO and PID
-        componentManager->Connect(Name(), "RobotIO",
-                                  IOComponentName(), Name());
-        componentManager->Connect(Name(), "PID",
-                                  PIDComponentName(), "Controller");
-        /*
-        if ((mSUJComponentName != "") && (mSUJInterfaceName != "")) {
-            componentManager->Connect(Name(), "SUJ", mSUJComponentName, mSUJInterfaceName);
-        }
-        */
-    } else if (armType == ARM_SUJ) {
+bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
+{
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+    // for research kit arms, create, add to manager and connect to
+    // extra IO, PID, etc.  For generic arms, do nothing.
+    switch (mType) {
+    case ARM_MTM:
+        break;
+    case ARM_PSM:
+        componentManager->Connect(Name(), "Adapter",
+                                  IOComponentName(), Name() + "-Adapter");
+        componentManager->Connect(Name(), "Tool",
+                                  IOComponentName(), Name() + "-Tool");
+        componentManager->Connect(Name(), "ManipClutch",
+                                  IOComponentName(), Name() + "-ManipClutch");
+        break;
+    case ARM_ECM:
+        componentManager->Connect(Name(), "ManipClutch",
+                                  IOComponentName(), Name() + "-ManipClutch");
+        break;
+    case ARM_SUJ:
         componentManager->Connect(Name(), "RobotIO",
                                   IOComponentName(), Name());
         componentManager->Connect(Name(), "MuxReset",
@@ -147,7 +151,23 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                   IOComponentName(), "SUJ-Clutch-3");
         componentManager->Connect(Name(), "SUJ-Clutch-4",
                                   IOComponentName(), "SUJ-Clutch-4");
+        break;
+    default:
+        break;
     }
+
+    // if the arm is a research kit arm
+    if ((mType == ARM_PSM) || (mType == ARM_MTM) || (mType == ARM_ECM)) {
+        // Connect arm to IO and PID
+        componentManager->Connect(Name(), "RobotIO",
+                                  IOComponentName(), Name());
+        componentManager->Connect(Name(), "PID",
+                                  PIDComponentName(), "Controller");
+        if ((mSUJComponentName != "") && (mSUJInterfaceName != "")) {
+            componentManager->Connect(Name(), "SUJ", mSUJComponentName, mSUJInterfaceName);
+        }
+    }
+    return true;
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::Arm::Name(void) const {
@@ -254,8 +274,8 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             io->Configure(ioConfig);
         }
     }
+
     mtsComponentManager::GetInstance()->AddComponent(io);
-    mtsComponentManager::GetInstance()->AddComponent(this);
 
     // now can configure PID and Arms
     for (iter = mArms.begin(); iter != end; ++iter) {
@@ -308,7 +328,7 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
                                  << newArm->Name() << " must be configured first (Arm config)." << std::endl;
         return false;
     }
-    if (SetupAndConnectInterfaces(newArm)) {
+    if (AddArmInterfaces(newArm)) {
         ArmList::iterator armIterator = mArms.find(newArm->mName);
         if (armIterator != mArms.end()) {
             mArms[newArm->mName] = newArm;
@@ -324,7 +344,7 @@ bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mts
 {
     // create new required interfaces to communicate with the components we created
     Arm * newArm = new Arm(genericArm->GetName(), "");
-    if (SetupAndConnectInterfaces(newArm)) {
+    if (AddArmInterfaces(newArm)) {
         ArmList::iterator armIterator = mArms.find(newArm->mName);
         if (armIterator != mArms.end()) {
             mArms[newArm->mName] = newArm;
@@ -505,10 +525,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     return true;
 }
 
-bool mtsIntuitiveResearchKitConsole::SetupAndConnectInterfaces(Arm * arm)
+bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
 {
-    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-
     // IO
     const std::string interfaceNameIO = "IO" + arm->Name();
     arm->IOInterfaceRequired = AddInterfaceRequired(interfaceNameIO);
@@ -516,8 +534,6 @@ bool mtsIntuitiveResearchKitConsole::SetupAndConnectInterfaces(Arm * arm)
         arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
         arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
         arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
-        componentManager->Connect(this->GetName(), interfaceNameIO,
-                                  arm->IOComponentName(), arm->Name());
     } else {
         return false;
     }
@@ -530,8 +546,6 @@ bool mtsIntuitiveResearchKitConsole::SetupAndConnectInterfaces(Arm * arm)
             arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
             arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
             arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
-            componentManager->Connect(this->GetName(), interfaceNamePID,
-                                      arm->PIDComponentName(), "Controller");
         } else {
             return false;
         }
@@ -545,12 +559,43 @@ bool mtsIntuitiveResearchKitConsole::SetupAndConnectInterfaces(Arm * arm)
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
-        componentManager->Connect(this->GetName(), interfaceNameArm,
-                                  arm->Name(), "Robot");
     } else {
         return false;
     }
 
+    return true;
+}
+
+bool mtsIntuitiveResearchKitConsole::Connect(void)
+{
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+
+    const ArmList::iterator end = mArms.end();
+    for (ArmList::iterator armIter = mArms.begin();
+         armIter != end;
+         ++armIter) {
+        Arm * arm = armIter->second;
+
+        // IO
+        if (arm->IOInterfaceRequired) {
+            componentManager->Connect(this->GetName(), "IO" + arm->Name(),
+                                      arm->IOComponentName(), arm->Name());
+        }
+        // PID
+        if (arm->mType != Arm::ARM_SUJ) {
+            if (arm->PIDInterfaceRequired) {
+                componentManager->Connect(this->GetName(), "PID" + arm->Name(),
+                                          arm->PIDComponentName(), "Controller");
+            }
+        }
+        // arm interface
+        if (arm->ArmInterfaceRequired) {
+            componentManager->Connect(this->GetName(), arm->Name(),
+                                      arm->Name(), "Robot");
+        }
+        // arm specific interfaces
+        arm->Connect();
+    }
     return true;
 }
 
