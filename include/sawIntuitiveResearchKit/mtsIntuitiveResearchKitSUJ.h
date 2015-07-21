@@ -73,6 +73,9 @@ protected:
     /*! Convert enum to string using function provided by cisstDataGenerator. */
     void GetRobotControlState(std::string & state) const;
 
+    /*! Set base coordinate frame, this will be added to the kinematics of all SUJs except ECM. */
+    void SetBaseFrame(const prmPositionCartesianGet & newBaseFrame);
+
     /*! Event handler for PID errors. */
     void ErrorEventHandler(const std::string & message);
 
@@ -125,6 +128,7 @@ protected:
     vctDoubleVec mVoltages;
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> Arms;
 
+    void DispatchError(const std::string & message);
     void DispatchStatus(const std::string & message);
 };
 

@@ -12,30 +12,36 @@
             "name": "SUJ",
             "type": "SUJ",
             "io": "jhu-daVinci/sawRobotIO1394-SUJ.xml",
-            "kinematic": "jhu-daVinci/suj_modified.json"
-        },
+            "kinematic": "jhu-daVinci/suj_modified.json",
+            "base-frame": {
+                "component": "ECM",
+                "interface": "Robot"
+            }
+        }
+        ,
         {
             "name": "PSM1",
             "type": "PSM",
             "io": "jhu-daVinci/sawRobotIO1394-PSM1-49695.xml",
             "pid": "sawControllersPID-PSM.xml",
             "kinematic": "dvpsm.rob",
-            "suj": {
+            "base-frame": {
                 "component": "SUJ",
                 "interface": "PSM1"
             }
-        },
+        }
+        ,
         {
             "name": "ECM",
             "type": "ECM",
             "io": "jhu-daVinci/sawRobotIO1394-ECM-29738.xml",
             "pid": "sawControllersPID-ECM.xml",
-            "kinematic": "jhu-daVinci/suj_modified.json",
-            "suj": {
+            "kinematic": "dvecm.rob",
+            "base-frame": {
                 "component": "SUJ",
                 "interface": "ECM"
             }
-        }        
+        }
         // {
         //     "name": "MTML",
         //     "type": "MTM",

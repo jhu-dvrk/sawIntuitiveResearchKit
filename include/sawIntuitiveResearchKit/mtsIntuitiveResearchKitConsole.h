@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsTaskFromSignal.h>
 #include <cisstParameterTypes/prmEventButton.h>
+#include <cisstParameterTypes/prmPositionCartesianGet.h>
 
 #include <json/json.h>
 
@@ -81,8 +82,8 @@ public:
         // arm
         std::string mArmConfigurationFile;
         // SUJ
-        std::string mSUJComponentName;
-        std::string mSUJInterfaceName;
+        std::string mBaseFrameComponentName;
+        std::string mBaseFrameInterfaceName;
 
         mtsFunctionWrite SetRobotControlState;
         mtsInterfaceRequired * IOInterfaceRequired;
@@ -174,6 +175,13 @@ protected:
     void ErrorEventHandler(const std::string & message);
     void WarningEventHandler(const std::string & message);
     void StatusEventHandler(const std::string & message);
+
+    // Getting position from ECM and ECM SUJ to create base frame event for all other SUJs
+    mtsInterfaceRequired * mSUJECMInterfaceRequired;
+    mtsInterfaceProvided * mECMBaseFrameInterfaceProvided;
+    mtsFunctionRead mGetPositionCartesianFromECM;
+    mtsFunctionWrite mECMBaseFrameEvent;
+    void SUJECMBaseFrameHandler(const prmPositionCartesianGet & baseFrameParam);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsole);

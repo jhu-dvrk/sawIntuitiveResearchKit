@@ -163,8 +163,8 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
                                   IOComponentName(), Name());
         componentManager->Connect(Name(), "PID",
                                   PIDComponentName(), "Controller");
-        if ((mSUJComponentName != "") && (mSUJInterfaceName != "")) {
-            componentManager->Connect(Name(), "SUJ", mSUJComponentName, mSUJInterfaceName);
+        if ((mBaseFrameComponentName != "") && (mBaseFrameInterfaceName != "")) {
+            componentManager->Connect(Name(), "BaseFrame", mBaseFrameComponentName, mBaseFrameInterfaceName);
         }
     }
     return true;
@@ -196,7 +196,9 @@ const std::string & mtsIntuitiveResearchKitConsole::TeleOp::Name(void) const {
 
 mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string & componentName):
     mtsTaskFromSignal(componentName, 100),
-    mConfigured(false)
+    mConfigured(false),
+    mSUJECMInterfaceRequired(0),
+    mECMBaseFrameInterfaceProvided(0)
 {
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Main");
     if (interfaceProvided) {
@@ -290,6 +292,38 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         // "add" the arm to the manager
         AddArm(iter->second);
     }
+
+    bool hasSUJ = false;
+    bool hasECM = false;
+
+    mtsInterfaceRequired * ecmArmInterface = 0;
+    for (iter = mArms.begin(); iter != end; ++iter) {
+        if (iter->second->mType == Arm::ARM_ECM) {
+            hasECM = true;
+            ecmArmInterface = iter->second->ArmInterfaceRequired;
+        }
+        else if (iter->second->mType == Arm::ARM_SUJ) {
+            hasSUJ = true;
+        }
+    }
+
+    // add required and provided interfaces to grab positions from ECM SUJ and ECM
+    if (hasSUJ && hasECM) {
+        mSUJECMInterfaceRequired = AddInterfaceRequired("BaseFrame");
+        if (mSUJECMInterfaceRequired) {
+            mSUJECMInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler, this, "BaseFrame");
+        }
+        if (ecmArmInterface) {
+            ecmArmInterface->AddFunction("GetPositionCartesian", mGetPositionCartesianFromECM);
+        } else {
+            CMN_LOG_CLASS_INIT_VERBOSE << "Configure: arm interface not yet added for ECM" << std::endl;
+        }
+        mECMBaseFrameInterfaceProvided = AddInterfaceProvided("ECMBaseFrame");
+        if (mECMBaseFrameInterfaceProvided) {
+            mECMBaseFrameInterfaceProvided->AddEventWrite(mECMBaseFrameEvent, "BaseFrame", prmPositionCartesianGet());
+        }
+    }
+
     mConfigured = true;
 }
 
@@ -333,6 +367,9 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
         if (armIterator != mArms.end()) {
             mArms[newArm->mName] = newArm;
             return true;
+        }else {
+            CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
+                                     << newArm->Name() << " seems to already exist (Arm config)." << std::endl;
         }
     }
     CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, unable to add new arm.  Are you adding two arms with the same name? "
@@ -511,13 +548,13 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                                  << armName << "\"" << std::endl;
         return false;
     }
-    jsonValue = jsonArm["suj"];
+    jsonValue = jsonArm["base-frame"];
     if (!jsonValue.empty()) {
-        armPointer->mSUJComponentName = jsonValue.get("component", "").asString();
-        armPointer->mSUJInterfaceName = jsonValue.get("interface", "").asString();
-        if ((armPointer->mSUJComponentName == "")
-            || (armPointer->mSUJInterfaceName == "")) {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: both \"component\" and \"interface\" must be provided with \"suj\" for arm \""
+        armPointer->mBaseFrameComponentName = jsonValue.get("component", "").asString();
+        armPointer->mBaseFrameInterfaceName = jsonValue.get("interface", "").asString();
+        if ((armPointer->mBaseFrameComponentName == "")
+            || (armPointer->mBaseFrameInterfaceName == "")) {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: both \"component\" and \"interface\" must be provided with \"base-frame\" for arm \""
                                      << armName << "\"" << std::endl;
             return false;
         }
@@ -535,6 +572,8 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
         arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
         arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
     } else {
+        CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces:failed to add IO interface for arm \""
+                                 << arm->Name() << "\"" << std::endl;
         return false;
     }
 
@@ -547,6 +586,8 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
             arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
             arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
         } else {
+            CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces:failed to add PID interface for arm \""
+                                     << arm->Name() << "\"" << std::endl;
             return false;
         }
     }
@@ -560,6 +601,8 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
     } else {
+        CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces:failed to add Main interface for arm \""
+                                 << arm->Name() << "\"" << std::endl;
         return false;
     }
 
@@ -596,6 +639,14 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
         // arm specific interfaces
         arm->Connect();
     }
+
+    // connect interfaces to retrieve base frame from ECM SUJ and send event to SUJ
+    if (mSUJECMInterfaceRequired
+        && mECMBaseFrameInterfaceProvided) {
+        componentManager->Connect(this->GetName(), "BaseFrame", "SUJ", "ECM");
+        componentManager->Connect("SUJ", "BaseFrame", this->GetName(), "ECMBaseFrame");
+    }
+
     return true;
 }
 
@@ -671,4 +722,36 @@ void mtsIntuitiveResearchKitConsole::WarningEventHandler(const std::string & mes
 
 void mtsIntuitiveResearchKitConsole::StatusEventHandler(const std::string & message) {
     MessageEvents.Status(message);
+}
+
+void mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler(const prmPositionCartesianGet & baseFrameParam)
+{
+    // convert input to useful type
+    //vctFrm4x4 positionSUJ;
+    //positionSUJ.From(baseFrameParam.Position());
+
+    // get position from ECM and convert to useful type
+    prmPositionCartesianGet positionECMParam;
+    mGetPositionCartesianFromECM(positionECMParam);
+    vctFrm4x4 positionECM;
+    positionECM.From(positionECMParam.Position());
+
+    // compute and send new base frame for all SUJs (SUJ will handle ECM differently)
+
+    /*
+    vctFrm4x4 baseFrameSUJ = positionSUJ * positionECM;
+    baseFrameSUJ.InverseSelf();
+    prmPositionCartesianGet baseFrameSUJParam;
+    baseFrameSUJParam.Position().From(baseFrameSUJ);
+    */
+
+    //std::cerr << positionECM << std::endl;
+
+    prmPositionCartesianGet baseFrameSUJParam;
+    positionECM.InverseSelf();
+    //positionECM.Identity();
+    baseFrameSUJParam.Position().From(positionECM);
+
+    baseFrameSUJParam.Valid() = baseFrameSUJParam.Valid() && positionECMParam.Valid();
+    mECMBaseFrameEvent(baseFrameSUJParam);
 }

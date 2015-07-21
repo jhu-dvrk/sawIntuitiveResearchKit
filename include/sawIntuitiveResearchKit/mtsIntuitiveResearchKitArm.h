@@ -190,7 +190,8 @@ protected:
     robManipulator Manipulator;
     vctFrm4x4 CartesianPositionFrm;
 
-    vctFrm4x4 Rtw0;
+    // Base frame
+    vctFrm4x4 BaseFrame;
 
     mtsIntuitiveResearchKitArmTypes::RobotStateType RobotState;
 

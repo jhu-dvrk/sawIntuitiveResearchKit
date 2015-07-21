@@ -39,10 +39,15 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJ, mtsTaskPeriodi
 class mtsIntuitiveResearchKitSUJArmData
 {
 public:
+
+    typedef enum {SUJ_UNDEFINED, SUJ_PSM, SUJ_ECM, SUJ_MOTORIZED_PSM} SujType;
+
     inline mtsIntuitiveResearchKitSUJArmData(const std::string & name,
-                                             unsigned int plugNumber,
+                                             const SujType type,
+                                             const unsigned int plugNumber,
                                              mtsInterfaceProvided * interfaceProvided):
         mName(name),
+        mType(type),
         mPlugNumber(plugNumber),
         mStateTable(500, name),
         mStateTableConfiguration(100, name + "Configuration"),
@@ -87,6 +92,7 @@ public:
         mStateTable.AddData(this->mVoltages[1], "Voltages[1]");
         mStateTable.AddData(this->mPositionJointParam, "PositionJoint");
         mStateTable.AddData(this->mPositionCartesianParam, "PositionCartesian");
+        mStateTable.AddData(this->mBaseFrame, "BaseFrame");
         mStateTableConfiguration.AddData(this->mName, "Name");
         mStateTableConfiguration.AddData(this->mSerialNumber, "SerialNumber");
         mStateTableConfiguration.AddData(this->mPlugNumber, "PlugNumber");
@@ -100,6 +106,7 @@ public:
         interfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0], "GetPrimaryJointOffset");
         interfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[1], "GetSecondaryJointOffset");
         interfaceProvided->AddCommandReadState(mStateTable, mPositionCartesianParam, "GetPositionCartesian");
+        interfaceProvided->AddCommandReadState(mStateTable, mBaseFrame, "GetBaseFrame");
         interfaceProvided->AddCommandReadState(mStateTable, mVoltages[0], "GetVoltagesPrimary");
         interfaceProvided->AddCommandReadState(mStateTable, mVoltages[1], "GetVoltagesSecondary");
         interfaceProvided->AddCommandReadState(mStateTableConfiguration, mName, "GetName");
@@ -204,6 +211,8 @@ public:
 
     // name of this SUJ arm (ECM, PSM1, ...)
     mtsStdString mName;
+    // suj type
+    SujType mType;
     // serial number
     mtsStdString mSerialNumber;
     // plug on back of controller, 1 to 4
@@ -229,9 +238,12 @@ public:
     vctDoubleVec mNewJointScales[2];
     vctDoubleVec mNewJointOffsets[2];
 
-    //Setup transformations
+    // Setup transformations from json file
     vctFrame4x4<double> mWorldToSUJ;
     vctFrame4x4<double> mSUJToArmBase;
+
+    // Base frame
+    vctFrame4x4<double> mBaseFrame;
 
     // clutch data
     unsigned int mClutched;
@@ -278,6 +290,7 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
         interfaceRequired->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
         interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
         interfaceRequired->AddFunction("GetAnalogInputVolts", RobotIO.GetAnalogInputVolts);
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::ErrorEventHandler, this, "Error");
     }
     interfaceRequired = AddInterfaceRequired("MuxReset");
     if (interfaceRequired) {
@@ -290,6 +303,11 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
         interfaceRequired->AddFunction("GetValue", MuxIncrement.GetValue);
         interfaceRequired->AddFunction("SetValue", MuxIncrement.SetValue);
         interfaceRequired->AddFunction("DownUpDown", MuxIncrement.DownUpDown);
+    }
+    interfaceRequired = AddInterfaceRequired("BaseFrame", MTS_OPTIONAL);
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::SetBaseFrame, this, "BaseFrame");
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::ErrorEventHandler, this, "Error");
     }
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
@@ -336,11 +354,28 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         // name
         Json::Value jsonArm = jsonArms[index];
         std::string name = jsonArm["name"].asString();
+        std::string typeString = jsonArm["type"].asString();
+        mtsIntuitiveResearchKitSUJArmData::SujType type;
+        if (typeString == "ECM") {
+            type = mtsIntuitiveResearchKitSUJArmData::SUJ_ECM;
+        }
+        else if (typeString == "PSM") {
+            type = mtsIntuitiveResearchKitSUJArmData::SUJ_PSM;
+        }
+        else if (typeString == "Motorized PSM") {
+            type = mtsIntuitiveResearchKitSUJArmData::SUJ_MOTORIZED_PSM;
+        }
+        else {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect arm type for SUJ \""
+                                     << name << "\", must be one of \"PSM\", \"ECM\" or \"Motorized PSM\""
+                                     << std::endl;
+            return;
+        }
         unsigned int plugNumber = jsonArm["plug-number"].asInt();
         unsigned int armIndex = plugNumber - 1;
 
         mtsInterfaceProvided * armInterface = this->AddInterfaceProvided(name);
-        arm = new mtsIntuitiveResearchKitSUJArmData(name, plugNumber, armInterface);
+        arm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, armInterface);
         Arms[armIndex] = arm;
 
         // Robot State so GUI widget for each arm can set/get state
@@ -511,7 +546,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
             arm->mPositionJointParam.Position()[3] = arm->mPositions[1][3];
             arm->mPositionJointParam.Position()[4] = arm->mPositions[0][4];
             arm->mPositionJointParam.Position()[5] = arm->mPositions[0][5];
-            if (arm->mName.Data == "ECM") {
+            if (arm->mType == mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
                 // ECM has only 4 joints
                 arm->mPositionJointParam.Position()[4] = 0.0;
                 arm->mPositionJointParam.Position()[5] = 0.0;
@@ -521,9 +556,9 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
             // Joint forward kinematics
             arm->mJointGet.Assign(arm->mPositionJointParam.Position(),arm->mManipulator.links.size());
             // forward kinematic
-            vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet);
-            // pre and post transformations loaded from JSON file
-            vctFrame4x4<double> armBase = arm->mWorldToSUJ * suj* arm->mSUJToArmBase;
+            vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
+            // pre and post transformations loaded from JSON file, base frame updated using events
+            vctFrame4x4<double> armBase = /*arm->mBaseFrame **/ arm->mWorldToSUJ * suj* arm->mSUJToArmBase;
             arm->mPositionCartesianParam.Position().From(armBase);
             arm->mPositionCartesianParam.SetValid(true);
 
@@ -671,6 +706,34 @@ void mtsIntuitiveResearchKitSUJ::SetRobotControlState(const std::string & state)
 void mtsIntuitiveResearchKitSUJ::GetRobotControlState(std::string & state) const
 {
     state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->mRobotState);
+}
+
+void mtsIntuitiveResearchKitSUJ::SetBaseFrame(const prmPositionCartesianGet & newBaseFrame)
+{
+    mtsIntuitiveResearchKitSUJArmData * arm;
+    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        arm = Arms[armIndex];
+        if (arm->mType != mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
+            //std::cerr << "pushing base frame to suj " << arm->mName << std::endl;
+            //std::cerr << newBaseFrame.Position() << std::endl;
+            arm->mBaseFrame.From(newBaseFrame.Position());
+        }
+    }
+}
+
+void mtsIntuitiveResearchKitSUJ::ErrorEventHandler(const std::string & message)
+{
+    RobotIO.DisablePower();
+    DispatchError(this->GetName() + ": received [" + message + "]");
+    SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+}
+
+void mtsIntuitiveResearchKitSUJ::DispatchError(const std::string & message)
+{
+    MessageEvents.Error(message);
+    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        Arms[armIndex]->MessageEvents.Error(message);
+    }
 }
 
 void mtsIntuitiveResearchKitSUJ::DispatchStatus(const std::string & message)

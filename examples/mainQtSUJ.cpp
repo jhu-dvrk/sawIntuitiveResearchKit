@@ -148,12 +148,18 @@ int main(int argc, char ** argv)
     componentManager->AddComponent(psm1Widget);
     componentManager->Connect(psm1Widget->GetName(), "Manipulator", "SUJ", "PSM1");
     tabWidget->addTab(psm1Widget, "PSM1-SUJ");
+/*
+    mtsIntuitiveResearchKitSUJQtWidget * psm2Widget = new mtsIntuitiveResearchKitSUJQtWidget("PSM2-SUJ");
+    componentManager->AddComponent(psm2Widget);
+    componentManager->Connect(psm2Widget->GetName(), "Manipulator", "SUJ", "PSM2");
+    tabWidget->addTab(psm2Widget, "PSM2-SUJ");
+
 
     mtsIntuitiveResearchKitSUJQtWidget * psm2Widget = new mtsIntuitiveResearchKitSUJQtWidget("ECM-SUJ");
     componentManager->AddComponent(psm2Widget);
     componentManager->Connect(psm2Widget->GetName(), "Manipulator", "SUJ", "ECM");
     tabWidget->addTab(psm2Widget, "ECM-SUJ");
-
+*/
     tabWidget->show();
 
     //-------------- create the components ------------------

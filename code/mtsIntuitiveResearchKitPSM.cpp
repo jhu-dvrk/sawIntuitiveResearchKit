@@ -201,9 +201,9 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             PID.SetCheckJointLimit(false);
             vctDoubleVec tolerances(NumberOfJoints());
             // first two rotations
-            tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
+            tolerances.Ref(2, 0).SetAll(20.0 * cmnPI_180); // 10 degrees
             // translation
-            tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
+            tolerances.Element(2) = 40.0 * cmn_mm; // 10 mm
             // tool/adapter gears
             tolerances.Ref(4, 3).SetAll(5.0 * cmnPI); // we request positions that can't be reached when the adapter/tool engage
             PID.SetTrackingErrorTolerance(tolerances);

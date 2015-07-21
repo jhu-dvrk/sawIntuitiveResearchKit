@@ -5,6 +5,7 @@
     [
         {
             "name": "PSM1",
+            "type": "PSM",
             "plug-number": 3,
             "serial-number": "SE054268",
             "brake-release-current": -2.2,
@@ -75,13 +76,14 @@
 	    ,
         {
 	        "name": "PSM2",
+            "type": "PSM",
 	        "plug-number": 4,
 	        "serial-number": "SE054270",
             "brake-release-current": 2.2,
-	        "primary-offsets": [-0.043291, -2.3611, -3.0623, 3.069, -3.0623, -3.0564],
-	        "primary-scales": [0.00027822, 0.0011525, 0.0014967, -0.0014975, 0.0014944, 0.0014902],
-	        "secondary-offsets": [-0.043744, -2.3726, -3.0707, 3.072, -3.0734, -3.0697],
-	        "secondary-scales": [0.00027827, 0.0011578, 0.0015001, -0.0015, 0.0014992, 0.0014984],
+		    "primary-offsets": [ -0.0410123, -2.3553, -3.0497, 3.05, 3.0684, -3.0509],
+		    "primary-scales": [ 0.00025439, 0.0010538, 0.0013608, -0.0013622, -0.0013651, 0.0013619],
+		    "secondary-offsets": [ -0.0433723, -2.3675, -3.0395, 3.0378, -34133, -3.0763],
+		    "secondary-scales": [ 0.00025449, 0.0010588, 0.0013592, -0.0013619, 7.6253, 0.0013728],
  	        "DH": {
 		        "links": [
 		            {
@@ -144,6 +146,7 @@
 	    ,
         {
 	        "name": "PSM3",
+            "type": "Motorized PSM",
 	        "plug-number": 2,
 	        "serial-number": "SE054271",
             "brake-release-current": 2.2,
@@ -213,6 +216,7 @@
 	    ,
         {
 	        "name": "ECM",
+            "type": "ECM",
 	        "plug-number": 1,
 	        "serial-number": "SE054269",
             "brake-release-current": 2.0,
