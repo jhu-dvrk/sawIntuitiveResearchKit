@@ -2,8 +2,13 @@
 
 {
     "io": {
-        "period": 0.005, // in seconds
+        "period": 0.0005, // in seconds
         "port": 0 // default is 0
+    }
+    ,
+    "operator-present": {
+        "component": "io",
+        "interface": "COAG"
     }
     ,
     "arms":
@@ -42,14 +47,26 @@
                 "interface": "ECM"
             }
         }
-        // {
-        //     "name": "MTML",
-        //     "type": "MTM",
-        //     "io": "sawRobotIO1394-MTMR-22403.xml",
-        //     //         "io": "sawRobotIO1394-MTML-22723.xml",
-        //     "pid": "sawControllersPID-MTM.xml",
-        //     "kinematic": "dvmtm.rob"
-        // }
+        ,
+        {
+             "name": "MTMR",
+             "type": "MTM",
+             "io": "jhu-daVinci/sawRobotIO1394-MTMR-22403-foot-pedal.xml",
+             "pid": "sawControllersPID-MTMR.xml",
+             "kinematic": "dvmtm.rob"
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            "master": "MTMR",
+            "slave": "PSM1",
+            "period": 0.005, // in seconds
+            "rotation" : [[-1.0000,  0.0000,  0.0000],
+			              [ 0.0000, -1.0000,  0.0000],
+			              [ 0.0000,  0.0000,  1.0000]]
+        }
     ]
     // ,
     // "pairs":

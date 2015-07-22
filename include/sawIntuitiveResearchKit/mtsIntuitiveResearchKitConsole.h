@@ -91,19 +91,32 @@ public:
         mtsInterfaceRequired * ArmInterfaceRequired;
     };
 
-    class TeleOp {
+    class Teleop {
     public:
         friend class mtsIntuitiveResearchKitConsole;
         friend class mtsIntuitiveResearchKitConsoleQt;
         friend class dvrk::console;
 
-        TeleOp(const std::string & name);
+        Teleop(const std::string & name,
+               const std::string & masterName,
+               const std::string & slaveName,
+               const std::string & consoleName);
+
+        /*! Create and configure the robot arm. */
+        void ConfigureTeleop(const vctMatRot3 & orientation,
+                             const double & periodInSeconds = 2.0 * cmn_ms);
+
+        /*! Connect all interfaces specific to this teleop. */
+        bool Connect(void);
 
         /*! Accessors */
         const std::string & Name(void) const;
 
     protected:
         std::string mName;
+        std::string mMasterName;
+        std::string mSlaveName;
+        std::string mConsoleName;
         mtsFunctionWrite Enable;
         mtsInterfaceRequired * InterfaceRequired;
     };
@@ -127,7 +140,6 @@ public:
 
     bool AddArm(Arm * newArm);
     bool AddArm(mtsComponent * genericArm, const Arm::ArmType armType);
-    bool AddTeleOperation(const std::string & name);
 
     bool AddFootpedalInterfaces(void);
     bool ConnectFootpedalInterfaces(void);
@@ -140,18 +152,20 @@ protected:
     typedef std::map<std::string, Arm *> ArmList;
     ArmList mArms;
 
-    typedef std::map<std::string, TeleOp *> TeleOpList;
-    TeleOpList mTeleOps;
+    typedef std::map<std::string, Teleop *> TeleopList;
+    TeleopList mTeleops;
 
     /*! Utility function to test if a file exists and log the results */
     bool FileExists(const std::string & description, const std::string & filename) const;
 
     /*! Find all arm data from JSON configuration. */
     bool ConfigureArmJSON(const Json::Value & jsonArm,
-                          const std::string & ioComponentName,
-                          const Arm::ArmType & type = Arm::ARM_UNDEFINED);
-
+                          const std::string & ioComponentName);
     bool AddArmInterfaces(Arm * arm);
+
+    bool ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop);
+    bool AddTeleopInterfaces(Teleop * teleop);
+
 
     void SetRobotsControlState(const std::string & newState);
     void TeleopEnable(const bool & enable);
@@ -164,6 +178,8 @@ protected:
         mtsFunctionWrite Camera;
         mtsFunctionWrite OperatorPresent;
     } ConsoleEvents;
+    std::string mOperatorPresentComponent;
+    std::string mOperatorPresentInterface;
 
     // Functions for events
     struct {

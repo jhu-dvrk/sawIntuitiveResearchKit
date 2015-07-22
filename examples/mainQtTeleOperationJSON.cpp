@@ -120,29 +120,6 @@ int main(int argc, char ** argv)
     mtsIntuitiveResearchKitConsoleQt * consoleQt = new mtsIntuitiveResearchKitConsoleQt(console);
 
 #if 0
-    // find name of button event used to detect if operator is present
-    std::string operatorPresentComponent = jsonConfig["operator-present"]["component"].asString();
-    std::string operatorPresentInterface = jsonConfig["operator-present"]["interface"].asString();
-    //set defaults
-    if (operatorPresentComponent == "") {
-        operatorPresentComponent = "io";
-    }
-    if (operatorPresentInterface == "") {
-        operatorPresentInterface = "COAG";
-    }
-    std::cout << "Using \"" << operatorPresentComponent << "::" << operatorPresentInterface
-              << "\" to detect if operator is present" << std::endl;
-
-    // connect console to IO
-    componentManager->Connect(console->GetName(), "Clutch",
-                              io->GetName(), "CLUTCH");
-    componentManager->Connect(console->GetName(), "Camera",
-                              io->GetName(), "CAMERA");
-    componentManager->Connect(console->GetName(), "OperatorPresent",
-                              operatorPresentComponent, operatorPresentInterface);
-#endif
-
-#if 0
     // setup arms defined in the json configuration file
     for (unsigned int index = 0; index < pairs.size(); ++index) {
         std::string masterUDPIP = jsonMaster["UDP-IP"].asString();
@@ -171,21 +148,9 @@ int main(int argc, char ** argv)
         teleGUI->Configure();
         componentManager->AddComponent(teleGUI);
         tabWidget->addTab(teleGUI, teleName.c_str());
-        mtsTeleOperation * tele = new mtsTeleOperation(teleName, periodTeleop);
-        // Default orientation between master and slave
-        vctMatRot3 master2slave;
-        master2slave.From(vctAxAnRot3(vct3(0.0, 0.0, 1.0), 180.0 * cmnPI_180));
-        tele->SetRegistrationRotation(master2slave);
-        componentManager->AddComponent(tele);
         // connect teleGUI to tele
         componentManager->Connect(teleGUI->GetName(), "TeleOperation", tele->GetName(), "Setting");
 
-        componentManager->Connect(tele->GetName(), "Master", mtm->Name(), "Robot");
-        componentManager->Connect(tele->GetName(), "Slave", psm->Name(), "Robot");
-        componentManager->Connect(tele->GetName(), "Clutch", console->GetName(), "Clutch");
-        componentManager->Connect(tele->GetName(), "OperatorPresent", console->GetName(), "OperatorPresent");
-        console->AddTeleOperation(tele->GetName());
-    }
 
     // configure data collection if needed
     if (options.IsSet("collection-config")) {
