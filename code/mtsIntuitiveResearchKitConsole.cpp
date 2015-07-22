@@ -665,10 +665,13 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
 
     // read orientation if present
     vctMatRot3 orientation; // identity by default
-    Json::Value jsonValue = jsonTeleop["orientation"];
+    Json::Value jsonValue = jsonTeleop["rotation"];
     if (!jsonValue.empty()) {
-        cmnDataJSON<vctMatRot3>::DeSerializeText(orientation, jsonTeleop["orientation"]);
+        cmnDataJSON<vctMatRot3>::DeSerializeText(orientation, jsonTeleop["rotation"]);
     }
+
+    std::cerr<< orientation << std::endl;
+
     // read period if present
     double period = 2.0 * cmn_ms;
     jsonValue = jsonTeleop["period"];
