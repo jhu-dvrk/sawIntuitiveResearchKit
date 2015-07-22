@@ -55,6 +55,14 @@
              "pid": "sawControllersPID-MTMR.xml",
              "kinematic": "dvmtm.rob"
         }
+        ,
+        {
+             "name": "MTML",
+             "type": "MTM",
+             "io": "jhu-daVinci/sawRobotIO1394-MTML-34863.xml",
+             "pid": "sawControllersPID-MTML.xml",
+             "kinematic": "dvmtm.rob"
+        }
     ]
     ,
     "psm-teleops":
@@ -62,6 +70,15 @@
         {
             "master": "MTMR",
             "slave": "PSM1",
+            "period": 0.005, // in seconds
+            "rotation" : [[-1.0000,  0.0000,  0.0000],   // -1 0 0
+			              [ 0.0000, -1.0000,  0.0000],  // 0 -1 0
+			              [ 0.0000,  0.0000,  1.0000]]
+        }
+        ,
+        {
+            "master": "MTML",
+            "slave": "ECM",
             "period": 0.005, // in seconds
             "rotation" : [[-1.0000,  0.0000,  0.0000],   // -1 0 0
 			              [ 0.0000, -1.0000,  0.0000],  // 0 -1 0
