@@ -879,13 +879,10 @@ void mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler(const prmPositionCar
     baseFrameSUJParam.Position().From(baseFrameSUJ);
     */
 
-    //std::cerr << positionECM << std::endl;
-
     prmPositionCartesianGet baseFrameSUJParam;
     positionECM.InverseSelf();
-    //positionECM.Identity();
     baseFrameSUJParam.Position().From(positionECM);
 
-    baseFrameSUJParam.Valid() = baseFrameSUJParam.Valid() && positionECMParam.Valid();
+    baseFrameSUJParam.Valid() = positionECMParam.Valid();
     mECMBaseFrameEvent(baseFrameSUJParam);
 }
