@@ -30,5 +30,29 @@
                 "interface": "PSM1"
             }
         }
+        ,
+        //{
+        //    "name": "PSM2",
+        //    "type": "PSM",
+        //    "io": "jhu-daVinci/sawRobotIO1394-PSM2-32204.xml",
+        //    "pid": "sawControllersPID-PSM.xml",
+        //    "kinematic": "dvpsm.rob",
+        //    "base-frame": {
+        //       "component": "SUJ",
+        //        "interface": "PSM2"
+        //    }
+        //}
+        //,
+        {
+            "name": "ECM",
+            "type": "ECM",
+            "io": "jhu-daVinci/sawRobotIO1394-ECM-29738.xml",
+            "pid": "sawControllersPID-ECM.xml",
+            "kinematic": "dvecm.rob",
+            "base-frame": {
+                "component": "SUJ",
+                "interface": "ECM"
+            }
+        }
     ]
 }

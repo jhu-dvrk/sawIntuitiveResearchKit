@@ -37,6 +37,18 @@
         }
         ,
         {
+            "name": "PSM2",
+            "type": "PSM",
+            "io": "jhu-daVinci/sawRobotIO1394-PSM2-32204.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "dvpsm.rob",
+            "base-frame": {
+                "component": "SUJ",
+                "interface": "PSM2"
+            }
+        }
+        ,
+        {
             "name": "ECM",
             "type": "ECM",
             "io": "jhu-daVinci/sawRobotIO1394-ECM-29738.xml",
@@ -78,7 +90,7 @@
         ,
         {
             "master": "MTML",
-            "slave": "ECM",
+            "slave": "PSM2",
             "period": 0.005, // in seconds
             "rotation" : [[-1.0000,  0.0000,  0.0000],   // -1 0 0
 			              [ 0.0000, -1.0000,  0.0000],  // 0 -1 0

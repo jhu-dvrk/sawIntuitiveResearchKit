@@ -48,6 +48,7 @@ if (cisst_FOUND)
   cisst_find_saw_component (sawControllers 1.1.0 REQUIRED)
   cisst_find_saw_component (sawConstraintController REQUIRED)
 
+
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND AND sawConstraintController_FOUND)
 
     # saw components configuration

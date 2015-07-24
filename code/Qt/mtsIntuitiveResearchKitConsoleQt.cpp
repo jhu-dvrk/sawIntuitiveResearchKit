@@ -107,6 +107,12 @@ mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(mtsIntuitiveR
             componentManager->AddComponent(sujGUI);
             componentManager->Connect(sujGUI->GetName(), "Manipulator", "SUJ", "ECM");
             tabWidget->addTab(sujGUI, "ECM SUJ");
+
+            sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM2-SUJ");
+            componentManager->AddComponent(sujGUI);
+            componentManager->Connect(sujGUI->GetName(), "Manipulator", "SUJ", "PSM2");
+            tabWidget->addTab(sujGUI, "PSM2 SUJ");
+
             break;
 
         default:
