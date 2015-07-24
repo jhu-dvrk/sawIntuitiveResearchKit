@@ -860,10 +860,6 @@ void mtsIntuitiveResearchKitConsole::StatusEventHandler(const std::string & mess
 
 void mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler(const prmPositionCartesianGet & baseFrameParam)
 {
-    // convert input to useful type
-    //vctFrm4x4 positionSUJ;
-    //positionSUJ.From(baseFrameParam.Position());
-
     // get position from ECM and convert to useful type
     prmPositionCartesianGet positionECMParam;
     mGetPositionCartesianFromECM(positionECMParam);
@@ -871,14 +867,6 @@ void mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler(const prmPositionCar
     positionECM.From(positionECMParam.Position());
 
     // compute and send new base frame for all SUJs (SUJ will handle ECM differently)
-
-    /*
-    vctFrm4x4 baseFrameSUJ = positionSUJ * positionECM;
-    baseFrameSUJ.InverseSelf();
-    prmPositionCartesianGet baseFrameSUJParam;
-    baseFrameSUJParam.Position().From(baseFrameSUJ);
-    */
-
     prmPositionCartesianGet baseFrameSUJParam;
     positionECM.InverseSelf();
     baseFrameSUJParam.Position().From(positionECM);
