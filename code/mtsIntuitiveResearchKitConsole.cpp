@@ -869,6 +869,11 @@ void mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler(const prmPositionCar
     // compute and send new base frame for all SUJs (SUJ will handle ECM differently)
     prmPositionCartesianGet baseFrameSUJParam;
     positionECM.InverseSelf();
+    vctFrm4x4 mtmrAdjusted;
+    mtmrAdjusted.Identity();
+    //mtmrAdjusted.Rotation().Element(2,2) = -1.0;
+    //positionECM = mtmrAdjusted * positionECM;
+    positionECM.Identity();
     baseFrameSUJParam.Position().From(positionECM);
 
     baseFrameSUJParam.Valid() = positionECMParam.Valid();

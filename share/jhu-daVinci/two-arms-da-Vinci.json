@@ -35,18 +35,18 @@
                 "interface": "PSM1"
             }
         }
-        ,
-        {
-            "name": "PSM2",
-            "type": "PSM",
-            "io": "jhu-daVinci/sawRobotIO1394-PSM2-32204.xml",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "dvpsm.rob",
-            "base-frame": {
-                "component": "SUJ",
-                "interface": "PSM2"
-            }
-        }
+        //,
+        //{
+        //    "name": "PSM2",
+        //    "type": "PSM",
+        //    "io": "jhu-daVinci/sawRobotIO1394-PSM2-32204.xml",
+        //    "pid": "sawControllersPID-PSM.xml",
+        //    "kinematic": "dvpsm.rob",
+        //    "base-frame": {
+        //        "component": "SUJ",
+        //        "interface": "PSM2"
+        //    }
+        //}
         ,
         {
             "name": "ECM",
@@ -67,14 +67,14 @@
              "pid": "sawControllersPID-MTMR.xml",
              "kinematic": "dvmtm.rob"
         }
-        ,
-        {
-             "name": "MTML",
-             "type": "MTM",
-             "io": "jhu-daVinci/sawRobotIO1394-MTML-34863.xml",
-             "pid": "sawControllersPID-MTML.xml",
-             "kinematic": "dvmtm.rob"
-        }
+        //,
+        //{
+        //     "name": "MTML",
+        //     "type": "MTM",
+        //     "io": "jhu-daVinci/sawRobotIO1394-MTML-34863.xml",
+        //     "pid": "sawControllersPID-MTML.xml",
+        //     "kinematic": "dvmtm.rob"
+        //}
     ]
     ,
     "psm-teleops":
@@ -84,33 +84,33 @@
             "slave": "PSM1",
             "period": 0.005, // in seconds
             "rotation" : [[-1.0000,  0.0000,  0.0000],   // -1 0 0
-			              [ 0.0000, -1.0000,  0.0000],  // 0 -1 0
+			              [ 0.0000,  -1.0000,  0.0000],  // 0 -1 0
 			              [ 0.0000,  0.0000,  1.0000]]
         }
-        ,
-        {
-            "master": "MTML",
-            "slave": "PSM2",
-            "period": 0.005, // in seconds
-            "rotation" : [[-1.0000,  0.0000,  0.0000],   // -1 0 0
-			              [ 0.0000, -1.0000,  0.0000],  // 0 -1 0
-			              [ 0.0000,  0.0000,  1.0000]]
-        }
+        //,
+        //{
+        //    "master": "MTML",
+        //    "slave": "PSM2",
+        //    "period": 0.005, // in seconds
+        //    "rotation" : [[-1.0000,  0.0000,  0.0000],   // -1 0 0
+		//	              [ 0.0000, -1.0000,  0.0000],  // 0 -1 0
+		//	              [ 0.0000,  0.0000,  -1.0000]]
+        //}
     ]
-    // ,
-    // "pairs":
-    // [
-    //     {
-    //         "master": {
-    //             "name": "MTML"
-    //         }
-    //         ,
-    //         "slave": {
-    //             "name": "PSM1",
-    //             "io": "sawRobotIO1394-PSM1-49695.xml",
-    //             "pid": "sawControllersPID-PSM.xml",
-    //             "kinematic": "dvpsm.rob"
-    //         }
-    //     }
-    // ]
+     ,
+     "pairs":
+     [
+         {
+             "master": {
+                 "name": "MTML"
+             }
+             ,
+             "slave": {
+                 "name": "PSM1",
+                 "io": "sawRobotIO1394-PSM1-49695.xml",
+                 "pid": "sawControllersPID-PSM.xml",
+                 "kinematic": "dvpsm.rob"
+             }
+         }
+     ]
 }

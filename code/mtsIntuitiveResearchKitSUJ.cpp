@@ -558,7 +558,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
             // forward kinematic
             vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
             // pre and post transformations loaded from JSON file, base frame updated using events
-            vctFrame4x4<double> armBase = arm->mBaseFrame * arm->mWorldToSUJ * suj* arm->mSUJToArmBase;
+            vctFrame4x4<double> armBase = /*arm->mBaseFrame **/ arm->mWorldToSUJ * suj* arm->mSUJToArmBase;
             arm->mPositionCartesianParam.Position().From(armBase);
             arm->mPositionCartesianParam.SetValid(true);
 
