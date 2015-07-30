@@ -558,7 +558,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
             // forward kinematic
             vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
             // pre and post transformations loaded from JSON file, base frame updated using events
-            vctFrame4x4<double> armBase = /*arm->mBaseFrame **/ arm->mWorldToSUJ * suj* arm->mSUJToArmBase;
+            vctFrame4x4<double> armBase = arm->mBaseFrame * arm->mWorldToSUJ * suj* arm->mSUJToArmBase;
             arm->mPositionCartesianParam.Position().From(armBase);
             arm->mPositionCartesianParam.SetValid(true);
 
@@ -714,9 +714,13 @@ void mtsIntuitiveResearchKitSUJ::SetBaseFrame(const prmPositionCartesianGet & ne
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
         arm = Arms[armIndex];
         if (arm->mType != mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
-            //std::cerr << "pushing base frame to suj " << arm->mName << std::endl;
-            //std::cerr << newBaseFrame.Position() << std::endl;
-            arm->mBaseFrame.From(newBaseFrame.Position());
+            vctFrm4x4 mtmrAdjusted;
+            vctFrm4x4 base;
+            base.From(newBaseFrame.Position());
+            //mtmrAdjusted.Identity();
+            //mtmrAdjusted.Rotation().Element(2,2) = -1.0;
+            //base = mtmrAdjusted * base;
+            arm->mBaseFrame = base;
         }
     }
 }

@@ -529,9 +529,12 @@ void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianGet & ne
 {
     if (newBaseFrame.Valid()) {
         this->BaseFrame.FromNormalized(newBaseFrame.Position());
+        //this->BaseFrame = vctFrm4x4::Identity();
+        //this->BaseFrame.Element(1,1) = -1;
         //std::cerr<<"Received new baseframe for arm: " << this->Name <<std::endl;
     } else {
         this->BaseFrame = vctFrm4x4::Identity();
+        //this->BaseFrame.Element(1,1) = -1;
         ErrorEventHandler("Received invalid base frame");
     }
 }
