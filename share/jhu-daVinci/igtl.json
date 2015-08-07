@@ -35,15 +35,15 @@
             "name": "PSM1",
             "component": "PSM1",
             "provided-interface": "Robot",
-            "port-number": 18948
+            "port-number": 18940
         }
-        //,
-        //{
-        //    "name": "PSM2",
-        //    "component": "PSM2",
-        //    "provided-interface": "Robot",
-        //    "port-number": 18949
-        //}
+        ,
+        {
+            "name": "PSM2",
+            "component": "PSM2",
+            "provided-interface": "Robot",
+            "port-number": 18941
+        }
         //,
         //{
         //    "name": "PSM3",
@@ -56,7 +56,7 @@
             "name": "ECM",
             "component": "ECM",
             "provided-interface": "Robot",
-            "port-number": 18950
+            "port-number": 18942
         }
     ]
 }
