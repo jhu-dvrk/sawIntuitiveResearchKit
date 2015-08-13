@@ -32,7 +32,7 @@ http://www.cisst.org/cisst/license.txt.
 const double MIN_BRAKE_CURRENT = 0.0;
 
 const size_t MUX_ARRAY_SIZE = 6;
-const size_t MUX_MAX_INDEX = 11;
+const size_t MUX_MAX_INDEX = 15;
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJ, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
 
@@ -85,11 +85,13 @@ public:
             mVoltageToPositionScales[potArray].SetSize(MUX_ARRAY_SIZE);
             mVoltageToPositionOffsets[potArray].SetSize(MUX_ARRAY_SIZE);
         }
+        mVoltagesExtra.SetSize(MUX_MAX_INDEX-2*MUX_ARRAY_SIZE+1);
 
         mPositionJointParam.Position().SetSize(MUX_ARRAY_SIZE);
 
         mStateTable.AddData(this->mVoltages[0], "Voltages[0]");
         mStateTable.AddData(this->mVoltages[1], "Voltages[1]");
+        mStateTable.AddData(this->mVoltagesExtra, "VoltagesExtra");
         mStateTable.AddData(this->mPositionJointParam, "PositionJoint");
         mStateTable.AddData(this->mPositionCartesianParam, "PositionCartesian");
         mStateTable.AddData(this->mBaseFrame, "BaseFrame");
@@ -109,6 +111,7 @@ public:
         interfaceProvided->AddCommandReadState(mStateTable, mBaseFrame, "GetBaseFrame");
         interfaceProvided->AddCommandReadState(mStateTable, mVoltages[0], "GetVoltagesPrimary");
         interfaceProvided->AddCommandReadState(mStateTable, mVoltages[1], "GetVoltagesSecondary");
+        interfaceProvided->AddCommandReadState(mStateTable, mVoltagesExtra, "GetVoltagesExtra");
         interfaceProvided->AddCommandReadState(mStateTableConfiguration, mName, "GetName");
         interfaceProvided->AddCommandReadState(mStateTableConfiguration, mSerialNumber, "GetSerialNumber");
         interfaceProvided->AddCommandReadState(mStateTableConfiguration, mPlugNumber, "GetPlugNumber");
@@ -230,6 +233,11 @@ public:
     vctDoubleVec mVoltageToPositionOffsets[2];
     prmPositionJointGet mPositionJointParam;
     prmPositionCartesianGet mPositionCartesianParam;
+
+    // Exta analog feedback
+    // plugs 1-3:  spare1, spare2, brake-voltage, gnd
+    // plug 4: I_MOT+, I_MOT-, VA_BIAS, brake-voltage
+    vctDoubleVec mVoltagesExtra;
 
     // Kinematics
     robManipulator mManipulator;
@@ -522,7 +530,8 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
     }
     // array index, 0 or 1, primary or secondary pots
     const size_t arrayIndex = mMuxIndex / MUX_ARRAY_SIZE; // 0 or 1: mux index 0 to 5 goes to first array of data, 6 to 11 goes to second array
-    const size_t indexInArray = mMuxIndex % MUX_ARRAY_SIZE; // pot index in array, 0 to 5
+                                                          // 12 to 15 goes to third array (misc. voltages)
+    const size_t indexInArray = mMuxIndex % MUX_ARRAY_SIZE; // pot index in array, 0 to 5 (0 to 3 for third array)
     executionResult = RobotIO.GetAnalogInputVolts(mVoltages);
     // for each arm, i.e. SUJ1, SUJ2, SUJ3, ...
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
@@ -531,8 +540,11 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
         if (mMuxIndex == 0) {
             arm->mStateTable.Start();
         }
-        // all 4 analog inputs are send to all 4 arm data structures
-        arm->mVoltages[arrayIndex][indexInArray] = mVoltages[armIndex];
+        // all 4 analog inputs are sent to all 4 arm data structures
+        if (arrayIndex < 2)
+            arm->mVoltages[arrayIndex][indexInArray] = mVoltages[armIndex];
+        else
+            arm->mVoltagesExtra[indexInArray] = mVoltages[armIndex];
         // advance state table when all joints have been read
         if (mMuxIndex == MUX_MAX_INDEX) {
             arm->mPositions[0].Assign(arm->mVoltageToPositionOffsets[0]);

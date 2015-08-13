@@ -37,6 +37,7 @@ protected:
 
     vctQtWidgetDynamicVectorDoubleRead * QVJointWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVBrakeCurrentWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVExtraVoltageWidget;
 
     vctQtWidgetDynamicVectorDoubleWrite * QVPotentiometerRecalibrationStartWidget;
     vctQtWidgetDynamicVectorDoubleWrite * QVPotentiometerRecalibrationFinishWidget;
@@ -57,8 +58,10 @@ protected:
 
     mtsFunctionRead GetPrimaryVoltages;
     mtsFunctionRead GetSecondaryVoltages;
+    mtsFunctionRead GetExtraVoltages;
     vctDoubleMat mJointsRecalibrationMatrix;
     vctDoubleVec mVoltages[2];
+    vctDoubleVec mVoltagesExtra;
     mtsFunctionWrite SetRecalibratioMatrix;
 
 protected slots:

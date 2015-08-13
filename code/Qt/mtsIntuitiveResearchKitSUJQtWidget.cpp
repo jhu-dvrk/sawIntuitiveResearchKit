@@ -42,6 +42,7 @@ mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std
     InterfaceRequired->AddFunction("Clutch", Clutch);
     InterfaceRequired->AddFunction("GetVoltagesPrimary", GetPrimaryVoltages);
     InterfaceRequired->AddFunction("GetVoltagesSecondary", GetSecondaryVoltages);
+    InterfaceRequired->AddFunction("GetVoltagesExtra", GetExtraVoltages);
     InterfaceRequired->AddFunction("SetRecalibrationMatrix", SetRecalibratioMatrix);
 
     const double negativeInfinity = cmnTypeTraits<double>::MinusInfinity();
@@ -60,6 +61,8 @@ mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std
     mVoltages[0].Zeros();
     mVoltages[1].SetSize(6);
     mVoltages[1].Zeros();
+    mVoltagesExtra.SetSize(4);
+    mVoltagesExtra.Zeros();
 
     mJointsRecalibrationMatrix.SetSize(6,6);
     mJointsRecalibrationMatrix.SetAll(negativeInfinity);
@@ -86,6 +89,10 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
     QVPotentiometerRecalibrationStartWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::TEXT_WIDGET);
     QVPotentiometerRecalibrationFinishWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::TEXT_WIDGET);
 
+    QLabel * labelExtraVoltages = new QLabel("Extra Voltages");
+    QVExtraVoltageWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    QVExtraVoltageWidget->SetPrecision(5);
+
     jointLayout->addWidget(labelJoints,1,0);
     jointLayout->addWidget(QVJointWidget,1,1);
     jointLayout->addWidget(labelBrakeCurrent,2,0);
@@ -96,6 +103,8 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
     jointLayout->addWidget(labelRecalibrationInputFinish,5,0);
     jointLayout->addWidget(QVPotentiometerRecalibrationFinishWidget,5,1);
     jointLayout->addWidget(ManualRecalibrationButton,6,1);
+    jointLayout->addWidget(labelExtraVoltages,7,0);
+    jointLayout->addWidget(QVExtraVoltageWidget,7,1);
 
     connect(clutchButton, SIGNAL(pressed()),
             this, SLOT(SlotClutchPressed()));
@@ -117,6 +126,7 @@ void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)
     GetBrakeCurrent(BrakeCurrent);
     GetPrimaryVoltages(mVoltages[0]);
     GetSecondaryVoltages(mVoltages[1]);
+    GetExtraVoltages(mVoltagesExtra);
 
     // first axis is a translation, convert to mm
     position.Element(0) *= 1000.0;
@@ -130,6 +140,7 @@ void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)
     QVPotentiometerRecalibrationFinishWidget->SetValue(JointPositionFinish);
     QVJointWidget->SetValue(position);
     QVBrakeCurrentWidget->SetValue(vctDoubleVec(1, BrakeCurrent * 1000.0));
+    QVExtraVoltageWidget->SetValue(mVoltagesExtra);
 }
 
 void mtsIntuitiveResearchKitSUJQtWidget::SlotClutchPressed(void)
