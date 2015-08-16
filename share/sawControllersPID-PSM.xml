@@ -7,43 +7,43 @@
   <joints>
     <joint index="0" name="outer yaw">
       <pid PGain="50.0" DGain="3.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.8" Deadband="0.0" Units="rad"/>
+      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-70" UpperLimit="70" Units="deg"/>
     </joint>
 
     <joint index="1" name="outer pitch">
       <pid PGain="50.0" DGain="3.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.8" Deadband="0.0" Units="rad"/>
+      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-50" UpperLimit="50" Units="deg"/>
     </joint>
 
     <joint index="2" name="insertion">
       <pid PGain="3000.0" DGain="50.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.8" Deadband="0.0" Units="rad"/>
+      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="0" UpperLimit="235" Units="mm"/>
     </joint>
 
     <joint index="3" name="outer roll">
       <pid PGain="0.500" DGain="0.03" IGain="0.001" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-10" MaxILimit="10" ErrorLimit="0.8" Deadband="0.0" Units="rad"/>
+      <limit MinILimit="-10" MaxILimit="10" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-260" UpperLimit="260" Units="deg"/>
     </joint>
 
     <joint index="4" name="wrist pitch">
       <pid PGain="0.500" DGain="0.03" IGain="0.001" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.8" Deadband="0.0" Units="rad"/>
+      <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-80" UpperLimit="80" Units="deg"/>
     </joint>
 
     <joint index="5" name="wrist yaw">
       <pid PGain="0.500" DGain="0.03" IGain="0.001" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.8" Deadband="0.0" Units="rad"/>
+      <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-80" UpperLimit="80" Units="deg"/>
     </joint>
 
     <joint index="6" name="jaw">
       <pid PGain="0.500" DGain="0.03" IGain="0.001" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.8" Deadband="0.0" Units="rad"/>
+      <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-20" UpperLimit="80" Units="deg"/>
     </joint>
 
