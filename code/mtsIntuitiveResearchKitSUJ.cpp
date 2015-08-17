@@ -139,10 +139,14 @@ public:
     inline void ClutchCallback(const prmEventButton & button) {
         if (button.Type() == prmEventButton::PRESSED) {
             mClutched += 1;
-            MessageEvents.Status(mName.Data + ": clutch button pressed");
+            if (mClutched == 1) {
+                MessageEvents.Status(mName.Data + ": SUJ clutched");
+            }
         } else {
             mClutched -= 1;
-            MessageEvents.Status(mName.Data + ": clutch button released");
+            if (mClutched == 0) {
+                MessageEvents.Status(mName.Data + ": SUJ not clutched");
+            }
         }
     }
 
@@ -362,6 +366,12 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         // name
         Json::Value jsonArm = jsonArms[index];
         std::string name = jsonArm["name"].asString();
+        if (!((name == "ECM") || (name == "PSM1") || (name == "PSM2") || (name == "PSM3"))) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect arm name for SUJ \""
+                                     << name << "\", must be one of \"PSM1\", \"PSM2\", \"PSM3\" or \"ECM\""
+                                     << std::endl;
+            return;
+        }
         std::string typeString = jsonArm["type"].asString();
         mtsIntuitiveResearchKitSUJArmData::SujType type;
         if (typeString == "ECM") {

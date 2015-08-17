@@ -77,7 +77,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // Main interface should have been created by base class init
     CMN_ASSERT(RobotInterface);
     RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
-    RobotInterface->AddEventWrite(ClutchEvents.SUJClutch, "SUJClutch", prmEventButton());
 
     // Event Adapter engage: digital input button event from PSM
     interfaceRequired = AddInterfaceRequired("Adapter");

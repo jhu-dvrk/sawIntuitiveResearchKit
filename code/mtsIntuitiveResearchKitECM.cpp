@@ -96,7 +96,6 @@ void mtsIntuitiveResearchKitECM::Init(void)
     // Main interface should have been created by base class init
     CMN_ASSERT(RobotInterface);
     RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
-    RobotInterface->AddEventWrite(ClutchEvents.SUJClutch, "SUJClutch", prmEventButton());
 
     // ManipClutch: digital input button event from ECM
     interfaceRequired = AddInterfaceRequired("ManipClutch");

@@ -81,7 +81,7 @@ public:
         std::string mPIDConfigurationFile;
         // arm
         std::string mArmConfigurationFile;
-        // SUJ
+        // base frame
         std::string mBaseFrameComponentName;
         std::string mBaseFrameInterfaceName;
 
@@ -89,6 +89,19 @@ public:
         mtsInterfaceRequired * IOInterfaceRequired;
         mtsInterfaceRequired * PIDInterfaceRequired;
         mtsInterfaceRequired * ArmInterfaceRequired;
+
+        // this is used only by PSMs and ECM
+        mtsInterfaceRequired * SUJInterfaceRequiredFromIO;
+        mtsInterfaceRequired * SUJInterfaceRequiredToSUJ;
+        mtsFunctionWrite SUJClutch;
+
+        void SUJClutchEventHandlerFromIO(const prmEventButton & button) {
+            if (button.Type() == prmEventButton::PRESSED) {
+                SUJClutch(true);
+            } else {
+                SUJClutch(false);
+            }
+        }
     };
 
     class Teleop {

@@ -365,6 +365,21 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         }
     }
 
+    // connect arm SUJ clutch button to SUJ
+    if (hasSUJ) {
+        for (iter = mArms.begin(); iter != end; ++iter) {
+            Arm * arm = iter->second;
+            if ((arm->mType == Arm::ARM_ECM) || (arm->mType == Arm::ARM_PSM)) {
+                arm->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJ-" + arm->Name() + "-IO");
+                arm->SUJInterfaceRequiredFromIO->AddEventHandlerWrite(&Arm::SUJClutchEventHandlerFromIO, arm, "Button");
+                arm->SUJInterfaceRequiredToSUJ = this->AddInterfaceRequired("SUJ-" + arm->Name());
+                arm->SUJInterfaceRequiredToSUJ->AddFunction("Clutch", arm->SUJClutch);
+            } else {
+                arm->SUJInterfaceRequiredFromIO = 0;
+                arm->SUJInterfaceRequiredToSUJ = 0;
+            }
+        }
+    }
     mConfigured = true;
 }
 
@@ -725,13 +740,6 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
         if (arm->mType == Arm::ARM_ECM) {
             arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ECMManipClutchEventHandler, this, "ManipClutch");
         }
-#if 0
-        // for ECM and PSM, get SUJ clutch button from arm
-        if ((arm->mType == Arm::ARM_ECM)
-            || (arm->mType == Arm::ARM_PSM)) {
-            arm->ArmInterfaceRequired->AddEventHandlerWrite(&Arm::SUJClutchEventHandler, arm, "SUJClutch");
-        }
-#endif
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add Main interface for arm \""
                                  << arm->Name() << "\"" << std::endl;
@@ -770,6 +778,13 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
         }
         // arm specific interfaces
         arm->Connect();
+        // connect to SUJ if needed
+        if (arm->SUJInterfaceRequiredFromIO && arm->SUJInterfaceRequiredToSUJ) {
+            componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredToSUJ->GetName(),
+                                      "SUJ", arm->Name());
+            componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredFromIO->GetName(),
+                                      arm->IOComponentName(), arm->Name() + "-SUJClutch");
+        }
     }
 
     const TeleopList::iterator teleopsEnd = mTeleops.end();
@@ -876,7 +891,6 @@ void mtsIntuitiveResearchKitConsole::ECMManipClutchEventHandler(const prmEventBu
     for (TeleopList::iterator teleOp = mTeleops.begin();
          teleOp != end;
          ++teleOp) {
-        std::cerr << "sending event to teleop " << teleOp->second->Name() << std::endl;
         result = teleOp->second->ManipClutch(button);
         if (!result) {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": ManipClutch: failed to send \""
