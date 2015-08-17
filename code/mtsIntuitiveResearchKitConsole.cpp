@@ -440,6 +440,7 @@ bool mtsIntuitiveResearchKitConsole::AddTeleopInterfaces(Teleop * teleop)
     teleop->InterfaceRequired = this->AddInterfaceRequired(teleop->Name());
     if (teleop->InterfaceRequired) {
         teleop->InterfaceRequired->AddFunction("Enable", teleop->Enable);
+        teleop->InterfaceRequired->AddFunction("CameraClutch", teleop->ManipClutch);
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
@@ -505,6 +506,7 @@ bool mtsIntuitiveResearchKitConsole::ConnectFootpedalInterfaces(void)
                               "io", "CAMERA");
     componentManager->Connect(this->GetName(), "OperatorPresent",
                               this->mOperatorPresentComponent, this->mOperatorPresentInterface);
+    return true;
 }
 
 bool mtsIntuitiveResearchKitConsole::FileExists(const std::string & description, const std::string & filename) const
@@ -670,8 +672,6 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         cmnDataJSON<vctMatRot3>::DeSerializeText(orientation, jsonTeleop["rotation"]);
     }
 
-    std::cerr<< orientation << std::endl;
-
     // read period if present
     double period = 2.0 * cmn_ms;
     jsonValue = jsonTeleop["period"];
@@ -721,6 +721,17 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
+        // for ECM, we need to know when clutched so we can tell teleops to update master orientation
+        if (arm->mType == Arm::ARM_ECM) {
+            arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ECMManipClutchEventHandler, this, "ManipClutch");
+        }
+#if 0
+        // for ECM and PSM, get SUJ clutch button from arm
+        if ((arm->mType == Arm::ARM_ECM)
+            || (arm->mType == Arm::ARM_PSM)) {
+            arm->ArmInterfaceRequired->AddEventHandlerWrite(&Arm::SUJClutchEventHandler, arm, "SUJClutch");
+        }
+#endif
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add Main interface for arm \""
                                  << arm->Name() << "\"" << std::endl;
@@ -811,7 +822,7 @@ void mtsIntuitiveResearchKitConsole::TeleopEnable(const bool & enable)
         if (!result) {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": Enable: failed to set \""
                                     << enable << "\" for tele-op \"" << teleOp->second->Name()
-                                    << "\"" << std::endl;
+                                    << "\": " << result << std::endl;
         }
     }
 }
@@ -856,6 +867,23 @@ void mtsIntuitiveResearchKitConsole::WarningEventHandler(const std::string & mes
 
 void mtsIntuitiveResearchKitConsole::StatusEventHandler(const std::string & message) {
     MessageEvents.Status(message);
+}
+
+void mtsIntuitiveResearchKitConsole::ECMManipClutchEventHandler(const prmEventButton & button)
+{
+    mtsExecutionResult result;
+    const TeleopList::iterator end = mTeleops.end();
+    for (TeleopList::iterator teleOp = mTeleops.begin();
+         teleOp != end;
+         ++teleOp) {
+        std::cerr << "sending event to teleop " << teleOp->second->Name() << std::endl;
+        result = teleOp->second->ManipClutch(button);
+        if (!result) {
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": ManipClutch: failed to send \""
+                                    << button << "\" for tele-op \"" << teleOp->second->Name()
+                                    << "\": " << result << std::endl;
+        }
+    }
 }
 
 void mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler(const prmPositionCartesianGet & baseFrameParam)

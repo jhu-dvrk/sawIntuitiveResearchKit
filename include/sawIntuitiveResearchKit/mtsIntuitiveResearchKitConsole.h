@@ -118,6 +118,7 @@ public:
         std::string mSlaveName;
         std::string mConsoleName;
         mtsFunctionWrite Enable;
+        mtsFunctionWrite ManipClutch;
         mtsInterfaceRequired * InterfaceRequired;
     };
 
@@ -191,6 +192,8 @@ protected:
     void ErrorEventHandler(const std::string & message);
     void WarningEventHandler(const std::string & message);
     void StatusEventHandler(const std::string & message);
+
+    void ECMManipClutchEventHandler(const prmEventButton & button);
 
     // Getting position from ECM and ECM SUJ to create base frame event for all other SUJs
     mtsInterfaceRequired * mSUJECMInterfaceRequired;
