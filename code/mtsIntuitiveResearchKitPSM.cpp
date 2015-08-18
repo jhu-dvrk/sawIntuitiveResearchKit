@@ -66,8 +66,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
     // high values for engage adapter/tool until these use a proper trajectory generator
-    PotsToEncodersTolerance.SetAll(180.0 * cmnPI_180); // 180 degrees for rotations
-    PotsToEncodersTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm
+    PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 10 degrees for rotations
+    PotsToEncodersTolerance.Element(2) = 5.0 * cmn_mm; // 5 mm
 
     // for tool/adapter engage procedure
     EngagingJointSet.SetSize(NumberOfJoints());
@@ -200,9 +200,9 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             PID.SetCheckJointLimit(false);
             vctDoubleVec tolerances(NumberOfJoints());
             // first two rotations
-            tolerances.Ref(2, 0).SetAll(20.0 * cmnPI_180); // 10 degrees
+            tolerances.Ref(2, 0).SetAll(20.0 * cmnPI_180); // 20 degrees
             // translation
-            tolerances.Element(2) = 40.0 * cmn_mm; // 10 mm
+            tolerances.Element(2) = 40.0 * cmn_mm; // 40 mm
             // tool/adapter gears
             tolerances.Ref(4, 3).SetAll(5.0 * cmnPI); // we request positions that can't be reached when the adapter/tool engage
             PID.SetTrackingErrorTolerance(tolerances);
@@ -231,6 +231,19 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL:
+        // configure PID to fail in case of tracking error
+        {
+            PID.SetCheckJointLimit(false);
+            vctDoubleVec tolerances(NumberOfJoints());
+            // first two rotations
+            tolerances.Ref(2, 0).SetAll(20.0 * cmnPI_180); // 20 degrees
+            // translation
+            tolerances.Element(2) = 40.0 * cmn_mm; // 40 mm
+            // tool/adapter gears
+            tolerances.Ref(4, 3).SetAll(5.0 * cmnPI); // we request positions that can't be reached when the adapter/tool engage
+            PID.SetTrackingErrorTolerance(tolerances);
+            PID.EnableTrackingError(true);
+        }
         EngagingToolStarted = false;
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED) {
             MessageEvents.Status(this->GetName() + " adapter is not engaged yet, will engage tool later");
