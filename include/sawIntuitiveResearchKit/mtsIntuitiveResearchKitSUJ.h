@@ -123,8 +123,11 @@ protected:
 
     // Clutch / brake timer
     double mPreviousTic;
-    vctDoubleVec mClutchCurrents;
+    vctDoubleVec mBrakeCurrents;
 
+    vctDynamicVector<vctDoubleVec> mVoltageSamples;
+    const size_t mVoltageSamplesNumber;
+    size_t mVoltageSamplesCounter;
     vctDoubleVec mVoltages;
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> Arms;
 

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -33,6 +33,7 @@ const double MIN_BRAKE_CURRENT = 0.0;
 
 const size_t MUX_ARRAY_SIZE = 6;
 const size_t MUX_MAX_INDEX = 15;
+const size_t ANALOG_SAMPLE_NUMBER = 60; // empirical value, tradeoff between speed and stability of analog input
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJ, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
 
@@ -275,13 +276,15 @@ public:
 };
 
 mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const std::string & componentName, const double periodInSeconds):
-    mtsTaskPeriodic(componentName, periodInSeconds)
+    mtsTaskPeriodic(componentName, periodInSeconds),
+    mVoltageSamplesNumber(ANALOG_SAMPLE_NUMBER)
 {
     Init();
 }
 
 mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicConstructorArg & arg):
-    mtsTaskPeriodic(arg)
+    mtsTaskPeriodic(arg),
+    mVoltageSamplesNumber(ANALOG_SAMPLE_NUMBER)
 {
     Init();
 }
@@ -291,7 +294,9 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     mMuxTimer = 0.0;
     mMuxState.SetSize(4);
     mVoltages.SetSize(4);
-    mClutchCurrents.SetSize(4);
+    mBrakeCurrents.SetSize(4);
+    mVoltageSamples.SetSize(mVoltageSamplesNumber);
+    mVoltageSamplesCounter = 0;
 
     // Robot IO
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("RobotIO");
@@ -495,26 +500,31 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
 
 void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
 {
-    // every 100 ms all we need is to make
-    // 100 ms is to make sure A2D stabilizes
+    // 30 ms is to make sure A2D stabilizes
     const double muxCycle = 30.0 * cmn_ms;
 
     // we can start reporting some joint values after the robot is powered
     if (this->mRobotState > mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING) {
         const double currentTime = this->StateTable.GetTic();
 
-        // time to toggle
+        // we assume the analog in is now stable
         if (currentTime > mMuxTimer) {
             // pot values should be stable by now, get pots values
             GetAndConvertPotentiometerValues();
-            // toggle mux
-            mMuxTimer = currentTime + muxCycle;
-            if (mMuxIndexExpected == MUX_MAX_INDEX) {
-                MuxReset.DownUpDown();
-                mMuxIndexExpected = 0;
-            } else {
-                MuxIncrement.DownUpDown();
-                mMuxIndexExpected += 1;
+
+            // time to toggle
+            if (mVoltageSamplesCounter == mVoltageSamplesNumber) {
+                // toggle mux
+                mMuxTimer = currentTime + muxCycle;
+                if (mMuxIndexExpected == MUX_MAX_INDEX) {
+                    MuxReset.DownUpDown();
+                    mMuxIndexExpected = 0;
+                } else {
+                    MuxIncrement.DownUpDown();
+                    mMuxIndexExpected += 1;
+                }
+                // reset sample counter
+                mVoltageSamplesCounter = 0;
             }
         }
     }
@@ -542,53 +552,69 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
     const size_t arrayIndex = mMuxIndex / MUX_ARRAY_SIZE; // 0 or 1: mux index 0 to 5 goes to first array of data, 6 to 11 goes to second array
                                                           // 12 to 15 goes to third array (misc. voltages)
     const size_t indexInArray = mMuxIndex % MUX_ARRAY_SIZE; // pot index in array, 0 to 5 (0 to 3 for third array)
+
     executionResult = RobotIO.GetAnalogInputVolts(mVoltages);
-    // for each arm, i.e. SUJ1, SUJ2, SUJ3, ...
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        arm = Arms[armIndex];
-        // start stable when reading 1st joint on all arms
-        if (mMuxIndex == 0) {
-            arm->mStateTable.Start();
+    mVoltageSamples[mVoltageSamplesCounter].ForceAssign(mVoltages);
+    mVoltageSamplesCounter++;
+
+    // if we have enough samples
+    if (mVoltageSamplesCounter == mVoltageSamplesNumber) {
+        // use mVoltages to store average
+        mVoltages.Zeros();
+        for (size_t index = 0;
+             index < mVoltageSamplesNumber;
+             ++index) {
+            mVoltages.Add(mVoltageSamples[index]);
         }
-        // all 4 analog inputs are sent to all 4 arm data structures
-        if (arrayIndex < 2)
-            arm->mVoltages[arrayIndex][indexInArray] = mVoltages[armIndex];
-        else
-            arm->mVoltagesExtra[indexInArray] = mVoltages[armIndex];
-        // advance state table when all joints have been read
-        if (mMuxIndex == MUX_MAX_INDEX) {
-            arm->mPositions[0].Assign(arm->mVoltageToPositionOffsets[0]);
-            arm->mPositions[0].AddElementwiseProductOf(arm->mVoltageToPositionScales[0], arm->mVoltages[0]);
-            arm->mPositions[1].Assign(arm->mVoltageToPositionOffsets[1]);
-            arm->mPositions[1].AddElementwiseProductOf(arm->mVoltageToPositionScales[1], arm->mVoltages[1]);
-            // temporary hack to build a vector of positions from pots that seem to work
-            arm->mPositionJointParam.Position()[0] = arm->mPositions[1][0];
-            arm->mPositionJointParam.Position()[1] = arm->mPositions[0][1];
-            arm->mPositionJointParam.Position()[2] = arm->mPositions[0][2];
-            arm->mPositionJointParam.Position()[3] = arm->mPositions[1][3];
-            arm->mPositionJointParam.Position()[4] = arm->mPositions[0][4];
-            arm->mPositionJointParam.Position()[5] = arm->mPositions[0][5];
-            if (arm->mType == mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
-                // ECM has only 4 joints
-                arm->mPositionJointParam.Position()[4] = 0.0;
-                arm->mPositionJointParam.Position()[5] = 0.0;
+        mVoltages.Divide(mVoltageSamplesNumber);
+        // for each arm, i.e. SUJ1, SUJ2, SUJ3, ...
+        for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+            arm = Arms[armIndex];
+            // start stable when reading 1st joint on all arms
+            if (mMuxIndex == 0) {
+                arm->mStateTable.Start();
             }
-            arm->mPositionJointParam.SetValid(true);
+            // all 4 analog inputs are sent to all 4 arm data structures
+            if (arrayIndex < 2) {
+                arm->mVoltages[arrayIndex][indexInArray] = mVoltages[armIndex];
+            } else {
+                arm->mVoltagesExtra[indexInArray] = mVoltages[armIndex];
+            }
+            // advance state table when all joints have been read
+            if (mMuxIndex == MUX_MAX_INDEX) {
+                arm->mPositions[0].Assign(arm->mVoltageToPositionOffsets[0]);
+                arm->mPositions[0].AddElementwiseProductOf(arm->mVoltageToPositionScales[0], arm->mVoltages[0]);
+                arm->mPositions[1].Assign(arm->mVoltageToPositionOffsets[1]);
+                arm->mPositions[1].AddElementwiseProductOf(arm->mVoltageToPositionScales[1], arm->mVoltages[1]);
+                // temporary hack to build a vector of positions from pots that seem to work
+                arm->mPositionJointParam.Position()[0] = arm->mPositions[1][0];
+                arm->mPositionJointParam.Position()[1] = arm->mPositions[0][1];
+                arm->mPositionJointParam.Position()[2] = arm->mPositions[0][2];
+                arm->mPositionJointParam.Position()[3] = arm->mPositions[1][3];
+                arm->mPositionJointParam.Position()[4] = arm->mPositions[0][4];
+                arm->mPositionJointParam.Position()[5] = arm->mPositions[0][5];
+                if (arm->mType == mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
+                    // ECM has only 4 joints
+                    arm->mPositionJointParam.Position()[4] = 0.0;
+                    arm->mPositionJointParam.Position()[5] = 0.0;
+                }
+                arm->mPositionJointParam.SetValid(true);
 
-            // Joint forward kinematics
-            arm->mJointGet.Assign(arm->mPositionJointParam.Position(),arm->mManipulator.links.size());
-            // forward kinematic
-            vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
-            // pre and post transformations loaded from JSON file, base frame updated using events
-            vctFrame4x4<double> armBase = arm->mBaseFrame * arm->mWorldToSUJ * suj* arm->mSUJToArmBase;
-            arm->mPositionCartesianParam.Position().From(armBase);
-            arm->mPositionCartesianParam.SetValid(true);
+                // Joint forward kinematics
+                arm->mJointGet.Assign(arm->mPositionJointParam.Position(),arm->mManipulator.links.size());
+                // forward kinematic
+                vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
+                // pre and post transformations loaded from JSON file, base frame updated using events
+                vctFrame4x4<double> armBase = arm->mBaseFrame * arm->mWorldToSUJ * suj* arm->mSUJToArmBase;
+                arm->mPositionCartesianParam.Position().From(armBase);
+                arm->mPositionCartesianParam.SetValid(true);
 
-            // advance this arm state table
-            arm->mStateTable.Advance();
+                // advance this arm state table
+                arm->mStateTable.Advance();
 
-            // Emit event with new cartesian position
-            arm->EventBaseFrame(arm->mPositionCartesianParam);
+                // Emit event with new cartesian position
+                arm->EventBaseFrame(arm->mPositionCartesianParam);
+            }
         }
     }
 }
@@ -701,9 +727,9 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
                 arm->mStateTableBrakeCurrent.Advance();
             }
         }
-        mClutchCurrents[armIndex] = arm->mBrakeDirectionCurrent * arm->mBrakeDesiredCurrent;
+        mBrakeCurrents[armIndex] = arm->mBrakeDirectionCurrent * arm->mBrakeDesiredCurrent;
     }
-    RobotIO.SetActuatorCurrent(mClutchCurrents);
+    RobotIO.SetActuatorCurrent(mBrakeCurrents);
     mPreviousTic = currentTic;
 }
 
@@ -736,12 +762,8 @@ void mtsIntuitiveResearchKitSUJ::SetBaseFrame(const prmPositionCartesianGet & ne
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
         arm = Arms[armIndex];
         if (arm->mType != mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
-            vctFrm4x4 mtmrAdjusted;
             vctFrm4x4 base;
             base.From(newBaseFrame.Position());
-            //mtmrAdjusted.Identity();
-            //mtmrAdjusted.Rotation().Element(2,2) = -1.0;
-            //base = mtmrAdjusted * base;
             arm->mBaseFrame = base;
         }
     }
