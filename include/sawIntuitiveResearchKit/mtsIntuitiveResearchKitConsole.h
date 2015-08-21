@@ -211,7 +211,7 @@ protected:
     // Getting position from ECM and ECM SUJ to create base frame event for all other SUJs
     mtsInterfaceRequired * mSUJECMInterfaceRequired;
     mtsInterfaceProvided * mECMBaseFrameInterfaceProvided;
-    mtsFunctionRead mGetPositionCartesianFromECM;
+    mtsFunctionRead mGetPositionCartesianLocalFromECM;
     mtsFunctionWrite mECMBaseFrameEvent;
     void SUJECMBaseFrameHandler(const prmPositionCartesianGet & baseFrameParam);
 };

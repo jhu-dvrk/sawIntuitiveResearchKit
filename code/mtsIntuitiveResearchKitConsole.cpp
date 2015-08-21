@@ -352,16 +352,16 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     if (hasSUJ && hasECM) {
         mSUJECMInterfaceRequired = AddInterfaceRequired("BaseFrame");
         if (mSUJECMInterfaceRequired) {
-            mSUJECMInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler, this, "BaseFrame");
+            mSUJECMInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler, this, "BaseFrameDesired");
         }
         if (ecmArmInterface) {
-            ecmArmInterface->AddFunction("GetPositionCartesian", mGetPositionCartesianFromECM);
+            ecmArmInterface->AddFunction("GetPositionCartesianLocal", mGetPositionCartesianLocalFromECM);
         } else {
             CMN_LOG_CLASS_INIT_VERBOSE << "Configure: arm interface not yet added for ECM" << std::endl;
         }
         mECMBaseFrameInterfaceProvided = AddInterfaceProvided("ECMBaseFrame");
         if (mECMBaseFrameInterfaceProvided) {
-            mECMBaseFrameInterfaceProvided->AddEventWrite(mECMBaseFrameEvent, "BaseFrame", prmPositionCartesianGet());
+            mECMBaseFrameInterfaceProvided->AddEventWrite(mECMBaseFrameEvent, "BaseFrameDesired", prmPositionCartesianGet());
         }
     }
 
@@ -903,16 +903,14 @@ void mtsIntuitiveResearchKitConsole::ECMManipClutchEventHandler(const prmEventBu
 void mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler(const prmPositionCartesianGet & baseFrameParam)
 {
     // get position from ECM and convert to useful type
-    prmPositionCartesianGet positionECMParam;
-    mGetPositionCartesianFromECM(positionECMParam);
-    vctFrm4x4 positionECM;
-    positionECM.From(positionECMParam.Position());
+    prmPositionCartesianGet positionECMLocalParam;
+    mGetPositionCartesianLocalFromECM(positionECMLocalParam);
+    vctFrm3 positionECM = baseFrameParam.Position() * positionECMLocalParam.Position();
 
     // compute and send new base frame for all SUJs (SUJ will handle ECM differently)
     prmPositionCartesianGet baseFrameSUJParam;
-    positionECM.InverseSelf();
-    baseFrameSUJParam.Position().From(positionECM);
-    baseFrameSUJParam.Valid() = positionECMParam.Valid();
-
+    baseFrameSUJParam.Position().From(positionECM.Inverse());
+    baseFrameSUJParam.SetValid(baseFrameParam.Valid() && positionECMLocalParam.Valid());
+    baseFrameSUJParam.SetTimestamp(positionECMLocalParam.Timestamp());
     mECMBaseFrameEvent(baseFrameSUJParam);
 }
