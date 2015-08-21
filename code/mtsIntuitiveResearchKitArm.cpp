@@ -66,9 +66,15 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianVelocityGetParam.SetTimestamp(0.0);
     CartesianVelocityGetParam.SetValid(false);
 
+    // base frame, mostly for cases where no base frame is set by user
+    BaseFrame = vctFrm4x4::Identity();
+    BaseFrameValid = true;
+
     // cartesian position are timestamped using timestamps provided by PID
     CartesianGetParam.SetAutomaticTimestamp(false);
     CartesianGetDesiredParam.SetAutomaticTimestamp(false);
+    this->StateTable.AddData(CartesianGetLocalParam, "CartesianPositionLocal");
+    this->StateTable.AddData(CartesianGetLocalDesiredParam, "CartesianPositionLocalDesired");
     this->StateTable.AddData(CartesianGetParam, "CartesianPosition");
     this->StateTable.AddData(CartesianGetDesiredParam, "CartesianPositionDesired");
     this->StateTable.AddData(BaseFrame, "BaseFrame");
@@ -119,7 +125,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     // Setup Joints
     SUJInterface = AddInterfaceRequired("BaseFrame", MTS_OPTIONAL);
     if (SUJInterface) {
-        SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame, this, "BaseFrame");
+        SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame, this, "BaseFrameDesired");
         SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler, this, "Error");
     }
 
@@ -131,6 +137,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandReadState(this->StateTable, JointGetDesired, "GetPositionJointDesired");
         RobotInterface->AddCommandReadState(this->StateTable, StateJointParam, "GetStateJoint");
         RobotInterface->AddCommandReadState(this->StateTable, StateJointDesiredParam, "GetStateJointDesired");
+        RobotInterface->AddCommandReadState(this->StateTable, CartesianGetLocalParam, "GetPositionCartesianLocal");
+        RobotInterface->AddCommandReadState(this->StateTable, CartesianGetLocalDesiredParam, "GetPositionCartesianLocalDesired");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianGetParam, "GetPositionCartesian");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianGetDesiredParam, "GetPositionCartesianDesired");
         RobotInterface->AddCommandReadState(this->StateTable, BaseFrame, "GetBaseFrame");
@@ -216,7 +224,6 @@ void mtsIntuitiveResearchKitArm::Run(void)
 
     mCounter++;
     CartesianGetPrevious = CartesianGet;
-    CartesianGetPreviousParam = CartesianGetParam;
 }
 
 void mtsIntuitiveResearchKitArm::Cleanup(void)
@@ -288,10 +295,16 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         // when the robot is ready, we can compute cartesian position
         if (this->RobotState >= mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
             // update cartesian position
-            CartesianGet = BaseFrame * Manipulator.ForwardKinematics(JointGet, NumberOfJointsKinematics());
+            CartesianGetLocal = Manipulator.ForwardKinematics(JointGet, NumberOfJointsKinematics());
+            CartesianGet = BaseFrame * CartesianGetLocal;
+            // normalize
+            CartesianGetLocal.Rotation().NormalizedSelf();
             CartesianGet.Rotation().NormalizedSelf();
+            // flags
+            CartesianGetLocalParam.SetTimestamp(JointGetParam.Timestamp());
+            CartesianGetLocalParam.SetValid(true);
             CartesianGetParam.SetTimestamp(JointGetParam.Timestamp());
-            CartesianGetParam.SetValid(true);
+            CartesianGetParam.SetValid(BaseFrameValid);
 
 #if 0
             // FIXME: bug
@@ -319,19 +332,31 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
 #endif
 
             // update cartesian position desired based on joint desired
-            CartesianGetDesired = BaseFrame * Manipulator.ForwardKinematics(JointGetDesired);
+            CartesianGetLocalDesired = Manipulator.ForwardKinematics(JointGetDesired);
+            CartesianGetDesired = BaseFrame * CartesianGetLocalDesired;
+            // normalize
+            CartesianGetLocalDesired.Rotation().NormalizedSelf();
             CartesianGetDesired.Rotation().NormalizedSelf();
+            // flags
+            CartesianGetLocalDesiredParam.SetTimestamp(JointGetParam.Timestamp());
+            CartesianGetLocalDesiredParam.SetValid(true);
             CartesianGetDesiredParam.SetTimestamp(JointGetParam.Timestamp());
-            CartesianGetDesiredParam.SetValid(true);
+            CartesianGetDesiredParam.SetValid(BaseFrameValid);
         } else {
             // update cartesian position
+            CartesianGetLocal.Assign(vctFrm4x4::Identity());
             CartesianGet.Assign(vctFrm4x4::Identity());
+            CartesianGetLocalParam.SetValid(false);
             CartesianGetParam.SetValid(false);
             // update cartesian position desired
+            CartesianGetLocalDesired.Assign(vctFrm4x4::Identity());
             CartesianGetDesired.Assign(vctFrm4x4::Identity());
+            CartesianGetLocalDesiredParam.SetValid(false);
             CartesianGetDesiredParam.SetValid(false);
         }
+        CartesianGetLocalParam.Position().From(CartesianGetLocal);
         CartesianGetParam.Position().From(CartesianGet);
+        CartesianGetLocalDesiredParam.Position().From(CartesianGetLocalDesired);
         CartesianGetDesiredParam.Position().From(CartesianGetDesired);
     } else {
         // set joint to zeros
@@ -529,13 +554,9 @@ void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianGet & ne
 {
     if (newBaseFrame.Valid()) {
         this->BaseFrame.FromNormalized(newBaseFrame.Position());
-        //this->BaseFrame = vctFrm4x4::Identity();
-        //this->BaseFrame.Element(1,1) = -1;
-        //std::cerr<<"Received new baseframe for arm: " << this->Name <<std::endl;
+        this->BaseFrameValid = true;
     } else {
-        this->BaseFrame = vctFrm4x4::Identity();
-        //this->BaseFrame.Element(1,1) = -1;
-        ErrorEventHandler("Received invalid base frame");
+        this->BaseFrameValid = false;
     }
 }
 

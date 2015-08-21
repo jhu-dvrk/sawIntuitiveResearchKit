@@ -166,10 +166,19 @@ protected:
     prmPositionCartesianSet CartesianSetParam;
     bool IsGoalSet;
 
+    // internal kinematics
+    prmPositionCartesianGet CartesianGetLocalParam;
+    vctFrm4x4 CartesianGetLocal;
+    prmPositionCartesianGet CartesianGetLocalDesiredParam;
+    vctFrm4x4 CartesianGetLocalDesired;
+
+    // with base frame included
     prmPositionCartesianGet CartesianGetParam;
     vctFrm4x4 CartesianGet;
     prmPositionCartesianGet CartesianGetDesiredParam;
     vctFrm4x4 CartesianGetDesired;
+
+    // joints
     prmPositionJointGet JointGetParam;
     vctDoubleVec JointGet;
     vctDoubleVec JointGetDesired;
@@ -184,7 +193,6 @@ protected:
 
     // Velocities
     vctFrm4x4 CartesianGetPrevious;
-    prmPositionCartesianGet CartesianGetPreviousParam;
     prmVelocityCartesianGet CartesianVelocityGetParam;
 
     robManipulator Manipulator;
@@ -192,6 +200,7 @@ protected:
 
     // Base frame
     vctFrm4x4 BaseFrame;
+    bool BaseFrameValid;
 
     mtsIntuitiveResearchKitArmTypes::RobotStateType RobotState;
 
