@@ -303,8 +303,6 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         if (armConfig != "") {
             iter->second->ConfigureArm(iter->second->mType, armConfig);
         }
-        // "add" the arm to the manager
-        AddArm(iter->second);
     }
 
     bool hasSUJ = false;
@@ -420,10 +418,10 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
     }
     if (AddArmInterfaces(newArm)) {
         ArmList::iterator armIterator = mArms.find(newArm->mName);
-        if (armIterator != mArms.end()) {
+        if (armIterator == mArms.end()) {
             mArms[newArm->mName] = newArm;
             return true;
-        }else {
+        } else {
             CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
                                      << newArm->Name() << " seems to already exist (Arm config)." << std::endl;
         }
@@ -713,7 +711,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
 bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
 {
     // IO
-    const std::string interfaceNameIO = "IO" + arm->Name();
+    const std::string interfaceNameIO = "IO-" + arm->Name();
     arm->IOInterfaceRequired = AddInterfaceRequired(interfaceNameIO);
     if (arm->IOInterfaceRequired) {
         arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
@@ -727,7 +725,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
 
     // PID
     if (arm->mType != Arm::ARM_SUJ) {
-        const std::string interfaceNamePID = "PID" + arm->Name();
+        const std::string interfaceNamePID = "PID-" + arm->Name();
         arm->PIDInterfaceRequired = AddInterfaceRequired(interfaceNamePID);
         if (arm->PIDInterfaceRequired) {
             arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
@@ -773,13 +771,13 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
 
         // IO
         if (arm->IOInterfaceRequired) {
-            componentManager->Connect(this->GetName(), "IO" + arm->Name(),
+            componentManager->Connect(this->GetName(), "IO-" + arm->Name(),
                                       arm->IOComponentName(), arm->Name());
         }
         // PID
         if (arm->mType != Arm::ARM_SUJ) {
             if (arm->PIDInterfaceRequired) {
-                componentManager->Connect(this->GetName(), "PID" + arm->Name(),
+                componentManager->Connect(this->GetName(), "PID-" + arm->Name(),
                                           arm->PIDComponentName(), "Controller");
             }
         }

@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <map>
 
 // cisst/saw
+#include <cisstCommon/cmnGetChar.h>
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstOSAbstraction/osaSleep.h>
@@ -37,6 +38,16 @@ http://www.cisst.org/cisst/license.txt.
 
 int main(int argc, char ** argv)
 {
+    // program deprecated
+    std::cout << "-----------------------------------------------------------" << std::endl
+              << "- This program is deprecated:                             -" << std::endl
+              << "-   use sawIntuitiveResearchKitQtConsoleJSON instead      -" << std::endl
+              << "-   examples can be found in share/jhu-dVRK/console*.json -" << std::endl
+              << "- Press any key to continue                               -" << std::endl
+              << "-----------------------------------------------------------" << std::endl
+              << std::endl;
+    cmnGetChar();
+
     // period used for IO and PID
     const double periodIOPID = 0.5 * cmn_ms;
 
@@ -150,6 +161,7 @@ int main(int argc, char ** argv)
         return -1;
     }
     console->AddArm(arm);
+    console->Connect();
 
     // connect ioGUIMaster to io
     mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");

@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <map>
 
 // cisst/saw
+#include <cisstCommon/cmnGetChar.h>
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstOSAbstraction/osaSleep.h>
@@ -59,6 +60,16 @@ void fileExists(const std::string & description, const std::string & filename)
 
 int main(int argc, char ** argv)
 {
+    // program deprecated
+    std::cout << "-----------------------------------------------------------" << std::endl
+              << "- This program is deprecated:                             -" << std::endl
+              << "-   use sawIntuitiveResearchKitQtConsoleJSON instead      -" << std::endl
+              << "-   examples can be found in share/jhu-dVRK/console*.json -" << std::endl
+              << "- Press any key to continue                               -" << std::endl
+              << "-----------------------------------------------------------" << std::endl
+              << std::endl;
+    cmnGetChar();
+
     // configuration
     const double periodIO = 0.5 * cmn_ms;
     const double periodKinematics = 1.0 * cmn_ms;
@@ -307,6 +318,9 @@ int main(int argc, char ** argv)
         componentManager->Connect(tele->GetName(), "OperatorPresent", operatorPresentComponent, operatorPresentInterface);
         console->AddTeleOperation(tele->GetName(), mtm->Name(), psm->Name());
     }
+
+    // connect all components from the console
+    console->Connect();
 
     // configure data collection if needed
     if (options.IsSet("collection-config")) {
