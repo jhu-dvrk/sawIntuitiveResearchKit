@@ -11,7 +11,7 @@
             "name": "SUJ",
             "type": "SUJ",
             "io": "jhu-daVinci/sawRobotIO1394-SUJ.xml",
-            "kinematic": "jhu-daVinci/suj_modified.json"
+            "kinematic": "jhu-daVinci/suj-calibrated.json"
         }
     ]
 }

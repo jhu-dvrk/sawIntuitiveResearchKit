@@ -23,8 +23,8 @@
       </Actuator>
       <Actuator ActuatorID="2" AxisID="2" BoardID="12">
          <Drive>
-            <AmpsToBits Offset="32941" Scale="-5242.88"/>
-            <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738"/>
+            <AmpsToBits Offset="32941" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <MaxCurrent Unit="A" Value="2.2"/>
          </Drive>
          <AnalogIn>
