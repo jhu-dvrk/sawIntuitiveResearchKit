@@ -450,6 +450,18 @@ bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mts
     return false;
 }
 
+bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name,
+                                                      const std::string & masterName,
+                                                      const std::string & slaveName)
+{
+    Teleop * teleop = new Teleop(name, masterName, slaveName, this->GetName());
+    if (AddTeleopInterfaces(teleop)) {
+        return true;
+    }
+    delete teleop;
+    return false;
+}
+
 bool mtsIntuitiveResearchKitConsole::AddTeleopInterfaces(Teleop * teleop)
 {
     teleop->InterfaceRequired = this->AddInterfaceRequired(teleop->Name());

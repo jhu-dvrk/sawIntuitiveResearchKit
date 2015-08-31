@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<controller type="PID" 
+<controller type="PID"
             interface="JointTorqueInterface"
             numofjoints="8">
 
@@ -30,19 +30,19 @@
     </joint>
 
     <joint index="4" name="wrist pitch">
-      <pid PGain="20.0" DGain="0.2" IGain="0.0" OffsetTorque="0.0" Forget="0.9" Nonlinear="0.35"/>
+      <pid PGain="20.0" DGain="0.4" IGain="0.0" OffsetTorque="0.0" Forget="0.9" Nonlinear="0.35"/>
       <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-90" UpperLimit="180" Units="deg"/>
     </joint>
 
     <joint index="5" name="wrist yaw">
-      <pid PGain="10.0" DGain="0.2" IGain="0.0" OffsetTorque="0.0" Forget="0.9" Nonlinear="0.35"/>
+      <pid PGain="10.0" DGain="0.3" IGain="0.0" OffsetTorque="0.0" Forget="0.9" Nonlinear="0.35"/>
       <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-45" UpperLimit="45" Units="deg"/>
     </joint>
 
     <joint index="6" name="wrist roll">
-      <pid PGain="1.2" DGain="0.03" IGain="0.0" OffsetTorque="0.0" Forget="0.9" Nonlinear="1.0"/>
+      <pid PGain="1.2" DGain="0.04" IGain="0.0" OffsetTorque="0.0" Forget="0.9" Nonlinear="1.0"/>
       <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-180" UpperLimit="180" Units="deg"/>
     </joint>

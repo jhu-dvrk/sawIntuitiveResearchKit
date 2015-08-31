@@ -155,6 +155,11 @@ public:
     bool AddArm(Arm * newArm);
     bool AddArm(mtsComponent * genericArm, const Arm::ArmType armType);
 
+    // to be deprecated
+    bool AddTeleOperation(const std::string & name,
+                          const std::string & masterName,
+                          const std::string & slaveName);
+
     bool AddFootpedalInterfaces(void);
     bool ConnectFootpedalInterfaces(void);
 

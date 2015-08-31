@@ -86,7 +86,7 @@ if (cisst_FOUND_AS_REQUIRED)
       # link against cisst libraries (and dependencies)
       cisst_target_link_libraries (sawIntuitiveResearchKitQtPID ${REQUIRED_CISST_LIBRARIES})
 
-      # main program used to configure TeleOperation
+      # main program used to configure TeleOperation --- TO BE DEPRECATED
       add_executable (sawIntuitiveResearchKitQtTeleOperation mainQtTeleOperation.cpp)
       set_property (TARGET sawIntuitiveResearchKitQtTeleOperation PROPERTY FOLDER "sawIntuitiveResearchKit")
       # link against non cisst libraries and cisst components
@@ -110,18 +110,6 @@ if (cisst_FOUND_AS_REQUIRED)
       # link against cisst libraries (and dependencies)
       cisst_target_link_libraries (sawIntuitiveResearchKitQtArm ${REQUIRED_CISST_LIBRARIES})
 
-      # main program used to test SUJ arms
-      add_executable (sawIntuitiveResearchKitQtSUJ mainQtSUJ.cpp)
-      set_property (TARGET sawIntuitiveResearchKitQtSUJ PROPERTY FOLDER "sawIntuitiveResearchKit")
-      # link against non cisst libraries and cisst components
-      target_link_libraries (sawIntuitiveResearchKitQtSUJ
-                             ${sawRobotIO1394_LIBRARIES}
-                             ${sawIntuitiveResearchKit_LIBRARIES}
-                             ${sawControllers_LIBRARIES}
-                             ${sawTextToSpeech_LIBRARIES})
-      # link against cisst libraries (and dependencies)
-      cisst_target_link_libraries (sawIntuitiveResearchKitQtSUJ ${REQUIRED_CISST_LIBRARIES})
-
       # main program used to configure Haptics
       add_executable (sawIntuitiveResearchKitQtHaptics mainQtHaptics.cpp)
       set_property (TARGET sawIntuitiveResearchKitQtHaptics PROPERTY FOLDER "sawIntuitiveResearchKit")
@@ -137,7 +125,7 @@ if (cisst_FOUND_AS_REQUIRED)
       # example using JSON
       if (CISST_HAS_JSON)
 
-        # main program used to configure TeleOperation
+        # main program used to configure TeleOperation --- TO BE DEPRECATED
         add_executable (sawIntuitiveResearchKitQtTeleOperationJSON mainQtTeleOperationJSON.cpp)
         set_property (TARGET sawIntuitiveResearchKitQtTeleOperationJSON PROPERTY FOLDER "sawIntuitiveResearchKit")
         # link against non cisst libraries and cisst components
@@ -148,6 +136,18 @@ if (cisst_FOUND_AS_REQUIRED)
                                ${sawTextToSpeech_LIBRARIES})
         # link against cisst libraries (and dependencies)
         cisst_target_link_libraries (sawIntuitiveResearchKitQtTeleOperationJSON ${REQUIRED_CISST_LIBRARIES})
+
+        # main program used to configure Console
+        add_executable (sawIntuitiveResearchKitQtConsoleJSON mainQtConsoleJSON.cpp)
+        set_property (TARGET sawIntuitiveResearchKitQtConsoleJSON PROPERTY FOLDER "sawIntuitiveResearchKit")
+        # link against non cisst libraries and cisst components
+        target_link_libraries (sawIntuitiveResearchKitQtConsoleJSON
+                               ${sawRobotIO1394_LIBRARIES}
+                               ${sawIntuitiveResearchKit_LIBRARIES}
+                               ${sawControllers_LIBRARIES}
+                               ${sawTextToSpeech_LIBRARIES})
+        # link against cisst libraries (and dependencies)
+        cisst_target_link_libraries (sawIntuitiveResearchKitQtConsoleJSON ${REQUIRED_CISST_LIBRARIES})
 
         # main program used to configure TeleOperation
         qt_wrap_cpp (sawIntuitiveResearchKitQtUDPServer sawIntuitiveResearchKitQtUDPServer_QT_WRAP mainQtUDPServer.h)
