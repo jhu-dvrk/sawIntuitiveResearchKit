@@ -238,6 +238,9 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
         interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
         interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
     }
+
+    mOperatorPresentComponent = "io";
+    mOperatorPresentInterface = "COAG";
 }
 
 void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
@@ -295,11 +298,11 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
     // now can configure PID and Arms
     for (iter = mArms.begin(); iter != end; ++iter) {
-        std::string pidConfig = iter->second->mPIDConfigurationFile;
+        const std::string pidConfig = iter->second->mPIDConfigurationFile;
         if (pidConfig != "") {
             iter->second->ConfigurePID(pidConfig);
         }
-        std::string armConfig = iter->second->mArmConfigurationFile;
+        const std::string armConfig = iter->second->mArmConfigurationFile;
         if (armConfig != "") {
             iter->second->ConfigureArm(iter->second->mType, armConfig);
         }
@@ -452,11 +455,17 @@ bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name,
                                                       const std::string & masterName,
                                                       const std::string & slaveName)
 {
+    const TeleopList::const_iterator teleopIterator = mTeleops.find(name);
+    if (teleopIterator != mTeleops.end()) {
+        CMN_LOG_CLASS_INIT_ERROR << "AddTeleOperation: there is already a teleop named \""
+                                 << name << "\"" << std::endl;
+        return false;
+    }
     Teleop * teleop = new Teleop(name, masterName, slaveName, this->GetName());
+    mTeleops[name] = teleop;
     if (AddTeleopInterfaces(teleop)) {
         return true;
     }
-    delete teleop;
     return false;
 }
 
@@ -550,13 +559,12 @@ bool mtsIntuitiveResearchKitConsole::FileExists(const std::string & description,
 bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonArm,
                                                       const std::string & ioComponentName)
 {
-    std::string armName = jsonArm["name"].asString();
-    ArmList::iterator armIterator = mArms.find(armName);
+    const std::string armName = jsonArm["name"].asString();
+    const ArmList::iterator armIterator = mArms.find(armName);
     Arm * armPointer = 0;
     if (armIterator == mArms.end()) {
         // create a new arm if needed
         armPointer = new Arm(armName, ioComponentName);
-        mArms[armName] = armPointer;
     } else {
         armPointer = armIterator->second;
     }
@@ -633,6 +641,10 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             return false;
         }
     }
+    // add the arm if it's a new one
+    if (armIterator == mArms.end()) {
+        AddArm(armPointer);
+    }
     return true;
 }
 
@@ -678,7 +690,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
 
     // check if pair already exist and then add
     const std::string name = masterName + "-" + slaveName;
-    TeleopList::iterator teleopIterator = mTeleops.find(name);
+    const TeleopList::iterator teleopIterator = mTeleops.find(name);
     Teleop * teleopPointer = 0;
     if (teleopIterator == mTeleops.end()) {
         // create a new teleop if needed
@@ -831,7 +843,7 @@ void mtsIntuitiveResearchKitConsole::SetRobotsControlState(const std::string & n
         if (!result) {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": SetRobotControlState: failed to set state \""
                                     << newState << "\" for arm \"" << arm->second->Name()
-                                    << "\"" << std::endl;
+                                    << "\": " << result << std::endl;
         }
     }
 }

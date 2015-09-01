@@ -309,15 +309,11 @@ int main(int argc, char ** argv)
         master2slave.From(vctAxAnRot3(vct3(0.0, 0.0, 1.0), 180.0 * cmnPI_180));
         tele->SetRegistrationRotation(master2slave);
         componentManager->AddComponent(tele);
-        // connect teleGUI to tele
-        componentManager->Connect(teleGUI->GetName(), "TeleOperation", tele->GetName(), "Setting");
-
-        componentManager->Connect(tele->GetName(), "Master", mtm->Name(), "Robot");
-        componentManager->Connect(tele->GetName(), "Slave", psm->Name(), "Robot");
-        componentManager->Connect(tele->GetName(), "Clutch", "io", "CLUTCH");
-        componentManager->Connect(tele->GetName(), "OperatorPresent", operatorPresentComponent, operatorPresentInterface);
         console->AddTeleOperation(tele->GetName(), mtm->Name(), psm->Name());
     }
+
+    // add foot pedal interfaces
+    console->AddFootpedalInterfaces();
 
     // connect all components from the console
     console->Connect();
