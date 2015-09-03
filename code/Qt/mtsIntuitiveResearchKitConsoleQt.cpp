@@ -30,7 +30,11 @@ http://www.cisst.org/cisst/license.txt.
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQt);
 
-mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(mtsIntuitiveResearchKitConsole * console)
+mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(void)
+{
+}
+
+void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole * console)
 {
     mtsComponentManager * componentManager = mtsComponentManager::GetInstance();
 
@@ -40,12 +44,13 @@ mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(mtsIntuitiveR
     mtsIntuitiveResearchKitConsoleQtWidget * consoleGUI = new mtsIntuitiveResearchKitConsoleQtWidget("consoleGUI");
     componentManager->AddComponent(consoleGUI);
     // connect consoleGUI to console
-    componentManager->Connect("console", "Main", "consoleGUI", "Main");
+    Connections.push_back(new ConnectionType("console", "Main", "consoleGUI", "Main"));
     tabWidget->addTab(consoleGUI, "Main");
 
     // connect ioGUIMaster to io
     mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");
     componentManager->AddComponent(robotWidgetFactory);
+    // this connect needs to happen now so the factory can figure out the io interfaces
     componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "io", "Configuration");
     robotWidgetFactory->Configure();
 
@@ -80,19 +85,21 @@ mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(mtsIntuitiveR
                 numberOfJoints = 8;
             } else if (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM) {
                 numberOfJoints = 4;
+            } else {
+                numberOfJoints = 0; // can't happen but prevents compiler warning
             }
 
             pidGUI = new mtsPIDQtWidget(name + "-PID-GUI", numberOfJoints);
             pidGUI->Configure();
             componentManager->AddComponent(pidGUI);
-            componentManager->Connect(pidGUI->GetName(), "Controller", armIter->second->PIDComponentName(), "Controller");
+            Connections.push_back(new ConnectionType(pidGUI->GetName(), "Controller", armIter->second->PIDComponentName(), "Controller"));
             tabWidget->addTab(pidGUI, (name + " PID").c_str());
 
             // Arm widget
             armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");
             armGUI->Configure();
             componentManager->AddComponent(armGUI);
-            componentManager->Connect(armGUI->GetName(), "Manipulator", armIter->second->mName, "Robot");
+            Connections.push_back(new ConnectionType(armGUI->GetName(), "Manipulator", armIter->second->mName, "Robot"));
             tabWidget->addTab(armGUI, name.c_str());
             break;
 
@@ -100,22 +107,22 @@ mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(mtsIntuitiveR
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1-SUJ");
             componentManager->AddComponent(sujGUI);
-            componentManager->Connect(sujGUI->GetName(), "Manipulator", "SUJ", "PSM1");
+            Connections.push_back(new ConnectionType(sujGUI->GetName(), "Manipulator", "SUJ", "PSM1"));
             tabWidget->addTab(sujGUI, "PSM1 SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("ECM-SUJ");
             componentManager->AddComponent(sujGUI);
-            componentManager->Connect(sujGUI->GetName(), "Manipulator", "SUJ", "ECM");
+            Connections.push_back(new ConnectionType(sujGUI->GetName(), "Manipulator", "SUJ", "ECM"));
             tabWidget->addTab(sujGUI, "ECM SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM2-SUJ");
             componentManager->AddComponent(sujGUI);
-            componentManager->Connect(sujGUI->GetName(), "Manipulator", "SUJ", "PSM2");
+            Connections.push_back(new ConnectionType(sujGUI->GetName(), "Manipulator", "SUJ", "PSM2"));
             tabWidget->addTab(sujGUI, "PSM2 SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM3-SUJ");
             componentManager->AddComponent(sujGUI);
-            componentManager->Connect(sujGUI->GetName(), "Manipulator", "SUJ", "PSM3");
+            Connections.push_back(new ConnectionType(sujGUI->GetName(), "Manipulator", "SUJ", "PSM3"));
             tabWidget->addTab(sujGUI, "PSM3 SUJ");
 
             break;
@@ -136,10 +143,27 @@ mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(mtsIntuitiveR
         mtsTeleOperationQtWidget * teleopGUI = new mtsTeleOperationQtWidget(name + "-GUI");
         teleopGUI->Configure();
         componentManager->AddComponent(teleopGUI);
-        componentManager->Connect(teleopGUI->GetName(), "TeleOperation", name, "Setting");
+        Connections.push_back(new ConnectionType(teleopGUI->GetName(), "TeleOperation", name, "Setting"));
         tabWidget->addTab(teleopGUI, name.c_str());
     }
 
     // show all widgets
     tabWidget->show();
+}
+
+void mtsIntuitiveResearchKitConsoleQt::Connect(void)
+{
+    mtsComponentManager * componentManager = mtsComponentManager::GetInstance();
+
+    const ConnectionsType::const_iterator end = Connections.end();
+    ConnectionsType::const_iterator connectIter;
+    for (connectIter = Connections.begin();
+         connectIter != end;
+         ++connectIter) {
+        ConnectionType * connection = *connectIter;
+        componentManager->Connect(connection->ClientComponentName,
+                                  connection->ClientInterfaceName,
+                                  connection->ServerComponentName,
+                                  connection->ServerInterfaceName);
+    }
 }

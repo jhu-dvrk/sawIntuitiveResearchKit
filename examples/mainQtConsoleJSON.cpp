@@ -117,7 +117,9 @@ int main(int argc, char ** argv)
     // add all Qt widgets
     QApplication application(argc, argv);
 
-    mtsIntuitiveResearchKitConsoleQt * consoleQt = new mtsIntuitiveResearchKitConsoleQt(console);
+    mtsIntuitiveResearchKitConsoleQt * consoleQt = new mtsIntuitiveResearchKitConsoleQt();
+    consoleQt->Configure(console);
+    consoleQt->Connect();
 
 #if 0
     // setup arms defined in the json configuration file

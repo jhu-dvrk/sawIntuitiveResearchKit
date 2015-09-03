@@ -28,7 +28,33 @@ class mtsIntuitiveResearchKitConsoleQt: public cmnGenericObject
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsIntuitiveResearchKitConsoleQt(mtsIntuitiveResearchKitConsole * console);
+    mtsIntuitiveResearchKitConsoleQt(void);
+
+    void Configure(mtsIntuitiveResearchKitConsole * console);
+
+    void Connect(void);
+
+protected:
+    class ConnectionType {
+    public:
+        inline ConnectionType(const std::string & clientComponentName,
+                       const std::string & clientInterfaceName,
+                       const std::string & serverComponentName,
+                       const std::string & serverInterfaceName):
+            ClientComponentName(clientComponentName),
+            ClientInterfaceName(clientInterfaceName),
+            ServerComponentName(serverComponentName),
+            ServerInterfaceName(serverInterfaceName)
+        {}
+
+        std::string ClientComponentName;
+        std::string ClientInterfaceName;
+        std::string ServerComponentName;
+        std::string ServerInterfaceName;
+    };
+
+    typedef std::list<ConnectionType *> ConnectionsType;
+    ConnectionsType Connections;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsoleQt);
