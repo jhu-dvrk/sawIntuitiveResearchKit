@@ -130,6 +130,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalJoint, this, "SetPositionGoalJoint");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionCartesian, this, "SetPositionCartesian");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalCartesian, this, "SetPositionGoalCartesian");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetWrenchBody, this, "SetWrenchBody");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetWrenchSpatial, this, "SetWrenchSpatial");
+
         // Trajectory events
         RobotInterface->AddEventWrite(JointTrajectory.GoalReachedEvent, "GoalReached", bool());
         // Robot State
@@ -536,3 +539,42 @@ void mtsIntuitiveResearchKitArm::JointLimitEventHandler(const vctBoolVec & flags
     }
     MessageEvents.Warning(this->GetName() + ": PID joint limit");
 }
+
+void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wrench)
+{
+
+    vctDynamicMatrix<double> J( 6, Manipulator.links.size() );
+    Manipulator.JacobianBody( JointGet, J );
+
+    prmForceCartesianSet::ForceType prmft;    // fixed size vector
+    {
+        prmForceCartesianSet tmp( wrench );
+        tmp.GetForce( prmft );                // because GetForce is not const
+    }
+    vctDynamicVector<double> vctft( 6, 0.0 ); // convert to dynamic size vector
+    for( size_t i=0; i<6; i++ )
+        { vctft[i] = prmft[i]; }
+
+    JointExternalEffort = J.Transpose()*vctft;
+
+}
+
+void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & wrench)
+{
+
+    vctDynamicMatrix<double> J( 6, Manipulator.links.size() );
+    Manipulator.JacobianSpatial( JointGet, J );
+
+    prmForceCartesianSet::ForceType prmft;    // fixed size vector
+    {
+        prmForceCartesianSet tmp( wrench );
+        tmp.GetForce( prmft );                // because GetForce is not const
+    }
+    vctDynamicVector<double> vctft( 6, 0.0 );
+    for( size_t i=0; i<6; i++ )
+        { vctft[i] = prmft[i]; }
+
+    JointExternalEffort = J.Transpose()*vctft;
+
+}
+

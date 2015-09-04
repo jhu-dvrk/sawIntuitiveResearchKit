@@ -501,6 +501,11 @@ void mtsIntuitiveResearchKitMTM::RunGravityCompensation(void)
         torqueDesired[JNT_WRIST_ROLL] = (-1.5 * cmnPI - JointGet[JNT_WRIST_ROLL]) * gain;
     }
 
+    // add the external efforts
+    size_t N = torqueDesired.size();
+    if( JointExternalEffort.size() < N ) { N = JointExternalEffort.size(); }
+    for( size_t i=0; i<N; i++ ) { torqueDesired[i] += JointExternalEffort[i]; }
+
     TorqueSet.SetForceTorque(torqueDesired);
     PID.SetTorqueJoint(TorqueSet);
 }
