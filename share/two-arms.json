@@ -1,0 +1,35 @@
+{
+    "pairs":
+    [
+        {
+            "master": {
+                "name": "MTML",
+                "io": "jhu-dVRK/sawRobotIO1394-MTML-22723.xml",
+                "pid": "sawControllersPID-MTML.xml",
+                "kinematic": "dvmtm.rob"
+		}
+            ,
+            "slave": {
+                "name": "PSM2",
+                "io": "jhu-dVRK/sawRobotIO1394-PSM2-27374.xml",
+                "pid": "sawControllersPID-PSM.xml",
+                "kinematic": "dvpsm.rob"
+            }
+        }
+        ,
+        {
+            "master": {
+                "name": "MTMR",
+                "io": "jhu-dVRK/sawRobotIO1394-MTMR-28247-foot-pedal.xml",
+                "pid": "sawControllersPID-MTMR.xml",
+                "kinematic": "dvmtm.rob"
+	    }
+            ,
+            "slave": {
+                "name": "PSM1",
+                "io": "jhu-dVRK/sawRobotIO1394-PSM1-28007.xml",
+                "pid": "sawControllersPID-PSM.xml",
+                "kinematic": "dvpsm.rob"}
+        }
+    ]
+}

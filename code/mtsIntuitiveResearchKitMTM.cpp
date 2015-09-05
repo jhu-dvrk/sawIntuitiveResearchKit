@@ -525,6 +525,12 @@ void mtsIntuitiveResearchKitMTM::RunClutch(void)
     JointSet.Assign(JointGet);
     CartesianClutched.Translation().Assign(CartesianGet.Translation());
     Manipulator.InverseKinematics(JointSet, CartesianClutched);
+
+    // find closest solution mod 2 pi
+    const double difference = JointGet[6] - JointSet[6];
+    const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
+    JointSet[6] = JointSet[6] + differenceInTurns * 2.0 * cmnPI;
+
     SetPositionJointLocal(JointSet);
 }
 

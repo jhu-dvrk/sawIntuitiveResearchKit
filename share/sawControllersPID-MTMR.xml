@@ -44,7 +44,7 @@
     <joint index="6" name="wrist roll">
       <pid PGain="1.2" DGain="0.04" IGain="0.0" OffsetTorque="0.0" Forget="0.9" Nonlinear="1.0"/>
       <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
-      <pos LowerLimit="-180" UpperLimit="180" Units="deg"/>
+      <pos LowerLimit="-480" UpperLimit="450" Units="deg"/>
     </joint>
 
     <joint index="7" name="finger grips">
