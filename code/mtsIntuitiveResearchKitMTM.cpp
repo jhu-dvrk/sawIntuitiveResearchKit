@@ -75,8 +75,6 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     JointTrajectory.GoalTolerance.Element(6) = 6.0 * cmnPI / 180.0; // roll has low encoder resolution
      // IO level treats the gripper as joint :-)
     PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
-    // Hack, pot reading is slower than encoder
-    PotsToEncodersTolerance.Element(5) = 50.0 * cmnPI_180;
     // pots on gripper rotation are not directly mapped to encoders
     PotsToEncodersTolerance.Element(6) = cmnTypeTraits<double>::PlusInfinityOrMax();
     // last joint is gripper, encoders can be anything
