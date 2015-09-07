@@ -5,12 +5,12 @@ function [ isOK ] = configGenerator( aCalName, aOutName, aRobotName, aBoardID, a
 % TODOs
 %  1. verify all settings
 
-% Set isOK to false by default 
+% Set isOK to false by default
 % if configuration file generation is good then isOK = true
 % otherwise isOK = false
 isOK = false;
 
-% sanity check for board id 
+% sanity check for board id
 if (length(aBoardID) ~= 2)
     disp('ERROR: board id size should be 2');
     cleanUp;
@@ -19,7 +19,7 @@ elseif (aBoardID(1) == aBoardID(2))
     disp('ERROR: board id should be different');
     cleanUp;
     return;
-end  
+end
 boardID = aBoardID; % save to local variable
 
 
@@ -103,13 +103,13 @@ motorMaxCur(CONST_SLV,:) = [2.01 2.01 1.005 1.005 1.005 1.005 1.005 0.0];
 motorMaxCur(CONST_ECM,:) = [1.4145 1.4145 1.005 0.885 0.0 0.0 0.0 0.0];
 
 % motor torque const  Unit: Nm/A
-% NOTE: no motor on axis 8, set value to 1 
+% NOTE: no motor on axis 8, set value to 1
 motorTor(CONST_MST,:) = [0.0438 0.0438 0.0438 0.0438 0.00495 0.00495 0.00339 1.0];
 motorTor(CONST_SLV,:) = [0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 1.0];
 motorTor(CONST_ECM,:) = [0.1190 0.1190 0.0438 0.00495 1.0 1.0 1.0 1.0];
 
 % Gear ratio
-% NOTE: gear ratio for axis 8 is set to 1 
+% NOTE: gear ratio for axis 8 is set to 1
 gearRatio(CONST_MST,:) = [63.41 49.88 59.73 10.53 33.16 33.16 16.58 1.0];
 gearRatio(CONST_SLV,:) = [56.50 56.50 336.6 11.71 11.71 11.71 11.71 1.0];
 gearRatio(CONST_ECM,:) = [240 240 2748.55 300.15    1.0   1.0   1.0 1.0];
@@ -153,15 +153,6 @@ end
 % ==== POT =======
 % raw value from Intuitive Surgical Inc mXXXX.cal file
 % NOTE:
-%  Intuitive system
-%    1. 12 bit ADC
-%    2. 0-5 V (Typical)
-%    3. Unit: Radian
-%
-%  JHU QLA board
-%    1. 16 bit ADC
-%    2. 0-4.5 V
-%    3. Unit: Radian
 jointUpper = joint.signal_range(UPPER_LIMIT,:);
 jointLower = joint.signal_range(LOWER_LIMIT,:);
 potGain = motor.pot_input_gain;
@@ -192,7 +183,7 @@ NmToAmps = ones(1,numOfActuator) ./ gearRatio(rType,1:numOfActuator) ./ motorTor
 MaxCurrent = motorDefCur(rType,1:numOfActuator);
 
 % === Encoder ======
-% EncPos = (360.0 * EncCounts / encCPT) / gearRatio * pitch 
+% EncPos = (360.0 * EncCounts / encCPT) / gearRatio * pitch
 BitsToPosSIScale = driveDirection(1:numOfActuator) .* 360 ./ encCPT(rType,1:numOfActuator) .* pitch(rType,1:numOfActuator) ./ gearRatio(rType,1:numOfActuator);
 
 % AmpIO buff = buff + MIDRANGE_VEL
@@ -208,8 +199,17 @@ BitsToDeltaT = ones(1,numOfActuator) * -1;
 CountsPerTurn = encCPT(rType,1:numOfActuator);
 
 % === AnalogIn =====
-BitsToVolts = ones(1,numOfActuator) * 0.0000686656;
-VoltsToPosSIScale = potGain * 2^12 / (4.5 - 0.0) * 180.0 / pi .* pitch(rType,1:numOfActuator);
+%  Intuitive system
+%    1. 12 bit ADC
+%    2. 0-4.096 V (Typical)
+%    3. Unit: Radian
+%
+%  JHU QLA board
+%    1. 16 bit ADC
+%    2. 0-4.5 V
+%    3. Unit: Radian
+BitsToVolts = ones(1,numOfActuator) * (4.5 / 2^16);  % 16 bits ADC with 4.5 V ref
+VoltsToPosSIScale = potGain * (2^12 / 4.5) * 180.0 / pi .* pitch(rType,1:numOfActuator);
 VoltsToPosSIOffset = potOffset * 180.0 / pi .* pitch(rType,1:numOfActuator);
 
 % special case for master last joint (Hall effect sensor)
@@ -289,11 +289,11 @@ for i = 1:numOfActuator
     % Actuator.setAttribute('Pos1', 'ENC');
     % Actuator.setAttribute('Pos2', 'POT');
     Robot.appendChild(Actuator);
-    
+
     % Drive
     Drive = docNode.createElement('Drive');
     Actuator.appendChild(Drive);
-    
+
     X_Amps2Bits = docNode.createElement('AmpsToBits');
     X_Amps2Bits.setAttribute('Scale', num2str(AmpsToBitsScale(i), '%5.2f'));
     X_Amps2Bits.setAttribute('Offset', num2str(AmpsToBitsOffset(i), '%5.0f'));
@@ -309,7 +309,7 @@ for i = 1:numOfActuator
     X_MaxCurrent.setAttribute('Value', num2str(MaxCurrent(i), '%5.3f'));
     X_MaxCurrent.setAttribute('Unit', 'A');
     Drive.appendChild(X_MaxCurrent);
-    
+
     % Brake
     if ((rType == CONST_ECM) && (hasBrake(i) == 1))
         Brake = docNode.createElement('AnalogBrake');
@@ -344,11 +344,11 @@ for i = 1:numOfActuator
         X_BrakeEngagedCurrent.setAttribute('Value', num2str(brakeEngagedCurrent(i), '%5.3f'));
         Brake.appendChild(X_BrakeEngagedCurrent);
     end
-    
+
     % Encoder
     Enc = docNode.createElement('Encoder');
     Actuator.appendChild(Enc);
-    
+
     X_BitsToPosSI = docNode.createElement('BitsToPosSI');
     X_BitsToPosSI.setAttribute('Scale', num2str(BitsToPosSIScale(i), '%5.8f'));
     Enc.appendChild(X_BitsToPosSI);
@@ -363,11 +363,11 @@ for i = 1:numOfActuator
     X_CountsPerTurn = docNode.createElement('CountsPerTurn');
     X_CountsPerTurn.setAttribute('Value', num2str(CountsPerTurn(i), '%5.0f'));
     Enc.appendChild(X_CountsPerTurn);
-    
+
     % AnalogIn
     AnaglogIn = docNode.createElement('AnalogIn');
     Actuator.appendChild(AnaglogIn);
-    
+
     X_BitsToVolts = docNode.createElement('BitsToVolts');
     % BitsToVolts
     X_BitsToVolts.setAttribute('Scale', num2str(BitsToVolts(i), 6));
