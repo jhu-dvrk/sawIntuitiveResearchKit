@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -30,27 +30,27 @@ http://www.cisst.org/cisst/license.txt.
 // #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitUDPStreamer.h>
 // #include <sawControllers/mtsTeleOperation.h>
 
-//#include <cisstMultiTask/mtsCollectorFactory.h>
-//#include <cisstMultiTask/mtsCollectorQtFactory.h>
-//#include <cisstMultiTask/mtsCollectorQtWidget.h>
+#include <cisstMultiTask/mtsCollectorFactory.h>
+#include <cisstMultiTask/mtsCollectorQtFactory.h>
+#include <cisstMultiTask/mtsCollectorQtWidget.h>
 
 #include <QApplication>
 
 void fileExists(const std::string & description, const std::string & filename)
 {
     if (!cmnPath::Exists(filename)) {
-        std::cerr << "File not found for " << description
-                  << ": " << filename << std::endl;
+        std::cerr << "File not found: " << description
+                  << "; " << filename << std::endl;
         exit(-1);
     } else {
-        std::cout << "File found for " << description
-                  << ": " << filename << std::endl;
+        std::cout << "File found: " << description
+                  << "; " << filename << std::endl;
     }
 }
 
 
 int main(int argc, char ** argv)
-{ 
+{
     // log configuration
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
@@ -144,15 +144,7 @@ int main(int argc, char ** argv)
                 exit(-1);
             }
         }
-        // Teleoperation
-        std::string teleName = masterName + "-" + slaveName;
-        mtsTeleOperationQtWidget * teleGUI = new mtsTeleOperationQtWidget(teleName + "GUI");
-        teleGUI->Configure();
-        componentManager->AddComponent(teleGUI);
-        tabWidget->addTab(teleGUI, teleName.c_str());
-        // connect teleGUI to tele
-        componentManager->Connect(teleGUI->GetName(), "TeleOperation", tele->GetName(), "Setting");
-
+#endif
 
     // configure data collection if needed
     if (options.IsSet("collection-config")) {
@@ -165,7 +157,8 @@ int main(int argc, char ** argv)
         collectorFactory->Connect();
 
         mtsCollectorQtWidget * collectorQtWidget = new mtsCollectorQtWidget();
-        tabWidget->addTab(collectorQtWidget, "Collection");
+        // tabWidget->addTab(collectorQtWidget, "Collection");
+        collectorQtWidget->show();
 
         mtsCollectorQtFactory * collectorQtFactory = new mtsCollectorQtFactory("collectorsQt");
         collectorQtFactory->SetFactory("collectors");
@@ -173,7 +166,6 @@ int main(int argc, char ** argv)
         collectorQtFactory->Connect();
         collectorQtFactory->ConnectToWidget(collectorQtWidget);
     }
-#endif
 
     //-------------- create the components ------------------
     componentManager->CreateAllAndWait(2.0 * cmn_s);
