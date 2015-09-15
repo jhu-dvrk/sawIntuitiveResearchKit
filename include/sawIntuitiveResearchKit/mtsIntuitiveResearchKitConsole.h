@@ -24,8 +24,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
-#include <json/json.h>
-
 namespace dvrk {
     class console;
 }
@@ -154,6 +152,7 @@ public:
 
     bool AddArm(Arm * newArm);
     bool AddArm(mtsComponent * genericArm, const Arm::ArmType armType);
+    std::string GetArmIOComponentName(const std::string & armName);
 
     // to be deprecated
     bool AddTeleOperation(const std::string & name,

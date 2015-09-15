@@ -36,6 +36,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 
+#include <json/json.h>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsole);
 
@@ -449,6 +450,15 @@ bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mts
                              << newArm->Name() << std::endl;
     delete newArm;
     return false;
+}
+
+std::string mtsIntuitiveResearchKitConsole::GetArmIOComponentName(const std::string & armName)
+{
+    ArmList::iterator armIterator = mArms.find(armName);
+    if (armIterator != mArms.end()) {
+        return armIterator->second->mIOComponentName;
+    }
+    return "";
 }
 
 bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name,
