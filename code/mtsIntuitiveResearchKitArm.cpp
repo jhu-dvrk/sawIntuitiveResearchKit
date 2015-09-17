@@ -360,7 +360,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         CartesianGetDesiredParam.Position().From(CartesianGetDesired);
     } else {
         // set joint to zeros
-        JointGet.Zeros();       
+        JointGet.Zeros();
         PID.GetPositionJoint(JointGetParam); // get size right
         JointGetParam.Position().Zeros();
         JointGetParam.SetValid(false);

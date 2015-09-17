@@ -591,13 +591,28 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
 
 void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 {
-    if ((RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN)
-        || (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN)
-        || (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN)) {
+    const double currentTime = this->StateTable.GetTic();
+    switch (RobotState) {
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
         JointSet[6] = jawPosition;
         IsGoalSet = true;
-    } else {
+        break;
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
+        JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
+        // check if there is a trajectory active
+        if (currentTime >= JointTrajectory.EndTime) {
+            JointTrajectory.Goal.Assign(JointTrajectory.Start);
+        }
+        JointTrajectory.Goal[6] = jawPosition;
+        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
+                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                 currentTime, robLSPB::LSPB_DURATION);
+        JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
+        break;
+    default:
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetJawPosition: PSM not ready" << std::endl;
+        break;
     }
 }
 
