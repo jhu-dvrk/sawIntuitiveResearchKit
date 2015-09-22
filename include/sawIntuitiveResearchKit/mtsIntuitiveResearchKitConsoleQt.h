@@ -23,6 +23,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnGenericObject.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 
+class QTabWidget;
+class QWidget;
+
 class mtsIntuitiveResearchKitConsoleQt: public cmnGenericObject
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
@@ -33,6 +36,8 @@ public:
     void Configure(mtsIntuitiveResearchKitConsole * console);
 
     void Connect(void);
+
+    void addTab(QWidget * widget, const std::string & name);
 
 protected:
     class ConnectionType {
@@ -55,6 +60,8 @@ protected:
 
     typedef std::list<ConnectionType *> ConnectionsType;
     ConnectionsType Connections;
+
+    QTabWidget * TabWidget;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsoleQt);

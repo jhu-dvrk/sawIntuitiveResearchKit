@@ -157,8 +157,7 @@ int main(int argc, char ** argv)
         collectorFactory->Connect();
 
         mtsCollectorQtWidget * collectorQtWidget = new mtsCollectorQtWidget();
-        // tabWidget->addTab(collectorQtWidget, "Collection");
-        collectorQtWidget->show();
+        consoleQt->addTab(collectorQtWidget, "Collection");
 
         mtsCollectorQtFactory * collectorQtFactory = new mtsCollectorQtFactory("collectorsQt");
         collectorQtFactory->SetFactory("collectors");

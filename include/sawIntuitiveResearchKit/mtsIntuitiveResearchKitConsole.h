@@ -38,7 +38,7 @@ public:
 
     class Arm {
     public:
-        typedef enum {ARM_UNDEFINED, ARM_MTM, ARM_PSM, ARM_ECM, ARM_SUJ, ARM_GENERIC_MTM, ARM_GENERIC_PSM} ArmType;
+        typedef enum {ARM_UNDEFINED, ARM_MTM, ARM_PSM, ARM_ECM, ARM_SUJ, ARM_MTM_GENERIC, ARM_PSM_GENERIC, ARM_MTM_DERIVED, ARM_PSM_DERIVED} ArmType;
 
         friend class mtsIntuitiveResearchKitConsole;
         friend class mtsIntuitiveResearchKitConsoleQt;
@@ -102,19 +102,21 @@ public:
         }
     };
 
-    class Teleop {
+    class TeleopPSM {
     public:
+        typedef enum {TELEOP_PSM, TELEOP_PSM_GENERIC} TeleopPSMType;
         friend class mtsIntuitiveResearchKitConsole;
         friend class mtsIntuitiveResearchKitConsoleQt;
         friend class dvrk::console;
 
-        Teleop(const std::string & name,
-               const std::string & masterName,
-               const std::string & slaveName,
-               const std::string & consoleName);
+        TeleopPSM(const std::string & name,
+                  const std::string & masterName,
+                  const std::string & slaveName,
+                  const std::string & consoleName);
 
         /*! Create and configure the robot arm. */
-        void ConfigureTeleop(const vctMatRot3 & orientation,
+        void ConfigureTeleop(const TeleopPSMType type,
+                             const vctMatRot3 & orientation,
                              const double & periodInSeconds = 2.0 * cmn_ms);
 
         /*! Connect all interfaces specific to this teleop. */
@@ -125,6 +127,7 @@ public:
 
     protected:
         std::string mName;
+        TeleopPSMType mType;
         std::string mMasterName;
         std::string mSlaveName;
         std::string mConsoleName;
@@ -170,7 +173,7 @@ protected:
     typedef std::map<std::string, Arm *> ArmList;
     ArmList mArms;
 
-    typedef std::map<std::string, Teleop *> TeleopList;
+    typedef std::map<std::string, TeleopPSM *> TeleopList;
     TeleopList mTeleops;
 
     /*! Utility function to test if a file exists and log the results */
@@ -182,7 +185,7 @@ protected:
     bool AddArmInterfaces(Arm * arm);
 
     bool ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop);
-    bool AddTeleopInterfaces(Teleop * teleop);
+    bool AddTeleopInterfaces(TeleopPSM * teleop);
 
 
     void SetRobotsControlState(const std::string & newState);

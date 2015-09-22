@@ -113,7 +113,50 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             componentManager->AddComponent(suj);
         }
         break;
-
+    case ARM_MTM_DERIVED:
+        {
+            if (!existingArm) {
+                mtsComponent * component;
+                component = componentManager->GetComponent(Name());
+                if (component) {
+                    mtsIntuitiveResearchKitMTM * master = dynamic_cast<mtsIntuitiveResearchKitMTM *>(component);
+                    if (master) {
+                        master->Configure(mArmConfigurationFile);
+                    } else {
+                        CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
+                                           << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitMTM."
+                                           << std::endl;
+                    }
+                } else {
+                    CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
+                                       << Name() << "\" not found."
+                                       << std::endl;
+                }
+            }
+        }
+        break;
+    case ARM_PSM_DERIVED:
+        {
+            if (!existingArm) {
+                mtsComponent * component;
+                component = componentManager->GetComponent(Name());
+                if (component) {
+                    mtsIntuitiveResearchKitPSM * slave = dynamic_cast<mtsIntuitiveResearchKitPSM *>(component);
+                    if (slave) {
+                        slave->Configure(mArmConfigurationFile);
+                    } else {
+                        CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
+                                           << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitPSM."
+                                           << std::endl;
+                    }
+                } else {
+                    CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
+                                       << Name() << "\" not found."
+                                       << std::endl;
+                }
+            }
+        }
+        break;
     default:
         break;
     }
@@ -126,8 +169,10 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
     // extra IO, PID, etc.  For generic arms, do nothing.
     switch (mType) {
     case ARM_MTM:
+    case ARM_MTM_DERIVED:
         break;
     case ARM_PSM:
+    case ARM_PSM_DERIVED:
         componentManager->Connect(Name(), "Adapter",
                                   IOComponentName(), Name() + "-Adapter");
         componentManager->Connect(Name(), "Tool",
@@ -160,7 +205,11 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
     }
 
     // if the arm is a research kit arm
-    if ((mType == ARM_PSM) || (mType == ARM_MTM) || (mType == ARM_ECM)) {
+    if ((mType == ARM_PSM) ||
+        (mType == ARM_MTM) ||
+        (mType == ARM_PSM_DERIVED) ||
+        (mType == ARM_MTM_DERIVED) ||
+        (mType == ARM_ECM)) {
         // Connect arm to IO and PID
         componentManager->Connect(Name(), "RobotIO",
                                   IOComponentName(), Name());
@@ -186,10 +235,10 @@ const std::string & mtsIntuitiveResearchKitConsole::Arm::PIDComponentName(void) 
 }
 
 
-mtsIntuitiveResearchKitConsole::Teleop::Teleop(const std::string & name,
-                                               const std::string & masterName,
-                                               const std::string & slaveName,
-                                               const std::string & consoleName):
+mtsIntuitiveResearchKitConsole::TeleopPSM::TeleopPSM(const std::string & name,
+                                                     const std::string & masterName,
+                                                     const std::string & slaveName,
+                                                     const std::string & consoleName):
     mName(name),
     mMasterName(masterName),
     mSlaveName(slaveName),
@@ -197,16 +246,26 @@ mtsIntuitiveResearchKitConsole::Teleop::Teleop(const std::string & name,
 {
 }
 
-void mtsIntuitiveResearchKitConsole::Teleop::ConfigureTeleop(const vctMatRot3 & orientation,
-                                                             const double & periodInSeconds)
+void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMType type,
+                                                                const vctMatRot3 & orientation,
+                                                                const double & periodInSeconds)
 {
-    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    mtsTeleOperation * teleop = new mtsTeleOperation(mName, periodInSeconds);
-    teleop->SetRegistrationRotation(orientation);
-    componentManager->AddComponent(teleop);
+    mType = type;
+    switch (type) {
+    case TELEOP_PSM:
+        {
+            mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+            mtsTeleOperation * teleop = new mtsTeleOperation(mName, periodInSeconds);
+            teleop->SetRegistrationRotation(orientation);
+            componentManager->AddComponent(teleop);
+        }
+        break;
+    default:
+        break;
+    }
 }
 
-bool mtsIntuitiveResearchKitConsole::Teleop::Connect(void)
+bool mtsIntuitiveResearchKitConsole::TeleopPSM::Connect(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     componentManager->Connect(mName, "Master", mMasterName, "Robot");
@@ -217,7 +276,7 @@ bool mtsIntuitiveResearchKitConsole::Teleop::Connect(void)
     return true;
 }
 
-const std::string & mtsIntuitiveResearchKitConsole::Teleop::Name(void) const {
+const std::string & mtsIntuitiveResearchKitConsole::TeleopPSM::Name(void) const {
     return mName;
 }
 
@@ -471,7 +530,7 @@ bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name,
                                  << name << "\"" << std::endl;
         return false;
     }
-    Teleop * teleop = new Teleop(name, masterName, slaveName, this->GetName());
+    TeleopPSM * teleop = new TeleopPSM(name, masterName, slaveName, this->GetName());
     mTeleops[name] = teleop;
     if (AddTeleopInterfaces(teleop)) {
         return true;
@@ -479,7 +538,7 @@ bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name,
     return false;
 }
 
-bool mtsIntuitiveResearchKitConsole::AddTeleopInterfaces(Teleop * teleop)
+bool mtsIntuitiveResearchKitConsole::AddTeleopInterfaces(TeleopPSM * teleop)
 {
     teleop->InterfaceRequired = this->AddInterfaceRequired(teleop->Name());
     if (teleop->InterfaceRequired) {
@@ -588,18 +647,22 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             armPointer->mType = Arm::ARM_MTM;
         } else if (typeString == "PSM") {
             armPointer->mType = Arm::ARM_PSM;
+        } else if (typeString == "MTM_DERIVED") {
+            armPointer->mType = Arm::ARM_MTM_DERIVED;
+        } else if (typeString == "PSM_DERIVED") {
+            armPointer->mType = Arm::ARM_PSM_DERIVED;
         } else if (typeString == "ECM") {
             armPointer->mType = Arm::ARM_ECM;
         } else if (typeString == "SUJ") {
             armPointer->mType = Arm::ARM_SUJ;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName << ": invalid type \""
-                                     << typeString << "\", needs to be MTM, PSM or ECM" << std::endl;
+                                     << typeString << "\", needs to be MTM(_DERIVED), PSM(_DERIVED) or ECM" << std::endl;
             return false;
         }
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName
-                                 << ": doesn't have a \"type\" specified, needs to be MTM, PSM or ECM" << std::endl;
+                                 << ": doesn't have a \"type\" specified, needs to be MTM(_DERIVED), PSM(_DERIVED) or ECM" << std::endl;
         return false;
     }
     jsonValue = jsonArm["io"];
@@ -616,6 +679,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     // PID only required for MTM, PSM and ECM
     if ((armPointer->mType == Arm::ARM_MTM)
         || (armPointer->mType == Arm::ARM_PSM)
+        || (armPointer->mType == Arm::ARM_MTM_DERIVED)
+        || (armPointer->mType == Arm::ARM_PSM_DERIVED)
         || (armPointer->mType == Arm::ARM_ECM)) {
         jsonValue = jsonArm["pid"];
         if (!jsonValue.empty()) {
@@ -676,7 +741,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->mType == Arm::ARM_GENERIC_MTM) ||
+        if (!((armPointer->mType == Arm::ARM_MTM_GENERIC) ||
+              (armPointer->mType == Arm::ARM_MTM_DERIVED) ||
               (armPointer->mType == Arm::ARM_MTM))) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: master \""
                                      << masterName << "\" type must be \"MTM\" or \"GENERIC_MTM\"" << std::endl;
@@ -690,7 +756,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->mType == Arm::ARM_GENERIC_PSM) ||
+        if (!((armPointer->mType == Arm::ARM_PSM_GENERIC) ||
+              (armPointer->mType == Arm::ARM_PSM_DERIVED) ||
               (armPointer->mType == Arm::ARM_PSM))) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: slave \""
                                      << masterName << "\" type must be \"PSM\" or \"GENERIC_PSM\"" << std::endl;
@@ -701,10 +768,10 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
     // check if pair already exist and then add
     const std::string name = masterName + "-" + slaveName;
     const TeleopList::iterator teleopIterator = mTeleops.find(name);
-    Teleop * teleopPointer = 0;
+    TeleopPSM * teleopPointer = 0;
     if (teleopIterator == mTeleops.end()) {
         // create a new teleop if needed
-        teleopPointer = new Teleop(name, masterName, slaveName, this->GetName());
+        teleopPointer = new TeleopPSM(name, masterName, slaveName, this->GetName());
         mTeleops[name] = teleopPointer;
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: there is already a teleop for the pair \""
@@ -712,9 +779,28 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         return false;
     }
 
+    Json::Value jsonValue;
+    jsonValue = jsonTeleop["type"];
+    if (!jsonValue.empty()) {
+        std::string typeString = jsonValue.asString();
+        if (typeString == "TELEOP_PSM") {
+            teleopPointer->mType = TeleopPSM::TELEOP_PSM;
+        } else if (typeString == "TELEOP_PSM_GENERIC") {
+            teleopPointer->mType = TeleopPSM::TELEOP_PSM_GENERIC;
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: teleop " << name << ": invalid type \""
+                                     << typeString << "\", needs to be TELEOP_PSM or TELEOP_PSM_GENERIC" << std::endl;
+            return false;
+        }
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: teleop " << name
+                                 << ": doesn't have a \"type\" specified, needs to be TELEOP_PSM or TELEOP_PSM_GENERIC" << std::endl;
+        return false;
+    }
+
     // read orientation if present
     vctMatRot3 orientation; // identity by default
-    Json::Value jsonValue = jsonTeleop["rotation"];
+    jsonValue = jsonTeleop["rotation"];
     if (!jsonValue.empty()) {
         cmnDataJSON<vctMatRot3>::DeSerializeText(orientation, jsonTeleop["rotation"]);
     }
@@ -725,7 +811,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
     if (!jsonValue.empty()) {
         period = jsonValue.asFloat();
     }
-    teleopPointer->ConfigureTeleop(orientation, period);
+    teleopPointer->ConfigureTeleop(teleopPointer->mType, orientation, period);
     AddTeleopInterfaces(teleopPointer);
     return true;
 }
@@ -823,7 +909,7 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
     for (TeleopList::iterator teleopIter = mTeleops.begin();
          teleopIter != teleopsEnd;
          ++teleopIter) {
-        Teleop * teleop = teleopIter->second;
+        TeleopPSM * teleop = teleopIter->second;
         teleop->Connect();
     }
 
