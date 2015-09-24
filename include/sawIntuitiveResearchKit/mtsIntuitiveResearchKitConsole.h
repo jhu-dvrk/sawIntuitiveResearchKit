@@ -191,6 +191,7 @@ protected:
     void SetRobotsControlState(const std::string & newState);
     void TeleopEnable(const bool & enable);
 
+    bool mHasFootpedals;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
@@ -199,6 +200,7 @@ protected:
         mtsFunctionWrite Camera;
         mtsFunctionWrite OperatorPresent;
     } ConsoleEvents;
+    std::string mIOComponentName;
     std::string mOperatorPresentComponent;
     std::string mOperatorPresentInterface;
 

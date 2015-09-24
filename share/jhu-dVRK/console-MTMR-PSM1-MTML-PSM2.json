@@ -2,7 +2,8 @@
 {
     "io": {
         "period": 0.0005, // in seconds
-        "port": 0 // default is 0
+        "port": 0, // default is 0
+        "has-footpedals": true // default is false unless there are some teleop components
     }
     ,
     "operator-present": {

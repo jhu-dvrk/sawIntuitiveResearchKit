@@ -299,7 +299,8 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
         interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
     }
 
-    mOperatorPresentComponent = "io";
+    mIOComponentName = "io";
+    mOperatorPresentComponent = mIOComponentName;
     mOperatorPresentInterface = "COAG";
 }
 
@@ -334,7 +335,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     }
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: FireWire port is " << firewirePort << std::endl;
     // create IO
-    mtsRobotIO1394 * io = new mtsRobotIO1394("io", periodIO, firewirePort);
+    mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, firewirePort);
 
     const Json::Value arms = jsonConfig["arms"];
     for (unsigned int index = 0; index < arms.size(); ++index) {
@@ -386,14 +387,24 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     mOperatorPresentInterface = jsonConfig["operator-present"]["interface"].asString();
     //set defaults
     if (mOperatorPresentComponent == "") {
-        mOperatorPresentComponent = "io";
+        mOperatorPresentComponent = mIOComponentName;
     }
     if (mOperatorPresentInterface == "") {
         mOperatorPresentInterface = "COAG";
     }
 
+    // look for footpedals in json config
+    jsonValue = jsonConfig["io"]["has-footpedals"];
+    if (jsonValue.empty()) {
+        mHasFootpedals = false;
+    } else {
+        mHasFootpedals = jsonValue.asBool();
+    }
     // if we have any teleoperation component, we need to add the interfaces for the foot pedals
     if (mTeleops.size() > 0) {
+        mHasFootpedals = true;
+    }
+    if (mHasFootpedals) {
         this->AddFootpedalInterfaces();
     }
 
@@ -604,9 +615,9 @@ bool mtsIntuitiveResearchKitConsole::ConnectFootpedalInterfaces(void)
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     // connect console to IO
     componentManager->Connect(this->GetName(), "Clutch",
-                              "io", "CLUTCH");
+                              mIOComponentName, "CLUTCH");
     componentManager->Connect(this->GetName(), "Camera",
-                              "io", "CAMERA");
+                              mIOComponentName, "CAMERA");
     componentManager->Connect(this->GetName(), "OperatorPresent",
                               this->mOperatorPresentComponent, this->mOperatorPresentInterface);
     return true;
@@ -793,9 +804,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
             return false;
         }
     } else {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: teleop " << name
-                                 << ": doesn't have a \"type\" specified, needs to be TELEOP_PSM or TELEOP_PSM_GENERIC" << std::endl;
-        return false;
+        // default value
+        teleopPointer->mType = TeleopPSM::TELEOP_PSM;
     }
 
     // read orientation if present
@@ -913,8 +923,8 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
         teleop->Connect();
     }
 
-    // if we have any teleoperation component, we need to connect the foot pedals
-    if (mTeleops.size() > 0) {
+    // connect the foot pedals if needed
+    if (mHasFootpedals) {
         this->ConnectFootpedalInterfaces();
     }
 
