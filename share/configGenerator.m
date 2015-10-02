@@ -269,6 +269,7 @@ fileName = aOutName;
 
 docNode = com.mathworks.xml.XMLUtils.createDocument('Config');
 Config = docNode.getDocumentElement;
+Config.setAttribute('Version','2');
 
 % ------------- Robot ----------------
 Robot = docNode.createElement('Robot');

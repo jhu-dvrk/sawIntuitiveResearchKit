@@ -67,7 +67,7 @@ set(handles.bidPopup1,'Value', handles.m_boardID(1) + 1);
 set(handles.bidPopup2,'Value', handles.m_boardID(2) + 1);
 
 % set default type
-handles.m_type = 'MTML';
+handles.m_type = 'undefined';
 set(handles.typeBtnGroup, 'SelectedObject', handles.mtmlButton);
 handles.m_out_filename = ['sawRobotIO1394-' handles.m_type];
 set(handles.out_name, 'String', handles.m_out_filename);
@@ -244,19 +244,25 @@ end
 % set default PSM DigitalIn
 if (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2') || strcmp(handles.m_type,'PSM3'))
     handles.m_digiIn{1,2,1} = [handles.m_type '-SUJClutch'];
+    handles.m_digiIn{1,3,1} = '1';
     handles.m_digiIn{1,5,1} = 0.2;
     handles.m_digiIn{3,2,1} = [handles.m_type '-ManipClutch'];
+    handles.m_digiIn{3,3,1} = '1';
     handles.m_digiIn{3,5,1} = 0.2;
     handles.m_digiIn{8,2,2} = [handles.m_type '-Tool'];
+    handles.m_digiIn{8,3,2} = '1';
     handles.m_digiIn{8,5,2} = 1.5;
     handles.m_digiIn{11,2,2} = [handles.m_type '-Adapter'];
+    handles.m_digiIn{11,3,2} = '1';
     handles.m_digiIn{11,5,2} = 1.5;
 end
 
 if (strcmp(handles.m_type,'ECM'))
     handles.m_digiIn{1,2,1} = [handles.m_type '-ManipClutch'];
+    handles.m_digiIn{1,3,1} = '1';
     handles.m_digiIn{1,5,1} = 0.2;
     handles.m_digiIn{3,2,1} = [handles.m_type '-SUJClutch'];
+    handles.m_digiIn{3,3,1} = '1';
     handles.m_digiIn{3,5,1} = 0.2;
 end
 
@@ -389,16 +395,22 @@ function footButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 handles.m_digiIn{4,2,1} = 'HEAD';
+handles.m_digiIn{4,3,1} = '1';
 handles.m_digiIn{4,5,1} = 0.2;
 handles.m_digiIn{1,2,2} = 'CLUTCH';
+handles.m_digiIn{1,3,2} = '1';
 handles.m_digiIn{1,5,2} = 0.2;
 handles.m_digiIn{2,2,2} = 'CAM-';
+handles.m_digiIn{2,3,2} = '1';
 handles.m_digiIn{2,5,2} = 0.2;
 handles.m_digiIn{3,2,2} = 'CAM+';
+handles.m_digiIn{3,3,2} = '1';
 handles.m_digiIn{3,5,2} = 0.2;
 handles.m_digiIn{4,2,2} = 'COAG';
+handles.m_digiIn{4,3,2} = '1'; 
 handles.m_digiIn{4,5,2} = 0.2;
 handles.m_digiIn{5,2,2} = 'CAMERA';
+handles.m_digiIn{5,3,2} = '1';
 handles.m_digiIn{5,5,2} = 0.2;
 
 val = get(handles.digiBidMenu, 'Value');
