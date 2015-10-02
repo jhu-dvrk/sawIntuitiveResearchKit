@@ -31,6 +31,8 @@ public:
     mtsIntuitiveResearchKitSUJQtWidget(const std::string & componentName, double periodInSeconds = 50.0 * cmn_ms);
     ~mtsIntuitiveResearchKitSUJQtWidget() {}
 
+    void Startup(void);
+
 protected:
     void setupUiDerived(void);
     void timerEventDerived(void);
@@ -42,7 +44,11 @@ protected:
     vctQtWidgetDynamicVectorDoubleWrite * QVPotentiometerRecalibrationStartWidget;
     vctQtWidgetDynamicVectorDoubleWrite * QVPotentiometerRecalibrationFinishWidget;
 
+    QPushButton * QPBLiftDown;
+    QPushButton * QPBLiftUp;
+
     mtsFunctionWrite Clutch;
+    mtsFunctionWrite SetLiftVelocity;
 
     prmPositionJointGet PositionJointParam;
     vctDoubleVec PrimaryJointOffset;
@@ -68,6 +74,11 @@ protected slots:
     void SlotManualRecalibration(void);
     void SlotClutchPressed(void);
     void SlotClutchReleased(void);
+
+    void SlotVelocityDownPressed(void);
+    void SlotVelocityUpPressed(void);
+    void SlotVelocityReleased(void);
+
     void SlotRecalibrationStartChanged(void);
     void SlotRecalibrationFinishChanged(void);
 

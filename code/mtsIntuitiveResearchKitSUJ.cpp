@@ -93,7 +93,7 @@ public:
             mVoltageToPositionScales[potArray].SetSize(MUX_ARRAY_SIZE);
             mVoltageToPositionOffsets[potArray].SetSize(MUX_ARRAY_SIZE);
         }
-        mVoltagesExtra.SetSize(MUX_MAX_INDEX-2*MUX_ARRAY_SIZE+1);
+        mVoltagesExtra.SetSize(MUX_MAX_INDEX - 2 * MUX_ARRAY_SIZE+1);
 
         mPositionJointParam.Position().SetSize(MUX_ARRAY_SIZE);
 
@@ -353,13 +353,27 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetValue", MuxReset.GetValue);
         interfaceRequired->AddFunction("SetValue", MuxReset.SetValue);
-        interfaceRequired->AddFunction("DownUpDown", MuxReset.DownUpDown);
     }
     interfaceRequired = AddInterfaceRequired("MuxIncrement");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetValue", MuxIncrement.GetValue);
         interfaceRequired->AddFunction("SetValue", MuxIncrement.SetValue);
-        interfaceRequired->AddFunction("DownUpDown", MuxIncrement.DownUpDown);
+    }
+    interfaceRequired = AddInterfaceRequired("ControlPWM");
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("SetPWMDutyCycle", PWM.SetPWMDutyCycle);
+    }
+    interfaceRequired = AddInterfaceRequired("EnablePWM");
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("SetValue", PWM.EnablePWM);
+    }
+    interfaceRequired = AddInterfaceRequired("MotorUp");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::MotorUpEventHandler, this, "Button");
+    }
+    interfaceRequired = AddInterfaceRequired("MotorDown");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::MotorDownEventHandler, this, "Button");
     }
     interfaceRequired = AddInterfaceRequired("BaseFrame", MTS_OPTIONAL);
     if (interfaceRequired) {
@@ -447,6 +461,12 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         armInterface->AddCommandRead(&mtsIntuitiveResearchKitSUJ::GetRobotControlState,
                                      this, "GetRobotControlState", std::string(""));
 
+        // Add motor up/down for the motorized arm
+        if (type == mtsIntuitiveResearchKitSUJArmData::SUJ_MOTORIZED_PSM) {
+            armInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetLiftVelocity, this,
+                                          "SetLiftVelocity", 0.0);
+        }
+
         // create a required interface for each arm to handle clutch button
         std::stringstream interfaceName;
         interfaceName << "SUJ-Clutch-" << plugNumber;
@@ -504,6 +524,10 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
 
 void mtsIntuitiveResearchKitSUJ::Startup(void)
 {
+    MuxReset.SetValue(false);
+    MuxIncrement.SetValue(false);
+    PWM.EnablePWM(false);
+    SetLiftVelocity(0.0);
     this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 }
 
@@ -531,6 +555,9 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
 
 void mtsIntuitiveResearchKitSUJ::Cleanup(void)
 {
+    // Disable PWM
+    SetLiftVelocity(0.0);
+    PWM.EnablePWM(false);
     // make sure requested current is back to 0
     vctDoubleVec zero(4, 0.0);
     RobotIO.SetActuatorCurrent(zero);
@@ -557,10 +584,10 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
                 // toggle mux
                 mMuxTimer = currentTime + muxCycle;
                 if (mMuxIndexExpected == MUX_MAX_INDEX) {
-                    MuxReset.DownUpDown();
+                    MuxReset.SetValue(true);
                     mMuxIndexExpected = 0;
                 } else {
-                    MuxIncrement.DownUpDown();
+                    MuxIncrement.SetValue(true);
                     mMuxIndexExpected += 1;
                 }
                 // reset sample counter
@@ -689,6 +716,8 @@ void mtsIntuitiveResearchKitSUJ::SetState(const mtsIntuitiveResearchKitArmTypes:
     switch (newState) {
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
+        PWM.EnablePWM(false);
+        SetLiftVelocity(0.0);
         mRobotState = newState;
         DispatchStatus(this->GetName() + " not initialized");
         break;
@@ -733,6 +762,8 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
         RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints, 0.0));
         // enable power and set a flags to move to next step
         RobotIO.EnablePower();
+        // set lift velocity
+        SetLiftVelocity(0.0);
         mHomingPowerRequested = true;
         DispatchStatus(this->GetName() + " power requested");
         return;
@@ -747,11 +778,12 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
         if (actuatorAmplifiersStatus.All()) {
             DispatchStatus(this->GetName() + " power on");
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
-
             // reset mux
-            MuxReset.DownUpDown();
+            MuxReset.SetValue(true);
             Sleep(10.0 * cmn_ms);
             mMuxIndexExpected = 0;
+            // enable power on PWM
+            PWM.EnablePWM(true);
         } else {
             MessageEvents.Error(this->GetName() + " failed to enable power.");
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
@@ -826,6 +858,16 @@ void mtsIntuitiveResearchKitSUJ::GetRobotControlState(std::string & state) const
     state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->mRobotState);
 }
 
+void mtsIntuitiveResearchKitSUJ::SetLiftVelocity(const double & velocity)
+{
+    if ((velocity >= -1.0) && (velocity <= 1.0)) {
+        const double dutyCyle = 0.5 + velocity * 0.1;
+        PWM.SetPWMDutyCycle(dutyCyle);
+    } else {
+        CMN_LOG_CLASS_RUN_ERROR << "MotorVelocity: value must be between -1.0 and 1.0" << std::endl;
+    }
+}
+
 void mtsIntuitiveResearchKitSUJ::SetBaseFrame(const prmPositionCartesianGet & newBaseFrame)
 {
     mtsIntuitiveResearchKitSUJArmData * arm;
@@ -837,6 +879,24 @@ void mtsIntuitiveResearchKitSUJ::SetBaseFrame(const prmPositionCartesianGet & ne
             arm->mBaseFrame = base;
             arm->mBaseFrameValid = newBaseFrame.Valid();
         }
+    }
+}
+
+void mtsIntuitiveResearchKitSUJ::MotorDownEventHandler(const prmEventButton & button)
+{
+    if (button.Type() == prmEventButton::PRESSED) {
+        SetLiftVelocity(-1.0);
+    } else {
+        SetLiftVelocity(0.0);
+    }
+}
+
+void mtsIntuitiveResearchKitSUJ::MotorUpEventHandler(const prmEventButton & button)
+{
+    if (button.Type() == prmEventButton::PRESSED) {
+        SetLiftVelocity(1.0);
+    } else {
+        SetLiftVelocity(0.0);
     }
 }
 

@@ -191,6 +191,14 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
                                   IOComponentName(), "MuxReset");
         componentManager->Connect(Name(), "MuxIncrement",
                                   IOComponentName(), "MuxIncrement");
+        componentManager->Connect(Name(), "ControlPWM",
+                                  IOComponentName(), "ControlPWM");
+        componentManager->Connect(Name(), "EnablePWM",
+                                  IOComponentName(), "EnablePWM");
+        componentManager->Connect(Name(), "MotorUp",
+                                  IOComponentName(), "MotorUp");
+        componentManager->Connect(Name(), "MotorDown",
+                                  IOComponentName(), "MotorDown");
         componentManager->Connect(Name(), "SUJ-Clutch-1",
                                   IOComponentName(), "SUJ-Clutch-1");
         componentManager->Connect(Name(), "SUJ-Clutch-2",

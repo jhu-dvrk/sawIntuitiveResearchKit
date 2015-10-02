@@ -40,6 +40,7 @@ mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std
     InterfaceRequired->AddFunction("GetPositionJoint", GetPositionJoint);
     InterfaceRequired->AddFunction("GetBrakeCurrent", GetBrakeCurrent);
     InterfaceRequired->AddFunction("Clutch", Clutch);
+    InterfaceRequired->AddFunction("SetLiftVelocity", SetLiftVelocity, MTS_OPTIONAL);
     InterfaceRequired->AddFunction("GetVoltagesPrimary", GetPrimaryVoltages);
     InterfaceRequired->AddFunction("GetVoltagesSecondary", GetSecondaryVoltages);
     InterfaceRequired->AddFunction("GetVoltagesExtra", GetExtraVoltages);
@@ -68,6 +69,15 @@ mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std
     mJointsRecalibrationMatrix.SetAll(negativeInfinity);
 }
 
+void mtsIntuitiveResearchKitSUJQtWidget::Startup(void)
+{
+    mtsIntuitiveResearchKitArmQtWidget::Startup();
+    if (!SetLiftVelocity.IsValid()) {
+        QPBLiftDown->setEnabled(false);
+        QPBLiftUp->setEnabled(false);
+    }
+}
+
 void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
 {
     QGridLayout * jointLayout = new QGridLayout;
@@ -78,6 +88,13 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
     QVJointWidget->SetPrecision(5);
 
     QPushButton * clutchButton = new QPushButton("Clutch");
+    QPBLiftDown = new QPushButton("Lift Down");
+    QPBLiftUp = new QPushButton("Lift Up");
+    QHBoxLayout * clutchAndLift = new QHBoxLayout();
+    clutchAndLift->addWidget(clutchButton);
+    clutchAndLift->addWidget(QPBLiftDown);
+    clutchAndLift->addWidget(QPBLiftUp);
+
     QPushButton * ManualRecalibrationButton = new QPushButton("Manual Recalibration");
 
     QLabel * labelBrakeCurrent = new QLabel("Brake (mA)");
@@ -93,23 +110,33 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
     QVExtraVoltageWidget = new vctQtWidgetDynamicVectorDoubleRead();
     QVExtraVoltageWidget->SetPrecision(5);
 
-    jointLayout->addWidget(labelJoints,1,0);
-    jointLayout->addWidget(QVJointWidget,1,1);
-    jointLayout->addWidget(labelBrakeCurrent,2,0);
-    jointLayout->addWidget(QVBrakeCurrentWidget,2,1);
-    jointLayout->addWidget(clutchButton,3,1);
-    jointLayout->addWidget(labelRecalibrationInputStart,4,0);
-    jointLayout->addWidget(QVPotentiometerRecalibrationStartWidget,4,1);
-    jointLayout->addWidget(labelRecalibrationInputFinish,5,0);
-    jointLayout->addWidget(QVPotentiometerRecalibrationFinishWidget,5,1);
-    jointLayout->addWidget(ManualRecalibrationButton,6,1);
-    jointLayout->addWidget(labelExtraVoltages,7,0);
-    jointLayout->addWidget(QVExtraVoltageWidget,7,1);
+    jointLayout->addWidget(labelJoints, 1, 0);
+    jointLayout->addWidget(QVJointWidget, 1, 1);
+    jointLayout->addWidget(labelBrakeCurrent, 2, 0);
+    jointLayout->addWidget(QVBrakeCurrentWidget, 2, 1);
+    jointLayout->addLayout(clutchAndLift, 3, 1);
+    jointLayout->addWidget(labelRecalibrationInputStart, 4, 0);
+    jointLayout->addWidget(QVPotentiometerRecalibrationStartWidget, 4, 1);
+    jointLayout->addWidget(labelRecalibrationInputFinish, 5, 0);
+    jointLayout->addWidget(QVPotentiometerRecalibrationFinishWidget, 5, 1);
+    jointLayout->addWidget(ManualRecalibrationButton, 6, 1);
+    jointLayout->addWidget(labelExtraVoltages, 7, 0);
+    jointLayout->addWidget(QVExtraVoltageWidget, 7, 1);
 
     connect(clutchButton, SIGNAL(pressed()),
             this, SLOT(SlotClutchPressed()));
     connect(clutchButton, SIGNAL(released()),
             this, SLOT(SlotClutchReleased()));
+
+    connect(QPBLiftDown, SIGNAL(pressed()),
+            this, SLOT(SlotVelocityDownPressed()));
+    connect(QPBLiftDown, SIGNAL(released()),
+            this, SLOT(SlotVelocityReleased()));
+    connect(QPBLiftUp, SIGNAL(pressed()),
+            this, SLOT(SlotVelocityUpPressed()));
+    connect(QPBLiftUp, SIGNAL(released()),
+            this, SLOT(SlotVelocityReleased()));
+
     connect(QVPotentiometerRecalibrationStartWidget, SIGNAL(valueChanged()),
             this, SLOT(SlotRecalibrationStartChanged()));
     connect(QVPotentiometerRecalibrationFinishWidget, SIGNAL(valueChanged()),
@@ -151,6 +178,21 @@ void mtsIntuitiveResearchKitSUJQtWidget::SlotClutchPressed(void)
 void mtsIntuitiveResearchKitSUJQtWidget::SlotClutchReleased(void)
 {
     Clutch(false);
+}
+
+void mtsIntuitiveResearchKitSUJQtWidget::SlotVelocityDownPressed(void)
+{
+    SetLiftVelocity(-1.0);
+}
+
+void mtsIntuitiveResearchKitSUJQtWidget::SlotVelocityUpPressed(void)
+{
+    SetLiftVelocity(1.0);
+}
+
+void mtsIntuitiveResearchKitSUJQtWidget::SlotVelocityReleased(void)
+{
+    SetLiftVelocity(0.0);
 }
 
 void mtsIntuitiveResearchKitSUJQtWidget::SlotRecalibrationStartChanged(void)

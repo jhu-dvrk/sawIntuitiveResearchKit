@@ -73,11 +73,20 @@ protected:
     /*! Convert enum to string using function provided by cisstDataGenerator. */
     void GetRobotControlState(std::string & state) const;
 
+    /*! Set velocity for motorized PSM lift. normalized between -1.0 and 1.0. */
+    void SetLiftVelocity(const double & velocity);
+
     /*! Set base coordinate frame, this will be added to the kinematics of all SUJs except ECM. */
     void SetBaseFrame(const prmPositionCartesianGet & newBaseFrame);
 
     /*! Event handler for PID errors. */
     void ErrorEventHandler(const std::string & message);
+
+    /*! Motor down button. */
+    void MotorDownEventHandler(const prmEventButton & button);
+
+    /*! Motor up button. */
+    void MotorUpEventHandler(const prmEventButton & button);
 
     // Required interface
     struct {
@@ -102,18 +111,22 @@ protected:
     struct {
         mtsFunctionRead GetValue;
         mtsFunctionWrite SetValue;
-        mtsFunctionVoid DownUpDown;
     } MuxReset;
 
     struct {
         mtsFunctionRead GetValue;
         mtsFunctionWrite SetValue;
-        mtsFunctionVoid DownUpDown;
     } MuxIncrement;
 
     double mMuxTimer;
     vctBoolVec mMuxState;
     size_t mMuxIndex, mMuxIndexExpected;
+
+    // Functions to control motor on SUJ3
+    struct {
+        mtsFunctionWrite EnablePWM;
+        mtsFunctionWrite SetPWMDutyCycle;
+    } PWM;
 
     mtsIntuitiveResearchKitArmTypes::RobotStateType mRobotState;
 
