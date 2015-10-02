@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Config>
+<Config Version="2">
    <Robot Name="SUJ" NumOfActuator="4" NumOfJoint="4" Type="io-only">
       <Actuator ActuatorID="0" AxisID="0" BoardID="12">
          <Drive>
@@ -43,12 +43,12 @@
       </Actuator>
    </Robot>
    <!-- Digital Input Configuration -->
-   <DigitalIn BitID="0" BoardID="12" Debounce="0" Name="SUJ-Clutch-1" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="1" BoardID="12" Debounce="0" Name="SUJ-Clutch-2" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="2" BoardID="12" Debounce="0" Name="SUJ-Clutch-3" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="3" BoardID="12" Debounce="0" Name="SUJ-Clutch-4" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="4" BoardID="12" Debounce="0" Name="SUJ-D10" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="5" BoardID="12" Debounce="0" Name="SUJ-D11" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="0" BoardID="12" Debounce="0" Name="SUJ-Clutch-1" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="1" BoardID="12" Debounce="0" Name="SUJ-Clutch-2" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="2" BoardID="12" Debounce="0" Name="SUJ-Clutch-3" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="3" BoardID="12" Debounce="0" Name="SUJ-Clutch-4" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="4" BoardID="12" Debounce="0" Name="MotorDown" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="5" BoardID="12" Debounce="0" Name="MotorUp"   Pressed="0" Trigger="all"/>
    <DigitalIn BitID="6" BoardID="12" Debounce="0" Name="SUJ-D12" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="7" BoardID="12" Debounce="0" Name="SUJ-D13" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="8" BoardID="12" Debounce="0" Name="SUJ-D20" Pressed="0" Trigger="all"/>
@@ -56,8 +56,8 @@
    <DigitalIn BitID="10" BoardID="12" Debounce="0" Name="SUJ-D22" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="11" BoardID="12" Debounce="0" Name="SUJ-D23" Pressed="0" Trigger="all"/>
    <!-- Digital Output Configuration -->
-   <DigitalOut BitID="0" BoardID="12" Name="SUJ-DOUT-00"/>
-   <DigitalOut BitID="1" BoardID="12" Name="SUJ-DOUT-01"/>
-   <DigitalOut BitID="2" BoardID="12" Name="MuxIncrement"/>
-   <DigitalOut BitID="3" BoardID="12" Name="MuxReset"/>
+   <DigitalOut BitID="0" BoardID="12" Name="MuxReset" HighDuration="0.0001"/>
+   <DigitalOut BitID="1" BoardID="12" Name="MuxIncrement" HighDuration = "0.0001"/>
+   <DigitalOut BitID="2" BoardID="12" Name="ControlPWM" Frequency="40000.0"/>
+   <DigitalOut BitID="3" BoardID="12" Name="EnablePWM"/>
 </Config>

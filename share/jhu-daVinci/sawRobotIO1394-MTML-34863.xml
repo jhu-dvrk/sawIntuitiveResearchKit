@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Config>
+<Config Version="2">
    <Robot Name="MTML" NumOfActuator="8" NumOfJoint="8" SN="34863">
       <Actuator ActuatorID="0" AxisID="0" BoardID="0" Type="Revolute">
          <Drive>
@@ -9,7 +9,7 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="-0.00141933"/>
+            <BitsToPosSI Scale="-0.00141933"/>
             <BitsToDeltaPosSI Offset="0" Scale="-4360.20"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
@@ -27,7 +27,7 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.00180433"/>
+            <BitsToPosSI Scale="0.00180433"/>
             <BitsToDeltaPosSI Offset="0" Scale="5542.90"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
@@ -45,7 +45,7 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.00150678"/>
+            <BitsToPosSI Scale="0.00150678"/>
             <BitsToDeltaPosSI Offset="0" Scale="4628.83"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
@@ -63,7 +63,7 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.00854701"/>
+            <BitsToPosSI Scale="0.00854701"/>
             <BitsToDeltaPosSI Offset="0" Scale="26256.41"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
@@ -99,7 +99,7 @@
             <MaxCurrent Unit="A" Value="0.590"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.16963209"/>
+            <BitsToPosSI Scale="0.16963209"/>
             <BitsToDeltaPosSI Offset="0" Scale="521109.77"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="64"/>
@@ -117,7 +117,7 @@
             <MaxCurrent Unit="A" Value="0.407"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="-0.33926417"/>
+            <BitsToPosSI Scale="-0.33926417"/>
             <BitsToDeltaPosSI Offset="0" Scale="-1042219.54"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="64"/>
@@ -135,7 +135,7 @@
             <MaxCurrent Unit="A" Value="0.000"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="360.00000000"/>
+            <BitsToPosSI Scale="360.00000000"/>
             <BitsToDeltaPosSI Offset="0" Scale="1105920000.00"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="1"/>

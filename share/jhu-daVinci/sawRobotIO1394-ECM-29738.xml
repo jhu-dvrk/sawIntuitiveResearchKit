@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Config>
+<Config Version="2">
    <Robot Name="ECM" NumOfActuator="4" NumOfJoint="4" SN="29738">
       <Actuator ActuatorID="0" AxisID="0" BoardID="4" Type="Revolute">
          <Drive>
@@ -18,7 +18,7 @@
             <EngagedCurrent Unit="A" Value="0.000"/>
          </AnalogBrake>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.00037500"/>
+            <BitsToPosSI Scale="0.00037500"/>
             <BitsToDeltaPosSI Offset="0" Scale="1152.00"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
@@ -45,7 +45,7 @@
             <EngagedCurrent Unit="A" Value="0.000"/>
          </AnalogBrake>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.00037500"/>
+            <BitsToPosSI Scale="0.00037500"/>
             <BitsToDeltaPosSI Offset="0" Scale="1152.00"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
@@ -72,7 +72,7 @@
             <EngagedCurrent Unit="A" Value="0.000"/>
          </AnalogBrake>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="-0.00357188"/>
+            <BitsToPosSI Scale="-0.00357188"/>
             <BitsToDeltaPosSI Offset="0" Scale="-10972.80"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="640"/>
@@ -90,7 +90,7 @@
             <MaxCurrent Unit="A" Value="0.590"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.01874063"/>
+            <BitsToPosSI Scale="0.01874063"/>
             <BitsToDeltaPosSI Offset="0" Scale="57571.21"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="64"/>
@@ -128,9 +128,9 @@
          </JointToActuatorTorque>
       </Coupling>
    </Robot><!--Digital Input Configuration-->
-   <DigitalIn BitID="0" BoardID="4" Debounce="0.2" Name="ECM-ManipClutch" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="0" BoardID="4" Debounce="0.2" Name="ECM-ManipClutch" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="1" BoardID="4" Debounce="0" Name="ECM-D01" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="2" BoardID="4" Debounce="0.2" Name="ECM-SUJClutch" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="2" BoardID="4" Debounce="0.2" Name="ECM-SUJClutch" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="3" BoardID="4" Debounce="0" Name="ECM-D03" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="4" BoardID="4" Debounce="0" Name="ECM-D10" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="5" BoardID="4" Debounce="0" Name="ECM-D11" Pressed="0" Trigger="all"/>
