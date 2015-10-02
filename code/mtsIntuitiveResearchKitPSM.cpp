@@ -183,7 +183,6 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         this->MessageEvents.Status(this->GetName() + " arm calibrated");
         // check if adpater is present and trigger new state
         Adapter.GetButton(Adapter.IsPresent);
-        Adapter.IsPresent = !Adapter.IsPresent;
         if (Adapter.IsPresent) {
             SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER);
         }
@@ -210,7 +209,6 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         }
         // if the tool is present, the adapter is already engadged
         Tool.GetButton(Tool.IsPresent);
-        Tool.IsPresent = !Tool.IsPresent;
         if (Tool.IsPresent) {
             SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
         } else {
@@ -224,7 +222,6 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         this->MessageEvents.Status(this->GetName() + " adapter engaged");
         // check if tool is present and trigger new state
         Tool.GetButton(Tool.IsPresent);
-        Tool.IsPresent = !Tool.IsPresent;
         if (Tool.IsPresent) {
             SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL);
         }
@@ -377,7 +374,6 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         JointTrajectory.Goal.ForceAssign(JointGet);
         // move to zero position only there is no tool present
         Tool.GetButton(Tool.IsPresent);
-        Tool.IsPresent = !Tool.IsPresent;
         if (!Tool.IsPresent) {
             JointTrajectory.Goal.Element(0) = 0.0;
             JointTrajectory.Goal.Element(1) = 0.0;
