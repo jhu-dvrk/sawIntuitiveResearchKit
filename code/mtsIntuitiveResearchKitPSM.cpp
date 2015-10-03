@@ -49,6 +49,11 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
         const double difference = JointGet[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
+        // make sure we are away from RCM point, this test is
+        // simplistic and might not work with all tools
+        if (jointSet[2] < 40.0 * cmn_mm) {
+            jointSet[2] = 40.0 * cmn_mm;
+        }
         return robManipulator::ESUCCESS;
     }
     return robManipulator::EFAILURE;
@@ -300,24 +305,27 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
           return;
       }
       // check that the tool is inserted deep enough
-      if (JointGet.Element(2) < 80.0 * cmn_mm) {
-          MessageEvents.Error(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula");
-          break;
-      }
-      RobotState = newState;
-
-      // init CartesianSet to current pose
-      vctDoubleRot3 tmprot;
-      tmprot.FromNormalized(CartesianGet.Rotation());
-      CartesianSetParam.SetGoal(CartesianGet.Translation());
-      CartesianSetParam.SetGoal(tmprot);
-
-      if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
-          IsGoalSet = false;
-          MessageEvents.Status(this->GetName() + " position cartesian");
+      if (JointGet.Element(2) < 40.0 * cmn_mm) {
+          MessageEvents.Error(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula (joint 3 at 40 mm)");
       } else {
-          JointTrajectory.EndTime = 0.0;
-          MessageEvents.Status(this->GetName() + " position goal cartesian");
+          if (JointGet.Element(2) < 50.0 * cmn_mm) {
+              MessageEvents.Warning(this->GetName() + " cartesian mode started close to RCM (joint 3 at 50 mm), joint 3 is clamped at 40 mm to avoid moving inside cannula.");
+          }
+          RobotState = newState;
+
+          // init CartesianSet to current pose
+          vctDoubleRot3 tmprot;
+          tmprot.FromNormalized(CartesianGet.Rotation());
+          CartesianSetParam.SetGoal(CartesianGet.Translation());
+          CartesianSetParam.SetGoal(tmprot);
+
+          if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
+              IsGoalSet = false;
+              MessageEvents.Status(this->GetName() + " position cartesian");
+          } else {
+              JointTrajectory.EndTime = 0.0;
+              MessageEvents.Status(this->GetName() + " position goal cartesian");
+          }
       }
       break;
     }
