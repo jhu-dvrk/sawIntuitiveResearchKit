@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Config>
+<Config Version="2">
    <Robot Name="MTML" NumOfActuator="8" NumOfJoint="8" SN="22723">
       <Actuator ActuatorID="0" AxisID="0" BoardID="0" Type="Revolute">
          <Drive>
@@ -9,13 +9,13 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="-0.00141933"/>
+            <BitsToPosSI Scale="-0.00141933"/>
             <BitsToDeltaPosSI Offset="0" Scale="-4360.20"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="-142.811392" Scale="75.985306"/>
          </AnalogIn>
       </Actuator>
@@ -27,13 +27,13 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.00180433"/>
+            <BitsToPosSI Scale="0.00180433"/>
             <BitsToDeltaPosSI Offset="0" Scale="5542.90"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="-130.136305" Scale="75.724547"/>
          </AnalogIn>
       </Actuator>
@@ -45,13 +45,13 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.00150678"/>
+            <BitsToPosSI Scale="0.00150678"/>
             <BitsToDeltaPosSI Offset="0" Scale="4628.83"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="-143.460725" Scale="75.881002"/>
          </AnalogIn>
       </Actuator>
@@ -63,13 +63,13 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.00854701"/>
+            <BitsToPosSI Scale="0.00854701"/>
             <BitsToDeltaPosSI Offset="0" Scale="26256.41"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="100.933105" Scale="-76.558977"/>
          </AnalogIn>
       </Actuator>
@@ -81,13 +81,13 @@
             <MaxCurrent Unit="A" Value="0.800"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="-0.16963209"/>
+            <BitsToPosSI Scale="-0.16963209"/>
             <BitsToDeltaPosSI Offset="0" Scale="-521109.77"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="64"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="227.055840" Scale="-79.479483"/>
          </AnalogIn>
       </Actuator>
@@ -99,13 +99,13 @@
             <MaxCurrent Unit="A" Value="0.590"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.16963209"/>
+            <BitsToPosSI Scale="0.16963209"/>
             <BitsToDeltaPosSI Offset="0" Scale="521109.77"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="64"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="-66.463104" Scale="78.227838"/>
          </AnalogIn>
       </Actuator>
@@ -117,13 +117,13 @@
             <MaxCurrent Unit="A" Value="0.407"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="-0.33926417"/>
+            <BitsToPosSI Scale="-0.33926417"/>
             <BitsToDeltaPosSI Offset="0" Scale="-1042219.54"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="64"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="-68.542998" Scale="40.052653"/>
          </AnalogIn>
       </Actuator>
@@ -135,13 +135,13 @@
             <MaxCurrent Unit="A" Value="0.000"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="360.00000000"/>
+            <BitsToPosSI Scale="360.00000000"/>
             <BitsToDeltaPosSI Offset="0" Scale="1105920000.00"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="1"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="429.750353" Scale="-137.195789"/>
          </AnalogIn>
       </Actuator>

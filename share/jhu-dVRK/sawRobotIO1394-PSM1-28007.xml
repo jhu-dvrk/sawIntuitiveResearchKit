@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Config>
+<Config Version="2">
    <Robot Name="PSM1" NumOfActuator="7" NumOfJoint="7" SN="28007">
       <Actuator ActuatorID="0" AxisID="0" BoardID="6" Type="Revolute">
          <Drive>
@@ -9,13 +9,13 @@
             <MaxCurrent Unit="A" Value="1.340"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="-0.00044248"/>
+            <BitsToPosSI Scale="-0.00044248"/>
             <BitsToDeltaPosSI Offset="0" Scale="-1359.29"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="14400"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="99.177447" Scale="-44.485564"/>
          </AnalogIn>
       </Actuator>
@@ -27,13 +27,13 @@
             <MaxCurrent Unit="A" Value="1.340"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="-0.00044248"/>
+            <BitsToPosSI Scale="-0.00044248"/>
             <BitsToDeltaPosSI Offset="0" Scale="-1359.29"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="14400"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="65.128284" Scale="-29.152907"/>
          </AnalogIn>
       </Actuator>
@@ -45,13 +45,13 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.00129629"/>
+            <BitsToPosSI Scale="0.00129629"/>
             <BitsToDeltaPosSI Offset="0" Scale="3982.21"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="14400"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="-17.013007" Scale="59.164470"/>
          </AnalogIn>
       </Actuator>
@@ -63,13 +63,13 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="-0.00768574"/>
+            <BitsToPosSI Scale="-0.00768574"/>
             <BitsToDeltaPosSI Offset="0" Scale="-23610.59"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="177.360346" Scale="-78.540749"/>
          </AnalogIn>
       </Actuator>
@@ -81,13 +81,13 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="-0.00768574"/>
+            <BitsToPosSI Scale="-0.00768574"/>
             <BitsToDeltaPosSI Offset="0" Scale="-23610.59"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="176.744244" Scale="-78.175686"/>
          </AnalogIn>
       </Actuator>
@@ -99,13 +99,13 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.00768574"/>
+            <BitsToPosSI Scale="0.00768574"/>
             <BitsToDeltaPosSI Offset="0" Scale="23610.59"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="174.881215" Scale="-79.062268"/>
          </AnalogIn>
       </Actuator>
@@ -117,13 +117,13 @@
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="0.00768574"/>
+            <BitsToPosSI Scale="0.00768574"/>
             <BitsToDeltaPosSI Offset="0" Scale="23610.59"/>
             <BitsToDeltaT Offset="0" Scale="-1.000"/>
             <CountsPerTurn Value="4000"/>
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
             <VoltsToPosSI Offset="176.724019" Scale="-78.853660"/>
          </AnalogIn>
       </Actuator>
@@ -167,9 +167,9 @@
          </JointToActuatorTorque>
       </Coupling>
    </Robot><!--Digital Input Configuration-->
-   <DigitalIn BitID="0" BoardID="6" Debounce="0.2" Name="PSM1-SUJClutch" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="0" BoardID="6" Debounce="0.2" Name="PSM1-SUJClutch" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="1" BoardID="6" Debounce="0" Name="PSM1-D01" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="2" BoardID="6" Debounce="0.2" Name="PSM1-ManipClutch" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="2" BoardID="6" Debounce="0.2" Name="PSM1-ManipClutch" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="3" BoardID="6" Debounce="0" Name="PSM1-D03" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="4" BoardID="6" Debounce="0" Name="PSM1-D10" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="5" BoardID="6" Debounce="0" Name="PSM1-D11" Pressed="0" Trigger="all"/>
@@ -186,9 +186,9 @@
    <DigitalIn BitID="4" BoardID="7" Debounce="0" Name="PSM1-D40" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="5" BoardID="7" Debounce="0" Name="PSM1-D41" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="6" BoardID="7" Debounce="0" Name="PSM1-D42" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="7" BoardID="7" Debounce="1.5" Name="PSM1-Tool" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="7" BoardID="7" Debounce="1.5" Name="PSM1-Tool" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="8" BoardID="7" Debounce="0" Name="PSM1-D50" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="9" BoardID="7" Debounce="0" Name="PSM1-D51" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="10" BoardID="7" Debounce="1.5" Name="PSM1-Adapter" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="10" BoardID="7" Debounce="1.5" Name="PSM1-Adapter" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="11" BoardID="7" Debounce="0" Name="PSM1-D53" Pressed="0" Trigger="all"/>
 </Config>
