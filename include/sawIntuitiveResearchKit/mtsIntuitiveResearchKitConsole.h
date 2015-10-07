@@ -176,12 +176,10 @@ protected:
     typedef std::map<std::string, TeleopPSM *> TeleopList;
     TeleopList mTeleops;
 
-    /*! Utility function to test if a file exists and log the results */
-    bool FileExists(const std::string & description, const std::string & filename) const;
-
     /*! Find all arm data from JSON configuration. */
     bool ConfigureArmJSON(const Json::Value & jsonArm,
-                          const std::string & ioComponentName);
+                          const std::string & ioComponentName,
+                          const cmnPath & configPath);
     bool AddArmInterfaces(Arm * arm);
 
     bool ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop);

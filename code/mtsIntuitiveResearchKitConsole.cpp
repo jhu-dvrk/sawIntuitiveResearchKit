@@ -328,6 +328,12 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         return;
     }
 
+    // extract path of main json config file to search other files relative to it
+    cmnPath configPath(cmnPath::GetWorkingDirectory());
+    std::string fullname = configPath.Find(filename);
+    std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
+    configPath.Add(configDir);
+
     // IO default settings
     double periodIO = 0.5 * cmn_ms;
     int firewirePort = 0;
@@ -347,7 +353,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
     const Json::Value arms = jsonConfig["arms"];
     for (unsigned int index = 0; index < arms.size(); ++index) {
-        if (!ConfigureArmJSON(arms[index], io->GetName())) {
+        if (!ConfigureArmJSON(arms[index], io->GetName(), configPath)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure arms[" << index << "]" << std::endl;
             return;
         }
@@ -631,21 +637,9 @@ bool mtsIntuitiveResearchKitConsole::ConnectFootpedalInterfaces(void)
     return true;
 }
 
-bool mtsIntuitiveResearchKitConsole::FileExists(const std::string & description, const std::string & filename) const
-{
-    if (!cmnPath::Exists(filename)) {
-        CMN_LOG_CLASS_INIT_ERROR << this->GetName() << ", file not found for " << description
-                                 << ": " << filename << std::endl;
-        return false;
-    } else {
-        CMN_LOG_CLASS_INIT_VERBOSE << this->GetName() << ", file found for " << description
-                                   << ": " << filename << std::endl;
-        return true;
-    }
-}
-
 bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonArm,
-                                                      const std::string & ioComponentName)
+                                                      const std::string & ioComponentName,
+                                                      const cmnPath & configPath)
 {
     const std::string armName = jsonArm["name"].asString();
     const ArmList::iterator armIterator = mArms.find(armName);
@@ -686,8 +680,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     }
     jsonValue = jsonArm["io"];
     if (!jsonValue.empty()) {
-        armPointer->mIOConfigurationFile = jsonValue.asString();
-        if (!FileExists(armName + " io", armPointer->mIOConfigurationFile)) {
+        armPointer->mIOConfigurationFile = configPath.Find(jsonValue.asString());
+        if (armPointer->mIOConfigurationFile == "") {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO file " << jsonValue.asString() << std::endl;
             return false;
         }
     } else {
@@ -703,8 +698,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         || (armPointer->mType == Arm::ARM_ECM)) {
         jsonValue = jsonArm["pid"];
         if (!jsonValue.empty()) {
-            armPointer->mPIDConfigurationFile = jsonValue.asString();
-            if (!FileExists(armName + " PID", armPointer->mPIDConfigurationFile)) {
+            armPointer->mPIDConfigurationFile = configPath.Find(jsonValue.asString());
+            if (armPointer->mPIDConfigurationFile == "") {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find PID file " << jsonValue.asString() << std::endl;
                 return false;
             }
         } else {
@@ -715,8 +711,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     }
     jsonValue = jsonArm["kinematic"];
     if (!jsonValue.empty()) {
-        armPointer->mArmConfigurationFile = jsonValue.asString();
-        if (!FileExists(armName + " kinematic", armPointer->mArmConfigurationFile)) {
+        armPointer->mArmConfigurationFile = configPath.Find(jsonValue.asString());
+        if (armPointer->mArmConfigurationFile == "") {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find Kinematic file " << jsonValue.asString() << std::endl;
             return false;
         }
     } else {

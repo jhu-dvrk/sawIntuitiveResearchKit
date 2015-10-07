@@ -15,9 +15,9 @@
         {
             "name": "PSM1",
             "type": "PSM",
-            "io": "jhu-dVRK/sawRobotIO1394-PSM1-28007.xml",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "dvpsm.rob"
+            "io": "sawRobotIO1394-PSM1-28007.xml",
+            "pid": "../sawControllersPID-PSM.xml",
+            "kinematic": "../dvpsm.rob"
         }
     ]
 }

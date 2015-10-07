@@ -15,17 +15,17 @@
         {
             "name": "PSM1",
             "type": "PSM",
-            "io": "jhu-dVRK/sawRobotIO1394-PSM1-28007.xml",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "dvpsm.rob"
+            "io": "sawRobotIO1394-PSM1-28007.xml",
+            "pid": "../sawControllersPID-PSM.xml",
+            "kinematic": "../dvpsm.rob"
         }
         ,
         {
             "name": "MTMR",
             "type": "MTM",
-            "io": "jhu-dVRK/sawRobotIO1394-MTMR-28247-foot-pedal.xml",
-            "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "dvmtm.rob"
+            "io": "sawRobotIO1394-MTMR-28247-foot-pedal.xml",
+            "pid": "../sawControllersPID-MTMR.xml",
+            "kinematic": "../dvmtm.rob"
         }
     ]
     ,
