@@ -10,8 +10,8 @@
         {
             "name": "SUJ",
             "type": "SUJ",
-            "io": "jhu-daVinci/sawRobotIO1394-SUJ.xml",
-            "kinematic": "jhu-daVinci/suj-calibrated.json"
+            "io": "sawRobotIO1394-SUJ.xml",
+            "kinematic": "suj-calibrated.json"
         }
     ]
 }

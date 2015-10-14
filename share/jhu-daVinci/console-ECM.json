@@ -10,9 +10,9 @@
         {
             "name": "ECM",
             "type": "ECM",
-            "io": "jhu-daVinci/sawRobotIO1394-ECM-29738.xml",
-            "pid": "sawControllersPID-ECM.xml",
-            "kinematic": "dvecm.rob"
+            "io": "sawRobotIO1394-ECM-29738.xml",
+            "pid": "../sawControllersPID-ECM.xml",
+            "kinematic": "../dvecm.rob"
         }
     ]
 }

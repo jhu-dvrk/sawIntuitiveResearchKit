@@ -15,8 +15,8 @@
         {
             "name": "SUJ",
             "type": "SUJ",
-            "io": "jhu-daVinci/sawRobotIO1394-SUJ.xml",
-            "kinematic": "jhu-daVinci/suj-calibrated.json",
+            "io": "sawRobotIO1394-SUJ.xml",
+            "kinematic": "suj-calibrated.json",
             "base-frame": {
                 "component": "ECM",
                 "interface": "Robot"
@@ -26,9 +26,9 @@
         {
             "name": "PSM1",
             "type": "PSM",
-            "io": "jhu-daVinci/sawRobotIO1394-PSM1-49695.xml",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "dvpsm.rob",
+            "io": "sawRobotIO1394-PSM1-49695.xml",
+            "pid": "../sawControllersPID-PSM.xml",
+            "kinematic": "../dvpsm.rob",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "PSM1"
@@ -38,9 +38,9 @@
         {
             "name": "ECM",
             "type": "ECM",
-            "io": "jhu-daVinci/sawRobotIO1394-ECM-29738.xml",
-            "pid": "sawControllersPID-ECM.xml",
-            "kinematic": "dvecm.rob",
+            "io": "sawRobotIO1394-ECM-29738.xml",
+            "pid": "../sawControllersPID-ECM.xml",
+            "kinematic": "../dvecm.rob",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "ECM"
@@ -50,9 +50,9 @@
         {
             "name": "MTMR",
             "type": "MTM",
-            "io": "jhu-daVinci/sawRobotIO1394-MTMR-22403-foot-pedal.xml",
-            "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "dvmtm.rob"
+            "io": "sawRobotIO1394-MTMR-22403-foot-pedal.xml",
+            "pid": "../sawControllersPID-MTMR.xml",
+            "kinematic": "../dvmtm.rob"
         }
     ]
     ,

@@ -10,9 +10,9 @@
         {
             "name": "PSM2",
             "type": "PSM",
-            "io": "jhu-daVinci/sawRobotIO1394-PSM2-32204.xml",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "dvpsm.rob"
+            "io": "sawRobotIO1394-PSM2-32204.xml",
+            "pid": "../sawControllersPID-PSM.xml",
+            "kinematic": "../dvpsm.rob"
         }
     ]
 }

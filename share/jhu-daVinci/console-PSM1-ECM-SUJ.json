@@ -10,8 +10,8 @@
         {
             "name": "SUJ",
             "type": "SUJ",
-            "io": "jhu-daVinci/sawRobotIO1394-SUJ.xml",
-            "kinematic": "jhu-daVinci/suj_modified.json",
+            "io": "sawRobotIO1394-SUJ.xml",
+            "kinematic": "suj_modified.json",
             "base-frame": {
                 "component": "ECM",
                 "interface": "Robot"
@@ -21,9 +21,9 @@
         {
             "name": "PSM1",
             "type": "PSM",
-            "io": "jhu-daVinci/sawRobotIO1394-PSM1-49695.xml",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "dvpsm.rob",
+            "io": "sawRobotIO1394-PSM1-49695.xml",
+            "pid": "../sawControllersPID-PSM.xml",
+            "kinematic": "../dvpsm.rob",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "PSM1"
@@ -33,9 +33,9 @@
         {
             "name": "ECM",
             "type": "ECM",
-            "io": "jhu-daVinci/sawRobotIO1394-ECM-29738.xml",
-            "pid": "sawControllersPID-ECM.xml",
-            "kinematic": "dvecm.rob",
+            "io": "sawRobotIO1394-ECM-29738.xml",
+            "pid": "../sawControllersPID-ECM.xml",
+            "kinematic": "../dvecm.rob",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "ECM"
