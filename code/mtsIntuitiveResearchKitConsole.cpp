@@ -338,16 +338,22 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     double periodIO = 0.5 * cmn_ms;
     int firewirePort = 0;
     // get user preferences
-    jsonValue = jsonConfig["io"]["period"];
+    jsonValue = jsonConfig["io"];
     if (!jsonValue.empty()) {
-        periodIO = jsonValue.asDouble();
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: looking for user provided io:period and io:port" << std::endl;
+        jsonValue = jsonConfig["io"]["period"];
+        if (!jsonValue.empty()) {
+            periodIO = jsonValue.asDouble();
+        }
+        jsonValue = jsonConfig["io"]["port"];
+        if (!jsonValue.empty()) {
+            firewirePort = jsonValue.asInt();
+        }
+    } else {
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: using default io:period and io:port" << std::endl;
     }
-    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: period IO is " << periodIO << std::endl;
-    jsonValue = jsonConfig["io"]["port"];
-    if (!jsonValue.empty()) {
-        firewirePort = jsonValue.asInt();
-    }
-    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: FireWire port is " << firewirePort << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: period IO is " << periodIO << std::endl
+                               << "Configure: FireWire port is " << firewirePort << std::endl;
     // create IO
     mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, firewirePort);
 
