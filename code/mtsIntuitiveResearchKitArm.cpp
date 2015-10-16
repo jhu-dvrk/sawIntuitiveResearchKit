@@ -525,16 +525,36 @@ void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesian
 void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition)
 {
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN)) {
+
+        const size_t nbJoints = this->NumberOfJoints();
+        const size_t nbJointsKin = this->NumberOfJointsKinematics();
+        const double currentTime = this->StateTable.GetTic();
+
         // copy current position
-        vctDoubleVec jointSet(JointGet.Ref(NumberOfJointsKinematics()));
+        vctDoubleVec jointSet(JointGet.Ref(nbJointsKin));
 
         // compute desired slave position
         CartesianPositionFrm.From(newPosition.Goal());
 
         if (this->InverseKinematics(jointSet, BaseFrame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
             // resize to proper number of joints
-            jointSet.resize(NumberOfJoints());
+            jointSet.resize(nbJoints);
 
+            // keep values of joints not handled by kinematics (PSM jaw)
+            if (nbJoints > nbJointsKin) {
+                // check if there is a trajectory active
+                if (currentTime >= JointTrajectory.EndTime) {
+                    // past any trajectory, use last desired joint position
+                    jointSet.Ref(nbJoints - nbJointsKin,
+                                 nbJointsKin).Assign(JointGetDesired.Ref(nbJoints - nbJointsKin,
+                                                                         nbJointsKin));
+                } else {
+                    // there is an ongoing trajectory, use the trajectory goal
+                    jointSet.Ref(nbJoints - nbJointsKin,
+                                 nbJointsKin).Assign(JointTrajectory.Goal.Ref(nbJoints - nbJointsKin,
+                                                                              nbJointsKin));
+                }
+            }
             const double currentTime = this->StateTable.GetTic();
             // starting point is last requested to PID component
             JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
