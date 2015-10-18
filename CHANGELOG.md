@@ -1,6 +1,27 @@
 Change log
 ==========
 
+1.2.0 (2015-10-18)
+==================
+
+* API changes:
+  * Fixed digital input bug for state pressed.  Need to regenerate XML IO configuration files!
+  * New PID has improved velosity estimation.  Need to use new PID XML files or at least update user files!
+* Deprecated features:
+  * None
+* New features:
+  * Console class can now be configured using json file for arms/teleops
+  * Single program can be used for different console configurations, including for Qt widgets
+  * Preliminary support for SUJ (using alpha version of dSIB)
+  * Added support for base frame and commands to retrieve cartesian wrt arm base or base frame (for SUJ)
+* Bug fixes:
+  * Matlab config generator has been updated to create proper digital input "pressed" values
+  * Matlab config generator forces to pick arm type, was generating improper joint directions on MTML
+  * Use new velocity estimation, PID gains are now independant of periodicity
+  * Fixed bugs in close/open grippers
+  * PID configuration files now use joint name matching ROS/urdf files (in dvrk-ros)
+  * PSM inverse kinematics now enforces tool can't go back in cannula
+
 1.1.1 (2015-05-15)
 ==================
 

@@ -44,8 +44,8 @@ if (cisst_FOUND)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
-  cisst_find_saw_component (sawRobotIO1394 1.1.0 REQUIRED)
-  cisst_find_saw_component (sawControllers 1.1.0 REQUIRED)
+  cisst_find_saw_component (sawRobotIO1394 1.2.0 REQUIRED)
+  cisst_find_saw_component (sawControllers 1.2.0 REQUIRED)
   cisst_find_saw_component (sawConstraintController REQUIRED)
 
 
