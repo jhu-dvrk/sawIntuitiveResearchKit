@@ -306,10 +306,10 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
       }
       // check that the tool is inserted deep enough
       if (JointGet.Element(2) < 40.0 * cmn_mm) {
-          MessageEvents.Error(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula (joint 3 at 40 mm)");
+          MessageEvents.Error(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula (joint 3 > 40 mm)");
       } else {
           if (JointGet.Element(2) < 50.0 * cmn_mm) {
-              MessageEvents.Warning(this->GetName() + " cartesian mode started close to RCM (joint 3 at 50 mm), joint 3 is clamped at 40 mm to avoid moving inside cannula.");
+              MessageEvents.Warning(this->GetName() + " cartesian mode started close to RCM (joint 3 < 50 mm), joint 3 will be clamped at 40 mm to avoid moving inside cannula.");
           }
           RobotState = newState;
 
