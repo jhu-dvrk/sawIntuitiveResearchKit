@@ -640,7 +640,18 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
             if (arrayIndex < 2) {
                 arm->mVoltages[arrayIndex][indexInArray] = mVoltages[armIndex];
             } else {
-                arm->mVoltagesExtra[indexInArray] = mVoltages[armIndex];
+                if (indexInArray == 2) {
+                    if ((armIndex==0) || (armIndex==1) || (armIndex==2)) {
+                        Arms[3-armIndex]->mVoltagesExtra[indexInArray] = mVoltages[armIndex];
+                    } else if (armIndex == 3) {
+
+                    }
+                } else if ((indexInArray == 3) && (armIndex == 3)) {
+                    Arms[0 /* 3 - armIndex */]->mVoltagesExtra[2] = mVoltages[armIndex];
+                } else {
+                    // normal case
+                    arm->mVoltagesExtra[indexInArray] = mVoltages[armIndex];
+                }
             }
             // advance state table when all joints have been read
             if (mMuxIndex == MUX_MAX_INDEX) {
