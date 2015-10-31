@@ -292,6 +292,11 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
 void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
 {
+    if (mIsSimulated) {
+        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ROLL);
+        return;
+    }
+
     static const double extraTime = 2.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
@@ -346,6 +351,11 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
 
 void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
 {
+    if (mIsSimulated) {
+        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+        return;
+    }
+
     static const double maxTrackingError = 1.0 * cmnPI; // 1/2 turn
     static const double maxRollRange = 6.0 * cmnPI + maxTrackingError; // that actual device is limited to ~2.6 turns
     static const double extraTime = 2.0 * cmn_s;

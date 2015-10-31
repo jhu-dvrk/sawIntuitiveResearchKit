@@ -263,42 +263,46 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
 {
     // we can start reporting some joint values after the robot is powered
     if (this->RobotState > mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING) {
-        mtsExecutionResult executionResult;
-        executionResult = PID.GetPositionJoint(JointGetParam);
-        if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPosition failed \""
-                                    << executionResult << "\"" << std::endl;
-        }
-        // assign to a more convenient vctDoubleVec
-        JointGet.Assign(JointGetParam.Position(), NumberOfJoints());
+        if (mIsSimulated) {
 
-        // desired joints
-        executionResult = PID.GetPositionJointDesired(JointGetDesired);
-        if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPositionDesired failed \""
-                                    << executionResult << "\"" << std::endl;
-        }
+        } else {
+            mtsExecutionResult executionResult;
+            executionResult = PID.GetPositionJoint(JointGetParam);
+            if (!executionResult.IsOK()) {
+                CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPosition failed \""
+                                        << executionResult << "\"" << std::endl;
+            }
+            // assign to a more convenient vctDoubleVec
+            JointGet.Assign(JointGetParam.Position(), NumberOfJoints());
 
-        // joint velocity
-        executionResult = PID.GetVelocityJoint(JointVelocityGetParam);
-        if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetVelocityJoint failed \""
-                                    << executionResult << "\"" << std::endl;
-        }
-        JointVelocityGet.Assign(JointVelocityGetParam.Velocity(), NumberOfJoints());
+            // desired joints
+            executionResult = PID.GetPositionJointDesired(JointGetDesired);
+            if (!executionResult.IsOK()) {
+                CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPositionDesired failed \""
+                                        << executionResult << "\"" << std::endl;
+            }
 
-        // joint state, not used internally but available to users
-        executionResult = PID.GetStateJoint(StateJointParam);
-        if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointState failed \""
-                                    << executionResult << "\"" << std::endl;
-        }
+            // joint velocity
+            executionResult = PID.GetVelocityJoint(JointVelocityGetParam);
+            if (!executionResult.IsOK()) {
+                CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetVelocityJoint failed \""
+                                        << executionResult << "\"" << std::endl;
+            }
+            JointVelocityGet.Assign(JointVelocityGetParam.Velocity(), NumberOfJoints());
 
-        // desired joint state
-        executionResult = PID.GetStateJointDesired(StateJointDesiredParam);
-        if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointStateDesired failed \""
-                                    << executionResult << "\"" << std::endl;
+            // joint state, not used internally but available to users
+            executionResult = PID.GetStateJoint(StateJointParam);
+            if (!executionResult.IsOK()) {
+                CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointState failed \""
+                                        << executionResult << "\"" << std::endl;
+            }
+
+            // desired joint state
+            executionResult = PID.GetStateJointDesired(StateJointDesiredParam);
+            if (!executionResult.IsOK()) {
+                CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointStateDesired failed \""
+                                        << executionResult << "\"" << std::endl;
+            }
         }
 
         // when the robot is ready, we can compute cartesian position
@@ -381,6 +385,14 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
 
 void mtsIntuitiveResearchKitArm::RunHomingPower(void)
 {
+    if (mIsSimulated) {
+        vctDoubleVec goal(NumberOfJoints());
+        goal.SetAll(0.0);
+        SetPositionJointLocal(goal);
+        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM);
+        return;
+    }
+
     const double timeToPower = 3.0 * cmn_s;
 
     const double currentTime = this->StateTable.GetTic();
@@ -493,9 +505,15 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalCartesian(void)
 
 void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
-    JointSetParam.Goal().Zeros();
-    JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
-    PID.SetPositionJoint(JointSetParam);
+    if (mIsSimulated) {
+        JointGet.ForceAssign(newPosition);
+        JointGetParam.Position().ForceAssign(newPosition);
+        JointGetDesired.ForceAssign(newPosition);
+    } else {
+        JointSetParam.Goal().Zeros();
+        JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
+        PID.SetPositionJoint(JointSetParam);
+    }
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
