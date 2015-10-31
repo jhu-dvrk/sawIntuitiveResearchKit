@@ -80,9 +80,13 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     // extra IO, PID, etc.  For generic arms, do nothing.
     switch (armType) {
     case ARM_MTM:
+    case ARM_MTM_KIN_SIMULATED:
         {
             if (!existingArm) {
                 mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
+                if (armType == ARM_MTM_KIN_SIMULATED) {
+                    master->SetSimulated();
+                }
                 master->Configure(mArmConfigurationFile);
                 componentManager->AddComponent(master);
             }
@@ -354,28 +358,36 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     }
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: period IO is " << periodIO << std::endl
                                << "Configure: FireWire port is " << firewirePort << std::endl;
-    // create IO
-    mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, firewirePort);
 
     const Json::Value arms = jsonConfig["arms"];
     for (unsigned int index = 0; index < arms.size(); ++index) {
-        if (!ConfigureArmJSON(arms[index], io->GetName(), configPath)) {
+        if (!ConfigureArmJSON(arms[index], mIOComponentName, configPath)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure arms[" << index << "]" << std::endl;
             return;
         }
     }
 
-    // loop over all arms to configure IO only
+    // loop over all arms to check if IO is needed
+    mHasIO = false;
     const ArmList::iterator end = mArms.end();
     ArmList::iterator iter;
     for (iter = mArms.begin(); iter != end; ++iter) {
         std::string ioConfig = iter->second->mIOConfigurationFile;
         if (ioConfig != "") {
-            io->Configure(ioConfig);
+            mHasIO = true;
         }
     }
-
-    mtsComponentManager::GetInstance()->AddComponent(io);
+    // create IO if needed and configure IO
+    if (mHasIO) {
+        mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, firewirePort);
+        for (iter = mArms.begin(); iter != end; ++iter) {
+            std::string ioConfig = iter->second->mIOConfigurationFile;
+            if (ioConfig != "") {
+                io->Configure(ioConfig);
+            }
+        }
+        mtsComponentManager::GetInstance()->AddComponent(io);
+    }
 
     // now can configure PID and Arms
     for (iter = mArms.begin(); iter != end; ++iter) {
@@ -498,7 +510,9 @@ void mtsIntuitiveResearchKitConsole::Cleanup(void)
 
 bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
 {
-    if (newArm->mType != Arm::ARM_SUJ) {
+    if ((newArm->mType != Arm::ARM_SUJ) &&
+        (newArm->mType != Arm::ARM_MTM_KIN_SIMULATED) &&
+        (newArm->mType != Arm::ARM_PSM_KIN_SIMULATED)) {
         if (newArm->mPIDConfigurationFile.empty()) {
             CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
                                      << newArm->Name() << " must be configured first (PID)." << std::endl;
@@ -634,12 +648,14 @@ bool mtsIntuitiveResearchKitConsole::ConnectFootpedalInterfaces(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     // connect console to IO
-    componentManager->Connect(this->GetName(), "Clutch",
-                              mIOComponentName, "CLUTCH");
-    componentManager->Connect(this->GetName(), "Camera",
-                              mIOComponentName, "CAMERA");
-    componentManager->Connect(this->GetName(), "OperatorPresent",
-                              this->mOperatorPresentComponent, this->mOperatorPresentInterface);
+    if (mHasIO) {
+        componentManager->Connect(this->GetName(), "Clutch",
+                                  mIOComponentName, "CLUTCH");
+        componentManager->Connect(this->GetName(), "Camera",
+                                  mIOComponentName, "CAMERA");
+        componentManager->Connect(this->GetName(), "OperatorPresent",
+                                  this->mOperatorPresentComponent, this->mOperatorPresentInterface);
+    }
     return true;
 }
 
@@ -670,13 +686,17 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             armPointer->mType = Arm::ARM_MTM_DERIVED;
         } else if (typeString == "PSM_DERIVED") {
             armPointer->mType = Arm::ARM_PSM_DERIVED;
+        } else if (typeString == "MTM_KIN_SIMULATED") {
+            armPointer->mType = Arm::ARM_MTM_KIN_SIMULATED;
+        } else if (typeString == "PSM_KIN_SIMULATED") {
+            armPointer->mType = Arm::ARM_PSM_KIN_SIMULATED;
         } else if (typeString == "ECM") {
             armPointer->mType = Arm::ARM_ECM;
         } else if (typeString == "SUJ") {
             armPointer->mType = Arm::ARM_SUJ;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName << ": invalid type \""
-                                     << typeString << "\", needs to be MTM(_DERIVED), PSM(_DERIVED) or ECM" << std::endl;
+                                     << typeString << "\", needs to be MTM(_DERIVED, _KIN_SIMULATED), PSM(_DERIVED, _KIN_SIMULATED) or ECM" << std::endl;
             return false;
         }
     } else {
@@ -684,18 +704,24 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                                  << ": doesn't have a \"type\" specified, needs to be MTM(_DERIVED), PSM(_DERIVED) or ECM" << std::endl;
         return false;
     }
-    jsonValue = jsonArm["io"];
-    if (!jsonValue.empty()) {
-        armPointer->mIOConfigurationFile = configPath.Find(jsonValue.asString());
-        if (armPointer->mIOConfigurationFile == "") {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO file " << jsonValue.asString() << std::endl;
+
+    // IO for anything not simulated
+    if ((armPointer->mType != Arm::ARM_MTM_KIN_SIMULATED) &&
+        (armPointer->mType != Arm::ARM_PSM_KIN_SIMULATED)) {
+        jsonValue = jsonArm["io"];
+        if (!jsonValue.empty()) {
+            armPointer->mIOConfigurationFile = configPath.Find(jsonValue.asString());
+            if (armPointer->mIOConfigurationFile == "") {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO file " << jsonValue.asString() << std::endl;
+                return false;
+            }
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"io\" setting for arm \""
+                                     << armName << "\"" << std::endl;
             return false;
         }
-    } else {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"io\" setting for arm \""
-                                 << armName << "\"" << std::endl;
-        return false;
     }
+
     // PID only required for MTM, PSM and ECM
     if ((armPointer->mType == Arm::ARM_MTM)
         || (armPointer->mType == Arm::ARM_PSM)
@@ -840,20 +866,25 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
 bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
 {
     // IO
-    const std::string interfaceNameIO = "IO-" + arm->Name();
-    arm->IOInterfaceRequired = AddInterfaceRequired(interfaceNameIO);
-    if (arm->IOInterfaceRequired) {
-        arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
-        arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
-        arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
-    } else {
-        CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO interface for arm \""
-                                 << arm->Name() << "\"" << std::endl;
-        return false;
+    if ((arm->mType != Arm::ARM_MTM_KIN_SIMULATED) &&
+        (arm->mType != Arm::ARM_PSM_KIN_SIMULATED)) {
+        const std::string interfaceNameIO = "IO-" + arm->Name();
+        arm->IOInterfaceRequired = AddInterfaceRequired(interfaceNameIO);
+        if (arm->IOInterfaceRequired) {
+            arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
+            arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
+            arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO interface for arm \""
+                                     << arm->Name() << "\"" << std::endl;
+            return false;
+        }
     }
 
     // PID
-    if (arm->mType != Arm::ARM_SUJ) {
+    if ((arm->mType != Arm::ARM_SUJ) &&
+        (arm->mType != Arm::ARM_MTM_KIN_SIMULATED) &&
+        (arm->mType != Arm::ARM_PSM_KIN_SIMULATED)) {
         const std::string interfaceNamePID = "PID-" + arm->Name();
         arm->PIDInterfaceRequired = AddInterfaceRequired(interfaceNamePID);
         if (arm->PIDInterfaceRequired) {

@@ -38,7 +38,11 @@ public:
 
     class Arm {
     public:
-        typedef enum {ARM_UNDEFINED, ARM_MTM, ARM_PSM, ARM_ECM, ARM_SUJ, ARM_MTM_GENERIC, ARM_PSM_GENERIC, ARM_MTM_DERIVED, ARM_PSM_DERIVED} ArmType;
+        typedef enum {ARM_UNDEFINED,
+                      ARM_MTM, ARM_PSM, ARM_ECM, ARM_SUJ,
+                      ARM_MTM_GENERIC, ARM_PSM_GENERIC,
+                      ARM_MTM_DERIVED, ARM_PSM_DERIVED,
+                      ARM_MTM_KIN_SIMULATED, ARM_PSM_KIN_SIMULATED} ArmType;
 
         friend class mtsIntuitiveResearchKitConsole;
         friend class mtsIntuitiveResearchKitConsoleQt;
@@ -189,6 +193,7 @@ protected:
     void SetRobotsControlState(const std::string & newState);
     void TeleopEnable(const bool & enable);
 
+    bool mHasIO;
     bool mHasFootpedals;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);

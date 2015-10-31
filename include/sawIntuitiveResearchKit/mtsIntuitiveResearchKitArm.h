@@ -47,6 +47,8 @@ public:
     void Run(void);
     void Cleanup(void);
 
+    void SetSimulated(void);
+
 protected:
 
     /*! Initialization, including resizing data members and setting up
@@ -224,6 +226,9 @@ protected:
     bool HomingCalibrateArmStarted;
 
     unsigned int mCounter;
+
+    // Flag to determine if this is connected to actual IO/hardware or simulated
+    bool mIsSimulated;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitArm);

@@ -42,6 +42,7 @@ mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicCons
 void mtsIntuitiveResearchKitArm::Init(void)
 {
     mCounter = 0;
+    mIsSimulated = false;
 
     IsGoalSet = false;
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
@@ -232,6 +233,14 @@ void mtsIntuitiveResearchKitArm::Cleanup(void)
         RobotIO.BrakeEngage();
     }
     CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
+}
+
+void mtsIntuitiveResearchKitArm::SetSimulated(void)
+{
+    mIsSimulated = true;
+    // in simulation mode, we don't need IO nor PID
+    RemoveInterfaceRequired("PID");
+    RemoveInterfaceRequired("RobotIO");
 }
 
 void mtsIntuitiveResearchKitArm::GetRobotControlState(std::string & state) const

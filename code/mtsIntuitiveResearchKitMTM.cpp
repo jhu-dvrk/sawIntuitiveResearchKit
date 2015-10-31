@@ -128,6 +128,10 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
 {
     mtsIntuitiveResearchKitArm::GetRobotData();
 
+    if (mIsSimulated) {
+        return;
+    }
+
     // get gripper based on analog inputs
     mtsExecutionResult executionResult = RobotIO.GetAnalogInputPosSI(AnalogInputPosSI);
     if (!executionResult.IsOK()) {

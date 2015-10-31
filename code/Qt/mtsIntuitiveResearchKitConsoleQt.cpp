@@ -47,22 +47,26 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     Connections.push_back(new ConnectionType("console", "Main", "consoleGUI", "Main"));
     TabWidget->addTab(consoleGUI, "Main");
 
-    // connect ioGUIMaster to io
-    mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");
-    componentManager->AddComponent(robotWidgetFactory);
-    // this connect needs to happen now so the factory can figure out the io interfaces
-    componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "io", "Configuration");
-    robotWidgetFactory->Configure();
+    // IOs
+    if (console->mHasIO) {
+        // connect ioGUIMaster to io
+        mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");
+        componentManager->AddComponent(robotWidgetFactory);
+        // this connect needs to happen now so the factory can figure out the io interfaces
+        componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "io", "Configuration");
+        robotWidgetFactory->Configure();
 
-    // add all IO GUI to tab
-    mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
-    for (iterator = robotWidgetFactory->Widgets().begin();
-         iterator != robotWidgetFactory->Widgets().end();
-         ++iterator) {
-        TabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
+        // add all IO GUI to tab
+        mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
+        for (iterator = robotWidgetFactory->Widgets().begin();
+             iterator != robotWidgetFactory->Widgets().end();
+             ++iterator) {
+            TabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
+        }
+        TabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
     }
-    TabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
 
+    // Arm and PID widgets
     const mtsIntuitiveResearchKitConsole::ArmList::iterator armsEnd = console->mArms.end();
     mtsIntuitiveResearchKitConsole::ArmList::iterator armIter;
     for (armIter = console->mArms.begin(); armIter != armsEnd; ++armIter) {
@@ -99,6 +103,8 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             Connections.push_back(new ConnectionType(pidGUI->GetName(), "Controller", armIter->second->PIDComponentName(), "Controller"));
             TabWidget->addTab(pidGUI, (name + " PID").c_str());
 
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_KIN_SIMULATED:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_KIN_SIMULATED:
             // Arm widget
             armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");
             armGUI->Configure();
