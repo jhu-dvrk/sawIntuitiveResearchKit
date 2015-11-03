@@ -108,6 +108,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     IOInterface = AddInterfaceRequired("RobotIO");
     if (IOInterface) {
         IOInterface->AddFunction("GetSerialNumber", RobotIO.GetSerialNumber);
+        IOInterface->AddFunction("SetCoupling", RobotIO.SetCoupling);
         IOInterface->AddFunction("EnablePower", RobotIO.EnablePower);
         IOInterface->AddFunction("DisablePower", RobotIO.DisablePower);
         IOInterface->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);

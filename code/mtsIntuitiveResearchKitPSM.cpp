@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
+#include <sawRobotIO1394/prmActuatorJointCoupling.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -65,13 +66,13 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mtsIntuitiveResearchKitArm::Init();
 
     // initialize trajectory data
-    JointTrajectory.Velocity.SetAll(90.0 * cmnPI_180); // degrees per second
+    JointTrajectory.Velocity.SetAll(2.0 * cmnPI); // degrees per second
     JointTrajectory.Velocity.Element(2) = 0.2; // m per second
-    JointTrajectory.Acceleration.SetAll(90.0 * cmnPI_180);
+    JointTrajectory.Acceleration.SetAll(2.0 * cmnPI);
     JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
-    JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
+    JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
     // high values for engage adapter/tool until these use a proper trajectory generator
-    PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 10 degrees for rotations
+    PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
     PotsToEncodersTolerance.Element(2) = 5.0 * cmn_mm; // 5 mm
 
     // for tool/adapter engage procedure
@@ -162,6 +163,17 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     switch (newState) {
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
+        // default coupling, assumes no tool
+        {
+            const vctDoubleMat identity(vctDoubleMat::Eye(NumberOfAxes()));
+            prmActuatorJointCoupling coupling;
+            coupling.ActuatorToJointPosition().ForceAssign(identity);
+            coupling.JointToActuatorPosition().ForceAssign(identity);
+            coupling.ActuatorToJointEffort().ForceAssign(identity);
+            coupling.JointToActuatorEffort().ForceAssign(identity);
+            RobotIO.SetCoupling(coupling);
+        }
+        // no power
         RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
         RobotIO.DisablePower();
         PID.Enable(false);
@@ -194,32 +206,34 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER:
-        EngagingAdapterStarted = false;
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
             MessageEvents.Status(this->GetName() + " is not calibrated yet, will engage adapter later");
             return;
-        }
-        // configure PID to fail in case of tracking error
-        {
-            PID.SetCheckJointLimit(false);
-            vctDoubleVec tolerances(NumberOfJoints());
-            // first two rotations
-            tolerances.Ref(2, 0).SetAll(20.0 * cmnPI_180); // 20 degrees
-            // translation
-            tolerances.Element(2) = 40.0 * cmn_mm; // 40 mm
-            // tool/adapter gears
-            tolerances.Ref(4, 3).SetAll(5.0 * cmnPI); // we request positions that can't be reached when the adapter/tool engage
-            PID.SetTrackingErrorTolerance(tolerances);
-            PID.EnableTrackingError(true);
         }
         // if the tool is present, the adapter is already engadged
         Tool.GetButton(Tool.IsPresent);
         if (Tool.IsPresent) {
             SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
-        } else {
-            RobotState = newState;
-            this->MessageEvents.Status(this->GetName() + " engaging adapter");
+            return;
         }
+        // start engage procedure
+        EngagingStage = 0;
+        LastEngagingStage = 4;
+        // configure PID to fail in case of tracking error
+        {
+            PID.SetCheckJointLimit(false);
+            vctDoubleVec tolerances(NumberOfJoints());
+            // first two rotations and translation, in case someone is pushinh/holding arm
+            tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
+            tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
+            // tool/adapter gears should have little resistance?
+            tolerances.Ref(4, 3).SetAll(100.0 * cmnPI_180); // 100 degrees
+            PID.SetTrackingErrorTolerance(tolerances);
+            PID.EnableTrackingError(true);
+        }
+        // set state
+        RobotState = newState;
+        this->MessageEvents.Status(this->GetName() + " engaging adapter");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED:
@@ -233,6 +247,12 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL:
+        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED) {
+            MessageEvents.Status(this->GetName() + " adapter is not engaged yet, will engage tool later");
+            return;
+        }
+        // start engaging procedure
+        EngagingToolStarted = false;
         // configure PID to fail in case of tracking error
         {
             PID.SetCheckJointLimit(false);
@@ -246,11 +266,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             PID.SetTrackingErrorTolerance(tolerances);
             PID.EnableTrackingError(true);
         }
-        EngagingToolStarted = false;
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED) {
-            MessageEvents.Status(this->GetName() + " adapter is not engaged yet, will engage tool later");
-            return;
-        }
+        // set state
         RobotState = newState;
         this->MessageEvents.Status(this->GetName() + " engaging tool");
         break;
@@ -379,13 +395,13 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
 
         // compute joint goal position
         JointTrajectory.Goal.SetSize(NumberOfJoints());
-        JointTrajectory.Goal.ForceAssign(JointGet);
-        // move to zero position only there is no tool present
         Tool.GetButton(Tool.IsPresent);
         if (!Tool.IsPresent) {
-            JointTrajectory.Goal.Element(0) = 0.0;
-            JointTrajectory.Goal.Element(1) = 0.0;
-            JointTrajectory.Goal.Element(2) = 0.0;
+            // move to zero position only there is no tool present
+            JointTrajectory.Goal.SetAll(0.0);
+        } else {
+            // stay at current position
+            JointTrajectory.Goal.ForceAssign(JointGet);
         }
         JointTrajectory.LSPB.Set(JointGet, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
@@ -424,62 +440,50 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
 
 void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 {
-    if (!EngagingAdapterStarted) {
-        EngagingStopwatch.Reset();
-        EngagingStopwatch.Start();
-        EngagingJointSet.ForceAssign(JointGetDesired);
-        // disable joint limits
-        PID.SetCheckJointLimit(false);
-        EngagingAdapterStarted = true;
+    // check if the adapter is still here
+    Adapter.GetButton(Adapter.IsPresent);
+    if (!Adapter.IsPresent) {
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
         return;
     }
 
-    // PSM tool last 4 actuator coupling matrix
+    const double currentTime = this->StateTable.GetTic();
 
-    // psm_m2jpos = [-1.5632  0.0000  0.0000  0.0000;
-    //                0.0000  1.0186  0.0000  0.0000;
-    //                0.0000 -0.8306  0.6089  0.6089;
-    //                0.0000  0.0000 -1.2177  1.2177];
-    // each actuator has -180 to 180 deg limits
-    // these joint limit is computed as
-    // joint_lim = psm_m2jpos * actuator_lim
+    // initialize all trajectories
+    if (EngagingStage == 0) {
+        // keep first three joint values as is
+        JointTrajectory.Goal.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
+        // set last 4 to -170.0
+        JointTrajectory.Goal.Ref(4, 3).SetAll(-170.0 * cmnPI_180);
+        // compute initial time
+        JointTrajectory.LSPB.Set(JointGetDesired, JointTrajectory.Goal,
+                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                 currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
+        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+        EngagingStage = 1;
+        return;
+    }
 
-    if (EngagingStopwatch.GetElapsedTime() > (3500 * cmn_ms)) {
-        EngagingJointSet[3] = 0.0;
-        EngagingJointSet[4] = 0.0;
-        EngagingJointSet[5] = 0.0;
-        EngagingJointSet[6] = 0.0;
-        JointSet.ForceAssign(EngagingJointSet);
-        PID.SetCheckJointLimit(true);
+    // perform whatever trajectory is going on
+    if (currentTime <= HomingTimer) {
+        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
         SetPositionJointLocal(JointSet);
-
-        // Adapter engage done
-        EngagingStopwatch.Reset();
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
-    }
-    else if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)) {
-        EngagingJointSet[3] = -300.0 * cmnPI / 180.0;
-        EngagingJointSet[4] =  170.0 * cmnPI / 180.0;
-        EngagingJointSet[5] =   65.0 * cmnPI / 180.0;
-        EngagingJointSet[6] =    0.0 * cmnPI / 180.0;
-        JointSet.ForceAssign(EngagingJointSet);
-        SetPositionJointLocal(JointSet);
-    }
-    else if (EngagingStopwatch.GetElapsedTime() > (1500 * cmn_ms)) {
-        EngagingJointSet[3] =  300.0 * cmnPI / 180.0;
-        EngagingJointSet[4] = -170.0 * cmnPI / 180.0;
-        EngagingJointSet[5] =  -65.0 * cmnPI / 180.0;
-        EngagingJointSet[6] =    0.0 * cmnPI / 180.0;
-        JointSet.ForceAssign(EngagingJointSet);
-        SetPositionJointLocal(JointSet);
-    }
-    else if (EngagingStopwatch.GetElapsedTime() > (500 * cmn_ms)) {
-        EngagingJointSet[3] = -300.0 * cmnPI / 180.0;
-        EngagingJointSet[4] =  170.0 * cmnPI / 180.0;
-        EngagingJointSet[5] =   65.0 * cmnPI / 180.0;
-        EngagingJointSet[6] =    0.0 * cmnPI / 180.0;
-        JointSet.ForceAssign(EngagingJointSet);
-        SetPositionJointLocal(JointSet);
+    } else {
+        // check if we were in last phase
+        if (EngagingStage > LastEngagingStage) {
+            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
+        } else {
+            if (EngagingStage != LastEngagingStage) {
+                JointTrajectory.Goal.Ref(4, 3) *= -1.0; // toggle back and forth
+            } else {
+                JointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
+            }
+            JointTrajectory.LSPB.Set(JointGetDesired, JointTrajectory.Goal,
+                                     JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                     currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
+            HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+            EngagingStage++;
+        }
     }
 }
 

@@ -134,6 +134,7 @@ protected:
     mtsInterfaceRequired * IOInterface;
     struct InterfaceRobotTorque {
         mtsFunctionRead  GetSerialNumber;
+        mtsFunctionWrite SetCoupling;
         mtsFunctionVoid  EnablePower;
         mtsFunctionVoid  DisablePower;
         mtsFunctionRead  GetActuatorAmpStatus;

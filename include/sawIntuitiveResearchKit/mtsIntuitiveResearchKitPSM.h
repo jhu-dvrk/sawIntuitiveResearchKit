@@ -124,7 +124,8 @@ protected:
     vctFrm4x4 ToolOffsetTransformation;
 
     // Home Action
-    bool EngagingAdapterStarted;
+    unsigned int EngagingStage; // 0 requested
+    unsigned int LastEngagingStage;
     bool EngagingToolStarted;
 
     // temporary

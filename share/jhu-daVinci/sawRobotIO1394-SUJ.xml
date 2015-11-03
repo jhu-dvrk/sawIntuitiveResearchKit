@@ -5,7 +5,7 @@
          <Drive>
             <AmpsToBits Offset="32840" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
-            <MaxCurrent Unit="A" Value="2.2"/>
+            <MaxCurrent Unit="A" Value="2.8"/>
          </Drive>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86656e-05"/>
