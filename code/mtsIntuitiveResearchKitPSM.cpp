@@ -440,13 +440,6 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
 
 void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 {
-    // check if the adapter is still here
-    Adapter.GetButton(Adapter.IsPresent);
-    if (!Adapter.IsPresent) {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
-        return;
-    }
-
     const double currentTime = this->StateTable.GetTic();
 
     // initialize all trajectories
@@ -653,7 +646,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & butt
     } else {
         // this is "down" transition so we have to
         // make sure we had an adapter properly engaged before
-        if (RobotState >= mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED) {
+        if (RobotState >= mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER) {
             SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
         }
     }
