@@ -23,6 +23,10 @@ class {
             description DVRK calibrated;
         }
         enum-value {
+            name DVRK_CHANGING_COUPLING;
+            description Changing actuator to joint coupling for PSM;
+        }
+        enum-value {
             name DVRK_ENGAGING_ADAPTER;
             description Engaging adapter for PSM;
         }

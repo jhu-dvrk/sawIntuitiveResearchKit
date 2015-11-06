@@ -88,6 +88,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     PIDInterface = AddInterfaceRequired("PID");
     if (PIDInterface) {
         PIDInterface->AddFunction("Enable", PID.Enable);
+        PIDInterface->AddFunction("EnableJoints", PID.EnableJoints);
         PIDInterface->AddFunction("GetPositionJoint", PID.GetPositionJoint);
         PIDInterface->AddFunction("GetPositionJointDesired", PID.GetPositionJointDesired);
         PIDInterface->AddFunction("GetStateJoint", PID.GetStateJoint);

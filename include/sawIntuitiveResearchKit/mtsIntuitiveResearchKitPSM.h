@@ -20,11 +20,10 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitPSM_h
 #define _mtsIntuitiveResearchKitPSM_h
 
+#include <cisstParameterTypes/prmActuatorJointCoupling.h>
+
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitOptimizer.h>
-
-// temporary
-#include <cisstOSAbstraction/osaStopwatch.h>
 
 class mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 {
@@ -80,6 +79,9 @@ protected:
     /*! Homing procedure, home all joints except last one using potentiometers as reference. */
     void RunHomingCalibrateArm(void);
 
+    /*! Change actuator to joint coupling matrices, needs to power off PID and then reenable. */
+    void RunChangingCoupling(void);
+
     /*! Engaging adapter procedure. */
     void RunEngagingAdapter(void);
 
@@ -95,6 +97,8 @@ protected:
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     void SetJawPosition(const double & openAngle);
+    void EnableJointsEventHandler(const vctBoolVec & enable);
+    void CouplingEventHandler(const prmActuatorJointCoupling & coupling);
 
     /*! Event handlers for tools */
     //@{
@@ -126,11 +130,15 @@ protected:
     // Home Action
     unsigned int EngagingStage; // 0 requested
     unsigned int LastEngagingStage;
-    bool EngagingToolStarted;
-
-    // temporary
-    osaStopwatch EngagingStopwatch;
-    vctDoubleVec EngagingJointSet;
+    struct {
+        bool CouplingForTool;
+        bool Started;
+        mtsIntuitiveResearchKitArmTypes::RobotStateType PreviousState;
+        bool WaitingForEnabledJoints, ReceivedEnabledJoints;
+        vctBoolVec LastEnabledJoints, DesiredEnabledJoints;
+        bool WaitingForCoupling, ReceivedCoupling;
+        prmActuatorJointCoupling LastCoupling, DesiredCoupling;
+    } CouplingChange;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitPSM);

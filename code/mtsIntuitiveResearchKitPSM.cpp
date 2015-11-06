@@ -25,7 +25,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
-#include <sawRobotIO1394/prmActuatorJointCoupling.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -66,23 +65,31 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mtsIntuitiveResearchKitArm::Init();
 
     // initialize trajectory data
-    JointTrajectory.Velocity.SetAll(2.0 * cmnPI); // degrees per second
+    JointTrajectory.Velocity.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
     JointTrajectory.Velocity.Element(2) = 0.2; // m per second
-    JointTrajectory.Acceleration.SetAll(2.0 * cmnPI);
+    JointTrajectory.Velocity.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
+    JointTrajectory.Acceleration.Ref(2, 0).SetAll(180.0 * cmnPI_180);
     JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
+    JointTrajectory.Acceleration.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
     // high values for engage adapter/tool until these use a proper trajectory generator
     PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
     PotsToEncodersTolerance.Element(2) = 5.0 * cmn_mm; // 5 mm
-
-    // for tool/adapter engage procedure
-    EngagingJointSet.SetSize(NumberOfJoints());
 
     mtsInterfaceRequired * interfaceRequired;
 
     // Main interface should have been created by base class init
     CMN_ASSERT(RobotInterface);
     RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetJawPosition, this, "SetJawPosition");
+
+    CMN_ASSERT(IOInterface);
+    IOInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::CouplingEventHandler, this, "Coupling");
+
+    CMN_ASSERT(PIDInterface);
+    PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EnableJointsEventHandler, this, "EnabledJoints");
+    CouplingChange.LastEnabledJoints.SetSize(NumberOfJoints());
+    CouplingChange.DesiredEnabledJoints.SetSize(NumberOfJoints());
 
     // Event Adapter engage: digital input button event from PSM
     interfaceRequired = AddInterfaceRequired("Adapter");
@@ -105,10 +112,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerManipClutch, this, "Button");
     }
-
-    // Main interface should have been created by base class init
-    CMN_ASSERT(RobotInterface);
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetJawPosition, this, "SetJawPosition");
 
     // Initialize the optimizer
     Optimizer = new mtsIntuitiveResearchKitOptimizer(6);
@@ -139,6 +142,9 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
 void mtsIntuitiveResearchKitPSM::RunArmSpecific(void)
 {
     switch (RobotState) {
+    case mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING:
+        RunChangingCoupling();
+        break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER:
         RunEngagingAdapter();
         break;
@@ -166,12 +172,11 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         // default coupling, assumes no tool
         {
             const vctDoubleMat identity(vctDoubleMat::Eye(NumberOfAxes()));
-            prmActuatorJointCoupling coupling;
-            coupling.ActuatorToJointPosition().ForceAssign(identity);
-            coupling.JointToActuatorPosition().ForceAssign(identity);
-            coupling.ActuatorToJointEffort().ForceAssign(identity);
-            coupling.JointToActuatorEffort().ForceAssign(identity);
-            RobotIO.SetCoupling(coupling);
+            CouplingChange.DesiredCoupling.ActuatorToJointPosition().ForceAssign(identity);
+            CouplingChange.DesiredCoupling.JointToActuatorPosition().ForceAssign(identity);
+            CouplingChange.DesiredCoupling.ActuatorToJointEffort().ForceAssign(identity);
+            CouplingChange.DesiredCoupling.JointToActuatorEffort().ForceAssign(identity);
+            RobotIO.SetCoupling(CouplingChange.DesiredCoupling);
         }
         // no power
         RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
@@ -205,6 +210,14 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         }
         break;
 
+    case mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING:
+        // save previous state
+        CouplingChange.PreviousState = RobotState;
+        // set state
+        RobotState = newState;
+        this->MessageEvents.Status(this->GetName() + " changing coupling");
+        break;
+
     case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
             MessageEvents.Status(this->GetName() + " is not calibrated yet, will engage adapter later");
@@ -217,20 +230,10 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         // start engage procedure
-        EngagingStage = 0;
-        LastEngagingStage = 4;
-        // configure PID to fail in case of tracking error
-        {
-            PID.SetCheckJointLimit(false);
-            vctDoubleVec tolerances(NumberOfJoints());
-            // first two rotations and translation, in case someone is pushinh/holding arm
-            tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
-            tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
-            // tool/adapter gears should have little resistance?
-            tolerances.Ref(4, 3).SetAll(100.0 * cmnPI_180); // 100 degrees
-            PID.SetTrackingErrorTolerance(tolerances);
-            PID.EnableTrackingError(true);
+        if (RobotState != mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING) {
+            EngagingStage = 0;
         }
+        LastEngagingStage = 4;
         // set state
         RobotState = newState;
         this->MessageEvents.Status(this->GetName() + " engaging adapter");
@@ -252,19 +255,8 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         // start engaging procedure
-        EngagingToolStarted = false;
-        // configure PID to fail in case of tracking error
-        {
-            PID.SetCheckJointLimit(false);
-            vctDoubleVec tolerances(NumberOfJoints());
-            // first two rotations
-            tolerances.Ref(2, 0).SetAll(20.0 * cmnPI_180); // 20 degrees
-            // translation
-            tolerances.Element(2) = 40.0 * cmn_mm; // 40 mm
-            // tool/adapter gears
-            tolerances.Ref(4, 3).SetAll(5.0 * cmnPI); // we request positions that can't be reached when the adapter/tool engage
-            PID.SetTrackingErrorTolerance(tolerances);
-            PID.EnableTrackingError(true);
+        if (RobotState != mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING) {
+            EngagingStage = 0;
         }
         // set state
         RobotState = newState;
@@ -282,10 +274,11 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             // shaft rotation
             tolerances.Element(3) = 120.0 * cmnPI_180;
             // tool orientation
-            tolerances.Ref(2, 4).SetAll(35.0 * cmnPI_180);
+            tolerances.Ref(4, 3).SetAll(35.0 * cmnPI_180);
             // gripper
             tolerances.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
             PID.SetTrackingErrorTolerance(tolerances);
+            SetPositionJointLocal(JointGet); // preload PID with current position
             PID.EnableTrackingError(true);
             // set tighter pots/encoder tolerances
             PotsToEncodersTolerance.SetAll(20.0 * cmnPI_180); // 10 degrees for rotations
@@ -328,13 +321,6 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
               MessageEvents.Warning(this->GetName() + " cartesian mode started close to RCM (joint 3 < 50 mm), joint 3 will be clamped at 40 mm to avoid moving inside cannula.");
           }
           RobotState = newState;
-
-          // init CartesianSet to current pose
-          vctDoubleRot3 tmprot;
-          tmprot.FromNormalized(CartesianGet.Rotation());
-          CartesianSetParam.SetGoal(CartesianGet.Translation());
-          CartesianSetParam.SetGoal(tmprot);
-
           if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
               IsGoalSet = false;
               MessageEvents.Status(this->GetName() + " position cartesian");
@@ -395,14 +381,16 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
 
         // compute joint goal position
         JointTrajectory.Goal.SetSize(NumberOfJoints());
+        // check if tool is present
         Tool.GetButton(Tool.IsPresent);
         if (!Tool.IsPresent) {
             // move to zero position only there is no tool present
             JointTrajectory.Goal.SetAll(0.0);
         } else {
-            // stay at current position
+            // stay at current position by default
             JointTrajectory.Goal.ForceAssign(JointGet);
         }
+
         JointTrajectory.LSPB.Set(JointGet, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
                                  currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
@@ -438,16 +426,74 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
     }
 }
 
+void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
+{
+    // first phase, disable last 4 joints and wait
+    if (!CouplingChange.Started) {
+        CouplingChange.DesiredEnabledJoints.Ref(3, 0).SetAll(true);
+        CouplingChange.DesiredEnabledJoints.Ref(4, 3).SetAll(false);
+        PID.EnableJoints(CouplingChange.DesiredEnabledJoints);
+        CouplingChange.WaitingForEnabledJoints = true;
+        CouplingChange.ReceivedEnabledJoints = false;
+        CouplingChange.Started = true;
+        return;
+    }
+
+    if (CouplingChange.WaitingForEnabledJoints) {
+        // check if received new EnabledJoints
+        if (CouplingChange.ReceivedEnabledJoints) {
+            if (CouplingChange.DesiredEnabledJoints.Equal(CouplingChange.LastEnabledJoints)) {
+                CouplingChange.WaitingForEnabledJoints = false;
+                if (CouplingChange.CouplingForTool) {
+                    std::cerr << "add code to load tool coupling" << std::endl;
+                } else {
+                    const vctDoubleMat identity(vctDoubleMat::Eye(NumberOfAxes()));
+                    // set desired
+                    CouplingChange.DesiredCoupling.ActuatorToJointPosition().ForceAssign(identity);
+                    CouplingChange.DesiredCoupling.JointToActuatorPosition().ForceAssign(identity);
+                    CouplingChange.DesiredCoupling.ActuatorToJointEffort().ForceAssign(identity);
+                    CouplingChange.DesiredCoupling.JointToActuatorEffort().ForceAssign(identity);
+                }
+                RobotIO.SetCoupling(CouplingChange.DesiredCoupling);
+                std::cerr << "add code to set wait for coupling" << std::endl;
+                return;
+            } else {
+                std::cerr << "write code to handle wrong enabled joints" << std::endl;
+                /*
+
+
+
+
+
+                 */
+            }
+        }
+    }
+}
+
 void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 {
     const double currentTime = this->StateTable.GetTic();
 
     // initialize all trajectories
     if (EngagingStage == 0) {
+        // configure PID to fail in case of tracking error
+        PID.SetCheckJointLimit(false);
+        vctDoubleVec tolerances(NumberOfJoints());
+        // first two rotations and translation, in case someone is pushinh/holding arm
+        tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
+        tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
+        // tool/adapter gears should have little resistance?
+        tolerances.Ref(4, 3).SetAll(90.0 * cmnPI_180);
+        PID.SetTrackingErrorTolerance(tolerances);
+        SetPositionJointLocal(JointGet); // preload PID with current position
+        PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
+        PID.EnableTrackingError(true);
+
         // keep first three joint values as is
         JointTrajectory.Goal.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
         // set last 4 to -170.0
-        JointTrajectory.Goal.Ref(4, 3).SetAll(-170.0 * cmnPI_180);
+        JointTrajectory.Goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
         // compute initial time
         JointTrajectory.LSPB.Set(JointGetDesired, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
@@ -475,6 +521,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
                                      JointTrajectory.Velocity, JointTrajectory.Acceleration,
                                      currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
             HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+            std::stringstream message;
+            message << this->GetName() << " engaging adapter " << EngagingStage << " of " << LastEngagingStage;
+            MessageEvents.Status(message.str());
             EngagingStage++;
         }
     }
@@ -482,6 +531,31 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
 void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 {
+    if (EngagingStage == 0) {
+        // configure PID to fail in case of tracking error
+        PID.SetCheckJointLimit(false);
+        vctDoubleVec tolerances(NumberOfJoints());
+        // first two rotations
+        tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
+        // translation
+        tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
+        // tool/adapter gears
+        tolerances.Ref(4, 3).SetAll(10.0 * cmnPI_180);
+        PID.SetTrackingErrorTolerance(tolerances);
+        SetPositionJointLocal(JointGet); // preload PID with current position
+        PID.EnableTrackingError(true);
+
+        // request coupling change
+        CouplingChange.PreviousState = RobotState;
+        CouplingChange.CouplingForTool = true;
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING);
+        EngagingStage = 1;
+        return;
+    }
+
+    std::cerr << "here" << std::endl;
+
+#if 0
     if (!EngagingToolStarted) {
         EngagingStopwatch.Reset();
         EngagingStopwatch.Start();
@@ -538,6 +612,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         JointSet.Assign(EngagingJointSet);
         SetPositionJointLocal(JointSet);
     }
+#endif
 }
 
 void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
@@ -615,6 +690,21 @@ void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetJawPosition: PSM not ready" << std::endl;
         break;
     }
+}
+
+void mtsIntuitiveResearchKitPSM::CouplingEventHandler(const prmActuatorJointCoupling & coupling)
+{
+    CouplingChange.ReceivedCoupling = true;
+    CouplingChange.LastCoupling.ActuatorToJointPosition().ForceAssign(coupling.ActuatorToJointPosition());
+    CouplingChange.LastCoupling.JointToActuatorPosition().ForceAssign(coupling.JointToActuatorPosition());
+    CouplingChange.LastCoupling.ActuatorToJointEffort().ForceAssign(coupling.ActuatorToJointEffort());
+    CouplingChange.LastCoupling.JointToActuatorEffort().ForceAssign(coupling.JointToActuatorEffort());
+}
+
+void mtsIntuitiveResearchKitPSM::EnableJointsEventHandler(const vctBoolVec & enable)
+{
+    CouplingChange.ReceivedEnabledJoints = true;
+    CouplingChange.LastEnabledJoints.Assign(enable);
 }
 
 void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)

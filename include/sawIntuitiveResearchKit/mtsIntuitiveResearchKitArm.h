@@ -116,6 +116,7 @@ protected:
     mtsInterfaceRequired * PIDInterface;
     struct {
         mtsFunctionWrite Enable;
+        mtsFunctionWrite EnableJoints;
         mtsFunctionRead  GetPositionJoint;
         mtsFunctionRead  GetPositionJointDesired;
         mtsFunctionRead  GetStateJoint;
