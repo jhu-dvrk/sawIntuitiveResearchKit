@@ -213,6 +213,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     case mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING:
         // save previous state
         CouplingChange.PreviousState = RobotState;
+        CouplingChange.Started = false;
         // set state
         RobotState = newState;
         this->MessageEvents.Status(this->GetName() + " changing coupling");
@@ -233,7 +234,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         if (RobotState != mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING) {
             EngagingStage = 0;
         }
-        LastEngagingStage = 4;
+        LastEngagingStage = 5;
         // set state
         RobotState = newState;
         this->MessageEvents.Status(this->GetName() + " engaging adapter");
@@ -281,7 +282,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             SetPositionJointLocal(JointGet); // preload PID with current position
             PID.EnableTrackingError(true);
             // set tighter pots/encoder tolerances
-            PotsToEncodersTolerance.SetAll(20.0 * cmnPI_180); // 10 degrees for rotations
+            PotsToEncodersTolerance.SetAll(20.0 * cmnPI_180); // 20 degrees for rotations
             PotsToEncodersTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm
             RobotIO.SetPotsToEncodersTolerance(PotsToEncodersTolerance);
         }
@@ -455,18 +456,34 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                     CouplingChange.DesiredCoupling.JointToActuatorEffort().ForceAssign(identity);
                 }
                 RobotIO.SetCoupling(CouplingChange.DesiredCoupling);
-                std::cerr << "add code to set wait for coupling" << std::endl;
+                CouplingChange.WaitingForEnabledJoints = false;
+                CouplingChange.WaitingForCoupling = true;
+                CouplingChange.ReceivedCoupling = false;
                 return;
             } else {
-                std::cerr << "write code to handle wrong enabled joints" << std::endl;
-                /*
-
-
-
-
-
-                 */
+                MessageEvents.Warning(this->GetName() + " can't disable last four axis to change coupling.");
+                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
             }
+        } else {
+            return;
+        }
+    }
+
+    if (CouplingChange.WaitingForCoupling) {
+        // check if received new coupling
+        if (CouplingChange.ReceivedCoupling) {
+            if ((CouplingChange.DesiredCoupling.ActuatorToJointPosition().Equal(CouplingChange.LastCoupling.ActuatorToJointPosition()))
+                && (CouplingChange.DesiredCoupling.JointToActuatorPosition().Equal(CouplingChange.LastCoupling.JointToActuatorPosition()))
+                && (CouplingChange.DesiredCoupling.JointToActuatorEffort().Equal(CouplingChange.LastCoupling.JointToActuatorEffort()))
+                && (CouplingChange.DesiredCoupling.JointToActuatorEffort().Equal(CouplingChange.LastCoupling.JointToActuatorEffort()))) {
+                CouplingChange.WaitingForCoupling = false;
+                this->SetState(CouplingChange.PreviousState);
+            } else {
+                MessageEvents.Warning(this->GetName() + " can't set coupling.");
+                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
+            }
+        } else {
+            return;
         }
     }
 }
@@ -477,6 +494,15 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
     // initialize all trajectories
     if (EngagingStage == 0) {
+        // request coupling change
+        CouplingChange.PreviousState = RobotState;
+        CouplingChange.CouplingForTool = false; // Load identity coupling
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING);
+        EngagingStage = 1;
+        return;
+    }
+
+    if (EngagingStage == 1) {
         // configure PID to fail in case of tracking error
         PID.SetCheckJointLimit(false);
         vctDoubleVec tolerances(NumberOfJoints());
@@ -484,9 +510,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
         tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
         // tool/adapter gears should have little resistance?
-        tolerances.Ref(4, 3).SetAll(90.0 * cmnPI_180);
+        tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
         PID.SetTrackingErrorTolerance(tolerances);
-        SetPositionJointLocal(JointGet); // preload PID with current position
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
 
@@ -495,11 +520,14 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         // set last 4 to -170.0
         JointTrajectory.Goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
         // compute initial time
-        JointTrajectory.LSPB.Set(JointGetDesired, JointTrajectory.Goal,
+        vctDoubleVec initialPosition(NumberOfJoints());
+        initialPosition.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
+        initialPosition.Ref(4, 3).Assign(JointGet.Ref(4, 0));
+        JointTrajectory.LSPB.Set(initialPosition, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
                                  currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
         HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
-        EngagingStage = 1;
+        EngagingStage = 2;
         return;
     }
 
@@ -522,7 +550,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
                                      currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
             HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
             std::stringstream message;
-            message << this->GetName() << " engaging adapter " << EngagingStage << " of " << LastEngagingStage;
+            message << this->GetName() << " engaging adapter " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
             MessageEvents.Status(message.str());
             EngagingStage++;
         }

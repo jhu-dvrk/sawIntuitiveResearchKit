@@ -24,25 +24,25 @@
     </joint>
 
     <joint index="3" name="outer_roll">
-      <pid PGain="0.500" DGain="0.03" IGain="0.001" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
+      <pid PGain="6.0" DGain="0.05" IGain="0.002" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
       <limit MinILimit="-10" MaxILimit="10" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-260" UpperLimit="260" Units="deg"/>
     </joint>
 
     <joint index="4" name="outer_wrist_pitch">
-      <pid PGain="0.500" DGain="0.03" IGain="0.001" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
+      <pid PGain="6.0" DGain="0.05" IGain="0.002" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
       <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-80" UpperLimit="80" Units="deg"/>
     </joint>
 
     <joint index="5" name="outer_wrist_yaw">
-      <pid PGain="0.500" DGain="0.03" IGain="0.001" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
+      <pid PGain="6.0" DGain="0.05" IGain="0.002" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
       <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-80" UpperLimit="80" Units="deg"/>
     </joint>
 
     <joint index="6" name="jaw">
-      <pid PGain="0.500" DGain="0.03" IGain="0.001" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
+      <pid PGain="6.0" DGain="0.05" IGain="0.002" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
       <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-20" UpperLimit="80" Units="deg"/>
     </joint>
