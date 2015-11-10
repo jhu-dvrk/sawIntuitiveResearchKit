@@ -510,7 +510,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
         tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
         // tool/adapter gears should have little resistance?
-        tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
+        tolerances.Ref(4, 3).SetAll(25.0 * cmnPI_180);
         PID.SetTrackingErrorTolerance(tolerances);
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
