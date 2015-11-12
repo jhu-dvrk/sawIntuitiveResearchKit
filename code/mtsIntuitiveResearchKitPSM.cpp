@@ -123,19 +123,55 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 
 void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
 {
-    robManipulator::Errno result;
-    result = this->Manipulator.LoadRobot(filename);
-    if (result == robManipulator::EFAILURE) {
-        CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
-                                 << filename << "\"" << std::endl;
-    } else {
-        // tool tip transform, this should come from a configuration file
-        ToolOffsetTransformation.Assign(0.0, -1.0,  0.0, 0.0,
-                                        0.0,  0.0,  1.0, 0.0,
-                                        -1.0, 0.0,  0.0, 0.0,
-                                        0.0,  0.0,  0.0, 1.0);
-        ToolOffset = new robManipulator(ToolOffsetTransformation);
-        Manipulator.Attach(ToolOffset);
+    try {
+        std::ifstream jsonStream;
+        Json::Value jsonConfig;
+        Json::Reader jsonReader;
+        
+        jsonStream.open(filename.c_str());
+        if (!jsonReader.parse(jsonStream, jsonConfig)) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": failed to parse configuration\n"
+                                     << jsonReader.getFormattedErrorMessages();
+            return;
+        }
+
+        // load DH parameters        
+        const Json::Value jsonDH = jsonConfig["DH"];
+        if (jsonDH.isNull()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": can find \"DH\" data in \"" << filename << "\"" << std::endl;
+            return;
+        }
+        this->Manipulator.LoadRobot(jsonDH);
+        std::stringstream dhResult;
+        this->Manipulator.PrintKinematics(dhResult);
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure " << this->GetName()
+                                   << ": loaded kinematrics" << std::endl << dhResult.str() << std::endl;
+
+        // load tool tip transform if any (with warning)
+        const Json::Value jsonToolTip = jsonConfig["tooltip-offset"];
+        if (jsonToolTip.isNull()) {
+            CMN_LOG_CLASS_INIT_WARNING << "Configure " << this->GetName()
+                                       << ": can find \"tooltip-offset\" data in \"" << filename << "\"" << std::endl;
+        } else {
+            cmnDataJSON<vctFrm4x4>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
+            ToolOffset = new robManipulator(ToolOffsetTransformation);
+            Manipulator.Attach(ToolOffset);
+        }
+
+        // load coupling information (required)
+        const Json::Value jsonCoupling = jsonConfig["coupling"];
+        if (jsonCoupling.isNull()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": can find \"coupling\" data in \"" << filename << "\"" << std::endl;
+            return;
+        }
+        cmnDataJSON<prmActuatorJointCoupling>::DeSerializeText(CouplingChange.ToolCoupling,
+                                                               jsonCoupling);
+    } catch (...) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
+                                 << filename << "\" is using JSON" << std::endl;
     }
 }
 
@@ -172,10 +208,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         // default coupling, assumes no tool
         {
             const vctDoubleMat identity(vctDoubleMat::Eye(NumberOfAxes()));
-            CouplingChange.DesiredCoupling.ActuatorToJointPosition().ForceAssign(identity);
-            CouplingChange.DesiredCoupling.JointToActuatorPosition().ForceAssign(identity);
-            CouplingChange.DesiredCoupling.ActuatorToJointEffort().ForceAssign(identity);
-            CouplingChange.DesiredCoupling.JointToActuatorEffort().ForceAssign(identity);
+            CouplingChange.DesiredCoupling.Assign(identity);
             RobotIO.SetCoupling(CouplingChange.DesiredCoupling);
         }
         // no power
@@ -446,14 +479,11 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
             if (CouplingChange.DesiredEnabledJoints.Equal(CouplingChange.LastEnabledJoints)) {
                 CouplingChange.WaitingForEnabledJoints = false;
                 if (CouplingChange.CouplingForTool) {
-                    std::cerr << "add code to load tool coupling" << std::endl;
+                    CouplingChange.DesiredCoupling.Assign(CouplingChange.ToolCoupling);
                 } else {
                     const vctDoubleMat identity(vctDoubleMat::Eye(NumberOfAxes()));
                     // set desired
-                    CouplingChange.DesiredCoupling.ActuatorToJointPosition().ForceAssign(identity);
-                    CouplingChange.DesiredCoupling.JointToActuatorPosition().ForceAssign(identity);
-                    CouplingChange.DesiredCoupling.ActuatorToJointEffort().ForceAssign(identity);
-                    CouplingChange.DesiredCoupling.JointToActuatorEffort().ForceAssign(identity);
+                    CouplingChange.DesiredCoupling.Assign(identity);
                 }
                 RobotIO.SetCoupling(CouplingChange.DesiredCoupling);
                 CouplingChange.WaitingForEnabledJoints = false;
@@ -472,10 +502,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
     if (CouplingChange.WaitingForCoupling) {
         // check if received new coupling
         if (CouplingChange.ReceivedCoupling) {
-            if ((CouplingChange.DesiredCoupling.ActuatorToJointPosition().Equal(CouplingChange.LastCoupling.ActuatorToJointPosition()))
-                && (CouplingChange.DesiredCoupling.JointToActuatorPosition().Equal(CouplingChange.LastCoupling.JointToActuatorPosition()))
-                && (CouplingChange.DesiredCoupling.JointToActuatorEffort().Equal(CouplingChange.LastCoupling.JointToActuatorEffort()))
-                && (CouplingChange.DesiredCoupling.JointToActuatorEffort().Equal(CouplingChange.LastCoupling.JointToActuatorEffort()))) {
+            if (CouplingChange.DesiredCoupling.Equal(CouplingChange.LastCoupling)) {
                 CouplingChange.WaitingForCoupling = false;
                 this->SetState(CouplingChange.PreviousState);
             } else {
@@ -510,7 +537,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
         tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
         // tool/adapter gears should have little resistance?
-        tolerances.Ref(4, 3).SetAll(25.0 * cmnPI_180);
+        tolerances.Ref(4, 3).SetAll(35.0 * cmnPI_180);
         PID.SetTrackingErrorTolerance(tolerances);
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
@@ -560,22 +587,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 {
     if (EngagingStage == 0) {
-        // configure PID to fail in case of tracking error
-        PID.SetCheckJointLimit(false);
-        vctDoubleVec tolerances(NumberOfJoints());
-        // first two rotations
-        tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
-        // translation
-        tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
-        // tool/adapter gears
-        tolerances.Ref(4, 3).SetAll(10.0 * cmnPI_180);
-        PID.SetTrackingErrorTolerance(tolerances);
-        SetPositionJointLocal(JointGet); // preload PID with current position
-        PID.EnableTrackingError(true);
-
         // request coupling change
         CouplingChange.PreviousState = RobotState;
-        CouplingChange.CouplingForTool = true;
+        CouplingChange.CouplingForTool = true; // Load tool coupling
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING);
         EngagingStage = 1;
         return;
@@ -723,10 +737,7 @@ void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 void mtsIntuitiveResearchKitPSM::CouplingEventHandler(const prmActuatorJointCoupling & coupling)
 {
     CouplingChange.ReceivedCoupling = true;
-    CouplingChange.LastCoupling.ActuatorToJointPosition().ForceAssign(coupling.ActuatorToJointPosition());
-    CouplingChange.LastCoupling.JointToActuatorPosition().ForceAssign(coupling.JointToActuatorPosition());
-    CouplingChange.LastCoupling.ActuatorToJointEffort().ForceAssign(coupling.ActuatorToJointEffort());
-    CouplingChange.LastCoupling.JointToActuatorEffort().ForceAssign(coupling.JointToActuatorEffort());
+    CouplingChange.LastCoupling.Assign(coupling);
 }
 
 void mtsIntuitiveResearchKitPSM::EnableJointsEventHandler(const vctBoolVec & enable)

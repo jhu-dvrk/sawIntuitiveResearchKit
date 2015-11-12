@@ -137,7 +137,7 @@ protected:
         bool WaitingForEnabledJoints, ReceivedEnabledJoints;
         vctBoolVec LastEnabledJoints, DesiredEnabledJoints;
         bool WaitingForCoupling, ReceivedCoupling;
-        prmActuatorJointCoupling LastCoupling, DesiredCoupling;
+        prmActuatorJointCoupling LastCoupling, DesiredCoupling, ToolCoupling;
     } CouplingChange;
 };
 
