@@ -127,7 +127,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         std::ifstream jsonStream;
         Json::Value jsonConfig;
         Json::Reader jsonReader;
-        
+
         jsonStream.open(filename.c_str());
         if (!jsonReader.parse(jsonStream, jsonConfig)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
@@ -136,7 +136,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             return;
         }
 
-        // load DH parameters        
+        // load DH parameters
         const Json::Value jsonDH = jsonConfig["DH"];
         if (jsonDH.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
@@ -169,6 +169,36 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         }
         cmnDataJSON<prmActuatorJointCoupling>::DeSerializeText(CouplingChange.ToolCoupling,
                                                                jsonCoupling);
+
+        // load lower/upper angles used to engage the tool(required)
+        const Json::Value jsonEngageAngles = jsonConfig["tool-engage-angles"];
+        if (jsonEngageAngles.isNull()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": can find \"tool-engage-angles\" data in \"" << filename << "\"" << std::endl;
+            return;
+        }
+        // lower
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.EngageAnglesLower,
+                                                   jsonEngageAngles["lower"]);
+        if (CouplingChange.EngageAnglesLower.size() != NumberOfJoints()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"tool-engage-angles\" : \"lower\" must contain " << NumberOfJoints()
+                                     << " elements in \"" << filename << "\"" << std::endl;
+            return;
+        }
+        // upper
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.EngageAnglesUpper,
+                                                   jsonEngageAngles["upper"]);
+        if (CouplingChange.EngageAnglesUpper.size() != NumberOfJoints()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"tool-engage-angles\" : \"upper\" must contain " << NumberOfJoints()
+                                     << " elements in \"" << filename << "\"" << std::endl;
+            return;
+        }
+        // convert to radians
+        CouplingChange.EngageAnglesUpper *= cmnPI_180;
+        CouplingChange.EngageAnglesLower *= cmnPI_180;
+
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
                                  << filename << "\" is using JSON" << std::endl;
@@ -253,7 +283,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
             MessageEvents.Status(this->GetName() + " is not calibrated yet, will engage adapter later");
             return;
         }
@@ -284,7 +314,8 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED) {
+        if ((RobotState != mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING)
+            && (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED)) {
             MessageEvents.Status(this->GetName() + " adapter is not engaged yet, will engage tool later");
             return;
         }
@@ -292,6 +323,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         if (RobotState != mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING) {
             EngagingStage = 0;
         }
+        LastEngagingStage = 4;
         // set state
         RobotState = newState;
         this->MessageEvents.Status(this->GetName() + " engaging tool");
@@ -325,7 +357,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
             MessageEvents.Error(this->GetName() + " is not ready");
             return;
         }
@@ -343,7 +375,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
     {
-      if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+      if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
           MessageEvents.Error(this->GetName() + " is not calibrated");
           return;
       }
@@ -366,7 +398,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
       break;
     }
     case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
             MessageEvents.Error(this->GetName() + " is not calibrated");
             return;
         }
@@ -381,7 +413,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
             MessageEvents.Error(this->GetName() + " is not ready yet");
             return;
         }
@@ -395,7 +427,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     }
 
     // Emit event with current state
-    MessageEvents.RobotState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->RobotState));
+    MessageEvents.RobotState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState));
 }
 
 void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
@@ -519,7 +551,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 {
     const double currentTime = this->StateTable.GetTic();
 
-    // initialize all trajectories
     if (EngagingStage == 0) {
         // request coupling change
         CouplingChange.PreviousState = RobotState;
@@ -539,6 +570,12 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         // tool/adapter gears should have little resistance?
         tolerances.Ref(4, 3).SetAll(35.0 * cmnPI_180);
         PID.SetTrackingErrorTolerance(tolerances);
+        // compute initial time, since we disable power on last 4 use latest read
+        vctDoubleVec initialPosition(NumberOfJoints());
+        initialPosition.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
+        initialPosition.Ref(4, 3).Assign(JointGet.Ref(4, 3));
+        SetPositionJointLocal(initialPosition);
+        // turn on PID
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
 
@@ -546,10 +583,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         JointTrajectory.Goal.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
         // set last 4 to -170.0
         JointTrajectory.Goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
-        // compute initial time
-        vctDoubleVec initialPosition(NumberOfJoints());
-        initialPosition.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
-        initialPosition.Ref(4, 3).Assign(JointGet.Ref(4, 0));
         JointTrajectory.LSPB.Set(initialPosition, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
                                  currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
@@ -586,6 +619,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
 void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 {
+    const double currentTime = this->StateTable.GetTic();
+
     if (EngagingStage == 0) {
         // request coupling change
         CouplingChange.PreviousState = RobotState;
@@ -595,66 +630,66 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         return;
     }
 
-    std::cerr << "here" << std::endl;
-
-#if 0
-    if (!EngagingToolStarted) {
-        EngagingStopwatch.Reset();
-        EngagingStopwatch.Start();
-        EngagingJointSet.ForceAssign(JointGetDesired);
-        // disable joint limits
+    if (EngagingStage == 1) {
+        // configure PID to fail in case of tracking error
         PID.SetCheckJointLimit(false);
-        EngagingToolStarted = true;
+        vctDoubleVec tolerances(NumberOfJoints());
+        // first two rotations and translation, in case someone is pushinh/holding arm
+        tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
+        tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
+        // tool/adapter gears should have little resistance?
+        tolerances.Ref(4, 3).SetAll(35.0 * cmnPI_180);
+        PID.SetTrackingErrorTolerance(tolerances);
+        // compute initial time, since we disable power on last 4 use latest read
+        vctDoubleVec initialPosition(NumberOfJoints());
+        initialPosition.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
+        initialPosition.Ref(4, 3).Assign(JointGet.Ref(4, 3));
+        SetPositionJointLocal(initialPosition);
+        // turn on PID
+        PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
+        PID.EnableTrackingError(true);
+
+        // keep first three joint values as is
+        JointTrajectory.Goal.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
+        // set last 4 to user preferences
+        JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.EngageAnglesLower.Ref(4, 3));
+        JointTrajectory.LSPB.Set(initialPosition, JointTrajectory.Goal,
+                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                 currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
+        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+        EngagingStage = 2;
         return;
     }
 
-    if (EngagingStopwatch.GetElapsedTime() > (3000 * cmn_ms)) {
-        EngagingStopwatch.Reset();
-        // Adapter engage done
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
-    }
-    else if (EngagingStopwatch.GetElapsedTime() > (2500 * cmn_ms)) {
-        // straight wrist open gripper
-        EngagingJointSet[3] = 0.0;
-        EngagingJointSet[4] = 0.0;
-        EngagingJointSet[5] = 0.0;
-        EngagingJointSet[6] = 10.0 * cmnPI / 180.0;
-        JointSet.Assign(EngagingJointSet);
+    // perform whatever trajectory is going on
+    if (currentTime <= HomingTimer) {
+        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
         SetPositionJointLocal(JointSet);
+    } else {
+        // check if we were in last phase
+        if (EngagingStage > LastEngagingStage) {
+            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+        } else {
+            if (EngagingStage != LastEngagingStage) {
+                // toggle between lower and upper
+                if (EngagingStage % 2 == 0) {
+                    JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.EngageAnglesUpper.Ref(4, 3));
+                } else {
+                    JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.EngageAnglesLower.Ref(4, 3));
+                }
+            } else {
+                JointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
+            }
+            JointTrajectory.LSPB.Set(JointGetDesired, JointTrajectory.Goal,
+                                     JointTrajectory.Velocity, JointTrajectory.Acceleration,
+                                     currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
+            HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+            std::stringstream message;
+            message << this->GetName() << " engaging tool " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
+            MessageEvents.Status(message.str());
+            EngagingStage++;
+        }
     }
-    else if (EngagingStopwatch.GetElapsedTime() > (2000 * cmn_ms)) {
-        EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
-        EngagingJointSet[4] =  10.0 * cmnPI / 180.0;
-        EngagingJointSet[5] =  10.0 * cmnPI / 180.0;
-        EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
-        JointSet.Assign(EngagingJointSet);
-        SetPositionJointLocal(JointSet);
-    }
-    else if (EngagingStopwatch.GetElapsedTime() > (1500 * cmn_ms)) {
-        EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
-        EngagingJointSet[4] =  10.0 * cmnPI / 180.0;
-        EngagingJointSet[5] = -10.0 * cmnPI / 180.0;
-        EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
-        JointSet.Assign(EngagingJointSet);
-        SetPositionJointLocal(JointSet);
-    }
-    else if (EngagingStopwatch.GetElapsedTime() > (1000 * cmn_ms)) {
-        EngagingJointSet[3] =  280.0 * cmnPI / 180.0;
-        EngagingJointSet[4] = -10.0 * cmnPI / 180.0;
-        EngagingJointSet[5] =  10.0 * cmnPI / 180.0;
-        EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
-        JointSet.Assign(EngagingJointSet);
-        SetPositionJointLocal(JointSet);
-    }
-    else if (EngagingStopwatch.GetElapsedTime() > (500 * cmn_ms)) {
-        EngagingJointSet[3] = -280.0 * cmnPI / 180.0;
-        EngagingJointSet[4] = -10.0 * cmnPI / 180.0;
-        EngagingJointSet[5] = -10.0 * cmnPI / 180.0;
-        EngagingJointSet[6] =  10.0 * cmnPI / 180.0;
-        JointSet.Assign(EngagingJointSet);
-        SetPositionJointLocal(JointSet);
-    }
-#endif
 }
 
 void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
@@ -801,7 +836,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
 
     // Start manual mode but save the previous state
     if (button.Type() == prmEventButton::PRESSED) {
-        ClutchEvents.ManipClutchPreviousState = this->RobotState;
+        ClutchEvents.ManipClutchPreviousState = RobotState;
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
     } else {
         if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL) {

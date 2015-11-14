@@ -85,4 +85,10 @@
                                    [ 0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.6089, -1.2177],
                                    [ 0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.6089,  1.2177]]
     }
+    ,
+    // angles used to engage the tool, in degrees - make sure these are within the range of motion IN the cannula
+    "tool-engage-angles" : {
+        "lower" : [0.0, 0.0, 0.0, -200.0, -15.0,  15.0, 0.0],
+        "upper" : [0.0, 0.0, 0.0,  200.0,  15.0, -15.0, 0.0]
+    }
 }

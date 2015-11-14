@@ -132,6 +132,7 @@ protected:
     unsigned int LastEngagingStage;
     struct {
         bool CouplingForTool;
+        vctDoubleVec EngageAnglesLower, EngageAnglesUpper;
         bool Started;
         mtsIntuitiveResearchKitArmTypes::RobotStateType PreviousState;
         bool WaitingForEnabledJoints, ReceivedEnabledJoints;
