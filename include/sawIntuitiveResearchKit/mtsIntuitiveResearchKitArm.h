@@ -47,7 +47,7 @@ public:
     void Run(void);
     void Cleanup(void);
 
-    void SetSimulated(void);
+    virtual void SetSimulated(void);
 
 protected:
 

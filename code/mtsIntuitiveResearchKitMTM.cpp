@@ -124,6 +124,20 @@ void mtsIntuitiveResearchKitMTM::SetMTMType(const bool autodetect, const MTM_TYP
     }
 }
 
+void mtsIntuitiveResearchKitMTM::SetSimulated(void)
+{
+    mtsIntuitiveResearchKitArm::SetSimulated();
+    StateJointParam.Name().SetSize(7);
+    StateJointParam.Name().at(0) = "outer_yaw";
+    StateJointParam.Name().at(1) = "shoulder_pitch";
+    StateJointParam.Name().at(2) = "elbow_pitch";        
+    StateJointParam.Name().at(3) = "wrist_platform";
+    StateJointParam.Name().at(4) = "wrist_pitch";        
+    StateJointParam.Name().at(5) = "wrist_yaw";        
+    StateJointParam.Name().at(6) = "wrist_roll";
+    StateJointDesiredParam.Name().ForceAssign(StateJointParam.Name());
+}
+
 void mtsIntuitiveResearchKitMTM::GetRobotData(void)
 {
     mtsIntuitiveResearchKitArm::GetRobotData();

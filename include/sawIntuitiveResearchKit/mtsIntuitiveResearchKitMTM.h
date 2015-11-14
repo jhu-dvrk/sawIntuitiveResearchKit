@@ -44,6 +44,8 @@ public:
     */
     void SetMTMType(const bool autodetect = true, const MTM_TYPE type = MTM_NULL);
 
+    void SetSimulated(void);
+
 protected:
     enum JointName {
         JNT_OUTER_YAW = 0,

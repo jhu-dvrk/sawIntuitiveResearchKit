@@ -263,9 +263,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
 {
     // we can start reporting some joint values after the robot is powered
     if (this->RobotState > mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING) {
-        if (mIsSimulated) {
-
-        } else {
+        if (!mIsSimulated) {
             mtsExecutionResult executionResult;
             executionResult = PID.GetPositionJoint(JointGetParam);
             if (!executionResult.IsOK()) {
@@ -508,7 +506,12 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
     if (mIsSimulated) {
         JointGet.ForceAssign(newPosition);
         JointGetParam.Position().ForceAssign(newPosition);
+        JointGetParam.Valid() = true;
         JointGetDesired.ForceAssign(newPosition);
+        StateJointParam.Valid() = true;
+        StateJointParam.Position().ForceAssign(newPosition);
+        StateJointDesiredParam.Valid() = true;
+        StateJointDesiredParam.Position().ForceAssign(newPosition);
     } else {
         JointSetParam.Goal().Zeros();
         JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
