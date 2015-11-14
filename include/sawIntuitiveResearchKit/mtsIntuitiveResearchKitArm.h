@@ -123,6 +123,8 @@ protected:
         mtsFunctionRead  GetStateJointDesired;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetCheckJointLimit;
+        mtsFunctionWrite SetJointLowerLimit;
+        mtsFunctionWrite SetJointUpperLimit;
         mtsFunctionRead  GetVelocityJoint;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite SetTorqueJoint;

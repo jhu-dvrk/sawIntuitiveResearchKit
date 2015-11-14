@@ -131,14 +131,17 @@ protected:
     unsigned int EngagingStage; // 0 requested
     unsigned int LastEngagingStage;
     struct {
-        bool CouplingForTool;
-        vctDoubleVec EngageAnglesLower, EngageAnglesUpper;
         bool Started;
         mtsIntuitiveResearchKitArmTypes::RobotStateType PreviousState;
+        bool CouplingForTool;
         bool WaitingForEnabledJoints, ReceivedEnabledJoints;
         vctBoolVec LastEnabledJoints, DesiredEnabledJoints;
         bool WaitingForCoupling, ReceivedCoupling;
         prmActuatorJointCoupling LastCoupling, DesiredCoupling, ToolCoupling;
+        vctDoubleVec ToolEngageLowerPosition, ToolEngageUpperPosition;
+        vctDoubleVec ToolJointLowerLimit, ToolJointUpperLimit;
+        vctDoubleVec NoToolJointLowerLimit, NoToolJointUpperLimit;
+        vctDoubleVec TorqueLowerLimit, TorqueUpperLimit;
     } CouplingChange;
 };
 

@@ -76,6 +76,23 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
     PotsToEncodersTolerance.Element(2) = 5.0 * cmn_mm; // 5 mm
 
+    // Joint limits when empty
+    CouplingChange.NoToolJointLowerLimit.SetSize(NumberOfJoints());
+    CouplingChange.NoToolJointUpperLimit.SetSize(NumberOfJoints());
+    CouplingChange.NoToolJointLowerLimit.Assign(-91.0, -53.0,   0.0, -175.0, -175.0 , -175.0, -175.0);
+    CouplingChange.NoToolJointUpperLimit.Assign( 91.0,  53.0, 240.0,  175.0,  175.0 ,  175.0,  175.0);
+    // convert to radians or meters
+    std::cerr <<  CouplingChange.NoToolJointLowerLimit << std::endl;
+    std::cerr <<  CouplingChange.NoToolJointUpperLimit << std::endl;
+    CouplingChange.NoToolJointLowerLimit.Ref(2, 0) *= cmnPI_180;
+    CouplingChange.NoToolJointLowerLimit.Element(2) *= cmn_mm;
+    CouplingChange.NoToolJointLowerLimit.Ref(4, 3) *= cmnPI_180;
+    CouplingChange.NoToolJointUpperLimit.Ref(2, 0) *= cmnPI_180;
+    CouplingChange.NoToolJointUpperLimit.Element(2) *= cmn_mm;
+    CouplingChange.NoToolJointUpperLimit.Ref(4, 3) *= cmnPI_180;
+    std::cerr <<  CouplingChange.NoToolJointLowerLimit << std::endl;
+    std::cerr <<  CouplingChange.NoToolJointUpperLimit << std::endl;
+
     mtsInterfaceRequired * interfaceRequired;
 
     // Main interface should have been created by base class init
@@ -170,34 +187,71 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         cmnDataJSON<prmActuatorJointCoupling>::DeSerializeText(CouplingChange.ToolCoupling,
                                                                jsonCoupling);
 
-        // load lower/upper angles used to engage the tool(required)
-        const Json::Value jsonEngageAngles = jsonConfig["tool-engage-angles"];
-        if (jsonEngageAngles.isNull()) {
+        // load lower/upper position used to engage the tool(required)
+        const Json::Value jsonEngagePosition = jsonConfig["tool-engage-position"];
+        if (jsonEngagePosition.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": can find \"tool-engage-angles\" data in \"" << filename << "\"" << std::endl;
+                                     << ": can find \"tool-engage-position\" data in \"" << filename << "\"" << std::endl;
             return;
         }
         // lower
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.EngageAnglesLower,
-                                                   jsonEngageAngles["lower"]);
-        if (CouplingChange.EngageAnglesLower.size() != NumberOfJoints()) {
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolEngageLowerPosition,
+                                                   jsonEngagePosition["lower"]);
+        if (CouplingChange.ToolEngageLowerPosition.size() != NumberOfJoints()) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": \"tool-engage-angles\" : \"lower\" must contain " << NumberOfJoints()
+                                     << ": \"tool-engage-position\" : \"lower\" must contain " << NumberOfJoints()
                                      << " elements in \"" << filename << "\"" << std::endl;
             return;
         }
         // upper
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.EngageAnglesUpper,
-                                                   jsonEngageAngles["upper"]);
-        if (CouplingChange.EngageAnglesUpper.size() != NumberOfJoints()) {
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolEngageUpperPosition,
+                                                   jsonEngagePosition["upper"]);
+        if (CouplingChange.ToolEngageUpperPosition.size() != NumberOfJoints()) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": \"tool-engage-angles\" : \"upper\" must contain " << NumberOfJoints()
+                                     << ": \"tool-engage-position\" : \"upper\" must contain " << NumberOfJoints()
                                      << " elements in \"" << filename << "\"" << std::endl;
             return;
         }
-        // convert to radians
-        CouplingChange.EngageAnglesUpper *= cmnPI_180;
-        CouplingChange.EngageAnglesLower *= cmnPI_180;
+        // convert to radians or meters
+        CouplingChange.ToolEngageUpperPosition.Ref(2, 0) *= cmnPI_180;
+        CouplingChange.ToolEngageUpperPosition.Element(2) *= cmn_mm;
+        CouplingChange.ToolEngageUpperPosition.Ref(4, 3) *= cmnPI_180;
+        CouplingChange.ToolEngageLowerPosition.Ref(2, 0) *= cmnPI_180;
+        CouplingChange.ToolEngageLowerPosition.Element(2) *= cmn_mm;
+        CouplingChange.ToolEngageLowerPosition.Ref(4, 3) *= cmnPI_180;
+
+        // load lower/upper joint limit for the tool(required)
+        const Json::Value jsonJointLimit = jsonConfig["tool-joint-limit"];
+        if (jsonJointLimit.isNull()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": can find \"tool-joint-limit\" data in \"" << filename << "\"" << std::endl;
+            return;
+        }
+        // lower
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolJointLowerLimit,
+                                                   jsonJointLimit["lower"]);
+        if (CouplingChange.ToolJointLowerLimit.size() != NumberOfJoints()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"tool-joint-limit\" : \"lower\" must contain " << NumberOfJoints()
+                                     << " elements in \"" << filename << "\"" << std::endl;
+            return;
+        }
+        // upper
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolJointUpperLimit,
+                                                   jsonJointLimit["upper"]);
+        if (CouplingChange.ToolJointUpperLimit.size() != NumberOfJoints()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"tool-joint-limit\" : \"lower\" must contain " << NumberOfJoints()
+                                     << " elements in \"" << filename << "\"" << std::endl;
+            return;
+        }
+        // convert to radians or meters
+        CouplingChange.ToolJointUpperLimit.Ref(2, 0) *= cmnPI_180;
+        CouplingChange.ToolJointUpperLimit.Element(2) *= cmn_mm;
+        CouplingChange.ToolJointUpperLimit.Ref(4, 3) *= cmnPI_180;
+        CouplingChange.ToolJointLowerLimit.Ref(2, 0) *= cmnPI_180;
+        CouplingChange.ToolJointLowerLimit.Element(2) *= cmn_mm;
+        CouplingChange.ToolJointLowerLimit.Ref(4, 3) *= cmnPI_180;
 
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
@@ -536,6 +590,14 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
         if (CouplingChange.ReceivedCoupling) {
             if (CouplingChange.DesiredCoupling.Equal(CouplingChange.LastCoupling)) {
                 CouplingChange.WaitingForCoupling = false;
+                // now set PID limits based on tool/no tool
+                if (CouplingChange.CouplingForTool) {
+                    PID.SetJointLowerLimit(CouplingChange.ToolJointLowerLimit);
+                    PID.SetJointUpperLimit(CouplingChange.ToolJointUpperLimit);
+                } else {
+                    PID.SetJointLowerLimit(CouplingChange.NoToolJointLowerLimit);
+                    PID.SetJointUpperLimit(CouplingChange.NoToolJointUpperLimit);
+                }
                 this->SetState(CouplingChange.PreviousState);
             } else {
                 MessageEvents.Warning(this->GetName() + " can't set coupling.");
@@ -652,7 +714,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         // keep first three joint values as is
         JointTrajectory.Goal.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
         // set last 4 to user preferences
-        JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.EngageAnglesLower.Ref(4, 3));
+        JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
         JointTrajectory.LSPB.Set(initialPosition, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
                                  currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
@@ -673,9 +735,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
             if (EngagingStage != LastEngagingStage) {
                 // toggle between lower and upper
                 if (EngagingStage % 2 == 0) {
-                    JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.EngageAnglesUpper.Ref(4, 3));
+                    JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageUpperPosition.Ref(4, 3));
                 } else {
-                    JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.EngageAnglesLower.Ref(4, 3));
+                    JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
                 }
             } else {
                 JointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
