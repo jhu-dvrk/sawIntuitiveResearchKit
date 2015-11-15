@@ -82,16 +82,12 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     CouplingChange.NoToolJointLowerLimit.Assign(-91.0, -53.0,   0.0, -175.0, -175.0 , -175.0, -175.0);
     CouplingChange.NoToolJointUpperLimit.Assign( 91.0,  53.0, 240.0,  175.0,  175.0 ,  175.0,  175.0);
     // convert to radians or meters
-    std::cerr <<  CouplingChange.NoToolJointLowerLimit << std::endl;
-    std::cerr <<  CouplingChange.NoToolJointUpperLimit << std::endl;
     CouplingChange.NoToolJointLowerLimit.Ref(2, 0) *= cmnPI_180;
     CouplingChange.NoToolJointLowerLimit.Element(2) *= cmn_mm;
     CouplingChange.NoToolJointLowerLimit.Ref(4, 3) *= cmnPI_180;
     CouplingChange.NoToolJointUpperLimit.Ref(2, 0) *= cmnPI_180;
     CouplingChange.NoToolJointUpperLimit.Element(2) *= cmn_mm;
     CouplingChange.NoToolJointUpperLimit.Ref(4, 3) *= cmnPI_180;
-    std::cerr <<  CouplingChange.NoToolJointLowerLimit << std::endl;
-    std::cerr <<  CouplingChange.NoToolJointUpperLimit << std::endl;
 
     mtsInterfaceRequired * interfaceRequired;
 
@@ -299,6 +295,8 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
         RobotIO.DisablePower();
         PID.Enable(false);
+        PID.SetJointLowerLimit(CouplingChange.NoToolJointLowerLimit);
+        PID.SetJointUpperLimit(CouplingChange.NoToolJointUpperLimit);
         PID.SetCheckJointLimit(true);
         RobotState = newState;
         MessageEvents.Status(this->GetName() + " not initialized");
@@ -710,6 +708,15 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         // turn on PID
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
+
+        // check if the tool in outside the cannula
+        if (JointGet.Element(2) > 50.0 * cmn_mm) {
+            std::string message = this->GetName();
+            message.append(" tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
+            message.append("  If the tool is not engaged properly, move sterile adpater all the way up and re-insert tool.");
+            MessageEvents.Status(message);
+            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+        }
 
         // keep first three joint values as is
         JointTrajectory.Goal.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
