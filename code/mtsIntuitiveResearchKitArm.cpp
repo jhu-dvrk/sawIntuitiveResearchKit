@@ -386,7 +386,7 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
             RobotIO.BrakeEngage();
         }
         // bias encoders based on pots
-        RobotIO.BiasEncoder();
+        RobotIO.BiasEncoder(1000); // 1000 samples
         // use pots for redundancy
         if (UsePotsForSafetyCheck()) {
             RobotIO.SetPotsToEncodersTolerance(PotsToEncodersTolerance);

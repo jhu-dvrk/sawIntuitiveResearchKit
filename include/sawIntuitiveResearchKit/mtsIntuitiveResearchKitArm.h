@@ -142,7 +142,7 @@ protected:
         mtsFunctionVoid  DisablePower;
         mtsFunctionRead  GetActuatorAmpStatus;
         mtsFunctionRead  GetBrakeAmpStatus;
-        mtsFunctionVoid  BiasEncoder;
+        mtsFunctionWrite BiasEncoder;
         mtsFunctionWrite ResetSingleEncoder;
         mtsFunctionRead  GetAnalogInputPosSI;
         mtsFunctionWrite SetActuatorCurrent;
