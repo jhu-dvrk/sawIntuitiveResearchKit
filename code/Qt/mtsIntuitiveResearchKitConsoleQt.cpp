@@ -83,6 +83,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM:        
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED:
             // PID widget
             unsigned int numberOfJoints;
             if (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM ||
@@ -104,6 +105,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             TabWidget->addTab(pidGUI, (name + " PID").c_str());
 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_KIN_SIMULATED:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_KIN_SIMULATED:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_KIN_SIMULATED:
             // Arm widget
             armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");

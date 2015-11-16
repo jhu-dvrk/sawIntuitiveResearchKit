@@ -93,6 +93,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         }
         break;
     case ARM_PSM:
+    case ARM_PSM_KIN_SIMULATED:
         {
             if (!existingArm) {
                 mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
@@ -102,6 +103,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         }
         break;
     case ARM_ECM:
+    case ARM_ECM_KIN_SIMULATED:
         {
             if (!existingArm) {
                 mtsIntuitiveResearchKitECM * ecm = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
@@ -161,6 +163,29 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             }
         }
         break;
+     case ARM_ECM_DERIVED:
+        {
+            if (!existingArm) {
+                mtsComponent * component;
+                component = componentManager->GetComponent(Name());
+                if (component) {
+                    mtsIntuitiveResearchKitPSM * slave = dynamic_cast<mtsIntuitiveResearchKitPSM *>(component);
+                    if (ecm) {
+                        ecm->Configure(mArmConfigurationFile);
+                    } else {
+                        CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
+                                           << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitPSM."
+                                           << std::endl;
+                    }
+                } else {
+                    CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
+                                       << Name() << "\" not found."
+                                       << std::endl;
+                }
+            }
+        }
+        break;
+
     default:
         break;
     }
@@ -185,6 +210,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
                                   IOComponentName(), Name() + "-ManipClutch");
         break;
     case ARM_ECM:
+    case ARM_ECM_DERIVED:
         componentManager->Connect(Name(), "ManipClutch",
                                   IOComponentName(), Name() + "-ManipClutch");
         break;
@@ -218,10 +244,12 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
 
     // if the arm is a research kit arm
     if ((mType == ARM_PSM) ||
+        (mType == ARM_PSM_DERIVED) ||
         (mType == ARM_MTM) ||
         (mType == ARM_PSM_DERIVED) ||
         (mType == ARM_MTM_DERIVED) ||
-        (mType == ARM_ECM)) {
+        (mType == ARM_ECM) ||
+        (mType == ARM_ECM_DERIVED) ||) {
         // Connect arm to IO and PID
         componentManager->Connect(Name(), "RobotIO",
                                   IOComponentName(), Name());
@@ -512,7 +540,8 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
 {
     if ((newArm->mType != Arm::ARM_SUJ) &&
         (newArm->mType != Arm::ARM_MTM_KIN_SIMULATED) &&
-        (newArm->mType != Arm::ARM_PSM_KIN_SIMULATED)) {
+        (newArm->mType != Arm::ARM_PSM_KIN_SIMULATED) &&
+        (newArm->mType != Arm::ARM_ECM_KIN_SIMULATED)) {
         if (newArm->mPIDConfigurationFile.empty()) {
             CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
                                      << newArm->Name() << " must be configured first (PID)." << std::endl;
@@ -682,16 +711,20 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             armPointer->mType = Arm::ARM_MTM;
         } else if (typeString == "PSM") {
             armPointer->mType = Arm::ARM_PSM;
+        } else if (typeString == "ECM") {
+            armPointer->mType = Arm::ARM_ECM;
         } else if (typeString == "MTM_DERIVED") {
             armPointer->mType = Arm::ARM_MTM_DERIVED;
         } else if (typeString == "PSM_DERIVED") {
             armPointer->mType = Arm::ARM_PSM_DERIVED;
+        } else if (typeString == "ECM_DERIVED") {
+            armPointer->mType = Arm::ARM_ECM_DERIVED;
         } else if (typeString == "MTM_KIN_SIMULATED") {
             armPointer->mType = Arm::ARM_MTM_KIN_SIMULATED;
         } else if (typeString == "PSM_KIN_SIMULATED") {
             armPointer->mType = Arm::ARM_PSM_KIN_SIMULATED;
-        } else if (typeString == "ECM") {
-            armPointer->mType = Arm::ARM_ECM;
+        }else if (typeString == "ECM_KIM_SIMULATED") {
+            armPointer->mType = Arm::ARM_ECM_KIN_SIMULATED;
         } else if (typeString == "SUJ") {
             armPointer->mType = Arm::ARM_SUJ;
         } else {
@@ -707,7 +740,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
 
     // IO for anything not simulated
     if ((armPointer->mType != Arm::ARM_MTM_KIN_SIMULATED) &&
-        (armPointer->mType != Arm::ARM_PSM_KIN_SIMULATED)) {
+        (armPointer->mType != Arm::ARM_PSM_KIN_SIMULATED)
+        (armPointer->mType != Arm::ARM_ECM_KIN_SIMULATED)) {
         jsonValue = jsonArm["io"];
         if (!jsonValue.empty()) {
             armPointer->mIOConfigurationFile = configPath.Find(jsonValue.asString());
@@ -724,10 +758,11 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
 
     // PID only required for MTM, PSM and ECM
     if ((armPointer->mType == Arm::ARM_MTM)
-        || (armPointer->mType == Arm::ARM_PSM)
         || (armPointer->mType == Arm::ARM_MTM_DERIVED)
+        || (armPointer->mType == Arm::ARM_PSM)
         || (armPointer->mType == Arm::ARM_PSM_DERIVED)
-        || (armPointer->mType == Arm::ARM_ECM)) {
+        || (armPointer->mType == Arm::ARM_ECM)
+        || (armPointer->mType == Arm::ARM_ECM_DERIVED)) {
         jsonValue = jsonArm["pid"];
         if (!jsonValue.empty()) {
             armPointer->mPIDConfigurationFile = configPath.Find(jsonValue.asString());
@@ -884,7 +919,8 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     // PID
     if ((arm->mType != Arm::ARM_SUJ) &&
         (arm->mType != Arm::ARM_MTM_KIN_SIMULATED) &&
-        (arm->mType != Arm::ARM_PSM_KIN_SIMULATED)) {
+        (arm->mType != Arm::ARM_PSM_KIN_SIMULATED) &&
+        (arm->mType != Arm::ARM_ECM_KIN_SIMULATED)) {
         const std::string interfaceNamePID = "PID-" + arm->Name();
         arm->PIDInterfaceRequired = AddInterfaceRequired(interfaceNamePID);
         if (arm->PIDInterfaceRequired) {
