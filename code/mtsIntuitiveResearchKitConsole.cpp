@@ -344,6 +344,16 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         jsonValue = jsonConfig["io"]["period"];
         if (!jsonValue.empty()) {
             periodIO = jsonValue.asDouble();
+            if (periodIO > 1.0 * cmn_ms) {
+                std::stringstream message;
+                message << "Configure:" << std::endl
+                        << "------------------------------------------------------------------------------" << std::endl
+                        << "WARNING, the period provided is quite high, i.e. " << periodIO << " seconds" << std::endl
+                        << "We strongly recommend you change it to a value below 1 ms, i.e. 0.001" << std::endl
+                        << "------------------------------------------------------------------------------";
+                std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
+                CMN_LOG_CLASS_INIT_WARNING << message << std::endl;
+            }
         }
         jsonValue = jsonConfig["io"]["port"];
         if (!jsonValue.empty()) {
