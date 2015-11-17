@@ -45,6 +45,7 @@ mtsIntuitiveResearchKitConsole::Arm::Arm(const std::string & name,
                                          const std::string & ioComponentName):
     mName(name),
     mIOComponentName(ioComponentName),
+    mArmPeriod(1.0 * cmn_ms),
     IOInterfaceRequired(0),
     PIDInterfaceRequired(0),
     ArmInterfaceRequired(0)
@@ -395,7 +396,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         }
         const std::string armConfig = iter->second->mArmConfigurationFile;
         if (armConfig != "") {
-            iter->second->ConfigureArm(iter->second->mType, armConfig);
+            iter->second->ConfigureArm(iter->second->mType, armConfig, iter->second->mArmPeriod);
         }
     }
 
@@ -748,6 +749,12 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             return false;
         }
     }
+    // read period if present
+    jsonValue = jsonArm["period"];
+    if (!jsonValue.empty()) {
+        armPointer->mArmPeriod = jsonValue.asFloat();
+    }
+
     // add the arm if it's a new one
     if (armIterator == mArms.end()) {
         AddArm(armPointer);
