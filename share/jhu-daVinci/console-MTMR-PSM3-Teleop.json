@@ -1,30 +1,20 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "io": {
-        "period": 0.0005, // in seconds
-        "port": 0 // default is 0
-    }
-    ,
-    "operator-present": {
-        "component": "io",
-        "interface": "COAG"
-    }
-    ,
     "arms":
     [
         {
-            "name": "PSM2",
+            "name": "PSM3",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM2-27374.xml",
+            "io": "sawRobotIO1394-PSM3-28613.xml",
             "pid": "../sawControllersPID-PSM.xml",
             "kinematic": "../psm-large-needle-driver.json"
         }
         ,
         {
-            "name": "MTML",
+            "name": "MTMR",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTML-22723-foot-pedal.xml",
-            "pid": "../sawControllersPID-MTML.xml",
+            "io": "sawRobotIO1394-MTMR-22403-foot-pedal.xml",
+            "pid": "../sawControllersPID-MTMR.xml",
             "kinematic": "../dvmtm.rob"
         }
     ]
@@ -32,8 +22,8 @@
     "psm-teleops":
     [
         {
-            "master": "MTML",
-            "slave": "PSM2",
+            "master": "MTMR",
+            "slave": "PSM3",
             "period": 0.005, // in seconds
             "rotation" : [[-1.0000,  0.0000,  0.0000],
 			              [ 0.0000, -1.0000,  0.0000],
