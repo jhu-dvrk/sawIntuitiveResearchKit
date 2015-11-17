@@ -915,13 +915,13 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
     } else {
         if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL) {
-            // Enable PID
-            PID.Enable(true);
             // set command joint position to joint current
             PID.GetPositionJoint(JointGetParam);
             JointGet.Assign(JointGetParam.Position(), NumberOfJoints());
             JointSet.ForceAssign(JointGet);
             SetPositionJointLocal(JointSet);
+            // Enable PID
+            PID.Enable(true);
             // go back to state before clutching
             SetState(ClutchEvents.ManipClutchPreviousState);
         }
