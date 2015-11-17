@@ -253,7 +253,7 @@ bool mtsIntuitiveResearchKitArm::CurrentStateIs(const mtsIntuitiveResearchKitArm
         return true;
     }
     CMN_LOG_CLASS_RUN_WARNING << GetName() << ": Checking state: arm not in "
-                              << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN)
+                              << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(state)
                               << ", current state is " << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState) << std::endl;
     return false;
 }
