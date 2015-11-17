@@ -912,6 +912,8 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
             // Enable PID
             PID.Enable(true);
             // set command joint position to joint current
+            PID.GetPositionJoint(JointGetParam);
+            JointGet.Assign(JointGetParam.Position(), NumberOfJoints());
             JointSet.ForceAssign(JointGet);
             SetPositionJointLocal(JointSet);
             // go back to state before clutching
