@@ -124,6 +124,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         IOInterface->AddFunction("SetPotsToEncodersTolerance", RobotIO.SetPotsToEncodersTolerance);
         IOInterface->AddFunction("BrakeRelease", RobotIO.BrakeRelease);
         IOInterface->AddFunction("BrakeEngage", RobotIO.BrakeEngage);
+        IOInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::BiasEncoderEventHandler, this, "BiasEncoder");
     }
 
     // Setup Joints
@@ -194,6 +195,9 @@ void mtsIntuitiveResearchKitArm::Run(void)
     switch (RobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
         break;
+    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER:
+        RunHomingBiasEncoder();
+        break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:
         RunHomingPower();
         break;
@@ -257,7 +261,7 @@ bool mtsIntuitiveResearchKitArm::CurrentStateIs(const mtsIntuitiveResearchKitArm
 void mtsIntuitiveResearchKitArm::GetRobotData(void)
 {
     // we can start reporting some joint values after the robot is powered
-    if (this->RobotState > mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING) {
+    if (this->RobotState > mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER) {
         mtsExecutionResult executionResult;
         executionResult = PID.GetPositionJoint(JointGetParam);
         if (!executionResult.IsOK()) {
@@ -374,6 +378,27 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
     }
 }
 
+void mtsIntuitiveResearchKitArm::RunHomingBiasEncoder(void)
+{
+    const double currentTime = this->StateTable.GetTic();
+    const double timeToBias = 30.0 * cmn_s; // large timeout
+
+    // first, request bias encoder
+    if (!HomingBiasEncoderRequested) {
+        RobotIO.BiasEncoder(1000);
+        HomingBiasEncoderRequested = true;
+        HomingTimer = currentTime;
+        return;
+    }
+
+    // second, check status
+    if ((currentTime - HomingTimer) > timeToBias) {
+        HomingBiasEncoderRequested = false;
+        MessageEvents.Error(this->GetName() + " failed to bias encoders (timeout).");
+        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);        
+    }
+}
+
 void mtsIntuitiveResearchKitArm::RunHomingPower(void)
 {
     const double timeToPower = 3.0 * cmn_s;
@@ -385,8 +410,6 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
         if (NumberOfBrakes() > 0) {
             RobotIO.BrakeEngage();
         }
-        // bias encoders based on pots
-        RobotIO.BiasEncoder(1000); // 1000 samples
         // use pots for redundancy
         if (UsePotsForSafetyCheck()) {
             RobotIO.SetPotsToEncodersTolerance(PotsToEncodersTolerance);
@@ -604,4 +627,13 @@ void mtsIntuitiveResearchKitArm::JointLimitEventHandler(const vctBoolVec & flags
         JointTrajectory.EndTime = 0.0;
     }
     MessageEvents.Warning(this->GetName() + ": PID joint limit");
+}
+
+void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
+{
+    if (HomingBiasEncoderRequested) {
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
+    } else {
+        MessageEvents.Status(this->GetName() + " encoders have been biased by another process");
+    }
 }

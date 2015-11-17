@@ -70,7 +70,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     JointTrajectory.Velocity.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
     JointTrajectory.Acceleration.Ref(2, 0).SetAll(180.0 * cmnPI_180);
     JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
-    JointTrajectory.Acceleration.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
+    JointTrajectory.Acceleration.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
     // high values for engage adapter/tool until these use a proper trajectory generator
     PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
@@ -300,6 +300,12 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         PID.SetCheckJointLimit(true);
         RobotState = newState;
         MessageEvents.Status(this->GetName() + " not initialized");
+        break;
+
+    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER:
+        HomingBiasEncoderRequested = false;
+        RobotState = newState;
+        MessageEvents.Status(this->GetName() + " updating encoders based on potentiometers");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:
@@ -853,7 +859,7 @@ void mtsIntuitiveResearchKitPSM::EnableJointsEventHandler(const vctBoolVec & ena
 void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
 {
     if (state == "Home") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER);
     } else if ((state == "Cartesian position") || (state == "Teleop")) {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN);
     } else if (state == "Cartesian constraint controller") {

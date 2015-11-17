@@ -65,7 +65,10 @@ protected:
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
 
-    /*! Homing procedure, power the robot and initial current and encoder calibration. */
+    /*! Homing procedure, bias encoders from potentiometers. */
+    virtual void RunHomingBiasEncoder(void);
+
+    /*! Homing procedure, power the robot. */
     virtual void RunHomingPower(void);
 
     /*! Homing procedure, home all joints except last one using potentiometers as reference. */
@@ -97,6 +100,9 @@ protected:
 
     /*! Event handler for PID errors. */
     void ErrorEventHandler(const std::string & message);
+
+    /*! Event handler for EncoderBias done. */
+    void BiasEncoderEventHandler(const int & nbSamples);
 
     /*! Configuration methods specific to derived classes. */
     virtual size_t NumberOfAxes(void) const = 0;           // used IO: ECM 4, PSM 7, MTM 8
@@ -224,6 +230,7 @@ protected:
 
     // Home Action
     double HomingTimer;
+    bool HomingBiasEncoderRequested;
     bool HomingPowerRequested;
     bool HomingCalibrateArmStarted;
 
