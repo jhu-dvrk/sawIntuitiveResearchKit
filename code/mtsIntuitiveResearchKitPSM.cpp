@@ -415,8 +415,8 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
-        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.Error(this->GetName() + " is not ready");
+        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
+            MessageEvents.Error(this->GetName() + " is not calibrated");
             return;
         }
         RobotState = newState;
@@ -433,8 +433,8 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
     {
-      if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-          MessageEvents.Error(this->GetName() + " is not calibrated");
+      if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+          MessageEvents.Error(this->GetName() + " is not ready");
           return;
       }
       // check that the tool is inserted deep enough
@@ -456,8 +456,8 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
       break;
     }
     case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
-        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            MessageEvents.Error(this->GetName() + " is not calibrated");
+        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+            MessageEvents.Error(this->GetName() + " is not ready");
             return;
         }
         // check that the tool is inserted deep enough
@@ -472,7 +472,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL:
         if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            MessageEvents.Error(this->GetName() + " is not ready yet");
+            MessageEvents.Error(this->GetName() + " is not calibrated");
             return;
         }
         // disable PID to allow manual move
