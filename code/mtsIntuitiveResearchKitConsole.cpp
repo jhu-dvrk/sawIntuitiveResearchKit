@@ -169,12 +169,12 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                 mtsComponent * component;
                 component = componentManager->GetComponent(Name());
                 if (component) {
-                    mtsIntuitiveResearchKitPSM * slave = dynamic_cast<mtsIntuitiveResearchKitPSM *>(component);
+                    mtsIntuitiveResearchKitECM * ecm = dynamic_cast<mtsIntuitiveResearchKitECM *>(component);
                     if (ecm) {
                         ecm->Configure(mArmConfigurationFile);
                     } else {
                         CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
-                                           << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitPSM."
+                                           << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitECM."
                                            << std::endl;
                     }
                 } else {
@@ -246,10 +246,9 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
     if ((mType == ARM_PSM) ||
         (mType == ARM_PSM_DERIVED) ||
         (mType == ARM_MTM) ||
-        (mType == ARM_PSM_DERIVED) ||
         (mType == ARM_MTM_DERIVED) ||
         (mType == ARM_ECM) ||
-        (mType == ARM_ECM_DERIVED) ||) {
+        (mType == ARM_ECM_DERIVED)) {
         // Connect arm to IO and PID
         componentManager->Connect(Name(), "RobotIO",
                                   IOComponentName(), Name());
@@ -740,7 +739,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
 
     // IO for anything not simulated
     if ((armPointer->mType != Arm::ARM_MTM_KIN_SIMULATED) &&
-        (armPointer->mType != Arm::ARM_PSM_KIN_SIMULATED)
+        (armPointer->mType != Arm::ARM_PSM_KIN_SIMULATED) &&
         (armPointer->mType != Arm::ARM_ECM_KIN_SIMULATED)) {
         jsonValue = jsonArm["io"];
         if (!jsonValue.empty()) {
