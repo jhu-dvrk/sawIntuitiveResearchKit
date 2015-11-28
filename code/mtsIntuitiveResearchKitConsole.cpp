@@ -60,17 +60,21 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & confi
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     mtsPID * pid = new mtsPID(mPIDComponentName,
                               (periodInSeconds != 0.0) ? periodInSeconds : 1.0 * cmn_s);
+    bool hasIO = true;
     pid->Configure(mPIDConfigurationFile);
     if ((mType == ARM_MTM_KIN_SIMULATED) ||
         (mType == ARM_PSM_KIN_SIMULATED) ||
         (mType == ARM_ECM_KIN_SIMULATED)) {
         pid->SetSimulated();
+        hasIO = false;
     }
     componentManager->AddComponent(pid);
-    componentManager->Connect(PIDComponentName(), "RobotJointTorqueInterface", IOComponentName(), Name());
-    if (periodInSeconds == 0.0) {
-        componentManager->Connect(PIDComponentName(), "ExecIn",
-                                  IOComponentName(), "ExecOut");
+    if (hasIO) {
+        componentManager->Connect(PIDComponentName(), "RobotJointTorqueInterface", IOComponentName(), Name());
+        if (periodInSeconds == 0.0) {
+            componentManager->Connect(PIDComponentName(), "ExecIn",
+                                      IOComponentName(), "ExecOut");
+        }
     }
 }
 

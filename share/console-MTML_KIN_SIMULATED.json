@@ -5,6 +5,7 @@
         {
             "name": "MTML",
             "type": "MTM_KIN_SIMULATED",
+            "pid": "sawControllersPID-MTML.xml",
             "kinematic": "dvmtm.rob"
         }
     ]

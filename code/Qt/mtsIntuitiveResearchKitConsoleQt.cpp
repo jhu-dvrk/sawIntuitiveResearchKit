@@ -80,10 +80,13 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         {
         case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_KIN_SIMULATED:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM:        
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_KIN_SIMULATED:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_KIN_SIMULATED:
             // PID widget
             unsigned int numberOfJoints;
             if (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM ||
@@ -97,16 +100,12 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             } else {
                 numberOfJoints = 0; // can't happen but prevents compiler warning
             }
-
             pidGUI = new mtsPIDQtWidget(name + "-PID-GUI", numberOfJoints);
             pidGUI->Configure();
             componentManager->AddComponent(pidGUI);
             Connections.push_back(new ConnectionType(pidGUI->GetName(), "Controller", armIter->second->PIDComponentName(), "Controller"));
             TabWidget->addTab(pidGUI, (name + " PID").c_str());
 
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_KIN_SIMULATED:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_KIN_SIMULATED:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_KIN_SIMULATED:
             // Arm widget
             armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");
             armGUI->Configure();
