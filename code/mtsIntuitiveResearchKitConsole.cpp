@@ -57,10 +57,15 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & confi
     mPIDComponentName = mName + "-PID";
 
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    mtsPID * pidMaster = new mtsPID(mPIDComponentName,
-                                    (periodInSeconds != 0.0) ? periodInSeconds : 1.0 * cmn_s);
-    pidMaster->Configure(mPIDConfigurationFile);
-    componentManager->AddComponent(pidMaster);
+    mtsPID * pid = new mtsPID(mPIDComponentName,
+                              (periodInSeconds != 0.0) ? periodInSeconds : 1.0 * cmn_s);
+    pid->Configure(mPIDConfigurationFile);
+    if ((mType == ARM_MTM_KIN_SIMULATED) ||
+        (mType == ARM_PSM_KIN_SIMULATED) ||
+        (mType == ARM_ECM_KIN_SIMULATED)) {
+        pid->SetSimulated();
+    }
+    componentManager->AddComponent(pid);
     componentManager->Connect(PIDComponentName(), "RobotJointTorqueInterface", IOComponentName(), Name());
     if (periodInSeconds == 0.0) {
         componentManager->Connect(PIDComponentName(), "ExecIn",
@@ -252,6 +257,16 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
         // Connect arm to IO and PID
         componentManager->Connect(Name(), "RobotIO",
                                   IOComponentName(), Name());
+    }
+    if ((mType == ARM_PSM) ||
+        (mType == ARM_PSM_DERIVED) ||
+        (mType == ARM_PSM_KIN_SIMULATED) ||
+        (mType == ARM_MTM) ||
+        (mType == ARM_MTM_DERIVED) ||
+        (mType == ARM_MTM_KIN_SIMULATED) ||
+        (mType == ARM_ECM) ||
+        (mType == ARM_ECM_DERIVED) ||
+        (mType == ARM_ECM_KIN_SIMULATED)) {
         componentManager->Connect(Name(), "PID",
                                   PIDComponentName(), "Controller");
         if ((mBaseFrameComponentName != "") && (mBaseFrameInterfaceName != "")) {
@@ -537,10 +552,7 @@ void mtsIntuitiveResearchKitConsole::Cleanup(void)
 
 bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
 {
-    if ((newArm->mType != Arm::ARM_SUJ) &&
-        (newArm->mType != Arm::ARM_MTM_KIN_SIMULATED) &&
-        (newArm->mType != Arm::ARM_PSM_KIN_SIMULATED) &&
-        (newArm->mType != Arm::ARM_ECM_KIN_SIMULATED)) {
+    if (newArm->mType != Arm::ARM_SUJ) {
         if (newArm->mPIDConfigurationFile.empty()) {
             CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
                                      << newArm->Name() << " must be configured first (PID)." << std::endl;
@@ -756,12 +768,15 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     }
 
     // PID only required for MTM, PSM and ECM
-    if ((armPointer->mType == Arm::ARM_MTM)
+    if (   (armPointer->mType == Arm::ARM_MTM)
         || (armPointer->mType == Arm::ARM_MTM_DERIVED)
+        || (armPointer->mType == Arm::ARM_MTM_KIN_SIMULATED)
         || (armPointer->mType == Arm::ARM_PSM)
         || (armPointer->mType == Arm::ARM_PSM_DERIVED)
+        || (armPointer->mType == Arm::ARM_PSM_KIN_SIMULATED)
         || (armPointer->mType == Arm::ARM_ECM)
-        || (armPointer->mType == Arm::ARM_ECM_DERIVED)) {
+        || (armPointer->mType == Arm::ARM_ECM_DERIVED)
+        || (armPointer->mType == Arm::ARM_ECM_KIN_SIMULATED)) {
         jsonValue = jsonArm["pid"];
         if (!jsonValue.empty()) {
             armPointer->mPIDConfigurationFile = configPath.Find(jsonValue.asString());
@@ -901,7 +916,8 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
 {
     // IO
     if ((arm->mType != Arm::ARM_MTM_KIN_SIMULATED) &&
-        (arm->mType != Arm::ARM_PSM_KIN_SIMULATED)) {
+        (arm->mType != Arm::ARM_PSM_KIN_SIMULATED) &&
+        (arm->mType != Arm::ARM_ECM_KIN_SIMULATED)) {
         const std::string interfaceNameIO = "IO-" + arm->Name();
         arm->IOInterfaceRequired = AddInterfaceRequired(interfaceNameIO);
         if (arm->IOInterfaceRequired) {
@@ -916,10 +932,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     }
 
     // PID
-    if ((arm->mType != Arm::ARM_SUJ) &&
-        (arm->mType != Arm::ARM_MTM_KIN_SIMULATED) &&
-        (arm->mType != Arm::ARM_PSM_KIN_SIMULATED) &&
-        (arm->mType != Arm::ARM_ECM_KIN_SIMULATED)) {
+    if (arm->mType != Arm::ARM_SUJ) {
         const std::string interfaceNamePID = "PID-" + arm->Name();
         arm->PIDInterfaceRequired = AddInterfaceRequired(interfaceNamePID);
         if (arm->PIDInterfaceRequired) {
