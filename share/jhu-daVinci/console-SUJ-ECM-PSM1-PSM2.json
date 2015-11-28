@@ -5,11 +5,6 @@
         "port": 0 // default is 0
     }
     ,
-    "operator-present": {
-        "component": "io",
-        "interface": "COAG"
-    }
-    ,
     "arms":
     [
         {
@@ -36,6 +31,18 @@
         }
         ,
         {
+            "name": "PSM2",
+            "type": "PSM",
+            "io": "sawRobotIO1394-PSM2-32204.xml",
+            "pid": "../sawControllersPID-PSM.xml",
+            "kinematic": "../psm-large-needle-driver.json",
+            "base-frame": {
+                "component": "SUJ",
+                "interface": "PSM2"
+            }
+        }
+        ,
+        {
             "name": "ECM",
             "type": "ECM",
             "io": "sawRobotIO1394-ECM-29738.xml",
@@ -45,26 +52,6 @@
                 "component": "SUJ",
                 "interface": "ECM"
             }
-        }
-        ,
-        {
-            "name": "MTMR",
-            "type": "MTM",
-            "io": "sawRobotIO1394-MTMR-22403-foot-pedal.xml",
-            "pid": "../sawControllersPID-MTMR.xml",
-            "kinematic": "../dvmtm.rob"
-        }
-    ]
-    ,
-    "psm-teleops":
-    [
-        {
-            "master": "MTMR",
-            "slave": "PSM1",
-            "period": 0.005, // in seconds
-            "rotation" : [[0.0000,  1.0000,  0.0000],   // -1 0 0
-			              [  1.0000,  0.0000,  0.0000],  // 0 -1 0
-			              [ 0.0000,  0.0000,  -1.0000]]
         }
     ]
 }

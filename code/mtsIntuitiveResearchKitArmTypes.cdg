@@ -7,6 +7,10 @@ class {
             description Uninitialized;
         }
         enum-value {
+            name DVRK_HOMING_BIAS_ENCODER;
+            description Bias encoders from potentiometers;
+        }
+        enum-value {
             name DVRK_HOMING_POWERING;
             description Powering;
         }
@@ -21,6 +25,10 @@ class {
         enum-value {
             name DVRK_ARM_CALIBRATED;
             description DVRK calibrated;
+        }
+        enum-value {
+            name DVRK_CHANGING_COUPLING;
+            description Changing actuator to joint coupling for PSM;
         }
         enum-value {
             name DVRK_ENGAGING_ADAPTER;

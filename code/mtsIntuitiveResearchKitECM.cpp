@@ -120,6 +120,12 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
         MessageEvents.Status(this->GetName() + " not initialized");
         break;
 
+    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER:
+        HomingBiasEncoderRequested = false;
+        RobotState = newState;
+        MessageEvents.Status(this->GetName() + " updating encoders based on potentiometers");
+        break;
+
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:
         HomingTimer = 0.0;
         HomingPowerRequested = false;
@@ -269,7 +275,7 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
 void mtsIntuitiveResearchKitECM::SetRobotControlState(const std::string & state)
 {
     if (state == "Home") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER);
     } else if ((state == "Cartesian position") || (state == "Teleop")) {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN);
     } else if (state == "Manual") {

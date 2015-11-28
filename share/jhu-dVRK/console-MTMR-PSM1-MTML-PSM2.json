@@ -18,7 +18,7 @@
             "type": "PSM",
             "io": "sawRobotIO1394-PSM1-28007.xml",
             "pid": "../sawControllersPID-PSM.xml",
-            "kinematic": "../dvpsm.rob"
+            "kinematic": "../psm-large-needle-driver.json"
         }
         ,
         {
@@ -26,7 +26,7 @@
             "type": "PSM",
             "io": "sawRobotIO1394-PSM2-27374.xml",
             "pid": "../sawControllersPID-PSM.xml",
-            "kinematic": "../dvpsm.rob"
+            "kinematic": "../psm-large-needle-driver.json"
         }
         ,
         {

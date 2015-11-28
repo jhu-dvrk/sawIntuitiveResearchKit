@@ -29,8 +29,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstRobot/robManipulator.h>
 
-const double MIN_BRAKE_CURRENT = 0.0;
-
 const size_t MUX_ARRAY_SIZE = 6;
 const size_t MUX_MAX_INDEX = 15;
 const size_t ANALOG_SAMPLE_NUMBER = 60; // empirical value, tradeoff between speed and stability of analog input
@@ -299,6 +297,7 @@ public:
     unsigned int mClutched;
     double mBrakeDesiredCurrent;
     double mBrakeReleaseCurrent;
+    double mBrakeEngagedCurrent;
     double mBrakeDirectionCurrent;
 
     // Functions for events
@@ -497,6 +496,12 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
             arm->mBrakeDirectionCurrent = -1.0;
         }
 
+        brakeCurrent = 0.0;
+        if (!jsonArm["brake-engaged-current"].isNull()) {
+            brakeCurrent = jsonArm["brake-engaged-current"].asFloat();
+        }
+        arm->mBrakeEngagedCurrent = brakeCurrent;
+
         // read pot settings
         cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionOffsets[0], jsonArm["primary-offsets"]);
         cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionOffsets[1], jsonArm["secondary-offsets"]);
@@ -640,7 +645,18 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
             if (arrayIndex < 2) {
                 arm->mVoltages[arrayIndex][indexInArray] = mVoltages[armIndex];
             } else {
-                arm->mVoltagesExtra[indexInArray] = mVoltages[armIndex];
+                if (indexInArray == 2) {
+                    if ((armIndex==0) || (armIndex==1) || (armIndex==2)) {
+                        Arms[3-armIndex]->mVoltagesExtra[indexInArray] = mVoltages[armIndex];
+                    } else if (armIndex == 3) {
+
+                    }
+                } else if ((indexInArray == 3) && (armIndex == 3)) {
+                    Arms[0 /* 3 - armIndex */]->mVoltagesExtra[2] = mVoltages[armIndex];
+                } else {
+                    // normal case
+                    arm->mVoltagesExtra[indexInArray] = mVoltages[armIndex];
+                }
             }
             // advance state table when all joints have been read
             if (mMuxIndex == MUX_MAX_INDEX) {
@@ -814,16 +830,16 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
         }
         // decrease current for brakes
         else {
-            if (arm->mBrakeDesiredCurrent != MIN_BRAKE_CURRENT) {
+            if (arm->mBrakeDesiredCurrent != arm->mBrakeEngagedCurrent) {
                 arm->mStateTableBrakeCurrent.Start();
-                if ((arm->mBrakeDesiredCurrent - (brakeCurrentRate * timeDelta)) >= MIN_BRAKE_CURRENT) {
+                if ((arm->mBrakeDesiredCurrent - (brakeCurrentRate * timeDelta)) >= arm->mBrakeEngagedCurrent) {
                     arm->mBrakeDesiredCurrent -= brakeCurrentRate * timeDelta;
-                    // if by any luck we have reached MIN_BRAKE_CURRENT, need to update cartesian desired
-                    if (arm->mBrakeDesiredCurrent == MIN_BRAKE_CURRENT) {
+                    // if by any luck we have reached arm->mBrakeEngagedCurrent, need to update cartesian desired
+                    if (arm->mBrakeDesiredCurrent == arm->mBrakeEngagedCurrent) {
                         arm->mNeedToUpdatePositionCartesianDesired = 1;
                     }
                 } else {
-                    arm->mBrakeDesiredCurrent = MIN_BRAKE_CURRENT;
+                    arm->mBrakeDesiredCurrent = arm->mBrakeEngagedCurrent;
                     arm->mNeedToUpdatePositionCartesianDesired = 1;
                 }
                 arm->mStateTableBrakeCurrent.Advance();

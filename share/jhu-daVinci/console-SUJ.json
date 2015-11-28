@@ -11,7 +11,7 @@
             "name": "SUJ",
             "type": "SUJ",
             "io": "sawRobotIO1394-SUJ.xml",
-            "kinematic": "suj-calibrated.json"
+            "kinematic": "suj-ECM-0-1-3.json"
         }
     ]
 }

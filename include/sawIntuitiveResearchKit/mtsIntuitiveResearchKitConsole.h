@@ -83,6 +83,7 @@ public:
         std::string mPIDConfigurationFile;
         // arm
         std::string mArmConfigurationFile;
+        double mArmPeriod;
         // base frame
         std::string mBaseFrameComponentName;
         std::string mBaseFrameInterfaceName;

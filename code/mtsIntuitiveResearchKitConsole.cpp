@@ -45,6 +45,7 @@ mtsIntuitiveResearchKitConsole::Arm::Arm(const std::string & name,
                                          const std::string & ioComponentName):
     mName(name),
     mIOComponentName(ioComponentName),
+    mArmPeriod(1.0 * cmn_ms),
     IOInterfaceRequired(0),
     PIDInterfaceRequired(0),
     ArmInterfaceRequired(0)
@@ -390,6 +391,16 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         jsonValue = jsonConfig["io"]["period"];
         if (!jsonValue.empty()) {
             periodIO = jsonValue.asDouble();
+            if (periodIO > 1.0 * cmn_ms) {
+                std::stringstream message;
+                message << "Configure:" << std::endl
+                        << "------------------------------------------------------------------------------" << std::endl
+                        << "WARNING, the period provided is quite high, i.e. " << periodIO << " seconds" << std::endl
+                        << "We strongly recommend you change it to a value below 1 ms, i.e. 0.001" << std::endl
+                        << "------------------------------------------------------------------------------";
+                std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
+                CMN_LOG_CLASS_INIT_WARNING << message << std::endl;
+            }
         }
         jsonValue = jsonConfig["io"]["port"];
         if (!jsonValue.empty()) {
@@ -439,7 +450,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         }
         const std::string armConfig = iter->second->mArmConfigurationFile;
         if (armConfig != "") {
-            iter->second->ConfigureArm(iter->second->mType, armConfig);
+            iter->second->ConfigureArm(iter->second->mType, armConfig, iter->second->mArmPeriod);
         }
     }
 
@@ -813,6 +824,12 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             return false;
         }
     }
+    // read period if present
+    jsonValue = jsonArm["period"];
+    if (!jsonValue.empty()) {
+        armPointer->mArmPeriod = jsonValue.asFloat();
+    }
+
     // add the arm if it's a new one
     if (armIterator == mArms.end()) {
         AddArm(armPointer);
