@@ -107,6 +107,9 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         {
             if (!existingArm) {
                 mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
+                if (armType == ARM_PSM_KIN_SIMULATED) {
+                    slave->SetSimulated();
+                }
                 slave->Configure(mArmConfigurationFile);
                 componentManager->AddComponent(slave);
             }
@@ -117,6 +120,9 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         {
             if (!existingArm) {
                 mtsIntuitiveResearchKitECM * ecm = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
+                if (armType == ARM_ECM_KIN_SIMULATED) {
+                    ecm->SetSimulated();
+                }
                 ecm->Configure(mArmConfigurationFile);
                 componentManager->AddComponent(ecm);
             }

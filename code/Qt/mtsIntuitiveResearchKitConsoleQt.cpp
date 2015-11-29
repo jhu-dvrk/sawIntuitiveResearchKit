@@ -89,13 +89,17 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_KIN_SIMULATED:
             // PID widget
             unsigned int numberOfJoints;
-            if (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM ||
-                armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED) {
+            if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM) ||
+                (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED) ||
+                (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_KIN_SIMULATED)) {
                 numberOfJoints = 7;
-            } else if (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM ||
-                       armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED) {
+            } else if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM) ||
+                       (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED) || 
+                       (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_KIN_SIMULATED)) {
                 numberOfJoints = 8;
-            } else if (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM) {
+            } else if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM) ||
+                       (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED) ||
+                       (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_KIN_SIMULATED)) {
                 numberOfJoints = 4;
             } else {
                 numberOfJoints = 0; // can't happen but prevents compiler warning
