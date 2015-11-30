@@ -59,7 +59,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & confi
 
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     mtsPID * pid = new mtsPID(mPIDComponentName,
-                              (periodInSeconds != 0.0) ? periodInSeconds : 1.0 * cmn_s);
+                              (periodInSeconds != 0.0) ? periodInSeconds : 0.5 * cmn_ms);
     bool hasIO = true;
     pid->Configure(mPIDConfigurationFile);
     if ((mType == ARM_MTM_KIN_SIMULATED) ||

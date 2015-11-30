@@ -388,6 +388,13 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
 
 void mtsIntuitiveResearchKitArm::RunHomingBiasEncoder(void)
 {
+    // if simulated, no need to bias encoders
+    if (mIsSimulated) {
+        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
+        return;
+    }
+
+    // first, request bias encoder
     const double currentTime = this->StateTable.GetTic();
     const double timeToBias = 30.0 * cmn_s; // large timeout
 
@@ -403,7 +410,7 @@ void mtsIntuitiveResearchKitArm::RunHomingBiasEncoder(void)
     if ((currentTime - HomingTimer) > timeToBias) {
         HomingBiasEncoderRequested = false;
         MessageEvents.Error(this->GetName() + " failed to bias encoders (timeout).");
-        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);        
+        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
     }
 }
 
@@ -529,14 +536,9 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalCartesian(void)
 
 void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
-    JointGet.ForceAssign(newPosition);
-    JointGetParam.Position().ForceAssign(newPosition);
-    JointGetParam.Valid() = true;
-    JointGetDesired.ForceAssign(newPosition);
-    StateJointParam.Valid() = true;
-    StateJointParam.Position().ForceAssign(newPosition);
-    StateJointDesiredParam.Valid() = true;
-    StateJointDesiredParam.Position().ForceAssign(newPosition);
+    JointSetParam.Goal().Zeros();
+    JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
+    PID.SetPositionJoint(JointSetParam);
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
