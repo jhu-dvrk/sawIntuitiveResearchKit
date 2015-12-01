@@ -6,7 +6,7 @@ Change log
 
 * API changes:
   * Fixed digital input bug for state pressed.  Need to regenerate XML IO configuration files!
-  * New PID has improved velosity estimation.  Need to use new PID XML files or at least update user files!
+  * New PID has improved velocity estimation.  Need to use new PID XML files or at least update user files!
 * Deprecated features:
   * None
 * New features:
