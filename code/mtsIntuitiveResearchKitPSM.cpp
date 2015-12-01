@@ -332,8 +332,6 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING:
-        // save previous state
-        CouplingChange.PreviousState = RobotState;
         CouplingChange.Started = false;
         // set state
         RobotState = newState;
@@ -899,7 +897,10 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         // this is "down" transition so we have to
         // make sure we had a tool properly engaged before
         if (RobotState >= mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
+            // change coupling to identity before going to DVRK_ADAPTER_ENGAGED state
+            CouplingChange.PreviousState = mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED;
+            CouplingChange.CouplingForTool = false; // Load identity coupling
+            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING);
         }
     }
 }
