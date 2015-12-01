@@ -400,7 +400,7 @@ void mtsIntuitiveResearchKitArm::RunHomingBiasEncoder(void)
 
     // first, request bias encoder
     if (!HomingBiasEncoderRequested) {
-        RobotIO.BiasEncoder(1000);
+        RobotIO.BiasEncoder(5000);
         HomingBiasEncoderRequested = true;
         HomingTimer = currentTime;
         return;
