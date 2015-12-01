@@ -41,6 +41,13 @@ mtsIntuitiveResearchKitECM::mtsIntuitiveResearchKitECM(const mtsTaskPeriodicCons
     Init();
 }
 
+void mtsIntuitiveResearchKitECM::SetSimulated(void)
+{
+    mtsIntuitiveResearchKitArm::SetSimulated();
+    // in simulation mode, we don't need clutch IO
+    RemoveInterfaceRequired("ManipClutch");
+}
+
 robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
@@ -213,6 +220,11 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
 void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
 {
+    if (mIsSimulated) {
+        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+        return;
+    }
+
     static const double extraTime = 5.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 

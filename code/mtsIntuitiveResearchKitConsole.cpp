@@ -755,7 +755,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             armPointer->mType = Arm::ARM_MTM_KIN_SIMULATED;
         } else if (typeString == "PSM_KIN_SIMULATED") {
             armPointer->mType = Arm::ARM_PSM_KIN_SIMULATED;
-        }else if (typeString == "ECM_KIM_SIMULATED") {
+        }else if (typeString == "ECM_KIN_SIMULATED") {
             armPointer->mType = Arm::ARM_ECM_KIN_SIMULATED;
         } else if (typeString == "SUJ") {
             armPointer->mType = Arm::ARM_SUJ;

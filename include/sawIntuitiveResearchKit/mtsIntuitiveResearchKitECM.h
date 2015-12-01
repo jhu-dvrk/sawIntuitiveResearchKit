@@ -32,6 +32,8 @@ public:
     mtsIntuitiveResearchKitECM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitECM() {}
 
+    void SetSimulated(void);
+
 protected:
 
     /*! Configuration methods */
