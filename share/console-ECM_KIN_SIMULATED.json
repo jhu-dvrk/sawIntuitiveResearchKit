@@ -6,7 +6,7 @@
             "name": "ECM",
             "type": "ECM_KIN_SIMULATED",
             "pid": "sawControllersPID-ECM.xml",
-            "kinematic": "dvmtm.rob"
+            "kinematic": "dvecm.rob"
         }
     ]
 }
