@@ -3,7 +3,7 @@
     "arms":
     [
         {
-            "name": "PSM",
+            "name": "PSM1",
             "type": "PSM_KIN_SIMULATED",
             "pid": "sawControllersPID-PSM.xml",
             "kinematic": "psm-large-needle-driver.json"
