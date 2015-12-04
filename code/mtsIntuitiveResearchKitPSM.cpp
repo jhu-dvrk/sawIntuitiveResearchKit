@@ -41,6 +41,15 @@ mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicCons
     Init();
 }
 
+void mtsIntuitiveResearchKitPSM::SetSimulated(void)
+{
+    mtsIntuitiveResearchKitArm::SetSimulated();
+    // in simulation mode, we don't need clutch, adapter nor tool IO
+    RemoveInterfaceRequired("ManipClutch");
+    RemoveInterfaceRequired("Adapter");
+    RemoveInterfaceRequired("Tool");
+}
+
 robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
@@ -325,8 +334,12 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         RobotState = newState;
         this->MessageEvents.Status(this->GetName() + " arm calibrated");
         // check if adpater is present and trigger new state
-        Adapter.GetButton(Adapter.IsPresent);
-        if (Adapter.IsPresent) {
+        if (!mIsSimulated) {
+            Adapter.GetButton(Adapter.IsPresent);
+            if (Adapter.IsPresent) {
+                SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER);
+            }
+        } else {
             SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER);
         }
         break;
@@ -363,8 +376,12 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         RobotState = newState;
         this->MessageEvents.Status(this->GetName() + " adapter engaged");
         // check if tool is present and trigger new state
-        Tool.GetButton(Tool.IsPresent);
-        if (Tool.IsPresent) {
+        if (!mIsSimulated) {
+            Tool.GetButton(Tool.IsPresent);
+            if (Tool.IsPresent) {
+                SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL);
+            }
+        } else {
             SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL);
         }
         break;
@@ -488,6 +505,11 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
 void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
 {
+    if (mIsSimulated) {
+        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
+        return;
+    }
+
     static const double extraTime = 5.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
@@ -613,6 +635,11 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
 
 void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 {
+    if (mIsSimulated) {
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
+        return;
+    }
+
     const double currentTime = this->StateTable.GetTic();
 
     if (EngagingStage == 0) {
@@ -683,6 +710,11 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
 void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 {
+    if (mIsSimulated) {
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+        return;
+    }
+
     const double currentTime = this->StateTable.GetTic();
 
     if (EngagingStage == 0) {

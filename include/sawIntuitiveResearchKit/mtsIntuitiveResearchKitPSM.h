@@ -34,6 +34,7 @@ public:
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitPSM() {}
 
+    void SetSimulated(void);
     void Configure(const std::string & filename);
 
 protected:
