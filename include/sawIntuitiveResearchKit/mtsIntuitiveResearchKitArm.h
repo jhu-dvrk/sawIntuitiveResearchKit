@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstParameterTypes/prmVelocityJointGet.h>
+#include <cisstParameterTypes/prmForceCartesianSet.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
@@ -93,6 +94,8 @@ protected:
     virtual void SetPositionGoalJoint(const prmPositionJointSet & newPosition);
     virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
+    virtual void SetWrenchSpatial(const prmForceCartesianSet & newForce);
+    virtual void SetWrenchBody(const prmForceCartesianSet & newForce);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
     virtual void SetBaseFrame(const prmPositionCartesianGet & newBaseFrame);
@@ -196,6 +199,8 @@ protected:
     vctDoubleVec JointGetDesired;
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
+
+    vctDoubleVec JointExternalEffort;
 
     //! robot current joint velocity
     prmVelocityJointGet JointVelocityGetParam;
