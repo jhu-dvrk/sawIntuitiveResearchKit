@@ -524,8 +524,8 @@ void mtsIntuitiveResearchKitMTM::RunGravityCompensation(void)
     if( JointExternalEffort.size() < N ) { N = JointExternalEffort.size(); }
     for( size_t i=0; i<N; i++ ) { torqueDesired[i] += JointExternalEffort[i]; }
 
-    TorqueSet.SetForceTorque(torqueDesired);
-    PID.SetTorqueJoint(TorqueSet);
+    TorqueSetParam.SetForceTorque(torqueDesired);
+    PID.SetTorqueJoint(TorqueSetParam);
 }
 
 void mtsIntuitiveResearchKitMTM::RunClutch(void)
@@ -541,8 +541,8 @@ void mtsIntuitiveResearchKitMTM::RunClutch(void)
     tau[0] = q(0) * 0.0564 + 0.08;
     torqueDesired.Ref(7).Assign(tau);
 
-    TorqueSet.SetForceTorque(torqueDesired);
-    PID.SetTorqueJoint(TorqueSet);
+    TorqueSetParam.SetForceTorque(torqueDesired);
+    PID.SetTorqueJoint(TorqueSetParam);
 
     // J4-J7
     JointSet.Assign(JointGet);
@@ -603,8 +603,8 @@ void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce
         if( torqueDesired[6] < -1.0 ) { torqueDesired[6] = -0.05; }
         if( 1.0 < torqueDesired[6]  ) { torqueDesired[6] =  0.05; }
 
-        TorqueSet.SetForceTorque(torqueDesired);
-        PID.SetTorqueJoint(TorqueSet);
+        TorqueSetParam.SetForceTorque(torqueDesired);
+        PID.SetTorqueJoint(TorqueSetParam);
     }
 }
 

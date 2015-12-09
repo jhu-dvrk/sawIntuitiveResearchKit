@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstParameterTypes/prmVelocityJointGet.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
+#include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
@@ -64,6 +65,8 @@ protected:
     /*! Convert enum to string using function provided by cisstDataGenerator. */
     void GetRobotControlState(std::string & state) const;
     bool CurrentStateIs(const mtsIntuitiveResearchKitArmTypes::RobotStateType & state);
+    bool CurrentStateIs(const mtsIntuitiveResearchKitArmTypes::RobotStateType & state1,
+                        const mtsIntuitiveResearchKitArmTypes::RobotStateType & state2);
 
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
@@ -82,6 +85,9 @@ protected:
     virtual void RunPositionGoalJoint(void);
     virtual void RunPositionCartesian(void);
     virtual void RunPositionGoalCartesian(void);
+
+    /*! Effort state. */
+    virtual void RunEffortCartesian(void);
 
     /*! Run method called for all states not handled in base class. */
     inline virtual void RunArmSpecific(void) {};
@@ -200,7 +206,10 @@ protected:
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
 
+    // efforts
+    vctDoubleMat JacobianBody, JacobianSpatial;
     vctDoubleVec JointExternalEffort;
+    prmForceTorqueJointSet TorqueSetParam;
 
     //! robot current joint velocity
     prmVelocityJointGet JointVelocityGetParam;

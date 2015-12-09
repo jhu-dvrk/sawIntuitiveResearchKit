@@ -67,6 +67,11 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianVelocityGetParam.SetTimestamp(0.0);
     CartesianVelocityGetParam.SetValid(false);
 
+    // jacobian
+    JacobianBody.SetSize(6, NumberOfJointsKinematics());
+    JacobianSpatial.SetSize(6, NumberOfJointsKinematics());
+    JointExternalEffort.SetSize(NumberOfJointsKinematics());
+
     // base frame, mostly for cases where no base frame is set by user
     BaseFrame = vctFrm4x4::Identity();
     BaseFrameValid = true;
@@ -224,6 +229,9 @@ void mtsIntuitiveResearchKitArm::Run(void)
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
         RunPositionGoalCartesian();
         break;
+    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
+        RunEffortCartesian();
+        break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL:
         break;
     default:
@@ -265,6 +273,20 @@ bool mtsIntuitiveResearchKitArm::CurrentStateIs(const mtsIntuitiveResearchKitArm
     }
     CMN_LOG_CLASS_RUN_WARNING << GetName() << ": Checking state: arm not in "
                               << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(state)
+                              << ", current state is " << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState) << std::endl;
+    return false;
+}
+
+bool mtsIntuitiveResearchKitArm::CurrentStateIs(const mtsIntuitiveResearchKitArmTypes::RobotStateType & state1,
+                                                const mtsIntuitiveResearchKitArmTypes::RobotStateType & state2)
+{
+    if ((RobotState == state1) || (RobotState == state2)) {
+        return true;
+    }
+    CMN_LOG_CLASS_RUN_WARNING << GetName() << ": Checking state: arm not in "
+                              << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(state1)
+                              << " nor "
+                              << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(state2)
                               << ", current state is " << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState) << std::endl;
     return false;
 }
@@ -324,6 +346,9 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             CartesianGetLocalParam.SetValid(true);
             CartesianGetParam.SetTimestamp(JointGetParam.Timestamp());
             CartesianGetParam.SetValid(BaseFrameValid);
+            // update jacobians
+            Manipulator.JacobianBody(JointGet, JacobianBody);
+            Manipulator.JacobianSpatial(JointGet, JacobianSpatial);
 
 #if 0
             // FIXME: bug
@@ -403,7 +428,7 @@ void mtsIntuitiveResearchKitArm::RunHomingBiasEncoder(void)
 
     // first, request bias encoder
     if (!HomingBiasEncoderRequested) {
-        RobotIO.BiasEncoder(5000);
+        RobotIO.BiasEncoder(1970); // birth date, state table only contain 1999 elements anyway
         HomingBiasEncoderRequested = true;
         HomingTimer = currentTime;
         return;
@@ -537,6 +562,14 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalCartesian(void)
     RunPositionGoalJoint();
 }
 
+void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
+{
+    vctDoubleVec torqueDesired(NumberOfAxes(), 0.0); // for PID
+    torqueDesired.Assign(JointExternalEffort, NumberOfJointsKinematics());
+    TorqueSetParam.SetForceTorque(torqueDesired);
+    PID.SetTorqueJoint(TorqueSetParam);
+}
+
 void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
     JointSetParam.Goal().Zeros();
@@ -647,7 +680,7 @@ void mtsIntuitiveResearchKitArm::ErrorEventHandler(const std::string & message)
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 }
 
-void mtsIntuitiveResearchKitArm::JointLimitEventHandler(const vctBoolVec & flags)
+void mtsIntuitiveResearchKitArm::JointLimitEventHandler(const vctBoolVec & CMN_UNUSED(flags))
 {
     // in case there was a trajectory going on
     if (JointTrajectory.EndTime != 0.0) {
@@ -659,6 +692,9 @@ void mtsIntuitiveResearchKitArm::JointLimitEventHandler(const vctBoolVec & flags
 
 void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 {
+    std::stringstream nbSamplesString;
+    nbSamplesString << nbSamples;
+    MessageEvents.Status(this->GetName() + ": encoders biased using " + nbSamplesString.str() + " potentiometer values");
     if (HomingBiasEncoderRequested) {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
     } else {
@@ -668,34 +704,22 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 
 void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wrench)
 {
-    vctDynamicMatrix<double> J( 6, Manipulator.links.size() );
-    Manipulator.JacobianBody( JointGet, J );
-
-    prmForceCartesianSet::ForceType prmft;    // fixed size vector
-    {
-        prmForceCartesianSet tmp( wrench );
-        tmp.GetForce( prmft );                // because GetForce is not const
+    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN,
+                       mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION)) {
+        vctDoubleVec force(wrench.Force()); // convert from fixed size to dynamic
+        JointExternalEffort.ProductOf(JacobianBody.Transpose(), force);
+        return;
     }
-    vctDynamicVector<double> vctft( 6, 0.0 ); // convert to dynamic size vector
-    for( size_t i=0; i<6; i++ )
-        { vctft[i] = prmft[i]; }
-
-    JointExternalEffort = J.Transpose()*vctft;
+    JointExternalEffort.Zeros();
 }
 
 void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & wrench)
 {
-    vctDynamicMatrix<double> J( 6, Manipulator.links.size() );
-    Manipulator.JacobianSpatial( JointGet, J );
-
-    prmForceCartesianSet::ForceType prmft;    // fixed size vector
-    {
-        prmForceCartesianSet tmp( wrench );
-        tmp.GetForce( prmft );                // because GetForce is not const
+    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN,
+                       mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION)) {
+        vctDoubleVec force(wrench.Force()); // convert from fixed size to dynamic
+        JointExternalEffort.ProductOf(JacobianSpatial.Transpose(), force);
+        return;
     }
-    vctDynamicVector<double> vctft( 6, 0.0 );
-    for( size_t i=0; i<6; i++ )
-        { vctft[i] = prmft[i]; }
-
-    JointExternalEffort = J.Transpose()*vctft;
+    JointExternalEffort.Zeros();
 }

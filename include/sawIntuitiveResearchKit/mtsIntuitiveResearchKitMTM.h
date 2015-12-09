@@ -20,7 +20,6 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitMTM_h
 #define _mtsIntuitiveResearchKitMTM_h
 
-#include <cisstParameterTypes/prmForceTorqueJointSet.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 
 class mtsIntuitiveResearchKitMTM: public mtsIntuitiveResearchKitArm
@@ -116,9 +115,6 @@ protected:
 
     //! robot cartesian position when cluthed
     vctFrm4x4 CartesianClutched;
-
-    //! desired torque for torque mode
-    prmForceTorqueJointSet TorqueSet;
 
     //! Analog Input from Hardware for Gripper
     vctDoubleVec AnalogInputPosSI;
