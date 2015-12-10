@@ -209,6 +209,7 @@ protected:
     // efforts
     vctDoubleMat JacobianBody, JacobianSpatial;
     vctDoubleVec JointExternalEffort;
+    bool IsWrenchSet;
     prmForceTorqueJointSet TorqueSetParam;
 
     //! robot current joint velocity

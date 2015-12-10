@@ -164,6 +164,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
     // first cleanup from previous state
     switch (RobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_CLUTCH:
         // Disable torque mode for all joints
         torqueMode.SetAll(false);
@@ -265,6 +266,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
+        IsWrenchSet = false;
         MessageEvents.Status(this->GetName() + " gravity compensation");
         torqueMode.SetAll(true);
         PID.EnableTorqueMode(torqueMode);
@@ -279,6 +281,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
+        IsWrenchSet = false;
         MessageEvents.Status(this->GetName() + " clutch mode");
         // save current cartesian position to CartesianCluted
         CartesianClutched.Assign(CartesianGet);

@@ -296,6 +296,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     // first cleanup from previous state
     switch (RobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
         // Disable torque mode for all joints
         torqueMode.SetAll(false);
         PID.EnableTorqueMode(torqueMode);
@@ -501,6 +502,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             PID.EnableTrackingError(false);
             PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
             RobotState = newState;
+            IsWrenchSet = false;
             MessageEvents.Status(this->GetName() + " effort cartesian");
         }
         break;

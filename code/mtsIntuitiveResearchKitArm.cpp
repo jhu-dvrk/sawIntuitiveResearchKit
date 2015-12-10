@@ -45,6 +45,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mIsSimulated = false;
 
     IsGoalSet = false;
+    IsWrenchSet = false;
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 
     // initialize trajectory data
@@ -564,10 +565,16 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalCartesian(void)
 
 void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
 {
-    vctDoubleVec torqueDesired(NumberOfAxes(), 0.0); // for PID
-    torqueDesired.Assign(JointExternalEffort, NumberOfJointsKinematics());
-    TorqueSetParam.SetForceTorque(torqueDesired);
-    PID.SetTorqueJoint(TorqueSetParam);
+    if (IsWrenchSet) {
+        // pad array for PID
+        vctDoubleVec torqueDesired(NumberOfAxes(), 0.0); // for PID
+        torqueDesired.Assign(JointExternalEffort, NumberOfJointsKinematics());
+        // convert to cisstParameterTypes
+        TorqueSetParam.SetForceTorque(torqueDesired);
+        PID.SetTorqueJoint(TorqueSetParam);
+        // reset flag
+        IsWrenchSet = false;
+    }
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newPosition)
@@ -708,6 +715,7 @@ void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wren
                        mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION)) {
         vctDoubleVec force(wrench.Force()); // convert from fixed size to dynamic
         JointExternalEffort.ProductOf(JacobianBody.Transpose(), force);
+        IsWrenchSet = true;
         return;
     }
     JointExternalEffort.Zeros();
@@ -719,6 +727,7 @@ void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & w
                        mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION)) {
         vctDoubleVec force(wrench.Force()); // convert from fixed size to dynamic
         JointExternalEffort.ProductOf(JacobianSpatial.Transpose(), force);
+        IsWrenchSet = true;
         return;
     }
     JointExternalEffort.Zeros();
