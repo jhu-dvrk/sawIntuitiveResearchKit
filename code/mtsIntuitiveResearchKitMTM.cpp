@@ -164,6 +164,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
     // first cleanup from previous state
     switch (RobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_CLUTCH:
         // Disable torque mode for all joints
         torqueMode.SetAll(false);
@@ -265,6 +266,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
+        IsWrenchSet = false;
         MessageEvents.Status(this->GetName() + " gravity compensation");
         torqueMode.SetAll(true);
         PID.EnableTorqueMode(torqueMode);
@@ -279,6 +281,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
+        IsWrenchSet = false;
         MessageEvents.Status(this->GetName() + " clutch mode");
         // save current cartesian position to CartesianCluted
         CartesianClutched.Assign(CartesianGet);
@@ -519,8 +522,13 @@ void mtsIntuitiveResearchKitMTM::RunGravityCompensation(void)
         torqueDesired[JNT_WRIST_ROLL] = (-1.5 * cmnPI - JointGet[JNT_WRIST_ROLL]) * gain;
     }
 
-    TorqueSet.SetForceTorque(torqueDesired);
-    PID.SetTorqueJoint(TorqueSet);
+    // add the external efforts
+    size_t N = torqueDesired.size();
+    if( JointExternalEffort.size() < N ) { N = JointExternalEffort.size(); }
+    for( size_t i=0; i<N; i++ ) { torqueDesired[i] += JointExternalEffort[i]; }
+
+    TorqueSetParam.SetForceTorque(torqueDesired);
+    PID.SetTorqueJoint(TorqueSetParam);
 }
 
 void mtsIntuitiveResearchKitMTM::RunClutch(void)
@@ -536,8 +544,8 @@ void mtsIntuitiveResearchKitMTM::RunClutch(void)
     tau[0] = q(0) * 0.0564 + 0.08;
     torqueDesired.Ref(7).Assign(tau);
 
-    TorqueSet.SetForceTorque(torqueDesired);
-    PID.SetTorqueJoint(TorqueSet);
+    TorqueSetParam.SetForceTorque(torqueDesired);
+    PID.SetTorqueJoint(TorqueSetParam);
 
     // J4-J7
     JointSet.Assign(JointGet);
@@ -598,8 +606,8 @@ void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce
         if( torqueDesired[6] < -1.0 ) { torqueDesired[6] = -0.05; }
         if( 1.0 < torqueDesired[6]  ) { torqueDesired[6] =  0.05; }
 
-        TorqueSet.SetForceTorque(torqueDesired);
-        PID.SetTorqueJoint(TorqueSet);
+        TorqueSetParam.SetForceTorque(torqueDesired);
+        PID.SetTorqueJoint(TorqueSetParam);
     }
 }
 

@@ -5,9 +5,9 @@
         {
             "name": "MTML",
             "type": "MTM",
-            "simulation": "KINEMATIC",
-            "pid": "sawControllersPID-MTML.xml",
-            "kinematic": "dvmtm.rob"
+            "io": "sawRobotIO1394-MTML-34863.xml",
+            "pid": "../sawControllersPID-MTML.xml",
+            "kinematic": "../dvmtm.rob"
         }
     ]
 }

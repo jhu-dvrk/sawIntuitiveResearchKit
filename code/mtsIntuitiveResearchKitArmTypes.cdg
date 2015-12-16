@@ -67,6 +67,10 @@ class {
             description Constraint controller mode;
         }
         enum-value {
+            name DVRK_EFFORT_CARTESIAN;
+            description Cartesian effort mode;
+        }
+        enum-value {
             name DVRK_GRAVITY_COMPENSATION;
             description Gravity compensation mode;
         }

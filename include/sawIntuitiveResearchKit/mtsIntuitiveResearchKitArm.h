@@ -27,6 +27,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstParameterTypes/prmVelocityJointGet.h>
+#include <cisstParameterTypes/prmForceCartesianSet.h>
+#include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
@@ -63,6 +65,8 @@ protected:
     /*! Convert enum to string using function provided by cisstDataGenerator. */
     void GetRobotControlState(std::string & state) const;
     bool CurrentStateIs(const mtsIntuitiveResearchKitArmTypes::RobotStateType & state);
+    bool CurrentStateIs(const mtsIntuitiveResearchKitArmTypes::RobotStateType & state1,
+                        const mtsIntuitiveResearchKitArmTypes::RobotStateType & state2);
 
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
@@ -82,6 +86,9 @@ protected:
     virtual void RunPositionCartesian(void);
     virtual void RunPositionGoalCartesian(void);
 
+    /*! Effort state. */
+    virtual void RunEffortCartesian(void);
+
     /*! Run method called for all states not handled in base class. */
     inline virtual void RunArmSpecific(void) {};
 
@@ -93,6 +100,8 @@ protected:
     virtual void SetPositionGoalJoint(const prmPositionJointSet & newPosition);
     virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
+    virtual void SetWrenchSpatial(const prmForceCartesianSet & newForce);
+    virtual void SetWrenchBody(const prmForceCartesianSet & newForce);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
     virtual void SetBaseFrame(const prmPositionCartesianGet & newBaseFrame);
@@ -196,6 +205,12 @@ protected:
     vctDoubleVec JointGetDesired;
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
+
+    // efforts
+    vctDoubleMat JacobianBody, JacobianSpatial;
+    vctDoubleVec JointExternalEffort;
+    bool IsWrenchSet;
+    prmForceTorqueJointSet TorqueSetParam;
 
     //! robot current joint velocity
     prmVelocityJointGet JointVelocityGetParam;

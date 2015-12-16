@@ -4,7 +4,8 @@
     [
         {
             "name": "ECM",
-            "type": "ECM_KIN_SIMULATED",
+            "type": "ECM",
+            "simulation": "KINEMATIC",
             "pid": "sawControllersPID-ECM.xml",
             "kinematic": "dvecm.rob"
         }

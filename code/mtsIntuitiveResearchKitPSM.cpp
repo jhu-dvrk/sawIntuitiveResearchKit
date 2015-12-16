@@ -291,6 +291,23 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
                             << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(newState) << std::endl;
 
+    vctBoolVec torqueMode(7);
+
+    // first cleanup from previous state
+    switch (RobotState) {
+    case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
+        // Disable torque mode for all joints
+        torqueMode.SetAll(false);
+        PID.EnableTorqueMode(torqueMode);
+        PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
+        PID.EnableTrackingError(true);
+        SetPositionJointLocal(JointGetDesired);
+        break;
+    default:
+        break;
+    }
+
     switch (newState) {
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
@@ -447,29 +464,49 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-    {
-      if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-          MessageEvents.Error(this->GetName() + " is not ready");
-          return;
-      }
-      // check that the tool is inserted deep enough
-      if (JointGet.Element(2) < 40.0 * cmn_mm) {
-          MessageEvents.Error(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula (joint 3 > 40 mm)");
-      } else {
-          if (JointGet.Element(2) < 50.0 * cmn_mm) {
-              MessageEvents.Warning(this->GetName() + " cartesian mode started close to RCM (joint 3 < 50 mm), joint 3 will be clamped at 40 mm to avoid moving inside cannula.");
-          }
-          RobotState = newState;
-          if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
-              IsGoalSet = false;
-              MessageEvents.Status(this->GetName() + " position cartesian");
-          } else {
-              JointTrajectory.EndTime = 0.0;
-              MessageEvents.Status(this->GetName() + " position goal cartesian");
-          }
-      }
-      break;
-    }
+        {
+            if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+                MessageEvents.Error(this->GetName() + " is not ready");
+                return;
+            }
+            // check that the tool is inserted deep enough
+            if (JointGet.Element(2) < 40.0 * cmn_mm) {
+                MessageEvents.Error(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula (joint 3 > 40 mm)");
+            } else {
+                if (JointGet.Element(2) < 50.0 * cmn_mm) {
+                    MessageEvents.Warning(this->GetName() + " cartesian mode started close to RCM (joint 3 < 50 mm), joint 3 will be clamped at 40 mm to avoid moving inside cannula.");
+                }
+                RobotState = newState;
+                if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
+                    IsGoalSet = false;
+                    MessageEvents.Status(this->GetName() + " position cartesian");
+                } else {
+                    JointTrajectory.EndTime = 0.0;
+                    MessageEvents.Status(this->GetName() + " position goal cartesian");
+                }
+            }
+        }
+        break;
+            
+    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
+        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+            MessageEvents.Error(this->GetName() + " is not ready");
+            return;
+        }
+        // check that the tool is inserted deep enough
+        if (JointGet.Element(2) < 40.0 * cmn_mm) {
+            MessageEvents.Error(this->GetName() + " can't start cartesian effort mode, make sure the tool is inserted past the cannula (joint 3 > 40 mm)");
+        } else {
+            torqueMode.SetAll(true);
+            PID.EnableTorqueMode(torqueMode);
+            PID.EnableTrackingError(false);
+            PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
+            RobotState = newState;
+            IsWrenchSet = false;
+            MessageEvents.Status(this->GetName() + " effort cartesian");
+        }
+        break;
+
     case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
         if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
             MessageEvents.Error(this->GetName() + " is not ready");
