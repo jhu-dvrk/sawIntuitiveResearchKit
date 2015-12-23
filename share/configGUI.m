@@ -22,7 +22,7 @@ function varargout = configGUI(varargin)
 
 % Edit the above text to modify the response to help configGUI
 
-% Last Modified by GUIDE v2.5 22-Apr-2015 09:28:25
+% Last Modified by GUIDE v2.5 23-Dec-2015 09:50:27
 
 % Date: 2013-04-28
 % Author: Zihan Chen
@@ -68,7 +68,7 @@ set(handles.bidPopup2,'Value', handles.m_boardID(2) + 1);
 
 % set default type
 handles.m_type = 'undefined';
-set(handles.typeBtnGroup, 'SelectedObject', handles.mtmlButton);
+set(handles.typeBtnGroup, 'SelectedObject', handles.undefinedButton);
 handles.m_out_filename = ['sawRobotIO1394-' handles.m_type];
 set(handles.out_name, 'String', handles.m_out_filename);
 
