@@ -165,6 +165,8 @@ potOffset = motor.pot_input_offset;
 % =============================================
 % === Drive =======
 % Direction
+% The linear amp drives +/- 6.25 Amps current, which is controlled by a DAC with 16 bits resolution.
+% So the conversion from amp to bits is 2^16/(6.25 * 2) = 5242.88 
 boardID
 driveDirection = aDirection
 AmpsToBitsScale = driveDirection(1:numOfActuator) .* 5242.8800;
