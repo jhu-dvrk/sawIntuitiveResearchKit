@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -487,7 +487,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             }
         }
         break;
-            
+
     case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
         if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
             MessageEvents.Error(this->GetName() + " is not ready");
@@ -692,11 +692,11 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         // configure PID to fail in case of tracking error
         PID.SetCheckJointLimit(false);
         vctDoubleVec tolerances(NumberOfJoints());
-        // first two rotations and translation, in case someone is pushinh/holding arm
+        // first two rotations and translation, in case someone is pushing/holding arm
         tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
         tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
         // tool/adapter gears should have little resistance?
-        tolerances.Ref(4, 3).SetAll(35.0 * cmnPI_180);
+        tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
         PID.SetTrackingErrorTolerance(tolerances);
         // compute initial time, since we disable power on last 4 use latest read
         vctDoubleVec initialPosition(NumberOfJoints());
@@ -707,8 +707,10 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
 
-        // keep first three joint values as is
-        JointTrajectory.Goal.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
+        // keep first two joint values as is
+        JointTrajectory.Goal.Ref(2, 0).Assign(JointGetDesired.Ref(2, 0));
+        // sterile adapter should be raised up
+        JointTrajectory.Goal[2] = 0.0;
         // set last 4 to -170.0
         JointTrajectory.Goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
         JointTrajectory.LSPB.Set(initialPosition, JointTrajectory.Goal,
@@ -767,11 +769,11 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         // configure PID to fail in case of tracking error
         PID.SetCheckJointLimit(false);
         vctDoubleVec tolerances(NumberOfJoints());
-        // first two rotations and translation, in case someone is pushinh/holding arm
+        // first two rotations and translation, in case someone is pushing/holding arm
         tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
         tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
         // tool/adapter gears should have little resistance?
-        tolerances.Ref(4, 3).SetAll(35.0 * cmnPI_180);
+        tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
         PID.SetTrackingErrorTolerance(tolerances);
         // compute initial time, since we disable power on last 4 use latest read
         vctDoubleVec initialPosition(NumberOfJoints());
