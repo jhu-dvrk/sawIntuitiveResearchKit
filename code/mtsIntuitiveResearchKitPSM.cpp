@@ -426,7 +426,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             // first two rotations
             tolerances.Ref(2, 0).SetAll(20.0 * cmnPI_180);
             // translation
-            tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
+            tolerances.Element(2) = 20.0 * cmn_mm; // 10 mm
             // shaft rotation
             tolerances.Element(3) = 120.0 * cmnPI_180;
             // tool orientation
