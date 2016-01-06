@@ -594,6 +594,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
             PID.SetCheckJointLimit(true);
+            HomedOnce = true;
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
         } else {
             // time out

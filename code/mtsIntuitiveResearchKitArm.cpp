@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -43,6 +43,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
 {
     mCounter = 0;
     mIsSimulated = false;
+    HomedOnce = false;
 
     IsGoalSet = false;
     IsWrenchSet = false;
@@ -418,7 +419,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
 void mtsIntuitiveResearchKitArm::RunHomingBiasEncoder(void)
 {
     // if simulated, no need to bias encoders
-    if (mIsSimulated) {
+    if (mIsSimulated || HomedOnce) {
         this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
         return;
     }

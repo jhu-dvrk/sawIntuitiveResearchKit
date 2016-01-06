@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -321,7 +321,9 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         // compute joint goal position
         JointTrajectory.Goal.SetAll(0.0);
         // last joint is calibrated later
-        JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = JointGet.Element(JNT_WRIST_ROLL);
+        if (!HomedOnce) {
+            JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = JointGet.Element(JNT_WRIST_ROLL);
+        }
         JointTrajectory.LSPB.Set(JointGet, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
                                  currentTime, robLSPB::LSPB_DURATION);
@@ -360,7 +362,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
 
 void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
 {
-    if (mIsSimulated) {
+    if (mIsSimulated || this->HomedOnce) {
         this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
         return;
     }
@@ -484,6 +486,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
             SetPositionJointLocal(JointSet);
             PID.SetCheckJointLimit(true);
             MessageEvents.Status(this->GetName() + " roll calibrated");
+            HomedOnce = true;
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
         } else {
             // time out

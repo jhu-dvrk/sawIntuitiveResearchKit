@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -270,6 +270,7 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
         bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
             PID.SetCheckJointLimit(true);
+            HomedOnce = true;
             MessageEvents.Status(this->GetName() + " arm ready");
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
         } else {
