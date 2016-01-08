@@ -260,9 +260,24 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         }
         break;
     }
+
+    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
+        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+            MessageEvents.Error(this->GetName() + " is not ready");
+            return;
+        }
+        torqueMode.SetAll(true);
+        PID.EnableTorqueMode(torqueMode);
+        PID.EnableTrackingError(false);
+        PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
+        RobotState = newState;
+        IsWrenchSet = false;
+        MessageEvents.Status(this->GetName() + " effort cartesian");
+        break;
+
     case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.Error(this->GetName() + " is not homed");
+            MessageEvents.Error(this->GetName() + " is not ready");
             return;
         }
         RobotState = newState;
@@ -277,7 +292,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
     case mtsIntuitiveResearchKitArmTypes::DVRK_CLUTCH:
         // check if MTM is ready
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.Error(this->GetName() + " is not homed");
+            MessageEvents.Error(this->GetName() + " is not ready");
             return;
         }
         RobotState = newState;
