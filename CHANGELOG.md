@@ -1,6 +1,29 @@
 Change log
 ==========
 
+1.3.0 (2016-01-08)
+==================
+
+* API changes:
+  * PSM: new file format (.rob replaced by .json with DH, coupling, limits, ...)
+  * Added SetSimulated for all arms/PID for kinematic simulation (assumes perfect PID)
+  * Console: better support for derived/simulated classes for ECM, PSM and MTM
+* Deprecated features:
+  * None
+* New features:
+  * PSM: improved engage procedure for sterile adapter and tool (uses trajectory generator)
+  * PSM: increased PID gains significantly now that engage uses trajectories
+  * PSM: when homing, do not go to zero position if tool is present
+  * PSM: move sterile adapter all the way up when engaged
+  * PSM: doesn't engage tool is tip is outside cannula
+  * MTM: search for joint limits only first time it is homed (need to restart application to search again)
+  * Added procedure to calibrate potentiometers, requires ROS build
+  * Added SetWrench body/spatial on MTM/PSM with ROS topics, mode DVRK_EFFORT_CARTESIAN
+  * SUJ: added JSON field to set brake current
+* Bug fixes:
+  * More stable bias encoder from pots, uses multiple samples
+  * Matlab config generator: selecting MTML didn't update IO and directions (#52)
+
 1.2.0 (2015-10-18)
 ==================
 

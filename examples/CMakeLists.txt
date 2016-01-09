@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2009-2015 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2016 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -38,9 +38,9 @@ if (cisst_FOUND_AS_REQUIRED)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
-  cisst_find_saw_component (sawRobotIO1394 REQUIRED)
-  cisst_find_saw_component (sawIntuitiveResearchKit 1.2.0 REQUIRED)
-  cisst_find_saw_component (sawControllers REQUIRED)
+  cisst_find_saw_component (sawRobotIO1394 1.3.0 REQUIRED)
+  cisst_find_saw_component (sawIntuitiveResearchKit 1.3.0 REQUIRED)
+  cisst_find_saw_component (sawControllers 1.3.0 REQUIRED)
   cisst_find_saw_component (sawConstraintController REQUIRED)
   cisst_find_saw_component (sawTextToSpeech REQUIRED)
 

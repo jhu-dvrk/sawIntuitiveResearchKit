@@ -19,7 +19,7 @@ set (REQUIRED_CISST_LIBRARIES
      cisstRobot
      cisstNumerical)
 
-find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.0.6 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND)
 
@@ -44,8 +44,8 @@ if (cisst_FOUND)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
-  cisst_find_saw_component (sawRobotIO1394 1.2.0 REQUIRED)
-  cisst_find_saw_component (sawControllers 1.2.0 REQUIRED)
+  cisst_find_saw_component (sawRobotIO1394 1.3.0 REQUIRED)
+  cisst_find_saw_component (sawControllers 1.3.0 REQUIRED)
   cisst_find_saw_component (sawConstraintController REQUIRED)
 
 
@@ -77,7 +77,7 @@ if (cisst_FOUND)
 
     # Set the version number
     set (sawIntuitiveResearchKit_VERSION_MAJOR "1")
-    set (sawIntuitiveResearchKit_VERSION_MINOR "2")
+    set (sawIntuitiveResearchKit_VERSION_MINOR "3")
     set (sawIntuitiveResearchKit_VERSION_PATCH "0")
     set (sawIntuitiveResearchKit_VERSION "${sawIntuitiveResearchKit_VERSION_MAJOR}.${sawIntuitiveResearchKit_VERSION_MINOR}.${sawIntuitiveResearchKit_VERSION_PATCH}")
 
