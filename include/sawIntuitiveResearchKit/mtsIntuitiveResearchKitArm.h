@@ -53,6 +53,9 @@ public:
 
 protected:
 
+    /*! Define wrench reference frame */
+    typedef enum {WRENCH_UNDEFINED, WRENCH_SPATIAL, WRENCH_BODY} WrenchType;
+
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
     virtual void Init(void);
@@ -89,6 +92,10 @@ protected:
     /*! Effort state. */
     virtual void RunEffortCartesian(void);
 
+    /*! Compute forces/position for PID when orientation is locked in
+      effort cartesian mode or gravity compensation. */
+    virtual void RunEffortOrientationLocked(void);
+
     /*! Run method called for all states not handled in base class. */
     inline virtual void RunArmSpecific(void) {};
 
@@ -102,6 +109,8 @@ protected:
     virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
     virtual void SetWrenchSpatial(const prmForceCartesianSet & newForce);
     virtual void SetWrenchBody(const prmForceCartesianSet & newForce);
+    /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */ 
+    virtual void SetWrenchBodyOrientationAbsolute(const bool & absolute);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
     virtual void SetBaseFrame(const prmPositionCartesianGet & newBaseFrame);
@@ -209,8 +218,13 @@ protected:
     // efforts
     vctDoubleMat JacobianBody, JacobianSpatial;
     vctDoubleVec JointExternalEffort;
-    bool IsWrenchSet;
+    WrenchType mWrenchType;
+    prmForceCartesianSet mWrench;
+    bool mWrenchBodyOrientationAbsolute;
     prmForceTorqueJointSet TorqueSetParam;
+    // used by MTM only
+    bool EffortOrientationLocked;
+    vctMatRot3 EffortOrientation;
 
     //! robot current joint velocity
     prmVelocityJointGet JointVelocityGetParam;

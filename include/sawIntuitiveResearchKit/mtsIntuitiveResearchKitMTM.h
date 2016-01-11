@@ -102,10 +102,17 @@ protected:
     /*! Gravity Compensation. */
     virtual void RunGravityCompensation(void);
 
+    // see base class
+    void RunEffortOrientationLocked(void);
+
     /*! Run Clutch */
     void RunClutch(void);
 
     virtual void SetWrench(const prmForceCartesianSet & newForce);  // NOTE: in body frame
+
+    /*! Lock master orientation when in gravity or cartesian effort mode */
+    virtual void LockOrientation(const vctMatRot3 & orientation);
+    virtual void UnlockOrientation(void);
 
     // Functions for events
     struct {

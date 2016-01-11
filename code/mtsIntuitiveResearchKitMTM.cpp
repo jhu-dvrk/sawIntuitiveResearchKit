@@ -85,6 +85,8 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // Main interface should have been created by base class init
     CMN_ASSERT(RobotInterface);
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetWrench, this, "SetWrench");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::LockOrientation, this, "LockOrientation");
+    RobotInterface->AddCommandVoid(&mtsIntuitiveResearchKitMTM::UnlockOrientation, this, "UnlockOrientation");
 
     // Gripper
     RobotInterface->AddCommandReadState(this->StateTable, GripperPosition, "GetGripperPosition");
@@ -271,7 +273,9 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         PID.EnableTrackingError(false);
         PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
         RobotState = newState;
-        IsWrenchSet = false;
+        mWrench.Force().Zeros();
+        mWrenchType = WRENCH_UNDEFINED;
+        mWrenchBodyOrientationAbsolute = false;
         MessageEvents.Status(this->GetName() + " effort cartesian");
         break;
 
@@ -281,7 +285,9 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
-        IsWrenchSet = false;
+        mWrench.Force().Zeros();
+        mWrenchType = WRENCH_UNDEFINED;
+        mWrenchBodyOrientationAbsolute = false;
         MessageEvents.Status(this->GetName() + " gravity compensation");
         torqueMode.SetAll(true);
         PID.EnableTorqueMode(torqueMode);
@@ -296,7 +302,9 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
-        IsWrenchSet = false;
+        mWrench.Force().Zeros();
+        mWrenchType = WRENCH_UNDEFINED;
+        mWrenchBodyOrientationAbsolute = false;
         MessageEvents.Status(this->GetName() + " clutch mode");
         // save current cartesian position to CartesianCluted
         CartesianClutched.Assign(CartesianGet);
@@ -547,6 +555,28 @@ void mtsIntuitiveResearchKitMTM::RunGravityCompensation(void)
 
     TorqueSetParam.SetForceTorque(torqueDesired);
     PID.SetTorqueJoint(TorqueSetParam);
+
+    if (EffortOrientationLocked) {
+        RunEffortOrientationLocked();
+    }
+}
+
+void mtsIntuitiveResearchKitMTM::RunEffortOrientationLocked(void)
+{
+    // copy current position
+    vctDoubleVec jointSet(JointGet.Ref(NumberOfJointsKinematics()));
+
+    // compute desired position from current position and locked orientation
+    CartesianPositionFrm.Translation().Assign(CartesianGetLocal.Translation());
+    CartesianPositionFrm.Rotation().Assign(EffortOrientationLocked);
+    if (this->InverseKinematics(jointSet, BaseFrame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
+        // assign to joints used for kinematics
+        JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
+        // finally send new joint values
+        SetPositionJointLocal(JointSet);
+    } else {
+        MessageEvents.Error(this->GetName() + " unable to solve inverse kinematics.");
+    }
 }
 
 void mtsIntuitiveResearchKitMTM::RunClutch(void)
@@ -626,6 +656,35 @@ void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce
 
         TorqueSetParam.SetForceTorque(torqueDesired);
         PID.SetTorqueJoint(TorqueSetParam);
+    }
+}
+
+void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
+{
+    // if we just started lock
+    if (!EffortOrientationLocked) {
+        vctBoolVec torqueMode(8);
+        torqueMode.SetAll(true);
+        torqueMode[4] = false;
+        torqueMode[5] = false;
+        torqueMode[6] = false;
+        PID.EnableTorqueMode(torqueMode);
+        EffortOrientationLocked = true;
+        std::cerr << "locked" << std::endl;
+    }
+    // in any case, update desired orientation
+    EffortOrientation.Assign(orientation);
+}
+
+void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)
+{
+    // only unlock if needed
+    if (EffortOrientationLocked) {
+        vctBoolVec torqueMode(8);
+        torqueMode.SetAll(true);
+        PID.EnableTorqueMode(torqueMode);
+        EffortOrientationLocked = false;
+        std::cerr << "unlocked" << std::endl;
     }
 }
 

@@ -46,7 +46,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     HomedOnce = false;
 
     IsGoalSet = false;
-    IsWrenchSet = false;
+    EffortOrientationLocked = false;
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 
     // initialize trajectory data
@@ -157,12 +157,20 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandReadState(this->StateTable, BaseFrame, "GetBaseFrame");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianVelocityGetParam, "GetVelocityCartesian");
         // Set
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionJoint, this, "SetPositionJoint");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalJoint, this, "SetPositionGoalJoint");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionCartesian, this, "SetPositionCartesian");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalCartesian, this, "SetPositionGoalCartesian");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetWrenchBody, this, "SetWrenchBody");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetWrenchSpatial, this, "SetWrenchSpatial");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionJoint,
+                                        this, "SetPositionJoint");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalJoint,
+                                        this, "SetPositionGoalJoint");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionCartesian,
+                                        this, "SetPositionCartesian");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalCartesian,
+                                        this, "SetPositionGoalCartesian");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetWrenchBody,
+                                        this, "SetWrenchBody");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetWrenchBodyOrientationAbsolute,
+                                        this, "SetWrenchBodyOrientationAbsolute");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetWrenchSpatial,
+                                        this, "SetWrenchSpatial");
 
         // Trajectory events
         RobotInterface->AddEventWrite(JointTrajectory.GoalReachedEvent, "GoalReached", bool());
@@ -349,8 +357,8 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             CartesianGetParam.SetTimestamp(JointGetParam.Timestamp());
             CartesianGetParam.SetValid(BaseFrameValid);
             // update jacobians
-            Manipulator.JacobianBody(JointGet, JacobianBody);
             Manipulator.JacobianSpatial(JointGet, JacobianSpatial);
+            Manipulator.JacobianBody(JointGet, JacobianBody);
 
 #if 0
             // FIXME: bug
@@ -543,7 +551,7 @@ void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
         // copy current position
         vctDoubleVec jointSet(JointGet.Ref(NumberOfJointsKinematics()));
 
-        // compute desired slave position
+        // compute desired arm position
         CartesianPositionFrm.From(CartesianSetParam.Goal());
         if (this->InverseKinematics(jointSet, BaseFrame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
             // assign to joints used for kinematics
@@ -566,16 +574,46 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalCartesian(void)
 
 void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
 {
-    if (IsWrenchSet) {
-        // pad array for PID
-        vctDoubleVec torqueDesired(NumberOfAxes(), 0.0); // for PID
-        torqueDesired.Assign(JointExternalEffort, NumberOfJointsKinematics());
-        // convert to cisstParameterTypes
-        TorqueSetParam.SetForceTorque(torqueDesired);
-        PID.SetTorqueJoint(TorqueSetParam);
-        // reset flag
-        IsWrenchSet = false;
+    // update torques based on wrench
+    vctDoubleVec force(6);
+    if (mWrenchBodyOrientationAbsolute) {
+        // use forward kinematics orientation to have constant wrench orientation
+        vct3 relative, absolute;
+        // force
+        relative.Assign(mWrench.Force().Ref<3>(0));
+        CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
+        force.Ref(3, 0).Assign(absolute);
+        // torque
+        relative.Assign(mWrench.Force().Ref<3>(3));
+        CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
+        force.Ref(3, 3).Assign(absolute);
+    } else {
+        force.Assign(mWrench.Force());
     }
+
+    if (mWrenchType == WRENCH_BODY) {
+        JointExternalEffort.ProductOf(JacobianBody.Transpose(), force);
+    } else if (mWrenchType == WRENCH_SPATIAL) {
+        JointExternalEffort.ProductOf(JacobianSpatial.Transpose(), force);
+    }
+    // pad array for PID
+    vctDoubleVec torqueDesired(NumberOfAxes(), 0.0); // for PID
+    torqueDesired.Assign(JointExternalEffort, NumberOfJointsKinematics());
+    // convert to cisstParameterTypes
+    TorqueSetParam.SetForceTorque(torqueDesired);
+    PID.SetTorqueJoint(TorqueSetParam);
+
+    // lock orientation if needed
+    if (EffortOrientationLocked) {
+        RunEffortOrientationLocked();
+    }
+}
+
+void mtsIntuitiveResearchKitArm::RunEffortOrientationLocked(void)
+{
+    CMN_LOG_CLASS_RUN_ERROR << GetName()
+                            << ": RunEffortOrientationLocked, this should never happen, MTMs are the only arms able to lock orientation and the derived implementation of this method should be called."
+                            << std::endl;
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newPosition)
@@ -714,22 +752,27 @@ void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wren
 {
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN,
                        mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION)) {
-        vctDoubleVec force(wrench.Force()); // convert from fixed size to dynamic
-        JointExternalEffort.ProductOf(JacobianBody.Transpose(), force);
-        IsWrenchSet = true;
-        return;
+        mWrench = wrench;
+        if (mWrenchType != WRENCH_BODY) {
+            mWrenchType = WRENCH_BODY;
+            MessageEvents.Status(this->GetName() + " effort cartesian (body)");
+        }
     }
-    JointExternalEffort.Zeros();
 }
 
 void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & wrench)
 {
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN,
                        mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION)) {
-        vctDoubleVec force(wrench.Force()); // convert from fixed size to dynamic
-        JointExternalEffort.ProductOf(JacobianSpatial.Transpose(), force);
-        IsWrenchSet = true;
-        return;
+        mWrench = wrench;
+        if (mWrenchType != WRENCH_SPATIAL) {
+            mWrenchType = WRENCH_SPATIAL;
+            MessageEvents.Status(this->GetName() + " effort cartesian (spatial)");
+        }
     }
-    JointExternalEffort.Zeros();
+}
+
+void mtsIntuitiveResearchKitArm::SetWrenchBodyOrientationAbsolute(const bool & absolute)
+{
+    mWrenchBodyOrientationAbsolute = absolute;
 }
