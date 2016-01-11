@@ -275,7 +275,6 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         RobotState = newState;
         mWrench.Force().Zeros();
         mWrenchType = WRENCH_UNDEFINED;
-        mWrenchBodyOrientationAbsolute = false;
         MessageEvents.Status(this->GetName() + " effort cartesian");
         break;
 
@@ -287,7 +286,6 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         RobotState = newState;
         mWrench.Force().Zeros();
         mWrenchType = WRENCH_UNDEFINED;
-        mWrenchBodyOrientationAbsolute = false;
         MessageEvents.Status(this->GetName() + " gravity compensation");
         torqueMode.SetAll(true);
         PID.EnableTorqueMode(torqueMode);
@@ -304,7 +302,6 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         RobotState = newState;
         mWrench.Force().Zeros();
         mWrenchType = WRENCH_UNDEFINED;
-        mWrenchBodyOrientationAbsolute = false;
         MessageEvents.Status(this->GetName() + " clutch mode");
         // save current cartesian position to CartesianCluted
         CartesianClutched.Assign(CartesianGet);

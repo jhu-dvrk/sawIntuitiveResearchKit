@@ -504,7 +504,6 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             RobotState = newState;
             mWrench.Force().Zeros();
             mWrenchType = WRENCH_UNDEFINED;
-            mWrenchBodyOrientationAbsolute = false;
             MessageEvents.Status(this->GetName() + " effort cartesian");
         }
         break;

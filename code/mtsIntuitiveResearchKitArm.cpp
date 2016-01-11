@@ -45,6 +45,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mIsSimulated = false;
     HomedOnce = false;
 
+    mWrenchBodyOrientationAbsolute = false;
+
     IsGoalSet = false;
     EffortOrientationLocked = false;
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
