@@ -46,7 +46,7 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
                                                                     const vctFrm4x4 & cartesianGoal)
 {
     // pre-feed inverse kinematics with preferred values for joint 6
-    jointSet[5] = 0.0;
+    jointSet[3] = 0.0;
     if (Manipulator.InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = JointGet[6] - jointSet[6];
@@ -63,6 +63,9 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 
     RobotType = MTM_NULL;
     SetMTMType();
+
+    // joint values when orientation is locked
+    EffortOrientationJoint.SetSize(NumberOfJoints());
 
     // initialize gripper state
     GripperClosed = false;
@@ -558,21 +561,40 @@ void mtsIntuitiveResearchKitMTM::RunGravityCompensation(void)
     }
 }
 
+vct3 SO3toRPY(const vctMatrixRotation3<double> & R)
+{
+    vct3 rpy;
+    if (fabs(R[2][2]) < 1e-12 && fabs(R[1][2]) < 1e-12) {
+        rpy[0] = 0;
+        rpy[1] = atan2(R[0][2], R[2][2]);
+        rpy[2] = atan2(R[1][0], R[1][1]);
+    } else {
+        rpy[0] = atan2(-R[1][2], R[2][2]);
+        double sr = sin(rpy[0]);
+        double cr = cos(rpy[0]);
+        rpy[1] = atan2( R[0][2], cr*R[2][2] - sr*R[1][2]);
+        rpy[2] = atan2(-R[0][1], R[0][0]);
+    }
+    return rpy;
+}
+
 void mtsIntuitiveResearchKitMTM::RunEffortOrientationLocked(void)
 {
-    // copy current position
+    // get current joint values
     vctDoubleVec jointSet(JointGet.Ref(NumberOfJointsKinematics()));
-
+    // override with 3 with position when orientation was locked to
+    // help optimizer stay in place
+    jointSet[3] = EffortOrientationJoint[3];
     // compute desired position from current position and locked orientation
     CartesianPositionFrm.Translation().Assign(CartesianGetLocal.Translation());
-    CartesianPositionFrm.Rotation().Assign(EffortOrientationLocked);
-    if (this->InverseKinematics(jointSet, BaseFrame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
+    CartesianPositionFrm.Rotation().From(EffortOrientation);
+    if (this->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // assign to joints used for kinematics
         JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
         // finally send new joint values
         SetPositionJointLocal(JointSet);
     } else {
-        MessageEvents.Error(this->GetName() + " unable to solve inverse kinematics.");
+        MessageEvents.Warning(this->GetName() + " unable to solve inverse kinematics.");
     }
 }
 
@@ -661,16 +683,16 @@ void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
     // if we just started lock
     if (!EffortOrientationLocked) {
         vctBoolVec torqueMode(8);
-        torqueMode.SetAll(true);
-        torqueMode[4] = false;
-        torqueMode[5] = false;
-        torqueMode[6] = false;
+        // first 3 joints in torque mode
+        torqueMode.Ref(3, 0).SetAll(true);
+        // last 4 in PID mode
+        torqueMode.Ref(4, 3).SetAll(false);
         PID.EnableTorqueMode(torqueMode);
         EffortOrientationLocked = true;
-        std::cerr << "locked" << std::endl;
     }
     // in any case, update desired orientation
     EffortOrientation.Assign(orientation);
+    EffortOrientationJoint.Assign(JointGet);
 }
 
 void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)

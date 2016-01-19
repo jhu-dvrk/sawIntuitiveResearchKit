@@ -224,6 +224,7 @@ protected:
     prmForceTorqueJointSet TorqueSetParam;
     // used by MTM only
     bool EffortOrientationLocked;
+    vctDoubleVec EffortOrientationJoint;
     vctMatRot3 EffortOrientation;
 
     //! robot current joint velocity
