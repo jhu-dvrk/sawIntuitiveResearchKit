@@ -53,7 +53,6 @@ private:
 
     void SlaveClutchEventHandler(const prmEventButton & button);
     void CameraClutchEventHandler(const prmEventButton & button);
-    void ClutchEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
 
     // Functions for events
@@ -101,7 +100,6 @@ private:
     double mScale;
     vctMatRot3 mRegistrationRotation;
 
-    bool mIsClutched;
     bool mIsOperatorPresent;
     bool mIsEnabled;
 

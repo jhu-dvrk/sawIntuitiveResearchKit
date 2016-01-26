@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-07-13
 
-  (C) Copyright 2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -80,7 +80,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         {
         case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM:        
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED:
@@ -145,9 +145,9 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     }
 
     // add teleop widgets
-    const mtsIntuitiveResearchKitConsole::TeleopList::iterator teleopsEnd = console->mTeleops.end();
-    mtsIntuitiveResearchKitConsole::TeleopList::iterator teleopIter;
-    for (teleopIter = console->mTeleops.begin(); teleopIter != teleopsEnd; ++teleopIter) {
+    const mtsIntuitiveResearchKitConsole::TeleopPSMList::iterator teleopsEnd = console->mTeleopsPSM.end();
+    mtsIntuitiveResearchKitConsole::TeleopPSMList::iterator teleopIter;
+    for (teleopIter = console->mTeleopsPSM.begin(); teleopIter != teleopsEnd; ++teleopIter) {
         const std::string name = teleopIter->first;
         mtsTeleOperationQtWidget * teleopGUI = new mtsTeleOperationQtWidget(name + "-GUI");
         teleopGUI->Configure();

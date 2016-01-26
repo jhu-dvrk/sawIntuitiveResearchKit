@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
+// for ROS console
 namespace dvrk {
     class console;
 }
@@ -111,6 +112,42 @@ public:
         }
     };
 
+    class TeleopECM {
+    public:
+        typedef enum {TELEOP_ECM, TELEOP_ECM_GENERIC} TeleopECMType;
+        friend class mtsIntuitiveResearchKitConsole;
+        friend class mtsIntuitiveResearchKitConsoleQt;
+        friend class dvrk::console;
+
+        TeleopECM(const std::string & name,
+                  const std::string & masterLeftName,
+                  const std::string & masterRightName,
+                  const std::string & slaveName,
+                  const std::string & consoleName);
+
+        /*! Create and configure the robot arm. */
+        void ConfigureTeleop(const TeleopECMType type,
+                             const vctMatRot3 & orientation,
+                             const double & periodInSeconds = 2.0 * cmn_ms);
+
+        /*! Connect all interfaces specific to this teleop. */
+        bool Connect(void);
+
+        /*! Accessors */
+        const std::string & Name(void) const;
+
+    protected:
+        std::string mName;
+        TeleopECMType mType;
+        std::string mMasterLeftName;
+        std::string mMasterRightName;
+        std::string mSlaveName;
+        std::string mConsoleName;
+        mtsFunctionWrite Enable;
+        mtsFunctionWrite ManipClutch;
+        mtsInterfaceRequired * InterfaceRequired;
+    };
+
     class TeleopPSM {
     public:
         typedef enum {TELEOP_PSM, TELEOP_PSM_GENERIC} TeleopPSMType;
@@ -182,8 +219,12 @@ protected:
     typedef std::map<std::string, Arm *> ArmList;
     ArmList mArms;
 
-    typedef std::map<std::string, TeleopPSM *> TeleopList;
-    TeleopList mTeleops;
+    /*! List to manage multiple PSM teleoperations */
+    typedef std::map<std::string, TeleopPSM *> TeleopPSMList;
+    TeleopPSMList mTeleopsPSM;
+
+    /*! Single ECM bimanual teleoperation */
+    TeleopECM * mTeleopECM;
 
     /*! Find all arm data from JSON configuration. */
     bool ConfigureArmJSON(const Json::Value & jsonArm,
@@ -191,9 +232,13 @@ protected:
                           const cmnPath & configPath);
     bool AddArmInterfaces(Arm * arm);
 
-    bool ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop);
-    bool AddTeleopInterfaces(TeleopPSM * teleop);
+    // these two methods have exact same implementation.it would be
+    // nice to have a base class, or template this
+    bool AddTeleopECMInterfaces(TeleopECM * teleop);
+    bool AddTeleopPSMInterfaces(TeleopPSM * teleop);
 
+    bool ConfigureECMTeleopJSON(const Json::Value & jsonTeleop);
+    bool ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop);
 
     void SetRobotsControlState(const std::string & newState);
     void TeleopEnable(const bool & enable);
