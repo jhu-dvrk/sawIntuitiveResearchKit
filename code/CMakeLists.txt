@@ -103,7 +103,8 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitECM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJ.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitOptimizer.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationBimanual.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSM.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitUDPStreamer.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsVFFollow.h
@@ -117,7 +118,8 @@ if (cisst_FOUND)
          mtsIntuitiveResearchKitECM.cpp
          mtsIntuitiveResearchKitSUJ.cpp
          mtsIntuitiveResearchKitOptimizer.cpp
-         mtsTeleOperationBimanual.cpp
+         mtsTeleOperationPSM.cpp
+         mtsTeleOperationECM.cpp
          mtsIntuitiveResearchKitConsole.cpp
          mtsIntuitiveResearchKitUDPStreamer.cpp
          mtsVFFollow.cpp

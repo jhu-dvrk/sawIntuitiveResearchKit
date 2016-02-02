@@ -28,13 +28,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 
 #include <sawControllers/mtsPID.h>
-#include <sawControllers/mtsTeleOperation.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
-#include <sawIntuitiveResearchKit/mtsTeleOperationBimanual.h>
+#include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
+#include <sawIntuitiveResearchKit/mtsTeleOperationECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 
 #include <json/json.h>
@@ -321,7 +321,7 @@ void mtsIntuitiveResearchKitConsole::TeleopECM::ConfigureTeleop(const TeleopECMT
     case TELEOP_ECM:
         {
             mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-            mtsTeleOperationBimanual * teleop = new mtsTeleOperationBimanual(mName, periodInSeconds);
+            mtsTeleOperationECM * teleop = new mtsTeleOperationECM(mName, periodInSeconds);
             teleop->SetRegistrationRotation(orientation);
             componentManager->AddComponent(teleop);
         }
@@ -367,7 +367,7 @@ void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMT
     case TELEOP_PSM:
         {
             mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-            mtsTeleOperation * teleop = new mtsTeleOperation(mName, periodInSeconds);
+            mtsTeleOperationPSM * teleop = new mtsTeleOperationPSM(mName, periodInSeconds);
             teleop->SetRegistrationRotation(orientation);
             componentManager->AddComponent(teleop);
         }
@@ -397,6 +397,7 @@ const std::string & mtsIntuitiveResearchKitConsole::TeleopPSM::Name(void) const 
 mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string & componentName):
     mtsTaskFromSignal(componentName, 100),
     mConfigured(false),
+    mTeleopEnabled(false),
     mTeleopECM(0),
     mSUJECMInterfaceRequired(0),
     mECMBaseFrameInterfaceProvided(0)
@@ -1252,6 +1253,7 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
 
 void mtsIntuitiveResearchKitConsole::SetRobotsControlState(const std::string & newState)
 {
+    mTeleopEnabled = false; // this is hackish
     mtsExecutionResult result;
     const ArmList::iterator end = mArms.end();
     for (ArmList::iterator arm = mArms.begin();
@@ -1269,6 +1271,7 @@ void mtsIntuitiveResearchKitConsole::SetRobotsControlState(const std::string & n
 void mtsIntuitiveResearchKitConsole::TeleopEnable(const bool & enable)
 {
     mtsExecutionResult result;
+    mTeleopEnabled = enable;
     const TeleopPSMList::iterator end = mTeleopsPSM.end();
     for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();
          teleOp != end;
@@ -1296,10 +1299,11 @@ void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & b
 {
     ConsoleEvents.Camera(button);
     if (button.Type() == prmEventButton::PRESSED) {
-        CMN_LOG_CLASS_RUN_ERROR << "CameraEventHandler: we should know if teleop was active and stop PSM only if needed" << std::endl;
-
+        mTeleopEnabledBeforeCamera = mTeleopEnabled;
         // disable all PSM teleops
-        TeleopEnable(false);
+        if (mTeleopEnabled) {
+            TeleopEnable(false);
+        }
         // start ECM teleop
         if (mTeleopECM) {
             mTeleopECM->Enable(true);
@@ -1310,7 +1314,10 @@ void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & b
         if (mTeleopECM) {
             mTeleopECM->Enable(false);
         }
-        CMN_LOG_CLASS_RUN_ERROR << "CameraEventHandler: we should know if teleop was active before and re-enable teleop for PSMs if needed" << std::endl;
+        // re-enable PSM teleop if needed
+        if (mTeleopEnabledBeforeCamera) {
+            TeleopEnable(true);
+        }
         MessageEvents.Status(this->GetName() + ": camera released");
     }
 }

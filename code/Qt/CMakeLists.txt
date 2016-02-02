@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -45,6 +45,8 @@ if (cisst_FOUND_AS_REQUIRED)
                mtsIntuitiveResearchKitConsoleQt.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h
                mtsIntuitiveResearchKitConsoleQtWidget.cpp
+               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h
+               mtsTeleOperationPSMQtWidget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArmQtWidget.h
                mtsIntuitiveResearchKitArmQtWidget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h

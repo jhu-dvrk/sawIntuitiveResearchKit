@@ -16,8 +16,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef _mtsTeleOperationBimanual_h
-#define _mtsTeleOperationBimanual_h
+#ifndef _mtsTeleOperationECM_h
+#define _mtsTeleOperationECM_h
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 #include <cisstParameterTypes/prmEventButton.h>
@@ -25,14 +25,14 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstRobot/robManipulator.h>
 
-class mtsTeleOperationBimanual: public mtsTaskPeriodic
+class mtsTeleOperationECM: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsTeleOperationBimanual(const std::string & componentName, const double periodInSeconds);
-    mtsTeleOperationBimanual(const mtsTaskPeriodicConstructorArg & arg);
-    ~mtsTeleOperationBimanual() {}
+    mtsTeleOperationECM(const std::string & componentName, const double periodInSeconds);
+    mtsTeleOperationECM(const mtsTaskPeriodicConstructorArg & arg);
+    ~mtsTeleOperationECM() {}
 
     void Configure(const std::string & filename = "");
     void Startup(void);
@@ -52,7 +52,6 @@ private:
     void SlaveErrorEventHandler(const std::string & message);
 
     void SlaveClutchEventHandler(const prmEventButton & button);
-    void CameraClutchEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
 
     // Functions for events
@@ -69,15 +68,25 @@ private:
 
     void Enable(const bool & enable);
 
-    void SetMasterControlState(void);
+    /*! Method called for all events that can potentially change
+      state. */
+    void UpdateTransition(void);
 
 protected:
 
     class RobotMaster {
     public:
         mtsFunctionRead GetPositionCartesian;
+        mtsFunctionWrite SetPositionCartesian;
         mtsFunctionWrite SetRobotControlState;
+        mtsFunctionWrite LockOrientation;
+        mtsFunctionVoid UnlockOrientation;
+        mtsFunctionWrite SetWrenchBody;
+        mtsFunctionWrite SetWrenchBodyOrientationAbsolute;
+
+        vctFrm3 PositionCartesianInitial;
         prmPositionCartesianGet PositionCartesianCurrent;
+        prmPositionCartesianSet PositionCartesianDesired;
     };
     RobotMaster mMasterLeft, mMasterRight;
 
@@ -87,9 +96,10 @@ protected:
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionWrite SetRobotControlState;
 
+        vctFrm3 PositionCartesianInitial;
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianSet PositionCartesianDesired;
-        vctFrm4x4 CartesianPrevious;
+
         bool IsManipClutched;
         bool IsSUJClutched;
     };
@@ -97,15 +107,18 @@ protected:
 
 private:
 
+
     double mScale;
     vctMatRot3 mRegistrationRotation;
 
     bool mIsOperatorPresent;
     bool mIsEnabled;
 
+    bool mIsOperating; // masters are actually driving ECM
+
     mtsStateTable * mConfigurationStateTable;
 };
 
-CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationBimanual);
+CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationECM);
 
-#endif // _mtsTeleOperationBimanual_h
+#endif // _mtsTeleOperationECM_h

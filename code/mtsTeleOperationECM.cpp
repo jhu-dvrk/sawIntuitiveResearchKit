@@ -21,27 +21,28 @@ http://www.cisst.org/cisst/license.txt.
 #include <iostream>
 
 // cisst
-#include <sawIntuitiveResearchKit/mtsTeleOperationBimanual.h>
+#include <sawIntuitiveResearchKit/mtsTeleOperationECM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 
 
-CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationBimanual, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
+CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationECM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
-mtsTeleOperationBimanual::mtsTeleOperationBimanual(const std::string & componentName, const double periodInSeconds):
+mtsTeleOperationECM::mtsTeleOperationECM(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds)
 {
     Init();
 }
 
-mtsTeleOperationBimanual::mtsTeleOperationBimanual(const mtsTaskPeriodicConstructorArg & arg):
+mtsTeleOperationECM::mtsTeleOperationECM(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg)
 {
     Init();
 }
 
-void mtsTeleOperationBimanual::Init(void)
+void mtsTeleOperationECM::Init(void)
 {
+    mIsOperating = false;
     mScale = 0.2;
 
     // Initialize states
@@ -62,34 +63,45 @@ void mtsTeleOperationBimanual::Init(void)
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MasterLeft");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", mMasterLeft.GetPositionCartesian);
+        interfaceRequired->AddFunction("SetPositionCartesian", mMasterLeft.SetPositionCartesian);
         interfaceRequired->AddFunction("SetRobotControlState", mMasterLeft.SetRobotControlState);
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationBimanual::MasterLeftErrorEventHandler,
+        interfaceRequired->AddFunction("LockOrientation", mMasterLeft.LockOrientation);
+        interfaceRequired->AddFunction("UnlockOrientation", mMasterLeft.UnlockOrientation);
+        interfaceRequired->AddFunction("SetWrenchBody", mMasterLeft.SetWrenchBody);
+        interfaceRequired->AddFunction("SetWrenchBodyOrientationAbsolute", mMasterLeft.SetWrenchBodyOrientationAbsolute);
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::MasterLeftErrorEventHandler,
                                                 this, "Error");
     }
 
     interfaceRequired = AddInterfaceRequired("MasterRight");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", mMasterRight.GetPositionCartesian);
+        interfaceRequired->AddFunction("SetPositionCartesian", mMasterRight.SetPositionCartesian);
         interfaceRequired->AddFunction("SetRobotControlState", mMasterRight.SetRobotControlState);
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationBimanual::MasterRightErrorEventHandler,
+        interfaceRequired->AddFunction("LockOrientation", mMasterRight.LockOrientation);
+        interfaceRequired->AddFunction("UnlockOrientation", mMasterRight.UnlockOrientation);
+        interfaceRequired->AddFunction("SetWrenchBody", mMasterRight.SetWrenchBody);
+        interfaceRequired->AddFunction("SetWrenchBodyOrientationAbsolute", mMasterRight.SetWrenchBodyOrientationAbsolute);
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::MasterRightErrorEventHandler,
                                                 this, "Error");
     }
 
     interfaceRequired = AddInterfaceRequired("Slave");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("GetPositionCartesian", mSlave.GetPositionCartesian);
+        // ECM, use PID desired position to make sure there is no jump when engaging
+        interfaceRequired->AddFunction("GetPositionCartesianDesired", mSlave.GetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", mSlave.SetPositionCartesian);
         interfaceRequired->AddFunction("SetRobotControlState", mSlave.SetRobotControlState);
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationBimanual::SlaveErrorEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::SlaveErrorEventHandler,
                                                 this, "Error");
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationBimanual::SlaveClutchEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::SlaveClutchEventHandler,
                                                 this, "ManipClutch");
     }
 
     // Console events
     interfaceRequired = AddInterfaceRequired("OperatorPresent");
     if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationBimanual::OperatorPresentEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::OperatorPresentEventHandler,
                                                 this, "Button");
     }
 
@@ -99,11 +111,11 @@ void mtsTeleOperationBimanual::Init(void)
         interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                               "GetPeriodStatistics"); // mtsIntervalStatistics
 
-        interfaceProvided->AddCommandWrite(&mtsTeleOperationBimanual::Enable, this,
+        interfaceProvided->AddCommandWrite(&mtsTeleOperationECM::Enable, this,
                                            "Enable", false);
-        interfaceProvided->AddCommandWrite(&mtsTeleOperationBimanual::SetScale, this,
+        interfaceProvided->AddCommandWrite(&mtsTeleOperationECM::SetScale, this,
                                            "SetScale", 0.5);
-        interfaceProvided->AddCommandWrite(&mtsTeleOperationBimanual::SetRegistrationRotation, this,
+        interfaceProvided->AddCommandWrite(&mtsTeleOperationECM::SetRegistrationRotation, this,
                                            "SetRegistrationRotation", vctMatRot3());
         interfaceProvided->AddCommandReadState(*mConfigurationStateTable,
                                                mScale,
@@ -135,22 +147,21 @@ void mtsTeleOperationBimanual::Init(void)
     }
 }
 
-void mtsTeleOperationBimanual::Configure(const std::string & filename)
+void mtsTeleOperationECM::Configure(const std::string & filename)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << filename << std::endl;
 }
 
-void mtsTeleOperationBimanual::Startup(void)
+void mtsTeleOperationECM::Startup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
 }
 
-void mtsTeleOperationBimanual::Run(void)
+void mtsTeleOperationECM::Run(void)
 {
     ProcessQueuedCommands();
     ProcessQueuedEvents();
 
-    // do something if all 3 conditions are true
     if (mIsEnabled && mIsOperatorPresent && !mSlave.IsManipClutched) {
         std::cerr << "+" << std::flush;
     }
@@ -177,7 +188,7 @@ void mtsTeleOperationBimanual::Run(void)
     }
 
     /*!
-      mtsTeleOperationBimanual can run in 4 control modes, which is controlled by
+      mtsTeleOperationECM can run in 4 control modes, which is controlled by
       footpedal Clutch & OperatorPresent.
 
       Mode 1: OperatorPresent = False, Clutch = False
@@ -240,35 +251,68 @@ void mtsTeleOperationBimanual::Run(void)
             // Do nothing
         }
     } else {
-        CMN_LOG_CLASS_RUN_DEBUG << "mtsTeleOperationBimanual disabled" << std::endl;
+        CMN_LOG_CLASS_RUN_DEBUG << "mtsTeleOperationECM disabled" << std::endl;
     }
 #endif
 }
 
-void mtsTeleOperationBimanual::Cleanup(void)
+void mtsTeleOperationECM::Cleanup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
 }
 
-void mtsTeleOperationBimanual::MasterLeftErrorEventHandler(const std::string & message)
+void mtsTeleOperationECM::UpdateTransition(void)
+{
+    // condition to be operating
+    if (mIsEnabled && mIsOperatorPresent && !mSlave.IsManipClutched) {
+        // is this a transition?
+        if (!mIsOperating) {
+            mIsOperating = true;
+            // record position of each arm
+            mMasterLeft.GetPositionCartesian(mMasterLeft.PositionCartesianCurrent);
+            mMasterLeft.PositionCartesianInitial.Assign(mMasterLeft.PositionCartesianCurrent.Position());
+            mMasterRight.GetPositionCartesian(mMasterRight.PositionCartesianCurrent);
+            mMasterRight.PositionCartesianInitial.Assign(mMasterRight.PositionCartesianCurrent.Position());
+            mSlave.GetPositionCartesian(mSlave.PositionCartesianCurrent);
+            mSlave.PositionCartesianInitial.Assign(mSlave.PositionCartesianCurrent.Position());
+            // set the masters on wrench body mode
+            mMasterLeft.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+            mMasterLeft.SetWrenchBodyOrientationAbsolute(true);
+            mMasterLeft.LockOrientation(mMasterLeft.PositionCartesianInitial.Rotation());
+            mMasterRight.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+            mMasterRight.SetWrenchBodyOrientationAbsolute(true);
+            mMasterRight.LockOrientation(mMasterRight.PositionCartesianInitial.Rotation());
+            // set ECM in cartesian position mode
+            mSlave.SetRobotControlState(mtsStdString("DVRK_POSITION_CARTESIAN"));
+            return;
+        }
+    }
+    // all other cases, not operating
+    // is this a transition?
+    if (mIsOperating) {
+        mIsOperating = false;
+    }
+}
+
+void mtsTeleOperationECM::MasterLeftErrorEventHandler(const std::string & message)
 {
     Enable(false);
     MessageEvents.Error(this->GetName() + ": received from left master [" + message + "]");
 }
 
-void mtsTeleOperationBimanual::MasterRightErrorEventHandler(const std::string & message)
+void mtsTeleOperationECM::MasterRightErrorEventHandler(const std::string & message)
 {
     Enable(false);
     MessageEvents.Error(this->GetName() + ": received from right master [" + message + "]");
 }
 
-void mtsTeleOperationBimanual::SlaveErrorEventHandler(const std::string & message)
+void mtsTeleOperationECM::SlaveErrorEventHandler(const std::string & message)
 {
     Enable(false);
     MessageEvents.Error(this->GetName() + ": received from slave [" + message + "]");
 }
 
-void mtsTeleOperationBimanual::SlaveClutchEventHandler(const prmEventButton & button)
+void mtsTeleOperationECM::SlaveClutchEventHandler(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
         mSlave.IsManipClutched = true;
@@ -277,29 +321,10 @@ void mtsTeleOperationBimanual::SlaveClutchEventHandler(const prmEventButton & bu
         mSlave.IsManipClutched = false;
         MessageEvents.Status(this->GetName() + ": slave clutch released");
     }
-
-#if 0
-    // Slave State
-    if (IsEnabled && !IsOperatorPresent && Slave.IsManipClutched) {
-        Slave.SetRobotControlState(mtsStdString("Manual"));
-    } else if (IsEnabled) {
-        Slave.SetRobotControlState(mtsStdString("Teleop"));
-    }
-#endif
+    UpdateTransition();
 }
 
-void mtsTeleOperationBimanual::CameraClutchEventHandler(const prmEventButton & button)
-{
-    if (button.Type() == prmEventButton::PRESSED) {
-        mSlave.IsManipClutched = true;
-        MessageEvents.Status(this->GetName() + ": camera clutch pressed");
-    } else {
-        mSlave.IsManipClutched = false;
-        MessageEvents.Status(this->GetName() + ": camera clutch released");
-    }
-}
-
-void mtsTeleOperationBimanual::OperatorPresentEventHandler(const prmEventButton & button)
+void mtsTeleOperationECM::OperatorPresentEventHandler(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
         mIsOperatorPresent = true;
@@ -308,37 +333,17 @@ void mtsTeleOperationBimanual::OperatorPresentEventHandler(const prmEventButton 
         mIsOperatorPresent = false;
         MessageEvents.Status(this->GetName() + ": operator not present");
     }
+    UpdateTransition();
 }
 
-void mtsTeleOperationBimanual::Enable(const bool & enable)
+void mtsTeleOperationECM::Enable(const bool & enable)
 {
     mIsEnabled = enable;
-
-#if 0
-    if (mIsEnabled) {
-        // Set Master/Slave to Teleop (Cartesian Position Mode)
-        SetMasterControlState();
-        Slave.SetRobotControlState(mtsStdString("Teleop"));
-
-        // Orientate Master with Slave
-        vctFrm4x4 masterCartesianDesired;
-        masterCartesianDesired.Translation().Assign(MasterLockTranslation);
-        vctMatRot3 masterRotation;
-        masterRotation = RegistrationRotation.Inverse() * Slave.PositionCartesianCurrent.Position().Rotation();
-        masterCartesianDesired.Rotation().FromNormalized(masterRotation);
-
-        // Send Master command postion
-        Master.SetRobotControlState(mtsStdString("DVRK_POSITION_GOAL_CARTESIAN"));
-        Master.PositionCartesianDesired.Goal().FromNormalized(masterCartesianDesired);
-        Master.SetPositionGoalCartesian(Master.PositionCartesianDesired);
-    }
-
-    // Send event for GUI
-#endif
     MessageEvents.Enabled(mIsEnabled);
+    UpdateTransition();
 }
 
-void mtsTeleOperationBimanual::SetScale(const double & scale)
+void mtsTeleOperationECM::SetScale(const double & scale)
 {
     mConfigurationStateTable->Start();
     mScale = scale;
@@ -346,7 +351,7 @@ void mtsTeleOperationBimanual::SetScale(const double & scale)
     ConfigurationEvents.Scale(mScale);
 }
 
-void mtsTeleOperationBimanual::SetRegistrationRotation(const vctMatRot3 & rotation)
+void mtsTeleOperationECM::SetRegistrationRotation(const vctMatRot3 & rotation)
 {
     mConfigurationStateTable->Start();
     mRegistrationRotation = rotation;

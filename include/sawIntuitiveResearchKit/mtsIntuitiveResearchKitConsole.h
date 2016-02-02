@@ -215,6 +215,8 @@ public:
 
 protected:
     bool mConfigured;
+    bool mTeleopEnabled;
+    bool mTeleopEnabledBeforeCamera;
 
     typedef std::map<std::string, Arm *> ArmList;
     ArmList mArms;
