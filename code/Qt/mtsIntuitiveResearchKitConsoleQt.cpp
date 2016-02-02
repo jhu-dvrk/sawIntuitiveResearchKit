@@ -20,12 +20,16 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst/saw
 #include <cisstMultiTask/mtsManagerLocal.h>
+
 #include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
+
 #include <sawControllers/mtsPIDQtWidget.h>
-#include <sawControllers/mtsTeleOperationQtWidget.h>
+
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsTeleOperationPSMQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJQtWidget.h>
+
 #include <QTabWidget>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQt);
@@ -149,7 +153,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     mtsIntuitiveResearchKitConsole::TeleopPSMList::iterator teleopIter;
     for (teleopIter = console->mTeleopsPSM.begin(); teleopIter != teleopsEnd; ++teleopIter) {
         const std::string name = teleopIter->first;
-        mtsTeleOperationQtWidget * teleopGUI = new mtsTeleOperationQtWidget(name + "-GUI");
+        mtsTeleOperationPSMQtWidget * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "-GUI");
         teleopGUI->Configure();
         componentManager->AddComponent(teleopGUI);
         Connections.push_back(new ConnectionType(teleopGUI->GetName(), "TeleOperation", name, "Setting"));

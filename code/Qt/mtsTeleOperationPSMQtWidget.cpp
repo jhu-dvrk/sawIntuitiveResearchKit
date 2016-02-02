@@ -31,9 +31,9 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSMQtWidget.h>
 
-CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationQtWidget, mtsComponent, std::string);
+CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationPSMQtWidget, mtsComponent, std::string);
 
-mtsTeleOperationQtWidget::mtsTeleOperationQtWidget(const std::string & componentName, double periodInSeconds):
+mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & componentName, double periodInSeconds):
     mtsComponent(componentName),
     TimerPeriodInMilliseconds(periodInSeconds * 1000) // Qt timers are in milliseconds
 {
@@ -49,48 +49,48 @@ mtsTeleOperationQtWidget::mtsTeleOperationQtWidget(const std::string & component
         interfaceRequired->AddFunction("GetRegistrationRotation", TeleOperation.GetRegistrationRotation);
         interfaceRequired->AddFunction("GetPeriodStatistics", TeleOperation.GetPeriodStatistics);
         // events
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationQtWidget::EnableEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::EnableEventHandler,
                                                 this, "Enabled");
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationQtWidget::ScaleEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::ScaleEventHandler,
                                                 this, "Scale");
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationQtWidget::RotationLockedEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::RotationLockedEventHandler,
                                                 this, "RotationLocked");
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationQtWidget::TranslationLockedEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::TranslationLockedEventHandler,
                                                 this, "TranslationLocked");
         // messages
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationQtWidget::ErrorEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::ErrorEventHandler,
                                                 this, "Error");
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationQtWidget::WarningEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::WarningEventHandler,
                                                 this, "Warning");
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationQtWidget::StatusEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::StatusEventHandler,
                                                 this, "Status");
     }
     setupUi();
     startTimer(TimerPeriodInMilliseconds);
 }
 
-void mtsTeleOperationQtWidget::Configure(const std::string &filename)
+void mtsTeleOperationPSMQtWidget::Configure(const std::string &filename)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << filename << std::endl;
 }
 
-void mtsTeleOperationQtWidget::Startup(void)
+void mtsTeleOperationPSMQtWidget::Startup(void)
 {
-    CMN_LOG_CLASS_INIT_VERBOSE << "mtsTeleOperationQtWidget::Startup" << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
     if (!parent()) {
         show();
     }
 }
 
-void mtsTeleOperationQtWidget::Cleanup(void)
+void mtsTeleOperationPSMQtWidget::Cleanup(void)
 {
     this->hide();
-    CMN_LOG_CLASS_INIT_VERBOSE << "mtsTeleOperationQtWidget::Cleanup" << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
 }
 
-void mtsTeleOperationQtWidget::closeEvent(QCloseEvent * event)
+void mtsTeleOperationPSMQtWidget::closeEvent(QCloseEvent * event)
 {
-    int answer = QMessageBox::warning(this, tr("mtsTeleOperationQtWidget"),
+    int answer = QMessageBox::warning(this, tr("mtsTeleOperationPSMQtWidget"),
                                       tr("Do you really want to quit this application?"),
                                       QMessageBox::No | QMessageBox::Yes);
     if (answer == QMessageBox::Yes) {
@@ -101,7 +101,7 @@ void mtsTeleOperationQtWidget::closeEvent(QCloseEvent * event)
     }
 }
 
-void mtsTeleOperationQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
+void mtsTeleOperationPSMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 {
     // make sure we should update the display
     if (this->isHidden()) {
@@ -137,48 +137,48 @@ void mtsTeleOperationQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 }
 
 
-void mtsTeleOperationQtWidget::SlotEnable(bool state)
+void mtsTeleOperationPSMQtWidget::SlotEnable(bool state)
 {
     TeleOperation.Enable(mtsBool(state));
 }
 
-void mtsTeleOperationQtWidget::SlotSetScale(double scale)
+void mtsTeleOperationPSMQtWidget::SlotSetScale(double scale)
 {
     TeleOperation.SetScale(scale);
 }
 
-void mtsTeleOperationQtWidget::SlotLockRotation(bool lock)
+void mtsTeleOperationPSMQtWidget::SlotLockRotation(bool lock)
 {
     TeleOperation.LockRotation(lock);
 }
 
-void mtsTeleOperationQtWidget::SlotLockTranslation(bool lock)
+void mtsTeleOperationPSMQtWidget::SlotLockTranslation(bool lock)
 {
     TeleOperation.LockTranslation(lock);
 }
 
 
-void mtsTeleOperationQtWidget::SlotEnableEventHandler(bool state)
+void mtsTeleOperationPSMQtWidget::SlotEnableEventHandler(bool state)
 {
     QCBEnable->setChecked(state);
 }
 
-void mtsTeleOperationQtWidget::SlotScaleEventHandler(double scale)
+void mtsTeleOperationPSMQtWidget::SlotScaleEventHandler(double scale)
 {
     QSBScale->setValue(scale);
 }
 
-void mtsTeleOperationQtWidget::SlotRotationLockedEventHandler(bool lock)
+void mtsTeleOperationPSMQtWidget::SlotRotationLockedEventHandler(bool lock)
 {
     QCBLockRotation->setChecked(lock);
 }
 
-void mtsTeleOperationQtWidget::SlotTranslationLockedEventHandler(bool lock)
+void mtsTeleOperationPSMQtWidget::SlotTranslationLockedEventHandler(bool lock)
 {
     QCBLockTranslation->setChecked(lock);
 }
 
-void mtsTeleOperationQtWidget::setupUi(void)
+void mtsTeleOperationPSMQtWidget::setupUi(void)
 {
     QFont font;
     font.setBold(true);
@@ -292,44 +292,44 @@ void mtsTeleOperationQtWidget::setupUi(void)
             this, SLOT(SlotTextChanged()));
 }
 
-void mtsTeleOperationQtWidget::EnableEventHandler(const bool & enable)
+void mtsTeleOperationPSMQtWidget::EnableEventHandler(const bool & enable)
 {
     emit SignalEnable(enable);
 }
 
-void mtsTeleOperationQtWidget::ScaleEventHandler(const double & scale)
+void mtsTeleOperationPSMQtWidget::ScaleEventHandler(const double & scale)
 {
     emit SignalScale(scale);
 }
 
-void mtsTeleOperationQtWidget::RotationLockedEventHandler(const bool & lock)
+void mtsTeleOperationPSMQtWidget::RotationLockedEventHandler(const bool & lock)
 {
     emit SignalRotationLocked(lock);
 }
 
-void mtsTeleOperationQtWidget::TranslationLockedEventHandler(const bool & lock)
+void mtsTeleOperationPSMQtWidget::TranslationLockedEventHandler(const bool & lock)
 {
     emit SignalTranslationLocked(lock);
 }
 
-void mtsTeleOperationQtWidget::SlotTextChanged(void)
+void mtsTeleOperationPSMQtWidget::SlotTextChanged(void)
 {
     QTEMessages->verticalScrollBar()->setSliderPosition(QTEMessages->verticalScrollBar()->maximum());
 }
 
-void mtsTeleOperationQtWidget::ErrorEventHandler(const std::string & message)
+void mtsTeleOperationPSMQtWidget::ErrorEventHandler(const std::string & message)
 {
     emit SignalSetColor(QColor("red"));
     emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
 }
 
-void mtsTeleOperationQtWidget::WarningEventHandler(const std::string & message)
+void mtsTeleOperationPSMQtWidget::WarningEventHandler(const std::string & message)
 {
     emit SignalSetColor(QColor("darkRed"));
     emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Warning: ") + QString(message.c_str()));
 }
 
-void mtsTeleOperationQtWidget::StatusEventHandler(const std::string & message)
+void mtsTeleOperationPSMQtWidget::StatusEventHandler(const std::string & message)
 {
     emit SignalSetColor(QColor("black"));
     emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));

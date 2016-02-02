@@ -16,8 +16,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef _mtsTeleOperationQtWidget_h
-#define _mtsTeleOperationQtWidget_h
+#ifndef _mtsTeleOperationPSMQtWidget_h
+#define _mtsTeleOperationPSMQtWidget_h
 
 #include <cisstVector/vctQtWidgetFrame.h>
 #include <cisstMultiTask/mtsComponent.h>
@@ -29,14 +29,14 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawControllers/sawControllersQtExport.h>
 
-class CISST_EXPORT mtsTeleOperationQtWidget: public QWidget, public mtsComponent
+class CISST_EXPORT mtsTeleOperationPSMQtWidget: public QWidget, public mtsComponent
 {
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsTeleOperationQtWidget(const std::string & componentName, double periodInSeconds = 50.0 * cmn_ms);
-    ~mtsTeleOperationQtWidget(){}
+    mtsTeleOperationPSMQtWidget(const std::string & componentName, double periodInSeconds = 50.0 * cmn_ms);
+    ~mtsTeleOperationPSMQtWidget(){}
 
     void Configure(const std::string & filename = "");
     void Startup(void);
@@ -69,7 +69,7 @@ private slots:
     void SlotTranslationLockedEventHandler(bool lock);
 
 private:
-    //! setup TeleOperation controller GUI
+    //! setup TeleOperationPSM controller GUI
     void setupUi(void);
     int TimerPeriodInMilliseconds;
 
@@ -112,6 +112,6 @@ private:
     QTextEdit * QTEMessages;
 };
 
-CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationQtWidget);
+CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationPSMQtWidget);
 
-#endif // _mtsTeleOperationQtWidget_h
+#endif // _mtsTeleOperationPSMQtWidget_h
