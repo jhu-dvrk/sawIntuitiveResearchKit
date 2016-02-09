@@ -29,25 +29,30 @@ http://www.cisst.org/cisst/license.txt.
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationECM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
 mtsTeleOperationECM::mtsTeleOperationECM(const std::string & componentName, const double periodInSeconds):
-    mtsTaskPeriodic(componentName, periodInSeconds)
+    mtsTaskPeriodic(componentName, periodInSeconds),
+    mTeleopState(componentName,
+                 mtsTeleOperationECMTypes::DISABLED)
 {
     Init();
 }
 
 mtsTeleOperationECM::mtsTeleOperationECM(const mtsTaskPeriodicConstructorArg & arg):
-    mtsTaskPeriodic(arg)
+    mtsTaskPeriodic(arg),
+    mTeleopState(arg.Name,
+                 mtsTeleOperationECMTypes::DISABLED)
 {
     Init();
 }
 
 void mtsTeleOperationECM::Init(void)
 {
-    mIsOperating = false;
+    // configure state machine
+    mTeleopState.AddAllowedDesiredStates(mtsTeleOperationECMTypes::ENABLED);
+    mTeleopState.AddAllowedDesiredStates(mtsTeleOperationECMTypes::DISABLED);
+
     mScale = 0.2;
 
     // Initialize states
-    mIsOperatorPresent = false;
-    mIsEnabled = false;
     mSlave.IsManipClutched = false;
 
     StateTable.AddData(mMasterLeft.PositionCartesianCurrent, "MasterLeftCartesianPosition");
@@ -96,13 +101,6 @@ void mtsTeleOperationECM::Init(void)
                                                 this, "Error");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::SlaveClutchEventHandler,
                                                 this, "ManipClutch");
-    }
-
-    // Console events
-    interfaceRequired = AddInterfaceRequired("OperatorPresent");
-    if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::OperatorPresentEventHandler,
-                                                this, "Button");
     }
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Setting");
@@ -162,9 +160,7 @@ void mtsTeleOperationECM::Run(void)
     ProcessQueuedCommands();
     ProcessQueuedEvents();
 
-    if (mIsEnabled && mIsOperatorPresent && !mSlave.IsManipClutched) {
-        std::cerr << "+" << std::flush;
-    }
+    std::cerr << "+" << std::flush;
 
 #if 0
     // get master Cartesian position
@@ -261,6 +257,7 @@ void mtsTeleOperationECM::Cleanup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
 }
 
+#if 0
 void mtsTeleOperationECM::UpdateTransition(void)
 {
     // condition to be operating
@@ -293,6 +290,7 @@ void mtsTeleOperationECM::UpdateTransition(void)
         mIsOperating = false;
     }
 }
+#endif
 
 void mtsTeleOperationECM::MasterLeftErrorEventHandler(const std::string & message)
 {
@@ -321,26 +319,15 @@ void mtsTeleOperationECM::SlaveClutchEventHandler(const prmEventButton & button)
         mSlave.IsManipClutched = false;
         MessageEvents.Status(this->GetName() + ": slave clutch released");
     }
-    UpdateTransition();
-}
-
-void mtsTeleOperationECM::OperatorPresentEventHandler(const prmEventButton & button)
-{
-    if (button.Type() == prmEventButton::PRESSED) {
-        mIsOperatorPresent = true;
-        MessageEvents.Status(this->GetName() + ": operator present");
-    } else {
-        mIsOperatorPresent = false;
-        MessageEvents.Status(this->GetName() + ": operator not present");
-    }
-    UpdateTransition();
 }
 
 void mtsTeleOperationECM::Enable(const bool & enable)
 {
-    mIsEnabled = enable;
-    MessageEvents.Enabled(mIsEnabled);
-    UpdateTransition();
+    if (enable) {
+        mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::ENABLED);
+    } else {
+        mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
+    }
 }
 
 void mtsTeleOperationECM::SetScale(const double & scale)

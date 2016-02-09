@@ -90,6 +90,8 @@ if (cisst_FOUND)
                           "${CISST_BINARY_DIR}/include" # where to save the file
                           "sawIntuitiveResearchKit/"    # sub directory for include
                           mtsIntuitiveResearchKitArmTypes.cdg
+                          mtsTeleOperationPSMTypes.cdg
+                          mtsTeleOperationECMTypes.cdg
                           mtsVFDataFollow.cdg)
 
     include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
@@ -97,6 +99,7 @@ if (cisst_FOUND)
          "${sawIntuitiveResearchKit_SOURCE_DIR}/include/sawIntuitiveResearchKit")
 
     set (HEADER_FILES
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsStateMachine.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArm.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitMTM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSM.h
@@ -112,6 +115,7 @@ if (cisst_FOUND)
         )
 
     set (SOURCE_FILES
+         mtsStateMachine.cpp
          mtsIntuitiveResearchKitArm.cpp
          mtsIntuitiveResearchKitMTM.cpp
          mtsIntuitiveResearchKitPSM.cpp

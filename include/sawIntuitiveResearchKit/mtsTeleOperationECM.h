@@ -23,7 +23,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
-#include <cisstRobot/robManipulator.h>
+
+#include <sawIntuitiveResearchKit/mtsStateMachine.h>
+#include <sawIntuitiveResearchKit/mtsTeleOperationECMTypes.h>
 
 class mtsTeleOperationECM: public mtsTaskPeriodic
 {
@@ -52,7 +54,6 @@ private:
     void SlaveErrorEventHandler(const std::string & message);
 
     void SlaveClutchEventHandler(const prmEventButton & button);
-    void OperatorPresentEventHandler(const prmEventButton & button);
 
     // Functions for events
     struct {
@@ -66,11 +67,8 @@ private:
         mtsFunctionWrite Scale;
     } ConfigurationEvents;
 
+    /*! Convenience method to set desired state to ENABLED/DISABLED */
     void Enable(const bool & enable);
-
-    /*! Method called for all events that can potentially change
-      state. */
-    void UpdateTransition(void);
 
 protected:
 
@@ -107,16 +105,12 @@ protected:
 
 private:
 
-
     double mScale;
     vctMatRot3 mRegistrationRotation;
-
-    bool mIsOperatorPresent;
-    bool mIsEnabled;
-
-    bool mIsOperating; // masters are actually driving ECM
-
     mtsStateTable * mConfigurationStateTable;
+
+    mtsStateMachine<mtsTeleOperationECMTypes::StateType,
+                    mtsTeleOperationECMTypes> mTeleopState;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationECM);

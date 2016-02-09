@@ -23,7 +23,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
-#include <cisstRobot/robManipulator.h>
+
+#include <sawIntuitiveResearchKit/mtsStateMachine.h>
+#include <sawIntuitiveResearchKit/mtsTeleOperationPSMTypes.h>
 
 /**
  * @brief  teleoperation component
@@ -107,7 +109,7 @@ protected:
         prmPositionCartesianSet PositionCartesianDesired;
         vctFrm4x4 CartesianPrevious;
     };
-    RobotMaster Master;
+    RobotMaster mMaster;
 
     class RobotSlave {
     public:
@@ -123,25 +125,26 @@ protected:
         bool IsManipClutched;
         bool IsSUJClutched;
     };
-    RobotSlave Slave;
+    RobotSlave mSlave;
 
 private:
+    double mScale;
+    vctMatRot3 mRegistrationRotation;
+    vctFrm3 mOffset;
+    vct3 mMasterLockTranslation;
 
-    int Counter;
-    double Scale;
-    vctMatRot3 RegistrationRotation;
-    vctFrm3 Offset;
-    vct3 MasterLockTranslation;
+    bool mIsClutched;
+    bool mIsOperatorPresent;
+    bool mIsEnabled;
+    bool mRotationLocked;
+    bool mTranslationLocked;
 
-    bool IsClutched;
-    bool IsOperatorPresent;
-    bool IsEnabled;
-    bool RotationLocked;
-    bool TranslationLocked;
+    mtsStateMachine<mtsTeleOperationPSMTypes::StateType,
+                    mtsTeleOperationPSMTypes> mTeleopState;
 
-    vctMatRot3 MasterClutchedOrientation;
+    vctMatRot3 mMasterClutchedOrientation;
 
-    mtsStateTable * ConfigurationStateTable;
+    mtsStateTable * mConfigurationStateTable;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationPSM);
