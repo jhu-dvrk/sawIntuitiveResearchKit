@@ -72,6 +72,10 @@ private:
 
 protected:
 
+    void RunDisabled(void); // mostly checks for desired state
+    void RunEnabled(void); // performs actual teleoperation
+    void EnterLeaveEnabledDisabled(void); // mostly send event Enable(true/false)
+
     class RobotMaster {
     public:
         mtsFunctionRead GetPositionCartesian;
@@ -102,8 +106,6 @@ protected:
         bool IsSUJClutched;
     };
     RobotSlave mSlave;
-
-private:
 
     double mScale;
     vctMatRot3 mRegistrationRotation;

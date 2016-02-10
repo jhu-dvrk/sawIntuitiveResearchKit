@@ -42,34 +42,18 @@ public:
     inline mtsStateMachine(const std::string & name,
                            const StateType initialState):
         mName(name),
-        mFirstRun(true)
+        mFirstRun(true),
+        mCurrentState(initialState)
     {
-        typename CallbackMap::iterator found;
-        // find state run callback
-        found = mRunCallbacks.find(initialState);
-        if (found != mRunCallbacks.end()) {
-            mCurrentRunCallback = found->second;
-        } else {
-            mCurrentRunCallback = 0;
-        }
-        // find state leave trigger callback
-        found = mLeaveTriggerCallbacks.find(initialState);
-        if (found != mLeaveTriggerCallbacks.end()) {
-            mCurrentLeaveTriggerCallback = found->second;
-        } else {
-            mCurrentLeaveTriggerCallback = 0;
-        }
-        // and finally set the new state
-        mCurrentState = initialState;
-        std::cerr << mName << ": initial state is "
-                  << ClassType::StateTypeToString(mCurrentState) << std::endl;
     }
 
     void AddAllowedDesiredStates(const StateType allowedState) {
         mAllowedDesiredStates[allowedState] = true;
     }
 
-    void SetRunCallback(const StateType state, const mtsCallableVoidBase * callback);
+    inline void SetRunCallback(const StateType state, mtsCallableVoidBase * callback) {
+        mRunCallbacks[state] = callback;
+    }
     template <class __classType>
     inline void SetRunCallback(const StateType state,
                                void (__classType::*method)(void),
@@ -77,7 +61,9 @@ public:
         this->SetRunCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
     }
 
-    void SetEnterCallback(const StateType state, mtsCallableVoidBase & callback);
+    inline void SetEnterCallback(const StateType state, mtsCallableVoidBase * callback) {
+        mEnterCallbacks[state] = callback;
+    }
     template <class __classType>
     inline void SetEnterCallback(const StateType state,
                                  void (__classType::*method)(void),
@@ -85,38 +71,30 @@ public:
         this->SetEnterCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
     }
 
-    void SetLeaveCallback(const StateType state, mtsCallableVoidBase & callback);
+    inline void SetLeaveCallback(const StateType state, mtsCallableVoidBase * callback) {
+        mLeaveCallbacks[state] = callback;
+    }
     template <class __classType>
-    inline void SetLEaveCallback(const StateType state,
+    inline void SetLeaveCallback(const StateType state,
                                  void (__classType::*method)(void),
                                  __classType * classInstantiation) {
         this->SetLeaveCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
     }
 
-    void SetLeaveTriggerCallback(const StateType state, mtsCallableVoidBase & callback);
-    template <class __classType>
-    inline void SetLeaveTriggerCallback(const StateType state,
-                                        void (__classType::*method)(void),
-                                        __classType * classInstantiation) {
-        this->SetLeaveTriggerCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
-    }
-
     inline void Run(void) {
         // on first run, call enter callback for initial state
         if (mFirstRun) {
-            typename CallbackMap::iterator found;
+            // update callbacks
+            UpdateCurrentCallbacks();
             // find new state enter callback
+            typename CallbackMap::iterator found;
             found = mEnterCallbacks.find(mCurrentState);
             if (found != mEnterCallbacks.end()) {
                 found->second->Execute();
             }
             mFirstRun = false;
         }
-        // check with current state to see if ready to leave
-        // the callback might call SetCurrentState
-        if (mCurrentLeaveTriggerCallback) {
-            mCurrentLeaveTriggerCallback->Execute();
-        }
+        // run current state method
         if (mCurrentRunCallback) {
             mCurrentRunCallback->Execute();
         }
@@ -145,8 +123,6 @@ public:
         return false;
     }
 
-protected:
-
     inline void SetCurrentState(const StateType newState) {
         typename CallbackMap::iterator found;
         
@@ -155,30 +131,31 @@ protected:
         if (found != mLeaveCallbacks.end()) {
             found->second->Execute();
         }
+        // set the new state and update current callbacks
+        mCurrentState = newState;
         // find new state enter callback
-        found = mEnterCallbacks.find(newState);
+        found = mEnterCallbacks.find(mCurrentState);
         if (found != mEnterCallbacks.end()) {
             found->second->Execute();
         }
+        // update current callbacks
+        UpdateCurrentCallbacks();
+        std::cerr << mName << ": current state is "
+                  << ClassType::StateTypeToString(mCurrentState) << std::endl;
+    }
+
+protected:
+
+    void UpdateCurrentCallbacks(void)
+    {
+        typename CallbackMap::iterator found;
         // find state run callback
-        found = mRunCallbacks.find(newState);
+        found = mRunCallbacks.find(mCurrentState);
         if (found != mRunCallbacks.end()) {
             mCurrentRunCallback = found->second;
         } else {
             mCurrentRunCallback = 0;
         }
-        // find state leave trigger callback
-        found = mLeaveTriggerCallbacks.find(newState);
-        if (found != mLeaveTriggerCallbacks.end()) {
-            mCurrentLeaveTriggerCallback = found->second;
-        } else {
-            mCurrentLeaveTriggerCallback = 0;
-        }
-        // and finally set the new state
-        mCurrentState = newState;
-
-        std::cerr << mName << ": current state is "
-                  << ClassType::StateTypeToString(mCurrentState) << std::endl;
     }
 
     std::string mName;
@@ -188,11 +165,9 @@ protected:
 
     CallbackMap mEnterCallbacks,
         mRunCallbacks,
-        mLeaveCallbacks,
-        mLeaveTriggerCallbacks;
+        mLeaveCallbacks;
 
     mtsCallableVoidBase * mCurrentRunCallback;
-    mtsCallableVoidBase * mCurrentLeaveTriggerCallback;
 
     StateType mCurrentState;
     StateType mDesiredState;

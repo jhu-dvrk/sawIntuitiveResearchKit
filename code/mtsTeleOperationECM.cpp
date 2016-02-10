@@ -47,8 +47,31 @@ mtsTeleOperationECM::mtsTeleOperationECM(const mtsTaskPeriodicConstructorArg & a
 void mtsTeleOperationECM::Init(void)
 {
     // configure state machine
-    mTeleopState.AddAllowedDesiredStates(mtsTeleOperationECMTypes::ENABLED);
     mTeleopState.AddAllowedDesiredStates(mtsTeleOperationECMTypes::DISABLED);
+    mTeleopState.AddAllowedDesiredStates(mtsTeleOperationECMTypes::ENABLED);
+
+    // disabled
+    mTeleopState.SetEnterCallback(mtsTeleOperationECMTypes::DISABLED,
+                                  &mtsTeleOperationECM::EnterLeaveEnabledDisabled,
+                                  this);
+    mTeleopState.SetRunCallback(mtsTeleOperationECMTypes::DISABLED,
+                                &mtsTeleOperationECM::RunDisabled,
+                                this);
+    
+    mTeleopState.SetLeaveCallback(mtsTeleOperationECMTypes::DISABLED,
+                                  &mtsTeleOperationECM::EnterLeaveEnabledDisabled,
+                                  this);
+    
+    // enabled
+    mTeleopState.SetEnterCallback(mtsTeleOperationECMTypes::ENABLED,
+                                  &mtsTeleOperationECM::EnterLeaveEnabledDisabled,
+                                  this);
+    mTeleopState.SetRunCallback(mtsTeleOperationECMTypes::DISABLED,
+                                &mtsTeleOperationECM::RunEnabled,
+                                this);
+    mTeleopState.SetLeaveCallback(mtsTeleOperationECMTypes::ENABLED,
+                                  &mtsTeleOperationECM::EnterLeaveEnabledDisabled,
+                                  this);
 
     mScale = 0.2;
 
@@ -291,6 +314,23 @@ void mtsTeleOperationECM::UpdateTransition(void)
     }
 }
 #endif
+
+void mtsTeleOperationECM::EnterLeaveEnabledDisabled(void)
+{
+    std::cerr << "EnterLeaveEnabledDisabled" << std::endl;
+}
+
+void mtsTeleOperationECM::RunDisabled(void)
+{
+    if (mTeleopState.DesiredState() == mtsTeleOperationECMTypes::ENABLED) {
+        mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::SETTING_ECM_STATE);
+    }
+}
+
+void mtsTeleOperationECM::RunEnabled(void)
+{
+
+}
 
 void mtsTeleOperationECM::MasterLeftErrorEventHandler(const std::string & message)
 {
