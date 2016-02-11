@@ -337,7 +337,6 @@ bool mtsIntuitiveResearchKitConsole::TeleopECM::Connect(void)
     componentManager->Connect(mName, "MasterLeft", mMasterLeftName, "Robot");
     componentManager->Connect(mName, "MasterRight", mMasterRightName, "Robot");
     componentManager->Connect(mName, "Slave", mSlaveName, "Robot");
-    componentManager->Connect(mName, "OperatorPresent", mConsoleName, "OperatorPresent");
     componentManager->Connect(mConsoleName, mName, mName, "Setting");
     return true;
 }

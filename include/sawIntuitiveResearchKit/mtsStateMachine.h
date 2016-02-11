@@ -29,6 +29,13 @@ http://www.cisst.org/cisst/license.txt.
     map<currentState, list<allowedDesired>>, maybe special syntax for all states allowed?
   - Add SetDesiredState(std::string) 
   - Add ErrorCallback(std::string)
+
+  General architecture:
+  - use any type for state (using int allows adding more "states" in derived classes)
+  - callbacks for enter/leave should take current state as value
+  - remove container class, user has to convert state to string
+  - add AddAllowedState method
+  - add GetAllStates method so users can add their own 
  */
 
 
@@ -81,6 +88,16 @@ public:
         this->SetLeaveCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
     }
 
+    inline void SetTransitionCallback(const StateType state, mtsCallableVoidBase * callback) {
+        mTransitionCallbacks[state] = callback;
+    }
+    template <class __classType>
+    inline void SetTransitionCallback(const StateType state,
+                                      void (__classType::*method)(void),
+                                      __classType * classInstantiation) {
+        this->SetTransitionCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
+    }
+
     inline void Run(void) {
         // on first run, call enter callback for initial state
         if (mFirstRun) {
@@ -97,6 +114,10 @@ public:
         // run current state method
         if (mCurrentRunCallback) {
             mCurrentRunCallback->Execute();
+        }
+        // check if a transition should happen
+        if (mCurrentTransitionCallback) {
+            mCurrentTransitionCallback->Execute();
         }
     }
 
@@ -156,6 +177,13 @@ protected:
         } else {
             mCurrentRunCallback = 0;
         }
+        // find transition callback
+        found = mTransitionCallbacks.find(mCurrentState);
+        if (found != mTransitionCallbacks.end()) {
+            mCurrentTransitionCallback = found->second;
+        } else {
+            mCurrentTransitionCallback = 0;
+        }
     }
 
     std::string mName;
@@ -164,10 +192,13 @@ protected:
     typedef std::map<StateType, mtsCallableVoidBase *> CallbackMap;
 
     CallbackMap mEnterCallbacks,
-        mRunCallbacks,
-        mLeaveCallbacks;
+                mRunCallbacks,
+                mLeaveCallbacks,
+                mTransitionCallbacks;
+                     
 
     mtsCallableVoidBase * mCurrentRunCallback;
+    mtsCallableVoidBase * mCurrentTransitionCallback;
 
     StateType mCurrentState;
     StateType mDesiredState;

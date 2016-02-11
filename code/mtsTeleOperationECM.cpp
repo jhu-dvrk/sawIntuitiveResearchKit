@@ -52,26 +52,38 @@ void mtsTeleOperationECM::Init(void)
 
     // disabled
     mTeleopState.SetEnterCallback(mtsTeleOperationECMTypes::DISABLED,
-                                  &mtsTeleOperationECM::EnterLeaveEnabledDisabled,
+                                  &mtsTeleOperationECM::EnterEnabledDisabled,
                                   this);
-    mTeleopState.SetRunCallback(mtsTeleOperationECMTypes::DISABLED,
-                                &mtsTeleOperationECM::RunDisabled,
-                                this);
-    
-    mTeleopState.SetLeaveCallback(mtsTeleOperationECMTypes::DISABLED,
-                                  &mtsTeleOperationECM::EnterLeaveEnabledDisabled,
+    mTeleopState.SetTransitionCallback(mtsTeleOperationECMTypes::DISABLED,
+                                       &mtsTeleOperationECM::TransitionDisabled,
+                                       this);
+
+    // setting ECM state
+    mTeleopState.SetEnterCallback(mtsTeleOperationECMTypes::SETTING_ECM_STATE,
+                                  &mtsTeleOperationECM::EnterSettingECMState,
                                   this);
-    
+    mTeleopState.SetTransitionCallback(mtsTeleOperationECMTypes::SETTING_ECM_STATE,
+                                       &mtsTeleOperationECM::TransitionSettingECMState,
+                                       this);
+
+    // setting MTMs state
+    mTeleopState.SetEnterCallback(mtsTeleOperationECMTypes::SETTING_MTMS_STATE,
+                                  &mtsTeleOperationECM::EnterSettingMTMsState,
+                                  this);
+    mTeleopState.SetTransitionCallback(mtsTeleOperationECMTypes::SETTING_MTMS_STATE,
+                                       &mtsTeleOperationECM::TransitionSettingMTMsState,
+                                       this);
+
     // enabled
     mTeleopState.SetEnterCallback(mtsTeleOperationECMTypes::ENABLED,
-                                  &mtsTeleOperationECM::EnterLeaveEnabledDisabled,
+                                  &mtsTeleOperationECM::EnterEnabledDisabled,
                                   this);
-    mTeleopState.SetRunCallback(mtsTeleOperationECMTypes::DISABLED,
+    mTeleopState.SetRunCallback(mtsTeleOperationECMTypes::ENABLED,
                                 &mtsTeleOperationECM::RunEnabled,
                                 this);
-    mTeleopState.SetLeaveCallback(mtsTeleOperationECMTypes::ENABLED,
-                                  &mtsTeleOperationECM::EnterLeaveEnabledDisabled,
-                                  this);
+    mTeleopState.SetTransitionCallback(mtsTeleOperationECMTypes::ENABLED,
+                                       &mtsTeleOperationECM::TransitionEnabled,
+                                       this);
 
     mScale = 0.2;
 
@@ -92,6 +104,7 @@ void mtsTeleOperationECM::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", mMasterLeft.GetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", mMasterLeft.SetPositionCartesian);
+        interfaceRequired->AddFunction("GetRobotControlState", mMasterLeft.GetRobotControlState);
         interfaceRequired->AddFunction("SetRobotControlState", mMasterLeft.SetRobotControlState);
         interfaceRequired->AddFunction("LockOrientation", mMasterLeft.LockOrientation);
         interfaceRequired->AddFunction("UnlockOrientation", mMasterLeft.UnlockOrientation);
@@ -105,6 +118,7 @@ void mtsTeleOperationECM::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", mMasterRight.GetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", mMasterRight.SetPositionCartesian);
+        interfaceRequired->AddFunction("GetRobotControlState", mMasterRight.GetRobotControlState);
         interfaceRequired->AddFunction("SetRobotControlState", mMasterRight.SetRobotControlState);
         interfaceRequired->AddFunction("LockOrientation", mMasterRight.LockOrientation);
         interfaceRequired->AddFunction("UnlockOrientation", mMasterRight.UnlockOrientation);
@@ -119,6 +133,7 @@ void mtsTeleOperationECM::Init(void)
         // ECM, use PID desired position to make sure there is no jump when engaging
         interfaceRequired->AddFunction("GetPositionCartesianDesired", mSlave.GetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", mSlave.SetPositionCartesian);
+        interfaceRequired->AddFunction("GetRobotControlState", mSlave.GetRobotControlState);
         interfaceRequired->AddFunction("SetRobotControlState", mSlave.SetRobotControlState);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::SlaveErrorEventHandler,
                                                 this, "Error");
@@ -183,7 +198,7 @@ void mtsTeleOperationECM::Run(void)
     ProcessQueuedCommands();
     ProcessQueuedEvents();
 
-    std::cerr << "+" << std::flush;
+    mTeleopState.Run();
 
 #if 0
     // get master Cartesian position
@@ -315,21 +330,101 @@ void mtsTeleOperationECM::UpdateTransition(void)
 }
 #endif
 
-void mtsTeleOperationECM::EnterLeaveEnabledDisabled(void)
+void mtsTeleOperationECM::EnterEnabledDisabled(void)
 {
     std::cerr << "EnterLeaveEnabledDisabled" << std::endl;
 }
 
-void mtsTeleOperationECM::RunDisabled(void)
+void mtsTeleOperationECM::TransitionDisabled(void)
 {
     if (mTeleopState.DesiredState() == mtsTeleOperationECMTypes::ENABLED) {
         mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::SETTING_ECM_STATE);
     }
 }
 
+void mtsTeleOperationECM::EnterSettingECMState(void)
+{
+    // reset timer
+    mSetStateTimer = StateTable.GetTic();
+    
+    // request state if needed
+    mtsStdString armState;
+    mSlave.GetRobotControlState(armState);
+    if (armState.Data != "DVRK_POSITION_CARTESIAN") {
+        mSlave.SetRobotControlState(mtsStdString("DVRK_POSITION_CARTESIAN"));
+    }   
+}
+
+void mtsTeleOperationECM::TransitionSettingECMState(void)
+{
+    // check state
+    mtsStdString armState;
+    mSlave.GetRobotControlState(armState);
+    if (armState.Data == "DVRK_POSITION_CARTESIAN") {
+        mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::SETTING_MTMS_STATE);
+        return;
+    }
+    // check timer
+    if ((StateTable.GetTic() - mSetStateTimer) < 60.0 * cmn_s) {
+        MessageEvents.Error(this->GetName() + ": timed out while setting up ECM state");
+        mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
+    }
+    // check if anyone wanted to disable anyway
+    if (mTeleopState.DesiredState() == mtsTeleOperationECMTypes::DISABLED) {
+        mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::DISABLED);
+    }   
+}
+
+void mtsTeleOperationECM::EnterSettingMTMsState(void)
+{
+    // reset timer
+    mSetStateTimer = StateTable.GetTic();
+    
+    // request state if needed
+    mtsStdString armState;
+    mMasterLeft.GetRobotControlState(armState);
+    if (armState.Data != "DVRK_EFFORT_CARTESIAN") {
+        mMasterLeft.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+    }   
+    mMasterRight.GetRobotControlState(armState);
+    if (armState.Data != "DVRK_EFFORT_CARTESIAN") {
+        mMasterRight.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+    }   
+}
+
+void mtsTeleOperationECM::TransitionSettingMTMsState(void)
+{
+    // check state
+    mtsStdString leftArmState, rightArmState;
+    mMasterLeft.GetRobotControlState(leftArmState);
+    mMasterRight.GetRobotControlState(rightArmState);
+    if ((leftArmState.Data == "DVRK_EFFORT_CARTESIAN") &&
+        (rightArmState.Data == "DVRK_EFFORT_CARTESIAN")) {
+        mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::ENABLED);
+        return;
+    }
+    // check timer
+    if ((StateTable.GetTic() - mSetStateTimer) < 60.0 * cmn_s) {
+        MessageEvents.Error(this->GetName() + ": timed out while setting up MTMs state");
+        mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
+    }
+    // check if anyone wanted to disable anyway
+    if (mTeleopState.DesiredState() == mtsTeleOperationECMTypes::DISABLED) {
+        mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::DISABLED);
+    }   
+}
+
 void mtsTeleOperationECM::RunEnabled(void)
 {
+    // std::cerr << CMN_LOG_DETAILS << " add check on arms states" << std::endl;
+    std::cerr << "+" << std::flush;
+}
 
+void mtsTeleOperationECM::TransitionEnabled(void)
+{
+    if (mTeleopState.DesiredState() == mtsTeleOperationECMTypes::DISABLED) {
+        mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::DISABLED);
+    }
 }
 
 void mtsTeleOperationECM::MasterLeftErrorEventHandler(const std::string & message)

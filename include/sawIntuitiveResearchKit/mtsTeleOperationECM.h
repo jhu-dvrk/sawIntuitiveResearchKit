@@ -72,14 +72,21 @@ private:
 
 protected:
 
-    void RunDisabled(void); // mostly checks for desired state
+    void TransitionDisabled(void); // checks for desired state
+    void EnterSettingECMState(void); // request state and set timer
+    void TransitionSettingECMState(void); // check current state and timer
+    void EnterSettingMTMsState(void);
+    void TransitionSettingMTMsState(void);
     void RunEnabled(void); // performs actual teleoperation
-    void EnterLeaveEnabledDisabled(void); // mostly send event Enable(true/false)
+    void TransitionEnabled(void); // performs actual teleoperation
+    void EnterEnabledDisabled(void); // mostly send event Enable(true/false)
+    
 
     class RobotMaster {
     public:
         mtsFunctionRead GetPositionCartesian;
         mtsFunctionWrite SetPositionCartesian;
+        mtsFunctionRead GetRobotControlState;
         mtsFunctionWrite SetRobotControlState;
         mtsFunctionWrite LockOrientation;
         mtsFunctionVoid UnlockOrientation;
@@ -96,6 +103,7 @@ protected:
     public:
         mtsFunctionRead GetPositionCartesian;
         mtsFunctionWrite SetPositionCartesian;
+        mtsFunctionRead GetRobotControlState;
         mtsFunctionWrite SetRobotControlState;
 
         vctFrm3 PositionCartesianInitial;
@@ -113,6 +121,8 @@ protected:
 
     mtsStateMachine<mtsTeleOperationECMTypes::StateType,
                     mtsTeleOperationECMTypes> mTeleopState;
+
+    double mSetStateTimer;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationECM);
