@@ -30,16 +30,14 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationPSM, mtsTaskPeriodic, mtsT
 
 mtsTeleOperationPSM::mtsTeleOperationPSM(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds),
-    mTeleopState(componentName,
-                 mtsTeleOperationPSMTypes::DISABLED)
+    mTeleopState(mtsTeleOperationPSMTypes::DISABLED)
 {
     Init();
 }
 
 mtsTeleOperationPSM::mtsTeleOperationPSM(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg),
-    mTeleopState(arg.Name,
-                 mtsTeleOperationPSMTypes::DISABLED)
+    mTeleopState(mtsTeleOperationPSMTypes::DISABLED)
 {
     Init();
 }

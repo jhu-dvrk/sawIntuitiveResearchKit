@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSMQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsTeleOperationECMQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJQtWidget.h>
 
 #include <QTabWidget>
@@ -148,12 +149,22 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         }
     }
 
-    // add teleop widgets
+    // add teleop PSM widgets
     const mtsIntuitiveResearchKitConsole::TeleopPSMList::iterator teleopsEnd = console->mTeleopsPSM.end();
     mtsIntuitiveResearchKitConsole::TeleopPSMList::iterator teleopIter;
     for (teleopIter = console->mTeleopsPSM.begin(); teleopIter != teleopsEnd; ++teleopIter) {
         const std::string name = teleopIter->first;
         mtsTeleOperationPSMQtWidget * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "-GUI");
+        teleopGUI->Configure();
+        componentManager->AddComponent(teleopGUI);
+        Connections.push_back(new ConnectionType(teleopGUI->GetName(), "TeleOperation", name, "Setting"));
+        TabWidget->addTab(teleopGUI, name.c_str());
+    }
+
+    // add teleop ECM widget
+    if (console->mTeleopECM) {
+        const std::string name = console->mTeleopECM->Name();
+        mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "-GUI");
         teleopGUI->Configure();
         componentManager->AddComponent(teleopGUI);
         Connections.push_back(new ConnectionType(teleopGUI->GetName(), "TeleOperation", name, "Setting"));

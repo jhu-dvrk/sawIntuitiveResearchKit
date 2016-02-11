@@ -30,16 +30,14 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationECM, mtsTaskPeriodic, mtsT
 
 mtsTeleOperationECM::mtsTeleOperationECM(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds),
-    mTeleopState(componentName,
-                 mtsTeleOperationECMTypes::DISABLED)
+    mTeleopState(mtsTeleOperationECMTypes::DISABLED)
 {
     Init();
 }
 
 mtsTeleOperationECM::mtsTeleOperationECM(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg),
-    mTeleopState(arg.Name,
-                 mtsTeleOperationECMTypes::DISABLED)
+    mTeleopState(mtsTeleOperationECMTypes::DISABLED)
 {
     Init();
 }
@@ -50,6 +48,10 @@ void mtsTeleOperationECM::Init(void)
     mTeleopState.AddAllowedDesiredStates(mtsTeleOperationECMTypes::DISABLED);
     mTeleopState.AddAllowedDesiredStates(mtsTeleOperationECMTypes::ENABLED);
 
+    // state change, to convert to string events for users (Qt, ROS)
+    mTeleopState.SetStateChangedCallback(&mtsTeleOperationECM::StateChanged,
+                                         this);
+    
     // disabled
     mTeleopState.SetEnterCallback(mtsTeleOperationECMTypes::DISABLED,
                                   &mtsTeleOperationECM::EnterEnabledDisabled,
@@ -330,9 +332,19 @@ void mtsTeleOperationECM::UpdateTransition(void)
 }
 #endif
 
+void mtsTeleOperationECM::StateChanged(void)
+{
+    MessageEvents.Status(this->GetName() + ", current state "
+                         + mtsTeleOperationECMTypes::StateTypeToString(mTeleopState.CurrentState()));
+}
+
 void mtsTeleOperationECM::EnterEnabledDisabled(void)
 {
-    std::cerr << "EnterLeaveEnabledDisabled" << std::endl;
+    if (mTeleopState.CurrentState() == mtsTeleOperationECMTypes::ENABLED) {
+        MessageEvents.Enabled(true);
+    } else {
+        MessageEvents.Enabled(false);
+    }
 }
 
 void mtsTeleOperationECM::TransitionDisabled(void)
@@ -357,6 +369,11 @@ void mtsTeleOperationECM::EnterSettingECMState(void)
 
 void mtsTeleOperationECM::TransitionSettingECMState(void)
 {
+    // check if anyone wanted to disable anyway
+    if (mTeleopState.DesiredState() == mtsTeleOperationECMTypes::DISABLED) {
+        mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::DISABLED);
+        return;
+    }   
     // check state
     mtsStdString armState;
     mSlave.GetRobotControlState(armState);
@@ -369,10 +386,6 @@ void mtsTeleOperationECM::TransitionSettingECMState(void)
         MessageEvents.Error(this->GetName() + ": timed out while setting up ECM state");
         mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
     }
-    // check if anyone wanted to disable anyway
-    if (mTeleopState.DesiredState() == mtsTeleOperationECMTypes::DISABLED) {
-        mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::DISABLED);
-    }   
 }
 
 void mtsTeleOperationECM::EnterSettingMTMsState(void)
@@ -394,6 +407,12 @@ void mtsTeleOperationECM::EnterSettingMTMsState(void)
 
 void mtsTeleOperationECM::TransitionSettingMTMsState(void)
 {
+    // check if anyone wanted to disable anyway
+    if (mTeleopState.DesiredState() == mtsTeleOperationECMTypes::DISABLED) {
+        mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::DISABLED);
+        return;
+    }   
+
     // check state
     mtsStdString leftArmState, rightArmState;
     mMasterLeft.GetRobotControlState(leftArmState);

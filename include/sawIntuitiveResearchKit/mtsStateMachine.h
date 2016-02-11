@@ -46,11 +46,10 @@ public:
     typedef _enumType StateType;
     typedef _containerClass ClassType;
 
-    inline mtsStateMachine(const std::string & name,
-                           const StateType initialState):
-        mName(name),
+    inline mtsStateMachine(const StateType initialState):
         mFirstRun(true),
-        mCurrentState(initialState)
+        mCurrentState(initialState),
+        mStateChangeCallback(0)
     {
     }
 
@@ -98,6 +97,15 @@ public:
         this->SetTransitionCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
     }
 
+    inline void SetStateChangedCallback(mtsCallableVoidBase * callback) {
+        mStateChangeCallback = callback;
+    }
+    template <class __classType>
+    inline void SetStateChangedCallback(void (__classType::*method)(void),
+                                        __classType * classInstantiation) {
+        this->SetStateChangedCallback(new mtsCallableVoidMethod<__classType>(method, classInstantiation));
+    }
+
     inline void Run(void) {
         // on first run, call enter callback for initial state
         if (mFirstRun) {
@@ -134,12 +142,11 @@ public:
             = mAllowedDesiredStates.find(desiredState);
         if (found != mAllowedDesiredStates.end()) {
             mDesiredState = desiredState;
-            std::cerr << mName << ": desired state is "
+            std::cerr << "desired state is "
                       << ClassType::StateTypeToString(mDesiredState) << std::endl;
             return true;
         }
-        std::cerr << mName << ": "
-                  << ClassType::StateTypeToString(desiredState)
+        std::cerr << ClassType::StateTypeToString(desiredState)
                   << " is not allowed as a desired state" << std::endl;
         return false;
     }
@@ -161,8 +168,10 @@ public:
         }
         // update current callbacks
         UpdateCurrentCallbacks();
-        std::cerr << mName << ": current state is "
-                  << ClassType::StateTypeToString(mCurrentState) << std::endl;
+        // user callback if provided
+        if (mStateChangeCallback) {
+            mStateChangeCallback->Execute();
+        }
     }
 
 protected:
@@ -199,6 +208,7 @@ protected:
 
     mtsCallableVoidBase * mCurrentRunCallback;
     mtsCallableVoidBase * mCurrentTransitionCallback;
+    mtsCallableVoidBase * mStateChangeCallback;
 
     StateType mCurrentState;
     StateType mDesiredState;

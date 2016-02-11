@@ -72,6 +72,7 @@ private:
 
 protected:
 
+    void StateChanged(void);
     void TransitionDisabled(void); // checks for desired state
     void EnterSettingECMState(void); // request state and set timer
     void TransitionSettingECMState(void); // check current state and timer
