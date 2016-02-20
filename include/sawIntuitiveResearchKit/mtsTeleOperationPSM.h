@@ -65,10 +65,9 @@ private:
     void SlaveErrorEventHandler(const std::string & message);
 
     void SlaveClutchEventHandler(const prmEventButton & button);
-    void StartAlignMaster(void);
+    //    void StartAlignMaster(void);
 
     void ClutchEventHandler(const prmEventButton & button);
-    void OperatorPresentEventHandler(const prmEventButton & button);
 
     // Functions for events
     struct {
@@ -86,21 +85,29 @@ private:
 
     void Enable(const bool & enable);
 
-    /**
-     * @brief Set MTM control states based on teleop component state
-     *        and control input device (cluch & operatorPresent).
-     *
-     *  WARNING: should only be called by event handlers
-     */
-    void SetMasterControlState(void);
+    // void SetMasterControlState(void);
 
 protected:
+
+    void StateChanged(void);
+    void EnterDisabled(void); // send event Enable(false)
+    void TransitionDisabled(void); // checks for desired state
+    void EnterSettingPSMState(void); // request state and set timer
+    void TransitionSettingPSMState(void); // check current state and timer
+    void EnterSettingMTMState(void);
+    void TransitionSettingMTMState(void);
+    void EnterAligningMTM(void);
+    void TransitionAligningMTM(void);
+    void EnterEnabled(void); // called when enabling, save initial positions of master and slave
+    void RunEnabled(void); // performs actual teleoperation
+    void TransitionEnabled(void); // performs actual teleoperation
 
     class RobotMaster {
     public:
         mtsFunctionRead GetPositionCartesian;
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionWrite SetPositionGoalCartesian;
+        mtsFunctionRead GetRobotControlState;
         mtsFunctionWrite SetRobotControlState;
 
         mtsFunctionRead GetGripperPosition;
@@ -115,6 +122,7 @@ protected:
     public:
         mtsFunctionRead GetPositionCartesian;
         mtsFunctionWrite SetPositionCartesian;
+        mtsFunctionRead GetRobotControlState;
         mtsFunctionWrite SetRobotControlState;
 
         mtsFunctionWrite SetJawPosition;
@@ -122,8 +130,6 @@ protected:
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianSet PositionCartesianDesired;
         vctFrm4x4 CartesianPrevious;
-        bool IsManipClutched;
-        bool IsSUJClutched;
     };
     RobotSlave mSlave;
 
@@ -134,17 +140,13 @@ private:
     vct3 mMasterLockTranslation;
 
     bool mIsClutched;
-    bool mIsOperatorPresent;
-    bool mIsEnabled;
     bool mRotationLocked;
     bool mTranslationLocked;
-
-    mtsStateMachine<mtsTeleOperationPSMTypes::StateType,
-                    mtsTeleOperationPSMTypes> mTeleopState;
-
     vctMatRot3 mMasterClutchedOrientation;
-
     mtsStateTable * mConfigurationStateTable;
+
+    mtsStateMachine<mtsTeleOperationPSMTypes::StateType> mTeleopState;
+    double mInStateTimer;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationPSM);

@@ -382,7 +382,6 @@ bool mtsIntuitiveResearchKitConsole::TeleopPSM::Connect(void)
     componentManager->Connect(mName, "Master", mMasterName, "Robot");
     componentManager->Connect(mName, "Slave", mSlaveName, "Robot");
     componentManager->Connect(mName, "Clutch", mConsoleName, "Clutch");
-    componentManager->Connect(mName, "OperatorPresent", mConsoleName, "OperatorPresent");
     componentManager->Connect(mConsoleName, mName, mName, "Setting");
     return true;
 }

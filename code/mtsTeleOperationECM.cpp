@@ -51,7 +51,7 @@ void mtsTeleOperationECM::Init(void)
     // state change, to convert to string events for users (Qt, ROS)
     mTeleopState.SetStateChangedCallback(&mtsTeleOperationECM::StateChanged,
                                          this);
-    
+
     // disabled
     mTeleopState.SetEnterCallback(mtsTeleOperationECMTypes::DISABLED,
                                   &mtsTeleOperationECM::EnterEnabledDisabled,
@@ -88,9 +88,6 @@ void mtsTeleOperationECM::Init(void)
                                        this);
 
     mScale = 0.2;
-
-    // Initialize states
-    mSlave.IsManipClutched = false;
 
     StateTable.AddData(mMasterLeft.PositionCartesianCurrent, "MasterLeftCartesianPosition");
     StateTable.AddData(mMasterRight.PositionCartesianCurrent, "MasterRightCartesianPosition");
@@ -139,8 +136,6 @@ void mtsTeleOperationECM::Init(void)
         interfaceRequired->AddFunction("SetRobotControlState", mSlave.SetRobotControlState);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::SlaveErrorEventHandler,
                                                 this, "Error");
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::SlaveClutchEventHandler,
-                                                this, "ManipClutch");
     }
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Setting");
@@ -357,14 +352,14 @@ void mtsTeleOperationECM::TransitionDisabled(void)
 void mtsTeleOperationECM::EnterSettingECMState(void)
 {
     // reset timer
-    mSetStateTimer = StateTable.GetTic();
-    
+    mInStateTimer = StateTable.GetTic();
+
     // request state if needed
     mtsStdString armState;
     mSlave.GetRobotControlState(armState);
     if (armState.Data != "DVRK_POSITION_CARTESIAN") {
         mSlave.SetRobotControlState(mtsStdString("DVRK_POSITION_CARTESIAN"));
-    }   
+    }
 }
 
 void mtsTeleOperationECM::TransitionSettingECMState(void)
@@ -373,7 +368,7 @@ void mtsTeleOperationECM::TransitionSettingECMState(void)
     if (mTeleopState.DesiredState() == mtsTeleOperationECMTypes::DISABLED) {
         mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::DISABLED);
         return;
-    }   
+    }
     // check state
     mtsStdString armState;
     mSlave.GetRobotControlState(armState);
@@ -382,7 +377,7 @@ void mtsTeleOperationECM::TransitionSettingECMState(void)
         return;
     }
     // check timer
-    if ((StateTable.GetTic() - mSetStateTimer) < 60.0 * cmn_s) {
+    if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
         MessageEvents.Error(this->GetName() + ": timed out while setting up ECM state");
         mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
     }
@@ -391,18 +386,18 @@ void mtsTeleOperationECM::TransitionSettingECMState(void)
 void mtsTeleOperationECM::EnterSettingMTMsState(void)
 {
     // reset timer
-    mSetStateTimer = StateTable.GetTic();
-    
+    mInStateTimer = StateTable.GetTic();
+
     // request state if needed
     mtsStdString armState;
     mMasterLeft.GetRobotControlState(armState);
     if (armState.Data != "DVRK_EFFORT_CARTESIAN") {
         mMasterLeft.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
-    }   
+    }
     mMasterRight.GetRobotControlState(armState);
     if (armState.Data != "DVRK_EFFORT_CARTESIAN") {
         mMasterRight.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
-    }   
+    }
 }
 
 void mtsTeleOperationECM::TransitionSettingMTMsState(void)
@@ -411,8 +406,7 @@ void mtsTeleOperationECM::TransitionSettingMTMsState(void)
     if (mTeleopState.DesiredState() == mtsTeleOperationECMTypes::DISABLED) {
         mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::DISABLED);
         return;
-    }   
-
+    }
     // check state
     mtsStdString leftArmState, rightArmState;
     mMasterLeft.GetRobotControlState(leftArmState);
@@ -423,14 +417,10 @@ void mtsTeleOperationECM::TransitionSettingMTMsState(void)
         return;
     }
     // check timer
-    if ((StateTable.GetTic() - mSetStateTimer) < 60.0 * cmn_s) {
+    if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
         MessageEvents.Error(this->GetName() + ": timed out while setting up MTMs state");
         mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
     }
-    // check if anyone wanted to disable anyway
-    if (mTeleopState.DesiredState() == mtsTeleOperationECMTypes::DISABLED) {
-        mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::DISABLED);
-    }   
 }
 
 void mtsTeleOperationECM::RunEnabled(void)
@@ -464,17 +454,6 @@ void mtsTeleOperationECM::SlaveErrorEventHandler(const std::string & message)
     MessageEvents.Error(this->GetName() + ": received from slave [" + message + "]");
 }
 
-void mtsTeleOperationECM::SlaveClutchEventHandler(const prmEventButton & button)
-{
-    if (button.Type() == prmEventButton::PRESSED) {
-        mSlave.IsManipClutched = true;
-        MessageEvents.Status(this->GetName() + ": slave clutch pressed");
-    } else {
-        mSlave.IsManipClutched = false;
-        MessageEvents.Status(this->GetName() + ": slave clutch released");
-    }
-}
-
 void mtsTeleOperationECM::Enable(const bool & enable)
 {
     if (enable) {
@@ -482,6 +461,8 @@ void mtsTeleOperationECM::Enable(const bool & enable)
     } else {
         mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
     }
+    MessageEvents.Status(this->GetName() + ": set desired state to "
+                         + mtsTeleOperationECMTypes::StateTypeToString(mTeleopState.DesiredState()));
 }
 
 void mtsTeleOperationECM::SetScale(const double & scale)

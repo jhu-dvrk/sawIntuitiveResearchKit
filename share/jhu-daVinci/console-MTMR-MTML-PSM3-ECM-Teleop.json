@@ -21,7 +21,7 @@
         {
             "name": "ECM",
             "type": "ECM",
-            "simulation": "KINEMATIC",
+            "simulation": "KINEMATIC", // comment this to use actual arm
             // "io": "sawRobotIO1394-ECM-29738.xml",
             "pid": "../sawControllersPID-ECM.xml",
             "kinematic": "../dvecm.rob"
@@ -42,8 +42,8 @@
             "master": "MTMR",
             "slave": "PSM3" ,
             "rotation" : [[-1.0000,  0.0000,  0.0000],
-			              [ 0.0000, -1.0000,  0.0000],
-			              [ 0.0000,  0.0000,  1.0000]]
+                          [ 0.0000, -1.0000,  0.0000],
+                          [ 0.0000,  0.0000,  1.0000]]
         }
     ]
     ,
@@ -52,9 +52,8 @@
         "master-left": "MTML",
         "master-right": "MTMR",
         "slave": "ECM",
-        "period": 0.005, // in seconds
         "rotation" : [[ 1.0000,  0.0000,  0.0000],
-			          [ 0.0000,  1.0000,  0.0000],
-			          [ 0.0000,  0.0000,  1.0000]]
+                      [ 0.0000,  1.0000,  0.0000],
+                      [ 0.0000,  0.0000,  1.0000]]
     }
 }

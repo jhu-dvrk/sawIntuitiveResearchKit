@@ -81,7 +81,7 @@ protected:
     void RunEnabled(void); // performs actual teleoperation
     void TransitionEnabled(void); // performs actual teleoperation
     void EnterEnabledDisabled(void); // mostly send event Enable(true/false)
-    
+
 
     class RobotMaster {
     public:
@@ -110,9 +110,6 @@ protected:
         vctFrm3 PositionCartesianInitial;
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianSet PositionCartesianDesired;
-
-        bool IsManipClutched;
-        bool IsSUJClutched;
     };
     RobotSlave mSlave;
 
@@ -120,10 +117,8 @@ protected:
     vctMatRot3 mRegistrationRotation;
     mtsStateTable * mConfigurationStateTable;
 
-    mtsStateMachine<mtsTeleOperationECMTypes::StateType,
-                    mtsTeleOperationECMTypes> mTeleopState;
-
-    double mSetStateTimer;
+    mtsStateMachine<mtsTeleOperationECMTypes::StateType> mTeleopState;
+    double mInStateTimer;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationECM);

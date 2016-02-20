@@ -27,7 +27,7 @@ http://www.cisst.org/cisst/license.txt.
   - Add mtsFunction(std::string) for error and status (compatible dVRK), maybe a change state callback?
   - For SetDesiredState, add list of allowed transition
     map<currentState, list<allowedDesired>>, maybe special syntax for all states allowed?
-  - Add SetDesiredState(std::string) 
+  - Add SetDesiredState(std::string)
   - Add ErrorCallback(std::string)
 
   General architecture:
@@ -35,21 +35,20 @@ http://www.cisst.org/cisst/license.txt.
   - callbacks for enter/leave should take current state as value
   - remove container class, user has to convert state to string
   - add AddAllowedState method
-  - add GetAllStates method so users can add their own 
+  - add GetAllStates method so users can add their own
  */
 
 
-template <typename _enumType, typename _containerClass>
+template <typename _stateType>
 class mtsStateMachine
 {
 public:
-    typedef _enumType StateType;
-    typedef _containerClass ClassType;
+    typedef _stateType StateType;
 
     inline mtsStateMachine(const StateType initialState):
         mFirstRun(true),
-        mCurrentState(initialState),
-        mStateChangeCallback(0)
+        mStateChangeCallback(0),
+        mCurrentState(initialState)
     {
     }
 
@@ -142,18 +141,14 @@ public:
             = mAllowedDesiredStates.find(desiredState);
         if (found != mAllowedDesiredStates.end()) {
             mDesiredState = desiredState;
-            std::cerr << "desired state is "
-                      << ClassType::StateTypeToString(mDesiredState) << std::endl;
             return true;
         }
-        std::cerr << ClassType::StateTypeToString(desiredState)
-                  << " is not allowed as a desired state" << std::endl;
         return false;
     }
 
     inline void SetCurrentState(const StateType newState) {
         typename CallbackMap::iterator found;
-        
+
         // find current state leave callback
         found = mLeaveCallbacks.find(mCurrentState);
         if (found != mLeaveCallbacks.end()) {
@@ -204,7 +199,6 @@ protected:
                 mRunCallbacks,
                 mLeaveCallbacks,
                 mTransitionCallbacks;
-                     
 
     mtsCallableVoidBase * mCurrentRunCallback;
     mtsCallableVoidBase * mCurrentTransitionCallback;
