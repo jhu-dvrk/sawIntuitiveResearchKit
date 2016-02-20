@@ -90,6 +90,7 @@ private:
 protected:
 
     void StateChanged(void);
+    void RunAll(void); // this should happen for all states
     void EnterDisabled(void); // send event Enable(false)
     void TransitionDisabled(void); // checks for desired state
     void EnterSettingPSMState(void); // request state and set timer

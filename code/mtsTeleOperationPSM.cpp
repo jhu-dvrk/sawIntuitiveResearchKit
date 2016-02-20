@@ -52,6 +52,10 @@ void mtsTeleOperationPSM::Init(void)
     mTeleopState.SetStateChangedCallback(&mtsTeleOperationPSM::StateChanged,
                                          this);
 
+    // run for all states
+    mTeleopState.SetRunCallback(&mtsTeleOperationPSM::RunAll,
+                                this);
+
     // disabled
     mTeleopState.SetEnterCallback(mtsTeleOperationPSMTypes::DISABLED,
                                   &mtsTeleOperationPSM::EnterDisabled,
@@ -188,25 +192,6 @@ void mtsTeleOperationPSM::Run(void)
     ProcessQueuedCommands();
     ProcessQueuedEvents();
 
-   // get master Cartesian position
-    mtsExecutionResult executionResult;
-    executionResult = mMaster.GetPositionCartesian(mMaster.PositionCartesianCurrent);
-    if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to Master.GetPositionCartesian failed \""
-                                << executionResult << "\"" << std::endl;
-        MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master");
-        this->Enable(false);
-    }
-
-    // get slave Cartesian position
-    executionResult = mSlave.GetPositionCartesian(mSlave.PositionCartesianCurrent);
-    if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to Slave.GetPositionCartesian failed \""
-                                << executionResult << "\"" << std::endl;
-        MessageEvents.Error(this->GetName() + ": unable to get cartesian position from slave");
-        this->Enable(false);
-    }
-
     // run based on state
     mTeleopState.Run();
 }
@@ -256,7 +241,7 @@ void mtsTeleOperationPSM::ClutchEventHandler(const prmEventButton & button)
     } else {
         mIsClutched = false;
         MessageEvents.Status(this->GetName() + ": master clutch released");
-        mTeleopState.SetCurrentState(mtsTeleOperationPSMTypes::SETTING_MTM_STATE);        
+        mTeleopState.SetCurrentState(mtsTeleOperationPSMTypes::SETTING_MTM_STATE);
     }
 }
 
@@ -320,6 +305,35 @@ void mtsTeleOperationPSM::StateChanged(void)
                          + mtsTeleOperationPSMTypes::StateTypeToString(mTeleopState.CurrentState()));
 }
 
+void mtsTeleOperationPSM::RunAll(void)
+{
+    // get master Cartesian position
+    mtsExecutionResult executionResult;
+    executionResult = mMaster.GetPositionCartesian(mMaster.PositionCartesianCurrent);
+    if (!executionResult.IsOK()) {
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to Master.GetPositionCartesian failed \""
+                                << executionResult << "\"" << std::endl;
+        MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master");
+        this->Enable(false);
+    }
+
+    // get slave Cartesian position
+    executionResult = mSlave.GetPositionCartesian(mSlave.PositionCartesianCurrent);
+    if (!executionResult.IsOK()) {
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to Slave.GetPositionCartesian failed \""
+                                << executionResult << "\"" << std::endl;
+        MessageEvents.Error(this->GetName() + ": unable to get cartesian position from slave");
+        this->Enable(false);
+    }
+
+    // check if anyone wanted to disable anyway
+    if ((mTeleopState.DesiredState() == mtsTeleOperationPSMTypes::DISABLED)
+        && (mTeleopState.CurrentState() != mtsTeleOperationPSMTypes::DISABLED)) {
+        mTeleopState.SetCurrentState(mtsTeleOperationPSMTypes::DISABLED);
+        return;
+    }
+}
+
 void mtsTeleOperationPSM::EnterDisabled(void)
 {
     MessageEvents.Enabled(false);
@@ -347,11 +361,6 @@ void mtsTeleOperationPSM::EnterSettingPSMState(void)
 
 void mtsTeleOperationPSM::TransitionSettingPSMState(void)
 {
-    // check if anyone wanted to disable anyway
-    if (mTeleopState.DesiredState() == mtsTeleOperationPSMTypes::DISABLED) {
-        mTeleopState.SetCurrentState(mtsTeleOperationPSMTypes::DISABLED);
-        return;
-    }
     // check state
     mtsStdString armState;
     mSlave.GetRobotControlState(armState);
@@ -381,11 +390,6 @@ void mtsTeleOperationPSM::EnterSettingMTMState(void)
 
 void mtsTeleOperationPSM::TransitionSettingMTMState(void)
 {
-    // check if anyone wanted to disable anyway
-    if (mTeleopState.DesiredState() == mtsTeleOperationPSMTypes::DISABLED) {
-        mTeleopState.SetCurrentState(mtsTeleOperationPSMTypes::DISABLED);
-        return;
-    }
     // check state
     mtsStdString armState;
     mMaster.GetRobotControlState(armState);
@@ -421,11 +425,6 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 
 void mtsTeleOperationPSM::TransitionAligningMTM(void)
 {
-    // check if anyone wanted to disable anyway
-    if (mTeleopState.DesiredState() == mtsTeleOperationPSMTypes::DISABLED) {
-        mTeleopState.SetCurrentState(mtsTeleOperationPSMTypes::DISABLED);
-        return;
-    }
     // check difference of orientation between master and slave
     vctMatRot3 desiredOrientation, difference;
     mRegistrationRotation.ApplyInverseTo(mSlave.PositionCartesianCurrent.Position().Rotation(),

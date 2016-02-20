@@ -23,17 +23,12 @@ http://www.cisst.org/cisst/license.txt.
 
 /*
   \todo
-  - Add name in ctor so messages can include name
-  - Add mtsFunction(std::string) for error and status (compatible dVRK), maybe a change state callback?
-  - For SetDesiredState, add list of allowed transition
+  - For SetDesiredState, add list of allowed transitions
     map<currentState, list<allowedDesired>>, maybe special syntax for all states allowed?
-  - Add SetDesiredState(std::string)
   - Add ErrorCallback(std::string)
 
   General architecture:
-  - use any type for state (using int allows adding more "states" in derived classes)
   - callbacks for enter/leave should take current state as value
-  - remove container class, user has to convert state to string
   - add AddAllowedState method
   - add GetAllStates method so users can add their own
  */
@@ -47,15 +42,20 @@ public:
 
     inline mtsStateMachine(const StateType initialState):
         mFirstRun(true),
+        mRunCallback(0),
         mStateChangeCallback(0),
         mCurrentState(initialState)
     {
     }
 
+    /*! Add an allowed desired state.  One can only use
+      SetDesiredState with allowed states. */
     void AddAllowedDesiredStates(const StateType allowedState) {
         mAllowedDesiredStates[allowedState] = true;
     }
 
+    /*! Set the Run callback for a given state. */
+    //@{
     inline void SetRunCallback(const StateType state, mtsCallableVoidBase * callback) {
         mRunCallbacks[state] = callback;
     }
@@ -65,7 +65,24 @@ public:
                                __classType * classInstantiation) {
         this->SetRunCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
     }
+    //@}
 
+    /*! Set the Run callback called for all states, this method is
+      called before the state specific Run callback. */
+    //@{
+    inline void SetRunCallback(mtsCallableVoidBase * callback) {
+        mRunCallback = callback;
+    }
+    template <class __classType>
+    inline void SetRunCallback(void (__classType::*method)(void),
+                               __classType * classInstantiation) {
+        this->SetRunCallback(new mtsCallableVoidMethod<__classType>(method, classInstantiation));
+    }
+    //@}
+
+    /*! Set the Enter callback for a given state.  This method is
+      called only once, before the Run callback. */
+    //@{
     inline void SetEnterCallback(const StateType state, mtsCallableVoidBase * callback) {
         mEnterCallbacks[state] = callback;
     }
@@ -75,7 +92,11 @@ public:
                                  __classType * classInstantiation) {
         this->SetEnterCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
     }
+    //@}
 
+    /*! Set the Leave callback for a given state.  Called once when
+      leaving the current state. */
+    //@{
     inline void SetLeaveCallback(const StateType state, mtsCallableVoidBase * callback) {
         mLeaveCallbacks[state] = callback;
     }
@@ -85,7 +106,11 @@ public:
                                  __classType * classInstantiation) {
         this->SetLeaveCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
     }
+    //@}
 
+    /*! Set the Transition callback for a given state.  This callback
+      is called after the Run callback for the current state. */
+    //@{
     inline void SetTransitionCallback(const StateType state, mtsCallableVoidBase * callback) {
         mTransitionCallbacks[state] = callback;
     }
@@ -95,7 +120,10 @@ public:
                                       __classType * classInstantiation) {
         this->SetTransitionCallback(state, new mtsCallableVoidMethod<__classType>(method, classInstantiation));
     }
+    //@}
 
+    /*! Set the state changed callback. */
+    //@{
     inline void SetStateChangedCallback(mtsCallableVoidBase * callback) {
         mStateChangeCallback = callback;
     }
@@ -104,6 +132,7 @@ public:
                                         __classType * classInstantiation) {
         this->SetStateChangedCallback(new mtsCallableVoidMethod<__classType>(method, classInstantiation));
     }
+    //@}
 
     inline void Run(void) {
         // on first run, call enter callback for initial state
@@ -119,6 +148,9 @@ public:
             mFirstRun = false;
         }
         // run current state method
+        if (mRunCallback) {
+            mRunCallback->Execute();
+        }
         if (mCurrentRunCallback) {
             mCurrentRunCallback->Execute();
         }
@@ -200,9 +232,10 @@ protected:
                 mLeaveCallbacks,
                 mTransitionCallbacks;
 
-    mtsCallableVoidBase * mCurrentRunCallback;
-    mtsCallableVoidBase * mCurrentTransitionCallback;
-    mtsCallableVoidBase * mStateChangeCallback;
+    mtsCallableVoidBase * mRunCallback,
+                        * mCurrentRunCallback,
+                        * mCurrentTransitionCallback,
+                        * mStateChangeCallback;
 
     StateType mCurrentState;
     StateType mDesiredState;
