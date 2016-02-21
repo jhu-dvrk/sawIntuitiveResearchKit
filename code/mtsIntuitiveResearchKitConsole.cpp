@@ -396,14 +396,20 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mtsTaskFromSignal(componentName, 100),
     mConfigured(false),
     mTeleopEnabled(false),
+    mTeleopPSMRunning(false),
+    mTeleopECMRunning(false),
     mTeleopECM(0),
+    mOperatorPresent(false),
+    mCameraPressed(false),
     mSUJECMInterfaceRequired(0),
     mECMBaseFrameInterfaceProvided(0)
 {
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Main");
     if (interfaceProvided) {
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetRobotsControlState, this,
-                                           "SetRobotsControlState", std::string(""));
+        interfaceProvided->AddCommandVoid(&mtsIntuitiveResearchKitConsole::PowerOff, this,
+                                           "PowerOff");
+        interfaceProvided->AddCommandVoid(&mtsIntuitiveResearchKitConsole::Home, this,
+                                           "Home");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::TeleopEnable, this,
                                            "TeleopEnable", false);
         interfaceProvided->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
@@ -1166,6 +1172,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     arm->ArmInterfaceRequired = AddInterfaceRequired(interfaceNameArm);
     if (arm->ArmInterfaceRequired) {
         arm->ArmInterfaceRequired->AddFunction("SetRobotControlState", arm->SetRobotControlState);
+        arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze);
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
@@ -1249,20 +1256,25 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
     return true;
 }
 
-void mtsIntuitiveResearchKitConsole::SetRobotsControlState(const std::string & newState)
+void mtsIntuitiveResearchKitConsole::PowerOff(void)
 {
-    mTeleopEnabled = false; // this is hackish
-    mtsExecutionResult result;
+    mTeleopEnabled = false;
     const ArmList::iterator end = mArms.end();
     for (ArmList::iterator arm = mArms.begin();
          arm != end;
          ++arm) {
-        result = arm->second->SetRobotControlState(newState);
-        if (!result) {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": SetRobotControlState: failed to set state \""
-                                    << newState << "\" for arm \"" << arm->second->Name()
-                                    << "\": " << result << std::endl;
-        }
+        arm->second->SetRobotControlState(mtsStdString("DVRK_UNINITIALIZED"));
+    }
+}
+
+void mtsIntuitiveResearchKitConsole::Home(void)
+{
+    mTeleopEnabled = false;
+    const ArmList::iterator end = mArms.end();
+    for (ArmList::iterator arm = mArms.begin();
+         arm != end;
+         ++arm) {
+        arm->second->SetRobotControlState(mtsStdString("DVRK_HOMING_BIAS_ENCODER"));
     }
 }
 
@@ -1270,17 +1282,64 @@ void mtsIntuitiveResearchKitConsole::TeleopEnable(const bool & enable)
 {
     mtsExecutionResult result;
     mTeleopEnabled = enable;
-    const TeleopPSMList::iterator end = mTeleopsPSM.end();
-    for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();
-         teleOp != end;
-         ++teleOp) {
-        result = teleOp->second->Enable(enable);
-        if (!result) {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": Enable: failed to set \""
-                                    << enable << "\" for tele-op \"" << teleOp->second->Name()
-                                    << "\": " << result << std::endl;
+    UpdateTeleopState();
+}
+
+void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
+{
+    // determine is any teleop should be running
+    bool teleopPSM = false;
+    bool teleopECM = false;
+
+    // which one should be running now
+    if (mTeleopEnabled && mOperatorPresent) {
+        if (mCameraPressed) {
+            teleopECM = true;
+        } else {
+            teleopPSM = true;
         }
     }
+
+    // shutdown all teleop that should be shut down
+    if (mTeleopPSMRunning && !teleopPSM) {
+        const TeleopPSMList::iterator end = mTeleopsPSM.end();
+        for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();
+             teleOp != end;
+             ++teleOp) {
+            teleOp->second->Enable(false);
+        }
+    }
+    if (mTeleopECMRunning && !teleopECM) {
+        mTeleopECM->Enable(false);
+    }
+
+    // freeze masters if needed
+    const ArmList::iterator end = mArms.end();
+    ArmList::iterator iter = mArms.begin();
+    for (; iter != end; ++iter) {
+        if ((iter->second->mType == Arm::ARM_MTM) ||
+            (iter->second->mType == Arm::ARM_MTM_DERIVED) ||
+            (iter->second->mType == Arm::ARM_MTM_GENERIC)) {
+            iter->second->Freeze();
+        }
+    }
+
+    // turn on teleop if needed
+    if (!mTeleopPSMRunning && teleopPSM) {
+        const TeleopPSMList::iterator end = mTeleopsPSM.end();
+        for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();
+             teleOp != end;
+             ++teleOp) {
+            teleOp->second->Enable(true);
+        }
+    }
+    if (!mTeleopECMRunning && teleopECM) {
+        mTeleopECM->Enable(true);
+    }
+
+    // update data members
+    mTeleopPSMRunning = teleopPSM;
+    mTeleopECMRunning = teleopECM;
 }
 
 void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & button)
@@ -1295,42 +1354,32 @@ void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & b
 
 void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & button)
 {
-    ConsoleEvents.Camera(button);
     if (button.Type() == prmEventButton::PRESSED) {
-        mTeleopEnabledBeforeCamera = mTeleopEnabled;
-        // disable all PSM teleops
-        if (mTeleopEnabled) {
-            TeleopEnable(false);
-        }
-        // start ECM teleop
-        if (mTeleopECM) {
-            mTeleopECM->Enable(true);
-        }
+        mCameraPressed = true;
         MessageEvents.Status(this->GetName() + ": camera pressed");
     } else {
-        // stop ECM teleop
-        if (mTeleopECM) {
-            mTeleopECM->Enable(false);
-        }
-        // re-enable PSM teleop if needed
-        if (mTeleopEnabledBeforeCamera) {
-            TeleopEnable(true);
-        }
+        mCameraPressed = false;
         MessageEvents.Status(this->GetName() + ": camera released");
     }
+    UpdateTeleopState();
+    ConsoleEvents.OperatorPresent(button);
 }
 
 void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventButton & button)
 {
-    ConsoleEvents.OperatorPresent(button);
     if (button.Type() == prmEventButton::PRESSED) {
+        mOperatorPresent = true;
         MessageEvents.Status(this->GetName() + ": operator present");
     } else {
+        mOperatorPresent = false;
         MessageEvents.Status(this->GetName() + ": operator not present");
     }
+    UpdateTeleopState();
+    ConsoleEvents.OperatorPresent(button);
 }
 
 void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const std::string & message) {
+    TeleopEnable(false);
     MessageEvents.Error(message);
 }
 
@@ -1344,6 +1393,7 @@ void mtsIntuitiveResearchKitConsole::StatusEventHandler(const std::string & mess
 
 void mtsIntuitiveResearchKitConsole::ECMManipClutchEventHandler(const prmEventButton & button)
 {
+    std::cerr << CMN_LOG_DETAILS << " this should be probably be treated as any other clutch event  -- remove this code?" << std::endl;
     mtsExecutionResult result;
     const TeleopPSMList::iterator end = mTeleopsPSM.end();
     for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();

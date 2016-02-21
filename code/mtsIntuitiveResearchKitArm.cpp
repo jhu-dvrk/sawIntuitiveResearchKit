@@ -159,6 +159,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandReadState(this->StateTable, BaseFrame, "GetBaseFrame");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianVelocityGetParam, "GetVelocityCartesian");
         // Set
+        RobotInterface->AddCommandVoid(&mtsIntuitiveResearchKitArm::Freeze,
+                                       this, "Freeze");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionJoint,
                                         this, "SetPositionJoint");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalJoint,
@@ -623,6 +625,12 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
     JointSetParam.Goal().Zeros();
     JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
     PID.SetPositionJoint(JointSetParam);
+}
+
+void mtsIntuitiveResearchKitArm::Freeze(void)
+{
+    SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT);
+    SetPositionJointLocal(JointGet);
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)

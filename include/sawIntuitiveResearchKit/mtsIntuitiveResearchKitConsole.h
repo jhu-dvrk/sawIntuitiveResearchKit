@@ -94,6 +94,7 @@ public:
         std::string mBaseFrameInterfaceName;
 
         mtsFunctionWrite SetRobotControlState;
+        mtsFunctionVoid Freeze;
         mtsInterfaceRequired * IOInterfaceRequired;
         mtsInterfaceRequired * PIDInterfaceRequired;
         mtsInterfaceRequired * ArmInterfaceRequired;
@@ -216,6 +217,8 @@ public:
 protected:
     bool mConfigured;
     bool mTeleopEnabled;
+    bool mTeleopPSMRunning;
+    bool mTeleopECMRunning;
     bool mTeleopEnabledBeforeCamera;
 
     typedef std::map<std::string, Arm *> ArmList;
@@ -242,19 +245,23 @@ protected:
     bool ConfigureECMTeleopJSON(const Json::Value & jsonTeleop);
     bool ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop);
 
-    void SetRobotsControlState(const std::string & newState);
+    void PowerOff(void);
+    void Home(void);
     void TeleopEnable(const bool & enable);
-
+    void UpdateTeleopState(void);
     bool mHasIO;
     bool mHasFootpedals;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
+    
     struct {
         mtsFunctionWrite Clutch;
         mtsFunctionWrite Camera;
         mtsFunctionWrite OperatorPresent;
     } ConsoleEvents;
+    bool mOperatorPresent;
+    bool mCameraPressed;
     std::string mIOComponentName;
     std::string mOperatorPresentComponent;
     std::string mOperatorPresentInterface;

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -40,7 +40,8 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
 {
     mtsInterfaceRequired * interfaceRequiredMain = AddInterfaceRequired("Main");
     if (interfaceRequiredMain) {
-        interfaceRequiredMain->AddFunction("SetRobotsControlState", Console.SetRobotsControlState);
+        interfaceRequiredMain->AddFunction("PowerOff", Console.PowerOff);
+        interfaceRequiredMain->AddFunction("Home", Console.Home);
         interfaceRequiredMain->AddFunction("TeleopEnable", Console.TeleopEnable);
         interfaceRequiredMain->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorEventHandler,
                                                     this, "Error");
@@ -84,16 +85,19 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
     }
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetStateButton(QAbstractButton * radioButton)
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotPowerOff(void)
 {
-    std::string request = radioButton->text().toStdString();
-    if (request == "Idle") {
-        Console.SetRobotsControlState(std::string("DVRK_UNINITIALIZED"));
-    } else if (request == "Home") {
-        Console.SetRobotsControlState(request);
-    } else if (request == "Teleop") {
-        Console.TeleopEnable(true);
-    }
+    Console.PowerOff();
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotHome(void)
+{
+    Console.Home();
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleop(void)
+{
+    Console.TeleopEnable(QPBTeleop->isChecked());
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTextChanged(void)
@@ -105,30 +109,17 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 {
     QGridLayout * frameLayout = new QGridLayout;
 
-    QGroupBox * groupBox = new QGroupBox("Desired state");
-    QRadioButton * idleButton = new QRadioButton("Idle");
-    QRadioButton * homeButton = new QRadioButton("Home");
-    QRadioButton * teleOpButton = new QRadioButton("Teleop");
-    // QRadioButton * gcButton = new QRadioButton("Gravity");
-    // QRadioButton * clutchButton = new QRadioButton("Clutch");
-    idleButton->setChecked(true);
-    QButtonGroup * group = new QButtonGroup;
-    group->addButton(idleButton);
-    group->addButton(homeButton);
-    group->addButton(teleOpButton);
-    // group->addButton(gcButton);
-    // group->addButton(clutchButton);
-	group->setExclusive(true);
+    QPBPowerOff = new QPushButton("Idle");
+    QPBHome = new QPushButton("Home");
+    QPBTeleop = new QPushButton("Teleop");
+    QPBTeleop->setCheckable(true);
 
-    QVBoxLayout * vbox = new QVBoxLayout;
-    vbox->addWidget(idleButton);
-    vbox->addWidget(homeButton);
-    vbox->addWidget(teleOpButton);
-    // vbox->addWidget(gcButton);
-    // vbox->addWidget(clutchButton);
-    vbox->addStretch(1);
-    groupBox->setLayout(vbox);
-    frameLayout->addWidget(groupBox, 0, 0);
+    QVBoxLayout * buttonsLayout = new QVBoxLayout;
+    buttonsLayout->addWidget(QPBPowerOff);
+    buttonsLayout->addWidget(QPBHome);
+    buttonsLayout->addWidget(QPBTeleop);
+    buttonsLayout->addStretch(1);
+    frameLayout->addLayout(buttonsLayout, 0, 0);
 
     QTEMessages = new QTextEdit();
     QTEMessages->setReadOnly(true);
@@ -142,8 +133,15 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     setWindowTitle("Intuitive Research Kit");
     resize(sizeHint());
 
-    connect(group, SIGNAL(buttonClicked(QAbstractButton*)),
-            this, SLOT(SlotSetStateButton(QAbstractButton*)));
+    // buttons
+    connect(QPBPowerOff, SIGNAL(clicked()),
+            this, SLOT(SlotPowerOff()));
+    connect(QPBHome, SIGNAL(clicked()),
+            this, SLOT(SlotHome()));
+    connect(QPBTeleop, SIGNAL(clicked()),
+            this, SLOT(SlotTeleop()));
+
+    // messages
     connect(this, SIGNAL(SignalAppendMessage(QString)),
             QTEMessages, SLOT(append(QString)));
     connect(this, SIGNAL(SignalSetColor(QColor)),

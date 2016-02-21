@@ -22,7 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsComponent.h>
 
-#include <QAbstractButton>
+#include <QPushButton>
 #include <QTextEdit>
 
 class mtsIntuitiveResearchKitConsoleQtWidget: public QWidget, public mtsComponent
@@ -43,7 +43,9 @@ signals:
     void SignalSetColor(QColor);
 
 private slots:
-    void SlotSetStateButton(QAbstractButton* radioButton);
+    void SlotPowerOff(void);
+    void SlotHome(void);
+    void SlotTeleop(void);
     void SlotTextChanged(void);
 
 protected:
@@ -52,13 +54,18 @@ protected:
     void setupUi(void);
 
     struct MainStruct {
-        mtsFunctionWrite SetRobotsControlState;
+        mtsFunctionVoid PowerOff;
+        mtsFunctionVoid Home;
         mtsFunctionWrite TeleopEnable;
     } Console;
 
     void ErrorEventHandler(const std::string & message);
     void WarningEventHandler(const std::string & message);
     void StatusEventHandler(const std::string & message);
+
+    QPushButton * QPBPowerOff;
+    QPushButton * QPBHome;
+    QPushButton * QPBTeleop;
 
     QTextEdit * QTEMessages;
 };
