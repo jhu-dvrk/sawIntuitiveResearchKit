@@ -40,7 +40,6 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
     // Setup cisst interface
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("TeleOperation");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("Enable", TeleOperation.Enable);
         interfaceRequired->AddFunction("SetScale", TeleOperation.SetScale);
         interfaceRequired->AddFunction("LockRotation", TeleOperation.LockRotation);
         interfaceRequired->AddFunction("LockTranslation", TeleOperation.LockTranslation);
@@ -49,8 +48,10 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
         interfaceRequired->AddFunction("GetRegistrationRotation", TeleOperation.GetRegistrationRotation);
         interfaceRequired->AddFunction("GetPeriodStatistics", TeleOperation.GetPeriodStatistics);
         // events
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::EnableEventHandler,
-                                                this, "Enabled");
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::DesiredStateEventHandler,
+                                                this, "DesiredState");
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::CurrentStateEventHandler,
+                                                this, "CurrentState");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::ScaleEventHandler,
                                                 this, "Scale");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::RotationLockedEventHandler,
@@ -136,12 +137,6 @@ void mtsTeleOperationPSMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
 
-
-void mtsTeleOperationPSMQtWidget::SlotEnable(bool state)
-{
-    TeleOperation.Enable(mtsBool(state));
-}
-
 void mtsTeleOperationPSMQtWidget::SlotSetScale(double scale)
 {
     TeleOperation.SetScale(scale);
@@ -158,9 +153,14 @@ void mtsTeleOperationPSMQtWidget::SlotLockTranslation(bool lock)
 }
 
 
-void mtsTeleOperationPSMQtWidget::SlotEnableEventHandler(bool state)
+void mtsTeleOperationPSMQtWidget::SlotDesiredStateEventHandler(QString state)
 {
-    QCBEnable->setChecked(state);
+    QLEDesiredState->setText(state);
+}
+
+void mtsTeleOperationPSMQtWidget::SlotCurrentStateEventHandler(QString state)
+{
+    QLECurrentState->setText(state);
 }
 
 void mtsTeleOperationPSMQtWidget::SlotScaleEventHandler(double scale)
@@ -222,18 +222,21 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     QLabel * instructionsLabel = new QLabel("To start tele-operation you must first insert the tool past the cannula tip (push tool clutch button and manually insert tool).\nYou must keep your right foot on the COAG/MONO pedal to operate.\nYou can use the clutch pedal to re-position your masters.");
     controlLayout->addWidget(instructionsLabel);
 
-    QHBoxLayout * buttonsLayout = new QHBoxLayout;
-    controlLayout->addLayout(buttonsLayout);
+    // state info
+    QHBoxLayout * stateLayout = new QHBoxLayout;
+    controlLayout->addLayout(stateLayout);
 
-    // enable/disable teleoperation
-    QCBEnable = new QCheckBox("Enable");
-    buttonsLayout->addWidget(QCBEnable);
+    QLabel * label = new QLabel("Desired state:");
+    stateLayout->addWidget(label);
+    QLEDesiredState = new QLineEdit("");
+    QLEDesiredState->setReadOnly(true);
+    stateLayout->addWidget(QLEDesiredState);
 
-    QCBLockRotation = new QCheckBox("Lock Rotation");
-    buttonsLayout->addWidget(QCBLockRotation);
-
-    QCBLockTranslation = new QCheckBox("Lock Translation");
-    buttonsLayout->addWidget(QCBLockTranslation);
+    label = new QLabel("Current state:");
+    stateLayout->addWidget(label);
+    QLECurrentState = new QLineEdit("");
+    QLECurrentState->setReadOnly(true);
+    stateLayout->addWidget(QLECurrentState);
 
     // scale
     QSBScale = new QDoubleSpinBox();
@@ -242,6 +245,17 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     QSBScale->setPrefix("scale ");
     QSBScale->setValue(0.2);
     controlLayout->addWidget(QSBScale);
+
+    // buttons to lock/unlock
+    QHBoxLayout * buttonsLayout = new QHBoxLayout;
+    controlLayout->addLayout(buttonsLayout);
+
+    // enable/disable rotation/translation
+    QCBLockRotation = new QCheckBox("Lock Rotation");
+    buttonsLayout->addWidget(QCBLockRotation);
+
+    QCBLockTranslation = new QCheckBox("Lock Translation");
+    buttonsLayout->addWidget(QCBLockTranslation);
 
     // Timing
     QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
@@ -263,10 +277,10 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     resize(sizeHint());
 
     // setup Qt Connection
-    connect(QCBEnable, SIGNAL(clicked(bool)),
-            this, SLOT(SlotEnable(bool)));
-    connect(this, SIGNAL(SignalEnable(bool)),
-            this, SLOT(SlotEnableEventHandler(bool)));
+    connect(this, SIGNAL(SignalDesiredState(QString)),
+            this, SLOT(SlotDesiredStateEventHandler(QString)));
+    connect(this, SIGNAL(SignalCurrentState(QString)),
+            this, SLOT(SlotCurrentStateEventHandler(QString)));
 
     connect(QSBScale, SIGNAL(valueChanged(double)),
             this, SLOT(SlotSetScale(double)));
@@ -292,9 +306,14 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
             this, SLOT(SlotTextChanged()));
 }
 
-void mtsTeleOperationPSMQtWidget::EnableEventHandler(const bool & enable)
+void mtsTeleOperationPSMQtWidget::DesiredStateEventHandler(const std::string & state)
 {
-    emit SignalEnable(enable);
+    emit SignalDesiredState(QString(state.c_str()));
+}
+
+void mtsTeleOperationPSMQtWidget::CurrentStateEventHandler(const std::string & state)
+{
+    emit SignalCurrentState(QString(state.c_str()));
 }
 
 void mtsTeleOperationPSMQtWidget::ScaleEventHandler(const double & scale)

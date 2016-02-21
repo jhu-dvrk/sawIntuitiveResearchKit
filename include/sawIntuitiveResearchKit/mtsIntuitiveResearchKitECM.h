@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,9 +21,9 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitECM_h
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
-
-class mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
+class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 

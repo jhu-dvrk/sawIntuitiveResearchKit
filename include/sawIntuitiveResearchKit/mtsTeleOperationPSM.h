@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSMTypes.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 /**
  * @brief  teleoperation component
@@ -37,7 +38,7 @@ http://www.cisst.org/cisst/license.txt.
  * \todo
  *
  */
-class mtsTeleOperationPSM: public mtsTaskPeriodic
+class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
@@ -74,7 +75,8 @@ private:
         mtsFunctionWrite Status;
         mtsFunctionWrite Warning;
         mtsFunctionWrite Error;
-        mtsFunctionWrite Enabled;
+        mtsFunctionWrite DesiredState;
+        mtsFunctionWrite CurrentState;
     } MessageEvents;
 
     struct {
@@ -83,15 +85,12 @@ private:
         mtsFunctionWrite TranslationLocked;
     } ConfigurationEvents;
 
-    void Enable(const bool & enable);
-
-    // void SetMasterControlState(void);
+    void SetDesiredState(const std::string & state);
 
 protected:
 
     void StateChanged(void);
     void RunAll(void); // this should happen for all states
-    void EnterDisabled(void); // send event Enable(false)
     void TransitionDisabled(void); // checks for desired state
     void EnterSettingPSMState(void); // request state and set timer
     void TransitionSettingPSMState(void); // check current state and timer

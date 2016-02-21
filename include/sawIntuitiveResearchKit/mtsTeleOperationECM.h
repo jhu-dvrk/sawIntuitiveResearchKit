@@ -27,7 +27,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationECMTypes.h>
 
-class mtsTeleOperationECM: public mtsTaskPeriodic
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+
+class CISST_EXPORT mtsTeleOperationECM: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
@@ -60,15 +62,15 @@ private:
         mtsFunctionWrite Status;
         mtsFunctionWrite Warning;
         mtsFunctionWrite Error;
-        mtsFunctionWrite Enabled;
+        mtsFunctionWrite DesiredState;
+        mtsFunctionWrite CurrentState;
     } MessageEvents;
 
     struct {
         mtsFunctionWrite Scale;
     } ConfigurationEvents;
 
-    /*! Convenience method to set desired state to ENABLED/DISABLED */
-    void Enable(const bool & enable);
+    void SetDesiredState(const std::string & state);
 
 protected:
 

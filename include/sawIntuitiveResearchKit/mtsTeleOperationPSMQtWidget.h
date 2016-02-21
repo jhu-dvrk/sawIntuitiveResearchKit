@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -27,7 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <QtCore>
 #include <QtGui>
 
-#include <sawControllers/sawControllersQtExport.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
 
 class CISST_EXPORT mtsTeleOperationPSMQtWidget: public QWidget, public mtsComponent
 {
@@ -46,7 +46,8 @@ protected:
     virtual void closeEvent(QCloseEvent * event);
 
 signals:
-    void SignalEnable(bool enable);
+    void SignalDesiredState(QString state);
+    void SignalCurrentState(QString state);
     void SignalScale(double scale);
     void SignalRotationLocked(bool lock);
     void SignalTranslationLocked(bool lock);
@@ -58,12 +59,12 @@ private slots:
     void timerEvent(QTimerEvent * event);
     void SlotTextChanged(void);
     // to set from the GUI
-    void SlotEnable(bool state);
     void SlotSetScale(double scale);
     void SlotLockRotation(bool lock);
     void SlotLockTranslation(bool lock);
     // to update GUI from component's events
-    void SlotEnableEventHandler(bool state);
+    void SlotDesiredStateEventHandler(QString state);
+    void SlotCurrentStateEventHandler(QString state);
     void SlotScaleEventHandler(double scale);
     void SlotRotationLockedEventHandler(bool lock);
     void SlotTranslationLockedEventHandler(bool lock);
@@ -73,7 +74,8 @@ private:
     void setupUi(void);
     int TimerPeriodInMilliseconds;
 
-    void EnableEventHandler(const bool & enable);
+    void DesiredStateEventHandler(const std::string & state);
+    void CurrentStateEventHandler(const std::string & state);
     void ScaleEventHandler(const double & scale);
     void RotationLockedEventHandler(const bool & lock);
     void TranslationLockedEventHandler(const bool & lock);
@@ -91,7 +93,8 @@ protected:
     } TeleOperation;
 
 private:
-    QCheckBox * QCBEnable;
+    QLineEdit * QLEDesiredState;
+    QLineEdit * QLECurrentState;
     QCheckBox * QCBLockRotation;
     QCheckBox * QCBLockTranslation;
     QDoubleSpinBox * QSBScale;

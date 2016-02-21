@@ -27,7 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <QtCore>
 #include <QtGui>
 
-#include <sawControllers/sawControllersQtExport.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 class CISST_EXPORT mtsTeleOperationECMQtWidget: public QWidget, public mtsComponent
 {

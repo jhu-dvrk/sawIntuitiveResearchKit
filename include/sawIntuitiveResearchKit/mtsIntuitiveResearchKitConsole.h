@@ -24,12 +24,14 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+
 // for ROS console
 namespace dvrk {
     class console;
 }
 
-class mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
+class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
@@ -144,8 +146,7 @@ public:
         std::string mMasterRightName;
         std::string mSlaveName;
         std::string mConsoleName;
-        mtsFunctionWrite Enable;
-        mtsFunctionWrite ManipClutch;
+        mtsFunctionWrite SetDesiredState;
         mtsInterfaceRequired * InterfaceRequired;
     };
 
@@ -178,8 +179,7 @@ public:
         std::string mMasterName;
         std::string mSlaveName;
         std::string mConsoleName;
-        mtsFunctionWrite Enable;
-        mtsFunctionWrite ManipClutch;
+        mtsFunctionWrite SetDesiredState;
         mtsInterfaceRequired * InterfaceRequired;
     };
 

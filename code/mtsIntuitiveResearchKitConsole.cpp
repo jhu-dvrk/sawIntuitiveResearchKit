@@ -711,7 +711,7 @@ bool mtsIntuitiveResearchKitConsole::AddTeleopECMInterfaces(TeleopECM * teleop)
 {
     teleop->InterfaceRequired = this->AddInterfaceRequired(teleop->Name());
     if (teleop->InterfaceRequired) {
-        teleop->InterfaceRequired->AddFunction("Enable", teleop->Enable);
+        teleop->InterfaceRequired->AddFunction("SetDesiredState", teleop->SetDesiredState);
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
@@ -727,7 +727,7 @@ bool mtsIntuitiveResearchKitConsole::AddTeleopPSMInterfaces(TeleopPSM * teleop)
 {
     teleop->InterfaceRequired = this->AddInterfaceRequired(teleop->Name());
     if (teleop->InterfaceRequired) {
-        teleop->InterfaceRequired->AddFunction("Enable", teleop->Enable);
+        teleop->InterfaceRequired->AddFunction("SetDesiredState", teleop->SetDesiredState);
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
@@ -1306,21 +1306,23 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();
              teleOp != end;
              ++teleOp) {
-            teleOp->second->Enable(false);
+            teleOp->second->SetDesiredState(mtsStdString("DISABLED"));
         }
     }
     if (mTeleopECMRunning && !teleopECM) {
-        mTeleopECM->Enable(false);
+        mTeleopECM->SetDesiredState(mtsStdString("DISABLED"));
     }
 
     // freeze masters if needed
-    const ArmList::iterator end = mArms.end();
-    ArmList::iterator iter = mArms.begin();
-    for (; iter != end; ++iter) {
-        if ((iter->second->mType == Arm::ARM_MTM) ||
-            (iter->second->mType == Arm::ARM_MTM_DERIVED) ||
-            (iter->second->mType == Arm::ARM_MTM_GENERIC)) {
-            iter->second->Freeze();
+    if (!teleopECM && !teleopPSM) {
+        const ArmList::iterator end = mArms.end();
+        ArmList::iterator iter = mArms.begin();
+        for (; iter != end; ++iter) {
+            if ((iter->second->mType == Arm::ARM_MTM) ||
+                (iter->second->mType == Arm::ARM_MTM_DERIVED) ||
+                (iter->second->mType == Arm::ARM_MTM_GENERIC)) {
+                iter->second->Freeze();
+            }
         }
     }
 
@@ -1330,16 +1332,30 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();
              teleOp != end;
              ++teleOp) {
-            teleOp->second->Enable(true);
+            teleOp->second->SetDesiredState(mtsStdString("ENABLED"));
         }
     }
     if (!mTeleopECMRunning && teleopECM) {
-        mTeleopECM->Enable(true);
+        mTeleopECM->SetDesiredState(mtsStdString("ENABLED"));
     }
 
     // update data members
     mTeleopPSMRunning = teleopPSM;
     mTeleopECMRunning = teleopECM;
+
+    // check if nothing is running but teleop is required, then ask to align MTMS
+    if (mTeleopEnabled
+        && !mTeleopPSMRunning
+        && !mTeleopECMRunning) {
+        std::cerr << CMN_LOG_DETAILS << " Teleop PSM should have a way to check if slave orientation has changed, maybe add a run callback on TeleopPSM to set new goal, would work as soon as we get reflexx to work" << std::endl;
+        const TeleopPSMList::iterator end = mTeleopsPSM.end();
+        for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();
+             teleOp != end;
+             ++teleOp) {
+            teleOp->second->SetDesiredState(mtsStdString("ALIGNING_MTM"));
+        }
+    }
+
 }
 
 void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & button)
@@ -1394,6 +1410,7 @@ void mtsIntuitiveResearchKitConsole::StatusEventHandler(const std::string & mess
 void mtsIntuitiveResearchKitConsole::ECMManipClutchEventHandler(const prmEventButton & button)
 {
     std::cerr << CMN_LOG_DETAILS << " this should be probably be treated as any other clutch event  -- remove this code?" << std::endl;
+    /*
     mtsExecutionResult result;
     const TeleopPSMList::iterator end = mTeleopsPSM.end();
     for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();
@@ -1406,6 +1423,7 @@ void mtsIntuitiveResearchKitConsole::ECMManipClutchEventHandler(const prmEventBu
                                     << "\": " << result << std::endl;
         }
     }
+    */
 }
 
 void mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler(const prmPositionCartesianGet & baseFrameParam)

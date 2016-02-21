@@ -34,8 +34,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstRobot/robLSPB.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
-class mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
+class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 

@@ -144,8 +144,8 @@ void mtsTeleOperationECM::Init(void)
         interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                               "GetPeriodStatistics"); // mtsIntervalStatistics
 
-        interfaceProvided->AddCommandWrite(&mtsTeleOperationECM::Enable, this,
-                                           "Enable", false);
+        interfaceProvided->AddCommandWrite(&mtsTeleOperationECM::SetDesiredState, this,
+                                           "SetDesiredState", std::string("DISABLED"));
         interfaceProvided->AddCommandWrite(&mtsTeleOperationECM::SetScale, this,
                                            "SetScale", 0.5);
         interfaceProvided->AddCommandWrite(&mtsTeleOperationECM::SetRegistrationRotation, this,
@@ -172,8 +172,10 @@ void mtsTeleOperationECM::Init(void)
                                          "Warning", std::string(""));
         interfaceProvided->AddEventWrite(MessageEvents.Error,
                                          "Error", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.Enabled,
-                                         "Enabled", false);
+        interfaceProvided->AddEventWrite(MessageEvents.DesiredState,
+                                         "DesiredState", std::string(""));
+        interfaceProvided->AddEventWrite(MessageEvents.CurrentState,
+                                         "CurrentState", std::string(""));
         // configuration
         interfaceProvided->AddEventWrite(ConfigurationEvents.Scale,
                                          "Scale", 0.5);
@@ -335,11 +337,14 @@ void mtsTeleOperationECM::StateChanged(void)
 
 void mtsTeleOperationECM::EnterEnabledDisabled(void)
 {
+    std::cerr << CMN_LOG_DETAILS << " implement this based on teleop PSM" << std::endl;
+    /*
     if (mTeleopState.CurrentState() == mtsTeleOperationECMTypes::ENABLED) {
         MessageEvents.Enabled(true);
     } else {
         MessageEvents.Enabled(false);
     }
+    */
 }
 
 void mtsTeleOperationECM::TransitionDisabled(void)
@@ -438,31 +443,37 @@ void mtsTeleOperationECM::TransitionEnabled(void)
 
 void mtsTeleOperationECM::MasterLeftErrorEventHandler(const std::string & message)
 {
-    Enable(false);
+    mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
     MessageEvents.Error(this->GetName() + ": received from left master [" + message + "]");
 }
 
 void mtsTeleOperationECM::MasterRightErrorEventHandler(const std::string & message)
 {
-    Enable(false);
+    mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
     MessageEvents.Error(this->GetName() + ": received from right master [" + message + "]");
 }
 
 void mtsTeleOperationECM::SlaveErrorEventHandler(const std::string & message)
 {
-    Enable(false);
+    mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
     MessageEvents.Error(this->GetName() + ": received from slave [" + message + "]");
 }
 
-void mtsTeleOperationECM::Enable(const bool & enable)
+void mtsTeleOperationECM::SetDesiredState(const std::string & state)
 {
-    if (enable) {
-        mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::ENABLED);
-    } else {
-        mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
+    mtsTeleOperationECMTypes::StateType stateEnum;
+    try {
+        stateEnum = mtsTeleOperationECMTypes::StateTypeFromString(state);
+    } catch (std::exception e) {
+        MessageEvents.Error(this->GetName() + ": unsupported state " + state + ": " + e.what());
+        return;
     }
-    MessageEvents.Status(this->GetName() + ": set desired state to "
-                         + mtsTeleOperationECMTypes::StateTypeToString(mTeleopState.DesiredState()));
+    if (!mTeleopState.SetDesiredState(stateEnum)) {
+        MessageEvents.Error(this->GetName() + ": " + state + " is not an allowed desired state");
+        return;
+    }
+    MessageEvents.DesiredState(state);
+    MessageEvents.Status(this->GetName() + ": set desired state to " + state);
 }
 
 void mtsTeleOperationECM::SetScale(const double & scale)
