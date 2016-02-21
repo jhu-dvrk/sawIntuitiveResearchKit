@@ -630,7 +630,7 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
 void mtsIntuitiveResearchKitArm::Freeze(void)
 {
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT);
-    SetPositionJointLocal(JointGet);
+    SetPositionJointLocal(JointGetDesired);
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
