@@ -46,7 +46,8 @@ protected:
     virtual void closeEvent(QCloseEvent * event);
 
 signals:
-    void SignalEnable(bool enable);
+    void SignalDesiredState(QString state);
+    void SignalCurrentState(QString state);
     void SignalScale(double scale);
 
     void SignalAppendMessage(QString);
@@ -56,10 +57,10 @@ private slots:
     void timerEvent(QTimerEvent * event);
     void SlotTextChanged(void);
     // to set from the GUI
-    void SlotEnable(bool state);
+    void SlotDesiredStateEventHandler(QString state);
+    void SlotCurrentStateEventHandler(QString state);
     void SlotSetScale(double scale);
     // to update GUI from component's events
-    void SlotEnableEventHandler(bool state);
     void SlotScaleEventHandler(double scale);
 
 private:
@@ -67,12 +68,12 @@ private:
     void setupUi(void);
     int TimerPeriodInMilliseconds;
 
-    void EnableEventHandler(const bool & enable);
+    void DesiredStateEventHandler(const std::string & state);
+    void CurrentStateEventHandler(const std::string & state);
     void ScaleEventHandler(const double & scale);
 
 protected:
     struct {
-        mtsFunctionWrite Enable;
         mtsFunctionWrite SetScale;
         mtsFunctionRead GetPositionCartesianMasterLeft;
         mtsFunctionRead GetPositionCartesianMasterRight;
@@ -82,7 +83,8 @@ protected:
     } TeleOperation;
 
 private:
-    QCheckBox * QCBEnable;
+    QLineEdit * QLEDesiredState;
+    QLineEdit * QLECurrentState;
     QDoubleSpinBox * QSBScale;
     prmPositionCartesianGet PositionMasterLeft;
     vctQtWidgetFrameDoubleRead * QFRPositionMasterLeftWidget;

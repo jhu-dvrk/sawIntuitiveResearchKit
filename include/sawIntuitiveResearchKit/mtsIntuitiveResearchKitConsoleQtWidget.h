@@ -22,8 +22,11 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsComponent.h>
 
-#include <QPushButton>
-#include <QTextEdit>
+class QPushButton;
+class QTextEdit;
+class QTabWidget;
+
+#include <QWidget>
 
 class mtsIntuitiveResearchKitConsoleQtWidget: public QWidget, public mtsComponent
 {
@@ -37,6 +40,9 @@ public:
     void Configure(const std::string & filename = "");
     void Startup(void);
     void Cleanup(void);
+    inline QTabWidget * GetTabWidget(void) {
+        return QTWidgets;
+    }
 
 signals:
     void SignalAppendMessage(QString);
@@ -66,7 +72,7 @@ protected:
     QPushButton * QPBPowerOff;
     QPushButton * QPBHome;
     QPushButton * QPBTeleop;
-
+    QTabWidget * QTWidgets;
     QTextEdit * QTEMessages;
 };
 

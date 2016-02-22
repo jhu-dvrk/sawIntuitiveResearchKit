@@ -26,11 +26,14 @@ http://www.cisst.org/cisst/license.txt.
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QCoreApplication>
+#include <QPushButton>
+#include <QTextEdit>
 #include <QScrollBar>
-#include <QGridLayout>
-#include <QGroupBox>
-#include <QRadioButton>
-#include <QButtonGroup>
+#include <QTabWidget>
+#include <QSplitter>
+// #include <QGridLayout>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QTime>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
@@ -107,7 +110,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotTextChanged(void)
 
 void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 {
-    QGridLayout * frameLayout = new QGridLayout;
+    QHBoxLayout * mainLayout = new QHBoxLayout;
 
     QPBPowerOff = new QPushButton("Idle");
     QPBHome = new QPushButton("Home");
@@ -119,15 +122,23 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     buttonsLayout->addWidget(QPBHome);
     buttonsLayout->addWidget(QPBTeleop);
     buttonsLayout->addStretch(1);
-    frameLayout->addLayout(buttonsLayout, 0, 0);
+    mainLayout->addLayout(buttonsLayout);
+
+    QSplitter * tabWidgetAndMessages = new QSplitter(); 
+    tabWidgetAndMessages->setOrientation(Qt::Vertical);
+    
+    QTWidgets = new QTabWidget();
+    tabWidgetAndMessages->addWidget(QTWidgets);
 
     QTEMessages = new QTextEdit();
     QTEMessages->setReadOnly(true);
     QTEMessages->ensureCursorVisible();
-    frameLayout->addWidget(QTEMessages, 0, 1);
+    tabWidgetAndMessages->addWidget(QTEMessages);
 
-    QVBoxLayout * mainLayout = new QVBoxLayout;
-    mainLayout->addLayout(frameLayout);
+    mainLayout->addWidget(tabWidgetAndMessages);
+
+    // QVBoxLayout * mainLayout = new QVBoxLayout;
+    // mainLayout->addLayout(frameLayout);
     setLayout(mainLayout);
 
     setWindowTitle("Intuitive Research Kit");

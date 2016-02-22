@@ -397,6 +397,7 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mConfigured(false),
     mTeleopEnabled(false),
     mTeleopPSMRunning(false),
+    mTeleopPSMAligning(false),
     mTeleopECMRunning(false),
     mTeleopECM(0),
     mOperatorPresent(false),
@@ -1259,6 +1260,7 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
 void mtsIntuitiveResearchKitConsole::PowerOff(void)
 {
     mTeleopEnabled = false;
+    UpdateTeleopState();
     const ArmList::iterator end = mArms.end();
     for (ArmList::iterator arm = mArms.begin();
          arm != end;
@@ -1270,6 +1272,7 @@ void mtsIntuitiveResearchKitConsole::PowerOff(void)
 void mtsIntuitiveResearchKitConsole::Home(void)
 {
     mTeleopEnabled = false;
+    UpdateTeleopState();
     const ArmList::iterator end = mArms.end();
     for (ArmList::iterator arm = mArms.begin();
          arm != end;
@@ -1302,6 +1305,7 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
 
     // shutdown all teleop that should be shut down
     if (mTeleopPSMRunning && !teleopPSM) {
+        mTeleopPSMAligning = false;
         const TeleopPSMList::iterator end = mTeleopsPSM.end();
         for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();
              teleOp != end;
@@ -1314,7 +1318,9 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
     }
 
     // freeze masters if needed
-    if (!teleopECM && !teleopPSM) {
+    if (mTeleopEnabled
+        && !teleopECM
+        && !teleopPSM) {
         const ArmList::iterator end = mArms.end();
         ArmList::iterator iter = mArms.begin();
         for (; iter != end; ++iter) {
@@ -1328,11 +1334,12 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
 
     // turn on teleop if needed
     if (!mTeleopPSMRunning && teleopPSM) {
+        mTeleopPSMAligning = false;
         const TeleopPSMList::iterator end = mTeleopsPSM.end();
         for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();
              teleOp != end;
              ++teleOp) {
-            teleOp->second->SetDesiredState(mtsStdString("ENABLED"));
+                 teleOp->second->SetDesiredState(mtsStdString("ENABLED"));
         }
     }
     if (!mTeleopECMRunning && teleopECM) {
@@ -1347,7 +1354,8 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
     if (mTeleopEnabled
         && !mTeleopPSMRunning
         && !mTeleopECMRunning) {
-        std::cerr << CMN_LOG_DETAILS << " Teleop PSM should have a way to check if slave orientation has changed, maybe add a run callback on TeleopPSM to set new goal, would work as soon as we get reflexx to work" << std::endl;
+        std::cerr << CMN_LOG_DETAILS
+                  << " Teleop PSM should have a way to check if slave orientation has changed, maybe add a run callback on TeleopPSM in align mode to set new goal, would work as soon as we get reflexx to work" << std::endl;
         const TeleopPSMList::iterator end = mTeleopsPSM.end();
         for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();
              teleOp != end;
@@ -1355,7 +1363,6 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
             teleOp->second->SetDesiredState(mtsStdString("ALIGNING_MTM"));
         }
     }
-
 }
 
 void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & button)

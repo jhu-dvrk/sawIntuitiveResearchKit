@@ -82,7 +82,6 @@ private:
 
 protected:
     struct {
-        mtsFunctionWrite Enable;
         mtsFunctionWrite SetScale;
         mtsFunctionWrite LockRotation;
         mtsFunctionWrite LockTranslation;

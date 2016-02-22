@@ -48,6 +48,7 @@ signals:
 private slots:
     void timerEvent(QTimerEvent * event);
     void SlotTextChanged(void);
+    void SlotLogEnabled(void);
     void SlotEnableDirectControl(bool toggle);
     void SlotHome(void);
 
@@ -86,6 +87,8 @@ private:
     QLineEdit * QLEState;
 
     // messages
+    bool LogEnabled;
+    QPushButton * QPBLog;
     void ErrorEventHandler(const std::string & message);
     void WarningEventHandler(const std::string & message);
     void StatusEventHandler(const std::string & message);

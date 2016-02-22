@@ -39,9 +39,10 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArmQtWidget, mtsCom
 
 mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std::string & componentName, double periodInSeconds):
     mtsComponent(componentName),
-    TimerPeriodInMilliseconds(periodInSeconds)
+    TimerPeriodInMilliseconds(periodInSeconds),
+    DirectControl(false),
+    LogEnabled(false)
 {
-    DirectControl = false;
 
     // Setup CISST Interface
     InterfaceRequired = AddInterfaceRequired("Manipulator");
@@ -68,6 +69,9 @@ void mtsIntuitiveResearchKitArmQtWidget::Startup(void)
 {
     setupUi();
     startTimer(TimerPeriodInMilliseconds); // ms
+    if (!LogEnabled) {
+        QTEMessages->hide();
+    }
     if (!parent()) {
         show();
     }
@@ -122,6 +126,16 @@ void mtsIntuitiveResearchKitArmQtWidget::SlotTextChanged(void)
     QTEMessages->verticalScrollBar()->setSliderPosition(QTEMessages->verticalScrollBar()->maximum());
 }
 
+void mtsIntuitiveResearchKitArmQtWidget::SlotLogEnabled(void)
+{
+    LogEnabled = QPBLog->isChecked();
+    if (LogEnabled) {
+        QTEMessages->show();
+    } else {
+        QTEMessages->hide();
+    }
+}
+
 void mtsIntuitiveResearchKitArmQtWidget::SlotEnableDirectControl(bool toggle)
 {
     DirectControl = toggle;
@@ -154,6 +168,9 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     // state
     QHBoxLayout * stateLayout = new QHBoxLayout;
     MainLayout->addLayout(stateLayout);
+    QPBLog = new QPushButton("Messages");
+    QPBLog->setCheckable(true);
+    stateLayout->addWidget(QPBLog);
     QCBEnableDirectControl = new QCheckBox("Direct control");
     stateLayout->addWidget(QCBEnableDirectControl);
     QPBHome = new QPushButton("Home");
@@ -177,6 +194,8 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     setWindowTitle("Manipulator");
     resize(sizeHint());
 
+    connect(QPBLog, SIGNAL(clicked()),
+            this, SLOT(SlotLogEnabled()));
     connect(this, SIGNAL(SignalAppendMessage(QString)),
             QTEMessages, SLOT(append(QString)));
     connect(this, SIGNAL(SignalSetColor(QColor)),
@@ -195,18 +214,24 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
 
 void mtsIntuitiveResearchKitArmQtWidget::ErrorEventHandler(const std::string & message)
 {
-    emit SignalSetColor(QColor("red"));
-    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
+    if (LogEnabled) {
+        emit SignalSetColor(QColor("red"));
+        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
+    }
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::WarningEventHandler(const std::string & message)
 {
-    emit SignalSetColor(QColor("darkRed"));
-    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Warning: ") + QString(message.c_str()));
+    if (LogEnabled) {
+        emit SignalSetColor(QColor("darkRed"));
+        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Warning: ") + QString(message.c_str()));
+    }
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::StatusEventHandler(const std::string & message)
 {
-    emit SignalSetColor(QColor("black"));
-    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
+    if (LogEnabled) {
+        emit SignalSetColor(QColor("black"));
+        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
+    }
 }

@@ -218,6 +218,7 @@ protected:
     bool mConfigured;
     bool mTeleopEnabled;
     bool mTeleopPSMRunning;
+    bool mTeleopPSMAligning;
     bool mTeleopECMRunning;
     bool mTeleopEnabledBeforeCamera;
 

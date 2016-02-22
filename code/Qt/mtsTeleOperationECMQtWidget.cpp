@@ -40,7 +40,6 @@ mtsTeleOperationECMQtWidget::mtsTeleOperationECMQtWidget(const std::string & com
     // Setup cisst interface
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("TeleOperation");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("Enable", TeleOperation.Enable);
         interfaceRequired->AddFunction("SetScale", TeleOperation.SetScale);
         interfaceRequired->AddFunction("GetPositionCartesianMasterLeft",
                                        TeleOperation.GetPositionCartesianMasterLeft);
@@ -52,8 +51,10 @@ mtsTeleOperationECMQtWidget::mtsTeleOperationECMQtWidget(const std::string & com
                                        TeleOperation.GetRegistrationRotation);
         interfaceRequired->AddFunction("GetPeriodStatistics", TeleOperation.GetPeriodStatistics);
         // events
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::EnableEventHandler,
-                                                this, "Enabled");
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::DesiredStateEventHandler,
+                                                this, "DesiredState");
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::CurrentStateEventHandler,
+                                                this, "CurrentState");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::ScaleEventHandler,
                                                 this, "Scale");
         // messages
@@ -136,20 +137,19 @@ void mtsTeleOperationECMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
 
-
-void mtsTeleOperationECMQtWidget::SlotEnable(bool state)
-{
-    TeleOperation.Enable(mtsBool(state));
-}
-
 void mtsTeleOperationECMQtWidget::SlotSetScale(double scale)
 {
     TeleOperation.SetScale(scale);
 }
 
-void mtsTeleOperationECMQtWidget::SlotEnableEventHandler(bool state)
+void mtsTeleOperationECMQtWidget::SlotDesiredStateEventHandler(QString state)
 {
-    QCBEnable->setChecked(state);
+    QLEDesiredState->setText(state);
+}
+
+void mtsTeleOperationECMQtWidget::SlotCurrentStateEventHandler(QString state)
+{
+    QLECurrentState->setText(state);
 }
 
 void mtsTeleOperationECMQtWidget::SlotScaleEventHandler(double scale)
@@ -206,12 +206,21 @@ void mtsTeleOperationECMQtWidget::setupUi(void)
     QLabel * instructionsLabel = new QLabel("To start tele-operation you must first insert the tool past the cannula tip (push tool clutch button and manually insert tool).\nYou must keep your right foot on the COAG/MONO pedal to operate.\nYou can use the clutch pedal to re-position your masters.");
     controlLayout->addWidget(instructionsLabel);
 
-    QHBoxLayout * buttonsLayout = new QHBoxLayout;
-    controlLayout->addLayout(buttonsLayout);
+    // state info
+    QHBoxLayout * stateLayout = new QHBoxLayout;
+    controlLayout->addLayout(stateLayout);
 
-    // enable/disable teleoperation
-    QCBEnable = new QCheckBox("Enable");
-    buttonsLayout->addWidget(QCBEnable);
+    QLabel * label = new QLabel("Desired state:");
+    stateLayout->addWidget(label);
+    QLEDesiredState = new QLineEdit("");
+    QLEDesiredState->setReadOnly(true);
+    stateLayout->addWidget(QLEDesiredState);
+
+    label = new QLabel("Current state:");
+    stateLayout->addWidget(label);
+    QLECurrentState = new QLineEdit("");
+    QLECurrentState->setReadOnly(true);
+    stateLayout->addWidget(QLECurrentState);
 
     // scale
     QSBScale = new QDoubleSpinBox();
@@ -241,10 +250,10 @@ void mtsTeleOperationECMQtWidget::setupUi(void)
     resize(sizeHint());
 
     // setup Qt Connection
-    connect(QCBEnable, SIGNAL(clicked(bool)),
-            this, SLOT(SlotEnable(bool)));
-    connect(this, SIGNAL(SignalEnable(bool)),
-            this, SLOT(SlotEnableEventHandler(bool)));
+    connect(this, SIGNAL(SignalDesiredState(QString)),
+            this, SLOT(SlotDesiredStateEventHandler(QString)));
+    connect(this, SIGNAL(SignalCurrentState(QString)),
+            this, SLOT(SlotCurrentStateEventHandler(QString)));
 
     connect(QSBScale, SIGNAL(valueChanged(double)),
             this, SLOT(SlotSetScale(double)));
@@ -260,9 +269,14 @@ void mtsTeleOperationECMQtWidget::setupUi(void)
             this, SLOT(SlotTextChanged()));
 }
 
-void mtsTeleOperationECMQtWidget::EnableEventHandler(const bool & enable)
+void mtsTeleOperationECMQtWidget::DesiredStateEventHandler(const std::string & state)
 {
-    emit SignalEnable(enable);
+    emit SignalDesiredState(QString(state.c_str()));
+}
+
+void mtsTeleOperationECMQtWidget::CurrentStateEventHandler(const std::string & state)
+{
+    emit SignalCurrentState(QString(state.c_str()));
 }
 
 void mtsTeleOperationECMQtWidget::ScaleEventHandler(const double & scale)

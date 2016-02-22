@@ -43,14 +43,12 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
 {
     mtsComponentManager * componentManager = mtsComponentManager::GetInstance();
 
-    // organize all widgets in a tab widget
-    TabWidget = new QTabWidget;
-
     mtsIntuitiveResearchKitConsoleQtWidget * consoleGUI = new mtsIntuitiveResearchKitConsoleQtWidget("consoleGUI");
     componentManager->AddComponent(consoleGUI);
     // connect consoleGUI to console
     Connections.push_back(new ConnectionType("console", "Main", "consoleGUI", "Main"));
-    TabWidget->addTab(consoleGUI, "Main");
+
+    TabWidget = consoleGUI->GetTabWidget();
 
     // IOs
     if (console->mHasIO) {
