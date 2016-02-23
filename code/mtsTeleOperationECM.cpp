@@ -52,10 +52,10 @@ void mtsTeleOperationECM::Init(void)
     mTeleopState.SetStateChangedCallback(&mtsTeleOperationECM::StateChanged,
                                          this);
 
+    // run for all states
+    mTeleopState.SetRunCallback(&mtsTeleOperationECM::RunAll,
+                                this);
     // disabled
-    mTeleopState.SetEnterCallback(mtsTeleOperationECMTypes::DISABLED,
-                                  &mtsTeleOperationECM::EnterEnabledDisabled,
-                                  this);
     mTeleopState.SetTransitionCallback(mtsTeleOperationECMTypes::DISABLED,
                                        &mtsTeleOperationECM::TransitionDisabled,
                                        this);
@@ -78,7 +78,7 @@ void mtsTeleOperationECM::Init(void)
 
     // enabled
     mTeleopState.SetEnterCallback(mtsTeleOperationECMTypes::ENABLED,
-                                  &mtsTeleOperationECM::EnterEnabledDisabled,
+                                  &mtsTeleOperationECM::EnterEnabled,
                                   this);
     mTeleopState.SetRunCallback(mtsTeleOperationECMTypes::ENABLED,
                                 &mtsTeleOperationECM::RunEnabled,
@@ -197,96 +197,8 @@ void mtsTeleOperationECM::Run(void)
     ProcessQueuedCommands();
     ProcessQueuedEvents();
 
+    // run based on state
     mTeleopState.Run();
-
-#if 0
-    // get master Cartesian position
-    mtsExecutionResult executionResult;
-    executionResult = Master.GetPositionCartesian(Master.PositionCartesianCurrent);
-    if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to Master.GetPositionCartesian failed \""
-                                << executionResult << "\"" << std::endl;
-        MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master");
-        this->Enable(false);
-    }
-    vctFrm4x4 masterPosition(Master.PositionCartesianCurrent.Position());
-
-    // get slave Cartesian position
-    executionResult = Slave.GetPositionCartesian(Slave.PositionCartesianCurrent);
-    if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to Slave.GetPositionCartesian failed \""
-                                << executionResult << "\"" << std::endl;
-        MessageEvents.Error(this->GetName() + ": unable to get cartesian position from slave");
-        this->Enable(false);
-    }
-
-    /*!
-      mtsTeleOperationECM can run in 4 control modes, which is controlled by
-      footpedal Clutch & OperatorPresent.
-
-      Mode 1: OperatorPresent = False, Clutch = False
-              MTM and PSM stop at their current position. If PSM ManipClutch is
-              pressed, then the user can manually move PSM.
-              NOTE: MTM always tries to allign its orientation with PSM's orientation
-
-      Mode 2/3: OperatorPresent = False/True, Clutch = True
-              MTM can move freely in workspace, however its orientation is locked
-              PSM can not move
-
-      Mode 4: OperatorPresent = True, Clutch = False
-              PSM follows MTM motion
-    */
-    if (IsEnabled
-        && Master.PositionCartesianCurrent.Valid()
-        && Slave.PositionCartesianCurrent.Valid()) {
-        // follow mode
-        if (!IsClutched && IsOperatorPresent) {
-            // compute master Cartesian motion
-            vctFrm4x4 masterCartesianMotion;
-            masterCartesianMotion = Master.CartesianPrevious.Inverse() * masterPosition;
-
-            // translation
-            vct3 masterTranslation;
-            vct3 slaveTranslation;
-            if (this->TranslationLocked) {
-                slaveTranslation = Slave.CartesianPrevious.Translation();
-            } else {
-                masterTranslation = (masterPosition.Translation() - Master.CartesianPrevious.Translation());
-                slaveTranslation = masterTranslation * this->Scale;
-                slaveTranslation = RegistrationRotation * slaveTranslation + Slave.CartesianPrevious.Translation();
-            }
-            // rotation
-            vctMatRot3 slaveRotation;
-            if (this->RotationLocked) {
-                slaveRotation.From(Slave.CartesianPrevious.Rotation());
-            } else {
-                slaveRotation = RegistrationRotation * masterPosition.Rotation();
-            }
-
-            // compute desired slave position
-            vctFrm4x4 slaveCartesianDesired;
-            slaveCartesianDesired.Translation().Assign(slaveTranslation);
-            slaveCartesianDesired.Rotation().FromNormalized(slaveRotation);
-            Slave.PositionCartesianDesired.Goal().FromNormalized(slaveCartesianDesired);
-
-            // Slave go this cartesian position
-            Slave.SetPositionCartesian(Slave.PositionCartesianDesired);
-
-            // Gripper
-            if (Master.GetGripperPosition.IsValid()) {
-                double gripperPosition;
-                Master.GetGripperPosition(gripperPosition);
-                Slave.SetJawPosition(gripperPosition);
-            } else {
-                Slave.SetJawPosition(5.0 * cmnPI_180);
-            }
-        } else if (!IsClutched && !IsOperatorPresent) {
-            // Do nothing
-        }
-    } else {
-        CMN_LOG_CLASS_RUN_DEBUG << "mtsTeleOperationECM disabled" << std::endl;
-    }
-#endif
 }
 
 void mtsTeleOperationECM::Cleanup(void)
@@ -294,57 +206,53 @@ void mtsTeleOperationECM::Cleanup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
 }
 
-#if 0
-void mtsTeleOperationECM::UpdateTransition(void)
-{
-    // condition to be operating
-    if (mIsEnabled && mIsOperatorPresent && !mSlave.IsManipClutched) {
-        // is this a transition?
-        if (!mIsOperating) {
-            mIsOperating = true;
-            // record position of each arm
-            mMasterLeft.GetPositionCartesian(mMasterLeft.PositionCartesianCurrent);
-            mMasterLeft.PositionCartesianInitial.Assign(mMasterLeft.PositionCartesianCurrent.Position());
-            mMasterRight.GetPositionCartesian(mMasterRight.PositionCartesianCurrent);
-            mMasterRight.PositionCartesianInitial.Assign(mMasterRight.PositionCartesianCurrent.Position());
-            mSlave.GetPositionCartesian(mSlave.PositionCartesianCurrent);
-            mSlave.PositionCartesianInitial.Assign(mSlave.PositionCartesianCurrent.Position());
-            // set the masters on wrench body mode
-            mMasterLeft.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
-            mMasterLeft.SetWrenchBodyOrientationAbsolute(true);
-            mMasterLeft.LockOrientation(mMasterLeft.PositionCartesianInitial.Rotation());
-            mMasterRight.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
-            mMasterRight.SetWrenchBodyOrientationAbsolute(true);
-            mMasterRight.LockOrientation(mMasterRight.PositionCartesianInitial.Rotation());
-            // set ECM in cartesian position mode
-            mSlave.SetRobotControlState(mtsStdString("DVRK_POSITION_CARTESIAN"));
-            return;
-        }
-    }
-    // all other cases, not operating
-    // is this a transition?
-    if (mIsOperating) {
-        mIsOperating = false;
-    }
-}
-#endif
-
 void mtsTeleOperationECM::StateChanged(void)
 {
     MessageEvents.Status(this->GetName() + ", current state "
                          + mtsTeleOperationECMTypes::StateTypeToString(mTeleopState.CurrentState()));
 }
 
-void mtsTeleOperationECM::EnterEnabledDisabled(void)
+void mtsTeleOperationECM::RunAll(void)
 {
-    std::cerr << CMN_LOG_DETAILS << " implement this based on teleop PSM" << std::endl;
-    /*
-    if (mTeleopState.CurrentState() == mtsTeleOperationECMTypes::ENABLED) {
-        MessageEvents.Enabled(true);
-    } else {
-        MessageEvents.Enabled(false);
+    mtsExecutionResult executionResult;
+
+    // get master left Cartesian position
+    executionResult = mMasterLeft.GetPositionCartesian(mMasterLeft.PositionCartesianCurrent);
+    if (!executionResult.IsOK()) {
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MasterLeft.GetPositionCartesian failed \""
+                                << executionResult << "\"" << std::endl;
+        MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master left");
+        mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
     }
-    */
+    // shift position to take spread MTMs
+    mMasterLeft.PositionCartesianCurrent.Position().Translation()[0] -= 0.2 * cmn_m;
+
+    // get master right Cartesian position
+    executionResult = mMasterRight.GetPositionCartesian(mMasterRight.PositionCartesianCurrent);
+    if (!executionResult.IsOK()) {
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MasterRight.GetPositionCartesian failed \""
+                                << executionResult << "\"" << std::endl;
+        MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master right");
+        mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
+    }
+    // shift position to take spread MTMs
+    mMasterRight.PositionCartesianCurrent.Position().Translation()[0] += 0.2 * cmn_m;
+
+    // get slave Cartesian position
+    executionResult = mSlave.GetPositionCartesian(mSlave.PositionCartesianCurrent);
+    if (!executionResult.IsOK()) {
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to Slave.GetPositionCartesian failed \""
+                                << executionResult << "\"" << std::endl;
+        MessageEvents.Error(this->GetName() + ": unable to get cartesian position from slave");
+        mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
+    }
+
+    // check if anyone wanted to disable anyway
+    if ((mTeleopState.DesiredState() == mtsTeleOperationECMTypes::DISABLED)
+        && (mTeleopState.CurrentState() != mtsTeleOperationECMTypes::DISABLED)) {
+        mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::DISABLED);
+        return;
+    }
 }
 
 void mtsTeleOperationECM::TransitionDisabled(void)
@@ -428,10 +336,25 @@ void mtsTeleOperationECM::TransitionSettingMTMsState(void)
     }
 }
 
+void mtsTeleOperationECM::EnterEnabled(void)
+{
+    vct3 masterOffset;
+    masterOffset.DifferenceOf(mMasterRight.PositionCartesianCurrent.Position().Translation(),
+                              mMasterLeft.PositionCartesianCurrent.Position().Translation());
+    mMasterDistance = masterOffset.Norm();
+    std::cerr << "Master distance: " << mMasterDistance << std::endl;
+}
+
 void mtsTeleOperationECM::RunEnabled(void)
 {
-    // std::cerr << CMN_LOG_DETAILS << " add check on arms states" << std::endl;
-    std::cerr << "+" << std::flush;
+    // compute force to maintain constant distance between masters
+    vct3 masterOffset;
+    masterOffset.DifferenceOf(mMasterRight.PositionCartesianCurrent.Position().Translation(),
+                              mMasterLeft.PositionCartesianCurrent.Position().Translation());
+    // get distance and normalize the vector
+    double newDistance = masterOffset.Norm();
+    masterOffset.Divide(newDistance);
+    std::cerr << " " << newDistance << std::endl;
 }
 
 void mtsTeleOperationECM::TransitionEnabled(void)

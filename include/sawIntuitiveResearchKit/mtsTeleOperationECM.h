@@ -75,14 +75,15 @@ private:
 protected:
 
     void StateChanged(void);
+    void RunAll(void);
     void TransitionDisabled(void); // checks for desired state
     void EnterSettingECMState(void); // request state and set timer
     void TransitionSettingECMState(void); // check current state and timer
     void EnterSettingMTMsState(void);
     void TransitionSettingMTMsState(void);
+    void EnterEnabled(void);
     void RunEnabled(void); // performs actual teleoperation
     void TransitionEnabled(void); // performs actual teleoperation
-    void EnterEnabledDisabled(void); // mostly send event Enable(true/false)
 
 
     class RobotMaster {
@@ -121,6 +122,9 @@ protected:
 
     mtsStateMachine<mtsTeleOperationECMTypes::StateType> mTeleopState;
     double mInStateTimer;
+
+    double mMasterDistance;
+    vct3 mRCM;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationECM);

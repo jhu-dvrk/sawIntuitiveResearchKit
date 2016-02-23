@@ -334,8 +334,9 @@ void mtsTeleOperationPSM::StateChanged(void)
 
 void mtsTeleOperationPSM::RunAll(void)
 {
-    // get master Cartesian position
     mtsExecutionResult executionResult;
+
+    // get master Cartesian position
     executionResult = mMaster.GetPositionCartesian(mMaster.PositionCartesianCurrent);
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to Master.GetPositionCartesian failed \""

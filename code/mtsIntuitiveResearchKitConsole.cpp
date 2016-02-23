@@ -1003,8 +1003,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         mTeleopECM = new TeleopECM(name, masterLeftName, masterRightName,
                                    slaveName, this->GetName());
     } else {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: there is already a teleop for the pair \""
-                                 << name << "\"" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: there is already an ECM teleop" << std::endl;
         return false;
     }
 
@@ -1143,9 +1142,12 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
         const std::string interfaceNameIO = "IO-" + arm->Name();
         arm->IOInterfaceRequired = AddInterfaceRequired(interfaceNameIO);
         if (arm->IOInterfaceRequired) {
-            arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
-            arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
-            arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
+            arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
+                                                           this, "Error");
+            arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
+                                                           this, "Warning");
+            arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
+                                                           this, "Status");
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO interface for arm \""
                                      << arm->Name() << "\"" << std::endl;
@@ -1158,9 +1160,12 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
         const std::string interfaceNamePID = "PID-" + arm->Name();
         arm->PIDInterfaceRequired = AddInterfaceRequired(interfaceNamePID);
         if (arm->PIDInterfaceRequired) {
-            arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
-            arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
-            arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
+            arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
+                                                            this, "Error");
+            arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
+                                                            this, "Warning");
+            arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
+                                                            this, "Status");
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add PID interface for arm \""
                                      << arm->Name() << "\"" << std::endl;
@@ -1174,9 +1179,12 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     if (arm->ArmInterfaceRequired) {
         arm->ArmInterfaceRequired->AddFunction("SetRobotControlState", arm->SetRobotControlState);
         arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze);
-        arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
-        arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
-        arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
+        arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
+                                                        this, "Error");
+        arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
+                                                        this, "Warning");
+        arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
+                                                        this, "Status");
         // for ECM, we need to know when clutched so we can tell teleops to update master orientation
         if (arm->mType == Arm::ARM_ECM) {
             arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ECMManipClutchEventHandler, this, "ManipClutch");
@@ -1304,7 +1312,8 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
     }
 
     // shutdown all teleop that should be shut down
-    if (mTeleopPSMRunning && !teleopPSM) {
+    if (!mTeleopEnabled
+        || (mTeleopPSMRunning && !teleopPSM)) {
         mTeleopPSMAligning = false;
         const TeleopPSMList::iterator end = mTeleopsPSM.end();
         for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();
@@ -1313,7 +1322,8 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
             teleOp->second->SetDesiredState(mtsStdString("DISABLED"));
         }
     }
-    if (mTeleopECMRunning && !teleopECM) {
+    if (!mTeleopEnabled
+        || (mTeleopECMRunning && !teleopECM)) {
         mTeleopECM->SetDesiredState(mtsStdString("DISABLED"));
     }
 

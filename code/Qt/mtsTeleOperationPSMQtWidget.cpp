@@ -109,27 +109,17 @@ void mtsTeleOperationPSMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
         return;
     }
 
-    mtsExecutionResult executionResult;
-    executionResult = TeleOperation.GetPositionCartesianMaster(PositionMaster);
-    if (!executionResult) {
-        CMN_LOG_CLASS_RUN_ERROR << "TeleOperation.GetPositionCartesianMaster failed, \""
-                                << executionResult << "\"" << std::endl;
-    }
-    executionResult = TeleOperation.GetPositionCartesianSlave(PositionSlave);
-    if (!executionResult) {
-        CMN_LOG_CLASS_RUN_ERROR << "TeleOperation.GetPositionCartesianSlave failed, \""
-                                << executionResult << "\"" << std::endl;
-    }
-    executionResult = TeleOperation.GetRegistrationRotation(RegistrationRotation);
-    if (!executionResult) {
-        CMN_LOG_CLASS_RUN_ERROR << "TeleOperation.GetRegistrationRotation failed, \""
-                                << executionResult << "\"" << std::endl;
-    }
+    // retrieve transformations
+    TeleOperation.GetPositionCartesianMaster(PositionMaster);
+    TeleOperation.GetPositionCartesianSlave(PositionSlave);
+    TeleOperation.GetRegistrationRotation(RegistrationRotation);
+
     // apply registration orientation
     vctFrm3 registeredSlave;
     RegistrationRotation.ApplyInverseTo(PositionSlave.Position().Rotation(), registeredSlave.Rotation());
     RegistrationRotation.ApplyInverseTo(PositionSlave.Position().Translation(), registeredSlave.Translation());
 
+    // update display
     QFRPositionMasterWidget->SetValue(PositionMaster.Position());
     QFRPositionSlaveWidget->SetValue(registeredSlave);
 

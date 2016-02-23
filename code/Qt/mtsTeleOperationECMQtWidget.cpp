@@ -108,31 +108,22 @@ void mtsTeleOperationECMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
         return;
     }
 
-    mtsExecutionResult executionResult;
-#if 0
-    executionResult = TeleOperation.GetPositionCartesianMasterLeft(PositionMaster);
-    if (!executionResult) {
-        CMN_LOG_CLASS_RUN_ERROR << "TeleOperation.GetPositionCartesianMasterLeft failed, \""
-                                << executionResult << "\"" << std::endl;
-    }
-    executionResult = TeleOperation.GetPositionCartesianSlave(PositionSlave);
-    if (!executionResult) {
-        CMN_LOG_CLASS_RUN_ERROR << "TeleOperation.GetPositionCartesianSlave failed, \""
-                                << executionResult << "\"" << std::endl;
-    }
-    executionResult = TeleOperation.GetRegistrationRotation(RegistrationRotation);
-    if (!executionResult) {
-        CMN_LOG_CLASS_RUN_ERROR << "TeleOperation.GetRegistrationRotation failed, \""
-                                << executionResult << "\"" << std::endl;
-    }
+    // retrieve transformations
+    TeleOperation.GetPositionCartesianMasterLeft(PositionMasterLeft);
+    TeleOperation.GetPositionCartesianMasterRight(PositionMasterRight);
+    TeleOperation.GetPositionCartesianSlave(PositionSlave);
+    TeleOperation.GetRegistrationRotation(RegistrationRotation);
+
     // apply registration orientation
     vctFrm3 registeredSlave;
     RegistrationRotation.ApplyInverseTo(PositionSlave.Position().Rotation(), registeredSlave.Rotation());
     RegistrationRotation.ApplyInverseTo(PositionSlave.Position().Translation(), registeredSlave.Translation());
 
-    QFRPositionMasterWidget->SetValue(PositionMaster.Position());
+    // update display
+    QFRPositionMasterLeftWidget->SetValue(PositionMasterLeft.Position());
+    QFRPositionMasterRightWidget->SetValue(PositionMasterRight.Position());
     QFRPositionSlaveWidget->SetValue(registeredSlave);
-#endif
+
     TeleOperation.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
