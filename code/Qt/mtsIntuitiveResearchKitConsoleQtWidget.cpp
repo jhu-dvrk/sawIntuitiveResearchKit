@@ -117,12 +117,15 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QPBTeleop = new QPushButton("Teleop");
     QPBTeleop->setCheckable(true);
 
+    QWidget * buttonsWidget = new QWidget();
     QVBoxLayout * buttonsLayout = new QVBoxLayout;
+    buttonsWidget->setLayout(buttonsLayout);
     buttonsLayout->addWidget(QPBPowerOff);
     buttonsLayout->addWidget(QPBHome);
     buttonsLayout->addWidget(QPBTeleop);
-    buttonsLayout->addStretch(1);
-    mainLayout->addLayout(buttonsLayout);
+    buttonsLayout->addStretch(100);
+    buttonsWidget->setFixedWidth(buttonsWidget->sizeHint().width());
+    mainLayout->addWidget(buttonsWidget);
 
     QSplitter * tabWidgetAndMessages = new QSplitter(); 
     tabWidgetAndMessages->setOrientation(Qt::Vertical);

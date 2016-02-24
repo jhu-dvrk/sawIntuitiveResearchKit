@@ -39,7 +39,7 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArmQtWidget, mtsCom
 
 mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std::string & componentName, double periodInSeconds):
     mtsComponent(componentName),
-    TimerPeriodInMilliseconds(periodInSeconds),
+    TimerPeriodInMilliseconds(periodInSeconds * 1000),
     DirectControl(false),
     LogEnabled(false)
 {
@@ -168,6 +168,8 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     // state
     QHBoxLayout * stateLayout = new QHBoxLayout;
     MainLayout->addLayout(stateLayout);
+
+    // messages on/off
     QPBLog = new QPushButton("Messages");
     QPBLog->setCheckable(true);
     stateLayout->addWidget(QPBLog);

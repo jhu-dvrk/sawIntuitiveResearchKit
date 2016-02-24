@@ -35,7 +35,8 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationPSMQtWidget, mtsComponent,
 
 mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & componentName, double periodInSeconds):
     mtsComponent(componentName),
-    TimerPeriodInMilliseconds(periodInSeconds * 1000) // Qt timers are in milliseconds
+    TimerPeriodInMilliseconds(periodInSeconds * 1000), // Qt timers are in milliseconds
+    LogEnabled(false)
 {
     // Setup cisst interface
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("TeleOperation");
@@ -66,8 +67,6 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::StatusEventHandler,
                                                 this, "Status");
     }
-    setupUi();
-    startTimer(TimerPeriodInMilliseconds);
 }
 
 void mtsTeleOperationPSMQtWidget::Configure(const std::string &filename)
@@ -77,7 +76,11 @@ void mtsTeleOperationPSMQtWidget::Configure(const std::string &filename)
 
 void mtsTeleOperationPSMQtWidget::Startup(void)
 {
-    CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
+    setupUi();
+    startTimer(TimerPeriodInMilliseconds);
+    if (!LogEnabled) {
+        QTEMessages->hide();
+    }
     if (!parent()) {
         show();
     }
@@ -170,10 +173,7 @@ void mtsTeleOperationPSMQtWidget::SlotTranslationLockedEventHandler(bool lock)
 
 void mtsTeleOperationPSMQtWidget::setupUi(void)
 {
-    QFont font;
-    font.setBold(true);
-    font.setPointSize(12);
-
+    // 3D frames
     QGridLayout * frameLayout = new QGridLayout;
     QLabel * masterLabel = new QLabel("<b>Master</b>");
     masterLabel->setAlignment(Qt::AlignCenter);
@@ -186,27 +186,16 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     QFRPositionSlaveWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
     frameLayout->addWidget(QFRPositionSlaveWidget, 3, 0);
 
-
+    // right side
     QVBoxLayout * controlLayout = new QVBoxLayout;
 
-    QLabel * instructionsLabel = new QLabel("To start tele-operation you must first insert the tool past the cannula tip (push tool clutch button and manually insert tool).\nYou must keep your right foot on the COAG/MONO pedal to operate.\nYou can use the clutch pedal to re-position your masters.");
+    QLabel * instructionsLabel = new QLabel("To start tele-operation you must first insert the tool past the cannula tip (push tool clutch button and manually insert tool).\nOperator must be present to operate (sometime using COAG pedal).\nYou can use the clutch pedal to re-position your masters.");
+    instructionsLabel->setWordWrap(true);
     controlLayout->addWidget(instructionsLabel);
 
-    // state info
-    QHBoxLayout * stateLayout = new QHBoxLayout;
-    controlLayout->addLayout(stateLayout);
-
-    QLabel * label = new QLabel("Desired state:");
-    stateLayout->addWidget(label);
-    QLEDesiredState = new QLineEdit("");
-    QLEDesiredState->setReadOnly(true);
-    stateLayout->addWidget(QLEDesiredState);
-
-    label = new QLabel("Current state:");
-    stateLayout->addWidget(label);
-    QLECurrentState = new QLineEdit("");
-    QLECurrentState->setReadOnly(true);
-    stateLayout->addWidget(QLECurrentState);
+    // scale/lock/unlock/messages
+    QHBoxLayout * buttonsLayout = new QHBoxLayout;
+    controlLayout->addLayout(buttonsLayout);
 
     // scale
     QSBScale = new QDoubleSpinBox();
@@ -214,11 +203,7 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     QSBScale->setSingleStep(0.1);
     QSBScale->setPrefix("scale ");
     QSBScale->setValue(0.2);
-    controlLayout->addWidget(QSBScale);
-
-    // buttons to lock/unlock
-    QHBoxLayout * buttonsLayout = new QHBoxLayout;
-    controlLayout->addLayout(buttonsLayout);
+    buttonsLayout->addWidget(QSBScale);
 
     // enable/disable rotation/translation
     QCBLockRotation = new QCheckBox("Lock Rotation");
@@ -226,6 +211,27 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
 
     QCBLockTranslation = new QCheckBox("Lock Translation");
     buttonsLayout->addWidget(QCBLockTranslation);
+
+    // messages on/off
+    QPBLog = new QPushButton("Messages");
+    QPBLog->setCheckable(true);
+    buttonsLayout->addWidget(QPBLog);
+
+    // state info
+    QHBoxLayout * stateLayout = new QHBoxLayout;
+    controlLayout->addLayout(stateLayout);
+
+    QLabel * label = new QLabel("Desired");
+    stateLayout->addWidget(label);
+    QLEDesiredState = new QLineEdit("");
+    QLEDesiredState->setReadOnly(true);
+    stateLayout->addWidget(QLEDesiredState);
+
+    label = new QLabel("Current");
+    stateLayout->addWidget(label);
+    QLECurrentState = new QLineEdit("");
+    QLECurrentState->setReadOnly(true);
+    stateLayout->addWidget(QLECurrentState);
 
     // Timing
     QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
@@ -237,11 +243,16 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     QTEMessages->ensureCursorVisible();
     controlLayout->addWidget(QTEMessages);
 
-    QHBoxLayout * mainLayout = new QHBoxLayout;
-    mainLayout->addLayout(frameLayout);
-    mainLayout->addLayout(controlLayout);
+    // add stretch
+    controlLayout->addStretch();
 
-    setLayout(mainLayout);
+    QWidget * leftWidget = new QWidget();
+    leftWidget->setLayout(frameLayout);
+    addWidget(leftWidget);
+
+    QWidget * rightWidget = new QWidget();
+    rightWidget->setLayout(controlLayout);
+    addWidget(rightWidget);
 
     setWindowTitle("TeleOperation Controller");
     resize(sizeHint());
@@ -268,6 +279,8 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
             this, SLOT(SlotTranslationLockedEventHandler(bool)));
 
     // messages
+    connect(QPBLog, SIGNAL(clicked()),
+            this, SLOT(SlotLogEnabled()));
     connect(this, SIGNAL(SignalAppendMessage(QString)),
             QTEMessages, SLOT(append(QString)));
     connect(this, SIGNAL(SignalSetColor(QColor)),
@@ -306,20 +319,36 @@ void mtsTeleOperationPSMQtWidget::SlotTextChanged(void)
     QTEMessages->verticalScrollBar()->setSliderPosition(QTEMessages->verticalScrollBar()->maximum());
 }
 
+void mtsTeleOperationPSMQtWidget::SlotLogEnabled(void)
+{
+    LogEnabled = QPBLog->isChecked();
+    if (LogEnabled) {
+        QTEMessages->show();
+    } else {
+        QTEMessages->hide();
+    }
+}
+
 void mtsTeleOperationPSMQtWidget::ErrorEventHandler(const std::string & message)
 {
-    emit SignalSetColor(QColor("red"));
-    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
+    if (LogEnabled) {
+        emit SignalSetColor(QColor("red"));
+        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
+    }
 }
 
 void mtsTeleOperationPSMQtWidget::WarningEventHandler(const std::string & message)
 {
-    emit SignalSetColor(QColor("darkRed"));
-    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Warning: ") + QString(message.c_str()));
+    if (LogEnabled) {
+        emit SignalSetColor(QColor("darkRed"));
+        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Warning: ") + QString(message.c_str()));
+    }
 }
 
 void mtsTeleOperationPSMQtWidget::StatusEventHandler(const std::string & message)
 {
-    emit SignalSetColor(QColor("black"));
-    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
+    if (LogEnabled) {
+        emit SignalSetColor(QColor("black"));
+        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
+    }
 }

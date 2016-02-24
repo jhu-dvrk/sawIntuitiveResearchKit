@@ -29,7 +29,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
-class CISST_EXPORT mtsTeleOperationECMQtWidget: public QWidget, public mtsComponent
+class CISST_EXPORT mtsTeleOperationECMQtWidget: public QSplitter, public mtsComponent
 {
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -56,6 +56,7 @@ signals:
 private slots:
     void timerEvent(QTimerEvent * event);
     void SlotTextChanged(void);
+    void SlotLogEnabled(void);
     // to set from the GUI
     void SlotDesiredStateEventHandler(QString state);
     void SlotCurrentStateEventHandler(QString state);
@@ -99,6 +100,8 @@ private:
     mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
 
     // messages
+    bool LogEnabled;
+    QPushButton * QPBLog;
     void ErrorEventHandler(const std::string & message);
     void WarningEventHandler(const std::string & message);
     void StatusEventHandler(const std::string & message);
