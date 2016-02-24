@@ -613,6 +613,8 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
     if (mMuxIndex != mMuxIndexExpected) {
         MessageEvents.Error(this->GetName() + " unexpected multiplexer value.");
         CMN_LOG_CLASS_RUN_ERROR << "GetAndConvertPotentiometerValues: mux from IO board: " << mMuxIndex << " expected: " << mMuxIndexExpected << std::endl;
+        MuxReset.SetValue(true);
+        mMuxIndexExpected = 0;
         return;
     }
     // array index, 0 or 1, primary or secondary pots
