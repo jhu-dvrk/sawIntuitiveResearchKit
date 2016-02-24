@@ -1,22 +1,12 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "io": {
-        "period": 0.0005, // in seconds
-        "port": 0 // default is 0
-    }
-    ,
-    "operator-present": {
-        "component": "io",
-        "interface": "COAG"
-    }
-    ,
     "arms":
     [
         {
             "name": "SUJ",
             "type": "SUJ",
             "io": "sawRobotIO1394-SUJ.xml",
-            "kinematic": "suj-calibrated.json",
+            "kinematic": "suj-ECM-1-2-3.json"
             "base-frame": {
                 "component": "ECM",
                 "interface": "Robot"
@@ -83,8 +73,8 @@
             "slave": "PSM1",
             "period": 0.005, // in seconds
             "rotation" : [[ 0.0000,  1.0000,  0.0000],
-			              [ 1.0000,  0.0000,  0.0000],
-			              [ 0.0000,  0.0000, -1.0000]]
+                          [ 1.0000,  0.0000,  0.0000],
+                          [ 0.0000,  0.0000, -1.0000]]
         }
         ,
         {
@@ -92,8 +82,8 @@
             "slave": "PSM2",
             "period": 0.005, // in seconds
             "rotation" : [[ 0.0000,  1.0000,  0.0000],
-			              [ 1.0000,  0.0000,  0.0000],
-			              [ 0.0000,  0.0000, -1.0000]]
+                          [ 1.0000,  0.0000,  0.0000],
+                          [ 0.0000,  0.0000, -1.0000]]
         }
     ]
 }
