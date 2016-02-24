@@ -278,6 +278,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         RobotState = newState;
         mWrench.Force().Zeros();
         mWrenchType = WRENCH_UNDEFINED;
+        EffortOrientationLocked = false;
         MessageEvents.Status(this->GetName() + " effort cartesian");
         break;
 
@@ -703,7 +704,6 @@ void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)
         torqueMode.SetAll(true);
         PID.EnableTorqueMode(torqueMode);
         EffortOrientationLocked = false;
-        std::cerr << "unlocked" << std::endl;
     }
 }
 

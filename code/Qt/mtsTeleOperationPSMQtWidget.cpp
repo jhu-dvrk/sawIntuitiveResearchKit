@@ -174,26 +174,6 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     font.setBold(true);
     font.setPointSize(12);
 
-    QGridLayout * cmdTitleLayout = new QGridLayout;
-    QSpacerItem * cmdTitleLeftSpacer = new QSpacerItem(341, 20, QSizePolicy::Expanding);
-    QSpacerItem * cmdTitleRightSpacer = new QSpacerItem(341, 20, QSizePolicy::Expanding);
-    cmdTitleLayout->addItem(cmdTitleLeftSpacer, 0, 0);
-    cmdTitleLayout->addItem(cmdTitleRightSpacer, 0, 2);
-
-    QFrame * cmdTitleLeftLine = new QFrame;
-    cmdTitleLeftLine->setFrameShape(QFrame::HLine);
-    cmdTitleLeftLine->setFrameShadow(QFrame::Sunken);
-    QFrame * cmdTitleRightLine = new QFrame;
-    cmdTitleRightLine->setFrameShape(QFrame::HLine);
-    cmdTitleRightLine->setFrameShadow(QFrame::Sunken);
-    QLabel * cmdTitleLabel = new QLabel("TeleOperation Controller");
-    cmdTitleLabel->setFont(font);
-    cmdTitleLabel->setAlignment(Qt::AlignCenter);
-
-    cmdTitleLayout->addWidget(cmdTitleLeftLine, 1, 0);
-    cmdTitleLayout->addWidget(cmdTitleLabel, 1, 1);
-    cmdTitleLayout->addWidget(cmdTitleRightLine, 1, 2);
-
     QGridLayout * frameLayout = new QGridLayout;
     QLabel * masterLabel = new QLabel("<b>Master</b>");
     masterLabel->setAlignment(Qt::AlignCenter);

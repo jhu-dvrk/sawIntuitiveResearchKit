@@ -133,12 +133,10 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QTEMessages = new QTextEdit();
     QTEMessages->setReadOnly(true);
     QTEMessages->ensureCursorVisible();
+    QTEMessages->resize(QTEMessages->width(), 600);
     tabWidgetAndMessages->addWidget(QTEMessages);
 
     mainLayout->addWidget(tabWidgetAndMessages);
-
-    // QVBoxLayout * mainLayout = new QVBoxLayout;
-    // mainLayout->addLayout(frameLayout);
     setLayout(mainLayout);
 
     setWindowTitle("Intuitive Research Kit");

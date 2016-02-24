@@ -24,7 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
-
+#include <cisstParameterTypes/prmForceCartesianSet.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -121,6 +121,8 @@ void mtsTeleOperationPSM::Init(void)
         masterRequired->AddFunction("SetPositionCartesian", mMaster.SetPositionCartesian);
         masterRequired->AddFunction("SetPositionGoalCartesian", mMaster.SetPositionGoalCartesian);
         masterRequired->AddFunction("GetGripperPosition", mMaster.GetGripperPosition);
+        masterRequired->AddFunction("UnlockOrientation", mMaster.UnlockOrientation);
+        masterRequired->AddFunction("SetWrenchBody", mMaster.SetWrenchBody);
         masterRequired->AddFunction("GetRobotControlState", mMaster.GetRobotControlState);
         masterRequired->AddFunction("SetRobotControlState", mMaster.SetRobotControlState);
         masterRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::MasterErrorEventHandler,
@@ -481,6 +483,12 @@ void mtsTeleOperationPSM::EnterEnabled(void)
 
     // set Master/Slave to Teleop (Cartesian Position Mode)
     mMaster.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+
+    // set forces to zero and unlock orientation
+    prmForceCartesianSet wrench;
+    mMaster.SetWrenchBody(wrench);
+    mMaster.UnlockOrientation();
+
     std::cerr << CMN_LOG_DETAILS << "Add way to turn on gravity in effort mode" << std::endl;
 }
 

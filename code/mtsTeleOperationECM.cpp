@@ -24,7 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsTeleOperationECM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
-
+#include <cisstParameterTypes/prmForceCartesianSet.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationECM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -224,7 +224,7 @@ void mtsTeleOperationECM::RunAll(void)
         MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master left");
         mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
     }
-    // shift position to take spread MTMs
+    // shift position to take into account distance between MTMs
     mMasterLeft.PositionCartesianCurrent.Position().Translation()[0] -= 0.2 * cmn_m;
 
     // get master right Cartesian position
@@ -235,7 +235,7 @@ void mtsTeleOperationECM::RunAll(void)
         MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master right");
         mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
     }
-    // shift position to take spread MTMs
+    // shift position to take into account distance between MTMs
     mMasterRight.PositionCartesianCurrent.Position().Translation()[0] += 0.2 * cmn_m;
 
     // get slave Cartesian position
@@ -338,6 +338,15 @@ void mtsTeleOperationECM::TransitionSettingMTMsState(void)
 
 void mtsTeleOperationECM::EnterEnabled(void)
 {
+    // set cartesian effort parameters
+    mMasterLeft.SetWrenchBodyOrientationAbsolute(true);
+    mMasterLeft.LockOrientation(mMasterLeft.PositionCartesianCurrent.Position().Rotation());
+    std::cerr << "L: \n" << mMasterLeft.PositionCartesianCurrent.Position().Rotation() << std::endl;
+    mMasterRight.SetWrenchBodyOrientationAbsolute(true);
+    mMasterRight.LockOrientation(mMasterRight.PositionCartesianCurrent.Position().Rotation());
+    std::cerr << "R: \n" << mMasterRight.PositionCartesianCurrent.Position().Rotation() << std::endl;
+
+    // store inital state
     vct3 masterOffset;
     masterOffset.DifferenceOf(mMasterRight.PositionCartesianCurrent.Position().Translation(),
                               mMasterLeft.PositionCartesianCurrent.Position().Translation());
@@ -354,7 +363,19 @@ void mtsTeleOperationECM::RunEnabled(void)
     // get distance and normalize the vector
     double newDistance = masterOffset.Norm();
     masterOffset.Divide(newDistance);
-    std::cerr << " " << newDistance << std::endl;
+
+    // compute force to apply on each master to maintain distance
+    double error = mMasterDistance - newDistance;
+    vct3 force(masterOffset);
+    force.Multiply(error * 100.0); // this gain should come from JSON file
+
+    // apply forces
+    prmForceCartesianSet wrench;
+    wrench.Force().Ref<3>(0).Assign(force);
+    mMasterRight.SetWrenchBody(wrench);
+    // flip force
+    wrench.Force().Multiply(-1.0);
+    mMasterLeft.SetWrenchBody(wrench);
 }
 
 void mtsTeleOperationECM::TransitionEnabled(void)
