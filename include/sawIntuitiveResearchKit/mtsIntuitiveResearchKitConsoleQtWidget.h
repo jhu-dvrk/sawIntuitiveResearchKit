@@ -51,7 +51,8 @@ signals:
 private slots:
     void SlotPowerOff(void);
     void SlotHome(void);
-    void SlotTeleop(void);
+    void SlotTeleopStart(void);
+    void SlotTeleopStop(void);
     void SlotTextChanged(void);
 
 protected:
@@ -71,7 +72,8 @@ protected:
 
     QPushButton * QPBPowerOff;
     QPushButton * QPBHome;
-    QPushButton * QPBTeleop;
+    QPushButton * QPBTeleopStart;
+    QPushButton * QPBTeleopStop;
     QTabWidget * QTWidgets;
     QTextEdit * QTEMessages;
 };

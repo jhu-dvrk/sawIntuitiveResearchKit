@@ -60,16 +60,35 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         robotWidgetFactory->Configure();
 
         // add all IO GUI to tab
+        QTabWidget * ioTabWidget;
+        if (robotWidgetFactory->Widgets().size() > 1) {
+            ioTabWidget = new QTabWidget();
+            TabWidget->addTab(ioTabWidget, "IOs");
+        } else {
+            ioTabWidget = TabWidget; // use current tab widget
+        }
         mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
         for (iterator = robotWidgetFactory->Widgets().begin();
              iterator != robotWidgetFactory->Widgets().end();
              ++iterator) {
-            TabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
+            ioTabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
         }
-        TabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
+        ioTabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
     }
 
     // Arm and PID widgets
+    QTabWidget * pidTabWidget;
+    QTabWidget * armTabWidget;
+    if (console->mArms.size() > 1) {
+        pidTabWidget = new QTabWidget();
+        TabWidget->addTab(pidTabWidget, "PIDs");
+        armTabWidget = new QTabWidget();
+        TabWidget->addTab(armTabWidget, "Arms");
+    } else {
+        pidTabWidget = TabWidget; // use current tab widget
+        armTabWidget = TabWidget; // use current tab widget
+    }
+
     const mtsIntuitiveResearchKitConsole::ArmList::iterator armsEnd = console->mArms.end();
     mtsIntuitiveResearchKitConsole::ArmList::iterator armIter;
     for (armIter = console->mArms.begin(); armIter != armsEnd; ++armIter) {
@@ -105,14 +124,14 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             pidGUI->Configure();
             componentManager->AddComponent(pidGUI);
             Connections.push_back(new ConnectionType(pidGUI->GetName(), "Controller", armIter->second->PIDComponentName(), "Controller"));
-            TabWidget->addTab(pidGUI, (name + " PID").c_str());
+            pidTabWidget->addTab(pidGUI, (name + " PID").c_str());
 
             // Arm widget
             armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");
             armGUI->Configure();
             componentManager->AddComponent(armGUI);
             Connections.push_back(new ConnectionType(armGUI->GetName(), "Manipulator", armIter->second->mName, "Robot"));
-            TabWidget->addTab(armGUI, name.c_str());
+            armTabWidget->addTab(armGUI, name.c_str());
             break;
 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ:
@@ -120,22 +139,22 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1-SUJ");
             componentManager->AddComponent(sujGUI);
             Connections.push_back(new ConnectionType(sujGUI->GetName(), "Manipulator", "SUJ", "PSM1"));
-            TabWidget->addTab(sujGUI, "PSM1 SUJ");
+            armTabWidget->addTab(sujGUI, "PSM1 SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("ECM-SUJ");
             componentManager->AddComponent(sujGUI);
             Connections.push_back(new ConnectionType(sujGUI->GetName(), "Manipulator", "SUJ", "ECM"));
-            TabWidget->addTab(sujGUI, "ECM SUJ");
+            armTabWidget->addTab(sujGUI, "ECM SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM2-SUJ");
             componentManager->AddComponent(sujGUI);
             Connections.push_back(new ConnectionType(sujGUI->GetName(), "Manipulator", "SUJ", "PSM2"));
-            TabWidget->addTab(sujGUI, "PSM2 SUJ");
+            armTabWidget->addTab(sujGUI, "PSM2 SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM3-SUJ");
             componentManager->AddComponent(sujGUI);
             Connections.push_back(new ConnectionType(sujGUI->GetName(), "Manipulator", "SUJ", "PSM3"));
-            TabWidget->addTab(sujGUI, "PSM3 SUJ");
+            armTabWidget->addTab(sujGUI, "PSM3 SUJ");
 
             break;
 

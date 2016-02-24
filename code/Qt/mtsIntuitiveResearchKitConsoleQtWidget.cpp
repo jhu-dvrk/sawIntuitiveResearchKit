@@ -29,9 +29,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <QPushButton>
 #include <QTextEdit>
 #include <QScrollBar>
+#include <QGroupBox>
 #include <QTabWidget>
 #include <QSplitter>
-// #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QTime>
@@ -98,9 +98,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotHome(void)
     Console.Home();
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleop(void)
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStart(void)
 {
-    Console.TeleopEnable(QPBTeleop->isChecked());
+    Console.TeleopEnable(true);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStop(void)
+{
+    Console.TeleopEnable(false);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTextChanged(void)
@@ -112,24 +117,36 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 {
     QHBoxLayout * mainLayout = new QHBoxLayout;
 
-    QPBPowerOff = new QPushButton("Idle");
-    QPBHome = new QPushButton("Home");
-    QPBTeleop = new QPushButton("Teleop");
-    QPBTeleop->setCheckable(true);
-
     QWidget * buttonsWidget = new QWidget();
-    QVBoxLayout * buttonsLayout = new QVBoxLayout;
-    buttonsWidget->setLayout(buttonsLayout);
-    buttonsLayout->addWidget(QPBPowerOff);
-    buttonsLayout->addWidget(QPBHome);
-    buttonsLayout->addWidget(QPBTeleop);
-    buttonsLayout->addStretch(100);
+    QVBoxLayout * boxLayout = new QVBoxLayout();
+    boxLayout->setContentsMargins(0, 0, 0, 0);
+    buttonsWidget->setLayout(boxLayout);
+
+    QGroupBox * powerBox = new QGroupBox("Power");
+    boxLayout->addWidget(powerBox);
+    QVBoxLayout * powerLayout = new QVBoxLayout();
+    powerBox->setLayout(powerLayout);
+    QPBPowerOff = new QPushButton("Off");
+    powerLayout->addWidget(QPBPowerOff);
+    QPBHome = new QPushButton("Home");
+    powerLayout->addWidget(QPBHome);
+
+    QGroupBox * teleopBox = new QGroupBox("Teleop");
+    boxLayout->addWidget(teleopBox);
+    QVBoxLayout * teleopLayout = new QVBoxLayout();
+    teleopBox->setLayout(teleopLayout);
+    QPBTeleopStart = new QPushButton("Start");
+    teleopLayout->addWidget(QPBTeleopStart);
+    QPBTeleopStop = new QPushButton("Stop");
+    teleopLayout->addWidget(QPBTeleopStop);
+
+    boxLayout->addStretch(100);
     buttonsWidget->setFixedWidth(buttonsWidget->sizeHint().width());
     mainLayout->addWidget(buttonsWidget);
 
-    QSplitter * tabWidgetAndMessages = new QSplitter(); 
+    QSplitter * tabWidgetAndMessages = new QSplitter();
     tabWidgetAndMessages->setOrientation(Qt::Vertical);
-    
+
     QTWidgets = new QTabWidget();
     tabWidgetAndMessages->addWidget(QTWidgets);
 
@@ -150,8 +167,10 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotPowerOff()));
     connect(QPBHome, SIGNAL(clicked()),
             this, SLOT(SlotHome()));
-    connect(QPBTeleop, SIGNAL(clicked()),
-            this, SLOT(SlotTeleop()));
+    connect(QPBTeleopStart, SIGNAL(clicked()),
+            this, SLOT(SlotTeleopStart()));
+    connect(QPBTeleopStop, SIGNAL(clicked()),
+            this, SLOT(SlotTeleopStop()));
 
     // messages
     connect(this, SIGNAL(SignalAppendMessage(QString)),
