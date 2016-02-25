@@ -635,7 +635,16 @@ void mtsIntuitiveResearchKitMTM::RunEffortOrientationLocked(void)
     // compute desired position from current position and locked orientation
     CartesianPositionFrm.Translation().Assign(CartesianGetLocal.Translation());
     CartesianPositionFrm.Rotation().From(EffortOrientation);
+#if 0
     if (this->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
+#endif
+
+    if (Manipulator.InverseKinematicsLSNorm(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
+        // find closest solution mod 2 pi
+        const double difference = JointGet[6] - jointSet[6];
+        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
+        jointSet[6] = jointSet[6] + differenceInTurns * 2.0 * cmnPI;
+
         // assign to joints used for kinematics
         JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
         // finally send new joint values

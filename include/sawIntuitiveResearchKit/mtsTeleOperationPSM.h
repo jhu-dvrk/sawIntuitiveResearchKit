@@ -104,14 +104,15 @@ protected:
 
     class RobotMaster {
     public:
-        mtsFunctionRead GetPositionCartesian;
+        mtsFunctionRead  GetPositionCartesian;
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionWrite SetPositionGoalCartesian;
-        mtsFunctionRead GetGripperPosition;
+        mtsFunctionRead  GetGripperPosition;
 
-        mtsFunctionRead GetRobotControlState;
+        mtsFunctionRead  GetRobotControlState;
         mtsFunctionWrite SetRobotControlState;
-        mtsFunctionVoid UnlockOrientation;
+        mtsFunctionWrite LockOrientation;
+        mtsFunctionVoid  UnlockOrientation;
         mtsFunctionWrite SetWrenchBody;
 
         prmPositionCartesianGet PositionCartesianCurrent;
@@ -122,11 +123,11 @@ protected:
 
     class RobotSlave {
     public:
-        mtsFunctionRead GetPositionCartesian;
+        mtsFunctionRead  GetPositionCartesian;
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionWrite SetJawPosition;
 
-        mtsFunctionRead GetRobotControlState;
+        mtsFunctionRead  GetRobotControlState;
         mtsFunctionWrite SetRobotControlState;
 
         prmPositionCartesianGet PositionCartesianCurrent;

@@ -30,7 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
-#include <cisstRobot/robManipulator.h>
+#include <cisstRobot/robManipulatorLSNorm.h>
 #include <cisstRobot/robLSPB.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
@@ -111,7 +111,7 @@ protected:
     virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
     virtual void SetWrenchSpatial(const prmForceCartesianSet & newForce);
     virtual void SetWrenchBody(const prmForceCartesianSet & newForce);
-    /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */ 
+    /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
     virtual void SetWrenchBodyOrientationAbsolute(const bool & absolute);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
@@ -239,7 +239,7 @@ protected:
     vctFrm4x4 CartesianGetPrevious;
     prmVelocityCartesianGet CartesianVelocityGetParam;
 
-    robManipulator Manipulator;
+    robManipulatorLSNorm Manipulator;
     vctFrm4x4 CartesianPositionFrm;
 
     // Base frame

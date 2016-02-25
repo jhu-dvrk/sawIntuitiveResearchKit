@@ -113,9 +113,10 @@ void mtsIntuitiveResearchKitUDPStreamer::SetDestination(const std::string &ipPor
         CMN_LOG_CLASS_RUN_ERROR << "SetDestination: invalid address:port " << ipPort << std::endl;
     else {
         unsigned short port;
-        if (sscanf(ipPort.c_str()+colon+1, "%hu", &port) != 1)
+        if ((sscanf(ipPort.c_str() + colon + 1, "%hu", &port) != 1)) {
             CMN_LOG_CLASS_RUN_ERROR << "SetDestination: invalid port " << ipPort << std::endl;
-        else {
+        
+        } else {
             Socket.SetDestination(ipPort.substr(0, colon), port);
             SocketConfigured = true;
         }

@@ -112,6 +112,8 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitUDPStreamer.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsVFFollow.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsVFFollowJacobian.h
+	 # temporary
+         "${sawIntuitiveResearchKit_SOURCE_DIR}/include/cisstRobot/robManipulatorLSNorm.h"
         )
 
     set (SOURCE_FILES
@@ -128,6 +130,8 @@ if (cisst_FOUND)
          mtsIntuitiveResearchKitUDPStreamer.cpp
          mtsVFFollow.cpp
          mtsVFFollowJacobian.cpp
+	 # temporary
+         robManipulatorLSNorm.cpp
         )
 
     add_library (sawIntuitiveResearchKit

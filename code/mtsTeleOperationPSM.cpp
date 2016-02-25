@@ -121,6 +121,7 @@ void mtsTeleOperationPSM::Init(void)
         masterRequired->AddFunction("SetPositionCartesian", mMaster.SetPositionCartesian);
         masterRequired->AddFunction("SetPositionGoalCartesian", mMaster.SetPositionGoalCartesian);
         masterRequired->AddFunction("GetGripperPosition", mMaster.GetGripperPosition);
+        masterRequired->AddFunction("LockOrientation", mMaster.LockOrientation);
         masterRequired->AddFunction("UnlockOrientation", mMaster.UnlockOrientation);
         masterRequired->AddFunction("SetWrenchBody", mMaster.SetWrenchBody);
         masterRequired->AddFunction("GetRobotControlState", mMaster.GetRobotControlState);
@@ -257,9 +258,10 @@ void mtsTeleOperationPSM::ClutchEventHandler(const prmEventButton & button)
                     mMaster.PositionCartesianCurrent.Position().Translation());
         MessageEvents.Status(this->GetName() + ": master clutch pressed");
 
-        std::cerr << CMN_LOG_DETAILS << " change this to lock master orientation in EFFORT MODE + add gravity" << std::endl;
-        mMaster.SetRobotControlState(mtsStdString("Clutch"));
-
+        // set Master/Slave to Teleop (Cartesian Position Mode)
+        mMaster.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+        mMaster.LockOrientation(mMaster.PositionCartesianCurrent.Position().Rotation());
+        std::cerr << CMN_LOG_DETAILS << " change this to add gravity" << std::endl;
     } else {
         mIsClutched = false;
         MessageEvents.Status(this->GetName() + ": master clutch released");
