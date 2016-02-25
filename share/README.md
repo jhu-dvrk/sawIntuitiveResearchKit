@@ -32,3 +32,9 @@ The kinematic parameters (DH and dynamic model) are store in two different types
    * `mtm.json`, `mtml.json` and `mtmr.json`: DH and dynamic parameters for MTMs.  The `mtml` and `mtmr` version include a base transformation to match the ISI API convention, i.e. use the stereo display as base frame.  **Important:** most parameters are shared across all `mtm{,l,r}.json` files.  If you find an issue in one, fix them all.
 
 ## Console
+
+Most configuration files are system specific but if you need to simulate a single arm (kinematic simulation only so far), you can use one of the `console-XXX_KIN_SIMULATED.json` file.  This should likely be used with the `dvrk-ros`/`dvrk_robot` ROS package to start RViz with the proper CAD models.
+
+## ROS IO
+
+These files can be used to configure the `dvrk_robot`/`dvrk_console_json` ROS application to publish the IO data of one or more arms.  See the `dvrk-ros`/`dvrk_robot` package.
