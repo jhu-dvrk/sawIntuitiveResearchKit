@@ -43,6 +43,7 @@ public:
      \param type MTM type either MTM_LEFT or MTM_RIGHT
     */
     void SetMTMType(const bool autodetect = true, const MTM_TYPE type = MTM_NULL);
+    void Configure(const std::string & filename);
 
 protected:
     enum JointName {
@@ -120,6 +121,9 @@ protected:
         mtsFunctionVoid GripperPinch;
         mtsFunctionWrite GripperClosed;
     } GripperEvents;
+
+    robManipulator * ActivePart;
+    vctFrm4x4 BaseTransformation;
 
     //! robot cartesian position when cluthed
     vctFrm4x4 CartesianClutched;

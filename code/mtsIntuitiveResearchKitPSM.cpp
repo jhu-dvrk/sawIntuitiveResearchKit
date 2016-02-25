@@ -260,7 +260,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
 
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
-                                 << filename << "\" is using JSON" << std::endl;
+                                 << filename << "\" is in JSON format" << std::endl;
     }
 }
 

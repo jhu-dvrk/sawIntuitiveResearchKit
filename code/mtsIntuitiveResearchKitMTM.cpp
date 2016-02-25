@@ -42,6 +42,52 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
     Init();
 }
 
+void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
+{
+    try {
+        std::ifstream jsonStream;
+        Json::Value jsonConfig;
+        Json::Reader jsonReader;
+
+        jsonStream.open(filename.c_str());
+        if (!jsonReader.parse(jsonStream, jsonConfig)) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": failed to parse configuration\n"
+                                     << jsonReader.getFormattedErrorMessages();
+            return;
+        }
+
+        // load base offset transform if any (with warning)
+        const Json::Value jsonBase = jsonConfig["base-offset"];
+        if (jsonBase.isNull()) {
+            CMN_LOG_CLASS_INIT_WARNING << "Configure " << this->GetName()
+                                       << ": can find \"base-offset\" data in \"" << filename << "\"" << std::endl;
+        } else {
+            cmnDataJSON<vctFrm4x4>::DeSerializeText(BaseTransformation, jsonBase);
+            std::cerr << CMN_LOG_DETAILS << " do something here" << std::endl;
+            // ToolOffset = new robManipulator(ToolOffsetTransformation);
+            // Manipulator.Attach(ToolOffset);
+        }
+
+        // load DH parameters
+        const Json::Value jsonDH = jsonConfig["DH"];
+        if (jsonDH.isNull()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": can find \"DH\" data in \"" << filename << "\"" << std::endl;
+            return;
+        }
+        this->Manipulator.LoadRobot(jsonDH);
+        std::stringstream dhResult;
+        this->Manipulator.PrintKinematics(dhResult);
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure " << this->GetName()
+                                   << ": loaded kinematrics" << std::endl << dhResult.str() << std::endl;
+
+    } catch (...) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
+                                 << filename << "\" is in JSON format" << std::endl;
+    }
+}
+
 robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
