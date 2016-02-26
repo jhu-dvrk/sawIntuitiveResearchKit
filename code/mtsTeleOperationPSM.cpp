@@ -308,13 +308,17 @@ void mtsTeleOperationPSM::LockRotation(const bool & lock)
     mConfigurationStateTable->Advance();
     ConfigurationEvents.RotationLocked(mRotationLocked);
     // when releasing the orientation, master orientation is likely off
-    // so disable to force a re-enable with master align
+    // so force re-align
     if (lock == false) {
-        mTeleopState.SetDesiredState(mtsTeleOperationPSMTypes::DISABLED);
+        mTeleopState.SetCurrentState(mtsTeleOperationPSMTypes::DISABLED);
     } else {
         // update MTM/PSM previous position
         mMaster.CartesianPrevious.From(mMaster.PositionCartesianCurrent.Position());
         mSlave.CartesianPrevious.From(mSlave.PositionCartesianCurrent.Position());
+        // lock orientation is the arm is running
+        if (mTeleopState.CurrentState() == mtsTeleOperationPSMTypes::ENABLED) {
+            mMaster.LockOrientation(mMaster.PositionCartesianCurrent.Position().Rotation());
+        }
     }
 }
 
@@ -485,11 +489,14 @@ void mtsTeleOperationPSM::EnterEnabled(void)
 
     // set Master/Slave to Teleop (Cartesian Position Mode)
     mMaster.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
-
-    // set forces to zero and unlock orientation
+    // set forces to zero and lock/unlock orientation as needed
     prmForceCartesianSet wrench;
     mMaster.SetWrenchBody(wrench);
-    mMaster.UnlockOrientation();
+    if (mRotationLocked) {
+        mMaster.LockOrientation(mMaster.PositionCartesianCurrent.Position().Rotation());
+    } else {
+        mMaster.UnlockOrientation();
+    }
 
     std::cerr << CMN_LOG_DETAILS << "Add way to turn on gravity in effort mode" << std::endl;
 }

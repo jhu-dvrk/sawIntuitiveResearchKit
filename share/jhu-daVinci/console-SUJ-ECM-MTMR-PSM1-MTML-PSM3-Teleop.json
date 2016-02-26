@@ -26,14 +26,14 @@
         }
         ,
         {
-            "name": "PSM2",
+            "name": "PSM3",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM2-32204.xml",
+            "io": "sawRobotIO1394-PSM3-28613.xml",
             "pid": "../sawControllersPID-PSM.xml",
             "kinematic": "../psm-large-needle-driver.json",
             "base-frame": {
                 "component": "SUJ",
-                "interface": "PSM2"
+                "interface": "PSM3"
             }
         }
         ,
@@ -79,7 +79,7 @@
         ,
         {
             "master": "MTML",
-            "slave": "PSM2",
+            "slave": "PSM3",
             "period": 0.005, // in seconds
             "rotation" : [[ 0.0000,  1.0000,  0.0000],
                           [ 1.0000,  0.0000,  0.0000],
