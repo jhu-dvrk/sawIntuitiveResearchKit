@@ -2,8 +2,8 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet
-  Created on: 2013-05-15
+  Author(s):  Anton Deguet, Zerui Wang
+  Created on: 2016-02-24
 
   (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
@@ -31,7 +31,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
 #include <cisstRobot/robManipulator.h>
-#include <cisstRobot/robLSPB.h>
+//#include <cisstRobot/robLSPB.h>
+#include <cisstRobot/robReflexxes.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 
@@ -231,6 +232,7 @@ protected:
 
     mtsIntuitiveResearchKitArmTypes::RobotStateType RobotState;
 
+    /*
     struct {
         robLSPB LSPB;
         vctDoubleVec Velocity;
@@ -241,6 +243,19 @@ protected:
         vctDoubleVec GoalTolerance;
         double EndTime; // time should be set to 0.0 if there is no on-going trajectory
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
+    } JointTrajectory;
+    */
+
+    struct {
+        robReflexxes Reflexxes;
+        vctDoubleVec CurrentPosition;
+        vctDoubleVec CurrentVelocity;
+        vctDoubleVec CurrentAcceleration;
+        vctDoubleVec MaxVelocity;
+        vctDoubleVec MaxAcceleration;
+        vctDoubleVec TargetPosition;
+        vctDoubleVec TargetVelocity;
+        mtsFunctionWrite GoalReachedEvent;
     } JointTrajectory;
 
     vctDoubleVec PotsToEncodersTolerance;
