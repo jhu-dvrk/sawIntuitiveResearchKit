@@ -105,6 +105,7 @@ protected:
     class RobotMaster {
     public:
         mtsFunctionRead  GetPositionCartesian;
+        mtsFunctionRead  GetPositionCartesianDesired;
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionWrite SetPositionGoalCartesian;
         mtsFunctionRead  GetGripperPosition;
@@ -116,7 +117,8 @@ protected:
         mtsFunctionWrite SetWrenchBody;
 
         prmPositionCartesianGet PositionCartesianCurrent;
-        prmPositionCartesianSet PositionCartesianDesired;
+        prmPositionCartesianGet PositionCartesianDesired;
+        prmPositionCartesianSet PositionCartesianSet;
         vctFrm4x4 CartesianPrevious;
     };
     RobotMaster mMaster;
@@ -131,7 +133,7 @@ protected:
         mtsFunctionWrite SetRobotControlState;
 
         prmPositionCartesianGet PositionCartesianCurrent;
-        prmPositionCartesianSet PositionCartesianDesired;
+        prmPositionCartesianSet PositionCartesianSet;
         vctFrm4x4 CartesianPrevious;
     };
     RobotSlave mSlave;

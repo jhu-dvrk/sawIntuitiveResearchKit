@@ -99,7 +99,7 @@ protected:
 
         vctFrm3 PositionCartesianInitial;
         prmPositionCartesianGet PositionCartesianCurrent;
-        prmPositionCartesianSet PositionCartesianDesired;
+        prmPositionCartesianSet PositionCartesianSet;
     };
     RobotMaster mMasterLeft, mMasterRight;
 
@@ -112,7 +112,7 @@ protected:
 
         vctFrm3 PositionCartesianInitial;
         prmPositionCartesianGet PositionCartesianCurrent;
-        prmPositionCartesianSet PositionCartesianDesired;
+        prmPositionCartesianSet PositionCartesianSet;
     };
     RobotSlave mSlave;
 

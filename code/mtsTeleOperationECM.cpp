@@ -341,17 +341,14 @@ void mtsTeleOperationECM::EnterEnabled(void)
     // set cartesian effort parameters
     mMasterLeft.SetWrenchBodyOrientationAbsolute(true);
     mMasterLeft.LockOrientation(mMasterLeft.PositionCartesianCurrent.Position().Rotation());
-    std::cerr << "L: \n" << mMasterLeft.PositionCartesianCurrent.Position().Rotation() << std::endl;
     mMasterRight.SetWrenchBodyOrientationAbsolute(true);
     mMasterRight.LockOrientation(mMasterRight.PositionCartesianCurrent.Position().Rotation());
-    std::cerr << "R: \n" << mMasterRight.PositionCartesianCurrent.Position().Rotation() << std::endl;
 
     // store inital state
     vct3 masterOffset;
     masterOffset.DifferenceOf(mMasterRight.PositionCartesianCurrent.Position().Translation(),
                               mMasterLeft.PositionCartesianCurrent.Position().Translation());
     mMasterDistance = masterOffset.Norm();
-    std::cerr << "Master distance: " << mMasterDistance << std::endl;
 }
 
 void mtsTeleOperationECM::RunEnabled(void)

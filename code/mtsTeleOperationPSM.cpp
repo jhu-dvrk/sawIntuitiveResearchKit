@@ -103,7 +103,8 @@ void mtsTeleOperationPSM::Init(void)
     mRotationLocked = false;
     mTranslationLocked = false;
 
-    this->StateTable.AddData(mMaster.PositionCartesianCurrent, "MasterCartesianPosition");
+    this->StateTable.AddData(mMaster.PositionCartesianCurrent, "MasterCartesianPositionCurrent");
+    this->StateTable.AddData(mMaster.PositionCartesianDesired, "MasterCartesianPositionDesired");
     this->StateTable.AddData(mSlave.PositionCartesianCurrent, "SlaveCartesianPosition");
 
     mConfigurationStateTable = new mtsStateTable(100, "Configuration");
@@ -118,6 +119,7 @@ void mtsTeleOperationPSM::Init(void)
     mtsInterfaceRequired * masterRequired = AddInterfaceRequired("Master");
     if (masterRequired) {
         masterRequired->AddFunction("GetPositionCartesian", mMaster.GetPositionCartesian);
+        masterRequired->AddFunction("GetPositionCartesianDesired", mMaster.GetPositionCartesianDesired);
         masterRequired->AddFunction("SetPositionCartesian", mMaster.SetPositionCartesian);
         masterRequired->AddFunction("SetPositionGoalCartesian", mMaster.SetPositionGoalCartesian);
         masterRequired->AddFunction("GetGripperPosition", mMaster.GetGripperPosition);
@@ -238,23 +240,11 @@ void mtsTeleOperationPSM::SlaveErrorEventHandler(const std::string & message)
 
 void mtsTeleOperationPSM::ClutchEventHandler(const prmEventButton & button)
 {
-    mtsExecutionResult executionResult;
-    executionResult = mMaster.GetPositionCartesian(mMaster.PositionCartesianCurrent);
-    if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "EventHandlerClutched: call to Master.GetPositionCartesian failed \""
-                                << executionResult << "\"" << std::endl;
-    }
-    executionResult = mSlave.GetPositionCartesian(mSlave.PositionCartesianCurrent);
-    if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "EventHandlerClutched: call to Slave.GetPositionCartesian failed \""
-                                << executionResult << "\"" << std::endl;
-    }
-
     if (button.Type() == prmEventButton::PRESSED) {
         mIsClutched = true;
-        mMaster.PositionCartesianDesired.Goal().Rotation().FromNormalized(
+        mMaster.PositionCartesianSet.Goal().Rotation().FromNormalized(
                     mSlave.PositionCartesianCurrent.Position().Rotation());
-        mMaster.PositionCartesianDesired.Goal().Translation().Assign(
+        mMaster.PositionCartesianSet.Goal().Translation().Assign(
                     mMaster.PositionCartesianCurrent.Position().Translation());
         MessageEvents.Status(this->GetName() + ": master clutch pressed");
 
@@ -313,7 +303,7 @@ void mtsTeleOperationPSM::LockRotation(const bool & lock)
         mTeleopState.SetCurrentState(mtsTeleOperationPSMTypes::DISABLED);
     } else {
         // update MTM/PSM previous position
-        mMaster.CartesianPrevious.From(mMaster.PositionCartesianCurrent.Position());
+        mMaster.CartesianPrevious.From(mMaster.PositionCartesianDesired.Position());
         mSlave.CartesianPrevious.From(mSlave.PositionCartesianCurrent.Position());
         // lock orientation is the arm is running
         if (mTeleopState.CurrentState() == mtsTeleOperationPSMTypes::ENABLED) {
@@ -329,7 +319,7 @@ void mtsTeleOperationPSM::LockTranslation(const bool & lock)
     mConfigurationStateTable->Advance();
     ConfigurationEvents.TranslationLocked(mTranslationLocked);
     // update MTM/PSM previous position
-    mMaster.CartesianPrevious.From(mMaster.PositionCartesianCurrent.Position());
+    mMaster.CartesianPrevious.From(mMaster.PositionCartesianDesired.Position());
     mSlave.CartesianPrevious.From(mSlave.PositionCartesianCurrent.Position());
 }
 
@@ -351,6 +341,11 @@ void mtsTeleOperationPSM::RunAll(void)
                                 << executionResult << "\"" << std::endl;
         MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master");
         mTeleopState.SetDesiredState(mtsTeleOperationPSMTypes::DISABLED);
+    }
+    executionResult = mMaster.GetPositionCartesianDesired(mMaster.PositionCartesianDesired);
+    if (!executionResult.IsOK()) {
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to Master.GetPositionCartesianDesired failed \""
+                                << executionResult << "\"" << std::endl;
     }
 
     // get slave Cartesian position
@@ -444,14 +439,14 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
     mMaster.SetRobotControlState(mtsStdString("DVRK_POSITION_GOAL_CARTESIAN"));
 
     // Orientate Master with Slave
-    vctFrm4x4 masterCartesianDesired;
-    masterCartesianDesired.Translation().Assign(mMaster.PositionCartesianCurrent.Position().Translation());
+    vctFrm4x4 masterCartesianGoal;
+    masterCartesianGoal.Translation().Assign(mMaster.PositionCartesianDesired.Position().Translation());
     vctMatRot3 masterRotation;
     masterRotation = mRegistrationRotation.Inverse() * mSlave.PositionCartesianCurrent.Position().Rotation();
-    masterCartesianDesired.Rotation().FromNormalized(masterRotation);
+    masterCartesianGoal.Rotation().FromNormalized(masterRotation);
     // convert to prm type
-    mMaster.PositionCartesianDesired.Goal().From(masterCartesianDesired);
-    mMaster.SetPositionGoalCartesian(mMaster.PositionCartesianDesired);
+    mMaster.PositionCartesianSet.Goal().From(masterCartesianGoal);
+    mMaster.SetPositionGoalCartesian(mMaster.PositionCartesianSet);
 }
 
 void mtsTeleOperationPSM::TransitionAligningMTM(void)
@@ -531,13 +526,13 @@ void mtsTeleOperationPSM::RunEnabled(void)
             }
 
             // compute desired slave position
-            vctFrm4x4 slaveCartesianDesired;
-            slaveCartesianDesired.Translation().Assign(slaveTranslation);
-            slaveCartesianDesired.Rotation().FromNormalized(slaveRotation);
-            mSlave.PositionCartesianDesired.Goal().FromNormalized(slaveCartesianDesired);
+            vctFrm4x4 slaveCartesianGoal;
+            slaveCartesianGoal.Translation().Assign(slaveTranslation);
+            slaveCartesianGoal.Rotation().FromNormalized(slaveRotation);
+            mSlave.PositionCartesianSet.Goal().FromNormalized(slaveCartesianGoal);
 
             // Slave go this cartesian position
-            mSlave.SetPositionCartesian(mSlave.PositionCartesianDesired);
+            mSlave.SetPositionCartesian(mSlave.PositionCartesianSet);
 
             // Gripper
             if (mMaster.GetGripperPosition.IsValid()) {
