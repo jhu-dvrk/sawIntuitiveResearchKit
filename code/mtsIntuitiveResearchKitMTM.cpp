@@ -627,18 +627,12 @@ vct3 SO3toRPY(const vctMatrixRotation3<double> & R)
 
 void mtsIntuitiveResearchKitMTM::RunEffortOrientationLocked(void)
 {
-    // get current joint values
-    vctDoubleVec jointSet(JointGet.Ref(NumberOfJointsKinematics()));
-    // override with 3 with position when orientation was locked to
-    // help optimizer stay in place
-    jointSet[3] = EffortOrientationJoint[3];
+    // don't get current joint values!
+    // always initialize IK from position when locked
+    vctDoubleVec jointSet(EffortOrientationJoint.Ref(NumberOfJointsKinematics()));
     // compute desired position from current position and locked orientation
     CartesianPositionFrm.Translation().Assign(CartesianGetLocal.Translation());
     CartesianPositionFrm.Rotation().From(EffortOrientation);
-#if 0
-    if (this->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
-#endif
-
     if (Manipulator.InverseKinematicsLSNorm(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = JointGet[6] - jointSet[6];
