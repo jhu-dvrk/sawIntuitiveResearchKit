@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -34,7 +34,8 @@ http://www.cisst.org/cisst/license.txt.
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJQtWidget, mtsComponent, std::string);
 
 mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std::string & componentName, double periodInSeconds):
-    mtsIntuitiveResearchKitArmQtWidget(componentName, periodInSeconds)
+    mtsIntuitiveResearchKitArmQtWidget(componentName, periodInSeconds),
+    mShowMore(false)
 {
     CMN_ASSERT(InterfaceRequired);
     InterfaceRequired->AddFunction("GetPositionJoint", GetPositionJoint);
@@ -73,55 +74,67 @@ void mtsIntuitiveResearchKitSUJQtWidget::Startup(void)
 {
     mtsIntuitiveResearchKitArmQtWidget::Startup();
     if (!SetLiftVelocity.IsValid()) {
-        QPBLiftDown->setEnabled(false);
-        QPBLiftUp->setEnabled(false);
+        QPBLiftDown->hide();
+        QPBLiftUp->hide();
     }
 }
 
 void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
 {
-    QGridLayout * jointLayout = new QGridLayout;
-    MainLayout->addLayout(jointLayout);
+    QGridLayout * sujLayout = new QGridLayout;
+    MainLayout->addLayout(sujLayout);
 
     QLabel * labelJoints = new QLabel("Joints");
+    sujLayout->addWidget(labelJoints, 0, 0);
     QVJointWidget = new vctQtWidgetDynamicVectorDoubleRead();
     QVJointWidget->SetPrecision(5);
+    sujLayout->addWidget(QVJointWidget, 0, 1, 1, -1);
 
     QPushButton * clutchButton = new QPushButton("Clutch");
-    QPBLiftDown = new QPushButton("Lift Down");
-    QPBLiftUp = new QPushButton("Lift Up");
-    QHBoxLayout * clutchAndLift = new QHBoxLayout();
-    clutchAndLift->addWidget(clutchButton);
-    clutchAndLift->addWidget(QPBLiftDown);
-    clutchAndLift->addWidget(QPBLiftUp);
+    sujLayout->addWidget(clutchButton, 1, 0);
+    QPBLiftDown = new QPushButton("Lift down");
+    sujLayout->addWidget(QPBLiftDown, 1, 1);
+    QPBLiftUp = new QPushButton("Lift up");
+    sujLayout->addWidget(QPBLiftUp, 1, 2);
+    QPBShowMore = new QPushButton("Show more");
+    QPBShowMore->setCheckable(true);
+    sujLayout->addWidget(QPBShowMore, 1, 3);
 
-    QPushButton * ManualRecalibrationButton = new QPushButton("Manual Recalibration");
+    // show more
+    QWMore = new QWidget();
+    sujLayout->addWidget(QWMore, 2, 0, 1, -1);
+    QGridLayout * moreLayout = new QGridLayout();
+    QWMore->setLayout(moreLayout);
 
+    // brake current
     QLabel * labelBrakeCurrent = new QLabel("Brake (mA)");
+    moreLayout->addWidget(labelBrakeCurrent, 0, 0);
     QVBrakeCurrentWidget = new vctQtWidgetDynamicVectorDoubleRead();
     QVBrakeCurrentWidget->SetPrecision(5);
+    moreLayout->addWidget(QVBrakeCurrentWidget, 0, 1, 1, 1);
 
-    QLabel * labelRecalibrationInputStart = new QLabel("Joint Start");
-    QLabel * labelRecalibrationInputFinish = new QLabel("Joint Finish");
-    QVPotentiometerRecalibrationStartWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::TEXT_WIDGET);
-    QVPotentiometerRecalibrationFinishWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::TEXT_WIDGET);
-
+    // extra voltages
     QLabel * labelExtraVoltages = new QLabel("Extra Voltages");
+    moreLayout->addWidget(labelExtraVoltages, 1, 0);
     QVExtraVoltageWidget = new vctQtWidgetDynamicVectorDoubleRead();
     QVExtraVoltageWidget->SetPrecision(5);
+    moreLayout->addWidget(QVExtraVoltageWidget, 1, 1, 1, 5);
 
-    jointLayout->addWidget(labelJoints, 1, 0);
-    jointLayout->addWidget(QVJointWidget, 1, 1);
-    jointLayout->addWidget(labelBrakeCurrent, 2, 0);
-    jointLayout->addWidget(QVBrakeCurrentWidget, 2, 1);
-    jointLayout->addLayout(clutchAndLift, 3, 1);
-    jointLayout->addWidget(labelRecalibrationInputStart, 4, 0);
-    jointLayout->addWidget(QVPotentiometerRecalibrationStartWidget, 4, 1);
-    jointLayout->addWidget(labelRecalibrationInputFinish, 5, 0);
-    jointLayout->addWidget(QVPotentiometerRecalibrationFinishWidget, 5, 1);
-    jointLayout->addWidget(ManualRecalibrationButton, 6, 1);
-    jointLayout->addWidget(labelExtraVoltages, 7, 0);
-    jointLayout->addWidget(QVExtraVoltageWidget, 7, 1);
+    // calibration stuff
+    QLabel * labelRecalibrationInputStart = new QLabel("Joint Start");
+    moreLayout->addWidget(labelRecalibrationInputStart, 2, 0);
+    QVPotentiometerRecalibrationStartWidget
+        = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::TEXT_WIDGET);
+    moreLayout->addWidget(QVPotentiometerRecalibrationStartWidget, 2, 1, 1, -1);
+    QLabel * labelRecalibrationInputFinish = new QLabel("Joint Finish");
+    moreLayout->addWidget(labelRecalibrationInputFinish, 3, 0);
+    QVPotentiometerRecalibrationFinishWidget
+        = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::TEXT_WIDGET);
+    moreLayout->addWidget(QVPotentiometerRecalibrationFinishWidget, 3, 1, 1, -1);
+    QPushButton * ManualRecalibrationButton = new QPushButton("Manual Recalibration");
+    moreLayout->addWidget(ManualRecalibrationButton, 4, 2, 1, 1);
+    
+    QWMore->hide();
 
     connect(clutchButton, SIGNAL(pressed()),
             this, SLOT(SlotClutchPressed()));
@@ -137,6 +150,9 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
     connect(QPBLiftUp, SIGNAL(released()),
             this, SLOT(SlotVelocityReleased()));
 
+    connect(QPBShowMore, SIGNAL(clicked()),
+            this, SLOT(SlotShowMore()));
+
     connect(QVPotentiometerRecalibrationStartWidget, SIGNAL(valueChanged()),
             this, SLOT(SlotRecalibrationStartChanged()));
     connect(QVPotentiometerRecalibrationFinishWidget, SIGNAL(valueChanged()),
@@ -150,24 +166,38 @@ void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)
     // get data
     GetPositionJoint(PositionJointParam);
     vctDoubleVec position(PositionJointParam.Position());
-    GetBrakeCurrent(BrakeCurrent);
-    GetPrimaryVoltages(mVoltages[0]);
-    GetSecondaryVoltages(mVoltages[1]);
-    GetExtraVoltages(mVoltagesExtra);
-
     // first axis is a translation, convert to mm
     position.Element(0) *= 1000.0;
     // all others are angles, convert to degrees
     for (size_t index = 1; index < position.size(); ++index) {
         position.Element(index) *= (180.0 / cmnPI);
     }
-
-    // display
-    QVPotentiometerRecalibrationStartWidget->SetValue(JointPositionStart);
-    QVPotentiometerRecalibrationFinishWidget->SetValue(JointPositionFinish);
     QVJointWidget->SetValue(position);
-    QVBrakeCurrentWidget->SetValue(vctDoubleVec(1, BrakeCurrent * 1000.0));
-    QVExtraVoltageWidget->SetValue(mVoltagesExtra);
+
+    // display more if needed
+    if (mShowMore) {
+        // brake voltage
+        GetBrakeCurrent(BrakeCurrent);
+        QVBrakeCurrentWidget->SetValue(vctDoubleVec(1, BrakeCurrent * 1000.0));
+        // extra voltages
+        GetExtraVoltages(mVoltagesExtra);
+        QVExtraVoltageWidget->SetValue(mVoltagesExtra);
+        // calibration data
+        QVPotentiometerRecalibrationStartWidget->SetValue(JointPositionStart);
+        QVPotentiometerRecalibrationFinishWidget->SetValue(JointPositionFinish);
+        GetPrimaryVoltages(mVoltages[0]);
+        GetSecondaryVoltages(mVoltages[1]);
+    }
+}
+
+void mtsIntuitiveResearchKitSUJQtWidget::SlotShowMore(void)
+{
+    mShowMore = QPBShowMore->isChecked();
+    if (mShowMore) {
+        QWMore->show();
+    } else {
+        QWMore->hide();
+    }
 }
 
 void mtsIntuitiveResearchKitSUJQtWidget::SlotClutchPressed(void)

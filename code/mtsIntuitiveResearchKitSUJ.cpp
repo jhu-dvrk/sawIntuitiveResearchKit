@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -738,6 +738,10 @@ void mtsIntuitiveResearchKitSUJ::SetState(const mtsIntuitiveResearchKitArmTypes:
         SetLiftVelocity(0.0);
         mRobotState = newState;
         DispatchStatus(this->GetName() + " not initialized");
+        break;
+
+    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER:
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:

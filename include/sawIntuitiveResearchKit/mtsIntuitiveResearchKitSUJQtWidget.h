@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -44,6 +44,10 @@ protected:
     vctQtWidgetDynamicVectorDoubleWrite * QVPotentiometerRecalibrationStartWidget;
     vctQtWidgetDynamicVectorDoubleWrite * QVPotentiometerRecalibrationFinishWidget;
 
+    bool mShowMore;
+    QPushButton * QPBShowMore;
+    QWidget * QWMore;
+
     QPushButton * QPBLiftDown;
     QPushButton * QPBLiftUp;
 
@@ -71,6 +75,8 @@ protected:
     mtsFunctionWrite SetRecalibratioMatrix;
 
 protected slots:
+    void SlotShowMore(void);
+
     void SlotManualRecalibration(void);
     void SlotClutchPressed(void);
     void SlotClutchReleased(void);

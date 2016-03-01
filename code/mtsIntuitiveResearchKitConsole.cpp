@@ -1178,7 +1178,9 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     arm->ArmInterfaceRequired = AddInterfaceRequired(interfaceNameArm);
     if (arm->ArmInterfaceRequired) {
         arm->ArmInterfaceRequired->AddFunction("SetRobotControlState", arm->SetRobotControlState);
-        arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze);
+        if (arm->mType != Arm::ARM_SUJ) {
+            arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze);
+        }
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
                                                         this, "Error");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
@@ -1322,8 +1324,9 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
             teleOp->second->SetDesiredState(mtsStdString("DISABLED"));
         }
     }
-    if (!mTeleopEnabled
-        || (mTeleopECMRunning && !teleopECM)) {
+    if (mTeleopECM
+        && (!mTeleopEnabled
+            || (mTeleopECMRunning && !teleopECM))) {
         mTeleopECM->SetDesiredState(mtsStdString("DISABLED"));
     }
 
@@ -1352,7 +1355,8 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
                  teleOp->second->SetDesiredState(mtsStdString("ENABLED"));
         }
     }
-    if (!mTeleopECMRunning && teleopECM) {
+    if (mTeleopECM &&
+        (!mTeleopECMRunning && teleopECM)) {
         mTeleopECM->SetDesiredState(mtsStdString("ENABLED"));
     }
 
