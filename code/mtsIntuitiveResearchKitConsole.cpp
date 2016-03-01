@@ -1033,7 +1033,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
     }
 
     // read period if present
-    double period = 2.0 * cmn_ms;
+    double period = 1.0 * cmn_ms;
     jsonValue = jsonTeleop["period"];
     if (!jsonValue.empty()) {
         period = jsonValue.asFloat();
@@ -1125,7 +1125,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
     }
 
     // read period if present
-    double period = 2.0 * cmn_ms;
+    double period = 1.0 * cmn_ms;
     jsonValue = jsonTeleop["period"];
     if (!jsonValue.empty()) {
         period = jsonValue.asFloat();

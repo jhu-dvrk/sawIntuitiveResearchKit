@@ -46,6 +46,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     HomedOnce = false;
 
     mWrenchBodyOrientationAbsolute = false;
+    mGravityCompensation = false;
 
     IsGoalSet = false;
     EffortOrientationLocked = false;
@@ -175,6 +176,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                         this, "SetWrenchBodyOrientationAbsolute");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetWrenchSpatial,
                                         this, "SetWrenchSpatial");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetGravityCompensation,
+                                        this, "SetGravityCompensation");
 
         // Trajectory events
         RobotInterface->AddEventWrite(JointTrajectory.GoalReachedEvent, "GoalReached", bool());
@@ -600,9 +603,16 @@ void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
     } else if (mWrenchType == WRENCH_SPATIAL) {
         JointExternalEffort.ProductOf(JacobianSpatial.Transpose(), force);
     }
+
+    // add gravity compensation if needed
+    if (mGravityCompensation) {
+        AddGravityCompensationEfforts(JointExternalEffort);
+    }
+
     // pad array for PID
     vctDoubleVec torqueDesired(NumberOfAxes(), 0.0); // for PID
     torqueDesired.Assign(JointExternalEffort, NumberOfJointsKinematics());
+
     // convert to cisstParameterTypes
     TorqueSetParam.SetForceTorque(torqueDesired);
     PID.SetTorqueJoint(TorqueSetParam);
@@ -785,4 +795,17 @@ void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & w
 void mtsIntuitiveResearchKitArm::SetWrenchBodyOrientationAbsolute(const bool & absolute)
 {
     mWrenchBodyOrientationAbsolute = absolute;
+}
+
+void mtsIntuitiveResearchKitArm::SetGravityCompensation(const bool & gravityCompensation)
+{
+    mGravityCompensation = gravityCompensation;
+}
+
+void mtsIntuitiveResearchKitArm::AddGravityCompensationEfforts(vctDoubleVec & efforts)
+{
+    vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
+    vctDoubleVec gravityEfforts;
+    gravityEfforts.ForceAssign(Manipulator.CCG(JointGet, qd));  // should this take joint velocities?
+    efforts.Add(gravityEfforts);
 }

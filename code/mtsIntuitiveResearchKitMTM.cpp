@@ -608,23 +608,6 @@ void mtsIntuitiveResearchKitMTM::RunGravityCompensation(void)
     }
 }
 
-vct3 SO3toRPY(const vctMatrixRotation3<double> & R)
-{
-    vct3 rpy;
-    if (fabs(R[2][2]) < 1e-12 && fabs(R[1][2]) < 1e-12) {
-        rpy[0] = 0;
-        rpy[1] = atan2(R[0][2], R[2][2]);
-        rpy[2] = atan2(R[1][0], R[1][1]);
-    } else {
-        rpy[0] = atan2(-R[1][2], R[2][2]);
-        double sr = sin(rpy[0]);
-        double cr = cos(rpy[0]);
-        rpy[1] = atan2( R[0][2], cr*R[2][2] - sr*R[1][2]);
-        rpy[2] = atan2(-R[0][1], R[0][0]);
-    }
-    return rpy;
-}
-
 void mtsIntuitiveResearchKitMTM::RunEffortOrientationLocked(void)
 {
     // don't get current joint values!

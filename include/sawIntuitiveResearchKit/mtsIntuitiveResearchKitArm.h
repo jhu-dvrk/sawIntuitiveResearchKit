@@ -113,6 +113,7 @@ protected:
     virtual void SetWrenchBody(const prmForceCartesianSet & newForce);
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
     virtual void SetWrenchBodyOrientationAbsolute(const bool & absolute);
+    virtual void SetGravityCompensation(const bool & gravityCompensation);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
     virtual void SetBaseFrame(const prmPositionCartesianGet & newBaseFrame);
@@ -228,6 +229,9 @@ protected:
     bool EffortOrientationLocked;
     vctDoubleVec EffortOrientationJoint;
     vctMatRot3 EffortOrientation;
+    // gravity compensation
+    bool mGravityCompensation;
+    void AddGravityCompensationEfforts(vctDoubleVec & efforts);
 
     //! robot current joint velocity
     prmVelocityJointGet JointVelocityGetParam;

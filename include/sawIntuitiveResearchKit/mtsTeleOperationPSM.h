@@ -115,6 +115,7 @@ protected:
         mtsFunctionWrite LockOrientation;
         mtsFunctionVoid  UnlockOrientation;
         mtsFunctionWrite SetWrenchBody;
+        mtsFunctionWrite SetGravityCompensation;
 
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianGet PositionCartesianDesired;
