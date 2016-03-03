@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst
 #include <cisstNumerical/nmrLSMinNorm.h>
+#include <cisstNumerical/nmrIsOrthonormal.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
@@ -63,10 +64,13 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
             CMN_LOG_CLASS_INIT_WARNING << "Configure " << this->GetName()
                                        << ": can find \"base-offset\" data in \"" << filename << "\"" << std::endl;
         } else {
-            cmnDataJSON<vctFrm4x4>::DeSerializeText(BaseTransformation, jsonBase);
-            std::cerr << CMN_LOG_DETAILS << " do something here" << std::endl;
-            // ToolOffset = new robManipulator(ToolOffsetTransformation);
-            // Manipulator.Attach(ToolOffset);
+            // save the transform as Manipulator Rtw0
+            cmnDataJSON<vctFrm4x4>::DeSerializeText(Manipulator.Rtw0, jsonBase);
+            if (!nmrIsOrthonormal(Manipulator.Rtw0.Rotation())) {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                         << ": the base offset rotation doesn't seem to be orthonormal"
+                                         << std::endl;
+            }
         }
 
         // load DH parameters
@@ -92,7 +96,7 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
                                                                     const vctFrm4x4 & cartesianGoal)
 {
     // pre-feed inverse kinematics with preferred values for joint 6
-    jointSet[3] = 0.0;
+    jointSet[5] = 0.0;
     if (Manipulator.InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = JointGet[6] - jointSet[6];

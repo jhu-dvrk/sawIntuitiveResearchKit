@@ -122,9 +122,6 @@ protected:
         mtsFunctionWrite GripperClosed;
     } GripperEvents;
 
-    robManipulator * ActivePart;
-    vctFrm4x4 BaseTransformation;
-
     //! robot cartesian position when cluthed
     vctFrm4x4 CartesianClutched;
 
