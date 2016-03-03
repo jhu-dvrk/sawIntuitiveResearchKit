@@ -105,11 +105,14 @@ public:
         mtsInterfaceRequired * SUJInterfaceRequiredFromIO;
         mtsInterfaceRequired * SUJInterfaceRequiredToSUJ;
         mtsFunctionWrite SUJClutch;
+        bool mSUJClutched;
 
         void SUJClutchEventHandlerFromIO(const prmEventButton & button) {
             if (button.Type() == prmEventButton::PRESSED) {
+                mSUJClutched = true;
                 SUJClutch(true);
             } else {
+                mSUJClutched = false;
                 SUJClutch(false);
             }
         }
