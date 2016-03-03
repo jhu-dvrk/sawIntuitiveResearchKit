@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <iostream>
 
 // cisst
+#include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 
@@ -82,6 +83,10 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
                                       QMessageBox::No | QMessageBox::Yes);
     if (answer == QMessageBox::Yes) {
         event->accept();
+        this->hide(); 
+        // send clean power off message and wait a bit
+        Console.PowerOff();
+        osaSleep(2.0 * cmn_s);
         QCoreApplication::exit();
     } else {
         event->ignore();
