@@ -88,7 +88,7 @@ protected:
     void TransitionEnabled(void); // performs actual teleoperation
 
 
-    class RobotMaster {
+    class RobotMTM {
     public:
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionRead  GetPositionCartesianDesired;
@@ -108,9 +108,9 @@ protected:
         prmVelocityCartesianGet VelocityCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
     };
-    RobotMaster mMasterLeft, mMasterRight;
+    RobotMTM mMTML, mMTMR;
 
-    class RobotSlave {
+    class RobotECM {
     public:
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionWrite SetPositionCartesian;
@@ -121,7 +121,7 @@ protected:
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
     };
-    RobotSlave mSlave;
+    RobotECM mECM;
 
  private:
     double mScale;
@@ -135,6 +135,8 @@ protected:
 
     double mDistanceLR; // distance between left and right
     double mDistanceL, mDistanceR; // distances to RCM
+    vct3 mInitialMTMsPosition;
+    double mInitialMTMsAngle;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationECM);

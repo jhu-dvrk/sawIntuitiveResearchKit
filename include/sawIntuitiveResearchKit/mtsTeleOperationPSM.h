@@ -91,7 +91,7 @@ protected:
     void RunEnabled(void); // performs actual teleoperation
     void TransitionEnabled(void); // performs actual teleoperation
 
-    class RobotMaster {
+    class RobotMTM {
     public:
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionRead  GetPositionCartesianDesired;
@@ -111,9 +111,9 @@ protected:
         prmPositionCartesianSet PositionCartesianSet;
         vctFrm4x4 CartesianPrevious;
     };
-    RobotMaster mMaster;
+    RobotMTM mMTM;
 
-    class RobotSlave {
+    class RobotPSM {
     public:
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionWrite SetPositionCartesian;
@@ -126,7 +126,7 @@ protected:
         prmPositionCartesianSet PositionCartesianSet;
         vctFrm4x4 CartesianPrevious;
     };
-    RobotSlave mSlave;
+    RobotPSM mPSM;
 
 private:
     double mScale;
