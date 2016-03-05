@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsTeleOperationECM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationECM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -88,6 +89,7 @@ void mtsTeleOperationECM::Init(void)
                                        this);
 
     mScale = 0.2;
+    mIsClutched = false;
 
     StateTable.AddData(mMasterLeft.PositionCartesianCurrent, "MasterLeftCartesianPosition");
     StateTable.AddData(mMasterRight.PositionCartesianCurrent, "MasterRightCartesianPosition");
@@ -102,6 +104,8 @@ void mtsTeleOperationECM::Init(void)
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MasterLeft");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", mMasterLeft.GetPositionCartesian);
+        interfaceRequired->AddFunction("GetPositionCartesianDesired", mMasterLeft.GetPositionCartesianDesired);
+        interfaceRequired->AddFunction("GetVelocityCartesian", mMasterLeft.GetVelocityCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", mMasterLeft.SetPositionCartesian);
         interfaceRequired->AddFunction("GetRobotControlState", mMasterLeft.GetRobotControlState);
         interfaceRequired->AddFunction("SetRobotControlState", mMasterLeft.SetRobotControlState);
@@ -116,6 +120,8 @@ void mtsTeleOperationECM::Init(void)
     interfaceRequired = AddInterfaceRequired("MasterRight");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", mMasterRight.GetPositionCartesian);
+        interfaceRequired->AddFunction("GetPositionCartesianDesired", mMasterRight.GetPositionCartesianDesired);
+        interfaceRequired->AddFunction("GetVelocityCartesian", mMasterRight.GetVelocityCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", mMasterRight.SetPositionCartesian);
         interfaceRequired->AddFunction("GetRobotControlState", mMasterRight.GetRobotControlState);
         interfaceRequired->AddFunction("SetRobotControlState", mMasterRight.SetRobotControlState);
@@ -136,6 +142,12 @@ void mtsTeleOperationECM::Init(void)
         interfaceRequired->AddFunction("SetRobotControlState", mSlave.SetRobotControlState);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::SlaveErrorEventHandler,
                                                 this, "Error");
+    }
+
+    // footpedal events
+    interfaceRequired = AddInterfaceRequired("Clutch");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::ClutchEventHandler, this, "Button");
     }
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Setting");
@@ -216,7 +228,7 @@ void mtsTeleOperationECM::RunAll(void)
 {
     mtsExecutionResult executionResult;
 
-    // get master left Cartesian position
+    // get master left Cartesian position/velocity
     executionResult = mMasterLeft.GetPositionCartesian(mMasterLeft.PositionCartesianCurrent);
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MasterLeft.GetPositionCartesian failed \""
@@ -224,8 +236,13 @@ void mtsTeleOperationECM::RunAll(void)
         MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master left");
         mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
     }
-    // shift position to take into account distance between MTMs
-    mMasterLeft.PositionCartesianCurrent.Position().Translation()[0] -= 0.2 * cmn_m;
+    executionResult = mMasterLeft.GetVelocityCartesian(mMasterLeft.VelocityCartesianCurrent);
+    if (!executionResult.IsOK()) {
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MasterLeft.GetVelocityCartesian failed \""
+                                << executionResult << "\"" << std::endl;
+        MessageEvents.Error(this->GetName() + ": unable to get cartesian velocity from master left");
+        mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
+    }
 
     // get master right Cartesian position
     executionResult = mMasterRight.GetPositionCartesian(mMasterRight.PositionCartesianCurrent);
@@ -235,8 +252,13 @@ void mtsTeleOperationECM::RunAll(void)
         MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master right");
         mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
     }
-    // shift position to take into account distance between MTMs
-    mMasterRight.PositionCartesianCurrent.Position().Translation()[0] += 0.2 * cmn_m;
+    executionResult = mMasterRight.GetVelocityCartesian(mMasterRight.VelocityCartesianCurrent);
+    if (!executionResult.IsOK()) {
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MasterRight.GetVelocityCartesian failed \""
+                                << executionResult << "\"" << std::endl;
+        MessageEvents.Error(this->GetName() + ": unable to get cartesian velocity from master right");
+        mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
+    }
 
     // get slave Cartesian position
     executionResult = mSlave.GetPositionCartesian(mSlave.PositionCartesianCurrent);
@@ -345,33 +367,59 @@ void mtsTeleOperationECM::EnterEnabled(void)
     mMasterRight.LockOrientation(mMasterRight.PositionCartesianCurrent.Position().Rotation());
 
     // store inital state
-    vct3 masterOffset;
-    masterOffset.DifferenceOf(mMasterRight.PositionCartesianCurrent.Position().Translation(),
-                              mMasterLeft.PositionCartesianCurrent.Position().Translation());
-    mMasterDistance = masterOffset.Norm();
+    // compute initial distance between left and right masters
+    vct3 vectorLR;
+    vectorLR.DifferenceOf(mMasterRight.PositionCartesianCurrent.Position().Translation(),
+                          mMasterLeft.PositionCartesianCurrent.Position().Translation());
+    mDistanceLR = vectorLR.Norm();
+    // compute distance to RCM for left and right
+    mDistanceL = mMasterLeft.PositionCartesianCurrent.Position().Translation().Norm();
+    mDistanceR = mMasterRight.PositionCartesianCurrent.Position().Translation().Norm();
 }
 
 void mtsTeleOperationECM::RunEnabled(void)
 {
+    const double frictionForceCoeff = 20.0;
+    const double distanceForceCoeff = 100.0;
+
+    // compute new distances to RCM
+    const double distanceL = mMasterLeft.PositionCartesianCurrent.Position().Translation().Norm();
+    const double distanceR = mMasterRight.PositionCartesianCurrent.Position().Translation().Norm();
+    const double distanceRatio = (distanceR + distanceL) / (mDistanceR + mDistanceL);
+
     // compute force to maintain constant distance between masters
-    vct3 masterOffset;
-    masterOffset.DifferenceOf(mMasterRight.PositionCartesianCurrent.Position().Translation(),
-                              mMasterLeft.PositionCartesianCurrent.Position().Translation());
+    vct3 vectorLR;
+    vectorLR.DifferenceOf(mMasterRight.PositionCartesianCurrent.Position().Translation(),
+                          mMasterLeft.PositionCartesianCurrent.Position().Translation());
     // get distance and normalize the vector
-    double newDistance = masterOffset.Norm();
-    masterOffset.Divide(newDistance);
+    double distanceLR = vectorLR.Norm();
+    vectorLR.Divide(distanceLR);
 
-    // compute force to apply on each master to maintain distance
-    double error = mMasterDistance - newDistance;
-    vct3 force(masterOffset);
-    force.Multiply(error * 100.0); // this gain should come from JSON file
+    // compute forceDistance to apply on each master to maintain distance
+    double error = (mDistanceLR * distanceRatio) - distanceLR;
+    vct3 forceDistanceLR(vectorLR);
+    forceDistanceLR.Multiply(error * distanceForceCoeff); // this gain should come from JSON file
 
-    // apply forces
+    vct3 forceFriction;
     prmForceCartesianSet wrench;
-    wrench.Force().Ref<3>(0).Assign(force);
+
+    // apply force
+    wrench.Force().Ref<3>(0).Assign(forceDistanceLR);
+    // add friction force
+    forceFriction.ProductOf(-frictionForceCoeff,
+                            mMasterRight.VelocityCartesianCurrent.VelocityLinear());
+    wrench.Force().Ref<3>(0).Add(forceFriction);
+    // apply
     mMasterRight.SetWrenchBody(wrench);
+
     // flip force
-    wrench.Force().Multiply(-1.0);
+    forceDistanceLR.Multiply(-1.0);
+    wrench.Force().Ref<3>(0).Assign(forceDistanceLR);
+    // add friction force
+    forceFriction.ProductOf(-frictionForceCoeff,
+                            mMasterLeft.VelocityCartesianCurrent.VelocityLinear());
+    wrench.Force().Ref<3>(0).Add(forceFriction);
+    // apply
     mMasterLeft.SetWrenchBody(wrench);
 }
 
@@ -398,6 +446,33 @@ void mtsTeleOperationECM::SlaveErrorEventHandler(const std::string & message)
 {
     mTeleopState.SetDesiredState(mtsTeleOperationECMTypes::DISABLED);
     MessageEvents.Error(this->GetName() + ": received from slave [" + message + "]");
+}
+
+void mtsTeleOperationECM::ClutchEventHandler(const prmEventButton & button)
+{
+    if (button.Type() == prmEventButton::PRESSED) {
+        mIsClutched = true;
+        MessageEvents.Status(this->GetName() + ": master clutch pressed");
+
+#if 0
+        mMaster.PositionCartesianSet.Goal().Rotation().FromNormalized(
+                    mSlave.PositionCartesianCurrent.Position().Rotation());
+        mMaster.PositionCartesianSet.Goal().Translation().Assign(
+                    mMaster.PositionCartesianCurrent.Position().Translation());
+
+
+        // set Master/Slave to Teleop (Cartesian Position Mode)
+        mMaster.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+        prmForceCartesianSet wrench;
+        mMaster.SetWrenchBody(wrench);
+        mMaster.SetGravityCompensation(true);
+        mMaster.LockOrientation(mMaster.PositionCartesianCurrent.Position().Rotation());
+#endif
+    } else {
+        mIsClutched = false;
+        MessageEvents.Status(this->GetName() + ": master clutch released");
+        mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::SETTING_MTMS_STATE);
+    }
 }
 
 void mtsTeleOperationECM::SetDesiredState(const std::string & state)

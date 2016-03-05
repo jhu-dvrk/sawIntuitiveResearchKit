@@ -22,11 +22,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationECMTypes.h>
 
+// always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 class CISST_EXPORT mtsTeleOperationECM: public mtsTaskPeriodic
@@ -55,7 +57,7 @@ private:
     void MasterRightErrorEventHandler(const std::string & message);
     void SlaveErrorEventHandler(const std::string & message);
 
-    void SlaveClutchEventHandler(const prmEventButton & button);
+    void ClutchEventHandler(const prmEventButton & button);
 
     // Functions for events
     struct {
@@ -89,6 +91,8 @@ protected:
     class RobotMaster {
     public:
         mtsFunctionRead  GetPositionCartesian;
+        mtsFunctionRead  GetPositionCartesianDesired;
+        mtsFunctionRead  GetVelocityCartesian;
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionRead  GetRobotControlState;
         mtsFunctionWrite SetRobotControlState;
@@ -96,9 +100,12 @@ protected:
         mtsFunctionVoid  UnlockOrientation;
         mtsFunctionWrite SetWrenchBody;
         mtsFunctionWrite SetWrenchBodyOrientationAbsolute;
+        mtsFunctionWrite SetGravityCompensation;
 
         vctFrm3 PositionCartesianInitial;
         prmPositionCartesianGet PositionCartesianCurrent;
+        prmPositionCartesianGet PositionCartesianDesired;
+        prmVelocityCartesianGet VelocityCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
     };
     RobotMaster mMasterLeft, mMasterRight;
@@ -116,15 +123,18 @@ protected:
     };
     RobotSlave mSlave;
 
+ private:
     double mScale;
     vctMatRot3 mRegistrationRotation;
     mtsStateTable * mConfigurationStateTable;
 
+    bool mIsClutched;
+
     mtsStateMachine<mtsTeleOperationECMTypes::StateType> mTeleopState;
     double mInStateTimer;
 
-    double mMasterDistance;
-    vct3 mRCM;
+    double mDistanceLR; // distance between left and right
+    double mDistanceL, mDistanceR; // distances to RCM
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationECM);

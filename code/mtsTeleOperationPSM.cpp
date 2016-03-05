@@ -116,90 +116,90 @@ void mtsTeleOperationPSM::Init(void)
     mConfigurationStateTable->AddData(mTranslationLocked, "TranslationLocked");
 
     // setup cisst interfaces
-    mtsInterfaceRequired * masterRequired = AddInterfaceRequired("Master");
-    if (masterRequired) {
-        masterRequired->AddFunction("GetPositionCartesian", mMaster.GetPositionCartesian);
-        masterRequired->AddFunction("GetPositionCartesianDesired", mMaster.GetPositionCartesianDesired);
-        masterRequired->AddFunction("SetPositionCartesian", mMaster.SetPositionCartesian);
-        masterRequired->AddFunction("SetPositionGoalCartesian", mMaster.SetPositionGoalCartesian);
-        masterRequired->AddFunction("GetGripperPosition", mMaster.GetGripperPosition);
-        masterRequired->AddFunction("LockOrientation", mMaster.LockOrientation);
-        masterRequired->AddFunction("UnlockOrientation", mMaster.UnlockOrientation);
-        masterRequired->AddFunction("SetWrenchBody", mMaster.SetWrenchBody);
-        masterRequired->AddFunction("SetGravityCompensation", mMaster.SetGravityCompensation);
-        masterRequired->AddFunction("GetRobotControlState", mMaster.GetRobotControlState);
-        masterRequired->AddFunction("SetRobotControlState", mMaster.SetRobotControlState);
-        masterRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::MasterErrorEventHandler,
-                                             this, "Error");
+    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Master");
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("GetPositionCartesian", mMaster.GetPositionCartesian);
+        interfaceRequired->AddFunction("GetPositionCartesianDesired", mMaster.GetPositionCartesianDesired);
+        interfaceRequired->AddFunction("SetPositionCartesian", mMaster.SetPositionCartesian);
+        interfaceRequired->AddFunction("SetPositionGoalCartesian", mMaster.SetPositionGoalCartesian);
+        interfaceRequired->AddFunction("GetGripperPosition", mMaster.GetGripperPosition);
+        interfaceRequired->AddFunction("LockOrientation", mMaster.LockOrientation);
+        interfaceRequired->AddFunction("UnlockOrientation", mMaster.UnlockOrientation);
+        interfaceRequired->AddFunction("SetWrenchBody", mMaster.SetWrenchBody);
+        interfaceRequired->AddFunction("SetGravityCompensation", mMaster.SetGravityCompensation);
+        interfaceRequired->AddFunction("GetRobotControlState", mMaster.GetRobotControlState);
+        interfaceRequired->AddFunction("SetRobotControlState", mMaster.SetRobotControlState);
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::MasterErrorEventHandler,
+                                                this, "Error");
     }
 
-    mtsInterfaceRequired * slaveRequired = AddInterfaceRequired("Slave");
-    if (slaveRequired) {
-        slaveRequired->AddFunction("GetPositionCartesian", mSlave.GetPositionCartesian);
-        slaveRequired->AddFunction("SetPositionCartesian", mSlave.SetPositionCartesian);
-        slaveRequired->AddFunction("SetJawPosition", mSlave.SetJawPosition);
-        slaveRequired->AddFunction("GetRobotControlState", mSlave.GetRobotControlState);
-        slaveRequired->AddFunction("SetRobotControlState", mSlave.SetRobotControlState);
-        slaveRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::SlaveErrorEventHandler,
-                                            this, "Error");
+    interfaceRequired = AddInterfaceRequired("Slave");
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("GetPositionCartesian", mSlave.GetPositionCartesian);
+        interfaceRequired->AddFunction("SetPositionCartesian", mSlave.SetPositionCartesian);
+        interfaceRequired->AddFunction("SetJawPosition", mSlave.SetJawPosition);
+        interfaceRequired->AddFunction("GetRobotControlState", mSlave.GetRobotControlState);
+        interfaceRequired->AddFunction("SetRobotControlState", mSlave.SetRobotControlState);
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::SlaveErrorEventHandler,
+                                                this, "Error");
     }
 
     // footpedal events
-    mtsInterfaceRequired * clutchRequired = AddInterfaceRequired("Clutch");
-    if (clutchRequired) {
-        clutchRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::ClutchEventHandler, this, "Button");
+    interfaceRequired = AddInterfaceRequired("Clutch");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::ClutchEventHandler, this, "Button");
     }
 
-    mtsInterfaceProvided * providedSettings = AddInterfaceProvided("Setting");
-    if (providedSettings) {
+    mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Setting");
+    if (interfaceProvided) {
         // commands
-        providedSettings->AddCommandReadState(StateTable, StateTable.PeriodStats,
-                                              "GetPeriodStatistics"); // mtsIntervalStatistics
+        interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
+                                               "GetPeriodStatistics"); // mtsIntervalStatistics
 
-        providedSettings->AddCommandWrite(&mtsTeleOperationPSM::SetDesiredState, this,
-                                          "SetDesiredState", std::string("DISABLED"));
-        providedSettings->AddCommandWrite(&mtsTeleOperationPSM::SetScale, this,
-                                          "SetScale", 0.5);
-        providedSettings->AddCommandWrite(&mtsTeleOperationPSM::SetRegistrationRotation, this,
-                                          "SetRegistrationRotation", vctMatRot3());
-        providedSettings->AddCommandWrite(&mtsTeleOperationPSM::LockRotation, this,
-                                          "LockRotation", false);
-        providedSettings->AddCommandWrite(&mtsTeleOperationPSM::LockTranslation, this,
-                                          "LockTranslation", false);
-        providedSettings->AddCommandReadState(*(mConfigurationStateTable),
-                                              mScale,
-                                              "GetScale");
-        providedSettings->AddCommandReadState(*(mConfigurationStateTable),
-                                              mRegistrationRotation,
-                                              "GetRegistrationRotation");
-        providedSettings->AddCommandReadState(*(mConfigurationStateTable),
-                                              mRotationLocked, "GetRotationLocked");
-        providedSettings->AddCommandReadState(*(mConfigurationStateTable),
-                                              mTranslationLocked, "GetTranslationLocked");
-        providedSettings->AddCommandReadState(this->StateTable,
-                                              mMaster.PositionCartesianCurrent,
-                                              "GetPositionCartesianMaster");
-        providedSettings->AddCommandReadState(this->StateTable,
-                                              mSlave.PositionCartesianCurrent,
-                                              "GetPositionCartesianSlave");
+        interfaceProvided->AddCommandWrite(&mtsTeleOperationPSM::SetDesiredState, this,
+                                           "SetDesiredState", std::string("DISABLED"));
+        interfaceProvided->AddCommandWrite(&mtsTeleOperationPSM::SetScale, this,
+                                           "SetScale", 0.5);
+        interfaceProvided->AddCommandWrite(&mtsTeleOperationPSM::SetRegistrationRotation, this,
+                                           "SetRegistrationRotation", vctMatRot3());
+        interfaceProvided->AddCommandWrite(&mtsTeleOperationPSM::LockRotation, this,
+                                           "LockRotation", false);
+        interfaceProvided->AddCommandWrite(&mtsTeleOperationPSM::LockTranslation, this,
+                                           "LockTranslation", false);
+        interfaceProvided->AddCommandReadState(*(mConfigurationStateTable),
+                                               mScale,
+                                               "GetScale");
+        interfaceProvided->AddCommandReadState(*(mConfigurationStateTable),
+                                               mRegistrationRotation,
+                                               "GetRegistrationRotation");
+        interfaceProvided->AddCommandReadState(*(mConfigurationStateTable),
+                                               mRotationLocked, "GetRotationLocked");
+        interfaceProvided->AddCommandReadState(*(mConfigurationStateTable),
+                                               mTranslationLocked, "GetTranslationLocked");
+        interfaceProvided->AddCommandReadState(this->StateTable,
+                                               mMaster.PositionCartesianCurrent,
+                                               "GetPositionCartesianMaster");
+        interfaceProvided->AddCommandReadState(this->StateTable,
+                                               mSlave.PositionCartesianCurrent,
+                                               "GetPositionCartesianSlave");
         // events
-        providedSettings->AddEventWrite(MessageEvents.Status,
-                                        "Status", std::string(""));
-        providedSettings->AddEventWrite(MessageEvents.Warning,
-                                        "Warning", std::string(""));
-        providedSettings->AddEventWrite(MessageEvents.Error,
-                                        "Error", std::string(""));
-        providedSettings->AddEventWrite(MessageEvents.DesiredState,
-                                        "DesiredState", std::string(""));
-        providedSettings->AddEventWrite(MessageEvents.CurrentState,
-                                        "CurrentState", std::string(""));
+        interfaceProvided->AddEventWrite(MessageEvents.Status,
+                                         "Status", std::string(""));
+        interfaceProvided->AddEventWrite(MessageEvents.Warning,
+                                         "Warning", std::string(""));
+        interfaceProvided->AddEventWrite(MessageEvents.Error,
+                                         "Error", std::string(""));
+        interfaceProvided->AddEventWrite(MessageEvents.DesiredState,
+                                         "DesiredState", std::string(""));
+        interfaceProvided->AddEventWrite(MessageEvents.CurrentState,
+                                         "CurrentState", std::string(""));
         // configuration
-        providedSettings->AddEventWrite(ConfigurationEvents.Scale,
-                                        "Scale", 0.5);
-        providedSettings->AddEventWrite(ConfigurationEvents.RotationLocked,
-                                        "RotationLocked", false);
-        providedSettings->AddEventWrite(ConfigurationEvents.TranslationLocked,
-                                        "TranslationLocked", false);
+        interfaceProvided->AddEventWrite(ConfigurationEvents.Scale,
+                                         "Scale", 0.5);
+        interfaceProvided->AddEventWrite(ConfigurationEvents.RotationLocked,
+                                         "RotationLocked", false);
+        interfaceProvided->AddEventWrite(ConfigurationEvents.TranslationLocked,
+                                         "TranslationLocked", false);
     }
 }
 

@@ -338,6 +338,7 @@ bool mtsIntuitiveResearchKitConsole::TeleopECM::Connect(void)
     componentManager->Connect(mName, "MasterLeft", mMasterLeftName, "Robot");
     componentManager->Connect(mName, "MasterRight", mMasterRightName, "Robot");
     componentManager->Connect(mName, "Slave", mSlaveName, "Robot");
+    componentManager->Connect(mName, "Clutch", mConsoleName, "Clutch");
     componentManager->Connect(mConsoleName, mName, mName, "Setting");
     return true;
 }
@@ -1323,7 +1324,7 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
             std::cerr << "-" << std::flush;
         }
     }
-                
+
     // which one should be running now
     if (mTeleopEnabled && allFine) {
         if (mCameraPressed) {

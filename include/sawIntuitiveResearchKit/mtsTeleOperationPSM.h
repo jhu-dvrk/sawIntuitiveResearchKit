@@ -26,18 +26,10 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSMTypes.h>
+
+// always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
-/**
- * @brief  teleoperation component
- *
- *    position: translation + rotation (vctFrm4x4)
- *    translation: 3D x,y,z (vct3)
- *    rotation: 3x3 rotation (vctMatRot3)
- *
- * \todo
- *
- */
 class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -64,9 +56,6 @@ private:
     // Event Handler
     void MasterErrorEventHandler(const std::string & message);
     void SlaveErrorEventHandler(const std::string & message);
-
-    void SlaveClutchEventHandler(const prmEventButton & button);
-    //    void StartAlignMaster(void);
 
     void ClutchEventHandler(const prmEventButton & button);
 
@@ -142,8 +131,6 @@ protected:
 private:
     double mScale;
     vctMatRot3 mRegistrationRotation;
-    vctFrm3 mOffset;
-    vct3 mMasterLockTranslation;
 
     bool mIsClutched;
     bool mRotationLocked;
