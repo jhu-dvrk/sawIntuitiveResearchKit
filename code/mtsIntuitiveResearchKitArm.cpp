@@ -367,30 +367,28 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             Manipulator.JacobianSpatial(JointGet, JacobianSpatial);
             Manipulator.JacobianBody(JointGet, JacobianBody);
 
-#if 0
-            // FIXME: bug
-            // update cartesian velocity (caveat, velocities are not updated)
+            // update linear velocity based on cartesian positions
             const double dt = CartesianGetParam.Timestamp() - CartesianGetPreviousParam.Timestamp();
+            // test for dt = 0 is because we read from a state table
+            // and we can occasionally get twice the same sample
             if (dt > 0.0) {
                 vct3 linearVelocity;
                 linearVelocity.DifferenceOf(CartesianGetParam.Position().Translation(),
                                             CartesianGetPreviousParam.Position().Translation());
                 linearVelocity.Divide(dt);
                 CartesianVelocityGetParam.SetVelocityLinear(linearVelocity);
-                CartesianVelocityGetParam.SetVelocityAngular(vct3(0.0));
                 CartesianVelocityGetParam.SetTimestamp(CartesianGetParam.Timestamp());
                 CartesianVelocityGetParam.SetValid(true);
-            } else {
-                CartesianVelocityGetParam.SetValid(false);
             }
-#else
-            vct3 linearVelocity;
-            linearVelocity = (CartesianGet.Translation() - CartesianGetPrevious.Translation()).Divide(StateTable.Period);
-            CartesianVelocityGetParam.SetVelocityLinear(linearVelocity);
-            CartesianVelocityGetParam.SetVelocityAngular(vct3(0.0));
-            CartesianVelocityGetParam.SetTimestamp(CartesianGetParam.Timestamp());
-            CartesianVelocityGetParam.SetValid(true);
-#endif
+            CartesianGetPreviousParam = CartesianGetParam;
+            // update angular velocity using the jacobian and angular
+            // velocities.  The last few joints are pretty noisy so
+            // this velocity is noisy as well.  This is why we don't
+            // use all joint velocities to compute the linear velocity
+            vctDoubleVec cartesianVelocity(6);
+            cartesianVelocity.ProductOf(JacobianSpatial,
+                                        JointVelocityGet.Ref(NumberOfJointsKinematics()));
+            CartesianVelocityGetParam.SetVelocityAngular(cartesianVelocity.Ref(3, 3));
 
             // update cartesian position desired based on joint desired
             CartesianGetLocalDesired = Manipulator.ForwardKinematics(JointGetDesired);

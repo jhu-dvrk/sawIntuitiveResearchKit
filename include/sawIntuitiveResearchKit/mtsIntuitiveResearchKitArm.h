@@ -206,7 +206,7 @@ protected:
     vctFrm4x4 CartesianGetLocalDesired;
 
     // with base frame included
-    prmPositionCartesianGet CartesianGetParam;
+    prmPositionCartesianGet CartesianGetParam, CartesianGetPreviousParam;
     vctFrm4x4 CartesianGet;
     prmPositionCartesianGet CartesianGetDesiredParam;
     vctFrm4x4 CartesianGetDesired;
