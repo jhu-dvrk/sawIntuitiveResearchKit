@@ -818,7 +818,7 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
     double currentTic = this->StateTable.GetTic();
     const double timeDelta = currentTic - mPreviousTic;
 
-    const double brakeCurrentRate = 4.0; // rate = 4 A/s, about 1/2 second to get up/down
+    const double brakeCurrentRate = 8.0; // rate = 8 A/s, about 1/4 second to get up/down
 
     mtsIntuitiveResearchKitSUJArmData * arm;
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
