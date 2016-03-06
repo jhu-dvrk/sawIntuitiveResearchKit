@@ -35,6 +35,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsCollectorQtWidget.h>
 
 #include <QApplication>
+#include <QIcon>
 
 void fileExists(const std::string & description, const std::string & filename)
 {
@@ -116,6 +117,7 @@ int main(int argc, char ** argv)
 
     // add all Qt widgets
     QApplication application(argc, argv);
+    application.setWindowIcon(QIcon(":/dVRK.svg"));
 
     mtsIntuitiveResearchKitConsoleQt * consoleQt = new mtsIntuitiveResearchKitConsoleQt();
     consoleQt->Configure(console);

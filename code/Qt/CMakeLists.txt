@@ -32,12 +32,14 @@ if (cisst_FOUND_AS_REQUIRED)
   # for Qt generated header files
   include_directories (${CMAKE_CURRENT_BINARY_DIR})
   if (CISST_HAS_QT4)
-    qt4_wrap_cpp (SAW_INTUITIVE_RESEARCH_KIT_QT_WRAP_CPP
+    qt4_wrap_cpp (sawIntuitiveResearchKit_QT_WRAP_CPP
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArmQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h)
   else (CISST_HAS_QT4)
     set (CMAKE_AUTOMOC ON)
+    qt5_add_resources (sawIntuitiveResearchKit_QT_RESOURCES
+                       ${CMAKE_CURRENT_SOURCE_DIR}/logo.qrc)
   endif (CISST_HAS_QT4)
 
   add_library (sawIntuitiveResearchKitQt
@@ -53,7 +55,9 @@ if (cisst_FOUND_AS_REQUIRED)
                mtsIntuitiveResearchKitArmQtWidget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
                mtsIntuitiveResearchKitSUJQtWidget.cpp
-               ${SAW_INTUITIVE_RESEARCH_KIT_QT_WRAP_CPP})
+               ${sawIntuitiveResearchKit_QT_WRAP_CPP}
+               ${sawIntuitiveResearchKit_QT_RESOURCES}
+               )
   set_property (TARGET sawIntuitiveResearchKitQt PROPERTY FOLDER "sawIntuitiveResearchKit")
   cisst_target_link_libraries (sawIntuitiveResearchKitQt ${REQUIRED_CISST_LIBRARIES})
 

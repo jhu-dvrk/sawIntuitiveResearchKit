@@ -83,7 +83,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
                                       QMessageBox::No | QMessageBox::Yes);
     if (answer == QMessageBox::Yes) {
         event->accept();
-        this->hide(); 
+        this->hide();
         // send clean power off message and wait a bit
         Console.PowerOff();
         osaSleep(2.0 * cmn_s);
@@ -164,7 +164,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     mainLayout->addWidget(tabWidgetAndMessages);
     setLayout(mainLayout);
 
-    setWindowTitle("Intuitive Research Kit");
+    setWindowTitle("dVRK");
     resize(sizeHint());
 
     // buttons
