@@ -36,6 +36,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QTime>
+#include <QLabel>
+#include <QPixmap>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
 
@@ -148,6 +150,10 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     boxLayout->addStretch(100);
     buttonsWidget->setFixedWidth(buttonsWidget->sizeHint().width());
     mainLayout->addWidget(buttonsWidget);
+
+    QLabel * labelLogo = new QLabel("");
+    labelLogo->setPixmap(QPixmap(":/dVRK.svg"));
+    boxLayout->addWidget(labelLogo);
 
     QSplitter * tabWidgetAndMessages = new QSplitter();
     tabWidgetAndMessages->setOrientation(Qt::Vertical);
