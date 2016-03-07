@@ -69,6 +69,11 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
         const double difference = JointGet[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
+        // make sure we are away from RCM point, this test is
+        // simplistic
+        if (jointSet[2] < 40.0 * cmn_mm) {
+            jointSet[2] = 40.0 * cmn_mm;
+        }
 #if 0
         vctFrm4x4 forward = Manipulator.ForwardKinematics(jointSet);
         vctDouble3 diff;
@@ -175,13 +180,21 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             MessageEvents.Error(this->GetName() + " is not calibrated");
             return;
         }
-        RobotState = newState;
-        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
-            IsGoalSet = false;
-            MessageEvents.Status(this->GetName() + " position cartesian");
+        // check that the tool is inserted deep enough
+        if (JointGet.Element(2) < 40.0 * cmn_mm) {
+            MessageEvents.Error(this->GetName() + " can't start cartesian mode, make sure the endoscope is inserted past the cannula (joint 3 > 40 mm)");
         } else {
-            JointTrajectory.EndTime = 0.0;
-            MessageEvents.Status(this->GetName() + " position goal cartesian");
+            if (JointGet.Element(2) < 50.0 * cmn_mm) {
+                MessageEvents.Warning(this->GetName() + " cartesian mode started close to RCM (joint 3 < 50 mm), joint 3 will be clamped at 40 mm to avoid moving inside cannula.");
+            }
+            RobotState = newState;
+            if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
+                IsGoalSet = false;
+                MessageEvents.Status(this->GetName() + " position cartesian");
+            } else {
+                JointTrajectory.EndTime = 0.0;
+                MessageEvents.Status(this->GetName() + " position goal cartesian");
+            }
         }
         break;
 
