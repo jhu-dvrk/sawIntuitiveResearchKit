@@ -601,7 +601,9 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     if (hasSUJ) {
         for (iter = mArms.begin(); iter != end; ++iter) {
             Arm * arm = iter->second;
-            if ((arm->mType == Arm::ARM_ECM) || (arm->mType == Arm::ARM_PSM)) {
+            // only for PSM and ECM when not simulated
+            if (((arm->mType == Arm::ARM_ECM) || (arm->mType == Arm::ARM_PSM))
+                && (arm->mSimulation == Arm::SIMULATION_NONE)) {
                 arm->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJ-" + arm->Name() + "-IO");
                 arm->SUJInterfaceRequiredFromIO->AddEventHandlerWrite(&Arm::SUJClutchEventHandlerFromIO, arm, "Button");
                 arm->SUJInterfaceRequiredToSUJ = this->AddInterfaceRequired("SUJ-" + arm->Name());
