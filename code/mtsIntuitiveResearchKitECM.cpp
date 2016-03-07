@@ -54,7 +54,7 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
     // re-align desired frame to 4 axis direction to reduce free space
     vctDouble3 shaft = cartesianGoal.Translation();
     shaft.NormalizedSelf();
-    const vctDouble3 z = cartesianGoal.Rotation().Row(2).Ref<3>(); // last column of rotation matrix
+    const vctDouble3 z = cartesianGoal.Rotation().Column(2).Ref<3>(); // last column of rotation matrix
     vctDouble3 axis;
     axis.CrossProductOf(z, shaft);
     const double angle = acos(vctDotProduct(z, shaft));
