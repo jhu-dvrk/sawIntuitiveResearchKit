@@ -145,9 +145,9 @@ public:
     protected:
         std::string mName;
         TeleopECMType mType;
-        std::string mMasterLeftName;
-        std::string mMasterRightName;
-        std::string mSlaveName;
+        std::string mMTMLName;
+        std::string mMTMRName;
+        std::string mECMName;
         std::string mConsoleName;
         mtsFunctionWrite SetDesiredState;
         mtsInterfaceRequired * InterfaceRequired;
@@ -179,8 +179,8 @@ public:
     protected:
         std::string mName;
         TeleopPSMType mType;
-        std::string mMasterName;
-        std::string mSlaveName;
+        std::string mMTMName;
+        std::string mPSMName;
         std::string mConsoleName;
         mtsFunctionWrite SetDesiredState;
         mtsInterfaceRequired * InterfaceRequired;

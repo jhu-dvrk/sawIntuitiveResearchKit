@@ -76,9 +76,9 @@ private:
 protected:
     struct {
         mtsFunctionWrite SetScale;
-        mtsFunctionRead GetPositionCartesianMasterLeft;
-        mtsFunctionRead GetPositionCartesianMasterRight;
-        mtsFunctionRead GetPositionCartesianSlave;
+        mtsFunctionRead GetPositionCartesianMTML;
+        mtsFunctionRead GetPositionCartesianMTMR;
+        mtsFunctionRead GetPositionCartesianECM;
         mtsFunctionRead GetRegistrationRotation;
         mtsFunctionRead GetPeriodStatistics;
     } TeleOperation;
@@ -87,12 +87,12 @@ private:
     QLineEdit * QLEDesiredState;
     QLineEdit * QLECurrentState;
     QDoubleSpinBox * QSBScale;
-    prmPositionCartesianGet PositionMasterLeft;
-    vctQtWidgetFrameDoubleRead * QFRPositionMasterLeftWidget;
-    prmPositionCartesianGet PositionMasterRight;
-    vctQtWidgetFrameDoubleRead * QFRPositionMasterRightWidget;
-    prmPositionCartesianGet PositionSlave;
-    vctQtWidgetFrameDoubleRead * QFRPositionSlaveWidget;
+    prmPositionCartesianGet PositionMTML;
+    vctQtWidgetFrameDoubleRead * QFRPositionMTMLWidget;
+    prmPositionCartesianGet PositionMTMR;
+    vctQtWidgetFrameDoubleRead * QFRPositionMTMRWidget;
+    prmPositionCartesianGet PositionECM;
+    vctQtWidgetFrameDoubleRead * QFRPositionECMWidget;
     vctMatRot3 RegistrationRotation;
 
     // timing

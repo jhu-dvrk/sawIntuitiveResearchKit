@@ -44,8 +44,8 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
         interfaceRequired->AddFunction("SetScale", TeleOperation.SetScale);
         interfaceRequired->AddFunction("LockRotation", TeleOperation.LockRotation);
         interfaceRequired->AddFunction("LockTranslation", TeleOperation.LockTranslation);
-        interfaceRequired->AddFunction("GetPositionCartesianMaster", TeleOperation.GetPositionCartesianMaster);
-        interfaceRequired->AddFunction("GetPositionCartesianSlave", TeleOperation.GetPositionCartesianSlave);
+        interfaceRequired->AddFunction("GetPositionCartesianMTM", TeleOperation.GetPositionCartesianMTM);
+        interfaceRequired->AddFunction("GetPositionCartesianPSM", TeleOperation.GetPositionCartesianPSM);
         interfaceRequired->AddFunction("GetRegistrationRotation", TeleOperation.GetRegistrationRotation);
         interfaceRequired->AddFunction("GetPeriodStatistics", TeleOperation.GetPeriodStatistics);
         // events
@@ -113,18 +113,18 @@ void mtsTeleOperationPSMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     }
 
     // retrieve transformations
-    TeleOperation.GetPositionCartesianMaster(PositionMaster);
-    TeleOperation.GetPositionCartesianSlave(PositionSlave);
+    TeleOperation.GetPositionCartesianMTM(PositionMTM);
+    TeleOperation.GetPositionCartesianPSM(PositionPSM);
     TeleOperation.GetRegistrationRotation(RegistrationRotation);
 
     // apply registration orientation
-    vctFrm3 registeredSlave;
-    RegistrationRotation.ApplyInverseTo(PositionSlave.Position().Rotation(), registeredSlave.Rotation());
-    RegistrationRotation.ApplyInverseTo(PositionSlave.Position().Translation(), registeredSlave.Translation());
+    vctFrm3 registeredPSM;
+    RegistrationRotation.ApplyInverseTo(PositionPSM.Position().Rotation(), registeredPSM.Rotation());
+    RegistrationRotation.ApplyInverseTo(PositionPSM.Position().Translation(), registeredPSM.Translation());
 
     // update display
-    QFRPositionMasterWidget->SetValue(PositionMaster.Position());
-    QFRPositionSlaveWidget->SetValue(registeredSlave);
+    QFRPositionMTMWidget->SetValue(PositionMTM.Position());
+    QFRPositionPSMWidget->SetValue(registeredPSM);
 
     TeleOperation.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
@@ -175,16 +175,16 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
 {
     // 3D frames
     QGridLayout * frameLayout = new QGridLayout;
-    QLabel * masterLabel = new QLabel("<b>Master</b>");
+    QLabel * masterLabel = new QLabel("<b>MTM</b>");
     masterLabel->setAlignment(Qt::AlignCenter);
     frameLayout->addWidget(masterLabel, 0, 0);
-    QFRPositionMasterWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    frameLayout->addWidget(QFRPositionMasterWidget, 1, 0);
-    QLabel * slaveLabel = new QLabel("<b>Slave</b>");
+    QFRPositionMTMWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
+    frameLayout->addWidget(QFRPositionMTMWidget, 1, 0);
+    QLabel * slaveLabel = new QLabel("<b>PSM</b>");
     slaveLabel->setAlignment(Qt::AlignCenter);
     frameLayout->addWidget(slaveLabel, 2, 0);
-    QFRPositionSlaveWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    frameLayout->addWidget(QFRPositionSlaveWidget, 3, 0);
+    QFRPositionPSMWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
+    frameLayout->addWidget(QFRPositionPSMWidget, 3, 0);
 
     // right side
     QVBoxLayout * controlLayout = new QVBoxLayout;

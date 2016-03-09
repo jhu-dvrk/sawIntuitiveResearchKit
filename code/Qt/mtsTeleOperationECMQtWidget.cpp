@@ -42,12 +42,12 @@ mtsTeleOperationECMQtWidget::mtsTeleOperationECMQtWidget(const std::string & com
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("TeleOperation");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("SetScale", TeleOperation.SetScale);
-        interfaceRequired->AddFunction("GetPositionCartesianMasterLeft",
-                                       TeleOperation.GetPositionCartesianMasterLeft);
-        interfaceRequired->AddFunction("GetPositionCartesianMasterRight",
-                                       TeleOperation.GetPositionCartesianMasterRight);
-        interfaceRequired->AddFunction("GetPositionCartesianSlave",
-                                       TeleOperation.GetPositionCartesianSlave);
+        interfaceRequired->AddFunction("GetPositionCartesianMTML",
+                                       TeleOperation.GetPositionCartesianMTML);
+        interfaceRequired->AddFunction("GetPositionCartesianMTMR",
+                                       TeleOperation.GetPositionCartesianMTMR);
+        interfaceRequired->AddFunction("GetPositionCartesianECM",
+                                       TeleOperation.GetPositionCartesianECM);
         interfaceRequired->AddFunction("GetRegistrationRotation",
                                        TeleOperation.GetRegistrationRotation);
         interfaceRequired->AddFunction("GetPeriodStatistics", TeleOperation.GetPeriodStatistics);
@@ -112,20 +112,20 @@ void mtsTeleOperationECMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     }
 
     // retrieve transformations
-    TeleOperation.GetPositionCartesianMasterLeft(PositionMasterLeft);
-    TeleOperation.GetPositionCartesianMasterRight(PositionMasterRight);
-    TeleOperation.GetPositionCartesianSlave(PositionSlave);
+    TeleOperation.GetPositionCartesianMTML(PositionMTML);
+    TeleOperation.GetPositionCartesianMTMR(PositionMTMR);
+    TeleOperation.GetPositionCartesianECM(PositionECM);
     TeleOperation.GetRegistrationRotation(RegistrationRotation);
 
     // apply registration orientation
-    vctFrm3 registeredSlave;
-    RegistrationRotation.ApplyInverseTo(PositionSlave.Position().Rotation(), registeredSlave.Rotation());
-    RegistrationRotation.ApplyInverseTo(PositionSlave.Position().Translation(), registeredSlave.Translation());
+    vctFrm3 registeredECM;
+    RegistrationRotation.ApplyInverseTo(PositionECM.Position().Rotation(), registeredECM.Rotation());
+    RegistrationRotation.ApplyInverseTo(PositionECM.Position().Translation(), registeredECM.Translation());
 
     // update display
-    QFRPositionMasterLeftWidget->SetValue(PositionMasterLeft.Position());
-    QFRPositionMasterRightWidget->SetValue(PositionMasterRight.Position());
-    QFRPositionSlaveWidget->SetValue(registeredSlave);
+    QFRPositionMTMLWidget->SetValue(PositionMTML.Position());
+    QFRPositionMTMRWidget->SetValue(PositionMTMR.Position());
+    QFRPositionECMWidget->SetValue(registeredECM);
 
     TeleOperation.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
@@ -155,21 +155,21 @@ void mtsTeleOperationECMQtWidget::setupUi(void)
 {
     // 3D frames
     QGridLayout * frameLayout = new QGridLayout;
-    QLabel * masterLabel = new QLabel("<b>Master Left</b>");
+    QLabel * masterLabel = new QLabel("<b>MTML</b>");
     masterLabel->setAlignment(Qt::AlignCenter);
     frameLayout->addWidget(masterLabel, 0, 0);
-    QFRPositionMasterLeftWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    frameLayout->addWidget(QFRPositionMasterLeftWidget, 1, 0);
-    masterLabel = new QLabel("<b>Master Right</b>");
+    QFRPositionMTMLWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
+    frameLayout->addWidget(QFRPositionMTMLWidget, 1, 0);
+    masterLabel = new QLabel("<b>MTMR</b>");
     masterLabel->setAlignment(Qt::AlignCenter);
     frameLayout->addWidget(masterLabel, 0, 1);
-    QFRPositionMasterRightWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    frameLayout->addWidget(QFRPositionMasterRightWidget, 1, 1);
-    QLabel * slaveLabel = new QLabel("<b>Slave</b>");
+    QFRPositionMTMRWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
+    frameLayout->addWidget(QFRPositionMTMRWidget, 1, 1);
+    QLabel * slaveLabel = new QLabel("<b>ECM</b>");
     slaveLabel->setAlignment(Qt::AlignCenter);
     frameLayout->addWidget(slaveLabel, 2, 0, 1, 2);
-    QFRPositionSlaveWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    frameLayout->addWidget(QFRPositionSlaveWidget, 3, 0, 1, 2);
+    QFRPositionECMWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
+    frameLayout->addWidget(QFRPositionECMWidget, 3, 0, 1, 2);
 
     // right side
     QVBoxLayout * controlLayout = new QVBoxLayout;

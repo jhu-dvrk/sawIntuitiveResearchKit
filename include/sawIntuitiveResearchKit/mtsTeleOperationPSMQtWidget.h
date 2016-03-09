@@ -86,8 +86,8 @@ protected:
         mtsFunctionWrite SetScale;
         mtsFunctionWrite LockRotation;
         mtsFunctionWrite LockTranslation;
-        mtsFunctionRead GetPositionCartesianMaster;
-        mtsFunctionRead GetPositionCartesianSlave;
+        mtsFunctionRead GetPositionCartesianMTM;
+        mtsFunctionRead GetPositionCartesianPSM;
         mtsFunctionRead GetRegistrationRotation;
         mtsFunctionRead GetPeriodStatistics;
     } TeleOperation;
@@ -98,10 +98,10 @@ private:
     QCheckBox * QCBLockRotation;
     QCheckBox * QCBLockTranslation;
     QDoubleSpinBox * QSBScale;
-    prmPositionCartesianGet PositionMaster;
-    vctQtWidgetFrameDoubleRead * QFRPositionMasterWidget;
-    prmPositionCartesianGet PositionSlave;
-    vctQtWidgetFrameDoubleRead * QFRPositionSlaveWidget;
+    prmPositionCartesianGet PositionMTM;
+    vctQtWidgetFrameDoubleRead * QFRPositionMTMWidget;
+    prmPositionCartesianGet PositionPSM;
+    vctQtWidgetFrameDoubleRead * QFRPositionPSMWidget;
     vctMatRot3 RegistrationRotation;
 
     // timing

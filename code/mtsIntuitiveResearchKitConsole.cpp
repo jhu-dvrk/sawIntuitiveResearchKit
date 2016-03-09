@@ -306,9 +306,9 @@ mtsIntuitiveResearchKitConsole::TeleopECM::TeleopECM(const std::string & name,
                                                      const std::string & slaveName,
                                                      const std::string & consoleName):
     mName(name),
-    mMasterLeftName(masterLeftName),
-    mMasterRightName(masterRightName),
-    mSlaveName(slaveName),
+    mMTMLName(masterLeftName),
+    mMTMRName(masterRightName),
+    mECMName(slaveName),
     mConsoleName(consoleName)
 {
 }
@@ -335,9 +335,9 @@ void mtsIntuitiveResearchKitConsole::TeleopECM::ConfigureTeleop(const TeleopECMT
 bool mtsIntuitiveResearchKitConsole::TeleopECM::Connect(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    componentManager->Connect(mName, "MasterLeft", mMasterLeftName, "Robot");
-    componentManager->Connect(mName, "MasterRight", mMasterRightName, "Robot");
-    componentManager->Connect(mName, "Slave", mSlaveName, "Robot");
+    componentManager->Connect(mName, "MTML", mMTMLName, "Robot");
+    componentManager->Connect(mName, "MTMR", mMTMRName, "Robot");
+    componentManager->Connect(mName, "ECM", mECMName, "Robot");
     componentManager->Connect(mName, "Clutch", mConsoleName, "Clutch");
     componentManager->Connect(mConsoleName, mName, mName, "Setting");
     return true;
@@ -353,8 +353,8 @@ mtsIntuitiveResearchKitConsole::TeleopPSM::TeleopPSM(const std::string & name,
                                                      const std::string & slaveName,
                                                      const std::string & consoleName):
     mName(name),
-    mMasterName(masterName),
-    mSlaveName(slaveName),
+    mMTMName(masterName),
+    mPSMName(slaveName),
     mConsoleName(consoleName)
 {
 }
@@ -381,8 +381,8 @@ void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMT
 bool mtsIntuitiveResearchKitConsole::TeleopPSM::Connect(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    componentManager->Connect(mName, "Master", mMasterName, "Robot");
-    componentManager->Connect(mName, "Slave", mSlaveName, "Robot");
+    componentManager->Connect(mName, "MTM", mMTMName, "Robot");
+    componentManager->Connect(mName, "PSM", mPSMName, "Robot");
     componentManager->Connect(mName, "Clutch", mConsoleName, "Clutch");
     componentManager->Connect(mConsoleName, mName, mName, "Setting");
     return true;

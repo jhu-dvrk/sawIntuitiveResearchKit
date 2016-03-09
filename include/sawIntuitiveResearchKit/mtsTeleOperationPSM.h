@@ -54,8 +54,8 @@ private:
     void Init(void);
 
     // Event Handler
-    void MasterErrorEventHandler(const std::string & message);
-    void SlaveErrorEventHandler(const std::string & message);
+    void MTMErrorEventHandler(const std::string & message);
+    void PSMErrorEventHandler(const std::string & message);
 
     void ClutchEventHandler(const prmEventButton & button);
 
@@ -135,7 +135,7 @@ private:
     bool mIsClutched;
     bool mRotationLocked;
     bool mTranslationLocked;
-    vctMatRot3 mMasterClutchedOrientation;
+    vctMatRot3 mMTMClutchedOrientation;
     mtsStateTable * mConfigurationStateTable;
 
     mtsStateMachine<mtsTeleOperationPSMTypes::StateType> mTeleopState;

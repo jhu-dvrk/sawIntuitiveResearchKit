@@ -53,9 +53,9 @@ private:
     void Init(void);
 
     // Event Handler
-    void MasterLeftErrorEventHandler(const std::string & message);
-    void MasterRightErrorEventHandler(const std::string & message);
-    void SlaveErrorEventHandler(const std::string & message);
+    void MTMLErrorEventHandler(const std::string & message);
+    void MTMRErrorEventHandler(const std::string & message);
+    void ECMErrorEventHandler(const std::string & message);
 
     void ClutchEventHandler(const prmEventButton & button);
 
@@ -113,12 +113,14 @@ protected:
     class RobotECM {
     public:
         mtsFunctionRead  GetPositionCartesian;
+        mtsFunctionRead  GetPositionCartesianDesired;
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionRead  GetRobotControlState;
         mtsFunctionWrite SetRobotControlState;
 
         vctFrm3 PositionCartesianInitial;
         prmPositionCartesianGet PositionCartesianCurrent;
+        prmPositionCartesianGet PositionCartesianDesired;
         prmPositionCartesianSet PositionCartesianSet;
     };
     RobotECM mECM;
