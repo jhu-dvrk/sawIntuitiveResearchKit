@@ -233,7 +233,6 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position joint");
         } else {
-            JointTrajectory.EndTime = 0.0;
             MessageEvents.Status(this->GetName() + " position goal joint");
         }
         break;
@@ -255,7 +254,6 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position cartesian");
         } else {
-            JointTrajectory.EndTime = 0.0;
             MessageEvents.Status(this->GetName() + " position goal cartesian");
         }
         break;
@@ -339,17 +337,23 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         if (!HomedOnce) {
             JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = JointGet.Element(JNT_WRIST_ROLL);
         }
-        JointTrajectory.LSPB.Set(JointGet, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime, robLSPB::LSPB_DURATION);
-        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
-        // set flag to indicate that homing has started
+        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                      JointTrajectory.Acceleration,
+                                      StateTable.PeriodStats.GetAvg(),
+                                      robReflexxes::Reflexxes_TIME);
         HomingCalibrateArmStarted = true;
     }
 
-    // compute a new set point based on time
-    if (currentTime <= HomingTimer) {
-        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
+    // compute a new set point if goal not reached
+    const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    if (trajectoryResult != ReflexxesAPI::RML_FINAL_STATE_REACHED) {
+        // get current position
+        JointSet.Assign(JointGet);
+        JointVelocitySet.Assign(JointVelocityGet);
+        JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                           JointVelocitySet,
+                                           JointTrajectory.Goal,
+                                           JointTrajectory.GoalVelocity);
         SetPositionJointLocal(JointSet);
     } else {
         // request final position in case trajectory rounding prevent us to get there
@@ -398,11 +402,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         JointTrajectory.Start.Element(JNT_WRIST_ROLL) = currentRoll;
         JointTrajectory.Goal.SetAll(0.0);
         JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
-        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime, robLSPB::LSPB_DURATION);
-        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
-        // set flag to indicate that homing has started
+        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                      JointTrajectory.Acceleration,
+                                      StateTable.PeriodStats.GetAvg(),
+                                      robReflexxes::Reflexxes_TIME);        // set flag to indicate that homing has started
         HomingCalibrateRollSeekLower = true;
         return;
     }
@@ -410,7 +413,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
     // looking for lower limit has start but not found yet
     if (HomingCalibrateRollSeekLower
         && (HomingCalibrateRollLower == cmnTypeTraits<double>::MaxPositiveValue())) {
-        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
+        JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                           JointVelocitySet,
+                                           JointTrajectory.Goal,
+                                           JointTrajectory.GoalVelocity);
         SetPositionJointLocal(JointSet);
         // detect tracking error and set lower limit
         const double trackingError =
@@ -436,10 +442,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         JointTrajectory.Start.Element(JNT_WRIST_ROLL) = currentRoll;
         JointTrajectory.Goal.SetAll(0.0);
         JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = currentRoll + maxRollRange;
-        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime, robLSPB::LSPB_DURATION);
-        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                      JointTrajectory.Acceleration,
+                                      StateTable.PeriodStats.GetAvg(),
+                                      robReflexxes::Reflexxes_TIME);
         // set flag to indicate that homing has started
         HomingCalibrateRollSeekUpper = true;
         return;
@@ -448,7 +454,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
     // looking for lower limit has start but not found yet
     if (HomingCalibrateRollSeekUpper
         && (HomingCalibrateRollUpper == cmnTypeTraits<double>::MinNegativeValue())) {
-        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
+        JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                           JointVelocitySet,
+                                           JointTrajectory.Goal,
+                                           JointTrajectory.GoalVelocity);
         SetPositionJointLocal(JointSet);
         // detect tracking error and set lower limit
         const double trackingError =
@@ -473,10 +482,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         JointTrajectory.Start.Element(JNT_WRIST_ROLL) = JointGet.Element(JNT_WRIST_ROLL);
         JointTrajectory.Goal.SetAll(0.0);
         JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = HomingCalibrateRollLower + 480.0 * cmnPI_180;
-        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime, robLSPB::LSPB_DURATION);
-        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                      JointTrajectory.Acceleration,
+                                      StateTable.PeriodStats.GetAvg(),
+                                      robReflexxes::Reflexxes_TIME);
         // set flag to indicate that homing has started
         HomingCalibrateRollSeekCenter = true;
         return;
@@ -484,7 +493,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
 
     // going to center position and check we have arrived
     if (currentTime <= HomingTimer) {
-        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
+        JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                           JointVelocitySet,
+                                           JointTrajectory.Goal,
+                                           JointTrajectory.GoalVelocity);
         SetPositionJointLocal(JointSet);
     } else {
         // request final position in case trajectory rounding prevent us to get there

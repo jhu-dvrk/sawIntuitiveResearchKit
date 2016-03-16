@@ -457,7 +457,6 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position joint");
         } else {
-            JointTrajectory.EndTime = 0.0;
             MessageEvents.Status(this->GetName() + " position goal joint");
         }
         break;
@@ -481,7 +480,6 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
                     IsGoalSet = false;
                     MessageEvents.Status(this->GetName() + " position cartesian");
                 } else {
-                    JointTrajectory.EndTime = 0.0;
                     MessageEvents.Status(this->GetName() + " position goal cartesian");
                 }
             }
@@ -572,17 +570,20 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
             JointTrajectory.Goal.ForceAssign(JointGet);
         }
 
-        JointTrajectory.LSPB.Set(JointGet, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
-        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                      JointTrajectory.Acceleration,
+                                      StateTable.PeriodStats.GetAvg(),
+                                      robReflexxes::Reflexxes_TIME);
         // set flag to indicate that homing has started
         HomingCalibrateArmStarted = true;
     }
 
     // compute a new set point based on time
     if (currentTime <= HomingTimer) {
-        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
+        JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                           JointVelocitySet,
+                                           JointTrajectory.Goal,
+                                           JointTrajectory.GoalVelocity);
         SetPositionJointLocal(JointSet);
     } else {
         // request final position in case trajectory rounding prevent us to get there
@@ -714,17 +715,20 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         JointTrajectory.Goal[2] = 0.0;
         // set last 4 to -170.0
         JointTrajectory.Goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
-        JointTrajectory.LSPB.Set(initialPosition, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
-        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                      JointTrajectory.Acceleration,
+                                      StateTable.PeriodStats.GetAvg(),
+                                      robReflexxes::Reflexxes_TIME);
         EngagingStage = 2;
         return;
     }
 
     // perform whatever trajectory is going on
     if (currentTime <= HomingTimer) {
-        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
+        JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                           JointVelocitySet,
+                                           JointTrajectory.Goal,
+                                           JointTrajectory.GoalVelocity);
         SetPositionJointLocal(JointSet);
     } else {
         // check if we were in last phase
@@ -736,10 +740,10 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
             } else {
                 JointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
             }
-            JointTrajectory.LSPB.Set(JointGetDesired, JointTrajectory.Goal,
-                                     JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                     currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
-            HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+            JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                          JointTrajectory.Acceleration,
+                                          StateTable.PeriodStats.GetAvg(),
+                                          robReflexxes::Reflexxes_TIME);
             std::stringstream message;
             message << this->GetName() << " engaging adapter " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
             MessageEvents.Status(message.str());
@@ -798,17 +802,20 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         JointTrajectory.Goal.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
         // set last 4 to user preferences
         JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
-        JointTrajectory.LSPB.Set(initialPosition, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
-        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                      JointTrajectory.Acceleration,
+                                      StateTable.PeriodStats.GetAvg(),
+                                      robReflexxes::Reflexxes_TIME);
         EngagingStage = 2;
         return;
     }
 
     // perform whatever trajectory is going on
     if (currentTime <= HomingTimer) {
-        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
+        JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                           JointVelocitySet,
+                                           JointTrajectory.Goal,
+                                           JointTrajectory.GoalVelocity);
         SetPositionJointLocal(JointSet);
     } else {
         // check if we were in last phase
@@ -825,10 +832,10 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
             } else {
                 JointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
             }
-            JointTrajectory.LSPB.Set(JointGetDesired, JointTrajectory.Goal,
-                                     JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                     currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
-            HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                      JointTrajectory.Acceleration,
+                                      StateTable.PeriodStats.GetAvg(),
+                                      robReflexxes::Reflexxes_TIME);
             std::stringstream message;
             message << this->GetName() << " engaging tool " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
             MessageEvents.Status(message.str());
@@ -889,7 +896,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
 
 void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 {
-    const double currentTime = this->StateTable.GetTic();
+    int trajectoryResult;
     switch (RobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
@@ -899,14 +906,15 @@ void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
         JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
         // check if there is a trajectory active
-        if (currentTime >= JointTrajectory.EndTime) {
+        trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+        if (trajectoryResult != ReflexxesAPI::RML_FINAL_STATE_REACHED) {
             JointTrajectory.Goal.Assign(JointTrajectory.Start);
         }
         JointTrajectory.Goal[6] = jawPosition;
-        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime, robLSPB::LSPB_DURATION);
-        JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
+        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                      JointTrajectory.Acceleration,
+                                      StateTable.PeriodStats.GetAvg(),
+                                      robReflexxes::Reflexxes_TIME);
         break;
     default:
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetJawPosition: PSM not ready" << std::endl;

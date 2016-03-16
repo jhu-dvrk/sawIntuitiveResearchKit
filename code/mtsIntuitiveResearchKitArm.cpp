@@ -51,16 +51,17 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     // initialize trajectory data
     JointGet.SetSize(NumberOfJoints());
-    JointVelocityGet.SetSize(NumberOfJoints());
     JointSet.SetSize(NumberOfJoints());
+    JointVelocityGet.SetSize(NumberOfJoints());
+    JointVelocitySet.SetSize(NumberOfJoints());
     JointSetParam.Goal().SetSize(NumberOfAxes());
     JointTrajectory.Velocity.SetSize(NumberOfJoints());
     JointTrajectory.Acceleration.SetSize(NumberOfJoints());
     JointTrajectory.Start.SetSize(NumberOfJoints());
     JointTrajectory.Goal.SetSize(NumberOfJoints());
+    JointTrajectory.GoalVelocity.SetSize(NumberOfJoints());
     JointTrajectory.GoalError.SetSize(NumberOfJoints());
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints());
-    JointTrajectory.EndTime = 0.0;
     PotsToEncodersTolerance.SetSize(NumberOfAxes());
 
     // initialize velocity
@@ -525,15 +526,18 @@ void mtsIntuitiveResearchKitArm::RunPositionJoint(void)
 
 void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
 {
-    const double currentTime = this->StateTable.GetTic();
-    if (currentTime <= JointTrajectory.EndTime) {
-        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
+    const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    if (trajectoryResult != ReflexxesAPI::RML_FINAL_STATE_REACHED) {
+        // get current position
+        JointSet.Assign(JointGet);
+        JointVelocitySet.Assign(JointVelocityGet);
+        JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                           JointVelocitySet,
+                                           JointTrajectory.Goal,
+                                           JointTrajectory.GoalVelocity);
         SetPositionJointLocal(JointSet);
     } else {
-        if (JointTrajectory.EndTime != 0.0) {
-            JointTrajectory.GoalReachedEvent(true);
-            JointTrajectory.EndTime = 0.0;
-        }
+        JointTrajectory.GoalReachedEvent(true);
     }
 }
 
@@ -596,14 +600,13 @@ void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & ne
 void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet & newPosition)
 {
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT)) {
-        const double currentTime = this->StateTable.GetTic();
         // starting point is last requested to PID component
         JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
         JointTrajectory.Goal.Assign(newPosition.Goal(), NumberOfJoints());
-        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime, robLSPB::LSPB_DURATION);
-        JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
+        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                      JointTrajectory.Acceleration,
+                                      StateTable.PeriodStats.GetAvg(),
+                                      robReflexxes::Reflexxes_TIME);
     }
 }
 
@@ -639,7 +642,8 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
             // keep values of joints not handled by kinematics (PSM jaw)
             if (nbJoints > nbJointsKin) {
                 // check if there is a trajectory active
-                if (currentTime >= JointTrajectory.EndTime) {
+                const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+                if (trajectoryResult != ReflexxesAPI::RML_FINAL_STATE_REACHED) {
                     // past any trajectory, use last desired joint position
                     jointSet.Ref(nbJoints - nbJointsKin,
                                  nbJointsKin).Assign(JointGetDesired.Ref(nbJoints - nbJointsKin,
@@ -655,10 +659,10 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
             // starting point is last requested to PID component
             JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
             JointTrajectory.Goal.Assign(jointSet);
-            JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
-                                     JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                     currentTime, robLSPB::LSPB_DURATION);
-            JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
+            JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                          JointTrajectory.Acceleration,
+                                          StateTable.PeriodStats.GetAvg(),
+                                          robReflexxes::Reflexxes_TIME);
         } else {
             MessageEvents.Error(this->GetName() + " unable to solve inverse kinematics.");
             JointTrajectory.GoalReachedEvent(false);
@@ -680,10 +684,11 @@ void mtsIntuitiveResearchKitArm::ErrorEventHandler(const std::string & message)
 {
     RobotIO.DisablePower();
     // in case there was a trajectory going on
-    if (JointTrajectory.EndTime != 0.0) {
+    const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    if (trajectoryResult != ReflexxesAPI::RML_FINAL_STATE_REACHED) {
         JointTrajectory.GoalReachedEvent(false);
-        JointTrajectory.EndTime = 0.0;
     }
+    
     MessageEvents.Error(this->GetName() + ": received [" + message + "]");
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 }
@@ -691,9 +696,9 @@ void mtsIntuitiveResearchKitArm::ErrorEventHandler(const std::string & message)
 void mtsIntuitiveResearchKitArm::JointLimitEventHandler(const vctBoolVec & CMN_UNUSED(flags))
 {
     // in case there was a trajectory going on
-    if (JointTrajectory.EndTime != 0.0) {
+    const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    if (trajectoryResult != ReflexxesAPI::RML_FINAL_STATE_REACHED) {
         JointTrajectory.GoalReachedEvent(false);
-        JointTrajectory.EndTime = 0.0;
     }
     MessageEvents.Warning(this->GetName() + ": PID joint limit");
 }

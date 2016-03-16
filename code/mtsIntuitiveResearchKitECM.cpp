@@ -164,7 +164,6 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position joint");
         } else {
-            JointTrajectory.EndTime = 0.0;
             MessageEvents.Status(this->GetName() + " position goal joint");
         }
         break;
@@ -180,7 +179,6 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position cartesian");
         } else {
-            JointTrajectory.EndTime = 0.0;
             MessageEvents.Status(this->GetName() + " position goal cartesian");
         }
         break;
@@ -248,17 +246,20 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
         JointTrajectory.Goal.SetSize(NumberOfJoints());
         JointTrajectory.Goal.ForceAssign(JointGet);
         JointTrajectory.Goal.SetAll(0.0);
-        JointTrajectory.LSPB.Set(JointGet, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime, robLSPB::LSPB_DURATION);
-        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                      JointTrajectory.Acceleration,
+                                      StateTable.PeriodStats.GetAvg(),
+                                      robReflexxes::Reflexxes_TIME);
         // set flag to indicate that homing has started
         HomingCalibrateArmStarted = true;
     }
 
     // compute a new set point based on time
     if (currentTime <= HomingTimer) {
-        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
+        JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                           JointVelocitySet,
+                                           JointTrajectory.Goal,
+                                           JointTrajectory.GoalVelocity);
         SetPositionJointLocal(JointSet);
     } else {
         // request final position in case trajectory rounding prevent us to get there

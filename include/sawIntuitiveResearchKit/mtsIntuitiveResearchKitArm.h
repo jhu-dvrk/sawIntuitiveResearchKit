@@ -31,7 +31,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
 #include <cisstRobot/robManipulator.h>
-//#include <cisstRobot/robLSPB.h>
 #include <cisstRobot/robReflexxes.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
@@ -216,7 +215,7 @@ protected:
     //! robot current joint velocity
     prmVelocityJointGet JointVelocityGetParam;
     vctDoubleVec JointVelocityGet;
-
+    vctDoubleVec JointVelocitySet;
     prmStateJoint StateJointParam, StateJointDesiredParam;
 
     // Velocities
@@ -232,30 +231,17 @@ protected:
 
     mtsIntuitiveResearchKitArmTypes::RobotStateType RobotState;
 
-    /*
     struct {
-        robLSPB LSPB;
+        robReflexxes Reflexxes;
         vctDoubleVec Velocity;
         vctDoubleVec Acceleration;
         vctDoubleVec Start;
         vctDoubleVec Goal;
+        vctDoubleVec GoalVelocity;
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
-        double EndTime; // time should be set to 0.0 if there is no on-going trajectory
+        vctDoubleVec MaxJerk;
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
-    } JointTrajectory;
-    */
-
-    struct {
-        robReflexxes Reflexxes;
-        vctDoubleVec CurrentPosition;
-        vctDoubleVec CurrentVelocity;
-        vctDoubleVec CurrentAcceleration;
-        vctDoubleVec MaxVelocity;
-        vctDoubleVec MaxAcceleration;
-        vctDoubleVec TargetPosition;
-        vctDoubleVec TargetVelocity;
-        mtsFunctionWrite GoalReachedEvent;
     } JointTrajectory;
 
     vctDoubleVec PotsToEncodersTolerance;
