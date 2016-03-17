@@ -526,18 +526,49 @@ void mtsIntuitiveResearchKitArm::RunPositionJoint(void)
 
 void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
 {
+    if (JointTrajectory.EndTime < 0.0) {
+        return;
+    }
+    
+    const double currentTime = this->StateTable.GetTic();
     const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-    if (trajectoryResult != ReflexxesAPI::RML_FINAL_STATE_REACHED) {
+    switch (trajectoryResult) {
+    case ReflexxesAPI::RML_WORKING:
         // get current position
         JointSet.Assign(JointGet);
-        JointVelocitySet.Assign(JointVelocityGet);
+        if (JointTrajectory.EndTime == 0.0) {
+            JointVelocitySet.Assign(JointVelocityGet);
+        }
         JointTrajectory.Reflexxes.Evaluate(JointSet,
                                            JointVelocitySet,
                                            JointTrajectory.Goal,
                                            JointTrajectory.GoalVelocity);
         SetPositionJointLocal(JointSet);
-    } else {
+        // if this is the first evaluation, we can't calculate expected completion time
+        if (JointTrajectory.EndTime == 0.0) {
+            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
+            std::cerr << "Start time: " << currentTime << std::endl
+                      << "End time:   " << JointTrajectory.EndTime << std::endl;
+        }
+        // try to detect timeout
+        if (currentTime > (JointTrajectory.EndTime + 1000.0 * cmn_s)) {
+            std::cerr << "we say we are past end time" << std::endl;
+            JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
+            JointTrajectory.GoalError.AbsSelf();
+            const bool reached =
+                !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
+            JointTrajectory.GoalReachedEvent(reached);
+            JointTrajectory.EndTime = -1.0;
+        }
+        break;
+    case ReflexxesAPI::RML_FINAL_STATE_REACHED:
+        std::cerr << "RML says RML_FINAL_STATE_REACHED" << std::endl;
         JointTrajectory.GoalReachedEvent(true);
+        JointTrajectory.EndTime = -1.0;
+        break;
+    default:
+        MessageEvents.Error(this->GetName() + " error while evaluating trjectory.");
+        break;
     }
 }
 
@@ -603,10 +634,14 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet 
         // starting point is last requested to PID component
         JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
         JointTrajectory.Goal.Assign(newPosition.Goal(), NumberOfJoints());
+        JointTrajectory.GoalVelocity.SetAll(0.0);
         JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
                                       robReflexxes::Reflexxes_TIME);
+        JointTrajectory.EndTime = 0.0; // we will know it after first evaluate
+        std::cerr << "Set with time: "
+                  << StateTable.PeriodStats.GetAvg() << std::endl;
     }
 }
 

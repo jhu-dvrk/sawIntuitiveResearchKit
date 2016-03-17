@@ -241,6 +241,7 @@ protected:
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
         vctDoubleVec MaxJerk;
+        double EndTime;
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
     } JointTrajectory;
 
