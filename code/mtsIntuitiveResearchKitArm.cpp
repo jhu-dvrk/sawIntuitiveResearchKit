@@ -529,7 +529,7 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
     if (JointTrajectory.EndTime < 0.0) {
         return;
     }
-    
+
     const double currentTime = this->StateTable.GetTic();
     const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
     switch (trajectoryResult) {
