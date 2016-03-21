@@ -109,9 +109,9 @@ void mtsIntuitiveResearchKitUDPStreamer::Cleanup(void)
 void mtsIntuitiveResearchKitUDPStreamer::SetDestination(const std::string &ipPort)
 {
     size_t colon = ipPort.find(':');
-    if (colon == std::string::npos)
+    if (colon == std::string::npos) {
         CMN_LOG_CLASS_RUN_ERROR << "SetDestination: invalid address:port " << ipPort << std::endl;
-    else {
+    } else {
         unsigned short port;
         if ((sscanf(ipPort.c_str() + colon + 1, "%hu", &port) != 1)) {
             CMN_LOG_CLASS_RUN_ERROR << "SetDestination: invalid port " << ipPort << std::endl;
