@@ -35,7 +35,9 @@ if (cisst_FOUND_AS_REQUIRED)
     qt4_wrap_cpp (sawIntuitiveResearchKit_QT_WRAP_CPP
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArmQtWidget.h
-                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h)
+                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
+                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECMQtWidget.h
+                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h)
     qt4_add_resources (sawIntuitiveResearchKit_QT_RESOURCES
                        ${CMAKE_CURRENT_SOURCE_DIR}/logo.qrc)
   else (CISST_HAS_QT4)
