@@ -15,10 +15,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.48.4 r9939"
-   sodipodi:docname="dVRK-orange-grey-4x4-grid-grippers.svg"
+   sodipodi:docname="dVRK-orange-grey-4x4-grid-no-lines.svg"
    inkscape:export-filename="/home/anton/dvrk-logos/dVRK-orange-grey-4x4-grid-no-lines-512.png"
-   inkscape:export-xdpi="1576.3127"
-   inkscape:export-ydpi="1576.3127">
+   inkscape:export-xdpi="1588.9656"
+   inkscape:export-ydpi="1588.9656">
   <defs
      id="defs4">
     <linearGradient
@@ -38,10 +38,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="34.37931"
-     inkscape:cx="14.5"
+     inkscape:cx="11.067703"
      inkscape:cy="14.5"
      inkscape:document-units="px"
-     inkscape:current-layer="layer3"
+     inkscape:current-layer="g3002"
      showgrid="true"
      inkscape:snap-grids="true"
      inkscape:snap-global="true"
@@ -105,12 +105,6 @@
          d="m 136,336.36218 -9,-12"
          style="fill:none;stroke:#616e78;stroke-width:5;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
     </g>
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
-       d="M 120.02106,327.39328 132,312.36218"
-       id="path4021-9"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cc" />
   </g>
   <g
      inkscape:label="R"
@@ -119,7 +113,7 @@
      style="display:inline"
      transform="translate(-105.5,-309.86218)">
     <path
-       style="fill:#4c565e;stroke:#4c565e;stroke-width:5;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;fill-opacity:1"
+       style="fill:#4c565e;fill-opacity:1;stroke:#4c565e;stroke-width:5;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        d="m 108,324.36218 6,0"
        id="path4027"
        inkscape:connector-curvature="0"
@@ -144,16 +138,24 @@
        sodipodi:cy="318.36218"
        sodipodi:rx="6"
        sodipodi:ry="6"
-       d="m 114,312.36218 c 3.31371,0 6,2.68629 6,6 0,3.31371 -2.68629,6 -6,6"
+       d="m 114,312.36218 a 6,6 0 0 1 0,12"
        sodipodi:start="4.712389"
        sodipodi:end="7.8539816"
        sodipodi:open="true" />
   </g>
   <g
-     inkscape:groupmode="layer"
-     id="layer5"
-     inkscape:label="K-top"
-     style="display:inline" />
+     transform="translate(-105.5,-309.86218)"
+     style="display:inline"
+     inkscape:label="K top"
+     id="g3002"
+     inkscape:groupmode="layer">
+    <path
+       sodipodi:nodetypes="cc"
+       inkscape:connector-curvature="0"
+       id="path3006"
+       d="m 120,312.36218 0,14"
+       style="fill:none;stroke:#616e78;stroke-width:5;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+  </g>
   <g
      inkscape:groupmode="layer"
      id="layer4"
@@ -177,7 +179,7 @@
        id="g5527"
        style="stroke:#fab82b;stroke-opacity:1;display:inline">
       <path
-         d="m 116,318.36218 c 0,1.10457 -0.89543,2 -2,2 -1.10457,0 -2,-0.89543 -2,-2 0,-1.10457 0.89543,-2 2,-2 1.10457,0 2,0.89543 2,2 z"
+         d="m 116,318.36218 a 2,2 0 1 1 -4,0 2,2 0 1 1 4,0 z"
          sodipodi:ry="2"
          sodipodi:rx="2"
          sodipodi:cy="318.36218"
