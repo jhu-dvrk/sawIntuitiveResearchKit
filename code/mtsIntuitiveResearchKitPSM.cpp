@@ -575,12 +575,14 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
                                       robReflexxes::Reflexxes_TIME);
+        JointSet.Assign(JointGet);
+        JointVelocitySet.Assign(JointVelocityGet);
         JointTrajectory.EndTime = 0.0;
         // set flag to indicate that homing has started
         HomingCalibrateArmStarted = true;
     }
 
-    // compute a new set point based on time
+    // compute a new set point
     JointTrajectory.Reflexxes.Evaluate(JointSet,
                                        JointVelocitySet,
                                        JointTrajectory.Goal,
@@ -604,6 +606,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
             const bool reached =
                 !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
             if (reached) {
+                std::cerr << "Time out: " << JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any() << std::endl;
                 homed = true;
             } else {
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
@@ -617,7 +620,8 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         homed = true;
         break;
     default:
-        MessageEvents.Error(this->GetName() + " error while evaluating trjectory.");
+        MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
         break;
     }
 
