@@ -267,10 +267,10 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
         JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
     }
 
-    const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
     bool homed = false;
     switch (trajectoryResult) {
-    case ReflexxesAPI::RML_WORKING:
+    case robReflexxes::Reflexxes_WORKING:
         SetPositionJointLocal(JointSet);
 
         // try to detect timeout
@@ -289,7 +289,7 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
             }
         }
         break;
-    case ReflexxesAPI::RML_FINAL_STATE_REACHED:
+    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         homed = true;
         break;
     default:

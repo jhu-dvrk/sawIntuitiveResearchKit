@@ -530,20 +530,23 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
         return;
     }
 
+    // get current position/velocity
+    JointSet.Assign(JointGet);
+    if (JointTrajectory.EndTime == 0.0) {
+        std::cerr << CMN_LOG_DETAILS << "Removed this condition when PID simulated velocity is fixed!!!!!" << std::endl;
+        JointVelocitySet.Assign(JointVelocityGet);
+    }
+    JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                       JointVelocitySet,
+                                       JointTrajectory.Goal,
+                                       JointTrajectory.GoalVelocity);
+    SetPositionJointLocal(JointSet);
+
+    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
     const double currentTime = this->StateTable.GetTic();
-    const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+
     switch (trajectoryResult) {
-    case ReflexxesAPI::RML_WORKING:
-        // get current position
-        JointSet.Assign(JointGet);
-        if (JointTrajectory.EndTime == 0.0) {
-            JointVelocitySet.Assign(JointVelocityGet);
-        }
-        JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                           JointVelocitySet,
-                                           JointTrajectory.Goal,
-                                           JointTrajectory.GoalVelocity);
-        SetPositionJointLocal(JointSet);
+    case robReflexxes::Reflexxes_WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
         if (JointTrajectory.EndTime == 0.0) {
             JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
@@ -551,7 +554,7 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
                       << "End time:   " << JointTrajectory.EndTime << std::endl;
         }
         // try to detect timeout
-        if (currentTime > (JointTrajectory.EndTime + 1000.0 * cmn_s)) {
+        if (currentTime > (JointTrajectory.EndTime + 10.0 * cmn_s)) {
             std::cerr << "we say we are past end time" << std::endl;
             JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
             JointTrajectory.GoalError.AbsSelf();
@@ -561,7 +564,7 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
             JointTrajectory.EndTime = -1.0;
         }
         break;
-    case ReflexxesAPI::RML_FINAL_STATE_REACHED:
+    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         std::cerr << "RML says RML_FINAL_STATE_REACHED" << std::endl;
         JointTrajectory.GoalReachedEvent(true);
         JointTrajectory.EndTime = -1.0;
@@ -662,7 +665,6 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
 
         const size_t nbJoints = this->NumberOfJoints();
         const size_t nbJointsKin = this->NumberOfJointsKinematics();
-        const double currentTime = this->StateTable.GetTic();
 
         // copy current position
         vctDoubleVec jointSet(JointGet.Ref(nbJointsKin));
@@ -677,8 +679,8 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
             // keep values of joints not handled by kinematics (PSM jaw)
             if (nbJoints > nbJointsKin) {
                 // check if there is a trajectory active
-                const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-                if (trajectoryResult != ReflexxesAPI::RML_FINAL_STATE_REACHED) {
+                const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+                if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
                     // past any trajectory, use last desired joint position
                     jointSet.Ref(nbJoints - nbJointsKin,
                                  nbJointsKin).Assign(JointGetDesired.Ref(nbJoints - nbJointsKin,
@@ -690,7 +692,6 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
                                                                               nbJointsKin));
                 }
             }
-            const double currentTime = this->StateTable.GetTic();
             // starting point is last requested to PID component
             JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
             JointTrajectory.Goal.Assign(jointSet);
@@ -719,11 +720,11 @@ void mtsIntuitiveResearchKitArm::ErrorEventHandler(const std::string & message)
 {
     RobotIO.DisablePower();
     // in case there was a trajectory going on
-    const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-    if (trajectoryResult != ReflexxesAPI::RML_FINAL_STATE_REACHED) {
+    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
         JointTrajectory.GoalReachedEvent(false);
     }
-    
+
     MessageEvents.Error(this->GetName() + ": received [" + message + "]");
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 }
@@ -732,7 +733,7 @@ void mtsIntuitiveResearchKitArm::JointLimitEventHandler(const vctBoolVec & CMN_U
 {
     // in case there was a trajectory going on
     const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-    if (trajectoryResult != ReflexxesAPI::RML_FINAL_STATE_REACHED) {
+    if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
         JointTrajectory.GoalReachedEvent(false);
     }
     MessageEvents.Warning(this->GetName() + ": PID joint limit");

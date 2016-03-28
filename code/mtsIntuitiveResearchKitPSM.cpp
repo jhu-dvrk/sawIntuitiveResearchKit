@@ -457,6 +457,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position joint");
         } else {
+            JointTrajectory.EndTime = -1.0;
             MessageEvents.Status(this->GetName() + " position goal joint");
         }
         break;
@@ -574,38 +575,57 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
                                       robReflexxes::Reflexxes_TIME);
+        JointTrajectory.EndTime = 0.0;
         // set flag to indicate that homing has started
         HomingCalibrateArmStarted = true;
     }
 
     // compute a new set point based on time
-    if (currentTime <= HomingTimer) {
-        JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                           JointVelocitySet,
-                                           JointTrajectory.Goal,
-                                           JointTrajectory.GoalVelocity);
-        SetPositionJointLocal(JointSet);
-    } else {
-        // request final position in case trajectory rounding prevent us to get there
-        SetPositionJointLocal(JointTrajectory.Goal);
+    JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                       JointVelocitySet,
+                                       JointTrajectory.Goal,
+                                       JointTrajectory.GoalVelocity);
 
-        // check position
-        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
-        JointTrajectory.GoalError.AbsSelf();
-        bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
-        if (isHomed) {
-            PID.SetCheckJointLimit(true);
-            HomedOnce = true;
-            this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
-        } else {
-            // time out
-            if (currentTime > HomingTimer + extraTime) {
+    // if this is the first evaluation, we can't calculate expected completion time
+    if (JointTrajectory.EndTime == 0.0) {
+        JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
+    }
+
+    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    bool homed = false;
+    switch (trajectoryResult) {
+    case robReflexxes::Reflexxes_WORKING:
+        SetPositionJointLocal(JointSet);
+
+        // try to detect timeout
+        if (currentTime > (JointTrajectory.EndTime + extraTime)) {
+            JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
+            JointTrajectory.GoalError.AbsSelf();
+            const bool reached =
+                !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
+            if (reached) {
+                homed = true;
+            } else {
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
                 MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
                 this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
             }
         }
+        break;
+    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+        homed = true;
+        break;
+    default:
+        MessageEvents.Error(this->GetName() + " error while evaluating trjectory.");
+        break;
+    }
+
+    if (homed) {
+        PID.SetCheckJointLimit(true);
+        HomedOnce = true;
+        MessageEvents.Status(this->GetName() + " arm ready");
+        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
     }
 }
 
@@ -896,7 +916,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
 
 void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 {
-    int trajectoryResult;
+    robReflexxes::ResultType trajectoryResult;
     switch (RobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
@@ -907,7 +927,7 @@ void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
         JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
         // check if there is a trajectory active
         trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-        if (trajectoryResult != ReflexxesAPI::RML_FINAL_STATE_REACHED) {
+        if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
             JointTrajectory.Goal.Assign(JointTrajectory.Start);
         }
         JointTrajectory.Goal[6] = jawPosition;

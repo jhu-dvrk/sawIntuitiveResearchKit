@@ -233,6 +233,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position joint");
         } else {
+            JointTrajectory.EndTime = -1.0;
             MessageEvents.Status(this->GetName() + " position goal joint");
         }
         break;
@@ -341,12 +342,13 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
                                       robReflexxes::Reflexxes_TIME);
+        JointTrajectory.EndTime = 0.0;
         HomingCalibrateArmStarted = true;
     }
 
     // compute a new set point if goal not reached
-    const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-    if (trajectoryResult != ReflexxesAPI::RML_FINAL_STATE_REACHED) {
+    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
         // get current position
         JointSet.Assign(JointGet);
         JointVelocitySet.Assign(JointVelocityGet);
