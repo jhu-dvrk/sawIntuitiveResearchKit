@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 // cisst
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 
 #include <QMessageBox>
@@ -176,7 +177,11 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     mainLayout->addWidget(tabWidgetAndMessages);
     setLayout(mainLayout);
 
-    setWindowTitle("dVRK");
+    std::string title = "dVRK ";
+    title.append(sawIntuitiveResearchKit_VERSION);
+    title.append(" / cisst ");
+    title.append(CISST_VERSION);
+    setWindowTitle(title.c_str());
     resize(sizeHint());
 
     // buttons

@@ -29,6 +29,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawControllers/mtsPID.h>
 
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
@@ -624,7 +625,12 @@ const bool & mtsIntuitiveResearchKitConsole::Configured(void) const
 
 void mtsIntuitiveResearchKitConsole::Startup(void)
 {
-    CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
+    std::string message = this->GetName();
+    message.append(" started, dVRK ");
+    message.append(sawIntuitiveResearchKit_VERSION);
+    message.append(" / cisst ");
+    message.append(CISST_VERSION);
+    MessageEvents.Status(message);
 }
 
 void mtsIntuitiveResearchKitConsole::Run(void)
