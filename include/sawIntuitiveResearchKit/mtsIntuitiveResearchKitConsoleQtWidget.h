@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -43,6 +43,7 @@ public:
     inline QTabWidget * GetTabWidget(void) {
         return QTWidgets;
     }
+    void HasTeleOp(const bool & hasTeleOp);
 
 signals:
     void SignalAppendMessage(QString);

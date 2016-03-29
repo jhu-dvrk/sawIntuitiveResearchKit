@@ -167,9 +167,11 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     }
 
     // add teleop PSM widgets
+    bool hasTeleOp = false;
     const mtsIntuitiveResearchKitConsole::TeleopPSMList::iterator teleopsEnd = console->mTeleopsPSM.end();
     mtsIntuitiveResearchKitConsole::TeleopPSMList::iterator teleopIter;
     for (teleopIter = console->mTeleopsPSM.begin(); teleopIter != teleopsEnd; ++teleopIter) {
+        hasTeleOp = true;
         const std::string name = teleopIter->first;
         mtsTeleOperationPSMQtWidget * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "-GUI");
         teleopGUI->Configure();
@@ -180,6 +182,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
 
     // add teleop ECM widget
     if (console->mTeleopECM) {
+        hasTeleOp = true;
         const std::string name = console->mTeleopECM->Name();
         mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "-GUI");
         teleopGUI->Configure();
@@ -187,6 +190,8 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         Connections.push_back(new ConnectionType(teleopGUI->GetName(), "TeleOperation", name, "Setting"));
         TabWidget->addTab(teleopGUI, name.c_str());
     }
+
+    consoleGUI->HasTeleOp(hasTeleOp);
 
     // show all widgets
     TabWidget->show();

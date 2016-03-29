@@ -78,6 +78,12 @@ void mtsIntuitiveResearchKitConsoleQtWidget::Cleanup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << "mtsIntuitiveResearchKitConsoleQtWidget::Cleanup" << std::endl;
 }
 
+void mtsIntuitiveResearchKitConsoleQtWidget::HasTeleOp(const bool & hasTeleOp)
+{
+    QPBTeleopStart->setEnabled(hasTeleOp);
+    QPBTeleopStop->setEnabled(hasTeleOp);
+}
+
 void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
 {
     int answer = QMessageBox::warning(this, tr("mtsIntuitiveResearchKitConsoleQtWidget"),
