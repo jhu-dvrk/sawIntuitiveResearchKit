@@ -2,8 +2,8 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet
-  Created on: 2013-05-15
+  Author(s):  Anton Deguet, Zerui Wang
+  Created on: 2016-02-24
 
   (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
@@ -31,7 +31,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
 #include <cisstRobot/robManipulator.h>
-#include <cisstRobot/robLSPB.h>
+#include <cisstRobot/robReflexxes.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 
@@ -230,7 +230,7 @@ protected:
     //! robot current joint velocity
     prmVelocityJointGet JointVelocityGetParam;
     vctDoubleVec JointVelocityGet;
-
+    vctDoubleVec JointVelocitySet;
     prmStateJoint StateJointParam, StateJointDesiredParam;
 
     // Velocities
@@ -247,14 +247,16 @@ protected:
     mtsIntuitiveResearchKitArmTypes::RobotStateType RobotState;
 
     struct {
-        robLSPB LSPB;
+        robReflexxes Reflexxes;
         vctDoubleVec Velocity;
         vctDoubleVec Acceleration;
         vctDoubleVec Start;
         vctDoubleVec Goal;
+        vctDoubleVec GoalVelocity;
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
-        double EndTime; // time should be set to 0.0 if there is no on-going trajectory
+        vctDoubleVec MaxJerk;
+        double EndTime;
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
     } JointTrajectory;
 

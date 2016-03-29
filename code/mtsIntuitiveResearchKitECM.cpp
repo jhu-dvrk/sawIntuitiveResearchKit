@@ -164,7 +164,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position joint");
         } else {
-            JointTrajectory.EndTime = 0.0;
+            JointTrajectory.EndTime = -1.0;
             MessageEvents.Status(this->GetName() + " position goal joint");
         }
         break;
@@ -180,7 +180,6 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position cartesian");
         } else {
-            JointTrajectory.EndTime = 0.0;
             MessageEvents.Status(this->GetName() + " position goal cartesian");
         }
         break;
@@ -248,40 +247,61 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
         JointTrajectory.Goal.SetSize(NumberOfJoints());
         JointTrajectory.Goal.ForceAssign(JointGet);
         JointTrajectory.Goal.SetAll(0.0);
-        JointTrajectory.LSPB.Set(JointGet, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime, robLSPB::LSPB_DURATION);
-        HomingTimer = currentTime + JointTrajectory.LSPB.Duration();
+        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                      JointTrajectory.Acceleration,
+                                      StateTable.PeriodStats.GetAvg(),
+                                      robReflexxes::Reflexxes_TIME);
+        JointTrajectory.EndTime = 0.0; // we will know it after first evaluate
         // set flag to indicate that homing has started
         HomingCalibrateArmStarted = true;
     }
 
     // compute a new set point based on time
-    if (currentTime <= HomingTimer) {
-        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
-        SetPositionJointLocal(JointSet);
-    } else {
-        // request final position in case trajectory rounding prevent us to get there
-        SetPositionJointLocal(JointTrajectory.Goal);
+    JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                       JointVelocitySet,
+                                       JointTrajectory.Goal,
+                                       JointTrajectory.GoalVelocity);
 
-        // check position
-        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
-        JointTrajectory.GoalError.AbsSelf();
-        bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
-        if (isHomed) {
-            PID.SetCheckJointLimit(true);
-            HomedOnce = true;
-            MessageEvents.Status(this->GetName() + " arm ready");
-            this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
-        } else {
-            // time out
-            if (currentTime > HomingTimer + extraTime) {
+    // if this is the first evaluation, we can't calculate expected completion time
+    if (JointTrajectory.EndTime == 0.0) {
+        JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
+    }
+
+    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    bool homed = false;
+    switch (trajectoryResult) {
+    case robReflexxes::Reflexxes_WORKING:
+        SetPositionJointLocal(JointSet);
+
+        // try to detect timeout
+        if (currentTime > (JointTrajectory.EndTime + extraTime)) {
+            JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
+            JointTrajectory.GoalError.AbsSelf();
+            const bool reached =
+                !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
+            if (reached) {
+                    homed = true;
+            } else {
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
                 MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
                 this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
             }
         }
+        break;
+    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+        homed = true;
+        break;
+    default:
+        MessageEvents.Error(this->GetName() + " error while evaluating trjectory.");
+        break;
+    }
+
+    if (homed) {
+        PID.SetCheckJointLimit(true);
+        HomedOnce = true;
+        MessageEvents.Status(this->GetName() + " arm ready");
+        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
     }
 }
 

@@ -2,8 +2,8 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet, Zihan Chen
-  Created on: 2013-05-15
+  Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
+  Created on: 2016-02-24
 
   (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
@@ -53,16 +53,17 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     // initialize trajectory data
     JointGet.SetSize(NumberOfJoints());
-    JointVelocityGet.SetSize(NumberOfJoints());
     JointSet.SetSize(NumberOfJoints());
+    JointVelocityGet.SetSize(NumberOfJoints());
+    JointVelocitySet.SetSize(NumberOfJoints());
     JointSetParam.Goal().SetSize(NumberOfAxes());
     JointTrajectory.Velocity.SetSize(NumberOfJoints());
     JointTrajectory.Acceleration.SetSize(NumberOfJoints());
     JointTrajectory.Start.SetSize(NumberOfJoints());
     JointTrajectory.Goal.SetSize(NumberOfJoints());
+    JointTrajectory.GoalVelocity.SetSize(NumberOfJoints());
     JointTrajectory.GoalError.SetSize(NumberOfJoints());
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints());
-    JointTrajectory.EndTime = 0.0;
     PotsToEncodersTolerance.SetSize(NumberOfAxes());
 
     // initialize velocity
@@ -535,15 +536,52 @@ void mtsIntuitiveResearchKitArm::RunPositionJoint(void)
 
 void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
 {
+    if (JointTrajectory.EndTime < 0.0) {
+        return;
+    }
+
+    // get current position/velocity
+    JointSet.Assign(JointGet);
+    if (JointTrajectory.EndTime == 0.0) {
+        std::cerr << CMN_LOG_DETAILS << "Removed this condition when PID simulated velocity is fixed!!!!!" << std::endl;
+        JointVelocitySet.Assign(JointVelocityGet);
+    }
+    JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                       JointVelocitySet,
+                                       JointTrajectory.Goal,
+                                       JointTrajectory.GoalVelocity);
+    SetPositionJointLocal(JointSet);
+
+    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
     const double currentTime = this->StateTable.GetTic();
-    if (currentTime <= JointTrajectory.EndTime) {
-        JointTrajectory.LSPB.Evaluate(currentTime, JointSet);
-        SetPositionJointLocal(JointSet);
-    } else {
-        if (JointTrajectory.EndTime != 0.0) {
-            JointTrajectory.GoalReachedEvent(true);
-            JointTrajectory.EndTime = 0.0;
+
+    switch (trajectoryResult) {
+    case robReflexxes::Reflexxes_WORKING:
+        // if this is the first evaluation, we can't calculate expected completion time
+        if (JointTrajectory.EndTime == 0.0) {
+            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
+            std::cerr << "Start time: " << currentTime << std::endl
+                      << "End time:   " << JointTrajectory.EndTime << std::endl;
         }
+        // try to detect timeout
+        if (currentTime > (JointTrajectory.EndTime + 10.0 * cmn_s)) {
+            std::cerr << "we say we are past end time" << std::endl;
+            JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
+            JointTrajectory.GoalError.AbsSelf();
+            const bool reached =
+                !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
+            JointTrajectory.GoalReachedEvent(reached);
+            JointTrajectory.EndTime = -1.0;
+        }
+        break;
+    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+        std::cerr << "RML says RML_FINAL_STATE_REACHED" << std::endl;
+        JointTrajectory.GoalReachedEvent(true);
+        JointTrajectory.EndTime = -1.0;
+        break;
+    default:
+        MessageEvents.Error(this->GetName() + " error while evaluating trjectory.");
+        break;
     }
 }
 
@@ -636,14 +674,17 @@ void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & ne
 void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet & newPosition)
 {
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT)) {
-        const double currentTime = this->StateTable.GetTic();
         // starting point is last requested to PID component
         JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
         JointTrajectory.Goal.Assign(newPosition.Goal(), NumberOfJoints());
-        JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
-                                 JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                 currentTime, robLSPB::LSPB_DURATION);
-        JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
+        JointTrajectory.GoalVelocity.SetAll(0.0);
+        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                      JointTrajectory.Acceleration,
+                                      StateTable.PeriodStats.GetAvg(),
+                                      robReflexxes::Reflexxes_TIME);
+        JointTrajectory.EndTime = 0.0; // we will know it after first evaluate
+        std::cerr << "Set with time: "
+                  << StateTable.PeriodStats.GetAvg() << std::endl;
     }
 }
 
@@ -664,7 +705,6 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
 
         const size_t nbJoints = this->NumberOfJoints();
         const size_t nbJointsKin = this->NumberOfJointsKinematics();
-        const double currentTime = this->StateTable.GetTic();
 
         // copy current position
         vctDoubleVec jointSet(JointGet.Ref(nbJointsKin));
@@ -679,7 +719,8 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
             // keep values of joints not handled by kinematics (PSM jaw)
             if (nbJoints > nbJointsKin) {
                 // check if there is a trajectory active
-                if (currentTime >= JointTrajectory.EndTime) {
+                const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+                if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
                     // past any trajectory, use last desired joint position
                     jointSet.Ref(nbJoints - nbJointsKin,
                                  nbJointsKin).Assign(JointGetDesired.Ref(nbJoints - nbJointsKin,
@@ -691,14 +732,13 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
                                                                               nbJointsKin));
                 }
             }
-            const double currentTime = this->StateTable.GetTic();
             // starting point is last requested to PID component
             JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
             JointTrajectory.Goal.Assign(jointSet);
-            JointTrajectory.LSPB.Set(JointTrajectory.Start, JointTrajectory.Goal,
-                                     JointTrajectory.Velocity, JointTrajectory.Acceleration,
-                                     currentTime, robLSPB::LSPB_DURATION);
-            JointTrajectory.EndTime = currentTime + JointTrajectory.LSPB.Duration();
+            JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                          JointTrajectory.Acceleration,
+                                          StateTable.PeriodStats.GetAvg(),
+                                          robReflexxes::Reflexxes_TIME);
         } else {
             MessageEvents.Error(this->GetName() + " unable to solve inverse kinematics.");
             JointTrajectory.GoalReachedEvent(false);
@@ -720,10 +760,11 @@ void mtsIntuitiveResearchKitArm::ErrorEventHandler(const std::string & message)
 {
     RobotIO.DisablePower();
     // in case there was a trajectory going on
-    if (JointTrajectory.EndTime != 0.0) {
+    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
         JointTrajectory.GoalReachedEvent(false);
-        JointTrajectory.EndTime = 0.0;
     }
+
     MessageEvents.Error(this->GetName() + ": received [" + message + "]");
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 }
@@ -731,9 +772,9 @@ void mtsIntuitiveResearchKitArm::ErrorEventHandler(const std::string & message)
 void mtsIntuitiveResearchKitArm::JointLimitEventHandler(const vctBoolVec & CMN_UNUSED(flags))
 {
     // in case there was a trajectory going on
-    if (JointTrajectory.EndTime != 0.0) {
+    const int trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
         JointTrajectory.GoalReachedEvent(false);
-        JointTrajectory.EndTime = 0.0;
     }
     MessageEvents.Warning(this->GetName() + ": PID joint limit");
 }
