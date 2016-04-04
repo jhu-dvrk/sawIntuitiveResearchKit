@@ -519,40 +519,45 @@ void mtsTeleOperationECM::ECMErrorEventHandler(const std::string & message)
 
 void mtsTeleOperationECM::ClutchEventHandler(const prmEventButton & button)
 {
-    if (button.Type() == prmEventButton::PRESSED) {
-        mIsClutched = true;
-        MessageEvents.Status(this->GetName() + ": master clutch pressed");
+    // if the teleoperation is activated
+    if (mTeleopState.DesiredState() == mtsTeleOperationECMTypes::ENABLED) {
+         if (button.Type() == prmEventButton::PRESSED) {
+            mIsClutched = true;
+            MessageEvents.Status(this->GetName() + ": console clutch pressed");
 
-#if 0
-        mMaster.PositionCartesianSet.Goal().Rotation().FromNormalized(
-                    mECM.PositionCartesianCurrent.Position().Rotation());
-        mMaster.PositionCartesianSet.Goal().Translation().Assign(
-                    mMaster.PositionCartesianCurrent.Position().Translation());
-
-
-        // set Master/Slave to Teleop (Cartesian Position Mode)
-        mMaster.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
-        prmForceCartesianSet wrench;
-        mMaster.SetWrenchBody(wrench);
-        mMaster.SetGravityCompensation(true);
-        mMaster.LockOrientation(mMaster.PositionCartesianCurrent.Position().Rotation());
-#endif
-    } else {
-        mIsClutched = false;
-        MessageEvents.Status(this->GetName() + ": master clutch released");
-        mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::SETTING_MTMS_STATE);
+            // set MTMs in effort mode, no force applied but gravity and locked orientation
+            prmForceCartesianSet wrench;
+            mMTML.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+            mMTML.SetWrenchBody(wrench);
+            mMTML.SetGravityCompensation(true);
+            mMTML.LockOrientation(mMTML.PositionCartesianCurrent.Position().Rotation());
+            mMTMR.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+            mMTMR.SetWrenchBody(wrench);
+            mMTMR.SetGravityCompensation(true);
+            mMTMR.LockOrientation(mMTMR.PositionCartesianCurrent.Position().Rotation());
+        } else {
+            mIsClutched = false;
+            MessageEvents.Status(this->GetName() + ": console clutch released");
+            mTeleopState.SetCurrentState(mtsTeleOperationECMTypes::SETTING_MTMS_STATE);
+        }
     }
 }
 
 void mtsTeleOperationECM::SetDesiredState(const std::string & state)
 {
     mtsTeleOperationECMTypes::StateType stateEnum;
+    // try to find the state from string
     try {
         stateEnum = mtsTeleOperationECMTypes::StateTypeFromString(state);
     } catch (std::exception e) {
         MessageEvents.Error(this->GetName() + ": unsupported state " + state + ": " + e.what());
         return;
     }
+    // if state is same as current, return
+    if (mTeleopState.CurrentState() == stateEnum) {
+        return;
+    }
+    // try to set the desired state
     if (!mTeleopState.SetDesiredState(stateEnum)) {
         MessageEvents.Error(this->GetName() + ": " + state + " is not an allowed desired state");
         return;
