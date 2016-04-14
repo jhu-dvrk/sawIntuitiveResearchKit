@@ -39,6 +39,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <QTime>
 #include <QLabel>
 #include <QPixmap>
+#include <QShortcut>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
 
@@ -141,8 +142,12 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QVBoxLayout * powerLayout = new QVBoxLayout();
     powerBox->setLayout(powerLayout);
     QPBPowerOff = new QPushButton("Off");
+    QPBPowerOff->setToolTip("ctrl + O");
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_O), this, SLOT(SlotPowerOff()));
     powerLayout->addWidget(QPBPowerOff);
     QPBHome = new QPushButton("Home");
+    QPBHome->setToolTip("ctrl + H");
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_H), this, SLOT(SlotHome()));
     powerLayout->addWidget(QPBHome);
 
     QGroupBox * teleopBox = new QGroupBox("Teleop");
@@ -150,8 +155,12 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QVBoxLayout * teleopLayout = new QVBoxLayout();
     teleopBox->setLayout(teleopLayout);
     QPBTeleopStart = new QPushButton("Start");
+    QPBTeleopStart->setToolTip("ctrl + T");
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_T), this, SLOT(SlotTeleopStart()));
     teleopLayout->addWidget(QPBTeleopStart);
     QPBTeleopStop = new QPushButton("Stop");
+    QPBTeleopStop->setToolTip("ctrl + S");
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this, SLOT(SlotTeleopStart()));
     teleopLayout->addWidget(QPBTeleopStop);
 
     boxLayout->addStretch(100);
@@ -201,6 +210,8 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             QTEMessages, SLOT(setTextColor(QColor)));
     connect(QTEMessages, SIGNAL(textChanged()),
             this, SLOT(SlotTextChanged()));
+
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q), this, SLOT(close()));
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::ErrorEventHandler(const std::string & message)
