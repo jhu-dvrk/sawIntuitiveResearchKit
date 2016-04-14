@@ -191,59 +191,60 @@ public:
     }
 
     inline void CalibratePotentiometers(const vctMat & mat) {
-        for (size_t cols = 0; cols < 6;cols++)
-        {
+        for (size_t col = 0; col < 6; col++) {
             // IF:                                      Pi = Offset + Vi * Scale
             // Given P1 / V1 & P2 / V2, THEN:           Scale = (P1 - P2) / (V1 - V2)
 
             // Delta_P = P1 - P2
-            const double deltaJointPosition = mat.Element(0,cols) - mat.Element(3,cols);
+            const double deltaJointPosition = mat.Element(0, col) - mat.Element(3, col);
 
             // Delta_V = V1 - V2 (primary)
-            const double deltaPrimaryVoltage = mat.Element(1,cols) - mat.Element(4,cols);
+            const double deltaPrimaryVoltage = mat.Element(1, col) - mat.Element(4, col);
 
             // V1 - V2 (secondary)
-            const double deltaSecondaryVoltage = mat.Element(2,cols) - mat.Element(5,cols);
+            const double deltaSecondaryVoltage = mat.Element(2, col) - mat.Element(5, col);
 
             // Scale = Delta_P / Delta_V
-            mNewJointScales[0][cols] = deltaJointPosition / deltaPrimaryVoltage;
-            mNewJointScales[1][cols] = deltaJointPosition / deltaSecondaryVoltage;
+            mNewJointScales[0][col] = deltaJointPosition / deltaPrimaryVoltage;
+            mNewJointScales[1][col] = deltaJointPosition / deltaSecondaryVoltage;
 
-            mNewJointOffsets[0][cols] = mat.Element(0,cols) - mat.Element(1,cols) * mNewJointScales[0][cols];
-            mNewJointOffsets[1][cols] = mat.Element(0,cols) - mat.Element(2,cols) * mNewJointScales[1][cols];
-            mNewJointScales[0][cols] /= 1000.0;
-            mNewJointScales[1][cols] /= 1000.0;
+            mNewJointOffsets[0][col] = mat.Element(0, col) - mat.Element(1, col) * mNewJointScales[0][col];
+            mNewJointOffsets[1][col] = mat.Element(0, col) - mat.Element(2, col) * mNewJointScales[1][col];
+            mNewJointScales[0][col] /= 1000.0;
+            mNewJointScales[1][col] /= 1000.0;
         }
 
-        std::cerr << "----------- SUJ scales and offsets for arm: " << mName << std::endl;
-        std::cerr << "\"primary-offsets\": [ " <<
-                     mNewJointOffsets[0][0] << ", " <<
-                     mNewJointOffsets[0][1] << ", " <<
-                     mNewJointOffsets[0][2] << ", " <<
-                     mNewJointOffsets[0][3] << ", " <<
-                     mNewJointOffsets[0][4] << ", " <<
-                     mNewJointOffsets[0][5] << "],"  << std::endl;
-        std::cerr << "\"primary-scales\": [ " <<
-                     mNewJointScales[0][0] << ", " <<
-                     mNewJointScales[0][1] << ", " <<
-                     mNewJointScales[0][2] << ", " <<
-                     mNewJointScales[0][3] << ", " <<
-                     mNewJointScales[0][4] << ", " <<
-                     mNewJointScales[0][5] << "],"  << std::endl;
-        std::cerr << "\"secondary-offsets\": [ " <<
-                     mNewJointOffsets[1][0] << ", " <<
-                     mNewJointOffsets[1][1] << ", " <<
-                     mNewJointOffsets[1][2] << ", " <<
-                     mNewJointOffsets[1][3] << ", " <<
-                     mNewJointOffsets[1][4] << ", " <<
-                     mNewJointOffsets[1][5] << "],"  << std::endl;
-        std::cerr << "\"secondary-scales\": [ " <<
-                     mNewJointScales[1][0] << ", " <<
-                     mNewJointScales[1][1] << ", " <<
-                     mNewJointScales[1][2] << ", " <<
-                     mNewJointScales[1][3] << ", " <<
-                     mNewJointScales[1][4] << ", " <<
-                     mNewJointScales[1][5] << "],"  << std::endl;
+
+        std::cerr << "SUJ scales and offsets for arm: " << mName << std::endl
+                  << "Please update your suj.json file using these values" << std::endl
+                  << "\"primary-offsets\": [ "
+                  << mNewJointOffsets[0][0] << ", "
+                  << mNewJointOffsets[0][1] << ", "
+                  << mNewJointOffsets[0][2] << ", "
+                  << mNewJointOffsets[0][3] << ", "
+                  << mNewJointOffsets[0][4] << ", "
+                  << mNewJointOffsets[0][5] << "],"  << std::endl
+                  << "\"primary-scales\": [ "
+                  << mNewJointScales[0][0] << ", "
+                  << mNewJointScales[0][1] << ", "
+                  << mNewJointScales[0][2] << ", "
+                  << mNewJointScales[0][3] << ", "
+                  << mNewJointScales[0][4] << ", "
+                  << mNewJointScales[0][5] << "],"  << std::endl
+                  << "\"secondary-offsets\": [ "
+                  << mNewJointOffsets[1][0] << ", "
+                  << mNewJointOffsets[1][1] << ", "
+                  << mNewJointOffsets[1][2] << ", "
+                  << mNewJointOffsets[1][3] << ", "
+                  << mNewJointOffsets[1][4] << ", "
+                  << mNewJointOffsets[1][5] << "]," << std::endl
+                  << "\"secondary-scales\": [ "
+                  << mNewJointScales[1][0] << ", "
+                  << mNewJointScales[1][1] << ", "
+                  << mNewJointScales[1][2] << ", "
+                  << mNewJointScales[1][3] << ", "
+                  << mNewJointScales[1][4] << ", "
+                  << mNewJointScales[1][5] << "],"  << std::endl;
     }
 
     // name of this SUJ arm (ECM, PSM1, ...)
@@ -648,8 +649,8 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                 arm->mVoltages[arrayIndex][indexInArray] = mVoltages[armIndex];
             } else {
                 if (indexInArray == 2) {
-                    if ((armIndex==0) || (armIndex==1) || (armIndex==2)) {
-                        Arms[3-armIndex]->mVoltagesExtra[indexInArray] = mVoltages[armIndex];
+                    if ((armIndex == 0) || (armIndex == 1) || (armIndex == 2)) {
+                        Arms[3 - armIndex]->mVoltagesExtra[indexInArray] = mVoltages[armIndex];
                     } else if (armIndex == 3) {
 
                     }
@@ -666,18 +667,18 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                 arm->mPositions[0].AddElementwiseProductOf(arm->mVoltageToPositionScales[0], arm->mVoltages[0]);
                 arm->mPositions[1].Assign(arm->mVoltageToPositionOffsets[1]);
                 arm->mPositions[1].AddElementwiseProductOf(arm->mVoltageToPositionScales[1], arm->mVoltages[1]);
-                // temporary hack to build a vector of positions from pots that seem to work
-                arm->mPositionJointParam.Position()[0] = arm->mPositions[1][0];
-                arm->mPositionJointParam.Position()[1] = arm->mPositions[0][1];
-                arm->mPositionJointParam.Position()[2] = arm->mPositions[0][2];
-                arm->mPositionJointParam.Position()[3] = arm->mPositions[1][3];
-                arm->mPositionJointParam.Position()[4] = arm->mPositions[0][4];
-                arm->mPositionJointParam.Position()[5] = arm->mPositions[0][5];
+
+                // ignore values on ECM arm
                 if (arm->mType == mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
                     // ECM has only 4 joints
-                    arm->mPositionJointParam.Position()[4] = 0.0;
-                    arm->mPositionJointParam.Position()[5] = 0.0;
+                    arm->mPositions[0][4] = 0.0;
+                    arm->mPositions[0][5] = 0.0;
+                    arm->mPositions[1][4] = 0.0;
+                    arm->mPositions[1][5] = 0.0;
                 }
+
+                // Use primary set of pots for joint values
+                arm->mPositionJointParam.Position().Assign(arm->mPositions[0]);
                 arm->mPositionJointParam.SetValid(true);
 
                 // Joint forward kinematics
@@ -883,7 +884,7 @@ void mtsIntuitiveResearchKitSUJ::GetRobotControlState(std::string & state) const
 void mtsIntuitiveResearchKitSUJ::SetLiftVelocity(const double & velocity)
 {
     if ((velocity >= -1.0) && (velocity <= 1.0)) {
-        const double dutyCyle = 0.5 + velocity * 0.1;
+        const double dutyCyle = 0.5 + velocity * 0.1;  // 0.1 determines max velocity
         PWM.SetPWMDutyCycle(dutyCyle);
     } else {
         CMN_LOG_CLASS_RUN_ERROR << "MotorVelocity: value must be between -1.0 and 1.0" << std::endl;
