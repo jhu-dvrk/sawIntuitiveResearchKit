@@ -105,34 +105,55 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
     sujLayout->addWidget(QWMore, 2, 0, 1, -1);
     QGridLayout * moreLayout = new QGridLayout();
     QWMore->setLayout(moreLayout);
+    int row = 0;
 
     // brake current
     QLabel * labelBrakeCurrent = new QLabel("Brake (mA)");
-    moreLayout->addWidget(labelBrakeCurrent, 0, 0);
+    moreLayout->addWidget(labelBrakeCurrent, row, 0);
     QVBrakeCurrentWidget = new vctQtWidgetDynamicVectorDoubleRead();
     QVBrakeCurrentWidget->SetPrecision(5);
-    moreLayout->addWidget(QVBrakeCurrentWidget, 0, 1, 1, 1);
+    moreLayout->addWidget(QVBrakeCurrentWidget, row, 1, 1, 1);
+    row++;
 
-    // extra voltages
+    // voltages
+    QLabel * labelPrimaryVoltages = new QLabel("Primary Voltages");
+    moreLayout->addWidget(labelPrimaryVoltages, row, 0);
+    QVPrimaryVoltagesWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    QVPrimaryVoltagesWidget->SetPrecision(5);
+    moreLayout->addWidget(QVPrimaryVoltagesWidget, row, 1, 1, 5);
+    row++;
+
+    QLabel * labelSecondaryVoltages = new QLabel("Secondary Voltages");
+    moreLayout->addWidget(labelSecondaryVoltages, row, 0);
+    QVSecondaryVoltagesWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    QVSecondaryVoltagesWidget->SetPrecision(5);
+    moreLayout->addWidget(QVSecondaryVoltagesWidget, row, 1, 1, 5);
+    row++;
+
     QLabel * labelExtraVoltages = new QLabel("Extra Voltages");
-    moreLayout->addWidget(labelExtraVoltages, 1, 0);
-    QVExtraVoltageWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    QVExtraVoltageWidget->SetPrecision(5);
-    moreLayout->addWidget(QVExtraVoltageWidget, 1, 1, 1, 5);
+    moreLayout->addWidget(labelExtraVoltages, row, 0);
+    QVExtraVoltagesWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    QVExtraVoltagesWidget->SetPrecision(5);
+    moreLayout->addWidget(QVExtraVoltagesWidget, row, 1, 1, 5);
+    row++;
 
     // calibration stuff
     QLabel * labelRecalibrationInputStart = new QLabel("Joint Start");
-    moreLayout->addWidget(labelRecalibrationInputStart, 2, 0);
+    moreLayout->addWidget(labelRecalibrationInputStart, row, 0);
     QVPotentiometerRecalibrationStartWidget
         = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::TEXT_WIDGET);
-    moreLayout->addWidget(QVPotentiometerRecalibrationStartWidget, 2, 1, 1, -1);
+    moreLayout->addWidget(QVPotentiometerRecalibrationStartWidget, row, 1, 1, -1);
+    row++;
+
     QLabel * labelRecalibrationInputFinish = new QLabel("Joint Finish");
-    moreLayout->addWidget(labelRecalibrationInputFinish, 3, 0);
+    moreLayout->addWidget(labelRecalibrationInputFinish, row, 0);
     QVPotentiometerRecalibrationFinishWidget
         = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::TEXT_WIDGET);
-    moreLayout->addWidget(QVPotentiometerRecalibrationFinishWidget, 3, 1, 1, -1);
+    moreLayout->addWidget(QVPotentiometerRecalibrationFinishWidget, row, 1, 1, -1);
     QPushButton * ManualRecalibrationButton = new QPushButton("Manual Recalibration");
-    moreLayout->addWidget(ManualRecalibrationButton, 4, 2, 1, 1);
+    row++;
+
+    moreLayout->addWidget(ManualRecalibrationButton, row, 2, 1, 1);
     
     QWMore->hide();
 
@@ -181,12 +202,14 @@ void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)
         QVBrakeCurrentWidget->SetValue(vctDoubleVec(1, BrakeCurrent * 1000.0));
         // extra voltages
         GetExtraVoltages(mVoltagesExtra);
-        QVExtraVoltageWidget->SetValue(mVoltagesExtra);
+        QVExtraVoltagesWidget->SetValue(mVoltagesExtra);
+        GetPrimaryVoltages(mVoltages[0]);
+        QVPrimaryVoltagesWidget->SetValue(mVoltages[0]);
+        GetSecondaryVoltages(mVoltages[1]);
+        QVSecondaryVoltagesWidget->SetValue(mVoltages[1]);
         // calibration data
         QVPotentiometerRecalibrationStartWidget->SetValue(JointPositionStart);
         QVPotentiometerRecalibrationFinishWidget->SetValue(JointPositionFinish);
-        GetPrimaryVoltages(mVoltages[0]);
-        GetSecondaryVoltages(mVoltages[1]);
     }
 }
 

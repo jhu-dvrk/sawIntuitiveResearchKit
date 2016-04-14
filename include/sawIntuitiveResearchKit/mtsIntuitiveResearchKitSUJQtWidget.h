@@ -39,7 +39,9 @@ protected:
 
     vctQtWidgetDynamicVectorDoubleRead * QVJointWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVBrakeCurrentWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVExtraVoltageWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVExtraVoltagesWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVPrimaryVoltagesWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVSecondaryVoltagesWidget;
 
     vctQtWidgetDynamicVectorDoubleWrite * QVPotentiometerRecalibrationStartWidget;
     vctQtWidgetDynamicVectorDoubleWrite * QVPotentiometerRecalibrationFinishWidget;
