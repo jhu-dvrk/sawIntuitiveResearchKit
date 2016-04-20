@@ -31,8 +31,14 @@ http://www.cisst.org/cisst/license.txt.
 
 const size_t MUX_ARRAY_SIZE = 6;
 const size_t MUX_MAX_INDEX = 15;
-const size_t ANALOG_SAMPLE_NUMBER = 60; // empirical value, tradeoff between speed and stability of analog input
-const size_t NUMBER_OF_MUX_CYCLE_BEFORE_STABLE = 5; // DO NOT set value below 2
+
+ // empirical value, tradeoff between speed and stability of analog
+ // input
+const size_t ANALOG_SAMPLE_NUMBER = 60;
+
+ // DO NOT set value below 2, this value should probably go
+// down when the QLA/dSIB are properly grounded.
+const size_t NUMBER_OF_MUX_CYCLE_BEFORE_STABLE = 4;
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJ, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
 
@@ -91,7 +97,9 @@ public:
             mVoltageToPositionScales[potArray].SetSize(MUX_ARRAY_SIZE);
             mVoltageToPositionOffsets[potArray].SetSize(MUX_ARRAY_SIZE);
         }
-        mVoltagesExtra.SetSize(MUX_MAX_INDEX - 2 * MUX_ARRAY_SIZE+1);
+        mPositionDifference.SetSize(MUX_ARRAY_SIZE);
+        mPotsAgree = true;
+        mVoltagesExtra.SetSize(MUX_MAX_INDEX - 2 * MUX_ARRAY_SIZE + 1);
 
         mPositionJointParam.Position().SetSize(MUX_ARRAY_SIZE);
 
@@ -264,6 +272,9 @@ public:
     // 2 arrays, one for each set of potentiometers
     vctDoubleVec mVoltages[2];
     vctDoubleVec mPositions[2];
+    vctDoubleVec mPositionDifference;
+    bool mPotsAgree;
+
     vctDoubleVec mVoltageToPositionScales[2];
     vctDoubleVec mVoltageToPositionOffsets[2];
     prmPositionJointGet mPositionJointParam;
@@ -677,8 +688,10 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                     arm->mPositions[1][5] = 0.0;
                 }
 
-                // Use primary set of pots for joint values
-                arm->mPositionJointParam.Position().Assign(arm->mPositions[0]);
+                // use average of positions reported by potentiometers
+                arm->mPositionJointParam.Position().SumOf(arm->mPositions[0],
+                                                          arm->mPositions[1]);
+                arm->mPositionJointParam.Position().Divide(2.0);
                 arm->mPositionJointParam.SetValid(true);
 
                 // Joint forward kinematics
@@ -714,6 +727,36 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                         arm->mNeedToUpdatePositionCartesianDesired = 0;
                     }
                 }
+
+                // check pots when the SUJ is not clutch and if the
+                // counter for update cartesian desired position is
+                // back to zero (pot values should now be stable).
+                if ((arm->mClutched == 0) && (arm->mNeedToUpdatePositionCartesianDesired == 0)) {
+                    // compare primary and secondary pots when arm is not clutched
+                    const double angleTolerance = 1.0 * cmnPI / 180.0;
+                    const double distanceTolerance = 2.0 * cmn_mm;
+                    arm->mPositionDifference.DifferenceOf(arm->mPositions[0], arm->mPositions[1]);
+                    if ((arm->mPositionDifference[0] > distanceTolerance) ||
+                            (arm->mPositionDifference.Ref(5, 1).MaxAbsElement() > angleTolerance)) {
+                        // send messages if this is new
+                        if (arm->mPotsAgree) {
+                            MessageEvents.Warning(this->GetName() + ": " + arm->mName.Data + " primary and secondary potentiometers don't seem to agree.");
+                            CMN_LOG_CLASS_RUN_WARNING << "GetAndConvertPotentiometerValues, error: " << std::endl
+                                                      << " - " << this->GetName() << ": " << arm->mName.Data << std::endl
+                                                      << " - primary:   " << arm->mPositions[0] << std::endl
+                                                      << " - secondary: " << arm->mPositions[1] << std::endl;
+                            arm->mPotsAgree = false;
+                        }
+                    } else {
+                        if (!arm->mPotsAgree) {
+                            MessageEvents.Status(this->GetName() + ": " + arm->mName.Data + " primary and secondary potentiometers agree.");
+                            CMN_LOG_CLASS_RUN_VERBOSE << "GetAndConvertPotentiometerValues recovery" << std::endl
+                                                      << " - " << this->GetName() << ": " << arm->mName.Data << std::endl;
+                            arm->mPotsAgree = true;
+                        }
+                    }
+                }
+
                 // update and send desired position
                 arm->mPositionCartesianDesiredParam.Position().From(arm->mBaseFrame * arm->mPositionCartesianLocalDesired);
                 arm->mPositionCartesianDesiredParam.SetTimestamp(arm->mPositionJointParam.Timestamp());
