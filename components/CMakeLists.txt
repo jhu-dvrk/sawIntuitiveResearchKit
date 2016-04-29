@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2016 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -8,6 +8,10 @@
 # http://www.cisst.org/cisst/license.txt.
 #
 # --- end cisst license ---
+
+project (sawIntuitiveResearchKit)
+
+cmake_minimum_required (VERSION 2.8)
 
 set (REQUIRED_CISST_LIBRARIES
      cisstCommon
@@ -34,19 +38,10 @@ if (cisst_FOUND)
     message (FATAL_ERROR "You need to make sure CISST_USE_SI_UNITS to ON")
   endif ()
 
-  # catkin/ROS paths
-  cisst_is_catkin_build (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
-  if (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
-    set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/cmake")
-    set (LIBRARY_OUTPUT_PATH "${sawIntuitiveResearchKit_BINARY_DIR}/lib")
-  else ()
-    set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${sawIntuitiveResearchKit_BINARY_DIR}")
-  endif ()
-
   # saw components have been compiled within cisst, we should find them automatically
-  cisst_find_saw_component (sawRobotIO1394 1.3.0 REQUIRED)
-  cisst_find_saw_component (sawControllers 1.3.0 REQUIRED)
-  cisst_find_saw_component (sawConstraintController REQUIRED)
+  find_package (sawRobotIO1394 1.3.0 REQUIRED)
+  find_package (sawControllers 1.3.0 REQUIRED)
+  find_package (sawConstraintController REQUIRED)
 
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND AND sawConstraintController_FOUND)
@@ -63,15 +58,17 @@ if (cisst_FOUND)
     # catkin/ROS paths
     cisst_is_catkin_build (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
     if (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
-      set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/cmake")
+      set (sawIntuitiveResearchKit_CONFIG_FILE_DIR
+           "${CATKIN_DEVEL_PREFIX}/share/sawIntuitiveResearchKit/cmake")
       set (LIBRARY_OUTPUT_PATH "${sawIntuitiveResearchKit_BINARY_DIR}/lib")
     else ()
       set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${sawIntuitiveResearchKit_BINARY_DIR}")
     endif ()
 
     # create/configure file for find_package (sawIntuitiveResearchKit)
-    set (sawIntuitiveResearchKit_INCLUDE_DIR "${sawIntuitiveResearchKit_SOURCE_DIR}/include"
-                                             "${sawIntuitiveResearchKit_BINARY_DIR}/include")
+    set (sawIntuitiveResearchKit_INCLUDE_DIR
+         "${sawIntuitiveResearchKit_SOURCE_DIR}/include"
+         "${sawIntuitiveResearchKit_BINARY_DIR}/include")
     set (sawIntuitiveResearchKit_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
     set (sawIntuitiveResearchKit_LIBRARIES sawIntuitiveResearchKit)
 
@@ -89,10 +86,10 @@ if (cisst_FOUND)
     cisst_data_generator (sawIntuitiveResearchKit
                           "${CISST_BINARY_DIR}/include" # where to save the file
                           "sawIntuitiveResearchKit/"    # sub directory for include
-                          mtsIntuitiveResearchKitArmTypes.cdg
-                          mtsTeleOperationPSMTypes.cdg
-                          mtsTeleOperationECMTypes.cdg
-                          mtsVFDataFollow.cdg)
+                          code/mtsIntuitiveResearchKitArmTypes.cdg
+                          code/mtsTeleOperationPSMTypes.cdg
+                          code/mtsTeleOperationECMTypes.cdg
+                          code/mtsVFDataFollow.cdg)
 
     include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
     set (sawIntuitiveResearchKit_HEADER_DIR
@@ -117,27 +114,27 @@ if (cisst_FOUND)
         )
 
     set (SOURCE_FILES
-         mtsStateMachine.cpp
-         mtsIntuitiveResearchKitArm.cpp
-         mtsIntuitiveResearchKitMTM.cpp
-         mtsIntuitiveResearchKitPSM.cpp
-         mtsIntuitiveResearchKitECM.cpp
-         mtsIntuitiveResearchKitSUJ.cpp
-         mtsIntuitiveResearchKitOptimizer.cpp
-         mtsTeleOperationPSM.cpp
-         mtsTeleOperationECM.cpp
-         mtsIntuitiveResearchKitConsole.cpp
-         mtsIntuitiveResearchKitUDPStreamer.cpp
-         mtsVFFollow.cpp
-         mtsVFFollowJacobian.cpp
+         code/mtsStateMachine.cpp
+         code/mtsIntuitiveResearchKitArm.cpp
+         code/mtsIntuitiveResearchKitMTM.cpp
+         code/mtsIntuitiveResearchKitPSM.cpp
+         code/mtsIntuitiveResearchKitECM.cpp
+         code/mtsIntuitiveResearchKitSUJ.cpp
+         code/mtsIntuitiveResearchKitOptimizer.cpp
+         code/mtsTeleOperationPSM.cpp
+         code/mtsTeleOperationECM.cpp
+         code/mtsIntuitiveResearchKitConsole.cpp
+         code/mtsIntuitiveResearchKitUDPStreamer.cpp
+         code/mtsVFFollow.cpp
+         code/mtsVFFollowJacobian.cpp
 	 # temporary
-         robManipulatorLSNorm.cpp
+         code/robManipulatorLSNorm.cpp
         )
 
     add_library (sawIntuitiveResearchKit
-                ${HEADER_FILES} ${SOURCE_FILES}
-                ${sawIntuitiveResearchKit_CISST_DG_SRCS}
-                ${sawIntuitiveResearchKit_CISST_DG_HDRS})
+                 ${HEADER_FILES} ${SOURCE_FILES}
+                 ${sawIntuitiveResearchKit_CISST_DG_SRCS}
+                 ${sawIntuitiveResearchKit_CISST_DG_HDRS})
     cisst_target_link_libraries (sawIntuitiveResearchKit ${REQUIRED_CISST_LIBRARIES})
     set_property (TARGET sawIntuitiveResearchKit PROPERTY FOLDER "sawIntuitiveResearchKit")
 
@@ -148,12 +145,15 @@ if (cisst_FOUND)
                            ${sawConstraintController_LIBRARIES})
 
     # add Qt code
-    add_subdirectory (Qt)
+    add_subdirectory (code/Qt)
     set (sawIntuitiveResearchKit_LIBRARIES ${sawIntuitiveResearchKit_LIBRARIES} ${sawIntuitiveResearchKitQt_LIBRARIES})
 
-    configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/sawIntuitiveResearchKitConfig.cmake.in"
-                    "${sawIntuitiveResearchKit_CONFIG_FILE_DIR}/sawIntuitiveResearchKitConfig.cmake"
-                    @ONLY@)
+    set (sawIntuitiveResearchKit_CMAKE_CONFIG_FILE
+         "${sawIntuitiveResearchKit_CONFIG_FILE_DIR}/sawIntuitiveResearchKitConfig.cmake")
+
+    configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/cmake/sawIntuitiveResearchKitConfig.cmake.in"
+                    "${sawIntuitiveResearchKit_CMAKE_CONFIG_FILE}"
+                    @ONLY)
 
     cisst_add_config_version ("${sawIntuitiveResearchKit_CONFIG_FILE_DIR}/sawIntuitiveResearchKitConfigVersion.cmake"
                               VERSION ${sawIntuitiveResearchKit_VERSION}
@@ -172,8 +172,8 @@ if (cisst_FOUND)
              LIBRARY DESTINATION lib
              ARCHIVE DESTINATION lib)
 
-    install (FILES "${sawIntuitiveResearchKit_BINARY_DIR}/sawIntuitiveResearchKitConfig.cmake"
-             DESTINATION "${CISST_CMAKE_INSTALL_SUFFIX}/saw")
+    install (FILES "${sawIntuitiveResearchKit_CMAKE_CONFIG_FILE}"
+             DESTINATION "share/sawIntuitiveResearchKit")
 
   endif (sawRobotIO1394_FOUND AND sawControllers_FOUND AND sawConstraintController_FOUND)
 
