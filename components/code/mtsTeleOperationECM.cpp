@@ -46,8 +46,8 @@ mtsTeleOperationECM::mtsTeleOperationECM(const mtsTaskPeriodicConstructorArg & a
 void mtsTeleOperationECM::Init(void)
 {
     // configure state machine
-    mTeleopState.AddAllowedDesiredStates(mtsTeleOperationECMTypes::DISABLED);
-    mTeleopState.AddAllowedDesiredStates(mtsTeleOperationECMTypes::ENABLED);
+    mTeleopState.AddAllowedDesiredState(mtsTeleOperationECMTypes::DISABLED);
+    mTeleopState.AddAllowedDesiredState(mtsTeleOperationECMTypes::ENABLED);
 
     // state change, to convert to string events for users (Qt, ROS)
     mTeleopState.SetStateChangedCallback(&mtsTeleOperationECM::StateChanged,
@@ -246,8 +246,11 @@ void mtsTeleOperationECM::Cleanup(void)
 
 void mtsTeleOperationECM::StateChanged(void)
 {
-    MessageEvents.Status(this->GetName() + ", current state "
-                         + mtsTeleOperationECMTypes::StateTypeToString(mTeleopState.CurrentState()));
+    mtsTeleOperationECMTypes::StateType state
+        = static_cast<mtsTeleOperationECMTypes::StateType>(mTeleopState.CurrentState());
+    const std::string newState = mtsTeleOperationECMTypes::StateTypeToString(state);
+    MessageEvents.CurrentState(newState);
+    MessageEvents.Status(this->GetName() + ", current state " + newState);
 }
 
 void mtsTeleOperationECM::RunAll(void)
