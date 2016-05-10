@@ -45,7 +45,9 @@ mtsTeleOperationECM::mtsTeleOperationECM(const mtsTaskPeriodicConstructorArg & a
 
 void mtsTeleOperationECM::Init(void)
 {
+
     // configure state machine
+    mTeleopState.AddStates(mtsTeleOperationECMTypes::StateTypeListInt());
     mTeleopState.AddAllowedDesiredState(mtsTeleOperationECMTypes::DISABLED);
     mTeleopState.AddAllowedDesiredState(mtsTeleOperationECMTypes::ENABLED);
 
