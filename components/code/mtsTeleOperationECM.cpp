@@ -494,7 +494,7 @@ void mtsTeleOperationECM::RunEnabled(void)
 
     mECM.PositionCartesianSet.Goal().Assign(mECM.PositionCartesianInitial);
     mECM.PositionCartesianSet.Goal().Translation().Add(translation);
-    mECM.SetPositionCartesian(mECM.PositionCartesianSet);
+    // mECM.SetPositionCartesian(mECM.PositionCartesianSet);
 }
 
 void mtsTeleOperationECM::TransitionEnabled(void)

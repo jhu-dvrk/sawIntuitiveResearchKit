@@ -562,7 +562,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         mHasFootpedals = jsonValue.asBool();
     }
     // if we have any teleoperation component, we need to add the interfaces for the foot pedals
-    if (mTeleopsPSM.size() > 0) {
+    if ((mTeleopsPSM.size() > 0) || mTeleopECM) {
         mHasFootpedals = true;
     }
     if (mHasFootpedals) {
