@@ -72,9 +72,11 @@ int main(int argc, char ** argv)
                               "json configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
 
+#if CISST_HAS_ICE
     options.AddOptionOneValue("g", "gcmip",
                               "global component manager IP address",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &gcmip);
+#endif
 
     options.AddOptionOneValue("c", "collection-config",
                               "json configuration file for data collection",

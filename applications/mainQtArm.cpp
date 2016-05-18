@@ -81,9 +81,11 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("f", "firewire",
                               "firewire port number(s)",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &firewirePort);
+#if CISST_HAS_ICE
     options.AddOptionOneValue("g", "gcmip",
                               "global component manager IP address",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &gcmip);
+#endif
 
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
