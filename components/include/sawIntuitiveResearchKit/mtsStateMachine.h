@@ -23,7 +23,6 @@ http://www.cisst.org/cisst/license.txt.
 
 /*
   \todo
-  - For SetDesiredState, add list of allowed transitions
     map<currentState, list<allowedDesired>>, maybe special syntax for all states allowed?
   - Add ErrorCallback(std::string)
 
@@ -50,7 +49,7 @@ public:
     /*! Add a state. */
     void AddState(const StateType state);
 
-    void AddStates(const std::list<StateType> & states);
+    void AddStates(const std::vector<StateType> & states);
 
     bool StateExists(const StateType state) const;
 

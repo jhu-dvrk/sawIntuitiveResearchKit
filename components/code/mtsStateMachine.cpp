@@ -27,11 +27,11 @@ void mtsStateMachine::AddState(const StateType state)
     mStates[state] = false;
 }
 
-void mtsStateMachine::AddStates(const std::list<StateType> & states)
+void mtsStateMachine::AddStates(const std::vector<StateType> & states)
 {
-    typedef std::list<StateType> ListType;
-    const ListType::const_iterator end = states.end();
-    ListType::const_iterator iter = states.begin();
+    typedef std::vector<StateType> VectorType;
+    const VectorType::const_iterator end = states.end();
+    VectorType::const_iterator iter = states.begin();
     for (; iter != end; ++iter) {
         AddState(*iter);
     }

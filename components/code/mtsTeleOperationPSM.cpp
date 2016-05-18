@@ -45,7 +45,7 @@ mtsTeleOperationPSM::mtsTeleOperationPSM(const mtsTaskPeriodicConstructorArg & a
 void mtsTeleOperationPSM::Init(void)
 {
     // configure state machine
-    mTeleopState.AddStates(mtsTeleOperationPSMTypes::StateTypeListInt());
+    mTeleopState.AddStates(mtsTeleOperationPSMTypes::StateTypeVectorInt());
     mTeleopState.AddAllowedDesiredState(mtsTeleOperationPSMTypes::ENABLED);
     mTeleopState.AddAllowedDesiredState(mtsTeleOperationPSMTypes::ALIGNING_MTM);
     mTeleopState.AddAllowedDesiredState(mtsTeleOperationPSMTypes::DISABLED);

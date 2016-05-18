@@ -47,7 +47,7 @@ void mtsTeleOperationECM::Init(void)
 {
 
     // configure state machine
-    mTeleopState.AddStates(mtsTeleOperationECMTypes::StateTypeListInt());
+    mTeleopState.AddStates(mtsTeleOperationECMTypes::StateTypeVectorInt());
     mTeleopState.AddAllowedDesiredState(mtsTeleOperationECMTypes::DISABLED);
     mTeleopState.AddAllowedDesiredState(mtsTeleOperationECMTypes::ENABLED);
 
