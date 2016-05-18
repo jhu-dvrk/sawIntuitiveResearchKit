@@ -138,7 +138,7 @@ private:
     vctMatRot3 mMTMClutchedOrientation;
     mtsStateTable * mConfigurationStateTable;
 
-    mtsStateMachine<mtsTeleOperationPSMTypes::StateType> mTeleopState;
+    mtsStateMachine mTeleopState;
     double mInStateTimer;
 };
 

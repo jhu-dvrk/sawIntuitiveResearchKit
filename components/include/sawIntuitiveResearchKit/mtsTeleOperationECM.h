@@ -132,7 +132,7 @@ protected:
 
     bool mIsClutched;
 
-    mtsStateMachine<mtsTeleOperationECMTypes::StateType> mTeleopState;
+    mtsStateMachine mTeleopState;
     double mInStateTimer;
 
     double mDistanceLR; // distance between left and right

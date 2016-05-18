@@ -45,9 +45,10 @@ mtsTeleOperationPSM::mtsTeleOperationPSM(const mtsTaskPeriodicConstructorArg & a
 void mtsTeleOperationPSM::Init(void)
 {
     // configure state machine
-    mTeleopState.AddAllowedDesiredStates(mtsTeleOperationPSMTypes::ENABLED);
-    mTeleopState.AddAllowedDesiredStates(mtsTeleOperationPSMTypes::ALIGNING_MTM);
-    mTeleopState.AddAllowedDesiredStates(mtsTeleOperationPSMTypes::DISABLED);
+    mTeleopState.AddStates(mtsTeleOperationPSMTypes::StateTypeListInt());
+    mTeleopState.AddAllowedDesiredState(mtsTeleOperationPSMTypes::ENABLED);
+    mTeleopState.AddAllowedDesiredState(mtsTeleOperationPSMTypes::ALIGNING_MTM);
+    mTeleopState.AddAllowedDesiredState(mtsTeleOperationPSMTypes::DISABLED);
 
     // state change, to convert to string events for users (Qt, ROS)
     mTeleopState.SetStateChangedCallback(&mtsTeleOperationPSM::StateChanged,
@@ -335,7 +336,9 @@ void mtsTeleOperationPSM::LockTranslation(const bool & lock)
 
 void mtsTeleOperationPSM::StateChanged(void)
 {
-    const std::string newState = mtsTeleOperationPSMTypes::StateTypeToString(mTeleopState.CurrentState());
+    const mtsTeleOperationPSMTypes::StateType state
+        = static_cast<mtsTeleOperationPSMTypes::StateType>(mTeleopState.CurrentState());
+    const std::string newState = mtsTeleOperationPSMTypes::StateTypeToString(state);
     MessageEvents.CurrentState(newState);
     MessageEvents.Status(this->GetName() + ", current state " + newState);
 }

@@ -34,11 +34,10 @@ http://www.cisst.org/cisst/license.txt.
  */
 
 
-template <typename _stateType>
 class mtsStateMachine
 {
 public:
-    typedef _stateType StateType;
+    typedef int StateType;
 
     inline mtsStateMachine(const StateType initialState):
         mFirstRun(true),
@@ -48,11 +47,16 @@ public:
     {
     }
 
+    /*! Add a state. */
+    void AddState(const StateType state);
+
+    void AddStates(const std::list<StateType> & states);
+
+    bool StateExists(const StateType state) const;
+
     /*! Add an allowed desired state.  One can only use
       SetDesiredState with allowed states. */
-    void AddAllowedDesiredStates(const StateType allowedState) {
-        mAllowedDesiredStates[allowedState] = true;
-    }
+    void AddAllowedDesiredState(const StateType allowedState);
 
     /*! Set the Run callback for a given state. */
     //@{
@@ -134,31 +138,7 @@ public:
     }
     //@}
 
-    inline void Run(void) {
-        // on first run, call enter callback for initial state
-        if (mFirstRun) {
-            // update callbacks
-            UpdateCurrentCallbacks();
-            // find new state enter callback
-            typename CallbackMap::iterator found;
-            found = mEnterCallbacks.find(mCurrentState);
-            if (found != mEnterCallbacks.end()) {
-                found->second->Execute();
-            }
-            mFirstRun = false;
-        }
-        // run current state method
-        if (mRunCallback) {
-            mRunCallback->Execute();
-        }
-        if (mCurrentRunCallback) {
-            mCurrentRunCallback->Execute();
-        }
-        // check if a transition should happen
-        if (mCurrentTransitionCallback) {
-            mCurrentTransitionCallback->Execute();
-        }
-    }
+    void Run(void);
 
     inline const StateType & CurrentState(void) const {
         return mCurrentState;
@@ -168,59 +148,13 @@ public:
         return mDesiredState;
     }
 
-    inline bool SetDesiredState(const StateType & desiredState) {
-        const typename AllowedStateMap::const_iterator found
-            = mAllowedDesiredStates.find(desiredState);
-        if (found != mAllowedDesiredStates.end()) {
-            mDesiredState = desiredState;
-            return true;
-        }
-        return false;
-    }
+    bool SetDesiredState(const StateType & desiredState);
 
-    inline void SetCurrentState(const StateType newState) {
-        typename CallbackMap::iterator found;
-
-        // find current state leave callback
-        found = mLeaveCallbacks.find(mCurrentState);
-        if (found != mLeaveCallbacks.end()) {
-            found->second->Execute();
-        }
-        // set the new state and update current callbacks
-        mCurrentState = newState;
-        // find new state enter callback
-        found = mEnterCallbacks.find(mCurrentState);
-        if (found != mEnterCallbacks.end()) {
-            found->second->Execute();
-        }
-        // update current callbacks
-        UpdateCurrentCallbacks();
-        // user callback if provided
-        if (mStateChangeCallback) {
-            mStateChangeCallback->Execute();
-        }
-    }
+    void SetCurrentState(const StateType newState);
 
 protected:
 
-    void UpdateCurrentCallbacks(void)
-    {
-        typename CallbackMap::iterator found;
-        // find state run callback
-        found = mRunCallbacks.find(mCurrentState);
-        if (found != mRunCallbacks.end()) {
-            mCurrentRunCallback = found->second;
-        } else {
-            mCurrentRunCallback = 0;
-        }
-        // find transition callback
-        found = mTransitionCallbacks.find(mCurrentState);
-        if (found != mTransitionCallbacks.end()) {
-            mCurrentTransitionCallback = found->second;
-        } else {
-            mCurrentTransitionCallback = 0;
-        }
-    }
+    void UpdateCurrentCallbacks(void);
 
     std::string mName;
     bool mFirstRun;
@@ -239,8 +173,9 @@ protected:
 
     StateType mCurrentState;
     StateType mDesiredState;
-    typedef std::map<StateType, bool> AllowedStateMap;
-    AllowedStateMap mAllowedDesiredStates;
+    // if true, can be used set desired state
+    typedef std::map<StateType, bool> StateMap;
+    StateMap mStates;
 
 private:
     // default constructor disabled

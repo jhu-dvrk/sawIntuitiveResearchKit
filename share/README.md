@@ -1,5 +1,5 @@
-VRK configuration files
-=======================
+dVRK configuration files
+========================
 
 # Directories per system
 
@@ -38,3 +38,9 @@ Most configuration files are system specific but if you need to simulate a singl
 ## ROS IO
 
 These files can be used to configure the `dvrk_robot`/`dvrk_console_json` ROS application to publish the IO data of one or more arms.  See the `dvrk-ros`/`dvrk_robot` package.
+
+## Obsolete files
+
+* `dvmtm.rob` and `dvpsm.rob`.  Use the JSON files instead.  The `.rob` files can still be used with `robManipulator` in C++/Python if needed.
+* `two-arms.json`.  These files were used with the old application teleop JSON.  This application has been replaced by the Qt console JSON and for ROS `dvrk_console_json`.  The "console" applications are far more convenient and configurable.  Search for existing `console-xyz.json` in this directory and subdirectory to find different examples of use.
+
