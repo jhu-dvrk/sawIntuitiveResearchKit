@@ -18,15 +18,15 @@
             "io": "xml/sawRobotIO1394-PSM2-28275.xml",
             "pid": "../sawControllersPID-PSM.xml",
             "kinematic": "../psm-large-needle-driver.json"
-        }    
+        }
         ,
         {
             "name": "MTML",
             "type": "MTM_DERIVED",
             "io": "xml/sawRobotIO1394-MTML-foot-pedal-30594.xml",
             "pid": "../sawControllersPID-MTML.xml",
-            "kinematic": "../dvmtm.rob"
-        }        
+            "kinematic": "../mtm.json"
+        }
     ]
     ,
     "psm-teleops":
@@ -34,7 +34,7 @@
         {
             "type": "TELEOP_PSM_GENERIC",
             "master": "MTML",
-            "slave": "PSM2"            
-        }    
+            "slave": "PSM2"
+        }
     ]
 }

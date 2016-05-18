@@ -26,7 +26,7 @@
             "type": "MTM",
             "io": "xml/sawRobotIO1394-MTMR-23877.xml",
             "pid": "../sawControllersPID-MTMR.xml",
-            "kinematic": "../dvmtm.rob"
+            "kinematic": "../mtm.json"
         }
     ]
     ,
