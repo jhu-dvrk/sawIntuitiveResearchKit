@@ -81,18 +81,28 @@ void mtsIntuitiveResearchKitArm::Init(void)
     BaseFrame = vctFrm4x4::Identity();
     BaseFrameValid = true;
 
-    // cartesian position are timestamped using timestamps provided by PID
-    CartesianGetParam.SetAutomaticTimestamp(false);
-    CartesianGetDesiredParam.SetAutomaticTimestamp(false);
+    CartesianGetParam.SetAutomaticTimestamp(false); // based on PID timestamp
+    this->StateTable.AddData(CartesianGetParam, "CartesianPosition");
+
+    CartesianGetDesiredParam.SetAutomaticTimestamp(false); // based on PID timestamp
+    this->StateTable.AddData(CartesianGetDesiredParam, "CartesianPositionDesired");
+
     this->StateTable.AddData(CartesianGetLocalParam, "CartesianPositionLocal");
     this->StateTable.AddData(CartesianGetLocalDesiredParam, "CartesianPositionLocalDesired");
-    this->StateTable.AddData(CartesianGetParam, "CartesianPosition");
-    this->StateTable.AddData(CartesianGetDesiredParam, "CartesianPositionDesired");
     this->StateTable.AddData(BaseFrame, "BaseFrame");
+
+    JointGetParam.SetAutomaticTimestamp(false); // keep PID timestamp
     this->StateTable.AddData(JointGetParam, "JointPosition");
+    
+    JointGetParam.SetAutomaticTimestamp(false); // keep PID timestamp
     this->StateTable.AddData(JointGetDesired, "JointPositionDesired");
+
     this->StateTable.AddData(CartesianVelocityGetParam, "CartesianVelocityGetParam");
+
+    StateJointParam.SetAutomaticTimestamp(false); // keep PID timestamp
     this->StateTable.AddData(StateJointParam, "StateJoint");
+
+    StateJointDesiredParam.SetAutomaticTimestamp(false); // keep PID timestamp
     this->StateTable.AddData(StateJointDesiredParam, "StateJointDesired");
 
     // PID
