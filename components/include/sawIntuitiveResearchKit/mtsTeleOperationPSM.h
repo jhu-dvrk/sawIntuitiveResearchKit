@@ -58,6 +58,7 @@ private:
     void PSMErrorEventHandler(const std::string & message);
 
     void ClutchEventHandler(const prmEventButton & button);
+    void Clutch(const bool & clutch);
 
     // Functions for events
     struct {

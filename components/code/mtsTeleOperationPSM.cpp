@@ -242,25 +242,35 @@ void mtsTeleOperationPSM::PSMErrorEventHandler(const std::string & message)
 
 void mtsTeleOperationPSM::ClutchEventHandler(const prmEventButton & button)
 {
+    if (button.Type() == prmEventButton::PRESSED) {
+        mIsClutched = true;
+    } else {
+        mIsClutched = false;
+    }
+
     // if the teleoperation is activated
     if (mTeleopState.DesiredState() == mtsTeleOperationPSMTypes::ENABLED) {
-        if (button.Type() == prmEventButton::PRESSED) {
-            mIsClutched = true;
-            mMTM.PositionCartesianSet.Goal().Rotation().FromNormalized(mPSM.PositionCartesianCurrent.Position().Rotation());
-            mMTM.PositionCartesianSet.Goal().Translation().Assign(mMTM.PositionCartesianCurrent.Position().Translation());
-            MessageEvents.Status(this->GetName() + ": console clutch pressed");
+        Clutch(mIsClutched);
+    }
+}
 
-            // set MTM in effort mode, no force applied but gravity and locked orientation
-            mMTM.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
-            prmForceCartesianSet wrench;
-            mMTM.SetWrenchBody(wrench);
-            mMTM.SetGravityCompensation(true);
-            mMTM.LockOrientation(mMTM.PositionCartesianCurrent.Position().Rotation());
-        } else {
-            mIsClutched = false;
-            MessageEvents.Status(this->GetName() + ": console clutch released");
-            mTeleopState.SetCurrentState(mtsTeleOperationPSMTypes::SETTING_MTM_STATE);
-        }
+void mtsTeleOperationPSM::Clutch(const bool & clutch)
+{
+    // if the teleoperation is activated
+    if (clutch) {
+        mMTM.PositionCartesianSet.Goal().Rotation().FromNormalized(mPSM.PositionCartesianCurrent.Position().Rotation());
+        mMTM.PositionCartesianSet.Goal().Translation().Assign(mMTM.PositionCartesianCurrent.Position().Translation());
+        MessageEvents.Status(this->GetName() + ": console clutch pressed");
+
+        // set MTM in effort mode, no force applied but gravity and locked orientation
+        mMTM.SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+        prmForceCartesianSet wrench;
+        mMTM.SetWrenchBody(wrench);
+        mMTM.SetGravityCompensation(true);
+        mMTM.LockOrientation(mMTM.PositionCartesianCurrent.Position().Rotation());
+    } else {
+        MessageEvents.Status(this->GetName() + ": console clutch released");
+        mTeleopState.SetCurrentState(mtsTeleOperationPSMTypes::SETTING_MTM_STATE);
     }
 }
 
@@ -505,6 +515,10 @@ void mtsTeleOperationPSM::EnterEnabled(void)
         mMTM.LockOrientation(mMTM.PositionCartesianCurrent.Position().Rotation());
     } else {
         mMTM.UnlockOrientation();
+    }
+    // check if by any chance the clutch pedal is pressed
+    if (mIsClutched) {
+        Clutch(true);
     }
 }
 
