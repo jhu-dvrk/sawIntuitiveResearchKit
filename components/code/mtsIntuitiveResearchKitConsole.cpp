@@ -1335,7 +1335,8 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
 
     // which one should be running now
     if (mTeleopEnabled && allFine) {
-        if (mCameraPressed) {
+        // if the camera is pressed and there is a teleop ECM component
+        if (mCameraPressed && mTeleopECM) {
             teleopECM = true;
         } else {
             teleopPSM = true;
