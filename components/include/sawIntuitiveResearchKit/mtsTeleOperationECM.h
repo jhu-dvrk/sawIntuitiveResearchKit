@@ -26,7 +26,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
-// #include <sawIntuitiveResearchKit/mtsTeleOperationECMTypes.h>
 
 // always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -38,7 +37,7 @@ class CISST_EXPORT mtsTeleOperationECM: public mtsTaskPeriodic
 public:
     mtsTeleOperationECM(const std::string & componentName, const double periodInSeconds);
     mtsTeleOperationECM(const mtsTaskPeriodicConstructorArg & arg);
-    ~mtsTeleOperationECM() {}
+    ~mtsTeleOperationECM();
 
     void Configure(const std::string & filename = "");
     void Startup(void);
@@ -106,7 +105,8 @@ protected:
         prmVelocityCartesianGet VelocityCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
     };
-    RobotMTM mMTML, mMTMR;
+    RobotMTM * mMTML;
+    RobotMTM * mMTMR;
 
     class RobotECM {
     public:
@@ -121,7 +121,7 @@ protected:
         prmPositionCartesianGet PositionCartesianDesired;
         prmPositionCartesianSet PositionCartesianSet;
     };
-    RobotECM mECM;
+    RobotECM * mECM;
 
     double mScale;
     vctMatRot3 mRegistrationRotation;

@@ -36,7 +36,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 public:
     mtsTeleOperationPSM(const std::string & componentName, const double periodInSeconds);
     mtsTeleOperationPSM(const mtsTaskPeriodicConstructorArg & arg);
-    ~mtsTeleOperationPSM(){}
+    ~mtsTeleOperationPSM();
 
     void Configure(const std::string & filename = "");
     void Startup(void);
@@ -109,7 +109,7 @@ protected:
         prmPositionCartesianSet PositionCartesianSet;
         vctFrm4x4 CartesianPrevious;
     };
-    RobotMTM mMTM;
+    RobotMTM * mMTM;
 
     class RobotPSM {
     public:
@@ -124,7 +124,7 @@ protected:
         prmPositionCartesianSet PositionCartesianSet;
         vctFrm4x4 CartesianPrevious;
     };
-    RobotPSM mPSM;
+    RobotPSM * mPSM;
 
     double mScale;
     vctMatRot3 mRegistrationRotation;

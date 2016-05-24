@@ -324,6 +324,7 @@ void mtsIntuitiveResearchKitConsole::TeleopECM::ConfigureTeleop(const TeleopECMT
         {
             mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
             mtsTeleOperationECM * teleop = new mtsTeleOperationECM(mName, periodInSeconds);
+            teleop->Configure();
             teleop->SetRegistrationRotation(orientation);
             componentManager->AddComponent(teleop);
         }
@@ -370,6 +371,7 @@ void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMT
         {
             mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
             mtsTeleOperationPSM * teleop = new mtsTeleOperationPSM(mName, periodInSeconds);
+            teleop->Configure();
             teleop->SetRegistrationRotation(orientation);
             componentManager->AddComponent(teleop);
         }

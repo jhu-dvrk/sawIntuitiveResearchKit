@@ -87,8 +87,6 @@ if (cisst_FOUND)
                           "${CISST_BINARY_DIR}/include" # where to save the file
                           "sawIntuitiveResearchKit/"    # sub directory for include
                           code/mtsIntuitiveResearchKitArmTypes.cdg
-                          code/mtsTeleOperationPSMTypes.cdg
-                          code/mtsTeleOperationECMTypes.cdg
                           code/mtsVFDataFollow.cdg)
 
     include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
