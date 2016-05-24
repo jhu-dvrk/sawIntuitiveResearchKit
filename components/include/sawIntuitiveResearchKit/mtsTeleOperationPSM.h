@@ -25,7 +25,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
-#include <sawIntuitiveResearchKit/mtsTeleOperationPSMTypes.h>
 
 // always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -49,7 +48,7 @@ public:
     void LockRotation(const bool & lock);
     void LockTranslation(const bool & lock);
 
-private:
+protected:
 
     void Init(void);
 
@@ -77,10 +76,8 @@ private:
 
     void SetDesiredState(const std::string & state);
 
-protected:
-
     void StateChanged(void);
-    void RunAll(void); // this should happen for all states
+    void RunAllStates(void); // this should happen for all states
     void TransitionDisabled(void); // checks for desired state
     void EnterSettingPSMState(void); // request state and set timer
     void TransitionSettingPSMState(void); // check current state and timer
@@ -129,7 +126,6 @@ protected:
     };
     RobotPSM mPSM;
 
-private:
     double mScale;
     vctMatRot3 mRegistrationRotation;
 

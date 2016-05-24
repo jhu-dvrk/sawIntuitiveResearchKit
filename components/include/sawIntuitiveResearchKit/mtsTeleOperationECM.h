@@ -26,7 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
-#include <sawIntuitiveResearchKit/mtsTeleOperationECMTypes.h>
+// #include <sawIntuitiveResearchKit/mtsTeleOperationECMTypes.h>
 
 // always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -48,7 +48,7 @@ public:
     void SetScale(const double & scale);
     void SetRegistrationRotation(const vctMatRot3 & rotation);
 
-private:
+protected:
 
     void Init(void);
 
@@ -74,10 +74,8 @@ private:
 
     void SetDesiredState(const std::string & state);
 
-protected:
-
     void StateChanged(void);
-    void RunAll(void);
+    void RunAllStates(void);
     void TransitionDisabled(void); // checks for desired state
     void EnterSettingECMState(void); // request state and set timer
     void TransitionSettingECMState(void); // check current state and timer
@@ -125,7 +123,6 @@ protected:
     };
     RobotECM mECM;
 
- private:
     double mScale;
     vctMatRot3 mRegistrationRotation;
     mtsStateTable * mConfigurationStateTable;

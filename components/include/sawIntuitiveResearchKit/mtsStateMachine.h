@@ -36,7 +36,7 @@ http://www.cisst.org/cisst/license.txt.
 class mtsStateMachine
 {
 public:
-    typedef int StateType;
+    typedef std::string StateType;
 
     inline mtsStateMachine(const StateType initialState):
         mFirstRun(true),
