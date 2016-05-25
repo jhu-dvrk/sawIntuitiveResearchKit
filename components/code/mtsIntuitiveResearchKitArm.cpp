@@ -617,6 +617,9 @@ void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
         AddGravityCompensationEfforts(JointExternalEffort);
     }
 
+    // add custom efforts
+    AddCustomEfforts(JointExternalEffort);
+
     // pad array for PID
     vctDoubleVec torqueDesired(NumberOfAxes(), 0.0); // for PID
     torqueDesired.Assign(JointExternalEffort, NumberOfJointsKinematics());

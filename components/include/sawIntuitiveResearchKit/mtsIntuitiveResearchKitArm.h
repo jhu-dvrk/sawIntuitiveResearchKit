@@ -232,6 +232,8 @@ protected:
     // gravity compensation
     bool mGravityCompensation;
     void AddGravityCompensationEfforts(vctDoubleVec & efforts);
+    // add custom efforts for derived classes
+    inline virtual void AddCustomEfforts(vctDoubleVec & CMN_UNUSED(efforts)) {};
 
     //! robot current joint velocity
     prmVelocityJointGet JointVelocityGetParam;
