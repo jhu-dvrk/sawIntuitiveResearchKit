@@ -450,7 +450,7 @@ void mtsTeleOperationECM::EnterEnabled(void)
 
 void mtsTeleOperationECM::RunEnabled(void)
 {
-    const vct3 frictionForceCoeff(-5.0, -5.0, -20.0); // allow faster motion in x/y than z
+    const vct3 frictionForceCoeff(-20.0, -20.0, -20.0);
     const double distanceLRForceCoeff = 50.0;
     const double distanceRCMForceCoeff = 150.0;
 
@@ -476,38 +476,38 @@ void mtsTeleOperationECM::RunEnabled(void)
     vct3 forceFriction;
     vct3 directionRCM;
     vct3 forceRCM;
-    prmForceCartesianSet wrench;
+    prmForceCartesianSet wrenchR, wrenchL;
 
     // MTMR
     // apply distanceLR force
-    wrench.Force().Ref<3>(0).Assign(forceDistanceLR);
+    wrenchR.Force().Ref<3>(0).Assign(forceDistanceLR);
     // apply RCM distance force
     directionRCM.RatioOf(mMTMR->PositionCartesianCurrent.Position().Translation(), distanceR);
     error = (mDistanceR * distanceRatio) - distanceR;
     forceRCM.ProductOf(error * distanceRCMForceCoeff, directionRCM);
-    wrench.Force().Ref<3>(0).Add(forceRCM);
+    wrenchR.Force().Ref<3>(0).Add(forceRCM);
     // add friction force
     forceFriction.ElementwiseProductOf(frictionForceCoeff,
                                        mMTMR->VelocityCartesianCurrent.VelocityLinear());
-    wrench.Force().Ref<3>(0).Add(forceFriction);
+    wrenchR.Force().Ref<3>(0).Add(forceFriction);
     // apply
-    mMTMR->SetWrenchBody(wrench);
+    mMTMR->SetWrenchBody(wrenchR);
 
     // MTML
     // flip distance LR force
     forceDistanceLR.Multiply(-1.0);
-    wrench.Force().Ref<3>(0).Assign(forceDistanceLR);
+    wrenchL.Force().Ref<3>(0).Assign(forceDistanceLR);
     // apply RCM distance force
     directionRCM.RatioOf(mMTML->PositionCartesianCurrent.Position().Translation(), distanceL);
     error = (mDistanceL * distanceRatio) - distanceL;
     forceRCM.ProductOf(error * distanceRCMForceCoeff, directionRCM);
-    wrench.Force().Ref<3>(0).Add(forceRCM);
+    wrenchL.Force().Ref<3>(0).Add(forceRCM);
     // add friction force
     forceFriction.ElementwiseProductOf(frictionForceCoeff,
                                        mMTML->VelocityCartesianCurrent.VelocityLinear());
-    wrench.Force().Ref<3>(0).Add(forceFriction);
+    wrenchL.Force().Ref<3>(0).Add(forceFriction);
     // apply
-    mMTML->SetWrenchBody(wrench);
+    mMTML->SetWrenchBody(wrenchL);
 
     // ECM
     vct3 translation;

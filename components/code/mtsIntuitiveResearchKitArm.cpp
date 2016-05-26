@@ -377,28 +377,20 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             Manipulator.JacobianSpatial(JointGet, JacobianSpatial);
             Manipulator.JacobianBody(JointGet, JacobianBody);
 
-            // update linear velocity based on cartesian positions
-            const double dt = CartesianGetParam.Timestamp() - CartesianGetPreviousParam.Timestamp();
-            // test for dt = 0 is because we read from a state table
-            // and we can occasionally get twice the same sample
-            if (dt > 0.0) {
-                vct3 linearVelocity;
-                linearVelocity.DifferenceOf(CartesianGetParam.Position().Translation(),
-                                            CartesianGetPreviousParam.Position().Translation());
-                linearVelocity.Divide(dt);
-                CartesianVelocityGetParam.SetVelocityLinear(linearVelocity);
-                CartesianVelocityGetParam.SetTimestamp(CartesianGetParam.Timestamp());
-                CartesianVelocityGetParam.SetValid(true);
-            }
-            CartesianGetPreviousParam = CartesianGetParam;
-            // update angular velocity using the jacobian and angular
-            // velocities.  The last few joints are pretty noisy so
-            // this velocity is noisy as well.  This is why we don't
-            // use all joint velocities to compute the linear velocity
+            // update cartesian velocity using the jacobian and joint
+            // velocities.
             vctDoubleVec cartesianVelocity(6);
-            cartesianVelocity.ProductOf(JacobianSpatial,
+            cartesianVelocity.ProductOf(JacobianBody,
                                         JointVelocityGet.Ref(NumberOfJointsKinematics()));
-            CartesianVelocityGetParam.SetVelocityAngular(cartesianVelocity.Ref(3, 3));
+            vct3 relative, absolute;
+            // linear
+            relative.Assign(cartesianVelocity.Ref(3, 0));
+            CartesianGet.Rotation().ApplyTo(relative, absolute);
+            CartesianVelocityGetParam.SetVelocityLinear(absolute);
+            // angular
+            relative.Assign(cartesianVelocity.Ref(3, 3));
+            CartesianGet.Rotation().ApplyTo(relative, absolute);
+            CartesianVelocityGetParam.SetVelocityAngular(absolute);
 
             // update cartesian position desired based on joint desired
             CartesianGetLocalDesired = Manipulator.ForwardKinematics(JointGetDesired);
