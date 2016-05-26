@@ -30,6 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawControllers/mtsPID.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
@@ -448,7 +449,12 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     cmnPath configPath(cmnPath::GetWorkingDirectory());
     std::string fullname = configPath.Find(filename);
     std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
-    configPath.Add(configDir);
+    configPath.Add(configDir, cmnPath::TAIL);
+    
+    // add path to source/share directory to find common files.  This
+    // will work as long as this component is located in the same
+    // parent directory as the "shared" directory.
+    configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
 
     // IO default settings
     double periodIO = 0.5 * cmn_ms;

@@ -82,6 +82,10 @@ if (cisst_FOUND)
     configure_file ("${sawIntuitiveResearchKit_SOURCE_DIR}/code/sawIntuitiveResearchKitRevision.h.in"
                     "${sawIntuitiveResearchKit_BINARY_DIR}/include/sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h")
 
+    # Generate sawIntuitiveResearchKitConfig.h
+    configure_file ("${sawIntuitiveResearchKit_SOURCE_DIR}/code/sawIntuitiveResearchKitConfig.h.in"
+                    "${sawIntuitiveResearchKit_BINARY_DIR}/include/sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h")
+
     # create data type using the data generator
     cisst_data_generator (sawIntuitiveResearchKit
                           "${CISST_BINARY_DIR}/include" # where to save the file
