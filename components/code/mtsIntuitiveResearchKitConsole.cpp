@@ -320,14 +320,35 @@ void mtsIntuitiveResearchKitConsole::TeleopECM::ConfigureTeleop(const TeleopECMT
                                                                 const double & periodInSeconds)
 {
     mType = type;
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+
     switch (type) {
     case TELEOP_ECM:
         {
-            mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
             mtsTeleOperationECM * teleop = new mtsTeleOperationECM(mName, periodInSeconds);
             teleop->Configure();
             teleop->SetRegistrationRotation(orientation);
             componentManager->AddComponent(teleop);
+        }
+        break;
+    case TELEOP_ECM_DERIVED:
+        {
+            mtsComponent * component;
+            component = componentManager->GetComponent(Name());
+            if (component) {
+                mtsTeleOperationECM * teleop = dynamic_cast<mtsTeleOperationECM *>(component);
+                if (teleop) {
+                    teleop->Configure();
+                } else {
+                    CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureTeleop: component \""
+                                       << Name() << "\" doesn't seem to be derived from mtsTeleOperationECM."
+                                       << std::endl;
+                }
+            } else {
+                CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureTeleop: component \""
+                                   << Name() << "\" not found."
+                                   << std::endl;
+            }
         }
         break;
     default:
@@ -367,14 +388,35 @@ void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMT
                                                                 const double & periodInSeconds)
 {
     mType = type;
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+
     switch (type) {
     case TELEOP_PSM:
         {
-            mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
             mtsTeleOperationPSM * teleop = new mtsTeleOperationPSM(mName, periodInSeconds);
             teleop->Configure();
             teleop->SetRegistrationRotation(orientation);
             componentManager->AddComponent(teleop);
+        }
+        break;
+    case TELEOP_PSM_DERIVED:
+        {
+            mtsComponent * component;
+            component = componentManager->GetComponent(Name());
+            if (component) {
+                mtsTeleOperationPSM * teleop = dynamic_cast<mtsTeleOperationPSM *>(component);
+                if (teleop) {
+                    teleop->Configure();
+                } else {
+                    CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureTeleop: component \""
+                                       << Name() << "\" doesn't seem to be derived from mtsTeleOperationPSM."
+                                       << std::endl;
+                }
+            } else {
+                CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureTeleop: component \""
+                                   << Name() << "\" not found."
+                                   << std::endl;
+            }
         }
         break;
     default:
@@ -450,7 +492,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     std::string fullname = configPath.Find(filename);
     std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
     configPath.Add(configDir, cmnPath::TAIL);
-    
+
     // add path to source/share directory to find common files.  This
     // will work as long as this component is located in the same
     // parent directory as the "shared" directory.
@@ -1031,11 +1073,13 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         std::string typeString = jsonValue.asString();
         if (typeString == "TELEOP_ECM") {
             mTeleopECM->mType = TeleopECM::TELEOP_ECM;
+        } else if (typeString == "TELEOP_ECM_DERIVED") {
+            mTeleopECM->mType = TeleopECM::TELEOP_ECM_DERIVED;
         } else if (typeString == "TELEOP_ECM_GENERIC") {
             mTeleopECM->mType = TeleopECM::TELEOP_ECM_GENERIC;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: teleop " << name << ": invalid type \""
-                                     << typeString << "\", needs to be TELEOP_ECM or TELEOP_ECM_GENERIC" << std::endl;
+                                     << typeString << "\", needs to be TELEOP_ECM, TELEOP_ECM_DERIVED or TELEOP_ECM_GENERIC" << std::endl;
             return false;
         }
     } else {
@@ -1123,11 +1167,13 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         std::string typeString = jsonValue.asString();
         if (typeString == "TELEOP_PSM") {
             teleopPointer->mType = TeleopPSM::TELEOP_PSM;
+        } else if (typeString == "TELEOP_PSM_DERIVED") {
+            teleopPointer->mType = TeleopPSM::TELEOP_PSM_DERIVED;
         } else if (typeString == "TELEOP_PSM_GENERIC") {
             teleopPointer->mType = TeleopPSM::TELEOP_PSM_GENERIC;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: teleop " << name << ": invalid type \""
-                                     << typeString << "\", needs to be TELEOP_PSM or TELEOP_PSM_GENERIC" << std::endl;
+                                     << typeString << "\", needs to be TELEOP_PSM, TELEOP_PSM_DERIVED or TELEOP_PSM_GENERIC" << std::endl;
             return false;
         }
     } else {

@@ -120,7 +120,7 @@ public:
 
     class TeleopECM {
     public:
-        typedef enum {TELEOP_ECM, TELEOP_ECM_GENERIC} TeleopECMType;
+        typedef enum {TELEOP_ECM, TELEOP_ECM_DERIVED, TELEOP_ECM_GENERIC} TeleopECMType;
         friend class mtsIntuitiveResearchKitConsole;
         friend class mtsIntuitiveResearchKitConsoleQt;
         friend class dvrk::console;
@@ -155,7 +155,7 @@ public:
 
     class TeleopPSM {
     public:
-        typedef enum {TELEOP_PSM, TELEOP_PSM_GENERIC} TeleopPSMType;
+        typedef enum {TELEOP_PSM, TELEOP_PSM_DERIVED, TELEOP_PSM_GENERIC} TeleopPSMType;
         friend class mtsIntuitiveResearchKitConsole;
         friend class mtsIntuitiveResearchKitConsoleQt;
         friend class dvrk::console;
