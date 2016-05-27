@@ -19,6 +19,8 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitArm_h
 #define _mtsIntuitiveResearchKitArm_h
 
+#include <cisstNumerical/nmrPInverse.h>
+
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
@@ -28,6 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstParameterTypes/prmVelocityJointGet.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
+#include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
 #include <cisstRobot/robManipulatorLSNorm.h>
@@ -219,12 +222,16 @@ protected:
     vctDoubleVec JointSet;
 
     // efforts
-    vctDoubleMat JacobianBody, JacobianSpatial;
+    vctDoubleMat JacobianBody, JacobianBodyTranspose, JacobianSpatial;
     vctDoubleVec JointExternalEffort;
     WrenchType mWrenchType;
-    prmForceCartesianSet mWrench;
+    prmForceCartesianSet mWrenchSet;
     bool mWrenchBodyOrientationAbsolute;
     prmForceTorqueJointSet TorqueSetParam;
+    // to estimate wrench from joint efforts
+    nmrPInverseDynamicData mJacobianPInverseData;
+    prmForceCartesianGet mWrenchGet;
+
     // used by MTM only
     bool EffortOrientationLocked;
     vctDoubleVec EffortOrientationJoint;

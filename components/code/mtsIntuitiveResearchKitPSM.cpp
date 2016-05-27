@@ -502,7 +502,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             PID.EnableTrackingError(false);
             PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
             RobotState = newState;
-            mWrench.Force().Zeros();
+            mWrenchSet.Force().Zeros();
             mWrenchType = WRENCH_UNDEFINED;
             MessageEvents.Status(this->GetName() + " effort cartesian");
         }
