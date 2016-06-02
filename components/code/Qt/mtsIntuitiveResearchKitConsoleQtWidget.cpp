@@ -160,7 +160,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     teleopLayout->addWidget(QPBTeleopStart);
     QPBTeleopStop = new QPushButton("Stop");
     QPBTeleopStop->setToolTip("ctrl + S");
-    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this, SLOT(SlotTeleopStart()));
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this, SLOT(SlotTeleopStop()));
     teleopLayout->addWidget(QPBTeleopStop);
 
     boxLayout->addStretch(100);
