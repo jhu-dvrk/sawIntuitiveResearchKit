@@ -619,24 +619,28 @@ void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
 {
     // update torques based on wrench
     vctDoubleVec force(6);
-    if (mWrenchBodyOrientationAbsolute) {
-        // use forward kinematics orientation to have constant wrench orientation
-        vct3 relative, absolute;
-        // force
-        relative.Assign(mWrenchSet.Force().Ref<3>(0));
-        CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
-        force.Ref(3, 0).Assign(absolute);
-        // torque
-        relative.Assign(mWrenchSet.Force().Ref<3>(3));
-        CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
-        force.Ref(3, 3).Assign(absolute);
-    } else {
-        force.Assign(mWrenchSet.Force());
-    }
 
+    // body wrench
     if (mWrenchType == WRENCH_BODY) {
+        if (mWrenchBodyOrientationAbsolute) {
+            // use forward kinematics orientation to have constant wrench orientation
+            vct3 relative, absolute;
+            // force
+            relative.Assign(mWrenchSet.Force().Ref<3>(0));
+            CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
+            force.Ref(3, 0).Assign(absolute);
+            // torque
+            relative.Assign(mWrenchSet.Force().Ref<3>(3));
+            CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
+            force.Ref(3, 3).Assign(absolute);
+        } else {
+            force.Assign(mWrenchSet.Force());
+        }
         JointExternalEffort.ProductOf(JacobianBody.Transpose(), force);
-    } else if (mWrenchType == WRENCH_SPATIAL) {
+    }
+    // spatial wrench
+    else if (mWrenchType == WRENCH_SPATIAL) {
+        force.Assign(mWrenchSet.Force());
         JointExternalEffort.ProductOf(JacobianSpatial.Transpose(), force);
     }
 
