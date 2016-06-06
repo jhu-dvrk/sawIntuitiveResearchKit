@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 class QPushButton;
 class QTextEdit;
 class QTabWidget;
+class QDoubleSpinBox;
 
 #include <QWidget>
 
@@ -46,6 +47,7 @@ public:
     void HasTeleOp(const bool & hasTeleOp);
 
 signals:
+    void SignalScale(double scale);
     void SignalAppendMessage(QString);
     void SignalSetColor(QColor);
 
@@ -54,6 +56,9 @@ private slots:
     void SlotHome(void);
     void SlotTeleopStart(void);
     void SlotTeleopStop(void);
+    void SlotSetScale(double scale);
+
+    void SlotScaleEventHandler(double scale);
     void SlotTextChanged(void);
 
 protected:
@@ -65,8 +70,10 @@ protected:
         mtsFunctionVoid PowerOff;
         mtsFunctionVoid Home;
         mtsFunctionWrite TeleopEnable;
+        mtsFunctionWrite SetScale;
     } Console;
 
+    void ScaleEventHandler(const double & scale);
     void ErrorEventHandler(const std::string & message);
     void WarningEventHandler(const std::string & message);
     void StatusEventHandler(const std::string & message);
@@ -75,6 +82,7 @@ protected:
     QPushButton * QPBHome;
     QPushButton * QPBTeleopStart;
     QPushButton * QPBTeleopStop;
+    QDoubleSpinBox * QSBScale;
     QTabWidget * QTWidgets;
     QTextEdit * QTEMessages;
 };

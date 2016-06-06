@@ -40,22 +40,26 @@ http://www.cisst.org/cisst/license.txt.
 #include <QLabel>
 #include <QPixmap>
 #include <QShortcut>
+#include <QDoubleSpinBox>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
 
 mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(const std::string & componentName):
     mtsComponent(componentName)
 {
-    mtsInterfaceRequired * interfaceRequiredMain = AddInterfaceRequired("Main");
-    if (interfaceRequiredMain) {
-        interfaceRequiredMain->AddFunction("PowerOff", Console.PowerOff);
-        interfaceRequiredMain->AddFunction("Home", Console.Home);
-        interfaceRequiredMain->AddFunction("TeleopEnable", Console.TeleopEnable);
-        interfaceRequiredMain->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorEventHandler,
+    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Main");
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("PowerOff", Console.PowerOff);
+        interfaceRequired->AddFunction("Home", Console.Home);
+        interfaceRequired->AddFunction("TeleopEnable", Console.TeleopEnable);
+        interfaceRequired->AddFunction("SetScale", Console.SetScale);
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
+                                                this, "Scale");
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorEventHandler,
                                                     this, "Error");
-        interfaceRequiredMain->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::WarningEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::WarningEventHandler,
                                                     this, "Warning");
-        interfaceRequiredMain->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StatusEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StatusEventHandler,
                                                     this, "Status");
     }
     setupUi();
@@ -123,6 +127,11 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStop(void)
     Console.TeleopEnable(false);
 }
 
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetScale(double scale)
+{
+    Console.SetScale(scale);
+}
+
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTextChanged(void)
 {
     QTEMessages->verticalScrollBar()->setSliderPosition(QTEMessages->verticalScrollBar()->maximum());
@@ -162,6 +171,12 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QPBTeleopStop->setToolTip("ctrl + S");
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this, SLOT(SlotTeleopStop()));
     teleopLayout->addWidget(QPBTeleopStop);
+    QSBScale = new QDoubleSpinBox();
+    QSBScale->setRange(0.1, 1.0);
+    QSBScale->setSingleStep(0.1);
+    QSBScale->setPrefix("scale ");
+    QSBScale->setValue(0.2);
+    teleopLayout->addWidget(QSBScale);
 
     boxLayout->addStretch(100);
     buttonsWidget->setFixedWidth(buttonsWidget->sizeHint().width());
@@ -202,6 +217,10 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotTeleopStart()));
     connect(QPBTeleopStop, SIGNAL(clicked()),
             this, SLOT(SlotTeleopStop()));
+    connect(QSBScale, SIGNAL(valueChanged(double)),
+            this, SLOT(SlotSetScale(double)));
+    connect(this, SIGNAL(SignalScale(double)),
+            this, SLOT(SlotScaleEventHandler(double)));
 
     // messages
     connect(this, SIGNAL(SignalAppendMessage(QString)),
@@ -212,6 +231,16 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotTextChanged()));
 
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q), this, SLOT(close()));
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotScaleEventHandler(double scale)
+{
+    QSBScale->setValue(scale);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler(const double & scale)
+{
+    emit SignalScale(scale);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::ErrorEventHandler(const std::string & message)

@@ -461,6 +461,10 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
                                            "Home");
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::TeleopEnable, this,
                                            "TeleopEnable", false);
+        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetScale, this,
+                                           "SetScale", 0.5);
+        interfaceProvided->AddEventWrite(ConfigurationEvents.Scale,
+                                         "Scale", 0.5);
         interfaceProvided->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
         interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
         interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
@@ -789,6 +793,7 @@ bool mtsIntuitiveResearchKitConsole::AddTeleopPSMInterfaces(TeleopPSM * teleop)
     teleop->InterfaceRequired = this->AddInterfaceRequired(teleop->Name());
     if (teleop->InterfaceRequired) {
         teleop->InterfaceRequired->AddFunction("SetDesiredState", teleop->SetDesiredState);
+        teleop->InterfaceRequired->AddFunction("SetScale", teleop->SetScale);
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
@@ -1460,6 +1465,17 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
             iterTeleopPSM->second->SetDesiredState(mtsStdString("ALIGNING_MTM"));
         }
     }
+}
+
+void mtsIntuitiveResearchKitConsole::SetScale(const double & scale)
+{
+    const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
+    for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
+         iterTeleopPSM != endTeleopPSM;
+         ++iterTeleopPSM) {
+        iterTeleopPSM->second->SetScale(scale);
+    }
+    ConfigurationEvents.Scale(scale);
 }
 
 void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & button)

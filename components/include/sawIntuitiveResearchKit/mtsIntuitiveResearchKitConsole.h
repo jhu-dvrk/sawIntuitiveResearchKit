@@ -183,6 +183,7 @@ public:
         std::string mPSMName;
         std::string mConsoleName;
         mtsFunctionWrite SetDesiredState;
+        mtsFunctionWrite SetScale;
         mtsInterfaceRequired * InterfaceRequired;
     };
 
@@ -253,12 +254,13 @@ protected:
     void Home(void);
     void TeleopEnable(const bool & enable);
     void UpdateTeleopState(void);
+    void SetScale(const double & scale);
     bool mHasIO;
     bool mHasFootpedals;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
-    
+
     struct {
         mtsFunctionWrite Clutch;
         mtsFunctionWrite Camera;
@@ -276,6 +278,9 @@ protected:
         mtsFunctionWrite Warning;
         mtsFunctionWrite Error;
     } MessageEvents;
+    struct {
+        mtsFunctionWrite Scale;
+    } ConfigurationEvents;
 
     void ErrorEventHandler(const std::string & message);
     void WarningEventHandler(const std::string & message);
