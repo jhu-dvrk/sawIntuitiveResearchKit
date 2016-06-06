@@ -60,6 +60,10 @@ public:
     /*! Set the Run callback for a given state. */
     //@{
     inline void SetRunCallback(const StateType state, mtsCallableVoidBase * callback) {
+        if (!StateExists(state)) {
+            cmnThrow("mtsStateMachine::SetRunCallback: "
+                     + mName + ", state doesn't exist.  Use AddState first.");
+        }
         mRunCallbacks[state] = callback;
     }
     template <class __classType>
@@ -87,6 +91,10 @@ public:
       called only once, before the Run callback. */
     //@{
     inline void SetEnterCallback(const StateType state, mtsCallableVoidBase * callback) {
+        if (!StateExists(state)) {
+            cmnThrow("mtsStateMachine::SetEnterCallback: "
+                     + mName + ", state doesn't exist.  Use AddState first.");
+        }
         mEnterCallbacks[state] = callback;
     }
     template <class __classType>
@@ -101,6 +109,10 @@ public:
       leaving the current state. */
     //@{
     inline void SetLeaveCallback(const StateType state, mtsCallableVoidBase * callback) {
+        if (!StateExists(state)) {
+            cmnThrow("mtsStateMachine::SetLeaveCallback: "
+                     + mName + ", state doesn't exist.  Use AddState first.");
+        }
         mLeaveCallbacks[state] = callback;
     }
     template <class __classType>
@@ -115,6 +127,10 @@ public:
       is called after the Run callback for the current state. */
     //@{
     inline void SetTransitionCallback(const StateType state, mtsCallableVoidBase * callback) {
+        if (!StateExists(state)) {
+            cmnThrow("mtsStateMachine::SetTransitionCallback: "
+                     + mName + ", state doesn't exist.  Use AddState first.");
+        }
         mTransitionCallbacks[state] = callback;
     }
     template <class __classType>
