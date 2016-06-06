@@ -66,7 +66,7 @@ void mtsTeleOperationPSM::Init(void)
     }
 }
 
-void mtsTeleOperationPSM::Configure(const std::string & filename)
+void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
 {
     // configure state machine
     mTeleopState.AddState("DISABLED");

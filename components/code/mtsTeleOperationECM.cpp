@@ -75,7 +75,7 @@ void mtsTeleOperationECM::Init(void)
     }
 }
 
-void mtsTeleOperationECM::Configure(const std::string & filename)
+void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
 {
     // configure state machine
     mTeleopState.AddState("DISABLED");
