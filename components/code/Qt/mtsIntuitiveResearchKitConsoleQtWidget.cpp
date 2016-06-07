@@ -88,6 +88,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::HasTeleOp(const bool & hasTeleOp)
 {
     QPBTeleopStart->setEnabled(hasTeleOp);
     QPBTeleopStop->setEnabled(hasTeleOp);
+    QSBScale->setEnabled(hasTeleOp);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
