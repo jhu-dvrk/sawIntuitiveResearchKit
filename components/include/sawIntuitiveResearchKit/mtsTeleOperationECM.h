@@ -132,10 +132,14 @@ protected:
     mtsStateMachine mTeleopState;
     double mInStateTimer;
 
-    double mDistanceLR; // distance between left and right
-    double mDistanceL, mDistanceR; // distances to RCM
-    vct3 mInitialMTMsPosition;
-    double mInitialMTMsAngle;
+    struct MTMsState {
+        double dLR; // distance
+        vct3 C;     // center
+        vct3 Up;    // up direction
+        double w;   // width of image
+        double d;   // depth of R along C, depth of L is opposite
+    } mInitial;
+
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationECM);

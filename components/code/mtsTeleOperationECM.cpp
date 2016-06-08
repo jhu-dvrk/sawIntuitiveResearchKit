@@ -432,60 +432,80 @@ void mtsTeleOperationECM::EnterEnabled(void)
     mMTMR->LockOrientation(mMTMR->PositionCartesianCurrent.Position().Rotation());
 
     // initial state for MTM force feedback
-    // compute initial distance between left and right masters
+    // -1- initial distance between left and right masters
     vct3 vectorLR;
     vectorLR.DifferenceOf(mMTMR->PositionCartesianCurrent.Position().Translation(),
                           mMTML->PositionCartesianCurrent.Position().Translation());
-    mDistanceLR = vectorLR.Norm();
-    // compute distance to RCM for left and right
-    mDistanceL = mMTML->PositionCartesianCurrent.Position().Translation().Norm();
-    mDistanceR = mMTMR->PositionCartesianCurrent.Position().Translation().Norm();
+    mInitial.dLR = vectorLR.Norm();
+    // -2- mid-point, aka center of image
+    mInitial.C.SumOf(mMTMR->PositionCartesianCurrent.Position().Translation(),
+                     mMTML->PositionCartesianCurrent.Position().Translation());
+    mInitial.C.Multiply(0.5);
+    // -3- image up vector
+    mInitial.Up.CrossProductOf(vectorLR, mInitial.C);
+    mInitial.Up.NormalizedSelf();
+    // -4- width of image, depth of arms wrt image plan
+    vct3 side;
+    side.CrossProductOf(mInitial.C, mInitial.Up);
+    side.NormalizedSelf();
+    mInitial.w = 0.5 * vctDotProduct(side, vectorLR);
+    mInitial.d = 0.5 * vctDotProduct(mInitial.C.Normalized(), vectorLR);
 
-    // initial state for ECM motion
-    mInitialMTMsPosition.SumOf(mMTMR->PositionCartesianCurrent.Position().Translation(),
-                               mMTML->PositionCartesianCurrent.Position().Translation());
-    mInitialMTMsPosition.Divide(2.0);
+#if 0
+    std::cerr << "L: " << mMTML->PositionCartesianCurrent.Position().Translation() << std::endl
+              << "R: " << mMTMR->PositionCartesianCurrent.Position().Translation() << std::endl
+              << "C:  " << mInitial.C << std::endl
+              << "Up: " << mInitial.Up << std::endl
+              << "d:  " << mInitial.dLR << std::endl
+              << "w:  " << mInitial.w << std::endl
+              << "d:  " << mInitial.d << std::endl
+              << "Si: " << side << std::endl;
+#endif
     mECM->PositionCartesianInitial = mECM->PositionCartesianDesired.Position();
 }
 
 void mtsTeleOperationECM::RunEnabled(void)
 {
-    const vct3 frictionForceCoeff(-20.0, -20.0, -20.0);
-    const double distanceLRForceCoeff = 50.0;
-    const double distanceRCMForceCoeff = 150.0;
+    const vct3 frictionForceCoeff(-10.0, -10.0, -10.0);
+    const double distanceForceCoeff = 150.0;
 
-    // compute new distances to RCM
-    const double distanceL = mMTML->PositionCartesianCurrent.Position().Translation().Norm();
-    const double distanceR = mMTMR->PositionCartesianCurrent.Position().Translation().Norm();
-    const double distanceRatio = (distanceR + distanceL) / (mDistanceR + mDistanceL);
-
-    // compute force to maintain constant distance between masters
+    // -1- vector between left and right masters
     vct3 vectorLR;
     vectorLR.DifferenceOf(mMTMR->PositionCartesianCurrent.Position().Translation(),
                           mMTML->PositionCartesianCurrent.Position().Translation());
-    // get distance and normalize the vector
-    vct3 unitLR(vectorLR);
-    double distanceLR = unitLR.Norm();
-    unitLR.Divide(distanceLR);
+    // -2- mid-point, aka center of image
+    vct3 c;
+    c.SumOf(mMTMR->PositionCartesianCurrent.Position().Translation(),
+            mMTML->PositionCartesianCurrent.Position().Translation());
+    c.Multiply(0.5);
+    vct3 directionC = c.Normalized();
+    // -3- image up vector
+    vct3 up;
+    up.CrossProductOf(vectorLR, c);
+    up.NormalizedSelf();
+    // -4- Width of image
+    vct3 side;
+    side.CrossProductOf(c, up);
+    side.NormalizedSelf();
+    // -5- find desired position for L and R
+    vct3 goalL(c);
+    goalL.AddProductOf(-mInitial.w, side);
+    goalL.AddProductOf(-mInitial.d, directionC);
+    vct3 goalR(c);
+    goalR.AddProductOf(mInitial.w, side);
+    goalR.AddProductOf(mInitial.d, directionC);
 
-    // compute forceDistance to apply on each master to maintain distance
-    double error = (mDistanceLR * distanceRatio) - distanceLR;
-    vct3 forceDistanceLR(unitLR);
-    forceDistanceLR.Multiply(error * distanceLRForceCoeff); // this gain should come from JSON file
-
+    // compute forces on L and R based on error in position
     vct3 forceFriction;
-    vct3 directionRCM;
-    vct3 forceRCM;
+    vct3 force;
     prmForceCartesianSet wrenchR, wrenchL;
 
     // MTMR
-    // apply distanceLR force
-    wrenchR.Force().Ref<3>(0).Assign(forceDistanceLR);
-    // apply RCM distance force
-    directionRCM.RatioOf(mMTMR->PositionCartesianCurrent.Position().Translation(), distanceR);
-    error = (mDistanceR * distanceRatio) - distanceR;
-    forceRCM.ProductOf(error * distanceRCMForceCoeff, directionRCM);
-    wrenchR.Force().Ref<3>(0).Add(forceRCM);
+    // apply force
+    force.DifferenceOf(goalR,
+                       mMTMR->PositionCartesianCurrent.Position().Translation());
+    force.Multiply(distanceForceCoeff);
+    wrenchR.Force().Ref<3>(0).Assign(force);
     // add friction force
     forceFriction.ElementwiseProductOf(frictionForceCoeff,
                                        mMTMR->VelocityCartesianCurrent.VelocityLinear());
@@ -494,14 +514,11 @@ void mtsTeleOperationECM::RunEnabled(void)
     mMTMR->SetWrenchBody(wrenchR);
 
     // MTML
-    // flip distance LR force
-    forceDistanceLR.Multiply(-1.0);
-    wrenchL.Force().Ref<3>(0).Assign(forceDistanceLR);
-    // apply RCM distance force
-    directionRCM.RatioOf(mMTML->PositionCartesianCurrent.Position().Translation(), distanceL);
-    error = (mDistanceL * distanceRatio) - distanceL;
-    forceRCM.ProductOf(error * distanceRCMForceCoeff, directionRCM);
-    wrenchL.Force().Ref<3>(0).Add(forceRCM);
+    // apply force
+    force.DifferenceOf(goalL,
+                       mMTML->PositionCartesianCurrent.Position().Translation());
+    force.Multiply(distanceForceCoeff);
+    wrenchL.Force().Ref<3>(0).Assign(force);
     // add friction force
     forceFriction.ElementwiseProductOf(frictionForceCoeff,
                                        mMTML->VelocityCartesianCurrent.VelocityLinear());
@@ -509,6 +526,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     // apply
     mMTML->SetWrenchBody(wrenchL);
 
+#if 0
     // ECM
     vct3 translation;
     translation.DifferenceOf(mInitialMTMsPosition, vectorLR);
@@ -522,6 +540,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     mECM->PositionCartesianSet.Goal().Assign(mECM->PositionCartesianInitial);
     mECM->PositionCartesianSet.Goal().Translation().Add(translation);
     // mECM->SetPositionCartesian(mECM->PositionCartesianSet);
+#endif
 }
 
 void mtsTeleOperationECM::TransitionEnabled(void)
