@@ -99,7 +99,6 @@ protected:
         mtsFunctionWrite SetWrenchBodyOrientationAbsolute;
         mtsFunctionWrite SetGravityCompensation;
 
-        vctFrm3 PositionCartesianInitial;
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianGet PositionCartesianDesired;
         prmVelocityCartesianGet VelocityCartesianCurrent;
@@ -138,6 +137,7 @@ protected:
         vct3 Up;    // up direction
         double w;   // width of image
         double d;   // depth of R along C, depth of L is opposite
+        vctFrm3 Frame; // frame associated to MTMs
     } mInitial;
 
 };

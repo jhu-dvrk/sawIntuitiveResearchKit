@@ -450,8 +450,13 @@ void mtsTeleOperationECM::EnterEnabled(void)
     side.NormalizedSelf();
     mInitial.w = 0.5 * vctDotProduct(side, vectorLR);
     mInitial.d = 0.5 * vctDotProduct(mInitial.C.Normalized(), vectorLR);
+    // -5- compute MTMs frame
+    mInitial.Frame.Translation().Assign(mInitial.C);
+    mInitial.Frame.Rotation().Row(0).Assign(side);
+    mInitial.Frame.Rotation().Row(1).Assign(mInitial.Up);
+    mInitial.Frame.Rotation().Row(2).Assign(vctCrossProduct(side, mInitial.Up));
 
-#if 0
+#if 1
     std::cerr << "L: " << mMTML->PositionCartesianCurrent.Position().Translation() << std::endl
               << "R: " << mMTMR->PositionCartesianCurrent.Position().Translation() << std::endl
               << "C:  " << mInitial.C << std::endl
@@ -459,7 +464,8 @@ void mtsTeleOperationECM::EnterEnabled(void)
               << "d:  " << mInitial.dLR << std::endl
               << "w:  " << mInitial.w << std::endl
               << "d:  " << mInitial.d << std::endl
-              << "Si: " << side << std::endl;
+              << "Si: " << side << std::endl
+              << "F:  " << std::endl << mInitial.Frame << std::endl;
 #endif
     mECM->PositionCartesianInitial = mECM->PositionCartesianDesired.Position();
 }
@@ -526,21 +532,23 @@ void mtsTeleOperationECM::RunEnabled(void)
     // apply
     mMTML->SetWrenchBody(wrenchL);
 
-#if 0
-    // ECM
-    vct3 translation;
-    translation.DifferenceOf(mInitialMTMsPosition, vectorLR);
-    translation.Multiply(0.2);
-    //    vctFrm3 transformation;
-    // transformation.Translation().Assign(translation);
-    // vctFrm3 ecmGoal;
-    // transformation.ApplyTo(mECM->PositionCartesianInitial, ecmGoal);
-    // mECM->PositionCartesianSet.Goal().Assign(ecmGoal);
 
-    mECM->PositionCartesianSet.Goal().Assign(mECM->PositionCartesianInitial);
-    mECM->PositionCartesianSet.Goal().Translation().Add(translation);
-    // mECM->SetPositionCartesian(mECM->PositionCartesianSet);
-#endif
+    // compute new MTMs frame
+    vctFrm3 frame;
+    frame.Translation().Assign(c);
+    frame.Rotation().Row(0).Assign(side);
+    frame.Rotation().Row(1).Assign(up);
+    frame.Rotation().Row(2).Assign(vctCrossProduct(side, up));
+
+    // Transformation since last clutch
+    vctFrm3 displacement;
+    frame.ApplyTo(mInitial.Frame.Inverse(), displacement);
+
+    // New ECM position
+    vctFrm3 goal;
+    displacement.ApplyTo(mECM->PositionCartesianInitial, goal);
+    mECM->PositionCartesianSet.Goal().Assign(goal);
+    mECM->SetPositionCartesian(mECM->PositionCartesianSet);
 }
 
 void mtsTeleOperationECM::TransitionEnabled(void)
