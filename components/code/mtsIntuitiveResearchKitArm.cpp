@@ -73,6 +73,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     // jacobian
     JacobianBody.SetSize(6, NumberOfJointsKinematics());
+    this->StateTable.AddData(JacobianBody, "JacobianBody");
     JacobianSpatial.SetSize(6, NumberOfJointsKinematics());
     this->StateTable.AddData(JacobianSpatial, "JacobianSpatial");
     JacobianBodyTranspose.ForceAssign(JacobianBody.Transpose());
@@ -177,6 +178,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandReadState(this->StateTable, BaseFrame, "GetBaseFrame");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianVelocityGetParam, "GetVelocityCartesian");
         RobotInterface->AddCommandReadState(this->StateTable, mWrenchGet, "GetWrenchBody");
+        RobotInterface->AddCommandReadState(this->StateTable, JacobianBody, "GetJacobianBody");
         RobotInterface->AddCommandReadState(this->StateTable, JacobianSpatial, "GetJacobianSpatial");
         // Set
         RobotInterface->AddCommandVoid(&mtsIntuitiveResearchKitArm::Freeze,
