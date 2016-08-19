@@ -6,8 +6,8 @@
             "name": "ECM",
             "type": "ECM",
             "io": "sawRobotIO1394-ECM-21589.xml",
-            "pid": "../sawControllersPID-ECM.xml",
-            "kinematic": "../dvecm.rob"
+            "pid": "sawControllersPID-ECM.xml",
+            "kinematic": "dvecm.rob"
         }
     ]
 }

@@ -17,8 +17,8 @@
             "name": "PSM1",
             "type": "PSM",
             "io": "sawRobotIO1394-PSM1-49695.xml",
-            "pid": "../sawControllersPID-PSM.xml",
-            "kinematic": "../psm-large-needle-driver.json",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "PSM1"
@@ -29,8 +29,8 @@
             "name": "PSM3",
             "type": "PSM",
             "io": "sawRobotIO1394-PSM3-28613.xml",
-            "pid": "../sawControllersPID-PSM.xml",
-            "kinematic": "../psm-large-needle-driver.json",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "PSM3"
@@ -41,8 +41,8 @@
             "name": "ECM",
             "type": "ECM",
             "io": "sawRobotIO1394-ECM-29738.xml",
-            "pid": "../sawControllersPID-ECM.xml",
-            "kinematic": "../dvecm.rob",
+            "pid": "sawControllersPID-ECM.xml",
+            "kinematic": "dvecm.rob",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "ECM"

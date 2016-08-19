@@ -1,18 +1,13 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "io": {
-        "period": 0.0005, // in seconds
-        "port": 0 // default is 0
-    }
-    ,
     "arms":
     [
         {
             "name": "ECM",
             "type": "ECM",
             "io": "sawRobotIO1394-ECM-29738.xml",
-            "pid": "../sawControllersPID-ECM.xml",
-            "kinematic": "../dvecm.rob"
+            "pid": "sawControllersPID-ECM.xml",
+            "kinematic": "dvecm.rob"
         }
     ]
 }

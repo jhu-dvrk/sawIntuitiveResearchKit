@@ -6,16 +6,16 @@
             "name": "MTMR",
             "type": "MTM",
             "io": "sawRobotIO1394-MTMR-22403-foot-pedal.xml",
-            "pid": "../sawControllersPID-MTMR.xml",
-            "kinematic": "../mtmr.json"
+            "pid": "sawControllersPID-MTMR.xml",
+            "kinematic": "mtmr.json"
         }
         ,
         {
             "name": "MTML",
             "type": "MTM",
             "io": "sawRobotIO1394-MTML-34863.xml",
-            "pid": "../sawControllersPID-MTML.xml",
-            "kinematic": "../mtml.json"
+            "pid": "sawControllersPID-MTML.xml",
+            "kinematic": "mtml.json"
         }
         ,
         {
@@ -23,16 +23,16 @@
             "type": "ECM",
             "simulation": "KINEMATIC", // comment this to use actual arm
             // "io": "sawRobotIO1394-ECM-29738.xml",
-            "pid": "../sawControllersPID-ECM.xml",
-            "kinematic": "../dvecm.rob"
+            "pid": "sawControllersPID-ECM.xml",
+            "kinematic": "dvecm.rob"
         }
         ,
         {
             "name": "PSM3",
             "type": "PSM",
             "io": "sawRobotIO1394-PSM3-28613.xml",
-            "pid": "../sawControllersPID-PSM.xml",
-            "kinematic": "../psm-large-needle-driver.json"
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json"
         }
     ]
     ,
