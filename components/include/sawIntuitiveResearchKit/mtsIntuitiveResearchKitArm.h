@@ -33,7 +33,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
-#include <cisstRobot/robManipulatorLSNorm.h>
+#include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robLSPB.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
@@ -252,7 +252,7 @@ protected:
     vctFrm4x4 CartesianGetPrevious;
     prmVelocityCartesianGet CartesianVelocityGetParam;
 
-    robManipulatorLSNorm Manipulator;
+    robManipulator Manipulator;
     vctFrm4x4 CartesianPositionFrm;
 
     // Base frame
