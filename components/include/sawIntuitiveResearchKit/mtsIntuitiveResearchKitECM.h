@@ -33,6 +33,7 @@ public:
     inline ~mtsIntuitiveResearchKitECM() {}
 
     void SetSimulated(void);
+    void Configure(const std::string & filename);
 
 protected:
 
@@ -84,6 +85,10 @@ protected:
         mtsFunctionWrite ManipClutch;
         mtsIntuitiveResearchKitArmTypes::RobotStateType ManipClutchPreviousState;
     } ClutchEvents;
+
+    // tooltip, used for up/down endoscopes
+    robManipulator * ToolOffset;
+    vctFrm4x4 ToolOffsetTransformation;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitECM);

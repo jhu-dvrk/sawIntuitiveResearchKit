@@ -84,7 +84,7 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
         std::stringstream dhResult;
         this->Manipulator.PrintKinematics(dhResult);
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure " << this->GetName()
-                                   << ": loaded kinematrics" << std::endl << dhResult.str() << std::endl;
+                                   << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
 
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""

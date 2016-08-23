@@ -23,7 +23,7 @@
             "type": "ECM",
             "simulation": "KINEMATIC",
             "pid": "sawControllersPID-ECM.xml",
-            "kinematic": "dvecm.rob"
+            "kinematic": "ecm-straight.json"
         }
     ]
     ,

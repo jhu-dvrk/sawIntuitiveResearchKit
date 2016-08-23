@@ -503,7 +503,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
 
     // IO default settings
-    double periodIO = 0.5 * cmn_ms;
+    double periodIO = 0.3 * cmn_ms;
     int firewirePort = 0;
     // get user preferences
     jsonValue = jsonConfig["io"];
