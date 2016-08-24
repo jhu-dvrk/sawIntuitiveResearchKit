@@ -42,7 +42,7 @@
             "type": "MTM",
             "io": "sawRobotIO1394-MTMR-22403-foot-pedal.xml",
             "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtmr.rob"
+            "kinematic": "mtmr.json"
         }
     ]
     ,
@@ -50,10 +50,7 @@
     [
         {
             "master": "MTMR",
-            "slave": "PSM1",
-            "rotation" : [[ 0.0000,  1.0000,  0.0000],   // -1 0 0
-                          [ 1.0000,  0.0000,  0.0000],  // 0 -1 0
-                          [ 0.0000,  0.0000, -1.0000]]
+            "slave": "PSM1"
         }
     ]
 }

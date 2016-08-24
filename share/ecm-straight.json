@@ -33,4 +33,10 @@
             }
         ]
     }
+    ,
+    // rotation to match ISI convention (for read-only research API on commercial da Vinci)
+    "tooltip-offset" : [[ 0.0, -1.0,  0.0,  0.0],
+                        [-1.0,  0.0,  0.0,  0.0],
+                        [ 0.0,  0.0, -1.0,  0.0],
+                        [ 0.0,  0.0,  0.0,  1.0]]
 }
