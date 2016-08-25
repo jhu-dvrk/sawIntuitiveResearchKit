@@ -23,7 +23,6 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst
 #include <cisstNumerical/nmrLSMinNorm.h>
-#include <cisstNumerical/nmrIsOrthonormal.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
@@ -58,33 +57,7 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
             return;
         }
 
-        // load base offset transform if any (with warning)
-        const Json::Value jsonBase = jsonConfig["base-offset"];
-        if (jsonBase.isNull()) {
-            CMN_LOG_CLASS_INIT_WARNING << "Configure " << this->GetName()
-                                       << ": can find \"base-offset\" data in \"" << filename << "\"" << std::endl;
-        } else {
-            // save the transform as Manipulator Rtw0
-            cmnDataJSON<vctFrm4x4>::DeSerializeText(Manipulator.Rtw0, jsonBase);
-            if (!nmrIsOrthonormal(Manipulator.Rtw0.Rotation())) {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                         << ": the base offset rotation doesn't seem to be orthonormal"
-                                         << std::endl;
-            }
-        }
-
-        // load DH parameters
-        const Json::Value jsonDH = jsonConfig["DH"];
-        if (jsonDH.isNull()) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": can find \"DH\" data in \"" << filename << "\"" << std::endl;
-            return;
-        }
-        this->Manipulator.LoadRobot(jsonDH);
-        std::stringstream dhResult;
-        this->Manipulator.PrintKinematics(dhResult);
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure " << this->GetName()
-                                   << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
+        ConfigureDH(jsonConfig);
 
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
@@ -137,7 +110,6 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 
     // Main interface should have been created by base class init
     CMN_ASSERT(RobotInterface);
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetWrench, this, "SetWrench");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::LockOrientation, this, "LockOrientation");
     RobotInterface->AddCommandVoid(&mtsIntuitiveResearchKitMTM::UnlockOrientation, this, "UnlockOrientation");
 
@@ -662,57 +634,6 @@ void mtsIntuitiveResearchKitMTM::RunClutch(void)
     JointSet[6] = JointSet[6] + differenceInTurns * 2.0 * cmnPI;
 
     SetPositionJointLocal(JointSet);
-}
-
-void mtsIntuitiveResearchKitMTM::SetWrench(const prmForceCartesianSet & newForce)
-{
-
-    if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
-
-        vctDoubleVec jointDesired( 7, 0.0 );
-        for ( size_t i=0; i<jointDesired.size(); i++ )
-            { jointDesired[i] = JointGet[i]; }
-
-        Manipulator.JacobianBody( jointDesired );
-        vctDynamicMatrix<double> J( 6, Manipulator.links.size(), VCT_COL_MAJOR );
-        for( size_t r=0; r<6; r++ ){
-            for( size_t c=0; c<Manipulator.links.size(); c++ ){
-                J[r][c] = Manipulator.Jn[c][r];
-            }
-        }
-
-        prmForceCartesianSet tmp = newForce;
-        prmForceCartesianSet::ForceType tmpft;
-        tmp.GetForce( tmpft );
-        vctDynamicMatrix<double> ft( tmpft.size(), 1, 0.0, VCT_COL_MAJOR );
-        for( size_t i=0; i<ft.size(); i++ )
-            { ft[i][0] = tmpft[i]; }
-        vctDynamicMatrix<double> t = nmrLSMinNorm( J, ft );
-
-
-        vctDoubleVec torqueDesired(8, 0.0);
-        for( size_t i=0; i<3; i++ )
-            { torqueDesired[i] = t[i][0]; }
-
-        if( torqueDesired[0] < -2.0 ) { torqueDesired[0] = -2.0; }
-        if( 2.0 < torqueDesired[0]  ) { torqueDesired[0] =  2.0; }
-        if( torqueDesired[1] < -2.0 ) { torqueDesired[1] = -2.0; }
-        if( 2.0 < torqueDesired[1]  ) { torqueDesired[1] =  2.0; }
-        if( torqueDesired[2] < -2.0 ) { torqueDesired[2] = -2.0; }
-        if( 2.0 < torqueDesired[2]  ) { torqueDesired[2] =  2.0; }
-
-        if( torqueDesired[3] < -1.0 ) { torqueDesired[3] = -0.05; }
-        if( 1.0 < torqueDesired[3]  ) { torqueDesired[3] =  0.05; }
-        if( torqueDesired[4] < -1.0 ) { torqueDesired[4] = -0.05; }
-        if( 1.0 < torqueDesired[4]  ) { torqueDesired[4] =  0.05; }
-        if( torqueDesired[5] < -1.0 ) { torqueDesired[5] = -0.05; }
-        if( 1.0 < torqueDesired[5]  ) { torqueDesired[5] =  0.05; }
-        if( torqueDesired[6] < -1.0 ) { torqueDesired[6] = -0.05; }
-        if( 1.0 < torqueDesired[6]  ) { torqueDesired[6] =  0.05; }
-
-        TorqueSetParam.SetForceTorque(torqueDesired);
-        PID.SetTorqueJoint(TorqueSetParam);
-    }
 }
 
 void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)

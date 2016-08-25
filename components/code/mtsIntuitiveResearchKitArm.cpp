@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <time.h>
 
 // cisst
+#include <cisstNumerical/nmrIsOrthonormal.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
@@ -159,8 +160,10 @@ void mtsIntuitiveResearchKitArm::Init(void)
     // Setup Joints
     SUJInterface = AddInterfaceRequired("BaseFrame", MTS_OPTIONAL);
     if (SUJInterface) {
-        SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame, this, "BaseFrameDesired");
-        SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler, this, "Error");
+        SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::SetBaseFrameEventHandler,
+                                           this, "BaseFrameDesired");
+        SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler,
+                                           this, "Error");
     }
 
     // Arm
@@ -183,6 +186,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         // Set
         RobotInterface->AddCommandVoid(&mtsIntuitiveResearchKitArm::Freeze,
                                        this, "Freeze");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame,
+                                        this, "SetBaseFrame");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionJoint,
                                         this, "SetPositionJoint");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalJoint,
@@ -227,6 +232,33 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
                                  << filename << "\"" << std::endl;
     }
+}
+
+void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
+{
+    // load base offset transform if any (without warning)
+    const Json::Value jsonBase = jsonConfig["base-offset"];
+    if (!jsonBase.isNull()) {
+        // save the transform as Manipulator Rtw0
+        cmnDataJSON<vctFrm4x4>::DeSerializeText(Manipulator.Rtw0, jsonBase);
+        if (!nmrIsOrthonormal(Manipulator.Rtw0.Rotation())) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": the base offset rotation doesn't seem to be orthonormal"
+                                     << std::endl;
+        }
+    }
+    
+    // load DH parameters
+    const Json::Value jsonDH = jsonConfig["DH"];
+    if (jsonDH.isNull()) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": can find \"DH\" data in configuration file" << std::endl;
+    }
+    this->Manipulator.LoadRobot(jsonDH);
+    std::stringstream dhResult;
+    this->Manipulator.PrintKinematics(dhResult);
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configure " << this->GetName()
+                               << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
 }
 
 void mtsIntuitiveResearchKitArm::Startup(void)
@@ -771,10 +803,20 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
     }
 }
 
-void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianGet & newBaseFrame)
+void mtsIntuitiveResearchKitArm::SetBaseFrameEventHandler(const prmPositionCartesianGet & newBaseFrame)
 {
     if (newBaseFrame.Valid()) {
         this->BaseFrame.FromNormalized(newBaseFrame.Position());
+        this->BaseFrameValid = true;
+    } else {
+        this->BaseFrameValid = false;
+    }
+}
+
+void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianSet & newBaseFrame)
+{
+    if (newBaseFrame.Valid()) {
+        this->BaseFrame.FromNormalized(newBaseFrame.Goal());
         this->BaseFrameValid = true;
     } else {
         this->BaseFrameValid = false;

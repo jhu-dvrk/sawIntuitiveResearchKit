@@ -60,6 +60,9 @@ protected:
     /*! Define wrench reference frame */
     typedef enum {WRENCH_UNDEFINED, WRENCH_SPATIAL, WRENCH_BODY} WrenchType;
 
+    /*! Load BaseFrame and DH parameters from JSON */
+    void ConfigureDH(const Json::Value & jsonConfig);
+
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
     virtual void Init(void);
@@ -119,7 +122,8 @@ protected:
     virtual void SetGravityCompensation(const bool & gravityCompensation);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
-    virtual void SetBaseFrame(const prmPositionCartesianGet & newBaseFrame);
+    virtual void SetBaseFrameEventHandler(const prmPositionCartesianGet & newBaseFrame);
+    virtual void SetBaseFrame(const prmPositionCartesianSet & newBaseFrame);
 
     /*! Event handler for PID joint limit. */
     virtual void JointLimitEventHandler(const vctBoolVec & flags);

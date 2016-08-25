@@ -158,18 +158,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             return;
         }
 
-        // load DH parameters
-        const Json::Value jsonDH = jsonConfig["DH"];
-        if (jsonDH.isNull()) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": can find \"DH\" data in \"" << filename << "\"" << std::endl;
-            return;
-        }
-        this->Manipulator.LoadRobot(jsonDH);
-        std::stringstream dhResult;
-        this->Manipulator.PrintKinematics(dhResult);
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure " << this->GetName()
-                                   << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
+        ConfigureDH(jsonConfig);
 
         // load tool tip transform if any (with warning)
         const Json::Value jsonToolTip = jsonConfig["tooltip-offset"];
