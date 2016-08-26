@@ -505,10 +505,26 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // IO default settings
     double periodIO = 0.3 * cmn_ms;
     int firewirePort = 0;
+    sawRobotIO1394::ProtocolType protocol = sawRobotIO1394::PROTOCOL_SEQ_R_BC_W;
+
     // get user preferences
     jsonValue = jsonConfig["io"];
     if (!jsonValue.empty()) {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure: looking for user provided io:period and io:port" << std::endl;
+        jsonValue = jsonConfig["io"]["firewire-protocol"];
+        if (!jsonValue.empty()) {
+            const std::string protocolString = jsonValue.asString();
+            if (protocolString == "sequential-read-write") {
+                protocol = sawRobotIO1394::PROTOCOL_SEQ_RW;
+            } else if (protocolString == "sequential-read-broadcast-write") {
+                protocol = sawRobotIO1394::PROTOCOL_SEQ_R_BC_W;
+            } else if (protocolString == "broadcast-read-write") {
+                protocol = sawRobotIO1394::PROTOCOL_BC_QRW;
+            } else {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure \"firewire-protocol\", values must be \"sequential-read-write\", \"sequential-read-broadcast-write\" or \"broadcast-read-write\".   Using default instead: \"sequential-read-broadcast-write\"" << std::endl;
+            }
+        }
+
         jsonValue = jsonConfig["io"]["period"];
         if (!jsonValue.empty()) {
             periodIO = jsonValue.asDouble();
@@ -554,6 +570,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // create IO if needed and configure IO
     if (mHasIO) {
         mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, firewirePort);
+        io->SetProtocol(protocol);
         for (iter = mArms.begin(); iter != end; ++iter) {
             std::string ioConfig = iter->second->mIOConfigurationFile;
             if (ioConfig != "") {
