@@ -134,6 +134,12 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
 
         ConfigureDH(jsonConfig);
 
+        // should arm go to zero position when homing, default set in Init method
+        const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
+        if (!jsonHomingGoesToZero.isNull()) {
+            HomingGoesToZero = jsonHomingGoesToZero.asBool();
+        }
+
         // load tool tip transform if any (for up/down endoscopes)
         const Json::Value jsonToolTip = jsonConfig["tooltip-offset"];
         if (!jsonToolTip.isNull()) {
@@ -291,8 +297,13 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
 
         // compute joint goal position
         JointTrajectory.Goal.SetSize(NumberOfJoints());
-        JointTrajectory.Goal.ForceAssign(JointGet);
-        JointTrajectory.Goal.SetAll(0.0);
+        if (HomingGoesToZero) {
+            // move to zero position
+            JointTrajectory.Goal.SetAll(0.0);
+        } else {
+            // stay at current position by default
+            JointTrajectory.Goal.Assign(JointGet);
+        }
         JointTrajectory.LSPB.Set(JointGet, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
                                  currentTime, robLSPB::LSPB_DURATION);

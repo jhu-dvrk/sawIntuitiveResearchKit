@@ -45,6 +45,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mCounter = 0;
     mIsSimulated = false;
     HomedOnce = false;
+    HomingGoesToZero = false; // MTM ignores this
 
     mWrenchBodyOrientationAbsolute = false;
     mGravityCompensation = false;

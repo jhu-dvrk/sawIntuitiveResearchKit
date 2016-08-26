@@ -281,6 +281,7 @@ protected:
 
     // Home Action
     bool HomedOnce;
+    bool HomingGoesToZero;
     double HomingTimer;
     bool HomingBiasEncoderRequested;
     bool HomingPowerRequested;

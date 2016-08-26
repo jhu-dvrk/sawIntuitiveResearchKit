@@ -160,6 +160,12 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
 
         ConfigureDH(jsonConfig);
 
+        // should arm go to zero position when homing, default set in Init method
+        const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
+        if (!jsonHomingGoesToZero.isNull()) {
+            HomingGoesToZero = jsonHomingGoesToZero.asBool();
+        }
+
         // load tool tip transform if any (with warning)
         const Json::Value jsonToolTip = jsonConfig["tooltip-offset"];
         if (jsonToolTip.isNull()) {
@@ -552,16 +558,16 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
 
         // compute joint goal position
         JointTrajectory.Goal.SetSize(NumberOfJoints());
-        // check if tool is present
+        // check if tool is present and if user wants to go to zero position
         Tool.GetButton(Tool.IsPresent);
-        if (!Tool.IsPresent) {
+        if (HomingGoesToZero
+            && !Tool.IsPresent) {
             // move to zero position only there is no tool present
             JointTrajectory.Goal.SetAll(0.0);
         } else {
             // stay at current position by default
-            JointTrajectory.Goal.ForceAssign(JointGet);
+            JointTrajectory.Goal.Assign(JointGet);
         }
-
         JointTrajectory.LSPB.Set(JointGet, JointTrajectory.Goal,
                                  JointTrajectory.Velocity, JointTrajectory.Acceleration,
                                  currentTime - this->GetPeriodicity(), robLSPB::LSPB_DURATION);
