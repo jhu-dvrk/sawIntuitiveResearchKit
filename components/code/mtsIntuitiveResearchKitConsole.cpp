@@ -656,7 +656,8 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     if (hasSUJ && hasECM) {
         mSUJECMInterfaceRequired = AddInterfaceRequired("BaseFrame");
         if (mSUJECMInterfaceRequired) {
-            mSUJECMInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler, this, "BaseFrameDesired");
+            mSUJECMInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler,
+                                                           this, "PositionCartesianDesired");
         }
         if (ecmArmInterface) {
             ecmArmInterface->AddFunction("GetPositionCartesianLocal", mGetPositionCartesianLocalFromECM);
@@ -665,7 +666,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         }
         mECMBaseFrameInterfaceProvided = AddInterfaceProvided("ECMBaseFrame");
         if (mECMBaseFrameInterfaceProvided) {
-            mECMBaseFrameInterfaceProvided->AddEventWrite(mECMBaseFrameEvent, "BaseFrameDesired", prmPositionCartesianGet());
+            mECMBaseFrameInterfaceProvided->AddEventWrite(mECMBaseFrameEvent, "PositionCartesianDesired", prmPositionCartesianGet());
         }
     }
 
