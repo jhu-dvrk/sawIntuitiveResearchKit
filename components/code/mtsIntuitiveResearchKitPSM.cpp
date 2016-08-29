@@ -104,6 +104,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     CMN_ASSERT(RobotInterface);
     RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetJawPosition, this, "SetJawPosition");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolPresent, this, "SetToolPresent");
 
     CMN_ASSERT(IOInterface);
     IOInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::CouplingEventHandler, this, "Coupling");
@@ -957,9 +958,9 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & butt
     }
 }
 
-void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
+void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
 {
-    if (button.Type() == prmEventButton::PRESSED) {
+    if (present) {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL);
     } else {
         // this is "down" transition so we have to
@@ -970,6 +971,15 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
             CouplingChange.CouplingForTool = false; // Load identity coupling
             SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING);
         }
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
+{
+    if (button.Type() == prmEventButton::PRESSED) {
+        SetToolPresent(true);
+    } else if (button.Type() == prmEventButton::RELEASED) {
+        SetToolPresent(false);
     }
 }
 
