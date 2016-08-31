@@ -1,6 +1,60 @@
 Change log
 ==========
 
+1.4.0 (2016-08-31)
+==================
+
+* API changes:
+  * PSM teleoperation now uses sawIntuitiveResearchKit class `mtsTeleOperationPSM`, not `mtsTeleOperation` from sawControllers
+  * Console: console now handles teleoperation on/off logic as well as PSM and SUJ clutch events
+  * Coordinate systems now match ISI conventions, see API wiki page (https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Components-APIs)
+  * Added class `mtsStateMachine` used by teleoperation components (NOTE, `mtsTeleOperationECM` is a work in progress, not ready for consumption)
+  * ECM: new file format (.rob replaced by .json with DH and tooltip-offset), see file formats wiki page (https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/FileFormats)
+* Deprecated features:
+  * Arm modes `DVRK_GRAVITY_COMPENSATION` and `DVRK_CLUTCH` will be deprecated in next release, use `DVRK_EFFORT_CARTESIAN` with commands to turn gravity on/off, lock orientation instead (see example in `mtsTeleOperationPSM.cpp`)
+  * MTM: removed `SetWrench` method, use `SetWrenchBody` or `SetWrenchSpatial` instead
+* New features:
+  * Arm:
+    * Jacobian body and spatial now stored in state table and accessible via provided interface (array ROS topics)
+    * Compute an estimated wrench at tooltip using current feedback converted to joint torques and jacobian body inverse (wrench ROS topic)
+    * PSM and ECM don't move when powered on
+    * All arms JSON configuration now support `base-offset`
+    * Added command `SetBaseFrame` and equivalent ROS topic (`set_base_frame`)
+  * PSM:
+    * Added JSON configuration file for pro grasp tool
+    * Reduced PID gains to increase stability across system (NOTE: make sure you don't use an old PID file)
+    * Added command (and ROS topic) to force SetToolPresent (used to test tools without wiring/chip on the back)
+  * MTM:
+    * Added JSON configuration file for MTM left and right to use stereo display coordinate system
+    * Fixed orientation lock, added command to set desired lock orientation
+  * Teleop PSM:
+    * Uses new `mtsStateTable` class
+    * Checks that PSM and MTM are in proper state before starting
+    * Checks that PSM and MTM are properly aligned, issues warning messages in console when not aligned
+  * Console:
+    * Added option in configuration file to set FireWire protocal, can significantly improve performance on some systems! See `firewire-protocol` on file formats wiki page (https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/FileFormats)
+    * Better support for derived teleop components (both PSM and ECM)
+    * Manages state transition for teleop PSM/ECM and user events
+    * Added search path to avoid absolute directories in console JSON configuration files, now searches in current directory, directory of console file being loaded and then `sawIntuitiveResearchKit/share`.  This allows to find shared files (PID, kinematics) without copying them around or specifying a full/relative path
+    * Default period for arm is now 1.0 ms, for IO/PID 0.3 ms (you should likely remove all `period` from your console JSON config files).
+  * Console Qt:
+    * Keep console widget/log visible on left/bottom, top/right used for IO, PID, Arm widgets in sub tabs
+    * Added widget to set scale for all teleop components
+    * Added keyboard shortcuts for basic commands (ctrl+H: home, ctrl+O: power off, ctrl+T: start teleop, ctrl+S: stop teleop)
+    * Temporary logo for the dVRK
+  * SUJ:
+    * Ongoing fixes for dSIB rev 3
+    * Uses both sets of potentiometers
+    * Checks that both sets of potentiometers agree and issues warning messages
+  * CMake: separated components from applications/examples (catkin build 0.4 compatible).   Since directories have been moved around, all your build trees need to be removed/cleaned.  For catkin build tool users, please clean using either `catkin clean -a` (older catkin build tools) or `catkin clean --all` (for all catkin versions supporting `catkin --version`, i.e. 0.4 and above).
+  * ROS: `share` directory is now a ROS package so one can find configuration files using the package name `dvrk_share`
+  * Added CISST_EXPORT, who knows, we might compile this on Windows one day...
+* Bug fixes:
+  * Data passed from IO to PID to arm doesn't get re-timestamped to preserve original timestamp
+  * Arm: fixed computation of cartesian velocities using proper jacobian (twist ROS topic)
+  * ECM: fixed inverse kinematics
+
+
 1.3.0 (2016-01-08)
 ==================
 
