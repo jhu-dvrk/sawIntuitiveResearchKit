@@ -25,18 +25,18 @@ Change log
     * Reduced PID gains to increase stability across system (NOTE: make sure you don't use an old PID file)
     * Added command (and ROS topic) to force SetToolPresent (used to test tools without wiring/chip on the back)
   * MTM:
-    * Added JSON configuration file for MTM left and right to use stereo display coordinate system
+    * Added JSON configuration files for MTM left and right to use stereo display coordinate system
     * Fixed orientation lock, added command to set desired lock orientation
   * Teleop PSM:
-    * Uses new `mtsStateTable` class
-    * Checks that PSM and MTM are in proper state before starting
+    * Uses new `mtsStateMachine` class
+    * Checks that PSM and MTM are in proper state
     * Checks that PSM and MTM are properly aligned, issues warning messages in console when not aligned
   * Console:
-    * Added option in configuration file to set FireWire protocal, can significantly improve performance on some systems! See `firewire-protocol` on file formats wiki page (https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/FileFormats)
+    * Added option in configuration file to set FireWire protocol, can significantly improve performance on some systems! See `firewire-protocol` in file formats wiki page (https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/FileFormats)
     * Better support for derived teleop components (both PSM and ECM)
     * Manages state transition for teleop PSM/ECM and user events
     * Added search path to avoid absolute directories in console JSON configuration files, now searches in current directory, directory of console file being loaded and then `sawIntuitiveResearchKit/share`.  This allows to find shared files (PID, kinematics) without copying them around or specifying a full/relative path
-    * Default period for arm is now 1.0 ms, for IO/PID 0.3 ms (you should likely remove all `period` from your console JSON config files).
+    * Default period for arm is now 1.0 ms, for IO/PID 0.3 ms (you should remove all `period` from your console JSON config files).
   * Console Qt:
     * Keep console widget/log visible on left/bottom, top/right used for IO, PID, Arm widgets in sub tabs
     * Added widget to set scale for all teleop components
@@ -47,8 +47,8 @@ Change log
     * Uses both sets of potentiometers
     * Checks that both sets of potentiometers agree and issues warning messages
   * CMake: separated components from applications/examples (catkin build 0.4 compatible).   Since directories have been moved around, all your build trees need to be removed/cleaned.  For catkin build tool users, please clean using either `catkin clean -a` (older catkin build tools) or `catkin clean --all` (for all catkin versions supporting `catkin --version`, i.e. 0.4 and above).
-  * ROS: `share` directory is now a ROS package so one can find configuration files using the package name `dvrk_share`
-  * Added CISST_EXPORT, who knows, we might compile this on Windows one day...
+  * ROS: `sawIntuitiveResearchKit/share` directory is now a ROS package so one can find configuration files using the package name `dvrk_share`
+  * Added CISST_EXPORT. Who knows, we might compile this thing on Windows one day...
 * Bug fixes:
   * Data passed from IO to PID to arm doesn't get re-timestamped to preserve original timestamp
   * Arm: fixed computation of cartesian velocities using proper jacobian (twist ROS topic)
