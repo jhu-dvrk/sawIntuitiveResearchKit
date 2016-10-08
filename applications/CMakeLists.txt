@@ -11,6 +11,9 @@
 
 cmake_minimum_required (VERSION 2.8)
 
+# applications in separate directories
+add_subdirectory (gripper-calibration)
+
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstCommonXML
@@ -62,17 +65,6 @@ if (cisst_FOUND_AS_REQUIRED)
                       ${sawControllers_LIBRARY_DIR}
                       ${sawConstraintController_LIBRARY_DIR}
                       ${sawTextToSpeech_LIBRARY_DIR})
-
-    # main program used to calibrate the MTM gripper
-    add_executable (sawIntuitiveResearchKitGripperCalibration GripperCalibration.cpp)
-    set_property (TARGET sawIntuitiveResearchKitGripperCalibration PROPERTY FOLDER "sawIntuitiveResearchKit")
-
-    # link against non cisst libraries and cisst components
-    target_link_libraries (sawIntuitiveResearchKitGripperCalibration
-                           ${sawRobotIO1394_LIBRARIES})
-
-    # link against cisst libraries (and dependencies)
-    cisst_target_link_libraries (sawIntuitiveResearchKitGripperCalibration ${REQUIRED_CISST_LIBRARIES})
 
     # examples using Qt
     if (CISST_HAS_QT)
