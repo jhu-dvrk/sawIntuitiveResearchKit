@@ -1,0 +1,32 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "arms":
+    [
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "io": "xml/sawRobotIO1394-PSM1-27334.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json"
+        }
+        ,
+        {
+            "name": "MTMR",
+            "type": "MTM",
+            "io": "xml/sawRobotIO1394-MTMR-23877.xml",
+            "pid": "sawControllersPID-MTMR.xml",
+            "kinematic": "mtm.json"
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            "master": "MTMR",
+            "slave": "PSM1",
+            "rotation" : [[-1.0000,  0.0000,  0.0000],
+                          [ 0.0000, -1.0000,  0.0000],
+                          [ 0.0000,  0.0000,  1.0000]]
+        }
+    ]
+}

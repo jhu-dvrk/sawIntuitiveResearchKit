@@ -1,0 +1,39 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "arms":
+    [
+        {
+            "name": "MTML",
+            "type": "MTM",
+            "io": "sawRobotIO1394-MTML-22723.xml",
+            "pid": "sawControllersPID-MTML.xml",
+            "kinematic": "mtml.json"
+        }
+        ,
+        {
+            "name": "MTMR",
+            "type": "MTM",
+            "io": "sawRobotIO1394-MTMR-28247-foot-pedal.xml",
+            "pid": "sawControllersPID-MTMR.xml",
+            "kinematic": "mtmr.json"
+        }
+        ,
+        {
+            "name": "ECM",
+            "type": "ECM",
+            "simulation": "KINEMATIC",
+            "pid": "sawControllersPID-ECM.xml",
+            "kinematic": "ecm-straight.json"
+        }
+    ]
+    ,
+    "ecm-teleop":
+    {
+        "master-left": "MTML",
+        "master-right": "MTMR",
+        "slave": "ECM",
+        "rotation" : [[ 1.0000,  0.0000,  0.0000],
+                      [ 0.0000,  1.0000,  0.0000],
+                      [ 0.0000,  0.0000,  1.0000]]
+    }
+}

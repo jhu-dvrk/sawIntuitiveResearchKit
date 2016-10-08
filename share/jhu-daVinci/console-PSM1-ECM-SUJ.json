@@ -1,10 +1,5 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "io": {
-        "period": 0.0005, // in seconds
-        "port": 0 // default is 0
-    }
-    ,
     "arms":
     [
         {
@@ -22,8 +17,8 @@
             "name": "PSM1",
             "type": "PSM",
             "io": "sawRobotIO1394-PSM1-49695.xml",
-            "pid": "../sawControllersPID-PSM.xml",
-            "kinematic": "../psm-large-needle-driver.json",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "PSM1"
@@ -34,8 +29,8 @@
             "name": "ECM",
             "type": "ECM",
             "io": "sawRobotIO1394-ECM-29738.xml",
-            "pid": "../sawControllersPID-ECM.xml",
-            "kinematic": "../dvecm.rob",
+            "pid": "sawControllersPID-ECM.xml",
+            "kinematic": "ecm-straight.json",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "ECM"

@@ -6,16 +6,16 @@
             "name" : "PSM1",
             "type": "PSM",
             "io": "sawRobotIO1394-PSM1-25138.xml",
-            "pid": "../sawControllersPID-PSM.xml",
-            "kinematic": "../psm-large-needle-driver.json"
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json"
         }
         ,
         {
             "name": "MTML",
             "type": "MTM",
             "io": "sawRobotIO1394-MTML-73298.xml",
-            "pid": "../sawControllersPID-MTMR.xml",
-            "kinematic": "../dvmtm.rob"
+            "pid": "sawControllersPID-MTMR.xml",
+            "kinematic": "mtm.json"
         }
     ]
     ,
@@ -24,7 +24,6 @@
         {
             "master": "MTML",
             "slave": "PSM1",
-            "period": 0.005, // in seconds
             "rotation" : [[-1.0000,  0.0000,  0.0000],
 			              [ 0.0000, -1.0000,  0.0000],
 			              [ 0.0000,  0.0000,  1.0000]]
