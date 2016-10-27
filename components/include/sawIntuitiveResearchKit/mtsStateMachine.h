@@ -42,7 +42,8 @@ public:
         mFirstRun(true),
         mRunCallback(0),
         mStateChangeCallback(0),
-        mCurrentState(initialState)
+        mCurrentState(initialState),
+        mDesiredState(initialState)
     {
     }
 
