@@ -32,7 +32,7 @@ protected:
 
     void Freeze(void);
     void SetPositionCartesian(const prmPositionCartesianSet &position);
-    void SetJawPosition(const int &position);
+    void SetJawPosition(const double &position);
     void UpdateApplication();
     void ReceivePSMStateData();
     void SendPSMCommandData();

@@ -12,7 +12,7 @@
         {
             "name": "MTMR",
             "type": "MTM",
-            "simulation": "KINEMATIC",
+            "io": "sawRobotIO1394-MTMR-28247-foot-pedal.xml",
             "pid": "sawControllersPID-MTMR.xml",
             "kinematic": "mtm.json"
         }

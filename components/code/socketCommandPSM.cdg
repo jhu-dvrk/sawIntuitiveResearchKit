@@ -27,7 +27,7 @@ class {
 
 	member {
 		name GoalJaw;
-		type int;
+		type double;
 		visibility public;
 	}
 }

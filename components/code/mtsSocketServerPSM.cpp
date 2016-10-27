@@ -45,20 +45,14 @@ void mtsSocketServerPSM::Cleanup()
 
 void mtsSocketServerPSM::Run()
 {
-    State.Data.Error = "";
+    //State.Data.Error = "";
     ProcessQueuedEvents();
     ProcessQueuedCommands();
 
-//    if(Command.Socket->IsConnected())
-//    {
-        ReceivePSMCommandData();
-//    }
+    ReceivePSMCommandData();
 
-//    if(State.Socket->IsConnected())
-//    {
-        UpdatePSMState();
-        SendPSMStateData();
-//    }
+    UpdatePSMState();
+    SendPSMStateData();
 }
 
 void mtsSocketServerPSM::ExecutePSMCommands()
@@ -117,8 +111,8 @@ void mtsSocketServerPSM::ReceivePSMCommandData()
     if(bytesRead > 0){
         cmnDataFormat local, remote;
         std::stringstream ss;
-        ss << State.Buffer;
-        cmnData<socketCommandPSM>::DeSerializeBinary(Command.Data, ss, local, remote);
+        ss << Command.Buffer;
+        cmnData<socketCommandPSM>::DeSerializeText(Command.Data, ss);
         ExecutePSMCommands();
     } else {
         CMN_LOG_CLASS_RUN_DEBUG << "RecvPSMCommandData: UDP receive failed" << std::endl;
@@ -130,14 +124,15 @@ void mtsSocketServerPSM::SendPSMStateData()
 {
     // Send Socket Data
     std::stringstream ss;
-    cmnData<socketStatePSM>::SerializeBinary(State.Data, ss);
+    cmnData<socketStatePSM>::SerializeText(State.Data, ss);
     strcpy(State.Buffer, ss.str().c_str());
+
     State.Socket->Send(State.Buffer, ss.str().size());
 }
 
 void mtsSocketServerPSM::ErrorEventHandler(const std::string & message)
 {
     // Send error message to the client
-    State.Data.Error = message;
+    //State.Data.Error = message;
     State.Data.RobotControlState = 0;
 }

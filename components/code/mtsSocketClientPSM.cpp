@@ -60,19 +60,15 @@ void mtsSocketClientPSM::Run()
     ProcessQueuedEvents();
     ProcessQueuedCommands();
 
-//    if(State.Socket->IsConnected())
-    {
-        ReceivePSMStateData();
-    }
+    ReceivePSMStateData();
 
-//    if(Command.Socket->IsConnected())
-        SendPSMCommandData();
+    SendPSMCommandData();
 }
 
 void mtsSocketClientPSM::UpdateApplication()
 {
-    if(!State.Data.Error.empty())
-        ErrorEvents(mtsStdString(State.Data.Error));
+//    if(!State.Data.Error.empty())
+//        ErrorEvents(mtsStdString(State.Data.Error));
 
     PositionCartesianCurrent.Valid() = (State.Data.RobotControlState == 1);
     PositionCartesianCurrent.Position().Assign(State.Data.CurrentPose);
@@ -112,7 +108,7 @@ void mtsSocketClientPSM::SetPositionCartesian(const prmPositionCartesianSet &pos
     }
 }
 
-void mtsSocketClientPSM::SetJawPosition(const int &position)
+void mtsSocketClientPSM::SetJawPosition(const double &position)
 {
     if (Command.Data.RobotControlState == 1) {
         Command.Data.GoalJaw = position;
@@ -141,7 +137,8 @@ void mtsSocketClientPSM::ReceivePSMStateData()
     if(bytesRead > 0){
         std::stringstream ss;
         ss << State.Buffer;
-        cmnData<socketStatePSM>::DeSerializeBinary(State.Data, ss, local, remote);
+
+        cmnData<socketStatePSM>::DeSerializeText(State.Data, ss);
         UpdateApplication();
     } else {
         CMN_LOG_CLASS_RUN_DEBUG << "RecvPSMStateData: UDP receive failed" << std::endl;
@@ -152,7 +149,7 @@ void mtsSocketClientPSM::SendPSMCommandData()
 {
     // Send Socket Data
     std::stringstream ss;
-    cmnData<socketCommandPSM>::SerializeBinary(Command.Data, ss);
+    cmnData<socketCommandPSM>::SerializeText(Command.Data, ss);
     strcpy(Command.Buffer, ss.str().c_str());
 
     Command.Socket->Send(Command.Buffer, ss.str().size());

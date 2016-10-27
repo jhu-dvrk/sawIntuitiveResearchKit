@@ -27,13 +27,7 @@ class {
 
 	member {
 		name CurrentJaw;
-		type int;
-		visibility public;
-	}
-
-	member {
-		name Error;
-		type std::string;
+		type double;
 		visibility public;
 	}
 }
