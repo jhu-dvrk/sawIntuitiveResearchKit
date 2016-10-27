@@ -1,0 +1,44 @@
+inline-header {
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+}
+
+class {
+	name socketHeader;
+	attribute CISST_EXPORT;
+	
+	member {
+		name Version;
+		type int;
+		visibility public;
+	}
+
+	member {
+		name Id;
+		type int;
+		visibility public;
+	}
+
+	member {
+		name Size;
+		type int;
+		visibility public;
+	}
+
+	member {
+		name Timestamp;
+		type int;
+		visibility public;
+	}
+
+	member {
+		name LastId;
+		type int;
+		visibility public;
+	}
+
+	member {
+		name LastTimestamp;
+		type int;
+		visibility public;
+	}
+}
