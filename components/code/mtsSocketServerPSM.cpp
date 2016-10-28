@@ -69,7 +69,7 @@ void mtsSocketServerPSM::ExecutePSMCommands()
 
     switch (State.Data.RobotControlState) {
     case 1:
-        PositionCartesianSet.Goal().FromNormalized(Command.Data.GoalPose);
+        PositionCartesianSet.Goal().From(Command.Data.GoalPose);
         SetPositionCartesian(PositionCartesianSet);
 
         SetJawPosition(Command.Data.GoalJaw);
@@ -108,16 +108,15 @@ void mtsSocketServerPSM::ReceivePSMCommandData()
     // Recv Socket Data
     size_t bytesRead = 0;
     bytesRead = Command.Socket->Receive(Command.Buffer, BUFFER_SIZE, 10.0*cmn_ms);
-    if(bytesRead > 0){
-        cmnDataFormat local, remote;
+    if (bytesRead > 0) {
         std::stringstream ss;
         ss << Command.Buffer;
         cmnData<socketCommandPSM>::DeSerializeText(Command.Data, ss);
+        Command.Data.GoalPose.NormalizedSelf();
         ExecutePSMCommands();
     } else {
         CMN_LOG_CLASS_RUN_DEBUG << "RecvPSMCommandData: UDP receive failed" << std::endl;
     }
-
 }
 
 void mtsSocketServerPSM::SendPSMStateData()

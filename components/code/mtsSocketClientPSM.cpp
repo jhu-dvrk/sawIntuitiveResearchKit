@@ -71,7 +71,7 @@ void mtsSocketClientPSM::UpdateApplication()
 //        ErrorEvents(mtsStdString(State.Data.Error));
 
     PositionCartesianCurrent.Valid() = (State.Data.RobotControlState == 1);
-    PositionCartesianCurrent.Position().Assign(State.Data.CurrentPose);
+    PositionCartesianCurrent.Position().FromNormalized(State.Data.CurrentPose);
     JawPosition = State.Data.CurrentJaw;
 }
 
@@ -122,7 +122,7 @@ void mtsSocketClientPSM::GetRobotControlState(std::string &state) const
         state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN);
         break;
     default:
-        state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+        state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
         break;
     }
 }
@@ -130,15 +130,13 @@ void mtsSocketClientPSM::GetRobotControlState(std::string &state) const
 void mtsSocketClientPSM::ReceivePSMStateData()
 {
     // Recv Scoket Data
-    cmnDataFormat local, remote;    
-    size_t bytesRead;
-
+    size_t bytesRead = 0;
     bytesRead = State.Socket->Receive(State.Buffer, BUFFER_SIZE, 10.0*cmn_ms);
-    if(bytesRead > 0){
+    if (bytesRead > 0) {
         std::stringstream ss;
         ss << State.Buffer;
-
         cmnData<socketStatePSM>::DeSerializeText(State.Data, ss);
+        State.Data.CurrentPose.NormalizedSelf();
         UpdateApplication();
     } else {
         CMN_LOG_CLASS_RUN_DEBUG << "RecvPSMStateData: UDP receive failed" << std::endl;
