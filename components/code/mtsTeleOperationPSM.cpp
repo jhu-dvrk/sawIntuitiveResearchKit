@@ -502,7 +502,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     mRegistrationRotation.ApplyInverseTo(mPSM->PositionCartesianCurrent.Position().Rotation(),
                                          desiredOrientation);
     mMTM->PositionCartesianCurrent.Position().Rotation().ApplyInverseTo(desiredOrientation, difference);
-    vctAxAnRot3 axisAngle(difference);
+    vctAxAnRot3 axisAngle(difference, VCT_NORMALIZE);
     const double angleInDegrees = axisAngle.Angle() * 180.0 / cmnPI;
     if (angleInDegrees <= 5.0) {
         mTeleopState.SetCurrentState("ENABLED");

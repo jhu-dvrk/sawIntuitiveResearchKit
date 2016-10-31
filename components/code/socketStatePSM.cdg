@@ -1,0 +1,33 @@
+inline-header {
+#include <sawIntuitiveResearchKit/socketHeader.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+}
+
+class {
+	name socketStatePSM;
+	attribute CISST_EXPORT;
+	
+	member {
+		name Header;
+		type socketHeader;
+		visibility public;
+	}
+	
+	member {
+		name RobotControlState;
+		type int;
+		visibility public;
+	}
+
+	member {
+		name CurrentPose;
+		type vctFrm3;
+		visibility public;
+	}
+
+	member {
+		name CurrentJaw;
+		type double;
+		visibility public;
+	}
+}

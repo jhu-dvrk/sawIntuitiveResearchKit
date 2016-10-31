@@ -44,7 +44,8 @@ public:
         typedef enum {ARM_UNDEFINED,
                       ARM_MTM, ARM_PSM, ARM_ECM, ARM_SUJ,
                       ARM_MTM_GENERIC, ARM_PSM_GENERIC, ARM_ECM_GENERIC,
-                      ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_ECM_DERIVED} ArmType;
+                      ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_ECM_DERIVED,
+                      ARM_PSM_SOCKET} ArmType;
 
         typedef enum {SIMULATION_NONE,
                       SIMULATION_KINEMATIC,
@@ -74,6 +75,7 @@ public:
 
         /*! Accessors */
         const std::string & Name(void) const;
+        const std::string & SocketComponentName(void) const;
         const std::string & IOComponentName(void) const;
         const std::string & PIDComponentName(void) const;
 
@@ -91,6 +93,11 @@ public:
         // arm
         std::string mArmConfigurationFile;
         double mArmPeriod;
+        // socket
+        std::string mIp;
+        int mPort;
+        bool mSocketServer;
+        std::string mSocketComponentName;
         // base frame
         std::string mBaseFrameComponentName;
         std::string mBaseFrameInterfaceName;

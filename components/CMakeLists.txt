@@ -91,7 +91,10 @@ if (cisst_FOUND)
                           "${CISST_BINARY_DIR}/include" # where to save the file
                           "sawIntuitiveResearchKit/"    # sub directory for include
                           code/mtsIntuitiveResearchKitArmTypes.cdg
-                          code/mtsVFDataFollow.cdg)
+                          code/mtsVFDataFollow.cdg
+                          code/socketHeader.cdg
+                          code/socketStatePSM.cdg
+                          code/socketCommandPSM.cdg)
 
     include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
     set (sawIntuitiveResearchKit_HEADER_DIR
@@ -111,6 +114,8 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitUDPStreamer.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsVFFollow.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsVFFollowJacobian.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketClientPSM.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketServerPSM.h
         )
 
     set (SOURCE_FILES
@@ -127,6 +132,8 @@ if (cisst_FOUND)
          code/mtsIntuitiveResearchKitUDPStreamer.cpp
          code/mtsVFFollow.cpp
          code/mtsVFFollowJacobian.cpp
+         code/mtsSocketClientPSM.cpp
+         code/mtsSocketServerPSM.cpp
         )
 
     add_library (sawIntuitiveResearchKit
