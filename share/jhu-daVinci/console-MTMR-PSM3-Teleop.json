@@ -13,7 +13,7 @@
         {
             "name": "MTMR",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTMR-22403-foot-pedal.xml",
+            "io": "sawRobotIO1394-MTMR-32336-foot-pedal.xml",
             "pid": "sawControllersPID-MTMR.xml",
             "kinematic": "mtm.json"
         }
