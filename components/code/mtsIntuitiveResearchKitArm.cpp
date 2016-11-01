@@ -614,6 +614,7 @@ void mtsIntuitiveResearchKitArm::RunPositionJoint(void)
 
 void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
 {
+    // we use end time == 0 to indicate that there's a goal
     if (JointTrajectory.EndTime < 0.0) {
         return;
     }
@@ -638,27 +639,14 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
         // if this is the first evaluation, we can't calculate expected completion time
         if (JointTrajectory.EndTime == 0.0) {
             JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
-            std::cerr << "Start time: " << currentTime << std::endl
-                      << "End time:   " << JointTrajectory.EndTime << std::endl;
-        }
-        // try to detect timeout
-        if (currentTime > (JointTrajectory.EndTime + 10.0 * cmn_s)) {
-            std::cerr << "we say we are past end time" << std::endl;
-            JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
-            JointTrajectory.GoalError.AbsSelf();
-            const bool reached =
-                !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
-            JointTrajectory.GoalReachedEvent(reached);
-            JointTrajectory.EndTime = -1.0;
         }
         break;
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
-        std::cerr << "RML says RML_FINAL_STATE_REACHED" << std::endl;
         JointTrajectory.GoalReachedEvent(true);
         JointTrajectory.EndTime = -1.0;
         break;
     default:
-        MessageEvents.Error(this->GetName() + " error while evaluating trjectory.");
+        MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
         break;
     }
 }
@@ -781,8 +769,6 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet 
                                       StateTable.PeriodStats.GetAvg(),
                                       robReflexxes::Reflexxes_TIME);
         JointTrajectory.EndTime = 0.0; // we will know it after first evaluate
-        std::cerr << "Set with time: "
-                  << StateTable.PeriodStats.GetAvg() << std::endl;
     }
 }
 

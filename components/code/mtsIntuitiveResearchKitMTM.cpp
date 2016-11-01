@@ -352,7 +352,6 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
     }
 
     static const double extraTime = 2.0 * cmn_s;
-    const double currentTime = this->StateTable.GetTic();
 
     // trigger motion
     if (!HomingCalibrateArmStarted) {
@@ -377,38 +376,46 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         HomingCalibrateArmStarted = true;
     }
 
-    // compute a new set point if goal not reached
-    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-    if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
-        // get current position
-        JointSet.Assign(JointGet);
-        JointVelocitySet.Assign(JointVelocityGet);
-        JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                           JointVelocitySet,
-                                           JointTrajectory.Goal,
-                                           JointTrajectory.GoalVelocity);
-        SetPositionJointLocal(JointSet);
-    } else {
-        // request final position in case trajectory rounding prevent us to get there
-        SetPositionJointLocal(JointTrajectory.Goal);
+    JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                       JointVelocitySet,
+                                       JointTrajectory.Goal,
+                                       JointTrajectory.GoalVelocity);
+    SetPositionJointLocal(JointSet);
 
-        // check position
-        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
-        JointTrajectory.GoalError.AbsSelf();
-        bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
-        if (isHomed) {
-            PID.SetCheckJointLimit(true);
-            MessageEvents.Status(this->GetName() + " arm calibrated");
-            this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ROLL);
-        } else {
-            // time out
-            if (currentTime > HomingTimer + extraTime) {
-                CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
-                                           << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
-                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    const double currentTime = this->StateTable.GetTic();
+
+    switch (trajectoryResult) {
+    case robReflexxes::Reflexxes_WORKING:
+        // if this is the first evaluation, we can't calculate expected completion time
+        if (JointTrajectory.EndTime == 0.0) {
+            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
+        }
+        break;
+    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+        {
+            // check position
+            JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
+            JointTrajectory.GoalError.AbsSelf();
+            bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
+            if (isHomed) {
+                PID.SetCheckJointLimit(true);
+                MessageEvents.Status(this->GetName() + " arm calibrated");
+                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ROLL);
+            } else {
+                // time out
+                if (currentTime > HomingTimer + extraTime) {
+                    CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
+                                               << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
+                    MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
+                    this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+                }
             }
         }
+        break;
+    default:
+        MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+        break;
     }
 }
 
