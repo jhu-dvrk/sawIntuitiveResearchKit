@@ -291,7 +291,6 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     // first cleanup from previous state
     switch (RobotState) {
-    case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
     case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
         // Disable torque mode for all joints
         torqueMode.SetAll(false);

@@ -101,14 +101,8 @@ protected:
     /*! Homing procedure, calibrate last joint based on hardware limits. */
     void RunHomingCalibrateRoll(void);
 
-    /*! Gravity Compensation. */
-    virtual void RunGravityCompensation(void);
-
     // see base class
     void RunEffortOrientationLocked(void);
-
-    /*! Run Clutch */
-    void RunClutch(void);
 
     /*! Lock master orientation when in cartesian effort mode */
     virtual void LockOrientation(const vctMatRot3 & orientation);
@@ -134,9 +128,8 @@ protected:
 
     // Home Action
     bool HomingCalibrateRollSeekLower,
-         HomingCalibrateRollSeekUpper,
          HomingCalibrateRollSeekCenter;
-    double HomingCalibrateRollLower, HomingCalibrateRollUpper;
+    double HomingCalibrateRollLower;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);

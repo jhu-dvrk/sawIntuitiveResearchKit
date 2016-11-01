@@ -125,11 +125,6 @@ void mtsIntuitiveResearchKitMTM::RunArmSpecific(void)
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ROLL:
         RunHomingCalibrateRoll();
         break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
-        RunGravityCompensation();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_CLUTCH:
-        RunClutch();
     default:
         break;
     }
@@ -190,9 +185,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     // first cleanup from previous state
     switch (RobotState) {
-    case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
     case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
-    case mtsIntuitiveResearchKitArmTypes::DVRK_CLUTCH:
         // Disable torque mode for all joints
         torqueMode.SetAll(false);
         PID.EnableTorqueMode(torqueMode);
@@ -235,10 +228,8 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ROLL:
         HomingCalibrateRollSeekLower = false;
-        HomingCalibrateRollSeekUpper = false;
         HomingCalibrateRollSeekCenter = false;
         HomingCalibrateRollLower = cmnTypeTraits<double>::MaxPositiveValue();
-        HomingCalibrateRollUpper = cmnTypeTraits<double>::MinNegativeValue();
         RobotState = newState;
         this->MessageEvents.Status(this->GetName() + " calibrating roll");
         break;
@@ -303,39 +294,6 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         MessageEvents.Status(this->GetName() + " effort cartesian");
         break;
 
-    case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.Error(this->GetName() + " is not ready");
-            return;
-        }
-        RobotState = newState;
-        mWrenchSet.Force().Zeros();
-        mWrenchType = WRENCH_UNDEFINED;
-        MessageEvents.Status(this->GetName() + " gravity compensation");
-        torqueMode.SetAll(true);
-        PID.EnableTorqueMode(torqueMode);
-        PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
-        CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: set gravity compensation" << std::endl;
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_CLUTCH:
-        // check if MTM is ready
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.Error(this->GetName() + " is not ready");
-            return;
-        }
-        RobotState = newState;
-        mWrenchSet.Force().Zeros();
-        mWrenchType = WRENCH_UNDEFINED;
-        MessageEvents.Status(this->GetName() + " clutch mode");
-        // save current cartesian position to CartesianCluted
-        CartesianClutched.Assign(CartesianGet);
-        // set J1-J3 to torque mode (GC) and J4-J7 to PID mode
-        torqueMode.SetAll(false);
-        std::fill(torqueMode.begin(), torqueMode.begin() + 3, true);
-        PID.EnableTorqueMode(torqueMode);
-        break;
-
     default:
         break;
     }
@@ -390,6 +348,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         // if this is the first evaluation, we can't calculate expected completion time
         if (JointTrajectory.EndTime == 0.0) {
             JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
+            HomingTimer = JointTrajectory.EndTime;
         }
         break;
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
@@ -431,6 +390,8 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
     static const double extraTime = 2.0 * cmn_s;
 
     const double currentTime = this->StateTable.GetTic();
+    double trackingError;
+    robReflexxes::ResultType trajectoryResult;
 
     // trigger search of lower limit
     if (!HomingCalibrateRollSeekLower) {
@@ -445,8 +406,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
-                                      robReflexxes::Reflexxes_TIME);        // set flag to indicate that homing has started
+                                      robReflexxes::Reflexxes_TIME);
+        // set flag to indicate that homing has started
         HomingCalibrateRollSeekLower = true;
+        MessageEvents.Status(this->GetName() + " looking for roll lower limit");
         return;
     }
 
@@ -458,59 +421,35 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
                                            JointTrajectory.Goal,
                                            JointTrajectory.GoalVelocity);
         SetPositionJointLocal(JointSet);
-        // detect tracking error and set lower limit
-        const double trackingError =
-                std::abs(JointGet.Element(JNT_WRIST_ROLL) - JointSet.Element(JNT_WRIST_ROLL));
-        if (trackingError > maxTrackingError) {
-            HomingCalibrateRollLower = JointGet.Element(JNT_WRIST_ROLL);
-            MessageEvents.Status(this->GetName() + " found roll lower limit");
-        } else {
-            // time out
-            if (currentTime > HomingTimer + extraTime) {
-                MessageEvents.Error(this->GetName() + " unable to hit roll lower limit");
-                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+        trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+        switch (trajectoryResult) {
+        case robReflexxes::Reflexxes_WORKING:
+            // if this is the first evaluation, we can't calculate expected completion time
+            if (JointTrajectory.EndTime == 0.0) {
+                JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
+                HomingTimer = JointTrajectory.EndTime;
             }
-        }
-        return;
-    }
-
-    // trigger search of upper limit
-    if (!HomingCalibrateRollSeekUpper) {
-        // compute joint goal position, we assume PID is on from previous state
-        const double currentRoll = JointGet.Element(JNT_WRIST_ROLL);
-        JointTrajectory.Start.SetAll(0.0);
-        JointTrajectory.Start.Element(JNT_WRIST_ROLL) = currentRoll;
-        JointTrajectory.Goal.SetAll(0.0);
-        JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = currentRoll + maxRollRange;
-        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                      JointTrajectory.Acceleration,
-                                      StateTable.PeriodStats.GetAvg(),
-                                      robReflexxes::Reflexxes_TIME);
-        // set flag to indicate that homing has started
-        HomingCalibrateRollSeekUpper = true;
-        return;
-    }
-
-    // looking for lower limit has start but not found yet
-    if (HomingCalibrateRollSeekUpper
-        && (HomingCalibrateRollUpper == cmnTypeTraits<double>::MinNegativeValue())) {
-        JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                           JointVelocitySet,
-                                           JointTrajectory.Goal,
-                                           JointTrajectory.GoalVelocity);
-        SetPositionJointLocal(JointSet);
-        // detect tracking error and set lower limit
-        const double trackingError =
-                std::abs(JointGet.Element(JNT_WRIST_ROLL) - JointSet.Element(JNT_WRIST_ROLL));
-        if (trackingError > maxTrackingError) {
-            HomingCalibrateRollUpper = JointGet.Element(JNT_WRIST_ROLL);
-            MessageEvents.Status(this->GetName() + " found roll upper limit");
-        } else {
-            // time out
-            if (currentTime > HomingTimer + extraTime) {
-                MessageEvents.Error(this->GetName() + " unable to hit roll upper limit");
-                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+            // detect tracking error and set lower limit
+            trackingError = std::abs(JointGet.Element(JNT_WRIST_ROLL) - JointSet.Element(JNT_WRIST_ROLL));
+            if (trackingError > maxTrackingError) {
+                HomingCalibrateRollLower = JointGet.Element(JNT_WRIST_ROLL);
+                MessageEvents.Status(this->GetName() + " found roll lower limit");
+            } else {
+                // time out
+                if (currentTime > HomingTimer + extraTime) {
+                    MessageEvents.Error(this->GetName() + " unable to hit roll lower limit in time");
+                    this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+                }
             }
+            break;
+        case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+            // we shouldn't be able to reach this goal
+            MessageEvents.Error(this->GetName() + " went past roll lower limit");
+            this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+            break;
+        default:
+            MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+            break;
         }
         return;
     }
@@ -526,26 +465,35 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
                                       robReflexxes::Reflexxes_TIME);
+        // we want to start from zero velocity since we hit the joint limit
+        JointVelocitySet.SetAll(0.0);
         // set flag to indicate that homing has started
         HomingCalibrateRollSeekCenter = true;
+        MessageEvents.Status(this->GetName() + " moving roll to center");
         return;
     }
 
     // going to center position and check we have arrived
-    if (currentTime <= HomingTimer) {
-        JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                           JointVelocitySet,
-                                           JointTrajectory.Goal,
-                                           JointTrajectory.GoalVelocity);
-        SetPositionJointLocal(JointSet);
-    } else {
-        // request final position in case trajectory rounding prevent us to get there
-        SetPositionJointLocal(JointTrajectory.Goal);
-
+    JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                       JointVelocitySet,
+                                       JointTrajectory.Goal,
+                                       JointTrajectory.GoalVelocity);
+    SetPositionJointLocal(JointSet);
+    trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    bool isHomed;
+    switch (trajectoryResult) {
+    case robReflexxes::Reflexxes_WORKING:
+        // if this is the first evaluation, we can't calculate expected completion time
+        if (JointTrajectory.EndTime == 0.0) {
+            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
+            HomingTimer = JointTrajectory.EndTime;
+        }
+        break;
+    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         // check position
         JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
         JointTrajectory.GoalError.AbsSelf();
-        bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
+        isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
             // reset encoder on last joint as well as PID target position to reflect new roll position = 0
             RobotIO.ResetSingleEncoder(static_cast<int>(JNT_WRIST_ROLL));
@@ -560,48 +508,14 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
             if (currentTime > HomingTimer + extraTime) {
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateRoll: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
+                MessageEvents.Error(this->GetName() + " unable to reach home position");
                 this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
             }
         }
-    }
-}
-
-void mtsIntuitiveResearchKitMTM::RunGravityCompensation(void)
-{
-    vctDoubleVec q(7, 0.0);
-    vctDoubleVec qd(7, 0.0);
-    vctDoubleVec tau(7, 0.0);
-    std::copy(JointGet.begin(), JointGet.begin() + 7 , q.begin());
-
-    vctDoubleVec torqueDesired(8, 0.0);
-    tau.ForceAssign(Manipulator.CCG(q, qd));
-    tau[0] = q(0) * 0.0564 + 0.08;
-    std::copy(tau.begin(), tau.end() , torqueDesired.begin());
-
-    torqueDesired[3]=0.0;
-    torqueDesired[4]=0.0;
-    torqueDesired[5]=0.0;
-    torqueDesired[6]=0.0;
-
-    // For J7 (wrist roll) to -1.5 PI to 1.5 PI
-    double gain = 0.05;
-    if (JointGet[JNT_WRIST_ROLL] > 1.5 * cmnPI) {
-        torqueDesired[JNT_WRIST_ROLL] = (1.5 * cmnPI - JointGet[JNT_WRIST_ROLL]) * gain;
-    } else if (JointGet[JNT_WRIST_ROLL] < -1.5 * cmnPI) {
-        torqueDesired[JNT_WRIST_ROLL] = (-1.5 * cmnPI - JointGet[JNT_WRIST_ROLL]) * gain;
-    }
-
-    // add the external efforts
-    size_t N = torqueDesired.size();
-    if( JointExternalEffort.size() < N ) { N = JointExternalEffort.size(); }
-    for( size_t i=0; i<N; i++ ) { torqueDesired[i] += JointExternalEffort[i]; }
-
-    TorqueSetParam.SetForceTorque(torqueDesired);
-    PID.SetTorqueJoint(TorqueSetParam);
-
-    if (EffortOrientationLocked) {
-        RunEffortOrientationLocked();
+        break;
+    default:
+        MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+        break;
     }
 }
 
@@ -626,35 +540,6 @@ void mtsIntuitiveResearchKitMTM::RunEffortOrientationLocked(void)
     } else {
         MessageEvents.Warning(this->GetName() + " unable to solve inverse kinematics.");
     }
-}
-
-void mtsIntuitiveResearchKitMTM::RunClutch(void)
-{
-    // J1-J3
-    vctDoubleVec q(7, 0.0);
-    vctDoubleVec qd(7, 0.0);
-    vctDoubleVec tau(7, 0.0);
-    q.Assign(JointGet.Ref(7));
-
-    vctDoubleVec torqueDesired(8, 0.0);
-    tau.ForceAssign(Manipulator.CCG(q, qd));
-    tau[0] = q(0) * 0.0564 + 0.08;
-    torqueDesired.Ref(7).Assign(tau);
-
-    TorqueSetParam.SetForceTorque(torqueDesired);
-    PID.SetTorqueJoint(TorqueSetParam);
-
-    // J4-J7
-    JointSet.Assign(JointGet);
-    CartesianClutched.Translation().Assign(CartesianGet.Translation());
-    Manipulator.InverseKinematics(JointSet, CartesianClutched);
-
-    // find closest solution mod 2 pi
-    const double difference = JointGet[6] - JointSet[6];
-    const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-    JointSet[6] = JointSet[6] + differenceInTurns * 2.0 * cmnPI;
-
-    SetPositionJointLocal(JointSet);
 }
 
 void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
@@ -693,10 +578,6 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN);
     } else if (state == "Teleop") {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN);
-    } else if (state == "Gravity") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION);
-    } else if (state == "Clutch") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CLUTCH);
     } else {
         mtsIntuitiveResearchKitArmTypes::RobotStateType stateEnum;
         try {

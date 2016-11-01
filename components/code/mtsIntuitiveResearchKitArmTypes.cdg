@@ -71,16 +71,8 @@ class {
             description Cartesian effort mode;
         }
         enum-value {
-            name DVRK_GRAVITY_COMPENSATION;
-            description Gravity compensation mode;
-        }
-        enum-value {
             name DVRK_MANUAL;
             description Manual mode for slave arm;
-        }
-        enum-value {
-            name DVRK_CLUTCH;
-            description Clutch mode for master arm;
         }
     }
 }

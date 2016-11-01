@@ -249,7 +249,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
                                      << std::endl;
         }
     }
-    
+
     // load DH parameters
     const Json::Value jsonDH = jsonConfig["DH"];
     if (jsonDH.isNull()) {
@@ -621,7 +621,7 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
 
     // get current position/velocity
     JointSet.Assign(JointGet);
-    if (JointTrajectory.EndTime == 0.0) {
+    if (JointTrajectory.EndTime == 0.0 && mIsSimulated) {
         std::cerr << CMN_LOG_DETAILS << "Removed this condition when PID simulated velocity is fixed!!!!!" << std::endl;
         JointVelocitySet.Assign(JointVelocityGet);
     }
@@ -647,6 +647,7 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
         break;
     default:
         MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+        JointTrajectory.EndTime = -1.0;
         break;
     }
 }
@@ -887,8 +888,7 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 
 void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wrench)
 {
-    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN,
-                       mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION)) {
+    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN)) {
         mWrenchSet = wrench;
         if (mWrenchType != WRENCH_BODY) {
             mWrenchType = WRENCH_BODY;
@@ -899,8 +899,7 @@ void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wren
 
 void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & wrench)
 {
-    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN,
-                       mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION)) {
+    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN)) {
         mWrenchSet = wrench;
         if (mWrenchType != WRENCH_SPATIAL) {
             mWrenchType = WRENCH_SPATIAL;
