@@ -5,15 +5,8 @@ CMN_IMPLEMENT_SERVICES_DERIVED(mtsSocketClientPSM, mtsTaskPeriodic);
 
 mtsSocketClientPSM::mtsSocketClientPSM(const std::string &componentName, const double periodInSeconds,
                                        const std::string &ip, const unsigned int port) :
-    mtsTaskPeriodic(componentName, periodInSeconds)
+    mtsSocketBasePSM(componentName, periodInSeconds, ip, port, false)
 {
-    Command.Socket = new osaSocket(osaSocket::UDP);
-    Command.Port = port;
-    ServerIp = ip;
-
-    State.Socket = new osaSocket(osaSocket::UDP);
-    State.Port = port+1;
-
     this->StateTable.AddData(PositionCartesianCurrent   , "PositionCartesianCurrent");
     this->StateTable.AddData(JawPosition   , "JawPosition");
 
@@ -21,7 +14,6 @@ mtsSocketClientPSM::mtsSocketClientPSM(const std::string &componentName, const d
     if(interfaceProvided) {
         interfaceProvided->AddCommandReadState(this->StateTable, PositionCartesianCurrent, "GetPositionCartesian");
         interfaceProvided->AddCommandReadState(this->StateTable, JawPosition, "GetJawPosition");
-        interfaceProvided->AddCommandReadState(this->StateTable, StateTable.PeriodStats, "GetPeriodStatistics");
 
         interfaceProvided->AddCommandVoid(&mtsSocketClientPSM::Freeze,
                                           this, "Freeze");
@@ -34,25 +26,13 @@ mtsSocketClientPSM::mtsSocketClientPSM(const std::string &componentName, const d
         interfaceProvided->AddCommandRead(&mtsSocketClientPSM::GetRobotControlState,
                                            this , "GetRobotControlState");
         interfaceProvided->AddEventWrite(ErrorEvents, "Error", std::string(""));
-
     }
 }
 
 void mtsSocketClientPSM::Configure(const std::string & CMN_UNUSED(fileName))
 {
-    Command.Socket->SetDestination(ServerIp, Command.Port);
-    State.Socket->AssignPort(State.Port);
-}
-
-void mtsSocketClientPSM::Startup()
-{
-    Command.Data.RobotControlState = 0;
-}
-
-void mtsSocketClientPSM::Cleanup()
-{
-    Command.Socket->Close();
-    State.Socket->Close();
+    Command.Socket->SetDestination(IpAddress, Command.IpPort);
+    State.Socket->AssignPort(State.IpPort);
 }
 
 void mtsSocketClientPSM::Run()
@@ -61,8 +41,8 @@ void mtsSocketClientPSM::Run()
     ProcessQueuedCommands();
 
     ReceivePSMStateData();
-
     SendPSMCommandData();
+    UpdateStatistics();
 }
 
 void mtsSocketClientPSM::UpdateApplication()
@@ -145,6 +125,12 @@ void mtsSocketClientPSM::ReceivePSMStateData()
 
 void mtsSocketClientPSM::SendPSMCommandData()
 {
+    // Update Header
+    Command.Data.Header.Id++;
+    Command.Data.Header.Timestamp = mTimeServer.GetRelativeTime();
+    Command.Data.Header.LastId = State.Data.Header.Id;
+    Command.Data.Header.LastTimestamp = State.Data.Header.Timestamp;
+
     // Send Socket Data
     std::stringstream ss;
     cmnData<socketCommandPSM>::SerializeText(Command.Data, ss);

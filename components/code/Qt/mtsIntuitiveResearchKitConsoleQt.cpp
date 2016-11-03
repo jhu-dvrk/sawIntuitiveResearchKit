@@ -30,6 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSMQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationECMQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsSocketBaseQtWidget.h>
 
 #include <QTabWidget>
 
@@ -95,6 +96,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         mtsIntuitiveResearchKitArmQtWidget * armGUI;
         mtsIntuitiveResearchKitSUJQtWidget * sujGUI;
         mtsPIDQtWidget * pidGUI;
+        mtsSocketBaseQtWidget * socketGUI;
 
         const std::string name = armIter->first;
 
@@ -132,6 +134,17 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             componentManager->AddComponent(armGUI);
             Connections.push_back(new ConnectionType(armGUI->GetName(), "Manipulator", armIter->second->mName, "Robot"));
             armTabWidget->addTab(armGUI, name.c_str());
+
+            // PSM server
+            if (armIter->second->mSocketServer) {
+                socketGUI = new mtsSocketBaseQtWidget(name + "-Server-GUI");
+                socketGUI->Configure();
+                componentManager->AddComponent(socketGUI);
+                Connections.push_back(new ConnectionType(socketGUI->GetName(), "SocketBase", armIter->second->mSocketComponentName, "System"));
+                armTabWidget->addTab(socketGUI, (name + "-Server").c_str());
+                break;
+            }
+
             break;
 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ:
@@ -156,6 +169,15 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             Connections.push_back(new ConnectionType(sujGUI->GetName(), "Manipulator", "SUJ", "PSM3"));
             armTabWidget->addTab(sujGUI, "PSM3 SUJ");
 
+            break;
+
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_SOCKET:
+
+            socketGUI = new mtsSocketBaseQtWidget(name + "-GUI");
+            socketGUI->Configure();
+            componentManager->AddComponent(socketGUI);
+            Connections.push_back(new ConnectionType(socketGUI->GetName(), "SocketBase", armIter->second->mName, "System"));
+            armTabWidget->addTab(socketGUI, name.c_str());
             break;
 
         default:

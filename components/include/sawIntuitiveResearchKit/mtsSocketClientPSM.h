@@ -1,17 +1,9 @@
 #ifndef _mtsSocketClientPSM_h
 #define _mtsSocketClientPSM_h
 
-#include <cisstMultiTask/mtsTaskPeriodic.h>
-#include <cisstOSAbstraction/osaSocket.h>
-#include <cisstParameterTypes/prmPositionCartesianSet.h>
-#include <cisstParameterTypes/prmPositionCartesianGet.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
-#include <sawIntuitiveResearchKit/socketCommandPSM.h>
-#include <sawIntuitiveResearchKit/socketStatePSM.h>
+#include <sawIntuitiveResearchKit/mtsSocketBasePSM.h>
 
-#define BUFFER_SIZE 1024
-
-class mtsSocketClientPSM : public mtsTaskPeriodic
+class mtsSocketClientPSM : public mtsSocketBasePSM
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
@@ -20,11 +12,8 @@ public :
                        const std::string & ip, const unsigned int port);
     mtsSocketClientPSM(const mtsTaskPeriodicConstructorArg & arg);
 
-    void Configure(const std::string & fileName = "");
-    void Startup();
-    void Run();
-    void Cleanup();
-
+    void Configure(const std::string & fileName = "");    
+    void Run();    
 
 protected:
     void SetRobotControlState(const std::string &state);
@@ -38,22 +27,6 @@ protected:
     void SendPSMCommandData();
 
 private:
-    // UDP details
-    struct {
-        socketCommandPSM Data;
-        osaSocket *Socket;
-        short Port;        
-        char Buffer[BUFFER_SIZE];
-    } Command;
-
-    struct {
-        socketStatePSM Data;
-        osaSocket *Socket;
-        short Port;
-        char Buffer[BUFFER_SIZE];
-    } State;
-
-    std::string ServerIp;
     prmPositionCartesianGet PositionCartesianCurrent;
 
     double JawPosition;

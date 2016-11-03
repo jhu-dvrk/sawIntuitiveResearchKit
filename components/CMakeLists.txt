@@ -114,6 +114,7 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitUDPStreamer.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsVFFollow.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsVFFollowJacobian.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBasePSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketClientPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketServerPSM.h
         )
@@ -132,6 +133,7 @@ if (cisst_FOUND)
          code/mtsIntuitiveResearchKitUDPStreamer.cpp
          code/mtsVFFollow.cpp
          code/mtsVFFollowJacobian.cpp
+         code/mtsSocketBasePSM.cpp
          code/mtsSocketClientPSM.cpp
          code/mtsSocketServerPSM.cpp
         )

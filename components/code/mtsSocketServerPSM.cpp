@@ -5,15 +5,8 @@ CMN_IMPLEMENT_SERVICES_DERIVED(mtsSocketServerPSM, mtsTaskPeriodic);
 
 mtsSocketServerPSM::mtsSocketServerPSM(const std::string &componentName, const double periodInSeconds,
                                        const std::string &ip, const unsigned int port) :
-    mtsTaskPeriodic(componentName, periodInSeconds)
+    mtsSocketBasePSM(componentName, periodInSeconds, ip, port, true)
 {
-    Command.Socket = new osaSocket(osaSocket::UDP);
-    Command.Port = port;
-
-    State.Socket = new osaSocket(osaSocket::UDP);
-    State.Port = port+1;
-    ClientIp = ip;
-
     mtsInterfaceRequired *interfaceRequired = AddInterfaceRequired("PSM");
     if(interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", GetPositionCartesian);
@@ -28,19 +21,8 @@ mtsSocketServerPSM::mtsSocketServerPSM(const std::string &componentName, const d
 
 void mtsSocketServerPSM::Configure(const std::string & CMN_UNUSED(fileName))
 {
-    State.Socket->SetDestination(ClientIp, State.Port);
-    Command.Socket->AssignPort(Command.Port);
-}
-
-void mtsSocketServerPSM::Startup()
-{
-    State.Data.RobotControlState = 0;
-}
-
-void mtsSocketServerPSM::Cleanup()
-{
-    State.Socket->Close();
-    Command.Socket->Close();
+    State.Socket->SetDestination(IpAddress, State.IpPort);
+    Command.Socket->AssignPort(Command.IpPort);
 }
 
 void mtsSocketServerPSM::Run()
@@ -50,9 +32,8 @@ void mtsSocketServerPSM::Run()
     ProcessQueuedCommands();
 
     ReceivePSMCommandData();
-
-    UpdatePSMState();
     SendPSMStateData();
+    UpdateStatistics();
 }
 
 void mtsSocketServerPSM::ExecutePSMCommands()
@@ -79,10 +60,27 @@ void mtsSocketServerPSM::ExecutePSMCommands()
     }
 }
 
-void mtsSocketServerPSM::UpdatePSMState()
+void mtsSocketServerPSM::ReceivePSMCommandData()
+{
+    // Recv Socket Data
+    size_t bytesRead = 0;
+    bytesRead = Command.Socket->Receive(Command.Buffer, BUFFER_SIZE, 10.0*cmn_ms);
+    if (bytesRead > 0) {
+        std::stringstream ss;
+        ss << Command.Buffer;
+        cmnData<socketCommandPSM>::DeSerializeText(Command.Data, ss);
+        Command.Data.GoalPose.NormalizedSelf();
+        ExecutePSMCommands();
+
+    } else {
+        CMN_LOG_CLASS_RUN_DEBUG << "RecvPSMCommandData: UDP receive failed" << std::endl;
+    }
+}
+
+void mtsSocketServerPSM::SendPSMStateData()
 {
     // Update PSM State
-    mtsExecutionResult executionResult;   
+    mtsExecutionResult executionResult;
 
     // Get Cartesian position
     executionResult = GetPositionCartesian(PositionCartesianCurrent);
@@ -101,26 +99,13 @@ void mtsSocketServerPSM::UpdatePSMState()
         State.Data.RobotControlState = 0;
         break;
     }
-}
 
-void mtsSocketServerPSM::ReceivePSMCommandData()
-{
-    // Recv Socket Data
-    size_t bytesRead = 0;
-    bytesRead = Command.Socket->Receive(Command.Buffer, BUFFER_SIZE, 10.0*cmn_ms);
-    if (bytesRead > 0) {
-        std::stringstream ss;
-        ss << Command.Buffer;
-        cmnData<socketCommandPSM>::DeSerializeText(Command.Data, ss);
-        Command.Data.GoalPose.NormalizedSelf();
-        ExecutePSMCommands();
-    } else {
-        CMN_LOG_CLASS_RUN_DEBUG << "RecvPSMCommandData: UDP receive failed" << std::endl;
-    }
-}
+    // Update Header
+    State.Data.Header.Id++;
+    State.Data.Header.Timestamp = mTimeServer.GetRelativeTime();
+    State.Data.Header.LastId = Command.Data.Header.Id;
+    State.Data.Header.LastTimestamp = Command.Data.Header.Timestamp;
 
-void mtsSocketServerPSM::SendPSMStateData()
-{
     // Send Socket Data
     std::stringstream ss;
     cmnData<socketStatePSM>::SerializeText(State.Data, ss);

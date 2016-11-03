@@ -14,8 +14,9 @@ class {
 
 	member {
 		name Id;
-		type int;
+		type unsigned int;
 		visibility public;
+		default 0;
 	}
 
 	member {
@@ -26,19 +27,22 @@ class {
 
 	member {
 		name Timestamp;
-		type int;
+		type double;
 		visibility public;
+		default 0.0;
 	}
 
 	member {
 		name LastId;
-		type int;
+		type unsigned int;
 		visibility public;
+		default 0;
 	}
 
 	member {
 		name LastTimestamp;
-		type int;
+		type double;
 		visibility public;
+		default 0.0;
 	}
 }

@@ -37,7 +37,8 @@ if (cisst_FOUND_AS_REQUIRED)
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArmQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECMQtWidget.h
-                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h)
+                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h
+                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBaseQtWidget.h)
     qt4_add_resources (sawIntuitiveResearchKit_QT_RESOURCES
                        ${CMAKE_CURRENT_SOURCE_DIR}/logo.qrc)
   else (CISST_HAS_QT4)
@@ -51,7 +52,7 @@ if (cisst_FOUND_AS_REQUIRED)
                mtsIntuitiveResearchKitConsoleQt.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h
                mtsIntuitiveResearchKitConsoleQtWidget.cpp
-               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h
+               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h               
                mtsTeleOperationPSMQtWidget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECMQtWidget.h
                mtsTeleOperationECMQtWidget.cpp
@@ -59,6 +60,8 @@ if (cisst_FOUND_AS_REQUIRED)
                mtsIntuitiveResearchKitArmQtWidget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
                mtsIntuitiveResearchKitSUJQtWidget.cpp
+               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBaseQtWidget.h
+               mtsSocketBaseQtWidget.cpp
                ${sawIntuitiveResearchKit_QT_WRAP_CPP}
                ${sawIntuitiveResearchKit_QT_RESOURCES}
                )
