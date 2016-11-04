@@ -5,7 +5,9 @@ mtsSocketBasePSM::mtsSocketBasePSM(const std::string &componentName, const doubl
                                    const std::string &ip, const unsigned int port, bool isServer) :
     mtsTaskPeriodic(componentName, periodInSeconds),
     mIsServer(isServer),
-    mTimeServer(mtsComponentManager::GetInstance()->GetTimeServer())
+    mTimeServer(mtsComponentManager::GetInstance()->GetTimeServer()),
+    mPacketsLost(0),
+    mPacketsDelayed(0)
 {
     Command.Socket = new osaSocket(osaSocket::UDP);
     Command.IpPort = port;
@@ -46,16 +48,16 @@ void mtsSocketBasePSM::UpdateStatistics()
 {
     int deltaPacket;
     if (mIsServer) {
-        mLoopTime = State.Data.Header.Timestamp - Command.Data.Header.LastTimestamp;
-        mPacketsLost = State.Data.Header.Id - Command.Data.Header.LastId;
+        mLoopTime = State.Data.Header.Timestamp - Command.Data.Header.LastTimestamp;                
         deltaPacket = Command.Data.Header.Id - State.Data.Header.LastId;
     } else {
-        mLoopTime = Command.Data.Header.Timestamp - State.Data.Header.LastTimestamp;
-        mPacketsLost = State.Data.Header.Id - Command.Data.Header.LastId;
-        deltaPacket = Command.Data.Header.Id - State.Data.Header.LastId;
+        mLoopTime = Command.Data.Header.Timestamp - State.Data.Header.LastTimestamp;                        
+        deltaPacket = State.Data.Header.Id - Command.Data.Header.LastId;
     }
 
     if (deltaPacket == 0) {
        mPacketsDelayed++;
+    } else if (deltaPacket > 1) {
+        mPacketsLost += (deltaPacket - 1);
     }
 }

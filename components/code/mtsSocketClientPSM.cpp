@@ -41,8 +41,8 @@ void mtsSocketClientPSM::Run()
     ProcessQueuedCommands();
 
     ReceivePSMStateData();
-    SendPSMCommandData();
     UpdateStatistics();
+    SendPSMCommandData();    
 }
 
 void mtsSocketClientPSM::UpdateApplication()
