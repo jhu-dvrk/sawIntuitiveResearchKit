@@ -47,15 +47,15 @@ void mtsSocketBasePSM::UpdateStatistics()
     int deltaPacket;
     if (mIsServer) {
         mLoopTime = State.Data.Header.Timestamp - Command.Data.Header.LastTimestamp;
-        deltaPacket = State.Data.Header.Id - Command.Data.Header.LastId;
+        mPacketsLost = State.Data.Header.Id - Command.Data.Header.LastId;
+        deltaPacket = Command.Data.Header.Id - State.Data.Header.LastId;
     } else {
         mLoopTime = Command.Data.Header.Timestamp - State.Data.Header.LastTimestamp;
+        mPacketsLost = State.Data.Header.Id - Command.Data.Header.LastId;
         deltaPacket = Command.Data.Header.Id - State.Data.Header.LastId;
     }
 
     if (deltaPacket == 0) {
        mPacketsDelayed++;
-    } else if (deltaPacket > 1) {
-        mPacketsLost += (deltaPacket - 1);
     }
 }
