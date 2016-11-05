@@ -111,7 +111,7 @@ void mtsSocketClientPSM::ReceivePSMStateData()
 {
     // Recv Scoket Data
     size_t bytesRead = 0;
-    bytesRead = State.Socket->Receive(State.Buffer, BUFFER_SIZE, 10.0*cmn_ms);
+    bytesRead = State.Socket->Receive(State.Buffer, BUFFER_SIZE, TIMEOUT);
     if (bytesRead > 0) {
         std::stringstream ss;
         ss << State.Buffer;

@@ -46,13 +46,29 @@ void mtsSocketBasePSM::Cleanup()
 
 void mtsSocketBasePSM::UpdateStatistics()
 {
-    int deltaPacket;
+    int deltaPacket = 1;
     if (mIsServer) {
-        mLoopTime = State.Data.Header.Timestamp - Command.Data.Header.LastTimestamp;                
-        deltaPacket = Command.Data.Header.Id - State.Data.Header.LastId;
+        mLoopTime = mTimeServer.GetRelativeTime() - Command.Data.Header.LastTimestamp;                
+        if (Command.Data.Header.Id == 1) {
+            State.Data.Header.Id = 1;
+            mPacketsLost = 0;
+            mPacketsDelayed = 0;
+        } else {
+            if (State.Data.Header.Id != 0) {
+                deltaPacket = Command.Data.Header.Id - State.Data.Header.LastId;
+            }
+        }
     } else {
-        mLoopTime = Command.Data.Header.Timestamp - State.Data.Header.LastTimestamp;                        
-        deltaPacket = State.Data.Header.Id - Command.Data.Header.LastId;
+        mLoopTime = mTimeServer.GetRelativeTime() - State.Data.Header.LastTimestamp;                        
+        if (State.Data.Header.Id == 1) {
+            Command.Data.Header.Id = 1;
+            mPacketsLost = 0;
+            mPacketsDelayed = 0;
+        } else {
+            if (Command.Data.Header.Id != 0) {
+                deltaPacket = State.Data.Header.Id - Command.Data.Header.LastId;
+            }
+        }
     }
 
     if (deltaPacket == 0) {

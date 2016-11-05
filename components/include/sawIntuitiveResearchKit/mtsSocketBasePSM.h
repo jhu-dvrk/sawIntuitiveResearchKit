@@ -11,6 +11,8 @@
 
 #define BUFFER_SIZE 1024
 
+#define TIMEOUT 3000.0 * cmn_ms
+
 class mtsSocketBasePSM : public mtsTaskPeriodic
 {
 
