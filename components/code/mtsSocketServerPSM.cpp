@@ -32,8 +32,8 @@ void mtsSocketServerPSM::Run()
     ProcessQueuedCommands();
 
     ReceivePSMCommandData();
-    SendPSMStateData();
     UpdateStatistics();
+    SendPSMStateData();    
 }
 
 void mtsSocketServerPSM::ExecutePSMCommands()
@@ -64,7 +64,7 @@ void mtsSocketServerPSM::ReceivePSMCommandData()
 {
     // Recv Socket Data
     size_t bytesRead = 0;
-    bytesRead = Command.Socket->Receive(Command.Buffer, BUFFER_SIZE, 10.0*cmn_ms);
+    bytesRead = Command.Socket->Receive(Command.Buffer, BUFFER_SIZE, TIMEOUT);
     if (bytesRead > 0) {
         std::stringstream ss;
         ss << Command.Buffer;

@@ -88,25 +88,25 @@ void mtsSocketBaseQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
         return;
     }
 
-    double loopTime;
-    SocketBase.GetLoopTime(loopTime);
-    SocketBase.QLLoopTime->setText(QString::number(loopTime));
-
     unsigned int packet;
+    SocketBase.GetLastSentPacketId(packet);
+    SocketBase.QLLastSentPacketId->setText(QString::number(packet));
+
+    SocketBase.GetLastReceivedPacketId(packet);
+    SocketBase.QLLastReceivedPacketId->setText(QString::number(packet));
+
     SocketBase.GetPacketsLost(packet);
     SocketBase.QLPacketsLost->setText(QString::number(packet));
 
     SocketBase.GetPacketsDelayed(packet);
     SocketBase.QLPacketsDelayed->setText(QString::number(packet));
 
-    SocketBase.GetLastReceivedPacketId(packet);
-    SocketBase.QLLastReceivedPacketId->setText(QString::number(packet));
-
-    SocketBase.GetLastSentPacketId(packet);
-    SocketBase.QLLastSentPacketId->setText(QString::number(packet));
+    double loopTime;
+    SocketBase.GetLoopTime(loopTime);
+    SocketBase.QLLoopTime->setText(QString::number(loopTime * 1000.0, 'g', 3));
 
     SocketBase.GetPeriodStatistics(IntervalStatistics);
-    QMIntervalStatistics->SetValue(IntervalStatistics);    
+    QMIntervalStatistics->SetValue(IntervalStatistics);
 }
 
 void mtsSocketBaseQtWidget::setupUi(void)
@@ -143,7 +143,7 @@ void mtsSocketBaseQtWidget::setupUi(void)
     grid->addWidget(SocketBase.QLPacketsDelayed, row, 1);
     row++;
 
-    grid->addWidget(new QLabel("Loop time"), row, 0);
+    grid->addWidget(new QLabel("Loop time (ms)"), row, 0);
     SocketBase.QLLoopTime = new QLabel();
     grid->addWidget(SocketBase.QLLoopTime, row, 1);
     row++;
