@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitMTM_h
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+#include <sawControllers/osaImpedanceController.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 class CISST_EXPORT mtsIntuitiveResearchKitMTM: public mtsIntuitiveResearchKitArm
@@ -110,9 +111,15 @@ protected:
     /*! Run Clutch */
     void RunClutch(void);
 
+    /*! Effort Impedance.  */
+    void RunEffortCartesianImpedance(void);
+
     /*! Lock master orientation when in cartesian effort mode */
     virtual void LockOrientation(const vctMatRot3 & orientation);
     virtual void UnlockOrientation(void);
+
+    /*! Set Impedance Gains*/
+    virtual void SetImpedanceGains(const prmFixtureGainCartesianSet & newGains);
 
     // Functions for events
     struct {
@@ -131,6 +138,10 @@ protected:
 
     //! robot type
     MTM_TYPE RobotType;
+
+    // Impedance Controller
+    osaImpedanceController *mImpedanceController;
+    prmFixtureGainCartesianSet mImpedanceGains;
 
     // Home Action
     bool HomingCalibrateRollSeekLower,

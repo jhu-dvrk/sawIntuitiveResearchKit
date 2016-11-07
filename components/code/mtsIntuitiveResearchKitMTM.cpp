@@ -112,6 +112,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     CMN_ASSERT(RobotInterface);
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::LockOrientation, this, "LockOrientation");
     RobotInterface->AddCommandVoid(&mtsIntuitiveResearchKitMTM::UnlockOrientation, this, "UnlockOrientation");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetImpedanceGains, this, "SetImpedanceGains");
 
     // Gripper
     RobotInterface->AddCommandReadState(this->StateTable, GripperPosition, "GetGripperPosition");
@@ -130,6 +131,9 @@ void mtsIntuitiveResearchKitMTM::RunArmSpecific(void)
         break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_CLUTCH:
         RunClutch();
+    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN_IMPEDANCE:
+        RunEffortCartesianImpedance();
+        break;
     default:
         break;
     }
@@ -300,6 +304,23 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         RobotState = newState;
         mWrenchSet.Force().Zeros();
         mWrenchType = WRENCH_UNDEFINED;
+        EffortOrientationLocked = false;
+        MessageEvents.Status(this->GetName() + " effort cartesian");
+        break;
+
+    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN_IMPEDANCE:
+        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+            MessageEvents.Error(this->GetName() + " is not ready");
+            return;
+        }
+        torqueMode.SetAll(true);
+        PID.EnableTorqueMode(torqueMode);
+        PID.EnableTrackingError(false);
+        PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
+        RobotState = newState;
+        mWrenchSet.Force().Zeros();
+        mWrenchType = WRENCH_BODY;
+        mWrenchBodyOrientationAbsolute = true;
         EffortOrientationLocked = false;
         MessageEvents.Status(this->GetName() + " effort cartesian");
         break;
@@ -636,6 +657,14 @@ void mtsIntuitiveResearchKitMTM::RunClutch(void)
     SetPositionJointLocal(JointSet);
 }
 
+void mtsIntuitiveResearchKitMTM::RunEffortCartesianImpedance(void)
+{
+    prmForceCartesianSet wrench;
+    mImpedanceController->Update(CartesianGetParam, CartesianVelocityGetParam, wrench);
+    SetWrenchBody(wrench);
+    RunEffortCartesian();
+}
+
 void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
 {
     // if we just started lock
@@ -685,5 +714,12 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
             return;
         }
         SetState(stateEnum);
+    }
+}
+
+void mtsIntuitiveResearchKitMTM::SetImpedanceGains(const prmFixtureGainCartesianSet &newGains)
+{
+    if(CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN_IMPEDANCE)) {
+        mImpedanceGains = newGains;
     }
 }

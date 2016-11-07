@@ -71,6 +71,10 @@ class {
             description Cartesian effort mode;
         }
         enum-value {
+            name DVRK_EFFORT_CARTESIAN_IMPEDANCE;
+            description Cartesian impedance effort mode;
+        }
+        enum-value {
             name DVRK_GRAVITY_COMPENSATION;
             description Gravity compensation mode;
         }
