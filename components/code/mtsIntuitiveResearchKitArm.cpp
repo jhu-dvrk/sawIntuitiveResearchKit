@@ -619,12 +619,6 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
         return;
     }
 
-    // get current position/velocity
-    JointSet.Assign(JointGet);
-    if (JointTrajectory.EndTime == 0.0 && mIsSimulated) {
-        std::cerr << CMN_LOG_DETAILS << "Removed this condition when PID simulated velocity is fixed!!!!!" << std::endl;
-        JointVelocitySet.Assign(JointVelocityGet);
-    }
     JointTrajectory.Reflexxes.Evaluate(JointSet,
                                        JointVelocitySet,
                                        JointTrajectory.Goal,
@@ -761,6 +755,11 @@ void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & ne
 void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet & newPosition)
 {
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT)) {
+        // if we just started using the trajectory, start from current position/velocity
+        if (JointTrajectory.EndTime < 0.0) {
+            JointSet.Assign(JointGet);
+            JointVelocitySet.Assign(JointVelocityGet);
+        }
         // starting point is last requested to PID component
         JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
         JointTrajectory.Goal.Assign(newPosition.Goal(), NumberOfJoints());

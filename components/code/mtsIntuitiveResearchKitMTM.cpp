@@ -95,10 +95,10 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 
     JointTrajectory.Velocity.SetAll(180.0 * cmnPI_180); // degrees per second
     JointTrajectory.Acceleration.SetAll(180.0 * cmnPI_180);
-    JointTrajectory.Velocity.Element(6) = 1080.0 * cmnPI_180; // roll can go fast
-    JointTrajectory.Acceleration.Element(6) = 1080.0 * cmnPI_180;
-    JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
-    JointTrajectory.GoalTolerance.Element(6) = 6.0 * cmnPI / 180.0; // roll has low encoder resolution
+    JointTrajectory.Velocity.Element(6) = 360.0 * cmnPI_180; // roll can go fast
+    JointTrajectory.Acceleration.Element(6) = 360.0 * cmnPI_180;
+    JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
+    JointTrajectory.GoalTolerance.Element(6) = 6.0 * cmnPI_180; // roll has low encoder resolution
      // IO level treats the gripper as joint :-)
     PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
     // pots on gripper rotation are not directly mapped to encoders
@@ -407,6 +407,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
                                       robReflexxes::Reflexxes_TIME);
+        JointTrajectory.EndTime = 0.0;
         // set flag to indicate that homing has started
         HomingCalibrateRollSeekLower = true;
         MessageEvents.Status(this->GetName() + " looking for roll lower limit");
@@ -465,6 +466,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
                                       robReflexxes::Reflexxes_TIME);
+        JointTrajectory.EndTime = 0.0;
         // we want to start from zero velocity since we hit the joint limit
         JointVelocitySet.SetAll(0.0);
         // set flag to indicate that homing has started

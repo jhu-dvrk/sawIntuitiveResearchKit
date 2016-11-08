@@ -602,7 +602,6 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
             const bool reached =
                 !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
             if (reached) {
-                std::cerr << "Time out: " << JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any() << std::endl;
                 homed = true;
             } else {
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
