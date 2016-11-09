@@ -87,6 +87,9 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     RobotType = MTM_NULL;
     SetMTMType();
 
+    // Impedance Controller
+    mImpedanceController = new osaImpedanceController();
+
     // joint values when orientation is locked
     EffortOrientationJoint.SetSize(NumberOfJoints());
 
@@ -318,11 +321,12 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         PID.EnableTrackingError(false);
         PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
         RobotState = newState;
+        mImpedanceController->ResetGains();
         mWrenchSet.Force().Zeros();
         mWrenchType = WRENCH_BODY;
         mWrenchBodyOrientationAbsolute = true;
         EffortOrientationLocked = false;
-        MessageEvents.Status(this->GetName() + " effort cartesian");
+        MessageEvents.Status(this->GetName() + " effort cartesian impedance");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
@@ -720,6 +724,6 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
 void mtsIntuitiveResearchKitMTM::SetImpedanceGains(const prmFixtureGainCartesianSet &newGains)
 {
     if(CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN_IMPEDANCE)) {
-        mImpedanceGains = newGains;
+        mImpedanceController->SetGains(newGains);
     }
 }

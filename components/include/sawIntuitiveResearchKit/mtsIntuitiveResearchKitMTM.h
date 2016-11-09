@@ -140,8 +140,7 @@ protected:
     MTM_TYPE RobotType;
 
     // Impedance Controller
-    osaImpedanceController *mImpedanceController;
-    prmFixtureGainCartesianSet mImpedanceGains;
+    osaImpedanceController *mImpedanceController;    
 
     // Home Action
     bool HomingCalibrateRollSeekLower,
