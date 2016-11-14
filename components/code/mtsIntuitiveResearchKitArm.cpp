@@ -81,6 +81,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     JacobianBodyTranspose.ForceAssign(JacobianBody.Transpose());
     mJacobianPInverseData.Allocate(JacobianBodyTranspose);
     JointExternalEffort.SetSize(NumberOfJointsKinematics());
+    mEffortJointSet.SetSize(NumberOfJoints());
+    mEffortJointSet.ForceTorque().SetAll(0.0);
     mWrenchGet.SetValid(false);
 
     // base frame, mostly for cases where no base frame is set by user
@@ -197,6 +199,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                         this, "SetPositionCartesian");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalCartesian,
                                         this, "SetPositionGoalCartesian");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetEffortJoint,
+                                        this, "SetEffortJoint");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetWrenchBody,
                                         this, "SetWrenchBody");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetWrenchBodyOrientationAbsolute,
@@ -299,6 +303,9 @@ void mtsIntuitiveResearchKitArm::Run(void)
         break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
         RunPositionGoalCartesian();
+        break;
+    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_JOINT:
+        RunEffortJoint();
         break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
         RunEffortCartesian();
@@ -652,6 +659,25 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalCartesian(void)
     RunPositionGoalJoint();
 }
 
+void mtsIntuitiveResearchKitArm::RunEffortJoint(void)
+{
+    // effort required
+    JointExternalEffort.Assign(mEffortJointSet.ForceTorque());
+
+    // add gravity compensation if needed
+    if (mGravityCompensation) {
+        AddGravityCompensationEfforts(JointExternalEffort);
+    }
+
+    // add custom efforts
+    AddCustomEfforts(JointExternalEffort);
+
+     // convert to cisstParameterTypes
+    TorqueSetParam.SetForceTorque(JointExternalEffort);
+
+    PID.SetTorqueJoint(TorqueSetParam);
+}
+
 void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
 {
     // update torques based on wrench
@@ -855,6 +881,13 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
     } else {
         MessageEvents.Status(this->GetName() + " encoders have been biased by another process");
+    }
+}
+
+void mtsIntuitiveResearchKitArm::SetEffortJoint(const prmForceTorqueJointSet & effort)
+{
+    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_JOINT)) {
+        mEffortJointSet.ForceTorque().Assign(effort.ForceTorque());
     }
 }
 

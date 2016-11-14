@@ -287,18 +287,20 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
                             << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(newState) << std::endl;
 
-    vctBoolVec torqueMode(7);
-
     // first cleanup from previous state
     switch (RobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_GRAVITY_COMPENSATION:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_JOINT:
     case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
-        // Disable torque mode for all joints
-        torqueMode.SetAll(false);
-        PID.EnableTorqueMode(torqueMode);
-        PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
-        PID.EnableTrackingError(true);
-        SetPositionJointLocal(JointGetDesired);
+        {
+            // Disable torque mode for all joints
+            vctBoolVec torqueMode(NumberOfJoints());
+            torqueMode.SetAll(false);
+            PID.EnableTorqueMode(torqueMode);
+            PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
+            PID.EnableTrackingError(true);
+            SetPositionJointLocal(JointGetDesired);
+        }
         break;
     default:
         break;
@@ -484,6 +486,22 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         }
         break;
 
+    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_JOINT:
+        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+            MessageEvents.Error(this->GetName() + " is not ready");
+            return;
+        } else {
+            vctBoolVec torqueMode(NumberOfJoints());
+            torqueMode.SetAll(true);
+            PID.EnableTorqueMode(torqueMode);
+            PID.EnableTrackingError(false);
+            PID.SetTorqueOffset(vctDoubleVec(NumberOfJoints(), 0.0));
+            JointExternalEffort.SetSize(NumberOfJoints());
+            RobotState = newState;
+            MessageEvents.Status(this->GetName() + " effort joint");
+        }
+        break;
+
     case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
         if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
             MessageEvents.Error(this->GetName() + " is not ready");
@@ -493,11 +511,13 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         if (JointGet.Element(2) < 40.0 * cmn_mm) {
             MessageEvents.Error(this->GetName() + " can't start cartesian effort mode, make sure the tool is inserted past the cannula (joint 3 > 40 mm)");
         } else {
+            vctBoolVec torqueMode(NumberOfJointsKinematics());
             torqueMode.SetAll(true);
             PID.EnableTorqueMode(torqueMode);
             PID.EnableTrackingError(false);
-            PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
+            PID.SetTorqueOffset(vctDoubleVec(NumberOfJointsKinematics(), 0.0));
             RobotState = newState;
+            JointExternalEffort.SetSize(NumberOfJointsKinematics());
             mWrenchSet.Force().Zeros();
             mWrenchType = WRENCH_UNDEFINED;
             MessageEvents.Status(this->GetName() + " effort cartesian");
