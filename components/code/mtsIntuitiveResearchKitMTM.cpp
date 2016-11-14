@@ -310,6 +310,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
     }
 
     static const double extraTime = 2.0 * cmn_s;
+    const double currentTime = this->StateTable.GetTic();
 
     // trigger motion
     if (!HomingCalibrateArmStarted) {
@@ -341,9 +342,9 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
     SetPositionJointLocal(JointSet);
 
     const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-    const double currentTime = this->StateTable.GetTic();
 
     switch (trajectoryResult) {
+
     case robReflexxes::Reflexxes_WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
         if (JointTrajectory.EndTime == 0.0) {
@@ -351,6 +352,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
             HomingTimer = JointTrajectory.EndTime;
         }
         break;
+
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         {
             // check position
@@ -372,6 +374,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
             }
         }
         break;
+
     default:
         MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
         break;

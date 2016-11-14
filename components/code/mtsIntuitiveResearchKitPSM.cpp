@@ -542,7 +542,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         return;
     }
 
-    static const double extraTime = 5.0 * cmn_s;
+    static const double extraTime = 2.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
     // trigger motion
@@ -552,7 +552,6 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         // enable PID and start from current position
         JointSet.ForceAssign(JointGet);
         SetPositionJointLocal(JointSet);
-        // finally enable PID
         PID.Enable(true);
 
         // compute joint goal position
@@ -571,60 +570,54 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
                                       robReflexxes::Reflexxes_TIME);
-        JointSet.Assign(JointGet);
-        JointVelocitySet.Assign(JointVelocityGet);
         JointTrajectory.EndTime = 0.0;
-        // set flag to indicate that homing has started
         HomingCalibrateArmStarted = true;
     }
 
-    // compute a new set point
     JointTrajectory.Reflexxes.Evaluate(JointSet,
                                        JointVelocitySet,
                                        JointTrajectory.Goal,
                                        JointTrajectory.GoalVelocity);
-
-    // if this is the first evaluation, we can't calculate expected completion time
-    if (JointTrajectory.EndTime == 0.0) {
-        JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
-    }
+    SetPositionJointLocal(JointSet);
 
     const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-    bool homed = false;
-    switch (trajectoryResult) {
-    case robReflexxes::Reflexxes_WORKING:
-        SetPositionJointLocal(JointSet);
 
-        // try to detect timeout
-        if (currentTime > (JointTrajectory.EndTime + extraTime)) {
+    switch (trajectoryResult) {
+
+    case robReflexxes::Reflexxes_WORKING:
+        // if this is the first evaluation, we can't calculate expected completion time
+        if (JointTrajectory.EndTime == 0.0) {
+            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
+            HomingTimer = JointTrajectory.EndTime;
+        }
+        break;
+
+    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+        {
+            // check position
             JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
             JointTrajectory.GoalError.AbsSelf();
-            const bool reached =
-                !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
-            if (reached) {
-                homed = true;
+            bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
+            if (isHomed) {
+                PID.SetCheckJointLimit(true);
+                MessageEvents.Status(this->GetName() + " arm ready");
+                HomedOnce = true;
+                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
             } else {
-                CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
-                                           << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
-                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+                // time out
+                if (currentTime > HomingTimer + extraTime) {
+                    CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
+                                               << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
+                    MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
+                    this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+                }
             }
         }
         break;
-    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
-        homed = true;
-        break;
+
     default:
         MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
-        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
         break;
-    }
-
-    if (homed) {
-        PID.SetCheckJointLimit(true);
-        HomedOnce = true;
-        MessageEvents.Status(this->GetName() + " arm ready");
-        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
     }
 }
 
@@ -738,35 +731,53 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
                                       robReflexxes::Reflexxes_TIME);
+        JointTrajectory.EndTime = 0.0;
         EngagingStage = 2;
         return;
     }
 
-    // perform whatever trajectory is going on
-    if (currentTime <= HomingTimer) {
-        JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                           JointVelocitySet,
-                                           JointTrajectory.Goal,
-                                           JointTrajectory.GoalVelocity);
-        SetPositionJointLocal(JointSet);
-    } else {
-        // check if we were in last phase
-        if (EngagingStage > LastEngagingStage) {
-            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
-        } else {
-            if (EngagingStage != LastEngagingStage) {
-                JointTrajectory.Goal.Ref(4, 3) *= -1.0; // toggle back and forth
+    JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                       JointVelocitySet,
+                                       JointTrajectory.Goal,
+                                       JointTrajectory.GoalVelocity);
+    SetPositionJointLocal(JointSet);
+
+    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+
+    switch (trajectoryResult) {
+
+    case robReflexxes::Reflexxes_WORKING:
+        // if this is the first evaluation, we can't calculate expected completion time
+        if (JointTrajectory.EndTime == 0.0) {
+            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
+            HomingTimer = JointTrajectory.EndTime;
+        }
+        break;
+
+    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+        {
+            // check if we were in last phase
+            if (EngagingStage > LastEngagingStage) {
+                SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
             } else {
-                JointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
+                if (EngagingStage != LastEngagingStage) {
+                    JointTrajectory.Goal.Ref(4, 3) *= -1.0; // toggle back and forth
+                } else {
+                    JointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
+                }
+                JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                              JointTrajectory.Acceleration,
+                                              StateTable.PeriodStats.GetAvg(),
+                                              robReflexxes::Reflexxes_TIME);
+                std::stringstream message;
+                message << this->GetName() << " engaging adapter " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
+                MessageEvents.Status(message.str());
+                EngagingStage++;
             }
-            JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                          JointTrajectory.Acceleration,
-                                          StateTable.PeriodStats.GetAvg(),
-                                          robReflexxes::Reflexxes_TIME);
-            std::stringstream message;
-            message << this->GetName() << " engaging adapter " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
-            MessageEvents.Status(message.str());
-            EngagingStage++;
+
+        default:
+            MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+            break;
         }
     }
 }
