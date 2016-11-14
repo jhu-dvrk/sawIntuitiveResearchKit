@@ -55,7 +55,7 @@ mtsIntuitiveResearchKitOptimizer::mtsIntuitiveResearchKitOptimizer(const size_t 
     mtsVFController(numOfJoints, mtsVFBase::JPOS)
 {
     NumOfJoints = numOfJoints;
-    CurrentJointState.JointPosition.SetSize(NumOfJoints);
+    CurrentJointState.Position().SetSize(NumOfJoints);
 }
 
 void mtsIntuitiveResearchKitOptimizer::InitializeFollowVF(const size_t rows,
@@ -103,7 +103,7 @@ void mtsIntuitiveResearchKitOptimizer::UpdateKinematics(vctDoubleVec & qCurr,
                                                         vctFrm4x4 cartesianCurrent,
                                                         vctFrm4x4 cartesianDesired)
 {
-    CurrentJointState.JointPosition = qCurr;
+    CurrentJointState.Position() = qCurr;
 
     // Populating the currest slave kinematics object
     CurrentSlaveKinematics.Frame.FromNormalized(cartesianCurrent);
@@ -117,7 +117,7 @@ void mtsIntuitiveResearchKitOptimizer::UpdateKinematics(vctDoubleVec & qCurr,
 void mtsIntuitiveResearchKitOptimizer::UpdateJacobian(const robManipulator & manip)
 {
     // ask manipulator to compute body jacobian
-    manip.JacobianBody(CurrentJointState.JointPosition);
+    manip.JacobianBody(CurrentJointState.Position());
 
     // to make sure we have the right size
     Cached.BodyJacobian.SetSize(6, 6);
@@ -127,7 +127,7 @@ void mtsIntuitiveResearchKitOptimizer::UpdateJacobian(const robManipulator & man
     // Base of the body jacobian is the tip frame and the ref point is the tip
     // Have to convert the base to the world frame
 
-    vctFrame4x4<double> Rt0n = manip.ForwardKinematics(CurrentJointState.JointPosition);
+    vctFrame4x4<double> Rt0n = manip.ForwardKinematics(CurrentJointState.Position());
 
     Cached.Adjoint = ComputeAdjointMatrix(Rt0n);
 
