@@ -10,6 +10,7 @@ class {
 		name Version;
 		type int;
 		visibility public;
+                default 10000;
 	}
 
 	member {

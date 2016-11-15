@@ -31,6 +31,7 @@ private:
 
     prmPositionCartesianGet PositionCartesianCurrent;
     prmPositionCartesianSet PositionCartesianSet;
+    bool mIsHoming;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsSocketServerPSM);

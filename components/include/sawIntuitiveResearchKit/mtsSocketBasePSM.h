@@ -9,9 +9,12 @@
 #include <sawIntuitiveResearchKit/socketCommandPSM.h>
 #include <sawIntuitiveResearchKit/socketStatePSM.h>
 
+#define VERSION 10000
 #define BUFFER_SIZE 1024
+#define CLIENT_MSG_SIZE 140
+#define SERVER_MSG_SIZE 140
 
-#define TIMEOUT 3000.0 * cmn_ms
+#define TIMEOUT 4.0 * cmn_ms
 
 class mtsSocketBasePSM : public mtsTaskPeriodic
 {
