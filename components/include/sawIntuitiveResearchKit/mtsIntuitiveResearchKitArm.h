@@ -97,6 +97,7 @@ protected:
     virtual void RunPositionGoalCartesian(void);
 
     /*! Effort state. */
+    virtual void RunEffortJoint(void);    
     virtual void RunEffortCartesian(void);
 
     /*! Compute forces/position for PID when orientation is locked in
@@ -115,6 +116,7 @@ protected:
     virtual void SetPositionGoalJoint(const prmPositionJointSet & newPosition);
     virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
+    virtual void SetEffortJoint(const prmForceTorqueJointSet & newEffort);
     virtual void SetWrenchSpatial(const prmForceCartesianSet & newForce);
     virtual void SetWrenchBody(const prmForceCartesianSet & newForce);
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
@@ -231,7 +233,7 @@ protected:
     WrenchType mWrenchType;
     prmForceCartesianSet mWrenchSet;
     bool mWrenchBodyOrientationAbsolute;
-    prmForceTorqueJointSet TorqueSetParam;
+    prmForceTorqueJointSet TorqueSetParam, mEffortJointSet;
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData mJacobianPInverseData;
     prmForceCartesianGet mWrenchGet;

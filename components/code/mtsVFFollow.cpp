@@ -43,14 +43,14 @@ void mtsVFFollow::FillInTableauRefs(const CONTROLLERMODE mode, const double Tick
     // current kinematics gives us current joint set
     int nJoints = CurrentKinematics->Jacobian.cols();
     CurrentJointSet.SetSize(nJoints);
-    CurrentJointSet.Assign(CurrentKinematics->JointState->JointPosition, nJoints);    
+    CurrentJointSet.Assign(CurrentKinematics->JointState->Position(), nJoints);
 
     // desired kinematics gives us desired frame
     DesiredFrame.FromNormalized(DesiredKinematics->Frame);
 
     // use desired frame to solve for desired joint set
     DesiredJointSet.SetSize(nJoints);
-    DesiredJointSet.Assign(CurrentJointSet,nJoints);    
+    DesiredJointSet.Assign(CurrentJointSet,nJoints);
 
     // make sure manipulator object exists
     if(Manipulator)
