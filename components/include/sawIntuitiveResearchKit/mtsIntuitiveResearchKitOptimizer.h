@@ -76,7 +76,7 @@ protected:
     prmKinematicsState DesiredSlaveKinematics;
     mtsVFDataFollow FollowData;
     vctDoubleVec ControllerOutput;
-    prmJointState CurrentJointState;
+    prmStateJoint CurrentJointState;
 
     size_t NumOfJoints;
 

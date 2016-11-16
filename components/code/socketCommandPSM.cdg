@@ -17,6 +17,7 @@ class {
 		name RobotControlState;
 		type int;
 		visibility public;
+		default 0;
 	}
 
 	member {
