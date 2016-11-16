@@ -285,8 +285,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         mMTM->PositionCartesianSet.Goal().Translation().Assign(mMTM->PositionCartesianCurrent.Position().Translation());
         MessageEvents.Status(this->GetName() + ": console clutch pressed");
 
-        // set MTM in effort mode, no force applied but gravity and locked orientation
-        mMTM->SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+        // no force applied but gravity and locked orientation
         prmForceCartesianSet wrench;
         mMTM->SetWrenchBody(wrench);
         mMTM->SetGravityCompensation(true);
@@ -492,6 +491,16 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 
 void mtsTeleOperationPSM::TransitionAligningMTM(void)
 {
+
+    // check mtm state
+    mtsStdString armState;
+    mPSM->GetRobotControlState(armState);
+    if (armState.Data != "DVRK_POSITION_CARTESIAN") {
+        mTeleopState.SetDesiredState("DISABLED");
+        mTeleopState.SetCurrentState("DISABLED");
+        return;
+    }
+
     // if the desired state is aligning MTM, just stay here
     if (mTeleopState.DesiredState() == mTeleopState.CurrentState()) {
         return;
@@ -592,6 +601,20 @@ void mtsTeleOperationPSM::RunEnabled(void)
 
 void mtsTeleOperationPSM::TransitionEnabled(void)
 {
+    mtsStdString armState;
+
+    // check psm state
+    mPSM->GetRobotControlState(armState);
+    if (armState.Data != "DVRK_POSITION_CARTESIAN") {
+        mTeleopState.SetDesiredState("DISABLED");
+    }
+
+    // check mtm state
+    mMTM->GetRobotControlState(armState);
+    if (armState.Data != "DVRK_EFFORT_CARTESIAN") {
+        mTeleopState.SetDesiredState("DISABLED");
+    }
+
     if (mTeleopState.DesiredState() != mTeleopState.CurrentState()) {
         mTeleopState.SetCurrentState(mTeleopState.DesiredState());
     }
