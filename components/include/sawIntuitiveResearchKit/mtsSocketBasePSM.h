@@ -6,8 +6,7 @@
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
-#include <sawIntuitiveResearchKit/socketCommandPSM.h>
-#include <sawIntuitiveResearchKit/socketStatePSM.h>
+#include <sawIntuitiveResearchKit/socketMessages.h>
 
 #define VERSION 10000
 #define BUFFER_SIZE 1024
@@ -48,6 +47,8 @@ protected:
     std::string IpAddress;
     bool mIsServer;
     const osaTimeServer &mTimeServer;
+    socketMessages::StateType CurrentState, DesiredState;
+
 private:
     unsigned int mPacketsLost;
     unsigned int mPacketsDelayed;

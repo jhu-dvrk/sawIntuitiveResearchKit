@@ -1,0 +1,144 @@
+inline-header {
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+}
+
+class {
+    name socketMessages;
+    enum {
+        name StateType;
+        enum-value {
+            name SCK_UNINITIALIZED;
+            value 0;
+        }
+        enum-value {
+            name SCK_HOMING;
+            value 1;
+        }
+        enum-value {
+            name SCK_HOMED;
+            value 2;
+        }
+        enum-value {
+            name SCK_CART_POS;
+            value 3;
+        }
+        enum-value {
+            name SCK_CART_TRAJ;
+            value 4;
+        }
+        enum-value {
+            name SCK_JNT_POS;
+            value 5;
+        }
+        enum-value {
+            name SCK_JNT_TRAJ;
+            value 6;
+        }
+    }
+}
+
+class {
+	name socketHeader;
+	attribute CISST_EXPORT;
+	
+	member {
+		name Version;
+		type int;
+		visibility public;
+        default 10000;
+	}
+
+	member {
+		name Id;
+		type unsigned int;
+		visibility public;
+		default 0;
+	}
+
+	member {
+		name Size;
+		type int;
+		visibility public;
+	}
+
+	member {
+		name Timestamp;
+		type double;
+		visibility public;
+		default 0.0;
+	}
+
+	member {
+		name LastId;
+		type unsigned int;
+		visibility public;
+		default 0;
+	}
+
+	member {
+		name LastTimestamp;
+		type double;
+		visibility public;
+		default 0.0;
+	}
+}
+
+class {
+	name socketStatePSM;
+	attribute CISST_EXPORT;
+	
+	member {
+		name Header;
+		type socketHeader;
+		visibility public;
+	}
+	
+	member {
+		name RobotControlState;
+        type socketMessages::StateType;
+		visibility public;
+        default socketMessages::SCK_UNINITIALIZED;
+	}
+
+	member {
+		name CurrentPose;
+		type vctFrm3;
+		visibility public;
+	}
+
+	member {
+		name CurrentJaw;
+		type double;
+		visibility public;
+	}
+}
+
+class {
+	name socketCommandPSM;
+	attribute CISST_EXPORT;	
+
+	member {
+		name Header;
+		type socketHeader;
+		visibility public;
+	}
+
+	member {
+        name RobotControlState;
+        type socketMessages::StateType;
+        visibility public;
+        default socketMessages::SCK_UNINITIALIZED;
+	}
+
+	member {
+		name GoalPose;
+		type vctFrm3;
+		visibility public;
+	}
+
+	member {
+		name GoalJaw;
+		type double;
+		visibility public;
+	}
+}

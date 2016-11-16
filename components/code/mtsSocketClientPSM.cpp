@@ -31,6 +31,8 @@ mtsSocketClientPSM::mtsSocketClientPSM(const std::string &componentName, const d
 
 void mtsSocketClientPSM::Configure(const std::string & CMN_UNUSED(fileName))
 {
+    DesiredState = socketMessages::SCK_UNINITIALIZED;
+    CurrentState = socketMessages::SCK_UNINITIALIZED;
     Command.Data.Header.Size = CLIENT_MSG_SIZE;
     Command.Socket->SetDestination(IpAddress, Command.IpPort);
     State.Socket->AssignPort(State.IpPort);
@@ -48,73 +50,97 @@ void mtsSocketClientPSM::Run()
 
 void mtsSocketClientPSM::UpdateApplication()
 {
-//    if(!State.Data.Error.empty())
-//        ErrorEvents(mtsStdString(State.Data.Error));
-
-    PositionCartesianCurrent.Valid() = (State.Data.RobotControlState == 2);
+    CurrentState = State.Data.RobotControlState;
+    PositionCartesianCurrent.Valid() = (CurrentState == socketMessages::SCK_CART_POS);
     PositionCartesianCurrent.Position().FromNormalized(State.Data.CurrentPose);
     JawPosition = State.Data.CurrentJaw;
 }
 
 void mtsSocketClientPSM::Freeze(void)
 {
-    Command.Data.RobotControlState = 2;
+    DesiredState = socketMessages::SCK_CART_POS;
     Command.Data.GoalPose.From(State.Data.CurrentPose);
     Command.Data.GoalJaw = State.Data.CurrentJaw;
 }
 
 void mtsSocketClientPSM::SetRobotControlState(const std::string &state)
 {
-    mtsIntuitiveResearchKitArmTypes::RobotStateType
-            dvrkState = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state);
-
-    // Check if the data is valid and is ok to send
-    switch (dvrkState) {
+    mtsIntuitiveResearchKitArmTypes::RobotStateType enumState = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state);
+    switch (enumState) {
+    case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
+        DesiredState = socketMessages::SCK_UNINITIALIZED;
+        break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER:
-        Command.Data.RobotControlState = 1;
+        case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
+        DesiredState = socketMessages::SCK_HOMED;
         break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
-        Command.Data.RobotControlState = 2;
+        DesiredState = socketMessages::SCK_CART_POS;
+        break;
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
+        DesiredState = socketMessages::SCK_CART_TRAJ;
+        break;
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
+        DesiredState = socketMessages::SCK_JNT_POS;
+        break;
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
+        DesiredState = socketMessages::SCK_JNT_TRAJ;
         break;
     default:
-        Command.Data.RobotControlState = 0;
+        std::cerr << CMN_LOG_DETAILS << state << " state not supported." << std::endl;
         break;
     }
 
+    Command.Data.RobotControlState = DesiredState;
     Command.Data.GoalPose.From(State.Data.CurrentPose);
     Command.Data.GoalJaw = State.Data.CurrentJaw;
 }
 
 void mtsSocketClientPSM::SetPositionCartesian(const prmPositionCartesianSet &position)
 {
-    if (Command.Data.RobotControlState == 2) {
+    if (DesiredState == socketMessages::SCK_CART_POS) {
         Command.Data.GoalPose.From(position.Goal());
     }
 }
 
 void mtsSocketClientPSM::SetJawPosition(const double &position)
 {
-    if (Command.Data.RobotControlState == 2) {
+    if (DesiredState == socketMessages::SCK_CART_POS) {
         Command.Data.GoalJaw = position;
     }
 }
 
 void mtsSocketClientPSM::GetRobotControlState(std::string &state) const
 {
-    switch (State.Data.RobotControlState) {
-    case 1:
-        state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER);
+    mtsIntuitiveResearchKitArmTypes::RobotStateType enumState;
+    switch (CurrentState) {
+    case socketMessages::SCK_UNINITIALIZED:
+        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED;
         break;
-    case 2:
-        state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN);
+    case socketMessages::SCK_HOMING:
+        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER;
         break;
-    case 3:
-        state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+    case socketMessages::SCK_HOMED:
+        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_READY;
+        break;
+    case socketMessages::SCK_CART_POS:
+        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN;
+        break;
+    case socketMessages::SCK_CART_TRAJ:
+        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN;
+        break;
+    case socketMessages::SCK_JNT_POS:
+        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT;
+        break;
+    case socketMessages::SCK_JNT_TRAJ:
+        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT;
         break;
     default:
-        state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+        std::cerr << CMN_LOG_DETAILS << state << " state not supported." << std::endl;
         break;
     }
+
+    state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(enumState);
 }
 
 void mtsSocketClientPSM::ReceivePSMStateData()
@@ -124,7 +150,7 @@ void mtsSocketClientPSM::ReceivePSMStateData()
     bytesRead = State.Socket->Receive(State.Buffer, BUFFER_SIZE, TIMEOUT);
     if (bytesRead > 0) {
         if(bytesRead != State.Data.Header.Size){
-            std::cerr << "Incorrect bytes read " << bytesRead << ". Looking for " << State.Data.Header.Size << " bytes." << std::endl;
+//            std::cerr << "Incorrect bytes read " << bytesRead << ". Looking for " << State.Data.Header.Size << " bytes." << std::endl;
         }
 
         std::stringstream ss;
@@ -163,6 +189,7 @@ void mtsSocketClientPSM::SendPSMCommandData()
     Command.Data.Header.Timestamp = mTimeServer.GetRelativeTime();
     Command.Data.Header.LastId = State.Data.Header.Id;
     Command.Data.Header.LastTimestamp = State.Data.Header.Timestamp;
+    Command.Data.RobotControlState = DesiredState;
 
     // Send Socket Data
     std::stringstream ss;
