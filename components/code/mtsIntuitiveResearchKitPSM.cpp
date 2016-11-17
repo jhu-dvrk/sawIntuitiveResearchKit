@@ -794,11 +794,13 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
                 MessageEvents.Status(message.str());
                 EngagingStage++;
             }
-
-        default:
-            MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
-            break;
         }
+        break;
+
+    default:
+        MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+        break;
     }
 }
 
@@ -856,41 +858,62 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
                                       robReflexxes::Reflexxes_TIME);
+        JointTrajectory.EndTime = 0.0;
         EngagingStage = 2;
         return;
     }
 
-    // perform whatever trajectory is going on
-    if (currentTime <= HomingTimer) {
-        JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                           JointVelocitySet,
-                                           JointTrajectory.Goal,
-                                           JointTrajectory.GoalVelocity);
-        SetPositionJointLocal(JointSet);
-    } else {
-        // check if we were in last phase
-        if (EngagingStage > LastEngagingStage) {
-            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
-        } else {
-            if (EngagingStage != LastEngagingStage) {
-                // toggle between lower and upper
-                if (EngagingStage % 2 == 0) {
-                    JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageUpperPosition.Ref(4, 3));
-                } else {
-                    JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
-                }
-            } else {
-                JointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
-            }
-        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                      JointTrajectory.Acceleration,
-                                      StateTable.PeriodStats.GetAvg(),
-                                      robReflexxes::Reflexxes_TIME);
-            std::stringstream message;
-            message << this->GetName() << " engaging tool " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
-            MessageEvents.Status(message.str());
-            EngagingStage++;
+    JointTrajectory.Reflexxes.Evaluate(JointSet,
+                                       JointVelocitySet,
+                                       JointTrajectory.Goal,
+                                       JointTrajectory.GoalVelocity);
+    SetPositionJointLocal(JointSet);
+
+
+    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+
+    switch (trajectoryResult) {
+
+    case robReflexxes::Reflexxes_WORKING:
+        // if this is the first evaluation, we can't calculate expected completion time
+        if (JointTrajectory.EndTime == 0.0) {
+            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
+            HomingTimer = JointTrajectory.EndTime;
         }
+        break;
+
+    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+        {
+            // check if we were in last phase
+            if (EngagingStage > LastEngagingStage) {
+                SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+            } else {
+                if (EngagingStage != LastEngagingStage) {
+                    // toggle between lower and upper
+                    if (EngagingStage % 2 == 0) {
+                        JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageUpperPosition.Ref(4, 3));
+                    } else {
+                        JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
+                    }
+                } else {
+                    JointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
+                }
+                JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
+                                              JointTrajectory.Acceleration,
+                                              StateTable.PeriodStats.GetAvg(),
+                                              robReflexxes::Reflexxes_TIME);
+                std::stringstream message;
+                message << this->GetName() << " engaging tool " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
+                MessageEvents.Status(message.str());
+                EngagingStage++;
+            }
+        }
+        break;
+
+    default:
+        MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+        break;
     }
 }
 
