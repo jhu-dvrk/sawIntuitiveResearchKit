@@ -29,6 +29,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
 
 class QCheckBox;
+class QDoubleSpinBox;
+class QPushButton;
+class QTextEdit;
 
 class CISST_EXPORT mtsTeleOperationPSMQtWidget: public QSplitter, public mtsComponent
 {
