@@ -93,7 +93,7 @@ void mtsSocketServerPSM::ReceivePSMCommandData()
     bytesRead = Command.Socket->Receive(Command.Buffer, BUFFER_SIZE, TIMEOUT);
     if (bytesRead > 0) {
         if(bytesRead != Command.Data.Header.Size){
-//            std::cerr << "Incorrect bytes read " << bytesRead << ". Looking for " << Command.Data.Header.Size << " bytes." << std::endl;
+            std::cerr << "Incorrect bytes read " << bytesRead << ". Looking for " << Command.Data.Header.Size << " bytes." << std::endl;
         }                
 
         std::stringstream ss;

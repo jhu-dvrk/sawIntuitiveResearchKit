@@ -2,6 +2,8 @@ inline-header {
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 }
 
+// Enum values for robot states for socket based connection
+// Can be used to either report current state or set a desired state.
 class {
     name socketMessages;
     enum {
@@ -9,34 +11,42 @@ class {
         enum-value {
             name SCK_UNINITIALIZED;
             value 0;
+            description Used to turn off the system (Current/Desired);
         }
         enum-value {
             name SCK_HOMING;
             value 1;
+            description Used to indicate the arm is currently homing (Current);
         }
         enum-value {
             name SCK_HOMED;
             value 2;
+            description Used to Home/Power the arm (Current/Desired);
         }
         enum-value {
             name SCK_CART_POS;
             value 3;
+            description Used to set direct cartesian position (Current/Desired);
         }
         enum-value {
             name SCK_CART_TRAJ;
             value 4;
+            description Used to set trajectory cartesian goal (Current/Desired);
         }
         enum-value {
-            name SCK_JNT_POS;
+            name SCK_JNT_POS;            
             value 5;
+            description Used to set direct joint position (Current/Desired);
         }
         enum-value {
-            name SCK_JNT_TRAJ;
+            name SCK_JNT_TRAJ;            
             value 6;
+            description Used to set trajectory joint goal (Current/Desired);
         }
     }
 }
 
+// Header for socket state and command message
 class {
 	name socketHeader;
 	attribute CISST_EXPORT;
@@ -46,6 +56,7 @@ class {
 		type int;
 		visibility public;
         default 10000;
+        description Version number. 10000 stands for 1.00.00;
 	}
 
 	member {
@@ -53,12 +64,14 @@ class {
 		type unsigned int;
 		visibility public;
 		default 0;
+        description Message id counter. Increment by 1 and the first packet number starts with 0;
 	}
 
 	member {
 		name Size;
 		type int;
 		visibility public;
+        description Message size in bytes, including the header;
 	}
 
 	member {
@@ -66,6 +79,7 @@ class {
 		type double;
 		visibility public;
 		default 0.0;
+        description Local timestamp in seconds;
 	}
 
 	member {
@@ -73,6 +87,7 @@ class {
 		type unsigned int;
 		visibility public;
 		default 0;
+        description Last Message id received;
 	}
 
 	member {
@@ -80,9 +95,11 @@ class {
 		type double;
 		visibility public;
 		default 0.0;
+        description Timestamp in seconds of the last message received;
 	}
 }
 
+// Socket state message. Used to report current state information of the arm
 class {
 	name socketStatePSM;
 	attribute CISST_EXPORT;
@@ -91,6 +108,7 @@ class {
 		name Header;
 		type socketHeader;
 		visibility public;
+        description Header;
 	}
 	
 	member {
@@ -98,21 +116,25 @@ class {
         type socketMessages::StateType;
 		visibility public;
         default socketMessages::SCK_UNINITIALIZED;
+        description Current State of the arm;
 	}
 
 	member {
 		name CurrentPose;
 		type vctFrm3;
 		visibility public;
+        description Current pose of the arm;
 	}
 
 	member {
 		name CurrentJaw;
 		type double;
 		visibility public;
+        description Current jaw position of the arm;
 	}
 }
 
+// Socket command message. Used to send commands to the arm
 class {
 	name socketCommandPSM;
 	attribute CISST_EXPORT;	
@@ -121,6 +143,7 @@ class {
 		name Header;
 		type socketHeader;
 		visibility public;
+        description Header;
 	}
 
 	member {
@@ -128,17 +151,20 @@ class {
         type socketMessages::StateType;
         visibility public;
         default socketMessages::SCK_UNINITIALIZED;
+        description Desired State of the arm;
 	}
 
 	member {
 		name GoalPose;
 		type vctFrm3;
 		visibility public;
+        description Desired pose of the arm;
 	}
 
 	member {
 		name GoalJaw;
 		type double;
 		visibility public;
+        description Desired jaw position of the arm;
 	}
 }
