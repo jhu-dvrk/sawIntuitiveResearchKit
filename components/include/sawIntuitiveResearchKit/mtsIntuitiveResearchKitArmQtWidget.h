@@ -25,7 +25,15 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
-class mtsIntuitiveResearchKitArmQtWidget: public QWidget, public mtsComponent
+#include <QWidget>
+
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
+
+class QCheckBox;
+class QPushButton;
+class QTextEdit;
+
+class CISST_EXPORT mtsIntuitiveResearchKitArmQtWidget: public QWidget, public mtsComponent
 {
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);

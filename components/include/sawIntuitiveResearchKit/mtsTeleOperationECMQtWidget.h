@@ -24,8 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
-#include <QtCore>
-#include <QtGui>
+#include <QSplitter>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
