@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet, Zerui Wang
+  Author(s):  Anton Deguet
   Created on: 2016-02-24
 
   (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
@@ -277,6 +277,7 @@ protected:
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
         vctDoubleVec MaxJerk;
+        bool IsWorking;
         double EndTime;
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
     } JointTrajectory;

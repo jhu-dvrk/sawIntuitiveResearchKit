@@ -67,6 +67,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     JointTrajectory.GoalVelocity.SetSize(NumberOfJoints());
     JointTrajectory.GoalError.SetSize(NumberOfJoints());
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints());
+    JointTrajectory.IsWorking = false;
     PotsToEncodersTolerance.SetSize(NumberOfAxes());
 
     // initialize velocity
@@ -616,13 +617,15 @@ void mtsIntuitiveResearchKitArm::RunPositionJoint(void)
 {
     if (IsGoalSet) {
         SetPositionJointLocal(JointSet);
+        // reset flag
+        IsGoalSet = false;
     }
 }
 
 void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
 {
-    // we use end time == 0 to indicate that there's a goal
-    if (JointTrajectory.EndTime < 0.0) {
+    // 
+    if (!JointTrajectory.IsWorking) {
         return;
     }
 
@@ -644,11 +647,11 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
         break;
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         JointTrajectory.GoalReachedEvent(true);
-        JointTrajectory.EndTime = -1.0;
+        JointTrajectory.IsWorking = false;
         break;
     default:
         MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
-        JointTrajectory.EndTime = -1.0;
+        JointTrajectory.IsWorking = false;
         break;
     }
 }
@@ -782,7 +785,7 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet 
 {
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT)) {
         // if we just started using the trajectory, start from current position/velocity
-        if (JointTrajectory.EndTime < 0.0) {
+        if (!JointTrajectory.IsWorking) {
             JointSet.Assign(JointGet);
             JointVelocitySet.Assign(JointVelocityGet);
         }
