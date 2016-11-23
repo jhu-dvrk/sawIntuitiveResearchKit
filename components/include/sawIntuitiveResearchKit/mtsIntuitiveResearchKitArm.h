@@ -95,6 +95,7 @@ protected:
     virtual void RunPositionGoalJoint(void);
     virtual void RunPositionCartesian(void);
     virtual void RunPositionGoalCartesian(void);
+    virtual void StartTrajectory(const bool start);
 
     /*! Effort state. */
     virtual void RunEffortJoint(void);    
@@ -271,12 +272,12 @@ protected:
         robReflexxes Reflexxes;
         vctDoubleVec Velocity;
         vctDoubleVec Acceleration;
-        vctDoubleVec Start;
         vctDoubleVec Goal;
         vctDoubleVec GoalVelocity;
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
         vctDoubleVec MaxJerk;
+        bool IsStarted;
         bool IsWorking;
         double EndTime;
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise

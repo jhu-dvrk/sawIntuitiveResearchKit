@@ -192,6 +192,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     // first cleanup from previous state
     switch (RobotState) {
+
     case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
         // Disable torque mode for all joints
         torqueMode.SetAll(false);
@@ -199,6 +200,12 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
         SetPositionJointLocal(JointGetDesired);
         break;
+
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
+        StartTrajectory(false);
+        break;
+
     default:
         break;
     }
@@ -210,6 +217,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         RobotIO.DisablePower();
         PID.Enable(false);
         PID.SetCheckJointLimit(true);
+        StartTrajectory(false);
         RobotState = newState;
         MessageEvents.Status(this->GetName() + " not initialized");
         break;
@@ -258,7 +266,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position joint");
         } else {
-            JointTrajectory.EndTime = -1.0;
+            StartTrajectory(true);
             MessageEvents.Status(this->GetName() + " position goal joint");
         }
         break;
@@ -280,6 +288,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position cartesian");
         } else {
+            StartTrajectory(true);
             MessageEvents.Status(this->GetName() + " position goal cartesian");
         }
         break;
@@ -348,15 +357,14 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
 
         // compute joint goal position
         JointTrajectory.Goal.SetAll(0.0);
+        JointTrajectory.GoalVelocity.SetAll(0.0);
+        JointTrajectory.EndTime = 0.0;
+
         // last joint is calibrated later
         if (!HomedOnce) {
             JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = JointGet.Element(JNT_WRIST_ROLL);
         }
-        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                      JointTrajectory.Acceleration,
-                                      StateTable.PeriodStats.GetAvg(),
-                                      robReflexxes::Reflexxes_TIME);
-        JointTrajectory.EndTime = 0.0;
+        StartTrajectory(true);
         HomingCalibrateArmStarted = true;
     }
 
@@ -426,15 +434,10 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         // disable joint limits on PID
         PID.SetCheckJointLimit(false);
         // compute joint goal position, we assume PID is on from previous state
-        const double currentRoll = JointGet.Element(JNT_WRIST_ROLL);
-        JointTrajectory.Start.SetAll(0.0);
-        JointTrajectory.Start.Element(JNT_WRIST_ROLL) = currentRoll;
         JointTrajectory.Goal.SetAll(0.0);
+        const double currentRoll = JointGetDesired.Element(JNT_WRIST_ROLL);
         JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
-        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                      JointTrajectory.Acceleration,
-                                      StateTable.PeriodStats.GetAvg(),
-                                      robReflexxes::Reflexxes_TIME);
+        JointTrajectory.GoalVelocity.SetAll(0.0);
         JointTrajectory.EndTime = 0.0;
         // set flag to indicate that homing has started
         HomingCalibrateRollSeekLower = true;
@@ -486,15 +489,11 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
     // compute trajectory to go to center point
     if (!HomingCalibrateRollSeekCenter) {
         // compute joint goal position, we assume PID is on from previous state
-        JointTrajectory.Start.SetAll(0.0);
-        JointTrajectory.Start.Element(JNT_WRIST_ROLL) = JointGet.Element(JNT_WRIST_ROLL);
         JointTrajectory.Goal.SetAll(0.0);
         JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = HomingCalibrateRollLower + 480.0 * cmnPI_180;
-        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                      JointTrajectory.Acceleration,
-                                      StateTable.PeriodStats.GetAvg(),
-                                      robReflexxes::Reflexxes_TIME);
+        JointTrajectory.GoalVelocity.SetAll(0.0);
         JointTrajectory.EndTime = 0.0;
+
         // we want to start from zero velocity since we hit the joint limit
         JointVelocitySet.SetAll(0.0);
         // set flag to indicate that homing has started

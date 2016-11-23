@@ -977,17 +977,9 @@ void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
         IsGoalSet = true;
         break;
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-        JointTrajectory.Start.Assign(JointGetDesired, NumberOfJoints());
-        // check if there is a trajectory active
-        trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-        if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
-            JointTrajectory.Goal.Assign(JointTrajectory.Start);
-        }
+        JointTrajectory.IsWorking = true;
         JointTrajectory.Goal[6] = jawPosition;
-        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                      JointTrajectory.Acceleration,
-                                      StateTable.PeriodStats.GetAvg(),
-                                      robReflexxes::Reflexxes_TIME);
+        JointTrajectory.EndTime = 0.0;
         break;
     default:
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetJawPosition: PSM not ready" << std::endl;
