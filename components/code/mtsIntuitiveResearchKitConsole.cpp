@@ -979,7 +979,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     // check if we need to create a socket server attached to this arm
     armPointer->mSocketServer = false;
     jsonValue = jsonArm["socket-server"];
-    if (!jsonValue.empty()) {        
+    if (!jsonValue.empty()) {
         armPointer->mSocketServer = jsonValue.asBool();
     }
 
@@ -1467,14 +1467,6 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
     for (; iterArms != endArms; ++iterArms) {
         if (iterArms->second->mSUJClutched) {
             allFine = false;
-        }
-    }
-
-    if (mTeleopEnabled) {
-        if (allFine) {
-            std::cerr << "+" << std::flush;
-        } else {
-            std::cerr << "-" << std::flush;
         }
     }
 

@@ -95,10 +95,10 @@ protected:
     virtual void RunPositionGoalJoint(void);
     virtual void RunPositionCartesian(void);
     virtual void RunPositionGoalCartesian(void);
-    virtual void StartTrajectory(const bool start);
+    virtual void TrajectoryIsUsed(const bool used);
 
     /*! Effort state. */
-    virtual void RunEffortJoint(void);    
+    virtual void RunEffortJoint(void);
     virtual void RunEffortCartesian(void);
 
     /*! Compute forces/position for PID when orientation is locked in
@@ -277,7 +277,7 @@ protected:
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
         vctDoubleVec MaxJerk;
-        bool IsStarted;
+        bool IsUsed;
         bool IsWorking;
         double EndTime;
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise

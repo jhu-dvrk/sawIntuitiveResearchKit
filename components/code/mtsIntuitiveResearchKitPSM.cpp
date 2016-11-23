@@ -287,20 +287,25 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
                             << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(newState) << std::endl;
 
+    vctBoolVec torqueMode(NumberOfJoints());
+
     // first cleanup from previous state
     switch (RobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_JOINT:
     case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
-        {
-            // Disable torque mode for all joints
-            vctBoolVec torqueMode(NumberOfJoints());
-            torqueMode.SetAll(false);
-            PID.EnableTorqueMode(torqueMode);
-            PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
-            PID.EnableTrackingError(true);
-            SetPositionJointLocal(JointGetDesired);
-        }
+        // Disable torque mode for all joints
+        torqueMode.SetAll(false);
+        PID.EnableTorqueMode(torqueMode);
+        PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
+        PID.EnableTrackingError(true);
+        SetPositionJointLocal(JointGetDesired);
         break;
+
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
+        TrajectoryIsUsed(false);
+        break;
+
     default:
         break;
     }
@@ -321,6 +326,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         PID.SetJointLowerLimit(CouplingChange.NoToolJointLowerLimit);
         PID.SetJointUpperLimit(CouplingChange.NoToolJointUpperLimit);
         PID.SetCheckJointLimit(true);
+        TrajectoryIsUsed(false);
         RobotState = newState;
         MessageEvents.Status(this->GetName() + " not initialized");
         break;
@@ -454,7 +460,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position joint");
         } else {
-            JointTrajectory.EndTime = -1.0;
+            TrajectoryIsUsed(true);
             MessageEvents.Status(this->GetName() + " position goal joint");
         }
         break;
@@ -478,6 +484,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
                     IsGoalSet = false;
                     MessageEvents.Status(this->GetName() + " position cartesian");
                 } else {
+                    TrajectoryIsUsed(true);
                     MessageEvents.Status(this->GetName() + " position goal cartesian");
                 }
             }
@@ -574,8 +581,11 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         SetPositionJointLocal(JointSet);
         PID.Enable(true);
 
+        // make sure we start from current state
+        JointSet.Assign(JointGetDesired, NumberOfJoints());
+        JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
+
         // compute joint goal position
-        JointTrajectory.Goal.SetSize(NumberOfJoints());
         // check if tool is present and if user wants to go to zero position
         Tool.GetButton(Tool.IsPresent);
         if (HomingGoesToZero
@@ -586,11 +596,10 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
             // stay at current position by default
             JointTrajectory.Goal.Assign(JointGet);
         }
-        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                      JointTrajectory.Acceleration,
-                                      StateTable.PeriodStats.GetAvg(),
-                                      robReflexxes::Reflexxes_TIME);
+
+        JointTrajectory.GoalVelocity.SetAll(0.0);
         JointTrajectory.EndTime = 0.0;
+        TrajectoryIsUsed(true);
         HomingCalibrateArmStarted = true;
     }
 
@@ -741,17 +750,19 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
 
+        // make sure we start from current state
+        JointSet.Assign(JointGetDesired, NumberOfJoints());
+        JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
+
         // keep first two joint values as is
         JointTrajectory.Goal.Ref(2, 0).Assign(JointGetDesired.Ref(2, 0));
         // sterile adapter should be raised up
         JointTrajectory.Goal[2] = 0.0;
         // set last 4 to -170.0
         JointTrajectory.Goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
-        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                      JointTrajectory.Acceleration,
-                                      StateTable.PeriodStats.GetAvg(),
-                                      robReflexxes::Reflexxes_TIME);
+        JointTrajectory.GoalVelocity.SetAll(0.0);
         JointTrajectory.EndTime = 0.0;
+        TrajectoryIsUsed(true);
         EngagingStage = 2;
         return;
     }
@@ -799,7 +810,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
     default:
         MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+        TrajectoryIsUsed(false);
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
         break;
     }
 }
@@ -841,6 +853,10 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
 
+        // make sure we start from current state
+        JointSet.Assign(JointGetDesired, NumberOfJoints());
+        JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
+
         // check if the tool in outside the cannula
         if (JointGet.Element(2) > 50.0 * cmn_mm) {
             std::string message = this->GetName();
@@ -854,11 +870,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         JointTrajectory.Goal.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
         // set last 4 to user preferences
         JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
-        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                      JointTrajectory.Acceleration,
-                                      StateTable.PeriodStats.GetAvg(),
-                                      robReflexxes::Reflexxes_TIME);
+        JointTrajectory.GoalVelocity.SetAll(0.0);
         JointTrajectory.EndTime = 0.0;
+        TrajectoryIsUsed(true);
         EngagingStage = 2;
         return;
     }
@@ -886,6 +900,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         {
             // check if we were in last phase
             if (EngagingStage > LastEngagingStage) {
+                TrajectoryIsUsed(false);
                 SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
             } else {
                 if (EngagingStage != LastEngagingStage) {
@@ -912,7 +927,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 
     default:
         MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+        TrajectoryIsUsed(false);
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
         break;
     }
 }
@@ -969,7 +985,6 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
 
 void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 {
-    robReflexxes::ResultType trajectoryResult;
     switch (RobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:

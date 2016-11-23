@@ -66,7 +66,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     JointTrajectory.GoalVelocity.SetSize(NumberOfJoints());
     JointTrajectory.GoalError.SetSize(NumberOfJoints());
     JointTrajectory.GoalTolerance.SetSize(NumberOfJoints());
-    JointTrajectory.IsStarted = false;
+    JointTrajectory.IsUsed = false;
     JointTrajectory.IsWorking = false;
     PotsToEncodersTolerance.SetSize(NumberOfAxes());
 
@@ -683,27 +683,26 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalCartesian(void)
     RunPositionGoalJoint();
 }
 
-void mtsIntuitiveResearchKitArm::StartTrajectory(const bool start)
+void mtsIntuitiveResearchKitArm::TrajectoryIsUsed(const bool used)
 {
-    // ignore if the trajectory is already started/stopped
-    if (start == JointTrajectory.IsStarted) {
+    // ignore if the trajectory is already in use
+    if (used == JointTrajectory.IsUsed) {
         return;
     }
 
     // when starting, set current position/velocity and trajectory
     // parameters
-    if (start) {
-        JointSet.Assign(JointGetDesired);
-        JointVelocitySet.Assign(JointVelocityGet);
-        JointTrajectory.Goal.Assign(JointGetDesired);
+    if (used) {
+        JointSet.Assign(JointGetDesired, NumberOfJoints());
+        JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
         JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
                                       robReflexxes::Reflexxes_TIME);
     }
-    
+
     // set flag
-    JointTrajectory.IsStarted = start;
+    JointTrajectory.IsUsed = used;
 }
 
 void mtsIntuitiveResearchKitArm::RunEffortJoint(void)

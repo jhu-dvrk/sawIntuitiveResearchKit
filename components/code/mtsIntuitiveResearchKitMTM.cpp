@@ -203,7 +203,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-        StartTrajectory(false);
+        TrajectoryIsUsed(false);
         break;
 
     default:
@@ -217,7 +217,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         RobotIO.DisablePower();
         PID.Enable(false);
         PID.SetCheckJointLimit(true);
-        StartTrajectory(false);
+        TrajectoryIsUsed(false);
         RobotState = newState;
         MessageEvents.Status(this->GetName() + " not initialized");
         break;
@@ -266,7 +266,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position joint");
         } else {
-            StartTrajectory(true);
+            TrajectoryIsUsed(true);
             MessageEvents.Status(this->GetName() + " position goal joint");
         }
         break;
@@ -288,7 +288,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position cartesian");
         } else {
-            StartTrajectory(true);
+            TrajectoryIsUsed(true);
             MessageEvents.Status(this->GetName() + " position goal cartesian");
         }
         break;
@@ -351,20 +351,23 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         // disable joint limits
         PID.SetCheckJointLimit(false);
         // enable PID and start from current position
-        JointSet.ForceAssign(JointGet);
+        JointSet.Assign(JointGetDesired, NumberOfJoints());
         SetPositionJointLocal(JointSet);
         PID.Enable(true);
 
+        // make sure we start from current state
+        JointSet.Assign(JointGetDesired, NumberOfJoints());
+        JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
+
         // compute joint goal position
         JointTrajectory.Goal.SetAll(0.0);
-        JointTrajectory.GoalVelocity.SetAll(0.0);
-        JointTrajectory.EndTime = 0.0;
-
         // last joint is calibrated later
         if (!HomedOnce) {
             JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = JointGet.Element(JNT_WRIST_ROLL);
         }
-        StartTrajectory(true);
+        JointTrajectory.GoalVelocity.SetAll(0.0);
+        JointTrajectory.EndTime = 0.0;
+        TrajectoryIsUsed(true);
         HomingCalibrateArmStarted = true;
     }
 
@@ -375,6 +378,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
     SetPositionJointLocal(JointSet);
 
     const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    bool isHomed;
 
     switch (trajectoryResult) {
 
@@ -387,23 +391,21 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         break;
 
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
-        {
-            // check position
-            JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
-            JointTrajectory.GoalError.AbsSelf();
-            bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
-            if (isHomed) {
-                PID.SetCheckJointLimit(true);
-                MessageEvents.Status(this->GetName() + " arm calibrated");
-                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ROLL);
-            } else {
-                // time out
-                if (currentTime > HomingTimer + extraTime) {
-                    CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
-                                               << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                    MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
-                    this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
-                }
+        // check position
+        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
+        JointTrajectory.GoalError.AbsSelf();
+        isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
+        if (isHomed) {
+            PID.SetCheckJointLimit(true);
+            MessageEvents.Status(this->GetName() + " arm calibrated");
+            this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ROLL);
+        } else {
+            // time out
+            if (currentTime > HomingTimer + extraTime) {
+                CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
+                                           << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
+                MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
+                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
             }
         }
         break;
@@ -531,6 +533,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
             PID.SetCheckJointLimit(true);
             MessageEvents.Status(this->GetName() + " roll calibrated");
             HomedOnce = true;
+            TrajectoryIsUsed(false);
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
         } else {
             // time out
