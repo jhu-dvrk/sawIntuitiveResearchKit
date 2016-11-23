@@ -22,11 +22,15 @@ http://www.cisst.org/cisst/license.txt.
 
 // Qt include
 #include <QString>
-#include <QtGui>
 #include <QTextEdit>
 #include <QPushButton>
 #include <QCheckBox>
 #include <QLineEdit>
+#include <QMessageBox>
+#include <QScrollBar>
+#include <QCloseEvent>
+#include <QCoreApplication>
+#include <QTime>
 
 // cisst
 #include <cisstMultiTask/mtsInterfaceRequired.h>

@@ -24,10 +24,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
-#include <QtCore>
-#include <QtGui>
+#include <QSplitter>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+
+class QDoubleSpinBox;
+class QPushButton;
+class QTextEdit;
 
 class CISST_EXPORT mtsTeleOperationECMQtWidget: public QSplitter, public mtsComponent
 {

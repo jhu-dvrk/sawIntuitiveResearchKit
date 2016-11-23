@@ -88,13 +88,11 @@ if (cisst_FOUND)
 
     # create data type using the data generator
     cisst_data_generator (sawIntuitiveResearchKit
-                          "${CISST_BINARY_DIR}/include" # where to save the file
+                          "${sawIntuitiveResearchKit_BINARY_DIR}/include" # where to save the file
                           "sawIntuitiveResearchKit/"    # sub directory for include
                           code/mtsIntuitiveResearchKitArmTypes.cdg
                           code/mtsVFDataFollow.cdg
-                          code/socketHeader.cdg
-                          code/socketStatePSM.cdg
-                          code/socketCommandPSM.cdg)
+                          code/socketMessages.cdg)
 
     include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
     set (sawIntuitiveResearchKit_HEADER_DIR
