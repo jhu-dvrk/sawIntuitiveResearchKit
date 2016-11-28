@@ -159,6 +159,17 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
                             << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(newState) << std::endl;
 
+    // first cleanup from previous state
+    switch (RobotState) {
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
+        TrajectoryIsUsed(false);
+        break;
+
+    default:
+        break;
+    }
+
     switch (newState) {
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
@@ -166,6 +177,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
         RobotIO.DisablePower();
         PID.Enable(false);
         PID.SetCheckJointLimit(true);
+        TrajectoryIsUsed(false);
         RobotState = newState;
         MessageEvents.Status(this->GetName() + " not initialized");
         break;
@@ -207,7 +219,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             IsGoalSet = false;
             MessageEvents.Status(this->GetName() + " position joint");
         } else {
-            JointTrajectory.EndTime = -1.0;
+            TrajectoryIsUsed(true);
             MessageEvents.Status(this->GetName() + " position goal joint");
         }
         break;
@@ -230,7 +242,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
                 IsGoalSet = false;
                 MessageEvents.Status(this->GetName() + " position cartesian");
             } else {
-                JointTrajectory.EndTime = 0.0;
+                TrajectoryIsUsed(true);
                 MessageEvents.Status(this->GetName() + " position goal cartesian");
             }
         }
@@ -304,12 +316,10 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
             // stay at current position by default
             JointTrajectory.Goal.Assign(JointGet);
         }
-        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                      JointTrajectory.Acceleration,
-                                      StateTable.PeriodStats.GetAvg(),
-                                      robReflexxes::Reflexxes_TIME);
-        JointTrajectory.EndTime = 0.0; // we will know it after first evaluate
-        // set flag to indicate that homing has started
+
+        JointTrajectory.GoalVelocity.SetAll(0.0);
+        JointTrajectory.EndTime = 0.0;
+        TrajectoryIsUsed(true);
         HomingCalibrateArmStarted = true;
     }
 
@@ -318,47 +328,46 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
                                        JointVelocitySet,
                                        JointTrajectory.Goal,
                                        JointTrajectory.GoalVelocity);
-
-    // if this is the first evaluation, we can't calculate expected completion time
-    if (JointTrajectory.EndTime == 0.0) {
-        JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
-    }
+    SetPositionJointLocal(JointSet);
 
     const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-    bool homed = false;
-    switch (trajectoryResult) {
-    case robReflexxes::Reflexxes_WORKING:
-        SetPositionJointLocal(JointSet);
 
-        // try to detect timeout
-        if (currentTime > (JointTrajectory.EndTime + extraTime)) {
+    switch (trajectoryResult) {
+
+    case robReflexxes::Reflexxes_WORKING:
+        // if this is the first evaluation, we can't calculate expected completion time
+        if (JointTrajectory.EndTime == 0.0) {
+            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
+            HomingTimer = JointTrajectory.EndTime;
+        }
+        break;
+
+    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+        {
+            // check position
             JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
             JointTrajectory.GoalError.AbsSelf();
-            const bool reached =
-                !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
-            if (reached) {
-                    homed = true;
+            bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
+            if (isHomed) {
+                PID.SetCheckJointLimit(true);
+                MessageEvents.Status(this->GetName() + " arm ready");
+                HomedOnce = true;
+                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
             } else {
-                CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
-                                           << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
-                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+                // time out
+                if (currentTime > HomingTimer + extraTime) {
+                    CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
+                                               << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
+                    MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
+                    this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+                }
             }
         }
         break;
-    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
-        homed = true;
-        break;
-    default:
-        MessageEvents.Error(this->GetName() + " error while evaluating trjectory.");
-        break;
-    }
 
-    if (homed) {
-        PID.SetCheckJointLimit(true);
-        HomedOnce = true;
-        MessageEvents.Status(this->GetName() + " arm ready");
-        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+    default:
+        MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+        break;
     }
 }
 
