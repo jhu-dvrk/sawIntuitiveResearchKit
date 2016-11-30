@@ -31,28 +31,118 @@ http://www.cisst.org/cisst/license.txt.
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds):
-    mtsTaskPeriodic(componentName, periodInSeconds)
+    mtsTaskPeriodic(componentName, periodInSeconds),
+    mArmState("UNINITIALIZED")
 {
 }
 
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg):
-    mtsTaskPeriodic(arg)
+    mtsTaskPeriodic(arg),
+    mArmState("UNINITIALIZED")
 {
 }
 
 void mtsIntuitiveResearchKitArm::Init(void)
 {
+    // configure state machine common to all arms (ECM/MTM/PSM)
+    // possible states
+    mArmState.AddState("UNINITIALIZED");
+    mArmState.AddState("CALIBRATING_ENCODERS_FROM_POTS");
+    mArmState.AddState("ENCODERS_BIASED");
+    mArmState.AddState("POWERING");
+    mArmState.AddState("POWERED");
+    mArmState.AddState("HOMING_ARM");
+    mArmState.AddState("ARM_HOMED");
+    mArmState.AddState("READY");
+    mArmState.AddState("POSITION_JOINT");
+    mArmState.AddState("POSITION_CARTESIAN");
+    mArmState.AddState("POSITION_GOAL_JOINT");
+    mArmState.AddState("POSITION_GOAL_CARTESIAN");
+    mArmState.AddState("EFFORT_JOINT");
+    mArmState.AddState("EFFORT_CARTESIAN");
+
+    // possible desired states
+    mArmState.AddAllowedDesiredState("UNINITIALIZED");
+    mArmState.AddAllowedDesiredState("ENCODERS_BIASED");
+    mArmState.AddAllowedDesiredState("POWERED");
+    mArmState.AddAllowedDesiredState("READY");
+    mArmState.AddAllowedDesiredState("POSITION_JOINT");
+    mArmState.AddAllowedDesiredState("POSITION_CARTESIAN");
+    mArmState.AddAllowedDesiredState("POSITION_GOAL_JOINT");
+    mArmState.AddAllowedDesiredState("POSITION_GOAL_CARTESIAN");
+    mArmState.AddAllowedDesiredState("EFFORT_JOINT");
+    mArmState.AddAllowedDesiredState("EFFORT_CARTESIAN");
+
+    // state change, to convert to string events for users (Qt, ROS)
+    mArmState.SetStateChangedCallback(&mtsIntuitiveResearchKitArm::StateChanged,
+                                      this);
+
+    // run for all states
+    mArmState.SetRunCallback(&mtsIntuitiveResearchKitArm::RunAllStates,
+                             this);
+
+    // unitialized
+    mArmState.SetEnterCallback("UNITIALIZED",
+                               &mtsIntuitiveResearchKitArm::EnterUninitialized,
+                               this);
+
+    mArmState.SetTransitionCallback("UNITIALIZED",
+                                    &mtsIntuitiveResearchKitArm::TransitionUninitialized,
+                                    this);
+
+    // bias encoders
+    mArmState.SetEnterCallback("CALIBRATING_ENCODERS_FROM_POTS",
+                               &mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots,
+                               this);
+
+    mArmState.SetTransitionCallback("CALIBRATING_ENCODERS_FROM_POTS",
+                                    &mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots,
+                                    this);
+
+    mArmState.SetTransitionCallback("ENCODERS_BIASED",
+                                    &mtsIntuitiveResearchKitArm::TransitionEncodersBiased,
+                                    this);
+
+    // power
+    mArmState.SetEnterCallback("POWERING",
+                               &mtsIntuitiveResearchKitArm::EnterPowering,
+                               this);
+
+    mArmState.SetTransitionCallback("POWERING",
+                                    &mtsIntuitiveResearchKitArm::TransitionPowering,
+                                    this);
+
+    mArmState.SetTransitionCallback("POWERED",
+                                    &mtsIntuitiveResearchKitArm::TransitionPowered,
+                                    this);
+
+    // homing arm, i.e. go to zero position if needed and leave PID on
+    // handles all DOF on ECM, all but roll on MTM and only first 3 on
+    // PSM
+    mArmState.SetEnterCallback("HOMING_ARM",
+                               &mtsIntuitiveResearchKitArm::EnterHomingArm,
+                               this);
+
+    mArmState.SetTransitionCallback("HOMING_ARM",
+                                    &mtsIntuitiveResearchKitArm::TransitionHomingArm,
+                                    this);
+
+    mArmState.SetTransitionCallback("ARM_HOMED",
+                                    &mtsIntuitiveResearchKitArm::TransitionArmHomed,
+                                    this);
+
+
     mCounter = 0;
     mIsSimulated = false;
-    HomedOnce = false;
-    HomingGoesToZero = false; // MTM ignores this
+    mHomedOnce = false;
+    mHomingGoesToZero = false; // MTM ignores this
+    mHomingBiasEncoderRequested = false;
 
     mWrenchBodyOrientationAbsolute = false;
     mGravityCompensation = false;
 
-    IsGoalSet = false;
-    EffortOrientationLocked = false;
-    SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+    mHasNewPIDGoal = false;
+    mEffortOrientationLocked = false;
 
     // initialize trajectory data
     JointGet.SetSize(NumberOfJoints());
@@ -60,14 +150,13 @@ void mtsIntuitiveResearchKitArm::Init(void)
     JointVelocityGet.SetSize(NumberOfJoints());
     JointVelocitySet.SetSize(NumberOfJoints());
     JointSetParam.Goal().SetSize(NumberOfAxes());
-    JointTrajectory.Velocity.SetSize(NumberOfJoints());
-    JointTrajectory.Acceleration.SetSize(NumberOfJoints());
-    JointTrajectory.Goal.SetSize(NumberOfJoints());
-    JointTrajectory.GoalVelocity.SetSize(NumberOfJoints());
-    JointTrajectory.GoalError.SetSize(NumberOfJoints());
-    JointTrajectory.GoalTolerance.SetSize(NumberOfJoints());
-    JointTrajectory.IsUsed = false;
-    JointTrajectory.IsWorking = false;
+    mJointTrajectory.Velocity.SetSize(NumberOfJoints());
+    mJointTrajectory.Acceleration.SetSize(NumberOfJoints());
+    mJointTrajectory.Goal.SetSize(NumberOfJoints());
+    mJointTrajectory.GoalVelocity.SetSize(NumberOfJoints());
+    mJointTrajectory.GoalError.SetSize(NumberOfJoints());
+    mJointTrajectory.GoalTolerance.SetSize(NumberOfJoints());
+    mJointTrajectory.IsWorking = false;
     PotsToEncodersTolerance.SetSize(NumberOfAxes());
 
     // initialize velocity
@@ -189,8 +278,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandReadState(this->StateTable, JacobianBody, "GetJacobianBody");
         RobotInterface->AddCommandReadState(this->StateTable, JacobianSpatial, "GetJacobianSpatial");
         // Set
-        RobotInterface->AddCommandVoid(&mtsIntuitiveResearchKitArm::Freeze,
-                                       this, "Freeze");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame,
                                         this, "SetBaseFrame");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionJoint,
@@ -213,22 +300,41 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                         this, "SetGravityCompensation");
 
         // Trajectory events
-        RobotInterface->AddEventWrite(JointTrajectory.GoalReachedEvent, "GoalReached", bool());
+        RobotInterface->AddEventWrite(mJointTrajectory.GoalReachedEvent, "GoalReached", bool());
         // Robot State
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetRobotControlState,
-                                        this, "SetRobotControlState", std::string(""));
-        RobotInterface->AddCommandRead(&mtsIntuitiveResearchKitArm::GetRobotControlState,
-                                       this, "GetRobotControlState", std::string(""));
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetDesiredState,
+                                        this, "SetDesiredState", std::string(""));
         // Human readable messages
         RobotInterface->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
         RobotInterface->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
         RobotInterface->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
-        RobotInterface->AddEventWrite(MessageEvents.RobotState, "RobotState", std::string(""));
+        RobotInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
+        RobotInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
 
         // Stats
         RobotInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                             "GetPeriodStatistics");
     }
+}
+
+void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
+{
+    // try to find the state in state machine
+    if (!mArmState.StateExists(state)) {
+        MessageEvents.Error(this->GetName() + ": unsupported state " + state);
+        return;
+    }
+    // if state is same as current, return
+    if (mArmState.CurrentState() == state) {
+        return;
+    }
+    // try to set the desired state
+    if (!mArmState.SetDesiredState(state)) {
+        MessageEvents.Error(this->GetName() + ": " + state + " is not an allowed desired state");
+        return;
+    }
+    MessageEvents.DesiredState(state);
+    MessageEvents.Status(this->GetName() + ": set desired state to " + state);
 }
 
 void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
@@ -270,55 +376,15 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
 
 void mtsIntuitiveResearchKitArm::Startup(void)
 {
-    this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+    this->SetDesiredState("UNITIALIZED");
 }
 
 void mtsIntuitiveResearchKitArm::Run(void)
 {
+    // collect data from required interfaces
     ProcessQueuedEvents();
-    GetRobotData();
-
-    switch (RobotState) {
-    case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER:
-        RunHomingBiasEncoder();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:
-        RunHomingPower();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM:
-        RunHomingCalibrateArm();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED:
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
-        RunPositionJoint();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
-        RunPositionGoalJoint();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
-        RunPositionCartesian();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-        RunPositionGoalCartesian();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_JOINT:
-        RunEffortJoint();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
-        RunEffortCartesian();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL:
-        break;
-    default:
-        RunArmSpecific();
-        break;
-    }
-
+    mArmState.Run();
+    // trigger ExecOut event
     RunEvent();
     ProcessQueuedCommands();
 
@@ -341,40 +407,33 @@ void mtsIntuitiveResearchKitArm::SetSimulated(void)
     RemoveInterfaceRequired("RobotIO");
 }
 
-void mtsIntuitiveResearchKitArm::GetRobotControlState(std::string & state) const
+bool mtsIntuitiveResearchKitArm::CurrentStateIs(const std::string & state)
 {
-    state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->RobotState);
-}
-
-bool mtsIntuitiveResearchKitArm::CurrentStateIs(const mtsIntuitiveResearchKitArmTypes::RobotStateType & state)
-{
-    if (RobotState == state) {
+    if (mArmState.CurrentState() == state) {
         return true;
     }
     CMN_LOG_CLASS_RUN_WARNING << GetName() << ": Checking state: arm not in "
-                              << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(state)
-                              << ", current state is " << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState) << std::endl;
+                              << state
+                              << ", current state is " << mArmState.CurrentState() << std::endl;
     return false;
 }
 
-bool mtsIntuitiveResearchKitArm::CurrentStateIs(const mtsIntuitiveResearchKitArmTypes::RobotStateType & state1,
-                                                const mtsIntuitiveResearchKitArmTypes::RobotStateType & state2)
+bool mtsIntuitiveResearchKitArm::CurrentStateIs(const std::string & state1,
+                                                const std::string & state2)
 {
-    if ((RobotState == state1) || (RobotState == state2)) {
+    if ((mArmState.CurrentState() == state1) || (mArmState.CurrentState() == state2)) {
         return true;
     }
     CMN_LOG_CLASS_RUN_WARNING << GetName() << ": Checking state: arm not in "
-                              << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(state1)
-                              << " nor "
-                              << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(state2)
-                              << ", current state is " << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState) << std::endl;
+                              << state1 << " nor " << state2
+                              << ", current state is " << mArmState.CurrentState() << std::endl;
     return false;
 }
 
 void mtsIntuitiveResearchKitArm::GetRobotData(void)
 {
     // we can start reporting some joint values after the robot is powered
-    if (this->RobotState > mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER) {
+    if (this->mJointReady) {
         mtsExecutionResult executionResult;
         executionResult = PID.GetPositionJoint(JointGetParam);
         if (!executionResult.IsOK()) {
@@ -414,7 +473,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         }
 
         // when the robot is ready, we can compute cartesian position
-        if (this->RobotState >= mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+        if (this->mCartesianReady) {
             // update cartesian position
             CartesianGetLocal = Manipulator.ForwardKinematics(JointGet, NumberOfJointsKinematics());
             CartesianGet = BaseFrame * CartesianGetLocal;
@@ -513,35 +572,85 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
     }
 }
 
-void mtsIntuitiveResearchKitArm::RunHomingBiasEncoder(void)
+void mtsIntuitiveResearchKitArm::StateChanged(void)
 {
-    // if simulated, no need to bias encoders
-    if (mIsSimulated || HomedOnce) {
-        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
-        return;
-    }
+    const std::string newState = mArmState.CurrentState();
+    MessageEvents.CurrentState(newState);
+    MessageEvents.Status(this->GetName() + ", current state " + newState);
+}
 
-    // first, request bias encoder
-    const double currentTime = this->StateTable.GetTic();
-    const double timeToBias = 30.0 * cmn_s; // large timeout
+void mtsIntuitiveResearchKitArm::RunAllStates(void)
+{
+    GetRobotData();
 
-    // first, request bias encoder
-    if (!HomingBiasEncoderRequested) {
-        RobotIO.BiasEncoder(1970); // birth date, state table only contain 1999 elements anyway
-        HomingBiasEncoderRequested = true;
-        HomingTimer = currentTime;
-        return;
-    }
-
-    // second, check status
-    if ((currentTime - HomingTimer) > timeToBias) {
-        HomingBiasEncoderRequested = false;
-        MessageEvents.Error(this->GetName() + " failed to bias encoders (timeout).");
-        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+    // always allow to go to unitialized
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        if (mArmState.DesiredState() == "UNITIALIZED") {
+            mArmState.SetCurrentState("UNITIALIZED");
+        }
     }
 }
 
-void mtsIntuitiveResearchKitArm::RunHomingPower(void)
+void mtsIntuitiveResearchKitArm::EnterUninitialized(void)
+{
+    RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
+    RobotIO.DisablePower();
+    PID.Enable(false);
+    PID.SetCheckJointLimit(true);
+    // in case there was a trajectory going on
+    if (mJointTrajectory.IsWorking) {
+        mJointTrajectory.GoalReachedEvent(false);
+    }
+    SetControlSpace(UNDEFINED_SPACE);
+    SetControlMode(UNDEFINED_MODE);
+}
+
+void mtsIntuitiveResearchKitArm::TransitionUninitialized(void)
+{
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        if (mHomedOnce) {
+            mArmState.SetCurrentState("CALIBRATING_ENCODERS_FROM_POTS");
+        } else {
+            mArmState.SetCurrentState("POWERING");
+        }
+    }
+}
+
+void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
+{
+    // if simulated, no need to bias encoders
+    if (mIsSimulated) {
+        mArmState.SetCurrentState("POWERING");
+        return;
+    }
+
+    // request bias encoder
+    const double currentTime = this->StateTable.GetTic();
+    RobotIO.BiasEncoder(1970); // birth date, state table only contain 1999 elements anyway
+    mHomingBiasEncoderRequested = true;
+    mHomingTimer = currentTime;
+}
+
+void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
+{
+    const double currentTime = this->StateTable.GetTic();
+    const double timeToBias = 30.0 * cmn_s; // large timeout
+    if ((currentTime - mHomingTimer) > timeToBias) {
+        mHomingBiasEncoderRequested = false;
+        MessageEvents.Error(this->GetName() + " failed to bias encoders (timeout).");
+        mArmState.SetCurrentState("UNITIALIZED");
+    }
+}
+
+void mtsIntuitiveResearchKitArm::TransitionEncodersBiased(void)
+{
+    // move to next stage if desired state is anything past post calibration
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        mArmState.SetCurrentState("POWERING");
+    }
+}
+
+void mtsIntuitiveResearchKitArm::EnterPowering(void)
 {
     if (mIsSimulated) {
         PID.EnableTrackingError(false);
@@ -549,39 +658,38 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
         vctDoubleVec goal(NumberOfJoints());
         goal.SetAll(0.0);
         SetPositionJointLocal(goal);
-        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM);
+        mArmState.SetCurrentState("POWERED");
         return;
     }
-
-    const double timeToPower = 3.0 * cmn_s;
 
     const double currentTime = this->StateTable.GetTic();
-    // first, request power to be turned on
-    if (!HomingPowerRequested) {
-        // in case we still have power but brakes are not engaged
-        if (NumberOfBrakes() > 0) {
-            RobotIO.BrakeEngage();
-        }
-        // use pots for redundancy
-        if (UsePotsForSafetyCheck()) {
-            RobotIO.SetPotsToEncodersTolerance(PotsToEncodersTolerance);
-            RobotIO.UsePotsForSafetyCheck(true);
-        }
-        HomingTimer = currentTime;
-        // make sure the PID is not sending currents
-        PID.Enable(false);
-        // pre-load the boards with zero current
-        RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
-        // enable power and set a flags to move to next step
-        RobotIO.EnablePower();
-        HomingPowerRequested = true;
-        MessageEvents.Status(this->GetName() + " power requested");
-        return;
+
+    // in case we still have power but brakes are not engaged
+    if (NumberOfBrakes() > 0) {
+        RobotIO.BrakeEngage();
     }
+    // use pots for redundancy
+    if (UsePotsForSafetyCheck()) {
+        RobotIO.SetPotsToEncodersTolerance(PotsToEncodersTolerance);
+        RobotIO.UsePotsForSafetyCheck(true);
+    }
+    mHomingTimer = currentTime;
+    // make sure the PID is not sending currents
+    PID.Enable(false);
+    // pre-load the boards with zero current
+    RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
+    // enable power and set a flags to move to next step
+    RobotIO.EnablePower();
+    MessageEvents.Status(this->GetName() + " power requested");
+}
+
+void mtsIntuitiveResearchKitArm::TransitionPowering(void)
+{
+    const double timeToPower = 3.0 * cmn_s;
+    const double currentTime = this->StateTable.GetTic();
 
     // second, check status
-    if (HomingPowerRequested
-        && ((currentTime - HomingTimer) > timeToPower)) {
+    if ((currentTime - mHomingTimer) > timeToPower) {
 
         // pre-load PID to make sure desired position has some reasonable values
         PID.GetPositionJoint(JointGetParam);
@@ -601,64 +709,60 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
             if (NumberOfBrakes() > 0) {
                 RobotIO.BrakeRelease();
             }
-            this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM);
+            mArmState.SetCurrentState("POWERED");
         } else {
-            // make sure the PID is not sending currents
-            PID.Enable(false);
-            RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
-            RobotIO.DisablePower();
             MessageEvents.Error(this->GetName() + " failed to enable power.");
-            this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+            mArmState.SetCurrentState("UNINITIALIZED");
         }
     }
 }
 
 void mtsIntuitiveResearchKitArm::RunPositionJoint(void)
 {
-    if (IsGoalSet) {
+    if (mHasNewPIDGoal) {
         SetPositionJointLocal(JointSet);
         // reset flag
-        IsGoalSet = false;
+        mHasNewPIDGoal = false;
     }
 }
 
 void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
 {
     // check if there's anything to do
-    if (!JointTrajectory.IsWorking) {
+    if (!mJointTrajectory.IsWorking) {
         return;
     }
 
-    JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                       JointVelocitySet,
-                                       JointTrajectory.Goal,
-                                       JointTrajectory.GoalVelocity);
+    mJointTrajectory.Reflexxes.Evaluate(JointSet,
+                                        JointVelocitySet,
+                                        mJointTrajectory.Goal,
+                                        mJointTrajectory.GoalVelocity);
     SetPositionJointLocal(JointSet);
 
-    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
     const double currentTime = this->StateTable.GetTic();
 
     switch (trajectoryResult) {
     case robReflexxes::Reflexxes_WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (JointTrajectory.EndTime == 0.0) {
-            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
+        if (mJointTrajectory.EndTime == 0.0) {
+            mJointTrajectory.EndTime = currentTime + mJointTrajectory.Reflexxes.Duration();
         }
         break;
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
-        JointTrajectory.GoalReachedEvent(true);
-        JointTrajectory.IsWorking = false;
+        mJointTrajectory.GoalReachedEvent(true);
+        mJointTrajectory.IsWorking = false;
         break;
     default:
         MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
-        JointTrajectory.IsWorking = false;
+        mJointTrajectory.IsWorking = false;
         break;
     }
 }
 
 void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
 {
-    if (IsGoalSet) {
+    if (mHasNewPIDGoal) {
         // copy current position
         vctDoubleVec jointSet(JointGet.Ref(NumberOfJointsKinematics()));
 
@@ -673,7 +777,7 @@ void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
             MessageEvents.Error(this->GetName() + " unable to solve inverse kinematics.");
         }
         // reset flag
-        IsGoalSet = false;
+        mHasNewPIDGoal = false;
     }
 }
 
@@ -683,26 +787,36 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalCartesian(void)
     RunPositionGoalJoint();
 }
 
-void mtsIntuitiveResearchKitArm::TrajectoryIsUsed(const bool used)
+void mtsIntuitiveResearchKitArm::SetControlSpace(const ControlSpace space)
 {
-    // ignore if the trajectory is already in use
-    if (used == JointTrajectory.IsUsed) {
+    // ignore if already in the same space
+    if (space == mControlSpace) {
         return;
     }
 
-    // when starting, set current position/velocity and trajectory
+    mControlSpace = space;
+}
+
+void mtsIntuitiveResearchKitArm::SetControlMode(const ControlMode mode)
+{
+    // ignore if already in the same mode
+    if (mode == mControlMode) {
+        return;
+    }
+
+    // when starting trajectory, set current position/velocity and trajectory
     // parameters
-    if (used) {
+    if (mode == TRAJECTORY_MODE) {
         JointSet.Assign(JointGetDesired, NumberOfJoints());
         JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
-        JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                      JointTrajectory.Acceleration,
-                                      StateTable.PeriodStats.GetAvg(),
-                                      robReflexxes::Reflexxes_TIME);
+        mJointTrajectory.Reflexxes.Set(mJointTrajectory.Velocity,
+                                       mJointTrajectory.Acceleration,
+                                       StateTable.PeriodStats.GetAvg(),
+                                       robReflexxes::Reflexxes_TIME);
     }
 
     // set flag
-    JointTrajectory.IsUsed = used;
+    mControlMode = mode;
 }
 
 void mtsIntuitiveResearchKitArm::RunEffortJoint(void)
@@ -718,7 +832,7 @@ void mtsIntuitiveResearchKitArm::RunEffortJoint(void)
     // add custom efforts
     AddCustomEfforts(JointExternalEffort);
 
-     // convert to cisstParameterTypes
+    // convert to cisstParameterTypes
     TorqueSetParam.SetForceTorque(JointExternalEffort);
 
     PID.SetTorqueJoint(TorqueSetParam);
@@ -770,7 +884,7 @@ void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
     PID.SetTorqueJoint(TorqueSetParam);
 
     // lock orientation if needed
-    if (EffortOrientationLocked) {
+    if (mEffortOrientationLocked) {
         RunEffortOrientationLocked();
     }
 }
@@ -778,7 +892,7 @@ void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
 void mtsIntuitiveResearchKitArm::RunEffortOrientationLocked(void)
 {
     CMN_LOG_CLASS_RUN_ERROR << GetName()
-                            << ": RunEffortOrientationLocked, this should never happen, MTMs are the only arms able to lock orientation and the derived implementation of this method should be called."
+                            << ": RunEffortOrientationLocked, this method should never be called, MTMs are the only arms able to lock orientation and the derived implementation of this method should be called."
                             << std::endl;
 }
 
@@ -789,44 +903,44 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
     PID.SetPositionJoint(JointSetParam);
 }
 
-void mtsIntuitiveResearchKitArm::Freeze(void)
-{
-    SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT);
-    SetPositionJointLocal(JointGetDesired);
-}
-
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
 {
-    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT)) {
+    if (mIsInJointMode && !mJointTrajectory.IsUsed) {
         JointSet.Assign(newPosition.Goal(), NumberOfJoints());
-        IsGoalSet = true;
+        mHasNewPIDGoal = true;
+    } else {
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in joint control mode, current state is "
+                                  << mArmState.CurrentState() << std::endl;
     }
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet & newPosition)
 {
-    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT)) {
-        JointTrajectory.IsWorking = true;
-        JointTrajectory.Goal.Assign(newPosition.Goal(), NumberOfJoints());
-        JointTrajectory.GoalVelocity.SetAll(0.0);
-        JointTrajectory.EndTime = 0.0;
+    if (mIsInJointMode && mJointTrajectory.IsUsed) {
+        mJointTrajectory.IsWorking = true;
+        mJointTrajectory.Goal.Assign(newPosition.Goal(), NumberOfJoints());
+        mJointTrajectory.GoalVelocity.SetAll(0.0);
+        mJointTrajectory.EndTime = 0.0;
+    } else {
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in joint trajectory control mode, current state is "
+                                  << mArmState.CurrentState() << std::endl;
     }
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if ((RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN)
-        || (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN)) {
+    if (mIsInCartesianMode && !mJointTrajectory.IsUsed) {
         CartesianSetParam = newPosition;
-        IsGoalSet = true;
+        mHasNewPIDGoal = true;
     } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: Arm not ready" << std::endl;
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in cartesian control mode, current state is "
+                                  << mArmState.CurrentState() << std::endl;
     }
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN)) {
+    if (mIsInCartesianMode && mJointTrajectory.IsUsed) {
 
         const size_t nbJoints = this->NumberOfJoints();
         const size_t nbJointsKin = this->NumberOfJointsKinematics();
@@ -844,7 +958,7 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
             // keep values of joints not handled by kinematics (PSM jaw)
             if (nbJoints > nbJointsKin) {
                 // check if there is a trajectory active
-                const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+                const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
                 if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
                     // past any trajectory, use last desired joint position
                     jointSet.Ref(nbJoints - nbJointsKin,
@@ -853,19 +967,22 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
                 } else {
                     // there is an ongoing trajectory, use the trajectory goal
                     jointSet.Ref(nbJoints - nbJointsKin,
-                                 nbJointsKin).Assign(JointTrajectory.Goal.Ref(nbJoints - nbJointsKin,
-                                                                              nbJointsKin));
+                                 nbJointsKin).Assign(mJointTrajectory.Goal.Ref(nbJoints - nbJointsKin,
+                                                                               nbJointsKin));
                 }
             }
             // set joint goals
-            JointTrajectory.IsWorking = true;
-            JointTrajectory.Goal.Assign(jointSet);
-            JointTrajectory.GoalVelocity.SetAll(0.0);
-            JointTrajectory.EndTime = 0.0;
+            mJointTrajectory.IsWorking = true;
+            mJointTrajectory.Goal.Assign(jointSet);
+            mJointTrajectory.GoalVelocity.SetAll(0.0);
+            mJointTrajectory.EndTime = 0.0;
         } else {
             MessageEvents.Error(this->GetName() + " unable to solve inverse kinematics.");
-            JointTrajectory.GoalReachedEvent(false);
+            mJointTrajectory.GoalReachedEvent(false);
         }
+    } else {
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in cartesian trajectory control mode, current state is "
+                                  << mArmState.CurrentState() << std::endl;
     }
 }
 
@@ -891,14 +1008,8 @@ void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianSet & ne
 
 void mtsIntuitiveResearchKitArm::ErrorEventHandler(const std::string & message)
 {
-    RobotIO.DisablePower();
-    // in case there was a trajectory going on
-    if (JointTrajectory.IsWorking) {
-        JointTrajectory.GoalReachedEvent(false);
-    }
-
     MessageEvents.Error(this->GetName() + ": received [" + message + "]");
-    SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+    mArmState.SetCurrentState("UNINITIALIZED");
 }
 
 void mtsIntuitiveResearchKitArm::JointLimitEventHandler(const vctBoolVec & CMN_UNUSED(flags))
@@ -911,8 +1022,9 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
     std::stringstream nbSamplesString;
     nbSamplesString << nbSamples;
     MessageEvents.Status(this->GetName() + ": encoders biased using " + nbSamplesString.str() + " potentiometer values");
-    if (HomingBiasEncoderRequested) {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
+    if (mHomingBiasEncoderRequested) {
+        mHomingBiasEncoderRequested = false;
+        mArmState.SetCurrentState("ENCODERS_BIASED");
     } else {
         MessageEvents.Status(this->GetName() + " encoders have been biased by another process");
     }
@@ -920,7 +1032,7 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 
 void mtsIntuitiveResearchKitArm::SetEffortJoint(const prmForceTorqueJointSet & effort)
 {
-    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_JOINT)) {
+    if (mIsInEffortMode && mIsInJointMode) {
         mEffortJointSet.ForceTorque().Assign(effort.ForceTorque());
     }
 }

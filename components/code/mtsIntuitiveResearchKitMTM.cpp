@@ -91,17 +91,17 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     mImpedanceController = new osaImpedanceController();
 
     // joint values when orientation is locked
-    EffortOrientationJoint.SetSize(NumberOfJoints());
+    mEffortOrientationJoint.SetSize(NumberOfJoints());
 
     // initialize gripper state
     GripperClosed = false;
 
-    JointTrajectory.Velocity.SetAll(180.0 * cmnPI_180); // degrees per second
-    JointTrajectory.Acceleration.SetAll(180.0 * cmnPI_180);
-    JointTrajectory.Velocity.Element(6) = 360.0 * cmnPI_180; // roll can go fast
-    JointTrajectory.Acceleration.Element(6) = 360.0 * cmnPI_180;
-    JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
-    JointTrajectory.GoalTolerance.Element(6) = 6.0 * cmnPI_180; // roll has low encoder resolution
+    mJointTrajectory.Velocity.SetAll(180.0 * cmnPI_180); // degrees per second
+    mJointTrajectory.Acceleration.SetAll(180.0 * cmnPI_180);
+    mJointTrajectory.Velocity.Element(6) = 360.0 * cmnPI_180; // roll can go fast
+    mJointTrajectory.Acceleration.Element(6) = 360.0 * cmnPI_180;
+    mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
+    mJointTrajectory.GoalTolerance.Element(6) = 6.0 * cmnPI_180; // roll has low encoder resolution
      // IO level treats the gripper as joint :-)
     PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
     // pots on gripper rotation are not directly mapped to encoders
@@ -123,6 +123,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     RobotInterface->AddEventWrite(GripperEvents.GripperClosed, "GripperClosedEvent", true);
 }
 
+/*
 void mtsIntuitiveResearchKitMTM::RunArmSpecific(void)
 {
     switch (RobotState) {
@@ -136,6 +137,7 @@ void mtsIntuitiveResearchKitMTM::RunArmSpecific(void)
         break;
     }
 }
+*/
 
 void mtsIntuitiveResearchKitMTM::SetMTMType(const bool autodetect, const MTM_TYPE type)
 {
@@ -183,6 +185,7 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
     }
 }
 
+/*
 void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState)
 {
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
@@ -335,7 +338,9 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
     // Emit event with current state
     MessageEvents.RobotState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->RobotState));
 }
+*/
 
+/*
 void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
 {
     if (mIsSimulated) {
@@ -550,15 +555,16 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         break;
     }
 }
+*/
 
 void mtsIntuitiveResearchKitMTM::RunEffortOrientationLocked(void)
 {
     // don't get current joint values!
     // always initialize IK from position when locked
-    vctDoubleVec jointSet(EffortOrientationJoint.Ref(NumberOfJointsKinematics()));
+    vctDoubleVec jointSet(mEffortOrientationJoint.Ref(NumberOfJointsKinematics()));
     // compute desired position from current position and locked orientation
     CartesianPositionFrm.Translation().Assign(CartesianGetLocal.Translation());
-    CartesianPositionFrm.Rotation().From(EffortOrientation);
+    CartesianPositionFrm.Rotation().From(mEffortOrientation);
     if (Manipulator.InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = JointGet[6] - jointSet[6];
@@ -585,28 +591,28 @@ void mtsIntuitiveResearchKitMTM::RunEffortCartesianImpedance(void)
 void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
 {
     // if we just started lock
-    if (!EffortOrientationLocked) {
+    if (!mEffortOrientationLocked) {
         vctBoolVec torqueMode(8);
         // first 3 joints in torque mode
         torqueMode.Ref(3, 0).SetAll(true);
         // last 4 in PID mode
         torqueMode.Ref(4, 3).SetAll(false);
         PID.EnableTorqueMode(torqueMode);
-        EffortOrientationLocked = true;
+        mEffortOrientationLocked = true;
     }
     // in any case, update desired orientation
-    EffortOrientation.Assign(orientation);
-    EffortOrientationJoint.Assign(JointGet);
+    mEffortOrientation.Assign(orientation);
+    mEffortOrientationJoint.Assign(JointGet);
 }
 
 void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)
 {
     // only unlock if needed
-    if (EffortOrientationLocked) {
+    if (mEffortOrientationLocked) {
         vctBoolVec torqueMode(8);
         torqueMode.SetAll(true);
         PID.EnableTorqueMode(torqueMode);
-        EffortOrientationLocked = false;
+        mEffortOrientationLocked = false;
     }
 }
 
@@ -630,9 +636,12 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
     }
 }
 
-void mtsIntuitiveResearchKitMTM::SetImpedanceGains(const prmFixtureGainCartesianSet &newGains)
+void mtsIntuitiveResearchKitMTM::SetImpedanceGains(const prmFixtureGainCartesianSet & newGains)
 {
-    if(CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN_IMPEDANCE)) {
+    std::cerr << CMN_LOG_DETAILS << " to be fixed" << std::endl;
+    /*
+    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN_IMPEDANCE)) {
         mImpedanceController->SetGains(newGains);
     }
+    */
 }

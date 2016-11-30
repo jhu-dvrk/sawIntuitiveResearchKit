@@ -91,15 +91,15 @@ void mtsIntuitiveResearchKitECM::Init(void)
     mtsIntuitiveResearchKitArm::Init();
 
     // initialize trajectory data
-    JointTrajectory.Velocity.Assign(30.0 * cmnPI_180, // degrees per second
-                                    30.0 * cmnPI_180,
+    mJointTrajectory.Velocity.Assign(30.0 * cmnPI_180, // degrees per second
+                                     30.0 * cmnPI_180,
                                      0.05,            // m per second
-                                    20.0 * cmnPI_180);
-    JointTrajectory.Acceleration.Assign(30.0 * cmnPI_180,
-                                        30.0 * cmnPI_180,
+                                     20.0 * cmnPI_180);
+    mJointTrajectory.Acceleration.Assign(30.0 * cmnPI_180,
+                                         30.0 * cmnPI_180,
                                          0.05,
-                                        30.0 * cmnPI_180);
-    JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
+                                         30.0 * cmnPI_180);
+    mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
     PotsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
     PotsToEncodersTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm
 
@@ -137,7 +137,7 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
         // should arm go to zero position when homing, default set in Init method
         const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
         if (!jsonHomingGoesToZero.isNull()) {
-            HomingGoesToZero = jsonHomingGoesToZero.asBool();
+            mHomingGoesToZero = jsonHomingGoesToZero.asBool();
         }
 
         // load tool tip transform if any (for up/down endoscopes)
@@ -153,7 +153,7 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
     }
 }
 
-
+/*
 void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState)
 {
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
@@ -280,7 +280,9 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
     // Emit event with current state
     MessageEvents.RobotState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->RobotState));
 }
+*/
 
+/*
 void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
 {
     if (mIsSimulated) {
@@ -370,7 +372,9 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
         break;
     }
 }
+*/
 
+/*
 void mtsIntuitiveResearchKitECM::SetRobotControlState(const std::string & state)
 {
     if (state == "Home") {
@@ -390,6 +394,7 @@ void mtsIntuitiveResearchKitECM::SetRobotControlState(const std::string & state)
         SetState(stateEnum);
     }
 }
+*/
 
 void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)
 {
@@ -402,6 +407,8 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
     // Pass events
     ClutchEvents.ManipClutch(button);
 
+    std::cerr << CMN_LOG_DETAILS << " to be fixed" << std::endl;
+    /*
     // Start manual mode but save the previous state
     if (button.Type() == prmEventButton::PRESSED) {
         ClutchEvents.ManipClutchPreviousState = this->RobotState;
@@ -417,4 +424,5 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
             SetState(ClutchEvents.ManipClutchPreviousState);
         }
     }
+    */
 }

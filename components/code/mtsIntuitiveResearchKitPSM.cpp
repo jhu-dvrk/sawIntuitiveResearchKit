@@ -74,13 +74,13 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mtsIntuitiveResearchKitArm::Init();
 
     // initialize trajectory data
-    JointTrajectory.Velocity.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
-    JointTrajectory.Velocity.Element(2) = 0.2; // m per second
-    JointTrajectory.Velocity.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
-    JointTrajectory.Acceleration.Ref(2, 0).SetAll(180.0 * cmnPI_180);
-    JointTrajectory.Acceleration.Element(2) = 0.2; // m per second
-    JointTrajectory.Acceleration.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
-    JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
+    mJointTrajectory.Velocity.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
+    mJointTrajectory.Velocity.Element(2) = 0.2; // m per second
+    mJointTrajectory.Velocity.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
+    mJointTrajectory.Acceleration.Ref(2, 0).SetAll(180.0 * cmnPI_180);
+    mJointTrajectory.Acceleration.Element(2) = 0.2; // m per second
+    mJointTrajectory.Acceleration.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
+    mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
     // high values for engage adapter/tool until these use a proper trajectory generator
     PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
     PotsToEncodersTolerance.Element(2) = 5.0 * cmn_mm; // 5 mm
@@ -164,7 +164,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         // should arm go to zero position when homing, default set in Init method
         const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
         if (!jsonHomingGoesToZero.isNull()) {
-            HomingGoesToZero = jsonHomingGoesToZero.asBool();
+            mHomingGoesToZero = jsonHomingGoesToZero.asBool();
         }
 
         // load tool tip transform if any (with warning)
@@ -260,6 +260,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
     }
 }
 
+/*
 void mtsIntuitiveResearchKitPSM::RunArmSpecific(void)
 {
     switch (RobotState) {
@@ -281,7 +282,9 @@ void mtsIntuitiveResearchKitPSM::RunArmSpecific(void)
         break;
     }
 }
+*/
 
+/*
 void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState)
 {
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
@@ -561,7 +564,9 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
     // Emit event with current state
     MessageEvents.RobotState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState));
 }
+*/
 
+/*
 void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
 {
     if (mIsSimulated) {
@@ -649,7 +654,9 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         break;
     }
 }
+*/
 
+/*
 void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
 {
     // first phase, disable last 4 joints and wait
@@ -712,7 +719,9 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
         }
     }
 }
+*/
 
+/*
 void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 {
     if (mIsSimulated) {
@@ -815,7 +824,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         break;
     }
 }
+*/
 
+/*
 void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 {
     if (mIsSimulated) {
@@ -932,7 +943,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         break;
     }
 }
+*/
 
+/*
 void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
 {
     // Update the optimizer
@@ -971,33 +984,29 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
         }
     }
 }
-
-void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
-{
-    if ((RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN)
-        || (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN)) {
-        CartesianSetParam = newPosition;
-        IsGoalSet = true;
-    } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetPositionCartesian: PSM not ready" << std::endl;
-    }
-}
+*/
 
 void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 {
-    switch (RobotState) {
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
-    case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
+    if (mControlSpace != CARTESIAN_SPACE) {
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in cartesian control space, current state is "
+                                  << mArmState.CurrentState() << std::endl;
+        return;
+    }
+
+    switch (mControlMode) {
+    case POSITION_MODE:
         JointSet[6] = jawPosition;
-        IsGoalSet = true;
+        mHasNewPIDGoal = true;
         break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-        JointTrajectory.IsWorking = true;
-        JointTrajectory.Goal[6] = jawPosition;
-        JointTrajectory.EndTime = 0.0;
+    case TRAJECTORY_MODE:
+        mJointTrajectory.IsWorking = true;
+        mJointTrajectory.Goal[6] = jawPosition;
+        mJointTrajectory.EndTime = 0.0;
         break;
     default:
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetJawPosition: PSM not ready" << std::endl;
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in position nor trajectory control mode, current state is "
+                                  << mArmState.CurrentState() << std::endl;
         break;
     }
 }
@@ -1036,6 +1045,7 @@ void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
     }
 }
 
+/*
 void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
@@ -1048,7 +1058,9 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & butt
         }
     }
 }
+*/
 
+/*
 void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
 {
     if (present) {
@@ -1064,6 +1076,7 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
         }
     }
 }
+*/
 
 void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
 {
@@ -1074,6 +1087,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
     }
 }
 
+/*
 void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & button)
 {
     // Pass events
@@ -1097,3 +1111,4 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
         }
     }
 }
+*/

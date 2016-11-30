@@ -37,6 +37,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstRobot/robReflexxes.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
+#include <sawIntuitiveResearchKit/mtsStateMachine.h>
+
+// Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
@@ -70,32 +73,38 @@ protected:
     /*! Verify that the state transition is possible, initialize
       global variables for the desired state and finally set the
       state. */
-    virtual void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState) = 0;
-    virtual void SetRobotControlState(const std::string & state) = 0;
-    /*! Convert enum to string using function provided by cisstDataGenerator. */
-    void GetRobotControlState(std::string & state) const;
-    bool CurrentStateIs(const mtsIntuitiveResearchKitArmTypes::RobotStateType & state);
-    bool CurrentStateIs(const mtsIntuitiveResearchKitArmTypes::RobotStateType & state1,
-                        const mtsIntuitiveResearchKitArmTypes::RobotStateType & state2);
+    virtual void SetDesiredState(const std::string & state);
+
+    bool CurrentStateIs(const std::string & state);
+    bool CurrentStateIs(const std::string & state1,
+                        const std::string & state2);
 
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
 
-    /*! Homing procedure, bias encoders from potentiometers. */
-    virtual void RunHomingBiasEncoder(void);
+    void StateChanged(void);
+    void RunAllStates(void); // this should happen for all states
 
-    /*! Homing procedure, power the robot. */
-    virtual void RunHomingPower(void);
+    virtual void EnterUninitialized(void);
+    virtual void TransitionUninitialized(void);
 
-    /*! Homing procedure, home all joints except last one using potentiometers as reference. */
-    virtual void RunHomingCalibrateArm(void) = 0;
+    virtual void EnterCalibratingEncodersFromPots(void);
+    virtual void TransitionCalibratingEncodersFromPots(void);
+    virtual void TransitionEncodersBiased(void);
+
+    virtual void EnterPowering(void);
+    virtual void TransitionPowering(void);
+    virtual void TransitionPowered(void);
+
+    virtual void EnterHomingArm(void);
+    virtual void TransitionHomingArm(void);
+    virtual void TransitionArmHomed(void);
 
     /*! Cartesian state. */
     virtual void RunPositionJoint(void);
     virtual void RunPositionGoalJoint(void);
     virtual void RunPositionCartesian(void);
     virtual void RunPositionGoalCartesian(void);
-    virtual void TrajectoryIsUsed(const bool used);
 
     /*! Effort state. */
     virtual void RunEffortJoint(void);
@@ -112,7 +121,6 @@ protected:
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
 
     /*! Methods used for commands */
-    virtual void Freeze(void);
     virtual void SetPositionJoint(const prmPositionJointSet & newPosition);
     virtual void SetPositionGoalJoint(const prmPositionJointSet & newPosition);
     virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
@@ -202,12 +210,13 @@ protected:
         mtsFunctionWrite Status;
         mtsFunctionWrite Warning;
         mtsFunctionWrite Error;
-        mtsFunctionWrite RobotState;
+        mtsFunctionWrite DesiredState;
+        mtsFunctionWrite CurrentState;
     } MessageEvents;
 
     // Cache cartesian goal position
     prmPositionCartesianSet CartesianSetParam;
-    bool IsGoalSet;
+    bool mHasNewPIDGoal;
 
     // internal kinematics
     prmPositionCartesianGet CartesianGetLocalParam;
@@ -240,9 +249,9 @@ protected:
     prmForceCartesianGet mWrenchGet;
 
     // used by MTM only
-    bool EffortOrientationLocked;
-    vctDoubleVec EffortOrientationJoint;
-    vctMatRot3 EffortOrientation;
+    bool mEffortOrientationLocked;
+    vctDoubleVec mEffortOrientationJoint;
+    vctMatRot3 mEffortOrientation;
     // gravity compensation
     bool mGravityCompensation;
     void AddGravityCompensationEfforts(vctDoubleVec & efforts);
@@ -266,7 +275,17 @@ protected:
     vctFrm4x4 BaseFrame;
     bool BaseFrameValid;
 
-    mtsIntuitiveResearchKitArmTypes::RobotStateType RobotState;
+    mtsStateMachine mArmState;
+    bool mJointReady;
+    bool mCartesianReady;
+
+    typedef enum {UNDEFINED_SPACE, ACTUATOR_SPACE, JOINT_SPACE, CARTESIAN_SPACE} ControlSpace;
+    ControlSpace mControlSpace;
+    void SetControlSpace(const ControlSpace space);
+
+    typedef enum {UNDEFINED_MODE, POSITION_MODE, TRAJECTORY_MODE, VELOCITY_MODE, EFFORT_MODE} ControlMode;
+    ControlMode mControlMode;
+    void SetControlMode(const ControlMode mode);
 
     struct {
         robReflexxes Reflexxes;
@@ -277,21 +296,18 @@ protected:
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
         vctDoubleVec MaxJerk;
-        bool IsUsed;
         bool IsWorking;
         double EndTime;
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
-    } JointTrajectory;
+    } mJointTrajectory;
 
     vctDoubleVec PotsToEncodersTolerance;
 
     // Home Action
-    bool HomedOnce;
-    bool HomingGoesToZero;
-    double HomingTimer;
-    bool HomingBiasEncoderRequested;
-    bool HomingPowerRequested;
-    bool HomingCalibrateArmStarted;
+    bool mHomedOnce;
+    bool mHomingGoesToZero;
+    bool mHomingBiasEncoderRequested;
+    double mHomingTimer;
 
     unsigned int mCounter;
 

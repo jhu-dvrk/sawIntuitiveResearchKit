@@ -61,10 +61,10 @@ void mtsStateMachine::Run(void)
         // update callbacks
         UpdateCurrentCallbacks();
         // find new state enter callback
-        typename CallbackMap::iterator found;
-        found = mEnterCallbacks.find(mCurrentState);
-        if (found != mEnterCallbacks.end()) {
-            found->second->Execute();
+        typename CallbackMap::iterator callback;
+        callback = mEnterCallbacks.find(mCurrentState);
+        if (callback != mEnterCallbacks.end()) {
+            callback->second->Execute();
         }
         mFirstRun = false;
     }
@@ -83,31 +83,41 @@ void mtsStateMachine::Run(void)
 
 bool mtsStateMachine::SetDesiredState(const StateType & desiredState)
 {
-    const typename StateMap::const_iterator found
+    const typename StateMap::const_iterator state
         = mStates.find(desiredState);
-    if ((found != mStates.end()) // state exists
-        && (found->second)) {  // can be set as desired
+    if ((state != mStates.end()) // state exists
+        && (state->second)) {  // can be set as desired
         mDesiredState = desiredState;
+        mDesiredStateIsNotCurrent = (mDesiredState == mCurrentState);
         return true;
     }
     return false;
 }
 
-void mtsStateMachine::SetCurrentState(const StateType newState)
+bool mtsStateMachine::SetCurrentState(const StateType & newState)
 {
-    typename CallbackMap::iterator found;
+    // check if this state exists
+    const typename StateMap::const_iterator state = mStates.find(newState);
+    if (state == mStates.end()) {
+        std::cerr << CMN_LOG_DETAILS << " state doesn't exist: " << newState << std::endl;
+        return false;
+    }
+
+    typename CallbackMap::iterator callback;
 
     // find current state leave callback
-    found = mLeaveCallbacks.find(mCurrentState);
-    if (found != mLeaveCallbacks.end()) {
-        found->second->Execute();
+    callback = mLeaveCallbacks.find(mCurrentState);
+    if (callback != mLeaveCallbacks.end()) {
+        callback->second->Execute();
     }
     // set the new state and update current callbacks
     mCurrentState = newState;
+    mDesiredStateIsNotCurrent = (mDesiredState == mCurrentState);
+
     // find new state enter callback
-    found = mEnterCallbacks.find(mCurrentState);
-    if (found != mEnterCallbacks.end()) {
-        found->second->Execute();
+    callback = mEnterCallbacks.find(mCurrentState);
+    if (callback != mEnterCallbacks.end()) {
+        callback->second->Execute();
     }
     // update current callbacks
     UpdateCurrentCallbacks();
@@ -115,22 +125,24 @@ void mtsStateMachine::SetCurrentState(const StateType newState)
     if (mStateChangeCallback) {
         mStateChangeCallback->Execute();
     }
+
+    return true;
 }
 
 void mtsStateMachine::UpdateCurrentCallbacks(void)
 {
-    typename CallbackMap::iterator found;
+    typename CallbackMap::iterator callback;
     // find state run callback
-    found = mRunCallbacks.find(mCurrentState);
-    if (found != mRunCallbacks.end()) {
-        mCurrentRunCallback = found->second;
+    callback = mRunCallbacks.find(mCurrentState);
+    if (callback != mRunCallbacks.end()) {
+        mCurrentRunCallback = callback->second;
     } else {
         mCurrentRunCallback = 0;
     }
     // find transition callback
-    found = mTransitionCallbacks.find(mCurrentState);
-    if (found != mTransitionCallbacks.end()) {
-        mCurrentTransitionCallback = found->second;
+    callback = mTransitionCallbacks.find(mCurrentState);
+    if (callback != mTransitionCallbacks.end()) {
+        mCurrentTransitionCallback = callback->second;
     } else {
         mCurrentTransitionCallback = 0;
     }
