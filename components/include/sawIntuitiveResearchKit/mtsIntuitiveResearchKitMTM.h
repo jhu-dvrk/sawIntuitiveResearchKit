@@ -87,15 +87,6 @@ protected:
       calling mtsIntuitiveResearchKitArm::GetRobotData. */
     void GetRobotData(void);
 
-    /*! Verify that the state transition is possible, initialize global
-      variables for the desired state and finally set the state. */
-    void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState);
-
-    void SetRobotControlState(const std::string & state);
-
-    /*! Switch case for user mode. */
-    void RunArmSpecific(void);
-
     /*! Homing procedure, home all joints except last one using potentiometers as reference. */
     void RunHomingCalibrateArm(void);
 

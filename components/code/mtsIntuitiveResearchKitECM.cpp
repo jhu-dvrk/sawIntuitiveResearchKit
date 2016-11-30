@@ -399,7 +399,7 @@ void mtsIntuitiveResearchKitECM::SetRobotControlState(const std::string & state)
 void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)
 {
     MessageEvents.Error(this->GetName() + ": PID tracking error");
-    SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+    mArmState.SetCurrentState("UNINITIALIZED");
 }
 
 void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & button)

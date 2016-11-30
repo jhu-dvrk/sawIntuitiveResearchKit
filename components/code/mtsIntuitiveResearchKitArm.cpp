@@ -116,6 +116,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                     &mtsIntuitiveResearchKitArm::TransitionPowered,
                                     this);
 
+    #if 0
     // homing arm, i.e. go to zero position if needed and leave PID on
     // handles all DOF on ECM, all but roll on MTM and only first 3 on
     // PSM
@@ -130,7 +131,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.SetTransitionCallback("ARM_HOMED",
                                     &mtsIntuitiveResearchKitArm::TransitionArmHomed,
                                     this);
-
+#endif
+    std::cerr << CMN_LOG_DETAILS << " need to finish state machine" << std::endl;
 
     mCounter = 0;
     mIsSimulated = false;
@@ -644,7 +646,8 @@ void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
 
 void mtsIntuitiveResearchKitArm::TransitionEncodersBiased(void)
 {
-    // move to next stage if desired state is anything past post calibration
+    // move to next stage if desired state is anything past post pot
+    // calibration
     if (mArmState.DesiredStateIsNotCurrent()) {
         mArmState.SetCurrentState("POWERING");
     }
@@ -713,6 +716,19 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
         } else {
             MessageEvents.Error(this->GetName() + " failed to enable power.");
             mArmState.SetCurrentState("UNINITIALIZED");
+        }
+    }
+}
+
+void mtsIntuitiveResearchKitArm::TransitionPowered(void)
+{
+    // move to next stage if desired state is anything past power
+    // unless user request new pots calibration
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        if (mArmState.DesiredState() == "ENCODERS_BIASED") {
+            mArmState.SetCurrentState("CALIBRATING_ENCODERS_FROM_POTS");
+        } else {
+            mArmState.SetCurrentState("HOMING_ARM");
         }
     }
 }
@@ -905,7 +921,8 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
 
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
 {
-    if (mIsInJointMode && !mJointTrajectory.IsUsed) {
+    if ((mControlSpace == JOINT_SPACE)
+        && (mControlMode == POSITION_MODE)) {
         JointSet.Assign(newPosition.Goal(), NumberOfJoints());
         mHasNewPIDGoal = true;
     } else {
@@ -916,7 +933,8 @@ void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & ne
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet & newPosition)
 {
-    if (mIsInJointMode && mJointTrajectory.IsUsed) {
+    if ((mControlSpace == JOINT_SPACE)
+        && (mControlMode == TRAJECTORY_MODE)) {
         mJointTrajectory.IsWorking = true;
         mJointTrajectory.Goal.Assign(newPosition.Goal(), NumberOfJoints());
         mJointTrajectory.GoalVelocity.SetAll(0.0);
@@ -929,7 +947,8 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet 
 
 void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (mIsInCartesianMode && !mJointTrajectory.IsUsed) {
+    if ((mControlSpace == CARTESIAN_SPACE)
+        && (mControlMode == POSITION_MODE)) {
         CartesianSetParam = newPosition;
         mHasNewPIDGoal = true;
     } else {
@@ -940,7 +959,8 @@ void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesian
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (mIsInCartesianMode && mJointTrajectory.IsUsed) {
+    if ((mControlSpace == CARTESIAN_SPACE)
+        && (mControlMode == TRAJECTORY_MODE)) {
 
         const size_t nbJoints = this->NumberOfJoints();
         const size_t nbJointsKin = this->NumberOfJointsKinematics();
@@ -1032,32 +1052,42 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 
 void mtsIntuitiveResearchKitArm::SetEffortJoint(const prmForceTorqueJointSet & effort)
 {
-    if (mIsInEffortMode && mIsInJointMode) {
+    if ((mControlSpace == JOINT_SPACE)
+        && (mControlMode == EFFORT_MODE)) {
         mEffortJointSet.ForceTorque().Assign(effort.ForceTorque());
+    } else {
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in joint effort control mode, current state is "
+                                  << mArmState.CurrentState() << std::endl;
     }
 }
 
 void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wrench)
 {
-    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN,
-                       mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN_IMPEDANCE)) {
+    if ((mControlSpace == CARTESIAN_SPACE)
+        && (mControlMode == EFFORT_MODE)) {
         mWrenchSet = wrench;
         if (mWrenchType != WRENCH_BODY) {
             mWrenchType = WRENCH_BODY;
             MessageEvents.Status(this->GetName() + " effort cartesian (body)");
         }
+    } else {
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in cartesian effort control mode, current state is "
+                                  << mArmState.CurrentState() << std::endl;
     }
 }
 
 void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & wrench)
 {
-    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN,
-                       mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN_IMPEDANCE)) {
+    if ((mControlSpace == CARTESIAN_SPACE)
+        && (mControlMode == EFFORT_MODE)) {
         mWrenchSet = wrench;
         if (mWrenchType != WRENCH_SPATIAL) {
             mWrenchType = WRENCH_SPATIAL;
             MessageEvents.Status(this->GetName() + " effort cartesian (spatial)");
         }
+    } else {
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in cartesian effort control mode, current state is "
+                                  << mArmState.CurrentState() << std::endl;
     }
 }
 

@@ -616,26 +616,6 @@ void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)
     }
 }
 
-void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
-{
-    if (state == "Home") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER);
-    } else if (state == "Cartesian position") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN);
-    } else if (state == "Teleop") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN);
-    } else {
-        mtsIntuitiveResearchKitArmTypes::RobotStateType stateEnum;
-        try {
-            stateEnum = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state);
-        } catch (std::exception e) {
-            MessageEvents.Error(this->GetName() + ": MTM unsupported state " + state + ": " + e.what());
-            return;
-        }
-        SetState(stateEnum);
-    }
-}
-
 void mtsIntuitiveResearchKitMTM::SetImpedanceGains(const prmFixtureGainCartesianSet & newGains)
 {
     std::cerr << CMN_LOG_DETAILS << " to be fixed" << std::endl;

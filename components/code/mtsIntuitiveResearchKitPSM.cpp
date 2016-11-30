@@ -945,47 +945,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 }
 */
 
-/*
-void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
-{
-    // Update the optimizer
-    // Go through the VF list, update state data pointers, assign tableau references, and fill in the references
-    if (IsGoalSet) {
-        IsGoalSet = false;
-
-        // Update kinematics and VF data objects
-        Optimizer->UpdateParams(JointGet,
-                                   Manipulator,
-                                   this->GetPeriodicity(),
-                                   CartesianGet,
-                                   vctFrm4x4(CartesianSetParam.Goal())
-                                   );
-
-        vctDoubleVec dq;
-        // Make sure the return value is meaningful
-        if (Optimizer->Solve(dq)) {
-            // make appropriate adjustments to incremental motion specific to davinci
-
-            // send command to move to specified position
-            vctDoubleVec FinalJoint(6);
-            FinalJoint.Assign(JointGet,6);
-            FinalJoint = FinalJoint + dq;
-            FinalJoint.resize(7);
-
-            // find closest solution mod 2 pi
-            double diffTurns = nearbyint(-dq[3] / (2.0 * cmnPI));
-            FinalJoint[3] = FinalJoint[3] + diffTurns * 2.0 * cmnPI;
-
-            // Send the final joint commands to the LLC
-            SetPositionJointLocal(FinalJoint);
-        }
-        else {
-            CMN_LOG_CLASS_RUN_ERROR << "Control Optimizer failed " << std::endl;
-        }
-    }
-}
-*/
-
 void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 {
     if (mControlSpace != CARTESIAN_SPACE) {
@@ -1023,31 +982,10 @@ void mtsIntuitiveResearchKitPSM::EnableJointsEventHandler(const vctBoolVec & ena
     CouplingChange.LastEnabledJoints.Assign(enable);
 }
 
-void mtsIntuitiveResearchKitPSM::SetRobotControlState(const std::string & state)
-{
-    if (state == "Home") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER);
-    } else if ((state == "Cartesian position") || (state == "Teleop")) {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN);
-    } else if (state == "Cartesian constraint controller") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN);
-    } else if (state == "Manual") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
-    } else {
-        mtsIntuitiveResearchKitArmTypes::RobotStateType stateEnum;
-        try {
-            stateEnum = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state);
-        } catch (std::exception e) {
-            MessageEvents.Error(this->GetName() + ": PSM unsupported state " + state + ": " + e.what());
-            return;
-        }
-        SetState(stateEnum);
-    }
-}
-
-/*
 void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & button)
 {
+    std::cerr << CMN_LOG_DETAILS << " to be fixed" << std::endl;
+    /*
     if (button.Type() == prmEventButton::PRESSED) {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER);
     } else {
@@ -1057,12 +995,13 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & butt
             SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
         }
     }
+    */
 }
-*/
 
-/*
 void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
 {
+    std::cerr << CMN_LOG_DETAILS << " to be fixed" << std::endl;
+    /*
     if (present) {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL);
     } else {
@@ -1075,8 +1014,8 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
             SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING);
         }
     }
+    */
 }
-*/
 
 void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
 {
@@ -1087,12 +1026,14 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
     }
 }
 
-/*
 void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & button)
 {
     // Pass events
     ClutchEvents.ManipClutch(button);
 
+    std::cerr << CMN_LOG_DETAILS << " to be fixed" << std::endl;
+
+    /*
     // Start manual mode but save the previous state
     if (button.Type() == prmEventButton::PRESSED) {
         ClutchEvents.ManipClutchPreviousState = RobotState;
@@ -1110,5 +1051,6 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
             SetState(ClutchEvents.ManipClutchPreviousState);
         }
     }
+    */
 }
-*/
+

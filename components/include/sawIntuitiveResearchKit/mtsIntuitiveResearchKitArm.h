@@ -96,10 +96,12 @@ protected:
     virtual void TransitionPowering(void);
     virtual void TransitionPowered(void);
 
+    /*
     virtual void EnterHomingArm(void);
     virtual void TransitionHomingArm(void);
     virtual void TransitionArmHomed(void);
-
+    */
+    
     /*! Cartesian state. */
     virtual void RunPositionJoint(void);
     virtual void RunPositionGoalJoint(void);
@@ -113,9 +115,6 @@ protected:
     /*! Compute forces/position for PID when orientation is locked in
       effort cartesian mode or gravity compensation. */
     virtual void RunEffortOrientationLocked(void);
-
-    /*! Run method called for all states not handled in base class. */
-    inline virtual void RunArmSpecific(void) {};
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);

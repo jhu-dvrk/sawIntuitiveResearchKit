@@ -70,15 +70,6 @@ protected:
 
     void Init(void);
 
-    /*! Verify that the state transition is possible, initialize global
-      variables for the desired state and finally set the state. */
-    void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState);
-
-    void SetRobotControlState(const std::string & state);
-
-    /*! Switch case for user mode. */
-    void RunArmSpecific(void);
-
     /*! Homing procedure, home all joints except last one using potentiometers as reference. */
     void RunHomingCalibrateArm(void);
 
@@ -91,9 +82,6 @@ protected:
     /*! Engaging tool procedure. */
     void RunEngagingTool(void);
 
-    /*! Cartesian constraint controller. */
-    virtual void RunConstraintControllerCartesian(void);
-
     void EventHandlerAdapter(const prmEventButton & button);
 
     /*! Set tool present.  This should only be used by the tool event
@@ -104,8 +92,8 @@ protected:
     void EventHandlerTool(const prmEventButton & button);
     void EventHandlerManipClutch(const prmEventButton & button);
 
-    void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     void SetJawPosition(const double & openAngle);
+
     void EnableJointsEventHandler(const vctBoolVec & enable);
     void CouplingEventHandler(const prmActuatorJointCoupling & coupling);
 
