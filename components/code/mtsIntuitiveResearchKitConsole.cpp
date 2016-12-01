@@ -432,6 +432,7 @@ void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMT
                 mtsTeleOperationPSM * teleop = dynamic_cast<mtsTeleOperationPSM *>(component);
                 if (teleop) {
                     teleop->Configure();
+                    teleop->SetRegistrationRotation(orientation);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureTeleop: component \""
                                        << Name() << "\" doesn't seem to be derived from mtsTeleOperationPSM."

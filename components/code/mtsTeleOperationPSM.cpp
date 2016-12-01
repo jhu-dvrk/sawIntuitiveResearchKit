@@ -495,7 +495,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     // check mtm state
     mtsStdString armState;
     mPSM->GetRobotControlState(armState);
-    if (armState.Data != "DVRK_POSITION_CARTESIAN") {
+    if (armState.Data != "DVRK_POSITION_CARTESIAN" && armState.Data !=  "DVRK_CONSTRAINT_CONTROLLER_CARTESIAN") {
         mTeleopState.SetDesiredState("DISABLED");
         mTeleopState.SetCurrentState("DISABLED");
         return;
@@ -605,7 +605,7 @@ void mtsTeleOperationPSM::TransitionEnabled(void)
 
     // check psm state
     mPSM->GetRobotControlState(armState);
-    if (armState.Data != "DVRK_POSITION_CARTESIAN") {
+    if (armState.Data != "DVRK_POSITION_CARTESIAN" && armState.Data !=  "DVRK_CONSTRAINT_CONTROLLER_CARTESIAN") {
         mTeleopState.SetDesiredState("DISABLED");
     }
 
