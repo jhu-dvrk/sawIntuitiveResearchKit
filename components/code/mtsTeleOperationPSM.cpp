@@ -32,7 +32,7 @@ mtsTeleOperationPSM::mtsTeleOperationPSM(const std::string & componentName, cons
     mtsTaskPeriodic(componentName, periodInSeconds),
     mMTM(0),
     mPSM(0),
-    mTeleopState("DISABLED")
+    mTeleopState(componentName, "DISABLED")
 {
     Init();
 }
@@ -41,7 +41,7 @@ mtsTeleOperationPSM::mtsTeleOperationPSM(const mtsTaskPeriodicConstructorArg & a
     mtsTaskPeriodic(arg),
     mMTM(0),
     mPSM(0),
-    mTeleopState("DISABLED")
+    mTeleopState(arg.Name, "DISABLED")
 {
     Init();
 }
@@ -69,7 +69,6 @@ void mtsTeleOperationPSM::Init(void)
 void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
 {
     // configure state machine
-    mTeleopState.AddState("DISABLED");
     mTeleopState.AddState("SETTING_PSM_STATE");
     mTeleopState.AddState("SETTING_MTM_STATE");
     mTeleopState.AddState("ALIGNING_MTM");

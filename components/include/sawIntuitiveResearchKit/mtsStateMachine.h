@@ -38,13 +38,15 @@ class mtsStateMachine
 public:
     typedef std::string StateType;
 
-    inline mtsStateMachine(const StateType initialState):
+    inline mtsStateMachine(const std::string & name, const StateType initialState):
+        mName(name),
         mFirstRun(true),
         mRunCallback(0),
         mStateChangeCallback(0),
         mCurrentState(initialState),
         mDesiredState(initialState)
     {
+        AddState(initialState);
     }
 
     /*! Add a state. */
@@ -63,7 +65,7 @@ public:
     inline void SetRunCallback(const StateType state, mtsCallableVoidBase * callback) {
         if (!StateExists(state)) {
             cmnThrow("mtsStateMachine::SetRunCallback: "
-                     + mName + ", state doesn't exist.  Use AddState first.");
+                     + mName + ", state [" + state + "] doesn't exist.  Use AddState first.");
         }
         mRunCallbacks[state] = callback;
     }
@@ -94,7 +96,7 @@ public:
     inline void SetEnterCallback(const StateType state, mtsCallableVoidBase * callback) {
         if (!StateExists(state)) {
             cmnThrow("mtsStateMachine::SetEnterCallback: "
-                     + mName + ", state doesn't exist.  Use AddState first.");
+                     + mName + ", state [" + state + "] doesn't exist.  Use AddState first.");
         }
         mEnterCallbacks[state] = callback;
     }
@@ -112,7 +114,7 @@ public:
     inline void SetLeaveCallback(const StateType state, mtsCallableVoidBase * callback) {
         if (!StateExists(state)) {
             cmnThrow("mtsStateMachine::SetLeaveCallback: "
-                     + mName + ", state doesn't exist.  Use AddState first.");
+                     + mName + ", state [" + state + "] doesn't exist.  Use AddState first.");
         }
         mLeaveCallbacks[state] = callback;
     }
@@ -130,7 +132,7 @@ public:
     inline void SetTransitionCallback(const StateType state, mtsCallableVoidBase * callback) {
         if (!StateExists(state)) {
             cmnThrow("mtsStateMachine::SetTransitionCallback: "
-                     + mName + ", state doesn't exist.  Use AddState first.");
+                     + mName + ", state [" + state + "] doesn't exist.  Use AddState first.");
         }
         mTransitionCallbacks[state] = callback;
     }

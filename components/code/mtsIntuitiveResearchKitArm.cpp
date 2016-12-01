@@ -32,13 +32,13 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodi
 
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds),
-    mArmState("UNINITIALIZED")
+    mArmState(componentName, "UNINITIALIZED")
 {
 }
 
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg),
-    mArmState("UNINITIALIZED")
+    mArmState(arg.Name, "UNINITIALIZED")
 {
 }
 
@@ -46,7 +46,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
 {
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
-    mArmState.AddState("UNINITIALIZED");
     mArmState.AddState("CALIBRATING_ENCODERS_FROM_POTS");
     mArmState.AddState("ENCODERS_BIASED");
     mArmState.AddState("POWERING");
@@ -82,15 +81,16 @@ void mtsIntuitiveResearchKitArm::Init(void)
                              this);
 
     // unitialized
-    mArmState.SetEnterCallback("UNITIALIZED",
+    mArmState.SetEnterCallback("UNINITIALIZED",
                                &mtsIntuitiveResearchKitArm::EnterUninitialized,
                                this);
 
-    mArmState.SetTransitionCallback("UNITIALIZED",
+    mArmState.SetTransitionCallback("UNINITIALIZED",
                                     &mtsIntuitiveResearchKitArm::TransitionUninitialized,
                                     this);
 
     // bias encoders
+    std::cerr << "CALIBRATING_ENCODERS_FROM_POTS" << std::endl;
     mArmState.SetEnterCallback("CALIBRATING_ENCODERS_FROM_POTS",
                                &mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots,
                                this);
@@ -378,7 +378,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
 
 void mtsIntuitiveResearchKitArm::Startup(void)
 {
-    this->SetDesiredState("UNITIALIZED");
+    this->SetDesiredState("UNINITIALIZED");
 }
 
 void mtsIntuitiveResearchKitArm::Run(void)
@@ -587,8 +587,8 @@ void mtsIntuitiveResearchKitArm::RunAllStates(void)
 
     // always allow to go to unitialized
     if (mArmState.DesiredStateIsNotCurrent()) {
-        if (mArmState.DesiredState() == "UNITIALIZED") {
-            mArmState.SetCurrentState("UNITIALIZED");
+        if (mArmState.DesiredState() == "UNINITIALIZED") {
+            mArmState.SetCurrentState("UNINITIALIZED");
         }
     }
 }
@@ -640,7 +640,7 @@ void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
     if ((currentTime - mHomingTimer) > timeToBias) {
         mHomingBiasEncoderRequested = false;
         MessageEvents.Error(this->GetName() + " failed to bias encoders (timeout).");
-        mArmState.SetCurrentState("UNITIALIZED");
+        mArmState.SetCurrentState("UNINITIALIZED");
     }
 }
 
