@@ -75,10 +75,6 @@ protected:
       state. */
     virtual void SetDesiredState(const std::string & state);
 
-    bool CurrentStateIs(const std::string & state);
-    bool CurrentStateIs(const std::string & state1,
-                        const std::string & state2);
-
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
 

@@ -1333,10 +1333,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     const std::string interfaceNameArm = arm->Name();
     arm->ArmInterfaceRequired = AddInterfaceRequired(interfaceNameArm);
     if (arm->ArmInterfaceRequired) {
-        arm->ArmInterfaceRequired->AddFunction("SetRobotControlState", arm->SetRobotControlState);
-        if (arm->mType != Arm::ARM_SUJ) {
-            arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze);
-        }
+        arm->ArmInterfaceRequired->AddFunction("SetDesiredState", arm->SetDesiredState);
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
                                                         this, "Error");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
@@ -1431,7 +1428,7 @@ void mtsIntuitiveResearchKitConsole::PowerOff(void)
     for (ArmList::iterator arm = mArms.begin();
          arm != end;
          ++arm) {
-        arm->second->SetRobotControlState(mtsStdString("DVRK_UNINITIALIZED"));
+        arm->second->SetDesiredState(std::string("UNINITIALIZED"));
     }
 }
 
@@ -1443,7 +1440,7 @@ void mtsIntuitiveResearchKitConsole::Home(void)
     for (ArmList::iterator arm = mArms.begin();
          arm != end;
          ++arm) {
-        arm->second->SetRobotControlState(mtsStdString("DVRK_HOMING_BIAS_ENCODER"));
+        arm->second->SetDesiredState(std::string("READY"));
     }
 }
 
@@ -1489,7 +1486,7 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
              iterTeleopPSM != endTeleopPSM;
              ++iterTeleopPSM) {
-            iterTeleopPSM->second->SetDesiredState(mtsStdString("DISABLED"));
+            iterTeleopPSM->second->SetDesiredState(std::string("DISABLED"));
         }
     }
     if (mTeleopECM
@@ -1507,7 +1504,7 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
             if ((iterArms->second->mType == Arm::ARM_MTM) ||
                 (iterArms->second->mType == Arm::ARM_MTM_DERIVED) ||
                 (iterArms->second->mType == Arm::ARM_MTM_GENERIC)) {
-                iterArms->second->Freeze();
+                iterArms->second->SetDesiredState(std::string("READY"));
             }
         }
     }
@@ -1519,12 +1516,12 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
              iterTeleopPSM != endTeleopPSM;
              ++iterTeleopPSM) {
-                 iterTeleopPSM->second->SetDesiredState(mtsStdString("ENABLED"));
+            iterTeleopPSM->second->SetDesiredState(std::string("ENABLED"));
         }
     }
     if (mTeleopECM &&
         (!mTeleopECMRunning && teleopECM)) {
-        mTeleopECM->SetDesiredState(mtsStdString("ENABLED"));
+        mTeleopECM->SetDesiredState(std::string("ENABLED"));
     }
 
     // update data members
@@ -1541,7 +1538,7 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
              iterTeleopPSM != endTeleopPSM;
              ++iterTeleopPSM) {
-            iterTeleopPSM->second->SetDesiredState(mtsStdString("ALIGNING_MTM"));
+            iterTeleopPSM->second->SetDesiredState(std::string("ALIGNING_MTM"));
         }
     }
 }

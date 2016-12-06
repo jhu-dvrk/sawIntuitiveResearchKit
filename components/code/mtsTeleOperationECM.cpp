@@ -34,7 +34,7 @@ mtsTeleOperationECM::mtsTeleOperationECM(const std::string & componentName, cons
     mMTML(0),
     mMTMR(0),
     mECM(0),
-    mTeleopState("DISABLED")
+    mTeleopState(componentName, "DISABLED")
 {
     Init();
 }
@@ -44,7 +44,7 @@ mtsTeleOperationECM::mtsTeleOperationECM(const mtsTaskPeriodicConstructorArg & a
     mMTML(0),
     mMTMR(0),
     mECM(0),
-    mTeleopState("DISABLED")
+    mTeleopState(arg.Name, "DISABLED")
 {
     Init();
 }
@@ -78,7 +78,6 @@ void mtsTeleOperationECM::Init(void)
 void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
 {
     // configure state machine
-    mTeleopState.AddState("DISABLED");
     mTeleopState.AddState("SETTING_ECM_STATE");
     mTeleopState.AddState("SETTING_MTMS_STATE");
     mTeleopState.AddState("ENABLED");

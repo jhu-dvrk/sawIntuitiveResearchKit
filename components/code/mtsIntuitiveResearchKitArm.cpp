@@ -32,13 +32,13 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodi
 
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds),
-    mArmState("UNINITIALIZED")
+    mArmState(componentName, "UNINITIALIZED")
 {
 }
 
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg),
-    mArmState("UNINITIALIZED")
+    mArmState(arg.Name, "UNINITIALIZED")
 {
 }
 
@@ -46,7 +46,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
 {
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
-    mArmState.AddState("UNINITIALIZED");
     mArmState.AddState("CALIBRATING_ENCODERS_FROM_POTS");
     mArmState.AddState("ENCODERS_BIASED");
     mArmState.AddState("POWERING");
@@ -82,11 +81,11 @@ void mtsIntuitiveResearchKitArm::Init(void)
                              this);
 
     // unitialized
-    mArmState.SetEnterCallback("UNITIALIZED",
+    mArmState.SetEnterCallback("UNINITIALIZED",
                                &mtsIntuitiveResearchKitArm::EnterUninitialized,
                                this);
 
-    mArmState.SetTransitionCallback("UNITIALIZED",
+    mArmState.SetTransitionCallback("UNINITIALIZED",
                                     &mtsIntuitiveResearchKitArm::TransitionUninitialized,
                                     this);
 
@@ -378,7 +377,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
 
 void mtsIntuitiveResearchKitArm::Startup(void)
 {
-    this->SetDesiredState("UNITIALIZED");
+    this->SetDesiredState("UNINITIALIZED");
 }
 
 void mtsIntuitiveResearchKitArm::Run(void)
@@ -407,29 +406,6 @@ void mtsIntuitiveResearchKitArm::SetSimulated(void)
     mIsSimulated = true;
     // in simulation mode, we don't need IO
     RemoveInterfaceRequired("RobotIO");
-}
-
-bool mtsIntuitiveResearchKitArm::CurrentStateIs(const std::string & state)
-{
-    if (mArmState.CurrentState() == state) {
-        return true;
-    }
-    CMN_LOG_CLASS_RUN_WARNING << GetName() << ": Checking state: arm not in "
-                              << state
-                              << ", current state is " << mArmState.CurrentState() << std::endl;
-    return false;
-}
-
-bool mtsIntuitiveResearchKitArm::CurrentStateIs(const std::string & state1,
-                                                const std::string & state2)
-{
-    if ((mArmState.CurrentState() == state1) || (mArmState.CurrentState() == state2)) {
-        return true;
-    }
-    CMN_LOG_CLASS_RUN_WARNING << GetName() << ": Checking state: arm not in "
-                              << state1 << " nor " << state2
-                              << ", current state is " << mArmState.CurrentState() << std::endl;
-    return false;
 }
 
 void mtsIntuitiveResearchKitArm::GetRobotData(void)
@@ -587,8 +563,8 @@ void mtsIntuitiveResearchKitArm::RunAllStates(void)
 
     // always allow to go to unitialized
     if (mArmState.DesiredStateIsNotCurrent()) {
-        if (mArmState.DesiredState() == "UNITIALIZED") {
-            mArmState.SetCurrentState("UNITIALIZED");
+        if (mArmState.DesiredState() == "UNINITIALIZED") {
+            mArmState.SetCurrentState("UNINITIALIZED");
         }
     }
 }
@@ -640,7 +616,7 @@ void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
     if ((currentTime - mHomingTimer) > timeToBias) {
         mHomingBiasEncoderRequested = false;
         MessageEvents.Error(this->GetName() + " failed to bias encoders (timeout).");
-        mArmState.SetCurrentState("UNITIALIZED");
+        mArmState.SetCurrentState("UNINITIALIZED");
     }
 }
 

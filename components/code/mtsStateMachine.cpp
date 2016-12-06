@@ -88,7 +88,7 @@ bool mtsStateMachine::SetDesiredState(const StateType & desiredState)
     if ((state != mStates.end()) // state exists
         && (state->second)) {  // can be set as desired
         mDesiredState = desiredState;
-        mDesiredStateIsNotCurrent = (mDesiredState == mCurrentState);
+        mDesiredStateIsNotCurrent = (mDesiredState != mCurrentState);
         return true;
     }
     return false;
@@ -99,7 +99,6 @@ bool mtsStateMachine::SetCurrentState(const StateType & newState)
     // check if this state exists
     const typename StateMap::const_iterator state = mStates.find(newState);
     if (state == mStates.end()) {
-        std::cerr << CMN_LOG_DETAILS << " state doesn't exist: " << newState << std::endl;
         return false;
     }
 
@@ -112,7 +111,7 @@ bool mtsStateMachine::SetCurrentState(const StateType & newState)
     }
     // set the new state and update current callbacks
     mCurrentState = newState;
-    mDesiredStateIsNotCurrent = (mDesiredState == mCurrentState);
+    mDesiredStateIsNotCurrent = (mDesiredState != mCurrentState);
 
     // find new state enter callback
     callback = mEnterCallbacks.find(mCurrentState);
