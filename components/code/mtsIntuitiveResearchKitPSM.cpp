@@ -566,95 +566,27 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
 }
 */
 
-/*
-void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
+void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
 {
-    if (mIsSimulated) {
-        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
-        return;
-    }
-
-    static const double extraTime = 2.0 * cmn_s;
-    const double currentTime = this->StateTable.GetTic();
-
-    // trigger motion
-    if (!HomingCalibrateArmStarted) {
-        // disable joint limits
-        PID.SetCheckJointLimit(false);
-        // enable PID and start from current position
-        JointSet.ForceAssign(JointGet);
-        SetPositionJointLocal(JointSet);
-        PID.Enable(true);
-
-        // make sure we start from current state
-        JointSet.Assign(JointGetDesired, NumberOfJoints());
-        JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
-
-        // compute joint goal position
-        // check if tool is present and if user wants to go to zero position
-        Tool.GetButton(Tool.IsPresent);
-        if (HomingGoesToZero
-            && !Tool.IsPresent) {
-            // move to zero position only there is no tool present
-            JointTrajectory.Goal.SetAll(0.0);
-        } else {
-            // stay at current position by default
-            JointTrajectory.Goal.Assign(JointGet);
-        }
-
-        JointTrajectory.GoalVelocity.SetAll(0.0);
-        JointTrajectory.EndTime = 0.0;
-        TrajectoryIsUsed(true);
-        HomingCalibrateArmStarted = true;
-    }
-
-    JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                       JointVelocitySet,
-                                       JointTrajectory.Goal,
-                                       JointTrajectory.GoalVelocity);
-    SetPositionJointLocal(JointSet);
-
-    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-
-    switch (trajectoryResult) {
-
-    case robReflexxes::Reflexxes_WORKING:
-        // if this is the first evaluation, we can't calculate expected completion time
-        if (JointTrajectory.EndTime == 0.0) {
-            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
-            HomingTimer = JointTrajectory.EndTime;
-        }
-        break;
-
-    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
-        {
-            // check position
-            JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
-            JointTrajectory.GoalError.AbsSelf();
-            bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
-            if (isHomed) {
-                PID.SetCheckJointLimit(true);
-                MessageEvents.Status(this->GetName() + " arm ready");
-                HomedOnce = true;
-                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
-            } else {
-                // time out
-                if (currentTime > HomingTimer + extraTime) {
-                    CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
-                                               << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                    MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
-                    this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
-                }
-            }
-        }
-        break;
-
-    default:
-        MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
-        break;
+    // check if tool is present and if user wants to go to zero position
+    Tool.GetButton(Tool.IsPresent);
+    if (mHomingGoesToZero
+        && !Tool.IsPresent) {
+        // move to zero position only there is no tool present
+        mJointTrajectory.Goal.SetAll(0.0);
+    } else {
+        // stay at current position by default
+        mJointTrajectory.Goal.Assign(JointGetDesired, NumberOfJoints());
     }
 }
-*/
+
+void mtsIntuitiveResearchKitPSM::TransitionArmHomed(void)
+{
+    // on ECM, arm homed means arm ready
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        mArmState.SetCurrentState("ENGAGING_ADAPTER");
+    }
+}
 
 /*
 void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)

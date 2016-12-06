@@ -278,7 +278,7 @@ void mtsTeleOperationECM::StateChanged(void)
 {
     const std::string newState = mTeleopState.CurrentState();
     MessageEvents.CurrentState(newState);
-    MessageEvents.Status(this->GetName() + ", current state " + newState);
+    MessageEvents.Status(this->GetName() + ": current state is " + newState);
 }
 
 void mtsTeleOperationECM::RunAllStates(void)
@@ -291,14 +291,14 @@ void mtsTeleOperationECM::RunAllStates(void)
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTML.GetPositionCartesian failed \""
                                 << executionResult << "\"" << std::endl;
         MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master left");
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
     executionResult = mMTML->GetVelocityCartesian(mMTML->VelocityCartesianCurrent);
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTML.GetVelocityCartesian failed \""
                                 << executionResult << "\"" << std::endl;
         MessageEvents.Error(this->GetName() + ": unable to get cartesian velocity from master left");
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
 
     // get master right Cartesian position
@@ -307,14 +307,14 @@ void mtsTeleOperationECM::RunAllStates(void)
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTMR.GetPositionCartesian failed \""
                                 << executionResult << "\"" << std::endl;
         MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master right");
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
     executionResult = mMTMR->GetVelocityCartesian(mMTMR->VelocityCartesianCurrent);
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTMR.GetVelocityCartesian failed \""
                                 << executionResult << "\"" << std::endl;
         MessageEvents.Error(this->GetName() + ": unable to get cartesian velocity from master right");
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
 
     // get slave Cartesian position
@@ -323,14 +323,14 @@ void mtsTeleOperationECM::RunAllStates(void)
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.GetPositionCartesian failed \""
                                 << executionResult << "\"" << std::endl;
         MessageEvents.Error(this->GetName() + ": unable to get cartesian position from slave");
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
     executionResult = mECM->GetPositionCartesianDesired(mECM->PositionCartesianDesired);
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.GetPositionCartesianDesired failed \""
                                 << executionResult << "\"" << std::endl;
         MessageEvents.Error(this->GetName() + ": unable to get cartesian position from slave");
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
 
     // check if anyone wanted to disable anyway
@@ -378,7 +378,7 @@ void mtsTeleOperationECM::TransitionSettingECMState(void)
     // check timer
     if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
         MessageEvents.Error(this->GetName() + ": timed out while setting up ECM state");
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
 }
 
@@ -418,7 +418,7 @@ void mtsTeleOperationECM::TransitionSettingMTMsState(void)
     // check timer
     if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
         MessageEvents.Error(this->GetName() + ": timed out while setting up MTMs state");
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
 }
 
@@ -559,19 +559,19 @@ void mtsTeleOperationECM::TransitionEnabled(void)
 
 void mtsTeleOperationECM::MTMLErrorEventHandler(const std::string & message)
 {
-    mTeleopState.SetDesiredState("DISABLED");
+    this->SetDesiredState("DISABLED");
     MessageEvents.Error(this->GetName() + ": received from left master [" + message + "]");
 }
 
 void mtsTeleOperationECM::MTMRErrorEventHandler(const std::string & message)
 {
-    mTeleopState.SetDesiredState("DISABLED");
+    this->SetDesiredState("DISABLED");
     MessageEvents.Error(this->GetName() + ": received from right master [" + message + "]");
 }
 
 void mtsTeleOperationECM::ECMErrorEventHandler(const std::string & message)
 {
-    mTeleopState.SetDesiredState("DISABLED");
+    this->SetDesiredState("DISABLED");
     MessageEvents.Error(this->GetName() + ": received from slave [" + message + "]");
 }
 

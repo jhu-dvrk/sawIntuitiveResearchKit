@@ -70,8 +70,9 @@ protected:
 
     void Init(void);
 
-    /*! Homing procedure, home all joints except last one using potentiometers as reference. */
-    void RunHomingCalibrateArm(void);
+    // state related methods
+    void SetGoalHomingArm(void);
+    void TransitionArmHomed(void);
 
     /*! Change actuator to joint coupling matrices, needs to power off PID and then reenable. */
     void RunChangingCoupling(void);

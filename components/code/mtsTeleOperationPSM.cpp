@@ -366,7 +366,7 @@ void mtsTeleOperationPSM::StateChanged(void)
 {
     const std::string newState = mTeleopState.CurrentState();
     MessageEvents.CurrentState(newState);
-    MessageEvents.Status(this->GetName() + ", current state " + newState);
+    MessageEvents.Status(this->GetName() + ": current state is " + newState);
 }
 
 void mtsTeleOperationPSM::RunAllStates(void)
@@ -379,7 +379,7 @@ void mtsTeleOperationPSM::RunAllStates(void)
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.GetPositionCartesian failed \""
                                 << executionResult << "\"" << std::endl;
         MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master");
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
     executionResult = mMTM->GetPositionCartesianDesired(mMTM->PositionCartesianDesired);
     if (!executionResult.IsOK()) {
@@ -393,7 +393,7 @@ void mtsTeleOperationPSM::RunAllStates(void)
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to PSM.GetPositionCartesian failed \""
                                 << executionResult << "\"" << std::endl;
         MessageEvents.Error(this->GetName() + ": unable to get cartesian position from slave");
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
 
     // check if anyone wanted to disable anyway
@@ -406,7 +406,7 @@ void mtsTeleOperationPSM::RunAllStates(void)
 
 void mtsTeleOperationPSM::TransitionDisabled(void)
 {
-    if (mTeleopState.DesiredState() != mTeleopState.CurrentState()) {
+    if (mTeleopState.DesiredStateIsNotCurrent()) {
         mTeleopState.SetCurrentState("SETTING_PSM_STATE");
     }
 }
@@ -436,7 +436,7 @@ void mtsTeleOperationPSM::TransitionSettingPSMState(void)
     // check timer
     if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
         MessageEvents.Error(this->GetName() + ": timed out while setting up PSM state");
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
 }
 
@@ -465,7 +465,7 @@ void mtsTeleOperationPSM::TransitionSettingMTMState(void)
     // check timer
     if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
         MessageEvents.Error(this->GetName() + ": timed out while setting up MTM state");
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
 }
 
@@ -495,13 +495,13 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     mtsStdString armState;
     mPSM->GetRobotControlState(armState);
     if (armState.Data != "DVRK_POSITION_CARTESIAN" && armState.Data !=  "DVRK_CONSTRAINT_CONTROLLER_CARTESIAN") {
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
         mTeleopState.SetCurrentState("DISABLED");
         return;
     }
 
     // if the desired state is aligning MTM, just stay here
-    if (mTeleopState.DesiredState() == mTeleopState.CurrentState()) {
+    if (!mTeleopState.DesiredStateIsNotCurrent()) {
         return;
     }
 
@@ -605,16 +605,16 @@ void mtsTeleOperationPSM::TransitionEnabled(void)
     // check psm state
     mPSM->GetRobotControlState(armState);
     if (armState.Data != "DVRK_POSITION_CARTESIAN" && armState.Data !=  "DVRK_CONSTRAINT_CONTROLLER_CARTESIAN") {
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
 
     // check mtm state
     mMTM->GetRobotControlState(armState);
     if (armState.Data != "DVRK_EFFORT_CARTESIAN") {
-        mTeleopState.SetDesiredState("DISABLED");
+        this->SetDesiredState("DISABLED");
     }
 
-    if (mTeleopState.DesiredState() != mTeleopState.CurrentState()) {
+    if (mTeleopState.DesiredStateIsNotCurrent()) {
         mTeleopState.SetCurrentState(mTeleopState.DesiredState());
     }
 }

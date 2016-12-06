@@ -92,12 +92,11 @@ protected:
     virtual void TransitionPowering(void);
     virtual void TransitionPowered(void);
 
-    /*
     virtual void EnterHomingArm(void);
-    virtual void TransitionHomingArm(void);
-    virtual void TransitionArmHomed(void);
-    */
-    
+    virtual void SetGoalHomingArm(void) = 0;
+    virtual void RunHomingArm(void);
+    virtual void TransitionArmHomed(void) = 0;
+
     /*! Cartesian state. */
     virtual void RunPositionJoint(void);
     virtual void RunPositionGoalJoint(void);

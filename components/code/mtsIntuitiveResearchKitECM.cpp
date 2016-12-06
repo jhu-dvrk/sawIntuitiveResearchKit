@@ -159,71 +159,6 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
                             << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(newState) << std::endl;
 
-    // first cleanup from previous state
-    switch (RobotState) {
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-        TrajectoryIsUsed(false);
-        break;
-
-    default:
-        break;
-    }
-
-    switch (newState) {
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
-        RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
-        RobotIO.DisablePower();
-        PID.Enable(false);
-        PID.SetCheckJointLimit(true);
-        TrajectoryIsUsed(false);
-        RobotState = newState;
-        MessageEvents.Status(this->GetName() + " not initialized");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER:
-        HomingBiasEncoderRequested = false;
-        RobotState = newState;
-        MessageEvents.Status(this->GetName() + " updating encoders based on potentiometers");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:
-        HomingTimer = 0.0;
-        HomingPowerRequested = false;
-        RobotState = newState;
-        MessageEvents.Status(this->GetName() + " powering");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM:
-        HomingCalibrateArmStarted = false;
-        RobotState = newState;
-        this->MessageEvents.Status(this->GetName() + " calibrating arm");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
-        // when returning from manual mode, need to re-enable PID
-        RobotState = newState;
-        MessageEvents.Status(this->GetName() + " ready");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.Error(this->GetName() + " is not ready");
-            return;
-        }
-        RobotState = newState;
-        JointSet.Assign(JointGetDesired, this->NumberOfJoints());
-        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
-            IsGoalSet = false;
-            MessageEvents.Status(this->GetName() + " position joint");
-        } else {
-            TrajectoryIsUsed(true);
-            MessageEvents.Status(this->GetName() + " position goal joint");
-        }
-        break;
-
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
@@ -282,124 +217,40 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
 }
 */
 
-/*
-void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
+
+void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
 {
-    if (mIsSimulated) {
-        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
-        return;
-    }
+    // configure PID to fail in case of tracking error
+    vctDoubleVec tolerances(NumberOfJoints());
+    tolerances.SetAll(7.0 * cmnPI_180); // 7 degrees on angles
+    tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
+    PID.SetTrackingErrorTolerance(tolerances);
+    PID.EnableTrackingError(true);
 
-    static const double extraTime = 5.0 * cmn_s;
-    const double currentTime = this->StateTable.GetTic();
-
-    // trigger motion
-    if (!HomingCalibrateArmStarted) {
-        // disable joint limits
-        PID.SetCheckJointLimit(false);
-        // enable PID and start from current position
-        JointSet.ForceAssign(JointGet);
-        SetPositionJointLocal(JointSet);
-        // configure PID to fail in case of tracking error
-        vctDoubleVec tolerances(NumberOfJoints());
-        tolerances.SetAll(7.0 * cmnPI_180); // 7 degrees on angles
-        tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
-        PID.SetTrackingErrorTolerance(tolerances);
-        PID.EnableTrackingError(true);
-        // finally enable PID
-        PID.Enable(true);
-
-        // compute joint goal position
-        JointTrajectory.Goal.SetSize(NumberOfJoints());
-        if (HomingGoesToZero) {
-            // move to zero position
-            JointTrajectory.Goal.SetAll(0.0);
-        } else {
-            // stay at current position by default
-            JointTrajectory.Goal.Assign(JointGet);
-        }
-
-        JointTrajectory.GoalVelocity.SetAll(0.0);
-        JointTrajectory.EndTime = 0.0;
-        TrajectoryIsUsed(true);
-        HomingCalibrateArmStarted = true;
-    }
-
-    // compute a new set point based on time
-    JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                       JointVelocitySet,
-                                       JointTrajectory.Goal,
-                                       JointTrajectory.GoalVelocity);
-    SetPositionJointLocal(JointSet);
-
-    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-
-    switch (trajectoryResult) {
-
-    case robReflexxes::Reflexxes_WORKING:
-        // if this is the first evaluation, we can't calculate expected completion time
-        if (JointTrajectory.EndTime == 0.0) {
-            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
-            HomingTimer = JointTrajectory.EndTime;
-        }
-        break;
-
-    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
-        {
-            // check position
-            JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
-            JointTrajectory.GoalError.AbsSelf();
-            bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
-            if (isHomed) {
-                PID.SetCheckJointLimit(true);
-                MessageEvents.Status(this->GetName() + " arm ready");
-                HomedOnce = true;
-                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
-            } else {
-                // time out
-                if (currentTime > HomingTimer + extraTime) {
-                    CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
-                                               << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                    MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
-                    this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
-                }
-            }
-        }
-        break;
-
-    default:
-        MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
-        break;
-    }
-}
-*/
-
-/*
-void mtsIntuitiveResearchKitECM::SetRobotControlState(const std::string & state)
-{
-    if (state == "Home") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER);
-    } else if ((state == "Cartesian position") || (state == "Teleop")) {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN);
-    } else if (state == "Manual") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
+    // compute joint goal position
+    mJointTrajectory.Goal.SetSize(NumberOfJoints());
+    if (mHomingGoesToZero) {
+        // move to zero position
+        mJointTrajectory.Goal.SetAll(0.0);
     } else {
-        mtsIntuitiveResearchKitArmTypes::RobotStateType stateEnum;
-        try {
-            stateEnum = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state);
-        } catch (std::exception e) {
-            MessageEvents.Error(this->GetName() + ": ECM unsupported state " + state + ": " + e.what());
-            return;
-        }
-        SetState(stateEnum);
+        // stay at current position by default
+        mJointTrajectory.Goal.Assign(JointGetDesired, NumberOfJoints());
     }
 }
-*/
+
+void mtsIntuitiveResearchKitECM::TransitionArmHomed(void)
+{
+    // on ECM, arm homed means arm ready
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        mCartesianReady = true;
+        mArmState.SetCurrentState("READY");
+    }
+}
 
 void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)
 {
     MessageEvents.Error(this->GetName() + ": PID tracking error");
-    mArmState.SetCurrentState("UNINITIALIZED");
+    this->SetDesiredState("UNINITIALIZED");
 }
 
 void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & button)

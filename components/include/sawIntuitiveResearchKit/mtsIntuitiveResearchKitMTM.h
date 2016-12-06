@@ -83,12 +83,13 @@ protected:
 
     virtual void Init(void);
 
+    // state related methods
+    void SetGoalHomingArm(void);
+    void TransitionArmHomed(void);
+
     /*! Get data specific to the MTM (gripper angle using analog inputs) after
       calling mtsIntuitiveResearchKitArm::GetRobotData. */
     void GetRobotData(void);
-
-    /*! Homing procedure, home all joints except last one using potentiometers as reference. */
-    void RunHomingCalibrateArm(void);
 
     /*! Homing procedure, calibrate last joint based on hardware limits. */
     void RunHomingCalibrateRoll(void);
@@ -125,7 +126,7 @@ protected:
     MTM_TYPE RobotType;
 
     // Impedance Controller
-    osaImpedanceController *mImpedanceController;    
+    osaImpedanceController *mImpedanceController;
 
     // Home Action
     bool HomingCalibrateRollSeekLower,
