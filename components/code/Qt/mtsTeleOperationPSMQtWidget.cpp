@@ -155,7 +155,6 @@ void mtsTeleOperationPSMQtWidget::SlotLockTranslation(bool lock)
     TeleOperation.LockTranslation(lock);
 }
 
-
 void mtsTeleOperationPSMQtWidget::SlotDesiredStateEventHandler(QString state)
 {
     QLEDesiredState->setText(state);

@@ -50,11 +50,15 @@ protected:
     virtual void closeEvent(QCloseEvent * event);
 
 signals:
+    void SignalDesiredState(QString state);
+    void SignalCurrentState(QString state);
     void SignalAppendMessage(QString);
     void SignalSetColor(QColor);
 
 private slots:
     void timerEvent(QTimerEvent * event);
+    void SlotDesiredStateEventHandler(QString state);
+    void SlotCurrentStateEventHandler(QString state);
     void SlotTextChanged(void);
     void SlotLogEnabled(void);
     void SlotEnableDirectControl(bool toggle);
@@ -68,8 +72,7 @@ private:
 protected:
     struct ArmStruct {
         mtsFunctionRead GetPositionCartesian;
-        mtsFunctionRead GetRobotControlState;
-        mtsFunctionWrite SetRobotControlState;
+        mtsFunctionWrite SetDesiredState;
         mtsFunctionRead GetPeriodStatistics;
     } Arm;
 
@@ -92,7 +95,12 @@ private:
     // state
     QCheckBox * QCBEnableDirectControl;
     QPushButton * QPBHome;
-    QLineEdit * QLEState;
+
+    QLineEdit * QLEDesiredState;
+    QLineEdit * QLECurrentState;
+    void DesiredStateEventHandler(const std::string & state);
+    void CurrentStateEventHandler(const std::string & state);
+
 
     // messages
     bool LogEnabled;

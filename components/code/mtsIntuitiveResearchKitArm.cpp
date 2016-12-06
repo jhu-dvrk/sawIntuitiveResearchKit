@@ -90,7 +90,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                     this);
 
     // bias encoders
-    std::cerr << "CALIBRATING_ENCODERS_FROM_POTS" << std::endl;
     mArmState.SetEnterCallback("CALIBRATING_ENCODERS_FROM_POTS",
                                &mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots,
                                this);
@@ -407,29 +406,6 @@ void mtsIntuitiveResearchKitArm::SetSimulated(void)
     mIsSimulated = true;
     // in simulation mode, we don't need IO
     RemoveInterfaceRequired("RobotIO");
-}
-
-bool mtsIntuitiveResearchKitArm::CurrentStateIs(const std::string & state)
-{
-    if (mArmState.CurrentState() == state) {
-        return true;
-    }
-    CMN_LOG_CLASS_RUN_WARNING << GetName() << ": Checking state: arm not in "
-                              << state
-                              << ", current state is " << mArmState.CurrentState() << std::endl;
-    return false;
-}
-
-bool mtsIntuitiveResearchKitArm::CurrentStateIs(const std::string & state1,
-                                                const std::string & state2)
-{
-    if ((mArmState.CurrentState() == state1) || (mArmState.CurrentState() == state2)) {
-        return true;
-    }
-    CMN_LOG_CLASS_RUN_WARNING << GetName() << ": Checking state: arm not in "
-                              << state1 << " nor " << state2
-                              << ", current state is " << mArmState.CurrentState() << std::endl;
-    return false;
 }
 
 void mtsIntuitiveResearchKitArm::GetRobotData(void)

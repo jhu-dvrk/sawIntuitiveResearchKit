@@ -102,8 +102,7 @@ public:
         std::string mBaseFrameComponentName;
         std::string mBaseFrameInterfaceName;
 
-        mtsFunctionWrite SetRobotControlState;
-        mtsFunctionVoid Freeze;
+        mtsFunctionWrite SetDesiredState;
         mtsInterfaceRequired * IOInterfaceRequired;
         mtsInterfaceRequired * PIDInterfaceRequired;
         mtsInterfaceRequired * ArmInterfaceRequired;
