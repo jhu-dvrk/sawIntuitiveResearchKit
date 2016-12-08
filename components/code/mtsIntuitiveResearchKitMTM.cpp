@@ -84,6 +84,35 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 {
     mtsIntuitiveResearchKitArm::Init();
 
+    // state machine specific to MTM, see base class for other states
+    mArmState.AddState("CALIBRATING_ROLL");
+    mArmState.AddState("ROLL_CALIBRATED");
+    mArmState.AddState("HOMING_ROLL");
+    mArmState.AddState("ROLL_HOMED");
+
+    // after arm homed
+    mArmState.SetTransitionCallback("ARM_HOMED",
+                                    &mtsIntuitiveResearchKitMTM::TransitionArmHomed,
+                                    this);
+    mArmState.SetEnterCallback("CALIBRATING_ROLL",
+                               &mtsIntuitiveResearchKitMTM::EnterCalibratingRoll,
+                               this);
+    mArmState.SetRunCallback("CALIBRATING_ROLL",
+                             &mtsIntuitiveResearchKitMTM::RunCalibratingRoll,
+                             this);
+    mArmState.SetTransitionCallback("ROLL_CALIBRATED",
+                                    &mtsIntuitiveResearchKitMTM::TransitionRollCalibrated,
+                                    this);
+    mArmState.SetEnterCallback("HOMING_ROLL",
+                               &mtsIntuitiveResearchKitMTM::EnterHomingRoll,
+                               this);
+    mArmState.SetRunCallback("HOMING_ROLL",
+                             &mtsIntuitiveResearchKitMTM::RunHomingRoll,
+                             this);
+    mArmState.SetTransitionCallback("ROLL_HOMED",
+                                    &mtsIntuitiveResearchKitMTM::TransitionRollHomed,
+                                    this);
+
     RobotType = MTM_NULL;
     SetMTMType();
 
@@ -308,142 +337,178 @@ void mtsIntuitiveResearchKitMTM::TransitionArmHomed(void)
         mArmState.SetCurrentState("CALIBRATING_ROLL");
     }
 }
-/*
-void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
+
+void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 {
-    if (mIsSimulated || this->HomedOnce) {
-        this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+    if (mIsSimulated || this->mHomedOnce) {
         return;
     }
 
     static const double maxTrackingError = 1.0 * cmnPI; // 1/2 turn
     static const double maxRollRange = 6.0 * cmnPI + maxTrackingError; // that actual device is limited to ~2.6 turns
-    static const double extraTime = 2.0 * cmn_s;
 
-    const double currentTime = this->StateTable.GetTic();
+    // disable joint limits on PID
+    PID.SetCheckJointLimit(false);
+
+    // compute joint goal position, we assume PID is on from previous state
+    mJointTrajectory.Goal.SetAll(0.0);
+    const double currentRoll = JointGetDesired.Element(JNT_WRIST_ROLL);
+    mJointTrajectory.Goal.Element(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
+    mJointTrajectory.GoalVelocity.SetAll(0.0);
+    mJointTrajectory.EndTime = 0.0;
+    SetControlMode(TRAJECTORY_MODE);
+    SetControlSpace(JOINT_SPACE);
+    MessageEvents.Status(this->GetName() + ": looking for roll lower limit");
+}
+
+void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
+{
+    if (mIsSimulated || this->mHomedOnce) {
+        mArmState.SetCurrentState("ROLL_CALIBRATED");
+        return;
+    }
+
+    static const double maxTrackingError = 1.0 * cmnPI; // 1/2 turn
     double trackingError;
-    robReflexxes::ResultType trajectoryResult;
+    static const double extraTime = 2.0 * cmn_s;
+    const double currentTime = this->StateTable.GetTic();
 
-    // trigger search of lower limit
-    if (!HomingCalibrateRollSeekLower) {
-        // disable joint limits on PID
-        PID.SetCheckJointLimit(false);
-        // compute joint goal position, we assume PID is on from previous state
-        JointTrajectory.Goal.SetAll(0.0);
-        const double currentRoll = JointGetDesired.Element(JNT_WRIST_ROLL);
-        JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
-        JointTrajectory.GoalVelocity.SetAll(0.0);
-        JointTrajectory.EndTime = 0.0;
-        // set flag to indicate that homing has started
-        HomingCalibrateRollSeekLower = true;
-        MessageEvents.Status(this->GetName() + " looking for roll lower limit");
-        return;
-    }
-
-    // looking for lower limit has start but not found yet
-    if (HomingCalibrateRollSeekLower
-        && (HomingCalibrateRollLower == cmnTypeTraits<double>::MaxPositiveValue())) {
-        JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                           JointVelocitySet,
-                                           JointTrajectory.Goal,
-                                           JointTrajectory.GoalVelocity);
-        SetPositionJointLocal(JointSet);
-        trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-        switch (trajectoryResult) {
-        case robReflexxes::Reflexxes_WORKING:
-            // if this is the first evaluation, we can't calculate expected completion time
-            if (JointTrajectory.EndTime == 0.0) {
-                JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
-                HomingTimer = JointTrajectory.EndTime;
-            }
-            // detect tracking error and set lower limit
-            trackingError = std::abs(JointGet.Element(JNT_WRIST_ROLL) - JointSet.Element(JNT_WRIST_ROLL));
-            if (trackingError > maxTrackingError) {
-                HomingCalibrateRollLower = JointGet.Element(JNT_WRIST_ROLL);
-                MessageEvents.Status(this->GetName() + " found roll lower limit");
-            } else {
-                // time out
-                if (currentTime > HomingTimer + extraTime) {
-                    MessageEvents.Error(this->GetName() + " unable to hit roll lower limit in time");
-                    this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
-                }
-            }
-            break;
-        case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
-            // we shouldn't be able to reach this goal
-            MessageEvents.Error(this->GetName() + " went past roll lower limit");
-            this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
-            break;
-        default:
-            MessageEvents.Error(this->GetName() + " error while evaluating trajectory");
-            break;
-        }
-        return;
-    }
-
-    // compute trajectory to go to center point
-    if (!HomingCalibrateRollSeekCenter) {
-        // compute joint goal position, we assume PID is on from previous state
-        JointTrajectory.Goal.SetAll(0.0);
-        JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = HomingCalibrateRollLower + 480.0 * cmnPI_180;
-        JointTrajectory.GoalVelocity.SetAll(0.0);
-        JointTrajectory.EndTime = 0.0;
-
-        // we want to start from zero velocity since we hit the joint limit
-        JointVelocitySet.SetAll(0.0);
-        // set flag to indicate that homing has started
-        HomingCalibrateRollSeekCenter = true;
-        MessageEvents.Status(this->GetName() + " moving roll to center");
-        return;
-    }
-
-    // going to center position and check we have arrived
-    JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                       JointVelocitySet,
-                                       JointTrajectory.Goal,
-                                       JointTrajectory.GoalVelocity);
+    mJointTrajectory.Reflexxes.Evaluate(JointSet,
+                                        JointVelocitySet,
+                                        mJointTrajectory.Goal,
+                                        mJointTrajectory.GoalVelocity);
     SetPositionJointLocal(JointSet);
-    trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-    bool isHomed;
+
+    const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
+
     switch (trajectoryResult) {
+
     case robReflexxes::Reflexxes_WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (JointTrajectory.EndTime == 0.0) {
-            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
-            HomingTimer = JointTrajectory.EndTime;
+        if (mJointTrajectory.EndTime == 0.0) {
+            mJointTrajectory.EndTime = currentTime + mJointTrajectory.Reflexxes.Duration();
+            mHomingTimer = mJointTrajectory.EndTime;
+        }
+        // detect tracking error and set lower limit
+        trackingError = std::abs(JointGet.Element(JNT_WRIST_ROLL) - JointSet.Element(JNT_WRIST_ROLL));
+        std::cerr << "error: " << trackingError << std::endl;
+        if (trackingError > maxTrackingError) {
+            mHomingCalibrateRollLower = JointGet.Element(JNT_WRIST_ROLL);
+            MessageEvents.Status(this->GetName() + ": found roll lower limit");
+            mArmState.SetCurrentState("ROLL_CALIBRATED");
+        } else {
+            // time out
+            if (currentTime > mHomingTimer + extraTime) {
+                MessageEvents.Error(this->GetName() + ": unable to hit roll lower limit in time");
+                this->SetDesiredState(mFallbackState);
+            }
         }
         break;
+
+    case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
+        // we shouldn't be able to reach this goal
+        MessageEvents.Error(this->GetName() + ": went past roll lower limit");
+        this->SetDesiredState(mFallbackState);
+        break;
+
+    default:
+        MessageEvents.Error(this->GetName() + ": error while evaluating trajectory");
+        break;
+    }
+    return;
+}
+
+void mtsIntuitiveResearchKitMTM::TransitionRollCalibrated(void)
+{
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        mArmState.SetCurrentState("HOMING_ROLL");
+    }
+}
+
+void mtsIntuitiveResearchKitMTM::EnterHomingRoll(void)
+{
+    if (mIsSimulated || this->mHomedOnce) {
+        return;
+    }
+    // compute joint goal position, we assume PID is on from previous state
+    mJointTrajectory.Goal.SetAll(0.0);
+    mJointTrajectory.Goal.Element(JNT_WRIST_ROLL) = mHomingCalibrateRollLower + 480.0 * cmnPI_180;
+    mJointTrajectory.GoalVelocity.SetAll(0.0);
+    mJointTrajectory.EndTime = 0.0;
+
+    // we want to start from zero velocity since we hit the joint limit
+    JointVelocitySet.SetAll(0.0);
+    SetControlMode(TRAJECTORY_MODE);
+    SetControlSpace(JOINT_SPACE);
+    MessageEvents.Status(this->GetName() + ": moving roll to center");
+}
+
+void mtsIntuitiveResearchKitMTM::RunHomingRoll(void)
+{
+    if (mIsSimulated || this->mHomedOnce) {
+        mHomedOnce = true;
+        mArmState.SetCurrentState("ROLL_HOMED");
+        return;
+    }
+
+    static const double extraTime = 2.0 * cmn_s;
+    const double currentTime = this->StateTable.GetTic();
+
+    // going to center position and check we have arrived
+    mJointTrajectory.Reflexxes.Evaluate(JointSet,
+                                        JointVelocitySet,
+                                        mJointTrajectory.Goal,
+                                        mJointTrajectory.GoalVelocity);
+    SetPositionJointLocal(JointSet);
+    const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
+    bool isHomed;
+
+    switch (trajectoryResult) {
+
+    case robReflexxes::Reflexxes_WORKING:
+        // if this is the first evaluation, we can't calculate expected completion time
+        if (mJointTrajectory.EndTime == 0.0) {
+            mJointTrajectory.EndTime = currentTime + mJointTrajectory.Reflexxes.Duration();
+            mHomingTimer = mJointTrajectory.EndTime;
+        }
+        break;
+
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         // check position
-        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
-        JointTrajectory.GoalError.AbsSelf();
-        isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
+        mJointTrajectory.GoalError.DifferenceOf(mJointTrajectory.Goal, JointGet);
+        mJointTrajectory.GoalError.AbsSelf();
+        isHomed = !mJointTrajectory.GoalError.ElementwiseGreaterOrEqual(mJointTrajectory.GoalTolerance).Any();
         if (isHomed) {
             // reset encoder on last joint as well as PID target position to reflect new roll position = 0
             RobotIO.ResetSingleEncoder(static_cast<int>(JNT_WRIST_ROLL));
             JointSet.SetAll(0.0);
             SetPositionJointLocal(JointSet);
             PID.SetCheckJointLimit(true);
-            MessageEvents.Status(this->GetName() + " roll calibrated");
-            HomedOnce = true;
-            TrajectoryIsUsed(false);
-            this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+            MessageEvents.Status(this->GetName() + ": roll homed");
+            mHomedOnce = true;
+            mArmState.SetCurrentState("ROLL_HOMED");
         } else {
             // time out
-            if (currentTime > HomingTimer + extraTime) {
-                CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateRoll: unable to reach home position, error in degrees is "
-                                           << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                MessageEvents.Error(this->GetName() + " unable to reach home position");
-                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+            if (currentTime > mHomingTimer + extraTime) {
+                CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingRoll: unable to reach home position, error in degrees is "
+                                           << mJointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
+                MessageEvents.Error(this->GetName() + ": unable to reach home position");
+                this->SetDesiredState(mFallbackState);
             }
         }
         break;
     default:
-        MessageEvents.Error(this->GetName() + " error while evaluating trajectory");
+        MessageEvents.Error(this->GetName() + ": error while evaluating trajectory");
         break;
     }
 }
-*/
+
+void mtsIntuitiveResearchKitMTM::TransitionRollHomed(void)
+{
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        mArmState.SetCurrentState("READY");
+    }
+}
 
 void mtsIntuitiveResearchKitMTM::RunEffortOrientationLocked(void)
 {

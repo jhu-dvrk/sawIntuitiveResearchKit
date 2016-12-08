@@ -78,6 +78,10 @@ protected:
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
 
+    // state machine
+
+    std::string mFallbackState;
+
     void StateChanged(void);
     void RunAllStates(void); // this should happen for all states
 
@@ -90,12 +94,17 @@ protected:
 
     virtual void EnterPowering(void);
     virtual void TransitionPowering(void);
+    virtual void EnterPowered(void);
     virtual void TransitionPowered(void);
 
     virtual void EnterHomingArm(void);
     virtual void SetGoalHomingArm(void) = 0;
     virtual void RunHomingArm(void);
-    virtual void TransitionArmHomed(void) = 0;
+
+    // transitions and states between ARM_HOMED and READY are defined
+    // in derived classes.
+
+    virtual void EnterReady(void);
 
     /*! Cartesian state. */
     virtual void RunPositionJoint(void);

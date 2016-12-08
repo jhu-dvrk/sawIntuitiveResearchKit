@@ -985,4 +985,3 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
     }
     */
 }
-

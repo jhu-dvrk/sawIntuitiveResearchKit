@@ -72,6 +72,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.AddAllowedDesiredState("EFFORT_JOINT");
     mArmState.AddAllowedDesiredState("EFFORT_CARTESIAN");
 
+    mFallbackState = "UNINITIALIZED";
+
     // state change, to convert to string events for users (Qt, ROS)
     mArmState.SetStateChangedCallback(&mtsIntuitiveResearchKitArm::StateChanged,
                                       this);
@@ -111,6 +113,10 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                     &mtsIntuitiveResearchKitArm::TransitionPowering,
                                     this);
 
+    mArmState.SetEnterCallback("POWERED",
+                               &mtsIntuitiveResearchKitArm::EnterPowered,
+                               this);
+
     mArmState.SetTransitionCallback("POWERED",
                                     &mtsIntuitiveResearchKitArm::TransitionPowered,
                                     this);
@@ -123,6 +129,13 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.SetTransitionCallback("HOMING_ARM",
                                     &mtsIntuitiveResearchKitArm::RunHomingArm,
                                     this);
+
+    // state between ARM_HOMED and READY depends on the arm type, see
+    // derived classes
+
+    mArmState.SetEnterCallback("READY",
+                               &mtsIntuitiveResearchKitArm::EnterReady,
+                               this);
 
     std::cerr << CMN_LOG_DETAILS << " need to finish state machine" << std::endl;
 
@@ -565,22 +578,25 @@ void mtsIntuitiveResearchKitArm::RunAllStates(void)
     if (mArmState.DesiredStateIsNotCurrent()) {
         if (mArmState.DesiredState() == "UNINITIALIZED") {
             mArmState.SetCurrentState("UNINITIALIZED");
+        } else {
+            // error handling will require to swith to fallback state
+            if (mArmState.DesiredState() == mFallbackState) {
+                mArmState.SetCurrentState(mFallbackState);
+            }
         }
     }
 }
 
 void mtsIntuitiveResearchKitArm::EnterUninitialized(void)
 {
+    mFallbackState = "UNINITIALIZED";
+
     RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
     RobotIO.DisablePower();
     PID.Enable(false);
     PID.SetCheckJointLimit(true);
-    // in case there was a trajectory going on
-    if (mJointTrajectory.IsWorking) {
-        mJointTrajectory.GoalReachedEvent(false);
-    }
     mJointReady = false;
-    mCartesianReady = true;
+    mCartesianReady = false;
     SetControlSpace(UNDEFINED_SPACE);
     SetControlMode(UNDEFINED_MODE);
 }
@@ -619,7 +635,7 @@ void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
     if ((currentTime - mHomingTimer) > timeToBias) {
         mHomingBiasEncoderRequested = false;
         MessageEvents.Error(this->GetName() + ": failed to bias encoders (timeout)");
-        this->SetDesiredState("UNINITIALIZED");
+        this->SetDesiredState(mFallbackState);
     }
 }
 
@@ -698,9 +714,20 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
             mArmState.SetCurrentState("POWERED");
         } else {
             MessageEvents.Error(this->GetName() + ": failed to enable power");
-            this->SetDesiredState("UNINITIALIZED");
+            this->SetDesiredState(mFallbackState);
         }
     }
+}
+
+void mtsIntuitiveResearchKitArm::EnterPowered(void)
+{
+    mFallbackState = "POWERED";
+
+    RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
+    PID.Enable(false);
+    mCartesianReady = false;
+    SetControlSpace(UNDEFINED_SPACE);
+    SetControlMode(UNDEFINED_MODE);
 }
 
 void mtsIntuitiveResearchKitArm::TransitionPowered(void)
@@ -723,7 +750,7 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
     }
 
     // make sure we start from current state
-    JointSet.Assign(JointGetDesired, NumberOfJoints());
+    JointSet.Assign(JointGet, NumberOfJoints());
     JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
 
     // disable joint limits
@@ -738,7 +765,6 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
     mJointTrajectory.EndTime = 0.0;
     SetControlMode(TRAJECTORY_MODE);
     SetControlSpace(JOINT_SPACE);
-    this->MessageEvents.Status(this->GetName() + ": homing arm");
 }
 
 void mtsIntuitiveResearchKitArm::RunHomingArm(void)
@@ -777,7 +803,6 @@ void mtsIntuitiveResearchKitArm::RunHomingArm(void)
         isHomed = !mJointTrajectory.GoalError.ElementwiseGreaterOrEqual(mJointTrajectory.GoalTolerance).Any();
         if (isHomed) {
             PID.SetCheckJointLimit(true);
-            MessageEvents.Status(this->GetName() + ": arm calibrated");
             mArmState.SetCurrentState("ARM_HOMED");
         } else {
             // time out
@@ -785,15 +810,24 @@ void mtsIntuitiveResearchKitArm::RunHomingArm(void)
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingArm: unable to reach home position, error in degrees is "
                                            << mJointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
                 MessageEvents.Error(this->GetName() + ": unable to reach home position during calibration on pots");
-                this->SetDesiredState("UNINITIALIZED");
+                this->SetDesiredState(mFallbackState);
             }
         }
         break;
 
     default:
         MessageEvents.Error(this->GetName() + ": error while evaluating trajectory");
+        this->SetDesiredState(mFallbackState);
         break;
     }
+}
+
+void mtsIntuitiveResearchKitArm::EnterReady(void)
+{
+    mFallbackState = "READY";
+    SetControlSpace(UNDEFINED_SPACE);
+    SetControlMode(UNDEFINED_MODE);
+    MessageEvents.Status(this->GetName() + ": ready!");
 }
 
 void mtsIntuitiveResearchKitArm::RunPositionJoint(void)
@@ -1092,7 +1126,7 @@ void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianSet & ne
 void mtsIntuitiveResearchKitArm::ErrorEventHandler(const std::string & message)
 {
     MessageEvents.Error(this->GetName() + ": received [" + message + "]");
-    this->SetDesiredState("UNINITIALIZED");
+    this->SetDesiredState(mFallbackState);
 }
 
 void mtsIntuitiveResearchKitArm::JointLimitEventHandler(const vctBoolVec & CMN_UNUSED(flags))

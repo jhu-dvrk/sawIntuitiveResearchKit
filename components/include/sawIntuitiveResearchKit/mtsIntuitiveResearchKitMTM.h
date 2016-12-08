@@ -86,13 +86,16 @@ protected:
     // state related methods
     void SetGoalHomingArm(void);
     void TransitionArmHomed(void);
+    void EnterCalibratingRoll(void);
+    void RunCalibratingRoll(void);
+    void TransitionRollCalibrated(void);
+    void EnterHomingRoll(void);
+    void RunHomingRoll(void);
+    void TransitionRollHomed(void);
 
     /*! Get data specific to the MTM (gripper angle using analog inputs) after
       calling mtsIntuitiveResearchKitArm::GetRobotData. */
     void GetRobotData(void);
-
-    /*! Homing procedure, calibrate last joint based on hardware limits. */
-    void RunHomingCalibrateRoll(void);
 
     // see base class
     void RunEffortOrientationLocked(void);
@@ -126,12 +129,10 @@ protected:
     MTM_TYPE RobotType;
 
     // Impedance Controller
-    osaImpedanceController *mImpedanceController;
+    osaImpedanceController * mImpedanceController;
 
-    // Home Action
-    bool HomingCalibrateRollSeekLower,
-         HomingCalibrateRollSeekCenter;
-    double HomingCalibrateRollLower;
+    // Roll position when hitting lower limit before encoder preload
+    double mHomingCalibrateRollLower;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);
