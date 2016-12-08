@@ -693,12 +693,6 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
     // second, check status
     if ((currentTime - mHomingTimer) > timeToPower) {
 
-        // pre-load PID to make sure desired position has some reasonable values
-        PID.GetPositionJoint(JointGetParam);
-        // assign to a more convenient vctDoubleVec
-        JointGet.Assign(JointGetParam.Position(), NumberOfJoints());
-        SetPositionJointLocal(JointGet);
-
         // check power status
         vctBoolVec actuatorAmplifiersStatus(NumberOfJoints());
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
@@ -749,8 +743,10 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
         return;
     }
 
-    // make sure we start from current state
-    JointSet.Assign(JointGet, NumberOfJoints());
+    // make sure we start from current state, SetControlMode
+    // initializes trajectory using JointGetDesired
+    PID.GetPositionJoint(JointGetParam);
+    JointGetDesired.Assign(JointGetParam.Position(), NumberOfJoints());
     JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
 
     // disable joint limits
@@ -1011,6 +1007,9 @@ void mtsIntuitiveResearchKitArm::RunEffortOrientationLocked(void)
 
 void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
+    if (!mJointReady) {
+        cmnThrow(this->GetName() + ": SetPositionJointLocal: not ready for joint control");
+    }
     JointSetParam.Goal().Zeros();
     JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
     PID.SetPositionJoint(JointSetParam);

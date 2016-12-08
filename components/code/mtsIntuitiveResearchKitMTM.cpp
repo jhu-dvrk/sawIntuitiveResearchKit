@@ -391,7 +391,6 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
         }
         // detect tracking error and set lower limit
         trackingError = std::abs(JointGet.Element(JNT_WRIST_ROLL) - JointSet.Element(JNT_WRIST_ROLL));
-        std::cerr << "error: " << trackingError << std::endl;
         if (trackingError > maxTrackingError) {
             mHomingCalibrateRollLower = JointGet.Element(JNT_WRIST_ROLL);
             MessageEvents.Status(this->GetName() + ": found roll lower limit");
