@@ -597,6 +597,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         // enable PID and start from current position
         JointSet.ForceAssign(JointGet);
         SetPositionJointLocal(JointSet);
+        PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.Enable(true);
 
         // make sure we start from current state
