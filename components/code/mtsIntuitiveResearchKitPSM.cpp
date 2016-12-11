@@ -345,6 +345,10 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM:
+        CouplingChange.Started = false;
+        if (RobotState != mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING) {
+            EngagingStage = 0;
+        }
         HomingCalibrateArmStarted = false;
         RobotState = newState;
         this->MessageEvents.Status(this->GetName() + " calibrating arm");
@@ -571,6 +575,20 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
 
     static const double extraTime = 2.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
+
+    if (EngagingStage == 0) {
+        // request coupling change
+        CouplingChange.PreviousState = RobotState;
+        Tool.GetButton(Tool.IsPresent);
+        if (Tool.IsPresent) {
+            CouplingChange.CouplingForTool = true; // Load tool coupling
+        } else {
+            CouplingChange.CouplingForTool = false; // Load identity
+        }
+        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING);
+        EngagingStage = 1;
+        return;
+    }
 
     // trigger motion
     if (!HomingCalibrateArmStarted) {
