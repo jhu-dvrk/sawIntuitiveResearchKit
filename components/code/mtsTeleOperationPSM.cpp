@@ -292,7 +292,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         mMTM->LockOrientation(mMTM->PositionCartesianCurrent.Position().Rotation());
     } else {
         MessageEvents.Status(this->GetName() + ": console clutch released");
-        mTeleopState.SetCurrentState("SETTING_MTM_STATE");
+        mTeleopState.SetCurrentState("SETTING_PSM_STATE");
     }
 }
 
