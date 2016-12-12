@@ -149,7 +149,6 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", mMTM->GetPositionCartesian);
         interfaceRequired->AddFunction("GetPositionCartesianDesired", mMTM->GetPositionCartesianDesired);
-        interfaceRequired->AddFunction("SetPositionCartesian", mMTM->SetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionGoalCartesian", mMTM->SetPositionGoalCartesian);
         interfaceRequired->AddFunction("GetGripperPosition", mMTM->GetGripperPosition);
         interfaceRequired->AddFunction("LockOrientation", mMTM->LockOrientation);

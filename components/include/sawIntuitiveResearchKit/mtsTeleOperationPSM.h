@@ -93,7 +93,6 @@ protected:
     public:
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionRead  GetPositionCartesianDesired;
-        mtsFunctionWrite SetPositionCartesian;
         mtsFunctionWrite SetPositionGoalCartesian;
         mtsFunctionRead  GetGripperPosition;
 
