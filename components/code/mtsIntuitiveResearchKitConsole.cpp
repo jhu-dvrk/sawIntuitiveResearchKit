@@ -747,7 +747,8 @@ void mtsIntuitiveResearchKitConsole::Cleanup(void)
 
 bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
 {
-    if (newArm->mType != Arm::ARM_PSM_SOCKET) {
+    if ((newArm->mType != Arm::ARM_PSM_SOCKET)
+        && (newArm->mType != Arm::ARM_MTM_GENERIC)) {
         if (newArm->mType != Arm::ARM_SUJ) {
             if (newArm->mPIDConfigurationFile.empty()) {
                 CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
@@ -944,6 +945,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             armPointer->mType = Arm::ARM_PSM_DERIVED;
         } else if (typeString == "ECM_DERIVED") {
             armPointer->mType = Arm::ARM_ECM_DERIVED;
+        } else if (typeString == "MTM_GENERIC") {
+            armPointer->mType = Arm::ARM_MTM_GENERIC;
         } else if (typeString == "PSM_SOCKET") {
             armPointer->mType = Arm::ARM_PSM_SOCKET;
         } else if (typeString == "SUJ") {
@@ -1006,7 +1009,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     }
 
     // IO for anything not simulated or socket client
-    if (armPointer->mType != Arm::ARM_PSM_SOCKET) {
+    if ((armPointer->mType != Arm::ARM_PSM_SOCKET)
+        && (armPointer->mType != Arm::ARM_MTM_GENERIC)) {
         if (armPointer->mSimulation == Arm::SIMULATION_NONE) {
             jsonValue = jsonArm["io"];
             if (!jsonValue.empty()) {
@@ -1045,7 +1049,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     }
 
     // only configure kinematics if not arm socket client
-    if (armPointer->mType != Arm::ARM_PSM_SOCKET) {
+    if ((armPointer->mType != Arm::ARM_PSM_SOCKET)
+        && (armPointer->mType != Arm::ARM_MTM_GENERIC)) {
         jsonValue = jsonArm["kinematic"];
         if (!jsonValue.empty()) {
             armPointer->mArmConfigurationFile = configPath.Find(jsonValue.asString());
