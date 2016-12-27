@@ -73,15 +73,25 @@ protected:
     // state related methods
     void SetGoalHomingArm(void);
     void TransitionArmHomed(void);
-
-    /*! Change actuator to joint coupling matrices, needs to power off PID and then reenable. */
-    void RunChangingCoupling(void);
-
-    /*! Engaging adapter procedure. */
+    // engaging adapter
+    void EnterChangingCouplingAdapter(void);
+    inline void RunChangingCouplingAdapter(void) {
+        RunChangingCoupling();
+    }
+    void EnterEngagingAdapter(void);
     void RunEngagingAdapter(void);
-
-    /*! Engaging tool procedure. */
+    void TransitionAdapterEngaged(void);
+    // engaging tool
+    void EnterChangingCouplingTool(void);
+    inline void RunChangingCouplingTool(void) {
+        RunChangingCoupling();
+    }
+    void EnterEngagingTool(void);
     void RunEngagingTool(void);
+    void TransitionToolEngaged(void);
+
+    // shared method for changing coupling
+    void RunChangingCoupling(void);
 
     void EventHandlerAdapter(const prmEventButton & button);
 
@@ -119,7 +129,7 @@ protected:
     // Functions for events
     struct {
         mtsFunctionWrite ManipClutch;
-        mtsIntuitiveResearchKitArmTypes::RobotStateType ManipClutchPreviousState;
+        std::string ManipClutchPreviousState;
     } ClutchEvents;
 
     robManipulator * ToolOffset;
@@ -128,9 +138,13 @@ protected:
     // Home Action
     unsigned int EngagingStage; // 0 requested
     unsigned int LastEngagingStage;
+
+    bool mAdapterNeedEngage;
+    bool mToolNeedEngage;
+
     struct {
         bool Started;
-        mtsIntuitiveResearchKitArmTypes::RobotStateType PreviousState;
+        std::string NextState;
         bool CouplingForTool;
         bool WaitingForEnabledJoints, ReceivedEnabledJoints;
         vctBoolVec LastEnabledJoints, DesiredEnabledJoints;

@@ -73,6 +73,52 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // main initialization from base type
     mtsIntuitiveResearchKitArm::Init();
 
+    mAdapterNeedEngage = false;
+    mToolNeedEngage = false;
+
+    // state machine specific to PSM, see base class for other states
+    mArmState.AddState("CHANGING_COUPLING_ADAPTER");
+    mArmState.AddState("ENGAGING_ADAPTER");
+    mArmState.AddState("ADAPTER_ENGAGED");
+    mArmState.AddState("CHANGING_COUPLING_TOOL");
+    mArmState.AddState("ENGAGING_TOOL");
+    mArmState.AddState("TOOL_ENGAGED");
+
+    // after arm homed
+    mArmState.SetTransitionCallback("ARM_HOMED",
+                                    &mtsIntuitiveResearchKitPSM::TransitionArmHomed,
+                                    this);
+    mArmState.SetEnterCallback("CHANGING_COUPLING_ADAPTER",
+                               &mtsIntuitiveResearchKitPSM::EnterChangingCouplingAdapter,
+                               this);
+    mArmState.SetRunCallback("CHANGING_COUPLING_ADAPTER",
+                             &mtsIntuitiveResearchKitPSM::RunChangingCouplingAdapter,
+                             this);
+    mArmState.SetEnterCallback("ENGAGING_ADAPTER",
+                               &mtsIntuitiveResearchKitPSM::EnterEngagingAdapter,
+                               this);
+    mArmState.SetRunCallback("ENGAGING_ADAPTER",
+                             &mtsIntuitiveResearchKitPSM::RunEngagingAdapter,
+                             this);
+    mArmState.SetTransitionCallback("ADAPTER_ENGAGED",
+                                    &mtsIntuitiveResearchKitPSM::TransitionAdapterEngaged,
+                                    this);
+    mArmState.SetEnterCallback("CHANGING_COUPLING_TOOL",
+                               &mtsIntuitiveResearchKitPSM::EnterChangingCouplingTool,
+                               this);
+    mArmState.SetRunCallback("CHANGING_COUPLING_TOOL",
+                             &mtsIntuitiveResearchKitPSM::RunChangingCouplingAdapter,
+                             this);
+    mArmState.SetEnterCallback("ENGAGING_TOOL",
+                               &mtsIntuitiveResearchKitPSM::EnterEngagingTool,
+                               this);
+    mArmState.SetRunCallback("ENGAGING_TOOL",
+                             &mtsIntuitiveResearchKitPSM::RunEngagingTool,
+                             this);
+    mArmState.SetTransitionCallback("TOOL_ENGAGED",
+                                    &mtsIntuitiveResearchKitPSM::TransitionToolEngaged,
+                                    this);
+
     // initialize trajectory data
     mJointTrajectory.Velocity.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
     mJointTrajectory.Velocity.Element(2) = 0.2; // m per second
@@ -259,30 +305,6 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
                                  << filename << "\" is in JSON format" << std::endl;
     }
 }
-
-/*
-void mtsIntuitiveResearchKitPSM::RunArmSpecific(void)
-{
-    switch (RobotState) {
-    case mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING:
-        RunChangingCoupling();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER:
-        RunEngagingAdapter();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED:
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL:
-        RunEngagingTool();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
-        RunConstraintControllerCartesian();
-        break;
-    default:
-        break;
-    }
-}
-*/
 
 /*
 void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState)
@@ -582,15 +604,21 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
 
 void mtsIntuitiveResearchKitPSM::TransitionArmHomed(void)
 {
-    // on ECM, arm homed means arm ready
     if (mArmState.DesiredStateIsNotCurrent()) {
-        mArmState.SetCurrentState("ENGAGING_ADAPTER");
+        Adapter.GetButton(Adapter.IsPresent);
+        if (Adapter.IsPresent) {
+            mArmState.SetCurrentState("CHANGING_COUPLING_ADAPTER");
+        }
     }
 }
 
-/*
 void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
 {
+    if (mIsSimulated) {
+        mArmState.SetCurrentState(CouplingChange.NextState);
+        return;
+    }
+
     // first phase, disable last 4 joints and wait
     if (!CouplingChange.Started) {
         CouplingChange.DesiredEnabledJoints.Ref(3, 0).SetAll(true);
@@ -620,8 +648,8 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 CouplingChange.ReceivedCoupling = false;
                 return;
             } else {
-                MessageEvents.Warning(this->GetName() + " can't disable last four axis to change coupling.");
-                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
+                MessageEvents.Warning(this->GetName() + ": can't disable last four axis to change coupling.");
+                mArmState.SetDesiredState(mFallbackState);
             }
         } else {
             return;
@@ -641,34 +669,44 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                     PID.SetJointLowerLimit(CouplingChange.NoToolJointLowerLimit);
                     PID.SetJointUpperLimit(CouplingChange.NoToolJointUpperLimit);
                 }
-                this->SetState(CouplingChange.PreviousState);
+                // finally move to next state
+                mArmState.SetCurrentState(CouplingChange.NextState);
             } else {
-                MessageEvents.Warning(this->GetName() + " can't set coupling.");
-                this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
+                MessageEvents.Warning(this->GetName() + ": can't set coupling.");
+                mArmState.SetDesiredState(mFallbackState);
             }
         } else {
             return;
         }
     }
 }
-*/
 
-/*
+
+void mtsIntuitiveResearchKitPSM::EnterChangingCouplingAdapter(void)
+{
+    CouplingChange.Started = false;
+    CouplingChange.CouplingForTool = false; // Load identity coupling
+    // after coupling is loaded, do we engage tool or not?
+    if (mAdapterNeedEngage) {
+        CouplingChange.NextState = "ENGAGING_ADAPTER";
+    } else {
+        CouplingChange.NextState = "ADAPTER_ENGAGED";
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::EnterEngagingAdapter(void)
+{
+    std::cerr << "+++++++++++++++++++++++++++" << std::endl;
+}
+
 void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 {
+    std::cerr << ".";
+}
+
+/*
     if (mIsSimulated) {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
-        return;
-    }
-
-    const double currentTime = this->StateTable.GetTic();
-
-    if (EngagingStage == 0) {
-        // request coupling change
-        CouplingChange.PreviousState = RobotState;
-        CouplingChange.CouplingForTool = false; // Load identity coupling
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING);
-        EngagingStage = 1;
+        mArmState.SetCurrentState("ADAPTER_ENGAGED");
         return;
     }
 
@@ -696,25 +734,26 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
 
         // keep first two joint values as is
-        JointTrajectory.Goal.Ref(2, 0).Assign(JointGetDesired.Ref(2, 0));
+        mJointTrajectory.Goal.Ref(2, 0).Assign(JointGetDesired.Ref(2, 0));
         // sterile adapter should be raised up
-        JointTrajectory.Goal[2] = 0.0;
+        mJointTrajectory.Goal[2] = 0.0;
         // set last 4 to -170.0
-        JointTrajectory.Goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
-        JointTrajectory.GoalVelocity.SetAll(0.0);
-        JointTrajectory.EndTime = 0.0;
-        TrajectoryIsUsed(true);
+        mJointTrajectory.Goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
+        mJointTrajectory.GoalVelocity.SetAll(0.0);
+        mJointTrajectory.EndTime = 0.0;
+        SetControlMode(TRAJECTORY_MODE);
+        SetControlSpace(JOINT_SPACE);
         EngagingStage = 2;
         return;
     }
 
-    JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                       JointVelocitySet,
-                                       JointTrajectory.Goal,
-                                       JointTrajectory.GoalVelocity);
+    mJointTrajectory.Reflexxes.Evaluate(JointSet,
+                                        JointVelocitySet,
+                                        mJointTrajectory.Goal,
+                                        mJointTrajectory.GoalVelocity);
     SetPositionJointLocal(JointSet);
 
-    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
 
     switch (trajectoryResult) {
 
@@ -730,6 +769,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         {
             // check if we were in last phase
             if (EngagingStage > LastEngagingStage) {
+                mAdapterNeedEngage = false;
                 SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
             } else {
                 if (EngagingStage != LastEngagingStage) {
@@ -742,7 +782,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
                                               StateTable.PeriodStats.GetAvg(),
                                               robReflexxes::Reflexxes_TIME);
                 std::stringstream message;
-                message << this->GetName() << " engaging adapter " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
+                message << this->GetName() << ": engaging adapter " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
                 MessageEvents.Status(message.str());
                 EngagingStage++;
             }
@@ -750,7 +790,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         break;
 
     default:
-        MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+        MessageEvents.Error(this->GetName() + ": error while evaluating trajectory.");
         TrajectoryIsUsed(false);
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
         break;
@@ -758,9 +798,36 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 }
 */
 
-/*
+void mtsIntuitiveResearchKitPSM::TransitionAdapterEngaged(void)
+{
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        Tool.GetButton(Tool.IsPresent);
+        if (Tool.IsPresent) {
+            mArmState.SetCurrentState("ENGAGING_TOOL");
+        }
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::EnterChangingCouplingTool(void)
+{
+    CouplingChange.Started = false;
+    CouplingChange.CouplingForTool = true; // Load tool coupling
+    if (mToolNeedEngage) {
+        CouplingChange.NextState = "ENGAGING_TOOL";
+    } else {
+        CouplingChange.NextState = "TOOL_ENGAGED";
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
+{
+}
+
 void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 {
+}
+
+/*
     if (mIsSimulated) {
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
         return;
@@ -803,7 +870,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         // check if the tool in outside the cannula
         if (JointGet.Element(2) > 50.0 * cmn_mm) {
             std::string message = this->GetName();
-            message.append(" tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
+            message.append(": tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
             message.append("  If the tool is not engaged properly, move sterile adpater all the way up and re-insert tool.");
             MessageEvents.Status(message);
             SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
@@ -844,6 +911,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
             // check if we were in last phase
             if (EngagingStage > LastEngagingStage) {
                 TrajectoryIsUsed(false);
+                mToolNeedEngage = false;
                 SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
             } else {
                 if (EngagingStage != LastEngagingStage) {
@@ -861,7 +929,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
                                               StateTable.PeriodStats.GetAvg(),
                                               robReflexxes::Reflexxes_TIME);
                 std::stringstream message;
-                message << this->GetName() << " engaging tool " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
+                message << this->GetName() << ": engaging tool " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
                 MessageEvents.Status(message.str());
                 EngagingStage++;
             }
@@ -876,6 +944,13 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
     }
 }
 */
+
+void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
+{
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        mArmState.SetCurrentState("READY");
+    }
+}
 
 void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 {
@@ -916,18 +991,13 @@ void mtsIntuitiveResearchKitPSM::EnableJointsEventHandler(const vctBoolVec & ena
 
 void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & button)
 {
-    std::cerr << CMN_LOG_DETAILS << " to be fixed" << std::endl;
-    /*
     if (button.Type() == prmEventButton::PRESSED) {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER);
+        mAdapterNeedEngage = true;
     } else {
-        // this is "down" transition so we have to
-        // make sure we had an adapter properly engaged before
-        if (RobotState >= mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER) {
-            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
-        }
+        std::cerr << CMN_LOG_DETAILS << " ---- implement method to see if state was at least arm_calibrated, otherwise do nothing, maybe add a flag mArmCalibrated?" << std::endl;
+        // set current state, not desired one - this needs to be immediate
+        mArmState.SetCurrentState("ARM_HOMED");
     }
-    */
 }
 
 void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
