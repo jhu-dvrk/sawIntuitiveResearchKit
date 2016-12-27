@@ -336,7 +336,9 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
         return;
     }
     // try to set the desired state
-    if (!mArmState.SetDesiredState(state)) {
+    try {
+        mArmState.SetDesiredState(state);
+    } catch (...) {
         MessageEvents.Error(this->GetName() + ": " + state + " is not an allowed desired state");
         return;
     }

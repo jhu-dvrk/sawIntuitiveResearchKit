@@ -307,7 +307,9 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
         return;
     }
     // try to set the desired state
-    if (!mTeleopState.SetDesiredState(state)) {
+    try {
+        mTeleopState.SetDesiredState(state);
+    } catch (...) {
         MessageEvents.Error(this->GetName() + ": " + state + " is not an allowed desired state");
         return;
     }

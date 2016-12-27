@@ -168,14 +168,14 @@ public:
 
     /*! Set the desired state.  This will check if the state is a
       possible desired state. */
-    bool SetDesiredState(const StateType & desiredState);
+    void SetDesiredState(const StateType & desiredState);
 
     /*! Set the current state.  This will check if the state is a
       valid state.  Leave and enter callbacks will also be called.
       Finally all callback pointers for the current state (run and
       transition) will be updated to avoid a callback lookup by state
       name in the Run method. */
-    bool SetCurrentState(const StateType & newState);
+    void SetCurrentState(const StateType & newState);
 
     /*! Check if the desired and current states are different.  This
         allows to avoid a string compare to determine if a transition

@@ -87,7 +87,7 @@ void mtsStateMachine::Run(void)
     }
 }
 
-bool mtsStateMachine::SetDesiredState(const StateType & desiredState)
+void mtsStateMachine::SetDesiredState(const StateType & desiredState)
 {
     const typename StateMap::const_iterator state
         = mStates.find(desiredState);
@@ -95,17 +95,20 @@ bool mtsStateMachine::SetDesiredState(const StateType & desiredState)
         && (state->second)) {  // can be set as desired
         mDesiredState = desiredState;
         mDesiredStateIsNotCurrent = (mDesiredState != mCurrentState);
-        return true;
+        return;
     }
-    return false;
+    cmnThrow("mtsStateMachine::SetDesiredState: "
+             + desiredState + ", doesn't exists or is not allowed as a desired state");
 }
 
-bool mtsStateMachine::SetCurrentState(const StateType & newState)
+void mtsStateMachine::SetCurrentState(const StateType & newState)
 {
     // check if this state exists
     const typename StateMap::const_iterator state = mStates.find(newState);
     if (state == mStates.end()) {
-        return false;
+        cmnThrow("mtsStateMachine::SetCurrentState: "
+                 + newState + ", doesn't exists");
+        return;
     }
 
     typename CallbackMap::iterator callback;
@@ -131,8 +134,6 @@ bool mtsStateMachine::SetCurrentState(const StateType & newState)
     }
     // update current callbacks
     UpdateCurrentCallbacks();
-
-    return true;
 }
 
 void mtsStateMachine::UpdateCurrentCallbacks(void)
