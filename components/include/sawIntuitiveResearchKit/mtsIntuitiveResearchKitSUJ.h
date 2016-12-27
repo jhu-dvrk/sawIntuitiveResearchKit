@@ -112,7 +112,7 @@ protected:
     struct {
         mtsFunctionRead GetValue;
         mtsFunctionWrite SetValue;
-    } MuxReset;
+    } NoMuxReset;
 
     struct {
         mtsFunctionRead GetValue;
@@ -125,7 +125,7 @@ protected:
 
     // Functions to control motor on SUJ3
     struct {
-        mtsFunctionWrite EnablePWM;
+        mtsFunctionWrite DisablePWM;
         mtsFunctionWrite SetPWMDutyCycle;
     } PWM;
 
