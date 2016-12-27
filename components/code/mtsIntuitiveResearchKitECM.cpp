@@ -234,7 +234,7 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
         mJointTrajectory.Goal.SetAll(0.0);
     } else {
         // stay at current position by default
-        mJointTrajectory.Goal.Assign(JointGetDesired, NumberOfJoints());
+        mJointTrajectory.Goal.Assign(JointGetDesired.Goal(), NumberOfJoints());
     }
 }
 

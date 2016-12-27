@@ -165,6 +165,7 @@ protected:
     // Interface to PID component
     mtsInterfaceRequired * PIDInterface;
     struct {
+        mtsFunctionWrite SetCoupling;
         mtsFunctionWrite Enable;
         mtsFunctionWrite EnableJoints;
         mtsFunctionRead  GetPositionJoint;
@@ -187,7 +188,6 @@ protected:
     mtsInterfaceRequired * IOInterface;
     struct InterfaceRobotTorque {
         mtsFunctionRead  GetSerialNumber;
-        mtsFunctionWrite SetCoupling;
         mtsFunctionVoid  EnablePower;
         mtsFunctionVoid  DisablePower;
         mtsFunctionRead  GetActuatorAmpStatus;
@@ -236,7 +236,7 @@ protected:
     // joints
     prmPositionJointGet JointGetParam;
     vctDoubleVec JointGet;
-    vctDoubleVec JointGetDesired;
+    prmPositionJointSet JointGetDesired;
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
 

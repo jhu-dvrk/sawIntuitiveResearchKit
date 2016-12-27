@@ -327,7 +327,7 @@ void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
     mJointTrajectory.Goal.SetAll(0.0);
     // last joint is calibrated later
     if (!mHomedOnce) {
-        mJointTrajectory.Goal.Element(JNT_WRIST_ROLL) = JointGetDesired.Element(JNT_WRIST_ROLL);
+        mJointTrajectory.Goal.Element(JNT_WRIST_ROLL) = JointGetDesired.Goal().Element(JNT_WRIST_ROLL);
     }
 }
 
@@ -352,7 +352,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 
     // compute joint goal position, we assume PID is on from previous state
     mJointTrajectory.Goal.SetAll(0.0);
-    const double currentRoll = JointGetDesired.Element(JNT_WRIST_ROLL);
+    const double currentRoll = JointGetDesired.Goal().Element(JNT_WRIST_ROLL);
     mJointTrajectory.Goal.Element(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
     mJointTrajectory.GoalVelocity.SetAll(0.0);
     mJointTrajectory.EndTime = 0.0;

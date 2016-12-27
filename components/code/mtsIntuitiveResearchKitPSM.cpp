@@ -152,10 +152,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetJawPosition, this, "SetJawPosition");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolPresent, this, "SetToolPresent");
 
-    CMN_ASSERT(IOInterface);
-    IOInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::CouplingEventHandler, this, "Coupling");
-
     CMN_ASSERT(PIDInterface);
+    PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::CouplingEventHandler, this, "Coupling");
     PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EnableJointsEventHandler, this, "EnabledJoints");
     CouplingChange.LastEnabledJoints.SetSize(NumberOfJoints());
     CouplingChange.DesiredEnabledJoints.SetSize(NumberOfJoints());
@@ -598,7 +596,7 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
         mJointTrajectory.Goal.SetAll(0.0);
     } else {
         // stay at current position by default
-        mJointTrajectory.Goal.Assign(JointGetDesired, NumberOfJoints());
+        mJointTrajectory.Goal.Assign(JointGetDesired.Goal(), NumberOfJoints());
     }
 }
 
@@ -642,7 +640,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                     // set desired
                     CouplingChange.DesiredCoupling.Assign(identity);
                 }
-                RobotIO.SetCoupling(CouplingChange.DesiredCoupling);
+                PID.SetCoupling(CouplingChange.DesiredCoupling);
                 CouplingChange.WaitingForEnabledJoints = false;
                 CouplingChange.WaitingForCoupling = true;
                 CouplingChange.ReceivedCoupling = false;
@@ -661,6 +659,8 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
         if (CouplingChange.ReceivedCoupling) {
             if (CouplingChange.DesiredCoupling.Equal(CouplingChange.LastCoupling)) {
                 CouplingChange.WaitingForCoupling = false;
+                // refresh all current data from PID after coupling
+                GetRobotData();
                 // now set PID limits based on tool/no tool
                 if (CouplingChange.CouplingForTool) {
                     PID.SetJointLowerLimit(CouplingChange.ToolJointLowerLimit);

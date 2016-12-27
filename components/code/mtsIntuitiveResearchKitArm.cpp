@@ -53,24 +53,12 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.AddState("HOMING_ARM");
     mArmState.AddState("ARM_HOMED");
     mArmState.AddState("READY");
-    mArmState.AddState("POSITION_JOINT");
-    mArmState.AddState("POSITION_CARTESIAN");
-    mArmState.AddState("POSITION_GOAL_JOINT");
-    mArmState.AddState("POSITION_GOAL_CARTESIAN");
-    mArmState.AddState("EFFORT_JOINT");
-    mArmState.AddState("EFFORT_CARTESIAN");
 
     // possible desired states
     mArmState.AddAllowedDesiredState("UNINITIALIZED");
     mArmState.AddAllowedDesiredState("ENCODERS_BIASED");
     mArmState.AddAllowedDesiredState("POWERED");
     mArmState.AddAllowedDesiredState("READY");
-    mArmState.AddAllowedDesiredState("POSITION_JOINT");
-    mArmState.AddAllowedDesiredState("POSITION_CARTESIAN");
-    mArmState.AddAllowedDesiredState("POSITION_GOAL_JOINT");
-    mArmState.AddAllowedDesiredState("POSITION_GOAL_CARTESIAN");
-    mArmState.AddAllowedDesiredState("EFFORT_JOINT");
-    mArmState.AddAllowedDesiredState("EFFORT_CARTESIAN");
 
     mFallbackState = "UNINITIALIZED";
 
@@ -136,8 +124,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.SetEnterCallback("READY",
                                &mtsIntuitiveResearchKitArm::EnterReady,
                                this);
-
-    std::cerr << CMN_LOG_DETAILS << " need to finish state machine" << std::endl;
 
     mCounter = 0;
     mIsSimulated = false;
@@ -218,6 +204,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     // PID
     PIDInterface = AddInterfaceRequired("PID");
     if (PIDInterface) {
+        PIDInterface->AddFunction("SetCoupling", PID.SetCoupling);
         PIDInterface->AddFunction("Enable", PID.Enable);
         PIDInterface->AddFunction("EnableJoints", PID.EnableJoints);
         PIDInterface->AddFunction("GetPositionJoint", PID.GetPositionJoint);
@@ -242,7 +229,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
     IOInterface = AddInterfaceRequired("RobotIO");
     if (IOInterface) {
         IOInterface->AddFunction("GetSerialNumber", RobotIO.GetSerialNumber);
-        IOInterface->AddFunction("SetCoupling", RobotIO.SetCoupling);
         IOInterface->AddFunction("EnablePower", RobotIO.EnablePower);
         IOInterface->AddFunction("DisablePower", RobotIO.DisablePower);
         IOInterface->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
@@ -524,7 +510,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             mWrenchGet.SetTimestamp(StateJointParam.Timestamp());
 
             // update cartesian position desired based on joint desired
-            CartesianGetLocalDesired = Manipulator.ForwardKinematics(JointGetDesired);
+            CartesianGetLocalDesired = Manipulator.ForwardKinematics(JointGetDesired.Goal());
             CartesianGetDesired = BaseFrame * CartesianGetLocalDesired;
             // normalize
             CartesianGetLocalDesired.Rotation().NormalizedSelf();
@@ -748,7 +734,7 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
     // make sure we start from current state, SetControlMode
     // initializes trajectory using JointGetDesired
     PID.GetPositionJoint(JointGetParam);
-    JointGetDesired.Assign(JointGetParam.Position(), NumberOfJoints());
+    JointGetDesired.Goal().Assign(JointGetParam.Position(), NumberOfJoints());
     JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
 
     // disable joint limits
@@ -918,7 +904,7 @@ void mtsIntuitiveResearchKitArm::SetControlMode(const ControlMode mode)
     // when starting trajectory, set current position/velocity and trajectory
     // parameters
     if (mode == TRAJECTORY_MODE) {
-        JointSet.Assign(JointGetDesired, NumberOfJoints());
+        JointSet.Assign(JointGetDesired.Goal(), NumberOfJoints());
         JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
         mJointTrajectory.Reflexxes.Set(mJointTrajectory.Velocity,
                                        mJointTrajectory.Acceleration,
@@ -1080,8 +1066,8 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
                 if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
                     // past any trajectory, use last desired joint position
                     jointSet.Ref(nbJoints - nbJointsKin,
-                                 nbJointsKin).Assign(JointGetDesired.Ref(nbJoints - nbJointsKin,
-                                                                         nbJointsKin));
+                                 nbJointsKin).Assign(JointGetDesired.Goal().Ref(nbJoints - nbJointsKin,
+                                                                                nbJointsKin));
                 } else {
                     // there is an ongoing trajectory, use the trajectory goal
                     jointSet.Ref(nbJoints - nbJointsKin,
