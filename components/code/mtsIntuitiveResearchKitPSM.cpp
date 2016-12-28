@@ -659,8 +659,6 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
         if (CouplingChange.ReceivedCoupling) {
             if (CouplingChange.DesiredCoupling.Equal(CouplingChange.LastCoupling)) {
                 CouplingChange.WaitingForCoupling = false;
-                // refresh all current data from PID after coupling
-                GetRobotData();
                 // now set PID limits based on tool/no tool
                 if (CouplingChange.CouplingForTool) {
                     PID.SetJointLowerLimit(CouplingChange.ToolJointLowerLimit);
@@ -696,19 +694,21 @@ void mtsIntuitiveResearchKitPSM::EnterChangingCouplingAdapter(void)
 
 void mtsIntuitiveResearchKitPSM::EnterEngagingAdapter(void)
 {
-    std::cerr << "+++++++++++++++++++++++++++" << std::endl;
+    if (mIsSimulated) {
+        return;
+    }
+    EngagingStage = 1;
+    LastEngagingStage = 5;
 }
 
 void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 {
-    std::cerr << ".";
-}
-
-/*
     if (mIsSimulated) {
         mArmState.SetCurrentState("ADAPTER_ENGAGED");
         return;
     }
+
+    const double currentTime = this->StateTable.GetTic();
 
     if (EngagingStage == 1) {
         // configure PID to fail in case of tracking error
@@ -722,7 +722,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         PID.SetTrackingErrorTolerance(tolerances);
         // compute initial time, since we disable power on last 4 use latest read
         vctDoubleVec initialPosition(NumberOfJoints());
-        initialPosition.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
+        initialPosition.Ref(3, 0).Assign(JointGetDesired.Goal().Ref(3, 0));
         initialPosition.Ref(4, 3).Assign(JointGet.Ref(4, 3));
         SetPositionJointLocal(initialPosition);
         // turn on PID
@@ -730,11 +730,11 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         PID.EnableTrackingError(true);
 
         // make sure we start from current state
-        JointSet.Assign(JointGetDesired, NumberOfJoints());
+        JointSet.Assign(JointGetDesired.Goal(), NumberOfJoints());
         JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
 
         // keep first two joint values as is
-        mJointTrajectory.Goal.Ref(2, 0).Assign(JointGetDesired.Ref(2, 0));
+        mJointTrajectory.Goal.Ref(2, 0).Assign(JointGetDesired.Goal().Ref(2, 0));
         // sterile adapter should be raised up
         mJointTrajectory.Goal[2] = 0.0;
         // set last 4 to -170.0
@@ -759,9 +759,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
     case robReflexxes::Reflexxes_WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (JointTrajectory.EndTime == 0.0) {
-            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
-            HomingTimer = JointTrajectory.EndTime;
+        if (mJointTrajectory.EndTime == 0.0) {
+            mJointTrajectory.EndTime = currentTime + mJointTrajectory.Reflexxes.Duration();
+            mHomingTimer = mJointTrajectory.EndTime;
         }
         break;
 
@@ -770,17 +770,14 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
             // check if we were in last phase
             if (EngagingStage > LastEngagingStage) {
                 mAdapterNeedEngage = false;
-                SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
+                mArmState.SetCurrentState("ADAPTER_ENGAGED");
             } else {
                 if (EngagingStage != LastEngagingStage) {
-                    JointTrajectory.Goal.Ref(4, 3) *= -1.0; // toggle back and forth
+                    mJointTrajectory.Goal.Ref(4, 3) *= -1.0; // toggle back and forth
                 } else {
-                    JointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
+                    mJointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
                 }
-                JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                              JointTrajectory.Acceleration,
-                                              StateTable.PeriodStats.GetAvg(),
-                                              robReflexxes::Reflexxes_TIME);
+                mJointTrajectory.EndTime = 0.0;
                 std::stringstream message;
                 message << this->GetName() << ": engaging adapter " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
                 MessageEvents.Status(message.str());
@@ -790,13 +787,11 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         break;
 
     default:
-        MessageEvents.Error(this->GetName() + ": error while evaluating trajectory.");
-        TrajectoryIsUsed(false);
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
+        MessageEvents.Error(this->GetName() + ": error while evaluating trajectory");
+        this->SetDesiredState(mFallbackState);
         break;
     }
 }
-*/
 
 void mtsIntuitiveResearchKitPSM::TransitionAdapterEngaged(void)
 {
@@ -981,6 +976,8 @@ void mtsIntuitiveResearchKitPSM::CouplingEventHandler(const prmActuatorJointCoup
 {
     CouplingChange.ReceivedCoupling = true;
     CouplingChange.LastCoupling.Assign(coupling);
+    // refresh robot data
+    GetRobotData();
 }
 
 void mtsIntuitiveResearchKitPSM::EnableJointsEventHandler(const vctBoolVec & enable)
