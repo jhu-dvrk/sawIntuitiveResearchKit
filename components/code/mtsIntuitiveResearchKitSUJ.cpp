@@ -360,10 +360,10 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
         interfaceRequired->AddFunction("GetAnalogInputVolts", RobotIO.GetAnalogInputVolts);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::ErrorEventHandler, this, "Error");
     }
-    interfaceRequired = AddInterfaceRequired("MuxReset");
+    interfaceRequired = AddInterfaceRequired("NoMuxReset");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("GetValue", MuxReset.GetValue);
-        interfaceRequired->AddFunction("SetValue", MuxReset.SetValue);
+        interfaceRequired->AddFunction("GetValue", NoMuxReset.GetValue);
+        interfaceRequired->AddFunction("SetValue", NoMuxReset.SetValue);
     }
     interfaceRequired = AddInterfaceRequired("MuxIncrement");
     if (interfaceRequired) {
@@ -374,9 +374,9 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddFunction("SetPWMDutyCycle", PWM.SetPWMDutyCycle);
     }
-    interfaceRequired = AddInterfaceRequired("EnablePWM");
+    interfaceRequired = AddInterfaceRequired("DisablePWM");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("SetValue", PWM.EnablePWM);
+        interfaceRequired->AddFunction("SetValue", PWM.DisablePWM);
     }
     interfaceRequired = AddInterfaceRequired("MotorUp");
     if (interfaceRequired) {
@@ -541,9 +541,9 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
 
 void mtsIntuitiveResearchKitSUJ::Startup(void)
 {
-    MuxReset.SetValue(false);
+    NoMuxReset.SetValue(true);
     MuxIncrement.SetValue(false);
-    PWM.EnablePWM(false);
+    PWM.DisablePWM(true);
     SetLiftVelocity(0.0);
     this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 }
@@ -574,7 +574,7 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
 {
     // Disable PWM
     SetLiftVelocity(0.0);
-    PWM.EnablePWM(false);
+    PWM.DisablePWM(true);
     // make sure requested current is back to 0
     vctDoubleVec zero(4, 0.0);
     RobotIO.SetActuatorCurrent(zero);
@@ -601,7 +601,7 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
                 // toggle mux
                 mMuxTimer = currentTime + muxCycle;
                 if (mMuxIndexExpected == MUX_MAX_INDEX) {
-                    MuxReset.SetValue(true);
+                    NoMuxReset.SetValue(false);
                     mMuxIndexExpected = 0;
                 } else {
                     MuxIncrement.SetValue(true);
@@ -625,7 +625,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
     if (mMuxIndex != mMuxIndexExpected) {
         MessageEvents.Error(this->GetName() + " unexpected multiplexer value.");
         CMN_LOG_CLASS_RUN_ERROR << "GetAndConvertPotentiometerValues: mux from IO board: " << mMuxIndex << " expected: " << mMuxIndexExpected << std::endl;
-        MuxReset.SetValue(true);
+        NoMuxReset.SetValue(false);
         mMuxIndexExpected = 0;
         return;
     }
@@ -778,7 +778,7 @@ void mtsIntuitiveResearchKitSUJ::SetState(const mtsIntuitiveResearchKitArmTypes:
     switch (newState) {
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
-        PWM.EnablePWM(false);
+        PWM.DisablePWM(true);
         SetLiftVelocity(0.0);
         mRobotState = newState;
         DispatchStatus(this->GetName() + " not initialized");
@@ -845,11 +845,11 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
             DispatchStatus(this->GetName() + " power on");
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
             // reset mux
-            MuxReset.SetValue(true);
+            NoMuxReset.SetValue(false);
             Sleep(10.0 * cmn_ms);
             mMuxIndexExpected = 0;
             // enable power on PWM
-            PWM.EnablePWM(true);
+            PWM.DisablePWM(false);
         } else {
             MessageEvents.Error(this->GetName() + " failed to enable power.");
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);

@@ -260,14 +260,14 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
     case ARM_SUJ:
         componentManager->Connect(Name(), "RobotIO",
                                   IOComponentName(), Name());
-        componentManager->Connect(Name(), "MuxReset",
-                                  IOComponentName(), "MuxReset");
+        componentManager->Connect(Name(), "NoMuxReset",
+                                  IOComponentName(), "NoMuxReset");
         componentManager->Connect(Name(), "MuxIncrement",
                                   IOComponentName(), "MuxIncrement");
         componentManager->Connect(Name(), "ControlPWM",
                                   IOComponentName(), "ControlPWM");
-        componentManager->Connect(Name(), "EnablePWM",
-                                  IOComponentName(), "EnablePWM");
+        componentManager->Connect(Name(), "DisablePWM",
+                                  IOComponentName(), "DisablePWM");
         componentManager->Connect(Name(), "MotorUp",
                                   IOComponentName(), "MotorUp");
         componentManager->Connect(Name(), "MotorDown",
