@@ -98,6 +98,12 @@ public:
         int mPort;
         bool mSocketServer;
         std::string mSocketComponentName;
+        // generic arm
+        bool mIsGeneric;
+        std::string mSharedLibrary;
+        std::string mClassName;
+        std::string mConstructorArgJSON;
+
         // base frame
         std::string mBaseFrameComponentName;
         std::string mBaseFrameInterfaceName;
