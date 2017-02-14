@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -29,14 +29,12 @@ http://www.cisst.org/cisst/license.txt.
 #include <QCloseEvent>
 #include <QCoreApplication>
 #include <QPushButton>
-#include <QTextEdit>
 #include <QScrollBar>
 #include <QGroupBox>
 #include <QTabWidget>
 #include <QSplitter>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QTime>
 #include <QLabel>
 #include <QPixmap>
 #include <QShortcut>
@@ -47,20 +45,17 @@ CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
 mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(const std::string & componentName):
     mtsComponent(componentName)
 {
+    QMMessage = new mtsMessageQtWidget();
+
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Main");
     if (interfaceRequired) {
+        QMMessage->SetInterfaceRequired(interfaceRequired);
         interfaceRequired->AddFunction("PowerOff", Console.PowerOff);
         interfaceRequired->AddFunction("Home", Console.Home);
         interfaceRequired->AddFunction("TeleopEnable", Console.TeleopEnable);
         interfaceRequired->AddFunction("SetScale", Console.SetScale);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
                                                 this, "Scale");
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorEventHandler,
-                                                    this, "Error");
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::WarningEventHandler,
-                                                    this, "Warning");
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StatusEventHandler,
-                                                    this, "Status");
     }
     setupUi();
 }
@@ -133,11 +128,6 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetScale(double scale)
     Console.SetScale(scale);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotTextChanged(void)
-{
-    QTEMessages->verticalScrollBar()->setSliderPosition(QTEMessages->verticalScrollBar()->maximum());
-}
-
 void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 {
     QHBoxLayout * mainLayout = new QHBoxLayout;
@@ -193,11 +183,8 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QTWidgets = new QTabWidget();
     tabWidgetAndMessages->addWidget(QTWidgets);
 
-    QTEMessages = new QTextEdit();
-    QTEMessages->setReadOnly(true);
-    QTEMessages->ensureCursorVisible();
-    QTEMessages->resize(QTEMessages->width(), 600);
-    tabWidgetAndMessages->addWidget(QTEMessages);
+    QMMessage->setupUi();
+    tabWidgetAndMessages->addWidget(QMMessage);
 
     mainLayout->addWidget(tabWidgetAndMessages);
     setLayout(mainLayout);
@@ -223,14 +210,6 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     connect(this, SIGNAL(SignalScale(double)),
             this, SLOT(SlotScaleEventHandler(double)));
 
-    // messages
-    connect(this, SIGNAL(SignalAppendMessage(QString)),
-            QTEMessages, SLOT(append(QString)));
-    connect(this, SIGNAL(SignalSetColor(QColor)),
-            QTEMessages, SLOT(setTextColor(QColor)));
-    connect(QTEMessages, SIGNAL(textChanged()),
-            this, SLOT(SlotTextChanged()));
-
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q), this, SLOT(close()));
 }
 
@@ -242,22 +221,4 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotScaleEventHandler(double scale)
 void mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler(const double & scale)
 {
     emit SignalScale(scale);
-}
-
-void mtsIntuitiveResearchKitConsoleQtWidget::ErrorEventHandler(const std::string & message)
-{
-    emit SignalSetColor(QColor("red"));
-    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
-}
-
-void mtsIntuitiveResearchKitConsoleQtWidget::WarningEventHandler(const std::string & message)
-{
-    emit SignalSetColor(QColor("darkRed"));
-    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Warning: ") + QString(message.c_str()));
-}
-
-void mtsIntuitiveResearchKitConsoleQtWidget::StatusEventHandler(const std::string & message)
-{
-    emit SignalSetColor(QColor("black"));
-    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
 }

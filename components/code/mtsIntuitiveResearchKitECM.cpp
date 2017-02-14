@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -179,99 +179,99 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
         PID.SetCheckJointLimit(true);
         TrajectoryIsUsed(false);
         RobotState = newState;
-        MessageEvents.Status(this->GetName() + " not initialized");
+        RobotInterface->SendStatus(this->GetName() + " not initialized");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER:
         HomingBiasEncoderRequested = false;
         RobotState = newState;
-        MessageEvents.Status(this->GetName() + " updating encoders based on potentiometers");
+        RobotInterface->SendStatus(this->GetName() + " updating encoders based on potentiometers");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:
         HomingTimer = 0.0;
         HomingPowerRequested = false;
         RobotState = newState;
-        MessageEvents.Status(this->GetName() + " powering");
+        RobotInterface->SendStatus(this->GetName() + " powering");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM:
         HomingCalibrateArmStarted = false;
         RobotState = newState;
-        this->MessageEvents.Status(this->GetName() + " calibrating arm");
+        this->RobotInterface->SendStatus(this->GetName() + " calibrating arm");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
         // when returning from manual mode, need to re-enable PID
         RobotState = newState;
-        MessageEvents.Status(this->GetName() + " ready");
+        RobotInterface->SendStatus(this->GetName() + " ready");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.Error(this->GetName() + " is not ready");
+            RobotInterface->SendError(this->GetName() + " is not ready");
             return;
         }
         RobotState = newState;
         JointSet.Assign(JointGetDesired, this->NumberOfJoints());
         if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
             IsGoalSet = false;
-            MessageEvents.Status(this->GetName() + " position joint");
+            RobotInterface->SendStatus(this->GetName() + " position joint");
         } else {
             TrajectoryIsUsed(true);
-            MessageEvents.Status(this->GetName() + " position goal joint");
+            RobotInterface->SendStatus(this->GetName() + " position goal joint");
         }
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            MessageEvents.Error(this->GetName() + " is not calibrated");
+            RobotInterface->SendError(this->GetName() + " is not calibrated");
             return;
         }
         // check that the tool is inserted deep enough
         if (JointGet.Element(2) < 40.0 * cmn_mm) {
-            MessageEvents.Error(this->GetName() + " can't start cartesian mode, make sure the endoscope is inserted past the cannula (joint 3 > 40 mm)");
+            RobotInterface->SendError(this->GetName() + " can't start cartesian mode, make sure the endoscope is inserted past the cannula (joint 3 > 40 mm)");
         } else {
             if (JointGet.Element(2) < 50.0 * cmn_mm) {
-                MessageEvents.Warning(this->GetName() + " cartesian mode started close to RCM (joint 3 < 50 mm), joint 3 will be clamped at 40 mm to avoid moving inside cannula.");
+                RobotInterface->SendWarning(this->GetName() + " cartesian mode started close to RCM (joint 3 < 50 mm), joint 3 will be clamped at 40 mm to avoid moving inside cannula.");
             }
             RobotState = newState;
             if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
                 IsGoalSet = false;
-                MessageEvents.Status(this->GetName() + " position cartesian");
+                RobotInterface->SendStatus(this->GetName() + " position cartesian");
             } else {
                 TrajectoryIsUsed(true);
-                MessageEvents.Status(this->GetName() + " position goal cartesian");
+                RobotInterface->SendStatus(this->GetName() + " position goal cartesian");
             }
         }
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.Error(this->GetName() + " is not ready");
+            RobotInterface->SendError(this->GetName() + " is not ready");
             return;
         }
         // check that the tool is inserted deep enough
         if (JointGet.Element(2) < 80.0 * cmn_mm) {
-            MessageEvents.Error(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
+            RobotInterface->SendError(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
         RobotState = newState;
         IsGoalSet = false;
-        MessageEvents.Status(this->GetName() + " constraint controller cartesian");
+        RobotInterface->SendStatus(this->GetName() + " constraint controller cartesian");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.Error(this->GetName() + " is not ready yet");
+            RobotInterface->SendError(this->GetName() + " is not ready yet");
             return;
         }
         // disable PID to allow manual move
         PID.Enable(false);
         RobotState = newState;
-        MessageEvents.Status(this->GetName() + " in manual mode");
+        RobotInterface->SendStatus(this->GetName() + " in manual mode");
         break;
     default:
         break;
@@ -350,7 +350,7 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
             bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
             if (isHomed) {
                 PID.SetCheckJointLimit(true);
-                MessageEvents.Status(this->GetName() + " arm ready");
+                RobotInterface->SendStatus(this->GetName() + " arm ready");
                 HomedOnce = true;
                 this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
             } else {
@@ -358,7 +358,7 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
                 if (currentTime > HomingTimer + extraTime) {
                     CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
                                                << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                    MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
+                    RobotInterface->SendError(this->GetName() + " unable to reach home position during calibration on pots.");
                     this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
                 }
             }
@@ -366,7 +366,7 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
         break;
 
     default:
-        MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+        RobotInterface->SendError(this->GetName() + " error while evaluating trajectory.");
         break;
     }
 }
@@ -384,7 +384,7 @@ void mtsIntuitiveResearchKitECM::SetRobotControlState(const std::string & state)
         try {
             stateEnum = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state);
         } catch (std::exception e) {
-            MessageEvents.Error(this->GetName() + ": ECM unsupported state " + state + ": " + e.what());
+            RobotInterface->SendError(this->GetName() + ": ECM unsupported state " + state + ": " + e.what());
             return;
         }
         SetState(stateEnum);
@@ -393,7 +393,7 @@ void mtsIntuitiveResearchKitECM::SetRobotControlState(const std::string & state)
 
 void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)
 {
-    MessageEvents.Error(this->GetName() + ": PID tracking error");
+    RobotInterface->SendError(this->GetName() + ": PID tracking error");
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 }
 

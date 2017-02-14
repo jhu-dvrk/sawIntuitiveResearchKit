@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstVector/vctQtWidgetFrame.h>
 #include <cisstMultiTask/mtsComponent.h>
+#include <cisstMultiTask/mtsMessageQtWidget.h>
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
@@ -49,13 +50,8 @@ public:
 protected:
     virtual void closeEvent(QCloseEvent * event);
 
-signals:
-    void SignalAppendMessage(QString);
-    void SignalSetColor(QColor);
-
 private slots:
     void timerEvent(QTimerEvent * event);
-    void SlotTextChanged(void);
     void SlotLogEnabled(void);
     void SlotEnableDirectControl(bool toggle);
     void SlotHome(void);
@@ -97,10 +93,7 @@ private:
     // messages
     bool LogEnabled;
     QPushButton * QPBLog;
-    void ErrorEventHandler(const std::string & message);
-    void WarningEventHandler(const std::string & message);
-    void StatusEventHandler(const std::string & message);
-    QTextEdit * QTEMessages;
+    mtsMessageQtWidget * QMMessage;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitArmQtWidget);

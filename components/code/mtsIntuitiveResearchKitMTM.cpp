@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -219,26 +219,26 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         PID.SetCheckJointLimit(true);
         TrajectoryIsUsed(false);
         RobotState = newState;
-        MessageEvents.Status(this->GetName() + " not initialized");
+        RobotInterface->SendStatus(this->GetName() + " not initialized");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER:
         HomingBiasEncoderRequested = false;
         RobotState = newState;
-        MessageEvents.Status(this->GetName() + " updating encoders based on potentiometers");
+        RobotInterface->SendStatus(this->GetName() + " updating encoders based on potentiometers");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:
         HomingTimer = 0.0;
         HomingPowerRequested = false;
         RobotState = newState;
-        MessageEvents.Status(this->GetName() + " powering");
+        RobotInterface->SendStatus(this->GetName() + " powering");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM:
         HomingCalibrateArmStarted = false;
         RobotState = newState;
-        this->MessageEvents.Status(this->GetName() + " calibrating arm");
+        this->RobotInterface->SendStatus(this->GetName() + " calibrating arm");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ROLL:
@@ -246,28 +246,28 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         HomingCalibrateRollSeekCenter = false;
         HomingCalibrateRollLower = cmnTypeTraits<double>::MaxPositiveValue();
         RobotState = newState;
-        this->MessageEvents.Status(this->GetName() + " calibrating roll");
+        this->RobotInterface->SendStatus(this->GetName() + " calibrating roll");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
         RobotState = newState;
-        MessageEvents.Status(this->GetName() + " ready");
+        RobotInterface->SendStatus(this->GetName() + " ready");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.Error(this->GetName() + " is not ready");
+            RobotInterface->SendError(this->GetName() + " is not ready");
             return;
         }
         RobotState = newState;
         JointSet.Assign(JointGetDesired, this->NumberOfJoints());
         if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
             IsGoalSet = false;
-            MessageEvents.Status(this->GetName() + " position joint");
+            RobotInterface->SendStatus(this->GetName() + " position joint");
         } else {
             TrajectoryIsUsed(true);
-            MessageEvents.Status(this->GetName() + " position goal joint");
+            RobotInterface->SendStatus(this->GetName() + " position goal joint");
         }
         break;
 
@@ -275,7 +275,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
     {
         if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            MessageEvents.Error(this->GetName() + " is not calibrated");
+            RobotInterface->SendError(this->GetName() + " is not calibrated");
             return;
         }
         RobotState = newState;
@@ -286,17 +286,17 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN)
         {
             IsGoalSet = false;
-            MessageEvents.Status(this->GetName() + " position cartesian");
+            RobotInterface->SendStatus(this->GetName() + " position cartesian");
         } else {
             TrajectoryIsUsed(true);
-            MessageEvents.Status(this->GetName() + " position goal cartesian");
+            RobotInterface->SendStatus(this->GetName() + " position goal cartesian");
         }
         break;
     }
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
         if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.Error(this->GetName() + " is not ready");
+            RobotInterface->SendError(this->GetName() + " is not ready");
             return;
         }
         torqueMode.SetAll(true);
@@ -307,12 +307,12 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         mWrenchSet.Force().Zeros();
         mWrenchType = WRENCH_UNDEFINED;
         EffortOrientationLocked = false;
-        MessageEvents.Status(this->GetName() + " effort cartesian");
+        RobotInterface->SendStatus(this->GetName() + " effort cartesian");
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN_IMPEDANCE:
         if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            MessageEvents.Error(this->GetName() + " is not ready");
+            RobotInterface->SendError(this->GetName() + " is not ready");
             return;
         }
         torqueMode.SetAll(true);
@@ -325,7 +325,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         mWrenchType = WRENCH_BODY;
         mWrenchBodyOrientationAbsolute = true;
         EffortOrientationLocked = false;
-        MessageEvents.Status(this->GetName() + " effort cartesian impedance");
+        RobotInterface->SendStatus(this->GetName() + " effort cartesian impedance");
         break;
 
     default:
@@ -397,21 +397,21 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
             PID.SetCheckJointLimit(true);
-            MessageEvents.Status(this->GetName() + " arm calibrated");
+            RobotInterface->SendStatus(this->GetName() + " arm calibrated");
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ROLL);
         } else {
             // time out
             if (currentTime > HomingTimer + extraTime) {
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateArm: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                MessageEvents.Error(this->GetName() + " unable to reach home position during calibration on pots.");
+                RobotInterface->SendError(this->GetName() + " unable to reach home position during calibration on pots.");
                 this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
             }
         }
         break;
 
     default:
-        MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+        RobotInterface->SendError(this->GetName() + " error while evaluating trajectory.");
         break;
     }
 }
@@ -443,7 +443,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         JointTrajectory.EndTime = 0.0;
         // set flag to indicate that homing has started
         HomingCalibrateRollSeekLower = true;
-        MessageEvents.Status(this->GetName() + " looking for roll lower limit");
+        RobotInterface->SendStatus(this->GetName() + " looking for roll lower limit");
         return;
     }
 
@@ -467,22 +467,22 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
             trackingError = std::abs(JointGet.Element(JNT_WRIST_ROLL) - JointSet.Element(JNT_WRIST_ROLL));
             if (trackingError > maxTrackingError) {
                 HomingCalibrateRollLower = JointGet.Element(JNT_WRIST_ROLL);
-                MessageEvents.Status(this->GetName() + " found roll lower limit");
+                RobotInterface->SendStatus(this->GetName() + " found roll lower limit");
             } else {
                 // time out
                 if (currentTime > HomingTimer + extraTime) {
-                    MessageEvents.Error(this->GetName() + " unable to hit roll lower limit in time");
+                    RobotInterface->SendError(this->GetName() + " unable to hit roll lower limit in time");
                     this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
                 }
             }
             break;
         case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
             // we shouldn't be able to reach this goal
-            MessageEvents.Error(this->GetName() + " went past roll lower limit");
+            RobotInterface->SendError(this->GetName() + " went past roll lower limit");
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
             break;
         default:
-            MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+            RobotInterface->SendError(this->GetName() + " error while evaluating trajectory.");
             break;
         }
         return;
@@ -500,7 +500,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         JointVelocitySet.SetAll(0.0);
         // set flag to indicate that homing has started
         HomingCalibrateRollSeekCenter = true;
-        MessageEvents.Status(this->GetName() + " moving roll to center");
+        RobotInterface->SendStatus(this->GetName() + " moving roll to center");
         return;
     }
 
@@ -531,7 +531,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
             JointSet.SetAll(0.0);
             SetPositionJointLocal(JointSet);
             PID.SetCheckJointLimit(true);
-            MessageEvents.Status(this->GetName() + " roll calibrated");
+            RobotInterface->SendStatus(this->GetName() + " roll calibrated");
             HomedOnce = true;
             TrajectoryIsUsed(false);
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
@@ -540,13 +540,13 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
             if (currentTime > HomingTimer + extraTime) {
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingCalibrateRoll: unable to reach home position, error in degrees is "
                                            << JointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                MessageEvents.Error(this->GetName() + " unable to reach home position");
+                RobotInterface->SendError(this->GetName() + " unable to reach home position");
                 this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
             }
         }
         break;
     default:
-        MessageEvents.Error(this->GetName() + " error while evaluating trajectory.");
+        RobotInterface->SendError(this->GetName() + " error while evaluating trajectory.");
         break;
     }
 }
@@ -570,7 +570,7 @@ void mtsIntuitiveResearchKitMTM::RunEffortOrientationLocked(void)
         // finally send new joint values
         SetPositionJointLocal(JointSet);
     } else {
-        MessageEvents.Warning(this->GetName() + " unable to solve inverse kinematics.");
+        RobotInterface->SendWarning(this->GetName() + " unable to solve inverse kinematics.");
     }
 }
 
@@ -623,7 +623,7 @@ void mtsIntuitiveResearchKitMTM::SetRobotControlState(const std::string & state)
         try {
             stateEnum = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state);
         } catch (std::exception e) {
-            MessageEvents.Error(this->GetName() + ": MTM unsupported state " + state + ": " + e.what());
+            RobotInterface->SendError(this->GetName() + ": MTM unsupported state " + state + ": " + e.what());
             return;
         }
         SetState(stateEnum);

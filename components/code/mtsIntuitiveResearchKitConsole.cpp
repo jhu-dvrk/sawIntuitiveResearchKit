@@ -482,21 +482,19 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mSUJECMInterfaceRequired(0),
     mECMBaseFrameInterfaceProvided(0)
 {
-    mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Main");
-    if (interfaceProvided) {
-        interfaceProvided->AddCommandVoid(&mtsIntuitiveResearchKitConsole::PowerOff, this,
+    mInterface = AddInterfaceProvided("Main");
+    if (mInterface) {
+        mInterface->AddMessageEvents();
+        mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::PowerOff, this,
                                            "PowerOff");
-        interfaceProvided->AddCommandVoid(&mtsIntuitiveResearchKitConsole::Home, this,
+        mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::Home, this,
                                            "Home");
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::TeleopEnable, this,
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::TeleopEnable, this,
                                            "TeleopEnable", false);
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetScale, this,
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetScale, this,
                                            "SetScale", 0.5);
-        interfaceProvided->AddEventWrite(ConfigurationEvents.Scale,
+        mInterface->AddEventWrite(ConfigurationEvents.Scale,
                                          "Scale", 0.5);
-        interfaceProvided->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
     }
 
     mIOComponentName = "io";
@@ -820,7 +818,7 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
     message.append(sawIntuitiveResearchKit_VERSION);
     message.append(" / cisst ");
     message.append(CISST_VERSION);
-    MessageEvents.Status(message);
+    mInterface->SendStatus(message);
 }
 
 void mtsIntuitiveResearchKitConsole::Run(void)
@@ -1689,9 +1687,9 @@ void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & b
 {
     ConsoleEvents.Clutch(button);
     if (button.Type() == prmEventButton::PRESSED) {
-        MessageEvents.Status(this->GetName() + ": clutch pressed");
+        mInterface->SendStatus(this->GetName() + ": clutch pressed");
     } else {
-        MessageEvents.Status(this->GetName() + ": clutch released");
+        mInterface->SendStatus(this->GetName() + ": clutch released");
     }
 }
 
@@ -1699,10 +1697,10 @@ void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & b
 {
     if (button.Type() == prmEventButton::PRESSED) {
         mCameraPressed = true;
-        MessageEvents.Status(this->GetName() + ": camera pressed");
+        mInterface->SendStatus(this->GetName() + ": camera pressed");
     } else {
         mCameraPressed = false;
-        MessageEvents.Status(this->GetName() + ": camera released");
+        mInterface->SendStatus(this->GetName() + ": camera released");
     }
     UpdateTeleopState();
     ConsoleEvents.OperatorPresent(button);
@@ -1712,26 +1710,26 @@ void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventB
 {
     if (button.Type() == prmEventButton::PRESSED) {
         mOperatorPresent = true;
-        MessageEvents.Status(this->GetName() + ": operator present");
+        mInterface->SendStatus(this->GetName() + ": operator present");
     } else {
         mOperatorPresent = false;
-        MessageEvents.Status(this->GetName() + ": operator not present");
+        mInterface->SendStatus(this->GetName() + ": operator not present");
     }
     UpdateTeleopState();
     ConsoleEvents.OperatorPresent(button);
 }
 
-void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const std::string & message) {
+void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & message) {
     TeleopEnable(false);
-    MessageEvents.Error(message);
+    mInterface->SendError(message.Message);
 }
 
-void mtsIntuitiveResearchKitConsole::WarningEventHandler(const std::string & message) {
-    MessageEvents.Warning(message);
+void mtsIntuitiveResearchKitConsole::WarningEventHandler(const mtsMessage & message) {
+    mInterface->SendWarning(message.Message);
 }
 
-void mtsIntuitiveResearchKitConsole::StatusEventHandler(const std::string & message) {
-    MessageEvents.Status(message);
+void mtsIntuitiveResearchKitConsole::StatusEventHandler(const mtsMessage & message) {
+    mInterface->SendStatus(message.Message);
 }
 
 void mtsIntuitiveResearchKitConsole::ECMManipClutchEventHandler(const prmEventButton & button)

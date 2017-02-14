@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-01-21
 
-  (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -52,20 +52,18 @@ protected:
     void Init(void);
 
     // Event Handler
-    void MTMLErrorEventHandler(const std::string & message);
-    void MTMRErrorEventHandler(const std::string & message);
-    void ECMErrorEventHandler(const std::string & message);
+    void MTMLErrorEventHandler(const mtsMessage & message);
+    void MTMRErrorEventHandler(const mtsMessage & message);
+    void ECMErrorEventHandler(const mtsMessage & message);
 
     void ClutchEventHandler(const prmEventButton & button);
 
     // Functions for events
     struct {
-        mtsFunctionWrite Status;
-        mtsFunctionWrite Warning;
-        mtsFunctionWrite Error;
         mtsFunctionWrite DesiredState;
         mtsFunctionWrite CurrentState;
     } MessageEvents;
+    mtsInterfaceProvided * mInterface;
 
     struct {
         mtsFunctionWrite Scale;

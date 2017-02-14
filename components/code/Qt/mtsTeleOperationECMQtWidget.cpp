@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -48,9 +48,12 @@ mtsTeleOperationECMQtWidget::mtsTeleOperationECMQtWidget(const std::string & com
     TimerPeriodInMilliseconds(periodInSeconds * 1000), // Qt timers are in milliseconds
     LogEnabled(false)
 {
+    QMMessage = new mtsMessageQtWidget();
+
     // Setup cisst interface
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("TeleOperation");
     if (interfaceRequired) {
+        QMMessage->SetInterfaceRequired(interfaceRequired);
         interfaceRequired->AddFunction("SetScale", TeleOperation.SetScale);
         interfaceRequired->AddFunction("GetPositionCartesianMTML",
                                        TeleOperation.GetPositionCartesianMTML);
@@ -68,13 +71,6 @@ mtsTeleOperationECMQtWidget::mtsTeleOperationECMQtWidget(const std::string & com
                                                 this, "CurrentState");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::ScaleEventHandler,
                                                 this, "Scale");
-        // messages
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::ErrorEventHandler,
-                                                this, "Error");
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::WarningEventHandler,
-                                                this, "Warning");
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::StatusEventHandler,
-                                                this, "Status");
     }
 }
 
@@ -88,7 +84,7 @@ void mtsTeleOperationECMQtWidget::Startup(void)
     setupUi();
     startTimer(TimerPeriodInMilliseconds);
     if (!LogEnabled) {
-        QTEMessages->hide();
+        QMMessage->hide();
     }
     if (!parent()) {
         show();
@@ -226,10 +222,8 @@ void mtsTeleOperationECMQtWidget::setupUi(void)
     controlLayout->addWidget(QMIntervalStatistics);
 
     // messages
-    QTEMessages = new QTextEdit();
-    QTEMessages->setReadOnly(true);
-    QTEMessages->ensureCursorVisible();
-    controlLayout->addWidget(QTEMessages);
+    QMMessage->setupUi();
+    controlLayout->addWidget(QMMessage);
 
     // add stretch
     controlLayout->addStretch();
@@ -259,12 +253,6 @@ void mtsTeleOperationECMQtWidget::setupUi(void)
     // messages
     connect(QPBLog, SIGNAL(clicked()),
             this, SLOT(SlotLogEnabled()));
-    connect(this, SIGNAL(SignalAppendMessage(QString)),
-            QTEMessages, SLOT(append(QString)));
-    connect(this, SIGNAL(SignalSetColor(QColor)),
-            QTEMessages, SLOT(setTextColor(QColor)));
-    connect(QTEMessages, SIGNAL(textChanged()),
-            this, SLOT(SlotTextChanged()));
 }
 
 void mtsTeleOperationECMQtWidget::DesiredStateEventHandler(const std::string & state)
@@ -282,41 +270,12 @@ void mtsTeleOperationECMQtWidget::ScaleEventHandler(const double & scale)
     emit SignalScale(scale);
 }
 
-void mtsTeleOperationECMQtWidget::SlotTextChanged(void)
-{
-    QTEMessages->verticalScrollBar()->setSliderPosition(QTEMessages->verticalScrollBar()->maximum());
-}
-
 void mtsTeleOperationECMQtWidget::SlotLogEnabled(void)
 {
     LogEnabled = QPBLog->isChecked();
     if (LogEnabled) {
-        QTEMessages->show();
+        QMMessage->show();
     } else {
-        QTEMessages->hide();
-    }
-}
-
-void mtsTeleOperationECMQtWidget::ErrorEventHandler(const std::string & message)
-{
-    if (LogEnabled) {
-        emit SignalSetColor(QColor("red"));
-        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
-    }
-}
-
-void mtsTeleOperationECMQtWidget::WarningEventHandler(const std::string & message)
-{
-    if (LogEnabled) {
-        emit SignalSetColor(QColor("darkRed"));
-        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Warning: ") + QString(message.c_str()));
-    }
-}
-
-void mtsTeleOperationECMQtWidget::StatusEventHandler(const std::string & message)
-{
-    if (LogEnabled) {
-        emit SignalSetColor(QColor("black"));
-        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
+        QMMessage->hide();
     }
 }
