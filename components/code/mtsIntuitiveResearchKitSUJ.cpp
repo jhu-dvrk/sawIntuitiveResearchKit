@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -120,50 +120,49 @@ public:
         mStateTableBrakeCurrent.AddData(this->mBrakeDesiredCurrent, "BrakeCurrent");
 
         CMN_ASSERT(interfaceProvided);
+        mInterface = interfaceProvided;
         // read commands
-        interfaceProvided->AddCommandReadState(mStateTable, mPositionJointParam, "GetPositionJoint");
-        interfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0],
+        mInterface->AddCommandReadState(mStateTable, mPositionJointParam, "GetPositionJoint");
+        mInterface->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0],
                                                "GetPrimaryJointOffset");
-        interfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[1],
+        mInterface->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[1],
                                                "GetSecondaryJointOffset");
-        interfaceProvided->AddCommandReadState(mStateTable, mPositionCartesianParam,
+        mInterface->AddCommandReadState(mStateTable, mPositionCartesianParam,
                                                "GetPositionCartesian");
-        interfaceProvided->AddCommandReadState(mStateTable, mPositionCartesianLocalParam,
+        mInterface->AddCommandReadState(mStateTable, mPositionCartesianLocalParam,
                                                "GetPositionCartesianLocal");
-        interfaceProvided->AddCommandReadState(mStateTable, mPositionCartesianDesiredParam,
+        mInterface->AddCommandReadState(mStateTable, mPositionCartesianDesiredParam,
                                                "GetPositionCartesianDesired");
-        interfaceProvided->AddCommandReadState(mStateTable, mPositionCartesianLocalDesiredParam,
+        mInterface->AddCommandReadState(mStateTable, mPositionCartesianLocalDesiredParam,
                                                "GetPositionCartesianLocalDesired");
-        interfaceProvided->AddCommandReadState(mStateTable, mBaseFrame, "GetBaseFrame");
-        interfaceProvided->AddCommandReadState(mStateTable, mVoltages[0], "GetVoltagesPrimary");
-        interfaceProvided->AddCommandReadState(mStateTable, mVoltages[1], "GetVoltagesSecondary");
-        interfaceProvided->AddCommandReadState(mStateTable, mVoltagesExtra, "GetVoltagesExtra");
-        interfaceProvided->AddCommandReadState(mStateTableConfiguration, mName, "GetName");
-        interfaceProvided->AddCommandReadState(mStateTableConfiguration, mSerialNumber, "GetSerialNumber");
-        interfaceProvided->AddCommandReadState(mStateTableConfiguration, mPlugNumber, "GetPlugNumber");
-        interfaceProvided->AddCommandReadState(mStateTableBrakeCurrent, mBrakeDesiredCurrent, "GetBrakeCurrent");
+        mInterface->AddCommandReadState(mStateTable, mBaseFrame, "GetBaseFrame");
+        mInterface->AddCommandReadState(mStateTable, mVoltages[0], "GetVoltagesPrimary");
+        mInterface->AddCommandReadState(mStateTable, mVoltages[1], "GetVoltagesSecondary");
+        mInterface->AddCommandReadState(mStateTable, mVoltagesExtra, "GetVoltagesExtra");
+        mInterface->AddCommandReadState(mStateTableConfiguration, mName, "GetName");
+        mInterface->AddCommandReadState(mStateTableConfiguration, mSerialNumber, "GetSerialNumber");
+        mInterface->AddCommandReadState(mStateTableConfiguration, mPlugNumber, "GetPlugNumber");
+        mInterface->AddCommandReadState(mStateTableBrakeCurrent, mBrakeDesiredCurrent, "GetBrakeCurrent");
 
         // write commands
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCommand, this,
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCommand, this,
                                            "Clutch", false);
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::CalibratePotentiometers, this,
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::CalibratePotentiometers, this,
                                            "SetRecalibrationMatrix", mRecalibrationMatrix);
 
         // cartesian position events
         // BaseFrame is send everytime the mux has found all joint values
-        interfaceProvided->AddEventWrite(EventPositionCartesian, "PositionCartesian", prmPositionCartesianGet());
-        interfaceProvided->AddEventWrite(EventPositionCartesianLocal, "PositionCartesianLocal", prmPositionCartesianGet());
+        mInterface->AddEventWrite(EventPositionCartesian, "PositionCartesian", prmPositionCartesianGet());
+        mInterface->AddEventWrite(EventPositionCartesianLocal, "PositionCartesianLocal", prmPositionCartesianGet());
         // BaseFrameDesired is sent only when the brakes are released, constant value afterwards
-        interfaceProvided->AddEventWrite(EventPositionCartesianDesired, "PositionCartesianDesired", prmPositionCartesianGet());
-        interfaceProvided->AddEventWrite(EventPositionCartesianLocalDesired, "PositionCartesianLocalDesired", prmPositionCartesianGet());
+        mInterface->AddEventWrite(EventPositionCartesianDesired, "PositionCartesianDesired", prmPositionCartesianGet());
+        mInterface->AddEventWrite(EventPositionCartesianLocalDesired, "PositionCartesianLocalDesired", prmPositionCartesianGet());
 
         // Events
-        interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.RobotState, "RobotState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.RobotState, "RobotState", std::string(""));
+        mInterface->AddMessageEvents();
         // Stats
-        interfaceProvided->AddCommandReadState(mStateTable, mStateTable.PeriodStats,
+        mInterface->AddCommandReadState(mStateTable, mStateTable.PeriodStats,
                                                "GetPeriodStatistics");
     }
 
@@ -172,7 +171,7 @@ public:
             mClutched += 1;
             if (mClutched == 1) {
                 // clutch is pressed, arm is moving around and we know the pots are slow, we mark position as invalid
-                MessageEvents.Status(mName.Data + ": SUJ clutched");
+                mInterface->SendStatus(mName.Data + ": SUJ clutched");
                 mPositionCartesianDesiredParam.SetTimestamp(mPositionJointParam.Timestamp());
                 mPositionCartesianDesiredParam.SetValid(false);
                 EventPositionCartesianDesired(mPositionCartesianDesiredParam);
@@ -183,7 +182,7 @@ public:
         } else {
             mClutched -= 1;
             if (mClutched == 0) {
-                MessageEvents.Status(mName.Data + ": SUJ not clutched");
+                mInterface->SendStatus(mName.Data + ": SUJ not clutched");
             }
         }
     }
@@ -264,6 +263,9 @@ public:
     // plug on back of controller, 1 to 4
     unsigned int mPlugNumber;
 
+    // interface provided
+    mtsInterfaceProvided * mInterface;
+
     // state of this SUJ arm
     mtsStateTable mStateTable; // for positions, fairly slow, i.e 12 * delay for a2d
     mtsStateTable mStateTableConfiguration; // changes only at config and if recalibrate
@@ -319,9 +321,6 @@ public:
     mtsFunctionWrite EventPositionCartesianLocalDesired;
 
     struct {
-        mtsFunctionWrite Status;
-        mtsFunctionWrite Warning;
-        mtsFunctionWrite Error;
         mtsFunctionWrite RobotState;
     } MessageEvents;
 };
@@ -392,20 +391,18 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::ErrorEventHandler, this, "Error");
     }
 
-    mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
-    if (interfaceProvided) {
+    mInterface = AddInterfaceProvided("Robot");
+    if (mInterface) {
         // Robot State
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetRobotControlState,
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetRobotControlState,
                                            this, "SetRobotControlState", std::string(""));
-        interfaceProvided->AddCommandRead(&mtsIntuitiveResearchKitSUJ::GetRobotControlState,
+        mInterface->AddCommandRead(&mtsIntuitiveResearchKitSUJ::GetRobotControlState,
                                           this, "GetRobotControlState", std::string(""));
         // Events
-        interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.RobotState, "RobotState", std::string(""));
+        mInterface->AddMessageEvents();
+        mInterface->AddEventWrite(MessageEvents.RobotState, "RobotState", std::string(""));
         // Stats
-        interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
+        mInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                                "GetPeriodStatistics");
     }
 }
@@ -623,7 +620,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
     // compute pot index
     mMuxIndex = (mMuxState[0]?1:0) + (mMuxState[1]?2:0) + (mMuxState[2]?4:0) + (mMuxState[3]?8:0);
     if (mMuxIndex != mMuxIndexExpected) {
-        MessageEvents.Error(this->GetName() + " unexpected multiplexer value.");
+        mInterface->SendError(this->GetName() + " unexpected multiplexer value.");
         CMN_LOG_CLASS_RUN_ERROR << "GetAndConvertPotentiometerValues: mux from IO board: " << mMuxIndex << " expected: " << mMuxIndexExpected << std::endl;
         NoMuxReset.SetValue(false);
         mMuxIndexExpected = 0;
@@ -740,7 +737,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                             (arm->mPositionDifference.Ref(5, 1).MaxAbsElement() > angleTolerance)) {
                         // send messages if this is new
                         if (arm->mPotsAgree) {
-                            MessageEvents.Warning(this->GetName() + ": " + arm->mName.Data + " primary and secondary potentiometers don't seem to agree.");
+                            mInterface->SendWarning(this->GetName() + ": " + arm->mName.Data + " primary and secondary potentiometers don't seem to agree.");
                             CMN_LOG_CLASS_RUN_WARNING << "GetAndConvertPotentiometerValues, error: " << std::endl
                                                       << " - " << this->GetName() << ": " << arm->mName.Data << std::endl
                                                       << " - primary:   " << arm->mPositions[0] << std::endl
@@ -749,7 +746,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                         }
                     } else {
                         if (!arm->mPotsAgree) {
-                            MessageEvents.Status(this->GetName() + ": " + arm->mName.Data + " primary and secondary potentiometers agree.");
+                            mInterface->SendStatus(this->GetName() + ": " + arm->mName.Data + " primary and secondary potentiometers agree.");
                             CMN_LOG_CLASS_RUN_VERBOSE << "GetAndConvertPotentiometerValues recovery" << std::endl
                                                       << " - " << this->GetName() << ": " << arm->mName.Data << std::endl;
                             arm->mPotsAgree = true;
@@ -851,7 +848,7 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
             // enable power on PWM
             PWM.DisablePWM(false);
         } else {
-            MessageEvents.Error(this->GetName() + " failed to enable power.");
+            mInterface->SendError(this->GetName() + " failed to enable power.");
             this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
         }
     }
@@ -912,7 +909,7 @@ void mtsIntuitiveResearchKitSUJ::SetRobotControlState(const std::string & state)
         try {
             stateEnum = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state);
         } catch (std::exception e) {
-            MessageEvents.Error(this->GetName() + ": SUJ unsupported state " + state + ": " + e.what());
+            mInterface->SendError(this->GetName() + ": SUJ unsupported state " + state + ": " + e.what());
             return;
         }
         SetState(stateEnum);
@@ -966,25 +963,25 @@ void mtsIntuitiveResearchKitSUJ::MotorUpEventHandler(const prmEventButton & butt
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::ErrorEventHandler(const std::string & message)
+void mtsIntuitiveResearchKitSUJ::ErrorEventHandler(const mtsMessage & message)
 {
     RobotIO.DisablePower();
-    DispatchError(this->GetName() + ": received [" + message + "]");
+    DispatchError(this->GetName() + ": received [" + message.Message + "]");
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 }
 
 void mtsIntuitiveResearchKitSUJ::DispatchError(const std::string & message)
 {
-    MessageEvents.Error(message);
+    mInterface->SendError(message);
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->MessageEvents.Error(message);
+        Arms[armIndex]->mInterface->SendError(message);
     }
 }
 
 void mtsIntuitiveResearchKitSUJ::DispatchStatus(const std::string & message)
 {
-    MessageEvents.Status(message);
+    mInterface->SendStatus(message);
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->MessageEvents.Status(message);
+        Arms[armIndex]->mInterface->SendStatus(message);
     }
 }
