@@ -49,7 +49,7 @@ int main(int argc, char ** argv)
     cmnGetChar();
 
     // period used for IO and PID
-    const double periodIOPID = 0.5 * cmn_ms;
+    const double periodIOPID = 0.3 * cmn_ms;
 
     // log configuration
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
@@ -148,15 +148,15 @@ int main(int argc, char ** argv)
     // Configure based on arm type assuming name
     if ((armName == "PSM1") || (armName == "PSM2") || (armName == "PSM3")) {
         arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_PSM,
-                          configFiles["kinematic"], 3.0 * cmn_ms);
+                          configFiles["kinematic"], 0.5 * cmn_ms);
         numberOfAxis = 7;
     } else if ((armName == "MTML") || (armName == "MTMR")) {
         arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_MTM,
-                          configFiles["kinematic"], 3.0 * cmn_ms);
+                          configFiles["kinematic"], 0.5 * cmn_ms);
         numberOfAxis = 8;
     } else if (armName == "ECM") {
         arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_ECM,
-                          configFiles["kinematic"], 3.0 * cmn_ms);
+                          configFiles["kinematic"], 0.5 * cmn_ms);
         numberOfAxis = 4;
     } else {
         std::cerr << "Arm name should be either PSM1, PSM2, PSM3, MTML, MTMR or ECM, not " << armName << std::endl;

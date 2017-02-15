@@ -39,6 +39,12 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
+namespace mtsIntuitiveResearchKit {
+    const double IOPeriod = 0.3 * cmn_ms;
+    const double ArmPeriod = 0.5 * cmn_ms;
+    const double TeleOperationPeriod = 0.5 * cmn_ms;
+};
+
 class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
