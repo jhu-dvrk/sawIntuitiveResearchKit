@@ -569,6 +569,16 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
 void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
 {
     if (mIsSimulated) {
+        // disable joint limits
+        PID.SetCheckJointLimit(false);
+        // enable PID and start from current position
+        JointSet.ForceAssign(JointGet);
+        if (mIsSimulated && (JointSet.Element(2) < 50.0 * cmn_mm)) {
+            JointSet.Element(2) = 50.0 * cmn_mm;
+        }
+        SetPositionJointLocal(JointSet);
+        PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
+        PID.Enable(true);
         this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
         return;
     }
