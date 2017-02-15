@@ -67,8 +67,7 @@ public:
         /*! Create and configure the robot arm. */
         void ConfigureArm(const ArmType armType,
                           const std::string & configFile,
-                          const double & periodInSeconds = 0.5 * cmn_ms,
-                          mtsComponent * existingArm = 0);
+                          const double & periodInSeconds = 0.5 * cmn_ms);
 
         /*! Connect all interfaces specific to this arm. */
         bool Connect(void);
@@ -284,6 +283,10 @@ protected:
     std::string mIOComponentName;
     std::string mOperatorPresentComponent;
     std::string mOperatorPresentInterface;
+    std::string mClutchComponent;
+    std::string mClutchInterface;
+    std::string mCameraComponent;
+    std::string mCameraInterface;
     mtsInterfaceProvided * mInterface;
     struct {
         mtsFunctionWrite Scale;
