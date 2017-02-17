@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -81,7 +81,7 @@ protected:
     void SetBaseFrame(const prmPositionCartesianGet & newBaseFrame);
 
     /*! Event handler for PID errors. */
-    void ErrorEventHandler(const std::string & message);
+    void ErrorEventHandler(const mtsMessage & message);
 
     /*! Motor down button. */
     void MotorDownEventHandler(const prmEventButton & button);
@@ -102,17 +102,15 @@ protected:
 
     // Functions for events
     struct {
-        mtsFunctionWrite Status;
-        mtsFunctionWrite Warning;
-        mtsFunctionWrite Error;
         mtsFunctionWrite RobotState;
     } MessageEvents;
+    mtsInterfaceProvided * mInterface;
 
     // Functions to control MUX
     struct {
         mtsFunctionRead GetValue;
         mtsFunctionWrite SetValue;
-    } MuxReset;
+    } NoMuxReset;
 
     struct {
         mtsFunctionRead GetValue;
@@ -125,7 +123,7 @@ protected:
 
     // Functions to control motor on SUJ3
     struct {
-        mtsFunctionWrite EnablePWM;
+        mtsFunctionWrite DisablePWM;
         mtsFunctionWrite SetPWMDutyCycle;
     } PWM;
 

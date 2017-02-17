@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -256,6 +256,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     // Arm
     RobotInterface = AddInterfaceProvided("Robot");
     if (RobotInterface) {
+        RobotInterface->AddMessageEvents();
+
         // Get
         RobotInterface->AddCommandReadState(this->StateTable, JointGetParam, "GetPositionJoint");
         RobotInterface->AddCommandReadState(this->StateTable, JointGetDesired, "GetPositionJointDesired");
@@ -298,9 +300,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetDesiredState,
                                         this, "SetDesiredState", std::string(""));
         // Human readable messages
-        RobotInterface->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
-        RobotInterface->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
-        RobotInterface->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
         RobotInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
         RobotInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
 
@@ -308,13 +307,17 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                             "GetPeriodStatistics");
     }
+
+    // SetState will send log events, it needs to happen after the
+    // provided interface has been created
+    SetDesiredState("DVRK_UNINITIALIZED");
 }
 
 void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
 {
     // try to find the state in state machine
     if (!mArmState.StateExists(state)) {
-        MessageEvents.Error(this->GetName() + ": unsupported state " + state);
+        RobotInterface->SendError(this->GetName() + ": unsupported state " + state);
         return;
     }
     // if state is same as current, return
@@ -325,11 +328,11 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
     try {
         mArmState.SetDesiredState(state);
     } catch (...) {
-        MessageEvents.Error(this->GetName() + ": " + state + " is not an allowed desired state");
+        RobotInterface->SendError(this->GetName() + ": " + state + " is not an allowed desired state");
         return;
     }
     MessageEvents.DesiredState(state);
-    MessageEvents.Status(this->GetName() + ": set desired state to " + state);
+    RobotInterface->SendStatus(this->GetName() + ": set desired state to " + state);
 }
 
 void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
@@ -382,8 +385,8 @@ void mtsIntuitiveResearchKitArm::Run(void)
     try {
         mArmState.Run();
     } catch (std::exception & e) {
-        MessageEvents.Error(this->GetName() + ": in state " + mArmState.CurrentState()
-                            + ", caught exception \"" + e.what() + "\"");
+        RobotInterface->SendError(this->GetName() + ": in state " + mArmState.CurrentState()
+                                  + ", caught exception \"" + e.what() + "\"");
         this->SetDesiredState("UNINITIALIZED");
     }
     // trigger ExecOut event
@@ -555,7 +558,7 @@ void mtsIntuitiveResearchKitArm::StateChanged(void)
 {
     const std::string newState = mArmState.CurrentState();
     MessageEvents.CurrentState(newState);
-    MessageEvents.Status(this->GetName() + ": current state is " + newState);
+    RobotInterface->SendStatus(this->GetName() + ": current state is " + newState);
 }
 
 void mtsIntuitiveResearchKitArm::RunAllStates(void)
@@ -622,7 +625,7 @@ void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
     const double timeToBias = 30.0 * cmn_s; // large timeout
     if ((currentTime - mHomingTimer) > timeToBias) {
         mHomingBiasEncoderRequested = false;
-        MessageEvents.Error(this->GetName() + ": failed to bias encoders (timeout)");
+        RobotInterface->SendError(this->GetName() + ": failed to bias encoders (timeout)");
         this->SetDesiredState(mFallbackState);
     }
 }
@@ -665,7 +668,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
     RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
     // enable power and set a flags to move to next step
     RobotIO.EnablePower();
-    MessageEvents.Status(this->GetName() + ": power requested");
+    RobotInterface->SendStatus(this->GetName() + ": power requested");
 }
 
 void mtsIntuitiveResearchKitArm::TransitionPowering(void)
@@ -689,13 +692,13 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
             RobotIO.GetBrakeAmpStatus(brakeAmplifiersStatus);
         }
         if (actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All()) {
-            MessageEvents.Status(this->GetName() + ": power on");
+            RobotInterface->SendStatus(this->GetName() + ": power on");
             if (NumberOfBrakes() > 0) {
                 RobotIO.BrakeRelease();
             }
             mArmState.SetCurrentState("POWERED");
         } else {
-            MessageEvents.Error(this->GetName() + ": failed to enable power");
+            RobotInterface->SendError(this->GetName() + ": failed to enable power");
             this->SetDesiredState(mFallbackState);
         }
     }
@@ -793,14 +796,14 @@ void mtsIntuitiveResearchKitArm::RunHomingArm(void)
             if (currentTime > mHomingTimer + extraTime) {
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingArm: unable to reach home position, error in degrees is "
                                            << mJointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                MessageEvents.Error(this->GetName() + ": unable to reach home position during calibration on pots");
+                RobotInterface->SendError(this->GetName() + ": unable to reach home position during calibration on pots");
                 this->SetDesiredState(mFallbackState);
             }
         }
         break;
 
     default:
-        MessageEvents.Error(this->GetName() + ": error while evaluating trajectory");
+        RobotInterface->SendError(this->GetName() + ": error while evaluating trajectory");
         this->SetDesiredState(mFallbackState);
         break;
     }
@@ -811,7 +814,7 @@ void mtsIntuitiveResearchKitArm::EnterReady(void)
     mFallbackState = "READY";
     SetControlSpace(UNDEFINED_SPACE);
     SetControlMode(UNDEFINED_MODE);
-    MessageEvents.Status(this->GetName() + ": ready!");
+    RobotInterface->SendStatus(this->GetName() + ": ready!");
 }
 
 void mtsIntuitiveResearchKitArm::RunPositionJoint(void)
@@ -851,7 +854,7 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
         mJointTrajectory.IsWorking = false;
         break;
     default:
-        MessageEvents.Error(this->GetName() + ": error while evaluating trajectory");
+        RobotInterface->SendError(this->GetName() + ": error while evaluating trajectory");
         mJointTrajectory.IsWorking = false;
         break;
     }
@@ -871,7 +874,7 @@ void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
             // finally send new joint values
             SetPositionJointLocal(JointSet);
         } else {
-            MessageEvents.Error(this->GetName() + ": unable to solve inverse kinematics");
+            RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
         }
         // reset flag
         mHasNewPIDGoal = false;
@@ -1081,7 +1084,7 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
             mJointTrajectory.GoalVelocity.SetAll(0.0);
             mJointTrajectory.EndTime = 0.0;
         } else {
-            MessageEvents.Error(this->GetName() + ": unable to solve inverse kinematics");
+            RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
             mJointTrajectory.GoalReachedEvent(false);
         }
     } else {
@@ -1110,28 +1113,28 @@ void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianSet & ne
     }
 }
 
-void mtsIntuitiveResearchKitArm::ErrorEventHandler(const std::string & message)
+void mtsIntuitiveResearchKitArm::ErrorEventHandler(const mtsMessage & message)
 {
-    MessageEvents.Error(this->GetName() + ": received [" + message + "]");
+    RobotInterface->SendError(this->GetName() + ": received [" + message.Message + "]");
     this->SetDesiredState(mFallbackState);
 }
 
 void mtsIntuitiveResearchKitArm::JointLimitEventHandler(const vctBoolVec & CMN_UNUSED(flags))
 {
-    MessageEvents.Warning(this->GetName() + ": PID joint limit");
+    RobotInterface->SendWarning(this->GetName() + ": PID joint limit");
 }
 
 void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 {
     std::stringstream nbSamplesString;
     nbSamplesString << nbSamples;
-    MessageEvents.Status(this->GetName() + ": encoders biased using " + nbSamplesString.str() + " potentiometer values");
+    RobotInterface->SendStatus(this->GetName() + ": encoders biased using " + nbSamplesString.str() + " potentiometer values");
     if (mHomingBiasEncoderRequested) {
         mHomingBiasEncoderRequested = false;
         mJointReady = true;
         mArmState.SetCurrentState("ENCODERS_BIASED");
     } else {
-        MessageEvents.Status(this->GetName() + ": encoders have been biased by another process");
+        RobotInterface->SendStatus(this->GetName() + ": encoders have been biased by another process");
     }
 }
 
@@ -1153,7 +1156,7 @@ void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wren
         mWrenchSet = wrench;
         if (mWrenchType != WRENCH_BODY) {
             mWrenchType = WRENCH_BODY;
-            MessageEvents.Status(this->GetName() + ": effort cartesian (body)");
+            RobotInterface->SendStatus(this->GetName() + ": effort cartesian (body)");
         }
     } else {
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in cartesian effort control mode, current state is "
@@ -1168,7 +1171,7 @@ void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & w
         mWrenchSet = wrench;
         if (mWrenchType != WRENCH_SPATIAL) {
             mWrenchType = WRENCH_SPATIAL;
-            MessageEvents.Status(this->GetName() + ": effort cartesian (spatial)");
+            RobotInterface->SendStatus(this->GetName() + ": effort cartesian (spatial)");
         }
     } else {
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in cartesian effort control mode, current state is "

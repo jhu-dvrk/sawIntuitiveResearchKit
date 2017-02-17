@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -53,20 +53,18 @@ protected:
     void Init(void);
 
     // Event Handler
-    void MTMErrorEventHandler(const std::string & message);
-    void PSMErrorEventHandler(const std::string & message);
+    void MTMErrorEventHandler(const mtsMessage & message);
+    void PSMErrorEventHandler(const mtsMessage & message);
 
     void ClutchEventHandler(const prmEventButton & button);
     void Clutch(const bool & clutch);
 
     // Functions for events
     struct {
-        mtsFunctionWrite Status;
-        mtsFunctionWrite Warning;
-        mtsFunctionWrite Error;
         mtsFunctionWrite DesiredState;
         mtsFunctionWrite CurrentState;
     } MessageEvents;
+    mtsInterfaceProvided * mInterface;
 
     struct {
         mtsFunctionWrite Scale;
@@ -93,7 +91,6 @@ protected:
     public:
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionRead  GetPositionCartesianDesired;
-        mtsFunctionWrite SetPositionCartesian;
         mtsFunctionWrite SetPositionGoalCartesian;
         mtsFunctionRead  GetGripperPosition;
 

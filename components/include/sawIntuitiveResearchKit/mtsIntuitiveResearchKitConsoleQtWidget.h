@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,9 +21,9 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitConsoleQtWidget_h
 
 #include <cisstMultiTask/mtsComponent.h>
+#include <cisstMultiTask/mtsMessageQtWidget.h>
 
 class QPushButton;
-class QTextEdit;
 class QTabWidget;
 class QDoubleSpinBox;
 
@@ -48,8 +48,6 @@ public:
 
 signals:
     void SignalScale(double scale);
-    void SignalAppendMessage(QString);
-    void SignalSetColor(QColor);
 
 private slots:
     void SlotPowerOff(void);
@@ -57,9 +55,7 @@ private slots:
     void SlotTeleopStart(void);
     void SlotTeleopStop(void);
     void SlotSetScale(double scale);
-
     void SlotScaleEventHandler(double scale);
-    void SlotTextChanged(void);
 
 protected:
     void closeEvent(QCloseEvent * event);
@@ -74,9 +70,6 @@ protected:
     } Console;
 
     void ScaleEventHandler(const double & scale);
-    void ErrorEventHandler(const std::string & message);
-    void WarningEventHandler(const std::string & message);
-    void StatusEventHandler(const std::string & message);
 
     QPushButton * QPBPowerOff;
     QPushButton * QPBHome;
@@ -84,7 +77,7 @@ protected:
     QPushButton * QPBTeleopStop;
     QDoubleSpinBox * QSBScale;
     QTabWidget * QTWidgets;
-    QTextEdit * QTEMessages;
+    mtsMessageQtWidget * QMMessage;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsoleQtWidget);

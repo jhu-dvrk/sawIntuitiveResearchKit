@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Config Version="2">
-   <Robot Name="MTML" NumOfActuator="8" NumOfJoint="8" SN="56047">
+   <Robot Name="MTML" NumOfActuator="8" NumOfJoint="8" SN="28056">
       <Actuator ActuatorID="0" AxisID="0" BoardID="0" Type="Revolute">
          <Drive>
             <AmpsToBits Offset="33028" Scale="-5242.88"/>
@@ -16,12 +16,12 @@
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05"/>
-            <VoltsToPosSI Offset="-185.552382" Scale="75.641104"/>
+            <VoltsToPosSI Offset="-186.773089" Scale="75.708901"/>
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="1" AxisID="1" BoardID="0" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32953" Scale="5242.88"/>
+            <AmpsToBits Offset="32952" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <NmToAmps Scale="0.457720"/>
             <MaxCurrent Unit="A" Value="0.670"/>
@@ -34,12 +34,12 @@
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05"/>
-            <VoltsToPosSI Offset="-143.525928" Scale="74.744091"/>
+            <VoltsToPosSI Offset="-145.210424" Scale="75.322977"/>
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="2" AxisID="2" BoardID="0" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32937" Scale="5242.88"/>
+            <AmpsToBits Offset="32936" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <NmToAmps Scale="0.382238"/>
             <MaxCurrent Unit="A" Value="0.670"/>
@@ -52,12 +52,12 @@
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05"/>
-            <VoltsToPosSI Offset="-162.175704" Scale="75.307332"/>
+            <VoltsToPosSI Offset="-162.129867" Scale="74.796243"/>
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="3" AxisID="3" BoardID="0" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32922" Scale="5242.88"/>
+            <AmpsToBits Offset="32920" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <NmToAmps Scale="2.168191"/>
             <MaxCurrent Unit="A" Value="0.670"/>
@@ -70,12 +70,12 @@
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05"/>
-            <VoltsToPosSI Offset="226.100605" Scale="-76.418167"/>
+            <VoltsToPosSI Offset="116.694314" Scale="-76.402521"/>
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="4" AxisID="0" BoardID="1" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32789" Scale="-5242.88"/>
+            <AmpsToBits Offset="32787" Scale="-5242.88"/>
             <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738"/>
             <NmToAmps Scale="6.092286"/>
             <MaxCurrent Unit="A" Value="0.590"/>
@@ -88,12 +88,12 @@
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05"/>
-            <VoltsToPosSI Offset="-133.865859" Scale="79.234369"/>
+            <VoltsToPosSI Offset="227.693428" Scale="-79.714167"/>
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="5" AxisID="1" BoardID="1" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32784" Scale="5242.88"/>
+            <AmpsToBits Offset="32783" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <NmToAmps Scale="6.092286"/>
             <MaxCurrent Unit="A" Value="0.590"/>
@@ -106,12 +106,12 @@
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05"/>
-            <VoltsToPosSI Offset="-159.442695" Scale="77.852344"/>
+            <VoltsToPosSI Offset="-182.996990" Scale="78.384293"/>
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="6" AxisID="2" BoardID="1" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32822" Scale="-5242.88"/>
+            <AmpsToBits Offset="32823" Scale="-5242.88"/>
             <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738"/>
             <NmToAmps Scale="17.791632"/>
             <MaxCurrent Unit="A" Value="0.407"/>
@@ -124,12 +124,12 @@
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05"/>
-            <VoltsToPosSI Offset="-86.505168" Scale="40.138703"/>
+            <VoltsToPosSI Offset="74.135009" Scale="40.274820"/>
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="7" AxisID="3" BoardID="1" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32816" Scale="5242.88"/>
+            <AmpsToBits Offset="32815" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
             <NmToAmps Scale="1.000000"/>
             <MaxCurrent Unit="A" Value="0.000"/>
@@ -192,7 +192,7 @@
    <DigitalIn BitID="0" BoardID="0" Debounce="0" Name="MTML-D00" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="1" BoardID="0" Debounce="0" Name="MTML-D01" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="2" BoardID="0" Debounce="0" Name="MTML-D02" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="3" BoardID="0" Debounce="0.2" Name="HEAD" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="3" BoardID="0" Debounce="0" Name="MTML-D03" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="4" BoardID="0" Debounce="0" Name="MTML-D10" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="5" BoardID="0" Debounce="0" Name="MTML-D11" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="6" BoardID="0" Debounce="0" Name="MTML-D12" Pressed="0" Trigger="all"/>
@@ -201,11 +201,11 @@
    <DigitalIn BitID="9" BoardID="0" Debounce="0" Name="MTML-D21" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="10" BoardID="0" Debounce="0" Name="MTML-D22" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="11" BoardID="0" Debounce="0" Name="MTML-D23" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="0" BoardID="1" Debounce="0.2" Name="CLUTCH" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="1" BoardID="1" Debounce="0.2" Name="CAM-" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="2" BoardID="1" Debounce="0.2" Name="CAM+" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="3" BoardID="1" Debounce="0.2" Name="COAG" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="4" BoardID="1" Debounce="0.2" Name="CAMERA" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="0" BoardID="1" Debounce="0" Name="MTML-D30" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="1" BoardID="1" Debounce="0" Name="MTML-D31" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="2" BoardID="1" Debounce="0" Name="MTML-D32" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="3" BoardID="1" Debounce="0" Name="MTML-D33" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="4" BoardID="1" Debounce="0" Name="MTML-D40" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="5" BoardID="1" Debounce="0" Name="MTML-D41" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="6" BoardID="1" Debounce="0" Name="MTML-D42" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="7" BoardID="1" Debounce="0" Name="MTML-D43" Pressed="0" Trigger="all"/>

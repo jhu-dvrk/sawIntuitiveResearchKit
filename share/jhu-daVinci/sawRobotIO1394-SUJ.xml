@@ -56,8 +56,8 @@
    <DigitalIn BitID="10" BoardID="12" Debounce="0" Name="SUJ-D22" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="11" BoardID="12" Debounce="0" Name="SUJ-D23" Pressed="0" Trigger="all"/>
    <!-- Digital Output Configuration -->
-   <DigitalOut BitID="0" BoardID="12" Name="MuxReset" HighDuration="0.0001"/>
+   <DigitalOut BitID="0" BoardID="12" Name="NoMuxReset" LowDuration="0.0001"/>
    <DigitalOut BitID="1" BoardID="12" Name="MuxIncrement" HighDuration = "0.0001"/>
    <DigitalOut BitID="2" BoardID="12" Name="ControlPWM" Frequency="40000.0"/>
-   <DigitalOut BitID="3" BoardID="12" Name="EnablePWM"/>
+   <DigitalOut BitID="3" BoardID="12" Name="DisablePWM"/>
 </Config>

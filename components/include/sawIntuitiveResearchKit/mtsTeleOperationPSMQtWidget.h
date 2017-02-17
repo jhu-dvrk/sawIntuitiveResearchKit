@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstVector/vctQtWidgetFrame.h>
 #include <cisstMultiTask/mtsComponent.h>
+#include <cisstMultiTask/mtsMessageQtWidget.h>
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
@@ -56,12 +57,8 @@ signals:
     void SignalRotationLocked(bool lock);
     void SignalTranslationLocked(bool lock);
 
-    void SignalAppendMessage(QString);
-    void SignalSetColor(QColor);
-
 private slots:
     void timerEvent(QTimerEvent * event);
-    void SlotTextChanged(void);
     void SlotLogEnabled(void);
     // to set from the GUI
     void SlotSetScale(double scale);
@@ -115,10 +112,7 @@ private:
     // messages
     bool LogEnabled;
     QPushButton * QPBLog;
-    void ErrorEventHandler(const std::string & message);
-    void WarningEventHandler(const std::string & message);
-    void StatusEventHandler(const std::string & message);
-    QTextEdit * QTEMessages;
+    mtsMessageQtWidget * QMMessage;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationPSMQtWidget);

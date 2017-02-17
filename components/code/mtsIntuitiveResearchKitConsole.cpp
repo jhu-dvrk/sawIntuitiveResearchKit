@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,6 +21,9 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst
 #include <cisstCommon/cmnPath.h>
+#include <cisstCommon/cmnClassRegister.h>
+#include <cisstOSAbstraction/osaDynamicLoader.h>
+
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstParameterTypes/prmEventButton.h>
@@ -257,14 +260,14 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
     case ARM_SUJ:
         componentManager->Connect(Name(), "RobotIO",
                                   IOComponentName(), Name());
-        componentManager->Connect(Name(), "MuxReset",
-                                  IOComponentName(), "MuxReset");
+        componentManager->Connect(Name(), "NoMuxReset",
+                                  IOComponentName(), "NoMuxReset");
         componentManager->Connect(Name(), "MuxIncrement",
                                   IOComponentName(), "MuxIncrement");
         componentManager->Connect(Name(), "ControlPWM",
                                   IOComponentName(), "ControlPWM");
-        componentManager->Connect(Name(), "EnablePWM",
-                                  IOComponentName(), "EnablePWM");
+        componentManager->Connect(Name(), "DisablePWM",
+                                  IOComponentName(), "DisablePWM");
         componentManager->Connect(Name(), "MotorUp",
                                   IOComponentName(), "MotorUp");
         componentManager->Connect(Name(), "MotorDown",
@@ -479,21 +482,19 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mSUJECMInterfaceRequired(0),
     mECMBaseFrameInterfaceProvided(0)
 {
-    mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Main");
-    if (interfaceProvided) {
-        interfaceProvided->AddCommandVoid(&mtsIntuitiveResearchKitConsole::PowerOff, this,
+    mInterface = AddInterfaceProvided("Main");
+    if (mInterface) {
+        mInterface->AddMessageEvents();
+        mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::PowerOff, this,
                                            "PowerOff");
-        interfaceProvided->AddCommandVoid(&mtsIntuitiveResearchKitConsole::Home, this,
+        mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::Home, this,
                                            "Home");
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::TeleopEnable, this,
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::TeleopEnable, this,
                                            "TeleopEnable", false);
-        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetScale, this,
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetScale, this,
                                            "SetScale", 0.5);
-        interfaceProvided->AddEventWrite(ConfigurationEvents.Scale,
+        mInterface->AddEventWrite(ConfigurationEvents.Scale,
                                          "Scale", 0.5);
-        interfaceProvided->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
     }
 
     mIOComponentName = "io";
@@ -612,11 +613,97 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         if (!pidConfig.empty()) {
             iter->second->ConfigurePID(pidConfig);
         }
-        const Arm::ArmType armType = iter->second->mType;
-        if ((armType != Arm::ARM_PSM_GENERIC &&
-             armType != Arm::ARM_MTM_GENERIC &&
-             armType != Arm::ARM_ECM_GENERIC)) {
-            const std::string armConfig = iter->second->mArmConfigurationFile;
+        // for generic arms, see if we can/should dynamically create the component
+        if (iter->second->mIsGeneric) {
+            const std::string sharedLibrary = iter->second->mSharedLibrary;
+            const std::string className = iter->second->mClassName;
+
+            if (!sharedLibrary.empty()) {
+                // create load and path based on LD_LIBRARY_PATH
+                osaDynamicLoader loader;
+                std::string fullPath;
+                // check if the file already exists, i.e. use provided a full path
+                if (cmnPath::Exists(sharedLibrary)) {
+                    fullPath = sharedLibrary;
+                } else {
+                    cmnPath path;
+                    path.AddFromEnvironment("LD_LIBRARY_PATH");
+                    fullPath = path.Find(cmnPath::SharedLibrary(sharedLibrary));
+                    if (fullPath.empty())  {
+                        fullPath = sharedLibrary;
+                        CMN_LOG_CLASS_INIT_WARNING << "Configure: using path: "
+                                                   << path << ", couldn't find \""
+                                                   << cmnPath::SharedLibrary(sharedLibrary)
+                                                   << "\"" << std::endl;;
+                    } else {
+                        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: using path: "
+                                                   << path << ", found full path name \""
+                                                   << fullPath << "\"" << std::endl;;
+                    }
+                }
+                if (!loader.Load(fullPath)) {
+                    CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to load shared library "
+                                             << sharedLibrary << std::endl;
+                    return;
+                }
+
+                // now try to dynamically create an instance of that class
+                cmnClassServicesBase * componentClassServices = cmnClassRegister::FindClassServices(className);
+                if (!componentClassServices) {
+                    CMN_LOG_CLASS_INIT_ERROR << "Configure: successfully loaded shared library "
+                                             << sharedLibrary << " but unable to find class services for type "
+                                             << className << std::endl;
+                    return;
+                }
+                // check if we need to also create an argument for the constructor
+                if (componentClassServices->OneArgConstructorAvailable()) {
+                    const cmnClassServicesBase * argumentClassServices = componentClassServices->GetConstructorArgServices();
+                    CMN_ASSERT(argumentClassServices); // this should not fail
+                    cmnGenericObject * argument = argumentClassServices->Create();
+                      // then deserialize from JSON value...
+                    Json::Value jsonValue;
+                    Json::Reader reader;
+                    // parsing should work since the string has been generated after a previous parse
+                    CMN_ASSERT(reader.parse(iter->second->mConstructorArgJSON, jsonValue));
+                    try {
+                        argument->DeSerializeTextJSON(jsonValue);
+                    } catch (std::runtime_error e) {
+                        CMN_LOG_CLASS_INIT_ERROR << "Configure: unable to deserialize constructor for "
+                                                 << className << " from JSON file, got exception: "
+                                                 << e.what() << std::endl;
+                        delete argument;
+                        return;
+                    }
+                    // now, finally, construct the component!
+                    cmnGenericObject * componentBase
+                        = componentClassServices->CreateWithArg(*argument);
+                    if (!componentBase) {
+                        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to create component of type "
+                                                 << className << std::endl;
+                        delete argument;
+                        return;
+                    }
+                    mtsComponent * component
+                        = dynamic_cast<mtsComponent *>(componentBase);
+                    if (!component) {
+                        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to cast newly created object of type "
+                                                 << className << " to mtsComponent" << std::endl;
+                        delete argument;
+                        delete componentBase;
+                        return;
+                    }
+                    const std::string componentConfig = iter->second->mArmConfigurationFile;
+                    if (componentConfig.empty()) {
+                        component->Configure();
+                    } else {
+                        component->Configure(componentConfig);
+                    }
+                    mtsComponentManager::GetInstance()->AddComponent(component);
+                }
+            }
+        }
+        const std::string armConfig = iter->second->mArmConfigurationFile;
+        if (!armConfig.empty()) {
             iter->second->ConfigureArm(iter->second->mType, armConfig, iter->second->mArmPeriod);
         }
     }
@@ -731,7 +818,7 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
     message.append(sawIntuitiveResearchKit_VERSION);
     message.append(" / cisst ");
     message.append(CISST_VERSION);
-    MessageEvents.Status(message);
+    mInterface->SendStatus(message);
 }
 
 void mtsIntuitiveResearchKitConsole::Run(void)
@@ -747,7 +834,8 @@ void mtsIntuitiveResearchKitConsole::Cleanup(void)
 
 bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
 {
-    if (newArm->mType != Arm::ARM_PSM_SOCKET) {
+    if ((newArm->mType != Arm::ARM_PSM_SOCKET)
+        && (!newArm->mIsGeneric)) {
         if (newArm->mType != Arm::ARM_SUJ) {
             if (newArm->mPIDConfigurationFile.empty()) {
                 CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
@@ -944,6 +1032,15 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             armPointer->mType = Arm::ARM_PSM_DERIVED;
         } else if (typeString == "ECM_DERIVED") {
             armPointer->mType = Arm::ARM_ECM_DERIVED;
+        } else if (typeString == "MTM_GENERIC") {
+            armPointer->mType = Arm::ARM_MTM_GENERIC;
+            armPointer->mIsGeneric = true;
+        } else if (typeString == "PSM_GENERIC") {
+            armPointer->mType = Arm::ARM_PSM_GENERIC;
+            armPointer->mIsGeneric = true;
+        } else if (typeString == "ECM_GENERIC") {
+            armPointer->mType = Arm::ARM_ECM_GENERIC;
+            armPointer->mIsGeneric = true;
         } else if (typeString == "PSM_SOCKET") {
             armPointer->mType = Arm::ARM_PSM_SOCKET;
         } else if (typeString == "SUJ") {
@@ -991,22 +1088,50 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         if(!jsonValue.empty()){
             armPointer->mIp = jsonValue.asString();
         } else {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"server-ip\" setting for arm \""
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"server-ip\" for arm \""
                                      << armName << "\"" << std::endl;
             return false;
         }
         jsonValue = jsonArm["port"];
-        if(!jsonValue.empty()){
+        if (!jsonValue.empty()) {
             armPointer->mPort = jsonValue.asInt();
         } else {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"port\" setting for arm \""
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"port\" for arm \""
                                      << armName << "\"" << std::endl;
             return false;
         }
     }
 
+    // for generic arm, look for shared library and class name, if not
+    // provided we assume the object already exists and has been
+    // configured
+    if (armPointer->mIsGeneric) {
+        jsonValue = jsonArm["shared-library"];
+        if (!jsonValue.empty()){
+            armPointer->mSharedLibrary = jsonValue.asString();
+            jsonValue = jsonArm["class-name"];
+            if (!jsonValue.empty()) {
+                armPointer->mClassName = jsonValue.asString();
+            } else {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"class-name\" for arm \""
+                                         << armName << "\"" << std::endl;
+                return false;
+            }
+            jsonValue = jsonArm["constructor-arg"];
+            if (!jsonValue.empty()) {
+                Json::FastWriter fastWriter;
+                armPointer->mConstructorArgJSON = fastWriter.write(jsonValue);
+            } else {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"constructor-arg\" for arm \""
+                                         << armName << "\"" << std::endl;
+                return false;
+            }
+        }
+    }
+
     // IO for anything not simulated or socket client
-    if (armPointer->mType != Arm::ARM_PSM_SOCKET) {
+    if ((armPointer->mType != Arm::ARM_PSM_SOCKET)
+        && (!armPointer->mIsGeneric)) {
         if (armPointer->mSimulation == Arm::SIMULATION_NONE) {
             jsonValue = jsonArm["io"];
             if (!jsonValue.empty()) {
@@ -1045,7 +1170,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     }
 
     // only configure kinematics if not arm socket client
-    if (armPointer->mType != Arm::ARM_PSM_SOCKET) {
+    if ((armPointer->mType != Arm::ARM_PSM_SOCKET)
+        && (!armPointer->mIsGeneric)) {
         jsonValue = jsonArm["kinematic"];
         if (!jsonValue.empty()) {
             armPointer->mArmConfigurationFile = configPath.Find(jsonValue.asString());
@@ -1112,7 +1238,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
               (armPointer->mType == Arm::ARM_MTM_DERIVED) ||
               (armPointer->mType == Arm::ARM_MTM))) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: master left\""
-                                     << masterLeftName << "\" type must be \"MTM\" or \"GENERIC_MTM\"" << std::endl;
+                                     << masterLeftName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
             return false;
         }
     }
@@ -1127,7 +1253,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
               (armPointer->mType == Arm::ARM_MTM_DERIVED) ||
               (armPointer->mType == Arm::ARM_MTM))) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: master right\""
-                                     << masterRightName << "\" type must be \"MTM\" or \"GENERIC_MTM\"" << std::endl;
+                                     << masterRightName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
             return false;
         }
     }
@@ -1218,7 +1344,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
               (armPointer->mType == Arm::ARM_MTM_DERIVED) ||
               (armPointer->mType == Arm::ARM_MTM))) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: master \""
-                                     << masterName << "\" type must be \"MTM\" or \"GENERIC_MTM\"" << std::endl;
+                                     << masterName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
             return false;
         }
     }
@@ -1234,7 +1360,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
               (armPointer->mType == Arm::ARM_PSM_SOCKET)  ||
               (armPointer->mType == Arm::ARM_PSM))) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: slave \""
-                                     << slaveName << "\" type must be \"PSM\" or \"GENERIC_PSM\"" << std::endl;
+                                     << slaveName << "\" type must be \"PSM\", \"PSM_DERIVED\" or \"PSM_GENERIC\"" << std::endl;
             return false;
         }
     }
@@ -1558,9 +1684,9 @@ void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & b
 {
     ConsoleEvents.Clutch(button);
     if (button.Type() == prmEventButton::PRESSED) {
-        MessageEvents.Status(this->GetName() + ": clutch pressed");
+        mInterface->SendStatus(this->GetName() + ": clutch pressed");
     } else {
-        MessageEvents.Status(this->GetName() + ": clutch released");
+        mInterface->SendStatus(this->GetName() + ": clutch released");
     }
 }
 
@@ -1568,10 +1694,10 @@ void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & b
 {
     if (button.Type() == prmEventButton::PRESSED) {
         mCameraPressed = true;
-        MessageEvents.Status(this->GetName() + ": camera pressed");
+        mInterface->SendStatus(this->GetName() + ": camera pressed");
     } else {
         mCameraPressed = false;
-        MessageEvents.Status(this->GetName() + ": camera released");
+        mInterface->SendStatus(this->GetName() + ": camera released");
     }
     UpdateTeleopState();
     ConsoleEvents.OperatorPresent(button);
@@ -1581,26 +1707,26 @@ void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventB
 {
     if (button.Type() == prmEventButton::PRESSED) {
         mOperatorPresent = true;
-        MessageEvents.Status(this->GetName() + ": operator present");
+        mInterface->SendStatus(this->GetName() + ": operator present");
     } else {
         mOperatorPresent = false;
-        MessageEvents.Status(this->GetName() + ": operator not present");
+        mInterface->SendStatus(this->GetName() + ": operator not present");
     }
     UpdateTeleopState();
     ConsoleEvents.OperatorPresent(button);
 }
 
-void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const std::string & message) {
+void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & message) {
     TeleopEnable(false);
-    MessageEvents.Error(message);
+    mInterface->SendError(message.Message);
 }
 
-void mtsIntuitiveResearchKitConsole::WarningEventHandler(const std::string & message) {
-    MessageEvents.Warning(message);
+void mtsIntuitiveResearchKitConsole::WarningEventHandler(const mtsMessage & message) {
+    mInterface->SendWarning(message.Message);
 }
 
-void mtsIntuitiveResearchKitConsole::StatusEventHandler(const std::string & message) {
-    MessageEvents.Status(message);
+void mtsIntuitiveResearchKitConsole::StatusEventHandler(const mtsMessage & message) {
+    mInterface->SendStatus(message.Message);
 }
 
 void mtsIntuitiveResearchKitConsole::ECMManipClutchEventHandler(const prmEventButton & button)

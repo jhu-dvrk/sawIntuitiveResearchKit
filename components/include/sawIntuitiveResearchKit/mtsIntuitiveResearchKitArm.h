@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -143,7 +143,7 @@ protected:
     virtual void JointLimitEventHandler(const vctBoolVec & flags);
 
     /*! Event handler for PID errors. */
-    void ErrorEventHandler(const std::string & message);
+    void ErrorEventHandler(const mtsMessage & message);
 
     /*! Event handler for EncoderBias done. */
     void BiasEncoderEventHandler(const int & nbSamples);
@@ -210,9 +210,6 @@ protected:
 
     // Functions for events
     struct {
-        mtsFunctionWrite Status;
-        mtsFunctionWrite Warning;
-        mtsFunctionWrite Error;
         mtsFunctionWrite DesiredState;
         mtsFunctionWrite CurrentState;
     } MessageEvents;

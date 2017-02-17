@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -22,7 +22,6 @@ http://www.cisst.org/cisst/license.txt.
 
 // Qt include
 #include <QString>
-#include <QTextEdit>
 #include <QPushButton>
 #include <QCheckBox>
 #include <QLineEdit>
@@ -30,7 +29,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <QScrollBar>
 #include <QCloseEvent>
 #include <QCoreApplication>
-#include <QTime>
 
 // cisst
 #include <cisstMultiTask/mtsInterfaceRequired.h>
@@ -47,6 +45,7 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
     DirectControl(false),
     LogEnabled(false)
 {
+    QMMessage = new mtsMessageQtWidget();
 
     // Setup CISST Interface
     InterfaceRequired = AddInterfaceRequired("Manipulator");
@@ -55,15 +54,10 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
                                                 this, "DesiredState");
         InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::CurrentStateEventHandler,
                                                 this, "CurrentState");
+        QMMessage->SetInterfaceRequired(InterfaceRequired);
         InterfaceRequired->AddFunction("GetPositionCartesian", Arm.GetPositionCartesian);
         InterfaceRequired->AddFunction("SetDesiredState", Arm.SetDesiredState);
         InterfaceRequired->AddFunction("GetPeriodStatistics", Arm.GetPeriodStatistics);
-        InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::ErrorEventHandler,
-                                                this, "Error");
-        InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::WarningEventHandler,
-                                                this, "Warning");
-        InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::StatusEventHandler,
-                                                this, "Status");
     }
 }
 
@@ -77,7 +71,7 @@ void mtsIntuitiveResearchKitArmQtWidget::Startup(void)
     setupUi();
     startTimer(TimerPeriodInMilliseconds); // ms
     if (!LogEnabled) {
-        QTEMessages->hide();
+        QMMessage->hide();
     }
     if (!parent()) {
         show();
@@ -134,18 +128,13 @@ void mtsIntuitiveResearchKitArmQtWidget::CurrentStateEventHandler(const std::str
     emit SignalCurrentState(QString(state.c_str()));
 }
 
-void mtsIntuitiveResearchKitArmQtWidget::SlotTextChanged(void)
-{
-    QTEMessages->verticalScrollBar()->setSliderPosition(QTEMessages->verticalScrollBar()->maximum());
-}
-
 void mtsIntuitiveResearchKitArmQtWidget::SlotLogEnabled(void)
 {
     LogEnabled = QPBLog->isChecked();
     if (LogEnabled) {
-        QTEMessages->show();
+        QMMessage->show();
     } else {
-        QTEMessages->hide();
+        QMMessage->hide();
     }
 }
 
@@ -217,10 +206,8 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     this->setupUiDerived();
 
     // messages
-    QTEMessages = new QTextEdit();
-    QTEMessages->setReadOnly(true);
-    QTEMessages->ensureCursorVisible();
-    MainLayout->addWidget(QTEMessages);
+    QMMessage->setupUi();
+    MainLayout->addWidget(QMMessage);
 
     setLayout(MainLayout);
     setWindowTitle("Manipulator");
@@ -233,12 +220,6 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
             this, SLOT(SlotCurrentStateEventHandler(QString)));
     connect(QPBLog, SIGNAL(clicked()),
             this, SLOT(SlotLogEnabled()));
-    connect(this, SIGNAL(SignalAppendMessage(QString)),
-            QTEMessages, SLOT(append(QString)));
-    connect(this, SIGNAL(SignalSetColor(QColor)),
-            QTEMessages, SLOT(setTextColor(QColor)));
-    connect(QTEMessages, SIGNAL(textChanged()),
-            this, SLOT(SlotTextChanged()));
     connect(QCBEnableDirectControl, SIGNAL(toggled(bool)),
             this, SLOT(SlotEnableDirectControl(bool)));
     connect(QPBHome, SIGNAL(clicked()),
@@ -247,28 +228,4 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     // set initial values
     QCBEnableDirectControl->setChecked(DirectControl);
     SlotEnableDirectControl(DirectControl);
-}
-
-void mtsIntuitiveResearchKitArmQtWidget::ErrorEventHandler(const std::string & message)
-{
-    if (LogEnabled) {
-        emit SignalSetColor(QColor("red"));
-        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
-    }
-}
-
-void mtsIntuitiveResearchKitArmQtWidget::WarningEventHandler(const std::string & message)
-{
-    if (LogEnabled) {
-        emit SignalSetColor(QColor("darkRed"));
-        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Warning: ") + QString(message.c_str()));
-    }
-}
-
-void mtsIntuitiveResearchKitArmQtWidget::StatusEventHandler(const std::string & message)
-{
-    if (LogEnabled) {
-        emit SignalSetColor(QColor("black"));
-        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
-    }
 }

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -98,6 +98,12 @@ public:
         int mPort;
         bool mSocketServer;
         std::string mSocketComponentName;
+        // generic arm
+        bool mIsGeneric;
+        std::string mSharedLibrary;
+        std::string mClassName;
+        std::string mConstructorArgJSON;
+
         // base frame
         std::string mBaseFrameComponentName;
         std::string mBaseFrameInterfaceName;
@@ -277,20 +283,14 @@ protected:
     std::string mIOComponentName;
     std::string mOperatorPresentComponent;
     std::string mOperatorPresentInterface;
-
-    // Functions for events
-    struct {
-        mtsFunctionWrite Status;
-        mtsFunctionWrite Warning;
-        mtsFunctionWrite Error;
-    } MessageEvents;
+    mtsInterfaceProvided * mInterface;
     struct {
         mtsFunctionWrite Scale;
     } ConfigurationEvents;
 
-    void ErrorEventHandler(const std::string & message);
-    void WarningEventHandler(const std::string & message);
-    void StatusEventHandler(const std::string & message);
+    void ErrorEventHandler(const mtsMessage & message);
+    void WarningEventHandler(const mtsMessage & message);
+    void StatusEventHandler(const mtsMessage & message);
 
     void ECMManipClutchEventHandler(const prmEventButton & button);
 

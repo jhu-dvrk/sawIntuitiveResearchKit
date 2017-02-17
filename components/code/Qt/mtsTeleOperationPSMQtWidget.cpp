@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -48,9 +48,12 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
     TimerPeriodInMilliseconds(periodInSeconds * 1000), // Qt timers are in milliseconds
     LogEnabled(false)
 {
+    QMMessage = new mtsMessageQtWidget();
+
     // Setup cisst interface
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("TeleOperation");
     if (interfaceRequired) {
+        QMMessage->SetInterfaceRequired(interfaceRequired);
         interfaceRequired->AddFunction("SetScale", TeleOperation.SetScale);
         interfaceRequired->AddFunction("LockRotation", TeleOperation.LockRotation);
         interfaceRequired->AddFunction("LockTranslation", TeleOperation.LockTranslation);
@@ -69,13 +72,6 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
                                                 this, "RotationLocked");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::TranslationLockedEventHandler,
                                                 this, "TranslationLocked");
-        // messages
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::ErrorEventHandler,
-                                                this, "Error");
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::WarningEventHandler,
-                                                this, "Warning");
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::StatusEventHandler,
-                                                this, "Status");
     }
 }
 
@@ -89,7 +85,7 @@ void mtsTeleOperationPSMQtWidget::Startup(void)
     setupUi();
     startTimer(TimerPeriodInMilliseconds);
     if (!LogEnabled) {
-        QTEMessages->hide();
+        QMMessage->hide();
     }
     if (!parent()) {
         show();
@@ -247,10 +243,8 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     controlLayout->addWidget(QMIntervalStatistics);
 
     // messages
-    QTEMessages = new QTextEdit();
-    QTEMessages->setReadOnly(true);
-    QTEMessages->ensureCursorVisible();
-    controlLayout->addWidget(QTEMessages);
+    QMMessage->setupUi();
+    controlLayout->addWidget(QMMessage);
 
     // add stretch
     controlLayout->addStretch();
@@ -290,12 +284,6 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     // messages
     connect(QPBLog, SIGNAL(clicked()),
             this, SLOT(SlotLogEnabled()));
-    connect(this, SIGNAL(SignalAppendMessage(QString)),
-            QTEMessages, SLOT(append(QString)));
-    connect(this, SIGNAL(SignalSetColor(QColor)),
-            QTEMessages, SLOT(setTextColor(QColor)));
-    connect(QTEMessages, SIGNAL(textChanged()),
-            this, SLOT(SlotTextChanged()));
 }
 
 void mtsTeleOperationPSMQtWidget::DesiredStateEventHandler(const std::string & state)
@@ -323,41 +311,12 @@ void mtsTeleOperationPSMQtWidget::TranslationLockedEventHandler(const bool & loc
     emit SignalTranslationLocked(lock);
 }
 
-void mtsTeleOperationPSMQtWidget::SlotTextChanged(void)
-{
-    QTEMessages->verticalScrollBar()->setSliderPosition(QTEMessages->verticalScrollBar()->maximum());
-}
-
 void mtsTeleOperationPSMQtWidget::SlotLogEnabled(void)
 {
     LogEnabled = QPBLog->isChecked();
     if (LogEnabled) {
-        QTEMessages->show();
+        QMMessage->show();
     } else {
-        QTEMessages->hide();
-    }
-}
-
-void mtsTeleOperationPSMQtWidget::ErrorEventHandler(const std::string & message)
-{
-    if (LogEnabled) {
-        emit SignalSetColor(QColor("red"));
-        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
-    }
-}
-
-void mtsTeleOperationPSMQtWidget::WarningEventHandler(const std::string & message)
-{
-    if (LogEnabled) {
-        emit SignalSetColor(QColor("darkRed"));
-        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Warning: ") + QString(message.c_str()));
-    }
-}
-
-void mtsTeleOperationPSMQtWidget::StatusEventHandler(const std::string & message)
-{
-    if (LogEnabled) {
-        emit SignalSetColor(QColor("black"));
-        emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
+        QMMessage->hide();
     }
 }
