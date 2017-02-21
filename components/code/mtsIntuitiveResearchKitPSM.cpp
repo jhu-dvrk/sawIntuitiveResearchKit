@@ -131,6 +131,17 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
     PotsToEncodersTolerance.Element(2) = 5.0 * cmn_mm; // 5 mm
 
+    // default PID tracking errors
+    PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
+    // first two rotations
+    PID.DefaultTrackingErrorTolerance.Ref(2, 0).SetAll(20.0 * cmnPI_180); // 2 elements starting at 0 -> 0 1
+    // translation
+    PID.DefaultTrackingErrorTolerance.Element(2) = 20.0 * cmn_mm; // 10 mm -> 2
+    // shaft rotation and tool orientation
+    PID.DefaultTrackingErrorTolerance.Ref(3, 3).SetAll(35.0 * cmnPI_180); // 3 elements starting at 3 0> 3, 4, 5
+    // gripper
+    PID.DefaultTrackingErrorTolerance.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
+
     // Joint limits when empty
     CouplingChange.NoToolJointLowerLimit.SetSize(NumberOfJoints());
     CouplingChange.NoToolJointUpperLimit.SetSize(NumberOfJoints());
@@ -305,18 +316,18 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
 }
 
 /*
-void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState)
-{
-    CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
-                            << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(newState) << std::endl;
+  void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState)
+  {
+  CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
+  << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(newState) << std::endl;
 
-    vctBoolVec torqueMode(NumberOfJoints());
+vctBoolVec torqueMode(NumberOfJoints());
 
-    // first cleanup from previous state
-    switch (RobotState) {
-    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_JOINT:
-    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
-        // Disable torque mode for all joints
+// first cleanup from previous state
+switch (RobotState) {
+ case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_JOINT:
+ case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
+// Disable torque mode for all joints
         torqueMode.SetAll(false);
         PID.EnableTorqueMode(torqueMode);
         PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
@@ -400,7 +411,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER:
         if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            RobotInterface->SendStatus(this->GetName() + " is not calibrated yet, will engage adapter later");
+            RobotInterface->SendStatus(this->GetName() + " is not calibrated yet, gwill engage adapter later");
             return;
         }
         // if the tool is present, the adapter is already engadged
@@ -688,19 +699,33 @@ void mtsIntuitiveResearchKitPSM::EnterChangingCouplingAdapter(void)
 {
     CouplingChange.Started = false;
     CouplingChange.CouplingForTool = false; // Load identity coupling
-    // after coupling is loaded, do we engage tool or not?
-    if (mAdapterNeedEngage) {
-        CouplingChange.NextState = "ENGAGING_ADAPTER";
-    } else {
-        CouplingChange.NextState = "ADAPTER_ENGAGED";
-    }
+    CouplingChange.NextState = "ENGAGING_ADAPTER";
 }
 
 void mtsIntuitiveResearchKitPSM::EnterEngagingAdapter(void)
 {
+    // if simulated, nothing to do
     if (mIsSimulated) {
         return;
     }
+
+    // after coupling is loaded, is it safe to engage?  If a tool is
+    // present, the adapter is already engaged
+    Tool.GetButton(Tool.IsPresent);
+    if (Tool.IsPresent) {
+        // we can skip engage later
+        mToolNeedEngage = false;
+        mArmState.SetCurrentState("ADAPTER_ENGAGED");
+        return;
+    }
+    // if for some reason we don't need to engage, basically, adapter
+    // was found before homing
+    if (!mAdapterNeedEngage) {
+        mArmState.SetCurrentState("ADAPTER_ENGAGED");
+        return;
+    }
+
+    // other case, initialize variables for adapter engage
     EngagingStage = 1;
     LastEngagingStage = 5;
 }
@@ -773,7 +798,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         {
             // check if we were in last phase
             if (EngagingStage > LastEngagingStage) {
-                mAdapterNeedEngage = false;
                 mArmState.SetCurrentState("ADAPTER_ENGAGED");
             } else {
                 if (EngagingStage != LastEngagingStage) {
@@ -799,10 +823,11 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
 void mtsIntuitiveResearchKitPSM::TransitionAdapterEngaged(void)
 {
+    mAdapterNeedEngage = false;
     if (mArmState.DesiredStateIsNotCurrent()) {
         Tool.GetButton(Tool.IsPresent);
         if (Tool.IsPresent) {
-            mArmState.SetCurrentState("ENGAGING_TOOL");
+            mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
         }
     }
 }
@@ -820,28 +845,31 @@ void mtsIntuitiveResearchKitPSM::EnterChangingCouplingTool(void)
 
 void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
 {
+    // if simulated, nothing to do
+    if (mIsSimulated) {
+        return;
+    }
+
+    // if for some reason we don't need to engage, basically, tool was
+    // found before homing
+    if (!mToolNeedEngage) {
+        mArmState.SetCurrentState("TOOL_ENGAGED");
+        return;
+    }
+
+    // other case, initialize variables for tool engage
+    EngagingStage = 1;
+    LastEngagingStage = 4;
 }
 
 void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 {
-}
-
-/*
     if (mIsSimulated) {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+        mArmState.SetCurrentState("TOOL_ENGAGED");
         return;
     }
 
     const double currentTime = this->StateTable.GetTic();
-
-    if (EngagingStage == 0) {
-        // request coupling change
-        CouplingChange.PreviousState = RobotState;
-        CouplingChange.CouplingForTool = true; // Load tool coupling
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING);
-        EngagingStage = 1;
-        return;
-    }
 
     if (EngagingStage == 1) {
         // configure PID to fail in case of tracking error
@@ -855,7 +883,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         PID.SetTrackingErrorTolerance(tolerances);
         // compute initial time, since we disable power on last 4 use latest read
         vctDoubleVec initialPosition(NumberOfJoints());
-        initialPosition.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
+        initialPosition.Ref(3, 0).Assign(JointGetDesired.Goal().Ref(3, 0));
         initialPosition.Ref(4, 3).Assign(JointGet.Ref(4, 3));
         SetPositionJointLocal(initialPosition);
         // turn on PID
@@ -863,7 +891,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         PID.EnableTrackingError(true);
 
         // make sure we start from current state
-        JointSet.Assign(JointGetDesired, NumberOfJoints());
+        JointSet.Assign(JointGetDesired.Goal(), NumberOfJoints());
         JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
 
         // check if the tool in outside the cannula
@@ -872,36 +900,37 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
             message.append(": tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
             message.append("  If the tool is not engaged properly, move sterile adpater all the way up and re-insert tool.");
             RobotInterface->SendStatus(message);
-            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+            mArmState.SetCurrentState("TOOL_ENGAGED");
         }
 
         // keep first three joint values as is
-        JointTrajectory.Goal.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
+        mJointTrajectory.Goal.Ref(3, 0).Assign(JointGetDesired.Goal().Ref(3, 0));
         // set last 4 to user preferences
-        JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
-        JointTrajectory.GoalVelocity.SetAll(0.0);
-        JointTrajectory.EndTime = 0.0;
-        TrajectoryIsUsed(true);
+        mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
+        mJointTrajectory.GoalVelocity.SetAll(0.0);
+        mJointTrajectory.EndTime = 0.0;
+        SetControlMode(TRAJECTORY_MODE);
+        SetControlSpace(JOINT_SPACE);
         EngagingStage = 2;
         return;
     }
 
-    JointTrajectory.Reflexxes.Evaluate(JointSet,
-                                       JointVelocitySet,
-                                       JointTrajectory.Goal,
-                                       JointTrajectory.GoalVelocity);
+    mJointTrajectory.Reflexxes.Evaluate(JointSet,
+                                        JointVelocitySet,
+                                        mJointTrajectory.Goal,
+                                        mJointTrajectory.GoalVelocity);
     SetPositionJointLocal(JointSet);
 
 
-    const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
+    const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
 
     switch (trajectoryResult) {
 
     case robReflexxes::Reflexxes_WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (JointTrajectory.EndTime == 0.0) {
-            JointTrajectory.EndTime = currentTime + JointTrajectory.Reflexxes.Duration();
-            HomingTimer = JointTrajectory.EndTime;
+        if (mJointTrajectory.EndTime == 0.0) {
+            mJointTrajectory.EndTime = currentTime + mJointTrajectory.Reflexxes.Duration();
+            mHomingTimer = mJointTrajectory.EndTime;
         }
         break;
 
@@ -909,32 +938,23 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         {
             // check if we were in last phase
             if (EngagingStage > LastEngagingStage) {
-                TrajectoryIsUsed(false);
                 mToolNeedEngage = false;
-                SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+                mArmState.SetCurrentState("TOOL_ENGAGED");
             } else {
                 if (EngagingStage != LastEngagingStage) {
                     // toggle between lower and upper
                     if (EngagingStage % 2 == 0) {
-                        JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageUpperPosition.Ref(4, 3));
+                        mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageUpperPosition.Ref(4, 3));
                     } else {
-                        JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
+                        mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
                     }
                 } else {
-                    JointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
+                    mJointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
                 }
-                JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
-                                              JointTrajectory.Acceleration,
-                                              StateTable.PeriodStats.GetAvg(),
-                                              robReflexxes::Reflexxes_TIME);
+                mJointTrajectory.EndTime = 0.0;
                 std::stringstream message;
-<<<<<<< HEAD
                 message << this->GetName() << ": engaging tool " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
                 RobotInterface->SendStatus(message.str());
-=======
-                message << this->GetName() << " engaging tool " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
-                RobotInterface->SendStatus(message.str());
->>>>>>> devel
                 EngagingStage++;
             }
         }
@@ -942,15 +962,14 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 
     default:
         RobotInterface->SendError(this->GetName() + " error while evaluating trajectory.");
-        TrajectoryIsUsed(false);
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED);
+        this->SetDesiredState(mFallbackState);
         break;
     }
 }
-*/
 
 void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
 {
+    mToolNeedEngage = false;
     if (mArmState.DesiredStateIsNotCurrent()) {
         mArmState.SetCurrentState("READY");
     }
@@ -1008,21 +1027,12 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & butt
 
 void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
 {
-    std::cerr << CMN_LOG_DETAILS << " to be fixed" << std::endl;
-    /*
     if (present) {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL);
+        // we will need to engage this tool
+        mToolNeedEngage = true;
     } else {
-        // this is "down" transition so we have to
-        // make sure we had a tool properly engaged before
-        if (RobotState >= mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            // change coupling to identity before going to DVRK_ADAPTER_ENGAGED state
-            CouplingChange.PreviousState = mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED;
-            CouplingChange.CouplingForTool = false; // Load identity coupling
-            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING);
-        }
+        mArmState.SetCurrentState("ARM_HOMED");
     }
-    */
 }
 
 void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)

@@ -414,8 +414,24 @@ void mtsIntuitiveResearchKitArm::SetSimulated(void)
 
 void mtsIntuitiveResearchKitArm::GetRobotData(void)
 {
+    // check that the robot still has power
+    if (mPowered) {
+        vctBoolVec actuatorAmplifiersStatus(NumberOfJoints());
+        RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
+        vctBoolVec brakeAmplifiersStatus(NumberOfBrakes());
+        if (NumberOfBrakes() > 0) {
+            RobotIO.GetBrakeAmpStatus(brakeAmplifiersStatus);
+        }
+        if (!(actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All())) {
+            mPowered = false;
+            RobotInterface->SendWarning(this->GetName() + ": detected power loss");
+            mArmState.SetDesiredState("UNINITIALIZED");
+            return;
+        }
+    }
+
     // we can start reporting some joint values after the robot is powered
-    if (this->mJointReady) {
+    if (mJointReady) {        
         mtsExecutionResult executionResult;
         executionResult = PID.GetPositionJoint(JointGetParam);
         if (!executionResult.IsOK()) {
@@ -455,7 +471,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         }
 
         // when the robot is ready, we can compute cartesian position
-        if (this->mCartesianReady) {
+        if (mCartesianReady) {
             // update cartesian position
             CartesianGetLocal = Manipulator.ForwardKinematics(JointGet, NumberOfJointsKinematics());
             CartesianGet = BaseFrame * CartesianGetLocal;
@@ -586,6 +602,7 @@ void mtsIntuitiveResearchKitArm::EnterUninitialized(void)
     RobotIO.DisablePower();
     PID.Enable(false);
     PID.SetCheckJointLimit(true);
+    mPowered = false;
     mJointReady = false;
     mCartesianReady = false;
     SetControlSpace(UNDEFINED_SPACE);
@@ -641,6 +658,8 @@ void mtsIntuitiveResearchKitArm::TransitionEncodersBiased(void)
 
 void mtsIntuitiveResearchKitArm::EnterPowering(void)
 {
+    mPowered = false;
+    
     if (mIsSimulated) {
         PID.EnableTrackingError(false);
         PID.Enable(true);
@@ -706,6 +725,7 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
 
 void mtsIntuitiveResearchKitArm::EnterPowered(void)
 {
+    mPowered = true;
     mFallbackState = "POWERED";
 
     RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
@@ -742,6 +762,9 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
 
     // disable joint limits
     PID.SetCheckJointLimit(false);
+    // enable tracking errors
+    PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
+    PID.EnableTrackingError(true);
     // enable PID and start from current position
     SetPositionJointLocal(JointSet);
     PID.Enable(true);
@@ -811,10 +834,17 @@ void mtsIntuitiveResearchKitArm::RunHomingArm(void)
 
 void mtsIntuitiveResearchKitArm::EnterReady(void)
 {
-    mFallbackState = "READY";
+    // no control mode defined
     SetControlSpace(UNDEFINED_SPACE);
     SetControlMode(UNDEFINED_MODE);
-    RobotInterface->SendStatus(this->GetName() + ": ready!");
+    // enable PID and start from current position
+    PID.GetPositionJoint(JointGetDesired);
+    JointSet.Assign(JointGetDesired.Goal());
+    SetPositionJointLocal(JointSet);
+    PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
+    PID.EnableTrackingError(true);
+    PID.SetCheckJointLimit(true);
+    PID.Enable(true);    
 }
 
 void mtsIntuitiveResearchKitArm::RunPositionJoint(void)

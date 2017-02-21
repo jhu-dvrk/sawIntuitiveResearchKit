@@ -46,7 +46,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
-public:
+ public:
     mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg);
     virtual inline ~mtsIntuitiveResearchKitArm() {}
@@ -58,7 +58,7 @@ public:
 
     virtual void SetSimulated(void);
 
-protected:
+ protected:
 
     /*! Define wrench reference frame */
     typedef enum {WRENCH_UNDEFINED, WRENCH_SPATIAL, WRENCH_BODY} WrenchType;
@@ -154,7 +154,6 @@ protected:
     virtual size_t NumberOfJointsKinematics(void) const = 0; // used for inverse kinematics: ECM 4, PSM 6, MTM 7
     virtual size_t NumberOfBrakes(void) const = 0;         // ECM 3, PSM 0, MTM 0
 
-    virtual bool UsePIDTrackingError(void) const = 0;      // ECM true, PSM false, MTM false
     inline virtual bool UsePotsForSafetyCheck(void) const {
         return true;
     }
@@ -182,6 +181,7 @@ protected:
         mtsFunctionWrite SetTorqueOffset;
         mtsFunctionWrite EnableTrackingError;
         mtsFunctionWrite SetTrackingErrorTolerance;
+        vctDoubleVec DefaultTrackingErrorTolerance;
     } PID;
 
     // Interface to IO component
@@ -276,6 +276,7 @@ protected:
     bool BaseFrameValid;
 
     mtsStateMachine mArmState;
+    bool mPowered;
     bool mJointReady;
     bool mCartesianReady;
 
