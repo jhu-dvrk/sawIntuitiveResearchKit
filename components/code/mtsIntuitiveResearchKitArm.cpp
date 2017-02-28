@@ -310,7 +310,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     // SetState will send log events, it needs to happen after the
     // provided interface has been created
-    SetDesiredState("DVRK_UNINITIALIZED");
+    SetDesiredState("UNINITIALIZED");
 }
 
 void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
