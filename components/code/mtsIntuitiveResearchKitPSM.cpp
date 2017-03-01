@@ -50,6 +50,14 @@ void mtsIntuitiveResearchKitPSM::SetSimulated(void)
     RemoveInterfaceRequired("Tool");
 }
 
+vctFrame4x4<double> mtsIntuitiveResearchKitPSM::ForwardKinematics(const vctDoubleVec & q, const int N) const
+{
+    if (!mSnakeLike) {
+        return this->Manipulator.ForwardKinematics(q, N);
+    }
+    return this->Manipulator.ForwardKinematics(JointsForSnakeLikeKinematics(q), N);
+}
+
 robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
@@ -68,10 +76,27 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
     return robManipulator::EFAILURE;
 }
 
+bool mtsIntuitiveResearchKitPSM::JacobianBody(const vctDoubleVec & q, vctDoubleMat & J) const {
+    if (!mSnakeLike) {
+        return Manipulator.JacobianBody(q, J);
+    }
+    return Manipulator.JacobianBody(JointsForSnakeLikeKinematics(q), J);
+}
+
+bool mtsIntuitiveResearchKitPSM::JacobianSpatial(const vctDoubleVec & q, vctDoubleMat & J) const {
+    if (!mSnakeLike) {
+        return Manipulator.JacobianSpatial(q, J);
+    }
+    return Manipulator.JacobianSpatial(JointsForSnakeLikeKinematics(q), J);
+}
+
 void mtsIntuitiveResearchKitPSM::Init(void)
 {
     // main initialization from base type
     mtsIntuitiveResearchKitArm::Init();
+
+    // kinematics
+    mSnakeLike = false;
 
     // initialize trajectory data
     JointTrajectory.Velocity.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
@@ -159,8 +184,29 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             return;
         }
 
+        const Json::Value snakeLike = jsonConfig["snake-like"];
+        if (!snakeLike.isNull()) {
+            mSnakeLike = snakeLike.asBool();
+        }
+
         ConfigureDH(jsonConfig);
 
+        size_t expectedNumberOfJoint;
+        if (mSnakeLike) {
+            expectedNumberOfJoint = 8;
+        } else {
+            expectedNumberOfJoint = 6;
+        }
+        size_t numberOfJointsLoaded = this->Manipulator.links.size();
+
+        if (expectedNumberOfJoint != numberOfJointsLoaded) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": incorrect number of joints (DH), found "
+                                     << numberOfJointsLoaded << ", expected " << expectedNumberOfJoint
+                                     << std::endl;
+            return;
+        }
+        
         // should arm go to zero position when homing, default set in Init method
         const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
         if (!jsonHomingGoesToZero.isNull()) {

@@ -65,8 +65,30 @@ protected:
         return false;
     }
 
+    /*! 5mm tools with 8 joints */
+    bool mSnakeLike;
+    
+    inline vctReturnDynamicVector<double> JointsForSnakeLikeKinematics(const vctDoubleVec & joints) const {
+        vctDoubleVec result(8);
+        result[0] = joints[0];
+        result[1] = joints[1];
+        result[2] = joints[2];
+        result[3] = joints[3];
+        result[4] = joints[4] * 0.5;
+        result[5] = joints[5] * 0.5;
+        result[6] = joints[5] * 0.5;
+        result[7] = joints[4] * 0.5;
+        return vctReturnDynamicVector<double>(result);
+    }
+    
+    vctFrame4x4<double> ForwardKinematics(const vctDoubleVec & q, const int N) const;
+
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
+
+    bool JacobianBody(const vctDoubleVec & q, vctDoubleMat & J) const;
+
+    bool JacobianSpatial(const vctDoubleVec & q, vctDoubleMat & J) const;
 
     void Init(void);
 

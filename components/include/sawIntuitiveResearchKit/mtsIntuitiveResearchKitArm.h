@@ -148,8 +148,20 @@ protected:
         return true;
     }
 
+    virtual vctFrame4x4<double> ForwardKinematics(const vctDoubleVec & q, const int N = -1 ) const {
+        return Manipulator.ForwardKinematics(q, N);
+    }
+
     virtual robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                                     const vctFrm4x4 & cartesianGoal) = 0;
+
+    virtual bool JacobianBody(const vctDoubleVec & q, vctDoubleMat & J) const {
+        return Manipulator.JacobianBody(q, J);
+    }
+
+    virtual bool JacobianSpatial(const vctDoubleVec & q, vctDoubleMat & J) const {
+        return Manipulator.JacobianSpatial(q, J);
+    }
 
     // Interface to PID component
     mtsInterfaceRequired * PIDInterface;
@@ -226,7 +238,7 @@ protected:
     vctDoubleVec JointSet;
 
     // efforts
-    vctDoubleMat JacobianBody, JacobianBodyTranspose, JacobianSpatial;
+    vctDoubleMat mJacobianBody, mJacobianBodyTranspose, mJacobianSpatial;
     vctDoubleVec JointExternalEffort;
     WrenchType mWrenchType;
     prmForceCartesianSet mWrenchSet;
