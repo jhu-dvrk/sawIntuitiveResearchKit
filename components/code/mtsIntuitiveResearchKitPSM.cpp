@@ -50,20 +50,12 @@ void mtsIntuitiveResearchKitPSM::SetSimulated(void)
     RemoveInterfaceRequired("Tool");
 }
 
-vctFrame4x4<double> mtsIntuitiveResearchKitPSM::ForwardKinematics(const vctDoubleVec & q, const int N) const
-{
-    if (!mSnakeLike) {
-        return this->Manipulator.ForwardKinematics(q, N);
-    }
-    return this->Manipulator.ForwardKinematics(JointsForSnakeLikeKinematics(q), N);
-}
-
 robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
     if (Manipulator.InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
-        const double difference = JointGet[3] - jointSet[3];
+        const double difference = StateJoint.Position()[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
         // make sure we are away from RCM point, this test is
@@ -75,28 +67,10 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
     }
     return robManipulator::EFAILURE;
 }
-
-bool mtsIntuitiveResearchKitPSM::JacobianBody(const vctDoubleVec & q, vctDoubleMat & J) const {
-    if (!mSnakeLike) {
-        return Manipulator.JacobianBody(q, J);
-    }
-    return Manipulator.JacobianBody(JointsForSnakeLikeKinematics(q), J);
-}
-
-bool mtsIntuitiveResearchKitPSM::JacobianSpatial(const vctDoubleVec & q, vctDoubleMat & J) const {
-    if (!mSnakeLike) {
-        return Manipulator.JacobianSpatial(q, J);
-    }
-    return Manipulator.JacobianSpatial(JointsForSnakeLikeKinematics(q), J);
-}
-
 void mtsIntuitiveResearchKitPSM::Init(void)
 {
     // main initialization from base type
     mtsIntuitiveResearchKitArm::Init();
-
-    // kinematics
-    mSnakeLike = false;
 
     // initialize trajectory data
     JointTrajectory.Velocity.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
@@ -344,7 +318,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         PID.EnableTorqueMode(torqueMode);
         PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
         PID.EnableTrackingError(true);
-        SetPositionJointLocal(JointGetDesired);
+        SetPositionJointLocal(StateJoint.Position());
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
@@ -487,7 +461,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             // gripper
             tolerances.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
             PID.SetTrackingErrorTolerance(tolerances);
-            SetPositionJointLocal(JointGet); // preload PID with current position
+            SetPositionJointLocal(StateJoint.Position()); // preload PID with current position
             PID.EnableTrackingError(true);
             // set tighter pots/encoder tolerances
             PotsToEncodersTolerance.SetAll(20.0 * cmnPI_180); // 20 degrees for rotations
@@ -505,7 +479,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
-        JointSet.Assign(JointGetDesired, this->NumberOfJoints());
+        JointSet.Assign(StateJointDesired.Position(), this->NumberOfJoints());
         if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
             IsGoalSet = false;
             RobotInterface->SendStatus(this->GetName() + " position joint");
@@ -523,10 +497,10 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
                 return;
             }
             // check that the tool is inserted deep enough
-            if (JointGet.Element(2) < 40.0 * cmn_mm) {
+            if (StateJoint.Position().Element(2) < 40.0 * cmn_mm) {
                 RobotInterface->SendError(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula (joint 3 > 40 mm)");
             } else {
-                if (JointGet.Element(2) < 50.0 * cmn_mm) {
+                if (StateJoint.Position().Element(2) < 50.0 * cmn_mm) {
                     RobotInterface->SendWarning(this->GetName() + " cartesian mode started close to RCM (joint 3 < 50 mm), joint 3 will be clamped at 40 mm to avoid moving inside cannula.");
                 }
                 RobotState = newState;
@@ -563,16 +537,16 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         // check that the tool is inserted deep enough
-        if (JointGet.Element(2) < 40.0 * cmn_mm) {
+        if (StateJoint.Position().Element(2) < 40.0 * cmn_mm) {
             RobotInterface->SendError(this->GetName() + " can't start cartesian effort mode, make sure the tool is inserted past the cannula (joint 3 > 40 mm)");
         } else {
-            vctBoolVec torqueMode(NumberOfJointsKinematics());
+            vctBoolVec torqueMode(NumberOfPhysicalJointsKinematics());
             torqueMode.SetAll(true);
             PID.EnableTorqueMode(torqueMode);
             PID.EnableTrackingError(false);
-            PID.SetTorqueOffset(vctDoubleVec(NumberOfJointsKinematics(), 0.0));
+            PID.SetTorqueOffset(vctDoubleVec(NumberOfPhysicalJointsKinematics(), 0.0));
             RobotState = newState;
-            JointExternalEffort.SetSize(NumberOfJointsKinematics());
+            JointExternalEffort.SetSize(NumberOfPhysicalJointsKinematics());
             mWrenchSet.Force().Zeros();
             mWrenchType = WRENCH_UNDEFINED;
             RobotInterface->SendStatus(this->GetName() + " effort cartesian");
@@ -585,7 +559,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         // check that the tool is inserted deep enough
-        if (JointGet.Element(2) < 80.0 * cmn_mm) {
+        if (StateJoint.Position().Element(2) < 80.0 * cmn_mm) {
             RobotInterface->SendError(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
@@ -641,14 +615,14 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         // disable joint limits
         PID.SetCheckJointLimit(false);
         // enable PID and start from current position
-        JointSet.ForceAssign(JointGet);
+        JointSet.ForceAssign(StateJoint.Position());
         SetPositionJointLocal(JointSet);
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.Enable(true);
 
         // make sure we start from current state
-        JointSet.Assign(JointGetDesired, NumberOfJoints());
-        JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
+        JointSet.Assign(StateJointDesired.Position(), NumberOfJoints());
+        JointVelocitySet.Assign(StateJoint.Velocity(), NumberOfJoints());
 
         // compute joint goal position
         // check if tool is present and if user wants to go to zero position
@@ -659,7 +633,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
             JointTrajectory.Goal.SetAll(0.0);
         } else {
             // stay at current position by default
-            JointTrajectory.Goal.Assign(JointGet);
+            JointTrajectory.Goal.Assign(StateJoint.Position());
         }
 
         JointTrajectory.GoalVelocity.SetAll(0.0);
@@ -689,7 +663,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         {
             // check position
-            JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
+            JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, StateJoint.Position());
             JointTrajectory.GoalError.AbsSelf();
             bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
             if (isHomed) {
@@ -808,19 +782,19 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         PID.SetTrackingErrorTolerance(tolerances);
         // compute initial time, since we disable power on last 4 use latest read
         vctDoubleVec initialPosition(NumberOfJoints());
-        initialPosition.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
-        initialPosition.Ref(4, 3).Assign(JointGet.Ref(4, 3));
+        initialPosition.Ref(3, 0).Assign(StateJointDesired.Position().Ref(3, 0));
+        initialPosition.Ref(4, 3).Assign(StateJoint.Position().Ref(4, 3));
         SetPositionJointLocal(initialPosition);
         // turn on PID
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
 
         // make sure we start from current state
-        JointSet.Assign(JointGetDesired, NumberOfJoints());
-        JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
+        JointSet.Assign(StateJointDesired.Position(), NumberOfJoints());
+        JointVelocitySet.Assign(StateJoint.Velocity(), NumberOfJoints());
 
         // keep first two joint values as is
-        JointTrajectory.Goal.Ref(2, 0).Assign(JointGetDesired.Ref(2, 0));
+        JointTrajectory.Goal.Ref(2, 0).Assign(StateJointDesired.Position().Ref(2, 0));
         // sterile adapter should be raised up
         JointTrajectory.Goal[2] = 0.0;
         // set last 4 to -170.0
@@ -911,19 +885,19 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         PID.SetTrackingErrorTolerance(tolerances);
         // compute initial time, since we disable power on last 4 use latest read
         vctDoubleVec initialPosition(NumberOfJoints());
-        initialPosition.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
-        initialPosition.Ref(4, 3).Assign(JointGet.Ref(4, 3));
+        initialPosition.Ref(3, 0).Assign(StateJointDesired.Position().Ref(3, 0));
+        initialPosition.Ref(4, 3).Assign(StateJoint.Position().Ref(4, 3));
         SetPositionJointLocal(initialPosition);
         // turn on PID
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
 
         // make sure we start from current state
-        JointSet.Assign(JointGetDesired, NumberOfJoints());
-        JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
+        JointSet.Assign(StateJointDesired.Position(), NumberOfJoints());
+        JointVelocitySet.Assign(StateJoint.Velocity(), NumberOfJoints());
 
         // check if the tool in outside the cannula
-        if (JointGet.Element(2) > 50.0 * cmn_mm) {
+        if (StateJoint.Position().Element(2) > 50.0 * cmn_mm) {
             std::string message = this->GetName();
             message.append(" tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
             message.append("  If the tool is not engaged properly, move sterile adpater all the way up and re-insert tool.");
@@ -932,7 +906,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         }
 
         // keep first three joint values as is
-        JointTrajectory.Goal.Ref(3, 0).Assign(JointGetDesired.Ref(3, 0));
+        JointTrajectory.Goal.Ref(3, 0).Assign(StateJointDesired.Position().Ref(3, 0));
         // set last 4 to user preferences
         JointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
         JointTrajectory.GoalVelocity.SetAll(0.0);
@@ -1006,12 +980,12 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
         IsGoalSet = false;
 
         // Update kinematics and VF data objects
-        Optimizer->UpdateParams(JointGet,
-                                   Manipulator,
-                                   this->GetPeriodicity(),
-                                   CartesianGet,
-                                   vctFrm4x4(CartesianSetParam.Goal())
-                                   );
+        Optimizer->UpdateParams(StateJoint.Position(),
+                                Manipulator,
+                                this->GetPeriodicity(),
+                                CartesianGet,
+                                vctFrm4x4(CartesianSetParam.Goal())
+                                );
 
         vctDoubleVec dq;
         // Make sure the return value is meaningful
@@ -1020,7 +994,8 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
 
             // send command to move to specified position
             vctDoubleVec FinalJoint(6);
-            FinalJoint.Assign(JointGet,6);
+            std::cerr << CMN_LOG_DETAILS << " -- this is bad, state shouldn't be modified in arm classes.   Can we remove this mode and optimizer?  Anton" << std::endl;
+            FinalJoint.Assign(StateJoint.Position(), 6);
             FinalJoint = FinalJoint + dq;
             FinalJoint.resize(7);
 
@@ -1151,9 +1126,8 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
     } else {
         if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL) {
             // set command joint position to joint current
-            PID.GetPositionJoint(JointGetParam);
-            JointGet.Assign(JointGetParam.Position(), NumberOfJoints());
-            JointSet.ForceAssign(JointGet);
+            PID.GetStateJoint(StateJoint);
+            JointSet.ForceAssign(StateJoint.Position());
             SetPositionJointLocal(JointSet);
             // Enable PID
             PID.Enable(true);

@@ -72,7 +72,7 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
     jointSet[5] = 0.0;
     if (Manipulator.InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
-        const double difference = JointGet[6] - jointSet[6];
+        const double difference = StateJoint.Position()[6] - jointSet[6];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[6] = jointSet[6] + differenceInTurns * 2.0 * cmnPI;
         return robManipulator::ESUCCESS;
@@ -198,7 +198,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         torqueMode.SetAll(false);
         PID.EnableTorqueMode(torqueMode);
         PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
-        SetPositionJointLocal(JointGetDesired);
+        SetPositionJointLocal(StateJointDesired.Position());
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
@@ -261,7 +261,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
-        JointSet.Assign(JointGetDesired, this->NumberOfJoints());
+        JointSet.Assign(StateJointDesired.Position(), this->NumberOfJoints());
         if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
             IsGoalSet = false;
             RobotInterface->SendStatus(this->GetName() + " position joint");
@@ -280,7 +280,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         }
         RobotState = newState;
         //set jnt to current pos, otherwise the robot will jump to previous setpoint
-        JointSet.ForceAssign(JointGet);
+        JointSet.ForceAssign(StateJoint.Position());
         SetPositionJointLocal(JointSet);
 
         if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN)
@@ -351,19 +351,19 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         // disable joint limits
         PID.SetCheckJointLimit(false);
         // enable PID and start from current position
-        JointSet.Assign(JointGetDesired, NumberOfJoints());
+        JointSet.Assign(StateJointDesired.Position(), NumberOfJoints());
         SetPositionJointLocal(JointSet);
         PID.Enable(true);
 
         // make sure we start from current state
-        JointSet.Assign(JointGetDesired, NumberOfJoints());
-        JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
+        JointSet.Assign(StateJointDesired.Position(), NumberOfJoints());
+        JointVelocitySet.Assign(StateJoint.Velocity(), NumberOfJoints());
 
         // compute joint goal position
         JointTrajectory.Goal.SetAll(0.0);
         // last joint is calibrated later
         if (!HomedOnce) {
-            JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = JointGet.Element(JNT_WRIST_ROLL);
+            JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = StateJoint.Position().Element(JNT_WRIST_ROLL);
         }
         JointTrajectory.GoalVelocity.SetAll(0.0);
         JointTrajectory.EndTime = 0.0;
@@ -392,7 +392,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
 
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         // check position
-        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
+        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, StateJoint.Position());
         JointTrajectory.GoalError.AbsSelf();
         isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
@@ -437,7 +437,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         PID.SetCheckJointLimit(false);
         // compute joint goal position, we assume PID is on from previous state
         JointTrajectory.Goal.SetAll(0.0);
-        const double currentRoll = JointGetDesired.Element(JNT_WRIST_ROLL);
+        const double currentRoll = StateJointDesired.Position().Element(JNT_WRIST_ROLL);
         JointTrajectory.Goal.Element(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
         JointTrajectory.GoalVelocity.SetAll(0.0);
         JointTrajectory.EndTime = 0.0;
@@ -464,9 +464,9 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
                 HomingTimer = JointTrajectory.EndTime;
             }
             // detect tracking error and set lower limit
-            trackingError = std::abs(JointGet.Element(JNT_WRIST_ROLL) - JointSet.Element(JNT_WRIST_ROLL));
+            trackingError = std::abs(StateJoint.Position().Element(JNT_WRIST_ROLL) - JointSet.Element(JNT_WRIST_ROLL));
             if (trackingError > maxTrackingError) {
-                HomingCalibrateRollLower = JointGet.Element(JNT_WRIST_ROLL);
+                HomingCalibrateRollLower = StateJoint.Position().Element(JNT_WRIST_ROLL);
                 RobotInterface->SendStatus(this->GetName() + " found roll lower limit");
             } else {
                 // time out
@@ -522,7 +522,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateRoll(void)
         break;
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         // check position
-        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
+        JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, StateJoint.Position());
         JointTrajectory.GoalError.AbsSelf();
         isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
         if (isHomed) {
@@ -555,18 +555,18 @@ void mtsIntuitiveResearchKitMTM::RunEffortOrientationLocked(void)
 {
     // don't get current joint values!
     // always initialize IK from position when locked
-    vctDoubleVec jointSet(EffortOrientationJoint.Ref(NumberOfJointsKinematics()));
+    vctDoubleVec jointSet(EffortOrientationJoint.Ref(NumberOfPhysicalJointsKinematics()));
     // compute desired position from current position and locked orientation
     CartesianPositionFrm.Translation().Assign(CartesianGetLocal.Translation());
     CartesianPositionFrm.Rotation().From(EffortOrientation);
     if (Manipulator.InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
-        const double difference = JointGet[6] - jointSet[6];
+        const double difference = StateJoint.Position()[6] - jointSet[6];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[6] = jointSet[6] + differenceInTurns * 2.0 * cmnPI;
 
         // assign to joints used for kinematics
-        JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
+        JointSet.Ref(NumberOfPhysicalJointsKinematics()).Assign(jointSet);
         // finally send new joint values
         SetPositionJointLocal(JointSet);
     } else {
@@ -596,7 +596,7 @@ void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
     }
     // in any case, update desired orientation
     EffortOrientation.Assign(orientation);
-    EffortOrientationJoint.Assign(JointGet);
+    EffortOrientationJoint.Assign(StateJoint.Position());
 }
 
 void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)

@@ -53,8 +53,12 @@ protected:
         return 7;
     }
 
-    inline size_t NumberOfJointsKinematics(void) const {
+    inline size_t NumberOfControlledJointsKinematics(void) const {
         return 6;
+    }
+
+    inline size_t NumberOfPhysicalJointsKinematics(void) const {
+        return mSnakeLike ? 8 : 6;
     }
 
     inline size_t NumberOfBrakes(void) const {
@@ -64,11 +68,8 @@ protected:
     inline bool UsePIDTrackingError(void) const {
         return false;
     }
-
-    /*! 5mm tools with 8 joints */
-    bool mSnakeLike;
     
-    inline vctReturnDynamicVector<double> JointsForSnakeLikeKinematics(const vctDoubleVec & joints) const {
+    inline vctReturnDynamicVector<double> KinematicsJointsControlledToPhysical(const vctDoubleVec & joints) const {
         vctDoubleVec result(8);
         result[0] = joints[0];
         result[1] = joints[1];
@@ -80,15 +81,9 @@ protected:
         result[7] = joints[4] * 0.5;
         return vctReturnDynamicVector<double>(result);
     }
-    
-    vctFrame4x4<double> ForwardKinematics(const vctDoubleVec & q, const int N) const;
 
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
-
-    bool JacobianBody(const vctDoubleVec & q, vctDoubleMat & J) const;
-
-    bool JacobianSpatial(const vctDoubleVec & q, vctDoubleMat & J) const;
 
     void Init(void);
 

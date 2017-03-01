@@ -46,7 +46,11 @@ protected:
         return 4;
     }
 
-    inline size_t NumberOfJointsKinematics(void) const {
+    inline size_t NumberOfControlledJointsKinematics(void) const {
+        return 4;
+    }
+
+    inline size_t NumberOfPhysicalJointsKinematics(void) const {
         return 4;
     }
 
