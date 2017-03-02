@@ -94,6 +94,9 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     EffortOrientationJoint.SetSize(NumberOfJoints());
 
     // initialize gripper state
+    Gripper.Name().SetSize(1);
+    Gripper.Name()[0] = "gripper";
+    Gripper.Position().SetSize(1);
     GripperClosed = false;
 
     JointTrajectory.Velocity.SetAll(180.0 * cmnPI_180); // degrees per second
@@ -109,7 +112,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // last joint is gripper, encoders can be anything
     PotsToEncodersTolerance.Element(7) = cmnTypeTraits<double>::PlusInfinityOrMax();
 
-    this->StateTable.AddData(GripperPosition, "GripperAngle");
+    this->StateTable.AddData(Gripper, "StateGripper");
 
     // Main interface should have been created by base class init
     CMN_ASSERT(RobotInterface);
@@ -118,7 +121,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetImpedanceGains, this, "SetImpedanceGains");
 
     // Gripper
-    RobotInterface->AddCommandReadState(this->StateTable, GripperPosition, "GetGripperPosition");
+    RobotInterface->AddCommandReadState(this->StateTable, Gripper, "GetStateGripper");
     RobotInterface->AddEventVoid(GripperEvents.GripperPinch, "GripperPinchEvent");
     RobotInterface->AddEventWrite(GripperEvents.GripperClosed, "GripperClosedEvent", true);
 }
@@ -168,14 +171,20 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
                                 << executionResult << "\"" << std::endl;
         return;
     }
-    GripperPosition = AnalogInputPosSI.Element(7);
+    // for timestamp, we assume the value ws collected at the same time as other joints
+    const double position = AnalogInputPosSI.Element(7);
+    Gripper.Position()[0] = position;
+    Gripper.Timestamp() = JointsPID.Timestamp();
+    Gripper.Valid() = JointsPID.Valid();
+
+    // events associated to gripper
     if (GripperClosed) {
-        if (GripperPosition > 0.0) {
+        if (position > 0.0) {
             GripperClosed = false;
             GripperEvents.GripperClosed(false);
         }
     } else {
-        if (GripperPosition < 0.0) {
+        if (position < 0.0) {
             GripperClosed = true;
             GripperEvents.GripperClosed(true);
             GripperEvents.GripperPinch.Execute();
@@ -392,6 +401,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
 
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         // check position
+        std::cerr << "traj: " << JointTrajectory.Goal.size() << " --- PID: " << JointsPID.Position().size() << std::endl;
         JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointsPID.Position());
         JointTrajectory.GoalError.AbsSelf();
         isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();

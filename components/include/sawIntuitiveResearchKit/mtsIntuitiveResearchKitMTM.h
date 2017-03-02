@@ -127,7 +127,7 @@ protected:
     //! Analog Input from Hardware for Gripper
     vctDoubleVec AnalogInputPosSI;
     //! Gripper angle
-    double GripperPosition;
+    prmStateJoint Gripper;
     bool GripperClosed;
 
     //! robot type

@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -150,7 +151,7 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
         interfaceRequired->AddFunction("GetPositionCartesian", mMTM->GetPositionCartesian);
         interfaceRequired->AddFunction("GetPositionCartesianDesired", mMTM->GetPositionCartesianDesired);
         interfaceRequired->AddFunction("SetPositionGoalCartesian", mMTM->SetPositionGoalCartesian);
-        interfaceRequired->AddFunction("GetGripperPosition", mMTM->GetGripperPosition);
+        interfaceRequired->AddFunction("GetStateGripper", mMTM->GetStateGripper);
         interfaceRequired->AddFunction("LockOrientation", mMTM->LockOrientation);
         interfaceRequired->AddFunction("UnlockOrientation", mMTM->UnlockOrientation);
         interfaceRequired->AddFunction("SetWrenchBody", mMTM->SetWrenchBody);
@@ -582,10 +583,10 @@ void mtsTeleOperationPSM::RunEnabled(void)
             mPSM->SetPositionCartesian(mPSM->PositionCartesianSet);
 
             // Gripper
-            if (mMTM->GetGripperPosition.IsValid()) {
-                double gripperPosition;
-                mMTM->GetGripperPosition(gripperPosition);
-                mPSM->SetJawPosition(gripperPosition);
+            if (mMTM->GetStateGripper.IsValid()) {
+                prmStateJoint gripper;
+                mMTM->GetStateGripper(gripper);
+                mPSM->SetJawPosition(gripper.Position()[0]);
             } else {
                 mPSM->SetJawPosition(45.0 * cmnPI_180);
             }

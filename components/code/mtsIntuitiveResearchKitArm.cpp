@@ -790,7 +790,7 @@ void mtsIntuitiveResearchKitArm::Freeze(void)
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
 {
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT)) {
-        JointSet.Assign(newPosition.Goal(), NumberOfJoints());
+        JointSet.Assign(newPosition.Goal(), NumberOfJointsKinematics());
         IsGoalSet = true;
     }
 }
@@ -799,7 +799,7 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet 
 {
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT)) {
         JointTrajectory.IsWorking = true;
-        JointTrajectory.Goal.Assign(newPosition.Goal(), NumberOfJoints());
+        JointTrajectory.Goal.Assign(newPosition.Goal(), NumberOfJointsKinematics());
         JointTrajectory.GoalVelocity.SetAll(0.0);
         JointTrajectory.EndTime = 0.0;
     }
