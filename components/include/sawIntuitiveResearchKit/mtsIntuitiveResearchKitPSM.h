@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -53,11 +53,7 @@ protected:
         return 7;
     }
 
-    inline size_t NumberOfControlledJointsKinematics(void) const {
-        return 6;
-    }
-
-    inline size_t NumberOfPhysicalJointsKinematics(void) const {
+    inline size_t NumberOfJointsKinematics(void) const {
         return mSnakeLike ? 8 : 6;
     }
 
@@ -68,24 +64,11 @@ protected:
     inline bool UsePIDTrackingError(void) const {
         return false;
     }
-    
-    inline vctReturnDynamicVector<double> KinematicsJointsControlledToPhysical(const vctDoubleVec & joints) const {
-        vctDoubleVec result(8);
-        result[0] = joints[0];
-        result[1] = joints[1];
-        result[2] = joints[2];
-        result[3] = joints[3];
-        result[4] = joints[4] * 0.5;
-        result[5] = joints[5] * 0.5;
-        result[6] = joints[5] * 0.5;
-        result[7] = joints[4] * 0.5;
-        return vctReturnDynamicVector<double>(result);
-    }
-
-    robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                            const vctFrm4x4 & cartesianGoal);
 
     void Init(void);
+    void UpdateJointsKinematics(void);
+    robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
+                                            const vctFrm4x4 & cartesianGoal);
 
     /*! Verify that the state transition is possible, initialize global
       variables for the desired state and finally set the state. */

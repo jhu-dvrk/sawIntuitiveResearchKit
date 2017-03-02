@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -58,19 +58,16 @@ protected:
     };
 
     /*! Configuration methods */
-    inline size_t NumberOfJoints(void) const {
-        return 7;
-    }
-
     inline size_t NumberOfAxes(void) const {
         return 8;
     }
 
-    inline size_t NumberOfControlledJointsKinematics(void) const {
+    inline size_t NumberOfJoints(void) const {
         return 7;
     }
 
-    inline size_t NumberOfPhysicalJointsKinematics(void) const {
+
+    inline size_t NumberOfJointsKinematics(void) const {
         return 7;
     }
 
@@ -82,10 +79,9 @@ protected:
         return false;
     }
 
+    void Init(void);
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
-
-    virtual void Init(void);
 
     /*! Get data specific to the MTM (gripper angle using analog inputs) after
       calling mtsIntuitiveResearchKitArm::GetRobotData. */
@@ -138,7 +134,7 @@ protected:
     MTM_TYPE RobotType;
 
     // Impedance Controller
-    osaImpedanceController *mImpedanceController;    
+    osaImpedanceController *mImpedanceController;
 
     // Home Action
     bool HomingCalibrateRollSeekLower,

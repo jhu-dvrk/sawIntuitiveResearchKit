@@ -66,6 +66,7 @@ protected:
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
     virtual void Init(void);
+    void ResizeKinematicsData(void);
 
     /*! Verify that the state transition is possible, initialize
       global variables for the desired state and finally set the
@@ -80,6 +81,7 @@ protected:
 
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
+    virtual void UpdateJointsKinematics(void);
 
     /*! Homing procedure, bias encoders from potentiometers. */
     virtual void RunHomingBiasEncoder(void);
@@ -140,8 +142,7 @@ protected:
     /*! Configuration methods specific to derived classes. */
     virtual size_t NumberOfAxes(void) const = 0;           // used IO: ECM 4, PSM 7, MTM 8
     virtual size_t NumberOfJoints(void) const = 0;         // used PID: ECM 4, PSM 7, MTM 7
-    virtual size_t NumberOfControlledJointsKinematics(void) const = 0; // used for inverse kinematics: ECM 4, PSM 6, MTM 7
-    virtual size_t NumberOfPhysicalJointsKinematics(void) const = 0; // used for inverse kinematics: ECM 4, PSM 6, MTM 7
+    virtual size_t NumberOfJointsKinematics(void) const = 0; // ECM 4, MTM 7, PSM 6 or 8 (snake like tools)
     virtual size_t NumberOfBrakes(void) const = 0;         // ECM 3, PSM 0, MTM 0
 
     virtual bool UsePIDTrackingError(void) const = 0;      // ECM true, PSM false, MTM false
@@ -224,7 +225,7 @@ protected:
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
     vctDoubleVec JointVelocitySet;
-    prmStateJoint StateJoint, StateJointDesired;
+    prmStateJoint JointsPID, JointsDesiredPID, JointsKinematics, JointsDesiredKinematics;
     
     // efforts
     vctDoubleMat mJacobianBody, mJacobianBodyTranspose, mJacobianSpatial;

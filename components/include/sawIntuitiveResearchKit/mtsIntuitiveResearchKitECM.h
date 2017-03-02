@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -46,11 +46,7 @@ protected:
         return 4;
     }
 
-    inline size_t NumberOfControlledJointsKinematics(void) const {
-        return 4;
-    }
-
-    inline size_t NumberOfPhysicalJointsKinematics(void) const {
+    inline size_t NumberOfJointsKinematics(void) const {
         return 4;
     }
 
@@ -62,10 +58,9 @@ protected:
         return true;
     }
 
+    void Init(void);
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
-
-    void Init(void);
 
     /*! Verify that the state transition is possible, initialize global
       variables for the desired state and finally set the state. */
