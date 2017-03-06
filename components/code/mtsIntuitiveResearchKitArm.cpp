@@ -46,9 +46,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
     HomedOnce = false;
     HomingGoesToZero = false; // MTM ignores this
 
-    // kinematics
-    mSnakeLike = false;
-
     mWrenchBodyOrientationAbsolute = false;
     mGravityCompensation = false;
 
@@ -237,6 +234,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
                                  << filename << "\"" << std::endl;
     }
+    ResizeKinematicsData();
 }
 
 void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
@@ -264,6 +262,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
     this->Manipulator.PrintKinematics(dhResult);
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure " << this->GetName()
                                << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
+    ResizeKinematicsData();
 }
 
 void mtsIntuitiveResearchKitArm::Startup(void)
@@ -446,15 +445,15 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             mWrenchGet.SetTimestamp(JointsKinematics.Timestamp());
 
             // update cartesian position desired based on joint desired
-            CartesianGetLocalDesired = Manipulator.ForwardKinematics(JointsDesiredPID.Position());
+            CartesianGetLocalDesired = Manipulator.ForwardKinematics(JointsDesiredKinematics.Position());
             CartesianGetDesired = BaseFrame * CartesianGetLocalDesired;
             // normalize
             CartesianGetLocalDesired.Rotation().NormalizedSelf();
             CartesianGetDesired.Rotation().NormalizedSelf();
             // flags
-            CartesianGetLocalDesiredParam.SetTimestamp(JointsDesiredPID.Timestamp());
+            CartesianGetLocalDesiredParam.SetTimestamp(JointsDesiredKinematics.Timestamp());
             CartesianGetLocalDesiredParam.SetValid(true);
-            CartesianGetDesiredParam.SetTimestamp(JointsDesiredPID.Timestamp());
+            CartesianGetDesiredParam.SetTimestamp(JointsDesiredKinematics.Timestamp());
             CartesianGetDesiredParam.SetValid(BaseFrameValid);
         } else {
             // update cartesian position
@@ -481,6 +480,11 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         JointsPID.Velocity().Zeros();
         JointsPID.Effort().Zeros();
         JointsPID.SetValid(false);
+
+        JointsKinematics.Position().Zeros();
+        JointsKinematics.Velocity().Zeros();
+        JointsKinematics.Effort().Zeros();
+        JointsKinematics.SetValid(false);
     }
 }
 
@@ -505,6 +509,11 @@ void mtsIntuitiveResearchKitArm::UpdateJointsKinematics(void)
     // JointsDesiredKinematics.Velocity().ForceAssign(JointsDesiredPID.Velocity().Ref(NumberOfJointsKinematics()));
     JointsDesiredKinematics.Effort().ForceAssign(JointsDesiredPID.Effort().Ref(NumberOfJointsKinematics()));
     JointsDesiredKinematics.Timestamp() = JointsDesiredPID.Timestamp();
+}
+
+void mtsIntuitiveResearchKitArm::ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID)
+{
+    jointsPID.Assign(jointsKinematics);
 }
 
 void mtsIntuitiveResearchKitArm::RunHomingBiasEncoder(void)
@@ -542,7 +551,7 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
         PID.Enable(true);
         vctDoubleVec goal(NumberOfJoints());
         goal.SetAll(0.0);
-        SetPositionJointLocal(goal);
+        mtsIntuitiveResearchKitArm::SetPositionJointLocal(goal);
         this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM);
         return;
     }
@@ -579,7 +588,7 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
 
         // pre-load PID to make sure desired position has some reasonable values
         PID.GetStateJoint(JointsPID);
-        SetPositionJointLocal(JointsPID.Position());
+        mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsPID.Position());
 
         // check power status
         vctBoolVec actuatorAmplifiersStatus(NumberOfJoints());
@@ -625,7 +634,7 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
                                        JointVelocitySet,
                                        JointTrajectory.Goal,
                                        JointTrajectory.GoalVelocity);
-    SetPositionJointLocal(JointSet);
+    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
 
     const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
     const double currentTime = this->StateTable.GetTic();
@@ -784,7 +793,7 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
 void mtsIntuitiveResearchKitArm::Freeze(void)
 {
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT);
-    SetPositionJointLocal(JointsDesiredPID.Position());
+    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsDesiredPID.Position());
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
@@ -799,7 +808,7 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet 
 {
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT)) {
         JointTrajectory.IsWorking = true;
-        JointTrajectory.Goal.Assign(newPosition.Goal(), NumberOfJointsKinematics());
+        ToJointsPID(newPosition.Goal(), JointTrajectory.Goal);
         JointTrajectory.GoalVelocity.SetAll(0.0);
         JointTrajectory.EndTime = 0.0;
     }

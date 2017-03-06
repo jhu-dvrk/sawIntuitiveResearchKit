@@ -82,6 +82,7 @@ protected:
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
     virtual void UpdateJointsKinematics(void);
+    virtual void ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID);
 
     /*! Homing procedure, bias encoders from potentiometers. */
     virtual void RunHomingBiasEncoder(void);
@@ -201,8 +202,6 @@ protected:
         mtsFunctionWrite RobotState;
     } MessageEvents;
 
-    /*! 5mm tools with 8 joints */
-    bool mSnakeLike;
     robManipulator Manipulator;
 
     // Cache cartesian goal position

@@ -67,6 +67,8 @@ protected:
 
     void Init(void);
     void UpdateJointsKinematics(void);
+    void ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID);
+
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
 
@@ -106,6 +108,7 @@ protected:
 
     void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     void SetJawPosition(const double & openAngle);
+    void SetPositionJointLocal(const vctDoubleVec & newPosition);
     void EnableJointsEventHandler(const vctBoolVec & enable);
     void CouplingEventHandler(const prmActuatorJointCoupling & coupling);
 
@@ -133,8 +136,14 @@ protected:
         mtsIntuitiveResearchKitArmTypes::RobotStateType ManipClutchPreviousState;
     } ClutchEvents;
 
+    /*! 5mm tools with 8 joints */
+    bool mSnakeLike;
+
     robManipulator * ToolOffset;
     vctFrm4x4 ToolOffsetTransformation;
+
+    prmStateJoint Jaw, JawDesired;
+    double JawGoal;
 
     // Home Action
     unsigned int EngagingStage; // 0 requested

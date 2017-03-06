@@ -55,6 +55,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // main initialization from base type
     mtsIntuitiveResearchKitArm::Init();
 
+    // kinematics
+    mSnakeLike = false;
+
     // initialize trajectory data
     JointTrajectory.Velocity.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
     JointTrajectory.Velocity.Element(2) = 0.2; // m per second
@@ -84,6 +87,14 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 
     // Main interface should have been created by base class init
     CMN_ASSERT(RobotInterface);
+    Jaw.SetAutomaticTimestamp(false);
+    StateTable.AddData(Jaw, "Jaw");
+
+    JawDesired.SetAutomaticTimestamp(false);
+    StateTable.AddData(JawDesired, "JawDesired");
+
+    RobotInterface->AddCommandReadState(this->StateTable, Jaw, "GetStateJaw");
+    RobotInterface->AddCommandReadState(this->StateTable, JawDesired, "GetStateJawDesired");
     RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetJawPosition, this, "SetJawPosition");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolPresent, this, "SetToolPresent");
@@ -128,11 +139,100 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 
 void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
 {
+    const size_t nbPIDJoints = JointsPID.Name().size();
+    const size_t jawIndex = nbPIDJoints - 1;
+
+    if (Jaw.Name().size() == 0) {
+        Jaw.Name().SetSize(1);
+        Jaw.Name().at(0) = JointsPID.Name().at(jawIndex);
+        Jaw.Position().SetSize(1);
+        Jaw.Velocity().SetSize(1);
+        Jaw.Effort().SetSize(1);
+
+        JawDesired.Name().SetSize(1);
+        JawDesired.Name().at(0) = JointsDesiredPID.Name().at(jawIndex);
+        JawDesired.Position().SetSize(1);
+        JawDesired.Velocity().SetSize(0);
+        JawDesired.Effort().SetSize(1);
+    }
+
+    Jaw.Position().at(0) = JointsPID.Position().at(jawIndex);
+    Jaw.Velocity().at(0) = JointsPID.Velocity().at(jawIndex);
+    Jaw.Effort().at(0)   = JointsPID.Effort().at(jawIndex);
+
+    JawDesired.Position().at(0) = JointsDesiredPID.Position().at(jawIndex);
+    JawDesired.Effort().at(0)   = JointsDesiredPID.Effort().at(jawIndex);
+
     if (!mSnakeLike) {
         mtsIntuitiveResearchKitArm::UpdateJointsKinematics();
         return;
     }
-    std::cerr << "Do something here" << std::endl;
+
+    if (JointsKinematics.Name().size() != NumberOfJointsKinematics()) {
+        JointsKinematics.Name().SetSize(NumberOfJointsKinematics());
+        JointsKinematics.Position().SetSize(NumberOfJointsKinematics());
+        JointsKinematics.Velocity().SetSize(NumberOfJointsKinematics());
+        JointsKinematics.Effort().SetSize(NumberOfJointsKinematics());
+
+        JointsKinematics.Name().Assign(JointsPID.Name(), 4);
+        JointsKinematics.Name().at(4) = JointsPID.Name().at(4) +"1";
+        JointsKinematics.Name().at(5) = JointsPID.Name().at(5) +"1";
+        JointsKinematics.Name().at(6) = JointsPID.Name().at(5) +"2";
+        JointsKinematics.Name().at(7) = JointsPID.Name().at(4) +"2";
+    }
+
+    // Position
+    JointsKinematics.Position().Assign(JointsPID.Position(), 4);
+    JointsKinematics.Position().at(4) = JointsKinematics.Position().at(7) = JointsPID.Position().at(4) / 2.0;
+    JointsKinematics.Position().at(5) = JointsKinematics.Position().at(6) = JointsPID.Position().at(5) / 2.0;
+
+    // Velocity
+    JointsKinematics.Velocity().Assign(JointsPID.Velocity(), 4);
+    JointsKinematics.Velocity().at(4) = JointsKinematics.Velocity().at(7) = JointsPID.Velocity().at(4) / 2.0;
+    JointsKinematics.Velocity().at(5) = JointsKinematics.Velocity().at(6) = JointsPID.Velocity().at(5) / 2.0;
+
+    // Effort
+    JointsKinematics.Effort().Assign(JointsPID.Effort(), 4);
+    JointsKinematics.Effort().at(4) = JointsKinematics.Effort().at(7) = JointsPID.Effort().at(4) / 2.0;
+    JointsKinematics.Effort().at(5) = JointsKinematics.Effort().at(6) = JointsPID.Effort().at(5) / 2.0;
+    JointsKinematics.Timestamp() = JointsPID.Timestamp();
+
+    if (JointsDesiredKinematics.Name().size() != NumberOfJointsKinematics()) {
+        JointsDesiredKinematics.Name().SetSize(NumberOfJointsKinematics());
+        JointsDesiredKinematics.Position().SetSize(NumberOfJointsKinematics());
+        JointsDesiredKinematics.Velocity().SetSize(NumberOfJointsKinematics());
+        JointsDesiredKinematics.Effort().SetSize(NumberOfJointsKinematics());
+
+        JointsDesiredKinematics.Name().Assign(JointsDesiredPID.Name(), 4);
+        JointsDesiredKinematics.Name().at(4) = JointsDesiredPID.Name().at(4) +"1";
+        JointsDesiredKinematics.Name().at(5) = JointsDesiredPID.Name().at(5) +"1";
+        JointsDesiredKinematics.Name().at(6) = JointsDesiredPID.Name().at(5) +"2";
+        JointsDesiredKinematics.Name().at(7) = JointsDesiredPID.Name().at(4) +"2";
+    }
+
+    // Position
+    JointsDesiredKinematics.Position().Assign(JointsDesiredPID.Position(), 4);
+    JointsDesiredKinematics.Position().at(4) = JointsDesiredKinematics.Position().at(7) = JointsDesiredPID.Position().at(4) / 2.0;
+    JointsDesiredKinematics.Position().at(5) = JointsDesiredKinematics.Position().at(6) = JointsDesiredPID.Position().at(5) / 2.0;
+
+    // Effort
+    JointsDesiredKinematics.Effort().Assign(JointsPID.Effort(), 4);
+    JointsDesiredKinematics.Effort().at(4) = JointsDesiredKinematics.Effort().at(7) = JointsDesiredPID.Effort().at(4) / 2.0;
+    JointsDesiredKinematics.Effort().at(5) = JointsDesiredKinematics.Effort().at(6) = JointsDesiredPID.Effort().at(5) / 2.0;
+    JointsDesiredKinematics.Timestamp() = JointsDesiredPID.Timestamp();
+}
+
+void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID)
+{
+    if (mSnakeLike) {
+        jointsPID.Assign(jointsKinematics, 4);
+        // Test if position 4 and 7 are very much apart; throw error maybe ?
+        jointsPID.at(4) = jointsKinematics.at(4) + jointsKinematics.at(7);
+        // Same goes for 5 and 6
+        jointsPID.at(5) = jointsKinematics.at(5) + jointsKinematics.at(6);
+    } else {
+        jointsPID.Assign(jointsKinematics, 6);
+    }
 }
 
 robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec & jointSet,
@@ -329,7 +429,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         PID.EnableTorqueMode(torqueMode);
         PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
         PID.EnableTrackingError(true);
-        SetPositionJointLocal(JointsPID.Position());
+        mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsPID.Position());
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
@@ -472,7 +572,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             // gripper
             tolerances.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
             PID.SetTrackingErrorTolerance(tolerances);
-            SetPositionJointLocal(JointsPID.Position()); // preload PID with current position
+            mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsPID.Position()); // preload PID with current position
             PID.EnableTrackingError(true);
             // set tighter pots/encoder tolerances
             PotsToEncodersTolerance.SetAll(20.0 * cmnPI_180); // 20 degrees for rotations
@@ -795,7 +895,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         vctDoubleVec initialPosition(NumberOfJoints());
         initialPosition.Ref(3, 0).Assign(JointsDesiredPID.Position().Ref(3, 0));
         initialPosition.Ref(4, 3).Assign(JointsPID.Position().Ref(4, 3));
-        SetPositionJointLocal(initialPosition);
+        mtsIntuitiveResearchKitArm::SetPositionJointLocal(initialPosition);
         // turn on PID
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
@@ -898,7 +998,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         vctDoubleVec initialPosition(NumberOfJoints());
         initialPosition.Ref(3, 0).Assign(JointsDesiredPID.Position().Ref(3, 0));
         initialPosition.Ref(4, 3).Assign(JointsPID.Position().Ref(4, 3));
-        SetPositionJointLocal(initialPosition);
+        mtsIntuitiveResearchKitArm::SetPositionJointLocal(initialPosition);
         // turn on PID
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
@@ -1004,11 +1104,10 @@ void mtsIntuitiveResearchKitPSM::RunConstraintControllerCartesian(void)
             // make appropriate adjustments to incremental motion specific to davinci
 
             // send command to move to specified position
-            vctDoubleVec FinalJoint(6);
+            vctDoubleVec FinalJoint(NumberOfJointsKinematics());
             std::cerr << CMN_LOG_DETAILS << " -- this is bad, state shouldn't be modified in arm classes.   Can we remove this mode and optimizer?  Anton" << std::endl;
-            FinalJoint.Assign(JointsPID.Position(), 6);
+            FinalJoint.Assign(JointsKinematics.Position());
             FinalJoint = FinalJoint + dq;
-            FinalJoint.resize(7);
 
             // find closest solution mod 2 pi
             double diffTurns = nearbyint(-dq[3] / (2.0 * cmnPI));
@@ -1036,21 +1135,33 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
 
 void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 {
+    const size_t jawIndex = JointsPID.Name().size() - 1;
     switch (RobotState) {
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
     case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
-        JointSet[6] = jawPosition;
+        JawGoal = jawPosition;
         IsGoalSet = true;
         break;
+    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
         JointTrajectory.IsWorking = true;
-        JointTrajectory.Goal[6] = jawPosition;
+        JointTrajectory.Goal[jawIndex] = jawPosition;
         JointTrajectory.EndTime = 0.0;
         break;
     default:
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": SetJawPosition: PSM not ready" << std::endl;
         break;
     }
+}
+
+void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
+{
+    const size_t jawIndex = JointsPID.Name().size() - 1;
+    JointSetParam.Goal().Zeros();
+    ToJointsPID(newPosition, JointSetParam.Goal());
+    JointSetParam.Goal().at(jawIndex) = JawGoal;
+    PID.SetPositionJoint(JointSetParam);
 }
 
 void mtsIntuitiveResearchKitPSM::CouplingEventHandler(const prmActuatorJointCoupling & coupling)
