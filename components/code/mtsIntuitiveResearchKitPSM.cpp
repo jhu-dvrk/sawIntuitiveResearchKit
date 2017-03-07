@@ -429,7 +429,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
         PID.EnableTorqueMode(torqueMode);
         PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
         PID.EnableTrackingError(true);
-        mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsPID.Position());
+        SetPositionJointLocal(JointsPID.Position());
         break;
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
@@ -572,7 +572,7 @@ void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes:
             // gripper
             tolerances.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
             PID.SetTrackingErrorTolerance(tolerances);
-            mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsPID.Position()); // preload PID with current position
+            SetPositionJointLocal(JointsPID.Position()); // preload PID with current position
             PID.EnableTrackingError(true);
             // set tighter pots/encoder tolerances
             PotsToEncodersTolerance.SetAll(20.0 * cmnPI_180); // 20 degrees for rotations
@@ -895,7 +895,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         vctDoubleVec initialPosition(NumberOfJoints());
         initialPosition.Ref(3, 0).Assign(JointsDesiredPID.Position().Ref(3, 0));
         initialPosition.Ref(4, 3).Assign(JointsPID.Position().Ref(4, 3));
-        mtsIntuitiveResearchKitArm::SetPositionJointLocal(initialPosition);
+        SetPositionJointLocal(initialPosition);
         // turn on PID
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
@@ -998,7 +998,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         vctDoubleVec initialPosition(NumberOfJoints());
         initialPosition.Ref(3, 0).Assign(JointsDesiredPID.Position().Ref(3, 0));
         initialPosition.Ref(4, 3).Assign(JointsPID.Position().Ref(4, 3));
-        mtsIntuitiveResearchKitArm::SetPositionJointLocal(initialPosition);
+        SetPositionJointLocal(initialPosition);
         // turn on PID
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
@@ -1157,6 +1157,11 @@ void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 
 void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
+    if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+        mtsIntuitiveResearchKitArm::SetPositionJointLocal(newPosition);
+        return;
+    }
+
     const size_t jawIndex = JointsPID.Name().size() - 1;
     JointSetParam.Goal().Zeros();
     ToJointsPID(newPosition, JointSetParam.Goal());

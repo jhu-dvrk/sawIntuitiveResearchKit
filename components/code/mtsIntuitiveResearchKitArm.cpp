@@ -551,7 +551,7 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
         PID.Enable(true);
         vctDoubleVec goal(NumberOfJoints());
         goal.SetAll(0.0);
-        mtsIntuitiveResearchKitArm::SetPositionJointLocal(goal);
+        SetPositionJointLocal(goal);
         this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM);
         return;
     }
@@ -588,7 +588,7 @@ void mtsIntuitiveResearchKitArm::RunHomingPower(void)
 
         // pre-load PID to make sure desired position has some reasonable values
         PID.GetStateJoint(JointsPID);
-        mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsPID.Position());
+        SetPositionJointLocal(JointsPID.Position());
 
         // check power status
         vctBoolVec actuatorAmplifiersStatus(NumberOfJoints());
@@ -634,7 +634,7 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
                                        JointVelocitySet,
                                        JointTrajectory.Goal,
                                        JointTrajectory.GoalVelocity);
-    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
+    SetPositionJointLocal(JointSet);
 
     const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
     const double currentTime = this->StateTable.GetTic();
@@ -793,7 +793,7 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
 void mtsIntuitiveResearchKitArm::Freeze(void)
 {
     SetState(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT);
-    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsDesiredPID.Position());
+    SetPositionJointLocal(JointsDesiredPID.Position());
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
