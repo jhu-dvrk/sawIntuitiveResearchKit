@@ -54,7 +54,8 @@ protected:
         JNT_SETUP_JNT = 3,
         JNT_WRIST_PITCH = 4,
         JNT_WRIST_YAW = 5,
-        JNT_WRIST_ROLL = 6
+        JNT_WRIST_ROLL = 6,
+        JNT_GRIPPER = 7
     };
 
     /*! Configuration methods */

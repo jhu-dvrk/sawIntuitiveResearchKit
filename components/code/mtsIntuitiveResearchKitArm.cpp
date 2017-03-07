@@ -55,7 +55,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     // initialize trajectory data
     JointSet.SetSize(NumberOfJoints());
     JointVelocitySet.SetSize(NumberOfJoints());
-    JointSetParam.Goal().SetSize(NumberOfAxes());
+    JointSetParam.Goal().SetSize(NumberOfJoints());
     JointTrajectory.Velocity.SetSize(NumberOfJoints());
     JointTrajectory.Acceleration.SetSize(NumberOfJoints());
     JointTrajectory.Goal.SetSize(NumberOfJoints());
@@ -763,7 +763,7 @@ void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
     AddCustomEfforts(JointExternalEffort);
 
     // pad array for PID
-    vctDoubleVec torqueDesired(NumberOfAxes(), 0.0); // for PID
+    vctDoubleVec torqueDesired(NumberOfJoints(), 0.0); // for PID
     torqueDesired.Assign(JointExternalEffort, NumberOfJointsKinematics());
 
     // convert to cisstParameterTypes

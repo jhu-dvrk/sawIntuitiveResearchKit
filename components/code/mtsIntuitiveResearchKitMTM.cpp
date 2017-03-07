@@ -72,9 +72,9 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
     jointSet[5] = 0.0;
     if (Manipulator.InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
-        const double difference = JointsPID.Position()[6] - jointSet[6];
+        const double difference = JointsPID.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        jointSet[6] = jointSet[6] + differenceInTurns * 2.0 * cmnPI;
+        jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
         return robManipulator::ESUCCESS;
     }
     return robManipulator::EFAILURE;
@@ -101,16 +101,16 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 
     JointTrajectory.Velocity.SetAll(180.0 * cmnPI_180); // degrees per second
     JointTrajectory.Acceleration.SetAll(180.0 * cmnPI_180);
-    JointTrajectory.Velocity.Element(6) = 360.0 * cmnPI_180; // roll can go fast
-    JointTrajectory.Acceleration.Element(6) = 360.0 * cmnPI_180;
+    JointTrajectory.Velocity.Element(JNT_WRIST_ROLL) = 360.0 * cmnPI_180; // roll can go fast
+    JointTrajectory.Acceleration.Element(JNT_WRIST_ROLL) = 360.0 * cmnPI_180;
     JointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
-    JointTrajectory.GoalTolerance.Element(6) = 6.0 * cmnPI_180; // roll has low encoder resolution
+    JointTrajectory.GoalTolerance.Element(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
      // IO level treats the gripper as joint :-)
     PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
     // pots on gripper rotation are not directly mapped to encoders
-    PotsToEncodersTolerance.Element(6) = cmnTypeTraits<double>::PlusInfinityOrMax();
+    PotsToEncodersTolerance.Element(JNT_WRIST_ROLL) = cmnTypeTraits<double>::PlusInfinityOrMax();
     // last joint is gripper, encoders can be anything
-    PotsToEncodersTolerance.Element(7) = cmnTypeTraits<double>::PlusInfinityOrMax();
+    PotsToEncodersTolerance.Element(JNT_GRIPPER) = cmnTypeTraits<double>::PlusInfinityOrMax();
 
     this->StateTable.AddData(Gripper, "StateGripper");
 
@@ -172,7 +172,7 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
         return;
     }
     // for timestamp, we assume the value ws collected at the same time as other joints
-    const double position = AnalogInputPosSI.Element(7);
+    const double position = AnalogInputPosSI.Element(JNT_GRIPPER);
     Gripper.Position()[0] = position;
     Gripper.Timestamp() = JointsPID.Timestamp();
     Gripper.Valid() = JointsPID.Valid();
@@ -401,7 +401,6 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
 
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         // check position
-        std::cerr << "traj: " << JointTrajectory.Goal.size() << " --- PID: " << JointsPID.Position().size() << std::endl;
         JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointsPID.Position());
         JointTrajectory.GoalError.AbsSelf();
         isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
@@ -571,9 +570,9 @@ void mtsIntuitiveResearchKitMTM::RunEffortOrientationLocked(void)
     CartesianPositionFrm.Rotation().From(EffortOrientation);
     if (Manipulator.InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
-        const double difference = JointsPID.Position()[6] - jointSet[6];
+        const double difference = JointsPID.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        jointSet[6] = jointSet[6] + differenceInTurns * 2.0 * cmnPI;
+        jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
 
         // assign to joints used for kinematics
         JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
