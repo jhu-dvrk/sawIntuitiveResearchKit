@@ -243,18 +243,16 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
     robManipulator::Errno Err;
     if (mSnakeLike) {
         Err = ManipulatorPSMSnake->InverseKinematics(jointSet, cartesianGoal);
+        // Check for equality Snake joints (4,7) and (5,6)
+        if (fabs(jointSet.at(4) - jointSet.at(7)) > 0.00001 ||
+                fabs(jointSet.at(5) - jointSet.at(6)) > 0.00001) {
+            RobotInterface->SendWarning(GetName() + ": InverseKinematics, equality constraint violated");
+        }
     } else {
         Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);
     }
 
     if (Err == robManipulator::ESUCCESS) {
-        // Check for equality Snake joints (4,7) and (5,6)
-
-        if (fabs(jointSet.at(4) - jointSet.at(7)) > 0.00001 ||
-                fabs(jointSet.at(5) - jointSet.at(6)) > 0.00001) {
-            RobotInterface->SendWarning(GetName() + ": InverseKinematics, equality constraint violated");
-        }
-
         // find closest solution mgod 2 pi
         const double difference = JointsPID.Position()[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
@@ -1158,7 +1156,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionCartesian(const prmPositionCartesian
 
 void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 {
-    const size_t jawIndex = JointsPID.Name().size() - 1;
+    const size_t jawIndex = 6;
     switch (RobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
     case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
@@ -1180,7 +1178,8 @@ void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 
 void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
-    if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+    if ( (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) ||
+            (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL)) {
         mtsIntuitiveResearchKitArm::SetPositionJointLocal(newPosition);
         return;
     }

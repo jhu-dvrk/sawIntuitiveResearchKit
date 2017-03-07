@@ -197,7 +197,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
                             << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(newState) << std::endl;
 
-    vctBoolVec torqueMode(8);
+    vctBoolVec torqueMode(NumberOfJoints());
 
     // first cleanup from previous state
     switch (RobotState) {
@@ -206,7 +206,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         // Disable torque mode for all joints
         torqueMode.SetAll(false);
         PID.EnableTorqueMode(torqueMode);
-        PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
+        PID.SetTorqueOffset(vctDoubleVec(NumberOfJoints(), 0.0));
         SetPositionJointLocal(JointsDesiredPID.Position());
         break;
 
@@ -311,7 +311,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         torqueMode.SetAll(true);
         PID.EnableTorqueMode(torqueMode);
         PID.EnableTrackingError(false);
-        PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
+        PID.SetTorqueOffset(vctDoubleVec(NumberOfJoints(), 0.0));
         RobotState = newState;
         mWrenchSet.Force().Zeros();
         mWrenchType = WRENCH_UNDEFINED;
@@ -327,7 +327,7 @@ void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes:
         torqueMode.SetAll(true);
         PID.EnableTorqueMode(torqueMode);
         PID.EnableTrackingError(false);
-        PID.SetTorqueOffset(vctDoubleVec(8, 0.0));
+        PID.SetTorqueOffset(vctDoubleVec(NumberOfJoints(), 0.0));
         RobotState = newState;
         mImpedanceController->ResetGains();
         mWrenchSet.Force().Zeros();
@@ -595,7 +595,7 @@ void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
 {
     // if we just started lock
     if (!EffortOrientationLocked) {
-        vctBoolVec torqueMode(8);
+        vctBoolVec torqueMode(NumberOfJoints());
         // first 3 joints in torque mode
         torqueMode.Ref(3, 0).SetAll(true);
         // last 4 in PID mode
@@ -612,7 +612,7 @@ void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)
 {
     // only unlock if needed
     if (EffortOrientationLocked) {
-        vctBoolVec torqueMode(8);
+        vctBoolVec torqueMode(NumberOfJoints());
         torqueMode.SetAll(true);
         PID.EnableTorqueMode(torqueMode);
         EffortOrientationLocked = false;

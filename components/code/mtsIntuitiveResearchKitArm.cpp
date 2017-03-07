@@ -668,11 +668,9 @@ void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
 
         // compute desired arm position
         CartesianPositionFrm.From(CartesianSetParam.Goal());
-        if (this->InverseKinematics(jointSet, BaseFrame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
-            // assign to joints used for kinematics
-            JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
+        if (this->InverseKinematics(jointSet, BaseFrame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {            
             // finally send new joint values
-            SetPositionJointLocal(JointSet);
+            SetPositionJointLocal(jointSet);
         } else {
             RobotInterface->SendError(this->GetName() + " unable to solve inverse kinematics.");
         }
@@ -698,8 +696,7 @@ void mtsIntuitiveResearchKitArm::TrajectoryIsUsed(const bool used)
     // parameters
     if (used) {        
         JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
-        JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
-        JointTrajectory.Goal.Assign(JointsDesiredPID.Position());
+        JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());        
         JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
@@ -758,6 +755,7 @@ void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
         JointExternalEffort.ProductOf(mJacobianSpatial.Transpose(), force);
     }
 
+    return;
     // add gravity compensation if needed
     if (mGravityCompensation) {
         AddGravityCompensationEfforts(JointExternalEffort);
@@ -768,7 +766,7 @@ void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
 
     // pad array for PID
     vctDoubleVec torqueDesired(NumberOfJoints(), 0.0); // for PID
-    torqueDesired.Assign(JointExternalEffort, NumberOfJointsKinematics());
+    torqueDesired.Assign(JointExternalEffort, NumberOfJoints());
 
     // convert to cisstParameterTypes
     TorqueSetParam.SetForceTorque(torqueDesired);
