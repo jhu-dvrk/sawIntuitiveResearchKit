@@ -225,12 +225,14 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
 void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID)
 {
     if (mSnakeLike) {
+        CMN_ASSERT(jointsKinematics.size() == 8);
         jointsPID.Assign(jointsKinematics, 4);
         // Test if position 4 and 7 are very much apart; throw error maybe ?
         jointsPID.at(4) = jointsKinematics.at(4) + jointsKinematics.at(7);
         // Same goes for 5 and 6
         jointsPID.at(5) = jointsKinematics.at(5) + jointsKinematics.at(6);
     } else {
+        CMN_ASSERT(jointsKinematics.size() == 6);
         jointsPID.Assign(jointsKinematics, 6);
     }
 }
@@ -238,7 +240,21 @@ void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec &jointsKinematic
 robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
-    if (Manipulator.InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
+    robManipulator::Errno Err;
+    if (mSnakeLike) {
+        Err = ManipulatorPSMSnake->InverseKinematics(jointSet, cartesianGoal);
+    } else {
+        Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);
+    }
+
+    if (Err == robManipulator::ESUCCESS) {
+        // Check for equality Snake joints (4,7) and (5,6)
+
+        if (fabs(jointSet.at(4) - jointSet.at(7)) > 0.00001 ||
+                fabs(jointSet.at(5) - jointSet.at(6)) > 0.00001) {
+            RobotInterface->SendWarning(GetName() + ": InverseKinematics, equality constraint violated");
+        }
+
         // find closest solution mgod 2 pi
         const double difference = JointsPID.Position()[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
@@ -274,6 +290,13 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             mSnakeLike = snakeLike.asBool();
         }
 
+        if (mSnakeLike) {
+            if (Manipulator) {
+                delete Manipulator;
+            }
+            ManipulatorPSMSnake = new robManipulatorPSMSnake();
+            Manipulator = ManipulatorPSMSnake;
+        }
         ConfigureDH(jsonConfig);
 
         size_t expectedNumberOfJoint;
@@ -282,7 +305,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         } else {
             expectedNumberOfJoint = 6;
         }
-        size_t numberOfJointsLoaded = this->Manipulator.links.size();
+        size_t numberOfJointsLoaded = this->Manipulator->links.size();
 
         if (expectedNumberOfJoint != numberOfJointsLoaded) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
@@ -306,7 +329,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         } else {
             cmnDataJSON<vctFrm4x4>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
             ToolOffset = new robManipulator(ToolOffsetTransformation);
-            Manipulator.Attach(ToolOffset);
+            Manipulator->Attach(ToolOffset);
         }
 
         // load coupling information (required)
@@ -1162,10 +1185,10 @@ void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newP
         return;
     }
 
-    const size_t jawIndex = JointsPID.Name().size() - 1;
+    CMN_ASSERT(JointSetParam.Goal().size() == 7);
     JointSetParam.Goal().Zeros();
     ToJointsPID(newPosition, JointSetParam.Goal());
-    JointSetParam.Goal().at(jawIndex) = JawGoal;
+    JointSetParam.Goal().at(6) = JawGoal;
     PID.SetPositionJoint(JointSetParam);
 }
 

@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitOptimizer.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+#include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
 
 class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 {
@@ -139,6 +140,7 @@ protected:
     /*! 5mm tools with 8 joints */
     bool mSnakeLike;
 
+    robManipulatorPSMSnake *ManipulatorPSMSnake;
     robManipulator * ToolOffset;
     vctFrm4x4 ToolOffsetTransformation;
 

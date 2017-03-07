@@ -71,6 +71,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianVelocityGetParam.SetVelocityAngular(vct3(0.0));
     CartesianVelocityGetParam.SetValid(false);
 
+    //Manipulator
+    Manipulator = new robManipulator();
+
     // jacobian
     ResizeKinematicsData();
     this->StateTable.AddData(mJacobianBody, "JacobianBody");
@@ -229,7 +232,7 @@ void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
 void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
 {
     robManipulator::Errno result;
-    result = this->Manipulator.LoadRobot(filename);
+    result = this->Manipulator->LoadRobot(filename);
     if (result == robManipulator::EFAILURE) {
         CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
                                  << filename << "\"" << std::endl;
@@ -243,8 +246,8 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
     const Json::Value jsonBase = jsonConfig["base-offset"];
     if (!jsonBase.isNull()) {
         // save the transform as Manipulator Rtw0
-        cmnDataJSON<vctFrm4x4>::DeSerializeText(Manipulator.Rtw0, jsonBase);
-        if (!nmrIsOrthonormal(Manipulator.Rtw0.Rotation())) {
+        cmnDataJSON<vctFrm4x4>::DeSerializeText(Manipulator->Rtw0, jsonBase);
+        if (!nmrIsOrthonormal(Manipulator->Rtw0.Rotation())) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": the base offset rotation doesn't seem to be orthonormal"
                                      << std::endl;
@@ -257,9 +260,9 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                  << ": can find \"DH\" data in configuration file" << std::endl;
     }
-    this->Manipulator.LoadRobot(jsonDH);
+    this->Manipulator->LoadRobot(jsonDH);
     std::stringstream dhResult;
-    this->Manipulator.PrintKinematics(dhResult);
+    this->Manipulator->PrintKinematics(dhResult);
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure " << this->GetName()
                                << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
     ResizeKinematicsData();
@@ -391,7 +394,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             // update joint states used for kinematics
             UpdateJointsKinematics();
             // update cartesian position
-            CartesianGetLocal = Manipulator.ForwardKinematics(JointsKinematics.Position());
+            CartesianGetLocal = Manipulator->ForwardKinematics(JointsKinematics.Position());
             CartesianGet = BaseFrame * CartesianGetLocal;
             // normalize
             CartesianGetLocal.Rotation().NormalizedSelf();
@@ -402,8 +405,8 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             CartesianGetParam.SetTimestamp(JointsKinematics.Timestamp());
             CartesianGetParam.SetValid(BaseFrameValid);
             // update jacobians
-            Manipulator.JacobianSpatial(JointsKinematics.Position(), mJacobianSpatial);
-            Manipulator.JacobianBody(JointsKinematics.Position(), mJacobianBody);
+            Manipulator->JacobianSpatial(JointsKinematics.Position(), mJacobianSpatial);
+            Manipulator->JacobianBody(JointsKinematics.Position(), mJacobianBody);
 
             // update cartesian velocity using the jacobian and joint
             // velocities.
@@ -445,7 +448,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             mWrenchGet.SetTimestamp(JointsKinematics.Timestamp());
 
             // update cartesian position desired based on joint desired
-            CartesianGetLocalDesired = Manipulator.ForwardKinematics(JointsDesiredKinematics.Position());
+            CartesianGetLocalDesired = Manipulator->ForwardKinematics(JointsDesiredKinematics.Position());
             CartesianGetDesired = BaseFrame * CartesianGetLocalDesired;
             // normalize
             CartesianGetLocalDesired.Rotation().NormalizedSelf();
@@ -693,9 +696,10 @@ void mtsIntuitiveResearchKitArm::TrajectoryIsUsed(const bool used)
 
     // when starting, set current position/velocity and trajectory
     // parameters
-    if (used) {
+    if (used) {        
         JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
         JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
+        JointTrajectory.Goal.Assign(JointsDesiredPID.Position());
         JointTrajectory.Reflexxes.Set(JointTrajectory.Velocity,
                                       JointTrajectory.Acceleration,
                                       StateTable.PeriodStats.GetAvg(),
@@ -833,34 +837,15 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
         const size_t nbJointsKin = this->NumberOfJointsKinematics();
 
         // copy current position
-        vctDoubleVec jointSet(JointsPID.Position().Ref(nbJointsKin));
+        vctDoubleVec jointSet(JointsKinematics.Position());
 
         // compute desired slave position
         CartesianPositionFrm.From(newPosition.Goal());
 
         if (this->InverseKinematics(jointSet, BaseFrame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
-            // resize to proper number of joints
-            jointSet.resize(nbJoints);
-
-            // keep values of joints not handled by kinematics (PSM jaw)
-            if (nbJoints > nbJointsKin) {
-                // check if there is a trajectory active
-                const robReflexxes::ResultType trajectoryResult = JointTrajectory.Reflexxes.ResultValue();
-                if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
-                    // past any trajectory, use last desired joint position
-                    jointSet.Ref(nbJoints - nbJointsKin,
-                                 nbJointsKin).Assign(JointsDesiredPID.Position().Ref(nbJoints - nbJointsKin,
-                                                                                     nbJointsKin));
-                } else {
-                    // there is an ongoing trajectory, use the trajectory goal
-                    jointSet.Ref(nbJoints - nbJointsKin,
-                                 nbJointsKin).Assign(JointTrajectory.Goal.Ref(nbJoints - nbJointsKin,
-                                                                              nbJointsKin));
-                }
-            }
             // set joint goals
             JointTrajectory.IsWorking = true;
-            JointTrajectory.Goal.Assign(jointSet);
+            ToJointsPID(jointSet, JointTrajectory.Goal);
             JointTrajectory.GoalVelocity.SetAll(0.0);
             JointTrajectory.EndTime = 0.0;
         } else {
@@ -964,6 +949,6 @@ void mtsIntuitiveResearchKitArm::AddGravityCompensationEfforts(vctDoubleVec & ef
 {
     vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
     vctDoubleVec gravityEfforts;
-    gravityEfforts.ForceAssign(Manipulator.CCG(JointsKinematics.Position(), qd));  // should this take joint velocities?
+    gravityEfforts.ForceAssign(Manipulator->CCG(JointsKinematics.Position(), qd));  // should this take joint velocities?
     efforts.Add(gravityEfforts);
 }

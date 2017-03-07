@@ -202,7 +202,7 @@ protected:
         mtsFunctionWrite RobotState;
     } MessageEvents;
 
-    robManipulator Manipulator;
+    robManipulator *Manipulator;
 
     // Cache cartesian goal position
     prmPositionCartesianSet CartesianSetParam;

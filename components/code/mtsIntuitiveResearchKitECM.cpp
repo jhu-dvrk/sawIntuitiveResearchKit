@@ -64,7 +64,7 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
     newGoal.Translation().Assign(cartesianGoal.Translation());
     newGoal.Rotation().ProductOf(reAlign, cartesianGoal.Rotation());
 
-    if (Manipulator.InverseKinematics(jointSet, newGoal) == robManipulator::ESUCCESS) {
+    if (Manipulator->InverseKinematics(jointSet, newGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = JointsPID.Position()[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
@@ -75,7 +75,7 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
             jointSet[2] = 40.0 * cmn_mm;
         }
 #if 0
-        vctFrm4x4 forward = Manipulator.ForwardKinematics(jointSet);
+        vctFrm4x4 forward = Manipulator->ForwardKinematics(jointSet);
         vctDouble3 diff;
         diff.DifferenceOf(forward.Translation(), newGoal.Translation());
         std::cerr << cmnInternalTo_mm(diff.Norm()) << "mm ";
@@ -145,7 +145,7 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
         if (!jsonToolTip.isNull()) {
             cmnDataJSON<vctFrm4x4>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
             ToolOffset = new robManipulator(ToolOffsetTransformation);
-            Manipulator.Attach(ToolOffset);
+            Manipulator->Attach(ToolOffset);
         }
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
