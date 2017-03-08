@@ -990,6 +990,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 {
     if (mIsSimulated) {
+        PID.SetJointLowerLimit(CouplingChange.ToolJointLowerLimit);
+        PID.SetJointUpperLimit(CouplingChange.ToolJointUpperLimit);
         SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
         return;
     }

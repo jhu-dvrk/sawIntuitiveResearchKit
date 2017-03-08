@@ -1,0 +1,32 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "arms":
+    [
+        {
+            "name": "PSM1",
+            "type": "PSM",            
+            "pid": "sawControllersPID-PSM.xml",
+            "simulation": "KINEMATIC",
+            "kinematic": "psm-5mm-needle-drive.json"
+        }
+        ,
+        {
+            "name": "MTMR",
+            "type": "MTM",
+            "io": "sawRobotIO1394-MTMR-28247-foot-pedal.xml",
+            "pid": "sawControllersPID-MTMR.xml",
+            "kinematic": "mtm.json"
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            "master": "MTMR",
+            "slave": "PSM1",
+            "rotation" : [[-1.0000,  0.0000,  0.0000],
+                          [ 0.0000, -1.0000,  0.0000],
+                          [ 0.0000,  0.0000,  1.0000]]
+        }
+    ]
+}
