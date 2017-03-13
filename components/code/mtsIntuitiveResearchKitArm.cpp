@@ -121,6 +121,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
         PIDInterface->AddFunction("SetJointLowerLimit", PID.SetJointLowerLimit);
         PIDInterface->AddFunction("SetJointUpperLimit", PID.SetJointUpperLimit);
+        PIDInterface->AddFunction("SetTorqueLowerLimit", PID.SetTorqueLowerLimit);
+        PIDInterface->AddFunction("SetTorqueUpperLimit", PID.SetTorqueUpperLimit);
         PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
         PIDInterface->AddFunction("SetTorqueJoint", PID.SetTorqueJoint);
         PIDInterface->AddFunction("SetTorqueOffset", PID.SetTorqueOffset);

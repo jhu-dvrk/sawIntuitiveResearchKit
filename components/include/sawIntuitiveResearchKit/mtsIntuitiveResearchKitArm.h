@@ -165,6 +165,8 @@ protected:
         mtsFunctionWrite SetCheckJointLimit;
         mtsFunctionWrite SetJointLowerLimit;
         mtsFunctionWrite SetJointUpperLimit;
+        mtsFunctionWrite SetTorqueLowerLimit;
+        mtsFunctionWrite SetTorqueUpperLimit;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite SetTorqueJoint;
         mtsFunctionWrite SetTorqueOffset;

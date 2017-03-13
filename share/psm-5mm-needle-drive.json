@@ -123,8 +123,13 @@
     // values from dVRK user guide
     // see PSM hardware for first 3 joints, motor torque * gear ratio
     // see tool appendix for last 4 joints
+    // "tool-torque-limit" : {
+    //    "lower" : [ -4.97, -4.97, -14.81, -0.33, -0.4, -0.4, -0.15],
+    //    "upper" : [  4.97,  4.97,  14.81,  0.33,  0.4,  0.4,  0.17]
+    // }
+    // Reduced Torque on last 3 joints to test/prevent damage
     "tool-torque-limit" : {
-        "lower" : [ -4.97, -4.97, -14.81, -0.33, -0.4, -0.4, -0.15],
-        "upper" : [  4.97,  4.97,  14.81,  0.33,  0.4,  0.4,  0.17]
+       "lower" : [ -4.97, -4.97, -14.81, -0.33, -0.2, -0.2, -0.08],
+       "upper" : [  4.97,  4.97,  14.81,  0.33,  0.2,  0.2,  0.08]
     }
 }

@@ -406,6 +406,32 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         CouplingChange.ToolJointLowerLimit.Element(2) *= cmn_mm;
         CouplingChange.ToolJointLowerLimit.Ref(4, 3) *= cmnPI_180;
 
+
+        // load lower/upper torque limit for the tool(required)
+        const Json::Value jsonTorqueLimit = jsonConfig["tool-torque-limit"];
+        if (jsonTorqueLimit.isNull()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": can find \"tool-torque-limit\" data in \"" << filename << "\"" << std::endl;
+            return;
+        }
+        // lower
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolTorqueLowerLimit,
+                                                   jsonTorqueLimit["lower"]);
+        if (CouplingChange.ToolTorqueLowerLimit.size() != NumberOfJoints()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"tool-torque-limit\" : \"lower\" must contain " << NumberOfJoints()
+                                     << " elements in \"" << filename << "\"" << std::endl;
+            return;
+        }
+        // upper
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolTorqueUpperLimit,
+                                                   jsonTorqueLimit["upper"]);
+        if (CouplingChange.ToolTorqueUpperLimit.size() != NumberOfJoints()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"tool-torque-limit\" : \"lower\" must contain " << NumberOfJoints()
+                                     << " elements in \"" << filename << "\"" << std::endl;
+            return;
+        }
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
                                  << filename << "\" is in JSON format" << std::endl;
@@ -869,6 +895,8 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 if (CouplingChange.CouplingForTool) {
                     PID.SetJointLowerLimit(CouplingChange.ToolJointLowerLimit);
                     PID.SetJointUpperLimit(CouplingChange.ToolJointUpperLimit);
+                    PID.SetTorqueLowerLimit(CouplingChange.ToolTorqueLowerLimit);
+                    PID.SetTorqueUpperLimit(CouplingChange.ToolTorqueUpperLimit);
                 } else {
                     PID.SetJointLowerLimit(CouplingChange.NoToolJointLowerLimit);
                     PID.SetJointUpperLimit(CouplingChange.NoToolJointUpperLimit);

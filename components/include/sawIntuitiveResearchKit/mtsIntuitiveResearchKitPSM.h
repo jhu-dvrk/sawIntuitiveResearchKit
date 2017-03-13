@@ -161,7 +161,7 @@ protected:
         vctDoubleVec ToolEngageLowerPosition, ToolEngageUpperPosition;
         vctDoubleVec ToolJointLowerLimit, ToolJointUpperLimit;
         vctDoubleVec NoToolJointLowerLimit, NoToolJointUpperLimit;
-        vctDoubleVec TorqueLowerLimit, TorqueUpperLimit;
+        vctDoubleVec ToolTorqueLowerLimit, ToolTorqueUpperLimit;
     } CouplingChange;
 };
 
