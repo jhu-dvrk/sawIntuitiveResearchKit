@@ -758,7 +758,6 @@ void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
         JointExternalEffort.ProductOf(mJacobianSpatial.Transpose(), force);
     }
 
-    return;
     // add gravity compensation if needed
     if (mGravityCompensation) {
         AddGravityCompensationEfforts(JointExternalEffort);
