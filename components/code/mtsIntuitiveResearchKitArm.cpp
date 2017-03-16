@@ -391,10 +391,11 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
                                     << executionResult << "\"" << std::endl;
         }
 
+        // update joint states used for kinematics
+        UpdateJointsKinematics();
+
         // when the robot is ready, we can compute cartesian position
         if (this->RobotState >= mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            // update joint states used for kinematics
-            UpdateJointsKinematics();
             // update cartesian position
             CartesianGetLocal = Manipulator->ForwardKinematics(JointsKinematics.Position());
             CartesianGet = BaseFrame * CartesianGetLocal;

@@ -254,13 +254,13 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
 
     if (Err == robManipulator::ESUCCESS) {
         // find closest solution mgod 2 pi
-        const double difference = JointsPID.Position()[3] - jointSet[3];
+        const double difference = JointsKinematics.Position().at(3) - jointSet.at(3);
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
+        jointSet.at(3) = jointSet.at(3) + differenceInTurns * 2.0 * cmnPI;
         // make sure we are away from RCM point, this test is
         // simplistic and might not work with all tools
-        if (jointSet[2] < 40.0 * cmn_mm) {
-            jointSet[2] = 40.0 * cmn_mm;
+        if (jointSet.at(2) < 40.0 * cmn_mm) {
+            jointSet.at(2) = 40.0 * cmn_mm;
         }
         return robManipulator::ESUCCESS;
     }
