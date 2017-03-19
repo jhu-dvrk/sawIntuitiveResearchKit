@@ -3,9 +3,9 @@
     "arms":
     [
         {
-            "name": "PSM2",
+            "name": "PSM1",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM2-27374.xml",
+            "io": "sawRobotIO1394-PSM1-49695.xml",
             "pid": "sawControllersPID-PSM.xml",
             "kinematic": "psm-5mm-needle-driver.json"
         }
@@ -13,9 +13,9 @@
         {
             "name": "MTMR",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTMR-28247-foot-pedal.xml",
+            "io": "sawRobotIO1394-MTMR-32336-foot-pedal.xml",
             "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtm.json"
+            "kinematic": "mtmr.json"
         }
     ]
     ,
@@ -23,10 +23,7 @@
     [
         {
             "master": "MTMR",
-            "slave": "PSM2",
-            "rotation" : [[-1.0000,  0.0000,  0.0000],
-                          [ 0.0000, -1.0000,  0.0000],
-                          [ 0.0000,  0.0000,  1.0000]]
+            "slave": "PSM1"
         }
     ]
 }
