@@ -116,7 +116,7 @@
     // see tool appendix for last 4 joints
     // for last joint, manual says [0, 30] but we need -20 to allow stronger torque, 80 to open wide
     "tool-joint-limit" : {
-        "lower" : [ -91.0, -53.0,   0.0, -260.0, -45.0, -45.0, -10.0],
+        "lower" : [ -91.0, -53.0,   0.0, -260.0, -45.0, -45.0, -20.0],
         "upper" : [  91.0,  53.0, 240.0,  260.0,  45.0,  45.0,  50.0]
     }
     ,

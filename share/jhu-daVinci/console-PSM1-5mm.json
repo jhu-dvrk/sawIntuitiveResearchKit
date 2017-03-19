@@ -3,11 +3,11 @@
     "arms":
     [
         {
-            "name": "PSM2",
+            "name": "PSM1",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM2-27374.xml",
+            "io": "sawRobotIO1394-PSM1-49695.xml",
             "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-5mm-needle-driver.json"
+            "kinematic": "psm-5mm-needle-drive.json"
         }
     ]
 }
