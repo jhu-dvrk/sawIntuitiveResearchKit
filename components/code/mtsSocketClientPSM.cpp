@@ -149,7 +149,7 @@ void mtsSocketClientPSM::ReceivePSMStateData()
     size_t bytesRead = 0;
     bytesRead = State.Socket->Receive(State.Buffer, BUFFER_SIZE, TIMEOUT);
     if (bytesRead > 0) {
-        if(bytesRead != State.Data.Header.Size){
+        if (bytesRead != State.Data.Header.Size){
             std::cerr << "Incorrect bytes read " << bytesRead << ". Looking for " << State.Data.Header.Size << " bytes." << std::endl;
         }
 
@@ -160,7 +160,7 @@ void mtsSocketClientPSM::ReceivePSMStateData()
         // Dequeue all the datagrams and only use the latest one.
         int readCounter = 0;
         int dataLeft = bytesRead;
-        while(dataLeft > 0){
+        while (dataLeft > 0) {
             dataLeft = State.Socket->Receive(State.Buffer, BUFFER_SIZE, 0);
             if (dataLeft != 0) {
                 bytesRead = dataLeft;
@@ -169,7 +169,7 @@ void mtsSocketClientPSM::ReceivePSMStateData()
             readCounter++;
         }
 
-        if(readCounter > 1)
+        if (readCounter > 1)
             std::cerr << "Catching up : " << readCounter << std::endl;
 
         ss.write(State.Buffer, bytesRead);

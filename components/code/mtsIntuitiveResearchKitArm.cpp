@@ -832,10 +832,6 @@ void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesian
 void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition)
 {
     if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN)) {
-
-        const size_t nbJoints = this->NumberOfJoints();
-        const size_t nbJointsKin = this->NumberOfJointsKinematics();
-
         // copy current position
         vctDoubleVec jointSet(JointsKinematics.Position());
 
