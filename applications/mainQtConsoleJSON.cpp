@@ -119,7 +119,7 @@ int main(int argc, char ** argv)
 
     // add all Qt widgets
     QApplication application(argc, argv);
-    application.setWindowIcon(QIcon(":/dVRK.svg"));
+    application.setWindowIcon(QIcon(":/dVRK.png"));
 
     mtsIntuitiveResearchKitConsoleQt * consoleQt = new mtsIntuitiveResearchKitConsoleQt();
     consoleQt->Configure(console);

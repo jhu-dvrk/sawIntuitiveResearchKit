@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-07-13
 
-  (C) Copyright 2015-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,9 +20,10 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst/saw
 #include <cisstMultiTask/mtsManagerLocal.h>
+#include <cisstMultiTask/mtsMessageQtWidget.h>
+#include <cisstMultiTask/mtsIntervalStatisticsQtWidget.h>
 
 #include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
-
 #include <sawControllers/mtsPIDQtWidget.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
@@ -178,6 +179,30 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             componentManager->AddComponent(socketGUI);
             Connections.push_back(new ConnectionType(socketGUI->GetName(), "SocketBase", armIter->second->mName, "System"));
             armTabWidget->addTab(socketGUI, name.c_str());
+            break;
+
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_GENERIC:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_GENERIC:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_GENERIC:
+            {
+                // Arm widget
+                QWidget * genericComponentGUI = new QWidget();
+                QHBoxLayout * genericComponentLayout = new QHBoxLayout();
+                genericComponentGUI->setLayout(genericComponentLayout);
+                mtsMessageQtWidgetComponent * messageGUI
+                    = new mtsMessageQtWidgetComponent(name + "-Message-GUI");
+                componentManager->AddComponent(messageGUI);
+                genericComponentLayout->addWidget(messageGUI);
+                Connections.push_back(new ConnectionType(messageGUI->GetName(), "Component",
+                                                         armIter->second->mName, "Robot"));
+                mtsIntervalStatisticsQtWidgetComponent * timingGUI
+                    = new mtsIntervalStatisticsQtWidgetComponent(name + "-Timing-GUI");
+                componentManager->AddComponent(timingGUI);
+                genericComponentLayout->addWidget(timingGUI);
+                Connections.push_back(new ConnectionType(timingGUI->GetName(), "Component",
+                                                         armIter->second->mName, "Robot"));
+                armTabWidget->addTab(genericComponentGUI, name.c_str());
+            }
             break;
 
         default:

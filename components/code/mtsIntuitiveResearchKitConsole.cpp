@@ -221,6 +221,21 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         }
         break;
 
+    case ARM_ECM_GENERIC:
+    case ARM_MTM_GENERIC:
+    case ARM_PSM_GENERIC:
+        {
+            if (existingArm) {
+                if (mArmConfigurationFile.empty()) {
+                    existingArm->Configure();
+                } else {
+                    existingArm->Configure(mArmConfigurationFile);
+                }
+                componentManager->AddComponent(existingArm);
+            }
+        }
+        break;
+
     default:
         break;
     }
@@ -614,97 +629,23 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             iter->second->ConfigurePID(pidConfig);
         }
         // for generic arms, see if we can/should dynamically create the component
+        mtsComponent * dynamicComponent = 0;
         if (iter->second->mIsGeneric) {
-            const std::string sharedLibrary = iter->second->mSharedLibrary;
-            const std::string className = iter->second->mClassName;
-
-            if (!sharedLibrary.empty()) {
-                // create load and path based on LD_LIBRARY_PATH
-                osaDynamicLoader loader;
-                std::string fullPath;
-                // check if the file already exists, i.e. use provided a full path
-                if (cmnPath::Exists(sharedLibrary)) {
-                    fullPath = sharedLibrary;
-                } else {
-                    cmnPath path;
-                    path.AddFromEnvironment("LD_LIBRARY_PATH");
-                    fullPath = path.Find(cmnPath::SharedLibrary(sharedLibrary));
-                    if (fullPath.empty())  {
-                        fullPath = sharedLibrary;
-                        CMN_LOG_CLASS_INIT_WARNING << "Configure: using path: "
-                                                   << path << ", couldn't find \""
-                                                   << cmnPath::SharedLibrary(sharedLibrary)
-                                                   << "\"" << std::endl;;
-                    } else {
-                        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: using path: "
-                                                   << path << ", found full path name \""
-                                                   << fullPath << "\"" << std::endl;;
-                    }
-                }
-                if (!loader.Load(fullPath)) {
-                    CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to load shared library "
-                                             << sharedLibrary << std::endl;
-                    return;
-                }
-
-                // now try to dynamically create an instance of that class
-                cmnClassServicesBase * componentClassServices = cmnClassRegister::FindClassServices(className);
-                if (!componentClassServices) {
-                    CMN_LOG_CLASS_INIT_ERROR << "Configure: successfully loaded shared library "
-                                             << sharedLibrary << " but unable to find class services for type "
-                                             << className << std::endl;
-                    return;
-                }
-                // check if we need to also create an argument for the constructor
-                if (componentClassServices->OneArgConstructorAvailable()) {
-                    const cmnClassServicesBase * argumentClassServices = componentClassServices->GetConstructorArgServices();
-                    CMN_ASSERT(argumentClassServices); // this should not fail
-                    cmnGenericObject * argument = argumentClassServices->Create();
-                      // then deserialize from JSON value...
-                    Json::Value jsonValue;
-                    Json::Reader reader;
-                    // parsing should work since the string has been generated after a previous parse
-                    CMN_ASSERT(reader.parse(iter->second->mConstructorArgJSON, jsonValue));
-                    try {
-                        argument->DeSerializeTextJSON(jsonValue);
-                    } catch (std::runtime_error e) {
-                        CMN_LOG_CLASS_INIT_ERROR << "Configure: unable to deserialize constructor for "
-                                                 << className << " from JSON file, got exception: "
-                                                 << e.what() << std::endl;
-                        delete argument;
-                        return;
-                    }
-                    // now, finally, construct the component!
-                    cmnGenericObject * componentBase
-                        = componentClassServices->CreateWithArg(*argument);
-                    if (!componentBase) {
-                        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to create component of type "
-                                                 << className << std::endl;
-                        delete argument;
-                        return;
-                    }
-                    mtsComponent * component
-                        = dynamic_cast<mtsComponent *>(componentBase);
-                    if (!component) {
-                        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to cast newly created object of type "
-                                                 << className << " to mtsComponent" << std::endl;
-                        delete argument;
-                        delete componentBase;
-                        return;
-                    }
-                    const std::string componentConfig = iter->second->mArmConfigurationFile;
-                    if (componentConfig.empty()) {
-                        component->Configure();
-                    } else {
-                        component->Configure(componentConfig);
-                    }
-                    mtsComponentManager::GetInstance()->AddComponent(component);
-                }
+            if (!iter->second->mSharedLibrary.empty()) {
+                dynamicComponent =
+                    mtsComponentManager::GetInstance()
+                    ->CreateComponentDynamicallyJSON(iter->second->mSharedLibrary,
+                                                     iter->second->mClassName,
+                                                     iter->second->mConstructorArgJSON);
             }
         }
         const std::string armConfig = iter->second->mArmConfigurationFile;
-        if (!armConfig.empty()) {
-            iter->second->ConfigureArm(iter->second->mType, armConfig, iter->second->mArmPeriod);
+        if (dynamicComponent) {
+            iter->second->ConfigureArm(iter->second->mType, armConfig,
+                                       iter->second->mArmPeriod, dynamicComponent);
+        } else {
+            iter->second->ConfigureArm(iter->second->mType, armConfig,
+                                       iter->second->mArmPeriod);
         }
     }
 
