@@ -116,7 +116,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
                 numberOfJoints = 7;
             } else if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM) ||
                        (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED)) {
-                numberOfJoints = 8;
+                numberOfJoints = 7;
             } else if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM) ||
                        (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED)) {
                 numberOfJoints = 4;

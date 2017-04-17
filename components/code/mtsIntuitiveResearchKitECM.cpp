@@ -64,9 +64,9 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
     newGoal.Translation().Assign(cartesianGoal.Translation());
     newGoal.Rotation().ProductOf(reAlign, cartesianGoal.Rotation());
 
-    if (Manipulator.InverseKinematics(jointSet, newGoal) == robManipulator::ESUCCESS) {
+    if (Manipulator->InverseKinematics(jointSet, newGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
-        const double difference = JointGet[3] - jointSet[3];
+        const double difference = JointsKinematics.Position()[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
         // make sure we are away from RCM point, this test is
@@ -75,7 +75,7 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
             jointSet[2] = 40.0 * cmn_mm;
         }
 #if 0
-        vctFrm4x4 forward = Manipulator.ForwardKinematics(jointSet);
+        vctFrm4x4 forward = Manipulator->ForwardKinematics(jointSet);
         vctDouble3 diff;
         diff.DifferenceOf(forward.Translation(), newGoal.Translation());
         std::cerr << cmnInternalTo_mm(diff.Norm()) << "mm ";
@@ -145,7 +145,7 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
         if (!jsonToolTip.isNull()) {
             cmnDataJSON<vctFrm4x4>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
             ToolOffset = new robManipulator(ToolOffsetTransformation);
-            Manipulator.Attach(ToolOffset);
+            Manipulator->Attach(ToolOffset);
         }
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
@@ -214,7 +214,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         RobotState = newState;
-        JointSet.Assign(JointGetDesired, this->NumberOfJoints());
+        JointSet.Assign(JointsDesiredPID.Position(), this->NumberOfJoints());
         if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
             IsGoalSet = false;
             RobotInterface->SendStatus(this->GetName() + " position joint");
@@ -231,10 +231,10 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         // check that the tool is inserted deep enough
-        if (JointGet.Element(2) < 40.0 * cmn_mm) {
+        if (JointsPID.Position().Element(2) < 40.0 * cmn_mm) {
             RobotInterface->SendError(this->GetName() + " can't start cartesian mode, make sure the endoscope is inserted past the cannula (joint 3 > 40 mm)");
         } else {
-            if (JointGet.Element(2) < 50.0 * cmn_mm) {
+            if (JointsPID.Position().Element(2) < 50.0 * cmn_mm) {
                 RobotInterface->SendWarning(this->GetName() + " cartesian mode started close to RCM (joint 3 < 50 mm), joint 3 will be clamped at 40 mm to avoid moving inside cannula.");
             }
             RobotState = newState;
@@ -254,7 +254,7 @@ void mtsIntuitiveResearchKitECM::SetState(const mtsIntuitiveResearchKitArmTypes:
             return;
         }
         // check that the tool is inserted deep enough
-        if (JointGet.Element(2) < 80.0 * cmn_mm) {
+        if (JointsPID.Position().Element(2) < 80.0 * cmn_mm) {
             RobotInterface->SendError(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
             break;
         }
@@ -296,7 +296,7 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
         // disable joint limits
         PID.SetCheckJointLimit(false);
         // enable PID and start from current position
-        JointSet.ForceAssign(JointGet);
+        JointSet.ForceAssign(JointsPID.Position());
         SetPositionJointLocal(JointSet);
         // configure PID to fail in case of tracking error
         vctDoubleVec tolerances(NumberOfJoints());
@@ -314,7 +314,7 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
             JointTrajectory.Goal.SetAll(0.0);
         } else {
             // stay at current position by default
-            JointTrajectory.Goal.Assign(JointGet);
+            JointTrajectory.Goal.Assign(JointsPID.Position());
         }
 
         JointTrajectory.GoalVelocity.SetAll(0.0);
@@ -345,7 +345,7 @@ void mtsIntuitiveResearchKitECM::RunHomingCalibrateArm(void)
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         {
             // check position
-            JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointGet);
+            JointTrajectory.GoalError.DifferenceOf(JointTrajectory.Goal, JointsPID.Position());
             JointTrajectory.GoalError.AbsSelf();
             bool isHomed = !JointTrajectory.GoalError.ElementwiseGreaterOrEqual(JointTrajectory.GoalTolerance).Any();
             if (isHomed) {
@@ -411,7 +411,7 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
             // Enable PID
             PID.Enable(true);
             // set command joint position to joint current
-            JointSet.ForceAssign(JointGet);
+            JointSet.ForceAssign(JointsPID.Position());
             SetPositionJointLocal(JointSet);
             // go back to state before clutching
             SetState(ClutchEvents.ManipClutchPreviousState);

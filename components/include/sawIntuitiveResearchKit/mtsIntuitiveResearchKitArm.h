@@ -72,6 +72,7 @@ protected:
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
     virtual void Init(void);
+    void ResizeKinematicsData(void);
 
     /*! Verify that the state transition is possible, initialize
       global variables for the desired state and finally set the
@@ -86,6 +87,8 @@ protected:
 
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
+    virtual void UpdateJointsKinematics(void);
+    virtual void ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID);
 
     /*! Homing procedure, bias encoders from potentiometers. */
     virtual void RunHomingBiasEncoder(void);
@@ -146,7 +149,7 @@ protected:
     /*! Configuration methods specific to derived classes. */
     virtual size_t NumberOfAxes(void) const = 0;           // used IO: ECM 4, PSM 7, MTM 8
     virtual size_t NumberOfJoints(void) const = 0;         // used PID: ECM 4, PSM 7, MTM 7
-    virtual size_t NumberOfJointsKinematics(void) const = 0; // used for inverse kinematics: ECM 4, PSM 6, MTM 7
+    virtual size_t NumberOfJointsKinematics(void) const = 0; // ECM 4, MTM 7, PSM 6 or 8 (snake like tools)
     virtual size_t NumberOfBrakes(void) const = 0;         // ECM 3, PSM 0, MTM 0
 
     virtual bool UsePIDTrackingError(void) const = 0;      // ECM true, PSM false, MTM false
@@ -162,15 +165,14 @@ protected:
     struct {
         mtsFunctionWrite Enable;
         mtsFunctionWrite EnableJoints;
-        mtsFunctionRead  GetPositionJoint;
-        mtsFunctionRead  GetPositionJointDesired;
         mtsFunctionRead  GetStateJoint;
         mtsFunctionRead  GetStateJointDesired;
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetCheckJointLimit;
         mtsFunctionWrite SetJointLowerLimit;
         mtsFunctionWrite SetJointUpperLimit;
-        mtsFunctionRead  GetVelocityJoint;
+        mtsFunctionWrite SetTorqueLowerLimit;
+        mtsFunctionWrite SetTorqueUpperLimit;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite SetTorqueJoint;
         mtsFunctionWrite SetTorqueOffset;
@@ -208,6 +210,8 @@ protected:
         mtsFunctionWrite RobotState;
     } MessageEvents;
 
+    robManipulator *Manipulator;
+
     // Cache cartesian goal position
     prmPositionCartesianSet CartesianSetParam;
     bool IsGoalSet;
@@ -225,14 +229,13 @@ protected:
     vctFrm4x4 CartesianGetDesired;
 
     // joints
-    prmPositionJointGet JointGetParam;
-    vctDoubleVec JointGet;
-    vctDoubleVec JointGetDesired;
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
-
+    vctDoubleVec JointVelocitySet;
+    prmStateJoint JointsPID, JointsDesiredPID, JointsKinematics, JointsDesiredKinematics;
+    
     // efforts
-    vctDoubleMat JacobianBody, JacobianBodyTranspose, JacobianSpatial;
+    vctDoubleMat mJacobianBody, mJacobianBodyTranspose, mJacobianSpatial;
     vctDoubleVec JointExternalEffort;
     WrenchType mWrenchType;
     prmForceCartesianSet mWrenchSet;
@@ -252,17 +255,9 @@ protected:
     // add custom efforts for derived classes
     inline virtual void AddCustomEfforts(vctDoubleVec & CMN_UNUSED(efforts)) {};
 
-    //! robot current joint velocity
-    prmVelocityJointGet JointVelocityGetParam;
-    vctDoubleVec JointVelocityGet;
-    vctDoubleVec JointVelocitySet;
-    prmStateJoint StateJointParam, StateJointDesiredParam;
-
     // Velocities
     vctFrm4x4 CartesianGetPrevious;
     prmVelocityCartesianGet CartesianVelocityGetParam;
-
-    robManipulator Manipulator;
     vctFrm4x4 CartesianPositionFrm;
 
     // Base frame

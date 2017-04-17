@@ -115,6 +115,7 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBasePSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketClientPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketServerPSM.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/robManipulatorPSMSnake.h
         )
 
     set (SOURCE_FILES
@@ -134,6 +135,7 @@ if (cisst_FOUND)
          code/mtsSocketBasePSM.cpp
          code/mtsSocketClientPSM.cpp
          code/mtsSocketServerPSM.cpp
+         code/robManipulatorPSMSnake.cpp
         )
 
     add_library (sawIntuitiveResearchKit
