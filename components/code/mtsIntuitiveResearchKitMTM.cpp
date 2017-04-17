@@ -360,12 +360,12 @@ void mtsIntuitiveResearchKitMTM::RunHomingCalibrateArm(void)
         // disable joint limits
         PID.SetCheckJointLimit(false);
         // enable PID and start from current position
-        JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
+        JointSet.Assign(JointsPID.Position(), NumberOfJoints());
         SetPositionJointLocal(JointSet);
         PID.Enable(true);
 
         // make sure we start from current state
-        JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
+        JointSet.Assign(JointsPID.Position(), NumberOfJoints());
         JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
 
         // compute joint goal position

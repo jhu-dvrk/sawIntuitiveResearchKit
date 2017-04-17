@@ -204,10 +204,10 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
         JointsDesiredKinematics.Effort().SetSize(NumberOfJointsKinematics());
 
         JointsDesiredKinematics.Name().Assign(JointsDesiredPID.Name(), 4);
-        JointsDesiredKinematics.Name().at(4) = JointsDesiredPID.Name().at(4) +"1";
-        JointsDesiredKinematics.Name().at(5) = JointsDesiredPID.Name().at(5) +"1";
-        JointsDesiredKinematics.Name().at(6) = JointsDesiredPID.Name().at(5) +"2";
-        JointsDesiredKinematics.Name().at(7) = JointsDesiredPID.Name().at(4) +"2";
+        JointsDesiredKinematics.Name().at(4) = JointsDesiredPID.Name().at(4) + "1";
+        JointsDesiredKinematics.Name().at(5) = JointsDesiredPID.Name().at(5) + "1";
+        JointsDesiredKinematics.Name().at(6) = JointsDesiredPID.Name().at(5) + "2";
+        JointsDesiredKinematics.Name().at(7) = JointsDesiredPID.Name().at(4) + "2";
     }
 
     // Position
@@ -789,7 +789,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         PID.Enable(true);
 
         // make sure we start from current state
-        JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
+        JointSet.Assign(JointsPID.Position(), NumberOfJoints());
         JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
 
         // compute joint goal position
