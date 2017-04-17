@@ -750,7 +750,7 @@ void mtsIntuitiveResearchKitPSM::RunHomingCalibrateArm(void)
         // disable joint limits
         PID.SetCheckJointLimit(false);
         // enable PID and start from current position
-        JointSet.ForceAssign(JointGet);
+        JointSet.ForceAssign(JointsPID.Position());
         if (mIsSimulated && (JointSet.Element(2) < 50.0 * cmn_mm)) {
             JointSet.Element(2) = 50.0 * cmn_mm;
         }
