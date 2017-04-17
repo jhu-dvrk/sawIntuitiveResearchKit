@@ -2,10 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet
-  Created on: 2013-08-24
+  Author(s):  Pretham Chalasani, Anton Deguet
+  Created on: 2016-11-04
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -26,7 +26,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <QMessageBox>
 // cisst
 #include <cisstMultiTask/mtsInterfaceRequired.h>
-
 #include <sawIntuitiveResearchKit/mtsSocketBaseQtWidget.h>
 
 
@@ -111,7 +110,7 @@ void mtsSocketBaseQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 
 void mtsSocketBaseQtWidget::setupUi(void)
 {
-    QHBoxLayout * mainLayout = new QHBoxLayout;
+    QVBoxLayout * mainLayout = new QVBoxLayout;
     setLayout(mainLayout);
     setWindowTitle("Manipulator");
     resize(sizeHint());
@@ -150,9 +149,7 @@ void mtsSocketBaseQtWidget::setupUi(void)
     socketlayout->addStretch();
 
     // timing
-    QVBoxLayout * timingLayout = new QVBoxLayout();
     QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
-    timingLayout->addWidget(QMIntervalStatistics);
-    timingLayout->addStretch();
-    mainLayout->addLayout(timingLayout);
+    mainLayout->addWidget(QMIntervalStatistics);
+    mainLayout->addStretch();
 }

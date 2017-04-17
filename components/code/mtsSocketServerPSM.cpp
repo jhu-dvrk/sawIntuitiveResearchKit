@@ -1,15 +1,33 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
+/* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
+
+/*
+  Author(s):  Pretham Chalasani, Anton Deguet
+  Created on: 2016-11-04
+
+  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+
+--- begin cisst license - do not edit ---
+
+This software is provided "as is" under an open source license, with
+no warranty.  The complete license can be found in license.txt and
+http://www.cisst.org/cisst/license.txt.
+
+--- end cisst license ---
+*/
+
 #include <sawIntuitiveResearchKit/mtsSocketServerPSM.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED(mtsSocketServerPSM, mtsTaskPeriodic);
 
-mtsSocketServerPSM::mtsSocketServerPSM(const std::string &componentName, const double periodInSeconds,
-                                       const std::string &ip, const unsigned int port) :
+mtsSocketServerPSM::mtsSocketServerPSM(const std::string & componentName, const double periodInSeconds,
+                                       const std::string & ip, const unsigned int port) :
     mtsSocketBasePSM(componentName, periodInSeconds, ip, port, true),
     mIsHoming(false),
     mIsHomed(false)
 {
-    mtsInterfaceRequired *interfaceRequired = AddInterfaceRequired("PSM");
+    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("PSM");
     if(interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", GetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", SetPositionCartesian);
@@ -18,7 +36,7 @@ mtsSocketServerPSM::mtsSocketServerPSM(const std::string &componentName, const d
         interfaceRequired->AddFunction("SetRobotControlState", SetRobotControlState);
         interfaceRequired->AddEventHandlerWrite(&mtsSocketServerPSM::ErrorEventHandler,
                                                 this, "Error");
-    }    
+    }
 }
 
 void mtsSocketServerPSM::Configure(const std::string & CMN_UNUSED(fileName))
@@ -30,7 +48,7 @@ void mtsSocketServerPSM::Configure(const std::string & CMN_UNUSED(fileName))
     Command.Socket->AssignPort(Command.IpPort);
 }
 
-void mtsSocketServerPSM::Run()
+void mtsSocketServerPSM::Run(void)
 {
     //State.Data.Error = "";
     ProcessQueuedEvents();
@@ -38,12 +56,12 @@ void mtsSocketServerPSM::Run()
 
     ReceivePSMCommandData();
     UpdateStatistics();
-    SendPSMStateData();    
+    SendPSMStateData();
 }
 
-void mtsSocketServerPSM::ExecutePSMCommands()
+void mtsSocketServerPSM::ExecutePSMCommands(void)
 {
-    if(DesiredState != Command.Data.RobotControlState) {
+    if (DesiredState != Command.Data.RobotControlState) {
         mtsIntuitiveResearchKitArmTypes::RobotStateType enumState;
         DesiredState = Command.Data.RobotControlState;
         switch (DesiredState) {
@@ -51,7 +69,7 @@ void mtsSocketServerPSM::ExecutePSMCommands()
             enumState = mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED;
             break;
         case socketMessages::SCK_HOMED:
-            if(CurrentState != socketMessages::SCK_HOMING) {
+            if (CurrentState != socketMessages::SCK_HOMING) {
                 enumState = mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER;
             }
             break;
@@ -86,15 +104,15 @@ void mtsSocketServerPSM::ExecutePSMCommands()
     }
 }
 
-void mtsSocketServerPSM::ReceivePSMCommandData()
+void mtsSocketServerPSM::ReceivePSMCommandData(void)
 {
     // Recv Socket Data
-    size_t bytesRead = 0;
+    int bytesRead = 0;
     bytesRead = Command.Socket->Receive(Command.Buffer, BUFFER_SIZE, TIMEOUT);
     if (bytesRead > 0) {
         if (bytesRead != Command.Data.Header.Size) {
             std::cerr << "Incorrect bytes read " << bytesRead << ". Looking for " << Command.Data.Header.Size << " bytes." << std::endl;
-        }                
+        }
 
         std::stringstream ss;
         cmnDataFormat local, remote;
@@ -118,7 +136,7 @@ void mtsSocketServerPSM::ReceivePSMCommandData()
         ss.write(Command.Buffer, bytesRead);
         cmnData<socketCommandPSM>::DeSerializeBinary(Command.Data, ss, local, remote);
 
-        Command.Data.GoalPose.NormalizedSelf();        
+        Command.Data.GoalPose.NormalizedSelf();
         ExecutePSMCommands();
 
     } else {
@@ -126,7 +144,7 @@ void mtsSocketServerPSM::ReceivePSMCommandData()
     }
 }
 
-void mtsSocketServerPSM::UpdatePSMState()
+void mtsSocketServerPSM::UpdatePSMState(void)
 {
     // Update PSM State
     mtsExecutionResult executionResult;
@@ -141,8 +159,8 @@ void mtsSocketServerPSM::UpdatePSMState()
 
     // Switch to socket states
     mtsIntuitiveResearchKitArmTypes::RobotStateType enumState = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(psmState.Data);
-    if(enumState > mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED &&
-            enumState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
+    if (enumState > mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED &&
+	enumState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
         CurrentState = socketMessages::SCK_HOMING;
     } else {
         switch (enumState) {
@@ -171,7 +189,7 @@ void mtsSocketServerPSM::UpdatePSMState()
     }
 }
 
-void mtsSocketServerPSM::SendPSMStateData()
+void mtsSocketServerPSM::SendPSMStateData(void)
 {
     UpdatePSMState();
 
@@ -190,7 +208,7 @@ void mtsSocketServerPSM::SendPSMStateData()
     State.Socket->Send(State.Buffer, ss.str().size());
 }
 
-void mtsSocketServerPSM::ErrorEventHandler(const std::string & message)
+void mtsSocketServerPSM::ErrorEventHandler(const mtsMessage & CMN_UNUSED(message))
 {
     // Send error message to the client
     //State.Data.Error = message;
