@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Config Version="2">
+   <DigitalIn BitID="3" BoardID="2" Debounce="0.2" Name="HEAD" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="0" BoardID="3" Debounce="0.2" Name="CLUTCH" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="1" BoardID="3" Debounce="0.2" Name="CAM-" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="2" BoardID="3" Debounce="0.2" Name="CAM+" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="3" BoardID="3" Debounce="0.2" Name="COAG" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="4" BoardID="3" Debounce="0.2" Name="CAMERA" Pressed="1" Trigger="all" />
+</Config>
