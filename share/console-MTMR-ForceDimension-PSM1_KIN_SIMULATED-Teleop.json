@@ -15,7 +15,8 @@
             "class-name": "mtsKeyboard",
             "constructor-arg": {
                 "Name": "Keyboard"
-            },
+            }
+            ,
             "configure-parameter": "keyboard-dVRK-console.json"
         }
     ]
