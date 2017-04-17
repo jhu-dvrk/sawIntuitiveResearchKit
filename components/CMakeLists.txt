@@ -100,6 +100,7 @@ if (cisst_FOUND)
 
     set (HEADER_FILES
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsStateMachine.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKit.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArm.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitMTM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSM.h

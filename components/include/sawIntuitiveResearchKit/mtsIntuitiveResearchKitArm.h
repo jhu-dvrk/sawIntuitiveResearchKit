@@ -36,21 +36,16 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
 
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
-
-namespace mtsIntuitiveResearchKit {
-    const double IOPeriod = 0.3 * cmn_ms;
-    const double ArmPeriod = 0.5 * cmn_ms;
-    const double TeleOperationPeriod = 0.5 * cmn_ms;
-};
 
 class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds);
+    mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
     mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg);
     virtual inline ~mtsIntuitiveResearchKitArm() {}
 
@@ -233,7 +228,7 @@ protected:
     vctDoubleVec JointSet;
     vctDoubleVec JointVelocitySet;
     prmStateJoint JointsPID, JointsDesiredPID, JointsKinematics, JointsDesiredKinematics;
-    
+
     // efforts
     vctDoubleMat mJacobianBody, mJacobianBodyTranspose, mJacobianSpatial;
     vctDoubleVec JointExternalEffort;

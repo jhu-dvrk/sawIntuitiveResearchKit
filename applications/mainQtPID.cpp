@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -14,7 +14,6 @@ no warranty.  The complete license can be found in license.txt and
 http://www.cisst.org/cisst/license.txt.
 
 --- end cisst license ---
-
 */
 
 // system
@@ -28,11 +27,12 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
 #include <sawControllers/mtsPID.h>
 #include <sawControllers/mtsPIDQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 
 int main(int argc, char ** argv)
 {
     // period used for IO and PID
-    const double periodIOPID = 0.5 * cmn_ms;
+    const double periodIOPID = mtsIntuitiveResearchKit::IOPeriod;
 
     // log configuration
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);

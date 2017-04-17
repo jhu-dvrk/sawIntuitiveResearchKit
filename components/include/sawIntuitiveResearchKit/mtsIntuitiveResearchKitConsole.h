@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 // for ROS console
@@ -67,7 +68,7 @@ public:
         /*! Create and configure the robot arm. */
         void ConfigureArm(const ArmType armType,
                           const std::string & configFile,
-                          const double & periodInSeconds = 0.5 * cmn_ms);
+                          const double & periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
 
         /*! Connect all interfaces specific to this arm. */
         bool Connect(void);
@@ -146,7 +147,7 @@ public:
         /*! Create and configure the robot arm. */
         void ConfigureTeleop(const TeleopECMType type,
                              const vctMatRot3 & orientation,
-                             const double & periodInSeconds = 2.0 * cmn_ms);
+                             const double & periodInSeconds = mtsIntuitiveResearchKit::TeleopPeriod);
 
         /*! Connect all interfaces specific to this teleop. */
         bool Connect(void);
@@ -180,7 +181,7 @@ public:
         /*! Create and configure the robot arm. */
         void ConfigureTeleop(const TeleopPSMType type,
                              const vctMatRot3 & orientation,
-                             const double & periodInSeconds = 2.0 * cmn_ms);
+                             const double & periodInSeconds = mtsIntuitiveResearchKit::TeleopPeriod);
 
         /*! Connect all interfaces specific to this teleop. */
         bool Connect(void);

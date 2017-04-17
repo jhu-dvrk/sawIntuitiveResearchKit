@@ -68,7 +68,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & confi
 
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     mtsPID * pid = new mtsPID(mPIDComponentName,
-                              (periodInSeconds != 0.0) ? periodInSeconds : 0.5 * cmn_ms);
+                              (periodInSeconds != 0.0) ? periodInSeconds : mtsIntuitiveResearchKit::IOPeriod);
     bool hasIO = true;
     pid->Configure(mPIDConfigurationFile);
     if (mSimulation == SIMULATION_KINEMATIC) {
@@ -591,7 +591,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     }
 
     // IO default settings
-    double periodIO = 0.3 * cmn_ms;
+    double periodIO = mtsIntuitiveResearchKit::IOPeriod;
     int firewirePort = 0;
     sawRobotIO1394::ProtocolType protocol = sawRobotIO1394::PROTOCOL_SEQ_R_BC_W;
 
@@ -1293,7 +1293,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
     }
 
     // read period if present
-    double period = mtsIntuitiveResearchKit::TeleOperationPeriod;
+    double period = mtsIntuitiveResearchKit::TeleopPeriod;
     jsonValue = jsonTeleop["period"];
     if (!jsonValue.empty()) {
         period = jsonValue.asFloat();
@@ -1388,7 +1388,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
     }
 
     // read period if present
-    double period = 1.0 * cmn_ms;
+    double period = mtsIntuitiveResearchKit::TeleopPeriod;
     jsonValue = jsonTeleop["period"];
     if (!jsonValue.empty()) {
         period = jsonValue.asFloat();
