@@ -514,6 +514,10 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         return;
     }
 
+    CMN_LOG_CLASS_INIT_DEBUG << "Configure: content of console file: " << std::endl
+                             << jsonConfig << std::endl
+                             << std::endl;
+
     // extract path of main json config file to search other files relative to it
     cmnPath configPath(cmnPath::GetWorkingDirectory());
     std::string fullname = configPath.Find(filename);
@@ -587,6 +591,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         if (!manager->AddComponent(component)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to add custom component ["
                                      << index << "] to component manager" << std::endl;
+            return;
         }
     }
 
@@ -610,6 +615,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 protocol = sawRobotIO1394::PROTOCOL_BC_QRW;
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure \"firewire-protocol\", values must be \"sequential-read-write\", \"sequential-read-broadcast-write\" or \"broadcast-read-write\".   Using default instead: \"sequential-read-broadcast-write\"" << std::endl;
+                return;
             }
         }
 
@@ -659,12 +665,32 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     if (mHasIO) {
         mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, firewirePort);
         io->SetProtocol(protocol);
+        // configure for each arm
         for (iter = mArms.begin(); iter != end; ++iter) {
             std::string ioConfig = iter->second->mIOConfigurationFile;
             if (ioConfig != "") {
+                CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO using \"" << ioConfig << "\"" << std::endl;
                 io->Configure(ioConfig);
             }
         }
+        // configure using extra configuration files (e.g. foot pedals)
+        jsonValue = jsonConfig["io"];
+        if (!jsonValue.empty()) {
+            const Json::Value configFiles = jsonValue["configuration-files"];
+            if (!configFiles.empty()) {
+                for (unsigned int index = 0; index < configFiles.size(); ++index) {
+                    const std::string configFile = configPath.Find(configFiles[index].asString());
+                    if (configFile == "") {
+                        CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
+                                                 << configFiles[index].asString() << std::endl;
+                        return;
+                    }
+                    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO using \"" << configFile << "\"" << std::endl;
+                    io->Configure(configFile);
+                }
+            }
+        }
+        // and add the io component!
         mtsComponentManager::GetInstance()->AddComponent(io);
     }
 
@@ -707,22 +733,36 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // find name of button event used to detect if operator is present
 
     // support for older files
-    mOperatorPresentComponent = jsonConfig["operator-present"]["component"].asString();
-    mOperatorPresentInterface = jsonConfig["operator-present"]["interface"].asString();
-    if ((mOperatorPresentComponent != "")
-        || (mOperatorPresentInterface != "")) {
+    std::string operatorPresentComponent = jsonConfig["operator-present"]["component"].asString();
+    std::string operatorPresentInterface = jsonConfig["operator-present"]["interface"].asString();
+    if ((operatorPresentComponent != "")
+        || (operatorPresentInterface != "")) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure: \"operator-present\" should now be defined within \"console-inputs\" scope" << std::endl;
+        return;
     }
 
     // load from console inputs
     const Json::Value consoleInputs = jsonConfig["console-inputs"];
     if (!consoleInputs.empty()) {
-        mOperatorPresentComponent = consoleInputs["operator-present"]["component"].asString();
-        mOperatorPresentInterface = consoleInputs["operator-present"]["interface"].asString();
-        mClutchComponent = consoleInputs["clutch"]["component"].asString();
-        mClutchInterface = consoleInputs["clutch"]["interface"].asString();
-        mCameraComponent = consoleInputs["camera"]["component"].asString();
-        mCameraInterface = consoleInputs["camera"]["interface"].asString();
+        std::string component, interface;
+        component = consoleInputs["operator-present"]["component"].asString();
+        interface = consoleInputs["operator-present"]["interface"].asString();
+        if ((component != "") && (interface != "")) {
+            mOperatorPresentComponent = component;
+            mOperatorPresentInterface = interface;
+        }
+        component = consoleInputs["clutch"]["component"].asString();
+        interface = consoleInputs["clutch"]["interface"].asString();
+        if ((component != "") && (interface != "")) {
+            mClutchComponent = component;
+            mClutchInterface = interface;
+        }
+        component = consoleInputs["camera"]["component"].asString();
+        interface = consoleInputs["camera"]["interface"].asString();
+        if ((component != "") && (interface != "")) {
+            mCameraComponent = component;
+            mCameraInterface = interface;
+        }
     }
 
     // look for footpedals in json config
@@ -1526,7 +1566,6 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
         componentManager->Connect(this->GetName(), "BaseFrame", "SUJ", "ECM");
         componentManager->Connect("SUJ", "BaseFrame", this->GetName(), "ECMBaseFrame");
     }
-
     return true;
 }
 
