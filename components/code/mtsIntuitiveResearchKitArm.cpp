@@ -89,9 +89,11 @@ void mtsIntuitiveResearchKitArm::Init(void)
     BaseFrameValid = true;
 
     CartesianGetParam.SetAutomaticTimestamp(false); // based on PID timestamp
+    CartesianGetParam.SetMovingFrame(GetName());
     this->StateTable.AddData(CartesianGetParam, "CartesianPosition");
 
     CartesianGetDesiredParam.SetAutomaticTimestamp(false); // based on PID timestamp
+    CartesianGetDesiredParam.SetMovingFrame(GetName());
     this->StateTable.AddData(CartesianGetDesiredParam, "CartesianPositionDesired");
 
     this->StateTable.AddData(CartesianGetLocalParam, "CartesianPositionLocal");
