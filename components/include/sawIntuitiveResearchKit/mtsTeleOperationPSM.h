@@ -92,7 +92,7 @@ protected:
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionRead  GetPositionCartesianDesired;
         mtsFunctionWrite SetPositionGoalCartesian;
-        mtsFunctionRead  GetGripperPosition;
+        mtsFunctionRead  GetStateGripper;
 
         mtsFunctionRead  GetRobotControlState;
         mtsFunctionWrite SetRobotControlState;

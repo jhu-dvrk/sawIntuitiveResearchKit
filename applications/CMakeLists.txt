@@ -11,6 +11,8 @@
 
 cmake_minimum_required (VERSION 2.8)
 
+project (sawIntuitiveResearchKitApplications)
+
 # applications in separate directories
 add_subdirectory (gripper-calibration)
 

@@ -138,11 +138,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mEffortOrientationLocked = false;
 
     // initialize trajectory data
-    JointGet.SetSize(NumberOfJoints());
     JointSet.SetSize(NumberOfJoints());
-    JointVelocityGet.SetSize(NumberOfJoints());
     JointVelocitySet.SetSize(NumberOfJoints());
-    JointSetParam.Goal().SetSize(NumberOfAxes());
+    JointSetParam.Goal().SetSize(NumberOfJoints());
     mJointTrajectory.Velocity.SetSize(NumberOfJoints());
     mJointTrajectory.Acceleration.SetSize(NumberOfJoints());
     mJointTrajectory.Goal.SetSize(NumberOfJoints());
@@ -157,14 +155,15 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianVelocityGetParam.SetVelocityAngular(vct3(0.0));
     CartesianVelocityGetParam.SetValid(false);
 
+    //Manipulator
+    Manipulator = new robManipulator();
+
     // jacobian
-    JacobianBody.SetSize(6, NumberOfJointsKinematics());
-    this->StateTable.AddData(JacobianBody, "JacobianBody");
-    JacobianSpatial.SetSize(6, NumberOfJointsKinematics());
-    this->StateTable.AddData(JacobianSpatial, "JacobianSpatial");
-    JacobianBodyTranspose.ForceAssign(JacobianBody.Transpose());
-    mJacobianPInverseData.Allocate(JacobianBodyTranspose);
-    JointExternalEffort.SetSize(NumberOfJointsKinematics());
+    ResizeKinematicsData();
+    this->StateTable.AddData(mJacobianBody, "JacobianBody");
+    this->StateTable.AddData(mJacobianSpatial, "JacobianSpatial");
+
+    // efforts for PID
     mEffortJointSet.SetSize(NumberOfJoints());
     mEffortJointSet.ForceTorque().SetAll(0.0);
     mWrenchGet.SetValid(false);
@@ -174,20 +173,16 @@ void mtsIntuitiveResearchKitArm::Init(void)
     BaseFrameValid = true;
 
     CartesianGetParam.SetAutomaticTimestamp(false); // based on PID timestamp
+    CartesianGetParam.SetMovingFrame(GetName());
     this->StateTable.AddData(CartesianGetParam, "CartesianPosition");
 
     CartesianGetDesiredParam.SetAutomaticTimestamp(false); // based on PID timestamp
+    CartesianGetDesiredParam.SetMovingFrame(GetName());
     this->StateTable.AddData(CartesianGetDesiredParam, "CartesianPositionDesired");
 
     this->StateTable.AddData(CartesianGetLocalParam, "CartesianPositionLocal");
     this->StateTable.AddData(CartesianGetLocalDesiredParam, "CartesianPositionLocalDesired");
     this->StateTable.AddData(BaseFrame, "BaseFrame");
-
-    JointGetParam.SetAutomaticTimestamp(false); // keep PID timestamp
-    this->StateTable.AddData(JointGetParam, "JointPosition");
-
-    JointGetParam.SetAutomaticTimestamp(false); // keep PID timestamp
-    this->StateTable.AddData(JointGetDesired, "JointPositionDesired");
 
     CartesianVelocityGetParam.SetAutomaticTimestamp(false); // keep PID timestamp
     this->StateTable.AddData(CartesianVelocityGetParam, "CartesianVelocityGetParam");
@@ -195,11 +190,11 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mWrenchGet.SetAutomaticTimestamp(false); // keep PID timestamp
     this->StateTable.AddData(mWrenchGet, "WrenchGet");
 
-    StateJointParam.SetAutomaticTimestamp(false); // keep PID timestamp
-    this->StateTable.AddData(StateJointParam, "StateJoint");
+    JointsKinematics.SetAutomaticTimestamp(false); // keep PID timestamp
+    this->StateTable.AddData(JointsKinematics, "JointsKinematics");
 
-    StateJointDesiredParam.SetAutomaticTimestamp(false); // keep PID timestamp
-    this->StateTable.AddData(StateJointDesiredParam, "StateJointDesired");
+    JointsDesiredKinematics.SetAutomaticTimestamp(false); // keep PID timestamp
+    this->StateTable.AddData(JointsDesiredKinematics, "JointsDesiredKinematics");
 
     // PID
     PIDInterface = AddInterfaceRequired("PID");
@@ -207,15 +202,14 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("SetCoupling", PID.SetCoupling);
         PIDInterface->AddFunction("Enable", PID.Enable);
         PIDInterface->AddFunction("EnableJoints", PID.EnableJoints);
-        PIDInterface->AddFunction("GetPositionJoint", PID.GetPositionJoint);
-        PIDInterface->AddFunction("GetPositionJointDesired", PID.GetPositionJointDesired);
         PIDInterface->AddFunction("GetStateJoint", PID.GetStateJoint);
         PIDInterface->AddFunction("GetStateJointDesired", PID.GetStateJointDesired);
         PIDInterface->AddFunction("SetPositionJoint", PID.SetPositionJoint);
         PIDInterface->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
         PIDInterface->AddFunction("SetJointLowerLimit", PID.SetJointLowerLimit);
         PIDInterface->AddFunction("SetJointUpperLimit", PID.SetJointUpperLimit);
-        PIDInterface->AddFunction("GetVelocityJoint", PID.GetVelocityJoint);
+        PIDInterface->AddFunction("SetTorqueLowerLimit", PID.SetTorqueLowerLimit);
+        PIDInterface->AddFunction("SetTorqueUpperLimit", PID.SetTorqueUpperLimit);
         PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
         PIDInterface->AddFunction("SetTorqueJoint", PID.SetTorqueJoint);
         PIDInterface->AddFunction("SetTorqueOffset", PID.SetTorqueOffset);
@@ -259,10 +253,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddMessageEvents();
 
         // Get
-        RobotInterface->AddCommandReadState(this->StateTable, JointGetParam, "GetPositionJoint");
-        RobotInterface->AddCommandReadState(this->StateTable, JointGetDesired, "GetPositionJointDesired");
-        RobotInterface->AddCommandReadState(this->StateTable, StateJointParam, "GetStateJoint");
-        RobotInterface->AddCommandReadState(this->StateTable, StateJointDesiredParam, "GetStateJointDesired");
+        RobotInterface->AddCommandReadState(this->StateTable, JointsKinematics, "GetStateJoint");
+        RobotInterface->AddCommandReadState(this->StateTable, JointsDesiredKinematics, "GetStateJointDesired");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianGetLocalParam, "GetPositionCartesianLocal");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianGetLocalDesiredParam, "GetPositionCartesianLocalDesired");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianGetParam, "GetPositionCartesian");
@@ -270,8 +262,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandReadState(this->StateTable, BaseFrame, "GetBaseFrame");
         RobotInterface->AddCommandReadState(this->StateTable, CartesianVelocityGetParam, "GetVelocityCartesian");
         RobotInterface->AddCommandReadState(this->StateTable, mWrenchGet, "GetWrenchBody");
-        RobotInterface->AddCommandReadState(this->StateTable, JacobianBody, "GetJacobianBody");
-        RobotInterface->AddCommandReadState(this->StateTable, JacobianSpatial, "GetJacobianSpatial");
+        RobotInterface->AddCommandReadState(this->StateTable, mJacobianBody, "GetJacobianBody");
+        RobotInterface->AddCommandReadState(this->StateTable, mJacobianSpatial, "GetJacobianSpatial");
         // Set
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame,
                                         this, "SetBaseFrame");
@@ -335,14 +327,24 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
     RobotInterface->SendStatus(this->GetName() + ": set desired state to " + state);
 }
 
+void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
+{
+    mJacobianBody.SetSize(6, NumberOfJointsKinematics());
+    mJacobianSpatial.SetSize(6, NumberOfJointsKinematics());
+    mJacobianBodyTranspose.ForceAssign(mJacobianBody.Transpose());
+    mJacobianPInverseData.Allocate(mJacobianBodyTranspose);
+    JointExternalEffort.SetSize(NumberOfJointsKinematics());
+}
+
 void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
 {
     robManipulator::Errno result;
-    result = this->Manipulator.LoadRobot(filename);
+    result = this->Manipulator->LoadRobot(filename);
     if (result == robManipulator::EFAILURE) {
         CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
                                  << filename << "\"" << std::endl;
     }
+    ResizeKinematicsData();
 }
 
 void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
@@ -351,8 +353,8 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
     const Json::Value jsonBase = jsonConfig["base-offset"];
     if (!jsonBase.isNull()) {
         // save the transform as Manipulator Rtw0
-        cmnDataJSON<vctFrm4x4>::DeSerializeText(Manipulator.Rtw0, jsonBase);
-        if (!nmrIsOrthonormal(Manipulator.Rtw0.Rotation())) {
+        cmnDataJSON<vctFrm4x4>::DeSerializeText(Manipulator->Rtw0, jsonBase);
+        if (!nmrIsOrthonormal(Manipulator->Rtw0.Rotation())) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": the base offset rotation doesn't seem to be orthonormal"
                                      << std::endl;
@@ -365,11 +367,12 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                  << ": can find \"DH\" data in configuration file" << std::endl;
     }
-    this->Manipulator.LoadRobot(jsonDH);
+    this->Manipulator->LoadRobot(jsonDH);
     std::stringstream dhResult;
-    this->Manipulator.PrintKinematics(dhResult);
+    this->Manipulator->PrintKinematics(dhResult);
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure " << this->GetName()
                                << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
+    ResizeKinematicsData();
 }
 
 void mtsIntuitiveResearchKitArm::Startup(void)
@@ -393,7 +396,6 @@ void mtsIntuitiveResearchKitArm::Run(void)
     RunEvent();
     ProcessQueuedCommands();
 
-    mCounter++;
     CartesianGetPrevious = CartesianGet;
 }
 
@@ -431,67 +433,46 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
     }
 
     // we can start reporting some joint values after the robot is powered
-    if (mJointReady) {        
+    if (mJointReady) {
         mtsExecutionResult executionResult;
-        executionResult = PID.GetPositionJoint(JointGetParam);
-        if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPosition failed \""
-                                    << executionResult << "\"" << std::endl;
-        }
-        // assign to a more convenient vctDoubleVec
-        JointGet.Assign(JointGetParam.Position(), NumberOfJoints());
-
-        // desired joints
-        executionResult = PID.GetPositionJointDesired(JointGetDesired);
-        if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointPositionDesired failed \""
-                                    << executionResult << "\"" << std::endl;
-        }
-
-        // joint velocity
-        executionResult = PID.GetVelocityJoint(JointVelocityGetParam);
-        if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetVelocityJoint failed \""
-                                    << executionResult << "\"" << std::endl;
-        }
-        JointVelocityGet.Assign(JointVelocityGetParam.Velocity(), NumberOfJoints());
-
-        // joint state, not used internally but available to users
-        executionResult = PID.GetStateJoint(StateJointParam);
+        // joint state
+        executionResult = PID.GetStateJoint(JointsPID);
         if (!executionResult.IsOK()) {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointState failed \""
                                     << executionResult << "\"" << std::endl;
         }
 
         // desired joint state
-        executionResult = PID.GetStateJointDesired(StateJointDesiredParam);
+        executionResult = PID.GetStateJointDesired(JointsDesiredPID);
         if (!executionResult.IsOK()) {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointStateDesired failed \""
                                     << executionResult << "\"" << std::endl;
         }
 
+        // update joint states used for kinematics
+        UpdateJointsKinematics();
+
         // when the robot is ready, we can compute cartesian position
         if (mCartesianReady) {
             // update cartesian position
-            CartesianGetLocal = Manipulator.ForwardKinematics(JointGet, NumberOfJointsKinematics());
+            CartesianGetLocal = Manipulator->ForwardKinematics(JointsKinematics.Position());
             CartesianGet = BaseFrame * CartesianGetLocal;
             // normalize
             CartesianGetLocal.Rotation().NormalizedSelf();
             CartesianGet.Rotation().NormalizedSelf();
             // flags
-            CartesianGetLocalParam.SetTimestamp(JointGetParam.Timestamp());
+            CartesianGetLocalParam.SetTimestamp(JointsKinematics.Timestamp());
             CartesianGetLocalParam.SetValid(true);
-            CartesianGetParam.SetTimestamp(JointGetParam.Timestamp());
+            CartesianGetParam.SetTimestamp(JointsKinematics.Timestamp());
             CartesianGetParam.SetValid(BaseFrameValid);
             // update jacobians
-            Manipulator.JacobianSpatial(JointGet, JacobianSpatial);
-            Manipulator.JacobianBody(JointGet, JacobianBody);
+            Manipulator->JacobianSpatial(JointsKinematics.Position(), mJacobianSpatial);
+            Manipulator->JacobianBody(JointsKinematics.Position(), mJacobianBody);
 
             // update cartesian velocity using the jacobian and joint
             // velocities.
             vctDoubleVec cartesianVelocity(6);
-            cartesianVelocity.ProductOf(JacobianBody,
-                                        StateJointParam.Velocity().Ref(NumberOfJointsKinematics()));
+            cartesianVelocity.ProductOf(mJacobianBody, JointsKinematics.Velocity());
             vct3 relative, absolute;
             // linear
             relative.Assign(cartesianVelocity.Ref(3, 0));
@@ -503,15 +484,14 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             CartesianVelocityGetParam.SetVelocityAngular(absolute);
             // valid/timestamp
             CartesianVelocityGetParam.SetValid(true);
-            CartesianVelocityGetParam.SetTimestamp(StateJointParam.Timestamp());
+            CartesianVelocityGetParam.SetTimestamp(JointsKinematics.Timestamp());
 
 
             // update wrench based on measured joint current efforts
-            JacobianBodyTranspose.Assign(JacobianBody.Transpose());
-            nmrPInverse(JacobianBodyTranspose, mJacobianPInverseData);
+            mJacobianBodyTranspose.Assign(mJacobianBody.Transpose());
+            nmrPInverse(mJacobianBodyTranspose, mJacobianPInverseData);
             vctDoubleVec wrench(6);
-            wrench.ProductOf(mJacobianPInverseData.PInverse(),
-                             StateJointParam.Effort().Ref(this->NumberOfJointsKinematics()));
+            wrench.ProductOf(mJacobianPInverseData.PInverse(), JointsKinematics.Effort());
             if (mWrenchBodyOrientationAbsolute) {
                 // forces
                 relative.Assign(wrench.Ref(3, 0));
@@ -526,18 +506,18 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             }
             // valid/timestamp
             mWrenchGet.SetValid(true);
-            mWrenchGet.SetTimestamp(StateJointParam.Timestamp());
+            mWrenchGet.SetTimestamp(JointsKinematics.Timestamp());
 
             // update cartesian position desired based on joint desired
-            CartesianGetLocalDesired = Manipulator.ForwardKinematics(JointGetDesired.Goal());
+            CartesianGetLocalDesired = Manipulator->ForwardKinematics(JointsDesiredKinematics.Position());
             CartesianGetDesired = BaseFrame * CartesianGetLocalDesired;
             // normalize
             CartesianGetLocalDesired.Rotation().NormalizedSelf();
             CartesianGetDesired.Rotation().NormalizedSelf();
             // flags
-            CartesianGetLocalDesiredParam.SetTimestamp(JointGetParam.Timestamp());
+            CartesianGetLocalDesiredParam.SetTimestamp(JointsDesiredKinematics.Timestamp());
             CartesianGetLocalDesiredParam.SetValid(true);
-            CartesianGetDesiredParam.SetTimestamp(JointGetParam.Timestamp());
+            CartesianGetDesiredParam.SetTimestamp(JointsDesiredKinematics.Timestamp());
             CartesianGetDesiredParam.SetValid(BaseFrameValid);
         } else {
             // update cartesian position
@@ -560,14 +540,44 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         CartesianGetDesiredParam.Position().From(CartesianGetDesired);
     } else {
         // set joint to zeros
-        JointGet.Zeros();
-        PID.GetPositionJoint(JointGetParam); // get size right
-        JointGetParam.Position().Zeros();
-        JointGetParam.SetValid(false);
-        JointVelocityGet.Zeros();
-        JointVelocityGetParam.Velocity().Zeros();
-        JointVelocityGetParam.SetValid(false);
+        JointsPID.Position().Zeros();
+        JointsPID.Velocity().Zeros();
+        JointsPID.Effort().Zeros();
+        JointsPID.SetValid(false);
+
+        JointsKinematics.Position().Zeros();
+        JointsKinematics.Velocity().Zeros();
+        JointsKinematics.Effort().Zeros();
+        JointsKinematics.SetValid(false);
     }
+}
+
+void mtsIntuitiveResearchKitArm::UpdateJointsKinematics(void)
+{
+    // for most cases, joints used for the kinematics are the first n joints
+    // from PID
+
+    // copy names only if first time
+    if (JointsKinematics.Name().size() != NumberOfJointsKinematics()) {
+        JointsKinematics.Name().ForceAssign(JointsPID.Name().Ref(NumberOfJointsKinematics()));
+    }
+    JointsKinematics.Position().ForceAssign(JointsPID.Position().Ref(NumberOfJointsKinematics()));
+    JointsKinematics.Velocity().ForceAssign(JointsPID.Velocity().Ref(NumberOfJointsKinematics()));
+    JointsKinematics.Effort().ForceAssign(JointsPID.Effort().Ref(NumberOfJointsKinematics()));
+    JointsKinematics.Timestamp() = JointsPID.Timestamp();
+    // commanded
+    if (JointsDesiredKinematics.Name().size() != NumberOfJointsKinematics()) {
+        JointsDesiredKinematics.Name().ForceAssign(JointsDesiredPID.Name().Ref(NumberOfJointsKinematics()));
+    }
+    JointsDesiredKinematics.Position().ForceAssign(JointsDesiredPID.Position().Ref(NumberOfJointsKinematics()));
+    // JointsDesiredKinematics.Velocity().ForceAssign(JointsDesiredPID.Velocity().Ref(NumberOfJointsKinematics()));
+    JointsDesiredKinematics.Effort().ForceAssign(JointsDesiredPID.Effort().Ref(NumberOfJointsKinematics()));
+    JointsDesiredKinematics.Timestamp() = JointsDesiredPID.Timestamp();
+}
+
+void mtsIntuitiveResearchKitArm::ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID)
+{
+    jointsPID.Assign(jointsKinematics);
 }
 
 void mtsIntuitiveResearchKitArm::StateChanged(void)
@@ -659,7 +669,7 @@ void mtsIntuitiveResearchKitArm::TransitionEncodersBiased(void)
 void mtsIntuitiveResearchKitArm::EnterPowering(void)
 {
     mPowered = false;
-    
+
     if (mIsSimulated) {
         PID.EnableTrackingError(false);
         PID.Enable(true);
@@ -700,9 +710,8 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
     const double timeToPower = 3.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
-    // second, check status
+    // check status
     if ((currentTime - mHomingTimer) > timeToPower) {
-
         // check power status
         vctBoolVec actuatorAmplifiersStatus(NumberOfJoints());
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
@@ -756,9 +765,12 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
 
     // make sure we start from current state, SetControlMode
     // initializes trajectory using JointGetDesired
-    PID.GetPositionJoint(JointGetParam);
-    JointGetDesired.Goal().Assign(JointGetParam.Position(), NumberOfJoints());
-    JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
+
+    // pre-load PID to make sure desired position has some reasonable values
+    PID.GetStateJoint(JointsPID);
+    SetPositionJointLocal(JointsPID.Position());
+    JointsDesiredPID.Position().Assign(JointsPID.Position());
+    JointsDesiredPID.Velocity().Assign(JointsPID.Velocity());
 
     // disable joint limits
     PID.SetCheckJointLimit(false);
@@ -766,7 +778,7 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
     PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
     PID.EnableTrackingError(true);
     // enable PID and start from current position
-    SetPositionJointLocal(JointSet);
+    SetPositionJointLocal(JointsDesiredPID.Position());
     PID.Enable(true);
 
     // compute joint goal position
@@ -808,7 +820,7 @@ void mtsIntuitiveResearchKitArm::RunHomingArm(void)
 
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         // check position
-        mJointTrajectory.GoalError.DifferenceOf(mJointTrajectory.Goal, JointGet);
+        mJointTrajectory.GoalError.DifferenceOf(mJointTrajectory.Goal, JointsPID.Position());
         mJointTrajectory.GoalError.AbsSelf();
         isHomed = !mJointTrajectory.GoalError.ElementwiseGreaterOrEqual(mJointTrajectory.GoalTolerance).Any();
         if (isHomed) {
@@ -838,13 +850,12 @@ void mtsIntuitiveResearchKitArm::EnterReady(void)
     SetControlSpace(UNDEFINED_SPACE);
     SetControlMode(UNDEFINED_MODE);
     // enable PID and start from current position
-    PID.GetPositionJoint(JointGetDesired);
-    JointSet.Assign(JointGetDesired.Goal());
-    SetPositionJointLocal(JointSet);
+    PID.GetStateJoint(JointsPID);
+    SetPositionJointLocal(JointsPID.Position());
     PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
     PID.EnableTrackingError(true);
     PID.SetCheckJointLimit(true);
-    PID.Enable(true);    
+    PID.Enable(true);
 }
 
 void mtsIntuitiveResearchKitArm::RunPositionJoint(void)
@@ -867,7 +878,7 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
                                         JointVelocitySet,
                                         mJointTrajectory.Goal,
                                         mJointTrajectory.GoalVelocity);
-    SetPositionJointLocal(JointSet);
+    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
 
     const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
     const double currentTime = this->StateTable.GetTic();
@@ -894,15 +905,13 @@ void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
 {
     if (mHasNewPIDGoal) {
         // copy current position
-        vctDoubleVec jointSet(JointGet.Ref(NumberOfJointsKinematics()));
+        vctDoubleVec jointSet(JointsKinematics.Position());
 
         // compute desired arm position
         CartesianPositionFrm.From(CartesianSetParam.Goal());
         if (this->InverseKinematics(jointSet, BaseFrame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
-            // assign to joints used for kinematics
-            JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
             // finally send new joint values
-            SetPositionJointLocal(JointSet);
+            SetPositionJointLocal(jointSet);
         } else {
             RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
         }
@@ -937,8 +946,8 @@ void mtsIntuitiveResearchKitArm::SetControlMode(const ControlMode mode)
     // when starting trajectory, set current position/velocity and trajectory
     // parameters
     if (mode == TRAJECTORY_MODE) {
-        JointSet.Assign(JointGetDesired.Goal(), NumberOfJoints());
-        JointVelocitySet.Assign(JointVelocityGet, NumberOfJoints());
+        JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
+        JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
         mJointTrajectory.Reflexxes.Set(mJointTrajectory.Velocity,
                                        mJointTrajectory.Acceleration,
                                        StateTable.PeriodStats.GetAvg(),
@@ -989,12 +998,12 @@ void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
         } else {
             force.Assign(mWrenchSet.Force());
         }
-        JointExternalEffort.ProductOf(JacobianBody.Transpose(), force);
+        JointExternalEffort.ProductOf(mJacobianBody.Transpose(), force);
     }
     // spatial wrench
     else if (mWrenchType == WRENCH_SPATIAL) {
         force.Assign(mWrenchSet.Force());
-        JointExternalEffort.ProductOf(JacobianSpatial.Transpose(), force);
+        JointExternalEffort.ProductOf(mJacobianSpatial.Transpose(), force);
     }
 
     // add gravity compensation if needed
@@ -1006,8 +1015,8 @@ void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
     AddCustomEfforts(JointExternalEffort);
 
     // pad array for PID
-    vctDoubleVec torqueDesired(NumberOfAxes(), 0.0); // for PID
-    torqueDesired.Assign(JointExternalEffort, NumberOfJointsKinematics());
+    vctDoubleVec torqueDesired(NumberOfJoints(), 0.0); // for PID
+    torqueDesired.Assign(JointExternalEffort, NumberOfJoints());
 
     // convert to cisstParameterTypes
     TorqueSetParam.SetForceTorque(torqueDesired);
@@ -1040,7 +1049,7 @@ void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & ne
 {
     if ((mControlSpace == JOINT_SPACE)
         && (mControlMode == POSITION_MODE)) {
-        JointSet.Assign(newPosition.Goal(), NumberOfJoints());
+        JointSet.Assign(newPosition.Goal(), NumberOfJointsKinematics());
         mHasNewPIDGoal = true;
     } else {
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in joint control mode, current state is "
@@ -1053,7 +1062,7 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet 
     if ((mControlSpace == JOINT_SPACE)
         && (mControlMode == TRAJECTORY_MODE)) {
         mJointTrajectory.IsWorking = true;
-        mJointTrajectory.Goal.Assign(newPosition.Goal(), NumberOfJoints());
+        ToJointsPID(newPosition.Goal(), mJointTrajectory.Goal);
         mJointTrajectory.GoalVelocity.SetAll(0.0);
         mJointTrajectory.EndTime = 0.0;
     } else {
@@ -1079,38 +1088,16 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
     if ((mControlSpace == CARTESIAN_SPACE)
         && (mControlMode == TRAJECTORY_MODE)) {
 
-        const size_t nbJoints = this->NumberOfJoints();
-        const size_t nbJointsKin = this->NumberOfJointsKinematics();
-
         // copy current position
-        vctDoubleVec jointSet(JointGet.Ref(nbJointsKin));
+        vctDoubleVec jointSet(JointsKinematics.Position());
 
         // compute desired slave position
         CartesianPositionFrm.From(newPosition.Goal());
 
         if (this->InverseKinematics(jointSet, BaseFrame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
-            // resize to proper number of joints
-            jointSet.resize(nbJoints);
-
-            // keep values of joints not handled by kinematics (PSM jaw)
-            if (nbJoints > nbJointsKin) {
-                // check if there is a trajectory active
-                const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
-                if (trajectoryResult != robReflexxes::Reflexxes_FINAL_STATE_REACHED) {
-                    // past any trajectory, use last desired joint position
-                    jointSet.Ref(nbJoints - nbJointsKin,
-                                 nbJointsKin).Assign(JointGetDesired.Goal().Ref(nbJoints - nbJointsKin,
-                                                                                nbJointsKin));
-                } else {
-                    // there is an ongoing trajectory, use the trajectory goal
-                    jointSet.Ref(nbJoints - nbJointsKin,
-                                 nbJointsKin).Assign(mJointTrajectory.Goal.Ref(nbJoints - nbJointsKin,
-                                                                               nbJointsKin));
-                }
-            }
             // set joint goals
             mJointTrajectory.IsWorking = true;
-            mJointTrajectory.Goal.Assign(jointSet);
+            ToJointsPID(jointSet, mJointTrajectory.Goal);
             mJointTrajectory.GoalVelocity.SetAll(0.0);
             mJointTrajectory.EndTime = 0.0;
         } else {
@@ -1223,6 +1210,6 @@ void mtsIntuitiveResearchKitArm::AddGravityCompensationEfforts(vctDoubleVec & ef
 {
     vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
     vctDoubleVec gravityEfforts;
-    gravityEfforts.ForceAssign(Manipulator.CCG(JointGet, qd));  // should this take joint velocities?
+    gravityEfforts.ForceAssign(Manipulator->CCG(JointsKinematics.Position(), qd));  // should this take joint velocities?
     efforts.Add(gravityEfforts);
 }

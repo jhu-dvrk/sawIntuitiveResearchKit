@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -14,7 +14,6 @@ no warranty.  The complete license can be found in license.txt and
 http://www.cisst.org/cisst/license.txt.
 
 --- end cisst license ---
-
 */
 
 // system
@@ -49,7 +48,7 @@ int main(int argc, char ** argv)
     cmnGetChar();
 
     // period used for IO and PID
-    const double periodIOPID = 0.5 * cmn_ms;
+    const double periodIOPID = mtsIntuitiveResearchKit::IOPeriod;
 
     // log configuration
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
@@ -148,15 +147,15 @@ int main(int argc, char ** argv)
     // Configure based on arm type assuming name
     if ((armName == "PSM1") || (armName == "PSM2") || (armName == "PSM3")) {
         arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_PSM,
-                          configFiles["kinematic"], 3.0 * cmn_ms);
+                          configFiles["kinematic"], mtsIntuitiveResearchKit::ArmPeriod);
         numberOfAxis = 7;
     } else if ((armName == "MTML") || (armName == "MTMR")) {
         arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_MTM,
-                          configFiles["kinematic"], 3.0 * cmn_ms);
+                          configFiles["kinematic"], mtsIntuitiveResearchKit::ArmPeriod);
         numberOfAxis = 8;
     } else if (armName == "ECM") {
         arm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_ECM,
-                          configFiles["kinematic"], 3.0 * cmn_ms);
+                          configFiles["kinematic"], mtsIntuitiveResearchKit::ArmPeriod);
         numberOfAxis = 4;
     } else {
         std::cerr << "Arm name should be either PSM1, PSM2, PSM3, MTML, MTMR or ECM, not " << armName << std::endl;

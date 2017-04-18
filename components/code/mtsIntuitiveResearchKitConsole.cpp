@@ -53,7 +53,7 @@ mtsIntuitiveResearchKitConsole::Arm::Arm(const std::string & name,
                                          const std::string & ioComponentName):
     mName(name),
     mIOComponentName(ioComponentName),
-    mArmPeriod(1.0 * cmn_ms),
+    mArmPeriod(mtsIntuitiveResearchKit::ArmPeriod),
     IOInterfaceRequired(0),
     PIDInterfaceRequired(0),
     ArmInterfaceRequired(0),
@@ -68,7 +68,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & confi
 
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     mtsPID * pid = new mtsPID(mPIDComponentName,
-                              (periodInSeconds != 0.0) ? periodInSeconds : 0.5 * cmn_ms);
+                              (periodInSeconds != 0.0) ? periodInSeconds : mtsIntuitiveResearchKit::IOPeriod);
     bool hasIO = true;
     pid->Configure(mPIDConfigurationFile);
     if (mSimulation == SIMULATION_KINEMATIC) {
@@ -87,8 +87,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & confi
 
 void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                                        const std::string & configFile,
-                                                       const double & periodInSeconds,
-                                                       mtsComponent * existingArm)
+                                                       const double & periodInSeconds)
 {
     mType = armType;
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
@@ -98,53 +97,45 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     switch (armType) {
     case ARM_MTM:
         {
-            if (!existingArm) {
-                mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
-                if (mSimulation == SIMULATION_KINEMATIC) {
-                    master->SetSimulated();
-                }
-                master->Configure(mArmConfigurationFile);
-                componentManager->AddComponent(master);
+            mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
+            if (mSimulation == SIMULATION_KINEMATIC) {
+                master->SetSimulated();
             }
+            master->Configure(mArmConfigurationFile);
+            componentManager->AddComponent(master);
         }
         break;
     case ARM_PSM:
         {
-            if (!existingArm) {
-                mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
-                if (mSimulation == SIMULATION_KINEMATIC) {
-                    slave->SetSimulated();
-                }
-                slave->Configure(mArmConfigurationFile);
-                componentManager->AddComponent(slave);
+            mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
+            if (mSimulation == SIMULATION_KINEMATIC) {
+                slave->SetSimulated();
+            }
+            slave->Configure(mArmConfigurationFile);
+            componentManager->AddComponent(slave);
 
-                if (mSocketServer) {
-                    mtsSocketServerPSM *serverPSM = new mtsSocketServerPSM(SocketComponentName(), periodInSeconds, mIp, mPort);
-                    serverPSM->Configure();
-                    componentManager->AddComponent(serverPSM);
-                }
+            if (mSocketServer) {
+                mtsSocketServerPSM *serverPSM = new mtsSocketServerPSM(SocketComponentName(), periodInSeconds, mIp, mPort);
+                serverPSM->Configure();
+                componentManager->AddComponent(serverPSM);
             }
         }
         break;
     case ARM_PSM_SOCKET:
         {
-            if (!existingArm) {
-                mtsSocketClientPSM * clientPSM = new mtsSocketClientPSM(Name(), periodInSeconds, mIp, mPort);
-                clientPSM->Configure();
-                componentManager->AddComponent(clientPSM);
-            }
+            mtsSocketClientPSM * clientPSM = new mtsSocketClientPSM(Name(), periodInSeconds, mIp, mPort);
+            clientPSM->Configure();
+            componentManager->AddComponent(clientPSM);
         }
         break;
     case ARM_ECM:
         {
-            if (!existingArm) {
-                mtsIntuitiveResearchKitECM * ecm = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
-                if (mSimulation == SIMULATION_KINEMATIC) {
-                    ecm->SetSimulated();
-                }
-                ecm->Configure(mArmConfigurationFile);
-                componentManager->AddComponent(ecm);
+            mtsIntuitiveResearchKitECM * ecm = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
+            if (mSimulation == SIMULATION_KINEMATIC) {
+                ecm->SetSimulated();
             }
+            ecm->Configure(mArmConfigurationFile);
+            componentManager->AddComponent(ecm);
         }
         break;
     case ARM_SUJ:
@@ -156,67 +147,67 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         break;
     case ARM_MTM_DERIVED:
         {
-            if (!existingArm) {
-                mtsComponent * component;
-                component = componentManager->GetComponent(Name());
-                if (component) {
-                    mtsIntuitiveResearchKitMTM * master = dynamic_cast<mtsIntuitiveResearchKitMTM *>(component);
-                    if (master) {
-                        master->Configure(mArmConfigurationFile);
-                    } else {
-                        CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
-                                           << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitMTM."
-                                           << std::endl;
+            mtsComponent * component;
+            component = componentManager->GetComponent(Name());
+            if (component) {
+                mtsIntuitiveResearchKitMTM * master = dynamic_cast<mtsIntuitiveResearchKitMTM *>(component);
+                if (master) {
+                    if (mSimulation == SIMULATION_KINEMATIC) {
+                        master->SetSimulated();
                     }
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
-                                       << Name() << "\" not found."
+                                       << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitMTM."
                                        << std::endl;
                 }
+            } else {
+                CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
+                                   << Name() << "\" not found."
+                                   << std::endl;
             }
         }
         break;
     case ARM_PSM_DERIVED:
         {
-            if (!existingArm) {
-                mtsComponent * component;
-                component = componentManager->GetComponent(Name());
-                if (component) {
-                    mtsIntuitiveResearchKitPSM * slave = dynamic_cast<mtsIntuitiveResearchKitPSM *>(component);
-                    if (slave) {
-                        slave->Configure(mArmConfigurationFile);
-                    } else {
-                        CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
-                                           << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitPSM."
-                                           << std::endl;
+            mtsComponent * component;
+            component = componentManager->GetComponent(Name());
+            if (component) {
+                mtsIntuitiveResearchKitPSM * slave = dynamic_cast<mtsIntuitiveResearchKitPSM *>(component);
+                if (slave) {
+                    if (mSimulation == SIMULATION_KINEMATIC) {
+                        slave->SetSimulated();
                     }
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
-                                       << Name() << "\" not found."
+                                       << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitPSM."
                                        << std::endl;
                 }
+            } else {
+                CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
+                                   << Name() << "\" not found."
+                                   << std::endl;
             }
         }
         break;
      case ARM_ECM_DERIVED:
         {
-            if (!existingArm) {
-                mtsComponent * component;
-                component = componentManager->GetComponent(Name());
-                if (component) {
-                    mtsIntuitiveResearchKitECM * ecm = dynamic_cast<mtsIntuitiveResearchKitECM *>(component);
-                    if (ecm) {
-                        ecm->Configure(mArmConfigurationFile);
-                    } else {
-                        CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
-                                           << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitECM."
-                                           << std::endl;
+            mtsComponent * component;
+            component = componentManager->GetComponent(Name());
+            if (component) {
+                mtsIntuitiveResearchKitECM * ecm = dynamic_cast<mtsIntuitiveResearchKitECM *>(component);
+                if (ecm) {
+                    if (mSimulation == SIMULATION_KINEMATIC) {
+                        ecm->SetSimulated();
                     }
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
-                                       << Name() << "\" not found."
+                                       << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitECM."
                                        << std::endl;
                 }
+            } else {
+                CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
+                                   << Name() << "\" not found."
+                                   << std::endl;
             }
         }
         break;
@@ -500,6 +491,10 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mIOComponentName = "io";
     mOperatorPresentComponent = mIOComponentName;
     mOperatorPresentInterface = "COAG";
+    mClutchComponent = mIOComponentName;
+    mClutchInterface = "CLUTCH";
+    mCameraComponent = mIOComponentName;
+    mCameraInterface = "CAMERA";
 }
 
 void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
@@ -512,11 +507,16 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     Json::Value jsonConfig, jsonValue;
     Json::Reader jsonReader;
     if (!jsonReader.parse(jsonStream, jsonConfig)) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to parse configuration\n"
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to parse configuration" << std::endl
+                                 << "File: " << filename << std::endl << "Error(s):" << std::endl
                                  << jsonReader.getFormattedErrorMessages();
         this->mConfigured = false;
         return;
     }
+
+    CMN_LOG_CLASS_INIT_DEBUG << "Configure: content of console file: " << std::endl
+                             << jsonConfig << std::endl
+                             << std::endl;
 
     // extract path of main json config file to search other files relative to it
     cmnPath configPath(cmnPath::GetWorkingDirectory());
@@ -529,8 +529,74 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // parent directory as the "shared" directory.
     configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
 
+    mtsComponentManager * manager = mtsComponentManager::GetInstance();
+
+    // first, create all custom components, i.e. dynamic loading and creation
+    const Json::Value customComponents = jsonConfig["custom-components"];
+    for (unsigned int index = 0; index < customComponents.size(); ++index) {
+        Json::Value customComponent = customComponents[index];
+        std::string sharedLibrary, className, constructorArgJSON;
+        // shared library is optional
+        jsonValue = customComponent["shared-library"];
+        if (!jsonValue.empty()){
+            sharedLibrary = jsonValue.asString();
+        } else {
+            sharedLibrary = "";
+        }
+        // class name is required
+        jsonValue = customComponent["class-name"];
+        if (!jsonValue.empty()) {
+            className = jsonValue.asString();
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find \"class-name\" for custom component["
+                                     << index << "]" << std::endl;
+            return;
+        }
+        // constructor argument is required
+        jsonValue = customComponent["constructor-arg"];
+        if (!jsonValue.empty()) {
+            Json::FastWriter fastWriter;
+            constructorArgJSON = fastWriter.write(jsonValue);
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find \"constructor-arg\" for custom component ["
+                                     << index << "]" << std::endl;
+            return;
+        }
+        // create (the method CreateComponentDynamicallyJSON should handle case w/o shared library
+        mtsComponent * component
+            = manager->CreateComponentDynamicallyJSON(sharedLibrary,
+                                                      className,
+                                                      constructorArgJSON);
+        if (!component) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to dynamically create custom component ["
+                                     << index << "]" << std::endl;
+            return;
+        }
+        // configure as needed
+        Json::Value configureParameter = customComponent["configure-parameter"];
+        if (configureParameter.empty()) {
+            component->Configure();
+        } else {
+            std::string configParam = configureParameter.asString();
+            // see if we can find a file corresponding to string
+            std::string configFile = configPath.Find(configParam);
+            if (configFile == "") {
+                // else pass the string as-is
+                component->Configure(configParam);
+            } else {
+                component->Configure(configFile);
+            }
+        }
+        // add
+        if (!manager->AddComponent(component)) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to add custom component ["
+                                     << index << "] to component manager" << std::endl;
+            return;
+        }
+    }
+
     // IO default settings
-    double periodIO = 0.3 * cmn_ms;
+    double periodIO = mtsIntuitiveResearchKit::IOPeriod;
     int firewirePort = 0;
     sawRobotIO1394::ProtocolType protocol = sawRobotIO1394::PROTOCOL_SEQ_R_BC_W;
 
@@ -549,6 +615,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 protocol = sawRobotIO1394::PROTOCOL_BC_QRW;
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure \"firewire-protocol\", values must be \"sequential-read-write\", \"sequential-read-broadcast-write\" or \"broadcast-read-write\".   Using default instead: \"sequential-read-broadcast-write\"" << std::endl;
+                return;
             }
         }
 
@@ -598,12 +665,32 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     if (mHasIO) {
         mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, firewirePort);
         io->SetProtocol(protocol);
+        // configure for each arm
         for (iter = mArms.begin(); iter != end; ++iter) {
             std::string ioConfig = iter->second->mIOConfigurationFile;
             if (ioConfig != "") {
+                CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO using \"" << ioConfig << "\"" << std::endl;
                 io->Configure(ioConfig);
             }
         }
+        // configure using extra configuration files (e.g. foot pedals)
+        jsonValue = jsonConfig["io"];
+        if (!jsonValue.empty()) {
+            const Json::Value configFiles = jsonValue["configuration-files"];
+            if (!configFiles.empty()) {
+                for (unsigned int index = 0; index < configFiles.size(); ++index) {
+                    const std::string configFile = configPath.Find(configFiles[index].asString());
+                    if (configFile == "") {
+                        CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
+                                                 << configFiles[index].asString() << std::endl;
+                        return;
+                    }
+                    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO using \"" << configFile << "\"" << std::endl;
+                    io->Configure(configFile);
+                }
+            }
+        }
+        // and add the io component!
         mtsComponentManager::GetInstance()->AddComponent(io);
     }
 
@@ -613,98 +700,11 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         if (!pidConfig.empty()) {
             iter->second->ConfigurePID(pidConfig);
         }
-        // for generic arms, see if we can/should dynamically create the component
-        if (iter->second->mIsGeneric) {
-            const std::string sharedLibrary = iter->second->mSharedLibrary;
-            const std::string className = iter->second->mClassName;
-
-            if (!sharedLibrary.empty()) {
-                // create load and path based on LD_LIBRARY_PATH
-                osaDynamicLoader loader;
-                std::string fullPath;
-                // check if the file already exists, i.e. use provided a full path
-                if (cmnPath::Exists(sharedLibrary)) {
-                    fullPath = sharedLibrary;
-                } else {
-                    cmnPath path;
-                    path.AddFromEnvironment("LD_LIBRARY_PATH");
-                    fullPath = path.Find(cmnPath::SharedLibrary(sharedLibrary));
-                    if (fullPath.empty())  {
-                        fullPath = sharedLibrary;
-                        CMN_LOG_CLASS_INIT_WARNING << "Configure: using path: "
-                                                   << path << ", couldn't find \""
-                                                   << cmnPath::SharedLibrary(sharedLibrary)
-                                                   << "\"" << std::endl;;
-                    } else {
-                        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: using path: "
-                                                   << path << ", found full path name \""
-                                                   << fullPath << "\"" << std::endl;;
-                    }
-                }
-                if (!loader.Load(fullPath)) {
-                    CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to load shared library "
-                                             << sharedLibrary << std::endl;
-                    return;
-                }
-
-                // now try to dynamically create an instance of that class
-                cmnClassServicesBase * componentClassServices = cmnClassRegister::FindClassServices(className);
-                if (!componentClassServices) {
-                    CMN_LOG_CLASS_INIT_ERROR << "Configure: successfully loaded shared library "
-                                             << sharedLibrary << " but unable to find class services for type "
-                                             << className << std::endl;
-                    return;
-                }
-                // check if we need to also create an argument for the constructor
-                if (componentClassServices->OneArgConstructorAvailable()) {
-                    const cmnClassServicesBase * argumentClassServices = componentClassServices->GetConstructorArgServices();
-                    CMN_ASSERT(argumentClassServices); // this should not fail
-                    cmnGenericObject * argument = argumentClassServices->Create();
-                      // then deserialize from JSON value...
-                    Json::Value jsonValue;
-                    Json::Reader reader;
-                    // parsing should work since the string has been generated after a previous parse
-                    CMN_ASSERT(reader.parse(iter->second->mConstructorArgJSON, jsonValue));
-                    try {
-                        argument->DeSerializeTextJSON(jsonValue);
-                    } catch (std::runtime_error e) {
-                        CMN_LOG_CLASS_INIT_ERROR << "Configure: unable to deserialize constructor for "
-                                                 << className << " from JSON file, got exception: "
-                                                 << e.what() << std::endl;
-                        delete argument;
-                        return;
-                    }
-                    // now, finally, construct the component!
-                    cmnGenericObject * componentBase
-                        = componentClassServices->CreateWithArg(*argument);
-                    if (!componentBase) {
-                        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to create component of type "
-                                                 << className << std::endl;
-                        delete argument;
-                        return;
-                    }
-                    mtsComponent * component
-                        = dynamic_cast<mtsComponent *>(componentBase);
-                    if (!component) {
-                        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to cast newly created object of type "
-                                                 << className << " to mtsComponent" << std::endl;
-                        delete argument;
-                        delete componentBase;
-                        return;
-                    }
-                    const std::string componentConfig = iter->second->mArmConfigurationFile;
-                    if (componentConfig.empty()) {
-                        component->Configure();
-                    } else {
-                        component->Configure(componentConfig);
-                    }
-                    mtsComponentManager::GetInstance()->AddComponent(component);
-                }
-            }
-        }
-        const std::string armConfig = iter->second->mArmConfigurationFile;
-        if (!armConfig.empty()) {
-            iter->second->ConfigureArm(iter->second->mType, armConfig, iter->second->mArmPeriod);
+        // for generic arms, nothing to do
+        if (!iter->second->mIsGeneric) {
+            const std::string armConfig = iter->second->mArmConfigurationFile;
+            iter->second->ConfigureArm(iter->second->mType, armConfig,
+                                       iter->second->mArmPeriod);
         }
     }
 
@@ -731,14 +731,38 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
     // see which event is used for operator present
     // find name of button event used to detect if operator is present
-    mOperatorPresentComponent = jsonConfig["operator-present"]["component"].asString();
-    mOperatorPresentInterface = jsonConfig["operator-present"]["interface"].asString();
-    //set defaults
-    if (mOperatorPresentComponent == "") {
-        mOperatorPresentComponent = mIOComponentName;
+
+    // support for older files
+    std::string operatorPresentComponent = jsonConfig["operator-present"]["component"].asString();
+    std::string operatorPresentInterface = jsonConfig["operator-present"]["interface"].asString();
+    if ((operatorPresentComponent != "")
+        || (operatorPresentInterface != "")) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: \"operator-present\" should now be defined within \"console-inputs\" scope" << std::endl;
+        return;
     }
-    if (mOperatorPresentInterface == "") {
-        mOperatorPresentInterface = "COAG";
+
+    // load from console inputs
+    const Json::Value consoleInputs = jsonConfig["console-inputs"];
+    if (!consoleInputs.empty()) {
+        std::string component, interface;
+        component = consoleInputs["operator-present"]["component"].asString();
+        interface = consoleInputs["operator-present"]["interface"].asString();
+        if ((component != "") && (interface != "")) {
+            mOperatorPresentComponent = component;
+            mOperatorPresentInterface = interface;
+        }
+        component = consoleInputs["clutch"]["component"].asString();
+        interface = consoleInputs["clutch"]["interface"].asString();
+        if ((component != "") && (interface != "")) {
+            mClutchComponent = component;
+            mClutchInterface = interface;
+        }
+        component = consoleInputs["camera"]["component"].asString();
+        interface = consoleInputs["camera"]["interface"].asString();
+        if ((component != "") && (interface != "")) {
+            mCameraComponent = component;
+            mCameraInterface = interface;
+        }
     }
 
     // look for footpedals in json config
@@ -989,15 +1013,12 @@ bool mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
 bool mtsIntuitiveResearchKitConsole::ConnectFootpedalInterfaces(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    // connect console to IO
-    if (mHasIO) {
-        componentManager->Connect(this->GetName(), "Clutch",
-                                  mIOComponentName, "CLUTCH");
-        componentManager->Connect(this->GetName(), "Camera",
-                                  mIOComponentName, "CAMERA");
-        componentManager->Connect(this->GetName(), "OperatorPresent",
-                                  this->mOperatorPresentComponent, this->mOperatorPresentInterface);
-    }
+    componentManager->Connect(this->GetName(), "Clutch",
+                              mClutchComponent, mClutchInterface);
+    componentManager->Connect(this->GetName(), "Camera",
+                              mCameraComponent, mCameraInterface);
+    componentManager->Connect(this->GetName(), "OperatorPresent",
+                              mOperatorPresentComponent, mOperatorPresentInterface);
     return true;
 }
 
@@ -1312,7 +1333,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
     }
 
     // read period if present
-    double period = 1.0 * cmn_ms;
+    double period = mtsIntuitiveResearchKit::TeleopPeriod;
     jsonValue = jsonTeleop["period"];
     if (!jsonValue.empty()) {
         period = jsonValue.asFloat();
@@ -1407,7 +1428,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
     }
 
     // read period if present
-    double period = 1.0 * cmn_ms;
+    double period = mtsIntuitiveResearchKit::TeleopPeriod;
     jsonValue = jsonTeleop["period"];
     if (!jsonValue.empty()) {
         period = jsonValue.asFloat();
@@ -1542,7 +1563,6 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
         componentManager->Connect(this->GetName(), "BaseFrame", "SUJ", "ECM");
         componentManager->Connect("SUJ", "BaseFrame", this->GetName(), "ECMBaseFrame");
     }
-
     return true;
 }
 

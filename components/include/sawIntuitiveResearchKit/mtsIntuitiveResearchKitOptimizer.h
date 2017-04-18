@@ -47,13 +47,13 @@ public:
     mtsIntuitiveResearchKitOptimizer(void) {};
     mtsIntuitiveResearchKitOptimizer(const size_t numOfJoints);
     inline ~mtsIntuitiveResearchKitOptimizer() {}
-    void UpdateJacobian(const robManipulator & manip);
+    void UpdateJacobian(robManipulator *manip);
     void UpdateKinematics(vctDoubleVec & qCurr,
                           vctFrm4x4 cartesianCurrent,
                           vctFrm4x4 cartesianDesired);
 
     void UpdateParams(vctDoubleVec & qCurr,
-                      const robManipulator & manip,
+                      robManipulator *manip,
                       const double tickTime,
                       vctFrm4x4 cartesianCurrent,
                       vctFrm4x4 cartesianDesired);

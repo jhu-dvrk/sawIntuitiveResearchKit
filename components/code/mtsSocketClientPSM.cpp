@@ -1,17 +1,36 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
+/* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
+
+/*
+  Author(s):  Pretham Chalasani, Anton Deguet
+  Created on: 2016-11-04
+
+  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+
+--- begin cisst license - do not edit ---
+
+This software is provided "as is" under an open source license, with
+no warranty.  The complete license can be found in license.txt and
+http://www.cisst.org/cisst/license.txt.
+
+--- end cisst license ---
+*/
+
 #include <sawIntuitiveResearchKit/mtsSocketClientPSM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED(mtsSocketClientPSM, mtsTaskPeriodic);
 
-mtsSocketClientPSM::mtsSocketClientPSM(const std::string &componentName, const double periodInSeconds,
-                                       const std::string &ip, const unsigned int port) :
+mtsSocketClientPSM::mtsSocketClientPSM(const std::string & componentName, const double periodInSeconds,
+                                       const std::string & ip, const unsigned int port) :
     mtsSocketBasePSM(componentName, periodInSeconds, ip, port, false)
 {
-    this->StateTable.AddData(PositionCartesianCurrent   , "PositionCartesianCurrent");
-    this->StateTable.AddData(JawPosition   , "JawPosition");
+    this->StateTable.AddData(PositionCartesianCurrent, "PositionCartesianCurrent");
+    this->StateTable.AddData(JawPosition, "JawPosition");
 
-    mtsInterfaceProvided *interfaceProvided = AddInterfaceProvided("Robot");
-    if(interfaceProvided) {
+    mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
+    if (interfaceProvided) {
+        interfaceProvided->AddMessageEvents();
         interfaceProvided->AddCommandReadState(this->StateTable, PositionCartesianCurrent, "GetPositionCartesian");
         interfaceProvided->AddCommandReadState(this->StateTable, JawPosition, "GetJawPosition");
 
@@ -25,7 +44,6 @@ mtsSocketClientPSM::mtsSocketClientPSM(const std::string &componentName, const d
                                            this , "SetRobotControlState");
         interfaceProvided->AddCommandRead(&mtsSocketClientPSM::GetRobotControlState,
                                            this , "GetRobotControlState");
-        interfaceProvided->AddEventWrite(ErrorEvents, "Error", std::string(""));
     }
 }
 
@@ -38,17 +56,17 @@ void mtsSocketClientPSM::Configure(const std::string & CMN_UNUSED(fileName))
     State.Socket->AssignPort(State.IpPort);
 }
 
-void mtsSocketClientPSM::Run()
+void mtsSocketClientPSM::Run(void)
 {
     ProcessQueuedEvents();
     ProcessQueuedCommands();
 
     ReceivePSMStateData();
     UpdateStatistics();
-    SendPSMCommandData();    
+    SendPSMCommandData();
 }
 
-void mtsSocketClientPSM::UpdateApplication()
+void mtsSocketClientPSM::UpdateApplication(void)
 {
     CurrentState = State.Data.RobotControlState;
     PositionCartesianCurrent.Valid() = (CurrentState == socketMessages::SCK_CART_POS);
@@ -63,7 +81,7 @@ void mtsSocketClientPSM::Freeze(void)
     Command.Data.GoalJaw = State.Data.CurrentJaw;
 }
 
-void mtsSocketClientPSM::SetRobotControlState(const std::string &state)
+void mtsSocketClientPSM::SetRobotControlState(const std::string & state)
 {
     mtsIntuitiveResearchKitArmTypes::RobotStateType enumState = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state);
     switch (enumState) {
@@ -96,14 +114,14 @@ void mtsSocketClientPSM::SetRobotControlState(const std::string &state)
     Command.Data.GoalJaw = State.Data.CurrentJaw;
 }
 
-void mtsSocketClientPSM::SetPositionCartesian(const prmPositionCartesianSet &position)
+void mtsSocketClientPSM::SetPositionCartesian(const prmPositionCartesianSet & position)
 {
     if (DesiredState == socketMessages::SCK_CART_POS) {
         Command.Data.GoalPose.From(position.Goal());
     }
 }
 
-void mtsSocketClientPSM::SetJawPosition(const double &position)
+void mtsSocketClientPSM::SetJawPosition(const double & position)
 {
     if (DesiredState == socketMessages::SCK_CART_POS) {
         Command.Data.GoalJaw = position;
@@ -143,13 +161,13 @@ void mtsSocketClientPSM::GetRobotControlState(std::string &state) const
     state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(enumState);
 }
 
-void mtsSocketClientPSM::ReceivePSMStateData()
+void mtsSocketClientPSM::ReceivePSMStateData(void)
 {
     // Recv Scoket Data
     size_t bytesRead = 0;
     bytesRead = State.Socket->Receive(State.Buffer, BUFFER_SIZE, TIMEOUT);
     if (bytesRead > 0) {
-        if(bytesRead != State.Data.Header.Size){
+        if (bytesRead != State.Data.Header.Size){
             std::cerr << "Incorrect bytes read " << bytesRead << ". Looking for " << State.Data.Header.Size << " bytes." << std::endl;
         }
 
@@ -160,7 +178,7 @@ void mtsSocketClientPSM::ReceivePSMStateData()
         // Dequeue all the datagrams and only use the latest one.
         int readCounter = 0;
         int dataLeft = bytesRead;
-        while(dataLeft > 0){
+        while (dataLeft > 0) {
             dataLeft = State.Socket->Receive(State.Buffer, BUFFER_SIZE, 0);
             if (dataLeft != 0) {
                 bytesRead = dataLeft;
@@ -169,7 +187,7 @@ void mtsSocketClientPSM::ReceivePSMStateData()
             readCounter++;
         }
 
-        if(readCounter > 1)
+        if (readCounter > 1)
             std::cerr << "Catching up : " << readCounter << std::endl;
 
         ss.write(State.Buffer, bytesRead);
@@ -182,7 +200,7 @@ void mtsSocketClientPSM::ReceivePSMStateData()
     }
 }
 
-void mtsSocketClientPSM::SendPSMCommandData()
+void mtsSocketClientPSM::SendPSMCommandData(void)
 {
     // Update Header
     Command.Data.Header.Id++;

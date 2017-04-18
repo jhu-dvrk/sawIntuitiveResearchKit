@@ -54,17 +54,19 @@ protected:
         JNT_SETUP_JNT = 3,
         JNT_WRIST_PITCH = 4,
         JNT_WRIST_YAW = 5,
-        JNT_WRIST_ROLL = 6
+        JNT_WRIST_ROLL = 6,
+        JNT_GRIPPER = 7
     };
 
     /*! Configuration methods */
+    inline size_t NumberOfAxes(void) const {
+        return 8;
+    }
+
     inline size_t NumberOfJoints(void) const {
         return 7;
     }
 
-    inline size_t NumberOfAxes(void) const {
-        return 8;
-    }
 
     inline size_t NumberOfJointsKinematics(void) const {
         return 7;
@@ -118,7 +120,7 @@ protected:
     //! Analog Input from Hardware for Gripper
     vctDoubleVec AnalogInputPosSI;
     //! Gripper angle
-    double GripperPosition;
+    prmStateJoint Gripper;
     bool GripperClosed;
 
     //! robot type

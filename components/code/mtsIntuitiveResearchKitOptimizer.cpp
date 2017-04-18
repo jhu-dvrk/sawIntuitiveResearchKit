@@ -89,7 +89,7 @@ void mtsIntuitiveResearchKitOptimizer::InitializePlaneVF(size_t rows,
 }
 
 void mtsIntuitiveResearchKitOptimizer::UpdateParams(vctDoubleVec & qCurr,
-                                                    const robManipulator & manip,
+                                                    robManipulator *manip,
                                                     double tickTime,
                                                     vctFrm4x4 cartesianCurrent,
                                                     vctFrm4x4 cartesianDesired)
@@ -114,20 +114,20 @@ void mtsIntuitiveResearchKitOptimizer::UpdateKinematics(vctDoubleVec & qCurr,
     SetKinematics(DesiredSlaveKinematics);
 }
 
-void mtsIntuitiveResearchKitOptimizer::UpdateJacobian(const robManipulator & manip)
+void mtsIntuitiveResearchKitOptimizer::UpdateJacobian(robManipulator * manip)
 {
     // ask manipulator to compute body jacobian
-    manip.JacobianBody(CurrentJointState.Position());
+    manip->JacobianBody(CurrentJointState.Position());
 
     // to make sure we have the right size
     Cached.BodyJacobian.SetSize(6, 6);
     // get a copy of the body jacobian
-    Cached.BodyJacobian.Assign(manip.Jn[0], VCT_COL_MAJOR);
+    Cached.BodyJacobian.Assign(manip->Jn[0], VCT_COL_MAJOR);
 
     // Base of the body jacobian is the tip frame and the ref point is the tip
     // Have to convert the base to the world frame
 
-    vctFrame4x4<double> Rt0n = manip.ForwardKinematics(CurrentJointState.Position());
+    vctFrame4x4<double> Rt0n = manip->ForwardKinematics(CurrentJointState.Position());
 
     Cached.Adjoint = ComputeAdjointMatrix(Rt0n);
 

@@ -47,10 +47,7 @@
       <pos LowerLimit="-480" UpperLimit="450" Units="deg"/>
     </joint>
 
-    <joint index="7" name="finger_grips" type="Revolute">
-      <pid PGain="0.00" DGain="0.00" IGain="0.0" OffsetTorque="0.0" Forget="1.2" Nonlinear="0.0"/>
-      <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
-      <pos LowerLimit="0" UpperLimit="30" Units="deg"/>
+    <joint index="7" name="finger_grips" type="Inactive">
     </joint>
 
   </joints>

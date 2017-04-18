@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitOptimizer.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+#include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
 
 class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 {
@@ -54,17 +55,21 @@ protected:
     }
 
     inline size_t NumberOfJointsKinematics(void) const {
-        return 6;
+        return mSnakeLike ? 8 : 6;
     }
 
     inline size_t NumberOfBrakes(void) const {
         return 0;
     }
+    
+    void UpdateJointsKinematics(void);
+    void ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID);
 
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
 
     void Init(void);
+
 
     // state related methods
     void SetGoalHomingArm(void);
@@ -100,6 +105,7 @@ protected:
     void EventHandlerManipClutch(const prmEventButton & button);
 
     void SetJawPosition(const double & openAngle);
+    void SetPositionJointLocal(const vctDoubleVec & newPosition);
 
     void EnableJointsEventHandler(const vctBoolVec & enable);
     void CouplingEventHandler(const prmActuatorJointCoupling & coupling);
@@ -128,8 +134,15 @@ protected:
         std::string ManipClutchPreviousState;
     } ClutchEvents;
 
+    /*! 5mm tools with 8 joints */
+    bool mSnakeLike;
+
+    robManipulatorPSMSnake *ManipulatorPSMSnake;
     robManipulator * ToolOffset;
     vctFrm4x4 ToolOffsetTransformation;
+
+    prmStateJoint Jaw, JawDesired;
+    double JawGoal;
 
     // Home Action
     unsigned int EngagingStage; // 0 requested
@@ -149,7 +162,7 @@ protected:
         vctDoubleVec ToolEngageLowerPosition, ToolEngageUpperPosition;
         vctDoubleVec ToolJointLowerLimit, ToolJointUpperLimit;
         vctDoubleVec NoToolJointLowerLimit, NoToolJointUpperLimit;
-        vctDoubleVec TorqueLowerLimit, TorqueUpperLimit;
+        vctDoubleVec ToolTorqueLowerLimit, ToolTorqueUpperLimit;
     } CouplingChange;
 };
 
