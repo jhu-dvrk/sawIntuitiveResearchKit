@@ -675,7 +675,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
         PID.Enable(true);
         vctDoubleVec goal(NumberOfJoints());
         goal.SetAll(0.0);
-        SetPositionJointLocal(goal);
+        mtsIntuitiveResearchKitArm::SetPositionJointLocal(goal);
         return;
     }
 
@@ -768,17 +768,16 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
 
     // pre-load PID to make sure desired position has some reasonable values
     PID.GetStateJoint(JointsPID);
-    SetPositionJointLocal(JointsPID.Position());
-    JointsDesiredPID.Position().Assign(JointsPID.Position());
-    JointsDesiredPID.Velocity().Assign(JointsPID.Velocity());
+    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsPID.Position());
+    JointsDesiredPID.Position().ForceAssign(JointsPID.Position());
+    JointsDesiredPID.Velocity().ForceAssign(JointsPID.Velocity());
 
     // disable joint limits
     PID.SetCheckJointLimit(false);
     // enable tracking errors
     PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
     PID.EnableTrackingError(true);
-    // enable PID and start from current position
-    SetPositionJointLocal(JointsDesiredPID.Position());
+    // enable PID
     PID.Enable(true);
 
     // compute joint goal position
@@ -803,7 +802,7 @@ void mtsIntuitiveResearchKitArm::RunHomingArm(void)
                                         JointVelocitySet,
                                         mJointTrajectory.Goal,
                                         mJointTrajectory.GoalVelocity);
-    SetPositionJointLocal(JointSet);
+    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
 
     const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
     bool isHomed;
@@ -851,7 +850,7 @@ void mtsIntuitiveResearchKitArm::EnterReady(void)
     SetControlMode(UNDEFINED_MODE);
     // enable PID and start from current position
     PID.GetStateJoint(JointsPID);
-    SetPositionJointLocal(JointsPID.Position());
+    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsPID.Position());
     PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
     PID.EnableTrackingError(true);
     PID.SetCheckJointLimit(true);
