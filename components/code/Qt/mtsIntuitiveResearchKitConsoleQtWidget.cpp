@@ -174,7 +174,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     mainLayout->addWidget(buttonsWidget);
 
     QLabel * labelLogo = new QLabel("");
-    labelLogo->setPixmap(QPixmap(":/dVRK.png").scaled(32, 32, Qt::KeepAspectRatio, Qt::FastTransformation));
+    labelLogo->setPixmap(QPixmap(":/dVRK.png").scaled(60, 60, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     boxLayout->addWidget(labelLogo);
 
     QSplitter * tabWidgetAndMessages = new QSplitter();
