@@ -493,7 +493,6 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
 void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 {
     mConfigured = false;
-    mHasFootpedals = false;
 
     std::ifstream jsonStream;
     jsonStream.open(filename.c_str());
@@ -708,7 +707,6 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                     return;
                 }
                 CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO foot pedals using \"" << configFile << "\"" << std::endl;
-                mHasFootpedals = true;
                 // these can be overwritten using console-inputs
                 mDInputSources["Clutch"] = InterfaceComponentType(mIOComponentName, "Clutch");
                 mDInputSources["OperatorPresent"] = InterfaceComponentType(mIOComponentName, "Coag");
@@ -792,21 +790,25 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         }
     }
 
-    // look for footpedals in json config
-    jsonValue = jsonConfig["io"]["has-footpedals"];
-    if (!jsonValue.empty()) {
-        mHasFootpedals = jsonValue.asBool();
-    }
-    // if we have any teleoperation component, we need to add the interfaces for the foot pedals
-    if ((mTeleopsPSM.size() > 0) || mTeleopECM) {
-        if (!mHasFootpedals) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: \"io has-footpedals\" needs to be set to true or \"io footpedals\" needs to be defined for teleoperation components to work" << std::endl;
+    // if we have any teleoperation component, we need to have the interfaces for the foot pedals
+    const DInputSourceType::const_iterator endDInputs = mDInputSources.end();
+    const bool foundClutch = (mDInputSources.find("Clutch") != endDInputs);
+    const bool foundOperatorPresent = (mDInputSources.find("OperatorPresent") != endDInputs);
+    const bool foundCamera = (mDInputSources.find("Camera") != endDInputs);
+
+    if (mTeleopsPSM.size() > 0) {
+        if (!foundClutch || !foundOperatorPresent) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Clutch\" and \"OperatorPresent\" need to be defined since there's at least one PSM tele-operation component" << std::endl;
             return;
         }
     }
-    if (mHasFootpedals) {
-        this->AddFootpedalInterfaces();
+    if (mTeleopECM) {
+        if (!foundCamera || !foundOperatorPresent) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Camera\" and \"OperatorPresent\" need to be defined since there's an ECM tele-operation component" << std::endl;
+            return;
+        }
     }
+    this->AddFootpedalInterfaces();
 
     // interface to ecm to get ECM frame and then push to PSM SUJs as base frame
     mtsInterfaceRequired * ecmArmInterface = 0;
@@ -994,51 +996,48 @@ bool mtsIntuitiveResearchKitConsole::AddTeleopPSMInterfaces(TeleopPSM * teleop)
     return true;
 }
 
-bool mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
+void mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
 {
-    // Footpedal events, receive
-    mtsInterfaceRequired * clutchRequired = AddInterfaceRequired("Clutch");
-    if (clutchRequired) {
-        clutchRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ClutchEventHandler, this, "Button");
-    } else {
-        return false;
-    }
-    mtsInterfaceRequired * cameraRequired = AddInterfaceRequired("Camera");
-    if (cameraRequired) {
-        cameraRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::CameraEventHandler, this, "Button");
-    } else {
-        return false;
-    }
-    mtsInterfaceRequired * headRequired = AddInterfaceRequired("OperatorPresent");
-    if (headRequired) {
-        headRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler, this, "Button");
-    } else {
-        return false;
+    const DInputSourceType::const_iterator endDInputs = mDInputSources.end();
+    const bool foundClutch = (mDInputSources.find("Clutch") != endDInputs);
+    const bool foundOperatorPresent = (mDInputSources.find("OperatorPresent") != endDInputs);
+    const bool foundCamera = (mDInputSources.find("Camera") != endDInputs);
+
+    if (foundClutch) {
+        mtsInterfaceRequired * clutchRequired = AddInterfaceRequired("Clutch");
+        if (clutchRequired) {
+            clutchRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ClutchEventHandler, this, "Button");
+        }
+        mtsInterfaceProvided * clutchProvided = AddInterfaceProvided("Clutch");
+        if (clutchProvided) {
+            clutchProvided->AddEventWrite(ConsoleEvents.Clutch, "Button", prmEventButton());
+        }
     }
 
-    // Console events, send
-    mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Clutch");
-    if (interfaceProvided) {
-        interfaceProvided->AddEventWrite(ConsoleEvents.Clutch, "Button", prmEventButton());
-    } else {
-        return false;
+    if (foundCamera) {
+        mtsInterfaceRequired * cameraRequired = AddInterfaceRequired("Camera");
+        if (cameraRequired) {
+            cameraRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::CameraEventHandler, this, "Button");
+        }
+        mtsInterfaceProvided * cameraProvided = AddInterfaceProvided("Camera");
+        if (cameraProvided) {
+            cameraProvided->AddEventWrite(ConsoleEvents.Camera, "Button", prmEventButton());
+        }
     }
-    interfaceProvided = AddInterfaceProvided("Camera");
-    if (interfaceProvided) {
-        interfaceProvided->AddEventWrite(ConsoleEvents.Camera, "Button", prmEventButton());
-    } else {
-        return false;
+
+    if (foundOperatorPresent) {
+        mtsInterfaceRequired * operatorRequired = AddInterfaceRequired("OperatorPresent");
+        if (operatorRequired) {
+            operatorRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler, this, "Button");
+        }
+        mtsInterfaceProvided * operatorProvided = AddInterfaceProvided("OperatorPresent");
+        if (operatorProvided) {
+            operatorProvided->AddEventWrite(ConsoleEvents.OperatorPresent, "Button", prmEventButton());
+        }
     }
-    interfaceProvided = AddInterfaceProvided("OperatorPresent");
-    if (interfaceProvided) {
-        interfaceProvided->AddEventWrite(ConsoleEvents.OperatorPresent, "Button", prmEventButton());
-    } else {
-        return false;
-    }
-    return true;
 }
 
-bool mtsIntuitiveResearchKitConsole::ConnectFootpedalInterfaces(void)
+void mtsIntuitiveResearchKitConsole::ConnectFootpedalInterfaces(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     const DInputSourceType::const_iterator end = mDInputSources.end();
@@ -1047,27 +1046,17 @@ bool mtsIntuitiveResearchKitConsole::ConnectFootpedalInterfaces(void)
     if (iter != end) {
         componentManager->Connect(this->GetName(), "Clutch",
                                   iter->second.first, iter->second.second);
-    } else {
-        CMN_LOG_CLASS_INIT_ERROR << "ConnectFootpedalInterfaces: component/interface not defined for \"Clutch\" event source"
-                                 << std::endl;
     }
     iter = mDInputSources.find("Camera");
     if (iter != end) {
         componentManager->Connect(this->GetName(), "Camera",
                                   iter->second.first, iter->second.second);
-    } else {
-        CMN_LOG_CLASS_INIT_ERROR << "ConnectFootpedalInterfaces: component/interface not defined for \"Camera\" event source"
-                                 << std::endl;
     }
     iter = mDInputSources.find("OperatorPresent");
     if (iter != end) {
         componentManager->Connect(this->GetName(), "OperatorPresent",
                                   iter->second.first, iter->second.second);
-    } else {
-        CMN_LOG_CLASS_INIT_ERROR << "ConnectFootpedalInterfaces: component/interface not defined for \"OperatorPresent\" event source"
-                                 << std::endl;
     }
-    return true;
 }
 
 bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonArm,
@@ -1603,10 +1592,8 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
         teleop->Connect();
     }
 
-    // connect the foot pedals if needed
-    if (mHasFootpedals) {
-        this->ConnectFootpedalInterfaces();
-    }
+    // connect the foot pedals
+    this->ConnectFootpedalInterfaces();
 
     // connect interfaces to retrieve base frame from ECM SUJ and send event to SUJ
     if (mSUJECMInterfaceRequired
