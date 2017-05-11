@@ -281,13 +281,14 @@ protected:
     } ConsoleEvents;
     bool mOperatorPresent;
     bool mCameraPressed;
-    std::string mIOComponentName;
-    std::string mOperatorPresentComponent;
-    std::string mOperatorPresentInterface;
-    std::string mClutchComponent;
-    std::string mClutchInterface;
-    std::string mCameraComponent;
-    std::string mCameraInterface;
+
+    std::string mIOComponentName; // for actuator IOs
+
+    // components used for events (digital inputs)
+    typedef std::pair<std::string, std::string> InterfaceComponentType;
+    typedef std::map<std::string, InterfaceComponentType> DInputSourceType;
+    DInputSourceType mDInputSources;
+
     mtsInterfaceProvided * mInterface;
     struct {
         mtsFunctionWrite Scale;

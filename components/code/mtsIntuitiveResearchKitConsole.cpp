@@ -470,6 +470,7 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mTeleopECM(0),
     mOperatorPresent(false),
     mCameraPressed(false),
+    mIOComponentName("io"),
     mSUJECMInterfaceRequired(0),
     mECMBaseFrameInterfaceProvided(0)
 {
@@ -487,14 +488,6 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
         mInterface->AddEventWrite(ConfigurationEvents.Scale,
                                          "Scale", 0.5);
     }
-
-    mIOComponentName = "io";
-    mOperatorPresentComponent = mIOComponentName;
-    mOperatorPresentInterface = "COAG";
-    mClutchComponent = mIOComponentName;
-    mClutchInterface = "CLUTCH";
-    mCameraComponent = mIOComponentName;
-    mCameraInterface = "CAMERA";
 }
 
 void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
@@ -748,20 +741,17 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         component = consoleInputs["operator-present"]["component"].asString();
         interface = consoleInputs["operator-present"]["interface"].asString();
         if ((component != "") && (interface != "")) {
-            mOperatorPresentComponent = component;
-            mOperatorPresentInterface = interface;
+            mDInputSources["OperatorPresent"] = InterfaceComponentType(component, interface);
         }
         component = consoleInputs["clutch"]["component"].asString();
         interface = consoleInputs["clutch"]["interface"].asString();
         if ((component != "") && (interface != "")) {
-            mClutchComponent = component;
-            mClutchInterface = interface;
+            mDInputSources["Clutch"] = InterfaceComponentType(component, interface);
         }
         component = consoleInputs["camera"]["component"].asString();
         interface = consoleInputs["camera"]["interface"].asString();
         if ((component != "") && (interface != "")) {
-            mCameraComponent = component;
-            mCameraInterface = interface;
+            mDInputSources["Camera"] = InterfaceComponentType(component, interface);
         }
     }
 
@@ -1013,12 +1003,23 @@ bool mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
 bool mtsIntuitiveResearchKitConsole::ConnectFootpedalInterfaces(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    componentManager->Connect(this->GetName(), "Clutch",
-                              mClutchComponent, mClutchInterface);
-    componentManager->Connect(this->GetName(), "Camera",
-                              mCameraComponent, mCameraInterface);
-    componentManager->Connect(this->GetName(), "OperatorPresent",
-                              mOperatorPresentComponent, mOperatorPresentInterface);
+    const DInputSourceType::const_iterator end = mDInputSources.end();
+    DInputSourceType::const_iterator iter;
+    iter = mDInputSources.find("Clutch");
+    if (iter != end) {
+        componentManager->Connect(this->GetName(), "Clutch",
+                                  iter->second.first, iter->second.second);
+    }
+    iter = mDInputSources.find("Camera");
+    if (iter != end) {
+        componentManager->Connect(this->GetName(), "Camera",
+                                  iter->second.first, iter->second.second);
+    }
+    iter = mDInputSources.find("OperatorPresent");
+    if (iter != end) {
+        componentManager->Connect(this->GetName(), "OperatorPresent",
+                                  iter->second.first, iter->second.second);
+    }
     return true;
 }
 
