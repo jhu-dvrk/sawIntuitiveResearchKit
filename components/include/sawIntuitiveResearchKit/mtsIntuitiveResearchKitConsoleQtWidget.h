@@ -22,8 +22,10 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>
+#include <cisstParameterTypes/prmEventButton.h>
 
 class QPushButton;
+class QRadioButton;
 class QTabWidget;
 class QDoubleSpinBox;
 
@@ -48,6 +50,9 @@ public:
 
 signals:
     void SignalScale(double scale);
+    void SignalClutch(bool clutch);
+    void SignalOperatorPresent(bool operatorPresent);
+    void SignalCamera(bool camera);
 
 private slots:
     void SlotPowerOff(void);
@@ -56,6 +61,9 @@ private slots:
     void SlotTeleopStop(void);
     void SlotSetScale(double scale);
     void SlotScaleEventHandler(double scale);
+    void SlotClutchEventHandler(bool clutch);
+    void SlotOperatorPresentEventHandler(bool operatorPresent);
+    void SlotCameraEventHandler(bool camera);
 
 protected:
     void closeEvent(QCloseEvent * event);
@@ -70,12 +78,18 @@ protected:
     } Console;
 
     void ScaleEventHandler(const double & scale);
+    void ClutchEventHandler(const prmEventButton & button);
+    void OperatorPresentEventHandler(const prmEventButton & button);
+    void CameraEventHandler(const prmEventButton & button);
 
     QPushButton * QPBPowerOff;
     QPushButton * QPBHome;
     QPushButton * QPBTeleopStart;
     QPushButton * QPBTeleopStop;
     QDoubleSpinBox * QSBScale;
+    QRadioButton * QRBClutch;
+    QRadioButton * QRBOperatorPresent;
+    QRadioButton * QRBCamera;
     QTabWidget * QTWidgets;
     mtsMessageQtWidget * QMMessage;
 };

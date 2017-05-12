@@ -39,6 +39,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <QPixmap>
 #include <QShortcut>
 #include <QDoubleSpinBox>
+#include <QRadioButton>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
 
@@ -56,6 +57,21 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequired->AddFunction("SetScale", Console.SetScale);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
                                                 this, "Scale");
+    }
+    interfaceRequired = AddInterfaceRequired("Clutch");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler,
+                                                this, "Button");
+    }
+    interfaceRequired = AddInterfaceRequired("OperatorPresent");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler,
+                                                this, "Button");
+    }
+    interfaceRequired = AddInterfaceRequired("Camera");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler,
+                                                this, "Button");
     }
     setupUi();
 }
@@ -169,9 +185,30 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QSBScale->setValue(0.2);
     teleopLayout->addWidget(QSBScale);
 
+    QGroupBox * inputsBox = new QGroupBox("Inputs");
+    boxLayout->addWidget(inputsBox);
+    QVBoxLayout * inputsLayout = new QVBoxLayout();
+    inputsBox->setLayout(inputsLayout);
+    QRBClutch = new QRadioButton("Clutch");
+    QRBClutch->setAutoExclusive(false);
+    QRBClutch->setChecked(false);
+    QRBClutch->setEnabled(false);
+    inputsLayout->addWidget(QRBClutch);
+    QRBOperatorPresent = new QRadioButton("Operator");
+    QRBOperatorPresent->setAutoExclusive(false);
+    QRBOperatorPresent->setChecked(false);
+    QRBOperatorPresent->setEnabled(false);
+    inputsLayout->addWidget(QRBOperatorPresent);
+    QRBCamera = new QRadioButton("Camera");
+    QRBCamera->setAutoExclusive(false);
+    QRBCamera->setChecked(false);
+    QRBCamera->setEnabled(false);
+    inputsLayout->addWidget(QRBCamera);
+
     boxLayout->addStretch(100);
     buttonsWidget->setFixedWidth(buttonsWidget->sizeHint().width());
     mainLayout->addWidget(buttonsWidget);
+
 
     QLabel * labelLogo = new QLabel("");
     labelLogo->setPixmap(QPixmap(":/dVRK.png").scaled(60, 60, Qt::KeepAspectRatio, Qt::SmoothTransformation));
@@ -209,6 +246,12 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotSetScale(double)));
     connect(this, SIGNAL(SignalScale(double)),
             this, SLOT(SlotScaleEventHandler(double)));
+    connect(this, SIGNAL(SignalClutch(bool)),
+            this, SLOT(SlotClutchEventHandler(bool)));
+    connect(this, SIGNAL(SignalOperatorPresent(bool)),
+            this, SLOT(SlotOperatorPresentEventHandler(bool)));
+    connect(this, SIGNAL(SignalCamera(bool)),
+            this, SLOT(SlotCameraEventHandler(bool)));
 
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q), this, SLOT(close()));
 }
@@ -221,4 +264,47 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotScaleEventHandler(double scale)
 void mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler(const double & scale)
 {
     emit SignalScale(scale);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotClutchEventHandler(bool clutch)
+{
+    QRBClutch->setChecked(clutch);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler(const prmEventButton & button)
+{
+    if (button.Type() == prmEventButton::PRESSED) {
+        emit SignalClutch(true);
+    } else {
+        emit SignalClutch(false);
+    }
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotOperatorPresentEventHandler(bool operatorPresent)
+{
+    QRBOperatorPresent->setChecked(operatorPresent);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler(const prmEventButton & button)
+{
+    if (button.Type() == prmEventButton::PRESSED) {
+        emit SignalOperatorPresent(true);
+    } else {
+        emit SignalOperatorPresent(false);
+    }
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotCameraEventHandler(bool camera)
+{
+    QRBCamera->setChecked(camera);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler(const prmEventButton & button)
+{
+    if (button.Type() == prmEventButton::PRESSED) {
+        emit SignalCamera(true);
+    } else {
+        emit SignalCamera(false);
+    }
+
 }
