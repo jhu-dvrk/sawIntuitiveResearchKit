@@ -3,7 +3,7 @@
     "io":
     {
         "firewire-protocol": "broadcast-read-write",
-        "footpedals": ["sawRobotIO1394-MTML-foot-pedals.xml"]
+        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
     }
     ,
     "arms":
@@ -11,7 +11,7 @@
         {
             "name": "PSM2",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM2-27374.xml",
+            "io": "sawRobotIO1394-PSM2-32204.xml",
             "pid": "sawControllersPID-PSM.xml",
             "kinematic": "psm-large-needle-driver.json"
         }
@@ -19,7 +19,7 @@
         {
             "name": "MTML",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTML-22723.xml",
+            "io": "sawRobotIO1394-MTML-34863.xml",
             "pid": "sawControllersPID-MTML.xml",
             "kinematic": "mtm.json"
         }

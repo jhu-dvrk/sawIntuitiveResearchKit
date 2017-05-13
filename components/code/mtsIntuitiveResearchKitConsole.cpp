@@ -470,6 +470,7 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mTeleopECM(0),
     mOperatorPresent(false),
     mCameraPressed(false),
+    mIOComponentName("io"),
     mSUJECMInterfaceRequired(0),
     mECMBaseFrameInterfaceProvided(0)
 {
@@ -487,19 +488,12 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
         mInterface->AddEventWrite(ConfigurationEvents.Scale,
                                          "Scale", 0.5);
     }
-
-    mIOComponentName = "io";
-    mOperatorPresentComponent = mIOComponentName;
-    mOperatorPresentInterface = "COAG";
-    mClutchComponent = mIOComponentName;
-    mClutchInterface = "CLUTCH";
-    mCameraComponent = mIOComponentName;
-    mCameraInterface = "CAMERA";
 }
 
 void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 {
     mConfigured = false;
+    mHasFootpedals = false;
 
     std::ifstream jsonStream;
     jsonStream.open(filename.c_str());
@@ -651,7 +645,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         }
     }
 
-    // loop over all arms to check if IO is needed
+    // loop over all arms to check if IO is needed, also check if some IO configuration files are listed in "io"
     mHasIO = false;
     const ArmList::iterator end = mArms.end();
     ArmList::iterator iter;
@@ -661,6 +655,20 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             mHasIO = true;
         }
     }
+    jsonValue = jsonConfig["io"];
+    if (!jsonValue.empty()) {
+        // generic files
+        Json::Value configFiles = jsonValue["configuration-files"];
+        if (!configFiles.empty()) {
+            mHasIO = true;
+        }
+        // footpedals config
+        configFiles = jsonValue["footpedals"];
+        if (!configFiles.empty()) {
+            mHasIO = true;
+        }
+    }
+
     // create IO if needed and configure IO
     if (mHasIO) {
         mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, firewirePort);
@@ -673,10 +681,11 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 io->Configure(ioConfig);
             }
         }
-        // configure using extra configuration files (e.g. foot pedals)
+        // configure using extra configuration files
         jsonValue = jsonConfig["io"];
         if (!jsonValue.empty()) {
-            const Json::Value configFiles = jsonValue["configuration-files"];
+            // generic files
+            Json::Value configFiles = jsonValue["configuration-files"];
             if (!configFiles.empty()) {
                 for (unsigned int index = 0; index < configFiles.size(); ++index) {
                     const std::string configFile = configPath.Find(configFiles[index].asString());
@@ -688,6 +697,27 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO using \"" << configFile << "\"" << std::endl;
                     io->Configure(configFile);
                 }
+            }
+            // footpedals, we assume these are the default one provided along the dVRK
+            configFiles = jsonValue["footpedals"];
+            if (!configFiles.empty()) {
+                const std::string configFile = configPath.Find(configFiles.asString());
+                if (configFile == "") {
+                    CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
+                                             << configFiles.asString() << std::endl;
+                    return;
+                }
+                CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO foot pedals using \"" << configFile << "\"" << std::endl;
+                mHasFootpedals = true;
+                // these can be overwritten using console-inputs
+                mDInputSources["Clutch"] = InterfaceComponentType(mIOComponentName, "Clutch");
+                mDInputSources["OperatorPresent"] = InterfaceComponentType(mIOComponentName, "Coag");
+                mDInputSources["BiCoag"] = InterfaceComponentType(mIOComponentName, "BiCoag");
+                mDInputSources["Camera"] = InterfaceComponentType(mIOComponentName, "Camera");
+                mDInputSources["Cam-"] = InterfaceComponentType(mIOComponentName, "Cam-");
+                mDInputSources["Cam+"] = InterfaceComponentType(mIOComponentName, "Cam+");
+                mDInputSources["Head"] = InterfaceComponentType(mIOComponentName, "Head");
+                io->Configure(configFile);
             }
         }
         // and add the io component!
@@ -748,33 +778,31 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         component = consoleInputs["operator-present"]["component"].asString();
         interface = consoleInputs["operator-present"]["interface"].asString();
         if ((component != "") && (interface != "")) {
-            mOperatorPresentComponent = component;
-            mOperatorPresentInterface = interface;
+            mDInputSources["OperatorPresent"] = InterfaceComponentType(component, interface);
         }
         component = consoleInputs["clutch"]["component"].asString();
         interface = consoleInputs["clutch"]["interface"].asString();
         if ((component != "") && (interface != "")) {
-            mClutchComponent = component;
-            mClutchInterface = interface;
+            mDInputSources["Clutch"] = InterfaceComponentType(component, interface);
         }
         component = consoleInputs["camera"]["component"].asString();
         interface = consoleInputs["camera"]["interface"].asString();
         if ((component != "") && (interface != "")) {
-            mCameraComponent = component;
-            mCameraInterface = interface;
+            mDInputSources["Camera"] = InterfaceComponentType(component, interface);
         }
     }
 
     // look for footpedals in json config
     jsonValue = jsonConfig["io"]["has-footpedals"];
-    if (jsonValue.empty()) {
-        mHasFootpedals = false;
-    } else {
+    if (!jsonValue.empty()) {
         mHasFootpedals = jsonValue.asBool();
     }
     // if we have any teleoperation component, we need to add the interfaces for the foot pedals
     if ((mTeleopsPSM.size() > 0) || mTeleopECM) {
-        mHasFootpedals = true;
+        if (!mHasFootpedals) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: \"io has-footpedals\" needs to be set to true or \"io footpedals\" needs to be defined for teleoperation components to work" << std::endl;
+            return;
+        }
     }
     if (mHasFootpedals) {
         this->AddFootpedalInterfaces();
@@ -1013,12 +1041,32 @@ bool mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
 bool mtsIntuitiveResearchKitConsole::ConnectFootpedalInterfaces(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    componentManager->Connect(this->GetName(), "Clutch",
-                              mClutchComponent, mClutchInterface);
-    componentManager->Connect(this->GetName(), "Camera",
-                              mCameraComponent, mCameraInterface);
-    componentManager->Connect(this->GetName(), "OperatorPresent",
-                              mOperatorPresentComponent, mOperatorPresentInterface);
+    const DInputSourceType::const_iterator end = mDInputSources.end();
+    DInputSourceType::const_iterator iter;
+    iter = mDInputSources.find("Clutch");
+    if (iter != end) {
+        componentManager->Connect(this->GetName(), "Clutch",
+                                  iter->second.first, iter->second.second);
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "ConnectFootpedalInterfaces: component/interface not defined for \"Clutch\" event source"
+                                 << std::endl;
+    }
+    iter = mDInputSources.find("Camera");
+    if (iter != end) {
+        componentManager->Connect(this->GetName(), "Camera",
+                                  iter->second.first, iter->second.second);
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "ConnectFootpedalInterfaces: component/interface not defined for \"Camera\" event source"
+                                 << std::endl;
+    }
+    iter = mDInputSources.find("OperatorPresent");
+    if (iter != end) {
+        componentManager->Connect(this->GetName(), "OperatorPresent",
+                                  iter->second.first, iter->second.second);
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "ConnectFootpedalInterfaces: component/interface not defined for \"OperatorPresent\" event source"
+                                 << std::endl;
+    }
     return true;
 }
 
@@ -1702,12 +1750,12 @@ void mtsIntuitiveResearchKitConsole::SetScale(const double & scale)
 
 void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & button)
 {
-    ConsoleEvents.Clutch(button);
     if (button.Type() == prmEventButton::PRESSED) {
         mInterface->SendStatus(this->GetName() + ": clutch pressed");
     } else {
         mInterface->SendStatus(this->GetName() + ": clutch released");
     }
+    ConsoleEvents.Clutch(button);
 }
 
 void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & button)
@@ -1720,7 +1768,7 @@ void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & b
         mInterface->SendStatus(this->GetName() + ": camera released");
     }
     UpdateTeleopState();
-    ConsoleEvents.OperatorPresent(button);
+    ConsoleEvents.Camera(button);
 }
 
 void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventButton & button)
