@@ -49,9 +49,15 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     componentManager->AddComponent(consoleGUI);
     // connect consoleGUI to console
     Connections.push_back(new ConnectionType("consoleGUI", "Main", "console", "Main"));
-    Connections.push_back(new ConnectionType("consoleGUI", "Clutch", "console", "Clutch"));
-    Connections.push_back(new ConnectionType("consoleGUI", "OperatorPresent", "console", "OperatorPresent"));
-    Connections.push_back(new ConnectionType("consoleGUI", "Camera", "console", "Camera"));
+    if (console->GetInterfaceRequired("Clutch")) {
+        Connections.push_back(new ConnectionType("consoleGUI", "Clutch", "console", "Clutch"));
+    }
+    if (console->GetInterfaceRequired("OperatorPresent")) {
+        Connections.push_back(new ConnectionType("consoleGUI", "OperatorPresent", "console", "OperatorPresent"));
+    }
+    if (console->GetInterfaceRequired("Camera")) {
+        Connections.push_back(new ConnectionType("consoleGUI", "Camera", "console", "Camera"));
+    }
 
     TabWidget = consoleGUI->GetTabWidget();
 
