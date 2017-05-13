@@ -142,6 +142,10 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // last joint is gripper, encoders can be anything
     PotsToEncodersTolerance.Element(JNT_GRIPPER) = cmnTypeTraits<double>::PlusInfinityOrMax();
 
+    // default PID tracking errors, defaults are used for homing
+    PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
+    PID.DefaultTrackingErrorTolerance.SetAll(20.0 * cmnPI_180);
+
     this->StateTable.AddData(Gripper, "StateGripper");
 
     // Main interface should have been created by base class init
@@ -411,6 +415,11 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     static const double maxTrackingError = 1.0 * cmnPI; // 1/2 turn
     static const double maxRollRange = 6.0 * cmnPI + maxTrackingError; // that actual device is limited to ~2.6 turns
 
+    // set different PID tracking error for roll
+    PID.DefaultTrackingErrorTolerance.Element(JNT_WRIST_ROLL) = 1.5 * maxRollRange;  // a bit more than maxRollRange
+    PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
+    PID.EnableTrackingError(true);
+
     // disable joint limits on PID
     PID.SetCheckJointLimit(false);
 
@@ -458,6 +467,14 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
         trackingError = std::abs(JointsPID.Position().Element(JNT_WRIST_ROLL) - JointSet.Element(JNT_WRIST_ROLL));
         if (trackingError > maxTrackingError) {
             mHomingCalibrateRollLower = JointsPID.Position().Element(JNT_WRIST_ROLL);
+            // reset PID to go to current position to avoid applying too much torque
+            JointSet.Element(JNT_WRIST_ROLL) = JointsPID.Position().Element(JNT_WRIST_ROLL);
+            SetPositionJointLocal(JointSet);
+            // reset PID tracking errors to something reasonable
+            PID.DefaultTrackingErrorTolerance.SetAll(20.0 * cmnPI_180);
+            PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
+            PID.EnableTrackingError(true);
+
             RobotInterface->SendStatus(this->GetName() + ": found roll lower limit");
             mArmState.SetCurrentState("ROLL_CALIBRATED");
         } else {
