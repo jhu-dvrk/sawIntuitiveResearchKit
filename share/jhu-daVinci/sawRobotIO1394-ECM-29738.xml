@@ -129,27 +129,5 @@
       </Coupling>
    </Robot>
    <DigitalIn BitID="0" BoardID="4" Debounce="0.2" Name="ECM-ManipClutch" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="1" BoardID="4" Debounce="0" Name="ECM-D01" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="2" BoardID="4" Debounce="0.2" Name="ECM-SUJClutch" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="3" BoardID="4" Debounce="0" Name="ECM-D03" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="4" BoardID="4" Debounce="0" Name="ECM-D10" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="5" BoardID="4" Debounce="0" Name="ECM-D11" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="6" BoardID="4" Debounce="0" Name="ECM-D12" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="7" BoardID="4" Debounce="0" Name="ECM-D13" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="8" BoardID="4" Debounce="0" Name="ECM-D20" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="9" BoardID="4" Debounce="0" Name="ECM-D21" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="10" BoardID="4" Debounce="0" Name="ECM-D22" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="11" BoardID="4" Debounce="0" Name="ECM-D23" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="0" BoardID="5" Debounce="0" Name="ECM-D30" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="1" BoardID="5" Debounce="0" Name="ECM-D31" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="2" BoardID="5" Debounce="0" Name="ECM-D32" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="3" BoardID="5" Debounce="0" Name="ECM-D33" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="4" BoardID="5" Debounce="0" Name="ECM-D40" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="5" BoardID="5" Debounce="0" Name="ECM-D41" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="6" BoardID="5" Debounce="0" Name="ECM-D42" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="7" BoardID="5" Debounce="0" Name="ECM-D43" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="8" BoardID="5" Debounce="0" Name="ECM-D50" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="9" BoardID="5" Debounce="0" Name="ECM-D51" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="10" BoardID="5" Debounce="0" Name="ECM-D52" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="11" BoardID="5" Debounce="0" Name="ECM-D53" Pressed="0" Trigger="all"/>
 </Config>
