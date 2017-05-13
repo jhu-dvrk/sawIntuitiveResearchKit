@@ -183,13 +183,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerManipClutch, this, "Button");
     }
-
-    // Initialize the optimizer
-    Optimizer = new mtsIntuitiveResearchKitOptimizer(6);
-    Optimizer->InitializeFollowVF(6,
-                                  "FollowVFSlave",
-                                  "CurrentSlaveKinematics",
-                                  "DesiredSlaveKinematics");
 }
 
 void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)

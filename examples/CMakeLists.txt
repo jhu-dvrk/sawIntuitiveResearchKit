@@ -42,25 +42,21 @@ if (cisst_FOUND_AS_REQUIRED)
   # saw components have been compiled within cisst, we should find them automatically
   find_package (sawRobotIO1394          1.4.0 REQUIRED)
   find_package (sawControllers          1.4.0 REQUIRED)
-  find_package (sawConstraintController 1.1.0 REQUIRED)
   find_package (sawIntuitiveResearchKit 1.4.0 REQUIRED)
   find_package (sawTextToSpeech REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND
-      AND sawIntuitiveResearchKit_FOUND AND sawTextToSpeech_FOUND
-      AND sawConstraintController_FOUND)
+      AND sawIntuitiveResearchKit_FOUND AND sawTextToSpeech_FOUND)
 
     # saw components configuration
     include_directories (${sawRobotIO1394_INCLUDE_DIR}
                          ${sawIntuitiveResearchKit_INCLUDE_DIR}
                          ${sawControllers_INCLUDE_DIR}
-                         ${sawConstrainController_INCLUDE_DIR}
                          ${sawTextToSpeech_INCLUDE_DIR})
 
     link_directories (${sawRobotIO1394_LIBRARY_DIR}
                       ${sawIntuitiveResearchKit_LIBRARY_DIR}
                       ${sawControllers_LIBRARY_DIR}
-                      ${sawConstraintController_LIBRARY_DIR}
                       ${sawTextToSpeech_LIBRARY_DIR})
 
     # examples using Qt

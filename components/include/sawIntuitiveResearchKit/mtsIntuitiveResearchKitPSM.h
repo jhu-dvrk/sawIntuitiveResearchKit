@@ -22,11 +22,12 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
 
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitOptimizer.h>
-
-#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 #include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+
+// Always include last
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+
 
 class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 {
@@ -41,9 +42,6 @@ public:
     void Configure(const std::string & filename);
 
 protected:
-
-    // PSM Optimizer
-    mtsIntuitiveResearchKitOptimizer * Optimizer;
 
     /*! Configuration methods */
     inline size_t NumberOfAxes(void) const {

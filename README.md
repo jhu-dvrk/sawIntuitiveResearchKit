@@ -17,4 +17,3 @@ Dependencies
  * cisst libraries: https://github.com/jhu-cisst/cisst
  * sawRobotIO1394: http://github.com/jhu-saw/sawRobotIO1394
  * sawControllers: http://github.com/jhu-saw/sawControllers
- * sawConstraintController: http://github.com/jhu-saw/sawConstraintController

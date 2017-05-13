@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2016 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2017 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -41,19 +41,16 @@ if (cisst_FOUND)
   # saw components have been compiled within cisst, we should find them automatically
   find_package (sawRobotIO1394          1.4.0 REQUIRED)
   find_package (sawControllers          1.4.0 REQUIRED)
-  find_package (sawConstraintController 1.1.0 REQUIRED)
 
 
-  if (sawRobotIO1394_FOUND AND sawControllers_FOUND AND sawConstraintController_FOUND)
+  if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
     # saw components configuration
     include_directories (${sawRobotIO1394_INCLUDE_DIR}
-                         ${sawControllers_INCLUDE_DIR}
-                         ${sawConstraintController_INCLUDE_DIR})
+                         ${sawControllers_INCLUDE_DIR})
 
     link_directories (${sawRobotIO1394_LIBRARY_DIR}
-                      ${sawControllers_LIBRARY_DIR}
-                      ${sawConstraintController_LIBRARY_DIR})
+                      ${sawControllers_LIBRARY_DIR})
 
     # catkin/ROS paths
     cisst_is_catkin_build (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
@@ -91,7 +88,6 @@ if (cisst_FOUND)
                           "${sawIntuitiveResearchKit_BINARY_DIR}/include" # where to save the file
                           "sawIntuitiveResearchKit/"    # sub directory for include
                           code/mtsIntuitiveResearchKitArmTypes.cdg
-                          code/mtsVFDataFollow.cdg
                           code/socketMessages.cdg)
 
     include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
@@ -106,13 +102,10 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitECM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJ.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitOptimizer.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitUDPStreamer.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsVFFollow.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsVFFollowJacobian.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBasePSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketClientPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketServerPSM.h
@@ -126,13 +119,10 @@ if (cisst_FOUND)
          code/mtsIntuitiveResearchKitPSM.cpp
          code/mtsIntuitiveResearchKitECM.cpp
          code/mtsIntuitiveResearchKitSUJ.cpp
-         code/mtsIntuitiveResearchKitOptimizer.cpp
          code/mtsTeleOperationPSM.cpp
          code/mtsTeleOperationECM.cpp
          code/mtsIntuitiveResearchKitConsole.cpp
          code/mtsIntuitiveResearchKitUDPStreamer.cpp
-         code/mtsVFFollow.cpp
-         code/mtsVFFollowJacobian.cpp
          code/mtsSocketBasePSM.cpp
          code/mtsSocketClientPSM.cpp
          code/mtsSocketServerPSM.cpp
@@ -149,8 +139,7 @@ if (cisst_FOUND)
     # link against non cisst libraries and cisst components
     target_link_libraries (sawIntuitiveResearchKit
                            ${sawRobotIO1394_LIBRARIES}
-                           ${sawControllers_LIBRARIES}
-                           ${sawConstraintController_LIBRARIES})
+                           ${sawControllers_LIBRARIES})
 
     # add Qt code
     add_subdirectory (code/Qt)
@@ -183,6 +172,6 @@ if (cisst_FOUND)
     install (FILES "${sawIntuitiveResearchKit_CMAKE_CONFIG_FILE}"
              DESTINATION "share/sawIntuitiveResearchKit")
 
-  endif (sawRobotIO1394_FOUND AND sawControllers_FOUND AND sawConstraintController_FOUND)
+  endif (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
 endif (cisst_FOUND)

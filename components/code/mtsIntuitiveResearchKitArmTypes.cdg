@@ -63,10 +63,6 @@ class {
             description Cartesian position goal mode;
         }
         enum-value {
-            name DVRK_CONSTRAINT_CONTROLLER_CARTESIAN;
-            description Constraint controller mode;
-        }
-        enum-value {
             name DVRK_EFFORT_JOINT;
             description Joint effort mode;
         }
