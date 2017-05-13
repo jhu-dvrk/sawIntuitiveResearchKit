@@ -166,7 +166,7 @@ potOffset = motor.pot_input_offset;
 % === Drive =======
 % Direction
 % The linear amp drives +/- 6.25 Amps current, which is controlled by a DAC with 16 bits resolution.
-% So the conversion from amp to bits is 2^16/(6.25 * 2) = 5242.88 
+% So the conversion from amp to bits is 2^16/(6.25 * 2) = 5242.88
 boardID
 driveDirection = aDirection
 AmpsToBitsScale = driveDirection(1:numOfActuator) .* 5242.8800;
@@ -449,14 +449,16 @@ Config.appendChild(docNode.createComment('Digital Input Configuration'));
 % read from GUI
 for b = 1:2
     for i = 1:12
-        DigitalIn = docNode.createElement('DigitalIn');
-        DigitalIn.setAttribute('BitID', num2str(i-1));
-        DigitalIn.setAttribute('Name', aDigital{i,2,b});
-        DigitalIn.setAttribute('BoardID', num2str(boardID(b)));
-        DigitalIn.setAttribute('Pressed', aDigital{i,3,b});
-        DigitalIn.setAttribute('Trigger', aDigital{i,4,b});
-        DigitalIn.setAttribute('Debounce', num2str(aDigital{i,5,b}));
-        Config.appendChild(DigitalIn);
+        if ~strcmp(aDigital{i,2,b},'unused')
+            DigitalIn = docNode.createElement('DigitalIn');
+            DigitalIn.setAttribute('BitID', num2str(i-1));
+            DigitalIn.setAttribute('Name', aDigital{i,2,b});
+            DigitalIn.setAttribute('BoardID', num2str(boardID(b)));
+            DigitalIn.setAttribute('Pressed', aDigital{i,3,b});
+            DigitalIn.setAttribute('Trigger', aDigital{i,4,b});
+            DigitalIn.setAttribute('Debounce', num2str(aDigital{i,5,b}));
+            Config.appendChild(DigitalIn);
+        end
     end
 end
 
@@ -490,5 +492,3 @@ function outStr = vector2str(inVector)
     end
 %     disp(outStr);
 end  % vector2str
-
-
