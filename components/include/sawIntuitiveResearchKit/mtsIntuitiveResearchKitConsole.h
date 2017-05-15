@@ -225,8 +225,8 @@ public:
                           const std::string & masterName,
                           const std::string & slaveName);
 
-    bool AddFootpedalInterfaces(void);
-    bool ConnectFootpedalInterfaces(void);
+    void AddFootpedalInterfaces(void);
+    void ConnectFootpedalInterfaces(void);
 
     bool Connect(void);
 
@@ -268,7 +268,6 @@ protected:
     void UpdateTeleopState(void);
     void SetScale(const double & scale);
     bool mHasIO;
-    bool mHasFootpedals;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
