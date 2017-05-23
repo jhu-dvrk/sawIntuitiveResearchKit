@@ -527,65 +527,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // first, create all custom components, i.e. dynamic loading and creation
     const Json::Value customComponents = jsonConfig["custom-components"];
     for (unsigned int index = 0; index < customComponents.size(); ++index) {
-        Json::Value customComponent = customComponents[index];
-        std::string sharedLibrary, className, constructorArgJSON;
-        // shared library is optional
-        jsonValue = customComponent["shared-library"];
-        if (!jsonValue.empty()){
-            sharedLibrary = jsonValue.asString();
-        } else {
-            sharedLibrary = "";
-        }
-        // class name is required
-        jsonValue = customComponent["class-name"];
-        if (!jsonValue.empty()) {
-            className = jsonValue.asString();
-        } else {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find \"class-name\" for custom component["
-                                     << index << "]" << std::endl;
-            return;
-        }
-        // constructor argument is required
-        jsonValue = customComponent["constructor-arg"];
-        if (!jsonValue.empty()) {
-            Json::FastWriter fastWriter;
-            constructorArgJSON = fastWriter.write(jsonValue);
-        } else {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find \"constructor-arg\" for custom component ["
-                                     << index << "]" << std::endl;
-            return;
-        }
-        // create (the method CreateComponentDynamicallyJSON should handle case w/o shared library
-        mtsComponent * component
-            = manager->CreateComponentDynamicallyJSON(sharedLibrary,
-                                                      className,
-                                                      constructorArgJSON);
-        if (!component) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to dynamically create custom component ["
-                                     << index << "]" << std::endl;
-            return;
-        }
-        // configure as needed
-        Json::Value configureParameter = customComponent["configure-parameter"];
-        if (configureParameter.empty()) {
-            component->Configure();
-        } else {
-            std::string configParam = configureParameter.asString();
-            // see if we can find a file corresponding to string
-            std::string configFile = configPath.Find(configParam);
-            if (configFile == "") {
-                // else pass the string as-is
-                component->Configure(configParam);
-            } else {
-                component->Configure(configFile);
-            }
-        }
-        // add
-        if (!manager->AddComponent(component)) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to add custom component ["
-                                     << index << "] to component manager" << std::endl;
-            return;
-        }
+        manager->ConfigureComponentJSON(customComponents[index], configPath);
     }
 
     // IO default settings
