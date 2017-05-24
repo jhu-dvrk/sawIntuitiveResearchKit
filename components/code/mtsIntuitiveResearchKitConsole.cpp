@@ -524,10 +524,13 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
     mtsComponentManager * manager = mtsComponentManager::GetInstance();
 
-    // first, create all custom components, i.e. dynamic loading and creation
-    const Json::Value customComponents = jsonConfig["custom-components"];
-    for (unsigned int index = 0; index < customComponents.size(); ++index) {
-        manager->ConfigureComponentJSON(customComponents[index], configPath);
+    // first, create all custom components and connections, i.e. dynamic loading and creation
+    const Json::Value componentManager = jsonConfig["component-manager"];
+    if (!componentManager.empty()) {
+        if (!manager->ConfigureJSON(componentManager, configPath)) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure component-manager" << std::endl;
+            return;
+        }
     }
 
     // IO default settings
