@@ -76,6 +76,8 @@ public:
         /*! Accessors */
         const std::string & Name(void) const;
         const std::string & SocketComponentName(void) const;
+        const std::string & ComponentName(void) const;
+        const std::string & InterfaceName(void) const;
         const std::string & IOComponentName(void) const;
         const std::string & PIDComponentName(void) const;
 
@@ -91,6 +93,8 @@ public:
         std::string mPIDComponentName;
         std::string mPIDConfigurationFile;
         // arm
+        std::string mComponentName;
+        std::string mInterfaceName;
         std::string mArmConfigurationFile;
         double mArmPeriod;
         // socket
@@ -139,9 +143,12 @@ public:
         friend class dvrk::console;
 
         TeleopECM(const std::string & name,
-                  const std::string & masterLeftName,
-                  const std::string & masterRightName,
-                  const std::string & slaveName,
+                  const std::string & masterLeftComponentName,
+                  const std::string & masterLeftInterfaceName,
+                  const std::string & masterRightComponentName,
+                  const std::string & masterRightInterfaceName,
+                  const std::string & slaveComponentName,
+                  const std::string & slaveInterfaceName,
                   const std::string & consoleName);
 
         /*! Create and configure the robot arm. */
@@ -158,9 +165,12 @@ public:
     protected:
         std::string mName;
         TeleopECMType mType;
-        std::string mMTMLName;
-        std::string mMTMRName;
-        std::string mECMName;
+        std::string mMTMLComponentName;
+        std::string mMTMLInterfaceName;
+        std::string mMTMRComponentName;
+        std::string mMTMRInterfaceName;
+        std::string mECMComponentName;
+        std::string mECMInterfaceName;
         std::string mConsoleName;
         mtsFunctionWrite SetDesiredState;
         mtsInterfaceRequired * InterfaceRequired;
@@ -174,8 +184,10 @@ public:
         friend class dvrk::console;
 
         TeleopPSM(const std::string & name,
-                  const std::string & masterName,
-                  const std::string & slaveName,
+                  const std::string & masterComponentName,
+                  const std::string & masterInterfaceName,
+                  const std::string & slaveComponentName,
+                  const std::string & slaveInterfaceName,
                   const std::string & consoleName);
 
         /*! Create and configure the robot arm. */
@@ -192,8 +204,10 @@ public:
     protected:
         std::string mName;
         TeleopPSMType mType;
-        std::string mMTMName;
-        std::string mPSMName;
+        std::string mMTMComponentName;
+        std::string mMTMInterfaceName;
+        std::string mPSMComponentName;
+        std::string mPSMInterfaceName;
         std::string mConsoleName;
         mtsFunctionWrite SetDesiredState;
         mtsFunctionWrite SetScale;

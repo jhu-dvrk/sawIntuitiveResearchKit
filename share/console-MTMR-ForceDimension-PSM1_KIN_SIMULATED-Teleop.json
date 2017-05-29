@@ -7,8 +7,9 @@
                 "shared-library": "sawForceDimensionSDK",
                 "class-name": "mtsForceDimension",
                 "constructor-arg": {
-                    "Name": "MTMR"
-                }
+                    "Name": "ForceDimensionSDK"
+                },
+                "configure-parameter": "sawForceDimensionSDK-MTMR.json"
             }
             ,
             {
@@ -18,7 +19,7 @@
                     "Name": "Keyboard"
                 }
                 ,
-                "configure-parameter": "keyboard-dVRK-console.json"
+                "configure-parameter": "sawKeyboard-dVRK-console.json"
             }
         ]
     }
@@ -45,7 +46,9 @@
     [
         {
             "name": "MTMR",  // created previously using custom components
-            "type": "MTM_GENERIC"
+            "type": "MTM_GENERIC",
+            "component": "ForceDimensionSDK",
+            "interface": "MTMR"
         }
         ,
         {
