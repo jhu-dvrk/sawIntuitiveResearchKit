@@ -144,7 +144,9 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");
             armGUI->Configure();
             componentManager->AddComponent(armGUI);
-            Connections.push_back(new ConnectionType(armGUI->GetName(), "Manipulator", armIter->second->mName, "Robot"));
+            Connections.push_back(new ConnectionType(armGUI->GetName(), "Manipulator",
+                                                     armIter->second->ComponentName(),
+                                                     armIter->second->InterfaceName()));
             armTabWidget->addTab(armGUI, name.c_str());
 
             // PSM server
@@ -188,7 +190,8 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             socketGUI = new mtsSocketBaseQtWidget(name + "-GUI");
             socketGUI->Configure();
             componentManager->AddComponent(socketGUI);
-            Connections.push_back(new ConnectionType(socketGUI->GetName(), "SocketBase", armIter->second->mName, "System"));
+            Connections.push_back(new ConnectionType(socketGUI->GetName(), "SocketBase",
+                                                     armIter->second->mName, "System"));
             armTabWidget->addTab(socketGUI, name.c_str());
             break;
 
@@ -205,13 +208,15 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
                 componentManager->AddComponent(messageGUI);
                 genericComponentLayout->addWidget(messageGUI);
                 Connections.push_back(new ConnectionType(messageGUI->GetName(), "Component",
-                                                         armIter->second->mName, "Robot"));
+                                                         armIter->second->ComponentName(),
+                                                         armIter->second->InterfaceName()));
                 mtsIntervalStatisticsQtWidgetComponent * timingGUI
                     = new mtsIntervalStatisticsQtWidgetComponent(name + "-Timing-GUI");
                 componentManager->AddComponent(timingGUI);
                 genericComponentLayout->addWidget(timingGUI);
                 Connections.push_back(new ConnectionType(timingGUI->GetName(), "Component",
-                                                         armIter->second->mName, "Robot"));
+                                                         armIter->second->ComponentName(),
+                                                         armIter->second->InterfaceName()));
                 armTabWidget->addTab(genericComponentGUI, name.c_str());
             }
             break;

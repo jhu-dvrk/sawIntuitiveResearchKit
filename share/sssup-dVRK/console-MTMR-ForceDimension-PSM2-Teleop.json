@@ -1,28 +1,25 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "component-manager": {
-        "components":
-        [
-            {
-                "shared-library": "sawForceDimensionSDK",
-                "class-name": "mtsForceDimension",
-                "constructor-arg": {
-                    "Name": "ForceDimensionSDK"
-                },
-                "configure-parameter": "sawForceDimensionSDK-MTMR.json"
+    "custom-components":
+    [
+        {
+            "shared-library": "sawForceDimensionSDK",
+            "class-name": "mtsForceDimension",
+            "constructor-arg": {
+                "Name": "MTMR"
+            }
+        }
+        ,
+        {
+            "shared-library": "sawKeyboard",
+            "class-name": "mtsKeyboard",
+            "constructor-arg": {
+                "Name": "Keyboard"
             }
             ,
-            {
-                "shared-library": "sawKeyboard",
-                "class-name": "mtsKeyboard",
-                "constructor-arg": {
-                    "Name": "Keyboard"
-                }
-                ,
-                "configure-parameter": "sawKeyboard-dVRK-console.json"
-            }
-        ]
-    }
+            "configure-parameter": "keyboard-dVRK-console.json"
+        }
+    ]
     ,
     "console-inputs":
     {
@@ -46,15 +43,13 @@
     [
         {
             "name": "MTMR",  // created previously using custom components
-            "type": "MTM_GENERIC",
-            "component": "ForceDimensionSDK",
-            "interface": "MTMR"
+            "type": "MTM_GENERIC"
         }
         ,
         {
-            "name": "PSM1",
+            "name": "PSM2",
             "type": "PSM",
-            "simulation": "KINEMATIC",
+            "io": "sawRobotIO1394-PSM2-29470_cal.xml",
             "pid": "sawControllersPID-PSM.xml",
             "kinematic": "psm-large-needle-driver.json"
         }
@@ -64,7 +59,7 @@
     [
         {
             "master": "MTMR",
-            "slave": "PSM1",
+            "slave": "PSM2",
             "rotation" : [[ 0.0000, -1.0000,  0.0000],
                           [ 1.0000,  0.0000,  0.0000],
                           [ 0.0000,  0.0000,  1.0000]]

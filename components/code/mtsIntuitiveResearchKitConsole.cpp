@@ -238,7 +238,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
         }
         if (mSocketServer) {
             componentManager->Connect(SocketComponentName(), "PSM",
-                                      Name(), "Robot");
+                                      ComponentName(), InterfaceName());
         }
         break;
     case ARM_ECM:
@@ -308,6 +308,14 @@ const std::string & mtsIntuitiveResearchKitConsole::Arm::Name(void) const {
     return mName;
 }
 
+const std::string & mtsIntuitiveResearchKitConsole::Arm::ComponentName(void) const {
+    return mComponentName;
+}
+
+const std::string & mtsIntuitiveResearchKitConsole::Arm::InterfaceName(void) const {
+    return mInterfaceName;
+}
+
 const std::string & mtsIntuitiveResearchKitConsole::Arm::SocketComponentName(void) const {
     return mSocketComponentName;
 }
@@ -322,14 +330,20 @@ const std::string & mtsIntuitiveResearchKitConsole::Arm::PIDComponentName(void) 
 
 
 mtsIntuitiveResearchKitConsole::TeleopECM::TeleopECM(const std::string & name,
-                                                     const std::string & masterLeftName,
-                                                     const std::string & masterRightName,
-                                                     const std::string & slaveName,
+                                                     const std::string & masterLeftComponentName,
+                                                     const std::string & masterLeftInterfaceName,
+                                                     const std::string & masterRightComponentName,
+                                                     const std::string & masterRightInterfaceName,
+                                                     const std::string & slaveComponentName,
+                                                     const std::string & slaveInterfaceName,
                                                      const std::string & consoleName):
     mName(name),
-    mMTMLName(masterLeftName),
-    mMTMRName(masterRightName),
-    mECMName(slaveName),
+    mMTMLComponentName(masterLeftComponentName),
+    mMTMLInterfaceName(masterLeftInterfaceName),
+    mMTMRComponentName(masterRightComponentName),
+    mMTMRInterfaceName(masterRightInterfaceName),
+    mECMComponentName(slaveComponentName),
+    mECMInterfaceName(slaveInterfaceName),
     mConsoleName(consoleName)
 {
 }
@@ -378,9 +392,9 @@ void mtsIntuitiveResearchKitConsole::TeleopECM::ConfigureTeleop(const TeleopECMT
 bool mtsIntuitiveResearchKitConsole::TeleopECM::Connect(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    componentManager->Connect(mName, "MTML", mMTMLName, "Robot");
-    componentManager->Connect(mName, "MTMR", mMTMRName, "Robot");
-    componentManager->Connect(mName, "ECM", mECMName, "Robot");
+    componentManager->Connect(mName, "MTML", mMTMLComponentName, mMTMLInterfaceName);
+    componentManager->Connect(mName, "MTMR", mMTMRComponentName, mMTMRInterfaceName);
+    componentManager->Connect(mName, "ECM", mECMComponentName, mECMInterfaceName);
     componentManager->Connect(mName, "Clutch", mConsoleName, "Clutch");
     componentManager->Connect(mConsoleName, mName, mName, "Setting");
     return true;
@@ -392,12 +406,16 @@ const std::string & mtsIntuitiveResearchKitConsole::TeleopECM::Name(void) const 
 
 
 mtsIntuitiveResearchKitConsole::TeleopPSM::TeleopPSM(const std::string & name,
-                                                     const std::string & masterName,
-                                                     const std::string & slaveName,
+                                                     const std::string & masterComponentName,
+                                                     const std::string & masterInterfaceName,
+                                                     const std::string & slaveComponentName,
+                                                     const std::string & slaveInterfaceName,
                                                      const std::string & consoleName):
     mName(name),
-    mMTMName(masterName),
-    mPSMName(slaveName),
+    mMTMComponentName(masterComponentName),
+    mMTMInterfaceName(masterInterfaceName),
+    mPSMComponentName(slaveComponentName),
+    mPSMInterfaceName(slaveInterfaceName),
     mConsoleName(consoleName)
 {
 }
@@ -447,8 +465,8 @@ void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMT
 bool mtsIntuitiveResearchKitConsole::TeleopPSM::Connect(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    componentManager->Connect(mName, "MTM", mMTMName, "Robot");
-    componentManager->Connect(mName, "PSM", mPSMName, "Robot");
+    componentManager->Connect(mName, "MTM", mMTMComponentName, mMTMInterfaceName);
+    componentManager->Connect(mName, "PSM", mPSMComponentName, mPSMInterfaceName);
     componentManager->Connect(mName, "Clutch", mConsoleName, "Clutch");
     componentManager->Connect(mConsoleName, mName, mName, "Setting");
     return true;
@@ -524,66 +542,11 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
     mtsComponentManager * manager = mtsComponentManager::GetInstance();
 
-    // first, create all custom components, i.e. dynamic loading and creation
-    const Json::Value customComponents = jsonConfig["custom-components"];
-    for (unsigned int index = 0; index < customComponents.size(); ++index) {
-        Json::Value customComponent = customComponents[index];
-        std::string sharedLibrary, className, constructorArgJSON;
-        // shared library is optional
-        jsonValue = customComponent["shared-library"];
-        if (!jsonValue.empty()){
-            sharedLibrary = jsonValue.asString();
-        } else {
-            sharedLibrary = "";
-        }
-        // class name is required
-        jsonValue = customComponent["class-name"];
-        if (!jsonValue.empty()) {
-            className = jsonValue.asString();
-        } else {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find \"class-name\" for custom component["
-                                     << index << "]" << std::endl;
-            return;
-        }
-        // constructor argument is required
-        jsonValue = customComponent["constructor-arg"];
-        if (!jsonValue.empty()) {
-            Json::FastWriter fastWriter;
-            constructorArgJSON = fastWriter.write(jsonValue);
-        } else {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find \"constructor-arg\" for custom component ["
-                                     << index << "]" << std::endl;
-            return;
-        }
-        // create (the method CreateComponentDynamicallyJSON should handle case w/o shared library
-        mtsComponent * component
-            = manager->CreateComponentDynamicallyJSON(sharedLibrary,
-                                                      className,
-                                                      constructorArgJSON);
-        if (!component) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to dynamically create custom component ["
-                                     << index << "]" << std::endl;
-            return;
-        }
-        // configure as needed
-        Json::Value configureParameter = customComponent["configure-parameter"];
-        if (configureParameter.empty()) {
-            component->Configure();
-        } else {
-            std::string configParam = configureParameter.asString();
-            // see if we can find a file corresponding to string
-            std::string configFile = configPath.Find(configParam);
-            if (configFile == "") {
-                // else pass the string as-is
-                component->Configure(configParam);
-            } else {
-                component->Configure(configFile);
-            }
-        }
-        // add
-        if (!manager->AddComponent(component)) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to add custom component ["
-                                     << index << "] to component manager" << std::endl;
+    // first, create all custom components and connections, i.e. dynamic loading and creation
+    const Json::Value componentManager = jsonConfig["component-manager"];
+    if (!componentManager.empty()) {
+        if (!manager->ConfigureJSON(componentManager, configPath)) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure component-manager" << std::endl;
             return;
         }
     }
@@ -955,7 +918,10 @@ bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name,
                                  << name << "\"" << std::endl;
         return false;
     }
-    TeleopPSM * teleop = new TeleopPSM(name, masterName, slaveName, this->GetName());
+    TeleopPSM * teleop = new TeleopPSM(name,
+                                       masterName, "Robot",
+                                       slaveName, "Robot",
+                                       this->GetName());
     mTeleopsPSM[name] = teleop;
     if (AddTeleopPSMInterfaces(teleop)) {
         return true;
@@ -1132,6 +1098,18 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         armPointer->mSimulation = Arm::SIMULATION_NONE;
     }
 
+    // component and interface, defaults
+    armPointer->mComponentName = armName;
+    armPointer->mInterfaceName = "Robot";
+    jsonValue = jsonArm["component"];
+    if (!jsonValue.empty()) {
+        armPointer->mComponentName = jsonValue.asString();
+    }
+    jsonValue = jsonArm["interface"];
+    if (!jsonValue.empty()) {
+        armPointer->mInterfaceName = jsonValue.asString();
+    }
+
     // check if we need to create a socket server attached to this arm
     armPointer->mSocketServer = false;
     jsonValue = jsonArm["socket-server"];
@@ -1282,7 +1260,10 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: \"master-left\" and \"master-right\" must be different" << std::endl;
         return false;
     }
-
+    std::string
+        masterLeftComponent, masterLeftInterface,
+        masterRightComponent, masterRightInterface,
+        slaveComponent, slaveInterface;
     // check that both arms have been defined and have correct type
     Arm * armPointer;
     ArmList::iterator armIterator = mArms.find(masterLeftName);
@@ -1299,6 +1280,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
                                      << masterLeftName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
             return false;
         }
+        masterLeftComponent = armPointer->ComponentName();
+        masterLeftInterface = armPointer->InterfaceName();
     }
     armIterator = mArms.find(masterRightName);
     if (armIterator == mArms.end()) {
@@ -1314,6 +1297,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
                                      << masterRightName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
             return false;
         }
+        masterRightComponent = armPointer->ComponentName();
+        masterRightInterface = armPointer->InterfaceName();
     }
     armIterator = mArms.find(slaveName);
     if (armIterator == mArms.end()) {
@@ -1329,14 +1314,19 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
                                      << slaveName << "\" type must be \"ECM\" or \"GENERIC_ECM\"" << std::endl;
             return false;
         }
+        slaveComponent = armPointer->ComponentName();
+        slaveInterface = armPointer->InterfaceName();
     }
 
     // check if pair already exist and then add
     const std::string name = masterLeftName + "-" + masterRightName + "-" + slaveName;
     if (mTeleopECM == 0) {
         // create a new teleop if needed
-        mTeleopECM = new TeleopECM(name, masterLeftName, masterRightName,
-                                   slaveName, this->GetName());
+        mTeleopECM = new TeleopECM(name,
+                                   masterLeftComponent, masterLeftInterface,
+                                   masterRightComponent, masterRightInterface,
+                                   slaveComponent, slaveInterface,
+                                   this->GetName());
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: there is already an ECM teleop" << std::endl;
         return false;
@@ -1389,6 +1379,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         return false;
     }
 
+    std::string masterComponent, masterInterface, slaveComponent, slaveInterface;
     // check that both arms have been defined and have correct type
     Arm * armPointer;
     ArmList::iterator armIterator = mArms.find(masterName);
@@ -1405,6 +1396,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
                                      << masterName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
             return false;
         }
+        masterComponent = armPointer->ComponentName();
+        masterInterface = armPointer->InterfaceName();
     }
     armIterator = mArms.find(slaveName);
     if (armIterator == mArms.end()) {
@@ -1421,6 +1414,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
                                      << slaveName << "\" type must be \"PSM\", \"PSM_DERIVED\" or \"PSM_GENERIC\"" << std::endl;
             return false;
         }
+        slaveComponent = armPointer->ComponentName();
+        slaveInterface = armPointer->InterfaceName();
     }
 
     // check if pair already exist and then add
@@ -1429,7 +1424,10 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
     TeleopPSM * teleopPointer = 0;
     if (teleopIterator == mTeleopsPSM.end()) {
         // create a new teleop if needed
-        teleopPointer = new TeleopPSM(name, masterName, slaveName, this->GetName());
+        teleopPointer = new TeleopPSM(name,
+                                      masterComponent, masterInterface,
+                                      slaveComponent, slaveInterface,
+                                      this->GetName());
         mTeleopsPSM[name] = teleopPointer;
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: there is already a teleop for the pair \""
@@ -1562,7 +1560,7 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
         // arm interface
         if (arm->ArmInterfaceRequired) {
             componentManager->Connect(this->GetName(), arm->Name(),
-                                      arm->Name(), "Robot");
+                                      arm->mComponentName, arm->mInterfaceName);
         }
         // arm specific interfaces
         arm->Connect();
