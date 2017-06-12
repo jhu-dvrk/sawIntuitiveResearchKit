@@ -142,8 +142,8 @@ public:
     virtual void SetBaseFrameEventHandler(const prmPositionCartesianGet & newBaseFrame);
     virtual void SetBaseFrame(const prmPositionCartesianSet & newBaseFrame);
 
-    /*! Event handler for PID joint limit. */
-    virtual void JointLimitEventHandler(const vctBoolVec & flags);
+    /*! Event handler for PID position limit. */
+    virtual void PositionLimitEventHandler(const vctBoolVec & flags);
 
     /*! Event handler for PID errors. */
     void ErrorEventHandler(const mtsMessage & message);
@@ -173,9 +173,9 @@ public:
         mtsFunctionRead  GetStateJoint;
         mtsFunctionRead  GetStateJointDesired;
         mtsFunctionWrite SetPositionJoint;
-        mtsFunctionWrite SetCheckJointLimit;
-        mtsFunctionWrite SetJointLowerLimit;
-        mtsFunctionWrite SetJointUpperLimit;
+        mtsFunctionWrite SetCheckPositionLimit;
+        mtsFunctionWrite SetPositionLowerLimit;
+        mtsFunctionWrite SetPositionUpperLimit;
         mtsFunctionWrite SetTorqueLowerLimit;
         mtsFunctionWrite SetTorqueUpperLimit;
         mtsFunctionWrite EnableTorqueMode;
