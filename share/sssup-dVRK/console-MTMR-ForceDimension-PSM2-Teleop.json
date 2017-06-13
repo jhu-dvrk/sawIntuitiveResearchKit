@@ -1,25 +1,28 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "custom-components":
-    [
-        {
-            "shared-library": "sawForceDimensionSDK",
-            "class-name": "mtsForceDimension",
-            "constructor-arg": {
-                "Name": "MTMR"
-            }
-        }
-        ,
-        {
-            "shared-library": "sawKeyboard",
-            "class-name": "mtsKeyboard",
-            "constructor-arg": {
-                "Name": "Keyboard"
+    "component-manager": {
+        "components":
+        [
+            {
+                "shared-library": "sawForceDimensionSDK",
+                "class-name": "mtsForceDimension",
+                "constructor-arg": {
+                    "Name": "ForceDimensionSDK"
+                },
+                "configure-parameter": "sawForceDimensionSDK-MTMR.json"
             }
             ,
-            "configure-parameter": "keyboard-dVRK-console.json"
-        }
-    ]
+            {
+                "shared-library": "sawKeyboard",
+                "class-name": "mtsKeyboard",
+                "constructor-arg": {
+                    "Name": "Keyboard"
+                }
+                ,
+                "configure-parameter": "sawKeyboard-dVRK-console.json"
+            }
+        ]
+    }
     ,
     "console-inputs":
     {
@@ -43,7 +46,9 @@
     [
         {
             "name": "MTMR",  // created previously using custom components
-            "type": "MTM_GENERIC"
+            "type": "MTM_GENERIC",
+            "component": "ForceDimensionSDK",
+            "interface": "MTMR"
         }
         ,
         {
