@@ -158,8 +158,8 @@ protected:
         bool WaitingForCoupling, ReceivedCoupling;
         prmActuatorJointCoupling LastCoupling, DesiredCoupling, ToolCoupling;
         vctDoubleVec ToolEngageLowerPosition, ToolEngageUpperPosition;
-        vctDoubleVec ToolJointLowerLimit, ToolJointUpperLimit;
-        vctDoubleVec NoToolJointLowerLimit, NoToolJointUpperLimit;
+        vctDoubleVec ToolPositionLowerLimit, ToolPositionUpperLimit;
+        vctDoubleVec NoToolPositionLowerLimit, NoToolPositionUpperLimit;
         vctDoubleVec ToolTorqueLowerLimit, ToolTorqueUpperLimit;
     } CouplingChange;
 };

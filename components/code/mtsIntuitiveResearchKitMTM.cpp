@@ -421,7 +421,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     PID.EnableTrackingError(true);
 
     // disable joint limits on PID
-    PID.SetCheckJointLimit(false);
+    PID.SetCheckPositionLimit(false);
 
     // compute joint goal position, we assume PID is on from previous state
     mJointTrajectory.Goal.SetAll(0.0);
@@ -564,7 +564,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingRoll(void)
             RobotIO.ResetSingleEncoder(static_cast<int>(JNT_WRIST_ROLL));
             JointSet.SetAll(0.0);
             SetPositionJointLocal(JointSet);
-            PID.SetCheckJointLimit(true);
+            PID.SetCheckPositionLimit(true);
             RobotInterface->SendStatus(this->GetName() + ": roll homed");
             mHomedOnce = true;
             mArmState.SetCurrentState("ROLL_HOMED");

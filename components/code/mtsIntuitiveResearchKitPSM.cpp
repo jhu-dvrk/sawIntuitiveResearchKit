@@ -128,17 +128,17 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     PID.DefaultTrackingErrorTolerance.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
 
     // Joint limits when empty
-    CouplingChange.NoToolJointLowerLimit.SetSize(NumberOfJoints());
-    CouplingChange.NoToolJointUpperLimit.SetSize(NumberOfJoints());
-    CouplingChange.NoToolJointLowerLimit.Assign(-91.0, -53.0,   0.0, -175.0, -175.0 , -175.0, -175.0);
-    CouplingChange.NoToolJointUpperLimit.Assign( 91.0,  53.0, 240.0,  175.0,  175.0 ,  175.0,  175.0);
+    CouplingChange.NoToolPositionLowerLimit.SetSize(NumberOfJoints());
+    CouplingChange.NoToolPositionUpperLimit.SetSize(NumberOfJoints());
+    CouplingChange.NoToolPositionLowerLimit.Assign(-91.0, -53.0,   0.0, -175.0, -175.0 , -175.0, -175.0);
+    CouplingChange.NoToolPositionUpperLimit.Assign( 91.0,  53.0, 240.0,  175.0,  175.0 ,  175.0,  175.0);
     // convert to radians or meters
-    CouplingChange.NoToolJointLowerLimit.Ref(2, 0) *= cmnPI_180;
-    CouplingChange.NoToolJointLowerLimit.Element(2) *= cmn_mm;
-    CouplingChange.NoToolJointLowerLimit.Ref(4, 3) *= cmnPI_180;
-    CouplingChange.NoToolJointUpperLimit.Ref(2, 0) *= cmnPI_180;
-    CouplingChange.NoToolJointUpperLimit.Element(2) *= cmn_mm;
-    CouplingChange.NoToolJointUpperLimit.Ref(4, 3) *= cmnPI_180;
+    CouplingChange.NoToolPositionLowerLimit.Ref(2, 0) *= cmnPI_180;
+    CouplingChange.NoToolPositionLowerLimit.Element(2) *= cmn_mm;
+    CouplingChange.NoToolPositionLowerLimit.Ref(4, 3) *= cmnPI_180;
+    CouplingChange.NoToolPositionUpperLimit.Ref(2, 0) *= cmnPI_180;
+    CouplingChange.NoToolPositionUpperLimit.Element(2) *= cmn_mm;
+    CouplingChange.NoToolPositionUpperLimit.Ref(4, 3) *= cmnPI_180;
 
     mtsInterfaceRequired * interfaceRequired;
 
@@ -429,30 +429,30 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             return;
         }
         // lower
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolJointLowerLimit,
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolPositionLowerLimit,
                                                    jsonJointLimit["lower"]);
-        if (CouplingChange.ToolJointLowerLimit.size() != NumberOfJoints()) {
+        if (CouplingChange.ToolPositionLowerLimit.size() != NumberOfJoints()) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": \"tool-joint-limit\" : \"lower\" must contain " << NumberOfJoints()
                                      << " elements in \"" << filename << "\"" << std::endl;
             return;
         }
         // upper
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolJointUpperLimit,
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolPositionUpperLimit,
                                                    jsonJointLimit["upper"]);
-        if (CouplingChange.ToolJointUpperLimit.size() != NumberOfJoints()) {
+        if (CouplingChange.ToolPositionUpperLimit.size() != NumberOfJoints()) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": \"tool-joint-limit\" : \"lower\" must contain " << NumberOfJoints()
                                      << " elements in \"" << filename << "\"" << std::endl;
             return;
         }
         // convert to radians or meters
-        CouplingChange.ToolJointUpperLimit.Ref(2, 0) *= cmnPI_180;
-        CouplingChange.ToolJointUpperLimit.Element(2) *= cmn_mm;
-        CouplingChange.ToolJointUpperLimit.Ref(4, 3) *= cmnPI_180;
-        CouplingChange.ToolJointLowerLimit.Ref(2, 0) *= cmnPI_180;
-        CouplingChange.ToolJointLowerLimit.Element(2) *= cmn_mm;
-        CouplingChange.ToolJointLowerLimit.Ref(4, 3) *= cmnPI_180;
+        CouplingChange.ToolPositionUpperLimit.Ref(2, 0) *= cmnPI_180;
+        CouplingChange.ToolPositionUpperLimit.Element(2) *= cmn_mm;
+        CouplingChange.ToolPositionUpperLimit.Ref(4, 3) *= cmnPI_180;
+        CouplingChange.ToolPositionLowerLimit.Ref(2, 0) *= cmnPI_180;
+        CouplingChange.ToolPositionLowerLimit.Element(2) *= cmn_mm;
+        CouplingChange.ToolPositionLowerLimit.Ref(4, 3) *= cmnPI_180;
 
 
         // load lower/upper torque limit for the tool(required)
@@ -528,8 +528,8 @@ switch (RobotState) {
         RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
         RobotIO.DisablePower();
         PID.Enable(false);
-        PID.SetJointLowerLimit(CouplingChange.NoToolJointLowerLimit);
-        PID.SetJointUpperLimit(CouplingChange.NoToolJointUpperLimit);
+        PID.SetJointLowerLimit(CouplingChange.NoToolPositionLowerLimit);
+        PID.SetJointUpperLimit(CouplingChange.NoToolPositionUpperLimit);
         PID.SetCheckJointLimit(true);
         TrajectoryIsUsed(false);
         RobotState = newState;
@@ -847,13 +847,13 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 CouplingChange.WaitingForCoupling = false;
                 // now set PID limits based on tool/no tool
                 if (CouplingChange.CouplingForTool) {
-                    PID.SetJointLowerLimit(CouplingChange.ToolJointLowerLimit);
-                    PID.SetJointUpperLimit(CouplingChange.ToolJointUpperLimit);
+                    PID.SetPositionLowerLimit(CouplingChange.ToolPositionLowerLimit);
+                    PID.SetPositionUpperLimit(CouplingChange.ToolPositionUpperLimit);
                     PID.SetTorqueLowerLimit(CouplingChange.ToolTorqueLowerLimit);
                     PID.SetTorqueUpperLimit(CouplingChange.ToolTorqueUpperLimit);
                 } else {
-                    PID.SetJointLowerLimit(CouplingChange.NoToolJointLowerLimit);
-                    PID.SetJointUpperLimit(CouplingChange.NoToolJointUpperLimit);
+                    PID.SetPositionLowerLimit(CouplingChange.NoToolPositionLowerLimit);
+                    PID.SetPositionUpperLimit(CouplingChange.NoToolPositionUpperLimit);
                 }
                 // finally move to next state
                 mArmState.SetCurrentState(CouplingChange.NextState);
@@ -914,7 +914,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
     if (EngagingStage == 1) {
         // configure PID to fail in case of tracking error
-        PID.SetCheckJointLimit(false);
+        PID.SetCheckPositionLimit(false);
         vctDoubleVec tolerances(NumberOfJoints());
         // first two rotations and translation, in case someone is pushing/holding arm
         tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
@@ -1019,8 +1019,8 @@ void mtsIntuitiveResearchKitPSM::EnterChangingCouplingTool(void)
 void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
 {
     // set PID limits
-    PID.SetJointLowerLimit(CouplingChange.ToolJointLowerLimit);
-    PID.SetJointUpperLimit(CouplingChange.ToolJointUpperLimit);
+    PID.SetPositionLowerLimit(CouplingChange.ToolPositionLowerLimit);
+    PID.SetPositionUpperLimit(CouplingChange.ToolPositionUpperLimit);
 
     // if for some reason we don't need to engage, basically, tool was
     // found before homing
@@ -1045,7 +1045,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 
     if (EngagingStage == 1) {
         // configure PID to fail in case of tracking error
-        PID.SetCheckJointLimit(false);
+        PID.SetCheckPositionLimit(false);
         vctDoubleVec tolerances(NumberOfJoints());
         // first two rotations and translation, in case someone is pushing/holding arm
         tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees

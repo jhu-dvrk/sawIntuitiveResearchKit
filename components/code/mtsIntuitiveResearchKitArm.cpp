@@ -205,9 +205,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("GetStateJoint", PID.GetStateJoint);
         PIDInterface->AddFunction("GetStateJointDesired", PID.GetStateJointDesired);
         PIDInterface->AddFunction("SetPositionJoint", PID.SetPositionJoint);
-        PIDInterface->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
-        PIDInterface->AddFunction("SetJointLowerLimit", PID.SetJointLowerLimit);
-        PIDInterface->AddFunction("SetJointUpperLimit", PID.SetJointUpperLimit);
+        PIDInterface->AddFunction("SetCheckPositionLimit", PID.SetCheckPositionLimit);
+        PIDInterface->AddFunction("SetPositionLowerLimit", PID.SetPositionLowerLimit);
+        PIDInterface->AddFunction("SetPositionUpperLimit", PID.SetPositionUpperLimit);
         PIDInterface->AddFunction("SetTorqueLowerLimit", PID.SetTorqueLowerLimit);
         PIDInterface->AddFunction("SetTorqueUpperLimit", PID.SetTorqueUpperLimit);
         PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
@@ -215,7 +215,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("SetTorqueOffset", PID.SetTorqueOffset);
         PIDInterface->AddFunction("EnableTrackingError", PID.EnableTrackingError);
         PIDInterface->AddFunction("SetTrackingErrorTolerances", PID.SetTrackingErrorTolerance);
-        PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::JointLimitEventHandler, this, "JointLimit");
+        PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::PositionLimitEventHandler, this, "PositionLimit");
         PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler, this, "Error");
     }
 
@@ -611,7 +611,7 @@ void mtsIntuitiveResearchKitArm::EnterUninitialized(void)
     RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
     RobotIO.DisablePower();
     PID.Enable(false);
-    PID.SetCheckJointLimit(true);
+    PID.SetCheckPositionLimit(true);
     mPowered = false;
     mJointReady = false;
     mCartesianReady = false;
@@ -773,7 +773,7 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
     JointsDesiredPID.Velocity().ForceAssign(JointsPID.Velocity());
 
     // disable joint limits
-    PID.SetCheckJointLimit(false);
+    PID.SetCheckPositionLimit(false);
     // enable tracking errors
     PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
     PID.EnableTrackingError(true);
@@ -823,7 +823,7 @@ void mtsIntuitiveResearchKitArm::RunHomingArm(void)
         mJointTrajectory.GoalError.AbsSelf();
         isHomed = !mJointTrajectory.GoalError.ElementwiseGreaterOrEqual(mJointTrajectory.GoalTolerance).Any();
         if (isHomed) {
-            PID.SetCheckJointLimit(true);
+            PID.SetCheckPositionLimit(true);
             mArmState.SetCurrentState("ARM_HOMED");
         } else {
             // time out
@@ -853,7 +853,7 @@ void mtsIntuitiveResearchKitArm::EnterReady(void)
     mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsPID.Position());
     PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
     PID.EnableTrackingError(true);
-    PID.SetCheckJointLimit(true);
+    PID.SetCheckPositionLimit(true);
     PID.Enable(true);
 }
 
@@ -1135,9 +1135,9 @@ void mtsIntuitiveResearchKitArm::ErrorEventHandler(const mtsMessage & message)
     this->SetDesiredState(mFallbackState);
 }
 
-void mtsIntuitiveResearchKitArm::JointLimitEventHandler(const vctBoolVec & CMN_UNUSED(flags))
+void mtsIntuitiveResearchKitArm::PositionLimitEventHandler(const vctBoolVec & CMN_UNUSED(flags))
 {
-    RobotInterface->SendWarning(this->GetName() + ": PID joint limit");
+    RobotInterface->SendWarning(this->GetName() + ": PID position limit");
 }
 
 void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
