@@ -922,11 +922,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         // tool/adapter gears should have little resistance?
         tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
         PID.SetTrackingErrorTolerance(tolerances);
-        // compute initial time, since we disable power on last 4 use latest read
-        vctDoubleVec initialPosition(NumberOfJoints());
-        initialPosition.Ref(3, 0).Assign(JointsDesiredPID.Position().Ref(3, 0));
-        initialPosition.Ref(4, 3).Assign(JointsPID.Position().Ref(4, 3));
-        SetPositionJointLocal(initialPosition);
+        SetPositionJointLocal(JointsDesiredPID.Position());
         // turn on PID
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
@@ -1053,11 +1049,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         // tool/adapter gears should have little resistance?
         tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
         PID.SetTrackingErrorTolerance(tolerances);
-        // compute initial time, since we disable power on last 4 use latest read
-        vctDoubleVec initialPosition(NumberOfJoints());
-        initialPosition.Ref(3, 0).Assign(JointsDesiredPID.Position().Ref(3, 0));
-        initialPosition.Ref(4, 3).Assign(JointsPID.Position().Ref(4, 3));
-        SetPositionJointLocal(initialPosition);
+        SetPositionJointLocal(JointsDesiredPID.Position());
         // turn on PID
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);

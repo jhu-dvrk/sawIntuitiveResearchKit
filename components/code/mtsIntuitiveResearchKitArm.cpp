@@ -763,15 +763,6 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
         return;
     }
 
-    // make sure we start from current state, SetControlMode
-    // initializes trajectory using JointGetDesired
-
-    // pre-load PID to make sure desired position has some reasonable values
-    PID.GetStateJoint(JointsPID);
-    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsPID.Position());
-    JointsDesiredPID.Position().ForceAssign(JointsPID.Position());
-    JointsDesiredPID.Velocity().ForceAssign(JointsPID.Velocity());
-
     // disable joint limits
     PID.SetCheckPositionLimit(false);
     // enable tracking errors
@@ -849,8 +840,7 @@ void mtsIntuitiveResearchKitArm::EnterReady(void)
     SetControlSpace(UNDEFINED_SPACE);
     SetControlMode(UNDEFINED_MODE);
     // enable PID and start from current position
-    PID.GetStateJoint(JointsPID);
-    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsPID.Position());
+    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsDesiredPID.Position());
     PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
     PID.EnableTrackingError(true);
     PID.SetCheckPositionLimit(true);
