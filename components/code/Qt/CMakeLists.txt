@@ -51,16 +51,19 @@ if (cisst_FOUND_AS_REQUIRED)
   # saw components have been compiled within cisst, we should find them automatically
   find_package (sawRobotIO1394          1.4.0 REQUIRED)
   find_package (sawControllers          1.4.0 REQUIRED)
-  find_package (sawIntuitiveResearchKit 1.4.0 REQUIRED)
+  # find_package (sawIntuitiveResearchKit 1.4.0 REQUIRED)
 
-  if (sawRobotIO1394_FOUND AND sawControllers_FOUND AND sawIntuitiveResearchKit_FOUND)
+  # make sure the new library is known by the parent folder to add to the config file
+  set (sawIntuitiveResearchKitQt_LIBRARIES sawIntuitiveResearchKitQt PARENT_SCOPE)
+
+  if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
     add_library (sawIntuitiveResearchKitQt
                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQt.h
                  mtsIntuitiveResearchKitConsoleQt.cpp
                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h
                  mtsIntuitiveResearchKitConsoleQtWidget.cpp
-                 ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h               
+                 ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h
                  mtsTeleOperationPSMQtWidget.cpp
                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECMQtWidget.h
                  mtsTeleOperationECMQtWidget.cpp
