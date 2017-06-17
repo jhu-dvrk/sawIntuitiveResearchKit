@@ -7,13 +7,13 @@
 
   (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
 
---- begin cisst license - do not edit ---
+  --- begin cisst license - do not edit ---
 
-This software is provided "as is" under an open source license, with
-no warranty.  The complete license can be found in license.txt and
-http://www.cisst.org/cisst/license.txt.
+  This software is provided "as is" under an open source license, with
+  no warranty.  The complete license can be found in license.txt and
+  http://www.cisst.org/cisst/license.txt.
 
---- end cisst license ---
+  --- end cisst license ---
 */
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
@@ -39,7 +39,7 @@ void mtsStateMachine::AddStates(const std::vector<StateType> & states)
 
 bool mtsStateMachine::StateExists(const StateType state) const
 {
-    const typename StateMap::const_iterator found
+    const StateMap::const_iterator found
         = mStates.find(state);
     return (found != mStates.end());
 }
@@ -67,7 +67,7 @@ void mtsStateMachine::Run(void)
         }
 
         // find new state enter callback
-        typename CallbackMap::iterator callback;
+        CallbackMap::iterator callback;
         callback = mEnterCallbacks.find(mCurrentState);
         if (callback != mEnterCallbacks.end()) {
             callback->second->Execute();
@@ -89,7 +89,7 @@ void mtsStateMachine::Run(void)
 
 void mtsStateMachine::SetDesiredState(const StateType & desiredState)
 {
-    const typename StateMap::const_iterator state
+    const StateMap::const_iterator state
         = mStates.find(desiredState);
     if ((state != mStates.end()) // state exists
         && (state->second)) {  // can be set as desired
@@ -104,14 +104,14 @@ void mtsStateMachine::SetDesiredState(const StateType & desiredState)
 void mtsStateMachine::SetCurrentState(const StateType & newState)
 {
     // check if this state exists
-    const typename StateMap::const_iterator state = mStates.find(newState);
+    const StateMap::const_iterator state = mStates.find(newState);
     if (state == mStates.end()) {
         cmnThrow("mtsStateMachine::SetCurrentState: "
                  + newState + ", doesn't exists");
         return;
     }
 
-    typename CallbackMap::iterator callback;
+    CallbackMap::iterator callback;
 
     // find current state leave callback
     callback = mLeaveCallbacks.find(mCurrentState);
@@ -138,7 +138,7 @@ void mtsStateMachine::SetCurrentState(const StateType & newState)
 
 void mtsStateMachine::UpdateCurrentCallbacks(void)
 {
-    typename CallbackMap::iterator callback;
+    CallbackMap::iterator callback;
     // find state run callback
     callback = mRunCallbacks.find(mCurrentState);
     if (callback != mRunCallbacks.end()) {
