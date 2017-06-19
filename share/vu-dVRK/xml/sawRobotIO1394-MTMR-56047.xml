@@ -189,28 +189,4 @@
          </JointToActuatorTorque>
       </Coupling>
    </Robot><!--Digital Input Configuration-->
-   <DigitalIn BitID="0" BoardID="2" Debounce="0" Name="MTMR-D00" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="1" BoardID="2" Debounce="0" Name="MTMR-D01" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="2" BoardID="2" Debounce="0" Name="MTMR-D02" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="3" BoardID="2" Debounce="0" Name="MTMR-D03" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="4" BoardID="2" Debounce="0" Name="MTMR-D10" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="5" BoardID="2" Debounce="0" Name="MTMR-D11" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="6" BoardID="2" Debounce="0" Name="MTMR-D12" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="7" BoardID="2" Debounce="0" Name="MTMR-D13" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="8" BoardID="2" Debounce="0" Name="MTMR-D20" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="9" BoardID="2" Debounce="0" Name="MTMR-D21" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="10" BoardID="2" Debounce="0" Name="MTMR-D22" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="11" BoardID="2" Debounce="0" Name="MTMR-D23" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="0" BoardID="3" Debounce="0" Name="MTMR-D30" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="1" BoardID="3" Debounce="0" Name="MTMR-D31" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="2" BoardID="3" Debounce="0" Name="MTMR-D32" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="3" BoardID="3" Debounce="0" Name="MTMR-D33" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="4" BoardID="3" Debounce="0" Name="MTMR-D40" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="5" BoardID="3" Debounce="0" Name="MTMR-D41" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="6" BoardID="3" Debounce="0" Name="MTMR-D42" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="7" BoardID="3" Debounce="0" Name="MTMR-D43" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="8" BoardID="3" Debounce="0" Name="MTMR-D50" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="9" BoardID="3" Debounce="0" Name="MTMR-D51" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="10" BoardID="3" Debounce="0" Name="MTMR-D52" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="11" BoardID="3" Debounce="0" Name="MTMR-D53" Pressed="0" Trigger="all"/>
 </Config>
