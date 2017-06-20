@@ -1717,8 +1717,10 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
                 mTeleopPSMRunning = false;
             }
             // ECM wasn't running, let's start it
-            mTeleopECM->SetDesiredState(mtsStdString("ENABLED"));
-            mTeleopECMRunning = true;
+            if (mTeleopECM) {
+                mTeleopECM->SetDesiredState(mtsStdString("ENABLED"));
+                mTeleopECMRunning = true;
+            }
         }
     } else {
         // we must teleop PSM
