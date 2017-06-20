@@ -155,6 +155,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                     if (mSimulation == SIMULATION_KINEMATIC) {
                         master->SetSimulated();
                     }
+                    master->Configure(mArmConfigurationFile);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
                                        << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitMTM."
@@ -177,6 +178,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                     if (mSimulation == SIMULATION_KINEMATIC) {
                         slave->SetSimulated();
                     }
+                    slave->Configure(mArmConfigurationFile);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
                                        << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitPSM."
@@ -199,6 +201,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                     if (mSimulation == SIMULATION_KINEMATIC) {
                         ecm->SetSimulated();
                     }
+                    ecm->Configure(mArmConfigurationFile);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
                                        << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitECM."
