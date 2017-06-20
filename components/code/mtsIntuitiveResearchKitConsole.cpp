@@ -1635,92 +1635,105 @@ void mtsIntuitiveResearchKitConsole::TeleopEnable(const bool & enable)
 
 void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
 {
-    // determine is any teleop should be running
-    bool teleopPSM = false;
-    bool teleopECM = false;
-
-    // all fine
-    bool allFine = mOperatorPresent;
-
     const ArmList::iterator endArms = mArms.end();
-    ArmList::iterator iterArms = mArms.begin();
-    for (; iterArms != endArms; ++iterArms) {
-        if (iterArms->second->mSUJClutched) {
-            allFine = false;
-        }
-    }
+    ArmList::iterator iterArms;
 
-    // which one should be running now
-    if (mTeleopEnabled && allFine) {
-        // if the camera is pressed and there is a teleop ECM component
-        if (mCameraPressed && mTeleopECM) {
-            teleopECM = true;
-        } else {
-            teleopPSM = true;
+    // Check if teleop is enabled
+    if (!mTeleopEnabled) {
+        bool freezeNeeded = false;
+        // stop whatever was running
+        if (mTeleopPSMRunning) {
+            const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
+            for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
+                 iterTeleopPSM != endTeleopPSM;
+                 ++iterTeleopPSM) {
+                iterTeleopPSM->second->SetDesiredState(mtsStdString("DISABLED"));
+            }
+            freezeNeeded = true;
+            mTeleopPSMRunning = false;
         }
-    }
-
-    // shutdown all teleop that should be shut down
-    if (!mTeleopEnabled
-        || (mTeleopPSMRunning && !teleopPSM)) {
-        mTeleopPSMAligning = false;
-        const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
-        for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
-             iterTeleopPSM != endTeleopPSM;
-             ++iterTeleopPSM) {
-            iterTeleopPSM->second->SetDesiredState(mtsStdString("DISABLED"));
+        if (mTeleopECMRunning) {
+            mTeleopECM->SetDesiredState(mtsStdString("DISABLED"));
+            freezeNeeded = true;
+            mTeleopECMRunning = false;
         }
-    }
-    if (mTeleopECM
-        && (!mTeleopEnabled
-            || (mTeleopECMRunning && !teleopECM))) {
-        mTeleopECM->SetDesiredState(mtsStdString("DISABLED"));
-    }
 
-    // freeze masters if needed
-    if (mTeleopEnabled
-        && !teleopECM
-        && !teleopPSM) {
-        iterArms = mArms.begin();
-        for (; iterArms != endArms; ++iterArms) {
-            if ((iterArms->second->mType == Arm::ARM_MTM) ||
-                (iterArms->second->mType == Arm::ARM_MTM_DERIVED) ||
-                (iterArms->second->mType == Arm::ARM_MTM_GENERIC)) {
-                iterArms->second->Freeze();
+        // freeze arms if we stopped any teleop
+        if (freezeNeeded) {
+            for (iterArms = mArms.begin(); iterArms != endArms; ++iterArms) {
+                if ((iterArms->second->mType == Arm::ARM_MTM) ||
+                        (iterArms->second->mType == Arm::ARM_MTM_DERIVED) ||
+                        (iterArms->second->mType == Arm::ARM_MTM_GENERIC)) {
+                    iterArms->second->Freeze();
+                }
             }
         }
+        return;
     }
 
-    // turn on teleop if needed
-    if (!mTeleopPSMRunning && teleopPSM) {
-        mTeleopPSMAligning = false;
-        const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
-        for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
-             iterTeleopPSM != endTeleopPSM;
-             ++iterTeleopPSM) {
-                 iterTeleopPSM->second->SetDesiredState(mtsStdString("ENABLED"));
+    // all fine
+    bool readyForTeleop = mOperatorPresent;
+
+    for (iterArms = mArms.begin(); iterArms != endArms; ++iterArms) {
+        if (iterArms->second->mSUJClutched) {
+            readyForTeleop = false;
         }
     }
-    if (mTeleopECM &&
-        (!mTeleopECMRunning && teleopECM)) {
-        mTeleopECM->SetDesiredState(mtsStdString("ENABLED"));
-    }
 
-    // update data members
-    mTeleopPSMRunning = teleopPSM;
-    mTeleopECMRunning = teleopECM;
-
-    // check if nothing is running but teleop is required, then ask to align MTMS
-    if (mTeleopEnabled
-        && !mTeleopPSMRunning
-        && !mTeleopECMRunning) {
-        std::cerr << CMN_LOG_DETAILS
-                  << " Teleop PSM should have a way to check if slave orientation has changed, maybe add a run callback on TeleopPSM in align mode to set new goal, would work as soon as we get reflexx to work" << std::endl;
+    // Check if operator is present
+    if (!readyForTeleop) {
+        // keep MTMs aligned
         const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
         for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
              iterTeleopPSM != endTeleopPSM;
              ++iterTeleopPSM) {
             iterTeleopPSM->second->SetDesiredState(mtsStdString("ALIGNING_MTM"));
+        }
+        mTeleopPSMRunning = false;
+
+        // stop ECM if needed
+        if (mTeleopECMRunning) {
+            mTeleopECM->SetDesiredState(mtsStdString("DISABLED"));
+            mTeleopECMRunning = false;
+        }
+        return;
+    }
+
+    // If camera is pressed for ECM Teleop or not
+    if (mCameraPressed) {
+        if (!mTeleopECMRunning) {
+
+            // if PSM was running so we need to stop it
+            if (mTeleopPSMRunning) {
+                const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
+                for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
+                     iterTeleopPSM != endTeleopPSM;
+                     ++iterTeleopPSM) {
+                    iterTeleopPSM->second->SetDesiredState(mtsStdString("DISABLED"));
+                }
+                mTeleopPSMRunning = false;
+            }
+            // ECM wasn't running, let's start it
+            mTeleopECM->SetDesiredState(mtsStdString("ENABLED"));
+            mTeleopECMRunning = true;
+        }
+    } else {
+        // we must teleop PSM
+        if (!mTeleopPSMRunning) {
+
+            // if ECM was running so we need to stop it
+            if (mTeleopECMRunning) {
+                mTeleopECM->SetDesiredState(mtsStdString("DISABLED"));
+                mTeleopECMRunning = false;
+            }
+            // PSM wasn't running, let's start it
+            const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
+            for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
+                 iterTeleopPSM != endTeleopPSM;
+                 ++iterTeleopPSM) {
+                iterTeleopPSM->second->SetDesiredState(mtsStdString("ENABLED"));
+            }
+            mTeleopPSMRunning = true;
         }
     }
 }
