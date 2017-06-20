@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Config Version="2">
-   <DigitalIn BitID="3" BoardID="0" Debounce="0.2" Name="Head" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="0" BoardID="1" Debounce="0.2" Name="Clutch" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="1" BoardID="1" Debounce="0.2" Name="Cam-" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="2" BoardID="1" Debounce="0.2" Name="Cam+" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="3" BoardID="1" Debounce="0.2" Name="Coag" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="4" BoardID="1" Debounce="0.2" Name="Camera" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="5" BoardID="1" Debounce="0.2" Name="BiCoag" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="3" BoardID="0" Debounce="0.05" Name="Head" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="0" BoardID="1" Debounce="0.05" Name="Clutch" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="1" BoardID="1" Debounce="0.05" Name="Cam-" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="2" BoardID="1" Debounce="0.05" Name="Cam+" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="3" BoardID="1" Debounce="0.05" Name="Coag" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="4" BoardID="1" Debounce="0.05" Name="Camera" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="5" BoardID="1" Debounce="0.05" Name="BiCoag" Pressed="1" Trigger="all"/>
 </Config>
