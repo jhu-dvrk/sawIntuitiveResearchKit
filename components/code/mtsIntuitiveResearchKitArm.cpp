@@ -120,9 +120,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("GetStateJoint", PID.GetStateJoint);
         PIDInterface->AddFunction("GetStateJointDesired", PID.GetStateJointDesired);
         PIDInterface->AddFunction("SetPositionJoint", PID.SetPositionJoint);
-        PIDInterface->AddFunction("SetCheckJointLimit", PID.SetCheckJointLimit);
-        PIDInterface->AddFunction("SetJointLowerLimit", PID.SetJointLowerLimit);
-        PIDInterface->AddFunction("SetJointUpperLimit", PID.SetJointUpperLimit);
+        PIDInterface->AddFunction("SetCheckPositionLimit", PID.SetCheckJointLimit);
+        PIDInterface->AddFunction("SetPositionLowerLimit", PID.SetJointLowerLimit);
+        PIDInterface->AddFunction("SetPositionUpperLimit", PID.SetJointUpperLimit);
         PIDInterface->AddFunction("SetTorqueLowerLimit", PID.SetTorqueLowerLimit);
         PIDInterface->AddFunction("SetTorqueUpperLimit", PID.SetTorqueUpperLimit);
         PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
@@ -130,7 +130,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("SetTorqueOffset", PID.SetTorqueOffset);
         PIDInterface->AddFunction("EnableTrackingError", PID.EnableTrackingError);
         PIDInterface->AddFunction("SetTrackingErrorTolerances", PID.SetTrackingErrorTolerance);
-        PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::JointLimitEventHandler, this, "JointLimit");
+        PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::JointLimitEventHandler, this, "PositionLimit");
         PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler, this, "Error");
     }
 
