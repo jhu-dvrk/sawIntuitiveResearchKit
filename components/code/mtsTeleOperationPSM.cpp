@@ -486,11 +486,11 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 
 void mtsTeleOperationPSM::TransitionAligningMTM(void)
 {
-
-    // check mtm state
+    // check psm state
     mtsStdString armState;
     mPSM->GetRobotControlState(armState);
-    if (armState.Data != "DVRK_POSITION_CARTESIAN" && armState.Data !=  "DVRK_CONSTRAINT_CONTROLLER_CARTESIAN") {
+    if ((armState.Data != "DVRK_POSITION_CARTESIAN") && (armState.Data != "DVRK_CONSTRAINT_CONTROLLER_CARTESIAN")) {
+        mInterface->SendWarning(this->GetName() + ": PSM state has changed to [" + armState.Data + "]");
         mTeleopState.SetDesiredState("DISABLED");
         mTeleopState.SetCurrentState("DISABLED");
         return;
@@ -600,14 +600,17 @@ void mtsTeleOperationPSM::TransitionEnabled(void)
 
     // check psm state
     mPSM->GetRobotControlState(armState);
-    if (armState.Data != "DVRK_POSITION_CARTESIAN" && armState.Data !=  "DVRK_CONSTRAINT_CONTROLLER_CARTESIAN") {
+    if ((armState.Data != "DVRK_POSITION_CARTESIAN") && (armState.Data != "DVRK_CONSTRAINT_CONTROLLER_CARTESIAN")) {
+        mInterface->SendWarning(this->GetName() + ": PSM state has changed to [" + armState.Data + "]");
         mTeleopState.SetDesiredState("DISABLED");
     }
 
     // check mtm state
     mMTM->GetRobotControlState(armState);
     if (armState.Data != "DVRK_EFFORT_CARTESIAN") {
-        mTeleopState.SetDesiredState("DISABLED");
+        mInterface->SendWarning(this->GetName() + ": MTM state has changed to [" + armState.Data + "]");
+        std::cerr << CMN_LOG_DETAILS << " this will have to be updated when feature-arm-state branch is merged, should just check if arm is ready.  Current implementation should wait for arm to change state to DVRK_POSITION_GOAL_CARTESIAN but that's one more state for teleop and it won't be needed soon(ish)" << std::endl;
+        // mTeleopState.SetDesiredState("DISABLED");
     }
 
     if (mTeleopState.DesiredState() != mTeleopState.CurrentState()) {

@@ -452,7 +452,8 @@ void mtsTeleOperationECM::EnterEnabled(void)
     mInitial.Frame.Rotation().Row(2).Assign(vctCrossProduct(side, mInitial.Up));
 
 #if 1
-    std::cerr << "L: " << mMTML->PositionCartesianCurrent.Position().Translation() << std::endl
+    std::cerr << CMN_LOG_DETAILS << std::endl
+              << "L: " << mMTML->PositionCartesianCurrent.Position().Translation() << std::endl
               << "R: " << mMTMR->PositionCartesianCurrent.Position().Translation() << std::endl
               << "C:  " << mInitial.C << std::endl
               << "Up: " << mInitial.Up << std::endl
@@ -540,10 +541,10 @@ void mtsTeleOperationECM::RunEnabled(void)
     frame.ApplyTo(mInitial.Frame.Inverse(), displacement);
 
     // New ECM position
-    vctFrm3 goal;
-    displacement.ApplyTo(mECM->PositionCartesianInitial, goal);
-    mECM->PositionCartesianSet.Goal().Assign(goal);
-    mECM->SetPositionCartesian(mECM->PositionCartesianSet);
+    //vctFrm3 goal;
+    //displacement.ApplyTo(mECM->PositionCartesianInitial, goal);
+    //mECM->PositionCartesianSet.Goal().Assign(goal);
+    //mECM->SetPositionCartesian(mECM->PositionCartesianSet);
 }
 
 void mtsTeleOperationECM::TransitionEnabled(void)
