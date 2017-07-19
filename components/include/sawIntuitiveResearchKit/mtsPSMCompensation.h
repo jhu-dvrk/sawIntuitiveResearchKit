@@ -28,8 +28,8 @@ class mtsPSMCompensation: public mtsTaskPeriodic {
 	CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
 protected:
-	prmStateJoint JointState; // to be added to the default state table
-	prmStateJoint CorrectedJointState; // to be added to an additional state table
+	prmStateJoint mJointStateEncoder; 
+	prmStateJoint mJointStateCompensated;
 
 	// functions used in the interface required to send commands to PID component
 	mtsFunctionRead GetJointState;
@@ -44,9 +44,9 @@ protected:
 	double torqueOffsetA2, torqueOffsetB2;
 	double backlash2;
 
-	void setupInterfaces(void); // setting up both requiredInterface and providedInterface
-	void setCorrectedPosition();
-	prmStateJoint getCorrectedJointState() const;
+	void SetupInterfaces(void); // setting up both requiredInterface and providedInterface
+	void ComputeCompensation();
+	prmStateJoint GetCorrectedJointState() const;
 
 public:
 	mtsPSMCompensation(const std::string & componentName, double periodInSecond);
@@ -58,11 +58,6 @@ public:
 	void Run(void);
 	void Cleanup(void) {};
 };
-// var: mCamelCase
-// method: CamelCase
-// class: mtsPSMCompensation
-// change JointState to JointStateEncoder, change CorrectedJOintState to JointStateCompensated
-// computeCompensation instead of setCorrectedPos
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsPSMCompensation);
 

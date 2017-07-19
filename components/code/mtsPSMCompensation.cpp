@@ -16,7 +16,7 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 
 */
-#include "mtsCompensation.h"
+#include <sawIntuitiveResearchKit/mtsPSMCompensation.h>
 // #include <cmath>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
@@ -25,49 +25,40 @@ http://www.cisst.org/cisst/license.txt.
 #include <json/json.h>
 #endif
 
-CMN_IMPLEMENT_SERVICES_DERIVED(compensation, mtsTaskPeriodic);
+CMN_IMPLEMENT_SERVICES_DERIVED(mtsPSMCompensation, mtsTaskPeriodic);
 
-mstCompensation::mstCompensation(const std::string & componentName, double periodInSeconds){
-    mtsTaskPeriodic(componentName, periodInSeconds, false, 500);
+mtsPSMCompensation::mtsPSMCompensation(const std::string & componentName, double periodInSeconds):
+    mtsTaskPeriodic(componentName, periodInSeconds, false, 500)
+{
+    StateTable.AddData(mJointStateEncoder, "JointStateEncoder");
+    StateTable.AddData(mJointStateCompensated, "CorrectedJointState");
 
-    StateTable.AddData(JointState, "JointState");
-    // CompensatedStateTable(50, "Compensated");
-    // // adding the state table to the component
-    // AddStateTable(&CompensatedStateTable);
-    // // make sure we control when the table advances
-    // CompensatedStateTable.SetAutomaticAdvance(false);
-    // add data to the state table
-    StateTable.AddData(CorrectedJointState, "CorrectedJointState");
-
-    setupInterfaces();
-
-    // get JointState from PID
-    // JointState = GetJointState();
+    SetupInterfaces();
 }
 
-void mstCompensation::setupInterfaces(void){
+void mtsPSMCompensation::SetupInterfaces(void){
 
     // add provided interfaces
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("JointStateCorrected");
     if (!interfaceProvided){
-        CMN_LOG_CLASS_INIT_ERROR << "failed to add \"PSM-RO\" to component \""
+        CMN_LOG_CLASS_INIT_ERROR << "failed to add \"JointStateCorrected\" to component \""
             << this->GetName() << "\"" << std::endl;
         return;
     }
   
     // get the latest values from both the state tables for comparison
-    interfaceProvided->AddCommandReadState(StateTable, CorrectedJointState, "GetJointState");
+    interfaceProvided->AddCommandReadState(StateTable, mJointStateCompensated, "GetJointState");
 
     // add another provided interfaces
-    interfaceProvided = AddInterfaceProvided("JointState");
+    interfaceProvided = AddInterfaceProvided("JointStateEncoder");
     if (!interfaceProvided){
-        CMN_LOG_CLASS_INIT_ERROR << "failed to add \"PSM-RO\" to component \""
+        CMN_LOG_CLASS_INIT_ERROR << "failed to add \"JointStateEncoder\" to component \""
             << this->GetName() << "\"" << std::endl;
         return;
     }
   
     // get the latest values from both the state tables for comparison
-    interfaceProvided->AddCommandReadState(StateTable, JointState, "GetJointState");
+    interfaceProvided->AddCommandReadState(StateTable, mJointStateEncoder, "GetJointState");
 
     // add required interfaces
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("PID");
@@ -79,10 +70,9 @@ void mstCompensation::setupInterfaces(void){
 
     // add commands to the interface
     interfaceRequired->AddFunction("GetJointState", this->GetJointState);
-
 }
 
-void mstCompensation::Configure(const std::string & filename) {
+void mtsPSMCompensation::Configure(const std::string & filename) {
 #if CISST_HAS_JSON
     std::ifstream jsonStream;
     jsonStream.open(filename.c_str());
@@ -112,28 +102,28 @@ void mstCompensation::Configure(const std::string & filename) {
             parameter_name = jsonValue.asString();
             
             if (parameter_name == "compliance_first") { // store data for first joint
-                complianceA1 = parameter["value-a"];
-                complianceB1 = parameter["value-b"];
-                complianceC1 = parameter["value-c"];
-                complianceD1 = parameter["value-d"];
+                complianceA1 = parameter["value-a"].asDouble();
+                complianceB1 = parameter["value-b"].asDouble();
+                complianceC1 = parameter["value-c"].asDouble();
+                complianceD1 = parameter["value-d"].asDouble();
             } else if (parameter_name == "torque_offset_first") {
-                torqueOffsetA1 = parameter["value-a"];
+                torqueOffsetA1 = parameter["value-a"].asDouble();
             } else if (parameter_name == "backlash_first"){
-                backlash1 = parameter["value-a"];
+                backlash1 = parameter["value-a"].asDouble();
             } else if (parameter_name == "compliance_second") { // store data for second joint
-                complianceA2 = parameter["value-a"];
-                complianceB2 = parameter["value-b"];
-                complianceC2 = parameter["value-c"];
-                complianceD2 = parameter["value-d"];
+                complianceA2 = parameter["value-a"].asDouble();
+                complianceB2 = parameter["value-b"].asDouble();
+                complianceC2 = parameter["value-c"].asDouble();
+                complianceD2 = parameter["value-d"].asDouble();
             }else if (parameter_name == "torque_offset_second") {
-                torqueOffsetA2 = parameter["value-a"];
-                torqueOffsetB2 = parameter["value-b"];
+                torqueOffsetA2 = parameter["value-a"].asDouble();
+                torqueOffsetB2 = parameter["value-b"].asDouble();
             } else if (parameter_name == "backlash_second"){
-                backlash2 = parameter["value-a"];
+                backlash2 = parameter["value-a"].asDouble();
             } 
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find \"parameter\" for parameters["
-                                 << index << "]" << std::endl;
+                                 << i << "]" << std::endl;
             return;
         }
     }
@@ -142,51 +132,49 @@ void mstCompensation::Configure(const std::string & filename) {
 #endif
 }
 
-void mtsCompensation::setCorrectedPosition() {
-    prmStateJoint correctedJointState = JointState;
+void mtsPSMCompensation::ComputeCompensation() {
+    mJointStateCompensated = mJointStateEncoder;
 
     // calculate compliance
-    double A = (complianceA1 * pow(JointState.Position[2], 3));
-    double B = (complianceB1 * pow(JointState.Position[2], 2));
-    double C = complianceC1 * JointState.Position[2];
+    double A = (complianceA1 * pow(mJointStateEncoder.Position()[2], 3));
+    double B = (complianceB1 * pow(mJointStateEncoder.Position()[2], 2));
+    double C = complianceC1 * mJointStateEncoder.Position()[2];
     double D = complianceD1;
     double complianceFirstJoint = A + B + C + D;
 
     // calculate first joint correction
-    correctedJointState[0] = JointState[0] - (backlash1 * (JointState.Effort[0] - torqueOffsetA1) +
-        (complianceFirstJoint * (JointState.Effort[0] - torqueOffsetA1)));
+    mJointStateCompensated.Position()[0] = mJointStateEncoder.Position()[0] - (backlash1 * (mJointStateEncoder.Effort()[0] - torqueOffsetA1) +
+        (complianceFirstJoint * (mJointStateEncoder.Effort()[0] - torqueOffsetA1)));
 
     // calculate compliance
-    A = (complianceA2 * pow(JointState.Position[2], 3));
-    B = (complianceB2 * pow(JointState.Position[2], 2));
-    C = complianceC2 * JointState.Position[2];
+    A = (complianceA2 * pow(mJointStateEncoder.Position()[2], 3));
+    B = (complianceB2 * pow(mJointStateEncoder.Position()[2], 2));
+    C = complianceC2 * mJointStateEncoder.Position()[2];
     D = complianceD2;
     double complianceSecondJoint = A + B + C + D;
 
     // calculate torque offset
-    double torqueOffset2 = (torqueOffsetA2 * JointState.Position[2]) + torqueOffsetB2;
+    double torqueOffset2 = (torqueOffsetA2 * mJointStateEncoder.Position()[2]) + torqueOffsetB2;
 
     // calculate second joint correction
-    correctedJointState[1] = JointState[1] - (backlash2 * (JointState.Effort[1] - torqueOffset2) +
-        (complianceSecondJoint * (JointState.Effort[1] - torqueOffset2)));
+    mJointStateCompensated.Position()[1] = mJointStateEncoder.Position()[1] - (backlash2 * (mJointStateEncoder.Effort()[1] - torqueOffset2) +
+        (complianceSecondJoint * (mJointStateEncoder.Effort()[1] - torqueOffset2)));
 
-    // CompensatedStateTable.Start();
-    CorrectedJointState = correctedJointState;
-    // CompensatedStateTable.Advance();
+    mJointStateCompensated.Velocity().Assign(mJointStateEncoder.Velocity());
 
     // TODO: copy timestamp of the JointState obj, isValid, Velocity, Effort, Name 
     // for name: for JointStateCompensated, if the name vector size is 0, take the name from JointStateEncoders
     // save temp computation as var
 }
 
-prmStateJoint mtsCompensation::getCorrectedJointState() const {
-    return CorrectedJointState;
+prmStateJoint mtsPSMCompensation::GetCorrectedJointState() const {
+    return mJointStateCompensated;
 }
 
-void mtsCompensation::Startup(void){}
+void mtsPSMCompensation::Startup(void){}
 
-void mtsCompensation::Run(void){
+void mtsPSMCompensation::Run(void){
 
     ProcessQueuedCommands();
-    setCorrectedPosition();
+    ComputeCompensation();
 }
