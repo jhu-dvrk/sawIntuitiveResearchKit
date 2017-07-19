@@ -7,7 +7,7 @@
             "type": "PSM",
             "simulation": "KINEMATIC",
             "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-5mm-needle-drive.json"            
+            "kinematic": "psm-5mm-needle-driver.json"            
         }
     ]
 }

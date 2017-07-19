@@ -1,7 +1,7 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
     "io": {
-        "firewire-protocol": "broadcast-read-write",
+        "firewire-protocol": "sequential-read-write",
         "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
     }
     ,
@@ -10,7 +10,7 @@
         {
             "name": "PSM1",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM1-28007.xml",
+            "io": "sawRobotIO1394-PSM1-49695.xml",
             "pid": "sawControllersPID-PSM.xml",
             "kinematic": "psm-large-needle-driver.json"
         }
@@ -18,25 +18,33 @@
         {
             "name": "PSM2",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM2-27374.xml",
+            "io": "sawRobotIO1394-PSM2-32204.xml",
             "pid": "sawControllersPID-PSM.xml",
             "kinematic": "psm-large-needle-driver.json"
         }
         ,
         {
+            "name": "ECM",
+            "type": "ECM",
+            "io": "sawRobotIO1394-ECM-29738.xml",
+            "pid": "sawControllersPID-ECM.xml",
+            "kinematic": "ecm-straight.json"
+        }
+        ,
+        {
             "name": "MTMR",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTMR-28247.xml",
+            "io": "sawRobotIO1394-MTMR-32336.xml",
             "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtm.json"
+            "kinematic": "mtmr.json"
         }
         ,
         {
             "name": "MTML",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTML-22723.xml",
+            "io": "sawRobotIO1394-MTML-34863.xml",
             "pid": "sawControllersPID-MTML.xml",
-            "kinematic": "mtm.json"
+            "kinematic": "mtml.json"
         }
     ]
     ,
@@ -44,18 +52,22 @@
     [
         {
             "master": "MTMR",
-            "slave": "PSM1",
-            "rotation" : [[-1.0000,  0.0000,  0.0000],
-                          [ 0.0000, -1.0000,  0.0000],
-                          [ 0.0000,  0.0000,  1.0000]]
+            "slave": "PSM1"
         }
         ,
         {
             "master": "MTML",
-            "slave": "PSM2",
-            "rotation" : [[-1.0000,  0.0000,  0.0000],
-                          [ 0.0000, -1.0000,  0.0000],
-                          [ 0.0000,  0.0000,  1.0000]]
+            "slave": "PSM2"
         }
     ]
+    ,
+    "ecm-teleop":
+    {
+        "master-left": "MTML",
+        "master-right": "MTMR",
+        "slave": "ECM",
+        "rotation" : [[ 1.0000,  0.0000,  0.0000],
+                      [ 0.0000,  1.0000,  0.0000],
+                      [ 0.0000,  0.0000,  1.0000]]
+    }
 }
