@@ -135,10 +135,14 @@ void mtsPSMCompensation::Configure(const std::string & filename) {
 void mtsPSMCompensation::ComputeCompensation() {
     mJointStateCompensated = mJointStateEncoder;
 
+    double polyThird = pow(mJointStateEncoder.Position()[2], 3);
+    double polySecond = pow(mJointStateEncoder.Position()[2], 2);
+    double polyFirst = mJointStateEncoder.Position()[2];
+
     // calculate compliance
-    double A = (complianceA1 * pow(mJointStateEncoder.Position()[2], 3));
-    double B = (complianceB1 * pow(mJointStateEncoder.Position()[2], 2));
-    double C = complianceC1 * mJointStateEncoder.Position()[2];
+    double A = complianceA1 * polyThird;
+    double B = complianceB1 * polySecond;
+    double C = complianceC1 * polyFirst;
     double D = complianceD1;
     double complianceFirstJoint = A + B + C + D;
 
@@ -147,9 +151,9 @@ void mtsPSMCompensation::ComputeCompensation() {
         (complianceFirstJoint * (mJointStateEncoder.Effort()[0] - torqueOffsetA1)));
 
     // calculate compliance
-    A = (complianceA2 * pow(mJointStateEncoder.Position()[2], 3));
-    B = (complianceB2 * pow(mJointStateEncoder.Position()[2], 2));
-    C = complianceC2 * mJointStateEncoder.Position()[2];
+    A = complianceA2 * polyThird;
+    B = complianceB2 * polySecond;
+    C = complianceC2 * polyFirst;
     D = complianceD2;
     double complianceSecondJoint = A + B + C + D;
 
@@ -160,10 +164,15 @@ void mtsPSMCompensation::ComputeCompensation() {
     mJointStateCompensated.Position()[1] = mJointStateEncoder.Position()[1] - (backlash2 * (mJointStateEncoder.Effort()[1] - torqueOffset2) +
         (complianceSecondJoint * (mJointStateEncoder.Effort()[1] - torqueOffset2)));
 
+   
+    // assign other members of encoder joint state to the compensated joint state
+    mJointStateCompensated.Timestamp() = mJointStateEncoder.Timestamp();
     mJointStateCompensated.Velocity().Assign(mJointStateEncoder.Velocity());
-
-    // TODO: copy timestamp of the JointState obj, isValid, Velocity, Effort, Name 
-    // for name: for JointStateCompensated, if the name vector size is 0, take the name from JointStateEncoders
+    mJointStateCompensated.Effort().Assign(mJointStateEncoder.Effort());
+    mJointStateCompensated.Valid() = mJointStateEncoder.Valid();
+    if (mJointStateCompensated.Name().size() == 0) {
+        mJointStateCompensated.Name() = mJointStateEncoder.Name();
+    }
     // save temp computation as var
 }
 
