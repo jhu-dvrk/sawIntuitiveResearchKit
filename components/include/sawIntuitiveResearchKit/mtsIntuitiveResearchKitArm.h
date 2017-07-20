@@ -108,20 +108,22 @@ public:
     // in derived classes.
 
     virtual void EnterReady(void);
+    virtual void LeaveReady(void);
+    virtual void RunReady(void);
 
-    /*! Cartesian state. */
-    virtual void RunPositionJoint(void);
-    virtual void RunPositionGoalJoint(void);
-    virtual void RunPositionCartesian(void);
-    virtual void RunPositionGoalCartesian(void);
+    /*! Control modes. */
+    virtual void ControlPositionJoint(void);
+    virtual void ControlPositionGoalJoint(void);
+    virtual void ControlPositionCartesian(void);
+    virtual void ControlPositionGoalCartesian(void);
 
     /*! Effort state. */
-    virtual void RunEffortJoint(void);
-    virtual void RunEffortCartesian(void);
+    virtual void ControlEffortJoint(void);
+    virtual void ControlEffortCartesian(void);
 
     /*! Compute forces/position for PID when orientation is locked in
       effort cartesian mode or gravity compensation. */
-    virtual void RunEffortOrientationLocked(void);
+    virtual void ControlEffortOrientationLocked(void);
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
@@ -272,16 +274,14 @@ public:
 
     mtsStateMachine mArmState;
     bool mPowered;
+    bool mReady;
     bool mJointReady;
     bool mCartesianReady;
 
-    typedef enum {UNDEFINED_SPACE, ACTUATOR_SPACE, JOINT_SPACE, CARTESIAN_SPACE} ControlSpace;
-    ControlSpace mControlSpace;
-    void SetControlSpace(const ControlSpace space);
-
-    typedef enum {UNDEFINED_MODE, POSITION_MODE, TRAJECTORY_MODE, VELOCITY_MODE, EFFORT_MODE} ControlMode;
-    ControlMode mControlMode;
-    void SetControlMode(const ControlMode mode);
+    mtsIntuitiveResearchKitArmTypes::ControlSpace mControlSpace;
+    mtsIntuitiveResearchKitArmTypes::ControlMode mControlMode;
+    void SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
+                                const mtsIntuitiveResearchKitArmTypes::ControlMode mode);
 
     struct {
         robReflexxes Reflexxes;

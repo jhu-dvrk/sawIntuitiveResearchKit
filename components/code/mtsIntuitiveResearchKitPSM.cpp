@@ -939,8 +939,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         mJointTrajectory.Goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
         mJointTrajectory.GoalVelocity.SetAll(0.0);
         mJointTrajectory.EndTime = 0.0;
-        SetControlMode(TRAJECTORY_MODE);
-        SetControlSpace(JOINT_SPACE);
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                               mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
         EngagingStage = 2;
         return;
     }
@@ -1073,8 +1073,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
         mJointTrajectory.GoalVelocity.SetAll(0.0);
         mJointTrajectory.EndTime = 0.0;
-        SetControlMode(TRAJECTORY_MODE);
-        SetControlSpace(JOINT_SPACE);
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                               mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
         EngagingStage = 2;
         return;
     }
@@ -1143,11 +1143,11 @@ void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 {
     const size_t jawIndex = 6;
     switch (mControlMode) {
-    case POSITION_MODE:
+    case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
         JawGoal = jawPosition;
         mHasNewPIDGoal = true;
         break;
-    case TRAJECTORY_MODE:
+    case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
         mJointTrajectory.IsWorking = true;
         mJointTrajectory.Goal[jawIndex] = jawPosition;
         mJointTrajectory.EndTime = 0.0;

@@ -56,10 +56,6 @@ protected:
       appropriate joint values based on the mux state. */
     void GetAndConvertPotentiometerValues(void);
 
-    /*! Verify that the state transition is possible, initialize global
-      variables for the desired state and finally set the state. */
-    void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState);
-
     /*! Homing procedure, will check the homing state and call the required method. */
     void RunHoming(void);
 
@@ -69,10 +65,7 @@ protected:
     /*! Normal operations. */
     void RunReady(void);
 
-    void SetRobotControlState(const std::string & state);
-
-    /*! Convert enum to string using function provided by cisstDataGenerator. */
-    void GetRobotControlState(std::string & state) const;
+    void SetDesiredState(const std::string & state);
 
     /*! Set velocity for motorized PSM lift. normalized between -1.0 and 1.0. */
     void SetLiftVelocity(const double & velocity);
@@ -102,7 +95,8 @@ protected:
 
     // Functions for events
     struct {
-        mtsFunctionWrite RobotState;
+        mtsFunctionWrite DesiredState;
+        mtsFunctionWrite CurrentState;
     } MessageEvents;
     mtsInterfaceProvided * mInterface;
 
@@ -127,7 +121,7 @@ protected:
         mtsFunctionWrite SetPWMDutyCycle;
     } PWM;
 
-    mtsIntuitiveResearchKitArmTypes::RobotStateType mRobotState;
+    // mtsIntuitiveResearchKitArmTypes::RobotStateType mRobotState;
 
     // Home Action
     double mHomingTimer;

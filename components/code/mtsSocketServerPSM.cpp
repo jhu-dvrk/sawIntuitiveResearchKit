@@ -33,7 +33,7 @@ mtsSocketServerPSM::mtsSocketServerPSM(const std::string & componentName, const 
         interfaceRequired->AddFunction("SetPositionCartesian", SetPositionCartesian);
         interfaceRequired->AddFunction("SetJawPosition"      , SetJawPosition);
         interfaceRequired->AddFunction("GetRobotControlState", GetRobotControlState);
-        interfaceRequired->AddFunction("SetRobotControlState", SetRobotControlState);
+        interfaceRequired->AddFunction("SetDesiredState", SetDesiredState);
         interfaceRequired->AddEventHandlerWrite(&mtsSocketServerPSM::ErrorEventHandler,
                                                 this, "Error");
     }
@@ -62,39 +62,27 @@ void mtsSocketServerPSM::Run(void)
 void mtsSocketServerPSM::ExecutePSMCommands(void)
 {
     if (DesiredState != Command.Data.RobotControlState) {
-        mtsIntuitiveResearchKitArmTypes::RobotStateType enumState;
+        std::string state;
         DesiredState = Command.Data.RobotControlState;
         switch (DesiredState) {
         case socketMessages::SCK_UNINITIALIZED:
-            enumState = mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED;
+            state = "UNINITIALIZED";
             break;
         case socketMessages::SCK_HOMED:
             if (CurrentState != socketMessages::SCK_HOMING) {
-                enumState = mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER;
+                state = "READY";
             }
-            break;
-        case socketMessages::SCK_CART_POS:
-            enumState = mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN;
-            break;
-        case socketMessages::SCK_CART_TRAJ:
-            enumState = mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN;
-            break;
-        case socketMessages::SCK_JNT_POS:
-            enumState = mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT;
-            break;
-        case socketMessages::SCK_JNT_TRAJ:
-            enumState = mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT;
             break;
         default:
             std::cerr << CMN_LOG_DETAILS << Command.Data.RobotControlState << " state not supported. " << std::endl;
             break;
         }
-        SetRobotControlState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(enumState));
+        SetDesiredState(state);
     }
 
     // Only send when in cartesian mode
     switch (CurrentState) {
-    case socketMessages::SCK_CART_POS:
+    case socketMessages::SCK_HOMED:
         PositionCartesianSet.Goal().From(Command.Data.GoalPose);
         SetPositionCartesian(PositionCartesianSet);
         SetJawPosition(Command.Data.GoalJaw);
@@ -158,34 +146,12 @@ void mtsSocketServerPSM::UpdatePSMState(void)
     GetRobotControlState(psmState);
 
     // Switch to socket states
-    mtsIntuitiveResearchKitArmTypes::RobotStateType enumState = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(psmState.Data);
-    if (enumState > mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED &&
-	enumState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-        CurrentState = socketMessages::SCK_HOMING;
+    if (psmState.Data == "UNINITIALIZED") {
+        CurrentState = socketMessages::SCK_UNINITIALIZED;
+    } else if (psmState.Data == "READY") {
+        CurrentState = socketMessages::SCK_HOMED;
     } else {
-        switch (enumState) {
-        case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
-            CurrentState = socketMessages::SCK_UNINITIALIZED;
-            break;
-        case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
-            CurrentState = socketMessages::SCK_HOMED;
-            break;
-        case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
-            CurrentState = socketMessages::SCK_CART_POS;
-            break;
-        case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-            CurrentState = socketMessages::SCK_CART_TRAJ;
-            break;
-        case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
-            CurrentState = socketMessages::SCK_JNT_POS;
-            break;
-        case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
-            CurrentState = socketMessages::SCK_JNT_TRAJ;
-            break;
-        default:
-            std::cerr << CMN_LOG_DETAILS << psmState << " state not supported." << std::endl;
-            break;
-        }
+        CurrentState = socketMessages::SCK_HOMING;
     }
 }
 

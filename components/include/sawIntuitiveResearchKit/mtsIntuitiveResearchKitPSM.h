@@ -59,7 +59,7 @@ protected:
     inline size_t NumberOfBrakes(void) const {
         return 0;
     }
-    
+
     void UpdateJointsKinematics(void);
     void ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID);
 
@@ -135,7 +135,7 @@ protected:
     /*! 5mm tools with 8 joints */
     bool mSnakeLike;
 
-    robManipulatorPSMSnake *ManipulatorPSMSnake;
+    robManipulatorPSMSnake * ManipulatorPSMSnake;
     robManipulator * ToolOffset;
     vctFrm4x4 ToolOffsetTransformation;
 

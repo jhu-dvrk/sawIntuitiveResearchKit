@@ -74,7 +74,7 @@ protected:
     // Functions for events
     struct {
         mtsFunctionWrite ManipClutch;
-        mtsIntuitiveResearchKitArmTypes::RobotStateType ManipClutchPreviousState;
+        std::string ManipClutchPreviousState;
     } ClutchEvents;
 
     // tooltip, used for up/down endoscopes

@@ -394,16 +394,15 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     mInterface = AddInterfaceProvided("Robot");
     if (mInterface) {
         // Robot State
-        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetRobotControlState,
-                                           this, "SetRobotControlState", std::string(""));
-        mInterface->AddCommandRead(&mtsIntuitiveResearchKitSUJ::GetRobotControlState,
-                                          this, "GetRobotControlState", std::string(""));
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetDesiredState,
+                                           this, "SetDesiredState", std::string(""));
         // Events
         mInterface->AddMessageEvents();
-        mInterface->AddEventWrite(MessageEvents.RobotState, "RobotState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
         // Stats
         mInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
-                                               "GetPeriodStatistics");
+                                        "GetPeriodStatistics");
     }
 }
 
@@ -464,10 +463,8 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         Arms[armIndex] = arm;
 
         // Robot State so GUI widget for each arm can set/get state
-        armInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetRobotControlState,
-                                      this, "SetRobotControlState", std::string(""));
-        armInterface->AddCommandRead(&mtsIntuitiveResearchKitSUJ::GetRobotControlState,
-                                     this, "GetRobotControlState", std::string(""));
+        armInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetDesiredState,
+                                      this, "SetDesiredState", std::string(""));
 
         // Add motor up/down for the motorized arm
         if (type == mtsIntuitiveResearchKitSUJArmData::SUJ_MOTORIZED_PSM) {
@@ -542,7 +539,8 @@ void mtsIntuitiveResearchKitSUJ::Startup(void)
     MuxIncrement.SetValue(false);
     PWM.DisablePWM(true);
     SetLiftVelocity(0.0);
-    this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+    std::cerr << CMN_LOG_DETAILS << " --- need to use state machine here" << std::endl;
+    // this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 }
 
 void mtsIntuitiveResearchKitSUJ::Run(void)
@@ -550,6 +548,8 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
     ProcessQueuedEvents();
     GetRobotData();
 
+    std::cerr << CMN_LOG_DETAILS << " --- need to use state machine here" << std::endl;
+    /*
     switch (mRobotState) {
     case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
         break;
@@ -562,7 +562,7 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
     default:
         break;
     }
-
+    */
     RunEvent();
     ProcessQueuedCommands();
 }
@@ -585,7 +585,9 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
     const double muxCycle = 30.0 * cmn_ms;
 
     // we can start reporting some joint values after the robot is powered
-    if (this->mRobotState > mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING) {
+
+    std::cerr << CMN_LOG_DETAILS << " --- need to use state machine here" << std::endl;
+    // if (this->mRobotState > mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING) {
         const double currentTime = this->StateTable.GetTic();
 
         // we assume the analog in is now stable
@@ -608,7 +610,7 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
                 mVoltageSamplesCounter = 0;
             }
         }
-    }
+        // }
 }
 
 void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
@@ -768,10 +770,11 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState)
+void mtsIntuitiveResearchKitSUJ::SetDesiredState(const std::string & newState)
 {
     CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state " << newState << std::endl;
 
+    /*
     switch (newState) {
 
     case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
@@ -811,6 +814,8 @@ void mtsIntuitiveResearchKitSUJ::SetState(const mtsIntuitiveResearchKitArmTypes:
 
     // Emit event with current state
     MessageEvents.RobotState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->mRobotState));
+
+    */
 }
 
 void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
@@ -840,7 +845,8 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         if (actuatorAmplifiersStatus.All()) {
             DispatchStatus(this->GetName() + " power on");
-            this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
+            std::cerr << CMN_LOG_DETAILS << " --- need to use state machine here" << std::endl;
+            // this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
             // reset mux
             NoMuxReset.SetValue(false);
             Sleep(10.0 * cmn_ms);
@@ -849,7 +855,8 @@ void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
             PWM.DisablePWM(false);
         } else {
             mInterface->SendError(this->GetName() + " failed to enable power.");
-            this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+            std::cerr << CMN_LOG_DETAILS << " --- need to use state machine here" << std::endl;
+            // this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
         }
     }
 }
@@ -898,29 +905,6 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
     mPreviousTic = currentTic;
 }
 
-void mtsIntuitiveResearchKitSUJ::SetRobotControlState(const std::string & state)
-{
-    if (state == "Home") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
-    } else if (state == "Manual") {
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
-    } else {
-        mtsIntuitiveResearchKitArmTypes::RobotStateType stateEnum;
-        try {
-            stateEnum = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state);
-        } catch (std::exception e) {
-            mInterface->SendError(this->GetName() + ": SUJ unsupported state " + state + ": " + e.what());
-            return;
-        }
-        SetState(stateEnum);
-    }
-}
-
-void mtsIntuitiveResearchKitSUJ::GetRobotControlState(std::string & state) const
-{
-    state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->mRobotState);
-}
-
 void mtsIntuitiveResearchKitSUJ::SetLiftVelocity(const double & velocity)
 {
     if ((velocity >= -1.0) && (velocity <= 1.0)) {
@@ -967,7 +951,8 @@ void mtsIntuitiveResearchKitSUJ::ErrorEventHandler(const mtsMessage & message)
 {
     RobotIO.DisablePower();
     DispatchError(this->GetName() + ": received [" + message.Message + "]");
-    SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+    std::cerr << CMN_LOG_DETAILS << " --- need to use state machine here" << std::endl;
+    // SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
 }
 
 void mtsIntuitiveResearchKitSUJ::DispatchError(const std::string & message)

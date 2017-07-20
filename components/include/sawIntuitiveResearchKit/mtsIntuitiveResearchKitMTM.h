@@ -98,7 +98,7 @@ protected:
     void GetRobotData(void);
 
     // see base class
-    void RunEffortOrientationLocked(void);
+    void ControlEffortOrientationLocked(void);
 
     /*! Effort Impedance.  */
     void RunEffortCartesianImpedance(void);

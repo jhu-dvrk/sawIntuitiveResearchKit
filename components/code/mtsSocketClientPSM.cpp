@@ -83,30 +83,12 @@ void mtsSocketClientPSM::Freeze(void)
 
 void mtsSocketClientPSM::SetRobotControlState(const std::string & state)
 {
-    mtsIntuitiveResearchKitArmTypes::RobotStateType enumState = mtsIntuitiveResearchKitArmTypes::RobotStateTypeFromString(state);
-    switch (enumState) {
-    case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
+    if (state == "UNINITIALIZED") {
         DesiredState = socketMessages::SCK_UNINITIALIZED;
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER:
-        case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
+    } else if (state == "READY") {
         DesiredState = socketMessages::SCK_HOMED;
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
-        DesiredState = socketMessages::SCK_CART_POS;
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-        DesiredState = socketMessages::SCK_CART_TRAJ;
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
-        DesiredState = socketMessages::SCK_JNT_POS;
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
-        DesiredState = socketMessages::SCK_JNT_TRAJ;
-        break;
-    default:
+    } else {
         std::cerr << CMN_LOG_DETAILS << state << " state not supported." << std::endl;
-        break;
     }
 
     Command.Data.RobotControlState = DesiredState;
@@ -128,37 +110,22 @@ void mtsSocketClientPSM::SetJawPosition(const double & position)
     }
 }
 
-void mtsSocketClientPSM::GetRobotControlState(std::string &state) const
+void mtsSocketClientPSM::GetRobotControlState(std::string & state) const
 {
-    mtsIntuitiveResearchKitArmTypes::RobotStateType enumState;
     switch (CurrentState) {
     case socketMessages::SCK_UNINITIALIZED:
-        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED;
+        state = "UNINITIALIZED";
         break;
     case socketMessages::SCK_HOMING:
-        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER;
+        state = "READY";
         break;
     case socketMessages::SCK_HOMED:
-        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_READY;
-        break;
-    case socketMessages::SCK_CART_POS:
-        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN;
-        break;
-    case socketMessages::SCK_CART_TRAJ:
-        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN;
-        break;
-    case socketMessages::SCK_JNT_POS:
-        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT;
-        break;
-    case socketMessages::SCK_JNT_TRAJ:
-        enumState = mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT;
+        state = "READY";
         break;
     default:
         std::cerr << CMN_LOG_DETAILS << state << " state not supported." << std::endl;
         break;
     }
-
-    state = mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(enumState);
 }
 
 void mtsSocketClientPSM::ReceivePSMStateData(void)

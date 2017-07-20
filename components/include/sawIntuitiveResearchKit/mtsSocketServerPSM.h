@@ -42,7 +42,7 @@ protected:
 
 private:
     mtsFunctionWrite SetPositionCartesian;
-    mtsFunctionWrite SetRobotControlState;
+    mtsFunctionWrite SetDesiredState;
     mtsFunctionWrite SetJawPosition;
     mtsFunctionRead GetPositionCartesian;
     mtsFunctionRead GetRobotControlState;

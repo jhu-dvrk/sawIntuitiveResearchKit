@@ -125,6 +125,14 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                &mtsIntuitiveResearchKitArm::EnterReady,
                                this);
 
+    mArmState.SetRunCallback("READY",
+                             &mtsIntuitiveResearchKitArm::RunReady,
+                             this);
+
+    mArmState.SetLeaveCallback("READY",
+                               &mtsIntuitiveResearchKitArm::LeaveReady,
+                               this);
+
     mCounter = 0;
     mIsSimulated = false;
     mHomedOnce = false;
@@ -312,6 +320,10 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
         RobotInterface->SendError(this->GetName() + ": unsupported state " + state);
         return;
     }
+
+    // setting desired state triggers a new event so user nows which state is current
+    MessageEvents.CurrentState(mArmState.CurrentState());
+
     // if state is same as current, return
     if (mArmState.CurrentState() == state) {
         return;
@@ -324,7 +336,7 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
         return;
     }
     MessageEvents.DesiredState(state);
-    RobotInterface->SendStatus(this->GetName() + ": set desired state to " + state);
+    RobotInterface->SendStatus(this->GetName() + ": desired state " + state);
 }
 
 void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
@@ -584,7 +596,7 @@ void mtsIntuitiveResearchKitArm::StateChanged(void)
 {
     const std::string newState = mArmState.CurrentState();
     MessageEvents.CurrentState(newState);
-    RobotInterface->SendStatus(this->GetName() + ": current state is " + newState);
+    RobotInterface->SendStatus(this->GetName() + ": current state " + newState);
 }
 
 void mtsIntuitiveResearchKitArm::RunAllStates(void)
@@ -615,8 +627,8 @@ void mtsIntuitiveResearchKitArm::EnterUninitialized(void)
     mPowered = false;
     mJointReady = false;
     mCartesianReady = false;
-    SetControlSpace(UNDEFINED_SPACE);
-    SetControlMode(UNDEFINED_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
 }
 
 void mtsIntuitiveResearchKitArm::TransitionUninitialized(void)
@@ -740,8 +752,8 @@ void mtsIntuitiveResearchKitArm::EnterPowered(void)
     RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
     PID.Enable(false);
     mCartesianReady = false;
-    SetControlSpace(UNDEFINED_SPACE);
-    SetControlMode(UNDEFINED_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
 }
 
 void mtsIntuitiveResearchKitArm::TransitionPowered(void)
@@ -775,8 +787,8 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
     this->SetGoalHomingArm();
     mJointTrajectory.GoalVelocity.SetAll(0.0);
     mJointTrajectory.EndTime = 0.0;
-    SetControlMode(TRAJECTORY_MODE);
-    SetControlSpace(JOINT_SPACE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
 }
 
 void mtsIntuitiveResearchKitArm::RunHomingArm(void)
@@ -836,9 +848,11 @@ void mtsIntuitiveResearchKitArm::RunHomingArm(void)
 
 void mtsIntuitiveResearchKitArm::EnterReady(void)
 {
+    // set ready flag
+    mReady = true;
     // no control mode defined
-    SetControlSpace(UNDEFINED_SPACE);
-    SetControlMode(UNDEFINED_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
     // enable PID and start from current position
     mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsDesiredPID.Position());
     PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
@@ -847,16 +861,69 @@ void mtsIntuitiveResearchKitArm::EnterReady(void)
     PID.Enable(true);
 }
 
-void mtsIntuitiveResearchKitArm::RunPositionJoint(void)
+void mtsIntuitiveResearchKitArm::LeaveReady(void)
+{
+    // set ready flag
+    mReady = false;
+    // no control mode defined
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
+}
+
+void mtsIntuitiveResearchKitArm::RunReady(void)
+{
+    switch (mControlMode) {
+    case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
+        switch (mControlSpace) {
+        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+            ControlPositionJoint();
+            break;
+        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
+            ControlPositionCartesian();
+            break;
+        default:
+            break;
+        }
+        break;
+    case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
+        switch (mControlSpace) {
+        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+            ControlPositionGoalJoint();
+            break;
+        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
+            ControlPositionGoalCartesian();
+            break;
+        default:
+            break;
+        }
+        break;
+    case mtsIntuitiveResearchKitArmTypes::EFFORT_MODE:
+        switch (mControlSpace) {
+        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+            ControlEffortJoint();
+            break;
+        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
+            ControlEffortCartesian();
+            break;
+        default:
+            break;
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+void mtsIntuitiveResearchKitArm::ControlPositionJoint(void)
 {
     if (mHasNewPIDGoal) {
-        SetPositionJointLocal(JointSet);
+        mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
         // reset flag
         mHasNewPIDGoal = false;
     }
 }
 
-void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
+void mtsIntuitiveResearchKitArm::ControlPositionGoalJoint(void)
 {
     // check if there's anything to do
     if (!mJointTrajectory.IsWorking) {
@@ -890,7 +957,7 @@ void mtsIntuitiveResearchKitArm::RunPositionGoalJoint(void)
     }
 }
 
-void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
+void mtsIntuitiveResearchKitArm::ControlPositionCartesian(void)
 {
     if (mHasNewPIDGoal) {
         // copy current position
@@ -909,45 +976,48 @@ void mtsIntuitiveResearchKitArm::RunPositionCartesian(void)
     }
 }
 
-void mtsIntuitiveResearchKitArm::RunPositionGoalCartesian(void)
+void mtsIntuitiveResearchKitArm::ControlPositionGoalCartesian(void)
 {
     // trajectory are computed in joint space for now
-    RunPositionGoalJoint();
+    ControlPositionGoalJoint();
 }
 
-void mtsIntuitiveResearchKitArm::SetControlSpace(const ControlSpace space)
+void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
+                                                        const mtsIntuitiveResearchKitArmTypes::ControlMode mode)
 {
     // ignore if already in the same space
-    if (space == mControlSpace) {
+    if ((space == mControlSpace) && (mode == mControlMode)) {
         return;
     }
 
-    mControlSpace = space;
-}
-
-void mtsIntuitiveResearchKitArm::SetControlMode(const ControlMode mode)
-{
-    // ignore if already in the same mode
-    if (mode == mControlMode) {
-        return;
+    // transitions
+    if (space != mControlSpace) {
+        // set flag
+        mControlSpace = space;
     }
 
-    // when starting trajectory, set current position/velocity and trajectory
-    // parameters
-    if (mode == TRAJECTORY_MODE) {
-        JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
-        JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
-        mJointTrajectory.Reflexxes.Set(mJointTrajectory.Velocity,
-                                       mJointTrajectory.Acceleration,
-                                       StateTable.PeriodStats.GetAvg(),
-                                       robReflexxes::Reflexxes_TIME);
+    if (mode != mControlMode) {
+        if (mode == mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE) {
+            JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
+            JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
+            mJointTrajectory.Reflexxes.Set(mJointTrajectory.Velocity,
+                                           mJointTrajectory.Acceleration,
+                                           StateTable.PeriodStats.GetAvg(),
+                                           robReflexxes::Reflexxes_TIME);
+        }
+
+        // set flag
+        mControlMode = mode;
     }
 
-    // set flag
-    mControlMode = mode;
+    // messages
+    RobotInterface->SendStatus(this->GetName() + ": control "
+                               + cmnData<mtsIntuitiveResearchKitArmTypes::ControlSpace>::HumanReadable(mControlSpace)
+                               + '/'
+                               + cmnData<mtsIntuitiveResearchKitArmTypes::ControlMode>::HumanReadable(mControlMode));
 }
 
-void mtsIntuitiveResearchKitArm::RunEffortJoint(void)
+void mtsIntuitiveResearchKitArm::ControlEffortJoint(void)
 {
     // effort required
     JointExternalEffort.Assign(mEffortJointSet.ForceTorque());
@@ -966,7 +1036,7 @@ void mtsIntuitiveResearchKitArm::RunEffortJoint(void)
     PID.SetTorqueJoint(TorqueSetParam);
 }
 
-void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
+void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
 {
     // update torques based on wrench
     vctDoubleVec force(6);
@@ -1013,14 +1083,14 @@ void mtsIntuitiveResearchKitArm::RunEffortCartesian(void)
 
     // lock orientation if needed
     if (mEffortOrientationLocked) {
-        RunEffortOrientationLocked();
+        ControlEffortOrientationLocked();
     }
 }
 
-void mtsIntuitiveResearchKitArm::RunEffortOrientationLocked(void)
+void mtsIntuitiveResearchKitArm::ControlEffortOrientationLocked(void)
 {
     CMN_LOG_CLASS_RUN_ERROR << GetName()
-                            << ": RunEffortOrientationLocked, this method should never be called, MTMs are the only arms able to lock orientation and the derived implementation of this method should be called"
+                            << ": ControlEffortOrientationLocked, this method should never be called, MTMs are the only arms able to lock orientation and the derived implementation of this method should be called"
                             << std::endl;
 }
 
@@ -1036,34 +1106,41 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
 
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
 {
-    if ((mControlSpace == JOINT_SPACE)
-        && (mControlMode == POSITION_MODE)) {
-        JointSet.Assign(newPosition.Goal(), NumberOfJointsKinematics());
-        mHasNewPIDGoal = true;
-    } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in joint control mode, current state is "
-                                  << mArmState.CurrentState() << std::endl;
+    if (!mReady) {
+        RobotInterface->SendWarning(this->GetName() + ": SetPositionJoint, arm not ready");
+        return;
     }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    // set goal
+    JointSet.Assign(newPosition.Goal(), NumberOfJointsKinematics());
+    mHasNewPIDGoal = true;
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet & newPosition)
 {
-    if ((mControlSpace == JOINT_SPACE)
-        && (mControlMode == TRAJECTORY_MODE)) {
-        mJointTrajectory.IsWorking = true;
-        ToJointsPID(newPosition.Goal(), mJointTrajectory.Goal);
-        mJointTrajectory.GoalVelocity.SetAll(0.0);
-        mJointTrajectory.EndTime = 0.0;
-    } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in joint trajectory control mode, current state is "
-                                  << mArmState.CurrentState() << std::endl;
+    if (!mReady) {
+        RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalJoint, arm not ready");
+        return;
     }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+    // make sure trajectory is reset
+    mJointTrajectory.IsWorking = true;
+    mJointTrajectory.EndTime = 0.0;
+    // new goal
+    ToJointsPID(newPosition.Goal(), mJointTrajectory.Goal);
+    mJointTrajectory.GoalVelocity.SetAll(0.0);
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if ((mControlSpace == CARTESIAN_SPACE)
-        && (mControlMode == POSITION_MODE)) {
+    if ((mControlSpace == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)
+        && (mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)) {
         CartesianSetParam = newPosition;
         mHasNewPIDGoal = true;
     } else {
@@ -1074,8 +1151,8 @@ void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesian
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if ((mControlSpace == CARTESIAN_SPACE)
-        && (mControlMode == TRAJECTORY_MODE)) {
+    if ((mControlSpace == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)
+        && (mControlMode == mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE)) {
 
         // copy current position
         vctDoubleVec jointSet(JointsKinematics.Position());
@@ -1146,8 +1223,8 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 
 void mtsIntuitiveResearchKitArm::SetEffortJoint(const prmForceTorqueJointSet & effort)
 {
-    if ((mControlSpace == JOINT_SPACE)
-        && (mControlMode == EFFORT_MODE)) {
+    if ((mControlSpace == mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)
+        && (mControlMode == mtsIntuitiveResearchKitArmTypes::EFFORT_MODE)) {
         mEffortJointSet.ForceTorque().Assign(effort.ForceTorque());
     } else {
         CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in joint effort control mode, current state is "
@@ -1157,8 +1234,8 @@ void mtsIntuitiveResearchKitArm::SetEffortJoint(const prmForceTorqueJointSet & e
 
 void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wrench)
 {
-    if ((mControlSpace == CARTESIAN_SPACE)
-        && (mControlMode == EFFORT_MODE)) {
+    if ((mControlSpace == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)
+        && (mControlMode == mtsIntuitiveResearchKitArmTypes::EFFORT_MODE)) {
         mWrenchSet = wrench;
         if (mWrenchType != WRENCH_BODY) {
             mWrenchType = WRENCH_BODY;
@@ -1172,8 +1249,8 @@ void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wren
 
 void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & wrench)
 {
-    if ((mControlSpace == CARTESIAN_SPACE)
-        && (mControlMode == EFFORT_MODE)) {
+    if ((mControlSpace == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)
+        && (mControlMode == mtsIntuitiveResearchKitArmTypes::EFFORT_MODE)) {
         mWrenchSet = wrench;
         if (mWrenchType != WRENCH_SPATIAL) {
             mWrenchType = WRENCH_SPATIAL;

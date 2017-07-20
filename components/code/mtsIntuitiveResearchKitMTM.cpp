@@ -429,8 +429,8 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     mJointTrajectory.Goal.Element(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
     mJointTrajectory.GoalVelocity.SetAll(0.0);
     mJointTrajectory.EndTime = 0.0;
-    SetControlMode(TRAJECTORY_MODE);
-    SetControlSpace(JOINT_SPACE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
     RobotInterface->SendStatus(this->GetName() + ": looking for roll lower limit");
 }
 
@@ -519,8 +519,8 @@ void mtsIntuitiveResearchKitMTM::EnterHomingRoll(void)
 
     // we want to start from zero velocity since we hit the joint limit
     JointVelocitySet.SetAll(0.0);
-    SetControlMode(TRAJECTORY_MODE);
-    SetControlSpace(JOINT_SPACE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
     RobotInterface->SendStatus(this->GetName() + ": moving roll to center");
 }
 
@@ -591,7 +591,7 @@ void mtsIntuitiveResearchKitMTM::TransitionRollHomed(void)
     }
 }
 
-void mtsIntuitiveResearchKitMTM::RunEffortOrientationLocked(void)
+void mtsIntuitiveResearchKitMTM::ControlEffortOrientationLocked(void)
 {
     // don't get current joint values!
     // always initialize IK from position when locked
@@ -619,7 +619,7 @@ void mtsIntuitiveResearchKitMTM::RunEffortCartesianImpedance(void)
     prmForceCartesianSet wrench;
     mImpedanceController->Update(CartesianGetParam, CartesianVelocityGetParam, wrench);
     SetWrenchBody(wrench);
-    RunEffortCartesian();
+    ControlEffortCartesian();
 }
 
 void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
