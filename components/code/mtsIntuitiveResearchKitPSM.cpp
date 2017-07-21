@@ -1203,6 +1203,7 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
         // we will need to engage this tool
         mToolNeedEngage = true;
     } else {
+        mCartesianReady = false;
         mArmState.SetCurrentState("ARM_HOMED");
     }
 }

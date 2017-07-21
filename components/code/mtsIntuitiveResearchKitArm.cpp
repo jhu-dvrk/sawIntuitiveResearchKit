@@ -849,6 +849,7 @@ void mtsIntuitiveResearchKitArm::RunHomingArm(void)
 void mtsIntuitiveResearchKitArm::EnterReady(void)
 {
     // set ready flag
+    mCartesianReady = true;
     mReady = true;
     // no control mode defined
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
@@ -1139,40 +1140,46 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet 
 
 void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if ((mControlSpace == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)
-        && (mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)) {
-        CartesianSetParam = newPosition;
-        mHasNewPIDGoal = true;
-    } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in cartesian control mode, current state is "
-                                  << mArmState.CurrentState() << std::endl;
+    if (!mReady) {
+        RobotInterface->SendWarning(this->GetName() + ": SetPositionCartesian, arm not ready");
+        return;
     }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    // set goal
+    CartesianSetParam = newPosition;
+    mHasNewPIDGoal = true;
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if ((mControlSpace == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)
-        && (mControlMode == mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE)) {
+    if (!mReady) {
+        RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalCartesian, arm not ready");
+        return;
+    }
 
-        // copy current position
-        vctDoubleVec jointSet(JointsKinematics.Position());
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
 
-        // compute desired slave position
-        CartesianPositionFrm.From(newPosition.Goal());
+    // copy current position
+    vctDoubleVec jointSet(JointsKinematics.Position());
+    
+    // compute desired slave position
+    CartesianPositionFrm.From(newPosition.Goal());
 
-        if (this->InverseKinematics(jointSet, BaseFrame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
-            // set joint goals
-            mJointTrajectory.IsWorking = true;
-            ToJointsPID(jointSet, mJointTrajectory.Goal);
-            mJointTrajectory.GoalVelocity.SetAll(0.0);
-            mJointTrajectory.EndTime = 0.0;
-        } else {
-            RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
-            mJointTrajectory.GoalReachedEvent(false);
-        }
+    if (this->InverseKinematics(jointSet, BaseFrame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
+        // make sure trajectory is reset
+        mJointTrajectory.IsWorking = true;
+        mJointTrajectory.EndTime = 0.0;
+        // new goal
+        ToJointsPID(jointSet, mJointTrajectory.Goal);
+        mJointTrajectory.GoalVelocity.SetAll(0.0);
     } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in cartesian trajectory control mode, current state is "
-                                  << mArmState.CurrentState() << std::endl;
+        RobotInterface->SendError(this->GetName() + ": SetPositionGoalCartesian, unable to solve inverse kinematics");
+        mJointTrajectory.GoalReachedEvent(false);
     }
 }
 
@@ -1223,42 +1230,54 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 
 void mtsIntuitiveResearchKitArm::SetEffortJoint(const prmForceTorqueJointSet & effort)
 {
-    if ((mControlSpace == mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)
-        && (mControlMode == mtsIntuitiveResearchKitArmTypes::EFFORT_MODE)) {
-        mEffortJointSet.ForceTorque().Assign(effort.ForceTorque());
-    } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in joint effort control mode, current state is "
-                                  << mArmState.CurrentState() << std::endl;
+    if (!mReady) {
+        RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalCartesian, arm not ready");
+        return;
     }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+
+    // set new effort
+    mEffortJointSet.ForceTorque().Assign(effort.ForceTorque());
 }
 
 void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wrench)
 {
-    if ((mControlSpace == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)
-        && (mControlMode == mtsIntuitiveResearchKitArmTypes::EFFORT_MODE)) {
-        mWrenchSet = wrench;
-        if (mWrenchType != WRENCH_BODY) {
-            mWrenchType = WRENCH_BODY;
-            RobotInterface->SendStatus(this->GetName() + ": effort cartesian (body)");
-        }
-    } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in cartesian effort control mode, current state is "
-                                  << mArmState.CurrentState() << std::endl;
+    if (!mReady) {
+        RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalCartesian, arm not ready");
+        return;
+    }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+
+    // set new wrench
+    mWrenchSet = wrench;
+    if (mWrenchType != WRENCH_BODY) {
+        mWrenchType = WRENCH_BODY;
+        RobotInterface->SendStatus(this->GetName() + ": effort cartesian WRENCH_BODY");
     }
 }
 
 void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & wrench)
 {
-    if ((mControlSpace == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)
-        && (mControlMode == mtsIntuitiveResearchKitArmTypes::EFFORT_MODE)) {
-        mWrenchSet = wrench;
-        if (mWrenchType != WRENCH_SPATIAL) {
-            mWrenchType = WRENCH_SPATIAL;
-            RobotInterface->SendStatus(this->GetName() + ": effort cartesian (spatial)");
-        }
-    } else {
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in cartesian effort control mode, current state is "
-                                  << mArmState.CurrentState() << std::endl;
+    if (!mReady) {
+        RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalCartesian, arm not ready");
+        return;
+    }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+
+    // set new wrench
+    mWrenchSet = wrench;
+    if (mWrenchType != WRENCH_SPATIAL) {
+        mWrenchType = WRENCH_SPATIAL;
+        RobotInterface->SendStatus(this->GetName() + ": effort cartesian WRENCH_SPATIAL");
     }
 }
 
