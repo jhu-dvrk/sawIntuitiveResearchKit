@@ -65,6 +65,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mArmState.AddState("CHANGING_COUPLING_TOOL");
     mArmState.AddState("ENGAGING_TOOL");
     mArmState.AddState("TOOL_ENGAGED");
+    mArmState.AddState("MANUAL");
 
     // after arm homed
     mArmState.SetTransitionCallback("ARM_HOMED",
@@ -100,6 +101,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mArmState.SetTransitionCallback("TOOL_ENGAGED",
                                     &mtsIntuitiveResearchKitPSM::TransitionToolEngaged,
                                     this);
+    mArmState.SetEnterCallback("MANUAL",
+                               &mtsIntuitiveResearchKitPSM::EnterManual,
+                               this);
 
     // kinematics
     mSnakeLike = false;
@@ -454,7 +458,6 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         CouplingChange.ToolPositionLowerLimit.Element(2) *= cmn_mm;
         CouplingChange.ToolPositionLowerLimit.Ref(4, 3) *= cmnPI_180;
 
-
         // load lower/upper torque limit for the tool(required)
         const Json::Value jsonTorqueLimit = jsonConfig["tool-torque-limit"];
         if (jsonTorqueLimit.isNull()) {
@@ -485,292 +488,6 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
                                  << filename << "\" is in JSON format" << std::endl;
     }
 }
-
-/*
-  void mtsIntuitiveResearchKitPSM::SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState)
-  {
-  CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
-  << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(newState) << std::endl;
-
-vctBoolVec torqueMode(NumberOfJoints());
-
-// first cleanup from previous state
-switch (RobotState) {
- case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_JOINT:
- case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
-// Disable torque mode for all joints
-        torqueMode.SetAll(false);
-        PID.EnableTorqueMode(torqueMode);
-        PID.SetTorqueOffset(vctDoubleVec(7, 0.0));
-        PID.EnableTrackingError(true);
-        SetPositionJointLocal(JointsPID.Position());
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-        TrajectoryIsUsed(false);
-        break;
-
-    default:
-        break;
-    }
-
-    switch (newState) {
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
-        // default coupling, assumes no tool
-        {
-            const vctDoubleMat identity(vctDoubleMat::Eye(NumberOfAxes()));
-            CouplingChange.DesiredCoupling.Assign(identity);
-            RobotIO.SetCoupling(CouplingChange.DesiredCoupling);
-        }
-        // no power
-        RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
-        RobotIO.DisablePower();
-        PID.Enable(false);
-        PID.SetJointLowerLimit(CouplingChange.NoToolPositionLowerLimit);
-        PID.SetJointUpperLimit(CouplingChange.NoToolPositionUpperLimit);
-        PID.SetCheckJointLimit(true);
-        TrajectoryIsUsed(false);
-        RobotState = newState;
-        RobotInterface->SendStatus(this->GetName() + " not initialized");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER:
-        HomingBiasEncoderRequested = false;
-        RobotState = newState;
-        RobotInterface->SendStatus(this->GetName() + " updating encoders based on potentiometers");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:
-        HomingTimer = 0.0;
-        HomingPowerRequested = false;
-        RobotState = newState;
-        RobotInterface->SendStatus(this->GetName() + " powering");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM:
-        CouplingChange.Started = false;
-        if (RobotState != mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING) {
-            EngagingStage = 0;
-        }
-        HomingCalibrateArmStarted = false;
-        RobotState = newState;
-        this->RobotInterface->SendStatus(this->GetName() + " calibrating arm");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED:
-        RobotState = newState;
-        this->RobotInterface->SendStatus(this->GetName() + " arm calibrated");
-        // check if adpater is present and trigger new state
-        if (!mIsSimulated) {
-            Adapter.GetButton(Adapter.IsPresent);
-            if (Adapter.IsPresent) {
-                SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER);
-            }
-        } else {
-            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER);
-        }
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING:
-        CouplingChange.Started = false;
-        // set state
-        RobotState = newState;
-        this->RobotInterface->SendStatus(this->GetName() + " changing coupling");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_ADAPTER:
-        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            RobotInterface->SendStatus(this->GetName() + " is not calibrated yet, gwill engage adapter later");
-            return;
-        }
-        // if the tool is present, the adapter is already engadged
-        Tool.GetButton(Tool.IsPresent);
-        if (Tool.IsPresent) {
-            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED);
-            return;
-        }
-        // start engage procedure
-        if (RobotState != mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING) {
-            EngagingStage = 0;
-        }
-        LastEngagingStage = 5;
-        // set state
-        RobotState = newState;
-        this->RobotInterface->SendStatus(this->GetName() + " engaging adapter");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED:
-        RobotState = newState;
-        this->RobotInterface->SendStatus(this->GetName() + " adapter engaged");
-        // check if tool is present and trigger new state
-        if (!mIsSimulated) {
-            Tool.GetButton(Tool.IsPresent);
-            if (Tool.IsPresent) {
-                SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL);
-            }
-        } else {
-            SetState(mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL);
-        }
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_ENGAGING_TOOL:
-        if ((RobotState != mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING)
-            && (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ADAPTER_ENGAGED)) {
-            RobotInterface->SendStatus(this->GetName() + " adapter is not engaged yet, will engage tool later");
-            return;
-        }
-        // start engaging procedure
-        if (RobotState != mtsIntuitiveResearchKitArmTypes::DVRK_CHANGING_COUPLING) {
-            EngagingStage = 0;
-        }
-        LastEngagingStage = 4;
-        // set state
-        RobotState = newState;
-        this->RobotInterface->SendStatus(this->GetName() + " engaging tool");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
-        {
-            PID.SetCheckJointLimit(true);
-            vctDoubleVec tolerances(NumberOfJoints());
-            // first two rotations
-            tolerances.Ref(2, 0).SetAll(20.0 * cmnPI_180);
-            // translation
-            tolerances.Element(2) = 20.0 * cmn_mm; // 10 mm
-            // shaft rotation
-            tolerances.Element(3) = 120.0 * cmnPI_180;
-            // tool orientation
-            tolerances.Ref(4, 3).SetAll(35.0 * cmnPI_180);
-            // gripper
-            tolerances.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
-            PID.SetTrackingErrorTolerance(tolerances);
-            SetPositionJointLocal(JointsPID.Position()); // preload PID with current position
-            PID.EnableTrackingError(true);
-            // set tighter pots/encoder tolerances
-            PotsToEncodersTolerance.SetAll(20.0 * cmnPI_180); // 20 degrees for rotations
-            PotsToEncodersTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm
-            RobotIO.SetPotsToEncodersTolerance(PotsToEncodersTolerance);
-        }
-        RobotState = newState;
-        RobotInterface->SendStatus(this->GetName() + " ready");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
-        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            RobotInterface->SendError(this->GetName() + " is not calibrated");
-            return;
-        }
-        RobotState = newState;
-        JointSet.Assign(JointsDesiredPID.Position(), this->NumberOfJoints());
-        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
-            IsGoalSet = false;
-            RobotInterface->SendStatus(this->GetName() + " position joint");
-        } else {
-            TrajectoryIsUsed(true);
-            RobotInterface->SendStatus(this->GetName() + " position goal joint");
-        }
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-        {
-            if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-                RobotInterface->SendError(this->GetName() + " is not ready");
-                return;
-            }
-            // check that the tool is inserted deep enough
-            if (JointsPID.Position().Element(2) < 40.0 * cmn_mm) {
-                RobotInterface->SendError(this->GetName() + " can't start cartesian mode, make sure the tool is inserted past the cannula (joint 3 > 40 mm)");
-            } else {
-                if (JointsPID.Position().Element(2) < 50.0 * cmn_mm) {
-                    RobotInterface->SendWarning(this->GetName() + " cartesian mode started close to RCM (joint 3 < 50 mm), joint 3 will be clamped at 40 mm to avoid moving inside cannula.");
-                }
-                RobotState = newState;
-                if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN) {
-                    IsGoalSet = false;
-                    RobotInterface->SendStatus(this->GetName() + " position cartesian");
-                } else {
-                    TrajectoryIsUsed(true);
-                    RobotInterface->SendStatus(this->GetName() + " position goal cartesian");
-                }
-            }
-        }
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_JOINT:
-        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            RobotInterface->SendError(this->GetName() + " is not ready");
-            return;
-        } else {
-            vctBoolVec torqueMode(NumberOfJoints());
-            torqueMode.SetAll(true);
-            PID.EnableTorqueMode(torqueMode);
-            PID.EnableTrackingError(false);
-            PID.SetTorqueOffset(vctDoubleVec(NumberOfJoints(), 0.0));
-            JointExternalEffort.SetSize(NumberOfJoints());
-            RobotState = newState;
-            RobotInterface->SendStatus(this->GetName() + " effort joint");
-        }
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
-        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            RobotInterface->SendError(this->GetName() + " is not ready");
-            return;
-        }
-        // check that the tool is inserted deep enough
-        if (JointsPID.Position().Element(2) < 40.0 * cmn_mm) {
-            RobotInterface->SendError(this->GetName() + " can't start cartesian effort mode, make sure the tool is inserted past the cannula (joint 3 > 40 mm)");
-        } else {
-            vctBoolVec torqueMode(NumberOfJointsKinematics());
-            torqueMode.SetAll(true);
-            PID.EnableTorqueMode(torqueMode);
-            PID.EnableTrackingError(false);
-            PID.SetTorqueOffset(vctDoubleVec(NumberOfJointsKinematics(), 0.0));
-            RobotState = newState;
-            JointExternalEffort.SetSize(NumberOfJointsKinematics());
-            mWrenchSet.Force().Zeros();
-            mWrenchType = WRENCH_UNDEFINED;
-            RobotInterface->SendStatus(this->GetName() + " effort cartesian");
-        }
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_CONSTRAINT_CONTROLLER_CARTESIAN:
-        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            RobotInterface->SendError(this->GetName() + " is not ready");
-            return;
-        }
-        // check that the tool is inserted deep enough
-        if (JointsPID.Position().Element(2) < 80.0 * cmn_mm) {
-            RobotInterface->SendError(this->GetName() + " can't start constraint controller cartesian mode, make sure the tool is inserted past the cannula");
-            break;
-        }
-        RobotState = newState;
-        IsGoalSet = false;
-        RobotInterface->SendStatus(this->GetName() + " constraint controller cartesian");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL:
-        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            RobotInterface->SendError(this->GetName() + " is not calibrated");
-            return;
-        }
-        // disable PID to allow manual move
-        PID.Enable(false);
-        RobotState = newState;
-        RobotInterface->SendStatus(this->GetName() + " in manual mode");
-        break;
-    default:
-        break;
-    }
-
-    // Emit event with current state
-    MessageEvents.RobotState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(RobotState));
-}
-*/
 
 void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
 {
@@ -1139,6 +856,11 @@ void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
     }
 }
 
+void mtsIntuitiveResearchKitPSM::EnterManual(void)
+{
+    PID.Enable(false);
+}
+
 void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
 {
     const size_t jawIndex = 6;
@@ -1222,24 +944,14 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
     // Pass events
     ClutchEvents.ManipClutch(button);
 
-    std::cerr << CMN_LOG_DETAILS << " to be fixed" << std::endl;
-
-    /*
     // Start manual mode but save the previous state
     if (button.Type() == prmEventButton::PRESSED) {
-        ClutchEvents.ManipClutchPreviousState = RobotState;
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL);
+        ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
+        mArmState.SetCurrentState("MANUAL");
     } else {
-        if (RobotState == mtsIntuitiveResearchKitArmTypes::DVRK_MANUAL) {
-            // set command joint position to joint current
-            PID.GetStateJoint(JointsPID);
-            JointSet.ForceAssign(JointsPID.Position());
-            SetPositionJointLocal(JointSet);
-            // Enable PID
-            PID.Enable(true);
+        if (mArmState.CurrentState() == "MANUAL") {
             // go back to state before clutching
-            SetState(ClutchEvents.ManipClutchPreviousState);
+            mArmState.SetCurrentState(ClutchEvents.ManipClutchPreviousState);
         }
     }
-    */
 }

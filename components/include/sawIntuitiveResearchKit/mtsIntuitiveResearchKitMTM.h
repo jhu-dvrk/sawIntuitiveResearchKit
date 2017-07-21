@@ -78,6 +78,10 @@ protected:
         return 0;
     }
 
+    inline bool UsePIDTrackingError(void) const {
+        return false;
+    }
+
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
 
@@ -102,6 +106,8 @@ protected:
 
     /*! Effort Impedance.  */
     void RunEffortCartesianImpedance(void);
+
+    void SetControlEffortActiveJoints(void);
 
     /*! Lock master orientation when in cartesian effort mode */
     virtual void LockOrientation(const vctMatRot3 & orientation);

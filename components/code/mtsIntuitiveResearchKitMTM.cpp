@@ -160,22 +160,6 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     RobotInterface->AddEventWrite(GripperEvents.GripperClosed, "GripperClosedEvent", true);
 }
 
-/*
-void mtsIntuitiveResearchKitMTM::RunArmSpecific(void)
-{
-    switch (RobotState) {
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ROLL:
-        RunHomingCalibrateRoll();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN_IMPEDANCE:
-        RunEffortCartesianImpedance();
-        break;
-    default:
-        break;
-    }
-}
-*/
-
 void mtsIntuitiveResearchKitMTM::SetMTMType(const bool autodetect, const MTM_TYPE type)
 {
     if (autodetect) {
@@ -227,168 +211,6 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
     }
 }
 
-/*
-void mtsIntuitiveResearchKitMTM::SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState)
-{
-    CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state "
-                            << mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(newState) << std::endl;
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-    vctBoolVec torqueMode(8);
-=======
-    vctBoolVec torqueMode(NumberOfJoints());
->>>>>>> devel
-
-    // first cleanup from previous state
-    switch (RobotState) {
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
-        // Disable torque mode for all joints
-        torqueMode.SetAll(false);
-        PID.EnableTorqueMode(torqueMode);
-        PID.SetTorqueOffset(vctDoubleVec(NumberOfJoints(), 0.0));
-        SetPositionJointLocal(JointsDesiredPID.Position());
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-        TrajectoryIsUsed(false);
-        break;
-
-    default:
-        break;
-    }
-
-    // setup transition
-    switch (newState) {
-    case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
-        RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
-        RobotIO.DisablePower();
-        PID.Enable(false);
-        PID.SetCheckJointLimit(true);
-        TrajectoryIsUsed(false);
-        RobotState = newState;
-        RobotInterface->SendStatus(this->GetName() + " not initialized");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER:
-        HomingBiasEncoderRequested = false;
-        RobotState = newState;
-        RobotInterface->SendStatus(this->GetName() + " updating encoders based on potentiometers");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:
-        HomingTimer = 0.0;
-        HomingPowerRequested = false;
-        RobotState = newState;
-        RobotInterface->SendStatus(this->GetName() + " powering");
-        break;
-
->>>>>>> devel
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ARM:
-        HomingCalibrateArmStarted = false;
-        RobotState = newState;
-        this->RobotInterface->SendStatus(this->GetName() + " calibrating arm");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_CALIBRATING_ROLL:
-        HomingCalibrateRollSeekLower = false;
-        HomingCalibrateRollSeekCenter = false;
-        HomingCalibrateRollLower = cmnTypeTraits<double>::MaxPositiveValue();
-        RobotState = newState;
-        this->RobotInterface->SendStatus(this->GetName() + " calibrating roll");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
-        RobotState = newState;
-        RobotInterface->SendStatus(this->GetName() + " ready");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT:
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_JOINT:
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            RobotInterface->SendError(this->GetName() + " is not ready");
-            return;
-        }
-        RobotState = newState;
-        JointSet.Assign(JointsDesiredPID.Position(), this->NumberOfJoints());
-        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_JOINT) {
-            IsGoalSet = false;
-            RobotInterface->SendStatus(this->GetName() + " position joint");
-        } else {
-            TrajectoryIsUsed(true);
-            RobotInterface->SendStatus(this->GetName() + " position goal joint");
-        }
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN:
-    case mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_GOAL_CARTESIAN:
-    {
-        if (this->RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_ARM_CALIBRATED) {
-            RobotInterface->SendError(this->GetName() + " is not calibrated");
-            return;
-        }
-        RobotState = newState;
-        //set jnt to current pos, otherwise the robot will jump to previous setpoint
-        JointSet.ForceAssign(JointsPID.Position());
-        SetPositionJointLocal(JointSet);
-
-        if (newState == mtsIntuitiveResearchKitArmTypes::DVRK_POSITION_CARTESIAN)
-        {
-            IsGoalSet = false;
-            RobotInterface->SendStatus(this->GetName() + " position cartesian");
-        } else {
-            TrajectoryIsUsed(true);
-            RobotInterface->SendStatus(this->GetName() + " position goal cartesian");
-        }
-        break;
-    }
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN:
-        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            RobotInterface->SendError(this->GetName() + " is not ready");
-            return;
-        }
-        torqueMode.SetAll(true);
-        PID.EnableTorqueMode(torqueMode);
-        PID.EnableTrackingError(false);
-        PID.SetTorqueOffset(vctDoubleVec(NumberOfJoints(), 0.0));
-        RobotState = newState;
-        mWrenchSet.Force().Zeros();
-        mWrenchType = WRENCH_UNDEFINED;
-        EffortOrientationLocked = false;
-        RobotInterface->SendStatus(this->GetName() + " effort cartesian");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN_IMPEDANCE:
-        if (RobotState < mtsIntuitiveResearchKitArmTypes::DVRK_READY) {
-            RobotInterface->SendError(this->GetName() + " is not ready");
-            return;
-        }
-        torqueMode.SetAll(true);
-        PID.EnableTorqueMode(torqueMode);
-        PID.EnableTrackingError(false);
-        PID.SetTorqueOffset(vctDoubleVec(NumberOfJoints(), 0.0));
-        RobotState = newState;
-        mImpedanceController->ResetGains();
-        mWrenchSet.Force().Zeros();
-        mWrenchType = WRENCH_BODY;
-        mWrenchBodyOrientationAbsolute = true;
-        EffortOrientationLocked = false;
-        RobotInterface->SendStatus(this->GetName() + " effort cartesian impedance");
-        break;
-
-    default:
-        break;
-    }
-
-    // Emit event with current state
-    MessageEvents.RobotState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->RobotState));
-}
-*/
-
 void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
 {
     // compute joint goal position
@@ -418,7 +240,6 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     // set different PID tracking error for roll
     PID.DefaultTrackingErrorTolerance.Element(JNT_WRIST_ROLL) = 1.5 * maxRollRange;  // a bit more than maxRollRange
     PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
-    PID.EnableTrackingError(true);
 
     // disable joint limits on PID
     PID.SetCheckPositionLimit(false);
@@ -431,6 +252,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     mJointTrajectory.EndTime = 0.0;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+    PID.EnableTrackingError(true);
     RobotInterface->SendStatus(this->GetName() + ": looking for roll lower limit");
 }
 
@@ -521,6 +343,7 @@ void mtsIntuitiveResearchKitMTM::EnterHomingRoll(void)
     JointVelocitySet.SetAll(0.0);
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+    PID.EnableTrackingError(true);
     RobotInterface->SendStatus(this->GetName() + ": moving roll to center");
 }
 
@@ -622,17 +445,28 @@ void mtsIntuitiveResearchKitMTM::RunEffortCartesianImpedance(void)
     ControlEffortCartesian();
 }
 
-void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
+void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
 {
-    // if we just started lock
-    if (!mEffortOrientationLocked) {
-        vctBoolVec torqueMode(NumberOfJoints());
+    vctBoolVec torqueMode(NumberOfJoints());
+    // if orientation is locked
+    if (mEffortOrientationLocked) {
         // first 3 joints in torque mode
         torqueMode.Ref(3, 0).SetAll(true);
         // last 4 in PID mode
         torqueMode.Ref(4, 3).SetAll(false);
-        PID.EnableTorqueMode(torqueMode);
+    } else {
+        // all joints in effort mode
+        torqueMode.SetAll(true);
+    }
+    PID.EnableTorqueMode(torqueMode);
+}
+
+void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
+{
+    // if we just started lock
+    if (!mEffortOrientationLocked) {
         mEffortOrientationLocked = true;
+        SetControlEffortActiveJoints();
     }
     // in any case, update desired orientation
     mEffortOrientation.Assign(orientation);
@@ -643,10 +477,8 @@ void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)
 {
     // only unlock if needed
     if (mEffortOrientationLocked) {
-        vctBoolVec torqueMode(NumberOfJoints());
-        torqueMode.SetAll(true);
-        PID.EnableTorqueMode(torqueMode);
         mEffortOrientationLocked = false;
+        SetControlEffortActiveJoints();
     }
 }
 

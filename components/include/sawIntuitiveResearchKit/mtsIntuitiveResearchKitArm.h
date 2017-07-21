@@ -163,6 +163,10 @@ public:
         return true;
     }
 
+    inline virtual bool UsePIDTrackingError(void) const {
+        return true;
+    }
+
     virtual robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                                     const vctFrm4x4 & cartesianGoal) = 0;
 
@@ -282,6 +286,7 @@ public:
     mtsIntuitiveResearchKitArmTypes::ControlMode mControlMode;
     void SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
                                 const mtsIntuitiveResearchKitArmTypes::ControlMode mode);
+    virtual void SetControlEffortActiveJoints(void);
 
     struct {
         robReflexxes Reflexxes;

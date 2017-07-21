@@ -89,6 +89,8 @@ protected:
     void RunEngagingTool(void);
     void TransitionToolEngaged(void);
 
+    void EnterManual(void);
+
     // shared method for changing coupling
     void RunChangingCoupling(void);
 

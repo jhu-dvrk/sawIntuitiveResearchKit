@@ -779,7 +779,6 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
     PID.SetCheckPositionLimit(false);
     // enable tracking errors
     PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
-    PID.EnableTrackingError(true);
     // enable PID
     PID.Enable(true);
 
@@ -856,8 +855,8 @@ void mtsIntuitiveResearchKitArm::EnterReady(void)
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
     // enable PID and start from current position
     mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsDesiredPID.Position());
+    PID.EnableTrackingError(UsePIDTrackingError());
     PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
-    PID.EnableTrackingError(true);
     PID.SetCheckPositionLimit(true);
     PID.Enable(true);
 }
@@ -998,13 +997,33 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
     }
 
     if (mode != mControlMode) {
-        if (mode == mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE) {
+
+        switch (mode) {
+        case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
+            // configure PID
+            PID.EnableTrackingError(UsePIDTrackingError());
+            PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), false));
+            break;
+        case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
+            // configure PID
+            PID.EnableTrackingError(UsePIDTrackingError());
+            PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), false));
+            // initialize trajectory
             JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
             JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
             mJointTrajectory.Reflexxes.Set(mJointTrajectory.Velocity,
                                            mJointTrajectory.Acceleration,
                                            StateTable.PeriodStats.GetAvg(),
                                            robReflexxes::Reflexxes_TIME);
+            break;
+        case mtsIntuitiveResearchKitArmTypes::EFFORT_MODE:
+            // configure PID
+            PID.EnableTrackingError(false);
+            JointExternalEffort.Assign(vctDoubleVec(NumberOfJoints(), 0.0));
+            SetControlEffortActiveJoints();
+            break;
+        default:
+            break;
         }
 
         // set flag
@@ -1016,6 +1035,11 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
                                + cmnData<mtsIntuitiveResearchKitArmTypes::ControlSpace>::HumanReadable(mControlSpace)
                                + '/'
                                + cmnData<mtsIntuitiveResearchKitArmTypes::ControlMode>::HumanReadable(mControlMode));
+}
+
+void mtsIntuitiveResearchKitArm::SetControlEffortActiveJoints(void)
+{
+    PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), true));
 }
 
 void mtsIntuitiveResearchKitArm::ControlEffortJoint(void)
