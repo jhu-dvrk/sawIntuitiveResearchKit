@@ -2,7 +2,7 @@
 {
     "io":
     {
-        "configuration-files": ["sawRobotIO1394-MTMR-foot-pedals.xml"]
+        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
     }
     ,
     "arms":
