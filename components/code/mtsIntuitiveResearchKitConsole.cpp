@@ -1045,6 +1045,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     // read from JSON and check if configuration files exist
     Json::Value jsonValue;
     jsonValue = jsonArm["type"];
+    armPointer->mIsGeneric = false; // default value
     if (!jsonValue.empty()) {
         std::string typeString = jsonValue.asString();
         if (typeString == "MTM") {
