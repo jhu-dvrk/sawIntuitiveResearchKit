@@ -62,6 +62,7 @@ protected:
     // state related methods
     void SetGoalHomingArm(void);
     void TransitionArmHomed(void);
+    void EnterManual(void);
 
     void EventHandlerTrackingError(void);
     void EventHandlerManipClutch(const prmEventButton & button);

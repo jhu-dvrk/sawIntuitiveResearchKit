@@ -754,9 +754,6 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
         }
         if (actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All()) {
             RobotInterface->SendStatus(this->GetName() + ": power on");
-            if (NumberOfBrakes() > 0) {
-                RobotIO.BrakeRelease();
-            }
             mArmState.SetCurrentState("POWERED");
         } else {
             RobotInterface->SendError(this->GetName() + ": failed to enable power");
@@ -770,11 +767,17 @@ void mtsIntuitiveResearchKitArm::EnterPowered(void)
     mPowered = true;
     mFallbackState = "POWERED";
 
+    // disable PID for fallback
     RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
     PID.Enable(false);
     mCartesianReady = false;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
+
+    // engage brakes for fallback
+    if (NumberOfBrakes() > 0) {
+        RobotIO.BrakeEngage();
+    }
 }
 
 void mtsIntuitiveResearchKitArm::TransitionPowered(void)
@@ -803,6 +806,11 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
     // enable PID
     PID.Enable(true);
 
+    // release brakes if any
+    if (NumberOfBrakes() > 0) {
+        RobotIO.BrakeRelease();
+    }
+     
     // compute joint goal position
     this->SetGoalHomingArm();
     mJointTrajectory.GoalVelocity.SetAll(0.0);
