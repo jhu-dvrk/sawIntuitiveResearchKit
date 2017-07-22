@@ -94,8 +94,9 @@ protected:
         mtsFunctionWrite SetPositionGoalCartesian;
         mtsFunctionRead  GetStateGripper;
 
-        mtsFunctionRead  GetRobotControlState;
-        mtsFunctionWrite SetRobotControlState;
+        mtsFunctionRead  GetCurrentState;
+        mtsFunctionRead  GetDesiredState;
+        mtsFunctionWrite SetDesiredState;
         mtsFunctionWrite LockOrientation;
         mtsFunctionVoid  UnlockOrientation;
         mtsFunctionWrite SetWrenchBody;
@@ -114,8 +115,9 @@ protected:
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionWrite SetJawPosition;
 
-        mtsFunctionRead  GetRobotControlState;
-        mtsFunctionWrite SetRobotControlState;
+        mtsFunctionRead  GetCurrentState;
+        mtsFunctionRead  GetDesiredState;
+        mtsFunctionWrite SetDesiredState;
 
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;

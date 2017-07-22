@@ -276,7 +276,12 @@ public:
     vctFrm4x4 BaseFrame;
     bool BaseFrameValid;
 
+    // Just to have read commands to retrieve states
     mtsStateMachine mArmState;
+    mtsStateTable mStateTableState;
+    mtsStdString mStateTableStateCurrent;
+    mtsStdString mStateTableStateDesired;
+
     bool mPowered;
     bool mReady;
     bool mJointReady;

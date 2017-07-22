@@ -32,13 +32,15 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodi
 
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds),
-    mArmState(componentName, "UNINITIALIZED")
+    mArmState(componentName, "UNINITIALIZED"),
+    mStateTableState(100, "State")
 {
 }
 
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg),
-    mArmState(arg.Name, "UNINITIALIZED")
+    mArmState(arg.Name, "UNINITIALIZED"),
+    mStateTableState(100, "State")
 {
 }
 
@@ -120,7 +122,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     // state between ARM_HOMED and READY depends on the arm type, see
     // derived classes
-
     mArmState.SetEnterCallback("READY",
                                &mtsIntuitiveResearchKitArm::EnterReady,
                                this);
@@ -132,6 +133,12 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.SetLeaveCallback("READY",
                                &mtsIntuitiveResearchKitArm::LeaveReady,
                                this);
+
+    // state table to maintain state :-)
+    mStateTableState.AddData(mStateTableStateCurrent, "Current");
+    mStateTableState.AddData(mStateTableStateDesired, "Desired");
+    AddStateTable(&mStateTableState);
+    mStateTableState.SetAutomaticAdvance(false);
 
     mCounter = 0;
     mIsSimulated = false;
@@ -272,6 +279,10 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandReadState(this->StateTable, mWrenchGet, "GetWrenchBody");
         RobotInterface->AddCommandReadState(this->StateTable, mJacobianBody, "GetJacobianBody");
         RobotInterface->AddCommandReadState(this->StateTable, mJacobianSpatial, "GetJacobianSpatial");
+        RobotInterface->AddCommandReadState(this->mStateTableState,
+                                            mStateTableStateCurrent, "GetCurrentState");
+        RobotInterface->AddCommandReadState(this->mStateTableState,
+                                            mStateTableStateDesired, "GetDesiredState");
         // Set
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame,
                                         this, "SetBaseFrame");
@@ -335,6 +346,11 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
         RobotInterface->SendError(this->GetName() + ": " + state + " is not an allowed desired state");
         return;
     }
+    // update state table
+    mStateTableState.Start();
+    mStateTableStateDesired = state;
+    mStateTableState.Advance();
+
     MessageEvents.DesiredState(state);
     RobotInterface->SendStatus(this->GetName() + ": desired state " + state);
 }
@@ -595,6 +611,11 @@ void mtsIntuitiveResearchKitArm::ToJointsPID(const vctDoubleVec & jointsKinemati
 void mtsIntuitiveResearchKitArm::StateChanged(void)
 {
     const std::string newState = mArmState.CurrentState();
+    // update state table
+    mStateTableState.Start();
+    mStateTableStateCurrent = newState;
+    mStateTableState.Advance();
+    // event
     MessageEvents.CurrentState(newState);
     RobotInterface->SendStatus(this->GetName() + ": current state " + newState);
 }
@@ -1190,7 +1211,7 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
 
     // copy current position
     vctDoubleVec jointSet(JointsKinematics.Position());
-    
+
     // compute desired slave position
     CartesianPositionFrm.From(newPosition.Goal());
 

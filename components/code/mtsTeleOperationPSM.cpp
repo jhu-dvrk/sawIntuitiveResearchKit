@@ -155,8 +155,9 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
         interfaceRequired->AddFunction("UnlockOrientation", mMTM->UnlockOrientation);
         interfaceRequired->AddFunction("SetWrenchBody", mMTM->SetWrenchBody);
         interfaceRequired->AddFunction("SetGravityCompensation", mMTM->SetGravityCompensation);
-        interfaceRequired->AddFunction("GetRobotControlState", mMTM->GetRobotControlState);
-        interfaceRequired->AddFunction("SetRobotControlState", mMTM->SetRobotControlState);
+        interfaceRequired->AddFunction("GetCurrentState", mMTM->GetCurrentState);
+        interfaceRequired->AddFunction("GetDesiredState", mMTM->GetDesiredState);
+        interfaceRequired->AddFunction("SetDesiredState", mMTM->SetDesiredState);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::MTMErrorEventHandler,
                                                 this, "Error");
     }
@@ -166,8 +167,9 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
         interfaceRequired->AddFunction("GetPositionCartesian", mPSM->GetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", mPSM->SetPositionCartesian);
         interfaceRequired->AddFunction("SetJawPosition", mPSM->SetJawPosition);
-        interfaceRequired->AddFunction("GetRobotControlState", mPSM->GetRobotControlState);
-        interfaceRequired->AddFunction("SetRobotControlState", mPSM->SetRobotControlState);
+        interfaceRequired->AddFunction("GetCurrentState", mPSM->GetCurrentState);
+        interfaceRequired->AddFunction("GetDesiredState", mPSM->GetDesiredState);
+        interfaceRequired->AddFunction("SetDesiredState", mPSM->SetDesiredState);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::PSMErrorEventHandler,
                                                 this, "Error");
     }
@@ -414,19 +416,19 @@ void mtsTeleOperationPSM::EnterSettingPSMState(void)
     mInStateTimer = StateTable.GetTic();
 
     // request state if needed
-    mtsStdString armState;
-    mPSM->GetRobotControlState(armState);
-    if (armState.Data != "DVRK_POSITION_CARTESIAN") {
-        mPSM->SetRobotControlState(mtsStdString("DVRK_POSITION_CARTESIAN"));
+    std::string armState;
+    mPSM->GetDesiredState(armState);
+    if (armState != "READY") {
+        mPSM->SetDesiredState(std::string("READY"));
     }
 }
 
 void mtsTeleOperationPSM::TransitionSettingPSMState(void)
 {
     // check state
-    mtsStdString armState;
-    mPSM->GetRobotControlState(armState);
-    if (armState.Data == "DVRK_POSITION_CARTESIAN") {
+    std::string armState;
+    mPSM->GetCurrentState(armState);
+    if (armState == "READY") {
         mTeleopState.SetCurrentState("SETTING_MTM_STATE");
         return;
     }
@@ -443,19 +445,19 @@ void mtsTeleOperationPSM::EnterSettingMTMState(void)
     mInStateTimer = StateTable.GetTic();
 
     // request state if needed
-    mtsStdString armState;
-    mMTM->GetRobotControlState(armState);
-    if (armState.Data != "DVRK_POSITION_GOAL_CARTESIAN") {
-        mMTM->SetRobotControlState(mtsStdString("DVRK_POSITION_GOAL_CARTESIAN"));
+    std::string armState;
+    mMTM->GetDesiredState(armState);
+    if (armState != "READY") {
+        mMTM->SetDesiredState(std::string("READY"));
     }
 }
 
 void mtsTeleOperationPSM::TransitionSettingMTMState(void)
 {
     // check state
-    mtsStdString armState;
-    mMTM->GetRobotControlState(armState);
-    if (armState.Data == "DVRK_POSITION_GOAL_CARTESIAN") {
+    std::string armState;
+    mMTM->GetCurrentState(armState);
+    if (armState == "READY") {
         mTeleopState.SetCurrentState("ALIGNING_MTM");
         return;
     }
@@ -471,9 +473,6 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
     // reset timer
     mInStateTimer = StateTable.GetTic();
 
-    // Send MTM command position
-    mMTM->SetRobotControlState(mtsStdString("DVRK_POSITION_GOAL_CARTESIAN"));
-
     // Orientate MTM with PSM
     vctFrm4x4 masterCartesianGoal;
     masterCartesianGoal.Translation().Assign(mMTM->PositionCartesianDesired.Position().Translation());
@@ -488,10 +487,10 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 void mtsTeleOperationPSM::TransitionAligningMTM(void)
 {
     // check psm state
-    mtsStdString armState;
-    mPSM->GetRobotControlState(armState);
-    if ((armState.Data != "DVRK_POSITION_CARTESIAN") && (armState.Data != "DVRK_CONSTRAINT_CONTROLLER_CARTESIAN")) {
-        mInterface->SendWarning(this->GetName() + ": PSM state has changed to [" + armState.Data + "]");
+    std::string armState;
+    mPSM->GetCurrentState(armState);
+    if (armState != "READY") {
+        mInterface->SendWarning(this->GetName() + ": PSM state has changed to [" + armState + "]");
         mTeleopState.SetDesiredState("DISABLED");
         mTeleopState.SetCurrentState("DISABLED");
         return;
@@ -529,7 +528,6 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     mPSM->CartesianPrevious.From(mPSM->PositionCartesianCurrent.Position());
 
     // set MTM/PSM to Teleop (Cartesian Position Mode)
-    mMTM->SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
     mMTM->SetGravityCompensation(true);
     // set forces to zero and lock/unlock orientation as needed
     prmForceCartesianSet wrench;
@@ -597,21 +595,20 @@ void mtsTeleOperationPSM::RunEnabled(void)
 
 void mtsTeleOperationPSM::TransitionEnabled(void)
 {
-    mtsStdString armState;
+    std::string armState;
 
     // check psm state
-    mPSM->GetRobotControlState(armState);
-    if ((armState.Data != "DVRK_POSITION_CARTESIAN") && (armState.Data != "DVRK_CONSTRAINT_CONTROLLER_CARTESIAN")) {
-        mInterface->SendWarning(this->GetName() + ": PSM state has changed to [" + armState.Data + "]");
+    mPSM->GetCurrentState(armState);
+    if (armState != "READY") {
+        mInterface->SendWarning(this->GetName() + ": PSM state has changed to [" + armState + "]");
         mTeleopState.SetDesiredState("DISABLED");
     }
 
     // check mtm state
-    mMTM->GetRobotControlState(armState);
-    if (armState.Data != "DVRK_EFFORT_CARTESIAN") {
-        mInterface->SendWarning(this->GetName() + ": MTM state has changed to [" + armState.Data + "]");
-        std::cerr << CMN_LOG_DETAILS << " this will have to be updated when feature-arm-state branch is merged, should just check if arm is ready.  Current implementation should wait for arm to change state to DVRK_POSITION_GOAL_CARTESIAN but that's one more state for teleop and it won't be needed soon(ish)" << std::endl;
-        // mTeleopState.SetDesiredState("DISABLED");
+    mMTM->GetCurrentState(armState);
+    if (armState != "READY") {
+        mInterface->SendWarning(this->GetName() + ": MTM state has changed to [" + armState + "]");
+        mTeleopState.SetDesiredState("DISABLED");
     }
 
     if (mTeleopState.DesiredStateIsNotCurrent()) {
