@@ -144,7 +144,9 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 
     // default PID tracking errors, defaults are used for homing
     PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
-    PID.DefaultTrackingErrorTolerance.SetAll(20.0 * cmnPI_180);
+    PID.DefaultTrackingErrorTolerance.SetAll(10.0 * cmnPI_180);
+    // last 3 joints tend to be weaker
+    PID.DefaultTrackingErrorTolerance.Ref(3, 4) = 30.0 * cmnPI_180;
 
     this->StateTable.AddData(Gripper, "StateGripper");
 

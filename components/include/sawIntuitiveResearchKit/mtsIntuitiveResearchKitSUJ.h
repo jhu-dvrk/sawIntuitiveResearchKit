@@ -151,6 +151,7 @@ protected:
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> Arms;
 
     void DispatchError(const std::string & message);
+    void DispatchWarning(const std::string & message);
     void DispatchStatus(const std::string & message);
     void DispatchCurrentState(const std::string & state);
     void DispatchDesiredState(const std::string & state);

@@ -781,7 +781,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
     // compute pot index
     mMuxIndex = (mMuxState[0]?1:0) + (mMuxState[1]?2:0) + (mMuxState[2]?4:0) + (mMuxState[3]?8:0);
     if (mMuxIndex != mMuxIndexExpected) {
-        DispatchError(this->GetName() + ": unexpected multiplexer value.");
+        DispatchWarning(this->GetName() + ": unexpected multiplexer value.");
         CMN_LOG_CLASS_RUN_ERROR << "GetAndConvertPotentiometerValues: mux from IO board: " << mMuxIndex << " expected: " << mMuxIndexExpected << std::endl;
         ResetMux();
         return;
@@ -1057,6 +1057,14 @@ void mtsIntuitiveResearchKitSUJ::DispatchError(const std::string & message)
     mInterface->SendError(message);
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
         Arms[armIndex]->mInterface->SendError(message);
+    }
+}
+
+void mtsIntuitiveResearchKitSUJ::DispatchWarning(const std::string & message)
+{
+    mInterface->SendWarning(message);
+    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        Arms[armIndex]->mInterface->SendWarning(message);
     }
 }
 
