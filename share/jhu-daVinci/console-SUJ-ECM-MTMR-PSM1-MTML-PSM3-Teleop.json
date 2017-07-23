@@ -1,5 +1,10 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
+    "io": {
+        "firewire-protocol" : "broadcast-read-write",
+        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
+    }
+    ,
     "arms":
     [
         {
@@ -52,7 +57,7 @@
         {
             "name": "MTMR",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTMR-32336-foot-pedal.xml",
+            "io": "sawRobotIO1394-MTMR-32336.xml",
             "pid": "sawControllersPID-MTMR.xml",
             "kinematic": "mtmr.json"
         }
