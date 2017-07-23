@@ -394,6 +394,13 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
                              &mtsIntuitiveResearchKitSUJ::RunReady,
                              this);
 
+    // state table to maintain state :-)
+    mStateTableState.AddData(mStateTableStateCurrent, "Current");
+    mStateTableState.AddData(mStateTableStateDesired, "Desired");
+    AddStateTable(&mStateTableState);
+    mStateTableState.SetAutomaticAdvance(false);
+
+    // default values
     mMuxTimer = 0.0;
     mMuxState.SetSize(4);
     mVoltages.SetSize(4);
@@ -598,8 +605,8 @@ void mtsIntuitiveResearchKitSUJ::StateChanged(void)
     mStateTableStateCurrent = newState;
     mStateTableState.Advance();
     // event
-    MessageEvents.CurrentState(newState);
     DispatchStatus(this->GetName() + ": current state " + newState);
+    DispatchCurrentState(newState);
 }
 
 void mtsIntuitiveResearchKitSUJ::RunAllStates(void)
@@ -620,6 +627,15 @@ void mtsIntuitiveResearchKitSUJ::RunAllStates(void)
     }
 }
 
+void mtsIntuitiveResearchKitSUJ::ResetMux(void)
+{
+    mMuxTimer = this->StateTable.GetTic();
+    MuxIncrement.SetValue(false);
+    NoMuxReset.SetValue(false);
+    Sleep(30.0 * cmn_ms);
+    mMuxIndexExpected = 0;
+}
+
 void mtsIntuitiveResearchKitSUJ::EnterUninitialized(void)
 {
     // power off brakes
@@ -632,10 +648,7 @@ void mtsIntuitiveResearchKitSUJ::EnterUninitialized(void)
     SetLiftVelocity(0.0);
 
     // reset mux
-    MuxIncrement.SetValue(false);
-    NoMuxReset.SetValue(false);
-    Sleep(10.0 * cmn_ms);
-    mMuxIndexExpected = 0;
+    ResetMux();
 
     mFallbackState = "UNINITIALIZED";
 }
@@ -700,7 +713,6 @@ void mtsIntuitiveResearchKitSUJ::EnterReady(void)
 void mtsIntuitiveResearchKitSUJ::Startup(void)
 {
     this->SetDesiredState("UNINITIALIZED");
-    MessageEvents.DesiredState(std::string("UNINITIALIZED"));
 }
 
 void mtsIntuitiveResearchKitSUJ::Run(void)
@@ -771,8 +783,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
     if (mMuxIndex != mMuxIndexExpected) {
         DispatchError(this->GetName() + ": unexpected multiplexer value.");
         CMN_LOG_CLASS_RUN_ERROR << "GetAndConvertPotentiometerValues: mux from IO board: " << mMuxIndex << " expected: " << mMuxIndexExpected << std::endl;
-        NoMuxReset.SetValue(false);
-        mMuxIndexExpected = 0;
+        ResetMux();
         return;
     }
     // array index, 0 or 1, primary or secondary pots
@@ -926,7 +937,7 @@ void mtsIntuitiveResearchKitSUJ::SetDesiredState(const std::string & state)
     }
 
     // setting desired state triggers a new event so user nows which state is current
-    MessageEvents.CurrentState(mArmState.CurrentState());
+    DispatchCurrentState(mArmState.CurrentState());
 
     // if state is same as current, return
     if (mArmState.CurrentState() == state) {
@@ -944,7 +955,7 @@ void mtsIntuitiveResearchKitSUJ::SetDesiredState(const std::string & state)
     mStateTableStateDesired = state;
     mStateTableState.Advance();
 
-    MessageEvents.DesiredState(state);
+    DispatchDesiredState(state);
     DispatchStatus(this->GetName() + ": desired state " + state);
 }
 
@@ -1054,5 +1065,21 @@ void mtsIntuitiveResearchKitSUJ::DispatchStatus(const std::string & message)
     mInterface->SendStatus(message);
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
         Arms[armIndex]->mInterface->SendStatus(message);
+    }
+}
+
+void mtsIntuitiveResearchKitSUJ::DispatchCurrentState(const std::string & state)
+{
+    MessageEvents.CurrentState(state);
+    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        Arms[armIndex]->MessageEvents.CurrentState(state);
+    }
+}
+
+void mtsIntuitiveResearchKitSUJ::DispatchDesiredState(const std::string & state)
+{
+    MessageEvents.DesiredState(state);
+    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        Arms[armIndex]->MessageEvents.DesiredState(state);
     }
 }

@@ -123,6 +123,7 @@ protected:
         mtsFunctionWrite SetValue;
     } MuxIncrement;
 
+    void ResetMux(void);
     double mMuxTimer;
     vctBoolVec mMuxState;
     size_t mMuxIndex, mMuxIndexExpected;
@@ -151,6 +152,8 @@ protected:
 
     void DispatchError(const std::string & message);
     void DispatchStatus(const std::string & message);
+    void DispatchCurrentState(const std::string & state);
+    void DispatchDesiredState(const std::string & state);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJ);
