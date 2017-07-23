@@ -146,10 +146,12 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
                                        mMTML->GetVelocityCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian",
                                        mMTML->SetPositionCartesian);
-        interfaceRequired->AddFunction("GetRobotControlState",
-                                       mMTML->GetRobotControlState);
-        interfaceRequired->AddFunction("SetRobotControlState",
-                                       mMTML->SetRobotControlState);
+        interfaceRequired->AddFunction("GetCurrentState",
+                                       mMTML->GetCurrentState);
+        interfaceRequired->AddFunction("GetDesiredState",
+                                       mMTML->GetDesiredState);
+        interfaceRequired->AddFunction("SetDesiredState",
+                                       mMTML->SetDesiredState);
         interfaceRequired->AddFunction("LockOrientation",
                                        mMTML->LockOrientation);
         interfaceRequired->AddFunction("UnlockOrientation",
@@ -172,10 +174,12 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
                                        mMTMR->GetVelocityCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian",
                                        mMTMR->SetPositionCartesian);
-        interfaceRequired->AddFunction("GetRobotControlState",
-                                       mMTMR->GetRobotControlState);
-        interfaceRequired->AddFunction("SetRobotControlState",
-                                       mMTMR->SetRobotControlState);
+        interfaceRequired->AddFunction("GetCurrentState",
+                                       mMTMR->GetCurrentState);
+        interfaceRequired->AddFunction("GetDesiredState",
+                                       mMTMR->GetDesiredState);
+        interfaceRequired->AddFunction("SetDesiredState",
+                                       mMTMR->SetDesiredState);
         interfaceRequired->AddFunction("LockOrientation",
                                        mMTMR->LockOrientation);
         interfaceRequired->AddFunction("UnlockOrientation",
@@ -197,10 +201,12 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
                                        mECM->GetPositionCartesianDesired);
         interfaceRequired->AddFunction("SetPositionCartesian",
                                        mECM->SetPositionCartesian);
-        interfaceRequired->AddFunction("GetRobotControlState",
-                                       mECM->GetRobotControlState);
-        interfaceRequired->AddFunction("SetRobotControlState",
-                                       mECM->SetRobotControlState);
+        interfaceRequired->AddFunction("GetCurrentState",
+                                       mECM->GetCurrentState);
+        interfaceRequired->AddFunction("GetDesiredState",
+                                       mECM->GetDesiredState);
+        interfaceRequired->AddFunction("SetDesiredState",
+                                       mECM->SetDesiredState);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::ECMErrorEventHandler,
                                                 this, "Error");
     }
@@ -349,10 +355,10 @@ void mtsTeleOperationECM::EnterSettingECMState(void)
     mInStateTimer = StateTable.GetTic();
 
     // request state if needed
-    mtsStdString armState;
-    mECM->GetRobotControlState(armState);
-    if (armState.Data != "DVRK_POSITION_CARTESIAN") {
-        mECM->SetRobotControlState(mtsStdString("DVRK_POSITION_CARTESIAN"));
+    std::string armState;
+    mECM->GetDesiredState(armState);
+    if (armState != "READY") {
+        mECM->SetDesiredState(std::string("READY"));
     }
 }
 
@@ -364,9 +370,9 @@ void mtsTeleOperationECM::TransitionSettingECMState(void)
         return;
     }
     // check state
-    mtsStdString armState;
-    mECM->GetRobotControlState(armState);
-    if (armState.Data == "DVRK_POSITION_CARTESIAN") {
+    std::string armState;
+    mECM->GetCurrentState(armState);
+    if (armState == "READY") {
         mTeleopState.SetCurrentState("SETTING_MTMS_STATE");
         return;
     }
@@ -383,14 +389,14 @@ void mtsTeleOperationECM::EnterSettingMTMsState(void)
     mInStateTimer = StateTable.GetTic();
 
     // request state if needed
-    mtsStdString armState;
-    mMTML->GetRobotControlState(armState);
-    if (armState.Data != "DVRK_EFFORT_CARTESIAN") {
-        mMTML->SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+    std::string armState;
+    mMTML->GetDesiredState(armState);
+    if (armState != "READY") {
+        mMTML->SetDesiredState(std::string("READY"));
     }
-    mMTMR->GetRobotControlState(armState);
-    if (armState.Data != "DVRK_EFFORT_CARTESIAN") {
-        mMTMR->SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+    mMTMR->GetDesiredState(armState);
+    if (armState != "READY") {
+        mMTMR->SetDesiredState(std::string("READY"));
     }
 }
 
@@ -402,11 +408,11 @@ void mtsTeleOperationECM::TransitionSettingMTMsState(void)
         return;
     }
     // check state
-    mtsStdString leftArmState, rightArmState;
-    mMTML->GetRobotControlState(leftArmState);
-    mMTMR->GetRobotControlState(rightArmState);
-    if ((leftArmState.Data == "DVRK_EFFORT_CARTESIAN") &&
-        (rightArmState.Data == "DVRK_EFFORT_CARTESIAN")) {
+    std::string leftArmState, rightArmState;
+    mMTML->GetCurrentState(leftArmState);
+    mMTMR->GetCurrentState(rightArmState);
+    if ((leftArmState == "READY") &&
+        (rightArmState == "READY")) {
         mTeleopState.SetCurrentState("ENABLED");
         return;
     }
@@ -581,11 +587,9 @@ void mtsTeleOperationECM::ClutchEventHandler(const prmEventButton & button)
 
             // set MTMs in effort mode, no force applied but gravity and locked orientation
             prmForceCartesianSet wrench;
-            mMTML->SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
             mMTML->SetWrenchBody(wrench);
             mMTML->SetGravityCompensation(true);
             mMTML->LockOrientation(mMTML->PositionCartesianCurrent.Position().Rotation());
-            mMTMR->SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
             mMTMR->SetWrenchBody(wrench);
             mMTMR->SetGravityCompensation(true);
             mMTMR->LockOrientation(mMTMR->PositionCartesianCurrent.Position().Rotation());
