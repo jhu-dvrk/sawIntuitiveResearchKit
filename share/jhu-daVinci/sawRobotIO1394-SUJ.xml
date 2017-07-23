@@ -49,12 +49,6 @@
    <DigitalIn BitID="3" BoardID="12" Debounce="0" Name="SUJ-Clutch-4" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="4" BoardID="12" Debounce="0.1" Name="MotorUp"      Pressed="0" Trigger="all"/>
    <DigitalIn BitID="5" BoardID="12" Debounce="0.1" Name="MotorDown"    Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="6" BoardID="12" Debounce="0" Name="SUJ-D12" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="7" BoardID="12" Debounce="0" Name="SUJ-D13" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="8" BoardID="12" Debounce="0" Name="SUJ-D20" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="9" BoardID="12" Debounce="0" Name="SUJ-D21" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="10" BoardID="12" Debounce="0" Name="SUJ-D22" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="11" BoardID="12" Debounce="0" Name="SUJ-D23" Pressed="0" Trigger="all"/>
    <!-- Digital Output Configuration -->
    <DigitalOut BitID="0" BoardID="12" Name="NoMuxReset" LowDuration="0.0001"/>
    <DigitalOut BitID="1" BoardID="12" Name="MuxIncrement" HighDuration = "0.0001"/>
