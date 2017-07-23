@@ -32,11 +32,11 @@ http://www.cisst.org/cisst/license.txt.
 const size_t MUX_ARRAY_SIZE = 6;
 const size_t MUX_MAX_INDEX = 15;
 
- // empirical value, tradeoff between speed and stability of analog
- // input
+// empirical value, tradeoff between speed and stability of analog
+// input
 const size_t ANALOG_SAMPLE_NUMBER = 60;
 
- // DO NOT set value below 2, this value should probably go
+// DO NOT set value below 2, this value should probably go
 // down when the QLA/dSIB are properly grounded.
 const size_t NUMBER_OF_MUX_CYCLE_BEFORE_STABLE = 4;
 
@@ -124,17 +124,17 @@ public:
         // read commands
         mInterface->AddCommandReadState(mStateTable, mPositionJointParam, "GetPositionJoint");
         mInterface->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0],
-                                               "GetPrimaryJointOffset");
+                                        "GetPrimaryJointOffset");
         mInterface->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[1],
-                                               "GetSecondaryJointOffset");
+                                        "GetSecondaryJointOffset");
         mInterface->AddCommandReadState(mStateTable, mPositionCartesianParam,
-                                               "GetPositionCartesian");
+                                        "GetPositionCartesian");
         mInterface->AddCommandReadState(mStateTable, mPositionCartesianLocalParam,
-                                               "GetPositionCartesianLocal");
+                                        "GetPositionCartesianLocal");
         mInterface->AddCommandReadState(mStateTable, mPositionCartesianDesiredParam,
-                                               "GetPositionCartesianDesired");
+                                        "GetPositionCartesianDesired");
         mInterface->AddCommandReadState(mStateTable, mPositionCartesianLocalDesiredParam,
-                                               "GetPositionCartesianLocalDesired");
+                                        "GetPositionCartesianLocalDesired");
         mInterface->AddCommandReadState(mStateTable, mBaseFrame, "GetBaseFrame");
         mInterface->AddCommandReadState(mStateTable, mVoltages[0], "GetVoltagesPrimary");
         mInterface->AddCommandReadState(mStateTable, mVoltages[1], "GetVoltagesSecondary");
@@ -146,9 +146,9 @@ public:
 
         // write commands
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCommand, this,
-                                           "Clutch", false);
+                                    "Clutch", false);
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::CalibratePotentiometers, this,
-                                           "SetRecalibrationMatrix", mRecalibrationMatrix);
+                                    "SetRecalibrationMatrix", mRecalibrationMatrix);
 
         // cartesian position events
         // BaseFrame is send everytime the mux has found all joint values
@@ -159,11 +159,12 @@ public:
         mInterface->AddEventWrite(EventPositionCartesianLocalDesired, "PositionCartesianLocalDesired", prmPositionCartesianGet());
 
         // Events
-        mInterface->AddEventWrite(MessageEvents.RobotState, "RobotState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
         mInterface->AddMessageEvents();
         // Stats
         mInterface->AddCommandReadState(mStateTable, mStateTable.PeriodStats,
-                                               "GetPeriodStatistics");
+                                        "GetPeriodStatistics");
     }
 
     inline void ClutchCallback(const prmEventButton & button) {
@@ -321,12 +322,15 @@ public:
     mtsFunctionWrite EventPositionCartesianLocalDesired;
 
     struct {
-        mtsFunctionWrite RobotState;
+        mtsFunctionWrite CurrentState;
+        mtsFunctionWrite DesiredState;
     } MessageEvents;
 };
 
 mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds),
+    mArmState(componentName, "UNINITIALIZED"),
+    mStateTableState(100, "State"),
     mVoltageSamplesNumber(ANALOG_SAMPLE_NUMBER)
 {
     Init();
@@ -334,6 +338,8 @@ mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const std::string & compo
 
 mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg),
+    mArmState(arg.Name, "UNINITIALIZED"),
+    mStateTableState(100, "State"),
     mVoltageSamplesNumber(ANALOG_SAMPLE_NUMBER)
 {
     Init();
@@ -341,6 +347,53 @@ mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicCons
 
 void mtsIntuitiveResearchKitSUJ::Init(void)
 {
+    // configure state machine common to all arms (ECM/MTM/PSM)
+    // possible states
+    mArmState.AddState("POWERING");
+    mArmState.AddState("READY");
+
+    // possible desired states
+    mArmState.AddAllowedDesiredState("UNINITIALIZED");
+    mArmState.AddAllowedDesiredState("READY");
+
+    mFallbackState = "UNINITIALIZED";
+
+    // state change, to convert to string events for users (Qt, ROS)
+    mArmState.SetStateChangedCallback(&mtsIntuitiveResearchKitSUJ::StateChanged,
+                                      this);
+
+    // run for all states
+    mArmState.SetRunCallback(&mtsIntuitiveResearchKitSUJ::RunAllStates,
+                             this);
+
+    // unitialized
+    mArmState.SetEnterCallback("UNINITIALIZED",
+                               &mtsIntuitiveResearchKitSUJ::EnterUninitialized,
+                               this);
+
+    mArmState.SetTransitionCallback("UNINITIALIZED",
+                                    &mtsIntuitiveResearchKitSUJ::TransitionUninitialized,
+                                    this);
+
+    // power
+    mArmState.SetEnterCallback("POWERING",
+                               &mtsIntuitiveResearchKitSUJ::EnterPowering,
+                               this);
+
+    mArmState.SetTransitionCallback("POWERING",
+                                    &mtsIntuitiveResearchKitSUJ::TransitionPowering,
+                                    this);
+
+    // state between ARM_HOMED and READY depends on the arm type, see
+    // derived classes
+    mArmState.SetEnterCallback("READY",
+                               &mtsIntuitiveResearchKitSUJ::EnterReady,
+                               this);
+
+    mArmState.SetRunCallback("READY",
+                             &mtsIntuitiveResearchKitSUJ::RunReady,
+                             this);
+
     mMuxTimer = 0.0;
     mMuxState.SetSize(4);
     mVoltages.SetSize(4);
@@ -395,7 +448,11 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     if (mInterface) {
         // Robot State
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetDesiredState,
-                                           this, "SetDesiredState", std::string(""));
+                                    this, "SetDesiredState", std::string(""));
+        mInterface->AddCommandReadState(this->mStateTableState,
+                                        mStateTableStateCurrent, "GetCurrentState");
+        mInterface->AddCommandReadState(this->mStateTableState,
+                                        mStateTableStateDesired, "GetDesiredState");
         // Events
         mInterface->AddMessageEvents();
         mInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
@@ -533,36 +590,131 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
     }
 }
 
+void mtsIntuitiveResearchKitSUJ::StateChanged(void)
+{
+    const std::string newState = mArmState.CurrentState();
+    // update state table
+    mStateTableState.Start();
+    mStateTableStateCurrent = newState;
+    mStateTableState.Advance();
+    // event
+    MessageEvents.CurrentState(newState);
+    DispatchStatus(this->GetName() + ": current state " + newState);
+}
+
+void mtsIntuitiveResearchKitSUJ::RunAllStates(void)
+{
+    // get robot data, i.e. process mux/pots
+    GetRobotData();
+
+    // always allow to go to unitialized
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        if (mArmState.DesiredState() == "UNINITIALIZED") {
+            mArmState.SetCurrentState("UNINITIALIZED");
+        } else {
+            // error handling will require to swith to fallback state
+            if (mArmState.DesiredState() == mFallbackState) {
+                mArmState.SetCurrentState(mFallbackState);
+            }
+        }
+    }
+}
+
+void mtsIntuitiveResearchKitSUJ::EnterUninitialized(void)
+{
+    // power off brakes
+    RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
+    RobotIO.DisablePower();
+
+    // disable power on PWM
+    PWM.DisablePWM(true);
+    // set lift velocity
+    SetLiftVelocity(0.0);
+
+    // reset mux
+    MuxIncrement.SetValue(false);
+    NoMuxReset.SetValue(false);
+    Sleep(10.0 * cmn_ms);
+    mMuxIndexExpected = 0;
+
+    mFallbackState = "UNINITIALIZED";
+}
+
+void mtsIntuitiveResearchKitSUJ::TransitionUninitialized(void)
+{
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        mArmState.SetCurrentState("POWERING");
+    }
+}
+
+void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
+{
+    const double currentTime = this->StateTable.GetTic();
+    mHomingTimer = currentTime;
+    // pre-load the boards with zero current
+    RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
+    // enable power and set a flags to move to next step
+    RobotIO.EnablePower();
+
+    DispatchStatus(this->GetName() + ": power requested");
+}
+
+void mtsIntuitiveResearchKitSUJ::TransitionPowering(void)
+{
+    const double timeToPower = 3.0 * cmn_s;
+    const double currentTime = this->StateTable.GetTic();
+
+    // check status
+    if ((currentTime - mHomingTimer) > timeToPower) {
+        // check power status
+        vctBoolVec actuatorAmplifiersStatus(4);
+        RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
+        if (actuatorAmplifiersStatus.All()) {
+            DispatchStatus(this->GetName() + ": power on");
+            mArmState.SetCurrentState("READY");
+        } else {
+            DispatchError(this->GetName() + ": failed to enable power");
+            this->SetDesiredState(mFallbackState);
+        }
+    }
+}
+
+void mtsIntuitiveResearchKitSUJ::EnterReady(void)
+{
+    // enable power on PWM
+    PWM.DisablePWM(false);
+
+    // make sure motor current is zero (brakes)
+    RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
+
+    // when returning from manual mode, make sure brakes are not released
+    mtsIntuitiveResearchKitSUJArmData * arm;
+    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        arm = Arms[armIndex];
+        arm->mClutched = 0;
+        arm->mBrakeDesiredCurrent = 0.0;
+        mPreviousTic = 0.0;
+    }
+}
+
 void mtsIntuitiveResearchKitSUJ::Startup(void)
 {
-    NoMuxReset.SetValue(true);
-    MuxIncrement.SetValue(false);
-    PWM.DisablePWM(true);
-    SetLiftVelocity(0.0);
-    std::cerr << CMN_LOG_DETAILS << " --- need to use state machine here" << std::endl;
-    // this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+    this->SetDesiredState("UNINITIALIZED");
+    MessageEvents.DesiredState(std::string("UNINITIALIZED"));
 }
 
 void mtsIntuitiveResearchKitSUJ::Run(void)
 {
+    // collect data from required interfaces
     ProcessQueuedEvents();
-    GetRobotData();
-
-    std::cerr << CMN_LOG_DETAILS << " --- need to use state machine here" << std::endl;
-    /*
-    switch (mRobotState) {
-    case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:
-        RunHomingPower();
-        break;
-    case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
-        RunReady();
-        break;
-    default:
-        break;
+    try {
+        mArmState.Run();
+    } catch (std::exception & e) {
+        DispatchError(this->GetName() + ": in state " + mArmState.CurrentState()
+                      + ", caught exception \"" + e.what() + "\"");
+        this->SetDesiredState("UNINITIALIZED");
     }
-    */
+    // trigger ExecOut event
     RunEvent();
     ProcessQueuedCommands();
 }
@@ -573,8 +725,7 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
     SetLiftVelocity(0.0);
     PWM.DisablePWM(true);
     // make sure requested current is back to 0
-    vctDoubleVec zero(4, 0.0);
-    RobotIO.SetActuatorCurrent(zero);
+    RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
     // turn off amplifiers
     RobotIO.DisablePower();
 }
@@ -585,32 +736,28 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
     const double muxCycle = 30.0 * cmn_ms;
 
     // we can start reporting some joint values after the robot is powered
+    const double currentTime = this->StateTable.GetTic();
 
-    std::cerr << CMN_LOG_DETAILS << " --- need to use state machine here" << std::endl;
-    // if (this->mRobotState > mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING) {
-        const double currentTime = this->StateTable.GetTic();
+    // we assume the analog in is now stable
+    if (currentTime > mMuxTimer) {
+        // pot values should be stable by now, get pots values
+        GetAndConvertPotentiometerValues();
 
-        // we assume the analog in is now stable
-        if (currentTime > mMuxTimer) {
-            // pot values should be stable by now, get pots values
-            GetAndConvertPotentiometerValues();
-
-            // time to toggle
-            if (mVoltageSamplesCounter == mVoltageSamplesNumber) {
-                // toggle mux
-                mMuxTimer = currentTime + muxCycle;
-                if (mMuxIndexExpected == MUX_MAX_INDEX) {
-                    NoMuxReset.SetValue(false);
-                    mMuxIndexExpected = 0;
-                } else {
-                    MuxIncrement.SetValue(true);
-                    mMuxIndexExpected += 1;
-                }
-                // reset sample counter
-                mVoltageSamplesCounter = 0;
+        // time to toggle
+        if (mVoltageSamplesCounter == mVoltageSamplesNumber) {
+            // toggle mux
+            mMuxTimer = currentTime + muxCycle;
+            if (mMuxIndexExpected == MUX_MAX_INDEX) {
+                NoMuxReset.SetValue(false);
+                mMuxIndexExpected = 0;
+            } else {
+                MuxIncrement.SetValue(true);
+                mMuxIndexExpected += 1;
             }
+            // reset sample counter
+            mVoltageSamplesCounter = 0;
         }
-        // }
+    }
 }
 
 void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
@@ -622,7 +769,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
     // compute pot index
     mMuxIndex = (mMuxState[0]?1:0) + (mMuxState[1]?2:0) + (mMuxState[2]?4:0) + (mMuxState[3]?8:0);
     if (mMuxIndex != mMuxIndexExpected) {
-        mInterface->SendError(this->GetName() + " unexpected multiplexer value.");
+        DispatchError(this->GetName() + ": unexpected multiplexer value.");
         CMN_LOG_CLASS_RUN_ERROR << "GetAndConvertPotentiometerValues: mux from IO board: " << mMuxIndex << " expected: " << mMuxIndexExpected << std::endl;
         NoMuxReset.SetValue(false);
         mMuxIndexExpected = 0;
@@ -736,7 +883,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                     const double distanceTolerance = 2.0 * cmn_mm;
                     arm->mPositionDifference.DifferenceOf(arm->mPositions[0], arm->mPositions[1]);
                     if ((arm->mPositionDifference[0] > distanceTolerance) ||
-                            (arm->mPositionDifference.Ref(5, 1).MaxAbsElement() > angleTolerance)) {
+                        (arm->mPositionDifference.Ref(5, 1).MaxAbsElement() > angleTolerance)) {
                         // send messages if this is new
                         if (arm->mPotsAgree) {
                             mInterface->SendWarning(this->GetName() + ": " + arm->mName.Data + " primary and secondary potentiometers don't seem to agree.");
@@ -770,95 +917,35 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::SetDesiredState(const std::string & newState)
+void mtsIntuitiveResearchKitSUJ::SetDesiredState(const std::string & state)
 {
-    CMN_LOG_CLASS_RUN_DEBUG << GetName() << ": SetState: new state " << newState << std::endl;
-
-    /*
-    switch (newState) {
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED:
-        PWM.DisablePWM(true);
-        SetLiftVelocity(0.0);
-        mRobotState = newState;
-        DispatchStatus(this->GetName() + " not initialized");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_BIAS_ENCODER:
-        SetState(mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING);
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_HOMING_POWERING:
-        mHomingTimer = 0.0;
-        mHomingPowerRequested = false;
-        mRobotState = newState;
-        DispatchStatus(this->GetName() + " powering");
-        break;
-
-    case mtsIntuitiveResearchKitArmTypes::DVRK_READY:
-        // when returning from manual mode, make sure brakes are not released
-        mtsIntuitiveResearchKitSUJArmData * arm;
-        for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-            arm = Arms[armIndex];
-            arm->mClutched = 0;
-            arm->mBrakeDesiredCurrent = 0.0;
-            mPreviousTic = 0.0;
-        }
-        mRobotState = newState;
-        DispatchStatus(this->GetName() + " ready");
-        break;
-
-    default:
-        break;
-    }
-
-    // Emit event with current state
-    MessageEvents.RobotState(mtsIntuitiveResearchKitArmTypes::RobotStateTypeToString(this->mRobotState));
-
-    */
-}
-
-void mtsIntuitiveResearchKitSUJ::RunHomingPower(void)
-{
-    const double timeToPower = 3.0 * cmn_s;
-
-    const double currentTime = this->StateTable.GetTic();
-    // first, request power to be turned on
-    if (!mHomingPowerRequested) {
-        mHomingTimer = currentTime;
-        // pre-load the boards with zero current
-        RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints, 0.0));
-        // enable power and set a flags to move to next step
-        RobotIO.EnablePower();
-        // set lift velocity
-        SetLiftVelocity(0.0);
-        mHomingPowerRequested = true;
-        DispatchStatus(this->GetName() + " power requested");
+    // try to find the state in state machine
+    if (!mArmState.StateExists(state)) {
+        DispatchError(this->GetName() + ": unsupported state " + state);
         return;
     }
 
-    // second, check status
-    if (mHomingPowerRequested
-        && ((currentTime - mHomingTimer) > timeToPower)) {
-        // check power status
-        vctBoolVec actuatorAmplifiersStatus(NumberOfJoints);
-        RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
-        if (actuatorAmplifiersStatus.All()) {
-            DispatchStatus(this->GetName() + " power on");
-            std::cerr << CMN_LOG_DETAILS << " --- need to use state machine here" << std::endl;
-            // this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_READY);
-            // reset mux
-            NoMuxReset.SetValue(false);
-            Sleep(10.0 * cmn_ms);
-            mMuxIndexExpected = 0;
-            // enable power on PWM
-            PWM.DisablePWM(false);
-        } else {
-            mInterface->SendError(this->GetName() + " failed to enable power.");
-            std::cerr << CMN_LOG_DETAILS << " --- need to use state machine here" << std::endl;
-            // this->SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
-        }
+    // setting desired state triggers a new event so user nows which state is current
+    MessageEvents.CurrentState(mArmState.CurrentState());
+
+    // if state is same as current, return
+    if (mArmState.CurrentState() == state) {
+        return;
     }
+    // try to set the desired state
+    try {
+        mArmState.SetDesiredState(state);
+    } catch (...) {
+        DispatchError(this->GetName() + ": " + state + " is not an allowed desired state");
+        return;
+    }
+    // update state table
+    mStateTableState.Start();
+    mStateTableStateDesired = state;
+    mStateTableState.Advance();
+
+    MessageEvents.DesiredState(state);
+    DispatchStatus(this->GetName() + ": desired state " + state);
 }
 
 void mtsIntuitiveResearchKitSUJ::RunReady(void)
@@ -951,8 +1038,7 @@ void mtsIntuitiveResearchKitSUJ::ErrorEventHandler(const mtsMessage & message)
 {
     RobotIO.DisablePower();
     DispatchError(this->GetName() + ": received [" + message.Message + "]");
-    std::cerr << CMN_LOG_DETAILS << " --- need to use state machine here" << std::endl;
-    // SetState(mtsIntuitiveResearchKitArmTypes::DVRK_UNINITIALIZED);
+    mArmState.SetCurrentState("UNINITIALIZED");
 }
 
 void mtsIntuitiveResearchKitSUJ::DispatchError(const std::string & message)

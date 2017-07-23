@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitSUJ_h
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
+#include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
@@ -56,14 +57,17 @@ protected:
       appropriate joint values based on the mux state. */
     void GetAndConvertPotentiometerValues(void);
 
-    /*! Homing procedure, will check the homing state and call the required method. */
-    void RunHoming(void);
+    void StateChanged(void);
+    void RunAllStates(void); // this should happen for all states
 
-    /*! Homing procedure, power the robot and initial current and encoder calibration. */
-    void RunHomingPower(void);
+    virtual void EnterUninitialized(void);
+    virtual void TransitionUninitialized(void);
 
-    /*! Normal operations. */
-    void RunReady(void);
+    virtual void EnterPowering(void);
+    virtual void TransitionPowering(void);
+
+    virtual void EnterReady(void);
+    virtual void RunReady(void);
 
     void SetDesiredState(const std::string & state);
 
@@ -81,6 +85,14 @@ protected:
 
     /*! Motor up button. */
     void MotorUpEventHandler(const prmEventButton & button);
+
+    // Arm state machine
+    mtsStateMachine mArmState;
+    std::string mFallbackState;
+    // Just to have read commands to retrieve states
+    mtsStateTable mStateTableState;
+    mtsStdString mStateTableStateCurrent;
+    mtsStdString mStateTableStateDesired;
 
     // Required interface
     struct {
