@@ -111,19 +111,12 @@ public:
     virtual void LeaveReady(void);
     virtual void RunReady(void);
 
-    /*! Control modes. */
-    virtual void ControlPositionJoint(void);
-    virtual void ControlPositionGoalJoint(void);
-    virtual void ControlPositionCartesian(void);
-    virtual void ControlPositionGoalCartesian(void);
-
-    /*! Effort state. */
-    virtual void ControlEffortJoint(void);
-    virtual void ControlEffortCartesian(void);
-
-    /*! Compute forces/position for PID when orientation is locked in
-      effort cartesian mode or gravity compensation. */
-    virtual void ControlEffortOrientationLocked(void);
+    // Arm state machine
+    mtsStateMachine mArmState;
+    // Just to have read commands to retrieve states
+    mtsStateTable mStateTableState;
+    mtsStdString mStateTableStateCurrent;
+    mtsStdString mStateTableStateDesired;
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
@@ -276,13 +269,6 @@ public:
     vctFrm4x4 BaseFrame;
     bool BaseFrameValid;
 
-    // Arm state machine
-    mtsStateMachine mArmState;
-    // Just to have read commands to retrieve states
-    mtsStateTable mStateTableState;
-    mtsStdString mStateTableStateCurrent;
-    mtsStdString mStateTableStateDesired;
-
     bool mPowered;
     bool mReady;
     bool mJointReady;
@@ -290,8 +276,59 @@ public:
 
     mtsIntuitiveResearchKitArmTypes::ControlSpace mControlSpace;
     mtsIntuitiveResearchKitArmTypes::ControlMode mControlMode;
+
+    /*! Sets control space and mode.  If none are user defined, the
+      callbacks will be using the methods provided in this class.
+      If either the space or mode is "USER", a callback must be
+      provided. */
     void SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
-                                const mtsIntuitiveResearchKitArmTypes::ControlMode mode);
+                                const mtsIntuitiveResearchKitArmTypes::ControlMode mode,
+                                mtsCallableVoidBase * callback = 0);
+
+    /*! Set the control space and mode along with a callback for
+      control.  The callback method will be use only if either the
+      space or the mode is "USER". */
+    template <class __classType>
+    inline void SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
+                                       const mtsIntuitiveResearchKitArmTypes::ControlMode mode,
+                                       void (__classType::*method)(void),
+                                       __classType * classInstantiation) {
+        this->SetControlSpaceAndMode(space, mode,
+                                     new mtsCallableVoidMethod<__classType>(method,
+                                                                            classInstantiation));
+    }
+
+    /*! Methods to set the control callback directly.  Users should
+      use the SetControlSpaceAndMode method instead. */
+    //@{
+    template <class __classType>
+    inline void SetControlCallback(void (__classType::*method)(void),
+                                   __classType * classInstantiation) {
+        this->SetControlCallback(new mtsCallableVoidMethod<__classType>(method,
+                                                                        classInstantiation));
+    }
+
+    inline void SetControlCallback(mtsCallableVoidBase * callback) {
+        if (this->mControlCallback != 0) {
+            delete this->mControlCallback;
+        }
+        this->mControlCallback = callback;
+    }
+    //@}
+
+    mtsCallableVoidBase * mControlCallback;
+
+    virtual void ControlPositionJoint(void);
+    virtual void ControlPositionGoalJoint(void);
+    virtual void ControlPositionCartesian(void);
+    virtual void ControlPositionGoalCartesian(void);
+    virtual void ControlEffortJoint(void);
+    virtual void ControlEffortCartesian(void);
+
+    /*! Compute forces/position for PID when orientation is locked in
+      effort cartesian mode or gravity compensation. */
+    virtual void ControlEffortOrientationLocked(void);
+
     virtual void SetControlEffortActiveJoints(void);
 
     struct {

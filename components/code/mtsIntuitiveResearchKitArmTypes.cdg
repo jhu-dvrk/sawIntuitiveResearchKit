@@ -15,6 +15,9 @@ class {
         enum-value {
             name CARTESIAN_SPACE;
         }
+        enum-value {
+            name USER_SPACE;
+        }
     }
 
     enum {

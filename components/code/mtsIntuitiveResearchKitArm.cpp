@@ -33,14 +33,16 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodi
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds),
     mArmState(componentName, "UNINITIALIZED"),
-    mStateTableState(100, "State")
+    mStateTableState(100, "State"),
+    mControlCallback(0)
 {
 }
 
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg),
     mArmState(arg.Name, "UNINITIALIZED"),
-    mStateTableState(100, "State")
+    mStateTableState(100, "State"),
+    mControlCallback(0)
 {
 }
 
@@ -810,7 +812,7 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
     if (NumberOfBrakes() > 0) {
         RobotIO.BrakeRelease();
     }
-     
+
     // compute joint goal position
     this->SetGoalHomingArm();
     mJointTrajectory.GoalVelocity.SetAll(0.0);
@@ -901,45 +903,8 @@ void mtsIntuitiveResearchKitArm::LeaveReady(void)
 
 void mtsIntuitiveResearchKitArm::RunReady(void)
 {
-    switch (mControlMode) {
-    case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
-        switch (mControlSpace) {
-        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
-            ControlPositionJoint();
-            break;
-        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-            ControlPositionCartesian();
-            break;
-        default:
-            break;
-        }
-        break;
-    case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
-        switch (mControlSpace) {
-        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
-            ControlPositionGoalJoint();
-            break;
-        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-            ControlPositionGoalCartesian();
-            break;
-        default:
-            break;
-        }
-        break;
-    case mtsIntuitiveResearchKitArmTypes::EFFORT_MODE:
-        switch (mControlSpace) {
-        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
-            ControlEffortJoint();
-            break;
-        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-            ControlEffortCartesian();
-            break;
-        default:
-            break;
-        }
-        break;
-    default:
-        break;
+    if (mControlCallback) {
+        mControlCallback->Execute();
     }
 }
 
@@ -1012,7 +977,8 @@ void mtsIntuitiveResearchKitArm::ControlPositionGoalCartesian(void)
 }
 
 void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
-                                                        const mtsIntuitiveResearchKitArmTypes::ControlMode mode)
+                                                        const mtsIntuitiveResearchKitArmTypes::ControlMode mode,
+                                                        mtsCallableVoidBase * callback)
 {
     // ignore if already in the same space
     if ((space == mControlSpace) && (mode == mControlMode)) {
@@ -1057,6 +1023,58 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
 
         // set flag
         mControlMode = mode;
+    }
+
+    // set control callback for RunReady
+    switch (mControlMode) {
+    case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
+        switch (mControlSpace) {
+        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+            SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionJoint, this);
+            break;
+        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
+            SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionCartesian, this);
+            break;
+        default:
+            break;
+        }
+        break;
+    case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
+        switch (mControlSpace) {
+        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+            SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionGoalJoint, this);
+            break;
+        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
+            SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionGoalCartesian, this);
+            break;
+        default:
+            break;
+        }
+        break;
+    case mtsIntuitiveResearchKitArmTypes::EFFORT_MODE:
+        switch (mControlSpace) {
+        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+            SetControlCallback(&mtsIntuitiveResearchKitArm::ControlEffortJoint, this);
+            break;
+        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
+            SetControlCallback(&mtsIntuitiveResearchKitArm::ControlEffortCartesian, this);
+            break;
+        default:
+            break;
+        }
+        break;
+    default:
+        SetControlCallback(0);
+        break;
+    }
+
+    // use provided callback if the space or mode is user defined
+    if ((mControlMode == mtsIntuitiveResearchKitArmTypes::USER_MODE)
+        || (mControlSpace == mtsIntuitiveResearchKitArmTypes::USER_SPACE)) {
+        mControlCallback = callback;
+    } else {
+        // callback shouldn't be provided for non user space/mode, maybe assert is a bit brutal?
+        CMN_ASSERT(!callback);
     }
 
     // messages
