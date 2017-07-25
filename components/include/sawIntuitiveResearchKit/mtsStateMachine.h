@@ -41,6 +41,7 @@ public:
     inline mtsStateMachine(const std::string & name, const StateType initialState):
         mName(name),
         mFirstRun(true),
+        mDesiredStateIsNotCurrent(false),
         mRunCallback(0),
         mStateChangeCallback(0),
         mCurrentState(initialState),
