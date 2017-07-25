@@ -507,7 +507,7 @@ void mtsIntuitiveResearchKitPSM::TransitionArmHomed(void)
 {
     if (mArmState.DesiredStateIsNotCurrent()) {
         Adapter.GetButton(Adapter.IsPresent);
-        if (Adapter.IsPresent) {
+        if (Adapter.IsPresent || mIsSimulated) {
             mArmState.SetCurrentState("CHANGING_COUPLING_ADAPTER");
         }
     }
@@ -712,7 +712,7 @@ void mtsIntuitiveResearchKitPSM::TransitionAdapterEngaged(void)
     mAdapterNeedEngage = false;
     if (mArmState.DesiredStateIsNotCurrent()) {
         Tool.GetButton(Tool.IsPresent);
-        if (Tool.IsPresent) {
+        if (Tool.IsPresent || mIsSimulated) {
             mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
         }
     }

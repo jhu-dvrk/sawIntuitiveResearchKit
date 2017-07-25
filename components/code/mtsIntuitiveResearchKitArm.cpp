@@ -766,6 +766,10 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
 
 void mtsIntuitiveResearchKitArm::EnterPowered(void)
 {
+    if (mIsSimulated) {
+        return;
+    }
+
     mPowered = true;
     mFallbackState = "POWERED";
 
@@ -884,6 +888,11 @@ void mtsIntuitiveResearchKitArm::EnterReady(void)
     // no control mode defined
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
+
+    if (mIsSimulated) {
+        return;
+    }
+
     // enable PID and start from current position
     mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointsDesiredPID.Position());
     PID.EnableTrackingError(UsePIDTrackingError());
@@ -982,6 +991,9 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
 {
     // ignore if already in the same space
     if ((space == mControlSpace) && (mode == mControlMode)) {
+        if (callback) {
+            delete callback;
+        }
         return;
     }
 
@@ -1072,9 +1084,6 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
     if ((mControlMode == mtsIntuitiveResearchKitArmTypes::USER_MODE)
         || (mControlSpace == mtsIntuitiveResearchKitArmTypes::USER_SPACE)) {
         mControlCallback = callback;
-    } else {
-        // callback shouldn't be provided for non user space/mode, maybe assert is a bit brutal?
-        CMN_ASSERT(!callback);
     }
 
     // messages
