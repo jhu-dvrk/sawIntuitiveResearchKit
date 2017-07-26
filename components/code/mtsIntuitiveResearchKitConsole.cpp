@@ -1605,8 +1605,7 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
 
 void mtsIntuitiveResearchKitConsole::PowerOff(void)
 {
-    mTeleopEnabled = false;
-    UpdateTeleopState();
+    TeleopEnable(false);
     const ArmList::iterator end = mArms.end();
     for (ArmList::iterator arm = mArms.begin();
          arm != end;
@@ -1617,8 +1616,7 @@ void mtsIntuitiveResearchKitConsole::PowerOff(void)
 
 void mtsIntuitiveResearchKitConsole::Home(void)
 {
-    mTeleopEnabled = false;
-    UpdateTeleopState();
+    TeleopEnable(false);
     const ArmList::iterator end = mArms.end();
     for (ArmList::iterator arm = mArms.begin();
          arm != end;
@@ -1629,7 +1627,6 @@ void mtsIntuitiveResearchKitConsole::Home(void)
 
 void mtsIntuitiveResearchKitConsole::TeleopEnable(const bool & enable)
 {
-    mtsExecutionResult result;
     mTeleopEnabled = enable;
     UpdateTeleopState();
 }
@@ -1643,18 +1640,17 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
     if (!mTeleopEnabled) {
         bool freezeNeeded = false;
         // stop whatever was running
-        if (mTeleopPSMRunning) {
-            const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
-            for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
-                 iterTeleopPSM != endTeleopPSM;
-                 ++iterTeleopPSM) {
-                iterTeleopPSM->second->SetDesiredState(mtsStdString("DISABLED"));
-            }
-            freezeNeeded = true;
-            mTeleopPSMRunning = false;
+        const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
+        for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
+             iterTeleopPSM != endTeleopPSM;
+             ++iterTeleopPSM) {
+            iterTeleopPSM->second->SetDesiredState(std::string("DISABLED"));
         }
-        if (mTeleopECMRunning) {
-            mTeleopECM->SetDesiredState(mtsStdString("DISABLED"));
+        freezeNeeded = true;
+        mTeleopPSMRunning = false;
+
+        if (mTeleopECM) {
+            mTeleopECM->SetDesiredState(std::string("DISABLED"));
             freezeNeeded = true;
             mTeleopECMRunning = false;
         }
