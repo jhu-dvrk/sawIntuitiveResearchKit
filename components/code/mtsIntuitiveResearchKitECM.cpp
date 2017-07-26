@@ -168,6 +168,13 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
 
 void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
 {
+    // if simulated, start at zero but insert endoscope so it can be used in cartesian mode
+    if (mIsSimulated) {
+        mJointTrajectory.Goal.SetAll(0.0);
+        mJointTrajectory.Goal.at(2) = 12.0 * cmn_cm;
+        return;
+    }
+
     // configure PID to fail in case of tracking error
     vctDoubleVec tolerances(NumberOfJoints());
     tolerances.SetAll(7.0 * cmnPI_180); // 7 degrees on angles

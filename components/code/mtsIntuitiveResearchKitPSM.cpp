@@ -491,6 +491,13 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
 
 void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
 {
+    // if simulated, start at zero but insert tool so it can be used in cartesian mode
+    if (mIsSimulated) {
+        mJointTrajectory.Goal.SetAll(0.0);
+        mJointTrajectory.Goal.at(2) = 12.0 * cmn_cm;
+        return;
+    }
+
     // check if tool is present and if user wants to go to zero position
     Tool.GetButton(Tool.IsPresent);
     if (mHomingGoesToZero

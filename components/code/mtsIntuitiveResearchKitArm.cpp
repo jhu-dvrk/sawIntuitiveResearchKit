@@ -801,10 +801,6 @@ void mtsIntuitiveResearchKitArm::TransitionPowered(void)
 
 void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
 {
-    if (mIsSimulated) {
-        return;
-    }
-
     // disable joint limits
     PID.SetCheckPositionLimit(false);
     // enable tracking errors
@@ -813,7 +809,7 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
     PID.Enable(true);
 
     // release brakes if any
-    if (NumberOfBrakes() > 0) {
+    if ((NumberOfBrakes() > 0) && !mIsSimulated) {
         RobotIO.BrakeRelease();
     }
 
@@ -827,11 +823,6 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
 
 void mtsIntuitiveResearchKitArm::RunHomingArm(void)
 {
-    if (mIsSimulated) {
-        mArmState.SetCurrentState("ARM_HOMED");
-        return;
-    }
-
     static const double extraTime = 2.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
