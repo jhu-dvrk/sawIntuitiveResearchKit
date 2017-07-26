@@ -57,6 +57,11 @@ protected:
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
 
+    // see base class
+    inline bool IsSafeForCartesianControl(void) const {
+        return (JointsKinematics.Position().at(2) > 50.0 * cmn_mm);
+    }
+
     void Init(void);
 
     // state related methods

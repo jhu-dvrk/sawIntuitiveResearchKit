@@ -319,7 +319,6 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
     return robManipulator::EFAILURE;
 }
 
-
 void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
 {
     try {

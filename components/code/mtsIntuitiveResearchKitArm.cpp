@@ -990,8 +990,24 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
 
     // transitions
     if (space != mControlSpace) {
-        // set flag
-        mControlSpace = space;
+        // check if the arm is ready to use in cartesian space
+        if (space == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE) {
+            if (this->IsSafeForCartesianControl()) {
+                // set flag
+                mControlSpace = space;
+                mSafeForCartesianControlCounter = 0;
+            } else {
+                if (mSafeForCartesianControlCounter == 0) {
+                    // message if needed
+                    RobotInterface->SendWarning(this->GetName() + ": tool/endoscope needs to be inserted past the cannula to switch to cartesian space");
+                }
+                mSafeForCartesianControlCounter = (mSafeForCartesianControlCounter + 1) % 1000;
+                return;
+            }
+        } else {
+            // all other spaces, just set the current space
+            mControlSpace = space;
+        }
     }
 
     if (mode != mControlMode) {

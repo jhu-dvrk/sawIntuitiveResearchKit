@@ -85,6 +85,10 @@ protected:
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
 
+    inline bool IsSafeForCartesianControl(void) const {
+        return true;
+    };
+
     virtual void Init(void);
 
     // state related methods

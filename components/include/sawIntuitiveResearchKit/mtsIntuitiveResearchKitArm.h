@@ -160,9 +160,20 @@ public:
         return true;
     }
 
+    /*! Inverse kinematics must be redefined for each arm type. */
     virtual robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                                     const vctFrm4x4 & cartesianGoal) = 0;
 
+    /*! Each arm must provide a way to check if the arm is ready to be
+      used in cartesian mode.  PSM and ECM need to make sure the
+      tool or endoscope is away from the RCM point. */
+    virtual bool IsSafeForCartesianControl(void) const = 0;
+    
+    /*! Counter to total number of consecutive times the user is
+      trying to switch to cartesian control space when it's not
+      safe.  Used to throttle error messages. */
+    size_t mSafeForCartesianControlCounter;
+    
     // Interface to PID component
     mtsInterfaceRequired * PIDInterface;
     struct {
