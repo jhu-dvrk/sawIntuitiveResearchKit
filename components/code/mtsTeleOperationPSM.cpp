@@ -70,8 +70,7 @@ void mtsTeleOperationPSM::Init(void)
 void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
 {
     // configure state machine
-    mTeleopState.AddState("SETTING_PSM_STATE");
-    mTeleopState.AddState("SETTING_MTM_STATE");
+    mTeleopState.AddState("SETTING_ARMS_STATE");
     mTeleopState.AddState("ALIGNING_MTM");
     mTeleopState.AddState("ENABLED");
     mTeleopState.AddAllowedDesiredState("ENABLED");
@@ -91,20 +90,12 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
                                        &mtsTeleOperationPSM::TransitionDisabled,
                                        this);
 
-    // setting ECM state
-    mTeleopState.SetEnterCallback("SETTING_PSM_STATE",
-                                  &mtsTeleOperationPSM::EnterSettingPSMState,
+    // setting arms state
+    mTeleopState.SetEnterCallback("SETTING_ARMS_STATE",
+                                  &mtsTeleOperationPSM::EnterSettingArmsState,
                                   this);
-    mTeleopState.SetTransitionCallback("SETTING_PSM_STATE",
-                                       &mtsTeleOperationPSM::TransitionSettingPSMState,
-                                       this);
-
-    // setting MTM state
-    mTeleopState.SetEnterCallback("SETTING_MTM_STATE",
-                                  &mtsTeleOperationPSM::EnterSettingMTMState,
-                                  this);
-    mTeleopState.SetTransitionCallback("SETTING_MTM_STATE",
-                                       &mtsTeleOperationPSM::TransitionSettingMTMState,
+    mTeleopState.SetTransitionCallback("SETTING_ARMS_STATE",
+                                       &mtsTeleOperationPSM::TransitionSettingArmsState,
                                        this);
 
     // aligning MTM
@@ -288,7 +279,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         mMTM->LockOrientation(mMTM->PositionCartesianCurrent.Position().Rotation());
     } else {
         mInterface->SendStatus(this->GetName() + ": console clutch released");
-        mTeleopState.SetCurrentState("SETTING_PSM_STATE");
+        mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
     }
 }
 
@@ -406,11 +397,11 @@ void mtsTeleOperationPSM::RunAllStates(void)
 void mtsTeleOperationPSM::TransitionDisabled(void)
 {
     if (mTeleopState.DesiredStateIsNotCurrent()) {
-        mTeleopState.SetCurrentState("SETTING_PSM_STATE");
+        mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
     }
 }
 
-void mtsTeleOperationPSM::EnterSettingPSMState(void)
+void mtsTeleOperationPSM::EnterSettingArmsState(void)
 {
     // reset timer
     mInStateTimer = StateTable.GetTic();
@@ -421,43 +412,20 @@ void mtsTeleOperationPSM::EnterSettingPSMState(void)
     if (armState != "READY") {
         mPSM->SetDesiredState(std::string("READY"));
     }
-}
-
-void mtsTeleOperationPSM::TransitionSettingPSMState(void)
-{
-    // check state
-    std::string armState;
-    mPSM->GetCurrentState(armState);
-    if (armState == "READY") {
-        mTeleopState.SetCurrentState("SETTING_MTM_STATE");
-        return;
-    }
-    // check timer
-    if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
-        mInterface->SendError(this->GetName() + ": timed out while setting up PSM state");
-        this->SetDesiredState("DISABLED");
-    }
-}
-
-void mtsTeleOperationPSM::EnterSettingMTMState(void)
-{
-    // reset timer
-    mInStateTimer = StateTable.GetTic();
-
-    // request state if needed
-    std::string armState;
     mMTM->GetDesiredState(armState);
     if (armState != "READY") {
         mMTM->SetDesiredState(std::string("READY"));
     }
 }
 
-void mtsTeleOperationPSM::TransitionSettingMTMState(void)
+void mtsTeleOperationPSM::TransitionSettingArmsState(void)
 {
     // check state
-    std::string armState;
-    mMTM->GetCurrentState(armState);
-    if (armState == "READY") {
+    std::string psmState, mtmState;
+    mPSM->GetCurrentState(psmState);
+    mMTM->GetCurrentState(mtmState);
+    if ((psmState == "READY")
+        && (mtmState == "READY")) {
         mTeleopState.SetCurrentState("ALIGNING_MTM");
         return;
     }

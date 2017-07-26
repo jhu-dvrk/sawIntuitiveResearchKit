@@ -77,10 +77,8 @@ protected:
     void StateChanged(void);
     void RunAllStates(void); // this should happen for all states
     void TransitionDisabled(void); // checks for desired state
-    void EnterSettingPSMState(void); // request state and set timer
-    void TransitionSettingPSMState(void); // check current state and timer
-    void EnterSettingMTMState(void);
-    void TransitionSettingMTMState(void);
+    void EnterSettingArmsState(void);
+    void TransitionSettingArmsState(void);
     void EnterAligningMTM(void);
     void TransitionAligningMTM(void);
     void EnterEnabled(void); // called when enabling, save initial positions of master and slave

@@ -78,8 +78,7 @@ void mtsTeleOperationECM::Init(void)
 void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
 {
     // configure state machine
-    mTeleopState.AddState("SETTING_ECM_STATE");
-    mTeleopState.AddState("SETTING_MTMS_STATE");
+    mTeleopState.AddState("SETTING_ARMS_STATE");
     mTeleopState.AddState("ENABLED");
     mTeleopState.AddAllowedDesiredState("DISABLED");
     mTeleopState.AddAllowedDesiredState("ENABLED");
@@ -96,20 +95,12 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
                                        &mtsTeleOperationECM::TransitionDisabled,
                                        this);
 
-    // setting ECM state
-    mTeleopState.SetEnterCallback("SETTING_ECM_STATE",
-                                  &mtsTeleOperationECM::EnterSettingECMState,
+    // setting arms state
+    mTeleopState.SetEnterCallback("SETTING_ARMS_STATE",
+                                  &mtsTeleOperationECM::EnterSettingArmsState,
                                   this);
-    mTeleopState.SetTransitionCallback("SETTING_ECM_STATE",
-                                       &mtsTeleOperationECM::TransitionSettingECMState,
-                                       this);
-
-    // setting MTMs state
-    mTeleopState.SetEnterCallback("SETTING_MTMS_STATE",
-                                  &mtsTeleOperationECM::EnterSettingMTMsState,
-                                  this);
-    mTeleopState.SetTransitionCallback("SETTING_MTMS_STATE",
-                                       &mtsTeleOperationECM::TransitionSettingMTMsState,
+    mTeleopState.SetTransitionCallback("SETTING_ARMS_STATE",
+                                       &mtsTeleOperationECM::TransitionSettingArmsState,
                                        this);
 
     // enabled
@@ -349,7 +340,7 @@ void mtsTeleOperationECM::TransitionDisabled(void)
     }
 }
 
-void mtsTeleOperationECM::EnterSettingECMState(void)
+void mtsTeleOperationECM::EnterSettingArmsState(void)
 {
     // reset timer
     mInStateTimer = StateTable.GetTic();
@@ -360,36 +351,6 @@ void mtsTeleOperationECM::EnterSettingECMState(void)
     if (armState != "READY") {
         mECM->SetDesiredState(std::string("READY"));
     }
-}
-
-void mtsTeleOperationECM::TransitionSettingECMState(void)
-{
-    // check if anyone wanted to disable anyway
-    if (mTeleopState.DesiredState() == "DISABLED") {
-        mTeleopState.SetCurrentState("DISABLED");
-        return;
-    }
-    // check state
-    std::string armState;
-    mECM->GetCurrentState(armState);
-    if (armState == "READY") {
-        mTeleopState.SetCurrentState("SETTING_MTMS_STATE");
-        return;
-    }
-    // check timer
-    if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
-        mInterface->SendError(this->GetName() + ": timed out while setting up ECM state");
-        this->SetDesiredState("DISABLED");
-    }
-}
-
-void mtsTeleOperationECM::EnterSettingMTMsState(void)
-{
-    // reset timer
-    mInStateTimer = StateTable.GetTic();
-
-    // request state if needed
-    std::string armState;
     mMTML->GetDesiredState(armState);
     if (armState != "READY") {
         mMTML->SetDesiredState(std::string("READY"));
@@ -400,7 +361,7 @@ void mtsTeleOperationECM::EnterSettingMTMsState(void)
     }
 }
 
-void mtsTeleOperationECM::TransitionSettingMTMsState(void)
+void mtsTeleOperationECM::TransitionSettingArmsState(void)
 {
     // check if anyone wanted to disable anyway
     if (mTeleopState.DesiredState() == "DISABLED") {
@@ -408,17 +369,19 @@ void mtsTeleOperationECM::TransitionSettingMTMsState(void)
         return;
     }
     // check state
-    std::string leftArmState, rightArmState;
+    std::string ecmState, leftArmState, rightArmState;
+    mECM->GetCurrentState(ecmState);
     mMTML->GetCurrentState(leftArmState);
     mMTMR->GetCurrentState(rightArmState);
-    if ((leftArmState == "READY") &&
+    if ((ecmState == "READY") &&
+        (leftArmState == "READY") &&
         (rightArmState == "READY")) {
         mTeleopState.SetCurrentState("ENABLED");
         return;
     }
     // check timer
     if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
-        mInterface->SendError(this->GetName() + ": timed out while setting up MTMs state");
+        mInterface->SendError(this->GetName() + ": timed out while setting up arms state");
         this->SetDesiredState("DISABLED");
     }
 }
@@ -596,7 +559,7 @@ void mtsTeleOperationECM::ClutchEventHandler(const prmEventButton & button)
         } else {
             mIsClutched = false;
             mInterface->SendStatus(this->GetName() + ": console clutch released");
-            mTeleopState.SetCurrentState("SETTING_MTMS_STATE");
+            mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
         }
     }
 }

@@ -74,10 +74,8 @@ protected:
     void StateChanged(void);
     void RunAllStates(void);
     void TransitionDisabled(void); // checks for desired state
-    void EnterSettingECMState(void); // request state and set timer
-    void TransitionSettingECMState(void); // check current state and timer
-    void EnterSettingMTMsState(void);
-    void TransitionSettingMTMsState(void);
+    void EnterSettingArmsState(void);
+    void TransitionSettingArmsState(void);
     void EnterEnabled(void);
     void RunEnabled(void); // performs actual teleoperation
     void TransitionEnabled(void); // performs actual teleoperation
