@@ -336,7 +336,7 @@ void mtsTeleOperationECM::RunAllStates(void)
 void mtsTeleOperationECM::TransitionDisabled(void)
 {
     if (mTeleopState.DesiredState() == "ENABLED") {
-        mTeleopState.SetCurrentState("SETTING_ECM_STATE");
+        mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
     }
 }
 

@@ -113,6 +113,7 @@ public:
         std::string mBaseFrameInterfaceName;
 
         mtsFunctionWrite SetDesiredState;
+        mtsFunctionVoid Freeze;
         mtsInterfaceRequired * IOInterfaceRequired;
         mtsInterfaceRequired * PIDInterfaceRequired;
         mtsInterfaceRequired * ArmInterfaceRequired;

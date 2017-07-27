@@ -122,6 +122,7 @@ public:
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
 
     /*! Methods used for commands */
+    virtual void Freeze(void);
     virtual void SetPositionJoint(const prmPositionJointSet & newPosition);
     virtual void SetPositionGoalJoint(const prmPositionJointSet & newPosition);
     virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);

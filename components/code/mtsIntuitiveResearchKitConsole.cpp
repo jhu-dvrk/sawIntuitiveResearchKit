@@ -1520,6 +1520,9 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     arm->ArmInterfaceRequired = AddInterfaceRequired(interfaceNameArm);
     if (arm->ArmInterfaceRequired) {
         arm->ArmInterfaceRequired->AddFunction("SetDesiredState", arm->SetDesiredState);
+        if (arm->mType != Arm::ARM_SUJ) {
+            arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze);
+        }
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
                                                         this, "Error");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
@@ -1636,20 +1639,28 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
     const ArmList::iterator endArms = mArms.end();
     ArmList::iterator iterArms;
 
+    std::cerr << "\n\nBefore" << std::endl
+              << "TeleopEnabled: " << mTeleopEnabled << std::endl
+              << "CameraPressed: " << mCameraPressed << std::endl
+              << "ECM running: " << mTeleopECMRunning << std::endl
+              << "PSM running: " << mTeleopPSMRunning << std::endl;
+    
     // Check if teleop is enabled
     if (!mTeleopEnabled) {
         bool freezeNeeded = false;
         // stop whatever was running
-        const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
-        for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
-             iterTeleopPSM != endTeleopPSM;
-             ++iterTeleopPSM) {
-            iterTeleopPSM->second->SetDesiredState(std::string("DISABLED"));
+        if (mTeleopPSMRunning) {
+            const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
+            for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
+                 iterTeleopPSM != endTeleopPSM;
+                 ++iterTeleopPSM) {
+                iterTeleopPSM->second->SetDesiredState(std::string("DISABLED"));
+            }
+            freezeNeeded = true;
+            mTeleopPSMRunning = false;
         }
-        freezeNeeded = true;
-        mTeleopPSMRunning = false;
-
-        if (mTeleopECM) {
+        
+        if (mTeleopECMRunning) {
             mTeleopECM->SetDesiredState(std::string("DISABLED"));
             freezeNeeded = true;
             mTeleopECMRunning = false;
@@ -1659,10 +1670,9 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         if (freezeNeeded) {
             for (iterArms = mArms.begin(); iterArms != endArms; ++iterArms) {
                 if ((iterArms->second->mType == Arm::ARM_MTM) ||
-                        (iterArms->second->mType == Arm::ARM_MTM_DERIVED) ||
-                        (iterArms->second->mType == Arm::ARM_MTM_GENERIC)) {
-                    // iterArms->second->Freeze();
-                    std::cerr << CMN_LOG_DETAILS << " need to freeze arm" << std::endl;
+                    (iterArms->second->mType == Arm::ARM_MTM_DERIVED) ||
+                    (iterArms->second->mType == Arm::ARM_MTM_GENERIC)) {
+                    iterArms->second->Freeze();
                 }
             }
         }
@@ -1734,6 +1744,12 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
             mTeleopPSMRunning = true;
         }
     }
+
+    std::cerr << "\n\nAfter" << std::endl
+              << "Ready for teleop: " << readyForTeleop << std::endl
+              << "ECM running: " << mTeleopECMRunning << std::endl
+              << "PSM running: " << mTeleopPSMRunning << std::endl;
+
 }
 
 void mtsIntuitiveResearchKitConsole::SetScale(const double & scale)

@@ -288,6 +288,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         // Set
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame,
                                         this, "SetBaseFrame");
+        RobotInterface->AddCommandVoid(&mtsIntuitiveResearchKitArm::Freeze,
+                                       this, "Freeze");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionJoint,
                                         this, "SetPositionJoint");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalJoint,
@@ -1190,6 +1192,21 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
     JointSetParam.Goal().Zeros();
     JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
     PID.SetPositionJoint(JointSetParam);
+}
+
+void mtsIntuitiveResearchKitArm::Freeze(void)
+{
+    if (!mReady) {
+        RobotInterface->SendWarning(this->GetName() + ": Freeze, arm not ready");
+        return;
+    }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    // set goal
+    JointSet.Assign(JointsKinematics.Position(), NumberOfJointsKinematics());
+    mHasNewPIDGoal = true;
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
