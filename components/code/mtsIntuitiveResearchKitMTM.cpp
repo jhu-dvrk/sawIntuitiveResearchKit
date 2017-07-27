@@ -88,7 +88,8 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     mArmState.AddState("CALIBRATING_ROLL");
     mArmState.AddState("ROLL_CALIBRATED");
     mArmState.AddState("HOMING_ROLL");
-    mArmState.AddState("ROLL_HOMED");
+    mArmState.AddState("RESETTING_ROLL_ENCODER");
+    mArmState.AddState("ROLL_ENCODER_RESET");
 
     // after arm homed
     mArmState.SetTransitionCallback("ARM_HOMED",
@@ -109,8 +110,14 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     mArmState.SetRunCallback("HOMING_ROLL",
                              &mtsIntuitiveResearchKitMTM::RunHomingRoll,
                              this);
-    mArmState.SetTransitionCallback("ROLL_HOMED",
-                                    &mtsIntuitiveResearchKitMTM::TransitionRollHomed,
+    mArmState.SetEnterCallback("RESETTING_ROLL_ENCODER",
+                               &mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder,
+                               this);
+    mArmState.SetRunCallback("RESETTING_ROLL_ENCODER",
+                             &mtsIntuitiveResearchKitMTM::RunResettingRollEncoder,
+                             this);
+    mArmState.SetTransitionCallback("ROLL_ENCODER_RESET",
+                                    &mtsIntuitiveResearchKitMTM::TransitionRollEncoderReset,
                                     this);
 
     RobotType = MTM_NULL;
@@ -353,7 +360,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingRoll(void)
 {
     if (mIsSimulated || this->mHomedOnce) {
         mHomedOnce = true;
-        mArmState.SetCurrentState("ROLL_HOMED");
+        mArmState.SetCurrentState("ROLL_ENCODER_RESET");
         return;
     }
 
@@ -385,14 +392,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingRoll(void)
         mJointTrajectory.GoalError.AbsSelf();
         isHomed = !mJointTrajectory.GoalError.ElementwiseGreaterOrEqual(mJointTrajectory.GoalTolerance).Any();
         if (isHomed) {
-            // reset encoder on last joint as well as PID target position to reflect new roll position = 0
-            RobotIO.ResetSingleEncoder(static_cast<int>(JNT_WRIST_ROLL));
-            JointSet.SetAll(0.0);
-            SetPositionJointLocal(JointSet);
-            PID.SetCheckPositionLimit(true);
-            RobotInterface->SendStatus(this->GetName() + ": roll homed");
-            mHomedOnce = true;
-            mArmState.SetCurrentState("ROLL_HOMED");
+            mArmState.SetCurrentState("RESETTING_ROLL_ENCODER");
         } else {
             // time out
             if (currentTime > mHomingTimer + extraTime) {
@@ -409,7 +409,61 @@ void mtsIntuitiveResearchKitMTM::RunHomingRoll(void)
     }
 }
 
-void mtsIntuitiveResearchKitMTM::TransitionRollHomed(void)
+void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
+{
+    mHomingRollEncoderReset = false;
+
+    // disable PID on roll joint
+    vctBoolVec enableJoints(NumberOfJoints());
+    enableJoints.SetAll(true);
+    enableJoints.at(6) = false;
+    PID.EnableJoints(enableJoints);
+
+    // start timer
+    const double currentTime = this->StateTable.GetTic();
+    mHomingTimer = currentTime;
+}
+
+void mtsIntuitiveResearchKitMTM::RunResettingRollEncoder(void)
+{
+    // wait for some time, no easy way to check if encoder has been reset
+    const double timeToWait = 10.0 * cmn_ms;
+    const double currentTime = this->StateTable.GetTic();
+
+    // first step, reset encoder
+    if (!mHomingRollEncoderReset) {
+        // wait a bit to make sure PID roll is off
+        if ((currentTime - mHomingTimer) < timeToWait) {
+            return;
+        }
+
+        // reset encoder on last joint as well as PID target position to reflect new roll position = 0
+        RobotIO.ResetSingleEncoder(static_cast<int>(JNT_WRIST_ROLL));
+        mHomingRollEncoderReset = true;
+        return;
+    }
+
+    // wait a bit to make sure encoder has been reset
+    if ((currentTime - mHomingTimer) < timeToWait) {
+        return;
+    }
+
+    // re-enable all joints
+    JointSet.SetAll(0.0);
+    SetPositionJointLocal(JointSet);
+    PID.SetCheckPositionLimit(true);
+    vctBoolVec enableJoints(NumberOfJoints());
+    enableJoints.SetAll(true);
+    PID.EnableJoints(enableJoints);
+    // pre-load JointsDesiredPID since EnterReady will use them and
+    // we're not sure the arm is already mJointReady
+    JointsDesiredPID.Position().SetAll(0.0);
+    
+    mHomedOnce = true;
+    mArmState.SetCurrentState("ROLL_ENCODER_RESET");
+}
+
+void mtsIntuitiveResearchKitMTM::TransitionRollEncoderReset(void)
 {
     if (mArmState.DesiredStateIsNotCurrent()) {
         mArmState.SetCurrentState("READY");

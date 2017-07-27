@@ -99,7 +99,9 @@ protected:
     void TransitionRollCalibrated(void);
     void EnterHomingRoll(void);
     void RunHomingRoll(void);
-    void TransitionRollHomed(void);
+    void EnterResettingRollEncoder(void);
+    void RunResettingRollEncoder(void);
+    void TransitionRollEncoderReset(void);
 
     /*! Get data specific to the MTM (gripper angle using analog inputs) after
       calling mtsIntuitiveResearchKitArm::GetRobotData. */
@@ -143,6 +145,7 @@ protected:
 
     // Roll position when hitting lower limit before encoder preload
     double mHomingCalibrateRollLower;
+    bool mHomingRollEncoderReset;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);
