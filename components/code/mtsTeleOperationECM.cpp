@@ -571,10 +571,6 @@ void mtsTeleOperationECM::SetDesiredState(const std::string & state)
         mInterface->SendError(this->GetName() + ": unsupported state " + state);
         return;
     }
-    // if state is same as current, return
-    if (mTeleopState.DesiredState() == state) {
-        return;
-    }
     // try to set the desired state
     try {
         mTeleopState.SetDesiredState(state);

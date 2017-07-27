@@ -935,14 +935,8 @@ void mtsIntuitiveResearchKitSUJ::SetDesiredState(const std::string & state)
         DispatchError(this->GetName() + ": unsupported state " + state);
         return;
     }
-
     // setting desired state triggers a new event so user nows which state is current
     DispatchCurrentState(mArmState.CurrentState());
-
-    // if state is same as current, return
-    if (mArmState.DesiredState() == state) {
-        return;
-    }
     // try to set the desired state
     try {
         mArmState.SetDesiredState(state);

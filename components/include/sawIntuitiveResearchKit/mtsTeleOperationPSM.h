@@ -135,6 +135,7 @@ protected:
 
     mtsStateMachine mTeleopState;
     double mInStateTimer;
+    double mTimeSinceLastAlign;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationPSM);

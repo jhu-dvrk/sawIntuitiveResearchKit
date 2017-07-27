@@ -341,14 +341,8 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
         RobotInterface->SendError(this->GetName() + ": unsupported state " + state);
         return;
     }
-
     // setting desired state triggers a new event so user nows which state is current
     MessageEvents.CurrentState(mArmState.CurrentState());
-
-    // if state is same as current, return
-    if (mArmState.DesiredState() == state) {
-        return;
-    }
     // try to set the desired state
     try {
         mArmState.SetDesiredState(state);

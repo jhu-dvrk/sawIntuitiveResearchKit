@@ -293,10 +293,6 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
         mInterface->SendError(this->GetName() + ": unsupported state " + state);
         return;
     }
-    // if state is same as current, return
-    if (mTeleopState.DesiredState() == state) {
-        return;
-    }
     // try to set the desired state
     try {
         mTeleopState.SetDesiredState(state);
@@ -443,19 +439,25 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 {
     // reset timer
     mInStateTimer = StateTable.GetTic();
+    mTimeSinceLastAlign = 0.0;
 }
 
 void mtsTeleOperationPSM::RunAligningMTM(void)
 {
-    // Orientate MTM with PSM
-    vctFrm4x4 masterCartesianGoal;
-    masterCartesianGoal.Translation().Assign(mMTM->PositionCartesianDesired.Position().Translation());
-    vctMatRot3 masterRotation;
-    masterRotation = mRegistrationRotation.Inverse() * mPSM->PositionCartesianCurrent.Position().Rotation();
-    masterCartesianGoal.Rotation().FromNormalized(masterRotation);
-    // convert to prm type
-    mMTM->PositionCartesianSet.Goal().From(masterCartesianGoal);
-    mMTM->SetPositionGoalCartesian(mMTM->PositionCartesianSet);
+    // don't ask continuously this might kill the MTM
+    const double currentTime = StateTable.GetTic();
+    if ((currentTime - mTimeSinceLastAlign) > 2.0 * cmn_s) {
+        mTimeSinceLastAlign = currentTime;
+        // Orientate MTM with PSM
+        vctFrm4x4 masterCartesianGoal;
+        masterCartesianGoal.Translation().Assign(mMTM->PositionCartesianDesired.Position().Translation());
+        vctMatRot3 masterRotation;
+        masterRotation = mRegistrationRotation.Inverse() * mPSM->PositionCartesianCurrent.Position().Rotation();
+        masterCartesianGoal.Rotation().FromNormalized(masterRotation);
+        // convert to prm type
+        mMTM->PositionCartesianSet.Goal().From(masterCartesianGoal);
+        mMTM->SetPositionGoalCartesian(mMTM->PositionCartesianSet);
+    }
 }
 
 void mtsTeleOperationPSM::TransitionAligningMTM(void)
@@ -463,10 +465,9 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     // check psm state
     std::string armState;
     mPSM->GetCurrentState(armState);
-    if (armState != "READY") {
+    if ((armState != "READY") && (armState != "MANUAL")) {
         mInterface->SendWarning(this->GetName() + ": PSM state has changed to [" + armState + "]");
         mTeleopState.SetDesiredState("DISABLED");
-        mTeleopState.SetCurrentState("DISABLED");
         return;
     }
 
