@@ -291,7 +291,7 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
         return;
     }
     // if state is same as current, return
-    if (mTeleopState.CurrentState() == state) {
+    if (mTeleopState.DesiredState() == state) {
         return;
     }
     // try to set the desired state

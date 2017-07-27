@@ -346,7 +346,7 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
     MessageEvents.CurrentState(mArmState.CurrentState());
 
     // if state is same as current, return
-    if (mArmState.CurrentState() == state) {
+    if (mArmState.DesiredState() == state) {
         return;
     }
     // try to set the desired state

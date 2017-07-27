@@ -940,7 +940,7 @@ void mtsIntuitiveResearchKitSUJ::SetDesiredState(const std::string & state)
     DispatchCurrentState(mArmState.CurrentState());
 
     // if state is same as current, return
-    if (mArmState.CurrentState() == state) {
+    if (mArmState.DesiredState() == state) {
         return;
     }
     // try to set the desired state
