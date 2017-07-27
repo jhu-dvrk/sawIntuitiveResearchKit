@@ -143,6 +143,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mStateTableState.SetAutomaticAdvance(false);
 
     mCounter = 0;
+    mReady = false;
     mIsSimulated = false;
     mHomedOnce = false;
     mHomingGoesToZero = false; // MTM ignores this
@@ -153,6 +154,10 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     mHasNewPIDGoal = false;
     mEffortOrientationLocked = false;
+
+    mSafeForCartesianControlCounter = 0;
+    mArmNotReadyCounter = 0;
+    mArmNotReadyTimeLastMessage = 0.0;
 
     // initialize trajectory data
     JointSet.SetSize(NumberOfJoints());
@@ -978,6 +983,27 @@ void mtsIntuitiveResearchKitArm::ControlPositionGoalCartesian(void)
     ControlPositionGoalJoint();
 }
 
+bool mtsIntuitiveResearchKitArm::ArmIsReady(const std::string & methodName)
+{
+    if (mReady) {
+        mArmNotReadyCounter = 0;
+        mArmNotReadyTimeLastMessage = 0.0;
+        return true;
+    }
+    // throttle messages in time
+    if ((StateTable.GetTic() - mArmNotReadyTimeLastMessage) > 2.0 * cmn_s) {
+        std::stringstream message;
+        message << this->GetName() << ": " << methodName << ", arm not ready";
+        if (mArmNotReadyCounter != 0) {
+            message << " (" << mArmNotReadyCounter << " errors)";
+        }
+        RobotInterface->SendWarning(message.str());
+        mArmNotReadyTimeLastMessage = StateTable.GetTic();
+    }
+    mArmNotReadyCounter++;
+    return false;
+}
+
 void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
                                                         const mtsIntuitiveResearchKitArmTypes::ControlMode mode,
                                                         mtsCallableVoidBase * callback)
@@ -1186,9 +1212,6 @@ void mtsIntuitiveResearchKitArm::ControlEffortOrientationLocked(void)
 
 void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
-    if (!mJointReady) {
-        cmnThrow(this->GetName() + ": SetPositionJointLocal: not ready for joint control");
-    }
     JointSetParam.Goal().Zeros();
     JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
     PID.SetPositionJoint(JointSetParam);
@@ -1196,8 +1219,7 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
 
 void mtsIntuitiveResearchKitArm::Freeze(void)
 {
-    if (!mReady) {
-        RobotInterface->SendWarning(this->GetName() + ": Freeze, arm not ready");
+    if (!ArmIsReady("Freeze")) {
         return;
     }
 
@@ -1211,8 +1233,7 @@ void mtsIntuitiveResearchKitArm::Freeze(void)
 
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
 {
-    if (!mReady) {
-        RobotInterface->SendWarning(this->GetName() + ": SetPositionJoint, arm not ready");
+    if (!ArmIsReady("SetPositionJoint")) {
         return;
     }
 
@@ -1226,8 +1247,7 @@ void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & ne
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet & newPosition)
 {
-    if (!mReady) {
-        RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalJoint, arm not ready");
+    if (!ArmIsReady("SetPositionGoalJoint")) {
         return;
     }
 
@@ -1244,8 +1264,7 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet 
 
 void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (!mReady) {
-        RobotInterface->SendWarning(this->GetName() + ": SetPositionCartesian, arm not ready");
+    if (!ArmIsReady("SetPositionCartesian")) {
         return;
     }
 
@@ -1259,8 +1278,7 @@ void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesian
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (!mReady) {
-        RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalCartesian, arm not ready");
+    if (!ArmIsReady("SetPositionGoalCartesian")) {
         return;
     }
 
@@ -1334,7 +1352,7 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 
 void mtsIntuitiveResearchKitArm::SetEffortJoint(const prmForceTorqueJointSet & effort)
 {
-    if (!mReady) {
+    if (!ArmIsReady("SetEffortJoint")) {
         RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalCartesian, arm not ready");
         return;
     }
@@ -1349,8 +1367,7 @@ void mtsIntuitiveResearchKitArm::SetEffortJoint(const prmForceTorqueJointSet & e
 
 void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wrench)
 {
-    if (!mReady) {
-        RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalCartesian, arm not ready");
+    if (!ArmIsReady("SetWrenchBody")) {
         return;
     }
 
@@ -1368,7 +1385,7 @@ void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wren
 
 void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & wrench)
 {
-    if (!mReady) {
+    if (!ArmIsReady("SetWrenchSpatial")) {
         RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalCartesian, arm not ready");
         return;
     }

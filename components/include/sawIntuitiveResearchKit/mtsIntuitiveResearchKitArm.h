@@ -289,6 +289,11 @@ public:
     mtsIntuitiveResearchKitArmTypes::ControlSpace mControlSpace;
     mtsIntuitiveResearchKitArmTypes::ControlMode mControlMode;
 
+    /*! Method used to check if the arm is ready and throttle messages sent. */
+    bool ArmIsReady(const std::string & methodName);
+    size_t mArmNotReadyCounter;
+    double mArmNotReadyTimeLastMessage;
+    
     /*! Sets control space and mode.  If none are user defined, the
       callbacks will be using the methods provided in this class.
       If either the space or mode is "USER", a callback must be
