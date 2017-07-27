@@ -224,6 +224,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("SetCoupling", PID.SetCoupling);
         PIDInterface->AddFunction("Enable", PID.Enable);
         PIDInterface->AddFunction("EnableJoints", PID.EnableJoints);
+        PIDInterface->AddFunction("IsEnabled", PID.IsEnabled);
         PIDInterface->AddFunction("GetStateJoint", PID.GetStateJoint);
         PIDInterface->AddFunction("GetStateJointDesired", PID.GetStateJointDesired);
         PIDInterface->AddFunction("SetPositionJoint", PID.SetPositionJoint);

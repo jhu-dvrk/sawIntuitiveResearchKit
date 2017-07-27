@@ -953,11 +953,13 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
     // Start manual mode but save the previous state
     if (button.Type() == prmEventButton::PRESSED) {
         ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
+        PID.IsEnabled(ClutchEvents.PIDEnabledPreviousState);
         mArmState.SetCurrentState("MANUAL");
     } else {
         if (mArmState.CurrentState() == "MANUAL") {
             // go back to state before clutching
             mArmState.SetCurrentState(ClutchEvents.ManipClutchPreviousState);
+            PID.Enable(ClutchEvents.PIDEnabledPreviousState);
         }
     }
 }

@@ -138,6 +138,7 @@ protected:
     struct {
         mtsFunctionWrite ManipClutch;
         std::string ManipClutchPreviousState;
+        bool PIDEnabledPreviousState;
     } ClutchEvents;
 
     /*! 5mm tools with 8 joints */

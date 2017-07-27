@@ -181,6 +181,7 @@ public:
         mtsFunctionWrite SetCoupling;
         mtsFunctionWrite Enable;
         mtsFunctionWrite EnableJoints;
+        mtsFunctionRead IsEnabled;
         mtsFunctionRead  GetStateJoint;
         mtsFunctionRead  GetStateJointDesired;
         mtsFunctionWrite SetPositionJoint;
@@ -227,7 +228,7 @@ public:
         mtsFunctionWrite CurrentState;
     } MessageEvents;
 
-    robManipulator *Manipulator;
+    robManipulator * Manipulator;
 
     // Cache cartesian goal position
     prmPositionCartesianSet CartesianSetParam;
