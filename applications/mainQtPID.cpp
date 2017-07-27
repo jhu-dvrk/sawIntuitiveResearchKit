@@ -81,7 +81,7 @@ int main(int argc, char ** argv)
     if ((armName == "PSM1") || (armName == "PSM2") || (armName == "PSM3")) {
         numberOfJoints = 7;
     } else if ((armName == "MTML") || (armName == "MTMR")) {
-        numberOfJoints = 8;
+        numberOfJoints = 7;
     } else if (armName == "ECM") {
         numberOfJoints = 4;
     } else {
