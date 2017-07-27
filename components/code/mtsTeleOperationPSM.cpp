@@ -102,6 +102,9 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
     mTeleopState.SetEnterCallback("ALIGNING_MTM",
                                   &mtsTeleOperationPSM::EnterAligningMTM,
                                   this);
+    mTeleopState.SetRunCallback("ALIGNING_MTM",
+                                  &mtsTeleOperationPSM::RunAligningMTM,
+                                  this);
     mTeleopState.SetTransitionCallback("ALIGNING_MTM",
                                        &mtsTeleOperationPSM::TransitionAligningMTM,
                                        this);
@@ -440,7 +443,10 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 {
     // reset timer
     mInStateTimer = StateTable.GetTic();
+}
 
+void mtsTeleOperationPSM::RunAligningMTM(void)
+{
     // Orientate MTM with PSM
     vctFrm4x4 masterCartesianGoal;
     masterCartesianGoal.Translation().Assign(mMTM->PositionCartesianDesired.Position().Translation());

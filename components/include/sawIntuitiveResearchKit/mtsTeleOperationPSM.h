@@ -80,6 +80,7 @@ protected:
     void EnterSettingArmsState(void);
     void TransitionSettingArmsState(void);
     void EnterAligningMTM(void);
+    void RunAligningMTM(void);
     void TransitionAligningMTM(void);
     void EnterEnabled(void); // called when enabling, save initial positions of master and slave
     void RunEnabled(void); // performs actual teleoperation
