@@ -1639,12 +1639,6 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
     const ArmList::iterator endArms = mArms.end();
     ArmList::iterator iterArms;
 
-    std::cerr << "\n\nBefore" << std::endl
-              << "TeleopEnabled: " << mTeleopEnabled << std::endl
-              << "CameraPressed: " << mCameraPressed << std::endl
-              << "ECM running: " << mTeleopECMRunning << std::endl
-              << "PSM running: " << mTeleopPSMRunning << std::endl;
-    
     // Check if teleop is enabled
     if (!mTeleopEnabled) {
         bool freezeNeeded = false;
@@ -1744,12 +1738,6 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
             mTeleopPSMRunning = true;
         }
     }
-
-    std::cerr << "\n\nAfter" << std::endl
-              << "Ready for teleop: " << readyForTeleop << std::endl
-              << "ECM running: " << mTeleopECMRunning << std::endl
-              << "PSM running: " << mTeleopPSMRunning << std::endl;
-
 }
 
 void mtsIntuitiveResearchKitConsole::SetScale(const double & scale)
