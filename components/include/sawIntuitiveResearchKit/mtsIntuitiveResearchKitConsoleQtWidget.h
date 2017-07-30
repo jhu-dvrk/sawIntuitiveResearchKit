@@ -31,7 +31,9 @@ class QDoubleSpinBox;
 
 #include <QWidget>
 
-class mtsIntuitiveResearchKitConsoleQtWidget: public QWidget, public mtsComponent
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
+
+class CISST_EXPORT mtsIntuitiveResearchKitConsoleQtWidget: public QWidget, public mtsComponent
 {
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);

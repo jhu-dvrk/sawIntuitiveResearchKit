@@ -40,6 +40,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 
+// nearbyint is a C++11 feature; VS2008 does not have it
+// (perhaps others as well).
+#include <cisstCommon/cmnPortability.h>
+#if (CISST_COMPILER == CISST_DOTNET2008)
+inline double nearbyint(double x) { return floor(x+0.5); }
+#endif
+
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
