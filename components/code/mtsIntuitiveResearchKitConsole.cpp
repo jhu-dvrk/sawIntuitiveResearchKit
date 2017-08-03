@@ -589,7 +589,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                         << "We strongly recommend you change it to a value below 1 ms, i.e. 0.001" << std::endl
                         << "------------------------------------------------------------------------------";
                 std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
-                CMN_LOG_CLASS_INIT_WARNING << message << std::endl;
+                CMN_LOG_CLASS_INIT_WARNING << message.str() << std::endl;
             }
         }
         jsonValue = jsonConfig["io"]["port"];
