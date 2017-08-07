@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <iostream>
 
 // cisst
+#include <cisstBuildType.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
@@ -86,6 +87,24 @@ void mtsIntuitiveResearchKitConsoleQtWidget::Startup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << "mtsIntuitiveResearchKitConsoleQtWidget::Startup" << std::endl;
     if (!parent()) {
         show();
+    }
+
+        // write warning to cerr if not compiled in Release mode
+    if (std::string(CISST_BUILD_TYPE) != "Release") {
+        std::string message;
+        message.append("Warning:\n");
+        message.append(" It seems that \"cisst\" has not been compiled in\n");
+        message.append(" Release mode.  Make sure your CMake configuration\n");
+        message.append(" or catkin profile is configured to compile in\n");
+        message.append(" Release mode for better performance and stability");
+
+        QMessageBox * msgBox = new QMessageBox(this);
+        msgBox->setAttribute(Qt::WA_DeleteOnClose); // makes sure the msgbox is deleted automatically when closed
+        msgBox->setStandardButtons(QMessageBox::Ok);
+        msgBox->setWindowTitle("Warning");
+        msgBox->setText(message.c_str());
+        msgBox->setModal(false); // if you want it non-modal
+        msgBox->show();
     }
 }
 
