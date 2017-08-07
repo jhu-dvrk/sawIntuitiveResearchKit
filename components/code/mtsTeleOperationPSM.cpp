@@ -212,6 +212,8 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
                                   "DesiredState", std::string(""));
         mInterface->AddEventWrite(MessageEvents.CurrentState,
                                   "CurrentState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.Following,
+                                  "Following", false);
         // configuration
         mInterface->AddEventWrite(ConfigurationEvents.Scale,
                                   "Scale", 0.5);
@@ -225,6 +227,7 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
 void mtsTeleOperationPSM::Startup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
+    MessageEvents.Following(false);
 }
 
 void mtsTeleOperationPSM::Run(void)
@@ -271,6 +274,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
 {
     // if the teleoperation is activated
     if (clutch) {
+        MessageEvents.Following(false);
         mMTM->PositionCartesianSet.Goal().Rotation().FromNormalized(mPSM->PositionCartesianCurrent.Position().Rotation());
         mMTM->PositionCartesianSet.Goal().Translation().Assign(mMTM->PositionCartesianCurrent.Position().Translation());
         mInterface->SendStatus(this->GetName() + ": console clutch pressed");
@@ -333,6 +337,7 @@ void mtsTeleOperationPSM::LockRotation(const bool & lock)
     // when releasing the orientation, master orientation is likely off
     // so force re-align
     if (lock == false) {
+        MessageEvents.Following(false);
         mTeleopState.SetCurrentState("DISABLED");
     } else {
         // update MTM/PSM previous position
@@ -393,6 +398,7 @@ void mtsTeleOperationPSM::RunAllStates(void)
     // check if anyone wanted to disable anyway
     if ((mTeleopState.DesiredState() == "DISABLED")
         && (mTeleopState.CurrentState() != "DISABLED")) {
+        MessageEvents.Following(false);
         mTeleopState.SetCurrentState("DISABLED");
         return;
     }
@@ -520,6 +526,8 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     // check if by any chance the clutch pedal is pressed
     if (mIsClutched) {
         Clutch(true);
+    } else {
+        MessageEvents.Following(true);
     }
 }
 
@@ -592,6 +600,7 @@ void mtsTeleOperationPSM::TransitionEnabled(void)
     }
 
     if (mTeleopState.DesiredStateIsNotCurrent()) {
+        MessageEvents.Following(false);
         mTeleopState.SetCurrentState(mTeleopState.DesiredState());
     }
 }

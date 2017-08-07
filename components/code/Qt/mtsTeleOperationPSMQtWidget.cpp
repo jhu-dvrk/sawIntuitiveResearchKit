@@ -66,6 +66,8 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
                                                 this, "DesiredState");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::CurrentStateEventHandler,
                                                 this, "CurrentState");
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::FollowingEventHandler,
+                                                this, "Following");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::ScaleEventHandler,
                                                 this, "Scale");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::RotationLockedEventHandler,
@@ -161,6 +163,15 @@ void mtsTeleOperationPSMQtWidget::SlotCurrentStateEventHandler(QString state)
     QLECurrentState->setText(state);
 }
 
+void mtsTeleOperationPSMQtWidget::SlotFollowingEventHandler(bool following)
+{
+    if (following) {
+        QLEFollowing->setText("FOLLOWING");
+    } else {
+        QLEFollowing->setText("INDEPENDANT");
+    }
+}
+
 void mtsTeleOperationPSMQtWidget::SlotScaleEventHandler(double scale)
 {
     QSBScale->setValue(scale);
@@ -223,20 +234,32 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     buttonsLayout->addWidget(QPBLog);
 
     // state info
-    QHBoxLayout * stateLayout = new QHBoxLayout;
-    controlLayout->addLayout(stateLayout);
-
-    QLabel * label = new QLabel("Desired");
-    stateLayout->addWidget(label);
+    QHBoxLayout * stateDesiredLayout = new QHBoxLayout;
+    controlLayout->addLayout(stateDesiredLayout);
+    QLabel * label = new QLabel("Desired state");
+    stateDesiredLayout->addWidget(label);
     QLEDesiredState = new QLineEdit("");
     QLEDesiredState->setReadOnly(true);
-    stateLayout->addWidget(QLEDesiredState);
+    stateDesiredLayout->addWidget(QLEDesiredState);
+    stateDesiredLayout->addStretch();
 
-    label = new QLabel("Current");
-    stateLayout->addWidget(label);
+    QHBoxLayout * stateCurrentLayout = new QHBoxLayout;
+    controlLayout->addLayout(stateCurrentLayout);
+    label = new QLabel("Current state");
+    stateCurrentLayout->addWidget(label);
     QLECurrentState = new QLineEdit("");
     QLECurrentState->setReadOnly(true);
-    stateLayout->addWidget(QLECurrentState);
+    stateCurrentLayout->addWidget(QLECurrentState);
+    stateCurrentLayout->addStretch();
+
+    QHBoxLayout * followingLayout = new QHBoxLayout;
+    controlLayout->addLayout(followingLayout);
+    label = new QLabel("Teleoperation \"mode\"");
+    followingLayout->addWidget(label);
+    QLEFollowing = new QLineEdit("");
+    QLEFollowing->setReadOnly(true);
+    followingLayout->addWidget(QLEFollowing);
+    followingLayout->addStretch();
 
     // Timing
     QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
@@ -265,6 +288,8 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
             this, SLOT(SlotDesiredStateEventHandler(QString)));
     connect(this, SIGNAL(SignalCurrentState(QString)),
             this, SLOT(SlotCurrentStateEventHandler(QString)));
+    connect(this, SIGNAL(SignalFollowing(bool)),
+            this, SLOT(SlotFollowingEventHandler(bool)));
 
     connect(QSBScale, SIGNAL(valueChanged(double)),
             this, SLOT(SlotSetScale(double)));
@@ -294,6 +319,11 @@ void mtsTeleOperationPSMQtWidget::DesiredStateEventHandler(const std::string & s
 void mtsTeleOperationPSMQtWidget::CurrentStateEventHandler(const std::string & state)
 {
     emit SignalCurrentState(QString(state.c_str()));
+}
+
+void mtsTeleOperationPSMQtWidget::FollowingEventHandler(const bool & following)
+{
+    emit SignalFollowing(following);
 }
 
 void mtsTeleOperationPSMQtWidget::ScaleEventHandler(const double & scale)

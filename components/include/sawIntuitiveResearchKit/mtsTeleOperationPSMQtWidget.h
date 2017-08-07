@@ -53,6 +53,7 @@ protected:
 signals:
     void SignalDesiredState(QString state);
     void SignalCurrentState(QString state);
+    void SignalFollowing(bool following);
     void SignalScale(double scale);
     void SignalRotationLocked(bool lock);
     void SignalTranslationLocked(bool lock);
@@ -67,6 +68,7 @@ private slots:
     // to update GUI from component's events
     void SlotDesiredStateEventHandler(QString state);
     void SlotCurrentStateEventHandler(QString state);
+    void SlotFollowingEventHandler(bool following);
     void SlotScaleEventHandler(double scale);
     void SlotRotationLockedEventHandler(bool lock);
     void SlotTranslationLockedEventHandler(bool lock);
@@ -78,6 +80,7 @@ private:
 
     void DesiredStateEventHandler(const std::string & state);
     void CurrentStateEventHandler(const std::string & state);
+    void FollowingEventHandler(const bool & following);
     void ScaleEventHandler(const double & scale);
     void RotationLockedEventHandler(const bool & lock);
     void TranslationLockedEventHandler(const bool & lock);
@@ -96,6 +99,7 @@ protected:
 private:
     QLineEdit * QLEDesiredState;
     QLineEdit * QLECurrentState;
+    QLineEdit * QLEFollowing;
     QCheckBox * QCBLockRotation;
     QCheckBox * QCBLockTranslation;
     QDoubleSpinBox * QSBScale;

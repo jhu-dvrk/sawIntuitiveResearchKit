@@ -63,6 +63,7 @@ protected:
     struct {
         mtsFunctionWrite DesiredState;
         mtsFunctionWrite CurrentState;
+        mtsFunctionWrite Following;
     } MessageEvents;
     mtsInterfaceProvided * mInterface;
 
