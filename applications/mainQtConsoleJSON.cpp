@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -26,9 +26,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQt.h>
-
-// #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitUDPStreamer.h>
-// #include <sawControllers/mtsTeleOperation.h>
 
 #include <cisstMultiTask/mtsCollectorFactory.h>
 #include <cisstMultiTask/mtsCollectorQtFactory.h>
@@ -124,31 +121,6 @@ int main(int argc, char ** argv)
     mtsIntuitiveResearchKitConsoleQt * consoleQt = new mtsIntuitiveResearchKitConsoleQt();
     consoleQt->Configure(console);
     consoleQt->Connect();
-
-#if 0
-    // setup arms defined in the json configuration file
-    for (unsigned int index = 0; index < pairs.size(); ++index) {
-        std::string masterUDPIP = jsonMaster["UDP-IP"].asString();
-        short masterUDPPort = jsonMaster["UDP-port"].asInt();
-
-        if (masterUDPIP != "" || masterUDPPort != 0) {
-            if (masterUDPIP != "" && masterUDPPort != 0) {
-                std::cout << "Adding UDPStream component for master " << masterName << " to " << masterUDPIP << ":" << masterUDPPort << std::endl;
-                mtsIntuitiveResearchKitUDPStreamer * streamer =
-                    new mtsIntuitiveResearchKitUDPStreamer(masterName + "UDP", periodUDP, masterUDPIP, masterUDPPort);
-                componentManager->AddComponent(streamer);
-                // connect to mtm interface to get cartesian position
-                componentManager->Connect(streamer->GetName(), "Robot", mtm->Name(), "Robot");
-                // connect to io to get clutch events
-                componentManager->Connect(streamer->GetName(), "Clutch", "io", "CLUTCH");
-                // connect to io to get coag events
-                componentManager->Connect(streamer->GetName(), "Coag", "io", "COAG");
-            } else {
-                std::cerr << "Error for master arm " << masterName << ", you can provided UDP-IP w/o UDP-port" << std::endl;
-                exit(-1);
-            }
-        }
-#endif
 
     // configure data collection if needed
     if (options.IsSet("collection-config")) {
