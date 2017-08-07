@@ -306,10 +306,15 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
 
 void mtsTeleOperationPSM::SetScale(const double & scale)
 {
+    // set scale
     mConfigurationStateTable->Start();
     mScale = scale;
     mConfigurationStateTable->Advance();
     ConfigurationEvents.Scale(mScale);
+
+    // update MTM/PSM previous position to prevent jumps
+    mMTM->CartesianPrevious.From(mMTM->PositionCartesianCurrent.Position());
+    mPSM->CartesianPrevious.From(mPSM->PositionCartesianCurrent.Position());
 }
 
 void mtsTeleOperationPSM::SetRegistrationRotation(const vctMatRot3 & rotation)
