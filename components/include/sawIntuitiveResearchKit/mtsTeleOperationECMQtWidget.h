@@ -27,7 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QSplitter>
 
-#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
 
 class QDoubleSpinBox;
 class QPushButton;

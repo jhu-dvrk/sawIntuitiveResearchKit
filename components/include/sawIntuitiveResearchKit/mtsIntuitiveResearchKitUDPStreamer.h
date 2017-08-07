@@ -27,7 +27,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsForwardDeclarations.h>
 class prmEventButton;
 
-class mtsIntuitiveResearchKitUDPStreamer : public mtsTaskPeriodic
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+
+class CISST_EXPORT mtsIntuitiveResearchKitUDPStreamer : public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 

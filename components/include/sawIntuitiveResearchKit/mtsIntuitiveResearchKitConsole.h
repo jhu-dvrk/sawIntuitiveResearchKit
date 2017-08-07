@@ -40,7 +40,7 @@ public:
     friend class mtsIntuitiveResearchKitConsoleQt;
     friend class dvrk::console;
 
-    class Arm {
+    class CISST_EXPORT Arm {
     public:
         typedef enum {ARM_UNDEFINED,
                       ARM_MTM, ARM_PSM, ARM_ECM, ARM_SUJ,
@@ -135,7 +135,7 @@ public:
         }
     };
 
-    class TeleopECM {
+    class CISST_EXPORT TeleopECM {
     public:
         typedef enum {TELEOP_ECM, TELEOP_ECM_DERIVED, TELEOP_ECM_GENERIC} TeleopECMType;
         friend class mtsIntuitiveResearchKitConsole;
