@@ -1222,7 +1222,7 @@ void mtsIntuitiveResearchKitArm::Freeze(void)
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
-    JointSet.Assign(JointsKinematics.Position(), NumberOfJointsKinematics());
+    JointSet.Assign(JointsDesiredKinematics.Position(), NumberOfJointsKinematics());
     mHasNewPIDGoal = true;
 }
 
