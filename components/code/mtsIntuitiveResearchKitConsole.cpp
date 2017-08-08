@@ -1641,25 +1641,34 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
 
     // Check if teleop is enabled
     if (!mTeleopEnabled) {
+        bool freezeNeeded = false;
         const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
         for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
              iterTeleopPSM != endTeleopPSM;
              ++iterTeleopPSM) {
             iterTeleopPSM->second->SetDesiredState(std::string("DISABLED"));
+            if (mTeleopPSMRunning) {
+                freezeNeeded = true;
+            }
             mTeleopPSMRunning = false;
         }
 
         if (mTeleopECM) {
             mTeleopECM->SetDesiredState(std::string("DISABLED"));
+            if (mTeleopECMRunning) {
+                freezeNeeded = true;
+            }
             mTeleopECMRunning = false;
         }
 
         // freeze arms if we stopped any teleop
-        for (iterArms = mArms.begin(); iterArms != endArms; ++iterArms) {
-            if ((iterArms->second->mType == Arm::ARM_MTM) ||
-                (iterArms->second->mType == Arm::ARM_MTM_DERIVED) ||
-                (iterArms->second->mType == Arm::ARM_MTM_GENERIC)) {
-                iterArms->second->Freeze();
+        if (freezeNeeded) {
+            for (iterArms = mArms.begin(); iterArms != endArms; ++iterArms) {
+                if ((iterArms->second->mType == Arm::ARM_MTM) ||
+                    (iterArms->second->mType == Arm::ARM_MTM_DERIVED) ||
+                    (iterArms->second->mType == Arm::ARM_MTM_GENERIC)) {
+                    iterArms->second->Freeze();
+                }
             }
         }
         return;
