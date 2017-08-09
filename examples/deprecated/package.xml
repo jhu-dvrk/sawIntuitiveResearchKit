@@ -1,8 +1,8 @@
 <package>
-  <name>saw_intuitive_research_kit_examples</name>
+  <name>saw_intuitive_research_kit_examples_deprecated</name>
   <version>1.4.0</version>
   <description>
-  sawIntuitiveResearchKit Examples
+  sawIntuitiveResearchKit Examples (deprecated)
   </description>
   <maintainer email="anton.deguet@jhu.edu">Anton Deguet</maintainer>
   <license>cisst</license>

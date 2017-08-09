@@ -1,0 +1,19 @@
+<package>
+  <name>saw_intuitive_research_kit_example_derived_teleop_psm</name>
+  <version>1.4.0</version>
+  <description>
+  sawIntuitiveResearchKit Example
+  </description>
+  <maintainer email="anton.deguet@jhu.edu">Anton Deuet</maintainer>
+  <license>cisst</license>
+  <url>https://github.com/jhu-saw/sawIntuitiveResearchKit</url>
+
+  <build_depend>saw_intuitive_research_kit</build_depend>
+
+  <run_depend>saw_intuitive_research_kit</run_depend>
+
+  <export>
+    <build_type>catkin</build_type>
+  </export>
+
+</package>
