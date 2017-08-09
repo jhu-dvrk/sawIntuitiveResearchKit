@@ -1,0 +1,15 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "devices":
+    [
+        {
+            "name": "MTML",
+            "serial": 11245
+        }
+        ,
+        {
+            "name": "MTMR",
+            "serial": 11231
+        }
+    ]
+}

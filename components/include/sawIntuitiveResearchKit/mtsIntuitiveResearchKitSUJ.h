@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitSUJ_h
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
+#include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
@@ -56,23 +57,19 @@ protected:
       appropriate joint values based on the mux state. */
     void GetAndConvertPotentiometerValues(void);
 
-    /*! Verify that the state transition is possible, initialize global
-      variables for the desired state and finally set the state. */
-    void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState);
+    void StateChanged(void);
+    void RunAllStates(void); // this should happen for all states
 
-    /*! Homing procedure, will check the homing state and call the required method. */
-    void RunHoming(void);
+    virtual void EnterUninitialized(void);
+    virtual void TransitionUninitialized(void);
 
-    /*! Homing procedure, power the robot and initial current and encoder calibration. */
-    void RunHomingPower(void);
+    virtual void EnterPowering(void);
+    virtual void TransitionPowering(void);
 
-    /*! Normal operations. */
-    void RunReady(void);
+    virtual void EnterReady(void);
+    virtual void RunReady(void);
 
-    void SetRobotControlState(const std::string & state);
-
-    /*! Convert enum to string using function provided by cisstDataGenerator. */
-    void GetRobotControlState(std::string & state) const;
+    void SetDesiredState(const std::string & state);
 
     /*! Set velocity for motorized PSM lift. normalized between -1.0 and 1.0. */
     void SetLiftVelocity(const double & velocity);
@@ -81,13 +78,21 @@ protected:
     void SetBaseFrame(const prmPositionCartesianGet & newBaseFrame);
 
     /*! Event handler for PID errors. */
-    void ErrorEventHandler(const std::string & message);
+    void ErrorEventHandler(const mtsMessage & message);
 
     /*! Motor down button. */
     void MotorDownEventHandler(const prmEventButton & button);
 
     /*! Motor up button. */
     void MotorUpEventHandler(const prmEventButton & button);
+
+    // Arm state machine
+    mtsStateMachine mArmState;
+    std::string mFallbackState;
+    // Just to have read commands to retrieve states
+    mtsStateTable mStateTableState;
+    mtsStdString mStateTableStateCurrent;
+    mtsStdString mStateTableStateDesired;
 
     // Required interface
     struct {
@@ -102,34 +107,34 @@ protected:
 
     // Functions for events
     struct {
-        mtsFunctionWrite Status;
-        mtsFunctionWrite Warning;
-        mtsFunctionWrite Error;
-        mtsFunctionWrite RobotState;
+        mtsFunctionWrite DesiredState;
+        mtsFunctionWrite CurrentState;
     } MessageEvents;
+    mtsInterfaceProvided * mInterface;
 
     // Functions to control MUX
     struct {
         mtsFunctionRead GetValue;
         mtsFunctionWrite SetValue;
-    } MuxReset;
+    } NoMuxReset;
 
     struct {
         mtsFunctionRead GetValue;
         mtsFunctionWrite SetValue;
     } MuxIncrement;
 
+    void ResetMux(void);
     double mMuxTimer;
     vctBoolVec mMuxState;
     size_t mMuxIndex, mMuxIndexExpected;
 
     // Functions to control motor on SUJ3
     struct {
-        mtsFunctionWrite EnablePWM;
+        mtsFunctionWrite DisablePWM;
         mtsFunctionWrite SetPWMDutyCycle;
     } PWM;
 
-    mtsIntuitiveResearchKitArmTypes::RobotStateType mRobotState;
+    // mtsIntuitiveResearchKitArmTypes::RobotStateType mRobotState;
 
     // Home Action
     double mHomingTimer;
@@ -146,7 +151,10 @@ protected:
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> Arms;
 
     void DispatchError(const std::string & message);
+    void DispatchWarning(const std::string & message);
     void DispatchStatus(const std::string & message);
+    void DispatchCurrentState(const std::string & state);
+    void DispatchDesiredState(const std::string & state);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJ);

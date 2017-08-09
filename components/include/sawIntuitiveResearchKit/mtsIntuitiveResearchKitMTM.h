@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,6 +21,9 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitMTM_h
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+#include <sawControllers/osaImpedanceController.h>
+
+// Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 class CISST_EXPORT mtsIntuitiveResearchKitMTM: public mtsIntuitiveResearchKitArm
@@ -53,17 +56,19 @@ protected:
         JNT_SETUP_JNT = 3,
         JNT_WRIST_PITCH = 4,
         JNT_WRIST_YAW = 5,
-        JNT_WRIST_ROLL = 6
+        JNT_WRIST_ROLL = 6,
+        JNT_GRIPPER = 7
     };
 
     /*! Configuration methods */
+    inline size_t NumberOfAxes(void) const {
+        return 8;
+    }
+
     inline size_t NumberOfJoints(void) const {
         return 7;
     }
 
-    inline size_t NumberOfAxes(void) const {
-        return 8;
-    }
 
     inline size_t NumberOfJointsKinematics(void) const {
         return 7;
@@ -80,39 +85,42 @@ protected:
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
 
+    inline bool IsSafeForCartesianControl(void) const {
+        return true;
+    };
+
     virtual void Init(void);
+
+    // state related methods
+    void SetGoalHomingArm(void);
+    void TransitionArmHomed(void);
+    void EnterCalibratingRoll(void);
+    void RunCalibratingRoll(void);
+    void TransitionRollCalibrated(void);
+    void EnterHomingRoll(void);
+    void RunHomingRoll(void);
+    void EnterResettingRollEncoder(void);
+    void RunResettingRollEncoder(void);
+    void TransitionRollEncoderReset(void);
 
     /*! Get data specific to the MTM (gripper angle using analog inputs) after
       calling mtsIntuitiveResearchKitArm::GetRobotData. */
     void GetRobotData(void);
 
-    /*! Verify that the state transition is possible, initialize global
-      variables for the desired state and finally set the state. */
-    void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState);
-
-    void SetRobotControlState(const std::string & state);
-
-    /*! Switch case for user mode. */
-    void RunArmSpecific(void);
-
-    /*! Homing procedure, home all joints except last one using potentiometers as reference. */
-    void RunHomingCalibrateArm(void);
-
-    /*! Homing procedure, calibrate last joint based on hardware limits. */
-    void RunHomingCalibrateRoll(void);
-
-    /*! Gravity Compensation. */
-    virtual void RunGravityCompensation(void);
-
     // see base class
-    void RunEffortOrientationLocked(void);
+    void ControlEffortOrientationLocked(void);
 
-    /*! Run Clutch */
-    void RunClutch(void);
+    /*! Effort Impedance.  */
+    void RunEffortCartesianImpedance(void);
+
+    void SetControlEffortActiveJoints(void);
 
     /*! Lock master orientation when in cartesian effort mode */
     virtual void LockOrientation(const vctMatRot3 & orientation);
     virtual void UnlockOrientation(void);
+
+    /*! Set Impedance Gains*/
+    virtual void SetImpedanceGains(const prmFixtureGainCartesianSet & newGains);
 
     // Functions for events
     struct {
@@ -126,17 +134,18 @@ protected:
     //! Analog Input from Hardware for Gripper
     vctDoubleVec AnalogInputPosSI;
     //! Gripper angle
-    double GripperPosition;
+    prmStateJoint Gripper;
     bool GripperClosed;
 
     //! robot type
     MTM_TYPE RobotType;
 
-    // Home Action
-    bool HomingCalibrateRollSeekLower,
-         HomingCalibrateRollSeekUpper,
-         HomingCalibrateRollSeekCenter;
-    double HomingCalibrateRollLower, HomingCalibrateRollUpper;
+    // Impedance Controller
+    osaImpedanceController * mImpedanceController;
+
+    // Roll position when hitting lower limit before encoder preload
+    double mHomingCalibrateRollLower;
+    bool mHomingRollEncoderReset;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);

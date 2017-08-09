@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 // for ROS console
@@ -39,12 +40,13 @@ public:
     friend class mtsIntuitiveResearchKitConsoleQt;
     friend class dvrk::console;
 
-    class Arm {
+    class CISST_EXPORT Arm {
     public:
         typedef enum {ARM_UNDEFINED,
                       ARM_MTM, ARM_PSM, ARM_ECM, ARM_SUJ,
                       ARM_MTM_GENERIC, ARM_PSM_GENERIC, ARM_ECM_GENERIC,
-                      ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_ECM_DERIVED} ArmType;
+                      ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_ECM_DERIVED,
+                      ARM_PSM_SOCKET} ArmType;
 
         typedef enum {SIMULATION_NONE,
                       SIMULATION_KINEMATIC,
@@ -66,14 +68,16 @@ public:
         /*! Create and configure the robot arm. */
         void ConfigureArm(const ArmType armType,
                           const std::string & configFile,
-                          const double & periodInSeconds = 0.5 * cmn_ms,
-                          mtsComponent * existingArm = 0);
+                          const double & periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
 
         /*! Connect all interfaces specific to this arm. */
         bool Connect(void);
 
         /*! Accessors */
         const std::string & Name(void) const;
+        const std::string & SocketComponentName(void) const;
+        const std::string & ComponentName(void) const;
+        const std::string & InterfaceName(void) const;
         const std::string & IOComponentName(void) const;
         const std::string & PIDComponentName(void) const;
 
@@ -89,13 +93,26 @@ public:
         std::string mPIDComponentName;
         std::string mPIDConfigurationFile;
         // arm
+        std::string mComponentName;
+        std::string mInterfaceName;
         std::string mArmConfigurationFile;
         double mArmPeriod;
+        // socket
+        std::string mIp;
+        int mPort;
+        bool mSocketServer;
+        std::string mSocketComponentName;
+        // generic arm
+        bool mIsGeneric;
+        std::string mSharedLibrary;
+        std::string mClassName;
+        std::string mConstructorArgJSON;
+
         // base frame
         std::string mBaseFrameComponentName;
         std::string mBaseFrameInterfaceName;
 
-        mtsFunctionWrite SetRobotControlState;
+        mtsFunctionWrite SetDesiredState;
         mtsFunctionVoid Freeze;
         mtsInterfaceRequired * IOInterfaceRequired;
         mtsInterfaceRequired * PIDInterfaceRequired;
@@ -118,7 +135,7 @@ public:
         }
     };
 
-    class TeleopECM {
+    class CISST_EXPORT TeleopECM {
     public:
         typedef enum {TELEOP_ECM, TELEOP_ECM_DERIVED, TELEOP_ECM_GENERIC} TeleopECMType;
         friend class mtsIntuitiveResearchKitConsole;
@@ -126,15 +143,18 @@ public:
         friend class dvrk::console;
 
         TeleopECM(const std::string & name,
-                  const std::string & masterLeftName,
-                  const std::string & masterRightName,
-                  const std::string & slaveName,
+                  const std::string & masterLeftComponentName,
+                  const std::string & masterLeftInterfaceName,
+                  const std::string & masterRightComponentName,
+                  const std::string & masterRightInterfaceName,
+                  const std::string & slaveComponentName,
+                  const std::string & slaveInterfaceName,
                   const std::string & consoleName);
 
         /*! Create and configure the robot arm. */
         void ConfigureTeleop(const TeleopECMType type,
                              const vctMatRot3 & orientation,
-                             const double & periodInSeconds = 2.0 * cmn_ms);
+                             const double & periodInSeconds = mtsIntuitiveResearchKit::TeleopPeriod);
 
         /*! Connect all interfaces specific to this teleop. */
         bool Connect(void);
@@ -145,9 +165,12 @@ public:
     protected:
         std::string mName;
         TeleopECMType mType;
-        std::string mMTMLName;
-        std::string mMTMRName;
-        std::string mECMName;
+        std::string mMTMLComponentName;
+        std::string mMTMLInterfaceName;
+        std::string mMTMRComponentName;
+        std::string mMTMRInterfaceName;
+        std::string mECMComponentName;
+        std::string mECMInterfaceName;
         std::string mConsoleName;
         mtsFunctionWrite SetDesiredState;
         mtsInterfaceRequired * InterfaceRequired;
@@ -161,14 +184,16 @@ public:
         friend class dvrk::console;
 
         TeleopPSM(const std::string & name,
-                  const std::string & masterName,
-                  const std::string & slaveName,
+                  const std::string & masterComponentName,
+                  const std::string & masterInterfaceName,
+                  const std::string & slaveComponentName,
+                  const std::string & slaveInterfaceName,
                   const std::string & consoleName);
 
         /*! Create and configure the robot arm. */
         void ConfigureTeleop(const TeleopPSMType type,
                              const vctMatRot3 & orientation,
-                             const double & periodInSeconds = 2.0 * cmn_ms);
+                             const double & periodInSeconds = mtsIntuitiveResearchKit::TeleopPeriod);
 
         /*! Connect all interfaces specific to this teleop. */
         bool Connect(void);
@@ -179,8 +204,10 @@ public:
     protected:
         std::string mName;
         TeleopPSMType mType;
-        std::string mMTMName;
-        std::string mPSMName;
+        std::string mMTMComponentName;
+        std::string mMTMInterfaceName;
+        std::string mPSMComponentName;
+        std::string mPSMInterfaceName;
         std::string mConsoleName;
         mtsFunctionWrite SetDesiredState;
         mtsFunctionWrite SetScale;
@@ -213,8 +240,8 @@ public:
                           const std::string & masterName,
                           const std::string & slaveName);
 
-    bool AddFootpedalInterfaces(void);
-    bool ConnectFootpedalInterfaces(void);
+    void AddFootpedalInterfaces(void);
+    void ConnectFootpedalInterfaces(void);
 
     bool Connect(void);
 
@@ -256,7 +283,6 @@ protected:
     void UpdateTeleopState(void);
     void SetScale(const double & scale);
     bool mHasIO;
-    bool mHasFootpedals;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
@@ -268,23 +294,22 @@ protected:
     } ConsoleEvents;
     bool mOperatorPresent;
     bool mCameraPressed;
-    std::string mIOComponentName;
-    std::string mOperatorPresentComponent;
-    std::string mOperatorPresentInterface;
 
-    // Functions for events
-    struct {
-        mtsFunctionWrite Status;
-        mtsFunctionWrite Warning;
-        mtsFunctionWrite Error;
-    } MessageEvents;
+    std::string mIOComponentName; // for actuator IOs
+
+    // components used for events (digital inputs)
+    typedef std::pair<std::string, std::string> InterfaceComponentType;
+    typedef std::map<std::string, InterfaceComponentType> DInputSourceType;
+    DInputSourceType mDInputSources;
+
+    mtsInterfaceProvided * mInterface;
     struct {
         mtsFunctionWrite Scale;
     } ConfigurationEvents;
 
-    void ErrorEventHandler(const std::string & message);
-    void WarningEventHandler(const std::string & message);
-    void StatusEventHandler(const std::string & message);
+    void ErrorEventHandler(const mtsMessage & message);
+    void WarningEventHandler(const mtsMessage & message);
+    void StatusEventHandler(const mtsMessage & message);
 
     void ECMManipClutchEventHandler(const prmEventButton & button);
 

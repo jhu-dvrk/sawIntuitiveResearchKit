@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <iostream>
 
 // cisst
+#include <cisstBuildType.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
@@ -29,38 +30,49 @@ http://www.cisst.org/cisst/license.txt.
 #include <QCloseEvent>
 #include <QCoreApplication>
 #include <QPushButton>
-#include <QTextEdit>
 #include <QScrollBar>
 #include <QGroupBox>
 #include <QTabWidget>
 #include <QSplitter>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QTime>
 #include <QLabel>
 #include <QPixmap>
 #include <QShortcut>
 #include <QDoubleSpinBox>
+#include <QRadioButton>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
 
 mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(const std::string & componentName):
     mtsComponent(componentName)
 {
+    QMMessage = new mtsMessageQtWidget();
+
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Main");
     if (interfaceRequired) {
+        QMMessage->SetInterfaceRequired(interfaceRequired);
         interfaceRequired->AddFunction("PowerOff", Console.PowerOff);
         interfaceRequired->AddFunction("Home", Console.Home);
         interfaceRequired->AddFunction("TeleopEnable", Console.TeleopEnable);
         interfaceRequired->AddFunction("SetScale", Console.SetScale);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
                                                 this, "Scale");
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ErrorEventHandler,
-                                                    this, "Error");
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::WarningEventHandler,
-                                                    this, "Warning");
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::StatusEventHandler,
-                                                    this, "Status");
+    }
+    interfaceRequired = AddInterfaceRequired("Clutch");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler,
+                                                this, "Button");
+    }
+    interfaceRequired = AddInterfaceRequired("OperatorPresent");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler,
+                                                this, "Button");
+    }
+    interfaceRequired = AddInterfaceRequired("Camera");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler,
+                                                this, "Button");
     }
     setupUi();
 }
@@ -75,6 +87,24 @@ void mtsIntuitiveResearchKitConsoleQtWidget::Startup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << "mtsIntuitiveResearchKitConsoleQtWidget::Startup" << std::endl;
     if (!parent()) {
         show();
+    }
+
+        // write warning to cerr if not compiled in Release mode
+    if (std::string(CISST_BUILD_TYPE) != "Release") {
+        std::string message;
+        message.append("Warning:\n");
+        message.append(" It seems that \"cisst\" has not been compiled in\n");
+        message.append(" Release mode.  Make sure your CMake configuration\n");
+        message.append(" or catkin profile is configured to compile in\n");
+        message.append(" Release mode for better performance and stability");
+
+        QMessageBox * msgBox = new QMessageBox(this);
+        msgBox->setAttribute(Qt::WA_DeleteOnClose); // makes sure the msgbox is deleted automatically when closed
+        msgBox->setStandardButtons(QMessageBox::Ok);
+        msgBox->setWindowTitle("Warning");
+        msgBox->setText(message.c_str());
+        msgBox->setModal(false); // if you want it non-modal
+        msgBox->show();
     }
 }
 
@@ -133,11 +163,6 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetScale(double scale)
     Console.SetScale(scale);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotTextChanged(void)
-{
-    QTEMessages->verticalScrollBar()->setSliderPosition(QTEMessages->verticalScrollBar()->maximum());
-}
-
 void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 {
     QHBoxLayout * mainLayout = new QHBoxLayout;
@@ -179,12 +204,33 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QSBScale->setValue(0.2);
     teleopLayout->addWidget(QSBScale);
 
+    QGroupBox * inputsBox = new QGroupBox("Inputs");
+    boxLayout->addWidget(inputsBox);
+    QVBoxLayout * inputsLayout = new QVBoxLayout();
+    inputsBox->setLayout(inputsLayout);
+    QRBClutch = new QRadioButton("Clutch");
+    QRBClutch->setAutoExclusive(false);
+    QRBClutch->setChecked(false);
+    QRBClutch->setEnabled(false);
+    inputsLayout->addWidget(QRBClutch);
+    QRBOperatorPresent = new QRadioButton("Operator");
+    QRBOperatorPresent->setAutoExclusive(false);
+    QRBOperatorPresent->setChecked(false);
+    QRBOperatorPresent->setEnabled(false);
+    inputsLayout->addWidget(QRBOperatorPresent);
+    QRBCamera = new QRadioButton("Camera");
+    QRBCamera->setAutoExclusive(false);
+    QRBCamera->setChecked(false);
+    QRBCamera->setEnabled(false);
+    inputsLayout->addWidget(QRBCamera);
+
     boxLayout->addStretch(100);
     buttonsWidget->setFixedWidth(buttonsWidget->sizeHint().width());
     mainLayout->addWidget(buttonsWidget);
 
+
     QLabel * labelLogo = new QLabel("");
-    labelLogo->setPixmap(QPixmap(":/dVRK.svg"));
+    labelLogo->setPixmap(QPixmap(":/dVRK.png").scaled(60, 60, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     boxLayout->addWidget(labelLogo);
 
     QSplitter * tabWidgetAndMessages = new QSplitter();
@@ -193,11 +239,8 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QTWidgets = new QTabWidget();
     tabWidgetAndMessages->addWidget(QTWidgets);
 
-    QTEMessages = new QTextEdit();
-    QTEMessages->setReadOnly(true);
-    QTEMessages->ensureCursorVisible();
-    QTEMessages->resize(QTEMessages->width(), 600);
-    tabWidgetAndMessages->addWidget(QTEMessages);
+    QMMessage->setupUi();
+    tabWidgetAndMessages->addWidget(QMMessage);
 
     mainLayout->addWidget(tabWidgetAndMessages);
     setLayout(mainLayout);
@@ -222,14 +265,12 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotSetScale(double)));
     connect(this, SIGNAL(SignalScale(double)),
             this, SLOT(SlotScaleEventHandler(double)));
-
-    // messages
-    connect(this, SIGNAL(SignalAppendMessage(QString)),
-            QTEMessages, SLOT(append(QString)));
-    connect(this, SIGNAL(SignalSetColor(QColor)),
-            QTEMessages, SLOT(setTextColor(QColor)));
-    connect(QTEMessages, SIGNAL(textChanged()),
-            this, SLOT(SlotTextChanged()));
+    connect(this, SIGNAL(SignalClutch(bool)),
+            this, SLOT(SlotClutchEventHandler(bool)));
+    connect(this, SIGNAL(SignalOperatorPresent(bool)),
+            this, SLOT(SlotOperatorPresentEventHandler(bool)));
+    connect(this, SIGNAL(SignalCamera(bool)),
+            this, SLOT(SlotCameraEventHandler(bool)));
 
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q), this, SLOT(close()));
 }
@@ -244,20 +285,45 @@ void mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler(const double & sc
     emit SignalScale(scale);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::ErrorEventHandler(const std::string & message)
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotClutchEventHandler(bool clutch)
 {
-    emit SignalSetColor(QColor("red"));
-    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Error: ") + QString(message.c_str()));
+    QRBClutch->setChecked(clutch);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::WarningEventHandler(const std::string & message)
+void mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler(const prmEventButton & button)
 {
-    emit SignalSetColor(QColor("darkRed"));
-    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Warning: ") + QString(message.c_str()));
+    if (button.Type() == prmEventButton::PRESSED) {
+        emit SignalClutch(true);
+    } else {
+        emit SignalClutch(false);
+    }
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::StatusEventHandler(const std::string & message)
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotOperatorPresentEventHandler(bool operatorPresent)
 {
-    emit SignalSetColor(QColor("black"));
-    emit SignalAppendMessage(QTime::currentTime().toString("hh:mm:ss") + QString(" Status: ") + QString(message.c_str()));
+    QRBOperatorPresent->setChecked(operatorPresent);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler(const prmEventButton & button)
+{
+    if (button.Type() == prmEventButton::PRESSED) {
+        emit SignalOperatorPresent(true);
+    } else {
+        emit SignalOperatorPresent(false);
+    }
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotCameraEventHandler(bool camera)
+{
+    QRBCamera->setChecked(camera);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler(const prmEventButton & button)
+{
+    if (button.Type() == prmEventButton::PRESSED) {
+        emit SignalCamera(true);
+    } else {
+        emit SignalCamera(false);
+    }
+
 }

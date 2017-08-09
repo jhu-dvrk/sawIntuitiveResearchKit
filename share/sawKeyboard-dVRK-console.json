@@ -1,0 +1,26 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "keys":
+    [
+        {
+            "key": "p",
+            "interface-type": "button-event",
+            "interface-name": "OperatorPresent",
+            "toggle": true
+        }
+        ,
+        {
+            "key": "c",
+            "interface-type": "button-event",
+            "interface-name": "Clutch",
+            "toggle": true
+        }
+        ,
+        {
+            "key": "v",
+            "interface-type": "button-event",
+            "interface-name": "Camera",
+            "toggle": true
+        }
+    ]
+}

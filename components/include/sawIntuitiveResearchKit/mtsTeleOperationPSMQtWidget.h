@@ -21,13 +21,18 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstVector/vctQtWidgetFrame.h>
 #include <cisstMultiTask/mtsComponent.h>
+#include <cisstMultiTask/mtsMessageQtWidget.h>
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
-#include <QtCore>
-#include <QtGui>
+#include <QSplitter>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
+
+class QCheckBox;
+class QDoubleSpinBox;
+class QPushButton;
+class QTextEdit;
 
 class CISST_EXPORT mtsTeleOperationPSMQtWidget: public QSplitter, public mtsComponent
 {
@@ -48,16 +53,13 @@ protected:
 signals:
     void SignalDesiredState(QString state);
     void SignalCurrentState(QString state);
+    void SignalFollowing(bool following);
     void SignalScale(double scale);
     void SignalRotationLocked(bool lock);
     void SignalTranslationLocked(bool lock);
 
-    void SignalAppendMessage(QString);
-    void SignalSetColor(QColor);
-
 private slots:
     void timerEvent(QTimerEvent * event);
-    void SlotTextChanged(void);
     void SlotLogEnabled(void);
     // to set from the GUI
     void SlotSetScale(double scale);
@@ -66,6 +68,7 @@ private slots:
     // to update GUI from component's events
     void SlotDesiredStateEventHandler(QString state);
     void SlotCurrentStateEventHandler(QString state);
+    void SlotFollowingEventHandler(bool following);
     void SlotScaleEventHandler(double scale);
     void SlotRotationLockedEventHandler(bool lock);
     void SlotTranslationLockedEventHandler(bool lock);
@@ -77,6 +80,7 @@ private:
 
     void DesiredStateEventHandler(const std::string & state);
     void CurrentStateEventHandler(const std::string & state);
+    void FollowingEventHandler(const bool & following);
     void ScaleEventHandler(const double & scale);
     void RotationLockedEventHandler(const bool & lock);
     void TranslationLockedEventHandler(const bool & lock);
@@ -95,6 +99,7 @@ protected:
 private:
     QLineEdit * QLEDesiredState;
     QLineEdit * QLECurrentState;
+    QLineEdit * QLEFollowing;
     QCheckBox * QCBLockRotation;
     QCheckBox * QCBLockTranslation;
     QDoubleSpinBox * QSBScale;
@@ -111,10 +116,7 @@ private:
     // messages
     bool LogEnabled;
     QPushButton * QPBLog;
-    void ErrorEventHandler(const std::string & message);
-    void WarningEventHandler(const std::string & message);
-    void StatusEventHandler(const std::string & message);
-    QTextEdit * QTEMessages;
+    mtsMessageQtWidget * QMMessage;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationPSMQtWidget);

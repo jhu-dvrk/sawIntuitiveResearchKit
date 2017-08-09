@@ -1,0 +1,42 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "io": {
+        "firewire-protocol" : "broadcast-read-write",
+        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "io": "sawRobotIO1394-PSM1-49695.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json"
+        }
+        ,
+        {
+            "name": "PSM2",
+            "type": "PSM",
+            "io": "sawRobotIO1394-PSM2-32204.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json"
+        }
+        ,
+        {
+            "name": "MTMR",
+            "type": "MTM",
+            "io": "sawRobotIO1394-MTMR-32336.xml",
+            "pid": "sawControllersPID-MTMR.xml",
+            "kinematic": "mtmr.json"
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            "master": "MTMR",
+            "slave": "PSM1"
+        }
+    ]
+}

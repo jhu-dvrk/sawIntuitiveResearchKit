@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -17,6 +17,7 @@ set (REQUIRED_CISST_LIBRARIES
      cisstNumerical
      cisstOSAbstraction
      cisstMultiTask
+     cisstMultiTaskQt
      cisstParameterTypes
      cisstParameterTypesQt
      cisstQt)
@@ -37,7 +38,8 @@ if (cisst_FOUND_AS_REQUIRED)
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArmQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECMQtWidget.h
-                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h)
+                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h
+                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBaseQtWidget.h)
     qt4_add_resources (sawIntuitiveResearchKit_QT_RESOURCES
                        ${CMAKE_CURRENT_SOURCE_DIR}/logo.qrc)
   else (CISST_HAS_QT4)
@@ -46,32 +48,49 @@ if (cisst_FOUND_AS_REQUIRED)
                        ${CMAKE_CURRENT_SOURCE_DIR}/logo.qrc)
   endif (CISST_HAS_QT4)
 
-  add_library (sawIntuitiveResearchKitQt
-               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQt.h
-               mtsIntuitiveResearchKitConsoleQt.cpp
-               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h
-               mtsIntuitiveResearchKitConsoleQtWidget.cpp
-               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h
-               mtsTeleOperationPSMQtWidget.cpp
-               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECMQtWidget.h
-               mtsTeleOperationECMQtWidget.cpp
-               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArmQtWidget.h
-               mtsIntuitiveResearchKitArmQtWidget.cpp
-               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
-               mtsIntuitiveResearchKitSUJQtWidget.cpp
-               ${sawIntuitiveResearchKit_QT_WRAP_CPP}
-               ${sawIntuitiveResearchKit_QT_RESOURCES}
-               )
-  set_property (TARGET sawIntuitiveResearchKitQt PROPERTY FOLDER "sawIntuitiveResearchKit")
-  cisst_target_link_libraries (sawIntuitiveResearchKitQt ${REQUIRED_CISST_LIBRARIES})
+  # saw components have been compiled within cisst, we should find them automatically
+  find_package (sawRobotIO1394          1.4.0 REQUIRED)
+  find_package (sawControllers          1.4.0 REQUIRED)
+  # find_package (sawIntuitiveResearchKit 1.4.0 REQUIRED)
 
   # make sure the new library is known by the parent folder to add to the config file
   set (sawIntuitiveResearchKitQt_LIBRARIES sawIntuitiveResearchKitQt PARENT_SCOPE)
 
-  install (TARGETS sawIntuitiveResearchKitQt
-           RUNTIME DESTINATION bin
-           LIBRARY DESTINATION lib
-           ARCHIVE DESTINATION lib)
+  if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
+
+    add_library (sawIntuitiveResearchKitQt
+                 ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQt.h
+                 mtsIntuitiveResearchKitConsoleQt.cpp
+                 ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h
+                 mtsIntuitiveResearchKitConsoleQtWidget.cpp
+                 ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h
+                 mtsTeleOperationPSMQtWidget.cpp
+                 ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECMQtWidget.h
+                 mtsTeleOperationECMQtWidget.cpp
+                 ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArmQtWidget.h
+                 mtsIntuitiveResearchKitArmQtWidget.cpp
+                 ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
+                 mtsIntuitiveResearchKitSUJQtWidget.cpp
+                 ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBaseQtWidget.h
+                 mtsSocketBaseQtWidget.cpp
+                 ${sawIntuitiveResearchKit_QT_WRAP_CPP}
+                 ${sawIntuitiveResearchKit_QT_RESOURCES}
+                 )
+    set_property (TARGET sawIntuitiveResearchKitQt PROPERTY FOLDER "sawIntuitiveResearchKit")
+    cisst_target_link_libraries (sawIntuitiveResearchKitQt ${REQUIRED_CISST_LIBRARIES})
+    target_link_libraries (sawIntuitiveResearchKitQt
+                           ${sawRobotIO1394_LIBRARIES}
+                           ${sawIntuitiveResearchKit_LIBRARIES}
+                           ${sawControllers_LIBRARIES})
+
+    # make sure the new library is known by the parent folder to add to the config file
+    set (sawIntuitiveResearchKitQt_LIBRARIES sawIntuitiveResearchKitQt PARENT_SCOPE)
+
+    install (TARGETS sawIntuitiveResearchKitQt
+             RUNTIME DESTINATION bin
+             LIBRARY DESTINATION lib
+             ARCHIVE DESTINATION lib)
+  endif ()
 
 else (cisst_FOUND_AS_REQUIRED)
   message ("Information: code will not be compiled, it requires ${REQUIRED_CISST_LIBRARIES}")

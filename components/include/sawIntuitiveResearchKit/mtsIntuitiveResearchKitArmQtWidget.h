@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -22,10 +22,19 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstVector/vctQtWidgetFrame.h>
 #include <cisstMultiTask/mtsComponent.h>
+#include <cisstMultiTask/mtsMessageQtWidget.h>
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
-class mtsIntuitiveResearchKitArmQtWidget: public QWidget, public mtsComponent
+#include <QWidget>
+
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
+
+class QCheckBox;
+class QPushButton;
+class QTextEdit;
+
+class CISST_EXPORT mtsIntuitiveResearchKitArmQtWidget: public QWidget, public mtsComponent
 {
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -42,12 +51,13 @@ protected:
     virtual void closeEvent(QCloseEvent * event);
 
 signals:
-    void SignalAppendMessage(QString);
-    void SignalSetColor(QColor);
+    void SignalDesiredState(QString state);
+    void SignalCurrentState(QString state);
 
 private slots:
     void timerEvent(QTimerEvent * event);
-    void SlotTextChanged(void);
+    void SlotDesiredStateEventHandler(QString state);
+    void SlotCurrentStateEventHandler(QString state);
     void SlotLogEnabled(void);
     void SlotEnableDirectControl(bool toggle);
     void SlotHome(void);
@@ -60,8 +70,7 @@ private:
 protected:
     struct ArmStruct {
         mtsFunctionRead GetPositionCartesian;
-        mtsFunctionRead GetRobotControlState;
-        mtsFunctionWrite SetRobotControlState;
+        mtsFunctionWrite SetDesiredState;
         mtsFunctionRead GetPeriodStatistics;
     } Arm;
 
@@ -84,15 +93,17 @@ private:
     // state
     QCheckBox * QCBEnableDirectControl;
     QPushButton * QPBHome;
-    QLineEdit * QLEState;
+
+    QLineEdit * QLEDesiredState;
+    QLineEdit * QLECurrentState;
+    void DesiredStateEventHandler(const std::string & state);
+    void CurrentStateEventHandler(const std::string & state);
+
 
     // messages
     bool LogEnabled;
     QPushButton * QPBLog;
-    void ErrorEventHandler(const std::string & message);
-    void WarningEventHandler(const std::string & message);
-    void StatusEventHandler(const std::string & message);
-    QTextEdit * QTEMessages;
+    mtsMessageQtWidget * QMMessage;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitArmQtWidget);

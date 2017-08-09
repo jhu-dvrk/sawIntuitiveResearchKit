@@ -14,7 +14,6 @@
   <build_depend>saw_keyboard</build_depend>
   <build_depend>saw_text_to_speech</build_depend>
   <build_depend>saw_controllers</build_depend>
-  <build_depend>saw_constraint_controller</build_depend>
   <build_depend>saw_robot_io_1394</build_depend>
 
   <run_depend>cisst_netlib</run_depend>
@@ -22,7 +21,6 @@
 
   <run_depend>saw_keyboard</run_depend>
   <run_depend>saw_controllers</run_depend>
-  <run_depend>saw_constraint_controller</run_depend>
   <run_depend>saw_robot_io_1394</run_depend>
 
   <export>

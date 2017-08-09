@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -50,23 +50,22 @@ public:
 
 protected:
 
-    void Init(void);
+    virtual void Init(void);
 
     // Event Handler
-    void MTMErrorEventHandler(const std::string & message);
-    void PSMErrorEventHandler(const std::string & message);
+    void MTMErrorEventHandler(const mtsMessage & message);
+    void PSMErrorEventHandler(const mtsMessage & message);
 
     void ClutchEventHandler(const prmEventButton & button);
     void Clutch(const bool & clutch);
 
     // Functions for events
     struct {
-        mtsFunctionWrite Status;
-        mtsFunctionWrite Warning;
-        mtsFunctionWrite Error;
         mtsFunctionWrite DesiredState;
         mtsFunctionWrite CurrentState;
+        mtsFunctionWrite Following;
     } MessageEvents;
+    mtsInterfaceProvided * mInterface;
 
     struct {
         mtsFunctionWrite Scale;
@@ -79,11 +78,10 @@ protected:
     void StateChanged(void);
     void RunAllStates(void); // this should happen for all states
     void TransitionDisabled(void); // checks for desired state
-    void EnterSettingPSMState(void); // request state and set timer
-    void TransitionSettingPSMState(void); // check current state and timer
-    void EnterSettingMTMState(void);
-    void TransitionSettingMTMState(void);
+    void EnterSettingArmsState(void);
+    void TransitionSettingArmsState(void);
     void EnterAligningMTM(void);
+    void RunAligningMTM(void);
     void TransitionAligningMTM(void);
     void EnterEnabled(void); // called when enabling, save initial positions of master and slave
     void RunEnabled(void); // performs actual teleoperation
@@ -93,12 +91,12 @@ protected:
     public:
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionRead  GetPositionCartesianDesired;
-        mtsFunctionWrite SetPositionCartesian;
         mtsFunctionWrite SetPositionGoalCartesian;
-        mtsFunctionRead  GetGripperPosition;
+        mtsFunctionRead  GetStateGripper;
 
-        mtsFunctionRead  GetRobotControlState;
-        mtsFunctionWrite SetRobotControlState;
+        mtsFunctionRead  GetCurrentState;
+        mtsFunctionRead  GetDesiredState;
+        mtsFunctionWrite SetDesiredState;
         mtsFunctionWrite LockOrientation;
         mtsFunctionVoid  UnlockOrientation;
         mtsFunctionWrite SetWrenchBody;
@@ -117,8 +115,9 @@ protected:
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionWrite SetJawPosition;
 
-        mtsFunctionRead  GetRobotControlState;
-        mtsFunctionWrite SetRobotControlState;
+        mtsFunctionRead  GetCurrentState;
+        mtsFunctionRead  GetDesiredState;
+        mtsFunctionWrite SetDesiredState;
 
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
@@ -137,6 +136,7 @@ protected:
 
     mtsStateMachine mTeleopState;
     double mInStateTimer;
+    double mTimeSinceLastAlign;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationPSM);

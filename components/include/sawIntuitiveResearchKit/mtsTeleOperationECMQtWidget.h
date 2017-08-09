@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,13 +21,17 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstVector/vctQtWidgetFrame.h>
 #include <cisstMultiTask/mtsComponent.h>
+#include <cisstMultiTask/mtsMessageQtWidget.h>
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 
-#include <QtCore>
-#include <QtGui>
+#include <QSplitter>
 
-#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
+
+class QDoubleSpinBox;
+class QPushButton;
+class QTextEdit;
 
 class CISST_EXPORT mtsTeleOperationECMQtWidget: public QSplitter, public mtsComponent
 {
@@ -50,12 +54,8 @@ signals:
     void SignalCurrentState(QString state);
     void SignalScale(double scale);
 
-    void SignalAppendMessage(QString);
-    void SignalSetColor(QColor);
-
 private slots:
     void timerEvent(QTimerEvent * event);
-    void SlotTextChanged(void);
     void SlotLogEnabled(void);
     // to set from the GUI
     void SlotDesiredStateEventHandler(QString state);
@@ -102,10 +102,7 @@ private:
     // messages
     bool LogEnabled;
     QPushButton * QPBLog;
-    void ErrorEventHandler(const std::string & message);
-    void WarningEventHandler(const std::string & message);
-    void StatusEventHandler(const std::string & message);
-    QTextEdit * QTEMessages;
+    mtsMessageQtWidget * QMMessage;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationECMQtWidget);

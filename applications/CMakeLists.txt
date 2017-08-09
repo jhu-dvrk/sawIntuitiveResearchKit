@@ -11,6 +11,11 @@
 
 cmake_minimum_required (VERSION 2.8)
 
+project (sawIntuitiveResearchKitApplications)
+
+# applications in separate directories
+add_subdirectory (gripper-calibration)
+
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstCommonXML
@@ -42,13 +47,11 @@ if (cisst_FOUND_AS_REQUIRED)
   # saw components have been compiled within cisst, we should find them automatically
   find_package (sawRobotIO1394          1.4.0 REQUIRED)
   find_package (sawControllers          1.4.0 REQUIRED)
-  find_package (sawConstraintController 1.1.0 REQUIRED)
   find_package (sawIntuitiveResearchKit 1.4.0 REQUIRED)
   find_package (sawTextToSpeech REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND
-      AND sawIntuitiveResearchKit_FOUND AND sawTextToSpeech_FOUND
-      AND sawConstraintController_FOUND)
+      AND sawIntuitiveResearchKit_FOUND AND sawTextToSpeech_FOUND)
 
     # saw components configuration
     include_directories (${sawRobotIO1394_INCLUDE_DIR}
@@ -60,19 +63,7 @@ if (cisst_FOUND_AS_REQUIRED)
     link_directories (${sawRobotIO1394_LIBRARY_DIR}
                       ${sawIntuitiveResearchKit_LIBRARY_DIR}
                       ${sawControllers_LIBRARY_DIR}
-                      ${sawConstraintController_LIBRARY_DIR}
                       ${sawTextToSpeech_LIBRARY_DIR})
-
-    # main program used to calibrate the MTM gripper
-    add_executable (sawIntuitiveResearchKitGripperCalibration GripperCalibration.cpp)
-    set_property (TARGET sawIntuitiveResearchKitGripperCalibration PROPERTY FOLDER "sawIntuitiveResearchKit")
-
-    # link against non cisst libraries and cisst components
-    target_link_libraries (sawIntuitiveResearchKitGripperCalibration
-                           ${sawRobotIO1394_LIBRARIES})
-
-    # link against cisst libraries (and dependencies)
-    cisst_target_link_libraries (sawIntuitiveResearchKitGripperCalibration ${REQUIRED_CISST_LIBRARIES})
 
     # examples using Qt
     if (CISST_HAS_QT)

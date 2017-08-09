@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -32,7 +33,7 @@ mtsTeleOperationPSM::mtsTeleOperationPSM(const std::string & componentName, cons
     mtsTaskPeriodic(componentName, periodInSeconds),
     mMTM(0),
     mPSM(0),
-    mTeleopState("DISABLED")
+    mTeleopState(componentName, "DISABLED")
 {
     Init();
 }
@@ -41,7 +42,7 @@ mtsTeleOperationPSM::mtsTeleOperationPSM(const mtsTaskPeriodicConstructorArg & a
     mtsTaskPeriodic(arg),
     mMTM(0),
     mPSM(0),
-    mTeleopState("DISABLED")
+    mTeleopState(arg.Name, "DISABLED")
 {
     Init();
 }
@@ -69,9 +70,7 @@ void mtsTeleOperationPSM::Init(void)
 void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
 {
     // configure state machine
-    mTeleopState.AddState("DISABLED");
-    mTeleopState.AddState("SETTING_PSM_STATE");
-    mTeleopState.AddState("SETTING_MTM_STATE");
+    mTeleopState.AddState("SETTING_ARMS_STATE");
     mTeleopState.AddState("ALIGNING_MTM");
     mTeleopState.AddState("ENABLED");
     mTeleopState.AddAllowedDesiredState("ENABLED");
@@ -91,25 +90,20 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
                                        &mtsTeleOperationPSM::TransitionDisabled,
                                        this);
 
-    // setting ECM state
-    mTeleopState.SetEnterCallback("SETTING_PSM_STATE",
-                                  &mtsTeleOperationPSM::EnterSettingPSMState,
+    // setting arms state
+    mTeleopState.SetEnterCallback("SETTING_ARMS_STATE",
+                                  &mtsTeleOperationPSM::EnterSettingArmsState,
                                   this);
-    mTeleopState.SetTransitionCallback("SETTING_PSM_STATE",
-                                       &mtsTeleOperationPSM::TransitionSettingPSMState,
-                                       this);
-
-    // setting MTM state
-    mTeleopState.SetEnterCallback("SETTING_MTM_STATE",
-                                  &mtsTeleOperationPSM::EnterSettingMTMState,
-                                  this);
-    mTeleopState.SetTransitionCallback("SETTING_MTM_STATE",
-                                       &mtsTeleOperationPSM::TransitionSettingMTMState,
+    mTeleopState.SetTransitionCallback("SETTING_ARMS_STATE",
+                                       &mtsTeleOperationPSM::TransitionSettingArmsState,
                                        this);
 
     // aligning MTM
     mTeleopState.SetEnterCallback("ALIGNING_MTM",
                                   &mtsTeleOperationPSM::EnterAligningMTM,
+                                  this);
+    mTeleopState.SetRunCallback("ALIGNING_MTM",
+                                  &mtsTeleOperationPSM::RunAligningMTM,
                                   this);
     mTeleopState.SetTransitionCallback("ALIGNING_MTM",
                                        &mtsTeleOperationPSM::TransitionAligningMTM,
@@ -149,15 +143,15 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", mMTM->GetPositionCartesian);
         interfaceRequired->AddFunction("GetPositionCartesianDesired", mMTM->GetPositionCartesianDesired);
-        interfaceRequired->AddFunction("SetPositionCartesian", mMTM->SetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionGoalCartesian", mMTM->SetPositionGoalCartesian);
-        interfaceRequired->AddFunction("GetGripperPosition", mMTM->GetGripperPosition);
+        interfaceRequired->AddFunction("GetStateGripper", mMTM->GetStateGripper);
         interfaceRequired->AddFunction("LockOrientation", mMTM->LockOrientation);
         interfaceRequired->AddFunction("UnlockOrientation", mMTM->UnlockOrientation);
         interfaceRequired->AddFunction("SetWrenchBody", mMTM->SetWrenchBody);
         interfaceRequired->AddFunction("SetGravityCompensation", mMTM->SetGravityCompensation);
-        interfaceRequired->AddFunction("GetRobotControlState", mMTM->GetRobotControlState);
-        interfaceRequired->AddFunction("SetRobotControlState", mMTM->SetRobotControlState);
+        interfaceRequired->AddFunction("GetCurrentState", mMTM->GetCurrentState);
+        interfaceRequired->AddFunction("GetDesiredState", mMTM->GetDesiredState);
+        interfaceRequired->AddFunction("SetDesiredState", mMTM->SetDesiredState);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::MTMErrorEventHandler,
                                                 this, "Error");
     }
@@ -167,8 +161,9 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
         interfaceRequired->AddFunction("GetPositionCartesian", mPSM->GetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", mPSM->SetPositionCartesian);
         interfaceRequired->AddFunction("SetJawPosition", mPSM->SetJawPosition);
-        interfaceRequired->AddFunction("GetRobotControlState", mPSM->GetRobotControlState);
-        interfaceRequired->AddFunction("SetRobotControlState", mPSM->SetRobotControlState);
+        interfaceRequired->AddFunction("GetCurrentState", mPSM->GetCurrentState);
+        interfaceRequired->AddFunction("GetDesiredState", mPSM->GetDesiredState);
+        interfaceRequired->AddFunction("SetDesiredState", mPSM->SetDesiredState);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::PSMErrorEventHandler,
                                                 this, "Error");
     }
@@ -179,62 +174,60 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::ClutchEventHandler, this, "Button");
     }
 
-    mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Setting");
-    if (interfaceProvided) {
+    mInterface = AddInterfaceProvided("Setting");
+    if (mInterface) {
+        mInterface->AddMessageEvents();
         // commands
-        interfaceProvided->AddCommandReadState(StateTable, StateTable.PeriodStats,
-                                               "GetPeriodStatistics"); // mtsIntervalStatistics
+        mInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
+                                        "GetPeriodStatistics"); // mtsIntervalStatistics
 
-        interfaceProvided->AddCommandWrite(&mtsTeleOperationPSM::SetDesiredState, this,
-                                           "SetDesiredState", std::string("DISABLED"));
-        interfaceProvided->AddCommandWrite(&mtsTeleOperationPSM::SetScale, this,
-                                           "SetScale", 0.5);
-        interfaceProvided->AddCommandWrite(&mtsTeleOperationPSM::SetRegistrationRotation, this,
-                                           "SetRegistrationRotation", vctMatRot3());
-        interfaceProvided->AddCommandWrite(&mtsTeleOperationPSM::LockRotation, this,
-                                           "LockRotation", false);
-        interfaceProvided->AddCommandWrite(&mtsTeleOperationPSM::LockTranslation, this,
-                                           "LockTranslation", false);
-        interfaceProvided->AddCommandReadState(*(mConfigurationStateTable),
-                                               mScale,
-                                               "GetScale");
-        interfaceProvided->AddCommandReadState(*(mConfigurationStateTable),
-                                               mRegistrationRotation,
-                                               "GetRegistrationRotation");
-        interfaceProvided->AddCommandReadState(*(mConfigurationStateTable),
-                                               mRotationLocked, "GetRotationLocked");
-        interfaceProvided->AddCommandReadState(*(mConfigurationStateTable),
-                                               mTranslationLocked, "GetTranslationLocked");
-        interfaceProvided->AddCommandReadState(this->StateTable,
-                                               mMTM->PositionCartesianCurrent,
-                                               "GetPositionCartesianMTM");
-        interfaceProvided->AddCommandReadState(this->StateTable,
-                                               mPSM->PositionCartesianCurrent,
-                                               "GetPositionCartesianPSM");
+        mInterface->AddCommandWrite(&mtsTeleOperationPSM::SetDesiredState, this,
+                                    "SetDesiredState", std::string("DISABLED"));
+        mInterface->AddCommandWrite(&mtsTeleOperationPSM::SetScale, this,
+                                    "SetScale", 0.5);
+        mInterface->AddCommandWrite(&mtsTeleOperationPSM::SetRegistrationRotation, this,
+                                    "SetRegistrationRotation", vctMatRot3());
+        mInterface->AddCommandWrite(&mtsTeleOperationPSM::LockRotation, this,
+                                    "LockRotation", false);
+        mInterface->AddCommandWrite(&mtsTeleOperationPSM::LockTranslation, this,
+                                    "LockTranslation", false);
+        mInterface->AddCommandReadState(*(mConfigurationStateTable),
+                                        mScale,
+                                        "GetScale");
+        mInterface->AddCommandReadState(*(mConfigurationStateTable),
+                                        mRegistrationRotation,
+                                        "GetRegistrationRotation");
+        mInterface->AddCommandReadState(*(mConfigurationStateTable),
+                                        mRotationLocked, "GetRotationLocked");
+        mInterface->AddCommandReadState(*(mConfigurationStateTable),
+                                        mTranslationLocked, "GetTranslationLocked");
+        mInterface->AddCommandReadState(this->StateTable,
+                                        mMTM->PositionCartesianCurrent,
+                                        "GetPositionCartesianMTM");
+        mInterface->AddCommandReadState(this->StateTable,
+                                        mPSM->PositionCartesianCurrent,
+                                        "GetPositionCartesianPSM");
         // events
-        interfaceProvided->AddEventWrite(MessageEvents.Status,
-                                         "Status", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.Warning,
-                                         "Warning", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.Error,
-                                         "Error", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.DesiredState,
-                                         "DesiredState", std::string(""));
-        interfaceProvided->AddEventWrite(MessageEvents.CurrentState,
-                                         "CurrentState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.DesiredState,
+                                  "DesiredState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.CurrentState,
+                                  "CurrentState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.Following,
+                                  "Following", false);
         // configuration
-        interfaceProvided->AddEventWrite(ConfigurationEvents.Scale,
-                                         "Scale", 0.5);
-        interfaceProvided->AddEventWrite(ConfigurationEvents.RotationLocked,
-                                         "RotationLocked", false);
-        interfaceProvided->AddEventWrite(ConfigurationEvents.TranslationLocked,
-                                         "TranslationLocked", false);
+        mInterface->AddEventWrite(ConfigurationEvents.Scale,
+                                  "Scale", 0.5);
+        mInterface->AddEventWrite(ConfigurationEvents.RotationLocked,
+                                  "RotationLocked", false);
+        mInterface->AddEventWrite(ConfigurationEvents.TranslationLocked,
+                                  "TranslationLocked", false);
     }
 }
 
 void mtsTeleOperationPSM::Startup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
+    MessageEvents.Following(false);
 }
 
 void mtsTeleOperationPSM::Run(void)
@@ -251,16 +244,16 @@ void mtsTeleOperationPSM::Cleanup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
 }
 
-void mtsTeleOperationPSM::MTMErrorEventHandler(const std::string & message)
+void mtsTeleOperationPSM::MTMErrorEventHandler(const mtsMessage & message)
 {
     mTeleopState.SetDesiredState("DISABLED");
-    MessageEvents.Error(this->GetName() + ": received from master [" + message + "]");
+    mInterface->SendError(this->GetName() + ": received from master [" + message.Message + "]");
 }
 
-void mtsTeleOperationPSM::PSMErrorEventHandler(const std::string & message)
+void mtsTeleOperationPSM::PSMErrorEventHandler(const mtsMessage & message)
 {
     mTeleopState.SetDesiredState("DISABLED");
-    MessageEvents.Error(this->GetName() + ": received from slave [" + message + "]");
+    mInterface->SendError(this->GetName() + ": received from slave [" + message.Message + "]");
 }
 
 void mtsTeleOperationPSM::ClutchEventHandler(const prmEventButton & button)
@@ -281,19 +274,19 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
 {
     // if the teleoperation is activated
     if (clutch) {
+        MessageEvents.Following(false);
         mMTM->PositionCartesianSet.Goal().Rotation().FromNormalized(mPSM->PositionCartesianCurrent.Position().Rotation());
         mMTM->PositionCartesianSet.Goal().Translation().Assign(mMTM->PositionCartesianCurrent.Position().Translation());
-        MessageEvents.Status(this->GetName() + ": console clutch pressed");
+        mInterface->SendStatus(this->GetName() + ": console clutch pressed");
 
-        // set MTM in effort mode, no force applied but gravity and locked orientation
-        mMTM->SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
+        // no force applied but gravity and locked orientation
         prmForceCartesianSet wrench;
         mMTM->SetWrenchBody(wrench);
         mMTM->SetGravityCompensation(true);
         mMTM->LockOrientation(mMTM->PositionCartesianCurrent.Position().Rotation());
     } else {
-        MessageEvents.Status(this->GetName() + ": console clutch released");
-        mTeleopState.SetCurrentState("SETTING_MTM_STATE");
+        mInterface->SendStatus(this->GetName() + ": console clutch released");
+        mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
     }
 }
 
@@ -301,28 +294,31 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
 {
     // try to find the state in state machine
     if (!mTeleopState.StateExists(state)) {
-        MessageEvents.Error(this->GetName() + ": unsupported state " + state);
-        return;
-    }
-    // if state is same as current, return
-    if (mTeleopState.CurrentState() == state) {
+        mInterface->SendError(this->GetName() + ": unsupported state " + state);
         return;
     }
     // try to set the desired state
-    if (!mTeleopState.SetDesiredState(state)) {
-        MessageEvents.Error(this->GetName() + ": " + state + " is not an allowed desired state");
+    try {
+        mTeleopState.SetDesiredState(state);
+    } catch (...) {
+        mInterface->SendError(this->GetName() + ": " + state + " is not an allowed desired state");
         return;
     }
     MessageEvents.DesiredState(state);
-    MessageEvents.Status(this->GetName() + ": set desired state to " + state);
+    mInterface->SendStatus(this->GetName() + ": set desired state to " + state);
 }
 
 void mtsTeleOperationPSM::SetScale(const double & scale)
 {
+    // set scale
     mConfigurationStateTable->Start();
     mScale = scale;
     mConfigurationStateTable->Advance();
     ConfigurationEvents.Scale(mScale);
+
+    // update MTM/PSM previous position to prevent jumps
+    mMTM->CartesianPrevious.From(mMTM->PositionCartesianCurrent.Position());
+    mPSM->CartesianPrevious.From(mPSM->PositionCartesianCurrent.Position());
 }
 
 void mtsTeleOperationPSM::SetRegistrationRotation(const vctMatRot3 & rotation)
@@ -341,6 +337,7 @@ void mtsTeleOperationPSM::LockRotation(const bool & lock)
     // when releasing the orientation, master orientation is likely off
     // so force re-align
     if (lock == false) {
+        MessageEvents.Following(false);
         mTeleopState.SetCurrentState("DISABLED");
     } else {
         // update MTM/PSM previous position
@@ -368,7 +365,7 @@ void mtsTeleOperationPSM::StateChanged(void)
 {
     const std::string newState = mTeleopState.CurrentState();
     MessageEvents.CurrentState(newState);
-    MessageEvents.Status(this->GetName() + ", current state " + newState);
+    mInterface->SendStatus(this->GetName() + ": current state is " + newState);
 }
 
 void mtsTeleOperationPSM::RunAllStates(void)
@@ -380,8 +377,8 @@ void mtsTeleOperationPSM::RunAllStates(void)
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.GetPositionCartesian failed \""
                                 << executionResult << "\"" << std::endl;
-        MessageEvents.Error(this->GetName() + ": unable to get cartesian position from master");
-        mTeleopState.SetDesiredState("DISABLED");
+        mInterface->SendError(this->GetName() + ": unable to get cartesian position from master");
+        this->SetDesiredState("DISABLED");
     }
     executionResult = mMTM->GetPositionCartesianDesired(mMTM->PositionCartesianDesired);
     if (!executionResult.IsOK()) {
@@ -394,13 +391,14 @@ void mtsTeleOperationPSM::RunAllStates(void)
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to PSM.GetPositionCartesian failed \""
                                 << executionResult << "\"" << std::endl;
-        MessageEvents.Error(this->GetName() + ": unable to get cartesian position from slave");
-        mTeleopState.SetDesiredState("DISABLED");
+        mInterface->SendError(this->GetName() + ": unable to get cartesian position from slave");
+        this->SetDesiredState("DISABLED");
     }
 
     // check if anyone wanted to disable anyway
     if ((mTeleopState.DesiredState() == "DISABLED")
         && (mTeleopState.CurrentState() != "DISABLED")) {
+        MessageEvents.Following(false);
         mTeleopState.SetCurrentState("DISABLED");
         return;
     }
@@ -408,66 +406,43 @@ void mtsTeleOperationPSM::RunAllStates(void)
 
 void mtsTeleOperationPSM::TransitionDisabled(void)
 {
-    if (mTeleopState.DesiredState() != mTeleopState.CurrentState()) {
-        mTeleopState.SetCurrentState("SETTING_PSM_STATE");
+    if (mTeleopState.DesiredStateIsNotCurrent()) {
+        mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
     }
 }
 
-void mtsTeleOperationPSM::EnterSettingPSMState(void)
+void mtsTeleOperationPSM::EnterSettingArmsState(void)
 {
     // reset timer
     mInStateTimer = StateTable.GetTic();
 
     // request state if needed
-    mtsStdString armState;
-    mPSM->GetRobotControlState(armState);
-    if (armState.Data != "DVRK_POSITION_CARTESIAN") {
-        mPSM->SetRobotControlState(mtsStdString("DVRK_POSITION_CARTESIAN"));
+    std::string armState;
+    mPSM->GetDesiredState(armState);
+    if (armState != "READY") {
+        mPSM->SetDesiredState(std::string("READY"));
+    }
+    mMTM->GetDesiredState(armState);
+    if (armState != "READY") {
+        mMTM->SetDesiredState(std::string("READY"));
     }
 }
 
-void mtsTeleOperationPSM::TransitionSettingPSMState(void)
+void mtsTeleOperationPSM::TransitionSettingArmsState(void)
 {
     // check state
-    mtsStdString armState;
-    mPSM->GetRobotControlState(armState);
-    if (armState.Data == "DVRK_POSITION_CARTESIAN") {
-        mTeleopState.SetCurrentState("SETTING_MTM_STATE");
-        return;
-    }
-    // check timer
-    if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
-        MessageEvents.Error(this->GetName() + ": timed out while setting up PSM state");
-        mTeleopState.SetDesiredState("DISABLED");
-    }
-}
-
-void mtsTeleOperationPSM::EnterSettingMTMState(void)
-{
-    // reset timer
-    mInStateTimer = StateTable.GetTic();
-
-    // request state if needed
-    mtsStdString armState;
-    mMTM->GetRobotControlState(armState);
-    if (armState.Data != "DVRK_POSITION_GOAL_CARTESIAN") {
-        mMTM->SetRobotControlState(mtsStdString("DVRK_POSITION_GOAL_CARTESIAN"));
-    }
-}
-
-void mtsTeleOperationPSM::TransitionSettingMTMState(void)
-{
-    // check state
-    mtsStdString armState;
-    mMTM->GetRobotControlState(armState);
-    if (armState.Data == "DVRK_POSITION_GOAL_CARTESIAN") {
+    std::string psmState, mtmState;
+    mPSM->GetCurrentState(psmState);
+    mMTM->GetCurrentState(mtmState);
+    if ((psmState == "READY")
+        && (mtmState == "READY")) {
         mTeleopState.SetCurrentState("ALIGNING_MTM");
         return;
     }
     // check timer
     if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
-        MessageEvents.Error(this->GetName() + ": timed out while setting up MTM state");
-        mTeleopState.SetDesiredState("DISABLED");
+        mInterface->SendError(this->GetName() + ": timed out while setting up MTM state");
+        this->SetDesiredState("DISABLED");
     }
 }
 
@@ -475,25 +450,40 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 {
     // reset timer
     mInStateTimer = StateTable.GetTic();
+    mTimeSinceLastAlign = 0.0;
+}
 
-    // Send MTM command position
-    mMTM->SetRobotControlState(mtsStdString("DVRK_POSITION_GOAL_CARTESIAN"));
-
-    // Orientate MTM with PSM
-    vctFrm4x4 masterCartesianGoal;
-    masterCartesianGoal.Translation().Assign(mMTM->PositionCartesianDesired.Position().Translation());
-    vctMatRot3 masterRotation;
-    masterRotation = mRegistrationRotation.Inverse() * mPSM->PositionCartesianCurrent.Position().Rotation();
-    masterCartesianGoal.Rotation().FromNormalized(masterRotation);
-    // convert to prm type
-    mMTM->PositionCartesianSet.Goal().From(masterCartesianGoal);
-    mMTM->SetPositionGoalCartesian(mMTM->PositionCartesianSet);
+void mtsTeleOperationPSM::RunAligningMTM(void)
+{
+    // don't ask continuously this might kill the MTM
+    const double currentTime = StateTable.GetTic();
+    if ((currentTime - mTimeSinceLastAlign) > 2.0 * cmn_s) {
+        mTimeSinceLastAlign = currentTime;
+        // Orientate MTM with PSM
+        vctFrm4x4 masterCartesianGoal;
+        masterCartesianGoal.Translation().Assign(mMTM->PositionCartesianDesired.Position().Translation());
+        vctMatRot3 masterRotation;
+        masterRotation = mRegistrationRotation.Inverse() * mPSM->PositionCartesianCurrent.Position().Rotation();
+        masterCartesianGoal.Rotation().FromNormalized(masterRotation);
+        // convert to prm type
+        mMTM->PositionCartesianSet.Goal().From(masterCartesianGoal);
+        mMTM->SetPositionGoalCartesian(mMTM->PositionCartesianSet);
+    }
 }
 
 void mtsTeleOperationPSM::TransitionAligningMTM(void)
 {
+    // check psm state
+    std::string armState;
+    mPSM->GetCurrentState(armState);
+    if ((armState != "READY") && (armState != "MANUAL")) {
+        mInterface->SendWarning(this->GetName() + ": PSM state has changed to [" + armState + "]");
+        mTeleopState.SetDesiredState("DISABLED");
+        return;
+    }
+
     // if the desired state is aligning MTM, just stay here
-    if (mTeleopState.DesiredState() == mTeleopState.CurrentState()) {
+    if (!mTeleopState.DesiredStateIsNotCurrent()) {
         return;
     }
 
@@ -502,7 +492,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     mRegistrationRotation.ApplyInverseTo(mPSM->PositionCartesianCurrent.Position().Rotation(),
                                          desiredOrientation);
     mMTM->PositionCartesianCurrent.Position().Rotation().ApplyInverseTo(desiredOrientation, difference);
-    vctAxAnRot3 axisAngle(difference);
+    vctAxAnRot3 axisAngle(difference, VCT_NORMALIZE);
     const double angleInDegrees = axisAngle.Angle() * 180.0 / cmnPI;
     if (angleInDegrees <= 5.0) {
         mTeleopState.SetCurrentState("ENABLED");
@@ -511,7 +501,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
         if ((StateTable.GetTic() - mInStateTimer) > 2.0 * cmn_s) {
             std::stringstream message;
             message << this->GetName() + ": unable to align master, current angle error is " << angleInDegrees;
-            MessageEvents.Warning(message.str());
+            mInterface->SendWarning(message.str());
             mInStateTimer = StateTable.GetTic();
         }
     }
@@ -524,7 +514,6 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     mPSM->CartesianPrevious.From(mPSM->PositionCartesianCurrent.Position());
 
     // set MTM/PSM to Teleop (Cartesian Position Mode)
-    mMTM->SetRobotControlState(mtsStdString("DVRK_EFFORT_CARTESIAN"));
     mMTM->SetGravityCompensation(true);
     // set forces to zero and lock/unlock orientation as needed
     prmForceCartesianSet wrench;
@@ -537,6 +526,8 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     // check if by any chance the clutch pedal is pressed
     if (mIsClutched) {
         Clutch(true);
+    } else {
+        MessageEvents.Following(true);
     }
 }
 
@@ -579,10 +570,10 @@ void mtsTeleOperationPSM::RunEnabled(void)
             mPSM->SetPositionCartesian(mPSM->PositionCartesianSet);
 
             // Gripper
-            if (mMTM->GetGripperPosition.IsValid()) {
-                double gripperPosition;
-                mMTM->GetGripperPosition(gripperPosition);
-                mPSM->SetJawPosition(gripperPosition);
+            if (mMTM->GetStateGripper.IsValid()) {
+                prmStateJoint gripper;
+                mMTM->GetStateGripper(gripper);
+                mPSM->SetJawPosition(gripper.Position()[0]);
             } else {
                 mPSM->SetJawPosition(45.0 * cmnPI_180);
             }
@@ -592,7 +583,24 @@ void mtsTeleOperationPSM::RunEnabled(void)
 
 void mtsTeleOperationPSM::TransitionEnabled(void)
 {
-    if (mTeleopState.DesiredState() != mTeleopState.CurrentState()) {
+    std::string armState;
+
+    // check psm state
+    mPSM->GetCurrentState(armState);
+    if (armState != "READY") {
+        mInterface->SendWarning(this->GetName() + ": PSM state has changed to [" + armState + "]");
+        mTeleopState.SetDesiredState("DISABLED");
+    }
+
+    // check mtm state
+    mMTM->GetCurrentState(armState);
+    if (armState != "READY") {
+        mInterface->SendWarning(this->GetName() + ": MTM state has changed to [" + armState + "]");
+        mTeleopState.SetDesiredState("DISABLED");
+    }
+
+    if (mTeleopState.DesiredStateIsNotCurrent()) {
+        MessageEvents.Following(false);
         mTeleopState.SetCurrentState(mTeleopState.DesiredState());
     }
 }

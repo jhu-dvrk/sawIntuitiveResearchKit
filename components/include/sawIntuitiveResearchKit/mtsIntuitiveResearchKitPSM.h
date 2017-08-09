@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -22,10 +22,12 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
 
+#include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitOptimizer.h>
 
+// Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+
 
 class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 {
@@ -41,9 +43,6 @@ public:
 
 protected:
 
-    // PSM Optimizer
-    mtsIntuitiveResearchKitOptimizer * Optimizer;
-
     /*! Configuration methods */
     inline size_t NumberOfAxes(void) const {
         return 7;
@@ -54,45 +53,52 @@ protected:
     }
 
     inline size_t NumberOfJointsKinematics(void) const {
-        return 6;
+        return mSnakeLike ? 8 : 6;
     }
 
     inline size_t NumberOfBrakes(void) const {
         return 0;
     }
 
-    inline bool UsePIDTrackingError(void) const {
-        return false;
-    }
+    void UpdateJointsKinematics(void);
+    void ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID);
 
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
 
+    // see base class
+    inline bool IsSafeForCartesianControl(void) const {
+        return (JointsKinematics.Position().at(2) > 50.0 * cmn_mm);
+    }
+
+
     void Init(void);
 
-    /*! Verify that the state transition is possible, initialize global
-      variables for the desired state and finally set the state. */
-    void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState);
 
-    void SetRobotControlState(const std::string & state);
-
-    /*! Switch case for user mode. */
-    void RunArmSpecific(void);
-
-    /*! Homing procedure, home all joints except last one using potentiometers as reference. */
-    void RunHomingCalibrateArm(void);
-
-    /*! Change actuator to joint coupling matrices, needs to power off PID and then reenable. */
-    void RunChangingCoupling(void);
-
-    /*! Engaging adapter procedure. */
+    // state related methods
+    void SetGoalHomingArm(void);
+    void TransitionArmHomed(void);
+    // engaging adapter
+    void EnterChangingCouplingAdapter(void);
+    inline void RunChangingCouplingAdapter(void) {
+        RunChangingCoupling();
+    }
+    void EnterEngagingAdapter(void);
     void RunEngagingAdapter(void);
-
-    /*! Engaging tool procedure. */
+    void TransitionAdapterEngaged(void);
+    // engaging tool
+    void EnterChangingCouplingTool(void);
+    inline void RunChangingCouplingTool(void) {
+        RunChangingCoupling();
+    }
+    void EnterEngagingTool(void);
     void RunEngagingTool(void);
+    void TransitionToolEngaged(void);
 
-    /*! Cartesian constraint controller. */
-    virtual void RunConstraintControllerCartesian(void);
+    void EnterManual(void);
+
+    // shared method for changing coupling
+    void RunChangingCoupling(void);
 
     void EventHandlerAdapter(const prmEventButton & button);
 
@@ -104,8 +110,9 @@ protected:
     void EventHandlerTool(const prmEventButton & button);
     void EventHandlerManipClutch(const prmEventButton & button);
 
-    void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     void SetJawPosition(const double & openAngle);
+    void SetPositionJointLocal(const vctDoubleVec & newPosition);
+
     void EnableJointsEventHandler(const vctBoolVec & enable);
     void CouplingEventHandler(const prmActuatorJointCoupling & coupling);
 
@@ -130,27 +137,39 @@ protected:
     // Functions for events
     struct {
         mtsFunctionWrite ManipClutch;
-        mtsIntuitiveResearchKitArmTypes::RobotStateType ManipClutchPreviousState;
+        std::string ManipClutchPreviousState;
+        bool PIDEnabledPreviousState;
     } ClutchEvents;
 
+    /*! 5mm tools with 8 joints */
+    bool mSnakeLike;
+
+    robManipulatorPSMSnake * ManipulatorPSMSnake;
     robManipulator * ToolOffset;
     vctFrm4x4 ToolOffsetTransformation;
+
+    prmStateJoint Jaw, JawDesired;
+    double JawGoal;
 
     // Home Action
     unsigned int EngagingStage; // 0 requested
     unsigned int LastEngagingStage;
+
+    bool mAdapterNeedEngage;
+    bool mToolNeedEngage;
+
     struct {
         bool Started;
-        mtsIntuitiveResearchKitArmTypes::RobotStateType PreviousState;
+        std::string NextState;
         bool CouplingForTool;
         bool WaitingForEnabledJoints, ReceivedEnabledJoints;
         vctBoolVec LastEnabledJoints, DesiredEnabledJoints;
         bool WaitingForCoupling, ReceivedCoupling;
         prmActuatorJointCoupling LastCoupling, DesiredCoupling, ToolCoupling;
         vctDoubleVec ToolEngageLowerPosition, ToolEngageUpperPosition;
-        vctDoubleVec ToolJointLowerLimit, ToolJointUpperLimit;
-        vctDoubleVec NoToolJointLowerLimit, NoToolJointUpperLimit;
-        vctDoubleVec TorqueLowerLimit, TorqueUpperLimit;
+        vctDoubleVec ToolPositionLowerLimit, ToolPositionUpperLimit;
+        vctDoubleVec NoToolPositionLowerLimit, NoToolPositionUpperLimit;
+        vctDoubleVec ToolTorqueLowerLimit, ToolTorqueUpperLimit;
     } CouplingChange;
 };
 

@@ -3,8 +3,8 @@
    <Robot Name="PSM3" NumOfActuator="7" NumOfJoint="7" SN="28613">
       <Actuator ActuatorID="0" AxisID="0" BoardID="10" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="33002" Scale="-5242.88"/>
-            <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738"/>
+            <AmpsToBits Offset="32923" Scale="-5242.88"/>
+            <BitsToFeedbackAmps Offset="6.234738" Scale="-0.000190738"/>
             <NmToAmps Scale="0.404089"/>
             <MaxCurrent Unit="A" Value="1.340"/>
          </Drive>
@@ -21,8 +21,8 @@
       </Actuator>
       <Actuator ActuatorID="1" AxisID="1" BoardID="10" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32797" Scale="-5242.88"/>
-            <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738"/>
+            <AmpsToBits Offset="32976" Scale="-5242.88"/>
+            <BitsToFeedbackAmps Offset="6.284800" Scale="-0.000190738"/>
             <NmToAmps Scale="0.404089"/>
             <MaxCurrent Unit="A" Value="1.340"/>
          </Drive>
@@ -39,8 +39,8 @@
       </Actuator>
       <Actuator ActuatorID="2" AxisID="2" BoardID="10" Type="Prismatic">
          <Drive>
-            <AmpsToBits Offset="32866" Scale="5242.88"/>
-            <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
+            <AmpsToBits Offset="32929" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.262313" Scale="0.000190738"/>
             <NmToAmps Scale="0.067828"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
@@ -58,7 +58,7 @@
       <Actuator ActuatorID="3" AxisID="3" BoardID="10" Type="Revolute">
          <Drive>
             <AmpsToBits Offset="32872" Scale="-5242.88"/>
-            <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738"/>
+            <BitsToFeedbackAmps Offset="6.250746" Scale="-0.000190738"/>
             <NmToAmps Scale="1.949705"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
@@ -75,8 +75,8 @@
       </Actuator>
       <Actuator ActuatorID="4" AxisID="0" BoardID="11" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32867" Scale="-5242.88"/>
-            <BitsToFeedbackAmps Offset="6.25" Scale="-0.000190738"/>
+            <AmpsToBits Offset="32930" Scale="-5242.88"/>
+            <BitsToFeedbackAmps Offset="6.263639" Scale="-0.000190738"/>
             <NmToAmps Scale="1.949705"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
@@ -93,8 +93,8 @@
       </Actuator>
       <Actuator ActuatorID="5" AxisID="1" BoardID="11" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32820" Scale="5242.88"/>
-            <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
+            <AmpsToBits Offset="32854" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.256689" Scale="0.000190738"/>
             <NmToAmps Scale="1.949705"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
@@ -111,8 +111,8 @@
       </Actuator>
       <Actuator ActuatorID="6" AxisID="2" BoardID="11" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32808" Scale="5242.88"/>
-            <BitsToFeedbackAmps Offset="-6.25" Scale="0.000190738"/>
+            <AmpsToBits Offset="32958" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.278253" Scale="0.000190738"/>
             <NmToAmps Scale="1.949705"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
@@ -168,27 +168,7 @@
       </Coupling>
    </Robot><!--Digital Input Configuration-->
    <DigitalIn BitID="0" BoardID="10" Debounce="0.2" Name="PSM3-SUJClutch" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="1" BoardID="10" Debounce="0" Name="PSM3-D01" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="2" BoardID="10" Debounce="0.2" Name="PSM3-ManipClutch" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="3" BoardID="10" Debounce="0" Name="PSM3-D03" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="4" BoardID="10" Debounce="0" Name="PSM3-D10" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="5" BoardID="10" Debounce="0" Name="PSM3-D11" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="6" BoardID="10" Debounce="0" Name="PSM3-D12" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="7" BoardID="10" Debounce="0" Name="PSM3-D13" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="8" BoardID="10" Debounce="0" Name="PSM3-D20" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="9" BoardID="10" Debounce="0" Name="PSM3-D21" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="10" BoardID="10" Debounce="0" Name="PSM3-D22" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="11" BoardID="10" Debounce="0" Name="PSM3-D23" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="0" BoardID="11" Debounce="0" Name="PSM3-D30" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="1" BoardID="11" Debounce="0" Name="PSM3-D31" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="2" BoardID="11" Debounce="0" Name="PSM3-D32" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="3" BoardID="11" Debounce="0" Name="PSM3-D33" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="4" BoardID="11" Debounce="0" Name="PSM3-D40" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="5" BoardID="11" Debounce="0" Name="PSM3-D41" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="6" BoardID="11" Debounce="0" Name="PSM3-D42" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="7" BoardID="11" Debounce="1.5" Name="PSM3-Tool" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="8" BoardID="11" Debounce="0" Name="PSM3-D50" Pressed="0" Trigger="all"/>
-   <DigitalIn BitID="9" BoardID="11" Debounce="0" Name="PSM3-D51" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="10" BoardID="11" Debounce="1.5" Name="PSM3-Adapter" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="11" BoardID="11" Debounce="0" Name="PSM3-D53" Pressed="0" Trigger="all"/>
 </Config>

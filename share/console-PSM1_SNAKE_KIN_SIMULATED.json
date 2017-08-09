@@ -1,0 +1,13 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "arms":
+    [
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "simulation": "KINEMATIC",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-5mm-needle-driver.json"            
+        }
+    ]
+}

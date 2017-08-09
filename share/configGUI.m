@@ -76,17 +76,13 @@ set(handles.out_name, 'String', handles.m_out_filename);
 handles.m_digiIn = cell(12, 4, 2);
 for i = 1:12
     handles.m_digiIn{i,1,1} = i-1;
-    handles.m_digiIn{i,2,1} = [handles.m_type, '-D', ...
-                              num2str(idivide(i-1, int32(4))), ...
-                              num2str(mod(i-1,4)) ];
+    handles.m_digiIn{i,2,1} = 'unused';
     handles.m_digiIn{i,3,1} = '0';
     handles.m_digiIn{i,4,1} = 'all';
     handles.m_digiIn{i,5,1} = 0.0;
 
     handles.m_digiIn{i,1,2} = i-1;
-    handles.m_digiIn{i,2,2} = [handles.m_type, '-D', ...
-                              num2str(idivide(i-1, int32(4))+3), ...
-                              num2str(mod(i-1,4)) ];
+    handles.m_digiIn{i,2,2} = 'unused';
     handles.m_digiIn{i,3,2} = '0';
     handles.m_digiIn{i,4,2} = 'all';
     handles.m_digiIn{i,5,2} = 0.0;
@@ -229,14 +225,10 @@ function typeBtnGroup_SelectionChangeFcn(hObject, eventdata, handles)
 handles.m_type = get(hObject, 'String');
 % update DigitalIn
 for i = 1:12
-    handles.m_digiIn{i,2,1} = [handles.m_type '-D' ...
-                               num2str(idivide(i-1, int32(4))) ...
-                               num2str(mod(i-1,4))];
+    handles.m_digiIn{i,2,1} = 'unused';
     handles.m_digiIn{i,5,1} = 0.0;
 
-    handles.m_digiIn{i,2,2} = [handles.m_type '-D' ...
-                              num2str(idivide(i-1, int32(4))+3) ...
-                              num2str(mod(i-1,4))];
+    handles.m_digiIn{i,2,2} = 'unused';
     handles.m_digiIn{i,5,2} = 0.0;
 end
 
@@ -387,39 +379,6 @@ handles = bidSetDefault(handles);
 
 guidata(hObject, handles);
 
-
-% --- Executes on button press in footButton.
-function footButton_Callback(hObject, eventdata, handles)
-% hObject    handle to footButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-handles.m_digiIn{4,2,1} = 'HEAD';
-handles.m_digiIn{4,3,1} = '1';
-handles.m_digiIn{4,5,1} = 0.2;
-handles.m_digiIn{1,2,2} = 'CLUTCH';
-handles.m_digiIn{1,3,2} = '1';
-handles.m_digiIn{1,5,2} = 0.2;
-handles.m_digiIn{2,2,2} = 'CAM-';
-handles.m_digiIn{2,3,2} = '1';
-handles.m_digiIn{2,5,2} = 0.2;
-handles.m_digiIn{3,2,2} = 'CAM+';
-handles.m_digiIn{3,3,2} = '1';
-handles.m_digiIn{3,5,2} = 0.2;
-handles.m_digiIn{4,2,2} = 'COAG';
-handles.m_digiIn{4,3,2} = '1'; 
-handles.m_digiIn{4,5,2} = 0.2;
-handles.m_digiIn{5,2,2} = 'CAMERA';
-handles.m_digiIn{5,3,2} = '1';
-handles.m_digiIn{5,5,2} = 0.2;
-
-val = get(handles.digiBidMenu, 'Value');
-set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val));
-
-% update default output file name
-handles.m_out_filename = ['sawRobotIO1394-' handles.m_type '-foot-pedal'];
-set(handles.out_name, 'String', handles.m_out_filename);
-guidata(hObject, handles);
 
 
 % --- Executes on button press in dirDefaultButton.

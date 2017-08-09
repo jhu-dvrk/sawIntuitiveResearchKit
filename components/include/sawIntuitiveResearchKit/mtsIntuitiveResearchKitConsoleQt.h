@@ -23,10 +23,12 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnGenericObject.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
+
 class QTabWidget;
 class QWidget;
 
-class mtsIntuitiveResearchKitConsoleQt: public cmnGenericObject
+class CISST_EXPORT mtsIntuitiveResearchKitConsoleQt: public cmnGenericObject
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 

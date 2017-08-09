@@ -7,13 +7,13 @@
 
   (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
 
---- begin cisst license - do not edit ---
+  --- begin cisst license - do not edit ---
 
-This software is provided "as is" under an open source license, with
-no warranty.  The complete license can be found in license.txt and
-http://www.cisst.org/cisst/license.txt.
+  This software is provided "as is" under an open source license, with
+  no warranty.  The complete license can be found in license.txt and
+  http://www.cisst.org/cisst/license.txt.
 
---- end cisst license ---
+  --- end cisst license ---
 */
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
@@ -39,7 +39,7 @@ void mtsStateMachine::AddStates(const std::vector<StateType> & states)
 
 bool mtsStateMachine::StateExists(const StateType state) const
 {
-    const typename StateMap::const_iterator found
+    const StateMap::const_iterator found
         = mStates.find(state);
     return (found != mStates.end());
 }
@@ -60,11 +60,17 @@ void mtsStateMachine::Run(void)
     if (mFirstRun) {
         // update callbacks
         UpdateCurrentCallbacks();
+
+        // user callback if provided
+        if (mStateChangeCallback) {
+            mStateChangeCallback->Execute();
+        }
+
         // find new state enter callback
-        typename CallbackMap::iterator found;
-        found = mEnterCallbacks.find(mCurrentState);
-        if (found != mEnterCallbacks.end()) {
-            found->second->Execute();
+        CallbackMap::iterator callback;
+        callback = mEnterCallbacks.find(mCurrentState);
+        if (callback != mEnterCallbacks.end()) {
+            callback->second->Execute();
         }
         mFirstRun = false;
     }
@@ -81,56 +87,69 @@ void mtsStateMachine::Run(void)
     }
 }
 
-bool mtsStateMachine::SetDesiredState(const StateType & desiredState)
+void mtsStateMachine::SetDesiredState(const StateType & desiredState)
 {
-    const typename StateMap::const_iterator found
+    const StateMap::const_iterator state
         = mStates.find(desiredState);
-    if ((found != mStates.end()) // state exists
-        && (found->second)) {  // can be set as desired
+    if ((state != mStates.end()) // state exists
+        && (state->second)) {  // can be set as desired
         mDesiredState = desiredState;
-        return true;
+        mDesiredStateIsNotCurrent = (mDesiredState != mCurrentState);
+        return;
     }
-    return false;
+    cmnThrow("mtsStateMachine::SetDesiredState: "
+             + desiredState + ", doesn't exists or is not allowed as a desired state");
 }
 
-void mtsStateMachine::SetCurrentState(const StateType newState)
+void mtsStateMachine::SetCurrentState(const StateType & newState)
 {
-    typename CallbackMap::iterator found;
+    // check if this state exists
+    const StateMap::const_iterator state = mStates.find(newState);
+    if (state == mStates.end()) {
+        cmnThrow("mtsStateMachine::SetCurrentState: "
+                 + newState + ", doesn't exists");
+        return;
+    }
+
+    CallbackMap::iterator callback;
 
     // find current state leave callback
-    found = mLeaveCallbacks.find(mCurrentState);
-    if (found != mLeaveCallbacks.end()) {
-        found->second->Execute();
+    callback = mLeaveCallbacks.find(mCurrentState);
+    if (callback != mLeaveCallbacks.end()) {
+        callback->second->Execute();
     }
     // set the new state and update current callbacks
     mCurrentState = newState;
-    // find new state enter callback
-    found = mEnterCallbacks.find(mCurrentState);
-    if (found != mEnterCallbacks.end()) {
-        found->second->Execute();
-    }
-    // update current callbacks
-    UpdateCurrentCallbacks();
+    mDesiredStateIsNotCurrent = (mDesiredState != mCurrentState);
+
     // user callback if provided
     if (mStateChangeCallback) {
         mStateChangeCallback->Execute();
     }
+
+    // find new state enter callback
+    callback = mEnterCallbacks.find(mCurrentState);
+    if (callback != mEnterCallbacks.end()) {
+        callback->second->Execute();
+    }
+    // update current callbacks
+    UpdateCurrentCallbacks();
 }
 
 void mtsStateMachine::UpdateCurrentCallbacks(void)
 {
-    typename CallbackMap::iterator found;
+    CallbackMap::iterator callback;
     // find state run callback
-    found = mRunCallbacks.find(mCurrentState);
-    if (found != mRunCallbacks.end()) {
-        mCurrentRunCallback = found->second;
+    callback = mRunCallbacks.find(mCurrentState);
+    if (callback != mRunCallbacks.end()) {
+        mCurrentRunCallback = callback->second;
     } else {
         mCurrentRunCallback = 0;
     }
     // find transition callback
-    found = mTransitionCallbacks.find(mCurrentState);
-    if (found != mTransitionCallbacks.end()) {
-        mCurrentTransitionCallback = found->second;
+    callback = mTransitionCallbacks.find(mCurrentState);
+    if (callback != mTransitionCallbacks.end()) {
+        mCurrentTransitionCallback = callback->second;
     } else {
         mCurrentTransitionCallback = 0;
     }

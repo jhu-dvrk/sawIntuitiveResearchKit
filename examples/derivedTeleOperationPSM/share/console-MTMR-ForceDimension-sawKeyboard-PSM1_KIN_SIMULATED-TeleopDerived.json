@@ -1,0 +1,90 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "component-manager": {
+        "components":
+        [
+            // this is to use the ForceDimension SDK with whatever
+            // device is supported
+            {
+                "shared-library": "sawForceDimensionSDK",
+                "class-name": "mtsForceDimension",
+                "constructor-arg": {
+                    "Name": "ForceDimensionSDK"
+                },
+                "configure-parameter": "sawForceDimensionSDK-MTMR.json"
+            }
+            ,
+            // this is to use our derived Teleop PSM, the name must
+            // match the name the console would use,
+            // i.e. <master>-<slave>
+            {
+                "shared-library": "sawIntuitiveResearchKitDerivedTeleOperationPSM",
+                "class-name": "mtsDerivedTeleOperationPSM",
+                "constructor-arg": {
+                    "Name": "MTMR-PSM1",
+                    "Period": 0.001
+                }
+            }
+            ,
+            // this is just to get "foot pedals", no needed on a
+            // physical dVRK system
+            {
+                "shared-library": "sawKeyboard",
+                "class-name": "mtsKeyboard",
+                "constructor-arg": {
+                    "Name": "Keyboard"
+                }
+                ,
+                "configure-parameter": "sawKeyboard-dVRK-console.json"
+            }
+
+        ]
+    }
+    ,
+    // if you're using a dVRK with physical foot pedals you can remove
+    // this
+    "console-inputs":
+    {
+        "operator-present": {
+            "component": "Keyboard",
+            "interface": "OperatorPresent" // see file keyboard-dVRK-console.json
+        }
+        ,
+        "clutch": {
+            "component": "Keyboard",
+            "interface": "Clutch"
+        }
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "MTMR",  // created previously using custom components
+            "type": "MTM_GENERIC",
+            "component": "ForceDimensionSDK",
+            "interface": "MTMR"
+        }
+        ,
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "simulation": "KINEMATIC",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json"
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            // this is where we tell the console to use our manually
+            // loaded teleop, using "type"
+            "type": "TELEOP_PSM_DERIVED",
+            "master": "MTMR",
+            "slave": "PSM1",
+            "rotation" : [[ 0.0000, -1.0000,  0.0000],
+                          [ 1.0000,  0.0000,  0.0000],
+                          [ 0.0000,  0.0000,  1.0000]]
+        }
+    ]
+}

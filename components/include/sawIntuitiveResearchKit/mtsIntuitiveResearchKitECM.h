@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -54,23 +54,20 @@ protected:
         return 3;
     }
 
-    inline bool UsePIDTrackingError(void) const {
-        return true;
-    }
-
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
 
+    // see base class
+    inline bool IsSafeForCartesianControl(void) const {
+        return (JointsKinematics.Position().at(2) > 50.0 * cmn_mm);
+    }
+
     void Init(void);
 
-    /*! Verify that the state transition is possible, initialize global
-      variables for the desired state and finally set the state. */
-    void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState);
-
-    void SetRobotControlState(const std::string & state);
-
-    /*! Homing procedure, home all joints except last one using potentiometers as reference. */
-    void RunHomingCalibrateArm(void);
+    // state related methods
+    void SetGoalHomingArm(void);
+    void TransitionArmHomed(void);
+    void EnterManual(void);
 
     void EventHandlerTrackingError(void);
     void EventHandlerManipClutch(const prmEventButton & button);
@@ -83,7 +80,7 @@ protected:
     // Functions for events
     struct {
         mtsFunctionWrite ManipClutch;
-        mtsIntuitiveResearchKitArmTypes::RobotStateType ManipClutchPreviousState;
+        std::string ManipClutchPreviousState;
     } ClutchEvents;
 
     // tooltip, used for up/down endoscopes

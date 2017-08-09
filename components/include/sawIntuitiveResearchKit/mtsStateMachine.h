@@ -38,12 +38,16 @@ class mtsStateMachine
 public:
     typedef std::string StateType;
 
-    inline mtsStateMachine(const StateType initialState):
+    inline mtsStateMachine(const std::string & name, const StateType initialState):
+        mName(name),
         mFirstRun(true),
+        mDesiredStateIsNotCurrent(false),
         mRunCallback(0),
         mStateChangeCallback(0),
-        mCurrentState(initialState)
+        mCurrentState(initialState),
+        mDesiredState(initialState)
     {
+        AddState(initialState);
     }
 
     /*! Add a state. */
@@ -62,7 +66,7 @@ public:
     inline void SetRunCallback(const StateType state, mtsCallableVoidBase * callback) {
         if (!StateExists(state)) {
             cmnThrow("mtsStateMachine::SetRunCallback: "
-                     + mName + ", state doesn't exist.  Use AddState first.");
+                     + mName + ", state [" + state + "] doesn't exist.  Use AddState first.");
         }
         mRunCallbacks[state] = callback;
     }
@@ -93,7 +97,7 @@ public:
     inline void SetEnterCallback(const StateType state, mtsCallableVoidBase * callback) {
         if (!StateExists(state)) {
             cmnThrow("mtsStateMachine::SetEnterCallback: "
-                     + mName + ", state doesn't exist.  Use AddState first.");
+                     + mName + ", state [" + state + "] doesn't exist.  Use AddState first.");
         }
         mEnterCallbacks[state] = callback;
     }
@@ -111,7 +115,7 @@ public:
     inline void SetLeaveCallback(const StateType state, mtsCallableVoidBase * callback) {
         if (!StateExists(state)) {
             cmnThrow("mtsStateMachine::SetLeaveCallback: "
-                     + mName + ", state doesn't exist.  Use AddState first.");
+                     + mName + ", state [" + state + "] doesn't exist.  Use AddState first.");
         }
         mLeaveCallbacks[state] = callback;
     }
@@ -129,7 +133,7 @@ public:
     inline void SetTransitionCallback(const StateType state, mtsCallableVoidBase * callback) {
         if (!StateExists(state)) {
             cmnThrow("mtsStateMachine::SetTransitionCallback: "
-                     + mName + ", state doesn't exist.  Use AddState first.");
+                     + mName + ", state [" + state + "] doesn't exist.  Use AddState first.");
         }
         mTransitionCallbacks[state] = callback;
     }
@@ -163,9 +167,23 @@ public:
         return mDesiredState;
     }
 
-    bool SetDesiredState(const StateType & desiredState);
+    /*! Set the desired state.  This will check if the state is a
+      possible desired state. */
+    void SetDesiredState(const StateType & desiredState);
 
-    void SetCurrentState(const StateType newState);
+    /*! Set the current state.  This will check if the state is a
+      valid state.  Leave and enter callbacks will also be called.
+      Finally all callback pointers for the current state (run and
+      transition) will be updated to avoid a callback lookup by state
+      name in the Run method. */
+    void SetCurrentState(const StateType & newState);
+
+    /*! Check if the desired and current states are different.  This
+        allows to avoid a string compare to determine if a transition
+        is desired. */
+    inline bool DesiredStateIsNotCurrent(void) const {
+        return mDesiredStateIsNotCurrent;
+    }
 
 protected:
 
@@ -173,6 +191,7 @@ protected:
 
     std::string mName;
     bool mFirstRun;
+    bool mDesiredStateIsNotCurrent;
 
     typedef std::map<StateType, mtsCallableVoidBase *> CallbackMap;
 

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Config Version="2">
+   <DigitalIn BitID="0"  BoardID="0" Debounce="0" Name="MTML-D0-00" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="1"  BoardID="0" Debounce="0" Name="MTML-D0-01" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="2"  BoardID="0" Debounce="0" Name="MTML-D0-02" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="3"  BoardID="0" Debounce="0" Name="MTML-D0-03" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="4"  BoardID="0" Debounce="0" Name="MTML-D0-04" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="5"  BoardID="0" Debounce="0" Name="MTML-D0-05" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="6"  BoardID="0" Debounce="0" Name="MTML-D0-06" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="7"  BoardID="0" Debounce="0" Name="MTML-D0-07" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="8"  BoardID="0" Debounce="0" Name="MTML-D0-08" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="9"  BoardID="0" Debounce="0" Name="MTML-D0-09" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="10" BoardID="0" Debounce="0" Name="MTML-D0-10" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="11" BoardID="0" Debounce="0" Name="MTML-D0-11" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="0"  BoardID="1" Debounce="0" Name="MTML-D1-00" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="1"  BoardID="1" Debounce="0" Name="MTML-D1-01" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="2"  BoardID="1" Debounce="0" Name="MTML-D1-02" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="3"  BoardID="1" Debounce="0" Name="MTML-D1-03" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="4"  BoardID="1" Debounce="0" Name="MTML-D1-04" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="5"  BoardID="1" Debounce="0" Name="MTML-D1-05" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="6"  BoardID="1" Debounce="0" Name="MTML-D1-06" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="7"  BoardID="1" Debounce="0" Name="MTML-D1-07" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="8"  BoardID="1" Debounce="0" Name="MTML-D1-08" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="9"  BoardID="1" Debounce="0" Name="MTML-D1-09" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="10" BoardID="1" Debounce="0" Name="MTML-D1-10" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="11" BoardID="1" Debounce="0" Name="MTML-D1-11" Pressed="0" Trigger="all"/>
+</Config>

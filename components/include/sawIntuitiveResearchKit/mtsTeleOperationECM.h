@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-01-21
 
-  (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -49,23 +49,21 @@ public:
 
 protected:
 
-    void Init(void);
+    virtual void Init(void);
 
     // Event Handler
-    void MTMLErrorEventHandler(const std::string & message);
-    void MTMRErrorEventHandler(const std::string & message);
-    void ECMErrorEventHandler(const std::string & message);
+    void MTMLErrorEventHandler(const mtsMessage & message);
+    void MTMRErrorEventHandler(const mtsMessage & message);
+    void ECMErrorEventHandler(const mtsMessage & message);
 
     void ClutchEventHandler(const prmEventButton & button);
 
     // Functions for events
     struct {
-        mtsFunctionWrite Status;
-        mtsFunctionWrite Warning;
-        mtsFunctionWrite Error;
         mtsFunctionWrite DesiredState;
         mtsFunctionWrite CurrentState;
     } MessageEvents;
+    mtsInterfaceProvided * mInterface;
 
     struct {
         mtsFunctionWrite Scale;
@@ -76,10 +74,8 @@ protected:
     void StateChanged(void);
     void RunAllStates(void);
     void TransitionDisabled(void); // checks for desired state
-    void EnterSettingECMState(void); // request state and set timer
-    void TransitionSettingECMState(void); // check current state and timer
-    void EnterSettingMTMsState(void);
-    void TransitionSettingMTMsState(void);
+    void EnterSettingArmsState(void);
+    void TransitionSettingArmsState(void);
     void EnterEnabled(void);
     void RunEnabled(void); // performs actual teleoperation
     void TransitionEnabled(void); // performs actual teleoperation
@@ -91,8 +87,9 @@ protected:
         mtsFunctionRead  GetPositionCartesianDesired;
         mtsFunctionRead  GetVelocityCartesian;
         mtsFunctionWrite SetPositionCartesian;
-        mtsFunctionRead  GetRobotControlState;
-        mtsFunctionWrite SetRobotControlState;
+        mtsFunctionRead  GetCurrentState;
+        mtsFunctionRead  GetDesiredState;
+        mtsFunctionWrite SetDesiredState;
         mtsFunctionWrite LockOrientation;
         mtsFunctionVoid  UnlockOrientation;
         mtsFunctionWrite SetWrenchBody;
@@ -112,8 +109,9 @@ protected:
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionRead  GetPositionCartesianDesired;
         mtsFunctionWrite SetPositionCartesian;
-        mtsFunctionRead  GetRobotControlState;
-        mtsFunctionWrite SetRobotControlState;
+        mtsFunctionRead  GetCurrentState;
+        mtsFunctionRead  GetDesiredState;
+        mtsFunctionWrite SetDesiredState;
 
         vctFrm3 PositionCartesianInitial;
         prmPositionCartesianGet PositionCartesianCurrent;

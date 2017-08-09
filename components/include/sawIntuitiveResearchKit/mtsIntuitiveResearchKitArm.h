@@ -3,9 +3,9 @@
 
 /*
   Author(s):  Anton Deguet
-  Created on: 2013-05-15
+  Created on: 2016-02-24
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -34,9 +34,20 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
 #include <cisstRobot/robManipulator.h>
-#include <cisstRobot/robLSPB.h>
+#include <cisstRobot/robReflexxes.h>
 
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
+#include <sawIntuitiveResearchKit/mtsStateMachine.h>
+
+// nearbyint is a C++11 feature; VS2008 does not have it
+// (perhaps others as well).
+#include <cisstCommon/cmnPortability.h>
+#if (CISST_COMPILER == CISST_DOTNET2008)
+inline double nearbyint(double x) { return floor(x+0.5); }
+#endif
+
+// Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
@@ -44,7 +55,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds);
+    mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
     mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg);
     virtual inline ~mtsIntuitiveResearchKitArm() {}
 
@@ -55,7 +66,7 @@ public:
 
     virtual void SetSimulated(void);
 
-protected:
+ protected:
 
     /*! Define wrench reference frame */
     typedef enum {WRENCH_UNDEFINED, WRENCH_SPATIAL, WRENCH_BODY} WrenchType;
@@ -66,45 +77,53 @@ protected:
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
     virtual void Init(void);
+    void ResizeKinematicsData(void);
 
     /*! Verify that the state transition is possible, initialize
       global variables for the desired state and finally set the
       state. */
-    virtual void SetState(const mtsIntuitiveResearchKitArmTypes::RobotStateType & newState) = 0;
-    virtual void SetRobotControlState(const std::string & state) = 0;
-    /*! Convert enum to string using function provided by cisstDataGenerator. */
-    void GetRobotControlState(std::string & state) const;
-    bool CurrentStateIs(const mtsIntuitiveResearchKitArmTypes::RobotStateType & state);
-    bool CurrentStateIs(const mtsIntuitiveResearchKitArmTypes::RobotStateType & state1,
-                        const mtsIntuitiveResearchKitArmTypes::RobotStateType & state2);
+    virtual void SetDesiredState(const std::string & state);
 
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
+    virtual void UpdateJointsKinematics(void);
+    virtual void ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID);
 
-    /*! Homing procedure, bias encoders from potentiometers. */
-    virtual void RunHomingBiasEncoder(void);
+    // state machine
+    std::string mFallbackState;
 
-    /*! Homing procedure, power the robot. */
-    virtual void RunHomingPower(void);
+    void StateChanged(void);
+    void RunAllStates(void); // this should happen for all states
 
-    /*! Homing procedure, home all joints except last one using potentiometers as reference. */
-    virtual void RunHomingCalibrateArm(void) = 0;
+    virtual void EnterUninitialized(void);
+    virtual void TransitionUninitialized(void);
 
-    /*! Cartesian state. */
-    virtual void RunPositionJoint(void);
-    virtual void RunPositionGoalJoint(void);
-    virtual void RunPositionCartesian(void);
-    virtual void RunPositionGoalCartesian(void);
+    virtual void EnterCalibratingEncodersFromPots(void);
+    virtual void TransitionCalibratingEncodersFromPots(void);
+    virtual void TransitionEncodersBiased(void);
 
-    /*! Effort state. */
-    virtual void RunEffortCartesian(void);
+    virtual void EnterPowering(void);
+    virtual void TransitionPowering(void);
+    virtual void EnterPowered(void);
+    virtual void TransitionPowered(void);
 
-    /*! Compute forces/position for PID when orientation is locked in
-      effort cartesian mode or gravity compensation. */
-    virtual void RunEffortOrientationLocked(void);
+    virtual void EnterHomingArm(void);
+    virtual void SetGoalHomingArm(void) = 0;
+    virtual void RunHomingArm(void);
 
-    /*! Run method called for all states not handled in base class. */
-    inline virtual void RunArmSpecific(void) {};
+    // transitions and states between ARM_HOMED and READY are defined
+    // in derived classes.
+
+    virtual void EnterReady(void);
+    virtual void LeaveReady(void);
+    virtual void RunReady(void);
+
+    // Arm state machine
+    mtsStateMachine mArmState;
+    // Just to have read commands to retrieve states
+    mtsStateTable mStateTableState;
+    mtsStdString mStateTableStateCurrent;
+    mtsStdString mStateTableStateDesired;
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
@@ -115,6 +134,7 @@ protected:
     virtual void SetPositionGoalJoint(const prmPositionJointSet & newPosition);
     virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
     virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
+    virtual void SetEffortJoint(const prmForceTorqueJointSet & newEffort);
     virtual void SetWrenchSpatial(const prmForceCartesianSet & newForce);
     virtual void SetWrenchBody(const prmForceCartesianSet & newForce);
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
@@ -125,11 +145,11 @@ protected:
     virtual void SetBaseFrameEventHandler(const prmPositionCartesianGet & newBaseFrame);
     virtual void SetBaseFrame(const prmPositionCartesianSet & newBaseFrame);
 
-    /*! Event handler for PID joint limit. */
-    virtual void JointLimitEventHandler(const vctBoolVec & flags);
+    /*! Event handler for PID position limit. */
+    virtual void PositionLimitEventHandler(const vctBoolVec & flags);
 
     /*! Event handler for PID errors. */
-    void ErrorEventHandler(const std::string & message);
+    void ErrorEventHandler(const mtsMessage & message);
 
     /*! Event handler for EncoderBias done. */
     void BiasEncoderEventHandler(const int & nbSamples);
@@ -137,43 +157,58 @@ protected:
     /*! Configuration methods specific to derived classes. */
     virtual size_t NumberOfAxes(void) const = 0;           // used IO: ECM 4, PSM 7, MTM 8
     virtual size_t NumberOfJoints(void) const = 0;         // used PID: ECM 4, PSM 7, MTM 7
-    virtual size_t NumberOfJointsKinematics(void) const = 0; // used for inverse kinematics: ECM 4, PSM 6, MTM 7
+    virtual size_t NumberOfJointsKinematics(void) const = 0; // ECM 4, MTM 7, PSM 6 or 8 (snake like tools)
     virtual size_t NumberOfBrakes(void) const = 0;         // ECM 3, PSM 0, MTM 0
 
-    virtual bool UsePIDTrackingError(void) const = 0;      // ECM true, PSM false, MTM false
     inline virtual bool UsePotsForSafetyCheck(void) const {
         return true;
     }
 
+    inline virtual bool UsePIDTrackingError(void) const {
+        return true;
+    }
+
+    /*! Inverse kinematics must be redefined for each arm type. */
     virtual robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                                     const vctFrm4x4 & cartesianGoal) = 0;
 
+    /*! Each arm must provide a way to check if the arm is ready to be
+      used in cartesian mode.  PSM and ECM need to make sure the
+      tool or endoscope is away from the RCM point. */
+    virtual bool IsSafeForCartesianControl(void) const = 0;
+    
+    /*! Counter to total number of consecutive times the user is
+      trying to switch to cartesian control space when it's not
+      safe.  Used to throttle error messages. */
+    size_t mSafeForCartesianControlCounter;
+    
     // Interface to PID component
     mtsInterfaceRequired * PIDInterface;
     struct {
+        mtsFunctionWrite SetCoupling;
         mtsFunctionWrite Enable;
         mtsFunctionWrite EnableJoints;
-        mtsFunctionRead  GetPositionJoint;
-        mtsFunctionRead  GetPositionJointDesired;
+        mtsFunctionRead IsEnabled;
         mtsFunctionRead  GetStateJoint;
         mtsFunctionRead  GetStateJointDesired;
         mtsFunctionWrite SetPositionJoint;
-        mtsFunctionWrite SetCheckJointLimit;
-        mtsFunctionWrite SetJointLowerLimit;
-        mtsFunctionWrite SetJointUpperLimit;
-        mtsFunctionRead  GetVelocityJoint;
+        mtsFunctionWrite SetCheckPositionLimit;
+        mtsFunctionWrite SetPositionLowerLimit;
+        mtsFunctionWrite SetPositionUpperLimit;
+        mtsFunctionWrite SetTorqueLowerLimit;
+        mtsFunctionWrite SetTorqueUpperLimit;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite SetTorqueJoint;
         mtsFunctionWrite SetTorqueOffset;
         mtsFunctionWrite EnableTrackingError;
         mtsFunctionWrite SetTrackingErrorTolerance;
+        vctDoubleVec DefaultTrackingErrorTolerance;
     } PID;
 
     // Interface to IO component
     mtsInterfaceRequired * IOInterface;
     struct InterfaceRobotTorque {
         mtsFunctionRead  GetSerialNumber;
-        mtsFunctionWrite SetCoupling;
         mtsFunctionVoid  EnablePower;
         mtsFunctionVoid  DisablePower;
         mtsFunctionRead  GetActuatorAmpStatus;
@@ -196,15 +231,15 @@ protected:
 
     // Functions for events
     struct {
-        mtsFunctionWrite Status;
-        mtsFunctionWrite Warning;
-        mtsFunctionWrite Error;
-        mtsFunctionWrite RobotState;
+        mtsFunctionWrite DesiredState;
+        mtsFunctionWrite CurrentState;
     } MessageEvents;
+
+    robManipulator * Manipulator;
 
     // Cache cartesian goal position
     prmPositionCartesianSet CartesianSetParam;
-    bool IsGoalSet;
+    bool mHasNewPIDGoal;
 
     // internal kinematics
     prmPositionCartesianGet CartesianGetLocalParam;
@@ -219,73 +254,129 @@ protected:
     vctFrm4x4 CartesianGetDesired;
 
     // joints
-    prmPositionJointGet JointGetParam;
-    vctDoubleVec JointGet;
-    vctDoubleVec JointGetDesired;
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
+    vctDoubleVec JointVelocitySet;
+    prmStateJoint JointsPID, JointsDesiredPID, JointsKinematics, JointsDesiredKinematics;
 
     // efforts
-    vctDoubleMat JacobianBody, JacobianBodyTranspose, JacobianSpatial;
+    vctDoubleMat mJacobianBody, mJacobianBodyTranspose, mJacobianSpatial;
     vctDoubleVec JointExternalEffort;
     WrenchType mWrenchType;
     prmForceCartesianSet mWrenchSet;
     bool mWrenchBodyOrientationAbsolute;
-    prmForceTorqueJointSet TorqueSetParam;
+    prmForceTorqueJointSet TorqueSetParam, mEffortJointSet;
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData mJacobianPInverseData;
     prmForceCartesianGet mWrenchGet;
 
     // used by MTM only
-    bool EffortOrientationLocked;
-    vctDoubleVec EffortOrientationJoint;
-    vctMatRot3 EffortOrientation;
+    bool mEffortOrientationLocked;
+    vctDoubleVec mEffortOrientationJoint;
+    vctMatRot3 mEffortOrientation;
     // gravity compensation
     bool mGravityCompensation;
     void AddGravityCompensationEfforts(vctDoubleVec & efforts);
     // add custom efforts for derived classes
     inline virtual void AddCustomEfforts(vctDoubleVec & CMN_UNUSED(efforts)) {};
 
-    //! robot current joint velocity
-    prmVelocityJointGet JointVelocityGetParam;
-    vctDoubleVec JointVelocityGet;
-
-    prmStateJoint StateJointParam, StateJointDesiredParam;
-
     // Velocities
     vctFrm4x4 CartesianGetPrevious;
     prmVelocityCartesianGet CartesianVelocityGetParam;
-
-    robManipulator Manipulator;
     vctFrm4x4 CartesianPositionFrm;
 
     // Base frame
     vctFrm4x4 BaseFrame;
     bool BaseFrameValid;
 
-    mtsIntuitiveResearchKitArmTypes::RobotStateType RobotState;
+    bool mPowered;
+    bool mReady;
+    bool mJointReady;
+    bool mCartesianReady;
+
+    mtsIntuitiveResearchKitArmTypes::ControlSpace mControlSpace;
+    mtsIntuitiveResearchKitArmTypes::ControlMode mControlMode;
+
+    /*! Method used to check if the arm is ready and throttle messages sent. */
+    bool ArmIsReady(const std::string & methodName);
+    size_t mArmNotReadyCounter;
+    double mArmNotReadyTimeLastMessage;
+    
+    /*! Sets control space and mode.  If none are user defined, the
+      callbacks will be using the methods provided in this class.
+      If either the space or mode is "USER", a callback must be
+      provided. */
+    void SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
+                                const mtsIntuitiveResearchKitArmTypes::ControlMode mode,
+                                mtsCallableVoidBase * callback = 0);
+
+    /*! Set the control space and mode along with a callback for
+      control.  The callback method will be use only if either the
+      space or the mode is "USER". */
+    template <class __classType>
+    inline void SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
+                                       const mtsIntuitiveResearchKitArmTypes::ControlMode mode,
+                                       void (__classType::*method)(void),
+                                       __classType * classInstantiation) {
+        this->SetControlSpaceAndMode(space, mode,
+                                     new mtsCallableVoidMethod<__classType>(method,
+                                                                            classInstantiation));
+    }
+
+    /*! Methods to set the control callback directly.  Users should
+      use the SetControlSpaceAndMode method instead. */
+    //@{
+    template <class __classType>
+    inline void SetControlCallback(void (__classType::*method)(void),
+                                   __classType * classInstantiation) {
+        this->SetControlCallback(new mtsCallableVoidMethod<__classType>(method,
+                                                                        classInstantiation));
+    }
+
+    inline void SetControlCallback(mtsCallableVoidBase * callback) {
+        if (this->mControlCallback != 0) {
+            delete this->mControlCallback;
+        }
+        this->mControlCallback = callback;
+    }
+    //@}
+
+    mtsCallableVoidBase * mControlCallback;
+
+    virtual void ControlPositionJoint(void);
+    virtual void ControlPositionGoalJoint(void);
+    virtual void ControlPositionCartesian(void);
+    virtual void ControlPositionGoalCartesian(void);
+    virtual void ControlEffortJoint(void);
+    virtual void ControlEffortCartesian(void);
+
+    /*! Compute forces/position for PID when orientation is locked in
+      effort cartesian mode or gravity compensation. */
+    virtual void ControlEffortOrientationLocked(void);
+
+    virtual void SetControlEffortActiveJoints(void);
 
     struct {
-        robLSPB LSPB;
+        robReflexxes Reflexxes;
         vctDoubleVec Velocity;
         vctDoubleVec Acceleration;
-        vctDoubleVec Start;
         vctDoubleVec Goal;
+        vctDoubleVec GoalVelocity;
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
-        double EndTime; // time should be set to 0.0 if there is no on-going trajectory
+        vctDoubleVec MaxJerk;
+        bool IsWorking;
+        double EndTime;
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
-    } JointTrajectory;
+    } mJointTrajectory;
 
     vctDoubleVec PotsToEncodersTolerance;
 
     // Home Action
-    bool HomedOnce;
-    bool HomingGoesToZero;
-    double HomingTimer;
-    bool HomingBiasEncoderRequested;
-    bool HomingPowerRequested;
-    bool HomingCalibrateArmStarted;
+    bool mHomedOnce;
+    bool mHomingGoesToZero;
+    bool mHomingBiasEncoderRequested;
+    double mHomingTimer;
 
     unsigned int mCounter;
 

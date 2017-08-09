@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file alias="dVRK.svg">dVRK.svg</file>
+        <file alias="dVRK.png">dVRK.png</file>
     </qresource>
 </RCC>
