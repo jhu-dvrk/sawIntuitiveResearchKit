@@ -57,7 +57,7 @@ if (cisst_FOUND)
     if (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
       set (sawIntuitiveResearchKit_CONFIG_FILE_DIR
            "${CATKIN_DEVEL_PREFIX}/share/sawIntuitiveResearchKit/cmake")
-      set (LIBRARY_OUTPUT_PATH "${sawIntuitiveResearchKit_BINARY_DIR}/lib")
+      set (LIBRARY_OUTPUT_PATH "${CATKIN_DEVEL_PREFIX}/lib")
     else ()
       set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${sawIntuitiveResearchKit_BINARY_DIR}")
     endif ()
