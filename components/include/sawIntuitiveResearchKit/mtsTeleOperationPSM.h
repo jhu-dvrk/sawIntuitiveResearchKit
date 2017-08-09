@@ -50,7 +50,7 @@ public:
 
 protected:
 
-    void Init(void);
+    virtual void Init(void);
 
     // Event Handler
     void MTMErrorEventHandler(const mtsMessage & message);

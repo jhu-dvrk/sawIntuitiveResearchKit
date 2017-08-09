@@ -49,7 +49,7 @@ public:
 
 protected:
 
-    void Init(void);
+    virtual void Init(void);
 
     // Event Handler
     void MTMLErrorEventHandler(const mtsMessage & message);
