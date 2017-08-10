@@ -17,7 +17,11 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include <mtsDerivedTeleOperationPSM.h>
+
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstParameterTypes/prmForceCartesianGet.h>
+#include <cisstParameterTypes/prmForceCartesianSet.h>
+
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsDerivedTeleOperationPSM,
                                       mtsTeleOperationPSM,
@@ -43,6 +47,9 @@ void mtsDerivedTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filena
 
     // We want to replace the method called when the MTM is actually
     // driving the PSM
+    mTeleopState.SetEnterCallback("ENABLED",
+                                  &mtsDerivedTeleOperationPSM::EnterEnabled,
+                                  this);
     mTeleopState.SetRunCallback("ENABLED",
                                 &mtsDerivedTeleOperationPSM::RunEnabled,
                                 this);
@@ -53,7 +60,23 @@ void mtsDerivedTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filena
     // That interface should exist, abort otherwise
     CMN_ASSERT(interfacePSM);
     // Add a required function
-    interfacePSM->AddFunction("GetWrenchBody", PSMGetWrenchBody);
+    interfacePSM->AddFunction("GetWrenchBody",
+                              PSMGetWrenchBody);
+    interfacePSM->AddFunction("SetWrenchBodyOrientationAbsolute",
+                              PSMSetWrenchBodyOrientationAbsolute);
+
+    // Same for MTM
+    mtsInterfaceRequired * interfaceMTM = GetInterfaceRequired("MTM");
+    CMN_ASSERT(interfaceMTM);
+    interfaceMTM->AddFunction("SetWrenchBodyOrientationAbsolute",
+                              MTMSetWrenchBodyOrientationAbsolute);
+}
+
+void mtsDerivedTeleOperationPSM::EnterEnabled(void)
+{
+    BaseType::EnterEnabled();
+    PSMSetWrenchBodyOrientationAbsolute(true);
+    MTMSetWrenchBodyOrientationAbsolute(true);
 }
 
 void mtsDerivedTeleOperationPSM::RunEnabled(void)
@@ -63,7 +86,11 @@ void mtsDerivedTeleOperationPSM::RunEnabled(void)
 
     // Only if the PSM is following
     if (mIsFollowing) {
-        PSMGetWrenchBody(PSMWrench);
-        std::cerr << PSMWrench.Force() << std::endl;
+        prmForceCartesianGet wrenchPSM;
+        prmForceCartesianSet wrenchMTM;
+        PSMGetWrenchBody(wrenchPSM);
+        vct3 force = wrenchPSM.Force().Ref<3>(0);
+        wrenchMTM.Force().Ref<3>(0) = mRegistrationRotation.Inverse() * -0.25 * force;
+        mMTM->SetWrenchBody(wrenchMTM);
     }
 }

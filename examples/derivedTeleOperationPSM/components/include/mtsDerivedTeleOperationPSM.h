@@ -21,10 +21,6 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 
-#include <cisstParameterTypes/prmForceCartesianGet.h>
-
-
-
 class mtsDerivedTeleOperationPSM: public mtsTeleOperationPSM
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -39,10 +35,12 @@ public:
     void Configure(const std::string & CMN_UNUSED(filename));
 
 protected:
+    void EnterEnabled(void);
     void RunEnabled(void);
     
-    prmForceCartesianGet PSMWrench;
     mtsFunctionRead PSMGetWrenchBody;
+    mtsFunctionWrite PSMSetWrenchBodyOrientationAbsolute;
+    mtsFunctionWrite MTMSetWrenchBodyOrientationAbsolute;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsDerivedTeleOperationPSM);
