@@ -17,33 +17,53 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include <mtsDerivedTeleOperationPSM.h>
+#include <cisstMultiTask/mtsInterfaceRequired.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsDerivedTeleOperationPSM,
                                       mtsTeleOperationPSM,
                                       mtsTaskPeriodicConstructorArg);
 
-mtsDerivedTeleOperationPSM::mtsDerivedTeleOperationPSM(const std::string & componentName, const double periodInSeconds) :
+mtsDerivedTeleOperationPSM::mtsDerivedTeleOperationPSM(const std::string & componentName,
+                                                       const double periodInSeconds):
     mtsTeleOperationPSM(componentName, periodInSeconds)
 {
 }
 
-mtsDerivedTeleOperationPSM::mtsDerivedTeleOperationPSM(const mtsTaskPeriodicConstructorArg &arg) :
+mtsDerivedTeleOperationPSM::mtsDerivedTeleOperationPSM(const mtsTaskPeriodicConstructorArg & arg):
     mtsTeleOperationPSM(arg)
 {
 }
 
+// Configure is a virtual method, we can redefine it and have our own
+// configuration
 void mtsDerivedTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
 {
-    std::cerr << "--------------------- my configure ----------------" << std::endl;
+    // Call the base class configure, it will do most of the work
     BaseType::Configure();
 
+    // We want to replace the method called when the MTM is actually
+    // driving the PSM
     mTeleopState.SetRunCallback("ENABLED",
                                 &mtsDerivedTeleOperationPSM::RunEnabled,
                                 this);
+
+    // We need to add a method to retrieve estimated wrench from the
+    // PSM
+    mtsInterfaceRequired * interfacePSM = GetInterfaceRequired("PSM");
+    // That interface should exist, abort otherwise
+    CMN_ASSERT(interfacePSM);
+    // Add a required function
+    interfacePSM->AddFunction("GetWrenchBody", PSMGetWrenchBody);
 }
 
 void mtsDerivedTeleOperationPSM::RunEnabled(void)
 {
+    // We call the base class method for enabled state, it'll handle most of the work
     BaseType::RunEnabled();
-    std::cerr << ".";
+
+    // Only if the PSM is following
+    if (mIsFollowing) {
+        PSMGetWrenchBody(PSMWrench);
+        std::cerr << PSMWrench.Force() << std::endl;
+    }
 }

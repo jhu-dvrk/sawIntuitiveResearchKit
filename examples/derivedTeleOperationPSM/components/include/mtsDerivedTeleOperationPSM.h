@@ -40,7 +40,9 @@ public:
 
 protected:
     void RunEnabled(void);
-    prmPositionCartesianGet mPSMForces;
+    
+    prmForceCartesianGet PSMWrench;
+    mtsFunctionRead PSMGetWrenchBody;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsDerivedTeleOperationPSM);

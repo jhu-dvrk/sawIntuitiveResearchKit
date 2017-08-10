@@ -137,6 +137,9 @@ protected:
     mtsStateMachine mTeleopState;
     double mInStateTimer;
     double mTimeSinceLastAlign;
+
+    bool mIsFollowing;
+    void SetFollowing(const bool following);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationPSM);
