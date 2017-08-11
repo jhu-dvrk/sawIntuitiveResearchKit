@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmForceCartesianGet.h>
+#include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 
 
@@ -64,6 +65,8 @@ void mtsDerivedTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filena
                               PSMGetWrenchBody);
     interfacePSM->AddFunction("SetWrenchBodyOrientationAbsolute",
                               PSMSetWrenchBodyOrientationAbsolute);
+    interfacePSM->AddFunction("GetVelocityCartesian",
+                              PSMGetVelocityCartesian);
 
     // Same for MTM
     mtsInterfaceRequired * interfaceMTM = GetInterfaceRequired("MTM");
@@ -87,10 +90,34 @@ void mtsDerivedTeleOperationPSM::RunEnabled(void)
     // Only if the PSM is following
     if (mIsFollowing) {
         prmForceCartesianGet wrenchPSM;
+        prmVelocityCartesianGet velocityPSM;
         prmForceCartesianSet wrenchMTM;
+
+        // Get estimated wrench and velocity from PSM
         PSMGetWrenchBody(wrenchPSM);
+        PSMGetVelocityCartesian(velocityPSM);
+
+        // Extract only position data, ignore orientation
+        const vct3 velocity = velocityPSM.VelocityLinear().Normalized();
         vct3 force = wrenchPSM.Force().Ref<3>(0);
-        wrenchMTM.Force().Ref<3>(0) = mRegistrationRotation.Inverse() * -0.25 * force;
-        mMTM->SetWrenchBody(wrenchMTM);
+
+        std::cerr << " v : " << velocity << std::endl;
+        // Scale force based on velocity, i.e. at high velocity apply less forces
+        for (size_t i = 0; i < 3; i++) {
+            double velocityDumping = 1.0 / (1000.0 * velocity[i] + 1.0);
+            std::cerr << i << " " << velocityDumping;
+            if (velocityDumping > 1) {
+                velocityDumping = 1.0;
+            }
+            // Compute force in opposite direction and scale back on master
+            force[i] = -0.3 * velocityDumping * force[i];
+        }
+        std::cerr << std::endl;
+
+        // Re-orient based on rotation between MTM and PSM
+        force = mRegistrationRotation.Inverse() * force;
+        // Set wrench for MTM
+        wrenchMTM.Force().Ref<3>(0) = force;
+        // mMTM->SetWrenchBody(wrenchMTM);
     }
 }

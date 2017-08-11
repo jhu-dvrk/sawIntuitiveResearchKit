@@ -38,8 +38,9 @@ protected:
     void EnterEnabled(void);
     void RunEnabled(void);
     
-    mtsFunctionRead PSMGetWrenchBody;
+    mtsFunctionRead  PSMGetWrenchBody;
     mtsFunctionWrite PSMSetWrenchBodyOrientationAbsolute;
+    mtsFunctionRead  PSMGetVelocityCartesian;
     mtsFunctionWrite MTMSetWrenchBodyOrientationAbsolute;
 };
 

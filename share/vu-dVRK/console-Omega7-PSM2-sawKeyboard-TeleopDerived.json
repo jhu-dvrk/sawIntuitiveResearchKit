@@ -3,27 +3,24 @@
     "component-manager": {
         "components":
         [
-            // this is to use the ForceDimension SDK with whatever
-            // device is supported
+            // to use derived teleop with force feedback
+            {
+                "shared-library": "sawIntuitiveResearchKitDerivedTeleOperationPSM",
+                "class-name": "mtsDerivedTeleOperationPSM",
+                "constructor-arg": {
+                    "Name": "MTML-PSM2",
+                    "Period": 0.001
+                }
+            }
+            ,
+            // to use ForceDimension
             {
                 "shared-library": "sawForceDimensionSDK",
                 "class-name": "mtsForceDimension",
                 "constructor-arg": {
                     "Name": "ForceDimensionSDK"
                 },
-                "configure-parameter": "sawForceDimensionSDK-MTMR.json"
-            }
-            ,
-            // this is to use our derived Teleop PSM, the name must
-            // match the name the console would use,
-            // i.e. <master>-<slave>
-            {
-                "shared-library": "sawIntuitiveResearchKitDerivedTeleOperationPSM",
-                "class-name": "mtsDerivedTeleOperationPSM",
-                "constructor-arg": {
-                    "Name": "MTMR-PSM1",
-                    "Period": 0.001
-                }
+                "configure-parameter": "sawForceDimensionSDK-Omega7-11245-MTML.json"
             }
             ,
             // this is just to get "foot pedals", no needed on a
@@ -40,8 +37,6 @@
         ]
     }
     ,
-    // if you're using a dVRK with physical foot pedals you can remove
-    // this
     "console-inputs":
     {
         "operator-present": {
@@ -58,18 +53,18 @@
     "arms":
     [
         {
-            "name": "MTMR",  // created previously using custom components
-            "type": "MTM_GENERIC",
-            "component": "ForceDimensionSDK",
-            "interface": "MTMR"
+            "name": "PSM2",
+            "type": "PSM",
+            "io": "xml/sawRobotIO1394-PSM2-26372.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json"
         }
         ,
         {
-            "name": "PSM1",
-            "type": "PSM",
-            "simulation": "KINEMATIC",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json"
+            "name": "MTML",
+            "type": "MTM_GENERIC",
+            "component": "ForceDimensionSDK",
+            "interface": "MTML"
         }
     ]
     ,
@@ -79,10 +74,10 @@
             // this is where we tell the console to use our manually
             // loaded teleop, using "type"
             "type": "TELEOP_PSM_DERIVED",
-            "master": "MTMR",
-            "slave": "PSM1",
-            "rotation" : [[ 0.0000, -1.0000,  0.0000],
-                          [ 1.0000,  0.0000,  0.0000],
+            "master": "MTML",
+            "slave": "PSM2",
+            "rotation" : [[-1.0000,  0.0000,  0.0000],
+                          [ 0.0000, -1.0000,  0.0000],
                           [ 0.0000,  0.0000,  1.0000]]
         }
     ]
