@@ -37,11 +37,6 @@
         }
     }
     ,
-    "io":
-    {
-        "firewire-protocol": "broadcast-read-write"
-    }
-    ,
     "arms":
     [
         {

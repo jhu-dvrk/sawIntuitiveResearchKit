@@ -16,7 +16,6 @@
     ,
     "io":
     {
-        "firewire-protocol": "broadcast-read-write",
         "footpedals": "sawRobotIO1394-MTML-foot-pedals.xml"
     }
     ,

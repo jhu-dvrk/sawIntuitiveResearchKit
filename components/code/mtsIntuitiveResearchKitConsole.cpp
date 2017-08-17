@@ -558,7 +558,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // IO default settings
     double periodIO = mtsIntuitiveResearchKit::IOPeriod;
     int firewirePort = 0;
-    sawRobotIO1394::ProtocolType protocol = sawRobotIO1394::PROTOCOL_SEQ_R_BC_W;
+    sawRobotIO1394::ProtocolType protocol = sawRobotIO1394::PROTOCOL_BC_QRW;
 
     // get user preferences
     jsonValue = jsonConfig["io"];
