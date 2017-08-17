@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmPositionJointSet.h>
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 
@@ -121,6 +122,7 @@ protected:
 
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
+        prmPositionJointSet     PositionJointSet;
         vctFrm4x4 CartesianPrevious;
     };
     RobotPSM * mPSM;

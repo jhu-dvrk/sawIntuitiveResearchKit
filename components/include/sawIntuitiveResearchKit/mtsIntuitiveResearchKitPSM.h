@@ -110,7 +110,7 @@ protected:
     void EventHandlerTool(const prmEventButton & button);
     void EventHandlerManipClutch(const prmEventButton & button);
 
-    void SetJawPosition(const double & openAngle);
+    void SetJawPosition(const prmPositionJointSet & jawPosition);
     void SetPositionJointLocal(const vctDoubleVec & newPosition);
 
     void EnableJointsEventHandler(const vctBoolVec & enable);

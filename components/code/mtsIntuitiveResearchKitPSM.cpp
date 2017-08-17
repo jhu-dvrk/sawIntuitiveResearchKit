@@ -867,17 +867,17 @@ void mtsIntuitiveResearchKitPSM::EnterManual(void)
     PID.Enable(false);
 }
 
-void mtsIntuitiveResearchKitPSM::SetJawPosition(const double & jawPosition)
+void mtsIntuitiveResearchKitPSM::SetJawPosition(const prmPositionJointSet & jawPosition)
 {
     const size_t jawIndex = 6;
     switch (mControlMode) {
     case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
-        JawGoal = jawPosition;
+        JawGoal = jawPosition.Goal().at(0);
         mHasNewPIDGoal = true;
         break;
     case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
         mJointTrajectory.IsWorking = true;
-        mJointTrajectory.Goal[jawIndex] = jawPosition;
+        mJointTrajectory.Goal[jawIndex] = jawPosition.Goal().at(0);
         mJointTrajectory.EndTime = 0.0;
         break;
     default:

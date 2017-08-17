@@ -126,6 +126,8 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
     mRotationLocked = false;
     mTranslationLocked = false;
 
+    mPSM->PositionJointSet.Goal().SetSize(1);
+
     this->StateTable.AddData(mMTM->PositionCartesianCurrent, "MTMCartesianPositionCurrent");
     this->StateTable.AddData(mMTM->PositionCartesianDesired, "MTMCartesianPositionDesired");
     this->StateTable.AddData(mPSM->PositionCartesianCurrent, "PSMCartesianPosition");
@@ -573,9 +575,11 @@ void mtsTeleOperationPSM::RunEnabled(void)
             if (mMTM->GetStateGripper.IsValid()) {
                 prmStateJoint gripper;
                 mMTM->GetStateGripper(gripper);
-                mPSM->SetJawPosition(gripper.Position()[0]);
+                mPSM->PositionJointSet.Goal()[0] = gripper.Position()[0];
+                mPSM->SetJawPosition(mPSM->PositionJointSet);
             } else {
-                mPSM->SetJawPosition(45.0 * cmnPI_180);
+                mPSM->PositionJointSet.Goal()[0] = 45.0 * cmnPI_180;
+                mPSM->SetJawPosition(mPSM->PositionJointSet);
             }
         }
     }
