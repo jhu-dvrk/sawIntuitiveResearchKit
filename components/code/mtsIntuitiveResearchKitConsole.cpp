@@ -527,9 +527,11 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         return;
     }
 
-    CMN_LOG_CLASS_INIT_DEBUG << "Configure: content of console file: " << std::endl
-                             << jsonConfig << std::endl
-                             << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
+                               << " using file \"" << filename << "\"" << std::endl
+                               << "----> content of configuration file: " << std::endl
+                               << jsonConfig << std::endl
+                               << "<----" << std::endl;
 
     // extract path of main json config file to search other files relative to it
     cmnPath configPath(cmnPath::GetWorkingDirectory());

@@ -144,6 +144,12 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
             return;
         }
 
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
+                                   << " using file \"" << filename << "\"" << std::endl
+                                   << "----> content of configuration file: " << std::endl
+                                   << jsonConfig << std::endl
+                                   << "<----" << std::endl;
+
         ConfigureDH(jsonConfig);
 
         // should arm go to zero position when homing, default set in Init method

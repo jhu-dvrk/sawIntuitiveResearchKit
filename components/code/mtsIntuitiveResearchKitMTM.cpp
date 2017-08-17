@@ -57,6 +57,12 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
             return;
         }
 
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
+                                   << " using file \"" << filename << "\"" << std::endl
+                                   << "----> content of configuration file: " << std::endl
+                                   << jsonConfig << std::endl
+                                   << "<----" << std::endl;
+
         ConfigureDH(jsonConfig);
 
     } catch (...) {
@@ -458,7 +464,7 @@ void mtsIntuitiveResearchKitMTM::RunResettingRollEncoder(void)
     // pre-load JointsDesiredPID since EnterReady will use them and
     // we're not sure the arm is already mJointReady
     JointsDesiredPID.Position().SetAll(0.0);
-    
+
     mHomedOnce = true;
     mArmState.SetCurrentState("ROLL_ENCODER_RESET");
 }

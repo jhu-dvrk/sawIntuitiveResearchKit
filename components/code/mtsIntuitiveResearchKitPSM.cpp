@@ -334,6 +334,12 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             return;
         }
 
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
+                                   << " using file \"" << filename << "\"" << std::endl
+                                   << "----> content of configuration file: " << std::endl
+                                   << jsonConfig << std::endl
+                                   << "<----" << std::endl;
+
         const Json::Value snakeLike = jsonConfig["snake-like"];
         if (!snakeLike.isNull()) {
             mSnakeLike = snakeLike.asBool();

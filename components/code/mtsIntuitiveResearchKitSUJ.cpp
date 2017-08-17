@@ -484,6 +484,12 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         return;
     }
 
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
+                               << " using file \"" << filename << "\"" << std::endl
+                               << "----> content of configuration file: " << std::endl
+                               << jsonConfig << std::endl
+                               << "<----" << std::endl;
+
     // find all arms, there should be 4 of them
     const Json::Value jsonArms = jsonConfig["arms"];
     if (jsonArms.size() != 4) {
