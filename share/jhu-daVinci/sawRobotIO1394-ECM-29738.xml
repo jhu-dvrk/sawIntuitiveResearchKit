@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<Config Version="2">
+<Config Version="3">
    <Robot Name="ECM" NumOfActuator="4" NumOfJoint="4" SN="29738">
       <Actuator ActuatorID="0" AxisID="0" BoardID="4" Type="Revolute">
          <Drive>
@@ -101,32 +101,6 @@
          </AnalogIn>
       </Actuator>
       <Potentiometers Position="Actuators"/>
-      <Coupling Value="1">
-         <ActuatorToJointPosition>
-            <Row Val="1.0000 0.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 1.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 0.0000 1.0000 0.0000"/>
-            <Row Val="0.0000 0.0000 0.0000 1.0000"/>
-         </ActuatorToJointPosition>
-         <JointToActuatorPosition>
-            <Row Val="1.0000 0.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 1.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 0.0000 1.0000 0.0000"/>
-            <Row Val="0.0000 0.0000 0.0000 1.0000"/>
-         </JointToActuatorPosition>
-         <ActuatorToJointTorque>
-            <Row Val="1.0000 0.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 1.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 0.0000 1.0000 0.0000"/>
-            <Row Val="0.0000 0.0000 0.0000 1.0000"/>
-         </ActuatorToJointTorque>
-         <JointToActuatorTorque>
-            <Row Val="1.0000 0.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 1.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 0.0000 1.0000 0.0000"/>
-            <Row Val="0.0000 0.0000 0.0000 1.0000"/>
-         </JointToActuatorTorque>
-      </Coupling>
    </Robot>
    <DigitalIn BitID="0" BoardID="4" Debounce="0.2" Name="ECM-ManipClutch" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="2" BoardID="4" Debounce="0.2" Name="ECM-SUJClutch" Pressed="1" Trigger="all"/>

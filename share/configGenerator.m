@@ -233,30 +233,11 @@ if (rType == CONST_MST)
         0.00  0.00   0.00 0.00 0.00 0.00 1.00 0.00; ...
         0.00  0.00   0.00 0.00 0.00 0.00 0.00 1.00  ...
         ];
-elseif (rType == CONST_SLV)
-    ActuatorToJointPosition = [ ...
-        1.00  0.00   0.00  0.00 0.00 0.00 0.00; ...
-        0.00  1.00   0.00  0.00 0.00 0.00 0.00; ...
-        0.00  0.00   1.00  0.00 0.00 0.00 0.00; ...
-        0.00  0.00   0.00 -1.5632 0.00 0.00 0.00; ...
-        0.00  0.00   0.00  0.00 1.0186 0.00 0.00;  ...
-        0.00  0.00   0.00  0.00 -0.8306 0.6089 0.6089; ...
-        0.00  0.00   0.00 0.00 0.00 -1.2177 1.2177; ...
-        ];
-elseif (rType == CONST_ECM)
-    ActuatorToJointPosition = [ ...
-        1.00  0.00   0.00  0.00 ; ...
-        0.00  1.00   0.00  0.00; ...
-        0.00  0.00   1.00  0.00 ; ...
-        0.00  0.00   0.00  1.00 ; ...
-        ];
+
+    JointToActuatorPosition = inv(ActuatorToJointPosition);
+    JointToActuatorTorque = ActuatorToJointPosition';
+    ActuatorToJointTorque = inv(JointToActuatorTorque);
 end
-
-
-JointToActuatorPosition = inv(ActuatorToJointPosition);
-JointToActuatorTorque = ActuatorToJointPosition';
-ActuatorToJointTorque = inv(JointToActuatorTorque);
-
 
 %% Create XML file
 
@@ -271,7 +252,7 @@ fileName = aOutName;
 
 docNode = com.mathworks.xml.XMLUtils.createDocument('Config');
 Config = docNode.getDocumentElement;
-Config.setAttribute('Version','2');
+Config.setAttribute('Version','3');
 
 % ------------- Robot ----------------
 Robot = docNode.createElement('Robot');
@@ -395,53 +376,55 @@ end
 Robot.appendChild(Potentiometers);
 
 % ----------- Coupling ---------------
-X_Coupling = docNode.createElement('Coupling');
-X_Coupling.setAttribute('Value', num2str(1));
-Robot.appendChild(X_Coupling);
+if (rType == CONST_MST)
+    X_Coupling = docNode.createElement('Coupling');
+    X_Coupling.setAttribute('Value', num2str(1));
+    Robot.appendChild(X_Coupling);
 
-% 1 Coupling/ActuatorToJointPosition
-X_ActuatorToJointPosition = docNode.createElement('ActuatorToJointPosition');
-X_Coupling.appendChild(X_ActuatorToJointPosition);
+    % 1 Coupling/ActuatorToJointPosition
+    X_ActuatorToJointPosition = docNode.createElement('ActuatorToJointPosition');
+    X_Coupling.appendChild(X_ActuatorToJointPosition);
 
-for i = 1:size(ActuatorToJointPosition, 1)
-    Row = docNode.createElement('Row');
-    Row.setAttribute('Val', vector2str(ActuatorToJointPosition(i,:)));
-    X_ActuatorToJointPosition.appendChild(Row);
+    for i = 1:size(ActuatorToJointPosition, 1)
+        Row = docNode.createElement('Row');
+        Row.setAttribute('Val', vector2str(ActuatorToJointPosition(i,:)));
+        X_ActuatorToJointPosition.appendChild(Row);
+    end
+
+
+    % 2 Coupling/JointToActuatorPosition
+    X_JointToActuatorPosition = docNode.createElement('JointToActuatorPosition');
+    X_Coupling.appendChild(X_JointToActuatorPosition);
+
+    for i = 1:size(JointToActuatorPosition, 1)
+        Row = docNode.createElement('Row');
+        Row.setAttribute('Val', vector2str(JointToActuatorPosition(i,:)));
+        X_JointToActuatorPosition.appendChild(Row);
+    end
+
+
+    % 3 Coupling/ActuatorToJointTorque
+    X_ActuatorToJointTorque = docNode.createElement('ActuatorToJointTorque');
+    X_Coupling.appendChild(X_ActuatorToJointTorque);
+
+    for i = 1:size(ActuatorToJointTorque, 1)
+        Row = docNode.createElement('Row');
+        Row.setAttribute('Val', vector2str(ActuatorToJointTorque(i,:)));
+        X_ActuatorToJointTorque.appendChild(Row);
+    end
+
+
+    % 4 Coupling/JointToActuatorTorque
+    X_JointToActuatorTorque = docNode.createElement('JointToActuatorTorque');
+    X_Coupling.appendChild(X_JointToActuatorTorque);
+
+    for i = 1:size(JointToActuatorTorque, 1)
+        Row = docNode.createElement('Row');
+        Row.setAttribute('Val', vector2str(JointToActuatorTorque(i,:)));
+        X_JointToActuatorTorque.appendChild(Row);
+    end
+
 end
-
-
-% 2 Coupling/JointToActuatorPosition
-X_JointToActuatorPosition = docNode.createElement('JointToActuatorPosition');
-X_Coupling.appendChild(X_JointToActuatorPosition);
-
-for i = 1:size(JointToActuatorPosition, 1)
-    Row = docNode.createElement('Row');
-    Row.setAttribute('Val', vector2str(JointToActuatorPosition(i,:)));
-    X_JointToActuatorPosition.appendChild(Row);
-end
-
-
-% 3 Coupling/ActuatorToJointTorque
-X_ActuatorToJointTorque = docNode.createElement('ActuatorToJointTorque');
-X_Coupling.appendChild(X_ActuatorToJointTorque);
-
-for i = 1:size(ActuatorToJointTorque, 1)
-    Row = docNode.createElement('Row');
-    Row.setAttribute('Val', vector2str(ActuatorToJointTorque(i,:)));
-    X_ActuatorToJointTorque.appendChild(Row);
-end
-
-
-% 4 Coupling/JointToActuatorTorque
-X_JointToActuatorTorque = docNode.createElement('JointToActuatorTorque');
-X_Coupling.appendChild(X_JointToActuatorTorque);
-
-for i = 1:size(JointToActuatorTorque, 1)
-    Row = docNode.createElement('Row');
-    Row.setAttribute('Val', vector2str(JointToActuatorTorque(i,:)));
-    X_JointToActuatorTorque.appendChild(Row);
-end
-
 
 % ---------- DigitalIn ---------------
 Config.appendChild(docNode.createComment('Digital Input Configuration'));

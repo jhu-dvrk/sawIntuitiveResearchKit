@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Config Version="2">
+<Config Version="3">
    <Robot Name="MTMR" NumOfActuator="8" NumOfJoint="8" SN="28247">
       <Actuator ActuatorID="0" AxisID="0" BoardID="2" Type="Revolute">
          <Drive>
