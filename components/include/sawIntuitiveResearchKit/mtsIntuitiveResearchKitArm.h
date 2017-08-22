@@ -176,12 +176,12 @@ public:
       used in cartesian mode.  PSM and ECM need to make sure the
       tool or endoscope is away from the RCM point. */
     virtual bool IsSafeForCartesianControl(void) const = 0;
-    
+
     /*! Counter to total number of consecutive times the user is
       trying to switch to cartesian control space when it's not
       safe.  Used to throttle error messages. */
     size_t mSafeForCartesianControlCounter;
-    
+
     // Interface to PID component
     mtsInterfaceRequired * PIDInterface;
     struct {
@@ -290,18 +290,20 @@ public:
     bool BaseFrameValid;
 
     bool mPowered;
-    bool mReady;
     bool mJointReady;
     bool mCartesianReady;
+    bool mJointControlReady;
+    bool mCartesianControlReady;
 
     mtsIntuitiveResearchKitArmTypes::ControlSpace mControlSpace;
     mtsIntuitiveResearchKitArmTypes::ControlMode mControlMode;
 
     /*! Method used to check if the arm is ready and throttle messages sent. */
-    bool ArmIsReady(const std::string & methodName);
+    bool ArmIsReady(const std::string & methodName,
+                    const mtsIntuitiveResearchKitArmTypes::ControlSpace space);
     size_t mArmNotReadyCounter;
     double mArmNotReadyTimeLastMessage;
-    
+
     /*! Sets control space and mode.  If none are user defined, the
       callbacks will be using the methods provided in this class.
       If either the space or mode is "USER", a callback must be

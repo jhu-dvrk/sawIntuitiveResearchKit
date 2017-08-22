@@ -118,9 +118,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                &mtsIntuitiveResearchKitArm::EnterHomingArm,
                                this);
 
-    mArmState.SetTransitionCallback("HOMING_ARM",
-                                    &mtsIntuitiveResearchKitArm::RunHomingArm,
-                                    this);
+    mArmState.SetRunCallback("HOMING_ARM",
+                             &mtsIntuitiveResearchKitArm::RunHomingArm,
+                             this);
 
     // state between ARM_HOMED and READY depends on the arm type, see
     // derived classes
@@ -143,7 +143,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mStateTableState.SetAutomaticAdvance(false);
 
     mCounter = 0;
-    mReady = false;
+    mJointControlReady = false;
+    mCartesianControlReady = false;
     mIsSimulated = false;
     mHomedOnce = false;
     mHomingGoesToZero = false; // MTM ignores this
@@ -652,6 +653,8 @@ void mtsIntuitiveResearchKitArm::EnterUninitialized(void)
     mPowered = false;
     mJointReady = false;
     mCartesianReady = false;
+    mJointControlReady = false;
+    mCartesianControlReady = false;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
 }
@@ -779,6 +782,8 @@ void mtsIntuitiveResearchKitArm::EnterPowered(void)
     RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
     PID.Enable(false);
     mCartesianReady = false;
+    mJointControlReady = false;
+    mCartesianControlReady = false;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
 
@@ -875,9 +880,11 @@ void mtsIntuitiveResearchKitArm::RunHomingArm(void)
 
 void mtsIntuitiveResearchKitArm::EnterReady(void)
 {
-    // set ready flag
+    // set ready flags, some might have been set earlier by derived
+    // classes (e.g. PSM allows joint commands without tool
     mCartesianReady = true;
-    mReady = true;
+    mJointControlReady = true;
+    mCartesianControlReady = true;
     // no control mode defined
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
@@ -897,7 +904,8 @@ void mtsIntuitiveResearchKitArm::EnterReady(void)
 void mtsIntuitiveResearchKitArm::LeaveReady(void)
 {
     // set ready flag
-    mReady = false;
+    mJointControlReady = false;
+    mCartesianControlReady = false;
     // no control mode defined
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
@@ -978,9 +986,14 @@ void mtsIntuitiveResearchKitArm::ControlPositionGoalCartesian(void)
     ControlPositionGoalJoint();
 }
 
-bool mtsIntuitiveResearchKitArm::ArmIsReady(const std::string & methodName)
+bool mtsIntuitiveResearchKitArm::ArmIsReady(const std::string & methodName,
+                                            const mtsIntuitiveResearchKitArmTypes::ControlSpace space)
 {
-    if (mReady) {
+    // reset counter if ready
+    if (((space == mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)
+         && mJointControlReady)
+        || ((space == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)
+            && mCartesianControlReady)) {
         mArmNotReadyCounter = 0;
         mArmNotReadyTimeLastMessage = 0.0;
         return true;
@@ -1214,7 +1227,7 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
 
 void mtsIntuitiveResearchKitArm::Freeze(void)
 {
-    if (!ArmIsReady("Freeze")) {
+    if (!ArmIsReady("Freeze", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
         return;
     }
 
@@ -1228,7 +1241,7 @@ void mtsIntuitiveResearchKitArm::Freeze(void)
 
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
 {
-    if (!ArmIsReady("SetPositionJoint")) {
+    if (!ArmIsReady("SetPositionJoint", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
         return;
     }
 
@@ -1242,7 +1255,7 @@ void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & ne
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet & newPosition)
 {
-    if (!ArmIsReady("SetPositionGoalJoint")) {
+    if (!ArmIsReady("SetPositionGoalJoint", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
         return;
     }
 
@@ -1259,7 +1272,7 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet 
 
 void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (!ArmIsReady("SetPositionCartesian")) {
+    if (!ArmIsReady("SetPositionCartesian", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
         return;
     }
 
@@ -1273,7 +1286,7 @@ void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesian
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition)
 {
-    if (!ArmIsReady("SetPositionGoalCartesian")) {
+    if (!ArmIsReady("SetPositionGoalCartesian", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
         return;
     }
 
@@ -1347,7 +1360,7 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 
 void mtsIntuitiveResearchKitArm::SetEffortJoint(const prmForceTorqueJointSet & effort)
 {
-    if (!ArmIsReady("SetEffortJoint")) {
+    if (!ArmIsReady("SetEffortJoint", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
         RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalCartesian, arm not ready");
         return;
     }
@@ -1362,7 +1375,7 @@ void mtsIntuitiveResearchKitArm::SetEffortJoint(const prmForceTorqueJointSet & e
 
 void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wrench)
 {
-    if (!ArmIsReady("SetWrenchBody")) {
+    if (!ArmIsReady("SetWrenchBody", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
         return;
     }
 
@@ -1380,7 +1393,7 @@ void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wren
 
 void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & wrench)
 {
-    if (!ArmIsReady("SetWrenchSpatial")) {
+    if (!ArmIsReady("SetWrenchSpatial", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
         RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalCartesian, arm not ready");
         return;
     }

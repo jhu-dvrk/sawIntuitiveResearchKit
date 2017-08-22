@@ -68,9 +68,18 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mArmState.AddState("MANUAL");
 
     // after arm homed
+    mArmState.SetEnterCallback("ARM_HOMED",
+                               &mtsIntuitiveResearchKitPSM::EnterArmHomed,
+                               this);
+    mArmState.SetRunCallback("ARM_HOMED",
+                             &mtsIntuitiveResearchKitPSM::RunArmHomed,
+                             this);
     mArmState.SetTransitionCallback("ARM_HOMED",
                                     &mtsIntuitiveResearchKitPSM::TransitionArmHomed,
                                     this);
+    mArmState.SetLeaveCallback("ARM_HOMED",
+                               &mtsIntuitiveResearchKitPSM::LeaveArmHomed,
+                               this);
     mArmState.SetEnterCallback("CHANGING_COUPLING_ADAPTER",
                                &mtsIntuitiveResearchKitPSM::EnterChangingCouplingAdapter,
                                this);
@@ -515,6 +524,18 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
     }
 }
 
+void mtsIntuitiveResearchKitPSM::EnterArmHomed(void)
+{
+    mJointControlReady = true;
+}
+
+void mtsIntuitiveResearchKitPSM::RunArmHomed(void)
+{
+    if (mControlCallback) {
+        mControlCallback->Execute();
+    }
+}
+
 void mtsIntuitiveResearchKitPSM::TransitionArmHomed(void)
 {
     if (mArmState.DesiredStateIsNotCurrent()) {
@@ -523,6 +544,16 @@ void mtsIntuitiveResearchKitPSM::TransitionArmHomed(void)
             mArmState.SetCurrentState("CHANGING_COUPLING_ADAPTER");
         }
     }
+}
+
+void mtsIntuitiveResearchKitPSM::LeaveArmHomed(void)
+{
+    // turn off joint control ready until we have adapter and tool
+    mJointControlReady = false;
+
+    // no control mode defined
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
 }
 
 void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)

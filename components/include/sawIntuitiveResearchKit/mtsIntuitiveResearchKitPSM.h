@@ -77,7 +77,11 @@ protected:
 
     // state related methods
     void SetGoalHomingArm(void);
+    void EnterArmHomed(void);
+    void RunArmHomed(void); // mostly to allow joint control without tool nor adapter
+    void LeaveArmHomed(void);
     void TransitionArmHomed(void);
+    
     // engaging adapter
     void EnterChangingCouplingAdapter(void);
     inline void RunChangingCouplingAdapter(void) {
