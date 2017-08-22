@@ -956,7 +956,6 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & butt
     if (button.Type() == prmEventButton::PRESSED) {
         mAdapterNeedEngage = true;
     } else {
-        std::cerr << CMN_LOG_DETAILS << " ---- implement method to see if state was at least arm_calibrated, otherwise do nothing, maybe add a flag mArmCalibrated?" << std::endl;
         // set current state, not desired one - this needs to be immediate
         mArmState.SetCurrentState("ARM_HOMED");
     }
