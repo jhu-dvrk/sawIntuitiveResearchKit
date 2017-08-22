@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Config Version="2">
+<Config Version="3">
    <DigitalIn BitID="0"  BoardID="0" Debounce="0" Name="MTML-D0-00" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="1"  BoardID="0" Debounce="0" Name="MTML-D0-01" Pressed="0" Trigger="all"/>
    <DigitalIn BitID="2"  BoardID="0" Debounce="0" Name="MTML-D0-02" Pressed="0" Trigger="all"/>
