@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 
+#include <cmath>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsDerivedTeleOperationPSM,
                                       mtsTeleOperationPSM,
@@ -98,26 +99,20 @@ void mtsDerivedTeleOperationPSM::RunEnabled(void)
         PSMGetVelocityCartesian(velocityPSM);
 
         // Extract only position data, ignore orientation
-        const vct3 velocity = velocityPSM.VelocityLinear().Normalized();
+        const vct3 velocity = velocityPSM.VelocityLinear();
         vct3 force = wrenchPSM.Force().Ref<3>(0);
 
-        std::cerr << " v : " << velocity << std::endl;
         // Scale force based on velocity, i.e. at high velocity apply less forces
         for (size_t i = 0; i < 3; i++) {
-            double velocityDumping = 1.0 / (1000.0 * velocity[i] + 1.0);
-            std::cerr << i << " " << velocityDumping;
-            if (velocityDumping > 1) {
-                velocityDumping = 1.0;
-            }
+            double velocityDumping = 1.0 / (20.0 * std::fabs(velocity[i]) + 1.0);
             // Compute force in opposite direction and scale back on master
             force[i] = -0.3 * velocityDumping * force[i];
         }
-        std::cerr << std::endl;
 
         // Re-orient based on rotation between MTM and PSM
         force = mRegistrationRotation.Inverse() * force;
         // Set wrench for MTM
         wrenchMTM.Force().Ref<3>(0) = force;
-        // mMTM->SetWrenchBody(wrenchMTM);
+        mMTM->SetWrenchBody(wrenchMTM);
     }
 }
