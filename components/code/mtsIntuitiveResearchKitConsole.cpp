@@ -563,7 +563,6 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // get user preferences
     jsonValue = jsonConfig["io"];
     if (!jsonValue.empty()) {
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: looking for user provided io:period and io:port" << std::endl;
         jsonValue = jsonConfig["io"]["firewire-protocol"];
         if (!jsonValue.empty()) {
             const std::string protocolString = jsonValue.asString();
@@ -585,10 +584,12 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             if (periodIO > 1.0 * cmn_ms) {
                 std::stringstream message;
                 message << "Configure:" << std::endl
-                        << "------------------------------------------------------------------------------" << std::endl
-                        << "WARNING, the period provided is quite high, i.e. " << periodIO << " seconds" << std::endl
-                        << "We strongly recommend you change it to a value below 1 ms, i.e. 0.001" << std::endl
-                        << "------------------------------------------------------------------------------";
+                        << "----------------------------------------------------" << std::endl
+                        << " Warning:" << std::endl
+                        << "   The period provided is quite high, i.e. " << periodIO << std::endl
+                        << "   seconds.  We strongly recommend you change it to" << std::endl
+                        << "   a value below 1 ms, i.e. 0.001." << std::endl
+                        << "----------------------------------------------------";
                 std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
                 CMN_LOG_CLASS_INIT_WARNING << message.str() << std::endl;
             }
@@ -598,10 +599,25 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             firewirePort = jsonValue.asInt();
         }
     } else {
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: using default io:period and io:port" << std::endl;
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: using default io:period, io:port and io:firewire-protocol" << std::endl;
     }
-    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: period IO is " << periodIO << std::endl
-                               << "Configure: FireWire port is " << firewirePort << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configure:" << std::endl
+                               << "     - Period IO is " << periodIO << std::endl
+                               << "     - FireWire port is " << firewirePort << std::endl
+                               << "     - Protocol is " << protocol << std::endl;
+
+    if (protocol != sawRobotIO1394::PROTOCOL_BC_QRW) {
+        std::stringstream message;
+        message << "Configure:" << std::endl
+                << "----------------------------------------------------" << std::endl
+                << " Warning:" << std::endl
+                << "   The firewire-protocol is not full broadcast" << std::endl
+                << "   We recommend you set it to \"broadcast-read-write\"." << std::endl
+                << "   You'll need firmware rev. 4 or above for this." << std::endl
+                << "----------------------------------------------------";
+        std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
+        CMN_LOG_CLASS_INIT_WARNING << message.str() << std::endl;
+    }
 
     const Json::Value arms = jsonConfig["arms"];
     for (unsigned int index = 0; index < arms.size(); ++index) {
@@ -765,13 +781,13 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
     if (mTeleopsPSM.size() > 0) {
         if (!foundClutch || !foundOperatorPresent) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Clutch\" and \"OperatorPresent\" need to be defined since there's at least one PSM tele-operation component" << std::endl;
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Clutch\" and \"OperatorPresent\" need to be defined since there's at least one PSM tele-operation component.  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
             return;
         }
     }
     if (mTeleopECM) {
         if (!foundCamera || !foundOperatorPresent) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Camera\" and \"OperatorPresent\" need to be defined since there's an ECM tele-operation component" << std::endl;
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Camera\" and \"OperatorPresent\" need to be defined since there's an ECM tele-operation component.  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
             return;
         }
     }
