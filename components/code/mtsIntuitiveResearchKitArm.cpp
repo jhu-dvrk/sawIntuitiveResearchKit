@@ -921,7 +921,7 @@ void mtsIntuitiveResearchKitArm::RunReady(void)
 void mtsIntuitiveResearchKitArm::ControlPositionJoint(void)
 {
     if (mHasNewPIDGoal) {
-        mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
+        SetPositionJointLocal(JointSet);
         // reset flag
         mHasNewPIDGoal = false;
     }

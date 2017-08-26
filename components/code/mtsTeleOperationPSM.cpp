@@ -162,7 +162,7 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", mPSM->GetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", mPSM->SetPositionCartesian);
-        interfaceRequired->AddFunction("SetJawPosition", mPSM->SetJawPosition);
+        interfaceRequired->AddFunction("SetPositionJaw", mPSM->SetPositionJaw);
         interfaceRequired->AddFunction("GetCurrentState", mPSM->GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState", mPSM->GetDesiredState);
         interfaceRequired->AddFunction("SetDesiredState", mPSM->SetDesiredState);
@@ -576,10 +576,10 @@ void mtsTeleOperationPSM::RunEnabled(void)
                 prmStateJoint gripper;
                 mMTM->GetStateGripper(gripper);
                 mPSM->PositionJointSet.Goal()[0] = gripper.Position()[0];
-                mPSM->SetJawPosition(mPSM->PositionJointSet);
+                mPSM->SetPositionJaw(mPSM->PositionJointSet);
             } else {
                 mPSM->PositionJointSet.Goal()[0] = 45.0 * cmnPI_180;
-                mPSM->SetJawPosition(mPSM->PositionJointSet);
+                mPSM->SetPositionJaw(mPSM->PositionJointSet);
             }
         }
     }

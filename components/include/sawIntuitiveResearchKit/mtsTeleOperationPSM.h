@@ -114,7 +114,7 @@ protected:
     public:
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionWrite SetPositionCartesian;
-        mtsFunctionWrite SetJawPosition;
+        mtsFunctionWrite SetPositionJaw;
 
         mtsFunctionRead  GetCurrentState;
         mtsFunctionRead  GetDesiredState;

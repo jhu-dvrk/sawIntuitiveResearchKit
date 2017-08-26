@@ -166,7 +166,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     RobotInterface->AddCommandReadState(this->StateTable, Jaw, "GetStateJaw");
     RobotInterface->AddCommandReadState(this->StateTable, JawDesired, "GetStateJawDesired");
     RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetJawPosition, this, "SetJawPosition");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionJaw, this, "SetPositionJaw");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionGoalJaw, this, "SetPositionGoalJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolPresent, this, "SetToolPresent");
 
     CMN_ASSERT(PIDInterface);
@@ -283,7 +284,7 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
     JointsDesiredKinematics.Timestamp() = JointsDesiredPID.Timestamp();
 }
 
-void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID)
+void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID)
 {
     if (mSnakeLike) {
         CMN_ASSERT(jointsKinematics.size() == 8);
@@ -293,7 +294,7 @@ void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec &jointsKinematic
         // Same goes for 5 and 6
         jointsPID.at(5) = jointsKinematics.at(5) + jointsKinematics.at(6);
     } else {
-        CMN_ASSERT(jointsKinematics.size() == 6);
+        CMN_ASSERT(jointsKinematics.size() >= 6);
         jointsPID.Assign(jointsKinematics, 6);
     }
 }
@@ -904,23 +905,47 @@ void mtsIntuitiveResearchKitPSM::EnterManual(void)
     PID.Enable(false);
 }
 
-void mtsIntuitiveResearchKitPSM::SetJawPosition(const prmPositionJointSet & jawPosition)
+void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawPosition)
 {
-    const size_t jawIndex = 6;
-    switch (mControlMode) {
-    case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
-        JawGoal = jawPosition.Goal().at(0);
-        mHasNewPIDGoal = true;
-        break;
-    case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
-        mJointTrajectory.IsWorking = true;
-        mJointTrajectory.Goal[jawIndex] = jawPosition.Goal().at(0);
-        mJointTrajectory.EndTime = 0.0;
-        break;
-    default:
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in control mode position nor trajectory" << std::endl;
-        break;
+    // for jaws to work you need a tool so it has to be fully ready
+    if (!ArmIsReady("SetPositionJaw", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+        return;
     }
+
+    // keep cartesian space is already there, otherwise use joint_space
+    if (mControlSpace == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE) {
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                               mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    } else {
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                               mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    }
+
+    // save goal
+    JawGoal = jawPosition.Goal().at(0);
+    mHasNewPIDGoal = true;
+}
+
+void mtsIntuitiveResearchKitPSM::SetPositionGoalJaw(const prmPositionJointSet & jawPosition)
+{
+    // for jaws to work you need a tool so it has to be fully ready
+    if (!ArmIsReady("SetPositionGoalJaw", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+        return;
+    }
+
+    // keep cartesian space is already there, otherwise use joint_space
+    if (mControlSpace == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE) {
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                               mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+    } else {
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                               mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+    }
+
+    // force trajectory re-evaluation with new goal for last joint
+    mJointTrajectory.IsWorking = true;
+    mJointTrajectory.Goal[6] = jawPosition.Goal().at(0);
+    mJointTrajectory.EndTime = 0.0;
 }
 
 void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
