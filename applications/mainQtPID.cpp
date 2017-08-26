@@ -22,12 +22,14 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstOSAbstraction/osaSleep.h>
-#include <cisstMultiTask/mtsQtApplication.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
 #include <sawControllers/mtsPID.h>
 #include <sawControllers/mtsPIDQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
+
+#include <QApplication>
+#include <QMainWindow>
 
 int main(int argc, char ** argv)
 {
@@ -97,10 +99,12 @@ int main(int argc, char ** argv)
 
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
-    // create a Qt application
-    mtsQtApplication *qtAppTask = new mtsQtApplication("QtApplication", argc, argv);
-    qtAppTask->Configure();
-    componentManager->AddComponent(qtAppTask);
+    // create a Qt user interface
+    QApplication application(argc, argv);
+    application.setWindowIcon(QIcon(":/dVRK.png"));
+
+    // organize all widgets in a tab widget
+    QTabWidget * tabWidget = new QTabWidget;
 
     // IO
     mtsRobotIO1394 * io = new mtsRobotIO1394("io", periodIOPID, firewirePort);
@@ -112,10 +116,23 @@ int main(int argc, char ** argv)
     componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "io", "Configuration");
     robotWidgetFactory->Configure();
 
+    mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
+    for (iterator = robotWidgetFactory->Widgets().begin();
+         iterator != robotWidgetFactory->Widgets().end();
+         ++iterator) {
+        tabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
+    }
+    if (robotWidgetFactory->ButtonsWidget()) {
+        tabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
+    }
+
+
     // Qt PID Controller GUI
     mtsPIDQtWidget * pidGUI = new mtsPIDQtWidget("pidGUI", numberOfJoints);
     pidGUI->Configure();
     componentManager->AddComponent(pidGUI);
+    tabWidget->addTab(pidGUI, "PID");
+
     mtsPID * pid = new mtsPID("pid", periodIOPID);
     pid->Configure(pidConfigFile);
     componentManager->AddComponent(pid);
@@ -134,11 +151,11 @@ int main(int argc, char ** argv)
     // start the periodic Run
     componentManager->StartAll();
 
-    // QtApplication will run in main thread and return control
-    // when exited.
+    // run Qt user interface
+    tabWidget->show();
+    application.exec();
 
-    componentManager->KillAll();
-    componentManager->WaitForStateAll(mtsComponentState::FINISHED, 2.0 * cmn_s);
+    componentManager->KillAllAndWait(5.0 * cmn_s);
     componentManager->Cleanup();
 
     // delete dvgc robot
