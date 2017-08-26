@@ -188,7 +188,7 @@ public:
         mtsFunctionWrite SetCoupling;
         mtsFunctionWrite Enable;
         mtsFunctionWrite EnableJoints;
-        mtsFunctionRead IsEnabled;
+        mtsFunctionRead  Enabled;
         mtsFunctionRead  GetStateJoint;
         mtsFunctionRead  GetStateJointDesired;
         mtsFunctionWrite SetPositionJoint;

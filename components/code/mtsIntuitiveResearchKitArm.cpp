@@ -225,7 +225,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("SetCoupling", PID.SetCoupling);
         PIDInterface->AddFunction("Enable", PID.Enable);
         PIDInterface->AddFunction("EnableJoints", PID.EnableJoints);
-        PIDInterface->AddFunction("IsEnabled", PID.IsEnabled);
+        PIDInterface->AddFunction("Enabled", PID.Enabled);
         PIDInterface->AddFunction("GetStateJoint", PID.GetStateJoint);
         PIDInterface->AddFunction("GetStateJointDesired", PID.GetStateJointDesired);
         PIDInterface->AddFunction("SetPositionJoint", PID.SetPositionJoint);
@@ -982,7 +982,7 @@ void mtsIntuitiveResearchKitArm::ControlPositionCartesian(void)
 
 void mtsIntuitiveResearchKitArm::ControlPositionGoalCartesian(void)
 {
-    // trajectory are computed in joint space for now
+    // trajectories are computed in joint space for now
     ControlPositionGoalJoint();
 }
 
@@ -1361,7 +1361,6 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 void mtsIntuitiveResearchKitArm::SetEffortJoint(const prmForceTorqueJointSet & effort)
 {
     if (!ArmIsReady("SetEffortJoint", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
-        RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalCartesian, arm not ready");
         return;
     }
 
@@ -1394,7 +1393,6 @@ void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wren
 void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & wrench)
 {
     if (!ArmIsReady("SetWrenchSpatial", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
-        RobotInterface->SendWarning(this->GetName() + ": SetPositionGoalCartesian, arm not ready");
         return;
     }
 

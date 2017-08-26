@@ -918,7 +918,7 @@ void mtsIntuitiveResearchKitPSM::SetJawPosition(const prmPositionJointSet & jawP
         mJointTrajectory.EndTime = 0.0;
         break;
     default:
-        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in not in control mode position nor trajectory" << std::endl;
+        CMN_LOG_CLASS_RUN_WARNING << GetName() << ": arm not in control mode position nor trajectory" << std::endl;
         break;
     }
 }
@@ -989,7 +989,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
     // Start manual mode but save the previous state
     if (button.Type() == prmEventButton::PRESSED) {
         ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
-        PID.IsEnabled(ClutchEvents.PIDEnabledPreviousState);
+        PID.Enabled(ClutchEvents.PIDEnabledPreviousState);
         mArmState.SetCurrentState("MANUAL");
     } else {
         if (mArmState.CurrentState() == "MANUAL") {
