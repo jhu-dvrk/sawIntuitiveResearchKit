@@ -1002,7 +1002,7 @@ bool mtsIntuitiveResearchKitArm::ArmIsReady(const std::string & methodName,
     if ((StateTable.GetTic() - mArmNotReadyTimeLastMessage) > 2.0 * cmn_s) {
         std::stringstream message;
         message << this->GetName() << ": " << methodName << ", arm not ready";
-        if (mArmNotReadyCounter != 0) {
+        if (mArmNotReadyCounter > 1) {
             message << " (" << mArmNotReadyCounter << " errors)";
         }
         RobotInterface->SendWarning(message.str());

@@ -907,8 +907,8 @@ void mtsIntuitiveResearchKitPSM::EnterManual(void)
 
 void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawPosition)
 {
-    // for jaws to work you need a tool so it has to be fully ready
-    if (!ArmIsReady("SetPositionJaw", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+    // we need to need to at least ready to control in joint space
+    if (!ArmIsReady("SetPositionJaw", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
         return;
     }
 
@@ -928,8 +928,8 @@ void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawP
 
 void mtsIntuitiveResearchKitPSM::SetPositionGoalJaw(const prmPositionJointSet & jawPosition)
 {
-    // for jaws to work you need a tool so it has to be fully ready
-    if (!ArmIsReady("SetPositionGoalJaw", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+    // we need to need to at least ready to control in joint space
+    if (!ArmIsReady("SetPositionGoalJaw", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
         return;
     }
 
