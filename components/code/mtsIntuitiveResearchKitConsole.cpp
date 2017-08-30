@@ -558,7 +558,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // IO default settings
     double periodIO = mtsIntuitiveResearchKit::IOPeriod;
     int firewirePort = 0;
-    sawRobotIO1394::ProtocolType protocol = sawRobotIO1394::PROTOCOL_BC_QRW;
+    sawRobotIO1394::ProtocolType protocol = sawRobotIO1394::PROTOCOL_SEQ_R_BC_W;
 
     // get user preferences
     jsonValue = jsonConfig["io"];
@@ -606,13 +606,13 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                                << "     - FireWire port is " << firewirePort << std::endl
                                << "     - Protocol is " << protocol << std::endl;
 
-    if (protocol != sawRobotIO1394::PROTOCOL_BC_QRW) {
+    if ((protocol != sawRobotIO1394::PROTOCOL_BC_QRW) && (protocol != sawRobotIO1394::PROTOCOL_SEQ_R_BC_W)) {
         std::stringstream message;
         message << "Configure:" << std::endl
                 << "----------------------------------------------------" << std::endl
                 << " Warning:" << std::endl
-                << "   The firewire-protocol is not full broadcast" << std::endl
-                << "   We recommend you set it to \"broadcast-read-write\"." << std::endl
+                << "   The firewire-protocol is not using broadcast" << std::endl
+                << "   We recommend you set it to \"sequential-read-broadcast-write\"." << std::endl
                 << "   You'll need firmware rev. 4 or above for this." << std::endl
                 << "----------------------------------------------------";
         std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
