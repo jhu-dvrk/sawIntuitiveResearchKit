@@ -913,12 +913,26 @@ void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawP
     }
 
     // keep cartesian space is already there, otherwise use joint_space
-    if (mControlSpace == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE) {
+    switch (mControlSpace) {
+    case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
-    } else {
+        break;
+    case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+        if (mControlMode != mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
+            // we are initiating the control mode switch
+            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                                   mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+            // make sure all other joints have a reasonable goal
+            JointSet.Assign(JointsDesiredKinematics.Position(), NumberOfJointsKinematics());
+        }
+        break;
+    default:
+        // we are initiating the control mode switch
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+        // make sure all other joints have a reasonable goal
+        JointSet.Assign(JointsDesiredKinematics.Position(), NumberOfJointsKinematics());
     }
 
     // save goal
@@ -934,12 +948,26 @@ void mtsIntuitiveResearchKitPSM::SetPositionGoalJaw(const prmPositionJointSet & 
     }
 
     // keep cartesian space is already there, otherwise use joint_space
-    if (mControlSpace == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE) {
+    switch (mControlSpace) {
+    case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
-    } else {
+        break;
+    case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+        if (mControlMode != mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE) {
+            // we are initiating the control mode switch
+            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                                   mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+            // make sure all other joints have a reasonable goal
+            mJointTrajectory.Goal.Assign(JointsDesiredPID.Position(), NumberOfJointsKinematics());
+        }
+        break;
+    default:
+        // we are initiating the control mode switch
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+        // make sure all other joints have a reasonable goal
+        mJointTrajectory.Goal.Assign(JointsDesiredPID.Position());
     }
 
     // force trajectory re-evaluation with new goal for last joint
