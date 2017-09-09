@@ -559,6 +559,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     double periodIO = mtsIntuitiveResearchKit::IOPeriod;
     int firewirePort = 0;
     sawRobotIO1394::ProtocolType protocol = sawRobotIO1394::PROTOCOL_SEQ_R_BC_W;
+    double watchdogTimeout = mtsIntuitiveResearchKit::WatchdogTimeout;
 
     // get user preferences
     jsonValue = jsonConfig["io"];
@@ -598,13 +599,36 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         if (!jsonValue.empty()) {
             firewirePort = jsonValue.asInt();
         }
+
+        jsonValue = jsonConfig["io"]["watchdog-timeout"];
+        if (!jsonValue.empty()) {
+            watchdogTimeout = jsonValue.asDouble();
+            if (watchdogTimeout > 300.0 * cmn_ms) {
+                watchdogTimeout = 300.0 * cmn_ms;
+                CMN_LOG_CLASS_INIT_WARNING << "Configure: io:watchdog-timeout has to be lower than 300 ms, it has been capped at 300 ms" << std::endl;
+            }
+            if (watchdogTimeout <= 0.0) {
+                watchdogTimeout = 0.0;
+                std::stringstream message;
+                message << "Configure:" << std::endl
+                        << "----------------------------------------------------" << std::endl
+                        << " Warning:" << std::endl
+                        << "   Setting the watchdog timeout to zero disables the" << std::endl
+                        << "   watchdog.   We strongly recommend to no specify" << std::endl
+                        << "   io:watchdog-timeout or set it around 10 ms." << std::endl
+                        << "----------------------------------------------------";
+                std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
+                CMN_LOG_CLASS_INIT_WARNING << message.str() << std::endl;
+            }
+        }
     } else {
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: using default io:period, io:port and io:firewire-protocol" << std::endl;
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: using default io:period, io:port, io:firewire-protocol and io:watchdog-timeout" << std::endl;
     }
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure:" << std::endl
                                << "     - Period IO is " << periodIO << std::endl
                                << "     - FireWire port is " << firewirePort << std::endl
-                               << "     - Protocol is " << protocol << std::endl;
+                               << "     - Protocol is " << protocol << std::endl
+                               << "     - Watchdog timeout is " << watchdogTimeout << std::endl; 
 
     if ((protocol != sawRobotIO1394::PROTOCOL_BC_QRW) && (protocol != sawRobotIO1394::PROTOCOL_SEQ_R_BC_W)) {
         std::stringstream message;
@@ -655,6 +679,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     if (mHasIO) {
         mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, firewirePort);
         io->SetProtocol(protocol);
+        io->SetWatchdogPeriod(watchdogTimeout);        
         // configure for each arm
         for (iter = mArms.begin(); iter != end; ++iter) {
             std::string ioConfig = iter->second->mIOConfigurationFile;
