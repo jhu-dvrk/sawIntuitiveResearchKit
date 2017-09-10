@@ -152,6 +152,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     mWrenchBodyOrientationAbsolute = false;
     mGravityCompensation = false;
+    mCartesianImpedance = false;
 
     mHasNewPIDGoal = false;
     mEffortOrientationLocked = false;
@@ -315,6 +316,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                         this, "SetWrenchSpatial");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetGravityCompensation,
                                         this, "SetGravityCompensation");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetCartesianImpedanceGains,
+                                        this, "SetCartesianImpedanceGains");
 
         // Trajectory events
         RobotInterface->AddEventWrite(mJointTrajectory.GoalReachedEvent, "GoalReached", bool());
@@ -1042,6 +1045,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             }
         } else {
             // all other spaces, just set the current space
+            mEffortOrientationLocked = false;
             mControlSpace = space;
         }
     }
@@ -1053,11 +1057,13 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             // configure PID
             PID.EnableTrackingError(UsePIDTrackingError());
             PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), false));
+            mEffortOrientationLocked = false;
             break;
         case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
             // configure PID
             PID.EnableTrackingError(UsePIDTrackingError());
             PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), false));
+            mEffortOrientationLocked = false;
             // initialize trajectory
             JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
             JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
@@ -1167,19 +1173,29 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
 
     // body wrench
     if (mWrenchType == WRENCH_BODY) {
-        if (mWrenchBodyOrientationAbsolute) {
-            // use forward kinematics orientation to have constant wrench orientation
-            vct3 relative, absolute;
-            // force
-            relative.Assign(mWrenchSet.Force().Ref<3>(0));
-            CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
-            force.Ref(3, 0).Assign(absolute);
-            // torque
-            relative.Assign(mWrenchSet.Force().Ref<3>(3));
-            CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
-            force.Ref(3, 3).Assign(absolute);
-        } else {
+        // either using wrench provided by user or cartesian impedance
+        if (mCartesianImpedance) {
+            mCartesianImpedanceController.Update(CartesianGetLocalParam,
+                                                 CartesianVelocityGetParam,
+                                                 mWrenchSet,
+                                                 mWrenchBodyOrientationAbsolute);
             force.Assign(mWrenchSet.Force());
+        } else {
+            // user provided wrench
+            if (mWrenchBodyOrientationAbsolute) {
+                // use forward kinematics orientation to have constant wrench orientation
+                vct3 relative, absolute;
+                // force
+                relative.Assign(mWrenchSet.Force().Ref<3>(0));
+                CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
+                force.Ref(3, 0).Assign(absolute);
+                // torque
+                relative.Assign(mWrenchSet.Force().Ref<3>(3));
+                CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
+                force.Ref(3, 3).Assign(absolute);
+            } else {
+                force.Assign(mWrenchSet.Force());
+            }
         }
         JointExternalEffort.ProductOf(mJacobianBody.Transpose(), force);
     }
@@ -1383,6 +1399,7 @@ void mtsIntuitiveResearchKitArm::SetWrenchBody(const prmForceCartesianSet & wren
                            mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
 
     // set new wrench
+    mCartesianImpedance = false;
     mWrenchSet = wrench;
     if (mWrenchType != WRENCH_BODY) {
         mWrenchType = WRENCH_BODY;
@@ -1401,6 +1418,7 @@ void mtsIntuitiveResearchKitArm::SetWrenchSpatial(const prmForceCartesianSet & w
                            mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
 
     // set new wrench
+    mCartesianImpedance = false;
     mWrenchSet = wrench;
     if (mWrenchType != WRENCH_SPATIAL) {
         mWrenchType = WRENCH_SPATIAL;
@@ -1424,4 +1442,24 @@ void mtsIntuitiveResearchKitArm::AddGravityCompensationEfforts(vctDoubleVec & ef
     vctDoubleVec gravityEfforts;
     gravityEfforts.ForceAssign(Manipulator->CCG(JointsKinematics.Position(), qd));  // should this take joint velocities?
     efforts.Add(gravityEfforts);
+}
+
+void mtsIntuitiveResearchKitArm::SetCartesianImpedanceGains(const prmCartesianImpedanceGains & gains)
+{
+    if (!ArmIsReady("SetWrenchBody", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+        return;
+    }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+
+    // set new wrench
+    mCartesianImpedance = true;
+    mWrenchBodyOrientationAbsolute = true;
+    mCartesianImpedanceController.SetGains(gains);
+    if (mWrenchType != WRENCH_BODY) {
+        mWrenchType = WRENCH_BODY;
+        RobotInterface->SendStatus(this->GetName() + ": effort cartesian WRENCH_BODY");
+    }
 }

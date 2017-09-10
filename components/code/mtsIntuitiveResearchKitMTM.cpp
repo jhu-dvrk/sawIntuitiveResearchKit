@@ -129,9 +129,6 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     RobotType = MTM_NULL;
     SetMTMType();
 
-    // Impedance Controller
-    mImpedanceController = new osaImpedanceController();
-
     // joint values when orientation is locked
     mEffortOrientationJoint.SetSize(NumberOfJoints());
 
@@ -141,8 +138,8 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     Gripper.Position().SetSize(1);
     GripperClosed = false;
 
-    mJointTrajectory.Velocity.SetAll(180.0 * cmnPI_180); // degrees per second
-    mJointTrajectory.Acceleration.SetAll(180.0 * cmnPI_180);
+    mJointTrajectory.Velocity.SetAll(90.0 * cmnPI_180); // degrees per second
+    mJointTrajectory.Acceleration.SetAll(90.0 * cmnPI_180);
     mJointTrajectory.Velocity.Element(JNT_WRIST_ROLL) = 360.0 * cmnPI_180; // roll can go fast
     mJointTrajectory.Acceleration.Element(JNT_WRIST_ROLL) = 360.0 * cmnPI_180;
     mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
@@ -167,7 +164,6 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     CMN_ASSERT(RobotInterface);
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::LockOrientation, this, "LockOrientation");
     RobotInterface->AddCommandVoid(&mtsIntuitiveResearchKitMTM::UnlockOrientation, this, "UnlockOrientation");
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::SetImpedanceGains, this, "SetImpedanceGains");
 
     // Gripper
     RobotInterface->AddCommandReadState(this->StateTable, Gripper, "GetStateGripper");
@@ -499,14 +495,6 @@ void mtsIntuitiveResearchKitMTM::ControlEffortOrientationLocked(void)
     }
 }
 
-void mtsIntuitiveResearchKitMTM::RunEffortCartesianImpedance(void)
-{
-    prmForceCartesianSet wrench;
-    mImpedanceController->Update(CartesianGetParam, CartesianVelocityGetParam, wrench);
-    SetWrenchBody(wrench);
-    ControlEffortCartesian();
-}
-
 void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
 {
     vctBoolVec torqueMode(NumberOfJoints());
@@ -542,14 +530,4 @@ void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)
         mEffortOrientationLocked = false;
         SetControlEffortActiveJoints();
     }
-}
-
-void mtsIntuitiveResearchKitMTM::SetImpedanceGains(const prmFixtureGainCartesianSet & newGains)
-{
-    std::cerr << CMN_LOG_DETAILS << " to be fixed" << std::endl;
-    /*
-    if (CurrentStateIs(mtsIntuitiveResearchKitArmTypes::DVRK_EFFORT_CARTESIAN_IMPEDANCE)) {
-        mImpedanceController->SetGains(newGains);
-    }
-    */
 }

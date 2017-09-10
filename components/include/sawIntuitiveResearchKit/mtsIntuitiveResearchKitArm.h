@@ -36,6 +36,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
 
+#include <sawControllers/osaCartesianImpedanceController.h>
+
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
@@ -140,6 +142,7 @@ public:
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
     virtual void SetWrenchBodyOrientationAbsolute(const bool & absolute);
     virtual void SetGravityCompensation(const bool & gravityCompensation);
+    virtual void SetCartesianImpedanceGains(const prmCartesianImpedanceGains & gains);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
     virtual void SetBaseFrameEventHandler(const prmPositionCartesianGet & newBaseFrame);
@@ -269,6 +272,10 @@ public:
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData mJacobianPInverseData;
     prmForceCartesianGet mWrenchGet;
+
+    // cartesian impendance controller
+    osaCartesianImpedanceController mCartesianImpedanceController;
+    bool mCartesianImpedance;
 
     // used by MTM only
     bool mEffortOrientationLocked;
