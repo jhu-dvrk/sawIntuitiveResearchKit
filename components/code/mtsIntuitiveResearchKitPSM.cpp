@@ -915,16 +915,22 @@ void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawP
     // keep cartesian space is already there, otherwise use joint_space
     switch (mControlSpace) {
     case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                               mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
-        break;
+        if (mControlMode != mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
+            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                                   mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+            // make sure all other joints have a reasonable cartesian
+            // goal for all other joints
+            CartesianSetParam.Goal().Assign(CartesianGetDesiredParam.Position());
+            break;
+        }
     case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
         if (mControlMode != mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
-            // we are initiating the control mode switch
+            // we are initiating the control mode switch so we need to
+            // set a reasonable JointSet
             SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                                    mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
             // make sure all other joints have a reasonable goal
-            JointSet.Assign(JointsDesiredKinematics.Position(), NumberOfJointsKinematics());
+            JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
         }
         break;
     default:
@@ -932,7 +938,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawP
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
         // make sure all other joints have a reasonable goal
-        JointSet.Assign(JointsDesiredKinematics.Position(), NumberOfJointsKinematics());
+        JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
     }
 
     // save goal
@@ -950,8 +956,13 @@ void mtsIntuitiveResearchKitPSM::SetPositionGoalJaw(const prmPositionJointSet & 
     // keep cartesian space is already there, otherwise use joint_space
     switch (mControlSpace) {
     case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                               mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+        if (mControlMode != mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE) {
+            // we are initiating the control mode switch
+            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                                   mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+            // make sure all other joints have a reasonable goal
+            mJointTrajectory.Goal.Assign(JointsDesiredPID.Position(), NumberOfJointsKinematics());
+        }
         break;
     case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
         if (mControlMode != mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE) {
