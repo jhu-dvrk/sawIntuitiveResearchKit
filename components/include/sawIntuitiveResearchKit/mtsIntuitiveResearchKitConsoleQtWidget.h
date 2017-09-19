@@ -66,6 +66,7 @@ private slots:
     void SlotClutchEventHandler(bool clutch);
     void SlotOperatorPresentEventHandler(bool operatorPresent);
     void SlotCameraEventHandler(bool camera);
+    void SlotComponentViewer(void);
 
 protected:
     void closeEvent(QCloseEvent * event);
@@ -92,6 +93,7 @@ protected:
     QRadioButton * QRBClutch;
     QRadioButton * QRBOperatorPresent;
     QRadioButton * QRBCamera;
+    QPushButton * QPBComponentViewer;
     QTabWidget * QTWidgets;
     mtsMessageQtWidget * QMMessage;
 };

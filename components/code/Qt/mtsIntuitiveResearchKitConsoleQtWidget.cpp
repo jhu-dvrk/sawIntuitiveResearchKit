@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstBuildType.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstMultiTask/mtsComponentViewer.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 
@@ -228,6 +229,9 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     buttonsWidget->setFixedWidth(buttonsWidget->sizeHint().width());
     mainLayout->addWidget(buttonsWidget);
 
+    QPBComponentViewer = new QPushButton("Component\nViewer");
+    QPBComponentViewer->setToolTip("Starts uDrawGraph (must be in system path)");
+    boxLayout->addWidget(QPBComponentViewer);
 
     QLabel * labelLogo = new QLabel("");
     labelLogo->setPixmap(QPixmap(":/dVRK.png").scaled(60, 60, Qt::KeepAspectRatio, Qt::SmoothTransformation));
@@ -271,6 +275,8 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotOperatorPresentEventHandler(bool)));
     connect(this, SIGNAL(SignalCamera(bool)),
             this, SLOT(SlotCameraEventHandler(bool)));
+    connect(QPBComponentViewer, SIGNAL(clicked()),
+            this, SLOT(SlotComponentViewer()));
 
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q), this, SLOT(close()));
 }
@@ -316,6 +322,21 @@ void mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler(const p
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotCameraEventHandler(bool camera)
 {
     QRBCamera->setChecked(camera);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotComponentViewer(void)
+{
+    QPBComponentViewer->setEnabled(false);
+    std::cerr << "Now trying to launch uDrawGraph." << std::endl
+              << "uDrawGraph needs to be installed in your path and the variable UDG_HOME set." << std::endl
+              << "See http://www.informatik.uni-bremen.de/uDrawGraph/en/download/download.html" << std::endl;
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+    mtsComponentViewer * componentViewer = new mtsComponentViewer("ComponentViewer");
+    componentManager->AddComponent(componentViewer);
+    osaSleep(0.2 * cmn_s);
+    componentViewer->Create();
+    osaSleep(0.2 * cmn_s);
+    componentViewer->Start();
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler(const prmEventButton & button)
