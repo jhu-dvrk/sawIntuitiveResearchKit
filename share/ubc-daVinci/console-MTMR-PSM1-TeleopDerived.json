@@ -1,0 +1,53 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "component-manager": {
+        "components":
+        [
+            // to use derived teleop with force feedback
+            {
+                "shared-library": "sawIntuitiveResearchKitDerivedTeleOperationPSM",
+                "class-name": "mtsDerivedTeleOperationPSM",
+                "constructor-arg": {
+                    "Name": "MTMR-PSM1",
+                    "Period": 0.001
+                }
+            }
+        ]
+    }
+    ,
+    "io":
+    {
+        "footpedals": "sawRobotIO1394-MTML-foot-pedals.xml"
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "io": "sawRobotIO1394-PSM1-45493.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json"
+        }
+        ,
+        {
+            "name": "MTMR",
+            "type": "MTM",
+            "io": "sawRobotIO1394-MTMR-73326.xml",
+            "pid": "sawControllersPID-MTMR.xml",
+            "kinematic": "mtm.json"
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            "type": "TELEOP_PSM_DERIVED",
+            "master": "MTMR",
+            "slave": "PSM1",
+            "rotation" : [[-1.0000,  0.0000,  0.0000],
+                          [ 0.0000, -1.0000,  0.0000],
+                          [ 0.0000,  0.0000,  1.0000]]
+        }
+    ]
+}
