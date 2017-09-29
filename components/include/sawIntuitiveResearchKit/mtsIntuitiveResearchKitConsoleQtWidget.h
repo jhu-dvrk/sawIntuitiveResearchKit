@@ -58,6 +58,7 @@ signals:
 
 private slots:
     void SlotPowerOff(void);
+    void SlotPowerOn(void);
     void SlotHome(void);
     void SlotTeleopStart(void);
     void SlotTeleopStop(void);
@@ -75,6 +76,7 @@ protected:
 
     struct MainStruct {
         mtsFunctionVoid PowerOff;
+        mtsFunctionVoid PowerOn;
         mtsFunctionVoid Home;
         mtsFunctionWrite TeleopEnable;
         mtsFunctionWrite SetScale;
@@ -86,6 +88,7 @@ protected:
     void CameraEventHandler(const prmEventButton & button);
 
     QPushButton * QPBPowerOff;
+    QPushButton * QPBPowerOn;
     QPushButton * QPBHome;
     QPushButton * QPBTeleopStart;
     QPushButton * QPBTeleopStop;

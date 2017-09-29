@@ -278,6 +278,7 @@ protected:
     bool ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop);
 
     void PowerOff(void);
+    void PowerOn(void);
     void Home(void);
     void TeleopEnable(const bool & enable);
     void UpdateTeleopState(void);

@@ -498,15 +498,17 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     if (mInterface) {
         mInterface->AddMessageEvents();
         mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::PowerOff, this,
-                                           "PowerOff");
+                                   "PowerOff");
+        mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::PowerOn, this,
+                                   "PowerOn");
         mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::Home, this,
-                                           "Home");
+                                   "Home");
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::TeleopEnable, this,
-                                           "TeleopEnable", false);
+                                    "TeleopEnable", false);
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetScale, this,
-                                           "SetScale", 0.5);
+                                    "SetScale", 0.5);
         mInterface->AddEventWrite(ConfigurationEvents.Scale,
-                                         "Scale", 0.5);
+                                  "Scale", 0.5);
     }
 }
 
@@ -628,7 +630,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                                << "     - Period IO is " << periodIO << std::endl
                                << "     - FireWire port is " << firewirePort << std::endl
                                << "     - Protocol is " << protocol << std::endl
-                               << "     - Watchdog timeout is " << watchdogTimeout << std::endl; 
+                               << "     - Watchdog timeout is " << watchdogTimeout << std::endl;
 
     if ((protocol != sawRobotIO1394::PROTOCOL_BC_QRW) && (protocol != sawRobotIO1394::PROTOCOL_SEQ_R_BC_W)) {
         std::stringstream message;
@@ -679,7 +681,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     if (mHasIO) {
         mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, firewirePort);
         io->SetProtocol(protocol);
-        io->SetWatchdogPeriod(watchdogTimeout);        
+        io->SetWatchdogPeriod(watchdogTimeout);
         // configure for each arm
         for (iter = mArms.begin(); iter != end; ++iter) {
             std::string ioConfig = iter->second->mIOConfigurationFile;
@@ -1656,6 +1658,16 @@ void mtsIntuitiveResearchKitConsole::PowerOff(void)
          arm != end;
          ++arm) {
         arm->second->SetDesiredState(std::string("UNINITIALIZED"));
+    }
+}
+
+void mtsIntuitiveResearchKitConsole::PowerOn(void)
+{
+    const ArmList::iterator end = mArms.end();
+    for (ArmList::iterator arm = mArms.begin();
+         arm != end;
+         ++arm) {
+        arm->second->SetDesiredState(std::string("POWERED"));
     }
 }
 

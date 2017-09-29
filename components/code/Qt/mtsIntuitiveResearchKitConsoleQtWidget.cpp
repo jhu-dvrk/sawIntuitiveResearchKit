@@ -54,6 +54,7 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
     if (interfaceRequired) {
         QMMessage->SetInterfaceRequired(interfaceRequired);
         interfaceRequired->AddFunction("PowerOff", Console.PowerOff);
+        interfaceRequired->AddFunction("PowerOn", Console.PowerOn);
         interfaceRequired->AddFunction("Home", Console.Home);
         interfaceRequired->AddFunction("TeleopEnable", Console.TeleopEnable);
         interfaceRequired->AddFunction("SetScale", Console.SetScale);
@@ -144,6 +145,11 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotPowerOff(void)
     Console.PowerOff();
 }
 
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotPowerOn(void)
+{
+    Console.PowerOn();
+}
+
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotHome(void)
 {
     Console.Home();
@@ -173,20 +179,24 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     boxLayout->setContentsMargins(0, 0, 0, 0);
     buttonsWidget->setLayout(boxLayout);
 
-    QGroupBox * powerBox = new QGroupBox("Power");
-    boxLayout->addWidget(powerBox);
-    QVBoxLayout * powerLayout = new QVBoxLayout();
-    powerBox->setLayout(powerLayout);
-    QPBPowerOff = new QPushButton("Off");
+    QGroupBox * armsBox = new QGroupBox("Arms");
+    boxLayout->addWidget(armsBox);
+    QVBoxLayout * armsLayout = new QVBoxLayout();
+    armsBox->setLayout(armsLayout);
+    QPBPowerOff = new QPushButton("Power Off");
     QPBPowerOff->setToolTip("ctrl + O");
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_O), this, SLOT(SlotPowerOff()));
-    powerLayout->addWidget(QPBPowerOff);
+    armsLayout->addWidget(QPBPowerOff);
+    QPBPowerOn = new QPushButton("Power On");
+    QPBPowerOn->setToolTip("ctrl + P");
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_O), this, SLOT(SlotPowerOn()));
+    armsLayout->addWidget(QPBPowerOn);
     QPBHome = new QPushButton("Home");
     QPBHome->setToolTip("ctrl + H");
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_H), this, SLOT(SlotHome()));
-    powerLayout->addWidget(QPBHome);
+    armsLayout->addWidget(QPBHome);
 
-    QGroupBox * teleopBox = new QGroupBox("Teleop");
+    QGroupBox * teleopBox = new QGroupBox("Tele operation");
     boxLayout->addWidget(teleopBox);
     QVBoxLayout * teleopLayout = new QVBoxLayout();
     teleopBox->setLayout(teleopLayout);
@@ -259,6 +269,8 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     // buttons
     connect(QPBPowerOff, SIGNAL(clicked()),
             this, SLOT(SlotPowerOff()));
+    connect(QPBPowerOn, SIGNAL(clicked()),
+            this, SLOT(SlotPowerOn()));
     connect(QPBHome, SIGNAL(clicked()),
             this, SLOT(SlotHome()));
     connect(QPBTeleopStart, SIGNAL(clicked()),
