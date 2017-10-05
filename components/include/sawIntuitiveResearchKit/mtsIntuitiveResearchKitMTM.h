@@ -133,6 +133,7 @@ protected:
     MTM_TYPE RobotType;
 
     // Roll position when hitting lower limit before encoder preload
+    bool mHomedOnce;
     double mHomingCalibrateRollLower;
     bool mHomingRollEncoderReset;
 };

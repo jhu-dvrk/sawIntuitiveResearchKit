@@ -146,7 +146,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mJointControlReady = false;
     mCartesianControlReady = false;
     mIsSimulated = false;
-    mHomedOnce = false;
+    mEncoderBiased = false;
     mHomingGoesToZero = false; // MTM ignores this
     mHomingBiasEncoderRequested = false;
 
@@ -672,7 +672,12 @@ void mtsIntuitiveResearchKitArm::TransitionUninitialized(void)
 void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 {
     // if simulated, no need to bias encoders
-    if (mIsSimulated || mHomedOnce) {
+    if (mIsSimulated) {
+        RobotInterface->SendStatus(this->GetName() + ": simulated mode, no need to calibrate encoders");
+        return;
+    }
+    if (mEncoderBiased) {
+        RobotInterface->SendStatus(this->GetName() + ": encoders have already been calibrated, skipping");
         return;
     }
 
@@ -685,7 +690,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 
 void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
 {
-    if (mIsSimulated || mHomedOnce) {
+    if (mIsSimulated || mEncoderBiased) {
         mJointReady = true;
         mArmState.SetCurrentState("ENCODERS_BIASED");
         return;
@@ -1367,10 +1372,11 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
     RobotInterface->SendStatus(this->GetName() + ": encoders biased using " + nbSamplesString.str() + " potentiometer values");
     if (mHomingBiasEncoderRequested) {
         mHomingBiasEncoderRequested = false;
+        mEncoderBiased = true;
         mJointReady = true;
         mArmState.SetCurrentState("ENCODERS_BIASED");
     } else {
-        RobotInterface->SendStatus(this->GetName() + ": encoders have been biased by another process");
+        RobotInterface->SendWarning(this->GetName() + ": encoders have been biased by another process");
     }
 }
 

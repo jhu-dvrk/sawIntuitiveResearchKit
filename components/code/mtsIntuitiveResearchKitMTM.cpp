@@ -90,6 +90,8 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 {
     mtsIntuitiveResearchKitArm::Init();
 
+    mHomedOnce = false;
+
     // state machine specific to MTM, see base class for other states
     mArmState.AddState("CALIBRATING_ROLL");
     mArmState.AddState("ROLL_CALIBRATED");

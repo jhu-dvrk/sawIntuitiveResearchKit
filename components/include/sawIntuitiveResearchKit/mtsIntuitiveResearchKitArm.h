@@ -382,7 +382,7 @@ public:
     vctDoubleVec PotsToEncodersTolerance;
 
     // Home Action
-    bool mHomedOnce;
+    bool mEncoderBiased;
     bool mHomingGoesToZero;
     bool mHomingBiasEncoderRequested;
     double mHomingTimer;
