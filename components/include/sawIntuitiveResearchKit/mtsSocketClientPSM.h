@@ -34,12 +34,13 @@ public :
     void Run(void);
 
 protected:
-    void SetRobotControlState(const std::string &state);
-    void GetRobotControlState(std::string & state) const;
+    void SetDesiredState(const std::string & state);
+    void GetDesiredState(std::string & state) const;
+    void GetCurrentState(std::string & state) const;
 
     void Freeze(void);
     void SetPositionCartesian(const prmPositionCartesianSet &position);
-    void SetJawPosition(const double &position);
+    void SetPositionJaw(const double &position);
     void UpdateApplication(void);
     void ReceivePSMStateData(void);
     void SendPSMCommandData(void);

@@ -38,12 +38,14 @@ mtsSocketClientPSM::mtsSocketClientPSM(const std::string & componentName, const 
                                           this, "Freeze");
         interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::SetPositionCartesian,
                                            this , "SetPositionCartesian");
-        interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::SetJawPosition,
-                                           this , "SetJawPosition");
-        interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::SetRobotControlState,
-                                           this , "SetRobotControlState");
-        interfaceProvided->AddCommandRead(&mtsSocketClientPSM::GetRobotControlState,
-                                           this , "GetRobotControlState");
+        interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::SetPositionJaw,
+                                           this , "SetPositionJaw");
+        interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::SetDesiredState,
+                                           this , "SetDesiredState");
+        interfaceProvided->AddCommandRead(&mtsSocketClientPSM::GetDesiredState,
+                                           this , "GetDesiredState");
+        interfaceProvided->AddCommandRead(&mtsSocketClientPSM::GetCurrentState,
+                                           this , "GetCurrentState");
     }
 }
 
@@ -81,7 +83,7 @@ void mtsSocketClientPSM::Freeze(void)
     Command.Data.GoalJaw = State.Data.CurrentJaw;
 }
 
-void mtsSocketClientPSM::SetRobotControlState(const std::string & state)
+void mtsSocketClientPSM::SetDesiredState(const std::string & state)
 {
     if (state == "UNINITIALIZED") {
         DesiredState = socketMessages::SCK_UNINITIALIZED;
@@ -103,14 +105,32 @@ void mtsSocketClientPSM::SetPositionCartesian(const prmPositionCartesianSet & po
     }
 }
 
-void mtsSocketClientPSM::SetJawPosition(const double & position)
+void mtsSocketClientPSM::SetPositionJaw(const double & position)
 {
     if (DesiredState == socketMessages::SCK_CART_POS) {
         Command.Data.GoalJaw = position;
     }
 }
 
-void mtsSocketClientPSM::GetRobotControlState(std::string & state) const
+void mtsSocketClientPSM::GetDesiredState(std::string & state) const
+{
+    switch (DesiredState) {
+    case socketMessages::SCK_UNINITIALIZED:
+        state = "UNINITIALIZED";
+        break;
+    case socketMessages::SCK_HOMING:
+        state = "READY";
+        break;
+    case socketMessages::SCK_HOMED:
+        state = "READY";
+        break;
+    default:
+        std::cerr << CMN_LOG_DETAILS << state << " state not supported." << std::endl;
+        break;
+    }
+}
+
+void mtsSocketClientPSM::GetCurrentState(std::string & state) const
 {
     switch (CurrentState) {
     case socketMessages::SCK_UNINITIALIZED:

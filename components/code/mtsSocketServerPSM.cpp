@@ -31,8 +31,8 @@ mtsSocketServerPSM::mtsSocketServerPSM(const std::string & componentName, const 
     if(interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", GetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", SetPositionCartesian);
-        interfaceRequired->AddFunction("SetJawPosition"      , SetJawPosition);
-        interfaceRequired->AddFunction("GetRobotControlState", GetRobotControlState);
+        interfaceRequired->AddFunction("SetPositionJaw", SetPositionJaw);
+        interfaceRequired->AddFunction("GetCurrentState", GetCurrentState);
         interfaceRequired->AddFunction("SetDesiredState", SetDesiredState);
         interfaceRequired->AddEventHandlerWrite(&mtsSocketServerPSM::ErrorEventHandler,
                                                 this, "Error");
@@ -82,10 +82,12 @@ void mtsSocketServerPSM::ExecutePSMCommands(void)
 
     // Only send when in cartesian mode
     switch (CurrentState) {
-    case socketMessages::SCK_HOMED:
+    case socketMessages::SCK_CART_POS:
         PositionCartesianSet.Goal().From(Command.Data.GoalPose);
         SetPositionCartesian(PositionCartesianSet);
-        SetJawPosition(Command.Data.GoalJaw);
+        PositionJointSet.Goal().SetSize(1);
+        PositionJointSet.Goal().Element(0) = Command.Data.GoalJaw;
+        SetPositionJaw(PositionJointSet);
         break;
     default:
         break;
@@ -114,12 +116,12 @@ void mtsSocketServerPSM::ReceivePSMCommandData(void)
             if (dataLeft != 0) {
                 bytesRead = dataLeft;
             }
-
             readCounter++;
         }
 
-        if (readCounter > 1)
+        if (readCounter > 1) {
             std::cerr << "Catching up : " << readCounter << std::endl;
+        }
 
         ss.write(Command.Buffer, bytesRead);
         cmnData<socketCommandPSM>::DeSerializeBinary(Command.Data, ss, local, remote);
@@ -143,7 +145,7 @@ void mtsSocketServerPSM::UpdatePSMState(void)
 
     // Get Robot State
     mtsStdString psmState;
-    GetRobotControlState(psmState);
+    GetCurrentState(psmState);
 
     // Switch to socket states
     if (psmState.Data == "UNINITIALIZED") {

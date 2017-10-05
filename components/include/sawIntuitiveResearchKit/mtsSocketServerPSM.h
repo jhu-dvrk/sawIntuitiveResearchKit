@@ -42,13 +42,15 @@ protected:
 
 private:
     mtsFunctionWrite SetPositionCartesian;
-    mtsFunctionWrite SetDesiredState;
-    mtsFunctionWrite SetJawPosition;
+    mtsFunctionWrite SetPositionJaw;
     mtsFunctionRead GetPositionCartesian;
-    mtsFunctionRead GetRobotControlState;
+
+    mtsFunctionWrite SetDesiredState;
+    mtsFunctionRead GetCurrentState;
 
     prmPositionCartesianGet PositionCartesianCurrent;
     prmPositionCartesianSet PositionCartesianSet;
+    prmPositionJointSet PositionJointSet;
     bool mIsHoming;
     bool mIsHomed;
 };
