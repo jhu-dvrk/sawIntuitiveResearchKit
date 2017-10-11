@@ -71,7 +71,7 @@ void mtsSocketClientPSM::Run(void)
 void mtsSocketClientPSM::UpdateApplication(void)
 {
     CurrentState = State.Data.RobotControlState;
-    PositionCartesianCurrent.Valid() = (CurrentState == socketMessages::SCK_CART_POS);
+    PositionCartesianCurrent.Valid() = (CurrentState >= socketMessages::SCK_HOMED);
     PositionCartesianCurrent.Position().FromNormalized(State.Data.CurrentPose);
     JawPosition = State.Data.CurrentJaw;
 }
@@ -100,16 +100,14 @@ void mtsSocketClientPSM::SetDesiredState(const std::string & state)
 
 void mtsSocketClientPSM::SetPositionCartesian(const prmPositionCartesianSet & position)
 {
-    if (DesiredState == socketMessages::SCK_CART_POS) {
-        Command.Data.GoalPose.From(position.Goal());
-    }
+    DesiredState = socketMessages::SCK_CART_POS;
+    Command.Data.GoalPose.From(position.Goal());
 }
 
-void mtsSocketClientPSM::SetPositionJaw(const double & position)
+void mtsSocketClientPSM::SetPositionJaw(const prmPositionJointSet & position)
 {
-    if (DesiredState == socketMessages::SCK_CART_POS) {
-        Command.Data.GoalJaw = position;
-    }
+    DesiredState = socketMessages::SCK_CART_POS;
+    Command.Data.GoalJaw = position.Goal().at(0);
 }
 
 void mtsSocketClientPSM::GetDesiredState(std::string & state) const
@@ -119,9 +117,8 @@ void mtsSocketClientPSM::GetDesiredState(std::string & state) const
         state = "UNINITIALIZED";
         break;
     case socketMessages::SCK_HOMING:
-        state = "READY";
-        break;
     case socketMessages::SCK_HOMED:
+    case socketMessages::SCK_CART_POS:
         state = "READY";
         break;
     default:
@@ -137,9 +134,8 @@ void mtsSocketClientPSM::GetCurrentState(std::string & state) const
         state = "UNINITIALIZED";
         break;
     case socketMessages::SCK_HOMING:
-        state = "READY";
-        break;
     case socketMessages::SCK_HOMED:
+    case socketMessages::SCK_CART_POS:
         state = "READY";
         break;
     default:
@@ -155,7 +151,7 @@ void mtsSocketClientPSM::ReceivePSMStateData(void)
     bytesRead = State.Socket->Receive(State.Buffer, BUFFER_SIZE, TIMEOUT);
     if (bytesRead > 0) {
         if (bytesRead != State.Data.Header.Size){
-            std::cerr << "Incorrect bytes read " << bytesRead << ". Looking for " << State.Data.Header.Size << " bytes." << std::endl;
+            std::cerr << CMN_LOG_DETAILS << "Incorrect bytes read " << bytesRead << ". Looking for " << State.Data.Header.Size << " bytes." << std::endl;
         }
 
         std::stringstream ss;
@@ -174,8 +170,9 @@ void mtsSocketClientPSM::ReceivePSMStateData(void)
             readCounter++;
         }
 
-        if (readCounter > 1)
-            std::cerr << "Catching up : " << readCounter << std::endl;
+        if (readCounter > 1) {
+            std::cerr << CMN_LOG_DETAILS << "Catching up : " << readCounter << std::endl;
+        }
 
         ss.write(State.Buffer, bytesRead);
         cmnData<socketStatePSM>::DeSerializeBinary(State.Data, ss, local, remote);

@@ -50,7 +50,6 @@ void mtsSocketServerPSM::Configure(const std::string & CMN_UNUSED(fileName))
 
 void mtsSocketServerPSM::Run(void)
 {
-    //State.Data.Error = "";
     ProcessQueuedEvents();
     ProcessQueuedCommands();
 
@@ -73,6 +72,12 @@ void mtsSocketServerPSM::ExecutePSMCommands(void)
                 state = "READY";
             }
             break;
+        case socketMessages::SCK_CART_POS:
+            if (CurrentState != socketMessages::SCK_HOMING) {
+                state = "READY";
+            }
+            CurrentState = socketMessages::SCK_CART_POS;
+            break;
         default:
             std::cerr << CMN_LOG_DETAILS << Command.Data.RobotControlState << " state not supported. " << std::endl;
             break;
@@ -83,8 +88,10 @@ void mtsSocketServerPSM::ExecutePSMCommands(void)
     // Only send when in cartesian mode
     switch (CurrentState) {
     case socketMessages::SCK_CART_POS:
+        // send cartesian goal
         PositionCartesianSet.Goal().From(Command.Data.GoalPose);
         SetPositionCartesian(PositionCartesianSet);
+        // send jaw goal
         PositionJointSet.Goal().SetSize(1);
         PositionJointSet.Goal().Element(0) = Command.Data.GoalJaw;
         SetPositionJaw(PositionJointSet);
@@ -101,7 +108,7 @@ void mtsSocketServerPSM::ReceivePSMCommandData(void)
     bytesRead = Command.Socket->Receive(Command.Buffer, BUFFER_SIZE, TIMEOUT);
     if (bytesRead > 0) {
         if (bytesRead != Command.Data.Header.Size) {
-            std::cerr << "Incorrect bytes read " << bytesRead << ". Looking for " << Command.Data.Header.Size << " bytes." << std::endl;
+            std::cerr << CMN_LOG_DETAILS << "Incorrect bytes read " << bytesRead << ". Looking for " << Command.Data.Header.Size << " bytes." << std::endl;
         }
 
         std::stringstream ss;
@@ -120,7 +127,7 @@ void mtsSocketServerPSM::ReceivePSMCommandData(void)
         }
 
         if (readCounter > 1) {
-            std::cerr << "Catching up : " << readCounter << std::endl;
+            std::cerr << CMN_LOG_DETAILS << "Catching up : " << readCounter << std::endl;
         }
 
         ss.write(Command.Buffer, bytesRead);
@@ -150,8 +157,11 @@ void mtsSocketServerPSM::UpdatePSMState(void)
     // Switch to socket states
     if (psmState.Data == "UNINITIALIZED") {
         CurrentState = socketMessages::SCK_UNINITIALIZED;
-    } else if (psmState.Data == "READY") {
-        CurrentState = socketMessages::SCK_HOMED;
+    } else if ((psmState.Data == "READY")) {
+        if ((CurrentState != socketMessages::SCK_HOMED)
+            && (CurrentState != socketMessages::SCK_CART_POS)) {
+            CurrentState = socketMessages::SCK_HOMED;
+        }
     } else {
         CurrentState = socketMessages::SCK_HOMING;
     }

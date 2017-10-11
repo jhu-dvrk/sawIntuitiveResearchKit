@@ -39,8 +39,8 @@ protected:
     void GetCurrentState(std::string & state) const;
 
     void Freeze(void);
-    void SetPositionCartesian(const prmPositionCartesianSet &position);
-    void SetPositionJaw(const double &position);
+    void SetPositionCartesian(const prmPositionCartesianSet & position);
+    void SetPositionJaw(const prmPositionJointSet & position);
     void UpdateApplication(void);
     void ReceivePSMStateData(void);
     void SendPSMCommandData(void);
