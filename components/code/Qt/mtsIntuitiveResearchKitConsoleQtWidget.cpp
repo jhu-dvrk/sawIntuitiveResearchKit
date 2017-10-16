@@ -189,7 +189,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     armsLayout->addWidget(QPBPowerOff);
     QPBPowerOn = new QPushButton("Power On");
     QPBPowerOn->setToolTip("ctrl + P");
-    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_O), this, SLOT(SlotPowerOn()));
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_P), this, SLOT(SlotPowerOn()));
     armsLayout->addWidget(QPBPowerOn);
     QPBHome = new QPushButton("Home");
     QPBHome->setToolTip("ctrl + H");
