@@ -755,11 +755,10 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
         return;
     }
 
-    const double timeToPower = 3.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
     // check status
-    if ((currentTime - mHomingTimer) > timeToPower) {
+    if ((currentTime - mHomingTimer) > mtsIntuitiveResearchKit::TimeToPower) {
         // check power status
         vctBoolVec actuatorAmplifiersStatus(NumberOfJoints());
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);

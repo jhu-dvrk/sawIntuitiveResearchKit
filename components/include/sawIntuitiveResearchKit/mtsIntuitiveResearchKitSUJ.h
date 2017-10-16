@@ -66,6 +66,8 @@ protected:
     virtual void EnterPowering(void);
     virtual void TransitionPowering(void);
 
+    virtual void TransitionPowered(void);
+
     virtual void EnterReady(void);
     virtual void RunReady(void);
 

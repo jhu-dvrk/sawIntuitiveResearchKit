@@ -26,6 +26,7 @@ namespace mtsIntuitiveResearchKit {
     const double ArmPeriod = 0.5 * cmn_ms;
     const double TeleopPeriod = 1.0 * cmn_ms;
     const double WatchdogTimeout = 30.0 * cmn_ms;
+    const double TimeToPower = 5.0 * cmn_s;
 };
 
 #endif // _mtsIntuitiveResearchKitArm_h

@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
@@ -350,10 +351,12 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
     mArmState.AddState("POWERING");
+    mArmState.AddState("POWERED");
     mArmState.AddState("READY");
 
     // possible desired states
     mArmState.AddAllowedDesiredState("UNINITIALIZED");
+    mArmState.AddAllowedDesiredState("POWERED");
     mArmState.AddAllowedDesiredState("READY");
 
     mFallbackState = "UNINITIALIZED";
@@ -382,6 +385,11 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
 
     mArmState.SetTransitionCallback("POWERING",
                                     &mtsIntuitiveResearchKitSUJ::TransitionPowering,
+                                    this);
+
+    // powered
+    mArmState.SetTransitionCallback("POWERED",
+                                    &mtsIntuitiveResearchKitSUJ::TransitionPowered,
                                     this);
 
     // state between ARM_HOMED and READY depends on the arm type, see
@@ -680,21 +688,28 @@ void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
 
 void mtsIntuitiveResearchKitSUJ::TransitionPowering(void)
 {
-    const double timeToPower = 3.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
     // check status
-    if ((currentTime - mHomingTimer) > timeToPower) {
+    if ((currentTime - mHomingTimer) > mtsIntuitiveResearchKit::TimeToPower) {
         // check power status
         vctBoolVec actuatorAmplifiersStatus(4);
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         if (actuatorAmplifiersStatus.All()) {
             DispatchStatus(this->GetName() + ": power on");
-            mArmState.SetCurrentState("READY");
+            mArmState.SetCurrentState("POWERED");
         } else {
             DispatchError(this->GetName() + ": failed to enable power");
             this->SetDesiredState(mFallbackState);
         }
+    }
+}
+
+void mtsIntuitiveResearchKitSUJ::TransitionPowered(void)
+{
+    // move to next stage if desired state is different
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        mArmState.SetCurrentState(mArmState.DesiredState());
     }
 }
 
@@ -1056,7 +1071,7 @@ void mtsIntuitiveResearchKitSUJ::DispatchError(const std::string & message)
 {
     mInterface->SendError(message);
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->mInterface->SendError(message);
+        Arms[armIndex]->mInterface->SendError(Arms[armIndex]->mName.Data + " " + message);
     }
 }
 
@@ -1064,7 +1079,7 @@ void mtsIntuitiveResearchKitSUJ::DispatchWarning(const std::string & message)
 {
     mInterface->SendWarning(message);
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->mInterface->SendWarning(message);
+        Arms[armIndex]->mInterface->SendWarning(Arms[armIndex]->mName.Data + " " + message);
     }
 }
 
@@ -1072,7 +1087,7 @@ void mtsIntuitiveResearchKitSUJ::DispatchStatus(const std::string & message)
 {
     mInterface->SendStatus(message);
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->mInterface->SendStatus(message);
+        Arms[armIndex]->mInterface->SendStatus(Arms[armIndex]->mName.Data + " " + message);
     }
 }
 
