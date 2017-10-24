@@ -172,7 +172,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mJointTrajectory.GoalError.SetSize(NumberOfJoints());
     mJointTrajectory.GoalTolerance.SetSize(NumberOfJoints());
     mJointTrajectory.IsWorking = false;
-    PotsToEncodersTolerance.SetSize(NumberOfAxes());
 
     // initialize velocity
     CartesianVelocityGetParam.SetVelocityLinear(vct3(0.0));
@@ -257,7 +256,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
         IOInterface->AddFunction("GetAnalogInputPosSI", RobotIO.GetAnalogInputPosSI);
         IOInterface->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
         IOInterface->AddFunction("UsePotsForSafetyCheck", RobotIO.UsePotsForSafetyCheck);
-        IOInterface->AddFunction("SetPotsToEncodersTolerance", RobotIO.SetPotsToEncodersTolerance);
         IOInterface->AddFunction("BrakeRelease", RobotIO.BrakeRelease);
         IOInterface->AddFunction("BrakeEngage", RobotIO.BrakeEngage);
         IOInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::BiasEncoderEventHandler, this, "BiasEncoder");
@@ -649,6 +647,7 @@ void mtsIntuitiveResearchKitArm::EnterUninitialized(void)
 {
     mFallbackState = "UNINITIALIZED";
 
+    RobotIO.UsePotsForSafetyCheck(false);
     RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
     RobotIO.DisablePower();
     PID.Enable(false);
@@ -733,11 +732,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
     if (NumberOfBrakes() > 0) {
         RobotIO.BrakeEngage();
     }
-    // use pots for redundancy
-    if (UsePotsForSafetyCheck()) {
-        RobotIO.SetPotsToEncodersTolerance(PotsToEncodersTolerance);
-        RobotIO.UsePotsForSafetyCheck(true);
-    }
+    
     mHomingTimer = currentTime;
     // make sure the PID is not sending currents
     PID.Enable(false);
@@ -757,19 +752,18 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
 
     const double currentTime = this->StateTable.GetTic();
 
-    // check status
-    if ((currentTime - mHomingTimer) > mtsIntuitiveResearchKit::TimeToPower) {
-        // check power status
-        vctBoolVec actuatorAmplifiersStatus(NumberOfJoints());
-        RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
-        vctBoolVec brakeAmplifiersStatus(NumberOfBrakes());
-        if (NumberOfBrakes() > 0) {
-            RobotIO.GetBrakeAmpStatus(brakeAmplifiersStatus);
-        }
-        if (actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All()) {
-            RobotInterface->SendStatus(this->GetName() + ": power on");
-            mArmState.SetCurrentState("POWERED");
-        } else {
+    // check power status
+    vctBoolVec actuatorAmplifiersStatus(NumberOfJoints());
+    RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
+    vctBoolVec brakeAmplifiersStatus(NumberOfBrakes());
+    if (NumberOfBrakes() > 0) {
+        RobotIO.GetBrakeAmpStatus(brakeAmplifiersStatus);
+    }
+    if (actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All()) {
+        RobotInterface->SendStatus(this->GetName() + ": power on");
+        mArmState.SetCurrentState("POWERED");
+    } else {
+        if ((currentTime - mHomingTimer) > mtsIntuitiveResearchKit::TimeToPower) {
             RobotInterface->SendError(this->GetName() + ": failed to enable power");
             this->SetDesiredState(mFallbackState);
         }
@@ -781,6 +775,9 @@ void mtsIntuitiveResearchKitArm::EnterPowered(void)
     if (mIsSimulated) {
         return;
     }
+
+    // use pots for redundancy
+    RobotIO.UsePotsForSafetyCheck(true);
 
     mPowered = true;
     mFallbackState = "POWERED";

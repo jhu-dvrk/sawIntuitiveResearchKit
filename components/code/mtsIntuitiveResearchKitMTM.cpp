@@ -147,13 +147,6 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
     mJointTrajectory.GoalTolerance.Element(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
 
-     // IO level treats the gripper as joint :-)
-    PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
-    // pots on gripper rotation are not directly mapped to encoders
-    PotsToEncodersTolerance.Element(JNT_WRIST_ROLL) = cmnTypeTraits<double>::PlusInfinityOrMax();
-    // last joint is gripper, encoders can be anything
-    PotsToEncodersTolerance.Element(JNT_GRIPPER) = cmnTypeTraits<double>::PlusInfinityOrMax();
-
     // default PID tracking errors, defaults are used for homing
     PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
     PID.DefaultTrackingErrorTolerance.SetAll(10.0 * cmnPI_180);

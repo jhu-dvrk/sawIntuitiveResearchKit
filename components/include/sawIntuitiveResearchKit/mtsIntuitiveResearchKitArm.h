@@ -163,10 +163,6 @@ public:
     virtual size_t NumberOfJointsKinematics(void) const = 0; // ECM 4, MTM 7, PSM 6 or 8 (snake like tools)
     virtual size_t NumberOfBrakes(void) const = 0;         // ECM 3, PSM 0, MTM 0
 
-    inline virtual bool UsePotsForSafetyCheck(void) const {
-        return true;
-    }
-
     inline virtual bool UsePIDTrackingError(void) const {
         return true;
     }
@@ -221,7 +217,6 @@ public:
         mtsFunctionRead  GetAnalogInputPosSI;
         mtsFunctionWrite SetActuatorCurrent;
         mtsFunctionWrite UsePotsForSafetyCheck;
-        mtsFunctionWrite SetPotsToEncodersTolerance;
         mtsFunctionVoid  BrakeRelease;
         mtsFunctionVoid  BrakeEngage;
     } RobotIO;
@@ -378,8 +373,6 @@ public:
         double EndTime;
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
     } mJointTrajectory;
-
-    vctDoubleVec PotsToEncodersTolerance;
 
     // Home Action
     bool mEncoderBiased;

@@ -125,9 +125,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mJointTrajectory.Acceleration.Element(2) = 0.2; // m per second
     mJointTrajectory.Acceleration.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
     mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
-    // high values for engage adapter/tool until these use a proper trajectory generator
-    PotsToEncodersTolerance.SetAll(15.0 * cmnPI_180); // 15 degrees for rotations
-    PotsToEncodersTolerance.Element(2) = 5.0 * cmn_mm; // 5 mm
 
     // default PID tracking errors
     PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());

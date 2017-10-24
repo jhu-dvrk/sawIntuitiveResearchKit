@@ -112,8 +112,6 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                          0.05,
                                          30.0 * cmnPI_180);
     mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
-    PotsToEncodersTolerance.SetAll(10.0 * cmnPI_180); // 10 degrees for rotations
-    PotsToEncodersTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm
 
     mtsInterfaceRequired * interfaceRequired;
 
