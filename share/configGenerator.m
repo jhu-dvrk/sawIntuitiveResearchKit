@@ -158,6 +158,22 @@ jointLower = joint.signal_range(LOWER_LIMIT,:);
 potGain = motor.pot_input_gain;
 potOffset = motor.pot_input_offset;
 
+% pot to encoder consistency check
+if (rType == CONST_MST)
+    potToleranceLatency = [0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02];
+    potToleranceDistance = [5.0 5.0 5.0 5.0 5.0 5.0 5.0 1000.0];
+    potToleranceUnit = {'deg', 'deg', 'deg', 'deg', ...
+                		'deg', 'deg', 'deg', 'deg'};
+elseif (rType == CONST_SLV) 
+    potToleranceLatency = [0.02 0.02 0.02 0.02 0.02 0.02 0.02];
+    potToleranceDistance = [5.0 5.0 5.0 5.0 5.0 5.0 5.0];
+    potToleranceUnit = {'deg', 'deg', 'mm', 'deg', ...
+                		'deg', 'deg', 'deg'};
+elseif (rType == CONST_ECM)
+    potToleranceLatency = [0.02 0.02 0.02 0.02];
+    potToleranceDistance = [5.0 5.0 5.0 5.0];
+    potToleranceUnit = {'deg', 'deg', 'mm', 'deg'};
+end
 
 %%
 % =============================================
@@ -167,8 +183,7 @@ potOffset = motor.pot_input_offset;
 % Direction
 % The linear amp drives +/- 6.25 Amps current, which is controlled by a DAC with 16 bits resolution.
 % So the conversion from amp to bits is 2^16/(6.25 * 2) = 5242.88
-boardID
-driveDirection = aDirection
+driveDirection = aDirection;
 AmpsToBitsScale = driveDirection(1:numOfActuator) .* 5242.8800;
 AmpsToBitsOffset = ones(1, numOfActuator) .* (2^15);
 
@@ -371,6 +386,15 @@ elseif (rType == CONST_SLV)
     Potentiometers.setAttribute('Position', 'Actuators');
 elseif (rType == CONST_ECM)
     Potentiometers.setAttribute('Position', 'Actuators');
+end
+
+for i = 1:numOfActuator
+    Tolerance = docNode.createElement('Tolerance');
+    Tolerance.setAttribute('Axis', num2str(i-1));
+    Tolerance.setAttribute('Distance', num2str(potToleranceDistance(i), '%5.2f'));
+    Tolerance.setAttribute('Latency', num2str(potToleranceLatency(i), '%5.2f'));
+    Tolerance.setAttribute('Unit', potToleranceUnit(i));
+    Potentiometers.appendChild(Tolerance);
 end
 
 Robot.appendChild(Potentiometers);
