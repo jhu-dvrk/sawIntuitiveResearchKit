@@ -160,17 +160,17 @@ potOffset = motor.pot_input_offset;
 
 % pot to encoder consistency check, for MTMs, last two joints are not used
 if (rType == CONST_MST)
-    potToleranceLatency = [0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.02];
+    potToleranceLatency = [0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01];
     potToleranceDistance = [5.0 5.0 5.0 5.0 5.0 5.0 1000.0 1000.0];
     potToleranceUnit = {'deg', 'deg', 'deg', 'deg', ...
                 		'deg', 'deg', 'deg', 'deg'};
 elseif (rType == CONST_SLV) 
-    potToleranceLatency = [0.02 0.02 0.02 0.02 0.02 0.02 0.02];
+    potToleranceLatency = [0.01 0.01 0.01 0.01 0.01 0.01 0.01];
     potToleranceDistance = [5.0 5.0 5.0 5.0 5.0 5.0 5.0];
     potToleranceUnit = {'deg', 'deg', 'mm', 'deg', ...
                 		'deg', 'deg', 'deg'};
 elseif (rType == CONST_ECM)
-    potToleranceLatency = [0.02 0.02 0.02 0.02];
+    potToleranceLatency = [0.01 0.01 0.01 0.01];
     potToleranceDistance = [5.0 5.0 5.0 5.0];
     potToleranceUnit = {'deg', 'deg', 'mm', 'deg'};
 end
