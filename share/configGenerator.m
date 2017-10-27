@@ -248,10 +248,6 @@ if (rType == CONST_MST)
         0.00  0.00   0.00 0.00 0.00 0.00 1.00 0.00; ...
         0.00  0.00   0.00 0.00 0.00 0.00 0.00 1.00  ...
         ];
-
-    JointToActuatorPosition = inv(ActuatorToJointPosition);
-    JointToActuatorTorque = ActuatorToJointPosition';
-    ActuatorToJointTorque = inv(JointToActuatorTorque);
 end
 
 %% Create XML file
@@ -405,7 +401,7 @@ if (rType == CONST_MST)
     X_Coupling.setAttribute('Value', num2str(1));
     Robot.appendChild(X_Coupling);
 
-    % 1 Coupling/ActuatorToJointPosition
+    % Coupling/ActuatorToJointPosition
     X_ActuatorToJointPosition = docNode.createElement('ActuatorToJointPosition');
     X_Coupling.appendChild(X_ActuatorToJointPosition);
 
@@ -414,40 +410,6 @@ if (rType == CONST_MST)
         Row.setAttribute('Val', vector2str(ActuatorToJointPosition(i,:)));
         X_ActuatorToJointPosition.appendChild(Row);
     end
-
-
-    % 2 Coupling/JointToActuatorPosition
-    X_JointToActuatorPosition = docNode.createElement('JointToActuatorPosition');
-    X_Coupling.appendChild(X_JointToActuatorPosition);
-
-    for i = 1:size(JointToActuatorPosition, 1)
-        Row = docNode.createElement('Row');
-        Row.setAttribute('Val', vector2str(JointToActuatorPosition(i,:)));
-        X_JointToActuatorPosition.appendChild(Row);
-    end
-
-
-    % 3 Coupling/ActuatorToJointTorque
-    X_ActuatorToJointTorque = docNode.createElement('ActuatorToJointTorque');
-    X_Coupling.appendChild(X_ActuatorToJointTorque);
-
-    for i = 1:size(ActuatorToJointTorque, 1)
-        Row = docNode.createElement('Row');
-        Row.setAttribute('Val', vector2str(ActuatorToJointTorque(i,:)));
-        X_ActuatorToJointTorque.appendChild(Row);
-    end
-
-
-    % 4 Coupling/JointToActuatorTorque
-    X_JointToActuatorTorque = docNode.createElement('JointToActuatorTorque');
-    X_Coupling.appendChild(X_JointToActuatorTorque);
-
-    for i = 1:size(JointToActuatorTorque, 1)
-        Row = docNode.createElement('Row');
-        Row.setAttribute('Val', vector2str(JointToActuatorTorque(i,:)));
-        X_JointToActuatorTorque.appendChild(Row);
-    end
-
 end
 
 % ---------- DigitalIn ---------------
