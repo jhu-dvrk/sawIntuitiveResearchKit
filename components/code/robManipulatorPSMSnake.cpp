@@ -1,3 +1,21 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
+/* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
+
+/*
+  Author(s):  Simon Leonard, Anton Deguet
+  Created on: 2017-03-07
+
+  (C) Copyright 2017 Johns Hopkins University (JHU), All Rights Reserved.
+
+--- begin cisst license - do not edit ---
+
+This software is provided "as is" under an open source license, with
+no warranty.  The complete license can be found in license.txt and
+http://www.cisst.org/cisst/license.txt.
+
+--- end cisst license ---
+*/
+
 #include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
 #include <cisstNumerical/nmrLSEISolver.h>
 
@@ -34,9 +52,10 @@ robManipulatorPSMSnake::ConstrainedRMRC(const vctDynamicVector<double> &q,
     // || Ax - B ||
     vctDynamicMatrix<double> A( 6, links.size(), 0.0, VCT_COL_MAJOR );
     vctDynamicMatrix<double> b( 6, 1, 0.0, VCT_COL_MAJOR );
-    JacobianSpatial( q, A );
-    for( size_t i=0; i<6; i++ )
-    { b[i][0] = vw[i]; }
+    JacobianSpatial(q, A);
+    for (size_t i = 0; i < 6; i++) {
+      b[i][0] = vw[i];
+    }
 
     vctDynamicMatrix<double> G;
     vctDynamicMatrix<double> h;
@@ -46,8 +65,9 @@ robManipulatorPSMSnake::ConstrainedRMRC(const vctDynamicVector<double> &q,
 
     vctDynamicMatrix<double> X = lsei.GetX();
     vctDynamicVector<double> qd( q.size() );
-    for( size_t i=0; i<qd.size(); i++ )
-        qd[i] = X[i][0];
+    for (size_t i = 0; i < qd.size(); i++) {
+      qd[i] = X[i][0];
+    }
 
     return qd;
 }
@@ -73,18 +93,18 @@ robManipulatorPSMSnake::InverseKinematics(vctDynamicVector<double> &q,
     }
 
 
-    double ndq=1;               // norm of the iteration error
-    size_t i=0;
+    double ndq = 1;               // norm of the iteration error
+    size_t i = 0;
     // loop until Niter are executed or the error is bellow the tolerance
-    for( i=0; i<Niterations && tolerance<ndq; i++ ){
+    for (i = 0; i < Niterations && tolerance < ndq; i++) {
 
         // Evaluate the forward kinematics
         vctFrame4x4<double,VCT_ROW_MAJOR> Rt = ForwardKinematics( q );
 
         // compute the translation error
-        vctFixedSizeVector<double,3> dt( Rts[0][3]-Rt[0][3],
-                Rts[1][3]-Rt[1][3],
-                Rts[2][3]-Rt[2][3] );
+        vctFixedSizeVector<double,3> dt( Rts[0][3] - Rt[0][3],
+                                         Rts[1][3] - Rt[1][3],
+                                         Rts[2][3] - Rt[2][3] );
 
         // compute the orientation error
         // first build the [ n o a ] vectors
@@ -107,11 +127,15 @@ robManipulatorPSMSnake::InverseKinematics(vctDynamicVector<double> &q,
         ndq = dq.Norm();
 
         // update the solution
-        for(size_t j=0; j<links.size(); j++) q[j] += dq[j];
+        for (size_t j=0; j<links.size(); j++) {
+            q[j] += dq[j];
+        }
     }
 
     NormalizeAngles(q);
 
-    if( i==Niterations ) return robManipulator::EFAILURE;
-    else return robManipulator::ESUCCESS;
+    if (i == Niterations) {
+      return robManipulator::EFAILURE;
+    }
+    return robManipulator::ESUCCESS;
 }
