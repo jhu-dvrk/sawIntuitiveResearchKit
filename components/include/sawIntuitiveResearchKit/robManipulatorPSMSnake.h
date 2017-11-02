@@ -37,7 +37,7 @@ public:
 
     ~robManipulatorPSMSnake() {}
 
-    vctDynamicVector<double>
+    vctReturnDynamicVector<double>
     ConstrainedRMRC(const vctDynamicVector<double> & q,
                     const vctFixedSizeVector<double, 6> & vw);
 
@@ -46,6 +46,23 @@ public:
                        const vctFrame4x4<double> & Rts,
                        double tolerance = 1e-12,
                        size_t Niterations = 1000);
+
+private:
+    void Resize(void);
+
+    struct {
+        // Ex = f
+        vctDynamicMatrix<double> E;
+        vctDynamicMatrix<double> f;
+
+        // || Ax - B ||
+        vctDynamicMatrix<double> A;
+        vctDynamicMatrix<double> b;
+
+        // storage for LSEI
+        vctDynamicMatrix<double> G;
+        vctDynamicMatrix<double> h;
+    } m;
 };
 
 #endif // _robManipulatorPSMSnake_h
