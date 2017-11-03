@@ -65,7 +65,7 @@
     ,
     // rotation to match ISI convention (for read-only research API on commercial da Vinci)
     "tooltip-offset" : [[ 0.7071,  0.7071,  0.0000,  0.0000],
-                        [ 0.0000,  0.0000, -1.0000,  0.0000],
+                        [ 0.0000,  0.0000, -1.0000, -0.0200],
                         [-0.7071,  0.7071,  0.0000,  0.0000],
                         [ 0.0000,  0.0000,  0.0000,  1.0000]]
     ,
