@@ -25,7 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
-#include <cisstParameterTypes/prmPositionJointGet.h>
+#include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstRobot/robManipulator.h>
@@ -102,12 +102,18 @@ public:
         mPotsAgree = true;
         mVoltagesExtra.SetSize(MUX_MAX_INDEX - 2 * MUX_ARRAY_SIZE + 1);
 
-        mPositionJointParam.Position().SetSize(MUX_ARRAY_SIZE);
-
+        mStateJoint.Position().SetSize(MUX_ARRAY_SIZE);
+        mStateJoint.Name().SetSize(MUX_ARRAY_SIZE);
+        std::stringstream jointName;
+        for (size_t index = 0; index < MUX_ARRAY_SIZE; ++index) {
+            jointName.str("");
+            jointName << "SUJ-" << name << "-j" << index;
+            mStateJoint.Name().at(index) = jointName.str();
+        }
         mStateTable.AddData(this->mVoltages[0], "Voltages[0]");
         mStateTable.AddData(this->mVoltages[1], "Voltages[1]");
         mStateTable.AddData(this->mVoltagesExtra, "VoltagesExtra");
-        mStateTable.AddData(this->mPositionJointParam, "PositionJoint");
+        mStateTable.AddData(this->mStateJoint, "PositionJoint");
         mStateTable.AddData(this->mPositionCartesianParam,             "PositionCartesian");
         mStateTable.AddData(this->mPositionCartesianLocalParam,        "PositionCartesianLocal");
         mStateTable.AddData(this->mPositionCartesianDesiredParam,      "PositionCartesianDesired");
@@ -123,7 +129,7 @@ public:
         CMN_ASSERT(interfaceProvided);
         mInterface = interfaceProvided;
         // read commands
-        mInterface->AddCommandReadState(mStateTable, mPositionJointParam, "GetPositionJoint");
+        mInterface->AddCommandReadState(mStateTable, mStateJoint, "GetPositionJoint");
         mInterface->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0],
                                         "GetPrimaryJointOffset");
         mInterface->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[1],
@@ -174,10 +180,10 @@ public:
             if (mClutched == 1) {
                 // clutch is pressed, arm is moving around and we know the pots are slow, we mark position as invalid
                 mInterface->SendStatus(mName.Data + ": SUJ clutched");
-                mPositionCartesianDesiredParam.SetTimestamp(mPositionJointParam.Timestamp());
+                mPositionCartesianDesiredParam.SetTimestamp(mStateJoint.Timestamp());
                 mPositionCartesianDesiredParam.SetValid(false);
                 EventPositionCartesianDesired(mPositionCartesianDesiredParam);
-                mPositionCartesianLocalDesiredParam.SetTimestamp(mPositionJointParam.Timestamp());
+                mPositionCartesianLocalDesiredParam.SetTimestamp(mStateJoint.Timestamp());
                 mPositionCartesianLocalDesiredParam.SetValid(false);
                 EventPositionCartesianLocalDesired(mPositionCartesianLocalDesiredParam);
             }
@@ -281,7 +287,7 @@ public:
 
     vctDoubleVec mVoltageToPositionScales[2];
     vctDoubleVec mVoltageToPositionOffsets[2];
-    prmPositionJointGet mPositionJointParam;
+    prmStateJoint mStateJoint;
     prmPositionCartesianGet mPositionCartesianParam;
     prmPositionCartesianGet mPositionCartesianLocalParam;
     unsigned int mNeedToUpdatePositionCartesianDesired; // 0 is no, 1 tells we need to send, 2 is for first full mux cycle has started
@@ -867,13 +873,13 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                 }
 
                 // use average of positions reported by potentiometers
-                arm->mPositionJointParam.Position().SumOf(arm->mPositions[0],
-                                                          arm->mPositions[1]);
-                arm->mPositionJointParam.Position().Divide(2.0);
-                arm->mPositionJointParam.SetValid(true);
+                arm->mStateJoint.Position().SumOf(arm->mPositions[0],
+                                                  arm->mPositions[1]);
+                arm->mStateJoint.Position().Divide(2.0);
+                arm->mStateJoint.SetValid(true);
 
                 // Joint forward kinematics
-                arm->mJointGet.Assign(arm->mPositionJointParam.Position(),arm->mManipulator.links.size());
+                arm->mJointGet.Assign(arm->mStateJoint.Position(),arm->mManipulator.links.size());
                 // forward kinematic
                 vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
                 // pre and post transformations loaded from JSON file, base frame updated using events
@@ -883,12 +889,12 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                 // emit events for continuous positions
                 // - with base
                 arm->mPositionCartesianParam.Position().From(armBase);
-                arm->mPositionCartesianParam.SetTimestamp(arm->mPositionJointParam.Timestamp());
+                arm->mPositionCartesianParam.SetTimestamp(arm->mStateJoint.Timestamp());
                 arm->mPositionCartesianParam.SetValid(arm->mBaseFrameValid);
                 arm->EventPositionCartesian(arm->mPositionCartesianParam);
                 // - local
                 arm->mPositionCartesianLocalParam.Position().From(armLocal);
-                arm->mPositionCartesianLocalParam.SetTimestamp(arm->mPositionJointParam.Timestamp());
+                arm->mPositionCartesianLocalParam.SetTimestamp(arm->mStateJoint.Timestamp());
                 arm->mPositionCartesianLocalParam.SetValid(arm->mBaseFrameValid);
                 arm->EventPositionCartesianLocal(arm->mPositionCartesianLocalParam);
                 // this mux cycle might have started before brakes where engaged
@@ -900,7 +906,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                         // so we treat this as a fixed transformation until the SUJ move again (user clutch)
                         arm->mPositionCartesianLocalDesired = armLocal;
                         arm->mPositionCartesianLocalDesiredParam.SetValid(true);
-                        arm->mPositionCartesianLocalDesiredParam.SetTimestamp(arm->mPositionJointParam.Timestamp());
+                        arm->mPositionCartesianLocalDesiredParam.SetTimestamp(arm->mStateJoint.Timestamp());
                         arm->mPositionCartesianLocalDesiredParam.Position().From(arm->mPositionCartesianLocalDesired);
                         arm->mNeedToUpdatePositionCartesianDesired = 0;
                     }
@@ -937,7 +943,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
 
                 // update and send desired position
                 arm->mPositionCartesianDesiredParam.Position().From(arm->mBaseFrame * arm->mPositionCartesianLocalDesired);
-                arm->mPositionCartesianDesiredParam.SetTimestamp(arm->mPositionJointParam.Timestamp());
+                arm->mPositionCartesianDesiredParam.SetTimestamp(arm->mStateJoint.Timestamp());
                 arm->mPositionCartesianDesiredParam.SetValid(arm->mBaseFrameValid * arm->mPositionCartesianLocalDesiredParam.Valid());
                 arm->EventPositionCartesianDesired(arm->mPositionCartesianDesiredParam);
                 // local is constant, no computation needed here

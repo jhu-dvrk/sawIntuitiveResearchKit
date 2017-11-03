@@ -20,7 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitSUJQtWidget_h
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
-#include <cisstParameterTypes/prmPositionJointGet.h>
+#include <cisstParameterTypes/prmStateJoint.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
 
 
@@ -58,7 +58,7 @@ protected:
     mtsFunctionWrite Clutch;
     mtsFunctionWrite SetLiftVelocity;
 
-    prmPositionJointGet PositionJointParam;
+    prmStateJoint StateJoint;
     vctDoubleVec PrimaryJointOffset;
     vctDoubleVec SecondaryJointOffset;
     vctDoubleVec JointPositionStart;

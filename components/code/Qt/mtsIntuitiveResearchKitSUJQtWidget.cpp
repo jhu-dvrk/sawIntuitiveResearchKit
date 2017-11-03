@@ -187,8 +187,8 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
 void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)
 {
     // get data
-    GetPositionJoint(PositionJointParam);
-    vctDoubleVec position(PositionJointParam.Position());
+    GetPositionJoint(StateJoint);
+    vctDoubleVec position(StateJoint.Position());
     // first axis is a translation, convert to mm
     position.Element(0) *= 1000.0;
     // all others are angles, convert to degrees
