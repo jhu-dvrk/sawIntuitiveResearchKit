@@ -17,7 +17,6 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
-#include <cisstNumerical/nmrLSEISolver.h>
 
 robManipulatorPSMSnake::robManipulatorPSMSnake(const std::vector<robKinematics *> linkParms,
                                                const vctFrame4x4<double> &Rtw0)
@@ -62,14 +61,10 @@ robManipulatorPSMSnake::ConstrainedRMRC(const vctDynamicVector<double> & q,
                                         const vctFixedSizeVector<double, 6> & vw)
 {
     JacobianSpatial(q, m.A);
-
     m.b.Column(0) = vw;
-
-    nmrLSEISolver lsei( m.E, m.A, m.G );
-    lsei.Solve( m.E, m.f, m.A, m.b, m.G, m.h );
-
-    // solution is first column of LSEI X
-    return vctReturnDynamicVector<double>(lsei.GetX().Column(0));
+    m.lsei.Allocate(m.E, m.A, m.G);
+    m.lsei.Solve(m.E, m.f, m.A, m.b, m.G, m.h);
+    return vctReturnDynamicVector<double>(m.lsei.GetX().Column(0));
 }
 
 robManipulator::Errno

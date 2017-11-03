@@ -5,7 +5,7 @@
   Author(s):  Simon Leonard, Anton Deguet
   Created on: 2017-03-07
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _robManipulatorPSMSnake_h
 
 #include <cisstRobot/robManipulator.h>
+#include <cisstNumerical/nmrLSEISolver.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
@@ -62,6 +63,9 @@ private:
         // storage for LSEI
         vctDynamicMatrix<double> G;
         vctDynamicMatrix<double> h;
+
+        // solver
+        nmrLSEISolver lsei;
     } m;
 };
 
