@@ -5,21 +5,23 @@ Change log
 ==================
 
 * API changes:
+  * Console: watchdog default changed to 30 ms.  The default can be overridden in console.json file.
   * Arm: SetRobotControlState has been removed, use SetDesiredState and GetDesiredState/GetCurrentState commands along with DesiredState/CurrentState events
-  * Arm: no need to set a new state to switch control mode
+  * Arm: no need to set a new state to switch control mode (position/cartesian position/goal/effort)
   * Arm: joint states size is now based on number of joints used for kinematics.   Gripper (PSM) and jaw (MTM) are reported using a different joint state command/topic
-  * Console: digital inputs/outputs not specific to an arm are now defined in a different file.  All sawRobotIO1394-{PSM,ECM,MTM} need to be updated!
+  * Console: digital inputs/outputs not specific to an arm are now defined in a different file.  All sawRobotIO1394-{PSM,ECM,MTM} XNL config files need to be updated!
 * Deprecated features:
-  *
+  * Arm: removed hard coded pot tolerance per arm type.  Now uses sawRobotIO XML file to save settings per arm and implementation uses time instead of iteration counter.
 * New features:
   * New dVRK logo: https://github.com/jhu-dvrk/dvrk-logo/blob/master/dVRK-blue-05-04-2017-01.png
   * Arm:
-    * New current calibration procedure, reduces current offset and undesired torques when request current is zero
+    * New current calibration procedure, reduces current offset and undesired torques when request current is zero.  Please regenerate your sawRobotIO configuration files!
     * Use mtsStateMachine to better control initialization and homing, now manages desired vs. current state
-    * States for each control mode have been removed, the mode will be automatically set when receiving a new command
+    * States for each control mode have been removed, the mode will be automatically set when receiving a new move command
     * Control modes have been added (space: actuator/joint/cartesian/user and mode: position/trajectory/effort/user) instead of states
     * Control mode for user implementations in derived classes can be set using SetControlCallback
     * Use Reflexxes for trajectory generation.  Can now interrupt existing trajectory using current velocity instead of resetting to 0.  Dropped use of robLSPB
+    * Cartesian impedance controller has been added to all arms.  Very useful for simple haptic feedback on MTMs.   Some examples are available in dvrk-ros.
     * When using firmware 6, use velocity estimation from controller (much better timestamps and estimation)
     * Uses new standardized mtsMessage for Qt messages and ROS log
   * PSM:
@@ -28,6 +30,7 @@ Change log
     * Added IK with equality constraints to support 5mm tools
     * Added implementation for tool specific torque limits (loaded from psm-xyz.json)
     * Added general purpose socket base protocal to communicate with PSM
+    * In psm-_.json, no need to provide all coupling matrices, just need the actuator to position
   * MTM: Homing is now slower to prevent hard hits on roll joint.  Also just looking for lower limit instead of both lower and upper limits
   * Teleop PSM:
     * Added support for alternate master arm (sawForceDimensionSDK)
@@ -37,10 +40,15 @@ Change log
     * Separated configuration files for digital inputs/outputs from arm configuration files (see API changes)
     * Uses new standardized mtsMessage for Qt messages and ROS log
   * Console Qt:
+    * Added tag/clear shortcuts in message window
+    * Can power all arms without homing, this allows to test safety chain and pot/encoders without PID on
   * SUJ:
+    * use state machine compatible with other arms
     * now reports joint values even if the arm is not in state "READY"
     * minor updates for firmware 6
+    * use joint state instead or joint position
   * CMake:
+    * Everything can now be compiled on Windows when using proper branch of sawRobotIO
   * ROS:
 * Bug fixes:
   * Fixed loading joint coupling matrix when the arm is started with a tool in place
