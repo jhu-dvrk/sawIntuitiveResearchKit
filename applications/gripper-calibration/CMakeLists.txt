@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2009-2016 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2017 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -20,7 +20,7 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstParameterTypes)
 
 # find cisst and make sure the required libraries have been compiled
-find_package (cisst 1.0.8 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.0.9 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -34,7 +34,7 @@ if (cisst_FOUND_AS_REQUIRED)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
-  find_package (sawRobotIO1394          1.4.0 REQUIRED)
+  find_package (sawRobotIO1394 1.5.0 REQUIRED)
 
   if (sawRobotIO1394_FOUND)
 

@@ -49,14 +49,14 @@ if (cisst_FOUND_AS_REQUIRED)
   endif (CISST_HAS_QT4)
 
   # saw components have been compiled within cisst, we should find them automatically
-  find_package (sawRobotIO1394          1.4.0 REQUIRED)
-  find_package (sawControllers          1.4.0 REQUIRED)
+  # find_package (sawRobotIO1394          1.5.0 REQUIRED)
+  # find_package (sawControllers          1.5.0 REQUIRED)
   # find_package (sawIntuitiveResearchKit 1.4.0 REQUIRED)
 
   # make sure the new library is known by the parent folder to add to the config file
   set (sawIntuitiveResearchKitQt_LIBRARIES sawIntuitiveResearchKitQt PARENT_SCOPE)
 
-  if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
+  # if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
     add_library (sawIntuitiveResearchKitQt
                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQt.h
@@ -79,9 +79,9 @@ if (cisst_FOUND_AS_REQUIRED)
     set_property (TARGET sawIntuitiveResearchKitQt PROPERTY FOLDER "sawIntuitiveResearchKit")
     cisst_target_link_libraries (sawIntuitiveResearchKitQt ${REQUIRED_CISST_LIBRARIES})
     target_link_libraries (sawIntuitiveResearchKitQt
-                           ${sawRobotIO1394_LIBRARIES}
-                           ${sawIntuitiveResearchKit_LIBRARIES}
-                           ${sawControllers_LIBRARIES})
+                           # ${sawRobotIO1394_LIBRARIES}
+                           ${sawIntuitiveResearchKit_LIBRARIES})
+                           # ${sawControllers_LIBRARIES})
 
     # make sure the new library is known by the parent folder to add to the config file
     set (sawIntuitiveResearchKitQt_LIBRARIES sawIntuitiveResearchKitQt PARENT_SCOPE)
@@ -90,7 +90,7 @@ if (cisst_FOUND_AS_REQUIRED)
              RUNTIME DESTINATION bin
              LIBRARY DESTINATION lib
              ARCHIVE DESTINATION lib)
-  endif ()
+  # endif ()
 
 else (cisst_FOUND_AS_REQUIRED)
   message ("Information: code will not be compiled, it requires ${REQUIRED_CISST_LIBRARIES}")
