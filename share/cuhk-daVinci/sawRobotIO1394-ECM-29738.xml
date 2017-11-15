@@ -100,7 +100,12 @@
             <VoltsToPosSI Offset="102.142275" Scale="-45.424298"/>
          </AnalogIn>
       </Actuator>
-      <Potentiometers Position="Actuators"/>
+      <Potentiometers Position="Actuators">
+         <Tolerance Axis="0" Distance="5.00" Latency="0.01" Unit="deg"/>
+         <Tolerance Axis="1" Distance="5.00" Latency="0.01" Unit="deg"/>
+         <Tolerance Axis="2" Distance="5.00" Latency="0.01" Unit="mm"/>
+         <Tolerance Axis="3" Distance="5.00" Latency="0.01" Unit="deg"/>
+      </Potentiometers>
    </Robot><!--Digital Input Configuration-->
    <DigitalIn BitID="0" BoardID="4" Debounce="0.2" Name="ECM-ManipClutch" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="2" BoardID="4" Debounce="0.2" Name="ECM-SUJClutch" Pressed="1" Trigger="all"/>
