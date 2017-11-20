@@ -19,7 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 
 
 #ifndef _mtsIntuitiveResearchKitUDPStreamer_h
-#define _mtsIntuitiveResearchKitUDPSTreamer_h
+#define _mtsIntuitiveResearchKitUDPStreamer_h
 
 #include <cisstOSAbstraction/osaSocket.h>
 #include <cisstMultiTask/mtsTaskPeriodic.h>
