@@ -8,7 +8,7 @@
     [
         {
             "name": "PSM1",
-            "type": "PSM",  //PSM_DERIVED for derived class
+            "type": "PSM",
             "io": "sawRobotIO1394-PSM1-30739.xml",
             "pid": "sawControllersPID-PSM.xml",
             "kinematic": "psm-large-needle-driver.json"
@@ -36,6 +36,14 @@
             "io": "sawRobotIO1394-MTML-26552.xml",
             "pid": "sawControllersPID-MTML.xml",
             "kinematic": "mtm.json"
+        }
+        ,
+        {
+            "name": "ECM",
+            "type": "ECM",
+            "io": "sawRobotIO1394-ECM-60600.xml",
+            "pid": "sawControllersPID-ECM.xml",
+            "kinematic": "ecm-straight.json"
         }
     ]
     ,
