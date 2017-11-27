@@ -9,9 +9,6 @@
          </Drive>
          <Encoder>
             <BitsToPosSI Scale="-0.00044248" />
-            <BitsToDeltaPosSI Offset="0" Scale="-1359.29" />
-            <BitsToDeltaT Offset="0" Scale="-1.000" />
-            <CountsPerTurn Value="14400" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
@@ -27,9 +24,6 @@
          </Drive>
          <Encoder>
             <BitsToPosSI Scale="-0.00044248" />
-            <BitsToDeltaPosSI Offset="0" Scale="-1359.29" />
-            <BitsToDeltaT Offset="0" Scale="-1.000" />
-            <CountsPerTurn Value="14400" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
@@ -45,9 +39,6 @@
          </Drive>
          <Encoder>
             <BitsToPosSI Scale="0.00129629" />
-            <BitsToDeltaPosSI Offset="0" Scale="3982.21" />
-            <BitsToDeltaT Offset="0" Scale="-1.000" />
-            <CountsPerTurn Value="14400" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
@@ -63,9 +54,6 @@
          </Drive>
          <Encoder>
             <BitsToPosSI Scale="-0.00768574" />
-            <BitsToDeltaPosSI Offset="0" Scale="-23610.59" />
-            <BitsToDeltaT Offset="0" Scale="-1.000" />
-            <CountsPerTurn Value="4000" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
@@ -81,9 +69,6 @@
          </Drive>
          <Encoder>
             <BitsToPosSI Scale="-0.00768574" />
-            <BitsToDeltaPosSI Offset="0" Scale="-23610.59" />
-            <BitsToDeltaT Offset="0" Scale="-1.000" />
-            <CountsPerTurn Value="4000" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
@@ -99,9 +84,6 @@
          </Drive>
          <Encoder>
             <BitsToPosSI Scale="0.00768574" />
-            <BitsToDeltaPosSI Offset="0" Scale="23610.59" />
-            <BitsToDeltaT Offset="0" Scale="-1.000" />
-            <CountsPerTurn Value="4000" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
@@ -117,9 +99,6 @@
          </Drive>
          <Encoder>
             <BitsToPosSI Scale="0.00768574" />
-            <BitsToDeltaPosSI Offset="0" Scale="23610.59" />
-            <BitsToDeltaT Offset="0" Scale="-1.000" />
-            <CountsPerTurn Value="4000" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />

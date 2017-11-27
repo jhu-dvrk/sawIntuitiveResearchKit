@@ -347,17 +347,6 @@ for i = 1:numOfActuator
     X_BitsToPosSI = docNode.createElement('BitsToPosSI');
     X_BitsToPosSI.setAttribute('Scale', num2str(BitsToPosSIScale(i), '%5.8f'));
     Enc.appendChild(X_BitsToPosSI);
-    X_BitsToDeltaPosSI = docNode.createElement('BitsToDeltaPosSI');
-    X_BitsToDeltaPosSI.setAttribute('Scale', num2str(BitsToDeltaPosSI(i), '%5.2f'));
-    X_BitsToDeltaPosSI.setAttribute('Offset', '0');
-    Enc.appendChild(X_BitsToDeltaPosSI);
-    X_BitsToDeltaT = docNode.createElement('BitsToDeltaT');
-    X_BitsToDeltaT.setAttribute('Scale', num2str(BitsToDeltaT(i), '%5.3f'));
-    X_BitsToDeltaT.setAttribute('Offset', '0');
-    Enc.appendChild(X_BitsToDeltaT);
-    X_CountsPerTurn = docNode.createElement('CountsPerTurn');
-    X_CountsPerTurn.setAttribute('Value', num2str(CountsPerTurn(i), '%5.0f'));
-    Enc.appendChild(X_CountsPerTurn);
 
     % AnalogIn
     AnaglogIn = docNode.createElement('AnalogIn');
