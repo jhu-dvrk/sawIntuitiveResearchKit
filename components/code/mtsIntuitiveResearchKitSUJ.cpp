@@ -129,7 +129,7 @@ public:
         CMN_ASSERT(interfaceProvided);
         mInterface = interfaceProvided;
         // read commands
-        mInterface->AddCommandReadState(mStateTable, mStateJoint, "GetPositionJoint");
+        mInterface->AddCommandReadState(mStateTable, mStateJoint, "GetStateJoint");
         mInterface->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0],
                                         "GetPrimaryJointOffset");
         mInterface->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[1],

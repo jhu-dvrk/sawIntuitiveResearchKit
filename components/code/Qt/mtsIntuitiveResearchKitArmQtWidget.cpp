@@ -57,7 +57,7 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
         QMMessage->SetInterfaceRequired(InterfaceRequired);
         InterfaceRequired->AddFunction("GetStateJoint", Arm.GetStateJoint);
         InterfaceRequired->AddFunction("GetPositionCartesian", Arm.GetPositionCartesian);
-        InterfaceRequired->AddFunction("GetWrenchBody", Arm.GetWrenchBody);
+        InterfaceRequired->AddFunction("GetWrenchBody", Arm.GetWrenchBody, MTS_OPTIONAL);
         InterfaceRequired->AddFunction("SetDesiredState", Arm.SetDesiredState);
         InterfaceRequired->AddFunction("GetPeriodStatistics", Arm.GetPeriodStatistics);
     }
@@ -108,26 +108,20 @@ void mtsIntuitiveResearchKitArmQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(eve
     mtsExecutionResult executionResult;
 
     executionResult = Arm.GetStateJoint(StateJoint);
-    if (!executionResult) {
-        CMN_LOG_CLASS_RUN_ERROR << "Arm.GetStateJoint failed, \""
-                                << executionResult << "\"" << std::endl;
+    if (executionResult) {
+        QSJWidget->SetValue(StateJoint);
     }
-    QSJWidget->SetValue(StateJoint);
 
     executionResult = Arm.GetPositionCartesian(Position);
-    if (!executionResult) {
-        CMN_LOG_CLASS_RUN_ERROR << "Arm.GetPositionCartesian failed, \""
-                                << executionResult << "\"" << std::endl;
+    if (executionResult) {
+        QFRPositionWidget->SetValue(Position.Position());
     }
-    QFRPositionWidget->SetValue(Position.Position());
 
     executionResult = Arm.GetWrenchBody(Wrench);
-    if (!executionResult) {
-        CMN_LOG_CLASS_RUN_ERROR << "Arm.GetWrenchBody failed, \""
-                                << executionResult << "\"" << std::endl;
-    }
-    if (Wrench.Valid()) {
-        QFTWidget->SetValue(Wrench.F(), Wrench.T(), Wrench.Timestamp());
+    if (executionResult) {
+        if (Wrench.Valid()) {
+            QFTWidget->SetValue(Wrench.F(), Wrench.T(), Wrench.Timestamp());
+        }
     }
 
     Arm.GetPeriodStatistics(IntervalStatistics);
