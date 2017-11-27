@@ -415,6 +415,7 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     mStateTableState.SetAutomaticAdvance(false);
 
     // default values
+    mIsSimulated = false;
     mMuxTimer = 0.0;
     mMuxState.SetSize(4);
     mVoltages.SetSize(4);
@@ -539,6 +540,13 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
                                      << std::endl;
             return;
         }
+
+        if (!jsonArm["plug-number"]) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: plug number is missing for SUJ \""
+                                     << name << "\", must be an integer between 1 and 4"
+                                     << std::endl;
+            return;
+        }
         unsigned int plugNumber = jsonArm["plug-number"].asInt();
         unsigned int armIndex = plugNumber - 1;
 
@@ -557,18 +565,20 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         }
 
         // create a required interface for each arm to handle clutch button
-        std::stringstream interfaceName;
-        interfaceName << "SUJ-Clutch-" << plugNumber;
-        mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
-        if (requiredInterface) {
-            requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCallback, arm,
-                                                    "Button");
-        } else {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: can't add required interface for SUJ \""
-                                     << name << "\" clutch button because this interface already exists: \""
-                                     << interfaceName.str() << "\".  Make sure all arms have a different plug number."
-                                     << std::endl;
-            return;
+        if (!mIsSimulated) {
+            std::stringstream interfaceName;
+            interfaceName << "SUJ-Clutch-" << plugNumber;
+            mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
+            if (requiredInterface) {
+                requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCallback, arm,
+                                                        "Button");
+            } else {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: can't add required interface for SUJ \""
+                                         << name << "\" clutch button because this interface already exists: \""
+                                         << interfaceName.str() << "\".  Make sure all arms have a different plug number."
+                                         << std::endl;
+                return;
+            }
         }
 
         // find serial number
@@ -682,6 +692,9 @@ void mtsIntuitiveResearchKitSUJ::TransitionUninitialized(void)
 
 void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
 {
+    if (mIsSimulated) {
+        return;
+    }
     const double currentTime = this->StateTable.GetTic();
     mHomingTimer = currentTime;
     // pre-load the boards with zero current
@@ -694,6 +707,11 @@ void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
 
 void mtsIntuitiveResearchKitSUJ::TransitionPowering(void)
 {
+    if (mIsSimulated) {
+        mArmState.SetCurrentState("POWERED");
+        return;
+    }
+
     const double currentTime = this->StateTable.GetTic();
 
     // check status
@@ -721,6 +739,10 @@ void mtsIntuitiveResearchKitSUJ::TransitionPowered(void)
 
 void mtsIntuitiveResearchKitSUJ::EnterReady(void)
 {
+    if (mIsSimulated) {
+        return;
+    }
+
     // enable power on PWM
     PWM.DisablePWM(false);
 
@@ -769,8 +791,25 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
     RobotIO.DisablePower();
 }
 
+void mtsIntuitiveResearchKitSUJ::SetSimulated(void)
+{
+    mIsSimulated = true;
+    // in simulation mode, we don't need IOs
+    RemoveInterfaceRequired("RobotIO");
+    RemoveInterfaceRequired("NoMuxReset");
+    RemoveInterfaceRequired("MuxIncrement");
+    RemoveInterfaceRequired("ControlPWM");
+    RemoveInterfaceRequired("DisablePWM");
+    RemoveInterfaceRequired("MotorUp");
+    RemoveInterfaceRequired("MotorDown");
+}
+
 void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
 {
+    if (mIsSimulated) {
+        return;
+    }
+
     // 30 ms is to make sure A2D stabilizes
     const double muxCycle = 30.0 * cmn_ms;
 
@@ -982,6 +1021,10 @@ void mtsIntuitiveResearchKitSUJ::SetDesiredState(const std::string & state)
 
 void mtsIntuitiveResearchKitSUJ::RunReady(void)
 {
+    if (mIsSimulated) {
+        return;
+    }
+
     double currentTic = this->StateTable.GetTic();
     const double timeDelta = currentTic - mPreviousTic;
 

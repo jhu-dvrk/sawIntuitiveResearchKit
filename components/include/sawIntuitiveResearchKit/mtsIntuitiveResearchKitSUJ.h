@@ -46,6 +46,8 @@ public:
     void Run(void);
     void Cleanup(void);
 
+    void SetSimulated(void);
+
 protected:
 
     void Init(void);
@@ -151,6 +153,9 @@ protected:
     size_t mVoltageSamplesCounter;
     vctDoubleVec mVoltages;
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> Arms;
+
+    // Flag to determine if this is connected to actual IO/hardware or simulated
+    bool mIsSimulated;
 
     void DispatchError(const std::string & message);
     void DispatchWarning(const std::string & message);

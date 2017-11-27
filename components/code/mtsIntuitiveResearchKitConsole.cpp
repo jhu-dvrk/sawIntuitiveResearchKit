@@ -141,6 +141,9 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     case ARM_SUJ:
         {
             mtsIntuitiveResearchKitSUJ * suj = new mtsIntuitiveResearchKitSUJ(Name(), periodInSeconds);
+            if (mSimulation == SIMULATION_KINEMATIC) {
+                suj->SetSimulated();
+            }
             suj->Configure(mArmConfigurationFile);
             componentManager->AddComponent(suj);
         }
@@ -252,28 +255,30 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
         }
         break;
     case ARM_SUJ:
-        componentManager->Connect(Name(), "RobotIO",
-                                  IOComponentName(), Name());
-        componentManager->Connect(Name(), "NoMuxReset",
-                                  IOComponentName(), "NoMuxReset");
-        componentManager->Connect(Name(), "MuxIncrement",
-                                  IOComponentName(), "MuxIncrement");
-        componentManager->Connect(Name(), "ControlPWM",
-                                  IOComponentName(), "ControlPWM");
-        componentManager->Connect(Name(), "DisablePWM",
-                                  IOComponentName(), "DisablePWM");
-        componentManager->Connect(Name(), "MotorUp",
-                                  IOComponentName(), "MotorUp");
-        componentManager->Connect(Name(), "MotorDown",
-                                  IOComponentName(), "MotorDown");
-        componentManager->Connect(Name(), "SUJ-Clutch-1",
-                                  IOComponentName(), "SUJ-Clutch-1");
-        componentManager->Connect(Name(), "SUJ-Clutch-2",
-                                  IOComponentName(), "SUJ-Clutch-2");
-        componentManager->Connect(Name(), "SUJ-Clutch-3",
-                                  IOComponentName(), "SUJ-Clutch-3");
-        componentManager->Connect(Name(), "SUJ-Clutch-4",
-                                  IOComponentName(), "SUJ-Clutch-4");
+        if (mSimulation == SIMULATION_NONE) {
+            componentManager->Connect(Name(), "RobotIO",
+                                      IOComponentName(), Name());
+            componentManager->Connect(Name(), "NoMuxReset",
+                                      IOComponentName(), "NoMuxReset");
+            componentManager->Connect(Name(), "MuxIncrement",
+                                      IOComponentName(), "MuxIncrement");
+            componentManager->Connect(Name(), "ControlPWM",
+                                      IOComponentName(), "ControlPWM");
+            componentManager->Connect(Name(), "DisablePWM",
+                                      IOComponentName(), "DisablePWM");
+            componentManager->Connect(Name(), "MotorUp",
+                                      IOComponentName(), "MotorUp");
+            componentManager->Connect(Name(), "MotorDown",
+                                      IOComponentName(), "MotorDown");
+            componentManager->Connect(Name(), "SUJ-Clutch-1",
+                                      IOComponentName(), "SUJ-Clutch-1");
+            componentManager->Connect(Name(), "SUJ-Clutch-2",
+                                      IOComponentName(), "SUJ-Clutch-2");
+            componentManager->Connect(Name(), "SUJ-Clutch-3",
+                                      IOComponentName(), "SUJ-Clutch-3");
+            componentManager->Connect(Name(), "SUJ-Clutch-4",
+                                      IOComponentName(), "SUJ-Clutch-4");
+        }
         break;
     default:
         break;
