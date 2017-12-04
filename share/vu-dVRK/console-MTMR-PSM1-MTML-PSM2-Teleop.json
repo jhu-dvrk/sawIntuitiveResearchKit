@@ -1,13 +1,7 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
     "io": {
-        "period": 0.0005, // in seconds
-        "port": 0 // default is 0
-    }
-    ,
-    "operator-present": {
-        "component": "io",
-        "interface": "COAG"
+        "footpedals": "sawRobotIO1394-MTML-foot-pedals.xml"
     }
     ,
     "arms":
@@ -16,32 +10,32 @@
             "name": "PSM1",
             "type": "PSM",
             "io": "sawRobotIO1394-PSM1-26332.xml",
-            "pid": "../sawControllersPID-PSM.xml",
-            "kinematic": "../psm-large-needle-driver.json"
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json"
         }
         ,
         {
             "name": "PSM2",
             "type": "PSM",
             "io": "sawRobotIO1394-PSM2-26372.xml",
-            "pid": "../sawControllersPID-PSM.xml",
-            "kinematic": "../psm-large-needle-driver.json"
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json"
         }
         ,
         {
             "name": "MTMR",
             "type": "MTM",
             "io": "sawRobotIO1394-MTMR-28056.xml",
-            "pid": "../sawControllersPID-MTMR.xml",
-            "kinematic": "../dvmtm.rob"
+            "pid": "sawControllersPID-MTMR.xml",
+            "kinematic": "mtm.json"
         }
         ,
         {
             "name": "MTML",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTML-foot-pedal-56047.xml",
-            "pid": "../sawControllersPID-MTML.xml",
-            "kinematic": "../dvmtm.rob"
+            "io": "sawRobotIO1394-MTML-56047.xml",
+            "pid": "sawControllersPID-MTML.xml",
+            "kinematic": "mtm.json"
         }
     ]
     ,
