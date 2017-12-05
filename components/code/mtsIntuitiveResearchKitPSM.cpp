@@ -204,12 +204,16 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
     if (Jaw.Name().size() == 0) {
         Jaw.Name().SetSize(1);
         Jaw.Name().at(0) = JointsPID.Name().at(jawIndex);
+        Jaw.Type().SetSize(1);
+        Jaw.Type().at(0) = JointsPID.Type().at(jawIndex);
         Jaw.Position().SetSize(1);
         Jaw.Velocity().SetSize(1);
         Jaw.Effort().SetSize(1);
 
         JawDesired.Name().SetSize(1);
         JawDesired.Name().at(0) = JointsDesiredPID.Name().at(jawIndex);
+        JawDesired.Type().SetSize(1);
+        JawDesired.Type().at(0) = JointsDesiredPID.Type().at(jawIndex);
         JawDesired.Position().SetSize(1);
         JawDesired.Velocity().SetSize(0);
         JawDesired.Effort().SetSize(1);
@@ -229,15 +233,22 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
 
     if (JointsKinematics.Name().size() != NumberOfJointsKinematics()) {
         JointsKinematics.Name().SetSize(NumberOfJointsKinematics());
+        JointsKinematics.Type().SetSize(NumberOfJointsKinematics());
         JointsKinematics.Position().SetSize(NumberOfJointsKinematics());
         JointsKinematics.Velocity().SetSize(NumberOfJointsKinematics());
         JointsKinematics.Effort().SetSize(NumberOfJointsKinematics());
 
         JointsKinematics.Name().Assign(JointsPID.Name(), 4);
-        JointsKinematics.Name().at(4) = JointsPID.Name().at(4) +"1";
-        JointsKinematics.Name().at(5) = JointsPID.Name().at(5) +"1";
-        JointsKinematics.Name().at(6) = JointsPID.Name().at(5) +"2";
-        JointsKinematics.Name().at(7) = JointsPID.Name().at(4) +"2";
+        JointsKinematics.Name().at(4) = JointsPID.Name().at(4) + "1";
+        JointsKinematics.Name().at(5) = JointsPID.Name().at(5) + "1";
+        JointsKinematics.Name().at(6) = JointsPID.Name().at(5) + "2";
+        JointsKinematics.Name().at(7) = JointsPID.Name().at(4) + "2";
+
+        JointsKinematics.Type().Assign(JointsPID.Type(), 4);
+        JointsKinematics.Type().at(4) = JointsPID.Type().at(4);
+        JointsKinematics.Type().at(5) = JointsPID.Type().at(5);
+        JointsKinematics.Type().at(6) = JointsPID.Type().at(5);
+        JointsKinematics.Type().at(7) = JointsPID.Type().at(4);
     }
 
     // Position
@@ -258,6 +269,7 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
 
     if (JointsDesiredKinematics.Name().size() != NumberOfJointsKinematics()) {
         JointsDesiredKinematics.Name().SetSize(NumberOfJointsKinematics());
+        JointsDesiredKinematics.Type().SetSize(NumberOfJointsKinematics());
         JointsDesiredKinematics.Position().SetSize(NumberOfJointsKinematics());
         JointsDesiredKinematics.Velocity().SetSize(NumberOfJointsKinematics());
         JointsDesiredKinematics.Effort().SetSize(NumberOfJointsKinematics());
@@ -267,6 +279,12 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
         JointsDesiredKinematics.Name().at(5) = JointsDesiredPID.Name().at(5) + "1";
         JointsDesiredKinematics.Name().at(6) = JointsDesiredPID.Name().at(5) + "2";
         JointsDesiredKinematics.Name().at(7) = JointsDesiredPID.Name().at(4) + "2";
+
+        JointsDesiredKinematics.Type().Assign(JointsDesiredPID.Type(), 4);
+        JointsDesiredKinematics.Type().at(4) = JointsDesiredPID.Type().at(4);
+        JointsDesiredKinematics.Type().at(5) = JointsDesiredPID.Type().at(5);
+        JointsDesiredKinematics.Type().at(6) = JointsDesiredPID.Type().at(5);
+        JointsDesiredKinematics.Type().at(7) = JointsDesiredPID.Type().at(4);
     }
 
     // Position

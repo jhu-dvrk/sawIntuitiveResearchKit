@@ -190,6 +190,7 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     // joint state
     QSJWidget = new prmStateJointQtWidget();
     QSJWidget->setupUi();
+    QSJWidget->SetPrismaticRevoluteFactors(1.0 / cmn_mm, cmn180_PI);
     topLayout->addWidget(QSJWidget, 0, 1);
 
     // 3D position

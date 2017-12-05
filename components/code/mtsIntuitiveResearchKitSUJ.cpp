@@ -110,6 +110,11 @@ public:
             jointName << "SUJ-" << name << "-j" << index;
             mStateJoint.Name().at(index) = jointName.str();
         }
+
+        mStateJoint.Type().SetSize(MUX_ARRAY_SIZE);
+        mStateJoint.Type().SetAll(PRM_JOINT_REVOLUTE);
+        mStateJoint.Type().at(0) = PRM_JOINT_PRISMATIC;
+
         mStateTable.AddData(this->mVoltages[0], "Voltages[0]");
         mStateTable.AddData(this->mVoltages[1], "Voltages[1]");
         mStateTable.AddData(this->mVoltagesExtra, "VoltagesExtra");

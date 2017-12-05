@@ -136,7 +136,9 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 
     // initialize gripper state
     Gripper.Name().SetSize(1);
-    Gripper.Name()[0] = "gripper";
+    Gripper.Name().at(0) = "gripper";
+    Gripper.Type().SetSize(1);
+    Gripper.Type().at(0) = PRM_JOINT_REVOLUTE;
     Gripper.Position().SetSize(1);
     GripperClosed = false;
 

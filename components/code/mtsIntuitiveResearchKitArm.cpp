@@ -591,9 +591,10 @@ void mtsIntuitiveResearchKitArm::UpdateJointsKinematics(void)
     // for most cases, joints used for the kinematics are the first n joints
     // from PID
 
-    // copy names only if first time
+    // copy names and types only if first time
     if (JointsKinematics.Name().size() != NumberOfJointsKinematics()) {
         JointsKinematics.Name().ForceAssign(JointsPID.Name().Ref(NumberOfJointsKinematics()));
+        JointsKinematics.Type().ForceAssign(JointsPID.Type().Ref(NumberOfJointsKinematics()));
     }
     JointsKinematics.Position().ForceAssign(JointsPID.Position().Ref(NumberOfJointsKinematics()));
     JointsKinematics.Velocity().ForceAssign(JointsPID.Velocity().Ref(NumberOfJointsKinematics()));
@@ -602,6 +603,7 @@ void mtsIntuitiveResearchKitArm::UpdateJointsKinematics(void)
     // commanded
     if (JointsDesiredKinematics.Name().size() != NumberOfJointsKinematics()) {
         JointsDesiredKinematics.Name().ForceAssign(JointsDesiredPID.Name().Ref(NumberOfJointsKinematics()));
+        JointsDesiredKinematics.Type().ForceAssign(JointsDesiredPID.Type().Ref(NumberOfJointsKinematics()));
     }
     JointsDesiredKinematics.Position().ForceAssign(JointsDesiredPID.Position().Ref(NumberOfJointsKinematics()));
     // JointsDesiredKinematics.Velocity().ForceAssign(JointsDesiredPID.Velocity().Ref(NumberOfJointsKinematics()));
