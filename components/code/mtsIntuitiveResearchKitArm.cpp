@@ -196,15 +196,25 @@ void mtsIntuitiveResearchKitArm::Init(void)
     BaseFrameValid = true;
 
     CartesianGetParam.SetAutomaticTimestamp(false); // based on PID timestamp
+    CartesianGetParam.SetReferenceFrame(GetName() + "_base");
     CartesianGetParam.SetMovingFrame(GetName());
     this->StateTable.AddData(CartesianGetParam, "CartesianPosition");
 
     CartesianGetDesiredParam.SetAutomaticTimestamp(false); // based on PID timestamp
-    CartesianGetDesiredParam.SetMovingFrame(GetName());
+    CartesianGetDesiredParam.SetReferenceFrame(GetName() + "_base");
+    CartesianGetDesiredParam.SetMovingFrame(GetName() + "_d");
     this->StateTable.AddData(CartesianGetDesiredParam, "CartesianPositionDesired");
 
+    CartesianGetLocalParam.SetAutomaticTimestamp(false); // based on PID timestamp
+    CartesianGetLocalParam.SetReferenceFrame(GetName() + "_base");
+    CartesianGetLocalParam.SetMovingFrame(GetName());
     this->StateTable.AddData(CartesianGetLocalParam, "CartesianPositionLocal");
+
+    CartesianGetLocalDesiredParam.SetAutomaticTimestamp(false); // based on PID timestamp
+    CartesianGetLocalDesiredParam.SetReferenceFrame(GetName() + "_base");
+    CartesianGetLocalDesiredParam.SetMovingFrame(GetName() + "_d");
     this->StateTable.AddData(CartesianGetLocalDesiredParam, "CartesianPositionLocalDesired");
+    
     this->StateTable.AddData(BaseFrame, "BaseFrame");
 
     CartesianVelocityGetParam.SetAutomaticTimestamp(false); // keep PID timestamp
@@ -1337,6 +1347,8 @@ void mtsIntuitiveResearchKitArm::SetBaseFrameEventHandler(const prmPositionCarte
     if (newBaseFrame.Valid()) {
         this->BaseFrame.FromNormalized(newBaseFrame.Position());
         this->BaseFrameValid = true;
+        this->CartesianGetParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
+        this->CartesianGetDesiredParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
     } else {
         this->BaseFrameValid = false;
     }

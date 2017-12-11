@@ -115,21 +115,34 @@ public:
         mStateJoint.Type().SetAll(PRM_JOINT_REVOLUTE);
         mStateJoint.Type().at(0) = PRM_JOINT_PRISMATIC;
 
-        mStateTable.AddData(this->mVoltages[0], "Voltages[0]");
-        mStateTable.AddData(this->mVoltages[1], "Voltages[1]");
-        mStateTable.AddData(this->mVoltagesExtra, "VoltagesExtra");
-        mStateTable.AddData(this->mStateJoint, "PositionJoint");
-        mStateTable.AddData(this->mPositionCartesianParam,             "PositionCartesian");
-        mStateTable.AddData(this->mPositionCartesianLocalParam,        "PositionCartesianLocal");
-        mStateTable.AddData(this->mPositionCartesianDesiredParam,      "PositionCartesianDesired");
-        mStateTable.AddData(this->mPositionCartesianLocalDesiredParam, "PositionCartesianLocalDesired");
-        mStateTable.AddData(this->mBaseFrame, "BaseFrame");
-        mStateTableConfiguration.AddData(this->mName, "Name");
-        mStateTableConfiguration.AddData(this->mSerialNumber, "SerialNumber");
-        mStateTableConfiguration.AddData(this->mPlugNumber, "PlugNumber");
-        mStateTableConfiguration.AddData(this->mVoltageToPositionOffsets[0], "PrimaryJointOffset");
-        mStateTableConfiguration.AddData(this->mVoltageToPositionOffsets[1], "SecondaryJointOffset");
-        mStateTableBrakeCurrent.AddData(this->mBrakeDesiredCurrent, "BrakeCurrent");
+        mStateTable.AddData(mVoltages[0], "Voltages[0]");
+        mStateTable.AddData(mVoltages[1], "Voltages[1]");
+        mStateTable.AddData(mVoltagesExtra, "VoltagesExtra");
+        mStateTable.AddData(mStateJoint, "PositionJoint");
+
+        mPositionCartesianParam.SetReferenceFrame("Cart");
+        mPositionCartesianParam.SetMovingFrame(name + "_base");
+        mStateTable.AddData(mPositionCartesianParam, "PositionCartesian");
+        
+        mPositionCartesianLocalParam.SetReferenceFrame("Cart");
+        mPositionCartesianLocalParam.SetMovingFrame(name + "_base");
+        mStateTable.AddData(mPositionCartesianLocalParam, "PositionCartesianLocal");
+
+        mPositionCartesianDesiredParam.SetReferenceFrame("Cart");
+        mPositionCartesianDesiredParam.SetMovingFrame(name + "_base");
+        mStateTable.AddData(mPositionCartesianDesiredParam, "PositionCartesianDesired");
+        
+        mPositionCartesianLocalDesiredParam.SetReferenceFrame("Cart");
+        mPositionCartesianLocalDesiredParam.SetMovingFrame(name + "_base");
+        mStateTable.AddData(mPositionCartesianLocalDesiredParam, "PositionCartesianLocalDesired");
+
+        mStateTable.AddData(mBaseFrame, "BaseFrame");
+        mStateTableConfiguration.AddData(mName, "Name");
+        mStateTableConfiguration.AddData(mSerialNumber, "SerialNumber");
+        mStateTableConfiguration.AddData(mPlugNumber, "PlugNumber");
+        mStateTableConfiguration.AddData(mVoltageToPositionOffsets[0], "PrimaryJointOffset");
+        mStateTableConfiguration.AddData(mVoltageToPositionOffsets[1], "SecondaryJointOffset");
+        mStateTableBrakeCurrent.AddData(mBrakeDesiredCurrent, "BrakeCurrent");
 
         CMN_ASSERT(interfaceProvided);
         mInterface = interfaceProvided;
@@ -476,9 +489,9 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
         // Robot State
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetDesiredState,
                                     this, "SetDesiredState", std::string(""));
-        mInterface->AddCommandReadState(this->mStateTableState,
+        mInterface->AddCommandReadState(mStateTableState,
                                         mStateTableStateCurrent, "GetCurrentState");
-        mInterface->AddCommandReadState(this->mStateTableState,
+        mInterface->AddCommandReadState(mStateTableState,
                                         mStateTableStateDesired, "GetDesiredState");
         // Events
         mInterface->AddMessageEvents();
@@ -1092,6 +1105,8 @@ void mtsIntuitiveResearchKitSUJ::SetBaseFrame(const prmPositionCartesianGet & ne
             base.From(newBaseFrame.Position());
             arm->mBaseFrame = base;
             arm->mBaseFrameValid = newBaseFrame.Valid();
+            arm->mPositionCartesianParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
+            arm->mPositionCartesianDesiredParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
         }
     }
 }
