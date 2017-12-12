@@ -114,7 +114,7 @@ void mtsIntuitiveResearchKitArmQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(eve
 
     executionResult = Arm.GetPositionCartesian(Position);
     if (executionResult) {
-        QFRPositionWidget->SetValue(Position.Position());
+        QCPGWidget->SetValue(Position);
     }
 
     executionResult = Arm.GetWrenchBody(Wrench);
@@ -194,8 +194,9 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     topLayout->addWidget(QSJWidget, 0, 1);
 
     // 3D position
-    QFRPositionWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    topLayout->addWidget(QFRPositionWidget, 1, 0);
+    QCPGWidget = new prmPositionCartesianGetQtWidget();
+    QCPGWidget->SetPrismaticRevoluteFactors(1.0 / cmn_mm, cmn180_PI);
+    topLayout->addWidget(QCPGWidget, 1, 0);
 
     // wrench, make large
     QFTWidget = new vctForceTorqueQtWidget();
