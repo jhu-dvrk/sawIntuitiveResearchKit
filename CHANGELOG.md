@@ -9,7 +9,7 @@ Change log
   * Arm: SetRobotControlState has been removed, use SetDesiredState and GetDesiredState/GetCurrentState commands along with DesiredState/CurrentState events
   * Arm: no need to set a new state to switch control mode (position/cartesian position/goal/effort)
   * Arm: joint states size is now based on number of joints used for kinematics.   Gripper (PSM) and jaw (MTM) are reported using a different joint state command/topic
-  * Console: digital inputs/outputs not specific to an arm are now defined in a different file.  All sawRobotIO1394-{PSM,ECM,MTM} XNL config files need to be updated!
+  * Console: digital inputs/outputs not specific to an arm are now defined in a different file.  All sawRobotIO1394-{PSM,ECM,MTM} XML config files need to be updated!
 * Deprecated features:
   * Arm: removed hard coded pot tolerance per arm type.  Now uses sawRobotIO XML file to save settings per arm and implementation uses time instead of iteration counter.
 * New features:
