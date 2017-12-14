@@ -1,0 +1,58 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "component-manager": {
+        "components":
+        [
+            {
+                "shared-library": "sawSensablePhantom",
+                "class-name": "mtsSensableHD",
+                "constructor-arg": {
+                    "Name": "Sensable"
+                },
+                "configure-parameter": "sawSensablePhantomRight.json"
+            }
+        ]
+    }
+    ,
+    "console-inputs":
+    {
+        "operator-present": {
+            "component": "Sensable",
+            "interface": "Right-Button1"
+        }
+        ,
+        "clutch": {
+            "component": "Sensable",
+            "interface": "Right-Button2"
+        }
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "MTMR",  // created previously using custom components
+            "type": "MTM_GENERIC",
+            "component": "Sensable",
+            "interface": "Right"
+        }
+        ,
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "simulation": "KINEMATIC",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json"
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            "master": "MTMR",
+            "slave": "PSM1",
+            "rotation" : [[ 0.0000, -1.0000,  0.0000],
+                          [ 1.0000,  0.0000,  0.0000],
+                          [ 0.0000,  0.0000,  1.0000]]
+        }
+    ]
+}
