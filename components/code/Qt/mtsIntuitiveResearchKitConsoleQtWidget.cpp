@@ -42,6 +42,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <QShortcut>
 #include <QDoubleSpinBox>
 #include <QRadioButton>
+#include <QApplication>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
 
@@ -320,6 +321,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler(const prmEventBu
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotOperatorPresentEventHandler(bool operatorPresent)
 {
     QRBOperatorPresent->setChecked(operatorPresent);
+    QApplication::beep();
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler(const prmEventButton & button)
