@@ -105,6 +105,7 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciHeadSensor.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitUDPStreamer.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBasePSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketClientPSM.h
@@ -123,6 +124,7 @@ if (cisst_FOUND)
          code/mtsTeleOperationPSM.cpp
          code/mtsTeleOperationECM.cpp
          code/mtsIntuitiveResearchKitConsole.cpp
+         code/mtsDaVinciHeadSensor.cpp
          code/mtsIntuitiveResearchKitUDPStreamer.cpp
          code/mtsSocketBasePSM.cpp
          code/mtsSocketClientPSM.cpp

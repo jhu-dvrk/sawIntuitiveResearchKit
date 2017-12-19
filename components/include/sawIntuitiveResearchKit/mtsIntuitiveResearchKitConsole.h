@@ -32,6 +32,8 @@ namespace dvrk {
     class console;
 }
 
+class mtsDaVinciHeadSensor;
+
 class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
@@ -262,6 +264,9 @@ protected:
 
     /*! Single ECM bimanual teleoperation */
     TeleopECM * mTeleopECM;
+
+    /*! daVinci Head Sensor */
+    mtsDaVinciHeadSensor * mDaVinciHeadSensor;
 
     /*! Find all arm data from JSON configuration. */
     bool ConfigureArmJSON(const Json::Value & jsonArm,

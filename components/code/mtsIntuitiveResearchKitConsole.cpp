@@ -40,6 +40,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
 #include <sawIntuitiveResearchKit/mtsSocketClientPSM.h>
 #include <sawIntuitiveResearchKit/mtsSocketServerPSM.h>
+#include <sawIntuitiveResearchKit/mtsDaVinciHeadSensor.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
@@ -493,6 +494,7 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mTeleopPSMAligning(false),
     mTeleopECMRunning(false),
     mTeleopECM(0),
+    mDaVinciHeadSensor(0),
     mOperatorPresent(false),
     mCameraPressed(false),
     mIOComponentName("io"),
@@ -681,7 +683,14 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             mHasIO = true;
         }
     }
-
+    jsonValue = jsonConfig["operator-present"];
+    if (!jsonValue.empty()) {
+        // check if operator present uses IO
+        Json::Value jsonConfigFile = jsonValue["io"];
+        if (!jsonConfigFile.empty()) {
+            mHasIO = true;
+        }
+    }
     // create IO if needed and configure IO
     if (mHasIO) {
         mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, firewirePort);
@@ -733,6 +742,23 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 io->Configure(configFile);
             }
         }
+        // configure for operator present
+        jsonValue = jsonConfig["operator-present"];
+        if (!jsonValue.empty()) {
+            // check if operator present uses IO
+            Json::Value jsonConfigFile = jsonValue["io"];
+            if (!jsonConfigFile.empty()) {
+                const std::string configFile = configPath.Find(jsonConfigFile.asString());
+                if (configFile == "") {
+                    CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
+                                             << jsonConfigFile.asString() << std::endl;
+                    return;
+                }
+                CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring operator present using \""
+                                           << configFile << "\"" << std::endl;
+                io->Configure(configFile);
+            }
+        }
         // and add the io component!
         mtsComponentManager::GetInstance()->AddComponent(io);
     }
@@ -775,15 +801,6 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // see which event is used for operator present
     // find name of button event used to detect if operator is present
 
-    // support for older files
-    std::string operatorPresentComponent = jsonConfig["operator-present"]["component"].asString();
-    std::string operatorPresentInterface = jsonConfig["operator-present"]["interface"].asString();
-    if ((operatorPresentComponent != "")
-        || (operatorPresentInterface != "")) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure: \"operator-present\" should now be defined within \"console-inputs\" scope" << std::endl;
-        return;
-    }
-
     // load from console inputs
     const Json::Value consoleInputs = jsonConfig["console-inputs"];
     if (!consoleInputs.empty()) {
@@ -803,6 +820,21 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         if ((component != "") && (interface != "")) {
             mDInputSources["Camera"] = InterfaceComponentType(component, interface);
         }
+    }
+
+    // load operator-present settings, this will over write older settings
+    const Json::Value operatorPresent = jsonConfig["operator-present"];
+    if (!operatorPresent.empty()) {
+        const std::string headSensorName = "daVinciHeadSensor";
+        mDaVinciHeadSensor = new mtsDaVinciHeadSensor(headSensorName);
+        mtsComponentManager::GetInstance()->AddComponent(mDaVinciHeadSensor);
+        // main DInput is OperatorPresent comming from the newly added component
+        mDInputSources["OperatorPresent"] = InterfaceComponentType(headSensorName, "OperatorPresent");
+        // also expose the digital inputs from RobotIO (e.g. ROS topics)
+        mDInputSources["HeadSensor1"] = InterfaceComponentType(mIOComponentName, "HeadSensor1");
+        mDInputSources["HeadSensor2"] = InterfaceComponentType(mIOComponentName, "HeadSensor2");
+        mDInputSources["HeadSensor3"] = InterfaceComponentType(mIOComponentName, "HeadSensor3");
+        mDInputSources["HeadSensor4"] = InterfaceComponentType(mIOComponentName, "HeadSensor4");
     }
 
     // if we have any teleoperation component, we need to have the interfaces for the foot pedals
@@ -1645,6 +1677,16 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
 
     // connect the foot pedals
     this->ConnectFootpedalInterfaces();
+
+    // connect daVinci head sensor if any
+    if (mDaVinciHeadSensor) {
+        const std::string headSensorName = mDaVinciHeadSensor->GetName();
+        // see sawRobotIO1394 XML file for interface names
+        componentManager->Connect(headSensorName, "HeadSensorEnable",
+                                  mIOComponentName, "HeadSensorEnable");
+        componentManager->Connect(headSensorName, "HeadSensor1",
+                                  mIOComponentName, "HeadSensor1");
+    }
 
     // connect interfaces to retrieve base frame from ECM SUJ and send event to SUJ
     if (mSUJECMInterfaceRequired
