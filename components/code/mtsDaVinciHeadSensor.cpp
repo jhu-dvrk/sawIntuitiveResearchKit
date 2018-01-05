@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2017-12-18
 
-  (C) Copyright 2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2017-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -42,13 +42,28 @@ void mtsDaVinciHeadSensor::Init(void)
     mOperatorPresent = false;
 
     // Robot IO
-    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("HeadSensorEnable");
+    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("HeadSensorTurnOff");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("SetValue", RobotIO.Enable);
+        interfaceRequired->AddFunction("SetValue", RobotIO.TurnOff);
     }
     interfaceRequired = AddInterfaceRequired("HeadSensor1");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsDaVinciHeadSensor::HeadSensor1EventHandler,
+                                                this, "Button");
+    }
+    interfaceRequired = AddInterfaceRequired("HeadSensor2");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsDaVinciHeadSensor::HeadSensor2EventHandler,
+                                                this, "Button");
+    }
+    interfaceRequired = AddInterfaceRequired("HeadSensor3");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsDaVinciHeadSensor::HeadSensor3EventHandler,
+                                                this, "Button");
+    }
+    interfaceRequired = AddInterfaceRequired("HeadSensor4");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsDaVinciHeadSensor::HeadSensor4EventHandler,
                                                 this, "Button");
     }
     mInterface = AddInterfaceProvided("OperatorPresent");
@@ -66,8 +81,7 @@ void mtsDaVinciHeadSensor::Configure(const std::string & filename)
 
 void mtsDaVinciHeadSensor::Startup(void)
 {
-    RobotIO.Enable(true);
-    std::cerr << CMN_LOG_DETAILS << " we should read all current LED status too" << std::endl;
+    RobotIO.TurnOff(false);
 }
 
 
@@ -80,7 +94,7 @@ void mtsDaVinciHeadSensor::Run(void)
 
 void mtsDaVinciHeadSensor::Cleanup(void)
 {
-    RobotIO.Enable(false);
+    RobotIO.TurnOff(true);
 }
 
 
@@ -92,5 +106,19 @@ void mtsDaVinciHeadSensor::HeadSensorEventHandler(const size_t sensorNumber,
     } else {
         mSensors.at(sensorNumber) = 0;
     }
-    std::cerr << "Head sensor: " << mSensors.SumOfElements() << std::endl;
+    // for now use a simple test, at least two sensors triggered
+    const bool operatorPresent = (mSensors.SumOfElements() >= 2);
+    
+    // nothing has changed, don't do anything
+    if (mOperatorPresent == operatorPresent) {
+        return;
+    }
+
+    // changed
+    if (operatorPresent) {
+        MessageEvents.OperatorPresent(prmEventButton(prmEventButton::PRESSED));
+    } else {
+        MessageEvents.OperatorPresent(prmEventButton(prmEventButton::RELEASED));
+    }
+    mOperatorPresent = operatorPresent;
 }

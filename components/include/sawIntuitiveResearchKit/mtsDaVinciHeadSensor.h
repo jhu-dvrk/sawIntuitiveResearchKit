@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2017-12-18
 
-  (C) Copyright 2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2017-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -44,7 +44,7 @@ protected:
 
     // Required interface
     struct {
-        mtsFunctionWrite Enable;
+        mtsFunctionWrite TurnOff;
     } RobotIO;
 
     // Functions for events
@@ -55,16 +55,16 @@ protected:
 
     // callbacks for each event
     inline void HeadSensor1EventHandler(const prmEventButton & event) {
-        HeadSensorEventHandler(1, event);
+        HeadSensorEventHandler(0, event);
     }
     inline void HeadSensor2EventHandler(const prmEventButton & event) {
-        HeadSensorEventHandler(2, event);
+        HeadSensorEventHandler(1, event);
     }
     inline void HeadSensor3EventHandler(const prmEventButton & event) {
-        HeadSensorEventHandler(3, event);
+        HeadSensorEventHandler(2, event);
     }
     inline void HeadSensor4EventHandler(const prmEventButton & event) {
-        HeadSensorEventHandler(4, event);
+        HeadSensorEventHandler(3, event);
     }
 
     void HeadSensorEventHandler(const size_t sensorNumber,

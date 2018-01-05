@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -1682,10 +1682,16 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
     if (mDaVinciHeadSensor) {
         const std::string headSensorName = mDaVinciHeadSensor->GetName();
         // see sawRobotIO1394 XML file for interface names
-        componentManager->Connect(headSensorName, "HeadSensorEnable",
-                                  mIOComponentName, "HeadSensorEnable");
+        componentManager->Connect(headSensorName, "HeadSensorTurnOff",
+                                  mIOComponentName, "HeadSensorTurnOff");
         componentManager->Connect(headSensorName, "HeadSensor1",
                                   mIOComponentName, "HeadSensor1");
+        componentManager->Connect(headSensorName, "HeadSensor2",
+                                  mIOComponentName, "HeadSensor2");
+        componentManager->Connect(headSensorName, "HeadSensor3",
+                                  mIOComponentName, "HeadSensor3");
+        componentManager->Connect(headSensorName, "HeadSensor4",
+                                  mIOComponentName, "HeadSensor4");
     }
 
     // connect interfaces to retrieve base frame from ECM SUJ and send event to SUJ
