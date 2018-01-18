@@ -1781,6 +1781,17 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         return;
     }
 
+    // if none are running, freeze
+    if (!mTeleopECMRunning && !mTeleopPSMRunning) {
+        for (iterArms = mArms.begin(); iterArms != endArms; ++iterArms) {
+            if ((iterArms->second->mType == Arm::ARM_MTM) ||
+                (iterArms->second->mType == Arm::ARM_MTM_DERIVED) ||
+                (iterArms->second->mType == Arm::ARM_MTM_GENERIC)) {
+                iterArms->second->Freeze();
+            }
+        }
+    }
+
     // all fine
     bool readyForTeleop = mOperatorPresent;
 
@@ -1842,8 +1853,8 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
                  iterTeleopPSM != endTeleopPSM;
                  ++iterTeleopPSM) {
                 iterTeleopPSM->second->SetDesiredState(std::string("ENABLED"));
+                mTeleopPSMRunning = true;
             }
-            mTeleopPSMRunning = true;
         }
     }
 }
