@@ -24,6 +24,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmStateJoint.h>
+#include <cisstParameterTypes/prmPositionJointSet.h>
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 
@@ -57,11 +59,13 @@ protected:
     void ECMErrorEventHandler(const mtsMessage & message);
 
     void ClutchEventHandler(const prmEventButton & button);
+    void Clutch(const bool & clutch);
 
     // Functions for events
     struct {
         mtsFunctionWrite DesiredState;
         mtsFunctionWrite CurrentState;
+        mtsFunctionWrite Following;
     } MessageEvents;
     mtsInterfaceProvided * mInterface;
 
@@ -84,7 +88,7 @@ protected:
     class RobotMTM {
     public:
         mtsFunctionRead  GetPositionCartesian;
-        mtsFunctionRead  GetPositionCartesianDesired;
+        // mtsFunctionRead  GetPositionCartesianDesired;
         mtsFunctionRead  GetVelocityCartesian;
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionRead  GetCurrentState;
@@ -97,7 +101,7 @@ protected:
         mtsFunctionWrite SetGravityCompensation;
 
         prmPositionCartesianGet PositionCartesianCurrent;
-        prmPositionCartesianGet PositionCartesianDesired;
+        // prmPositionCartesianGet PositionCartesianDesired;
         prmVelocityCartesianGet VelocityCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
     };
@@ -107,16 +111,16 @@ protected:
     class RobotECM {
     public:
         mtsFunctionRead  GetPositionCartesian;
-        mtsFunctionRead  GetPositionCartesianDesired;
-        mtsFunctionWrite SetPositionCartesian;
+        mtsFunctionRead  GetStateJointDesired;
+        mtsFunctionWrite SetPositionJoint;
         mtsFunctionRead  GetCurrentState;
         mtsFunctionRead  GetDesiredState;
         mtsFunctionWrite SetDesiredState;
 
-        vctFrm3 PositionCartesianInitial;
         prmPositionCartesianGet PositionCartesianCurrent;
-        prmPositionCartesianGet PositionCartesianDesired;
-        prmPositionCartesianSet PositionCartesianSet;
+        vctVec PositionJointInitial;
+        prmStateJoint StateJointDesired;
+        prmPositionJointSet PositionJointSet;
     };
     RobotECM * mECM;
 
@@ -138,6 +142,8 @@ protected:
         vctFrm3 Frame; // frame associated to MTMs
     } mInitial;
 
+    bool mIsFollowing;
+    void SetFollowing(const bool following);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationECM);

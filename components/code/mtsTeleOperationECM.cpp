@@ -131,8 +131,8 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian",
                                        mMTML->GetPositionCartesian);
-        interfaceRequired->AddFunction("GetPositionCartesianDesired",
-                                       mMTML->GetPositionCartesianDesired);
+        //        interfaceRequired->AddFunction("GetPositionCartesianDesired",
+        //                               mMTML->GetPositionCartesianDesired);
         interfaceRequired->AddFunction("GetVelocityCartesian",
                                        mMTML->GetVelocityCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian",
@@ -159,8 +159,8 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian",
                                        mMTMR->GetPositionCartesian);
-        interfaceRequired->AddFunction("GetPositionCartesianDesired",
-                                       mMTMR->GetPositionCartesianDesired);
+        //        interfaceRequired->AddFunction("GetPositionCartesianDesired",
+        //                               mMTMR->GetPositionCartesianDesired);
         interfaceRequired->AddFunction("GetVelocityCartesian",
                                        mMTMR->GetVelocityCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian",
@@ -188,10 +188,10 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
         // ECM, use PID desired position to make sure there is no jump when engaging
         interfaceRequired->AddFunction("GetPositionCartesian",
                                        mECM->GetPositionCartesian);
-        interfaceRequired->AddFunction("GetPositionCartesianDesired",
-                                       mECM->GetPositionCartesianDesired);
-        interfaceRequired->AddFunction("SetPositionCartesian",
-                                       mECM->SetPositionCartesian);
+        interfaceRequired->AddFunction("GetStateJointDesired",
+                                       mECM->GetStateJointDesired);
+        interfaceRequired->AddFunction("SetPositionJoint",
+                                       mECM->SetPositionJoint);
         interfaceRequired->AddFunction("GetCurrentState",
                                        mECM->GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState",
@@ -241,6 +241,8 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
                                   "DesiredState", std::string(""));
         mInterface->AddEventWrite(MessageEvents.CurrentState,
                                   "CurrentState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.Following,
+                                  "Following", false);
         // configuration
         mInterface->AddEventWrite(ConfigurationEvents.Scale,
                                   "Scale", 0.5);
@@ -250,6 +252,7 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
 void mtsTeleOperationECM::Startup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
+    SetFollowing(false);
 }
 
 void mtsTeleOperationECM::Run(void)
@@ -309,7 +312,7 @@ void mtsTeleOperationECM::RunAllStates(void)
         this->SetDesiredState("DISABLED");
     }
 
-    // get slave Cartesian position
+    // get slave Cartesian position for GUI
     executionResult = mECM->GetPositionCartesian(mECM->PositionCartesianCurrent);
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.GetPositionCartesian failed \""
@@ -317,17 +320,19 @@ void mtsTeleOperationECM::RunAllStates(void)
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from slave");
         this->SetDesiredState("DISABLED");
     }
-    executionResult = mECM->GetPositionCartesianDesired(mECM->PositionCartesianDesired);
+    // for motion computation
+    executionResult = mECM->GetStateJointDesired(mECM->StateJointDesired);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.GetPositionCartesianDesired failed \""
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.GetStateJointDesired failed \""
                                 << executionResult << "\"" << std::endl;
-        mInterface->SendError(this->GetName() + ": unable to get cartesian position from slave");
+        mInterface->SendError(this->GetName() + ": unable to get joint state from slave");
         this->SetDesiredState("DISABLED");
     }
 
     // check if anyone wanted to disable anyway
     if ((mTeleopState.DesiredState() == "DISABLED")
         && (mTeleopState.CurrentState() != "DISABLED")) {
+        SetFollowing(false);
         mTeleopState.SetCurrentState("DISABLED");
         return;
     }
@@ -431,15 +436,26 @@ void mtsTeleOperationECM::EnterEnabled(void)
               << "Si: " << side << std::endl
               << "F:  " << std::endl << mInitial.Frame << std::endl;
 #endif
-    mECM->PositionCartesianInitial = mECM->PositionCartesianDesired.Position();
+    mECM->PositionJointInitial = mECM->StateJointDesired.Position();
+    // check if by any chance the clutch pedal is pressed
+    if (mIsClutched) {
+        Clutch(true);
+    } else {
+        SetFollowing(true);
+    }
 }
 
 void mtsTeleOperationECM::RunEnabled(void)
 {
+    if (mIsClutched) {
+        return;
+    }
+
     const vct3 frictionForceCoeff(-10.0, -10.0, -10.0);
     const double distanceForceCoeff = 150.0;
+    static int counter = 0;
 
-    // -1- vector between left and right masters
+    //-1- vector between left and right masters
     vct3 vectorLR;
     vectorLR.DifferenceOf(mMTMR->PositionCartesianCurrent.Position().Translation(),
                           mMTML->PositionCartesianCurrent.Position().Translation());
@@ -509,17 +525,64 @@ void mtsTeleOperationECM::RunEnabled(void)
     frame.ApplyTo(mInitial.Frame.Inverse(), displacement);
 
     // New ECM position
-    //vctFrm3 goal;
-    //displacement.ApplyTo(mECM->PositionCartesianInitial, goal);
-    //mECM->PositionCartesianSet.Goal().Assign(goal);
-    //mECM->SetPositionCartesian(mECM->PositionCartesianSet);
+    vctVec goal(mECM->PositionJointInitial);
+    // displacement.ApplyTo(mECM->PositionCartesianInitial, goal);
+    mECM->PositionJointSet.Goal().ForceAssign(goal);
+    mECM->SetPositionJoint(mECM->PositionJointSet);
+
+    /*#if (!counter%100)
+    std::cerr << CMN_LOG_DETAILS << std::endl
+              << "L: " << mMTML->PositionCartesianCurrent.Position().Translation() << std::endl
+              << "R: " << mMTMR->PositionCartesianCurrent.Position().Translation() << std::endl
+              << "C:  " << mInitial.C << std::endl
+              << "Up: " << mInitial.Up << std::endl
+              << "d:  " << mInitial.dLR << std::endl
+              << "w:  " << mInitial.w << std::endl
+              << "d:  " << mInitial.d << std::endl
+              << "Si: " << side << std::endl
+              << "F:  " << std::endl << mInitial.Frame << std::endl;
+#endif
+    mECM->PositionJointInitial = mECM->StateJointDesired.Position();
+
+    counter++;*/
+
 }
 
 void mtsTeleOperationECM::TransitionEnabled(void)
 {
-    if (mTeleopState.DesiredState() == "DISABLED") {
-        mTeleopState.SetCurrentState("DISABLED");
+    std::string armState;
+
+    // check ECM state
+    mECM->GetCurrentState(armState);
+    if (armState != "READY") {
+        mInterface->SendWarning(this->GetName() + ": ECM state has changed to [" + armState + "]");
+        mTeleopState.SetDesiredState("DISABLED");
     }
+
+    // check mtml state
+    mMTML->GetCurrentState(armState);
+    if (armState != "READY") {
+        mInterface->SendWarning(this->GetName() + ": MTML state has changed to [" + armState + "]");
+        mTeleopState.SetDesiredState("DISABLED");
+    }
+
+    // check mtmr state
+    mMTMR->GetCurrentState(armState);
+    if (armState != "READY") {
+        mInterface->SendWarning(this->GetName() + ": MTMR state has changed to [" + armState + "]");
+        mTeleopState.SetDesiredState("DISABLED");
+    }
+
+    if (mTeleopState.DesiredStateIsNotCurrent()) {
+        SetFollowing(false);
+        mTeleopState.SetCurrentState(mTeleopState.DesiredState());
+    }
+}
+
+void mtsTeleOperationECM::SetFollowing(const bool following)
+{
+    MessageEvents.Following(following);
+    mIsFollowing = following;
 }
 
 void mtsTeleOperationECM::MTMLErrorEventHandler(const mtsMessage & message)
@@ -542,25 +605,37 @@ void mtsTeleOperationECM::ECMErrorEventHandler(const mtsMessage & message)
 
 void mtsTeleOperationECM::ClutchEventHandler(const prmEventButton & button)
 {
+    if (button.Type() == prmEventButton::PRESSED) {
+        mIsClutched = true;
+    } else {
+        mIsClutched = false;
+    }
+
     // if the teleoperation is activated
     if (mTeleopState.DesiredState() == "ENABLED") {
-        if (button.Type() == prmEventButton::PRESSED) {
-            mIsClutched = true;
-            mInterface->SendStatus(this->GetName() + ": console clutch pressed");
+        Clutch(mIsClutched);
+    }
+}
 
-            // set MTMs in effort mode, no force applied but gravity and locked orientation
-            prmForceCartesianSet wrench;
-            mMTML->SetWrenchBody(wrench);
-            mMTML->SetGravityCompensation(true);
-            mMTML->LockOrientation(mMTML->PositionCartesianCurrent.Position().Rotation());
-            mMTMR->SetWrenchBody(wrench);
-            mMTMR->SetGravityCompensation(true);
-            mMTMR->LockOrientation(mMTMR->PositionCartesianCurrent.Position().Rotation());
-        } else {
-            mIsClutched = false;
-            mInterface->SendStatus(this->GetName() + ": console clutch released");
-            mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
-        }
+void mtsTeleOperationECM::Clutch(const bool & clutch)
+{
+    // if the teleoperation is activated
+    if (clutch) {
+        SetFollowing(false);
+        mInterface->SendStatus(this->GetName() + ": console clutch pressed");
+
+        // set MTMs in effort mode, no force applied but gravity and locked orientation
+        prmForceCartesianSet wrench;
+        mMTML->SetWrenchBody(wrench);
+        mMTML->SetGravityCompensation(true);
+        mMTML->LockOrientation(mMTML->PositionCartesianCurrent.Position().Rotation());
+        mMTMR->SetWrenchBody(wrench);
+        mMTMR->SetGravityCompensation(true);
+        mMTMR->LockOrientation(mMTMR->PositionCartesianCurrent.Position().Rotation());
+    } else {
+        mIsClutched = false;
+        mInterface->SendStatus(this->GetName() + ": console clutch released");
+        mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
     }
 }
 
