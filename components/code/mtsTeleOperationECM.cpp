@@ -514,37 +514,45 @@ void mtsTeleOperationECM::RunEnabled(void)
 
 
     // compute new MTMs frame
-    vctFrm3 frame;
-    frame.Translation().Assign(c);
-    frame.Rotation().Row(0).Assign(side);
-    frame.Rotation().Row(1).Assign(up);
-    frame.Rotation().Row(2).Assign(vctCrossProduct(side, up));
+    // vctFrm3 frame;
+    // frame.Translation().Assign(c);
+    // frame.Rotation().Row(0).Assign(side);
+    // frame.Rotation().Row(1).Assign(up);
+    // frame.Rotation().Row(2).Assign(vctCrossProduct(side, up));
 
     // Transformation since last clutch
-    vctFrm3 displacement;
-    frame.ApplyTo(mInitial.Frame.Inverse(), displacement);
+    // vctFrm3 displacement;
+    // frame.ApplyTo(mInitial.Frame.Inverse(), displacement);
 
     // New ECM position
     vctVec goal(mECM->PositionJointInitial);
-    // displacement.ApplyTo(mECM->PositionCartesianInitial, goal);
-    mECM->PositionJointSet.Goal().ForceAssign(goal);
+    //displacement.ApplyTo(mECM->PositionCartesianInitial, goal);
+    vctVec goalJoints(mECM->PositionJointInitial);
+    //add z translation to
+    vctVec changeJoints(4);
+    vct3 crossUp;
+    changeJoints[0] = 0.0;
+    changeJoints[1] = 0.0;
+    changeJoints[2] =mInitial.C.Norm() - c.Norm();
+    changeJoints[3] = acos(vctDotProduct(mInitial.Up, up));
+    /*crossUp.CrossProductOf(mInitial.Up, up);
+    if (vctDotProduct(c,crossUp) < 0) { // Or > 0
+        changeJoints[3] = -changeJoints[3];
+        }*/
+    goalJoints.Add(changeJoints);
+    mECM->PositionJointSet.Goal().ForceAssign(goalJoints);
     mECM->SetPositionJoint(mECM->PositionJointSet);
 
-    /*#if (!counter%100)
+if (counter%250 == 0)
     std::cerr << CMN_LOG_DETAILS << std::endl
-              << "L: " << mMTML->PositionCartesianCurrent.Position().Translation() << std::endl
-              << "R: " << mMTMR->PositionCartesianCurrent.Position().Translation() << std::endl
-              << "C:  " << mInitial.C << std::endl
-              << "Up: " << mInitial.Up << std::endl
-              << "d:  " << mInitial.dLR << std::endl
-              << "w:  " << mInitial.w << std::endl
-              << "d:  " << mInitial.d << std::endl
-              << "Si: " << side << std::endl
-              << "F:  " << std::endl << mInitial.Frame << std::endl;
-#endif
-    mECM->PositionJointInitial = mECM->StateJointDesired.Position();
+              << "c: " << c << std::endl <<"c[2]: "<< c[2] << std::endl
+              << "goal Joints: " << goalJoints <<std::endl
+                     << "change Joints: " << changeJoints << std::endl;
+//<< "new Joints: " << newJoints << std::endl;
+// else
+    // mECM->PositionJointInitial = mECM->StateJointDesired.Position();
 
-    counter++;*/
+    counter++;
 
 }
 
