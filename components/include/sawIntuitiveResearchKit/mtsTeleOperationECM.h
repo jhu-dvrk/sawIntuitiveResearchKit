@@ -136,6 +136,7 @@ protected:
     struct MTMsState {
         double dLR; // distance
         vct3 C;     // center
+        vct3 n;     // normal to image direction
         vct3 Up;    // up direction
         double w;   // width of image
         double d;   // depth of R along C, depth of L is opposite
