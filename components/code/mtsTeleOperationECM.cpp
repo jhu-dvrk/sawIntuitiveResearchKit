@@ -416,10 +416,20 @@ void mtsTeleOperationECM::EnterEnabled(void)
     vct3 side;
     side.CrossProductOf(mInitial.C, mInitial.Up);
     side.NormalizedSelf();
-    mInitial.n.CrossProductOf(mInitial.Up, side);
-    mInitial.n.NormalizedSelf();
     mInitial.w = 0.5 * vctDotProduct(side, vectorLR);
     mInitial.d = 0.5 * vctDotProduct(mInitial.C.Normalized(), vectorLR);
+
+    // projections
+    vct3 normXZ(0.0, 1.0, 0.0); vct3 normYZ(1.0, 0.0, 0.0); vct3 normXY(0.0, 0.0, 1.0);
+    mInitial.N.CrossProductOf(mInitial.Up, side);
+    mInitial.N.NormalizedSelf();
+    mInitial.nXZ = mInitial.N - vctDotProduct(mInitial.N, normXZ)*normXZ;
+    mInitial.nXZ.NormalizedSelf();
+    mInitial.nYZ = mInitial.N - vctDotProduct(mInitial.N,normYZ)*normYZ;
+    mInitial.nYZ.NormalizedSelf();
+    mInitial.uXY = mInitial.Up - vctDotProduct(mInitial.Up,normXY)*normXY;
+    mInitial.uXY.NormalizedSelf();
+
     // -5- compute MTMs frame
     mInitial.Frame.Translation().Assign(mInitial.C);
     mInitial.Frame.Rotation().Row(0).Assign(side);
@@ -536,31 +546,37 @@ void mtsTeleOperationECM::RunEnabled(void)
     vctVec goalJoints(mECM->PositionJointInitial);
     //add z translation to
     vctVec changeJoints(4);
+    vct3 normXZ(0.0, 1.0, 0.0); vct3 normYZ(1.0, 0.0, 0.0); vct3 normXY(0.0, 0.0, 1.0);
     vct3 crossUp, crossN;
-    vct3 mInx(mInitial.n[0], 0.0, mInitial.n[2]);
-    vct3 nx(n[0], 0.0, n[2]);
-    vct3 mIny(0.0, mInitial.n[1], mInitial.n[2]);
-    vct3 ny(0.0, n[1], n[2]);
-    
-    changeJoints[0] = acos(vctDotProduct(mInx,nx));
-    crossN = vctCrossProduct(mInx, nx);
-    if (vctDotProduct(up, crossN) < 0 )
+    vct3 nXZ, nYZ, uXY;
+    // - Joint 0 -left/right
+    // proj1 = mInitial.n - vctDotProduct(mInitial.n,normXZ)*normXZ;
+    nXZ = n - vctDotProduct(n,normXZ)*normXZ;
+    nXZ.NormalizedSelf();
+    changeJoints[0] = acos(vctDotProduct(mInitial.nXZ, nXZ));
+    crossN = vctCrossProduct(mInitial.nXZ, nXZ);
+    if (vctDotProduct(normXZ, crossN) < 0 )
        changeJoints[0] = -changeJoints[0];
-    
-    changeJoints[1] = acos(vctDotProduct(mIny,ny));
-    crossN = vctCrossProduct(mIny, ny);
-    if (vctDotProduct(side, crossN) < 0 )
+    // - Joint 1 - up/down
+    // proj3 = mInitial.n - vctDotProduct(mInitial.n,normYZ)*normYZ;
+    nYZ = n - vctDotProduct(n,normYZ)*normYZ;
+    nYZ.NormalizedSelf();
+    changeJoints[1] = -acos(vctDotProduct(mInitial.nYZ, nYZ));
+    crossN = vctCrossProduct(mInitial.nYZ, nYZ);
+    if (vctDotProduct(normYZ, crossN) < 0 )
        changeJoints[1] = -changeJoints[1];
-    changeJoints[1]=0.0;
-    
+    // - Joint 2 - in/out movement
     changeJoints[2] =mInitial.C.Norm() - c.Norm();
-    changeJoints[3] = acos(vctDotProduct(mInitial.Up, up))*0.2;
-    vct3 cmid;
-    cmid = (mInitial.C+c).NormalizedSelf(); //causing errors 
-    crossUp = vctCrossProduct(mInitial.Up, up);
-    if (vctDotProduct(cmid, crossUp) < 0) { // Or > 0
-        changeJoints[3] = -changeJoints[3];
-        }
+    // - Joint 3 - cc/ccw movement
+    vct3 proj5, proj6;
+    // proj5 = mInitial.Up - vctDotProduct(mInitial.n,normXY)*normXY;
+    uXY = up - vctDotProduct(up,normXY)*normXY;
+    uXY.NormalizedSelf();
+    changeJoints[3] = acos(vctDotProduct(mInitial.uXY, uXY));
+    crossN = vctCrossProduct(mInitial.uXY, uXY);
+    if (vctDotProduct(normXY, crossN) < 0 )
+       changeJoints[3] = -changeJoints[3];
+    
     goalJoints.Add(changeJoints);
     mECM->PositionJointSet.Goal().ForceAssign(goalJoints);
     mECM->SetPositionJoint(mECM->PositionJointSet);
@@ -568,7 +584,6 @@ void mtsTeleOperationECM::RunEnabled(void)
 if (counter%250 == 0)
     std::cerr << CMN_LOG_DETAILS << std::endl
               << "c: " << c << std::endl <<"mInitialC: "<< mInitial.C << std::endl
-              << "n: " << n << std::endl <<"mInitialN: "<< mInitial.n << std::endl
               << "goal Joints: " << goalJoints <<std::endl
                      << "change Joints: " << changeJoints << std::endl;
 //<< "new Joints: " << newJoints << std::endl;
