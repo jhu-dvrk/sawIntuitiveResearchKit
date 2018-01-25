@@ -528,29 +528,17 @@ void mtsTeleOperationECM::RunEnabled(void)
     // apply
     mMTML->SetWrenchBody(wrenchL);
 
-
-    // compute new MTMs frame
-    // vctFrm3 frame;
-    // frame.Translation().Assign(c);
-    // frame.Rotation().Row(0).Assign(side);
-    // frame.Rotation().Row(1).Assign(up);
-    // frame.Rotation().Row(2).Assign(vctCrossProduct(side, up));
-
-    // Transformation since last clutch
-    // vctFrm3 displacement;
-    // frame.ApplyTo(mInitial.Frame.Inverse(), displacement);
-
-    // New ECM position
+   // New ECM position
     vctVec goal(mECM->PositionJointInitial);
-    //displacement.ApplyTo(mECM->PositionCartesianInitial, goal);
     vctVec goalJoints(mECM->PositionJointInitial);
-    //add z translation to
+
+    // New Joint positions
     vctVec changeJoints(4);
     vct3 normXZ(0.0, 1.0, 0.0); vct3 normYZ(1.0, 0.0, 0.0); vct3 normXY(0.0, 0.0, 1.0);
     vct3 crossUp, crossN;
     vct3 nXZ, nYZ, uXY;
+    
     // - Joint 0 -left/right
-    // proj1 = mInitial.n - vctDotProduct(mInitial.n,normXZ)*normXZ;
     nXZ = n - vctDotProduct(n,normXZ)*normXZ;
     nXZ.NormalizedSelf();
     changeJoints[0] = acos(vctDotProduct(mInitial.nXZ, nXZ));
@@ -558,7 +546,6 @@ void mtsTeleOperationECM::RunEnabled(void)
     if (vctDotProduct(normXZ, crossN) < 0 )
        changeJoints[0] = -changeJoints[0];
     // - Joint 1 - up/down
-    // proj3 = mInitial.n - vctDotProduct(mInitial.n,normYZ)*normYZ;
     nYZ = n - vctDotProduct(n,normYZ)*normYZ;
     nYZ.NormalizedSelf();
     changeJoints[1] = -acos(vctDotProduct(mInitial.nYZ, nYZ));
@@ -568,8 +555,6 @@ void mtsTeleOperationECM::RunEnabled(void)
     // - Joint 2 - in/out movement
     changeJoints[2] =mInitial.C.Norm() - c.Norm();
     // - Joint 3 - cc/ccw movement
-    vct3 proj5, proj6;
-    // proj5 = mInitial.Up - vctDotProduct(mInitial.n,normXY)*normXY;
     uXY = up - vctDotProduct(up,normXY)*normXY;
     uXY.NormalizedSelf();
     changeJoints[3] = acos(vctDotProduct(mInitial.uXY, uXY));
