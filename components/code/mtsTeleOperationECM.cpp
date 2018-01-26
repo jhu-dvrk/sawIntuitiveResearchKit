@@ -534,33 +534,38 @@ void mtsTeleOperationECM::RunEnabled(void)
 
     // New Joint positions
     vctVec changeJoints(4);
-    vct3 normXZ(0.0, 1.0, 0.0); vct3 normYZ(1.0, 0.0, 0.0); vct3 normXY(0.0, 0.0, 1.0);
+    vct3 normXZ(0.0, 1.0, 0.0);
+    vct3 normYZ(1.0, 0.0, 0.0);
+    vct3 normXY(0.0, 0.0, 1.0);
     vct3 crossUp, crossN;
     vct3 nXZ, nYZ, uXY;
     
     // - Joint 0 -left/right
     nXZ = n - vctDotProduct(n,normXZ)*normXZ;
     nXZ.NormalizedSelf();
-    changeJoints[0] = acos(vctDotProduct(mInitial.nXZ, nXZ));
+    changeJoints[0] = -acos(vctDotProduct(mInitial.nXZ, nXZ));
     crossN = vctCrossProduct(mInitial.nXZ, nXZ);
-    if (vctDotProduct(normXZ, crossN) < 0 )
+    if (vctDotProduct(normXZ, crossN) < 0) {
        changeJoints[0] = -changeJoints[0];
+    }
     // - Joint 1 - up/down
     nYZ = n - vctDotProduct(n,normYZ)*normYZ;
     nYZ.NormalizedSelf();
-    changeJoints[1] = -acos(vctDotProduct(mInitial.nYZ, nYZ));
+    changeJoints[1] = acos(vctDotProduct(mInitial.nYZ, nYZ));
     crossN = vctCrossProduct(mInitial.nYZ, nYZ);
-    if (vctDotProduct(normYZ, crossN) < 0 )
+    if (vctDotProduct(normYZ, crossN) < 0) {
        changeJoints[1] = -changeJoints[1];
+    }
     // - Joint 2 - in/out movement
     changeJoints[2] =mInitial.C.Norm() - c.Norm();
     // - Joint 3 - cc/ccw movement
     uXY = up - vctDotProduct(up,normXY)*normXY;
     uXY.NormalizedSelf();
-    changeJoints[3] = acos(vctDotProduct(mInitial.uXY, uXY));
+    changeJoints[3] = -acos(vctDotProduct(mInitial.uXY, uXY));
     crossN = vctCrossProduct(mInitial.uXY, uXY);
-    if (vctDotProduct(normXY, crossN) < 0 )
+    if (vctDotProduct(normXY, crossN) < 0) {
        changeJoints[3] = -changeJoints[3];
+    }
     
     goalJoints.Add(changeJoints);
     mECM->PositionJointSet.Goal().ForceAssign(goalJoints);
