@@ -107,7 +107,7 @@ public:
         std::stringstream jointName;
         for (size_t index = 0; index < MUX_ARRAY_SIZE; ++index) {
             jointName.str("");
-            jointName << "SUJ-" << name << "-j" << index;
+            jointName << "SUJ_" << name << "_J" << index;
             mStateJoint.Name().at(index) = jointName.str();
         }
 
