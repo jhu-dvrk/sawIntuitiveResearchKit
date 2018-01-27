@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -156,6 +156,7 @@ protected:
 
     // Flag to determine if this is connected to actual IO/hardware or simulated
     bool mIsSimulated;
+    double mSimulatedTimer;
 
     void DispatchError(const std::string & message);
     void DispatchWarning(const std::string & message);

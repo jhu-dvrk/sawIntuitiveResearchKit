@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -123,7 +123,7 @@ public:
         mPositionCartesianParam.SetReferenceFrame("Cart");
         mPositionCartesianParam.SetMovingFrame(name + "_base");
         mStateTable.AddData(mPositionCartesianParam, "PositionCartesian");
-        
+
         mPositionCartesianLocalParam.SetReferenceFrame("Cart");
         mPositionCartesianLocalParam.SetMovingFrame(name + "_base");
         mStateTable.AddData(mPositionCartesianLocalParam, "PositionCartesianLocal");
@@ -131,7 +131,7 @@ public:
         mPositionCartesianDesiredParam.SetReferenceFrame("Cart");
         mPositionCartesianDesiredParam.SetMovingFrame(name + "_base");
         mStateTable.AddData(mPositionCartesianDesiredParam, "PositionCartesianDesired");
-        
+
         mPositionCartesianLocalDesiredParam.SetReferenceFrame("Cart");
         mPositionCartesianLocalDesiredParam.SetMovingFrame(name + "_base");
         mStateTable.AddData(mPositionCartesianLocalDesiredParam, "PositionCartesianLocalDesired");
@@ -372,6 +372,8 @@ mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicCons
 
 void mtsIntuitiveResearchKitSUJ::Init(void)
 {
+    mSimulatedTimer = 0.0;
+
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
     mArmState.AddState("POWERING");
@@ -936,7 +938,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                 arm->mStateJoint.SetValid(true);
 
                 // Joint forward kinematics
-                arm->mJointGet.Assign(arm->mStateJoint.Position(),arm->mManipulator.links.size());
+                arm->mJointGet.Assign(arm->mStateJoint.Position(), arm->mManipulator.links.size());
                 // forward kinematic
                 vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
                 // pre and post transformations loaded from JSON file, base frame updated using events
@@ -1040,6 +1042,36 @@ void mtsIntuitiveResearchKitSUJ::SetDesiredState(const std::string & state)
 void mtsIntuitiveResearchKitSUJ::RunReady(void)
 {
     if (mIsSimulated) {
+        const double currentTime = this->StateTable.GetTic();
+        if (currentTime - mSimulatedTimer > 1.0 * cmn_s) {
+            mSimulatedTimer = currentTime;
+            for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+                mtsIntuitiveResearchKitSUJArmData * arm = Arms[armIndex];
+                arm->mStateTable.Start();
+                // Joint forward kinematics
+                arm->mJointGet.Assign(arm->mStateJoint.Position(), arm->mManipulator.links.size());
+                // forward kinematic
+                vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
+                // pre and post transformations loaded from JSON file, base frame updated using events
+                vctFrm4x4 armLocal = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
+                // apply base frame
+                vctFrm4x4 armBase = arm->mBaseFrame * armLocal;
+                // emit events for continuous positions
+                // - with base
+                arm->mPositionCartesianParam.Position().From(armBase);
+                arm->mPositionCartesianParam.SetTimestamp(arm->mStateJoint.Timestamp());
+                arm->mPositionCartesianParam.SetValid(arm->mBaseFrameValid);
+                arm->EventPositionCartesian(arm->mPositionCartesianParam);
+                arm->EventPositionCartesianDesired(arm->mPositionCartesianParam);
+                // - local
+                arm->mPositionCartesianLocalParam.Position().From(armLocal);
+                arm->mPositionCartesianLocalParam.SetTimestamp(arm->mStateJoint.Timestamp());
+                arm->mPositionCartesianLocalParam.SetValid(arm->mBaseFrameValid);
+                arm->EventPositionCartesianLocal(arm->mPositionCartesianLocalParam);
+                arm->EventPositionCartesianLocalDesired(arm->mPositionCartesianLocalParam);
+                arm->mStateTable.Advance();
+            }
+        }
         return;
     }
 
