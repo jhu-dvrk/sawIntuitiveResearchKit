@@ -1087,7 +1087,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             }
             mJointTrajectory.Reflexxes.Set(mJointTrajectory.Velocity,
                                            mJointTrajectory.Acceleration,
-                                           StateTable.PeriodStats.GetAvg(),
+                                           StateTable.PeriodStats.PeriodAvg(),
                                            robReflexxes::Reflexxes_TIME);
             break;
         case mtsIntuitiveResearchKitArmTypes::EFFORT_MODE:
