@@ -1948,6 +1948,10 @@ void mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler(const prmPositionCar
     // compute and send new base frame for all SUJs (SUJ will handle ECM differently)
     prmPositionCartesianGet baseFrameSUJParam;
     baseFrameSUJParam.Position().From(positionECM.Inverse());
+    // it's an inverse, swap moving and reference frames
+    baseFrameSUJParam.SetReferenceFrame(positionECMLocalParam.MovingFrame());
+    baseFrameSUJParam.SetMovingFrame(baseFrameSUJParam.ReferenceFrame());
+    // valid only if both are valid
     baseFrameSUJParam.SetValid(baseFrameParam.Valid() && positionECMLocalParam.Valid());
     baseFrameSUJParam.SetTimestamp(positionECMLocalParam.Timestamp());
     mECMBaseFrameEvent(baseFrameSUJParam);

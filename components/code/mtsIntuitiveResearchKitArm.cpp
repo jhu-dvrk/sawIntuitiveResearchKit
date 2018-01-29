@@ -1079,10 +1079,15 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             mEffortOrientationLocked = false;
             // initialize trajectory
             JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
-            JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
+            if (mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
+                JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
+            } else {
+                JointVelocitySet.SetSize(NumberOfJoints());
+                JointVelocitySet.SetAll(0.0);
+            }
             mJointTrajectory.Reflexxes.Set(mJointTrajectory.Velocity,
                                            mJointTrajectory.Acceleration,
-                                           StateTable.PeriodStats.GetAvg(),
+                                           StateTable.PeriodStats.PeriodAvg(),
                                            robReflexxes::Reflexxes_TIME);
             break;
         case mtsIntuitiveResearchKitArmTypes::EFFORT_MODE:
