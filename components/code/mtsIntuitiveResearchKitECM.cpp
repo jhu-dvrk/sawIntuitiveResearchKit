@@ -55,11 +55,15 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
     vctDouble3 shaft = cartesianGoal.Translation();
     shaft.NormalizedSelf();
     const vctDouble3 z = cartesianGoal.Rotation().Column(2).Ref<3>(); // last column of rotation matrix
-    vctDouble3 axis;
-    axis.CrossProductOf(z, shaft);
-    const double angle = acos(vctDotProduct(z, shaft));
+    vctMatRot3 reAlign;
+    vct3 axis;
+    double angle;
+    if (! z.AlmostEqual(shaft, 0.0001)) {
+        axis.CrossProductOf(z, shaft);
+        angle = acos(vctDotProduct(z, shaft));
+        reAlign.From(vctAxAnRot3(axis, angle, VCT_NORMALIZE));
+    }
 
-    const vctMatRot3 reAlign(vctAxAnRot3(axis, angle, VCT_NORMALIZE));
     vctFrm4x4 newGoal;
     newGoal.Translation().Assign(cartesianGoal.Translation());
     newGoal.Rotation().ProductOf(reAlign, cartesianGoal.Rotation());
@@ -112,6 +116,11 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                          0.05,
                                          30.0 * cmnPI_180);
     mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
+
+    // default PID tracking errors
+    PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
+    PID.DefaultTrackingErrorTolerance.SetAll(7.0 * cmnPI_180); // 7 degrees on angles
+    PID.DefaultTrackingErrorTolerance.Element(2) = 10.0 * cmn_mm; // 10 mm
 
     mtsInterfaceRequired * interfaceRequired;
 
@@ -179,11 +188,8 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
         return;
     }
 
-    // configure PID to fail in case of tracking error
-    vctDoubleVec tolerances(NumberOfJoints());
-    tolerances.SetAll(7.0 * cmnPI_180); // 7 degrees on angles
-    tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
-    PID.SetTrackingErrorTolerance(tolerances);
+    // make sure tracking error is set
+    PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
     PID.EnableTrackingError(true);
 
     // compute joint goal position
