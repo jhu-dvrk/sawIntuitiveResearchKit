@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-01-21
 
-  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -190,8 +190,8 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
                                        mECM->GetPositionCartesian);
         interfaceRequired->AddFunction("GetStateJointDesired",
                                        mECM->GetStateJointDesired);
-        interfaceRequired->AddFunction("SetPositionJoint",
-                                       mECM->SetPositionJoint);
+        interfaceRequired->AddFunction("SetPositionGoalJoint",
+                                       mECM->SetPositionGoalJoint);
         interfaceRequired->AddFunction("GetCurrentState",
                                        mECM->GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState",
@@ -463,7 +463,7 @@ void mtsTeleOperationECM::RunEnabled(void)
         return;
     }
 
-    const vct3 frictionForceCoeff(-10.0, -10.0, -10.0);
+    const vct3 frictionForceCoeff(-10.0, -10.0, -40.0);
     const double distanceForceCoeff = 150.0;
     static int counter = 0;
 
@@ -539,9 +539,9 @@ void mtsTeleOperationECM::RunEnabled(void)
     vct3 normXY(0.0, 0.0, 1.0);
     vct3 crossUp, crossN;
     vct3 nXZ, nYZ, uXY;
-    
+
     // - Joint 0 -left/right
-    nXZ = n - vctDotProduct(n,normXZ)*normXZ;
+    nXZ = n - vctDotProduct(n, normXZ) * normXZ;
     nXZ.NormalizedSelf();
     changeJoints[0] = -acos(vctDotProduct(mInitial.nXZ, nXZ));
     crossN = vctCrossProduct(mInitial.nXZ, nXZ);
@@ -549,7 +549,7 @@ void mtsTeleOperationECM::RunEnabled(void)
        changeJoints[0] = -changeJoints[0];
     }
     // - Joint 1 - up/down
-    nYZ = n - vctDotProduct(n,normYZ)*normYZ;
+    nYZ = n - vctDotProduct(n, normYZ) * normYZ;
     nYZ.NormalizedSelf();
     changeJoints[1] = acos(vctDotProduct(mInitial.nYZ, nYZ));
     crossN = vctCrossProduct(mInitial.nYZ, nYZ);
@@ -557,7 +557,7 @@ void mtsTeleOperationECM::RunEnabled(void)
        changeJoints[1] = -changeJoints[1];
     }
     // - Joint 2 - in/out movement
-    changeJoints[2] =mInitial.C.Norm() - c.Norm();
+    changeJoints[2] = mScale * 4.0 * (mInitial.C.Norm() - c.Norm());
     // - Joint 3 - cc/ccw movement
     uXY = up - vctDotProduct(up,normXY)*normXY;
     uXY.NormalizedSelf();
@@ -566,22 +566,12 @@ void mtsTeleOperationECM::RunEnabled(void)
     if (vctDotProduct(normXY, crossN) < 0) {
        changeJoints[3] = -changeJoints[3];
     }
-    
+
     goalJoints.Add(changeJoints);
     mECM->PositionJointSet.Goal().ForceAssign(goalJoints);
-    mECM->SetPositionJoint(mECM->PositionJointSet);
-
-if (counter%250 == 0)
-    std::cerr << CMN_LOG_DETAILS << std::endl
-              << "c: " << c << std::endl <<"mInitialC: "<< mInitial.C << std::endl
-              << "goal Joints: " << goalJoints <<std::endl
-                     << "change Joints: " << changeJoints << std::endl;
-//<< "new Joints: " << newJoints << std::endl;
-// else
-    // mECM->PositionJointInitial = mECM->StateJointDesired.Position();
+    mECM->SetPositionGoalJoint(mECM->PositionJointSet);
 
     counter++;
-
 }
 
 void mtsTeleOperationECM::TransitionEnabled(void)
