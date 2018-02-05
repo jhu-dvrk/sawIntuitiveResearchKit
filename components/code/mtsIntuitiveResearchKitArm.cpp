@@ -214,7 +214,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianGetLocalDesiredParam.SetReferenceFrame(GetName() + "_base");
     CartesianGetLocalDesiredParam.SetMovingFrame(GetName() + "_d");
     this->StateTable.AddData(CartesianGetLocalDesiredParam, "CartesianPositionLocalDesired");
-    
+
     this->StateTable.AddData(BaseFrame, "BaseFrame");
 
     CartesianVelocityGetParam.SetAutomaticTimestamp(false); // keep PID timestamp
@@ -658,6 +658,9 @@ void mtsIntuitiveResearchKitArm::RunAllStates(void)
 void mtsIntuitiveResearchKitArm::EnterUninitialized(void)
 {
     mFallbackState = "UNINITIALIZED";
+    if (NumberOfBrakes() > 0) {
+        RobotIO.BrakeEngage();
+    }
 
     RobotIO.UsePotsForSafetyCheck(false);
     RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
@@ -744,7 +747,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
     if (NumberOfBrakes() > 0) {
         RobotIO.BrakeEngage();
     }
-    
+
     mHomingTimer = currentTime;
     // make sure the PID is not sending currents
     PID.Enable(false);
