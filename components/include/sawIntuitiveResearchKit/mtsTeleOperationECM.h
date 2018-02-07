@@ -101,7 +101,6 @@ protected:
         mtsFunctionWrite SetGravityCompensation;
 
         prmPositionCartesianGet PositionCartesianCurrent;
-        // prmPositionCartesianGet PositionCartesianDesired;
         prmVelocityCartesianGet VelocityCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
     };
@@ -118,7 +117,6 @@ protected:
         mtsFunctionWrite SetDesiredState;
 
         prmPositionCartesianGet PositionCartesianCurrent;
-        vctVec PositionJointInitial;
         prmStateJoint StateJointDesired;
         prmPositionJointSet PositionJointSet;
     };
@@ -133,7 +131,7 @@ protected:
     mtsStateMachine mTeleopState;
     double mInStateTimer;
 
-    struct MTMsState {
+    struct TeleopState {
         double dLR; // distance
         vct3 C;     // center
         vct3 N;     // normal to image
@@ -144,6 +142,11 @@ protected:
         double w;   // width of image
         double d;   // depth of R along C, depth of L is opposite
         vctFrm3 Frame; // frame associated to MTMs
+        vctMatRot3 MTMLRot; //initial rotation of MTML
+        vctMatRot3 MTMRRot; //initial rotation of MTMR
+        vct3 MTMLAxis;
+        vct3 MTMRAxis;
+        vctVec ECMPositionJoint;        
     } mInitial;
 
     bool mIsFollowing;

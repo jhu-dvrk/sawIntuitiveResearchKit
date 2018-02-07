@@ -436,6 +436,13 @@ void mtsTeleOperationECM::EnterEnabled(void)
     mInitial.Frame.Rotation().Row(1).Assign(mInitial.Up);
     mInitial.Frame.Rotation().Row(2).Assign(vctCrossProduct(side, mInitial.Up));
 
+    // -6- store rotation matrix and axis for MTML and MTMR
+    mInitial.MTMLRot = mMTML->PositionCartesianCurrent.Position().Rotation(); 
+    mInitial.MTMRRot = mMTMR->PositionCartesianCurrent.Position().Rotation();
+    mInitial.MTMLAxis = mInitial.MTMLRot * normXZ;
+    mInitial.MTMRAxis = mInitial.MTMRRot * normXZ;
+   
+
 #if 1
     std::cerr << CMN_LOG_DETAILS << std::endl
               << "L: " << mMTML->PositionCartesianCurrent.Position().Translation() << std::endl
@@ -448,7 +455,7 @@ void mtsTeleOperationECM::EnterEnabled(void)
               << "Si: " << side << std::endl
               << "F:  " << std::endl << mInitial.Frame << std::endl;
 #endif
-    mECM->PositionJointInitial = mECM->StateJointDesired.Position();
+    mInitial.ECMPositionJoint = mECM->StateJointDesired.Position();
     // check if by any chance the clutch pedal is pressed
     if (mIsClutched) {
         Clutch(true);
@@ -497,6 +504,13 @@ void mtsTeleOperationECM::RunEnabled(void)
     goalR.AddProductOf(mInitial.w, side);
     goalR.AddProductOf(mInitial.d, directionC);
 
+    // -6- new frame associated to MTMs
+    vctFrm3 Frame;
+    Frame.Translation().Assign(c);
+    Frame.Rotation().Row(0).Assign(side);
+    Frame.Rotation().Row(1).Assign(up);
+    Frame.Rotation().Row(2).Assign(vctCrossProduct(side, up));
+
     // compute forces on L and R based on error in position
     vct3 forceFriction;
     vct3 force;
@@ -529,8 +543,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     mMTML->SetWrenchBody(wrenchL);
 
    // New ECM position
-    vctVec goal(mECM->PositionJointInitial);
-    vctVec goalJoints(mECM->PositionJointInitial);
+    vctVec goalJoints(mInitial.ECMPositionJoint);
 
     // New Joint positions
     vctVec changeJoints(4);
@@ -571,6 +584,30 @@ void mtsTeleOperationECM::RunEnabled(void)
     mECM->PositionJointSet.Goal().ForceAssign(goalJoints);
     mECM->SetPositionGoalJoint(mECM->PositionJointSet);
 
+    //Calculate new rotations of MTMs
+    vctMatRot3 currMTMLRot;
+    vctMatRot3 currMTMRRot;
+    vctMatRot3 currRot;
+
+    // Set ECM joint positions 
+
+
+    currRot = Frame.Rotation() * mInitial.Frame.Rotation().Inverse();
+    currMTMLRot = currRot * mInitial.MTMLRot;
+    currMTMRRot = currRot * mInitial.MTMRRot;
+
+    // set cartesian effort parameters
+    //mMTML->SetWrenchBodyOrientationAbsolute(true);
+    //mMTML->LockOrientation(currMTMLRot);
+    //mMTMR->SetWrenchBodyOrientationAbsolute(true);
+    //mMTMR->LockOrientation(currMTMRRot);
+
+    if( counter% 1000 == 0 ) {
+        std::cerr << CMN_LOG_DETAILS << std::endl
+              << "MTML Rot" <<  mMTML->PositionCartesianCurrent.Position().Rotation() << std::endl
+              << "MTMR Rot" <<  mMTMR->PositionCartesianCurrent.Position().Rotation() << std::endl
+              << "angle applied" << changeJoints[3] << std::endl;
+    }
     counter++;
 }
 
