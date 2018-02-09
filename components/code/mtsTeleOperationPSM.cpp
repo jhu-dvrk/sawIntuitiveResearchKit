@@ -540,9 +540,7 @@ void mtsTeleOperationPSM::RunEnabled(void)
         // follow mode
         if (!mIsClutched) {
             // compute master Cartesian motion
-            vctFrm4x4 masterCartesianMotion;
             vctFrm4x4 masterPosition(mMTM->PositionCartesianCurrent.Position());
-            masterCartesianMotion = mMTM->CartesianPrevious.Inverse() * masterPosition;
 
             // translation
             vct3 masterTranslation;
