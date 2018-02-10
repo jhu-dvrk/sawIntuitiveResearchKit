@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmStateJoint.h>
+#include <cisstParameterTypes/prmPositionJointSet.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstRobot/robManipulator.h>
@@ -52,10 +53,12 @@ public:
     inline mtsIntuitiveResearchKitSUJArmData(const std::string & name,
                                              const SujType type,
                                              const unsigned int plugNumber,
+                                             const bool isSimulated,
                                              mtsInterfaceProvided * interfaceProvided):
         mName(name),
         mType(type),
         mPlugNumber(plugNumber),
+        mIsSimulated(isSimulated),
         mStateTable(500, name),
         mStateTableConfiguration(100, name + "Configuration"),
         mStateTableBrakeCurrent(100, name + "BrakeCurrent")
@@ -148,6 +151,8 @@ public:
         mInterface = interfaceProvided;
         // read commands
         mInterface->AddCommandReadState(mStateTable, mStateJoint, "GetStateJoint");
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::SetPositionJoint,
+                                    this, "SetPositionJoint");
         mInterface->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0],
                                         "GetPrimaryJointOffset");
         mInterface->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[1],
@@ -211,6 +216,16 @@ public:
                 mInterface->SendStatus(mName.Data + ": SUJ not clutched");
             }
         }
+    }
+
+    inline void SetPositionJoint(const prmPositionJointSet & newPosition) {
+        if (!mIsSimulated) {
+            mInterface->SendWarning(mName.Data + ": SetPositionJoint can't be used unless the SUJs are in simulated mode");
+            return;
+        }
+        // save the desired position
+        mStateJoint.Position().Assign(newPosition.Goal());
+        mStateJoint.Timestamp() = newPosition.Timestamp();
     }
 
     inline void ClutchCommand(const bool & clutch) {
@@ -288,6 +303,9 @@ public:
     mtsStdString mSerialNumber;
     // plug on back of controller, 1 to 4
     unsigned int mPlugNumber;
+
+    // simulated or not
+    bool mIsSimulated;
 
     // interface provided
     mtsInterfaceProvided * mInterface;
@@ -373,6 +391,11 @@ mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicCons
 void mtsIntuitiveResearchKitSUJ::Init(void)
 {
     mSimulatedTimer = 0.0;
+
+    // initialize arm pointers
+    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        Arms[armIndex] = 0;
+    }
 
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
@@ -571,7 +594,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         unsigned int armIndex = plugNumber - 1;
 
         mtsInterfaceProvided * armInterface = this->AddInterfaceProvided(name);
-        arm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, armInterface);
+        arm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, mIsSimulated, armInterface);
         Arms[armIndex] = arm;
 
         // Robot State so GUI widget for each arm can set/get state
@@ -814,6 +837,12 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
 void mtsIntuitiveResearchKitSUJ::SetSimulated(void)
 {
     mIsSimulated = true;
+    // set all arms simulated
+    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        if (Arms[armIndex]) {
+            Arms[armIndex]->mIsSimulated = true;
+        }
+    }
     // in simulation mode, we don't need IOs
     RemoveInterfaceRequired("RobotIO");
     RemoveInterfaceRequired("NoMuxReset");
