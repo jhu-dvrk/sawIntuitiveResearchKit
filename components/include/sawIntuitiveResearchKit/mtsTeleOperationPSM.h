@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
@@ -103,6 +104,7 @@ protected:
         mtsFunctionWrite SetWrenchBody;
         mtsFunctionWrite SetGravityCompensation;
 
+        prmStateJoint StateGripper;
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianGet PositionCartesianDesired;
         prmPositionCartesianSet PositionCartesianSet;
@@ -114,12 +116,14 @@ protected:
     public:
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionWrite SetPositionCartesian;
+        mtsFunctionRead GetStateJaw;
         mtsFunctionWrite SetPositionJaw;
 
         mtsFunctionRead  GetCurrentState;
         mtsFunctionRead  GetDesiredState;
         mtsFunctionWrite SetDesiredState;
 
+        prmStateJoint StateJaw;
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
         prmPositionJointSet     PositionJointSet;
