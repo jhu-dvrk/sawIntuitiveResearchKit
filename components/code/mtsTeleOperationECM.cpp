@@ -420,15 +420,17 @@ void mtsTeleOperationECM::EnterEnabled(void)
     mInitial.d = 0.5 * vctDotProduct(mInitial.C.Normalized(), vectorLR);
 
     // projections
-    vct3 normXZ(0.0, 1.0, 0.0); vct3 normYZ(1.0, 0.0, 0.0); vct3 normXY(0.0, 0.0, 1.0);
+    static const vct3 normXZ(0.0, 1.0, 0.0);
+    static const vct3 normYZ(1.0, 0.0, 0.0);
+    static const vct3 normXY(0.0, 0.0, 1.0);
     mInitial.N.CrossProductOf(mInitial.Up, side);
     mInitial.N.NormalizedSelf();
-    mInitial.nXZ = mInitial.N - vctDotProduct(mInitial.N, normXZ)*normXZ;
-    mInitial.nXZ.NormalizedSelf();
-    mInitial.nYZ = mInitial.N - vctDotProduct(mInitial.N,normYZ)*normYZ;
-    mInitial.nYZ.NormalizedSelf();
-    mInitial.uXY = mInitial.Up - vctDotProduct(mInitial.Up,normXY)*normXY;
-    mInitial.uXY.NormalizedSelf();
+    mInitial.Lr.Assign(mInitial.C[0], 0, mInitial.C[2]);
+    mInitial.Lr.NormalizedSelf();
+    mInitial.Ud.Assign(0, mInitial.C[1], mInitial.C[2]);
+    mInitial.Ud.NormalizedSelf();
+    mInitial.Cw.Assign(mInitial.Up[0], mInitial.Up[1], 0);
+    mInitial.Cw.NormalizedSelf();
 
     // -5- compute MTMs frame
     mInitial.Frame.Translation().Assign(mInitial.C);
@@ -470,6 +472,7 @@ void mtsTeleOperationECM::RunEnabled(void)
         return;
     }
 
+    /* --- Forces on MTMs --- */
     const vct3 frictionForceCoeff(-10.0, -10.0, -40.0);
     const double distanceForceCoeff = 150.0;
     static int counter = 0;
@@ -542,67 +545,43 @@ void mtsTeleOperationECM::RunEnabled(void)
     // apply
     mMTML->SetWrenchBody(wrenchL);
 
-   // New ECM position
+    /* --- Joint Control --- */
+    static const vct3 normXZ(0.0, 1.0, 0.0);
+    static const vct3 normYZ(1.0, 0.0, 0.0);
+    static const vct3 normXY(0.0, 0.0, 1.0);
+    // Initial ECM joints
     vctVec goalJoints(mInitial.ECMPositionJoint);
-
-    // New Joint positions
+    // Change in directions and joints
     vctVec changeJoints(4);
-    vctVec changeDirPrev(4);
     vctVec changeDir(4);
-    vct3 normXZ(0.0, 1.0, 0.0);
-    vct3 normYZ(1.0, 0.0, 0.0);
-    vct3 normXY(0.0, 0.0, 1.0);
-    vct3 crossUp, crossN;
-    vct3 nXZ, nYZ, uXY;
+    vct3 crossN;  // normal to direction of motion
 
-    // - Joint 0 -left/right
-    nXZ = n - vctDotProduct(n, normXZ) * normXZ;
-    nXZ.NormalizedSelf();
-    changeDirPrev[0] = -acos(vctDotProduct(mInitial.nXZ, nXZ));
-    crossN = vctCrossProduct(mInitial.nXZ, nXZ);
-    if (vctDotProduct(normXZ, crossN) < 0) {
-       changeDirPrev[0] = -changeDirPrev[0];
-    }
-
-    //new Joint 0 
-    vct3 lrInit(mInitial.C[0], 0, mInitial.C[2]);
-    vct3  lrCurr(c[0], 0, c[2]);
-    lrInit.NormalizedSelf();
-    lrCurr.NormalizedSelf();
-    changeDir[0] = acos(vctDotProduct(lrInit, lrCurr));
-    crossN = vctCrossProduct(lrInit, lrCurr);
+    // - Direction 0 - left/right, movement in the XZ plane 
+    vct3  lr(c[0], 0, c[2]);
+    lr.NormalizedSelf();
+    changeDir[0] = acos(vctDotProduct(mInitial.Lr, lr));
+    crossN = vctCrossProduct(mInitial.Lr, lr);
     if (vctDotProduct(normXZ, crossN) < 0) {
         changeDir[0] = -changeDir[0];
     }
-    // - Joint 1 - up/down
-    nYZ = n - vctDotProduct(n, normYZ) * normYZ;
-    nYZ.NormalizedSelf();
-    changeDirPrev[1] = acos(vctDotProduct(mInitial.nYZ, nYZ));
-    crossN = vctCrossProduct(mInitial.nYZ, nYZ);
-    if (vctDotProduct(normYZ, crossN) < 0) {
-       changeDirPrev[1] = -changeDirPrev[1];
-    }
-
-    //new Joint 1
-    vct3 udInit(0, mInitial.C[1], mInitial.C[2]);
-    vct3  udCurr(0, c[1], c[2]);
-    udInit.NormalizedSelf();
-    udCurr.NormalizedSelf();
-    changeDir[1] = -acos(vctDotProduct(udInit, udCurr));
-    crossN = vctCrossProduct(udInit, udCurr);
+    
+    // - Direction 1 - up/down, movement in the YZ plane
+    vct3  ud(0, c[1], c[2]);
+    ud.NormalizedSelf();
+    changeDir[1] = -acos(vctDotProduct(mInitial.Ud, ud));
+    crossN = vctCrossProduct(mInitial.Ud, ud);
     if (vctDotProduct(normYZ, crossN) < 0) {
         changeDir[1] = -changeDir[1];
     }
    
-
-    
-    // - Joint 2 - in/out movement
+    // - Direction 2 - in/out
     changeDir[2] = mScale * 4.0 * (mInitial.C.Norm() - c.Norm());
-    // - Joint 3 - cc/ccw movement
-    uXY = up - vctDotProduct(up,normXY)*normXY;
-    uXY.NormalizedSelf();
-    changeDir[3] = acos(vctDotProduct(mInitial.uXY, uXY));
-    crossN = vctCrossProduct(mInitial.uXY, uXY);
+    
+    // - Direction 3 - cc/ccw, movement in the XY plane
+    vct3 cw(up[0], up[1], 0);
+    cw.NormalizedSelf();
+    changeDir[3] = acos(vctDotProduct(mInitial.Cw, cw));
+    crossN = vctCrossProduct(mInitial.Cw, cw);
     if (vctDotProduct(normXY, crossN) < 0) {
         changeDir[3] = -changeDir[3];
     }
@@ -612,17 +591,20 @@ void mtsTeleOperationECM::RunEnabled(void)
     changeJoints[0] = changeDir[0]*cos(totalChangeJoint3) - changeDir[1]*sin(totalChangeJoint3);
     changeJoints[1] = changeDir[1]*cos(totalChangeJoint3) + changeDir[0]*sin(totalChangeJoint3);
     changeJoints[2] = changeDir[2];
-    changeJoints[2] = 0;
     changeJoints[3] = changeDir[3];
 
     goalJoints.Add(changeJoints);
     mECM->PositionJointSet.Goal().ForceAssign(goalJoints);
     mECM->SetPositionGoalJoint(mECM->PositionJointSet);
 
+    /* --- Lock Orientation --- */
+
     //Calculate new rotations of MTMs
     vctMatRot3 currMTMLRot;
     vctMatRot3 currMTMRRot;
     vctMatRot3 currRot;
+    // Current ECM Rotation
+    
 
     // Set ECM joint positions 
 
@@ -641,9 +623,6 @@ void mtsTeleOperationECM::RunEnabled(void)
         std::cerr << CMN_LOG_DETAILS << std::endl
                   << "c initial : " << mInitial.C << std::endl
                   << "c :         " << c << std::endl
-                  << "change dir lr : " << changeDirPrev[0] << std::endl
-                  << "change dir ud : " << changeDirPrev[1] << std::endl
-                  << "change dir cc/cw: " << changeDir[3] << std::endl
                   << "joints:           " << changeJoints << std::endl;
     }
     counter++;

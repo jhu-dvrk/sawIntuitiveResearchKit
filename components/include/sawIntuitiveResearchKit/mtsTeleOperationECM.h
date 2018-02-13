@@ -136,9 +136,9 @@ protected:
         vct3 C;     // center
         vct3 N;     // normal to image
         vct3 Up;    // up direction
-        vct3 nXZ;   // projection of n to XZ plane
-        vct3 nYZ;   // projection of n to YZ plane
-        vct3 uXY;   // projection of u to XY plane
+        vct3 Lr;    // left/right movement, ie. c vector projected on the XZ plane
+        vct3 Ud;    // up/down movement, ie. c vector projected on the YZ plane
+        vct3 Cw;   // cw vector, ie. up vector projected on the XY plane
         double w;   // width of image
         double d;   // depth of R along C, depth of L is opposite
         vctFrm3 Frame; // frame associated to MTMs
