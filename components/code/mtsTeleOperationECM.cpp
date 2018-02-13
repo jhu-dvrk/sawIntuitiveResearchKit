@@ -190,7 +190,7 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
                                        mECM->GetPositionCartesian);
         interfaceRequired->AddFunction("GetStateJointDesired",
                                        mECM->GetStateJointDesired);
-        interfaceRequired->AddFunction("SetPositionGoalJoint",
+        interfaceRequired->AddFunction("SetPositionJoint",
                                        mECM->SetPositionGoalJoint);
         interfaceRequired->AddFunction("GetCurrentState",
                                        mECM->GetCurrentState);
@@ -547,6 +547,8 @@ void mtsTeleOperationECM::RunEnabled(void)
 
     // New Joint positions
     vctVec changeJoints(4);
+    vctVec changeDirPrev(4);
+    vctVec changeDir(4);
     vct3 normXZ(0.0, 1.0, 0.0);
     vct3 normYZ(1.0, 0.0, 0.0);
     vct3 normXY(0.0, 0.0, 1.0);
@@ -556,29 +558,62 @@ void mtsTeleOperationECM::RunEnabled(void)
     // - Joint 0 -left/right
     nXZ = n - vctDotProduct(n, normXZ) * normXZ;
     nXZ.NormalizedSelf();
-    changeJoints[0] = -acos(vctDotProduct(mInitial.nXZ, nXZ));
+    changeDirPrev[0] = -acos(vctDotProduct(mInitial.nXZ, nXZ));
     crossN = vctCrossProduct(mInitial.nXZ, nXZ);
     if (vctDotProduct(normXZ, crossN) < 0) {
-       changeJoints[0] = -changeJoints[0];
+       changeDirPrev[0] = -changeDirPrev[0];
+    }
+
+    //new Joint 0 
+    vct3 lrInit(mInitial.C[0], 0, mInitial.C[2]);
+    vct3  lrCurr(c[0], 0, c[2]);
+    lrInit.NormalizedSelf();
+    lrCurr.NormalizedSelf();
+    changeDir[0] = acos(vctDotProduct(lrInit, lrCurr));
+    crossN = vctCrossProduct(lrInit, lrCurr);
+    if (vctDotProduct(normXZ, crossN) < 0) {
+        changeDir[0] = -changeDir[0];
     }
     // - Joint 1 - up/down
     nYZ = n - vctDotProduct(n, normYZ) * normYZ;
     nYZ.NormalizedSelf();
-    changeJoints[1] = acos(vctDotProduct(mInitial.nYZ, nYZ));
+    changeDirPrev[1] = acos(vctDotProduct(mInitial.nYZ, nYZ));
     crossN = vctCrossProduct(mInitial.nYZ, nYZ);
     if (vctDotProduct(normYZ, crossN) < 0) {
-       changeJoints[1] = -changeJoints[1];
+       changeDirPrev[1] = -changeDirPrev[1];
     }
+
+    //new Joint 1
+    vct3 udInit(0, mInitial.C[1], mInitial.C[2]);
+    vct3  udCurr(0, c[1], c[2]);
+    udInit.NormalizedSelf();
+    udCurr.NormalizedSelf();
+    changeDir[1] = -acos(vctDotProduct(udInit, udCurr));
+    crossN = vctCrossProduct(udInit, udCurr);
+    if (vctDotProduct(normYZ, crossN) < 0) {
+        changeDir[1] = -changeDir[1];
+    }
+   
+
+    
     // - Joint 2 - in/out movement
-    changeJoints[2] = mScale * 4.0 * (mInitial.C.Norm() - c.Norm());
+    changeDir[2] = mScale * 4.0 * (mInitial.C.Norm() - c.Norm());
     // - Joint 3 - cc/ccw movement
     uXY = up - vctDotProduct(up,normXY)*normXY;
     uXY.NormalizedSelf();
-    changeJoints[3] = -acos(vctDotProduct(mInitial.uXY, uXY));
+    changeDir[3] = acos(vctDotProduct(mInitial.uXY, uXY));
     crossN = vctCrossProduct(mInitial.uXY, uXY);
     if (vctDotProduct(normXY, crossN) < 0) {
-       changeJoints[3] = -changeJoints[3];
+        changeDir[3] = -changeDir[3];
     }
+    
+    // adjusting movement for camera orientation
+    double totalChangeJoint3 = changeDir[3] + mInitial.ECMPositionJoint[3];
+    changeJoints[0] = changeDir[0]*cos(totalChangeJoint3) - changeDir[1]*sin(totalChangeJoint3);
+    changeJoints[1] = changeDir[1]*cos(totalChangeJoint3) + changeDir[0]*sin(totalChangeJoint3);
+    changeJoints[2] = changeDir[2];
+    changeJoints[2] = 0;
+    changeJoints[3] = changeDir[3];
 
     goalJoints.Add(changeJoints);
     mECM->PositionJointSet.Goal().ForceAssign(goalJoints);
@@ -592,21 +627,24 @@ void mtsTeleOperationECM::RunEnabled(void)
     // Set ECM joint positions 
 
 
-    currRot = Frame.Rotation() * mInitial.Frame.Rotation().Inverse();
-    currMTMLRot = currRot * mInitial.MTMLRot;
-    currMTMRRot = currRot * mInitial.MTMRRot;
+    currRot = mInitial.Frame.Rotation().Inverse()* Frame.Rotation();
+    currMTMLRot = mInitial.MTMLRot * currRot;
+    currMTMRRot = mInitial.MTMRRot * currRot;
 
     // set cartesian effort parameters
-    //mMTML->SetWrenchBodyOrientationAbsolute(true);
-    //mMTML->LockOrientation(currMTMLRot);
-    //mMTMR->SetWrenchBodyOrientationAbsolute(true);
-    //mMTMR->LockOrientation(currMTMRRot);
+    // mMTML->SetWrenchBodyOrientationAbsolute(true);
+    // mMTML->LockOrientation(currMTMLRot);
+    // mMTMR->SetWrenchBodyOrientationAbsolute(true);
+    // mMTMR->LockOrientation(currMTMRRot);
 
-    if( counter% 1000 == 0 ) {
+    if( counter% 500  == 0 ) {
         std::cerr << CMN_LOG_DETAILS << std::endl
-              << "MTML Rot" <<  mMTML->PositionCartesianCurrent.Position().Rotation() << std::endl
-              << "MTMR Rot" <<  mMTMR->PositionCartesianCurrent.Position().Rotation() << std::endl
-              << "angle applied" << changeJoints[3] << std::endl;
+                  << "c initial : " << mInitial.C << std::endl
+                  << "c :         " << c << std::endl
+                  << "change dir lr : " << changeDirPrev[0] << std::endl
+                  << "change dir ud : " << changeDirPrev[1] << std::endl
+                  << "change dir cc/cw: " << changeDir[3] << std::endl
+                  << "joints:           " << changeJoints << std::endl;
     }
     counter++;
 }
