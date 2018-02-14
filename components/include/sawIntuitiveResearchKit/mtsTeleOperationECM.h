@@ -141,12 +141,9 @@ protected:
         vct3 Cw;   // cw vector, ie. up vector projected on the XY plane
         double w;   // width of image
         double d;   // depth of R along C, depth of L is opposite
-        vctFrm3 Frame; // frame associated to MTMs
         vctMatRot3 MTMLRot; //initial rotation of MTML
         vctMatRot3 MTMRRot; //initial rotation of MTMR
-        vct3 MTMLAxis;
-        vct3 MTMRAxis;
-        vctVec ECMPositionJoint;        
+        vctVec ECMPositionJoint;   
     } mInitial;
 
     bool mIsFollowing;

@@ -432,17 +432,10 @@ void mtsTeleOperationECM::EnterEnabled(void)
     mInitial.Cw.Assign(mInitial.Up[0], mInitial.Up[1], 0);
     mInitial.Cw.NormalizedSelf();
 
-    // -5- compute MTMs frame
-    mInitial.Frame.Translation().Assign(mInitial.C);
-    mInitial.Frame.Rotation().Row(0).Assign(side);
-    mInitial.Frame.Rotation().Row(1).Assign(mInitial.Up);
-    mInitial.Frame.Rotation().Row(2).Assign(vctCrossProduct(side, mInitial.Up));
-
-    // -6- store rotation matrix and axis for MTML and MTMR
+    // -5- store current rotation matrix for MTML, MTMR, and ECM
     mInitial.MTMLRot = mMTML->PositionCartesianCurrent.Position().Rotation(); 
-    mInitial.MTMRRot = mMTMR->PositionCartesianCurrent.Position().Rotation();
-    mInitial.MTMLAxis = mInitial.MTMLRot * normXZ;
-    mInitial.MTMRAxis = mInitial.MTMRRot * normXZ;
+    mInitial.MTMRRot = mMTMR->PositionCartesianCurrent.Position().Rotation(); 
+    
    
 
 #if 1
@@ -454,8 +447,7 @@ void mtsTeleOperationECM::EnterEnabled(void)
               << "d:  " << mInitial.dLR << std::endl
               << "w:  " << mInitial.w << std::endl
               << "d:  " << mInitial.d << std::endl
-              << "Si: " << side << std::endl
-              << "F:  " << std::endl << mInitial.Frame << std::endl;
+              << "Si: " << side << std::endl;
 #endif
     mInitial.ECMPositionJoint = mECM->StateJointDesired.Position();
     // check if by any chance the clutch pedal is pressed
@@ -507,12 +499,6 @@ void mtsTeleOperationECM::RunEnabled(void)
     goalR.AddProductOf(mInitial.w, side);
     goalR.AddProductOf(mInitial.d, directionC);
 
-    // -6- new frame associated to MTMs
-    vctFrm3 Frame;
-    Frame.Translation().Assign(c);
-    Frame.Rotation().Row(0).Assign(side);
-    Frame.Rotation().Row(1).Assign(up);
-    Frame.Rotation().Row(2).Assign(vctCrossProduct(side, up));
 
     // compute forces on L and R based on error in position
     vct3 forceFriction;
@@ -559,7 +545,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     // - Direction 0 - left/right, movement in the XZ plane 
     vct3  lr(c[0], 0, c[2]);
     lr.NormalizedSelf();
-    changeDir[0] = acos(vctDotProduct(mInitial.Lr, lr));
+    changeDir[0] = -acos(vctDotProduct(mInitial.Lr, lr));
     crossN = vctCrossProduct(mInitial.Lr, lr);
     if (vctDotProduct(normXZ, crossN) < 0) {
         changeDir[0] = -changeDir[0];
@@ -568,7 +554,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     // - Direction 1 - up/down, movement in the YZ plane
     vct3  ud(0, c[1], c[2]);
     ud.NormalizedSelf();
-    changeDir[1] = -acos(vctDotProduct(mInitial.Ud, ud));
+    changeDir[1] = acos(vctDotProduct(mInitial.Ud, ud));
     crossN = vctCrossProduct(mInitial.Ud, ud);
     if (vctDotProduct(normYZ, crossN) < 0) {
         changeDir[1] = -changeDir[1];
@@ -580,7 +566,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     // - Direction 3 - cc/ccw, movement in the XY plane
     vct3 cw(up[0], up[1], 0);
     cw.NormalizedSelf();
-    changeDir[3] = acos(vctDotProduct(mInitial.Cw, cw));
+    changeDir[3] = -acos(vctDotProduct(mInitial.Cw, cw));
     crossN = vctCrossProduct(mInitial.Cw, cw);
     if (vctDotProduct(normXY, crossN) < 0) {
         changeDir[3] = -changeDir[3];
@@ -602,16 +588,16 @@ void mtsTeleOperationECM::RunEnabled(void)
     //Calculate new rotations of MTMs
     vctMatRot3 currMTMLRot;
     vctMatRot3 currMTMRRot;
-    vctMatRot3 currRot;
     // Current ECM Rotation
+    vctEulerZYXRotation3 eulerAngles;
+    vctMatrixRotation3<double> currECMRot;
+    eulerAngles.Assign(changeJoints[0], changeJoints[1], changeJoints[3]);
     
+    vctEulerToMatrixRotation3(eulerAngles, currECMRot);
 
     // Set ECM joint positions 
-
-
-    currRot = mInitial.Frame.Rotation().Inverse()* Frame.Rotation();
-    currMTMLRot = mInitial.MTMLRot * currRot;
-    currMTMRRot = mInitial.MTMRRot * currRot;
+    currMTMLRot = mInitial.MTMLRot * currECMRot;
+    currMTMRRot = mInitial.MTMRRot * currECMRot;
 
     // set cartesian effort parameters
     // mMTML->SetWrenchBodyOrientationAbsolute(true);
@@ -623,7 +609,8 @@ void mtsTeleOperationECM::RunEnabled(void)
         std::cerr << CMN_LOG_DETAILS << std::endl
                   << "c initial : " << mInitial.C << std::endl
                   << "c :         " << c << std::endl
-                  << "joints:           " << changeJoints << std::endl;
+                  << "joints:     " << changeJoints << std::endl
+                  <<"Rotation:    " << currECMRot << std::endl;
     }
     counter++;
 }
