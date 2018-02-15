@@ -1,5 +1,12 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
+    // transformation to match ISI convention (for read-only research
+    // API on commercial da Vinci), uses stereo display as origin
+    "base-offset" : [[ 1.0,   0.0,     0.0,            0.0],
+                     [  0.0,   -0.866025404,    0.5,            0.0],
+                     [  0.0,   -0.5,            -0.866025404,   0.0],
+                     [  0.0,  0.0,    0.0,      1.0]]
+    ,
     // see dVRK user guide
     "DH": {
         "links": [
