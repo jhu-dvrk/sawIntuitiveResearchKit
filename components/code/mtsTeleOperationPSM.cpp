@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -24,7 +24,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
-#include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -162,6 +161,7 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", mPSM->GetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", mPSM->SetPositionCartesian);
+        interfaceRequired->AddFunction("GetStateJaw", mPSM->GetStateJaw);
         interfaceRequired->AddFunction("SetPositionJaw", mPSM->SetPositionJaw);
         interfaceRequired->AddFunction("GetCurrentState", mPSM->GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState", mPSM->GetDesiredState);
@@ -495,14 +495,34 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
                                          desiredOrientation);
     mMTM->PositionCartesianCurrent.Position().Rotation().ApplyInverseTo(desiredOrientation, difference);
     vctAxAnRot3 axisAngle(difference, VCT_NORMALIZE);
-    const double angleInDegrees = axisAngle.Angle() * 180.0 / cmnPI;
-    if (angleInDegrees <= 5.0) {
+    const double orientationErrorInDegrees = axisAngle.Angle() * 180.0 / cmnPI;
+
+    // find difference between gripper (MTM) and jaw (PSM)
+    double gripperJawErrorInDegrees = 0.0;
+    if (mMTM->GetStateGripper.IsValid()) {
+        mMTM->GetStateGripper(mMTM->StateGripper);
+        mPSM->GetStateJaw(mPSM->StateJaw);
+        const double gripperInDegrees = cmn180_PI * mMTM->StateGripper.Position()[0];
+        const double jawInDegrees = cmn180_PI * mPSM->StateJaw.Position()[0];
+        // MTMs can't really open above 60 degrees so if both ends are above 55, just engage
+        if ((gripperInDegrees > 55) && (jawInDegrees > 55)) {
+            gripperJawErrorInDegrees = 0.0;
+        } else {
+            gripperJawErrorInDegrees = fabs(gripperInDegrees - jawInDegrees);
+        }
+    }
+
+    if (orientationErrorInDegrees <= 5.0 && gripperJawErrorInDegrees <= 5.0) {
         mTeleopState.SetCurrentState("ENABLED");
     } else {
         // check timer and issue a message
         if ((StateTable.GetTic() - mInStateTimer) > 2.0 * cmn_s) {
             std::stringstream message;
-            message << this->GetName() + ": unable to align master, current angle error is " << angleInDegrees;
+            if (orientationErrorInDegrees >= 5.0) {
+                message << this->GetName() + ": unable to align master, current angle error is " << orientationErrorInDegrees;
+            } else {
+                message << this->GetName() + ": unable to match gripper/jaw angle, current error is " << gripperJawErrorInDegrees;
+            }                
             mInterface->SendWarning(message.str());
             mInStateTimer = StateTable.GetTic();
         }
