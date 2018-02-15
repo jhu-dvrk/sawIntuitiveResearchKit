@@ -27,7 +27,7 @@
             "type": "MTM",
             "io": "sawRobotIO1394-MTMR-28247.xml",
             "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtm.json"
+            "kinematic": "mtmr.json"
         }
         ,
         {
@@ -35,7 +35,7 @@
             "type": "MTM",
             "io": "sawRobotIO1394-MTML-22723.xml",
             "pid": "sawControllersPID-MTML.xml",
-            "kinematic": "mtm.json"
+            "kinematic": "mtml.json"
         }
     ]
     ,
@@ -43,18 +43,12 @@
     [
         {
             "master": "MTMR",
-            "slave": "PSM1",
-            "rotation" : [[-1.0000,  0.0000,  0.0000],
-                          [ 0.0000, -1.0000,  0.0000],
-                          [ 0.0000,  0.0000,  1.0000]]
+            "slave": "PSM1"
         }
         ,
         {
             "master": "MTML",
-            "slave": "PSM2",
-            "rotation" : [[-1.0000,  0.0000,  0.0000],
-                          [ 0.0000, -1.0000,  0.0000],
-                          [ 0.0000,  0.0000,  1.0000]]
+            "slave": "PSM2"
         }
     ]
 }
