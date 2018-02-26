@@ -26,12 +26,11 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnUnits.h>
 #include <cisstCommon/cmnKbHit.h>
 #include <cisstCommon/cmnGetChar.h>
+#include <cisstCommon/cmnXMLPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstOSAbstraction/osaSleep.h>
-#include <sawRobotIO1394/osaConfiguration1394.h>
-#include <sawRobotIO1394/osaXML1394.h>
-#include <sawRobotIO1394/osaPort1394.h>
-#include <sawRobotIO1394/osaRobot1394.h>
+#include <sawRobotIO1394/mtsRobotIO1394.h>
+#include <sawRobotIO1394/mtsRobot1394.h>
 
 using namespace sawRobotIO1394;
 
@@ -71,24 +70,22 @@ int main(int argc, char * argv[])
     cmnGetChar();
 
     std::cout << "Loading config file ..." << std::endl;
-    osaPort1394Configuration config;
-    osaXML1394ConfigurePort(configFile, config);
+    mtsRobotIO1394 * port = new mtsRobotIO1394("io", 1.0 * cmn_ms, portNumber);
+    port->Configure(configFile);
 
     std::cout << "Creating robot ..." << std::endl;
-    if (config.Robots.size() == 0) {
+    int numberOfRobots;
+    port->GetNumberOfRobots(numberOfRobots);
+    if (numberOfRobots == 0) {
         std::cerr << "Error: the config file doesn't define a robot." << std::endl;
         return -1;
     }
-    if (config.Robots.size() != 1) {
+    if (numberOfRobots != 1) {
         std::cerr << "Error: the config file defines more than one robot." << std::endl;
         return -1;
     }
-    osaRobot1394 * robot = new osaRobot1394(config.Robots[0]);
+    mtsRobot1394 * robot = port->Robot(0);
     size_t numberOfActuators = robot->NumberOfActuators();
-
-    std::cout << "Creating port ..." << std::endl;
-    osaPort1394 * port = new osaPort1394(portNumber);
-    port->AddRobot(robot);
 
     // make sure we have at least one set of pots values
     try {
