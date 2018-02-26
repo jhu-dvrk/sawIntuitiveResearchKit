@@ -186,7 +186,7 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
     interfaceRequired = AddInterfaceRequired("ECM");
     if (interfaceRequired) {
         // ECM, use PID desired position to make sure there is no jump when engaging
-        interfaceRequired->AddFunction("GetPositionCartesian",
+        interfaceRequired->AddFunction("GetPositionCartesianLocalDesired",
                                        mECM->GetPositionCartesian);
         interfaceRequired->AddFunction("GetStateJointDesired",
                                        mECM->GetStateJointDesired);
@@ -420,9 +420,6 @@ void mtsTeleOperationECM::EnterEnabled(void)
     mInitial.d = 0.5 * vctDotProduct(mInitial.C.Normalized(), vectorLR);
 
     // projections
-    static const vct3 normXZ(0.0, 1.0, 0.0);
-    static const vct3 normYZ(1.0, 0.0, 0.0);
-    static const vct3 normXY(0.0, 0.0, 1.0);
     mInitial.N.CrossProductOf(mInitial.Up, side);
     mInitial.N.NormalizedSelf();
     mInitial.Lr.Assign(mInitial.C[0], 0, mInitial.C[2]);
@@ -432,11 +429,16 @@ void mtsTeleOperationECM::EnterEnabled(void)
     mInitial.Cw.Assign(mInitial.Up[0], mInitial.Up[1], 0);
     mInitial.Cw.NormalizedSelf();
 
+    mInitial.ECMPositionJoint = mECM->StateJointDesired.Position();
+
     // -5- store current rotation matrix for MTML, MTMR, and ECM
+    vctEulerZYXRotation3 eulerAngles;
+    eulerAngles.Assign(mInitial.ECMPositionJoint[3], mInitial.ECMPositionJoint[0], mInitial.ECMPositionJoint[1]);
+    vctEulerToMatrixRotation3(eulerAngles, mInitial.ECMRotEuler);
+
     mInitial.MTMLRot = mMTML->PositionCartesianCurrent.Position().Rotation(); 
     mInitial.MTMRRot = mMTMR->PositionCartesianCurrent.Position().Rotation(); 
-    
-   
+    mInitial.ECMRot = mECM->PositionCartesianCurrent.Position().Rotation();
 
 #if 1
     std::cerr << CMN_LOG_DETAILS << std::endl
@@ -447,7 +449,13 @@ void mtsTeleOperationECM::EnterEnabled(void)
               << "d:  " << mInitial.dLR << std::endl
               << "w:  " << mInitial.w << std::endl
               << "d:  " << mInitial.d << std::endl
-              << "Si: " << side << std::endl;
+              << "Si: " << side << std::endl
+              << "ECM Rotation Euler:    " << std::endl << mInitial.ECMRotEuler << std::endl
+              << "ECM Rotation Position: " << std::endl << mInitial.ECMRot << std::endl
+              << "ECM Joints:            " << std::endl << mInitial.ECMPositionJoint << std::endl
+              << "Euler angle alpha from rotation:   " << eulerAngles.alpha() << std::endl
+              << "Euler angles beta from rotation:   " << eulerAngles.beta() << std::endl
+              << "Euler angles gamma from rotation:  " << eulerAngles.gamma() << std::endl;
 #endif
     mInitial.ECMPositionJoint = mECM->StateJointDesired.Position();
     // check if by any chance the clutch pedal is pressed
@@ -589,15 +597,19 @@ void mtsTeleOperationECM::RunEnabled(void)
     vctMatRot3 currMTMLRot;
     vctMatRot3 currMTMRRot;
     // Current ECM Rotation
-    vctEulerZYXRotation3 eulerAngles;
+    vctEulerZYXRotation3 finalEulerAngles;
     vctMatrixRotation3<double> currECMRot;
-    eulerAngles.Assign(changeJoints[0], changeJoints[1], changeJoints[3]);
-    
-    vctEulerToMatrixRotation3(eulerAngles, currECMRot);
+    vctMatrixRotation3<double> finalECMRot;
+   
+    finalEulerAngles.Assign(goalJoints[3], goalJoints[0], goalJoints[1]);
+    vctEulerToMatrixRotation3(finalEulerAngles, finalECMRot);
+    currECMRot = finalECMRot * mInitial.ECMRotEuler.Inverse();
 
-    // Set ECM joint positions 
-    currMTMLRot = mInitial.MTMLRot * currECMRot;
-    currMTMRRot = mInitial.MTMRRot * currECMRot;
+    
+
+    // Set MTM Orientation
+    currMTMLRot = currECMRot.Inverse() * mInitial.MTMLRot;
+    currMTMRRot = currECMRot.Inverse() * mInitial.MTMRRot;
 
     // set cartesian effort parameters
     // mMTML->SetWrenchBodyOrientationAbsolute(true);
