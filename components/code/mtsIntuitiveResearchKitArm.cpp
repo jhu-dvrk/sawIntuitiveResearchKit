@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -1364,6 +1364,8 @@ void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianSet & ne
     if (newBaseFrame.Valid()) {
         this->BaseFrame.FromNormalized(newBaseFrame.Goal());
         this->BaseFrameValid = true;
+        this->CartesianGetParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
+        this->CartesianGetDesiredParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
     } else {
         this->BaseFrameValid = false;
     }

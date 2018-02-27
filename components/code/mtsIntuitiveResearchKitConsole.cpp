@@ -98,22 +98,24 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     switch (armType) {
     case ARM_MTM:
         {
-            mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
+            mtsIntuitiveResearchKitMTM * mtm = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
             if (mSimulation == SIMULATION_KINEMATIC) {
-                master->SetSimulated();
+                mtm->SetSimulated();
             }
-            master->Configure(mArmConfigurationFile);
-            componentManager->AddComponent(master);
+            mtm->Configure(mArmConfigurationFile);
+            SetBaseFrameIfNeeded(mtm);
+            componentManager->AddComponent(mtm);
         }
         break;
     case ARM_PSM:
         {
-            mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
+            mtsIntuitiveResearchKitPSM * psm = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
             if (mSimulation == SIMULATION_KINEMATIC) {
-                slave->SetSimulated();
+                psm->SetSimulated();
             }
-            slave->Configure(mArmConfigurationFile);
-            componentManager->AddComponent(slave);
+            psm->Configure(mArmConfigurationFile);
+            SetBaseFrameIfNeeded(psm);
+            componentManager->AddComponent(psm);
 
             if (mSocketServer) {
                 mtsSocketServerPSM *serverPSM = new mtsSocketServerPSM(SocketComponentName(), periodInSeconds, mIp, mPort);
@@ -136,6 +138,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                 ecm->SetSimulated();
             }
             ecm->Configure(mArmConfigurationFile);
+            SetBaseFrameIfNeeded(ecm);
             componentManager->AddComponent(ecm);
         }
         break;
@@ -154,12 +157,13 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             mtsComponent * component;
             component = componentManager->GetComponent(Name());
             if (component) {
-                mtsIntuitiveResearchKitMTM * master = dynamic_cast<mtsIntuitiveResearchKitMTM *>(component);
-                if (master) {
+                mtsIntuitiveResearchKitMTM * mtm = dynamic_cast<mtsIntuitiveResearchKitMTM *>(component);
+                if (mtm) {
                     if (mSimulation == SIMULATION_KINEMATIC) {
-                        master->SetSimulated();
+                        mtm->SetSimulated();
                     }
-                    master->Configure(mArmConfigurationFile);
+                    mtm->Configure(mArmConfigurationFile);
+                    SetBaseFrameIfNeeded(mtm);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
                                        << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitMTM."
@@ -177,12 +181,13 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             mtsComponent * component;
             component = componentManager->GetComponent(Name());
             if (component) {
-                mtsIntuitiveResearchKitPSM * slave = dynamic_cast<mtsIntuitiveResearchKitPSM *>(component);
-                if (slave) {
+                mtsIntuitiveResearchKitPSM * psm = dynamic_cast<mtsIntuitiveResearchKitPSM *>(component);
+                if (psm) {
                     if (mSimulation == SIMULATION_KINEMATIC) {
-                        slave->SetSimulated();
+                        psm->SetSimulated();
                     }
-                    slave->Configure(mArmConfigurationFile);
+                    psm->Configure(mArmConfigurationFile);
+                    SetBaseFrameIfNeeded(psm);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
                                        << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitPSM."
@@ -206,6 +211,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                         ecm->SetSimulated();
                     }
                     ecm->Configure(mArmConfigurationFile);
+                    SetBaseFrameIfNeeded(ecm);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
                                        << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitECM."
@@ -221,6 +227,13 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
 
     default:
         break;
+    }
+}
+
+void mtsIntuitiveResearchKitConsole::Arm::SetBaseFrameIfNeeded(mtsIntuitiveResearchKitArm * armPointer)
+{
+    if (mBaseFrame.ReferenceFrame() != "") {
+        armPointer->SetBaseFrame(mBaseFrame);
     }
 }
 
@@ -297,13 +310,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
             componentManager->Connect(Name(), "RobotIO",
                                       IOComponentName(), Name());
         }
-    }
-    if ((mType == ARM_PSM) ||
-        (mType == ARM_PSM_DERIVED) ||
-        (mType == ARM_MTM) ||
-        (mType == ARM_MTM_DERIVED) ||
-        (mType == ARM_ECM) ||
-        (mType == ARM_ECM_DERIVED)) {
+        // Connect PID and BaseFrame if needed
         componentManager->Connect(Name(), "PID",
                                   PIDComponentName(), "Controller");
         if ((mBaseFrameComponentName != "") && (mBaseFrameInterfaceName != "")) {
@@ -1307,13 +1314,28 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         }
         jsonValue = jsonArm["base-frame"];
         if (!jsonValue.empty()) {
-            armPointer->mBaseFrameComponentName = jsonValue.get("component", "").asString();
-            armPointer->mBaseFrameInterfaceName = jsonValue.get("interface", "").asString();
-            if ((armPointer->mBaseFrameComponentName == "")
-                || (armPointer->mBaseFrameInterfaceName == "")) {
-                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: both \"component\" and \"interface\" must be provided with \"base-frame\" for arm \""
-                                         << armName << "\"" << std::endl;
-                return false;
+            Json::Value fixedJson = jsonValue["transform"];
+            if (!fixedJson.empty()) {
+                std::string reference = jsonValue["reference-frame"].asString();
+                if (reference.empty()) {
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: both \"transform\" (4x4) and \"reference-frame\" (name) must be provided with \"base-frame\" for arm \""
+                                             << armName << "\"" << std::endl;
+                    return false;
+                }
+                vctFrm4x4 frame;
+                cmnDataJSON<vctFrm4x4>::DeSerializeText(frame, fixedJson);
+                armPointer->mBaseFrame.Goal().From(frame);
+                armPointer->mBaseFrame.ReferenceFrame() = reference;
+                armPointer->mBaseFrame.Valid() = true;
+            } else {
+                armPointer->mBaseFrameComponentName = jsonValue.get("component", "").asString();
+                armPointer->mBaseFrameInterfaceName = jsonValue.get("interface", "").asString();
+                if ((armPointer->mBaseFrameComponentName == "")
+                    || (armPointer->mBaseFrameInterfaceName == "")) {
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: both \"component\" and \"interface\" OR \"transform\" (4x4) and \"reference-frame\" (name) must be provided with \"base-frame\" for arm \""
+                                             << armName << "\"" << std::endl;
+                    return false;
+                }
             }
         }
     }

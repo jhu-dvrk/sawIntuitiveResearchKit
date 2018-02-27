@@ -11,7 +11,14 @@
             "type": "PSM",
             "io": "sawRobotIO1394-PSM1-28007.xml",
             "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json"
+            "kinematic": "psm-large-needle-driver.json",
+            "base-frame": {
+                "reference-frame": "ECM",
+                "transform": [[  1.0,  0.0,          0.0,         -0.20],
+                              [  0.0, -0.866025404,  0.5,          0.0 ],
+                              [  0.0, -0.5,         -0.866025404,  0.0 ],
+                              [  0.0,  0.0,          0.0,          1.0 ]]
+            }
         }
         ,
         {
@@ -19,7 +26,14 @@
             "type": "PSM",
             "io": "sawRobotIO1394-PSM2-27374.xml",
             "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json"
+            "kinematic": "psm-large-needle-driver.json",
+            "base-frame": {
+                "reference-frame": "ECM",
+                "transform": [[  1.0,  0.0,          0.0,          0.20],
+                              [  0.0, -0.866025404,  0.5,          0.0 ],
+                              [  0.0, -0.5,         -0.866025404,  0.0 ],
+                              [  0.0,  0.0,          0.0,          1.0 ]]
+            }
         }
         ,
         {
@@ -27,7 +41,14 @@
             "type": "MTM",
             "io": "sawRobotIO1394-MTMR-28247.xml",
             "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtm.json"
+            "kinematic": "mtm.json",
+            "base-frame": {
+                "reference-frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,         -0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
+            }
         }
         ,
         {
@@ -35,7 +56,14 @@
             "type": "MTM",
             "io": "sawRobotIO1394-MTML-22723.xml",
             "pid": "sawControllersPID-MTML.xml",
-            "kinematic": "mtm.json"
+            "kinematic": "mtm.json",
+            "base-frame": {
+                "reference-frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,          0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
+            }
         }
     ]
     ,
@@ -43,18 +71,12 @@
     [
         {
             "master": "MTMR",
-            "slave": "PSM1",
-            "rotation" : [[-1.0000,  0.0000,  0.0000],
-                          [ 0.0000, -1.0000,  0.0000],
-                          [ 0.0000,  0.0000,  1.0000]]
+            "slave": "PSM1"
         }
         ,
         {
             "master": "MTML",
-            "slave": "PSM2",
-            "rotation" : [[-1.0000,  0.0000,  0.0000],
-                          [ 0.0000, -1.0000,  0.0000],
-                          [ 0.0000,  0.0000,  1.0000]]
+            "slave": "PSM2"
         }
     ]
 }

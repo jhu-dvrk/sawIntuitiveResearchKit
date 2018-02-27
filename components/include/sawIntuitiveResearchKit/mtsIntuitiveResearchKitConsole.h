@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsTaskFromSignal.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmPositionCartesianSet.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -33,6 +34,7 @@ namespace dvrk {
 }
 
 class mtsDaVinciHeadSensor;
+class mtsIntuitiveResearchKitArm;
 
 class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 {
@@ -71,6 +73,10 @@ public:
         void ConfigureArm(const ArmType armType,
                           const std::string & configFile,
                           const double & periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
+
+        /*! Check if mBaseFrame has a valid name and if it does
+          SetBaseFrame on the arm. */
+        void SetBaseFrameIfNeeded(mtsIntuitiveResearchKitArm * armPointer);
 
         /*! Connect all interfaces specific to this arm. */
         bool Connect(void);
@@ -111,6 +117,8 @@ public:
         std::string mConstructorArgJSON;
 
         // base frame
+        // (name and frame) OR (component and interface)
+        prmPositionCartesianSet mBaseFrame;
         std::string mBaseFrameComponentName;
         std::string mBaseFrameInterfaceName;
 
