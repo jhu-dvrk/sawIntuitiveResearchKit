@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -515,8 +515,9 @@ void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
         mEffortOrientationLocked = true;
         SetControlEffortActiveJoints();
     }
-    // in any case, update desired orientation
-    mEffortOrientation.Assign(orientation);
+    // in any case, update desired orientation in local coordinate system
+    // mEffortOrientation.Assign(BaseFrame.Rotation().Inverse() * orientation);
+    BaseFrame.Rotation().ApplyInverseTo(orientation, mEffortOrientation);
     mEffortOrientationJoint.Assign(JointsPID.Position());
 }
 
