@@ -143,7 +143,10 @@ protected:
         double d;   // depth of R along C, depth of L is opposite
         vctMatRot3 MTMLRot; //initial rotation of MTML
         vctMatRot3 MTMRRot; //initial rotation of MTMR
-        vctVec ECMPositionJoint;   
+        vctMatRot3 ECMRot; //initial rotation of ECM
+        vctMatrixRotation3<double> ECMRotEuler; //initial rotation of ECM frame calculated using Euler angles
+        
+        vctVec ECMPositionJoint;
     } mInitial;
 
     bool mIsFollowing;
