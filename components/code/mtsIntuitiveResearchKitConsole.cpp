@@ -437,8 +437,8 @@ mtsIntuitiveResearchKitConsole::TeleopPSM::TeleopPSM(const std::string & name,
 }
 
 void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMType type,
-                                                                const vctMatRot3 & orientation,
-                                                                const double & periodInSeconds)
+                                                                const double & periodInSeconds,
+                                                                const Json::Value & jsonConfig)
 {
     mType = type;
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
@@ -447,8 +447,7 @@ void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMT
     case TELEOP_PSM:
         {
             mtsTeleOperationPSM * teleop = new mtsTeleOperationPSM(mName, periodInSeconds);
-            teleop->Configure();
-            teleop->SetRegistrationRotation(orientation);
+            teleop->Configure(jsonConfig);
             componentManager->AddComponent(teleop);
         }
         break;
@@ -459,7 +458,7 @@ void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMT
             if (component) {
                 mtsTeleOperationPSM * teleop = dynamic_cast<mtsTeleOperationPSM *>(component);
                 if (teleop) {
-                    teleop->SetRegistrationRotation(orientation);
+                    teleop->Configure(jsonConfig);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureTeleop: component \""
                                        << Name() << "\" doesn't seem to be derived from mtsTeleOperationPSM."
@@ -1562,20 +1561,20 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         teleopPointer->mType = TeleopPSM::TELEOP_PSM;
     }
 
-    // read orientation if present
-    vctMatRot3 orientation; // identity by default
-    jsonValue = jsonTeleop["rotation"];
-    if (!jsonValue.empty()) {
-        cmnDataJSON<vctMatRot3>::DeSerializeText(orientation, jsonTeleop["rotation"]);
-    }
-
     // read period if present
     double period = mtsIntuitiveResearchKit::TeleopPeriod;
     jsonValue = jsonTeleop["period"];
     if (!jsonValue.empty()) {
         period = jsonValue.asFloat();
     }
-    teleopPointer->ConfigureTeleop(teleopPointer->mType, orientation, period);
+    // for backward compatibility, send warning
+    jsonValue = jsonTeleop["rotation"];
+    if (!jsonValue.empty()) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: teleop " << name << ": \"rotation\" must now be defined under \"configure-parameter\" or in a separate configuration file" << std::endl;
+        return false;
+    }
+    const Json::Value jsonTeleopConfig = jsonTeleop["configure-parameter"];
+    teleopPointer->ConfigureTeleop(teleopPointer->mType, period, jsonTeleopConfig);
     AddTeleopPSMInterfaces(teleopPointer);
     return true;
 }
@@ -1641,7 +1640,6 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
                                  << arm->Name() << "\"" << std::endl;
         return false;
     }
-
     return true;
 }
 

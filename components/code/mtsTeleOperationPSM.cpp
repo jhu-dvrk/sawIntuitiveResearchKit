@@ -64,10 +64,7 @@ void mtsTeleOperationPSM::Init(void)
     if (!mPSM) {
         mPSM = new RobotPSM;
     }
-}
 
-void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
-{
     // configure state machine
     mTeleopState.AddState("SETTING_ARMS_STATE");
     mTeleopState.AddState("ALIGNING_MTM");
@@ -226,9 +223,33 @@ void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
     }
 }
 
+void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
+{
+}
+
+void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
+{
+    Json::Value jsonValue;
+
+    // read scale if present
+    jsonValue = jsonConfig["scale"];
+    if (!jsonValue.empty()) {
+        mScale = jsonValue.asDouble();
+    }
+
+    // read orientation if present
+    jsonValue = jsonConfig["rotation"];
+    if (!jsonValue.empty()) {
+        vctMatRot3 orientation; // identity by default
+        cmnDataJSON<vctMatRot3>::DeSerializeText(orientation, jsonConfig["rotation"]);
+        SetRegistrationRotation(orientation);
+    }
+}
+
 void mtsTeleOperationPSM::Startup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
+    SetScale(mScale);
     SetFollowing(false);
 }
 
@@ -450,6 +471,9 @@ void mtsTeleOperationPSM::TransitionSettingArmsState(void)
 
 void mtsTeleOperationPSM::EnterAligningMTM(void)
 {
+    // update user GUI re. scale 
+    ConfigurationEvents.Scale(mScale);
+
     // reset timer
     mInStateTimer = StateTable.GetTic();
     mTimeSinceLastAlign = 0.0;
@@ -522,7 +546,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
                 message << this->GetName() + ": unable to align master, current angle error is " << orientationErrorInDegrees;
             } else {
                 message << this->GetName() + ": unable to match gripper/jaw angle, current error is " << gripperJawErrorInDegrees;
-            }                
+            }
             mInterface->SendWarning(message.str());
             mInStateTimer = StateTable.GetTic();
         }

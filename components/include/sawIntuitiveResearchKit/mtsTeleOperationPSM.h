@@ -41,6 +41,7 @@ public:
     ~mtsTeleOperationPSM();
 
     void Configure(const std::string & filename = "");
+    virtual void Configure(const Json::Value & jsonConfig);
     void Startup(void);
     void Run(void);
     void Cleanup(void);
