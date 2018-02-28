@@ -154,7 +154,10 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mGravityCompensation = false;
     mCartesianImpedance = false;
 
-    mHasNewPIDGoal = false;
+    mHasNewPIDGoalOrIncrement = false;
+    mJointIncrement.SetSize(NumberOfJoints());
+    mJointIncrement.Zeros();
+
     mEffortOrientationLocked = false;
 
     mSafeForCartesianControlCounter = 0;
@@ -214,7 +217,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianGetLocalDesiredParam.SetReferenceFrame(GetName() + "_base");
     CartesianGetLocalDesiredParam.SetMovingFrame(GetName() + "_d");
     this->StateTable.AddData(CartesianGetLocalDesiredParam, "CartesianPositionLocalDesired");
-    
+
     this->StateTable.AddData(BaseFrame, "BaseFrame");
 
     CartesianVelocityGetParam.SetAutomaticTimestamp(false); // keep PID timestamp
@@ -308,10 +311,14 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                        this, "Freeze");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionJoint,
                                         this, "SetPositionJoint");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionIncrementJoint,
+                                        this, "SetPositionIncrementJoint");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalJoint,
                                         this, "SetPositionGoalJoint");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionCartesian,
                                         this, "SetPositionCartesian");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionIncrementCartesian,
+                                        this, "SetPositionIncrementCartesian");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalCartesian,
                                         this, "SetPositionGoalCartesian");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetEffortJoint,
@@ -744,7 +751,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
     if (NumberOfBrakes() > 0) {
         RobotIO.BrakeEngage();
     }
-    
+
     mHomingTimer = currentTime;
     // make sure the PID is not sending currents
     PID.Enable(false);
@@ -936,10 +943,22 @@ void mtsIntuitiveResearchKitArm::RunReady(void)
 
 void mtsIntuitiveResearchKitArm::ControlPositionJoint(void)
 {
-    if (mHasNewPIDGoal) {
+    if (mHasNewPIDGoalOrIncrement) {
         SetPositionJointLocal(JointSet);
         // reset flag
-        mHasNewPIDGoal = false;
+        mHasNewPIDGoalOrIncrement = false;
+    }
+}
+
+void mtsIntuitiveResearchKitArm::ControlPositionIncrementJoint(void)
+{
+    if (mHasNewPIDGoalOrIncrement) {
+
+        std::cerr << CMN_LOG_DETAILS << " --------- tbd" << std::endl;
+
+        // reset flag
+        mJointIncrement.Zeros();
+        mHasNewPIDGoalOrIncrement = false;
     }
 }
 
@@ -979,7 +998,7 @@ void mtsIntuitiveResearchKitArm::ControlPositionGoalJoint(void)
 
 void mtsIntuitiveResearchKitArm::ControlPositionCartesian(void)
 {
-    if (mHasNewPIDGoal) {
+    if (mHasNewPIDGoalOrIncrement) {
         // copy current position
         vctDoubleVec jointSet(JointsKinematics.Position());
 
@@ -992,7 +1011,19 @@ void mtsIntuitiveResearchKitArm::ControlPositionCartesian(void)
             RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
         }
         // reset flag
-        mHasNewPIDGoal = false;
+        mHasNewPIDGoalOrIncrement = false;
+    }
+}
+
+void mtsIntuitiveResearchKitArm::ControlPositionIncrementCartesian(void)
+{
+    if (mHasNewPIDGoalOrIncrement) {
+
+        std::cerr << CMN_LOG_DETAILS << " --------- tbd" << std::endl;
+
+        // reset flag
+        mCartesianIncrement = vctFrm3::Identity();
+        mHasNewPIDGoalOrIncrement = false;
     }
 }
 
@@ -1067,9 +1098,13 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
 
         switch (mode) {
         case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
+        case mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE:
             // configure PID
             PID.EnableTrackingError(UsePIDTrackingError());
             PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), false));
+            mHasNewPIDGoalOrIncrement = false;
+            mCartesianIncrement = vctFrm3::Identity();
+            mJointIncrement.Zeros();
             mEffortOrientationLocked = false;
             break;
         case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
@@ -1079,7 +1114,8 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             mEffortOrientationLocked = false;
             // initialize trajectory
             JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
-            if (mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
+            if ((mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)
+                || (mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE)) {
                 JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
             } else {
                 JointVelocitySet.SetSize(NumberOfJoints());
@@ -1113,6 +1149,18 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             break;
         case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionCartesian, this);
+            break;
+        default:
+            break;
+        }
+        break;
+    case mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE:
+        switch (mControlSpace) {
+        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+            SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionIncrementJoint, this);
+            break;
+        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
+            SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionIncrementCartesian, this);
             break;
         default:
             break;
@@ -1270,7 +1318,7 @@ void mtsIntuitiveResearchKitArm::Freeze(void)
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     JointSet.Assign(JointsDesiredKinematics.Position(), NumberOfJointsKinematics());
-    mHasNewPIDGoal = true;
+    mHasNewPIDGoalOrIncrement = true;
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & newPosition)
@@ -1284,7 +1332,21 @@ void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & ne
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     JointSet.Assign(newPosition.Goal(), NumberOfJointsKinematics());
-    mHasNewPIDGoal = true;
+    mHasNewPIDGoalOrIncrement = true;
+}
+
+void mtsIntuitiveResearchKitArm::SetPositionIncrementJoint(const prmPositionJointSet & increment)
+{
+    if (!ArmIsReady("SetPositionCartesian", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+        return;
+    }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE);
+    // set goal
+    mJointIncrement.Add(increment.Goal());
+    mHasNewPIDGoalOrIncrement = true;
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet & newPosition)
@@ -1315,7 +1377,21 @@ void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesian
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     CartesianSetParam = newPosition;
-    mHasNewPIDGoal = true;
+    mHasNewPIDGoalOrIncrement = true;
+}
+
+void mtsIntuitiveResearchKitArm::SetPositionIncrementCartesian(const prmPositionCartesianSet & increment)
+{
+    if (!ArmIsReady("SetPositionCartesian", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+        return;
+    }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE);
+    // set goal
+    mCartesianIncrement = mCartesianIncrement * increment.Goal();
+    mHasNewPIDGoalOrIncrement = true;
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition)

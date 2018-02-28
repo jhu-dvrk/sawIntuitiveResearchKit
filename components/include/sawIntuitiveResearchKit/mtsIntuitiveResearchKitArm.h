@@ -135,8 +135,10 @@ public:
     /*! Methods used for commands */
     virtual void Freeze(void);
     virtual void SetPositionJoint(const prmPositionJointSet & newPosition);
+    virtual void SetPositionIncrementJoint(const prmPositionJointSet & increment);
     virtual void SetPositionGoalJoint(const prmPositionJointSet & newPosition);
     virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
+    virtual void SetPositionIncrementCartesian(const prmPositionCartesianSet & increment);
     virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
     virtual void SetEffortJoint(const prmForceTorqueJointSet & newEffort);
     virtual void SetWrenchSpatial(const prmForceCartesianSet & newForce);
@@ -237,9 +239,11 @@ public:
 
     robManipulator * Manipulator;
 
-    // Cache cartesian goal position
+    // cache cartesian goal position and increment
+    bool mHasNewPIDGoalOrIncrement;
     prmPositionCartesianSet CartesianSetParam;
-    bool mHasNewPIDGoal;
+    vctDoubleVec mJointIncrement;
+    vctFrm3 mCartesianIncrement;
 
     // internal kinematics
     prmPositionCartesianGet CartesianGetLocalParam;
@@ -350,8 +354,10 @@ public:
     mtsCallableVoidBase * mControlCallback;
 
     virtual void ControlPositionJoint(void);
+    virtual void ControlPositionIncrementJoint(void);
     virtual void ControlPositionGoalJoint(void);
     virtual void ControlPositionCartesian(void);
+    virtual void ControlPositionIncrementCartesian(void);
     virtual void ControlPositionGoalCartesian(void);
     virtual void ControlEffortJoint(void);
     virtual void ControlEffortCartesian(void);
