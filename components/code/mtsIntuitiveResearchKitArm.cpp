@@ -1429,7 +1429,6 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
 void mtsIntuitiveResearchKitArm::SetBaseFrameEventHandler(const prmPositionCartesianGet & newBaseFrame)
 {
     if (newBaseFrame.Valid()) {
-        this->Manipulator->Rtw0 = vctFrm4x4::Identity();
         this->BaseFrame.FromNormalized(newBaseFrame.Position());
         this->BaseFrameValid = true;
         this->CartesianGetParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
@@ -1442,7 +1441,6 @@ void mtsIntuitiveResearchKitArm::SetBaseFrameEventHandler(const prmPositionCarte
 void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianSet & newBaseFrame)
 {
     if (newBaseFrame.Valid()) {
-        this->Manipulator->Rtw0 = vctFrm4x4::Identity();
         this->BaseFrame.FromNormalized(newBaseFrame.Goal());
         this->BaseFrameValid = true;
         this->CartesianGetParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
