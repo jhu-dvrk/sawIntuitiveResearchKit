@@ -457,9 +457,9 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 
 void mtsTeleOperationPSM::RunAligningMTM(void)
 {
-    // don't ask continuously this might kill the MTM
+    // set trajectory goal periodically, this will track PSM motion
     const double currentTime = StateTable.GetTic();
-    if ((currentTime - mTimeSinceLastAlign) > 2.0 * cmn_s) {
+    if ((currentTime - mTimeSinceLastAlign) > 10.0 * cmn_ms) {
         mTimeSinceLastAlign = currentTime;
         // Orientate MTM with PSM
         vctFrm4x4 masterCartesianGoal;
@@ -522,7 +522,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
                 message << this->GetName() + ": unable to align master, current angle error is " << orientationErrorInDegrees;
             } else {
                 message << this->GetName() + ": unable to match gripper/jaw angle, current error is " << gripperJawErrorInDegrees;
-            }                
+            }
             mInterface->SendWarning(message.str());
             mInStateTimer = StateTable.GetTic();
         }
