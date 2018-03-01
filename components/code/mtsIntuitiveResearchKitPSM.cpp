@@ -931,7 +931,8 @@ void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawP
     // keep cartesian space is already there, otherwise use joint_space
     switch (mControlSpace) {
     case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-        if (mControlMode != mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
+        if (! ((mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)
+               || (mControlMode != mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE))) {
             SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                    mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
             // make sure all other joints have a reasonable cartesian
@@ -959,7 +960,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawP
 
     // save goal
     JawGoal = jawPosition.Goal().at(0);
-    mHasNewPIDGoal = true;
+    mHasNewPIDGoalOrIncrement = true;
 }
 
 void mtsIntuitiveResearchKitPSM::SetPositionGoalJaw(const prmPositionJointSet & jawPosition)

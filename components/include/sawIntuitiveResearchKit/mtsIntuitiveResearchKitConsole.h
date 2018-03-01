@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -202,8 +202,8 @@ public:
 
         /*! Create and configure the robot arm. */
         void ConfigureTeleop(const TeleopPSMType type,
-                             const vctMatRot3 & orientation,
-                             const double & periodInSeconds = mtsIntuitiveResearchKit::TeleopPeriod);
+                             const double & periodInSeconds,
+                             const Json::Value & jsonConfig);
 
         /*! Connect all interfaces specific to this teleop. */
         bool Connect(void);
