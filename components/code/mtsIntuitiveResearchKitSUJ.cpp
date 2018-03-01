@@ -821,6 +821,40 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
     // trigger ExecOut event
     RunEvent();
     ProcessQueuedCommands();
+
+    // hack Anton to force event at higher rate
+    mtsIntuitiveResearchKitSUJArmData * arm;
+    static int counter = 0;
+    counter++;
+    if (counter == 10) {
+        counter = 0;
+        for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+            arm = Arms[armIndex];
+            
+            // forward kinematic
+            vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
+            // pre and post transformations loaded from JSON file, base frame updated using events
+            vctFrm4x4 armLocal = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
+            // apply base frame
+            vctFrm4x4 armBase = arm->mBaseFrame * armLocal;
+            // emit events for continuous positions
+            // - with base
+            arm->mPositionCartesianParam.Position().From(armBase);
+            arm->mPositionCartesianParam.SetTimestamp(arm->mStateJoint.Timestamp());
+            arm->mPositionCartesianParam.SetValid(arm->mBaseFrameValid);
+            arm->EventPositionCartesian(arm->mPositionCartesianParam);
+            // - local
+            arm->mPositionCartesianLocalParam.Position().From(armLocal);
+            arm->mPositionCartesianLocalParam.SetTimestamp(arm->mStateJoint.Timestamp());
+            arm->mPositionCartesianLocalParam.SetValid(arm->mBaseFrameValid);
+            arm->EventPositionCartesianLocal(arm->mPositionCartesianLocalParam);
+            
+            arm->EventPositionCartesianDesired(arm->mPositionCartesianParam);
+            arm->EventPositionCartesian(arm->mPositionCartesianParam);
+            arm->EventPositionCartesianLocalDesired(arm->mPositionCartesianLocalParam);
+            arm->EventPositionCartesianLocal(arm->mPositionCartesianLocalParam);
+        }
+    }
 }
 
 void mtsIntuitiveResearchKitSUJ::Cleanup(void)

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-01-21
 
-  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -131,8 +131,8 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian",
                                        mMTML->GetPositionCartesian);
-        interfaceRequired->AddFunction("GetPositionCartesianDesired",
-                                       mMTML->GetPositionCartesianDesired);
+        //        interfaceRequired->AddFunction("GetPositionCartesianDesired",
+        //                               mMTML->GetPositionCartesianDesired);
         interfaceRequired->AddFunction("GetVelocityCartesian",
                                        mMTML->GetVelocityCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian",
@@ -159,8 +159,8 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian",
                                        mMTMR->GetPositionCartesian);
-        interfaceRequired->AddFunction("GetPositionCartesianDesired",
-                                       mMTMR->GetPositionCartesianDesired);
+        //        interfaceRequired->AddFunction("GetPositionCartesianDesired",
+        //                               mMTMR->GetPositionCartesianDesired);
         interfaceRequired->AddFunction("GetVelocityCartesian",
                                        mMTMR->GetVelocityCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian",
@@ -186,12 +186,12 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
     interfaceRequired = AddInterfaceRequired("ECM");
     if (interfaceRequired) {
         // ECM, use PID desired position to make sure there is no jump when engaging
-        interfaceRequired->AddFunction("GetPositionCartesian",
+        interfaceRequired->AddFunction("GetPositionCartesianLocalDesired",
                                        mECM->GetPositionCartesian);
-        interfaceRequired->AddFunction("GetPositionCartesianDesired",
-                                       mECM->GetPositionCartesianDesired);
-        interfaceRequired->AddFunction("SetPositionCartesian",
-                                       mECM->SetPositionCartesian);
+        interfaceRequired->AddFunction("GetStateJointDesired",
+                                       mECM->GetStateJointDesired);
+        interfaceRequired->AddFunction("SetPositionJoint",
+                                       mECM->SetPositionGoalJoint);
         interfaceRequired->AddFunction("GetCurrentState",
                                        mECM->GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState",
@@ -241,6 +241,8 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
                                   "DesiredState", std::string(""));
         mInterface->AddEventWrite(MessageEvents.CurrentState,
                                   "CurrentState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.Following,
+                                  "Following", false);
         // configuration
         mInterface->AddEventWrite(ConfigurationEvents.Scale,
                                   "Scale", 0.5);
@@ -250,6 +252,7 @@ void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
 void mtsTeleOperationECM::Startup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
+    SetFollowing(false);
 }
 
 void mtsTeleOperationECM::Run(void)
@@ -309,7 +312,7 @@ void mtsTeleOperationECM::RunAllStates(void)
         this->SetDesiredState("DISABLED");
     }
 
-    // get slave Cartesian position
+    // get slave Cartesian position for GUI
     executionResult = mECM->GetPositionCartesian(mECM->PositionCartesianCurrent);
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.GetPositionCartesian failed \""
@@ -317,17 +320,19 @@ void mtsTeleOperationECM::RunAllStates(void)
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from slave");
         this->SetDesiredState("DISABLED");
     }
-    executionResult = mECM->GetPositionCartesianDesired(mECM->PositionCartesianDesired);
+    // for motion computation
+    executionResult = mECM->GetStateJointDesired(mECM->StateJointDesired);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.GetPositionCartesianDesired failed \""
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.GetStateJointDesired failed \""
                                 << executionResult << "\"" << std::endl;
-        mInterface->SendError(this->GetName() + ": unable to get cartesian position from slave");
+        mInterface->SendError(this->GetName() + ": unable to get joint state from slave");
         this->SetDesiredState("DISABLED");
     }
 
     // check if anyone wanted to disable anyway
     if ((mTeleopState.DesiredState() == "DISABLED")
         && (mTeleopState.CurrentState() != "DISABLED")) {
+        SetFollowing(false);
         mTeleopState.SetCurrentState("DISABLED");
         return;
     }
@@ -413,11 +418,27 @@ void mtsTeleOperationECM::EnterEnabled(void)
     side.NormalizedSelf();
     mInitial.w = 0.5 * vctDotProduct(side, vectorLR);
     mInitial.d = 0.5 * vctDotProduct(mInitial.C.Normalized(), vectorLR);
-    // -5- compute MTMs frame
-    mInitial.Frame.Translation().Assign(mInitial.C);
-    mInitial.Frame.Rotation().Row(0).Assign(side);
-    mInitial.Frame.Rotation().Row(1).Assign(mInitial.Up);
-    mInitial.Frame.Rotation().Row(2).Assign(vctCrossProduct(side, mInitial.Up));
+
+    // projections
+    mInitial.N.CrossProductOf(mInitial.Up, side);
+    mInitial.N.NormalizedSelf();
+    mInitial.Lr.Assign(mInitial.C[0], 0, mInitial.C[2]);
+    mInitial.Lr.NormalizedSelf();
+    mInitial.Ud.Assign(0, mInitial.C[1], mInitial.C[2]);
+    mInitial.Ud.NormalizedSelf();
+    mInitial.Cw.Assign(mInitial.Up[0], mInitial.Up[1], 0);
+    mInitial.Cw.NormalizedSelf();
+
+    mInitial.ECMPositionJoint = mECM->StateJointDesired.Position();
+
+    // -5- store current rotation matrix for MTML, MTMR, and ECM
+    vctEulerZYXRotation3 eulerAngles;
+    eulerAngles.Assign(mInitial.ECMPositionJoint[3], mInitial.ECMPositionJoint[0], mInitial.ECMPositionJoint[1]);
+    vctEulerToMatrixRotation3(eulerAngles, mInitial.ECMRotEuler);
+
+    mInitial.MTMLRot = mMTML->PositionCartesianCurrent.Position().Rotation(); 
+    mInitial.MTMRRot = mMTMR->PositionCartesianCurrent.Position().Rotation(); 
+    mInitial.ECMRot = mECM->PositionCartesianCurrent.Position().Rotation();
 
 #if 1
     std::cerr << CMN_LOG_DETAILS << std::endl
@@ -429,17 +450,34 @@ void mtsTeleOperationECM::EnterEnabled(void)
               << "w:  " << mInitial.w << std::endl
               << "d:  " << mInitial.d << std::endl
               << "Si: " << side << std::endl
-              << "F:  " << std::endl << mInitial.Frame << std::endl;
+              << "ECM Rotation Euler:    " << std::endl << mInitial.ECMRotEuler << std::endl
+              << "ECM Rotation Position: " << std::endl << mInitial.ECMRot << std::endl
+              << "ECM Joints:            " << std::endl << mInitial.ECMPositionJoint << std::endl
+              << "Euler angle alpha from rotation:   " << eulerAngles.alpha() << std::endl
+              << "Euler angles beta from rotation:   " << eulerAngles.beta() << std::endl
+              << "Euler angles gamma from rotation:  " << eulerAngles.gamma() << std::endl;
 #endif
-    mECM->PositionCartesianInitial = mECM->PositionCartesianDesired.Position();
+    mInitial.ECMPositionJoint = mECM->StateJointDesired.Position();
+    // check if by any chance the clutch pedal is pressed
+    if (mIsClutched) {
+        Clutch(true);
+    } else {
+        SetFollowing(true);
+    }
 }
 
 void mtsTeleOperationECM::RunEnabled(void)
 {
-    const vct3 frictionForceCoeff(-10.0, -10.0, -10.0);
-    const double distanceForceCoeff = 150.0;
+    if (mIsClutched) {
+        return;
+    }
 
-    // -1- vector between left and right masters
+    /* --- Forces on MTMs --- */
+    const vct3 frictionForceCoeff(-10.0, -10.0, -40.0);
+    const double distanceForceCoeff = 150.0;
+    static int counter = 0;
+
+    //-1- vector between left and right masters
     vct3 vectorLR;
     vectorLR.DifferenceOf(mMTMR->PositionCartesianCurrent.Position().Translation(),
                           mMTML->PositionCartesianCurrent.Position().Translation());
@@ -457,6 +495,10 @@ void mtsTeleOperationECM::RunEnabled(void)
     vct3 side;
     side.CrossProductOf(c, up);
     side.NormalizedSelf();
+    // normal to image
+    vct3 n;
+    n.CrossProductOf(up, side);
+    n.NormalizedSelf();
     // -5- find desired position for L and R
     vct3 goalL(c);
     goalL.AddProductOf(-mInitial.w, side);
@@ -464,6 +506,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     vct3 goalR(c);
     goalR.AddProductOf(mInitial.w, side);
     goalR.AddProductOf(mInitial.d, directionC);
+
 
     // compute forces on L and R based on error in position
     vct3 forceFriction;
@@ -496,30 +539,129 @@ void mtsTeleOperationECM::RunEnabled(void)
     // apply
     mMTML->SetWrenchBody(wrenchL);
 
+    /* --- Joint Control --- */
+    static const vct3 normXZ(0.0, 1.0, 0.0);
+    static const vct3 normYZ(1.0, 0.0, 0.0);
+    static const vct3 normXY(0.0, 0.0, 1.0);
+    // Initial ECM joints
+    vctVec goalJoints(mInitial.ECMPositionJoint);
+    // Change in directions and joints
+    vctVec changeJoints(4);
+    vctVec changeDir(4);
+    vct3 crossN;  // normal to direction of motion
 
-    // compute new MTMs frame
-    vctFrm3 frame;
-    frame.Translation().Assign(c);
-    frame.Rotation().Row(0).Assign(side);
-    frame.Rotation().Row(1).Assign(up);
-    frame.Rotation().Row(2).Assign(vctCrossProduct(side, up));
+    // - Direction 0 - left/right, movement in the XZ plane 
+    vct3  lr(c[0], 0, c[2]);
+    lr.NormalizedSelf();
+    changeDir[0] = -acos(vctDotProduct(mInitial.Lr, lr));
+    crossN = vctCrossProduct(mInitial.Lr, lr);
+    if (vctDotProduct(normXZ, crossN) < 0) {
+        changeDir[0] = -changeDir[0];
+    }
+    
+    // - Direction 1 - up/down, movement in the YZ plane
+    vct3  ud(0, c[1], c[2]);
+    ud.NormalizedSelf();
+    changeDir[1] = acos(vctDotProduct(mInitial.Ud, ud));
+    crossN = vctCrossProduct(mInitial.Ud, ud);
+    if (vctDotProduct(normYZ, crossN) < 0) {
+        changeDir[1] = -changeDir[1];
+    }
+   
+    // - Direction 2 - in/out
+    changeDir[2] = mScale * 4.0 * (mInitial.C.Norm() - c.Norm());
+    
+    // - Direction 3 - cc/ccw, movement in the XY plane
+    vct3 cw(up[0], up[1], 0);
+    cw.NormalizedSelf();
+    changeDir[3] = -acos(vctDotProduct(mInitial.Cw, cw));
+    crossN = vctCrossProduct(mInitial.Cw, cw);
+    if (vctDotProduct(normXY, crossN) < 0) {
+        changeDir[3] = -changeDir[3];
+    }
+    
+    // adjusting movement for camera orientation
+    double totalChangeJoint3 = changeDir[3] + mInitial.ECMPositionJoint[3];
+    changeJoints[0] = changeDir[0]*cos(totalChangeJoint3) - changeDir[1]*sin(totalChangeJoint3);
+    changeJoints[1] = changeDir[1]*cos(totalChangeJoint3) + changeDir[0]*sin(totalChangeJoint3);
+    changeJoints[2] = changeDir[2];
+    changeJoints[3] = changeDir[3];
 
-    // Transformation since last clutch
-    vctFrm3 displacement;
-    frame.ApplyTo(mInitial.Frame.Inverse(), displacement);
+    goalJoints.Add(changeJoints);
+    mECM->PositionJointSet.Goal().ForceAssign(goalJoints);
+    mECM->SetPositionGoalJoint(mECM->PositionJointSet);
 
-    // New ECM position
-    //vctFrm3 goal;
-    //displacement.ApplyTo(mECM->PositionCartesianInitial, goal);
-    //mECM->PositionCartesianSet.Goal().Assign(goal);
-    //mECM->SetPositionCartesian(mECM->PositionCartesianSet);
+    /* --- Lock Orientation --- */
+
+    //Calculate new rotations of MTMs
+    vctMatRot3 currMTMLRot;
+    vctMatRot3 currMTMRRot;
+    // Current ECM Rotation
+    vctEulerZYXRotation3 finalEulerAngles;
+    vctMatrixRotation3<double> currECMRot;
+    vctMatrixRotation3<double> finalECMRot;
+   
+    finalEulerAngles.Assign(goalJoints[3], goalJoints[0], goalJoints[1]);
+    vctEulerToMatrixRotation3(finalEulerAngles, finalECMRot);
+    currECMRot = finalECMRot * mInitial.ECMRotEuler.Inverse();
+
+    
+
+    // Set MTM Orientation
+    currMTMLRot = currECMRot.Inverse() * mInitial.MTMLRot;
+    currMTMRRot = currECMRot.Inverse() * mInitial.MTMRRot;
+
+    // set cartesian effort parameters
+    mMTML->SetWrenchBodyOrientationAbsolute(true);
+    mMTML->LockOrientation(currMTMLRot);
+    mMTMR->SetWrenchBodyOrientationAbsolute(true);
+    mMTMR->LockOrientation(currMTMRRot);
+
+    if( counter% 500  == 0 ) {
+        std::cerr << CMN_LOG_DETAILS << std::endl
+                  << "c initial : " << mInitial.C << std::endl
+                  << "c :         " << c << std::endl
+                  << "joints:     " << changeJoints << std::endl
+                  <<"Rotation:    " << currECMRot << std::endl;
+    }
+    counter++;
 }
 
 void mtsTeleOperationECM::TransitionEnabled(void)
 {
-    if (mTeleopState.DesiredState() == "DISABLED") {
-        mTeleopState.SetCurrentState("DISABLED");
+    std::string armState;
+
+    // check ECM state
+    mECM->GetCurrentState(armState);
+    if (armState != "READY") {
+        mInterface->SendWarning(this->GetName() + ": ECM state has changed to [" + armState + "]");
+        mTeleopState.SetDesiredState("DISABLED");
     }
+
+    // check mtml state
+    mMTML->GetCurrentState(armState);
+    if (armState != "READY") {
+        mInterface->SendWarning(this->GetName() + ": MTML state has changed to [" + armState + "]");
+        mTeleopState.SetDesiredState("DISABLED");
+    }
+
+    // check mtmr state
+    mMTMR->GetCurrentState(armState);
+    if (armState != "READY") {
+        mInterface->SendWarning(this->GetName() + ": MTMR state has changed to [" + armState + "]");
+        mTeleopState.SetDesiredState("DISABLED");
+    }
+
+    if (mTeleopState.DesiredStateIsNotCurrent()) {
+        SetFollowing(false);
+        mTeleopState.SetCurrentState(mTeleopState.DesiredState());
+    }
+}
+
+void mtsTeleOperationECM::SetFollowing(const bool following)
+{
+    MessageEvents.Following(following);
+    mIsFollowing = following;
 }
 
 void mtsTeleOperationECM::MTMLErrorEventHandler(const mtsMessage & message)
@@ -542,25 +684,37 @@ void mtsTeleOperationECM::ECMErrorEventHandler(const mtsMessage & message)
 
 void mtsTeleOperationECM::ClutchEventHandler(const prmEventButton & button)
 {
+    if (button.Type() == prmEventButton::PRESSED) {
+        mIsClutched = true;
+    } else {
+        mIsClutched = false;
+    }
+
     // if the teleoperation is activated
     if (mTeleopState.DesiredState() == "ENABLED") {
-        if (button.Type() == prmEventButton::PRESSED) {
-            mIsClutched = true;
-            mInterface->SendStatus(this->GetName() + ": console clutch pressed");
+        Clutch(mIsClutched);
+    }
+}
 
-            // set MTMs in effort mode, no force applied but gravity and locked orientation
-            prmForceCartesianSet wrench;
-            mMTML->SetWrenchBody(wrench);
-            mMTML->SetGravityCompensation(true);
-            mMTML->LockOrientation(mMTML->PositionCartesianCurrent.Position().Rotation());
-            mMTMR->SetWrenchBody(wrench);
-            mMTMR->SetGravityCompensation(true);
-            mMTMR->LockOrientation(mMTMR->PositionCartesianCurrent.Position().Rotation());
-        } else {
-            mIsClutched = false;
-            mInterface->SendStatus(this->GetName() + ": console clutch released");
-            mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
-        }
+void mtsTeleOperationECM::Clutch(const bool & clutch)
+{
+    // if the teleoperation is activated
+    if (clutch) {
+        SetFollowing(false);
+        mInterface->SendStatus(this->GetName() + ": console clutch pressed");
+
+        // set MTMs in effort mode, no force applied but gravity and locked orientation
+        prmForceCartesianSet wrench;
+        mMTML->SetWrenchBody(wrench);
+        mMTML->SetGravityCompensation(true);
+        mMTML->LockOrientation(mMTML->PositionCartesianCurrent.Position().Rotation());
+        mMTMR->SetWrenchBody(wrench);
+        mMTMR->SetGravityCompensation(true);
+        mMTMR->LockOrientation(mMTMR->PositionCartesianCurrent.Position().Rotation());
+    } else {
+        mIsClutched = false;
+        mInterface->SendStatus(this->GetName() + ": console clutch released");
+        mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
     }
 }
 

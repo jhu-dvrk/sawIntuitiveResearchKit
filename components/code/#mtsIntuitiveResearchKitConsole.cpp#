@@ -58,8 +58,6 @@ mtsIntuitiveResearchKitConsole::Arm::Arm(const std::string & name,
     IOInterfaceRequired(0),
     PIDInterfaceRequired(0),
     ArmInterfaceRequired(0),
-    SUJInterfaceRequiredFromIO(0),
-    SUJInterfaceRequiredToSUJ(0),
     mSUJClutched(false)
 {}
 
@@ -100,24 +98,22 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     switch (armType) {
     case ARM_MTM:
         {
-            mtsIntuitiveResearchKitMTM * mtm = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
+            mtsIntuitiveResearchKitMTM * master = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
             if (mSimulation == SIMULATION_KINEMATIC) {
-                mtm->SetSimulated();
+                master->SetSimulated();
             }
-            mtm->Configure(mArmConfigurationFile);
-            SetBaseFrameIfNeeded(mtm);
-            componentManager->AddComponent(mtm);
+            master->Configure(mArmConfigurationFile);
+            componentManager->AddComponent(master);
         }
         break;
     case ARM_PSM:
         {
-            mtsIntuitiveResearchKitPSM * psm = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
+            mtsIntuitiveResearchKitPSM * slave = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
             if (mSimulation == SIMULATION_KINEMATIC) {
-                psm->SetSimulated();
+                slave->SetSimulated();
             }
-            psm->Configure(mArmConfigurationFile);
-            SetBaseFrameIfNeeded(psm);
-            componentManager->AddComponent(psm);
+            slave->Configure(mArmConfigurationFile);
+            componentManager->AddComponent(slave);
 
             if (mSocketServer) {
                 mtsSocketServerPSM *serverPSM = new mtsSocketServerPSM(SocketComponentName(), periodInSeconds, mIp, mPort);
@@ -140,7 +136,6 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                 ecm->SetSimulated();
             }
             ecm->Configure(mArmConfigurationFile);
-            SetBaseFrameIfNeeded(ecm);
             componentManager->AddComponent(ecm);
         }
         break;
@@ -159,13 +154,12 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             mtsComponent * component;
             component = componentManager->GetComponent(Name());
             if (component) {
-                mtsIntuitiveResearchKitMTM * mtm = dynamic_cast<mtsIntuitiveResearchKitMTM *>(component);
-                if (mtm) {
+                mtsIntuitiveResearchKitMTM * master = dynamic_cast<mtsIntuitiveResearchKitMTM *>(component);
+                if (master) {
                     if (mSimulation == SIMULATION_KINEMATIC) {
-                        mtm->SetSimulated();
+                        master->SetSimulated();
                     }
-                    mtm->Configure(mArmConfigurationFile);
-                    SetBaseFrameIfNeeded(mtm);
+                    master->Configure(mArmConfigurationFile);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
                                        << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitMTM."
@@ -183,13 +177,12 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             mtsComponent * component;
             component = componentManager->GetComponent(Name());
             if (component) {
-                mtsIntuitiveResearchKitPSM * psm = dynamic_cast<mtsIntuitiveResearchKitPSM *>(component);
-                if (psm) {
+                mtsIntuitiveResearchKitPSM * slave = dynamic_cast<mtsIntuitiveResearchKitPSM *>(component);
+                if (slave) {
                     if (mSimulation == SIMULATION_KINEMATIC) {
-                        psm->SetSimulated();
+                        slave->SetSimulated();
                     }
-                    psm->Configure(mArmConfigurationFile);
-                    SetBaseFrameIfNeeded(psm);
+                    slave->Configure(mArmConfigurationFile);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
                                        << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitPSM."
@@ -213,7 +206,6 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                         ecm->SetSimulated();
                     }
                     ecm->Configure(mArmConfigurationFile);
-                    SetBaseFrameIfNeeded(ecm);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
                                        << Name() << "\" doesn't seem to be derived from mtsIntuitiveResearchKitECM."
@@ -229,13 +221,6 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
 
     default:
         break;
-    }
-}
-
-void mtsIntuitiveResearchKitConsole::Arm::SetBaseFrameIfNeeded(mtsIntuitiveResearchKitArm * armPointer)
-{
-    if (mBaseFrame.ReferenceFrame() != "") {
-        armPointer->SetBaseFrame(mBaseFrame);
     }
 }
 
@@ -312,7 +297,13 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
             componentManager->Connect(Name(), "RobotIO",
                                       IOComponentName(), Name());
         }
-        // Connect PID and BaseFrame if needed
+    }
+    if ((mType == ARM_PSM) ||
+        (mType == ARM_PSM_DERIVED) ||
+        (mType == ARM_MTM) ||
+        (mType == ARM_MTM_DERIVED) ||
+        (mType == ARM_ECM) ||
+        (mType == ARM_ECM_DERIVED)) {
         componentManager->Connect(Name(), "PID",
                                   PIDComponentName(), "Controller");
         if ((mBaseFrameComponentName != "") && (mBaseFrameInterfaceName != "")) {
@@ -439,8 +430,8 @@ mtsIntuitiveResearchKitConsole::TeleopPSM::TeleopPSM(const std::string & name,
 }
 
 void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMType type,
-                                                                const double & periodInSeconds,
-                                                                const Json::Value & jsonConfig)
+                                                                const vctMatRot3 & orientation,
+                                                                const double & periodInSeconds)
 {
     mType = type;
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
@@ -449,7 +440,8 @@ void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMT
     case TELEOP_PSM:
         {
             mtsTeleOperationPSM * teleop = new mtsTeleOperationPSM(mName, periodInSeconds);
-            teleop->Configure(jsonConfig);
+            teleop->Configure();
+            teleop->SetRegistrationRotation(orientation);
             componentManager->AddComponent(teleop);
         }
         break;
@@ -460,7 +452,7 @@ void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMT
             if (component) {
                 mtsTeleOperationPSM * teleop = dynamic_cast<mtsTeleOperationPSM *>(component);
                 if (teleop) {
-                    teleop->Configure(jsonConfig);
+                    teleop->SetRegistrationRotation(orientation);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureTeleop: component \""
                                        << Name() << "\" doesn't seem to be derived from mtsTeleOperationPSM."
@@ -1315,28 +1307,13 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         }
         jsonValue = jsonArm["base-frame"];
         if (!jsonValue.empty()) {
-            Json::Value fixedJson = jsonValue["transform"];
-            if (!fixedJson.empty()) {
-                std::string reference = jsonValue["reference-frame"].asString();
-                if (reference.empty()) {
-                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: both \"transform\" (4x4) and \"reference-frame\" (name) must be provided with \"base-frame\" for arm \""
-                                             << armName << "\"" << std::endl;
-                    return false;
-                }
-                vctFrm4x4 frame;
-                cmnDataJSON<vctFrm4x4>::DeSerializeText(frame, fixedJson);
-                armPointer->mBaseFrame.Goal().From(frame);
-                armPointer->mBaseFrame.ReferenceFrame() = reference;
-                armPointer->mBaseFrame.Valid() = true;
-            } else {
-                armPointer->mBaseFrameComponentName = jsonValue.get("component", "").asString();
-                armPointer->mBaseFrameInterfaceName = jsonValue.get("interface", "").asString();
-                if ((armPointer->mBaseFrameComponentName == "")
-                    || (armPointer->mBaseFrameInterfaceName == "")) {
-                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: both \"component\" and \"interface\" OR \"transform\" (4x4) and \"reference-frame\" (name) must be provided with \"base-frame\" for arm \""
-                                             << armName << "\"" << std::endl;
-                    return false;
-                }
+            armPointer->mBaseFrameComponentName = jsonValue.get("component", "").asString();
+            armPointer->mBaseFrameInterfaceName = jsonValue.get("interface", "").asString();
+            if ((armPointer->mBaseFrameComponentName == "")
+                || (armPointer->mBaseFrameInterfaceName == "")) {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: both \"component\" and \"interface\" must be provided with \"base-frame\" for arm \""
+                                         << armName << "\"" << std::endl;
+                return false;
             }
         }
     }
@@ -1563,20 +1540,20 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         teleopPointer->mType = TeleopPSM::TELEOP_PSM;
     }
 
+    // read orientation if present
+    vctMatRot3 orientation; // identity by default
+    jsonValue = jsonTeleop["rotation"];
+    if (!jsonValue.empty()) {
+        cmnDataJSON<vctMatRot3>::DeSerializeText(orientation, jsonTeleop["rotation"]);
+    }
+
     // read period if present
     double period = mtsIntuitiveResearchKit::TeleopPeriod;
     jsonValue = jsonTeleop["period"];
     if (!jsonValue.empty()) {
         period = jsonValue.asFloat();
     }
-    // for backward compatibility, send warning
-    jsonValue = jsonTeleop["rotation"];
-    if (!jsonValue.empty()) {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: teleop " << name << ": \"rotation\" must now be defined under \"configure-parameter\" or in a separate configuration file" << std::endl;
-        return false;
-    }
-    const Json::Value jsonTeleopConfig = jsonTeleop["configure-parameter"];
-    teleopPointer->ConfigureTeleop(teleopPointer->mType, period, jsonTeleopConfig);
+    teleopPointer->ConfigureTeleop(teleopPointer->mType, orientation, period);
     AddTeleopPSMInterfaces(teleopPointer);
     return true;
 }
@@ -1642,6 +1619,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
                                  << arm->Name() << "\"" << std::endl;
         return false;
     }
+
     return true;
 }
 
@@ -1970,10 +1948,6 @@ void mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler(const prmPositionCar
     // compute and send new base frame for all SUJs (SUJ will handle ECM differently)
     prmPositionCartesianGet baseFrameSUJParam;
     baseFrameSUJParam.Position().From(positionECM.Inverse());
-    // it's an inverse, swap moving and reference frames
-    baseFrameSUJParam.SetReferenceFrame(positionECMLocalParam.MovingFrame());
-    baseFrameSUJParam.SetMovingFrame(baseFrameSUJParam.ReferenceFrame());
-    // valid only if both are valid
     baseFrameSUJParam.SetValid(baseFrameParam.Valid() && positionECMLocalParam.Valid());
     baseFrameSUJParam.SetTimestamp(positionECMLocalParam.Timestamp());
     mECMBaseFrameEvent(baseFrameSUJParam);

@@ -109,14 +109,14 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                this);
 
     // initialize trajectory data
-    mJointTrajectory.Velocity.Assign(30.0 * cmnPI_180, // degrees per second
-                                     30.0 * cmnPI_180,
-                                     0.05,            // m per second
-                                     20.0 * cmnPI_180);
-    mJointTrajectory.Acceleration.Assign(30.0 * cmnPI_180,
-                                         30.0 * cmnPI_180,
-                                         0.05,
-                                         30.0 * cmnPI_180);
+    mJointTrajectory.Velocity.Assign(60.0 * cmnPI_180, // degrees per second
+                                     60.0 * cmnPI_180,
+                                     30.0 * cmn_mm,    // mm per second
+                                     60.0 * cmnPI_180);
+    mJointTrajectory.Acceleration.Assign(90.0 * cmnPI_180,
+                                         90.0 * cmnPI_180,
+                                         15.0 * cmn_mm,
+                                         90.0 * cmnPI_180);
     mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
 
     // default PID tracking errors

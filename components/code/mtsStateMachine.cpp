@@ -74,16 +74,16 @@ void mtsStateMachine::Run(void)
         }
         mFirstRun = false;
     }
+    // check if a transition should happen
+    if (mCurrentTransitionCallback) {
+        mCurrentTransitionCallback->Execute();
+    }
     // run current state method
     if (mRunCallback) {
         mRunCallback->Execute();
     }
     if (mCurrentRunCallback) {
         mCurrentRunCallback->Execute();
-    }
-    // check if a transition should happen
-    if (mCurrentTransitionCallback) {
-        mCurrentTransitionCallback->Execute();
     }
 }
 

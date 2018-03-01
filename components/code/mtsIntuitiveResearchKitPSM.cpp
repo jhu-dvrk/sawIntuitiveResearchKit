@@ -375,10 +375,11 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         }
 
         if (mSnakeLike) {
+            ManipulatorPSMSnake = new robManipulatorPSMSnake();
             if (Manipulator) {
+                ManipulatorPSMSnake->Rtw0.Assign(Manipulator->Rtw0);
                 delete Manipulator;
             }
-            ManipulatorPSMSnake = new robManipulatorPSMSnake();
             Manipulator = ManipulatorPSMSnake;
         }
         ConfigureDH(jsonConfig);

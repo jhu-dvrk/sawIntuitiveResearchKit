@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-01-21
 
-  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -24,6 +24,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmStateJoint.h>
+#include <cisstParameterTypes/prmPositionJointSet.h>
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 
@@ -57,11 +59,13 @@ protected:
     void ECMErrorEventHandler(const mtsMessage & message);
 
     void ClutchEventHandler(const prmEventButton & button);
+    void Clutch(const bool & clutch);
 
     // Functions for events
     struct {
         mtsFunctionWrite DesiredState;
         mtsFunctionWrite CurrentState;
+        mtsFunctionWrite Following;
     } MessageEvents;
     mtsInterfaceProvided * mInterface;
 
@@ -84,7 +88,7 @@ protected:
     class RobotMTM {
     public:
         mtsFunctionRead  GetPositionCartesian;
-        mtsFunctionRead  GetPositionCartesianDesired;
+        // mtsFunctionRead  GetPositionCartesianDesired;
         mtsFunctionRead  GetVelocityCartesian;
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionRead  GetCurrentState;
@@ -97,7 +101,6 @@ protected:
         mtsFunctionWrite SetGravityCompensation;
 
         prmPositionCartesianGet PositionCartesianCurrent;
-        prmPositionCartesianGet PositionCartesianDesired;
         prmVelocityCartesianGet VelocityCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
     };
@@ -107,16 +110,15 @@ protected:
     class RobotECM {
     public:
         mtsFunctionRead  GetPositionCartesian;
-        mtsFunctionRead  GetPositionCartesianDesired;
-        mtsFunctionWrite SetPositionCartesian;
+        mtsFunctionRead  GetStateJointDesired;
+        mtsFunctionWrite SetPositionGoalJoint;
         mtsFunctionRead  GetCurrentState;
         mtsFunctionRead  GetDesiredState;
         mtsFunctionWrite SetDesiredState;
 
-        vctFrm3 PositionCartesianInitial;
         prmPositionCartesianGet PositionCartesianCurrent;
-        prmPositionCartesianGet PositionCartesianDesired;
-        prmPositionCartesianSet PositionCartesianSet;
+        prmStateJoint StateJointDesired;
+        prmPositionJointSet PositionJointSet;
     };
     RobotECM * mECM;
 
@@ -129,15 +131,26 @@ protected:
     mtsStateMachine mTeleopState;
     double mInStateTimer;
 
-    struct MTMsState {
+    struct TeleopState {
         double dLR; // distance
         vct3 C;     // center
+        vct3 N;     // normal to image
         vct3 Up;    // up direction
+        vct3 Lr;    // left/right movement, ie. c vector projected on the XZ plane
+        vct3 Ud;    // up/down movement, ie. c vector projected on the YZ plane
+        vct3 Cw;   // cw vector, ie. up vector projected on the XY plane
         double w;   // width of image
         double d;   // depth of R along C, depth of L is opposite
-        vctFrm3 Frame; // frame associated to MTMs
+        vctMatRot3 MTMLRot; //initial rotation of MTML
+        vctMatRot3 MTMRRot; //initial rotation of MTMR
+        vctMatRot3 ECMRot; //initial rotation of ECM
+        vctMatrixRotation3<double> ECMRotEuler; //initial rotation of ECM frame calculated using Euler angles
+        
+        vctVec ECMPositionJoint;
     } mInitial;
 
+    bool mIsFollowing;
+    void SetFollowing(const bool following);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationECM);
