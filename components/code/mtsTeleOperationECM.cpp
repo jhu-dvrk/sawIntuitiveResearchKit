@@ -612,10 +612,10 @@ void mtsTeleOperationECM::RunEnabled(void)
     currMTMRRot = currECMRot.Inverse() * mInitial.MTMRRot;
 
     // set cartesian effort parameters
-    // mMTML->SetWrenchBodyOrientationAbsolute(true);
-    // mMTML->LockOrientation(currMTMLRot);
-    // mMTMR->SetWrenchBodyOrientationAbsolute(true);
-    // mMTMR->LockOrientation(currMTMRRot);
+    mMTML->SetWrenchBodyOrientationAbsolute(true);
+    mMTML->LockOrientation(currMTMLRot);
+    mMTMR->SetWrenchBodyOrientationAbsolute(true);
+    mMTMR->LockOrientation(currMTMRRot);
 
     if( counter% 500  == 0 ) {
         std::cerr << CMN_LOG_DETAILS << std::endl
