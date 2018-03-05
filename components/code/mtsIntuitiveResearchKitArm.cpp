@@ -143,6 +143,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mStateTableState.SetAutomaticAdvance(false);
 
     mCounter = 0;
+    mControlSpace = mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE;
+    mControlMode = mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE;
+        
     mJointControlReady = false;
     mCartesianControlReady = false;
     mIsSimulated = false;

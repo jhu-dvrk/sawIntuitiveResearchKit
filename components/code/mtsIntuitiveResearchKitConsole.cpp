@@ -58,6 +58,8 @@ mtsIntuitiveResearchKitConsole::Arm::Arm(const std::string & name,
     IOInterfaceRequired(0),
     PIDInterfaceRequired(0),
     ArmInterfaceRequired(0),
+    SUJInterfaceRequiredFromIO(0),
+    SUJInterfaceRequiredToSUJ(0),
     mSUJClutched(false)
 {}
 

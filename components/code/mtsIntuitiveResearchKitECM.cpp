@@ -94,6 +94,8 @@ void mtsIntuitiveResearchKitECM::Init(void)
     // main initialization from base type
     mtsIntuitiveResearchKitArm::Init();
 
+    ToolOffset = 0;
+    
     // state machine specific to ECM, see base class for other states
     mArmState.AddState("MANUAL");
 

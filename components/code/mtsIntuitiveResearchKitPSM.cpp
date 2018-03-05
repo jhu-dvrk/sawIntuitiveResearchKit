@@ -55,6 +55,10 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // main initialization from base type
     mtsIntuitiveResearchKitArm::Init();
 
+    mSnakeLike = false;
+    ManipulatorPSMSnake = 0;
+    ToolOffset = 0;
+
     mAdapterNeedEngage = false;
     mToolNeedEngage = false;
 
