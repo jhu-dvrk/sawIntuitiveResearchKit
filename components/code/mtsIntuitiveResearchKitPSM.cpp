@@ -54,6 +54,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 {
     // main initialization from base type
     mtsIntuitiveResearchKitArm::Init();
+    mSnakeLike = false;
 
     mAdapterNeedEngage = false;
     mToolNeedEngage = false;
