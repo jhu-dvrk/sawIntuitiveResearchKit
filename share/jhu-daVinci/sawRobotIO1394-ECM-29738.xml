@@ -58,8 +58,8 @@
          <AnalogBrake AxisID="2" BoardID="5">
             <AmpsToBits Offset="33078" Scale="5242.88" />
             <BitsToFeedbackAmps Offset="-6.293983" Scale="0.000190738" />
-            <MaxCurrent Unit="A" Value="0.900" />
-            <ReleaseCurrent Unit="A" Value="0.900" />
+            <MaxCurrent Unit="A" Value="1.100" />
+            <ReleaseCurrent Unit="A" Value="1.100" />
             <ReleaseTime Value="2.000" />
             <ReleasedCurrent Unit="A" Value="0.200" />
             <EngagedCurrent Unit="A" Value="0.000" />

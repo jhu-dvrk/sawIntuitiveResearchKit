@@ -163,8 +163,8 @@ public:
 
         /*! Create and configure the robot arm. */
         void ConfigureTeleop(const TeleopECMType type,
-                             const vctMatRot3 & orientation,
-                             const double & periodInSeconds = mtsIntuitiveResearchKit::TeleopPeriod);
+                             const double & periodInSeconds,
+                             const Json::Value & jsonConfig);
 
         /*! Connect all interfaces specific to this teleop. */
         bool Connect(void);

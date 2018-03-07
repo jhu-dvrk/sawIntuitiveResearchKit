@@ -454,7 +454,7 @@ void mtsTeleOperationPSM::TransitionSettingArmsState(void)
 
 void mtsTeleOperationPSM::EnterAligningMTM(void)
 {
-    // update user GUI re. scale 
+    // update user GUI re. scale
     ConfigurationEvents.Scale(mScale);
 
     // reset timer
@@ -464,9 +464,9 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 
 void mtsTeleOperationPSM::RunAligningMTM(void)
 {
-    // don't ask continuously this might kill the MTM
+    // set trajectory goal periodically, this will track PSM motion
     const double currentTime = StateTable.GetTic();
-    if ((currentTime - mTimeSinceLastAlign) > 2.0 * cmn_s) {
+    if ((currentTime - mTimeSinceLastAlign) > 10.0 * cmn_ms) {
         mTimeSinceLastAlign = currentTime;
         // Orientate MTM with PSM
         vctFrm4x4 masterCartesianGoal;

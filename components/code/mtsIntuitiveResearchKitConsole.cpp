@@ -367,8 +367,8 @@ mtsIntuitiveResearchKitConsole::TeleopECM::TeleopECM(const std::string & name,
 }
 
 void mtsIntuitiveResearchKitConsole::TeleopECM::ConfigureTeleop(const TeleopECMType type,
-                                                                const vctMatRot3 & orientation,
-                                                                const double & periodInSeconds)
+                                                                const double & periodInSeconds,
+                                                                const Json::Value & jsonConfig)
 {
     mType = type;
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
@@ -377,8 +377,7 @@ void mtsIntuitiveResearchKitConsole::TeleopECM::ConfigureTeleop(const TeleopECMT
     case TELEOP_ECM:
         {
             mtsTeleOperationECM * teleop = new mtsTeleOperationECM(mName, periodInSeconds);
-            teleop->Configure();
-            teleop->SetRegistrationRotation(orientation);
+            teleop->Configure(jsonConfig);
             componentManager->AddComponent(teleop);
         }
         break;
@@ -389,7 +388,7 @@ void mtsIntuitiveResearchKitConsole::TeleopECM::ConfigureTeleop(const TeleopECMT
             if (component) {
                 mtsTeleOperationECM * teleop = dynamic_cast<mtsTeleOperationECM *>(component);
                 if (teleop) {
-
+                    teleop->Configure(jsonConfig);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureTeleop: component \""
                                        << Name() << "\" doesn't seem to be derived from mtsTeleOperationECM."
@@ -541,7 +540,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                                  << "File: " << filename << std::endl << "Error(s):" << std::endl
                                  << jsonReader.getFormattedErrorMessages();
         this->mConfigured = false;
-        return;
+        exit(EXIT_FAILURE);
     }
 
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
@@ -568,7 +567,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     if (!componentManager.empty()) {
         if (!manager->ConfigureJSON(componentManager, configPath)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure component-manager" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -592,7 +591,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 protocol = sawRobotIO1394::PROTOCOL_BC_QRW;
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure \"firewire-protocol\", values must be \"sequential-read-write\", \"sequential-read-broadcast-write\" or \"broadcast-read-write\".   Using default instead: \"sequential-read-broadcast-write\"" << std::endl;
-                return;
+                exit(EXIT_FAILURE);
             }
         }
 
@@ -664,7 +663,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     for (unsigned int index = 0; index < arms.size(); ++index) {
         if (!ConfigureArmJSON(arms[index], mIOComponentName, configPath)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure arms[" << index << "]" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -723,7 +722,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                     if (configFile == "") {
                         CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
                                                  << configFiles[index].asString() << std::endl;
-                        return;
+                        exit(EXIT_FAILURE);
                     }
                     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO using \"" << configFile << "\"" << std::endl;
                     io->Configure(configFile);
@@ -736,7 +735,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 if (configFile == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
                                              << configFiles.asString() << std::endl;
-                    return;
+                    exit(EXIT_FAILURE);
                 }
                 CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO foot pedals using \"" << configFile << "\"" << std::endl;
                 // these can be overwritten using console-inputs
@@ -760,7 +759,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 if (configFile == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
                                              << jsonConfigFile.asString() << std::endl;
-                    return;
+                    exit(EXIT_FAILURE);
                 }
                 CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring operator present using \""
                                            << configFile << "\"" << std::endl;
@@ -793,7 +792,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     if (!ecmTeleop.isNull()) {
         if (!ConfigureECMTeleopJSON(ecmTeleop)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure ecm-teleop" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -802,7 +801,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     for (unsigned int index = 0; index < psmTeleops.size(); ++index) {
         if (!ConfigurePSMTeleopJSON(psmTeleops[index])) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure psm-teleops[" << index << "]" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -854,13 +853,13 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     if (mTeleopsPSM.size() > 0) {
         if (!foundClutch || !foundOperatorPresent) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Clutch\" and \"OperatorPresent\" need to be defined since there's at least one PSM tele-operation component.  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
     }
     if (mTeleopECM) {
         if (!foundCamera || !foundOperatorPresent) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Camera\" and \"OperatorPresent\" need to be defined since there's an ECM tele-operation component.  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
     }
     this->AddFootpedalInterfaces();
@@ -1460,20 +1459,20 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         mTeleopECM->mType = TeleopECM::TELEOP_ECM;
     }
 
-    // read orientation if present
-    vctMatRot3 orientation; // identity by default
-    jsonValue = jsonTeleop["rotation"];
-    if (!jsonValue.empty()) {
-        cmnDataJSON<vctMatRot3>::DeSerializeText(orientation, jsonTeleop["rotation"]);
-    }
-
     // read period if present
     double period = mtsIntuitiveResearchKit::TeleopPeriod;
     jsonValue = jsonTeleop["period"];
     if (!jsonValue.empty()) {
         period = jsonValue.asFloat();
     }
-    mTeleopECM->ConfigureTeleop(mTeleopECM->mType, orientation, period);
+    // for backward compatibility, send warning
+    jsonValue = jsonTeleop["rotation"];
+    if (!jsonValue.empty()) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: teleop " << name << ": \"rotation\" must now be defined under \"configure-parameter\" or in a separate configuration file" << std::endl;
+        return false;
+    }
+    const Json::Value jsonTeleopConfig = jsonTeleop["configure-parameter"];
+    mTeleopECM->ConfigureTeleop(mTeleopECM->mType, period, jsonTeleopConfig);
     AddTeleopECMInterfaces(mTeleopECM);
     return true;
 }
@@ -1803,6 +1802,17 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         return;
     }
 
+    // if none are running, freeze
+    if (!mTeleopECMRunning && !mTeleopPSMRunning) {
+        for (iterArms = mArms.begin(); iterArms != endArms; ++iterArms) {
+            if ((iterArms->second->mType == Arm::ARM_MTM) ||
+                (iterArms->second->mType == Arm::ARM_MTM_DERIVED) ||
+                (iterArms->second->mType == Arm::ARM_MTM_GENERIC)) {
+                iterArms->second->Freeze();
+            }
+        }
+    }
+
     // all fine
     bool readyForTeleop = mOperatorPresent;
 
@@ -1864,8 +1874,8 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
                  iterTeleopPSM != endTeleopPSM;
                  ++iterTeleopPSM) {
                 iterTeleopPSM->second->SetDesiredState(std::string("ENABLED"));
+                mTeleopPSMRunning = true;
             }
-            mTeleopPSMRunning = true;
         }
     }
 }
