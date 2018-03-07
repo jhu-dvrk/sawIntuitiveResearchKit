@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet
+  Author(s):  Anton Deguet, Nicole Ortega
   Created on: 2016-01-21
 
   (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
@@ -417,8 +417,8 @@ void mtsTeleOperationECM::EnterEnabled(void)
     eulerAngles.Assign(mInitial.ECMPositionJoint[3], mInitial.ECMPositionJoint[0], mInitial.ECMPositionJoint[1]);
     vctEulerToMatrixRotation3(eulerAngles, mInitial.ECMRotEuler);
 
-    mInitial.MTMLRot = mMTML.PositionCartesianCurrent.Position().Rotation(); 
-    mInitial.MTMRRot = mMTMR.PositionCartesianCurrent.Position().Rotation(); 
+    mInitial.MTMLRot = mMTML.PositionCartesianCurrent.Position().Rotation();
+    mInitial.MTMRRot = mMTMR.PositionCartesianCurrent.Position().Rotation();
 
 #if 0
     std::cerr << CMN_LOG_DETAILS << std::endl
@@ -518,7 +518,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     vctVec changeDir(4);
     vct3 crossN;  // normal to direction of motion
 
-    // - Direction 0 - left/right, movement in the XZ plane 
+    // - Direction 0 - left/right, movement in the XZ plane
     vct3  lr(c[0], 0, c[2]);
     lr.NormalizedSelf();
     changeDir[0] = -acos(vctDotProduct(mInitial.Lr, lr));
@@ -526,7 +526,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     if (vctDotProduct(normXZ, crossN) < 0) {
         changeDir[0] = -changeDir[0];
     }
-    
+
     // - Direction 1 - up/down, movement in the YZ plane
     vct3  ud(0, c[1], c[2]);
     ud.NormalizedSelf();
@@ -535,10 +535,10 @@ void mtsTeleOperationECM::RunEnabled(void)
     if (vctDotProduct(normYZ, crossN) < 0) {
         changeDir[1] = -changeDir[1];
     }
-   
+
     // - Direction 2 - in/out
     changeDir[2] = mScale * (mInitial.C.Norm() - c.Norm());
-    
+
     // - Direction 3 - cc/ccw, movement in the XY plane
     vct3 cw(up[0], up[1], 0);
     cw.NormalizedSelf();
@@ -547,7 +547,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     if (vctDotProduct(normXY, crossN) < 0) {
         changeDir[3] = -changeDir[3];
     }
-    
+
     // adjusting movement for camera orientation
     double totalChangeJoint3 = changeDir[3] + mInitial.ECMPositionJoint[3];
     changeJoints[0] = changeDir[0]*cos(totalChangeJoint3) - changeDir[1]*sin(totalChangeJoint3);
@@ -568,7 +568,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     vctEulerZYXRotation3 finalEulerAngles;
     vctMatrixRotation3<double> currECMRot;
     vctMatrixRotation3<double> finalECMRot;
-   
+
     finalEulerAngles.Assign(goalJoints[3], goalJoints[0], goalJoints[1]);
     vctEulerToMatrixRotation3(finalEulerAngles, finalECMRot);
     currECMRot = finalECMRot * mInitial.ECMRotEuler.Inverse();

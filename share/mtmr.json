@@ -3,8 +3,8 @@
     // transformation to match ISI convention (for read-only research
     // API on commercial da Vinci), uses stereo display as origin
     "base-offset" : [[ -1.0,  0.0,            0.0,         -0.180],
-                     [  0.0,  -0.866025404,  -0.5,         -0.400],
-                     [  0.0,  -0.5,           0.866025404, -0.325],
+                     [  0.0, -0.866025404,   -0.5,         -0.400],
+                     [  0.0, -0.5,            0.866025404, -0.325],
                      [  0.0,  0.0,            0.0,          1.0]]
     ,
     // see dVRK user guide
@@ -25,7 +25,7 @@
             },
             { // 2
                 "convention": "standard",
-      
+
           "alpha":  0.0000, "A":  0.2794, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",

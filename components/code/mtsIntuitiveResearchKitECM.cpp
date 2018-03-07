@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -95,7 +95,7 @@ void mtsIntuitiveResearchKitECM::Init(void)
     mtsIntuitiveResearchKitArm::Init();
 
     ToolOffset = 0;
-    
+
     // state machine specific to ECM, see base class for other states
     mArmState.AddState("MANUAL");
 

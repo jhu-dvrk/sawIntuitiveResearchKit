@@ -145,7 +145,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mCounter = 0;
     mControlSpace = mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE;
     mControlMode = mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE;
-        
+
     mJointControlReady = false;
     mCartesianControlReady = false;
     mIsSimulated = false;
@@ -490,11 +490,11 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
     if (mJointReady) {
 
 
-        
+
         try {
 
 
-            
+
         mtsExecutionResult executionResult;
         // joint state
         executionResult = PID.GetStateJoint(JointsPID);
@@ -604,10 +604,10 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
                       << "------ pid desired  " << JointsDesiredPID << std::endl
                       << "------ kin measured " << JointsKinematics << std::endl
                       << "------ kin desired  " << JointsDesiredKinematics << std::endl;
-            abort();           
+            abort();
         }
 
-        
+
         CartesianGetLocalParam.Position().From(CartesianGetLocal);
         CartesianGetParam.Position().From(CartesianGet);
         CartesianGetLocalDesiredParam.Position().From(CartesianGetLocalDesired);

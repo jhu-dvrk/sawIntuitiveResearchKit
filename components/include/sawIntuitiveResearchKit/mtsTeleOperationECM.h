@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet
+  Author(s):  Anton Deguet, Nicole Ortega
   Created on: 2016-01-21
 
   (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
@@ -42,7 +42,7 @@ public:
     ~mtsTeleOperationECM();
 
     void Configure(const std::string & filename = "");
-    virtual void Configure(const Json::Value & jsonConfig); 
+    virtual void Configure(const Json::Value & jsonConfig);
     void Startup(void);
     void Run(void);
     void Cleanup(void);
