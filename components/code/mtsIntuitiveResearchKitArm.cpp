@@ -488,6 +488,13 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
 
     // we can start reporting some joint values after the robot is powered
     if (mJointReady) {
+
+
+        
+        try {
+
+
+            
         mtsExecutionResult executionResult;
         // joint state
         executionResult = PID.GetStateJoint(JointsPID);
@@ -588,6 +595,19 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             CartesianGetLocalDesiredParam.SetValid(false);
             CartesianGetDesiredParam.SetValid(false);
         }
+
+
+        } catch (...) {
+            std::cerr << "Oops in " << this->GetName() << std::endl
+                      << CMN_LOG_DETAILS
+                      << "------ pid measured " << JointsPID << std::endl
+                      << "------ pid desired  " << JointsDesiredPID << std::endl
+                      << "------ kin measured " << JointsKinematics << std::endl
+                      << "------ kin desired  " << JointsDesiredKinematics << std::endl;
+            abort();           
+        }
+
+        
         CartesianGetLocalParam.Position().From(CartesianGetLocal);
         CartesianGetParam.Position().From(CartesianGet);
         CartesianGetLocalDesiredParam.Position().From(CartesianGetLocalDesired);
@@ -668,6 +688,9 @@ void mtsIntuitiveResearchKitArm::RunAllStates(void)
 void mtsIntuitiveResearchKitArm::EnterUninitialized(void)
 {
     mFallbackState = "UNINITIALIZED";
+    if (NumberOfBrakes() > 0) {
+        RobotIO.BrakeEngage();
+    }
 
     RobotIO.UsePotsForSafetyCheck(false);
     RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
