@@ -281,7 +281,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     SUJInterface = AddInterfaceRequired("BaseFrame", MTS_OPTIONAL);
     if (SUJInterface) {
         SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::SetBaseFrameEventHandler,
-                                           this, "PositionCartesianDesired");
+                                           this, "PositionCartesian");
         SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler,
                                            this, "Error");
     }
