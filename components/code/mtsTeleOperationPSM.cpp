@@ -454,7 +454,7 @@ void mtsTeleOperationPSM::TransitionSettingArmsState(void)
 
 void mtsTeleOperationPSM::EnterAligningMTM(void)
 {
-    // update user GUI re. scale 
+    // update user GUI re. scale
     ConfigurationEvents.Scale(mScale);
 
     // reset timer

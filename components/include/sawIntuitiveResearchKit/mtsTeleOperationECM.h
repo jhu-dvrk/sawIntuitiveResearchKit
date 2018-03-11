@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet
+  Author(s):  Anton Deguet, Nicole Ortega
   Created on: 2016-01-21
 
   (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
@@ -42,6 +42,7 @@ public:
     ~mtsTeleOperationECM();
 
     void Configure(const std::string & filename = "");
+    virtual void Configure(const Json::Value & jsonConfig);
     void Startup(void);
     void Run(void);
     void Cleanup(void);
@@ -85,30 +86,22 @@ protected:
     void TransitionEnabled(void); // performs actual teleoperation
 
 
-    class RobotMTM {
-    public:
+    struct {
         mtsFunctionRead  GetPositionCartesian;
-        // mtsFunctionRead  GetPositionCartesianDesired;
         mtsFunctionRead  GetVelocityCartesian;
-        mtsFunctionWrite SetPositionCartesian;
         mtsFunctionRead  GetCurrentState;
         mtsFunctionRead  GetDesiredState;
         mtsFunctionWrite SetDesiredState;
         mtsFunctionWrite LockOrientation;
-        mtsFunctionVoid  UnlockOrientation;
         mtsFunctionWrite SetWrenchBody;
         mtsFunctionWrite SetWrenchBodyOrientationAbsolute;
         mtsFunctionWrite SetGravityCompensation;
 
         prmPositionCartesianGet PositionCartesianCurrent;
         prmVelocityCartesianGet VelocityCartesianCurrent;
-        prmPositionCartesianSet PositionCartesianSet;
-    };
-    RobotMTM * mMTML;
-    RobotMTM * mMTMR;
+    } mMTMR, mMTML;
 
-    class RobotECM {
-    public:
+    struct {
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionRead  GetStateJointDesired;
         mtsFunctionWrite SetPositionGoalJoint;
@@ -119,8 +112,7 @@ protected:
         prmPositionCartesianGet PositionCartesianCurrent;
         prmStateJoint StateJointDesired;
         prmPositionJointSet PositionJointSet;
-    };
-    RobotECM * mECM;
+    } mECM;
 
     double mScale;
     vctMatRot3 mRegistrationRotation;
@@ -132,9 +124,7 @@ protected:
     double mInStateTimer;
 
     struct TeleopState {
-        double dLR; // distance
         vct3 C;     // center
-        vct3 N;     // normal to image
         vct3 Up;    // up direction
         vct3 Lr;    // left/right movement, ie. c vector projected on the XZ plane
         vct3 Ud;    // up/down movement, ie. c vector projected on the YZ plane
@@ -143,9 +133,7 @@ protected:
         double d;   // depth of R along C, depth of L is opposite
         vctMatRot3 MTMLRot; //initial rotation of MTML
         vctMatRot3 MTMRRot; //initial rotation of MTMR
-        vctMatRot3 ECMRot; //initial rotation of ECM
-        vctMatrixRotation3<double> ECMRotEuler; //initial rotation of ECM frame calculated using Euler angles
-        
+        vctMatrixRotation3<double> ECMRotEuler; //initial rotation of ECM calc using Euler angles
         vctVec ECMPositionJoint;
     } mInitial;
 

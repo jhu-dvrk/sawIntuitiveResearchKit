@@ -38,9 +38,9 @@ const size_t MUX_MAX_INDEX = 15;
 // input
 const size_t ANALOG_SAMPLE_NUMBER = 60;
 
-// DO NOT set value below 2, this value should probably go
-// down when the QLA/dSIB are properly grounded.
-const size_t NUMBER_OF_MUX_CYCLE_BEFORE_STABLE = 4;
+// DO NOT set value below 3, this value might go down when the
+// QLA/dSIB are properly grounded.
+const size_t NUMBER_OF_MUX_CYCLE_BEFORE_STABLE = 3;
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJ, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
 
@@ -68,7 +68,7 @@ public:
         mBrakeDesiredCurrent = 0.0;
 
         // emit an event the first time we have a valid position
-        mNeedToUpdatePositionCartesianDesired = 1;
+        mNumberOfMuxCyclesBeforeStable = 0;
 
         // joints
         mJointGet.SetSize(6);
@@ -131,14 +131,6 @@ public:
         mPositionCartesianLocalParam.SetMovingFrame(name + "_base");
         mStateTable.AddData(mPositionCartesianLocalParam, "PositionCartesianLocal");
 
-        mPositionCartesianDesiredParam.SetReferenceFrame("Cart");
-        mPositionCartesianDesiredParam.SetMovingFrame(name + "_base");
-        mStateTable.AddData(mPositionCartesianDesiredParam, "PositionCartesianDesired");
-
-        mPositionCartesianLocalDesiredParam.SetReferenceFrame("Cart");
-        mPositionCartesianLocalDesiredParam.SetMovingFrame(name + "_base");
-        mStateTable.AddData(mPositionCartesianLocalDesiredParam, "PositionCartesianLocalDesired");
-
         mStateTable.AddData(mBaseFrame, "BaseFrame");
         mStateTableConfiguration.AddData(mName, "Name");
         mStateTableConfiguration.AddData(mSerialNumber, "SerialNumber");
@@ -161,10 +153,6 @@ public:
                                         "GetPositionCartesian");
         mInterface->AddCommandReadState(mStateTable, mPositionCartesianLocalParam,
                                         "GetPositionCartesianLocal");
-        mInterface->AddCommandReadState(mStateTable, mPositionCartesianDesiredParam,
-                                        "GetPositionCartesianDesired");
-        mInterface->AddCommandReadState(mStateTable, mPositionCartesianLocalDesiredParam,
-                                        "GetPositionCartesianLocalDesired");
         mInterface->AddCommandReadState(mStateTable, mBaseFrame, "GetBaseFrame");
         mInterface->AddCommandReadState(mStateTable, mVoltages[0], "GetVoltagesPrimary");
         mInterface->AddCommandReadState(mStateTable, mVoltages[1], "GetVoltagesSecondary");
@@ -184,9 +172,6 @@ public:
         // BaseFrame is send everytime the mux has found all joint values
         mInterface->AddEventWrite(EventPositionCartesian, "PositionCartesian", prmPositionCartesianGet());
         mInterface->AddEventWrite(EventPositionCartesianLocal, "PositionCartesianLocal", prmPositionCartesianGet());
-        // BaseFrameDesired is sent only when the brakes are released, constant value afterwards
-        mInterface->AddEventWrite(EventPositionCartesianDesired, "PositionCartesianDesired", prmPositionCartesianGet());
-        mInterface->AddEventWrite(EventPositionCartesianLocalDesired, "PositionCartesianLocalDesired", prmPositionCartesianGet());
 
         // Events
         mInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
@@ -203,12 +188,12 @@ public:
             if (mClutched == 1) {
                 // clutch is pressed, arm is moving around and we know the pots are slow, we mark position as invalid
                 mInterface->SendStatus(mName.Data + ": SUJ clutched");
-                mPositionCartesianDesiredParam.SetTimestamp(mStateJoint.Timestamp());
-                mPositionCartesianDesiredParam.SetValid(false);
-                EventPositionCartesianDesired(mPositionCartesianDesiredParam);
-                mPositionCartesianLocalDesiredParam.SetTimestamp(mStateJoint.Timestamp());
-                mPositionCartesianLocalDesiredParam.SetValid(false);
-                EventPositionCartesianLocalDesired(mPositionCartesianLocalDesiredParam);
+                mPositionCartesianParam.SetTimestamp(mStateJoint.Timestamp());
+                mPositionCartesianParam.SetValid(false);
+                EventPositionCartesian(mPositionCartesianParam);
+                mPositionCartesianLocalParam.SetTimestamp(mStateJoint.Timestamp());
+                mPositionCartesianLocalParam.SetValid(false);
+                EventPositionCartesianLocal(mPositionCartesianLocalParam);
             }
         } else {
             mClutched -= 1;
@@ -324,12 +309,11 @@ public:
     vctDoubleVec mVoltageToPositionScales[2];
     vctDoubleVec mVoltageToPositionOffsets[2];
     prmStateJoint mStateJoint;
+     // 0 is no, 1 tells we need to send, 2 is for first full mux cycle has started
+    unsigned int mNumberOfMuxCyclesBeforeStable;
+    vctFrm4x4 mPositionCartesianLocal;
     prmPositionCartesianGet mPositionCartesianParam;
     prmPositionCartesianGet mPositionCartesianLocalParam;
-    unsigned int mNeedToUpdatePositionCartesianDesired; // 0 is no, 1 tells we need to send, 2 is for first full mux cycle has started
-    vctFrm4x4 mPositionCartesianLocalDesired;
-    prmPositionCartesianGet mPositionCartesianDesiredParam; // set when user releases brakes
-    prmPositionCartesianGet mPositionCartesianLocalDesiredParam;
 
     // Exta analog feedback
     // plugs 1-3:  spare1, spare2, brake-voltage, gnd
@@ -361,8 +345,6 @@ public:
     // Functions for events
     mtsFunctionWrite EventPositionCartesian;
     mtsFunctionWrite EventPositionCartesianLocal;
-    mtsFunctionWrite EventPositionCartesianDesired;
-    mtsFunctionWrite EventPositionCartesianLocalDesired;
 
     struct {
         mtsFunctionWrite CurrentState;
@@ -505,7 +487,7 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     }
     interfaceRequired = AddInterfaceRequired("BaseFrame", MTS_OPTIONAL);
     if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::SetBaseFrame, this, "PositionCartesianDesired");
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::SetBaseFrame, this, "PositionCartesian");
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::ErrorEventHandler, this, "Error");
     }
 
@@ -830,7 +812,7 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
         counter = 0;
         for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
             arm = Arms[armIndex];
-            
+
             // forward kinematic
             vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
             // pre and post transformations loaded from JSON file, base frame updated using events
@@ -841,17 +823,10 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
             // - with base
             arm->mPositionCartesianParam.Position().From(armBase);
             arm->mPositionCartesianParam.SetTimestamp(arm->mStateJoint.Timestamp());
-            arm->mPositionCartesianParam.SetValid(arm->mBaseFrameValid);
             arm->EventPositionCartesian(arm->mPositionCartesianParam);
             // - local
             arm->mPositionCartesianLocalParam.Position().From(armLocal);
             arm->mPositionCartesianLocalParam.SetTimestamp(arm->mStateJoint.Timestamp());
-            arm->mPositionCartesianLocalParam.SetValid(arm->mBaseFrameValid);
-            arm->EventPositionCartesianLocal(arm->mPositionCartesianLocalParam);
-            
-            arm->EventPositionCartesianDesired(arm->mPositionCartesianParam);
-            arm->EventPositionCartesian(arm->mPositionCartesianParam);
-            arm->EventPositionCartesianLocalDesired(arm->mPositionCartesianLocalParam);
             arm->EventPositionCartesianLocal(arm->mPositionCartesianLocalParam);
         }
     }
@@ -994,50 +969,15 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                     arm->mPositions[1][5] = 0.0;
                 }
 
-                // use average of positions reported by potentiometers
-                arm->mStateJoint.Position().SumOf(arm->mPositions[0],
-                                                  arm->mPositions[1]);
-                arm->mStateJoint.Position().Divide(2.0);
-                arm->mStateJoint.SetValid(true);
-
-                // Joint forward kinematics
-                arm->mJointGet.Assign(arm->mStateJoint.Position(), arm->mManipulator.links.size());
-                // forward kinematic
-                vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
-                // pre and post transformations loaded from JSON file, base frame updated using events
-                vctFrm4x4 armLocal = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
-                // apply base frame
-                vctFrm4x4 armBase = arm->mBaseFrame * armLocal;
-                // emit events for continuous positions
-                // - with base
-                arm->mPositionCartesianParam.Position().From(armBase);
-                arm->mPositionCartesianParam.SetTimestamp(arm->mStateJoint.Timestamp());
-                arm->mPositionCartesianParam.SetValid(arm->mBaseFrameValid);
-                arm->EventPositionCartesian(arm->mPositionCartesianParam);
-                // - local
-                arm->mPositionCartesianLocalParam.Position().From(armLocal);
-                arm->mPositionCartesianLocalParam.SetTimestamp(arm->mStateJoint.Timestamp());
-                arm->mPositionCartesianLocalParam.SetValid(arm->mBaseFrameValid);
-                arm->EventPositionCartesianLocal(arm->mPositionCartesianLocalParam);
-                // this mux cycle might have started before brakes where engaged
-                if (arm->mNeedToUpdatePositionCartesianDesired > 0) {
-                    if (arm->mNeedToUpdatePositionCartesianDesired < NUMBER_OF_MUX_CYCLE_BEFORE_STABLE) {
-                        arm->mNeedToUpdatePositionCartesianDesired++;
-                    } else {
-                        // at that point we know there has been a full mux cycle with brakes engaged
-                        // so we treat this as a fixed transformation until the SUJ move again (user clutch)
-                        arm->mPositionCartesianLocalDesired = armLocal;
-                        arm->mPositionCartesianLocalDesiredParam.SetValid(true);
-                        arm->mPositionCartesianLocalDesiredParam.SetTimestamp(arm->mStateJoint.Timestamp());
-                        arm->mPositionCartesianLocalDesiredParam.Position().From(arm->mPositionCartesianLocalDesired);
-                        arm->mNeedToUpdatePositionCartesianDesired = 0;
-                    }
+                // if the arm is clutched, we keep resetting mux counter
+                if (arm->mClutched > 0) {
+                    arm->mNumberOfMuxCyclesBeforeStable = 0;
                 }
 
                 // check pots when the SUJ is not clutch and if the
                 // counter for update cartesian desired position is
                 // back to zero (pot values should now be stable).
-                if ((arm->mClutched == 0) && (arm->mNeedToUpdatePositionCartesianDesired == 0)) {
+                if ((arm->mClutched == 0) && (arm->mNumberOfMuxCyclesBeforeStable >= NUMBER_OF_MUX_CYCLE_BEFORE_STABLE)) {
                     // compare primary and secondary pots when arm is not clutched
                     const double angleTolerance = 1.0 * cmnPI / 180.0;
                     const double distanceTolerance = 2.0 * cmn_mm;
@@ -1063,13 +1003,44 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                     }
                 }
 
-                // update and send desired position
-                arm->mPositionCartesianDesiredParam.Position().From(arm->mBaseFrame * arm->mPositionCartesianLocalDesired);
-                arm->mPositionCartesianDesiredParam.SetTimestamp(arm->mStateJoint.Timestamp());
-                arm->mPositionCartesianDesiredParam.SetValid(arm->mBaseFrameValid * arm->mPositionCartesianLocalDesiredParam.Valid());
-                arm->EventPositionCartesianDesired(arm->mPositionCartesianDesiredParam);
-                // local is constant, no computation needed here
-                arm->EventPositionCartesianLocalDesired(arm->mPositionCartesianLocalDesiredParam);
+                // use average of positions reported by potentiometers
+                arm->mStateJoint.Position().SumOf(arm->mPositions[0],
+                                                  arm->mPositions[1]);
+                arm->mStateJoint.Position().Divide(2.0);
+                arm->mStateJoint.SetValid(true);
+
+                // Joint forward kinematics
+                arm->mJointGet.Assign(arm->mStateJoint.Position(), arm->mManipulator.links.size());
+
+                // this mux cycle might have started before brakes where engaged so we can set the valid flag
+                if (arm->mNumberOfMuxCyclesBeforeStable < NUMBER_OF_MUX_CYCLE_BEFORE_STABLE) {
+                    arm->mNumberOfMuxCyclesBeforeStable++;
+                } else {
+                    // at that point we know there has been a full mux cycle with brakes engaged
+                    // so we treat this as a fixed transformation until the SUJ move again (user clutch)
+                    arm->mPositionCartesianLocalParam.SetValid(true);
+                }
+
+                // always update the global position valid flag to take into account base frame valid
+                arm->mPositionCartesianParam.SetValid(arm->mBaseFrameValid && arm->mPositionCartesianLocalParam.Valid());
+
+                // forward kinematic
+                vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
+                // pre and post transformations loaded from JSON file, base frame updated using events
+                arm->mPositionCartesianLocal = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
+                // apply base frame
+                vctFrm4x4 armBase = arm->mBaseFrame * arm->mPositionCartesianLocal;
+
+                // emit events for continuous positions
+                // - with base
+                arm->mPositionCartesianParam.Position().From(armBase);
+                arm->mPositionCartesianParam.SetTimestamp(arm->mStateJoint.Timestamp());
+                arm->EventPositionCartesian(arm->mPositionCartesianParam);
+                // - local
+                arm->mPositionCartesianLocalParam.Position().From(arm->mPositionCartesianLocal);
+                arm->mPositionCartesianLocalParam.SetTimestamp(arm->mStateJoint.Timestamp());
+                arm->EventPositionCartesianLocal(arm->mPositionCartesianLocalParam);
+
                 // advance this arm state table
                 arm->mStateTable.Advance();
             }
@@ -1125,13 +1096,11 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
                 arm->mPositionCartesianParam.SetTimestamp(arm->mStateJoint.Timestamp());
                 arm->mPositionCartesianParam.SetValid(arm->mBaseFrameValid);
                 arm->EventPositionCartesian(arm->mPositionCartesianParam);
-                arm->EventPositionCartesianDesired(arm->mPositionCartesianParam);
                 // - local
                 arm->mPositionCartesianLocalParam.Position().From(armLocal);
                 arm->mPositionCartesianLocalParam.SetTimestamp(arm->mStateJoint.Timestamp());
                 arm->mPositionCartesianLocalParam.SetValid(arm->mBaseFrameValid);
                 arm->EventPositionCartesianLocal(arm->mPositionCartesianLocalParam);
-                arm->EventPositionCartesianLocalDesired(arm->mPositionCartesianLocalParam);
                 arm->mStateTable.Advance();
             }
         }
@@ -1165,11 +1134,11 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
                     arm->mBrakeDesiredCurrent -= brakeCurrentRate * timeDelta;
                     // if by any luck we have reached arm->mBrakeEngagedCurrent, need to update cartesian desired
                     if (arm->mBrakeDesiredCurrent == arm->mBrakeEngagedCurrent) {
-                        arm->mNeedToUpdatePositionCartesianDesired = 1;
+                        arm->mNumberOfMuxCyclesBeforeStable = 0;
                     }
                 } else {
                     arm->mBrakeDesiredCurrent = arm->mBrakeEngagedCurrent;
-                    arm->mNeedToUpdatePositionCartesianDesired = 1;
+                    arm->mNumberOfMuxCyclesBeforeStable = 0;
                 }
                 arm->mStateTableBrakeCurrent.Advance();
             }
@@ -1201,7 +1170,6 @@ void mtsIntuitiveResearchKitSUJ::SetBaseFrame(const prmPositionCartesianGet & ne
             arm->mBaseFrame = base;
             arm->mBaseFrameValid = newBaseFrame.Valid();
             arm->mPositionCartesianParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
-            arm->mPositionCartesianDesiredParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
         }
     }
 }
