@@ -316,7 +316,8 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
         componentManager->Connect(Name(), "PID",
                                   PIDComponentName(), "Controller");
         if ((mBaseFrameComponentName != "") && (mBaseFrameInterfaceName != "")) {
-            componentManager->Connect(Name(), "BaseFrame", mBaseFrameComponentName, mBaseFrameInterfaceName);
+            componentManager->Connect(mBaseFrameComponentName, mBaseFrameInterfaceName,
+                                      Name(), "Robot");
         }
     }
     return true;
@@ -504,9 +505,7 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mDaVinciHeadSensor(0),
     mOperatorPresent(false),
     mCameraPressed(false),
-    mIOComponentName("io"),
-    mSUJECMInterfaceRequired(0),
-    mECMBaseFrameInterfaceProvided(0)
+    mIOComponentName("io")
 {
     mInterface = AddInterfaceProvided("Main");
     if (mInterface) {
@@ -784,9 +783,6 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         }
     }
 
-    bool hasSUJ = false;
-    bool hasECM = false;
-
     // look for ECM teleop
     const Json::Value ecmTeleop = jsonConfig["ecm-teleop"];
     if (!ecmTeleop.isNull()) {
@@ -864,42 +860,26 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     }
     this->AddFootpedalInterfaces();
 
-    // interface to ecm to get ECM frame and then push to PSM SUJs as base frame
-    mtsInterfaceRequired * ecmArmInterface = 0;
+    // connect arm SUJ clutch button to SUJ
+
+
+    // search for SUJs
+    bool hasSUJ = false;
     for (iter = mArms.begin(); iter != end; ++iter) {
-        if (iter->second->mType == Arm::ARM_ECM) {
-            hasECM = true;
-            ecmArmInterface = iter->second->ArmInterfaceRequired;
-        }
-        else if (iter->second->mType == Arm::ARM_SUJ) {
+        if (iter->second->mType == Arm::ARM_SUJ) {
             hasSUJ = true;
         }
     }
 
-    // add required and provided interfaces to grab positions from ECM SUJ and ECM
-    if (hasSUJ && hasECM) {
-        mSUJECMInterfaceRequired = AddInterfaceRequired("BaseFrame");
-        if (mSUJECMInterfaceRequired) {
-            mSUJECMInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler,
-                                                           this, "PositionCartesian");
-        }
-        if (ecmArmInterface) {
-            ecmArmInterface->AddFunction("GetPositionCartesianLocal", mGetPositionCartesianLocalFromECM);
-        } else {
-            CMN_LOG_CLASS_INIT_VERBOSE << "Configure: arm interface not yet added for ECM" << std::endl;
-        }
-        mECMBaseFrameInterfaceProvided = AddInterfaceProvided("ECMBaseFrame");
-        if (mECMBaseFrameInterfaceProvided) {
-            mECMBaseFrameInterfaceProvided->AddEventWrite(mECMBaseFrameEvent, "PositionCartesian", prmPositionCartesianGet());
-        }
-    }
-
-    // connect arm SUJ clutch button to SUJ
     if (hasSUJ) {
         for (iter = mArms.begin(); iter != end; ++iter) {
             Arm * arm = iter->second;
             // only for PSM and ECM when not simulated
-            if (((arm->mType == Arm::ARM_ECM) || (arm->mType == Arm::ARM_PSM))
+            if (((arm->mType == Arm::ARM_ECM)
+                 || (arm->mType == Arm::ARM_ECM_DERIVED)
+                 || (arm->mType == Arm::ARM_PSM)
+                 || (arm->mType == Arm::ARM_PSM_DERIVED)
+                )
                 && (arm->mSimulation == Arm::SIMULATION_NONE)) {
                 arm->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJ-" + arm->Name() + "-IO");
                 arm->SUJInterfaceRequiredFromIO->AddEventHandlerWrite(&Arm::SUJClutchEventHandlerFromIO, arm, "Button");
@@ -911,6 +891,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             }
         }
     }
+
     mConfigured = true;
 }
 
@@ -1632,10 +1613,6 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
                                                         this, "Warning");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
                                                         this, "Status");
-        // for ECM, we need to know when clutched so we can tell teleops to update master orientation
-        if (arm->mType == Arm::ARM_ECM) {
-            arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ECMManipClutchEventHandler, this, "ManipClutch");
-        }
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add Main interface for arm \""
                                  << arm->Name() << "\"" << std::endl;
@@ -1715,12 +1692,6 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
                                   mIOComponentName, "HeadSensor4");
     }
 
-    // connect interfaces to retrieve base frame from ECM SUJ and send event to SUJ
-    if (mSUJECMInterfaceRequired
-        && mECMBaseFrameInterfaceProvided) {
-        componentManager->Connect(this->GetName(), "BaseFrame", "SUJ", "ECM");
-        componentManager->Connect("SUJ", "BaseFrame", this->GetName(), "ECMBaseFrame");
-    }
     return true;
 }
 
@@ -1758,6 +1729,11 @@ void mtsIntuitiveResearchKitConsole::Home(void)
 
 void mtsIntuitiveResearchKitConsole::TeleopEnable(const bool & enable)
 {
+    // for convenience, if we start teleop we assume all arms should
+    // be homed too
+    if (enable) {
+        Home();
+    }
     mTeleopEnabled = enable;
     UpdateTeleopState();
 }
@@ -1938,42 +1914,4 @@ void mtsIntuitiveResearchKitConsole::WarningEventHandler(const mtsMessage & mess
 
 void mtsIntuitiveResearchKitConsole::StatusEventHandler(const mtsMessage & message) {
     mInterface->SendStatus(message.Message);
-}
-
-void mtsIntuitiveResearchKitConsole::ECMManipClutchEventHandler(const prmEventButton & button)
-{
-    std::cerr << CMN_LOG_DETAILS << " this should be probably be treated as any other clutch event  -- remove this code?" << std::endl;
-    /*
-    mtsExecutionResult result;
-    const TeleopPSMList::iterator end = mTeleopsPSM.end();
-    for (TeleopPSMList::iterator teleOp = mTeleopsPSM.begin();
-         teleOp != end;
-         ++teleOp) {
-        result = teleOp->second->ManipClutch(button);
-        if (!result) {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": ManipClutch: failed to send \""
-                                    << button << "\" for tele-op \"" << teleOp->second->Name()
-                                    << "\": " << result << std::endl;
-        }
-    }
-    */
-}
-
-void mtsIntuitiveResearchKitConsole::SUJECMBaseFrameHandler(const prmPositionCartesianGet & baseFrameParam)
-{
-    // get position from ECM and convert to useful type
-    prmPositionCartesianGet positionECMLocalParam;
-    mGetPositionCartesianLocalFromECM(positionECMLocalParam);
-    vctFrm3 positionECM = baseFrameParam.Position() * positionECMLocalParam.Position();
-
-    // compute and send new base frame for all SUJs (SUJ will handle ECM differently)
-    prmPositionCartesianGet baseFrameSUJParam;
-    baseFrameSUJParam.Position().From(positionECM.Inverse());
-    // it's an inverse, swap moving and reference frames
-    baseFrameSUJParam.SetReferenceFrame(positionECMLocalParam.MovingFrame());
-    baseFrameSUJParam.SetMovingFrame(baseFrameSUJParam.ReferenceFrame());
-    // valid only if both are valid
-    baseFrameSUJParam.SetValid(baseFrameParam.Valid() && positionECMLocalParam.Valid());
-    baseFrameSUJParam.SetTimestamp(positionECMLocalParam.Timestamp());
-    mECMBaseFrameEvent(baseFrameSUJParam);
 }

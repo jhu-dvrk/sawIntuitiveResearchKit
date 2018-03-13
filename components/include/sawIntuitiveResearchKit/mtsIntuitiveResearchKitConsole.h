@@ -324,15 +324,6 @@ protected:
     void ErrorEventHandler(const mtsMessage & message);
     void WarningEventHandler(const mtsMessage & message);
     void StatusEventHandler(const mtsMessage & message);
-
-    void ECMManipClutchEventHandler(const prmEventButton & button);
-
-    // Getting position from ECM and ECM SUJ to create base frame event for all other SUJs
-    mtsInterfaceRequired * mSUJECMInterfaceRequired;
-    mtsInterfaceProvided * mECMBaseFrameInterfaceProvided;
-    mtsFunctionRead mGetPositionCartesianLocalFromECM;
-    mtsFunctionWrite mECMBaseFrameEvent;
-    void SUJECMBaseFrameHandler(const prmPositionCartesianGet & baseFrameParam);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsole);
