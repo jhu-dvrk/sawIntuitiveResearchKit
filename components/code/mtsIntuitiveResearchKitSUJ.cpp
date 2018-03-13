@@ -1191,20 +1191,6 @@ void mtsIntuitiveResearchKitSUJ::SetLiftVelocity(const double & velocity)
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::SetBaseFrame(const prmPositionCartesianGet & newBaseFrame)
-{
-    std::cerr << "---------- SUJ set base frame called" << std::endl;
-    mtsIntuitiveResearchKitSUJArmData * arm;
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        arm = Arms[armIndex];
-        if (arm->mType != mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
-            arm->mBaseFrame.From(newBaseFrame.Position());
-            arm->mBaseFrameValid = newBaseFrame.Valid();
-            arm->mPositionCartesianParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
-        }
-    }
-}
-
 void mtsIntuitiveResearchKitSUJ::MotorDownEventHandler(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
