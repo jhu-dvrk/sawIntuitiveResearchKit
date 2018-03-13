@@ -965,7 +965,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawP
 
     // save goal
     JawGoal = jawPosition.Goal().at(0);
-    mHasNewPIDGoalOrIncrement = true;
+    mHasNewPIDGoal = true;
 }
 
 void mtsIntuitiveResearchKitPSM::SetPositionGoalJaw(const prmPositionJointSet & jawPosition)
