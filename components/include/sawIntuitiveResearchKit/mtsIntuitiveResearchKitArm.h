@@ -149,7 +149,6 @@ public:
     virtual void SetCartesianImpedanceGains(const prmCartesianImpedanceGains & gains);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
-    virtual void SetBaseFrameEventHandler(const prmPositionCartesianGet & newBaseFrame);
     virtual void SetBaseFrame(const prmPositionCartesianSet & newBaseFrame);
 
     /*! Event handler for PID position limit. */
@@ -224,9 +223,6 @@ public:
         mtsFunctionVoid  BrakeRelease;
         mtsFunctionVoid  BrakeEngage;
     } RobotIO;
-
-    // Interface to SUJ component
-    mtsInterfaceRequired * SUJInterface;
 
     // Main provided interface
     mtsInterfaceProvided * RobotInterface;

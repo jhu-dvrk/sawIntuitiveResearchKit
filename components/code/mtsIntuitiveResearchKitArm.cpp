@@ -277,15 +277,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
         IOInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::BiasEncoderEventHandler, this, "BiasEncoder");
     }
 
-    // Setup Joints
-    SUJInterface = AddInterfaceRequired("BaseFrame", MTS_OPTIONAL);
-    if (SUJInterface) {
-        SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::SetBaseFrameEventHandler,
-                                           this, "PositionCartesian");
-        SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler,
-                                           this, "Error");
-    }
-
     // Arm
     RobotInterface = AddInterfaceProvided("Robot");
     if (RobotInterface) {
@@ -1446,18 +1437,6 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
     } else {
         RobotInterface->SendError(this->GetName() + ": SetPositionGoalCartesian, unable to solve inverse kinematics");
         mJointTrajectory.GoalReachedEvent(false);
-    }
-}
-
-void mtsIntuitiveResearchKitArm::SetBaseFrameEventHandler(const prmPositionCartesianGet & newBaseFrame)
-{
-    if (newBaseFrame.Valid()) {
-        this->BaseFrame.FromNormalized(newBaseFrame.Position());
-        this->BaseFrameValid = true;
-        this->CartesianGetParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
-        this->CartesianGetDesiredParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
-    } else {
-        this->BaseFrameValid = false;
     }
 }
 
