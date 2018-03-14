@@ -5,6 +5,6 @@
   <DigitalIn BitID="4" BoardID="10" Debounce="0.05" Name="HeadSensor2" Pressed="1" Trigger="all"/>
   <DigitalIn BitID="8" BoardID="10" Debounce="0.05" Name="HeadSensor3" Pressed="1" Trigger="all"/>
   <DigitalIn BitID="12" BoardID="10" Debounce="0.05" Name="HeadSensor4" Pressed="1" Trigger="all"/>
-  <!-- Digital Input Configuration -->
+  <!-- Digital Output Configuration -->
   <DigitalOut BitID="0" BoardID="10" Name="HeadSensorTurnOff"/>
 </Config>
