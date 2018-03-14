@@ -5,6 +5,14 @@
         "watchdog-timeout": 0.04 // in seconds
     }
     ,
+    "operator-present": {
+        "io": "sawRobotIO1394-MTMR-dv-head-sensor.xml"
+    }
+    ,
+    "endoscope-focus": {
+        "io": "sawRobotIO1394-MTML-dv-endoscope-focus.xml"
+    }
+    ,
     "arms":
     [
         {
