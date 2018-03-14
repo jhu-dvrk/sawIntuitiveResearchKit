@@ -41,6 +41,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsSocketClientPSM.h>
 #include <sawIntuitiveResearchKit/mtsSocketServerPSM.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciHeadSensor.h>
+#include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
@@ -503,6 +504,7 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mTeleopECMRunning(false),
     mTeleopECM(0),
     mDaVinciHeadSensor(0),
+    mDaVinciEndoscopeFocus(0),
     mOperatorPresent(false),
     mCameraPressed(false),
     mIOComponentName("io")
@@ -766,6 +768,23 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 io->Configure(configFile);
             }
         }
+        // configure for endoscope focus
+        jsonValue = jsonConfig["endoscope-focus"];
+        if (!jsonValue.empty()) {
+            // check if operator present uses IO
+            Json::Value jsonConfigFile = jsonValue["io"];
+            if (!jsonConfigFile.empty()) {
+                const std::string configFile = configPath.Find(jsonConfigFile.asString());
+                if (configFile == "") {
+                    CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
+                                             << jsonConfigFile.asString() << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring endoscope focus using \""
+                                           << configFile << "\"" << std::endl;
+                io->Configure(configFile);
+            }
+        }
         // and add the io component!
         mtsComponentManager::GetInstance()->AddComponent(io);
     }
@@ -841,6 +860,26 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         mDInputSources["HeadSensor4"] = InterfaceComponentType(mIOComponentName, "HeadSensor4");
     }
 
+    // load endoscope-focus settings
+    const Json::Value endoscopeFocus = jsonConfig["endoscope-focus"];
+    if (!endoscopeFocus.empty()) {
+        const std::string endoscopeFocusName = "daVinciEndoscopeFocus";
+        mDaVinciEndoscopeFocus = new mtsDaVinciEndoscopeFocus(endoscopeFocusName);
+        mtsComponentManager::GetInstance()->AddComponent(mDaVinciEndoscopeFocus);
+        // make sure we have cam+ and cam- in digital inputs
+        const DInputSourceType::const_iterator endDInputs = mDInputSources.end();
+        const bool foundCamMinus = (mDInputSources.find("Cam-") != endDInputs);
+        if (!foundCamMinus) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: input for footpedal \"Cam-\" is required for \"endoscope-focus\".  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        const bool foundCamPlus = (mDInputSources.find("Cam+") != endDInputs);
+        if (!foundCamMinus) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: input for footpedal \"Cam+\" is required for \"endoscope-focus\".  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
     // if we have any teleoperation component, we need to have the interfaces for the foot pedals
     const DInputSourceType::const_iterator endDInputs = mDInputSources.end();
     const bool foundClutch = (mDInputSources.find("Clutch") != endDInputs);
@@ -860,9 +899,6 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         }
     }
     this->AddFootpedalInterfaces();
-
-    // connect arm SUJ clutch button to SUJ
-
 
     // search for SUJs
     bool hasSUJ = false;
@@ -1691,6 +1727,20 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
                                   mIOComponentName, "HeadSensor3");
         componentManager->Connect(headSensorName, "HeadSensor4",
                                   mIOComponentName, "HeadSensor4");
+    }
+
+    // connect daVinci endoscope focus if any
+    if (mDaVinciEndoscopeFocus) {
+        const std::string endoscopeFocusName = mDaVinciEndoscopeFocus->GetName();
+        // see sawRobotIO1394 XML file for interface names
+        componentManager->Connect(endoscopeFocusName, "EndoscopeFocusIn",
+                                  mIOComponentName, "EndoscopeFocusIn");
+        componentManager->Connect(endoscopeFocusName, "EndoscopeFocusOut",
+                                  mIOComponentName, "EndoscopeFocusOut");
+        componentManager->Connect(endoscopeFocusName, "FocusIn",
+                                  mIOComponentName, "Cam+");
+        componentManager->Connect(endoscopeFocusName, "FocusOut",
+                                  mIOComponentName, "Cam-");
     }
 
     return true;

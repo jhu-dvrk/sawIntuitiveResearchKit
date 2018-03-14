@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2017 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2018 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -106,6 +106,7 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciHeadSensor.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciEndoscopeFocus.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitUDPStreamer.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBasePSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketClientPSM.h
@@ -125,6 +126,7 @@ if (cisst_FOUND)
          code/mtsTeleOperationECM.cpp
          code/mtsIntuitiveResearchKitConsole.cpp
          code/mtsDaVinciHeadSensor.cpp
+         code/mtsDaVinciEndoscopeFocus.cpp
          code/mtsIntuitiveResearchKitUDPStreamer.cpp
          code/mtsSocketBasePSM.cpp
          code/mtsSocketClientPSM.cpp

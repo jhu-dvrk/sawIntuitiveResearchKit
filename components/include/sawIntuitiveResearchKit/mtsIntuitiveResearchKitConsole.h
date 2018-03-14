@@ -34,6 +34,7 @@ namespace dvrk {
 }
 
 class mtsDaVinciHeadSensor;
+class mtsDaVinciEndoscopeFocus;
 class mtsIntuitiveResearchKitArm;
 
 class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
@@ -275,6 +276,9 @@ protected:
 
     /*! daVinci Head Sensor */
     mtsDaVinciHeadSensor * mDaVinciHeadSensor;
+
+    /*! daVinci Endoscope Focus */
+    mtsDaVinciEndoscopeFocus * mDaVinciEndoscopeFocus;
 
     /*! Find all arm data from JSON configuration. */
     bool ConfigureArmJSON(const Json::Value & jsonArm,
