@@ -1,6 +1,8 @@
 dVRK configuration files
 ========================
 
+The console class which loads a `console-XYZ.json` file has a search path that include this `share` directory.   You should always use a relative path when using the configuration files from this directory and subdirectories.
+
 # Directories per system
 
 Directories are used to store system specific files.  Directory names start with the institution name
@@ -16,6 +18,12 @@ number.  You might also want to store the original `.cal` files provided by Intu
   * your console configuration files since these refer to your system specific IO configuration files
 
 # Shared files
+
+## IOs
+
+There are some IO files shared accross systems/sites.  These are used to define inputs/outputs used to communicate with the daVinci foot pedals, head sensor, camera focus controllers, ...
+
+These files are stored in the subdirectory `io`.  The console class will search for files in this directory, there's no need to specify the full path to the standard IO files. 
 
 ## PID
 

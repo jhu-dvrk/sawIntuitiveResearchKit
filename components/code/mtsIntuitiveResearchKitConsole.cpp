@@ -558,6 +558,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // will work as long as this component is located in the same
     // parent directory as the "shared" directory.
     configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
+    configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/io", cmnPath::TAIL);
 
     mtsComponentManager * manager = mtsComponentManager::GetInstance();
 
