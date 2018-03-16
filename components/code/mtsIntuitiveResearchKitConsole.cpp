@@ -524,6 +524,8 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
                                     "SetScale", 0.5);
         mInterface->AddEventWrite(ConfigurationEvents.Scale,
                                   "Scale", 0.5);
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetVolume, this,
+                                    "SetVolume", 0.5);
     }
 }
 
@@ -576,6 +578,10 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // add text to speech compoment for the whole system
     mTextToSpeech = new mtsTextToSpeech();
     manager->AddComponent(mTextToSpeech);
+    mtsInterfaceRequired * textToSpeechInterface = this->AddInterfaceRequired("TextToSpeech");
+    textToSpeechInterface->AddFunction("Beep", mAudio.Beep);
+    textToSpeechInterface->AddFunction("StringToSpeech", mAudio.StringToSpeech);
+    mAudioVolume = 0.5;
 
     // IO default settings
     double periodIO = mtsIntuitiveResearchKit::IOPeriod;
@@ -878,7 +884,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             exit(EXIT_FAILURE);
         }
         const bool foundCamPlus = (mDInputSources.find("Cam+") != endDInputs);
-        if (!foundCamMinus) {
+        if (!foundCamPlus) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: input for footpedal \"Cam+\" is required for \"endoscope-focus\".  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
             exit(EXIT_FAILURE);
         }
@@ -949,6 +955,7 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
     message.append(" / cisst ");
     message.append(CISST_VERSION);
     mInterface->SendStatus(message);
+    mAudio.StringToSpeech(std::string("Hello"));
 }
 
 void mtsIntuitiveResearchKitConsole::Run(void)
@@ -1666,6 +1673,10 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
+    // connect console for audio feedback
+    componentManager->Connect(this->GetName(), "TextToSpeech",
+                              mTextToSpeech->GetName(), "Commands");
+
     const ArmList::iterator armsEnd = mArms.end();
     for (ArmList::iterator armIter = mArms.begin();
          armIter != armsEnd;
@@ -1731,9 +1742,6 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
                                   mIOComponentName, "HeadSensor3");
         componentManager->Connect(headSensorName, "HeadSensor4",
                                   mIOComponentName, "HeadSensor4");
-        // connect beep for audio feedback
-        componentManager->Connect(headSensorName, "TextToSpeech",
-                                  mTextToSpeech->GetName(), "Commands");
     }
 
     // connect daVinci endoscope focus if any
@@ -1925,12 +1933,28 @@ void mtsIntuitiveResearchKitConsole::SetScale(const double & scale)
     ConfigurationEvents.Scale(scale);
 }
 
+void mtsIntuitiveResearchKitConsole::SetVolume(const double & volume)
+{
+    if (volume > 1.0) {
+        mAudioVolume = 1.0;
+    } else if (volume < 0.0) {
+        mAudioVolume = 0.0;
+    } else {
+        mAudioVolume = volume;
+    }
+    std::stringstream message;
+    message << this->GetName() << ": volume set to " << static_cast<int>(volume * 100.0);
+    mInterface->SendStatus(message.str());
+}
+
 void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
         mInterface->SendStatus(this->GetName() + ": clutch pressed");
+        mAudio.Beep(vct3(0.1, 700.0, mAudioVolume));
     } else {
         mInterface->SendStatus(this->GetName() + ": clutch released");
+        mAudio.Beep(vct3(0.1, 700.0, mAudioVolume));
     }
     ConsoleEvents.Clutch(button);
 }
@@ -1940,9 +1964,11 @@ void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & b
     if (button.Type() == prmEventButton::PRESSED) {
         mCameraPressed = true;
         mInterface->SendStatus(this->GetName() + ": camera pressed");
+        mAudio.Beep(vct3(0.1, 1000.0, mAudioVolume));
     } else {
         mCameraPressed = false;
         mInterface->SendStatus(this->GetName() + ": camera released");
+        mAudio.Beep(vct3(0.1, 1000.0, mAudioVolume));
     }
     UpdateTeleopState();
     ConsoleEvents.Camera(button);
@@ -1953,9 +1979,11 @@ void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventB
     if (button.Type() == prmEventButton::PRESSED) {
         mOperatorPresent = true;
         mInterface->SendStatus(this->GetName() + ": operator present");
+        mAudio.Beep(vct3(0.3, 1500.0, mAudioVolume));
     } else {
         mOperatorPresent = false;
         mInterface->SendStatus(this->GetName() + ": operator not present");
+        mAudio.Beep(vct3(0.3, 1200.0, mAudioVolume));
     }
     UpdateTeleopState();
     ConsoleEvents.OperatorPresent(button);

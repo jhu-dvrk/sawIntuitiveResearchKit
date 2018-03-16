@@ -71,12 +71,18 @@
     [
         {
             "master": "MTMR",
-            "slave": "PSM1"
+            "slave": "PSM1",
+            "configure-parameter": {
+                "scale": 0.4
+            }
         }
         ,
         {
             "master": "MTML",
-            "slave": "PSM2"
+            "slave": "PSM2",
+            "configure-parameter": {
+                "scale":0.4
+            }
         }
     ]
 }

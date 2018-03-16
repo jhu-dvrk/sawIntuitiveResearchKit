@@ -304,10 +304,17 @@ protected:
     void TeleopEnable(const bool & enable);
     void UpdateTeleopState(void);
     void SetScale(const double & scale);
+    void SetVolume(const double & volume);
     bool mHasIO;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
+
+    struct {
+        mtsFunctionWrite Beep;
+        mtsFunctionWrite StringToSpeech;
+    } mAudio;
+    double mAudioVolume;
 
     struct {
         mtsFunctionWrite Clutch;
