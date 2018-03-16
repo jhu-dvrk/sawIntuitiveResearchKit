@@ -33,6 +33,7 @@ namespace dvrk {
     class console;
 }
 
+class mtsTextToSpeech;
 class mtsDaVinciHeadSensor;
 class mtsDaVinciEndoscopeFocus;
 class mtsIntuitiveResearchKitArm;
@@ -266,6 +267,9 @@ protected:
 
     typedef std::map<std::string, Arm *> ArmList;
     ArmList mArms;
+
+    /*! Pointer to mtsTextToSpeech component */
+    mtsTextToSpeech * mTextToSpeech;
 
     /*! List to manage multiple PSM teleoperations */
     typedef std::map<std::string, TeleopPSM *> TeleopPSMList;

@@ -28,8 +28,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstParameterTypes/prmEventButton.h>
 
+#include <sawTextToSpeech/mtsTextToSpeech.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
-
 #include <sawControllers/mtsPID.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
@@ -572,6 +572,10 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             exit(EXIT_FAILURE);
         }
     }
+
+    // add text to speech compoment for the whole system
+    mTextToSpeech = new mtsTextToSpeech();
+    manager->AddComponent(mTextToSpeech);
 
     // IO default settings
     double periodIO = mtsIntuitiveResearchKit::IOPeriod;
@@ -1727,6 +1731,9 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
                                   mIOComponentName, "HeadSensor3");
         componentManager->Connect(headSensorName, "HeadSensor4",
                                   mIOComponentName, "HeadSensor4");
+        // connect beep for audio feedback
+        componentManager->Connect(headSensorName, "TextToSpeech",
+                                  mTextToSpeech->GetName(), "Commands");
     }
 
     // connect daVinci endoscope focus if any

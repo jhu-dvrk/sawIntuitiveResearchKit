@@ -46,6 +46,10 @@ protected:
     struct {
         mtsFunctionWrite TurnOff;
     } RobotIO;
+    
+    struct {
+        mtsFunctionWrite Beep;
+    } TextToSpeech;
 
     // Functions for events
     struct {

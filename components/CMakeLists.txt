@@ -39,6 +39,7 @@ if (cisst_FOUND)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
+  find_package (sawTextToSpeech         1.1.0 REQUIRED)
   find_package (sawRobotIO1394          1.5.0 REQUIRED)
   find_package (sawControllers          1.5.0 REQUIRED)
 
@@ -46,10 +47,12 @@ if (cisst_FOUND)
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
     # saw components configuration
-    include_directories (${sawRobotIO1394_INCLUDE_DIR}
+    include_directories (${sawTextToSpeech_INCLUDE_DIR}
+                         ${sawRobotIO1394_INCLUDE_DIR}
                          ${sawControllers_INCLUDE_DIR})
 
-    link_directories (${sawRobotIO1394_LIBRARY_DIR}
+    link_directories (${sawTextToSpeech_LIBRARY_DIR}
+                      ${sawRobotIO1394_LIBRARY_DIR}
                       ${sawControllers_LIBRARY_DIR})
 
     # catkin/ROS paths
@@ -144,6 +147,7 @@ if (cisst_FOUND)
 
     # link against non cisst libraries and cisst components
     target_link_libraries (sawIntuitiveResearchKit
+                           ${sawTextToSpeech_LIBRARIES}
                            ${sawRobotIO1394_LIBRARIES}
                            ${sawControllers_LIBRARIES})
 
