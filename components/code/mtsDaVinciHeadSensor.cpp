@@ -115,5 +115,12 @@ void mtsDaVinciHeadSensor::HeadSensorEventHandler(const size_t sensorNumber,
         return;
     }
 
+    // changed
+    if (operatorPresent) {
+        MessageEvents.OperatorPresent(prmEventButton(prmEventButton::PRESSED));
+    } else {
+        MessageEvents.OperatorPresent(prmEventButton(prmEventButton::RELEASED));
+    }
+
     mOperatorPresent = operatorPresent;
 }
