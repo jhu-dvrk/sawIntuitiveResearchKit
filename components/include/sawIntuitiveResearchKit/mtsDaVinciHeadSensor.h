@@ -47,10 +47,6 @@ protected:
         mtsFunctionWrite TurnOff;
     } RobotIO;
     
-    struct {
-        mtsFunctionWrite Beep;
-    } TextToSpeech;
-
     // Functions for events
     struct {
         mtsFunctionWrite OperatorPresent;

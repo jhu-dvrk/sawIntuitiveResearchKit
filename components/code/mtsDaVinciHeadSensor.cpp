@@ -66,11 +66,6 @@ void mtsDaVinciHeadSensor::Init(void)
         interfaceRequired->AddEventHandlerWrite(&mtsDaVinciHeadSensor::HeadSensor4EventHandler,
                                                 this, "Button");
     }
-    // text to speech
-    interfaceRequired = AddInterfaceRequired("TextToSpeech");
-    if (interfaceRequired) {
-        interfaceRequired->AddFunction("Beep", TextToSpeech.Beep);
-    }
 
     mInterface = AddInterfaceProvided("OperatorPresent");
     if (mInterface) {
@@ -80,7 +75,7 @@ void mtsDaVinciHeadSensor::Init(void)
 }
 
 
-void mtsDaVinciHeadSensor::Configure(const std::string & filename)
+void mtsDaVinciHeadSensor::Configure(const std::string & CMN_UNUSED(filename))
 {
 }
 
@@ -114,19 +109,11 @@ void mtsDaVinciHeadSensor::HeadSensorEventHandler(const size_t sensorNumber,
     }
     // for now use a simple test, at least two sensors triggered
     const bool operatorPresent = (mSensors.SumOfElements() >= 3);
-    
+
     // nothing has changed, don't do anything
     if (mOperatorPresent == operatorPresent) {
         return;
     }
 
-    // changed
-    if (operatorPresent) {
-        MessageEvents.OperatorPresent(prmEventButton(prmEventButton::PRESSED));
-        TextToSpeech.Beep(vct3(0.2, 1500.0, 1.0));
-    } else {
-        MessageEvents.OperatorPresent(prmEventButton(prmEventButton::RELEASED));
-        TextToSpeech.Beep(vct3(0.2, 300.0, 1.0));
-    }
     mOperatorPresent = operatorPresent;
 }
