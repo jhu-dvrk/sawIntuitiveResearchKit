@@ -151,7 +151,7 @@ void mtsTeleOperationECM::Init(void)
         interfaceRequired->AddFunction("GetStateJointDesired",
                                        mECM.GetStateJointDesired);
         interfaceRequired->AddFunction("SetPositionJoint",
-                                       mECM.SetPositionGoalJoint);
+                                       mECM.SetPositionJoint);
         interfaceRequired->AddFunction("GetCurrentState",
                                        mECM.GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState",
@@ -519,45 +519,57 @@ void mtsTeleOperationECM::RunEnabled(void)
     vct3 crossN;  // normal to direction of motion
 
     // - Direction 0 - left/right, movement in the XZ plane
-    vct3  lr(c[0], 0, c[2]);
+    vct3  lr(c[0], 0.0, c[2]);
     lr.NormalizedSelf();
-    changeDir[0] = -acos(vctDotProduct(mInitial.Lr, lr));
-    crossN = vctCrossProduct(mInitial.Lr, lr);
-    if (vctDotProduct(normXZ, crossN) < 0) {
-        changeDir[0] = -changeDir[0];
+    if (mInitial.Lr.AlmostEqual(lr)) {
+        changeDir[0] = 0.0;
+    } else {
+        changeDir[0] = -acos(vctDotProduct(mInitial.Lr, lr));
+        crossN = vctCrossProduct(mInitial.Lr, lr);
+        if (vctDotProduct(normXZ, crossN) < 0.0) {
+            changeDir[0] = -changeDir[0];
+        }
     }
 
     // - Direction 1 - up/down, movement in the YZ plane
-    vct3  ud(0, c[1], c[2]);
+    vct3  ud(0.0, c[1], c[2]);
     ud.NormalizedSelf();
-    changeDir[1] = acos(vctDotProduct(mInitial.Ud, ud));
-    crossN = vctCrossProduct(mInitial.Ud, ud);
-    if (vctDotProduct(normYZ, crossN) < 0) {
-        changeDir[1] = -changeDir[1];
+    if (mInitial.Ud.AlmostEqual(ud)) {
+        changeDir[1] = 0.0;
+    } else {
+        changeDir[1] = acos(vctDotProduct(mInitial.Ud, ud));
+        crossN = vctCrossProduct(mInitial.Ud, ud);
+        if (vctDotProduct(normYZ, crossN) < 0.0) {
+            changeDir[1] = -changeDir[1];
+        }
     }
-
+    
     // - Direction 2 - in/out
     changeDir[2] = mScale * (mInitial.C.Norm() - c.Norm());
 
     // - Direction 3 - cc/ccw, movement in the XY plane
     vct3 cw(up[0], up[1], 0);
     cw.NormalizedSelf();
-    changeDir[3] = -acos(vctDotProduct(mInitial.Cw, cw));
-    crossN = vctCrossProduct(mInitial.Cw, cw);
-    if (vctDotProduct(normXY, crossN) < 0) {
-        changeDir[3] = -changeDir[3];
+    if (mInitial.Cw.AlmostEqual(cw)) {
+        changeDir[3] = 0.0;
+    } else {
+        changeDir[3] = -acos(vctDotProduct(mInitial.Cw, cw));
+        crossN = vctCrossProduct(mInitial.Cw, cw);
+        if (vctDotProduct(normXY, crossN) < 0) {
+            changeDir[3] = -changeDir[3];
+        }
     }
 
     // adjusting movement for camera orientation
     double totalChangeJoint3 = changeDir[3] + mInitial.ECMPositionJoint[3];
-    changeJoints[0] = changeDir[0]*cos(totalChangeJoint3) - changeDir[1]*sin(totalChangeJoint3);
-    changeJoints[1] = changeDir[1]*cos(totalChangeJoint3) + changeDir[0]*sin(totalChangeJoint3);
+    changeJoints[0] = changeDir[0] * cos(totalChangeJoint3) - changeDir[1] * sin(totalChangeJoint3);
+    changeJoints[1] = changeDir[1] * cos(totalChangeJoint3) + changeDir[0] * sin(totalChangeJoint3);
     changeJoints[2] = changeDir[2];
     changeJoints[3] = changeDir[3];
 
     goalJoints.Add(changeJoints);
     mECM.PositionJointSet.Goal().ForceAssign(goalJoints);
-    mECM.SetPositionGoalJoint(mECM.PositionJointSet);
+    mECM.SetPositionJoint(mECM.PositionJointSet);
 
     /* --- Lock Orientation --- */
 

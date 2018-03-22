@@ -104,7 +104,7 @@ protected:
     struct {
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionRead  GetStateJointDesired;
-        mtsFunctionWrite SetPositionGoalJoint;
+        mtsFunctionWrite SetPositionJoint;
         mtsFunctionRead  GetCurrentState;
         mtsFunctionRead  GetDesiredState;
         mtsFunctionWrite SetDesiredState;
