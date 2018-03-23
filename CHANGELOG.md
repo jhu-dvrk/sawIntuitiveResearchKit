@@ -39,8 +39,9 @@ Change log
     * Created multiple ROS bridges, publishers, subscribers, tf2 and cisst/SAW period stats (custom message) 
     * Initial support for crtk topics
   * sawRobotIO1394:
-    * if pot/encoder tolerance distance is set to 0, ignore axis in safety checks
-    * code refactor to reduce number of classes and ease maintenance
+    * New velocity estimation of FPGA with firmware rev 6
+    * If pot/encoder tolerance distance is set to 0, ignore axis in safety checks
+    * Code refactor to reduce number of classes and ease maintenance
 * Bug fixes:
   * Fixed data member initialization (valgrind)
 
