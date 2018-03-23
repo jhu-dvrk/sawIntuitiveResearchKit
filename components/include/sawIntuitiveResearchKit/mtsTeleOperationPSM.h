@@ -131,6 +131,7 @@ protected:
     double mScale;
     vctMatRot3 mRegistrationRotation;
 
+    bool mIgnoreJaw;
     bool mIsClutched;
     bool mRotationLocked;
     bool mTranslationLocked;

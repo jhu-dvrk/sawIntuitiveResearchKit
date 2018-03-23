@@ -100,6 +100,7 @@ void mtsTeleOperationPSM::Init(void)
                                        this);
 
     mScale = 0.2;
+    mIgnoreJaw = false;
     mIsClutched = false;
 
     mRotationLocked = false;
@@ -226,6 +227,11 @@ void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
         vctMatRot3 orientation; // identity by default
         cmnDataJSON<vctMatRot3>::DeSerializeText(orientation, jsonConfig["rotation"]);
         SetRegistrationRotation(orientation);
+    }
+
+    jsonValue = jsonConfig["ignore-jaw"];
+    if (!jsonValue.empty()) {
+        mIgnoreJaw = jsonValue.asBool();
     }
 }
 
@@ -506,16 +512,19 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
 
     // find difference between gripper (MTM) and jaw (PSM)
     double gripperJawErrorInDegrees = 0.0;
-    if (mMTM.GetStateGripper.IsValid()) {
-        mMTM.GetStateGripper(mMTM.StateGripper);
-        mPSM.GetStateJaw(mPSM.StateJaw);
-        const double gripperInDegrees = cmn180_PI * mMTM.StateGripper.Position()[0];
-        const double jawInDegrees = cmn180_PI * mPSM.StateJaw.Position()[0];
-        // MTMs can't really open above 60 degrees so if both ends are above 55, just engage
-        if ((gripperInDegrees > 55) && (jawInDegrees > 55)) {
-            gripperJawErrorInDegrees = 0.0;
-        } else {
-            gripperJawErrorInDegrees = fabs(gripperInDegrees - jawInDegrees);
+
+    if (!mIgnoreJaw) {
+        if (mMTM.GetStateGripper.IsValid()) {
+            mMTM.GetStateGripper(mMTM.StateGripper);
+            mPSM.GetStateJaw(mPSM.StateJaw);
+            const double gripperInDegrees = cmn180_PI * mMTM.StateGripper.Position()[0];
+            const double jawInDegrees = cmn180_PI * mPSM.StateJaw.Position()[0];
+            // MTMs can't really open above 60 degrees so if both ends are above 55, just engage
+            if ((gripperInDegrees > 55) && (jawInDegrees > 55)) {
+                gripperJawErrorInDegrees = 0.0;
+            } else {
+                gripperJawErrorInDegrees = fabs(gripperInDegrees - jawInDegrees);
+            }
         }
     }
 
@@ -596,15 +605,17 @@ void mtsTeleOperationPSM::RunEnabled(void)
             // PSM go this cartesian position
             mPSM.SetPositionCartesian(mPSM.PositionCartesianSet);
 
-            // Gripper
-            if (mMTM.GetStateGripper.IsValid()) {
-                prmStateJoint gripper;
-                mMTM.GetStateGripper(gripper);
-                mPSM.PositionJointSet.Goal()[0] = gripper.Position()[0];
-                mPSM.SetPositionJaw(mPSM.PositionJointSet);
-            } else {
-                mPSM.PositionJointSet.Goal()[0] = 45.0 * cmnPI_180;
-                mPSM.SetPositionJaw(mPSM.PositionJointSet);
+            if (!mIgnoreJaw) {
+                // Gripper
+                if (mMTM.GetStateGripper.IsValid()) {
+                    prmStateJoint gripper;
+                    mMTM.GetStateGripper(gripper);
+                    mPSM.PositionJointSet.Goal()[0] = gripper.Position()[0];
+                    mPSM.SetPositionJaw(mPSM.PositionJointSet);
+                } else {
+                    mPSM.PositionJointSet.Goal()[0] = 45.0 * cmnPI_180;
+                    mPSM.SetPositionJaw(mPSM.PositionJointSet);
+                }
             }
         }
     }
