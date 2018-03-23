@@ -1,6 +1,46 @@
 Change log
 ==========
 
+1.6.0 (2018-xx-xx)
+==================
+
+* API changes:
+* Deprecated features:
+  * Fixed reference frames to match ISI convention on real da Vinci systems.  `mtml.json` and `mtmr.json` are now deprecated
+  * In arm JSON configuration files, do not use `base-offset`.  Use console JSON configuration `base-frame` instead
+  * Teleop JSON: `rotation` is now moved under `configure-parameter`
+  * IO XML configuration files moved to `share/io` folder.  Console class will search in `share/io` so this should be backward compatible
+* New features:
+  * Teleoperation ECM:
+    * First working implementation, tested on JHU system
+    * Use structs for MTMR/L and ECM instead of pointers
+  * Teleoperation PSM:
+    * Match gripper/jaw angle before starting teleoperation
+    * Use structs for MTM and PSM instead of pointers
+  * General:
+    * Fixed interval statistics with better load estimation, updated Qt widget
+    * Fixed 3D rotation widget, show reference frame and allow to rotate view with mouse
+    * Transformation Qt widget now shows moving/reference frame names, valid/invalid and timestamp
+  * Console:
+    * While configuring from JSON file, `exit` if an error is found
+    * daVinci head sensor: figured out cabling to connect head sensor from full daVinci system to dVRK controllers, added software support with special component (see https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/HeadSensor#davinci-head-sensor)
+    * Added audio feedback, emit different beep tones for operator present, master clutch and camera control pedal.  This requires to install sox and espeak (`sudo apt install sox espeak`)
+    * Added component to control endoscopic camera from master console foot pedals (requires custom wires, see instructions https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Full-da-Vinci#endoscope-focus-controller)
+  * Arm:
+    * added relative position commands in joint and cartesian space
+    * in console JSON configuration file, added `base-frame` with static transformation and reference frame name
+  * SUJ:
+    * Better/faster propagation of base frames
+    * Added simulation mode, can set joint values using ROS topic
+    * Removed "desired" position, all positions are "measured"
+    * Joint names are now compatible WPI ROS/urdf models
+  * ROS topics: initial support for crtk topics
+  * sawRobotIO1394:
+    * if pot/encoder tolerance distance is set to 0, ignore axis in safety checks
+    * code refactor to reduce number of classes and ease maintenance
+* Bug fixes:
+  * Fixed data member initialization (valgrind)
+
 1.5.0 (2017-11-07)
 ==================
 
