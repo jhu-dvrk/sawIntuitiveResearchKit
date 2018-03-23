@@ -34,7 +34,10 @@ Change log
     * Added simulation mode, can set joint values using ROS topic
     * Removed "desired" position, all positions are "measured"
     * Joint names are now compatible WPI ROS/urdf models
-  * ROS topics: initial support for crtk topics
+  * ROS:
+    * Added tf2 support
+    * Created multiple ROS bridges, publishers, subscribers, tf2 and cisst/SAW period stats (custom message) 
+    * Initial support for crtk topics
   * sawRobotIO1394:
     * if pot/encoder tolerance distance is set to 0, ignore axis in safety checks
     * code refactor to reduce number of classes and ease maintenance
