@@ -1,0 +1,13 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "arms":
+    [
+        {
+            "name": "MTML",
+            "type": "MTM",
+            "io": "xml/sawRobotIO1394-MTML-68162.xml",
+            "pid": "sawControllersPID-MTML.xml",
+            "kinematic": "mtml.json"
+        }
+    ]
+}
