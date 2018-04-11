@@ -1,0 +1,15 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "io-interfaces":
+    [
+
+        {
+            "period": 0.005, // in seconds, e.g. 0.005 is 5 ms
+            "name": "MTMR"
+        }, {
+            "period": 0.005, 
+            "name": "PSM1"
+        }
+ 
+    ]
+}

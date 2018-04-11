@@ -1,0 +1,13 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "arms":
+    [
+        {
+            "name": "ECM",
+            "type": "ECM",
+            "io": "xml/sawRobotIO1394-ECM-28067.xml",
+            "pid": "sawControllersPID-ECM.xml",
+            "kinematic": "ecm-straight.json"
+        }
+    ]
+}
