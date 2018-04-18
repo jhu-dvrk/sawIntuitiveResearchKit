@@ -143,6 +143,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mStateTableState.SetAutomaticAdvance(false);
 
     mCounter = 0;
+    mControlSpace = mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE;
+    mControlMode = mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE;
+
     mJointControlReady = false;
     mCartesianControlReady = false;
     mIsSimulated = false;
@@ -155,6 +158,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mCartesianImpedance = false;
 
     mHasNewPIDGoal = false;
+    mJointRelative.SetSize(NumberOfJoints());
+    mJointRelative.Zeros();
+
     mEffortOrientationLocked = false;
 
     mSafeForCartesianControlCounter = 0;
@@ -214,7 +220,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianGetLocalDesiredParam.SetReferenceFrame(GetName() + "_base");
     CartesianGetLocalDesiredParam.SetMovingFrame(GetName() + "_d");
     this->StateTable.AddData(CartesianGetLocalDesiredParam, "CartesianPositionLocalDesired");
-    
+
     this->StateTable.AddData(BaseFrame, "BaseFrame");
 
     CartesianVelocityGetParam.SetAutomaticTimestamp(false); // keep PID timestamp
@@ -271,15 +277,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
         IOInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::BiasEncoderEventHandler, this, "BiasEncoder");
     }
 
-    // Setup Joints
-    SUJInterface = AddInterfaceRequired("BaseFrame", MTS_OPTIONAL);
-    if (SUJInterface) {
-        SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::SetBaseFrameEventHandler,
-                                           this, "PositionCartesianDesired");
-        SUJInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler,
-                                           this, "Error");
-    }
-
     // Arm
     RobotInterface = AddInterfaceProvided("Robot");
     if (RobotInterface) {
@@ -308,10 +305,14 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                        this, "Freeze");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionJoint,
                                         this, "SetPositionJoint");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionRelativeJoint,
+                                        this, "SetPositionRelativeJoint");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalJoint,
                                         this, "SetPositionGoalJoint");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionCartesian,
                                         this, "SetPositionCartesian");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionRelativeCartesian,
+                                        this, "SetPositionRelativeCartesian");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetPositionGoalCartesian,
                                         this, "SetPositionGoalCartesian");
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetEffortJoint,
@@ -478,6 +479,13 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
 
     // we can start reporting some joint values after the robot is powered
     if (mJointReady) {
+
+
+
+        try {
+
+
+
         mtsExecutionResult executionResult;
         // joint state
         executionResult = PID.GetStateJoint(JointsPID);
@@ -578,6 +586,19 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             CartesianGetLocalDesiredParam.SetValid(false);
             CartesianGetDesiredParam.SetValid(false);
         }
+
+
+        } catch (...) {
+            std::cerr << "Oops in " << this->GetName() << std::endl
+                      << CMN_LOG_DETAILS
+                      << "------ pid measured " << JointsPID << std::endl
+                      << "------ pid desired  " << JointsDesiredPID << std::endl
+                      << "------ kin measured " << JointsKinematics << std::endl
+                      << "------ kin desired  " << JointsDesiredKinematics << std::endl;
+            abort();
+        }
+
+
         CartesianGetLocalParam.Position().From(CartesianGetLocal);
         CartesianGetParam.Position().From(CartesianGet);
         CartesianGetLocalDesiredParam.Position().From(CartesianGetLocalDesired);
@@ -658,6 +679,9 @@ void mtsIntuitiveResearchKitArm::RunAllStates(void)
 void mtsIntuitiveResearchKitArm::EnterUninitialized(void)
 {
     mFallbackState = "UNINITIALIZED";
+    if (NumberOfBrakes() > 0) {
+        RobotIO.BrakeEngage();
+    }
 
     RobotIO.UsePotsForSafetyCheck(false);
     RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
@@ -744,7 +768,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
     if (NumberOfBrakes() > 0) {
         RobotIO.BrakeEngage();
     }
-    
+
     mHomingTimer = currentTime;
     // make sure the PID is not sending currents
     PID.Enable(false);
@@ -943,6 +967,18 @@ void mtsIntuitiveResearchKitArm::ControlPositionJoint(void)
     }
 }
 
+void mtsIntuitiveResearchKitArm::ControlPositionRelativeJoint(void)
+{
+    if (mHasNewPIDGoal) {
+
+        std::cerr << CMN_LOG_DETAILS << " --------- tbd" << std::endl;
+
+        // reset flag
+        mJointRelative.Zeros();
+        mHasNewPIDGoal = false;
+    }
+}
+
 void mtsIntuitiveResearchKitArm::ControlPositionGoalJoint(void)
 {
     // check if there's anything to do
@@ -992,6 +1028,18 @@ void mtsIntuitiveResearchKitArm::ControlPositionCartesian(void)
             RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
         }
         // reset flag
+        mHasNewPIDGoal = false;
+    }
+}
+
+void mtsIntuitiveResearchKitArm::ControlPositionRelativeCartesian(void)
+{
+    if (mHasNewPIDGoal) {
+
+        std::cerr << CMN_LOG_DETAILS << " --------- tbd" << std::endl;
+
+        // reset flag
+        mCartesianRelative = vctFrm3::Identity();
         mHasNewPIDGoal = false;
     }
 }
@@ -1067,9 +1115,13 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
 
         switch (mode) {
         case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
+        case mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE:
             // configure PID
             PID.EnableTrackingError(UsePIDTrackingError());
             PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), false));
+            mHasNewPIDGoal = false;
+            mCartesianRelative = vctFrm3::Identity();
+            mJointRelative.Zeros();
             mEffortOrientationLocked = false;
             break;
         case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
@@ -1079,7 +1131,8 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             mEffortOrientationLocked = false;
             // initialize trajectory
             JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
-            if (mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
+            if ((mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)
+                || (mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE)) {
                 JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
             } else {
                 JointVelocitySet.SetSize(NumberOfJoints());
@@ -1113,6 +1166,18 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             break;
         case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionCartesian, this);
+            break;
+        default:
+            break;
+        }
+        break;
+    case mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE:
+        switch (mControlSpace) {
+        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+            SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionRelativeJoint, this);
+            break;
+        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
+            SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionRelativeCartesian, this);
             break;
         default:
             break;
@@ -1294,6 +1359,20 @@ void mtsIntuitiveResearchKitArm::SetPositionJoint(const prmPositionJointSet & ne
     mHasNewPIDGoal = true;
 }
 
+void mtsIntuitiveResearchKitArm::SetPositionRelativeJoint(const prmPositionJointSet & difference)
+{
+    if (!ArmIsReady("SetPositionCartesian", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+        return;
+    }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE);
+    // set goal
+    mJointRelative.Add(difference.Goal());
+    mHasNewPIDGoal = true;
+}
+
 void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet & newPosition)
 {
     if (!ArmIsReady("SetPositionGoalJoint", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
@@ -1325,6 +1404,20 @@ void mtsIntuitiveResearchKitArm::SetPositionCartesian(const prmPositionCartesian
     mHasNewPIDGoal = true;
 }
 
+void mtsIntuitiveResearchKitArm::SetPositionRelativeCartesian(const prmPositionCartesianSet & difference)
+{
+    if (!ArmIsReady("SetPositionCartesian", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+        return;
+    }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE);
+    // set goal
+    mCartesianRelative = mCartesianRelative * difference.Goal();
+    mHasNewPIDGoal = true;
+}
+
 void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition)
 {
     if (!ArmIsReady("SetPositionGoalCartesian", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
@@ -1351,18 +1444,6 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
     } else {
         RobotInterface->SendError(this->GetName() + ": SetPositionGoalCartesian, unable to solve inverse kinematics");
         mJointTrajectory.GoalReachedEvent(false);
-    }
-}
-
-void mtsIntuitiveResearchKitArm::SetBaseFrameEventHandler(const prmPositionCartesianGet & newBaseFrame)
-{
-    if (newBaseFrame.Valid()) {
-        this->BaseFrame.FromNormalized(newBaseFrame.Position());
-        this->BaseFrameValid = true;
-        this->CartesianGetParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
-        this->CartesianGetDesiredParam.SetReferenceFrame(newBaseFrame.ReferenceFrame());
-    } else {
-        this->BaseFrameValid = false;
     }
 }
 

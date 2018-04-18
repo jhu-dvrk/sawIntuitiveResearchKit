@@ -118,7 +118,7 @@
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05"/>
-            <VoltsToPosSI Offset="178.033669" Scale="-43.520904"/>
+            <VoltsToPosSI Offset="353.995519" Scale="-108.764340"/>
          </AnalogIn>
       </Actuator>
       <Potentiometers Position="Joints">

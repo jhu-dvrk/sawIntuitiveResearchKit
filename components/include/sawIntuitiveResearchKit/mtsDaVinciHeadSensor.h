@@ -46,7 +46,7 @@ protected:
     struct {
         mtsFunctionWrite TurnOff;
     } RobotIO;
-
+    
     // Functions for events
     struct {
         mtsFunctionWrite OperatorPresent;

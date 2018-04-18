@@ -78,9 +78,6 @@ protected:
     /*! Set velocity for motorized PSM lift. normalized between -1.0 and 1.0. */
     void SetLiftVelocity(const double & velocity);
 
-    /*! Set base coordinate frame, this will be added to the kinematics of all SUJs except ECM. */
-    void SetBaseFrame(const prmPositionCartesianGet & newBaseFrame);
-
     /*! Event handler for PID errors. */
     void ErrorEventHandler(const mtsMessage & message);
 
@@ -153,6 +150,7 @@ protected:
     size_t mVoltageSamplesCounter;
     vctDoubleVec mVoltages;
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> Arms;
+    size_t ECMIndex;
 
     // Flag to determine if this is connected to actual IO/hardware or simulated
     bool mIsSimulated;

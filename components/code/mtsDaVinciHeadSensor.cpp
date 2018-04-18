@@ -66,6 +66,7 @@ void mtsDaVinciHeadSensor::Init(void)
         interfaceRequired->AddEventHandlerWrite(&mtsDaVinciHeadSensor::HeadSensor4EventHandler,
                                                 this, "Button");
     }
+
     mInterface = AddInterfaceProvided("OperatorPresent");
     if (mInterface) {
         mInterface->AddEventWrite(MessageEvents.OperatorPresent,
@@ -74,7 +75,7 @@ void mtsDaVinciHeadSensor::Init(void)
 }
 
 
-void mtsDaVinciHeadSensor::Configure(const std::string & filename)
+void mtsDaVinciHeadSensor::Configure(const std::string & CMN_UNUSED(filename))
 {
 }
 
@@ -107,8 +108,8 @@ void mtsDaVinciHeadSensor::HeadSensorEventHandler(const size_t sensorNumber,
         mSensors.at(sensorNumber) = 0;
     }
     // for now use a simple test, at least two sensors triggered
-    const bool operatorPresent = (mSensors.SumOfElements() >= 2);
-    
+    const bool operatorPresent = (mSensors.SumOfElements() >= 3);
+
     // nothing has changed, don't do anything
     if (mOperatorPresent == operatorPresent) {
         return;
@@ -120,5 +121,6 @@ void mtsDaVinciHeadSensor::HeadSensorEventHandler(const size_t sensorNumber,
     } else {
         MessageEvents.OperatorPresent(prmEventButton(prmEventButton::RELEASED));
     }
+
     mOperatorPresent = operatorPresent;
 }

@@ -41,6 +41,7 @@ public:
     ~mtsTeleOperationPSM();
 
     void Configure(const std::string & filename = "");
+    virtual void Configure(const Json::Value & jsonConfig);
     void Startup(void);
     void Run(void);
     void Cleanup(void);
@@ -89,8 +90,7 @@ protected:
     void RunEnabled(void); // performs actual teleoperation
     void TransitionEnabled(void); // performs actual teleoperation
 
-    class RobotMTM {
-    public:
+    struct {
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionRead  GetPositionCartesianDesired;
         mtsFunctionWrite SetPositionGoalCartesian;
@@ -109,11 +109,9 @@ protected:
         prmPositionCartesianGet PositionCartesianDesired;
         prmPositionCartesianSet PositionCartesianSet;
         vctFrm4x4 CartesianPrevious;
-    };
-    RobotMTM * mMTM;
+    } mMTM;
 
-    class RobotPSM {
-    public:
+    struct {
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionRead GetStateJaw;
@@ -128,12 +126,12 @@ protected:
         prmPositionCartesianSet PositionCartesianSet;
         prmPositionJointSet     PositionJointSet;
         vctFrm4x4 CartesianPrevious;
-    };
-    RobotPSM * mPSM;
+    } mPSM;
 
     double mScale;
     vctMatRot3 mRegistrationRotation;
 
+    bool mIgnoreJaw;
     bool mIsClutched;
     bool mRotationLocked;
     bool mTranslationLocked;

@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2017 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2018 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -39,6 +39,7 @@ if (cisst_FOUND)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
+  find_package (sawTextToSpeech         1.1.0 REQUIRED)
   find_package (sawRobotIO1394          1.5.0 REQUIRED)
   find_package (sawControllers          1.5.0 REQUIRED)
 
@@ -46,10 +47,12 @@ if (cisst_FOUND)
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
     # saw components configuration
-    include_directories (${sawRobotIO1394_INCLUDE_DIR}
+    include_directories (${sawTextToSpeech_INCLUDE_DIR}
+                         ${sawRobotIO1394_INCLUDE_DIR}
                          ${sawControllers_INCLUDE_DIR})
 
-    link_directories (${sawRobotIO1394_LIBRARY_DIR}
+    link_directories (${sawTextToSpeech_LIBRARY_DIR}
+                      ${sawRobotIO1394_LIBRARY_DIR}
                       ${sawControllers_LIBRARY_DIR})
 
     # catkin/ROS paths
@@ -106,6 +109,7 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciHeadSensor.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciEndoscopeFocus.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitUDPStreamer.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBasePSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketClientPSM.h
@@ -125,6 +129,7 @@ if (cisst_FOUND)
          code/mtsTeleOperationECM.cpp
          code/mtsIntuitiveResearchKitConsole.cpp
          code/mtsDaVinciHeadSensor.cpp
+         code/mtsDaVinciEndoscopeFocus.cpp
          code/mtsIntuitiveResearchKitUDPStreamer.cpp
          code/mtsSocketBasePSM.cpp
          code/mtsSocketClientPSM.cpp
@@ -142,6 +147,7 @@ if (cisst_FOUND)
 
     # link against non cisst libraries and cisst components
     target_link_libraries (sawIntuitiveResearchKit
+                           ${sawTextToSpeech_LIBRARIES}
                            ${sawRobotIO1394_LIBRARIES}
                            ${sawControllers_LIBRARIES})
 

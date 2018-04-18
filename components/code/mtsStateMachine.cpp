@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-05
 
-  (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -74,16 +74,16 @@ void mtsStateMachine::Run(void)
         }
         mFirstRun = false;
     }
+    // check if a transition should happen
+    if (mCurrentTransitionCallback) {
+        mCurrentTransitionCallback->Execute();
+    }
     // run current state method
     if (mRunCallback) {
         mRunCallback->Execute();
     }
     if (mCurrentRunCallback) {
         mCurrentRunCallback->Execute();
-    }
-    // check if a transition should happen
-    if (mCurrentTransitionCallback) {
-        mCurrentTransitionCallback->Execute();
     }
 }
 
