@@ -378,7 +378,7 @@ void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
     mJacobianSpatial.SetSize(6, NumberOfJointsKinematics());
     mJacobianBodyTranspose.ForceAssign(mJacobianBody.Transpose());
     mJacobianPInverseData.Allocate(mJacobianBodyTranspose);
-    JointExternalEffort.SetSize(NumberOfJointsKinematics());
+    JointExternalEffort.SetSize(NumberOfJoints());
 }
 
 void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
@@ -1279,20 +1279,40 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
                 force.Assign(mWrenchSet.Force());
             }
         }
-        vctDoubleVec temp;
-//        temp.SetSize(6);
-//        temp.ProductOf(mJacobianBody.Transpose(), force);
-//        JointExternalEffort.Assign(temp, 0.0);
-        JointExternalEffort.ProductOf(mJacobianBody.Transpose(), force);
+        // Assuming that the NumberOfJoints is always greater than or equal to NumberOfJointsKinematics()
+        if (NumberOfJoints() == NumberOfJointsKinematics()){
+            JointExternalEffort.ProductOf(mJacobianBody.Transpose(), force);
+        }
+        else{
+            vctDoubleVec temp(NumberOfJointsKinematics(), 0.0);
+            temp.ProductOf(mJacobianBody.Transpose(), force);
+            // No way to assing two vctDynamicVectors to a vctDynamicVector, so setting each element in a loop
+            for (int i=0 ; i < temp.size() ; i++){
+                JointExternalEffort[i] = temp[i];
+            }
+            for (int i=temp.size() ; i < JointExternalEffort.size() ; i++){
+                JointExternalEffort[i] = 0.0;
+            }
+        }
     }
     // spatial wrench
     else if (mWrenchType == WRENCH_SPATIAL) {
         force.Assign(mWrenchSet.Force());
-//        vctDoubleVec temp;
-//        temp.SetSize(6);
-//        temp.ProductOf(mJacobianSpatial.Transpose(), force);
-//        JointExternalEffort.Assign(temp, 0.0);
-        JointExternalEffort.ProductOf(mJacobianSpatial.Transpose(), force);
+        // Assuming that the NumberOfJoints is always greater than or equal to NumberOfJointsKinematics()
+        if (NumberOfJoints() == NumberOfJointsKinematics()){
+            JointExternalEffort.ProductOf(mJacobianSpatial.Transpose(), force);
+        }
+        else{
+            vctDoubleVec temp(NumberOfJointsKinematics(), 0.0);
+            temp.ProductOf(mJacobianSpatial.Transpose(), force);
+            // No way to assing two vctDynamicVectors to a vctDynamicVector, so setting each element in a loop
+            for (int i=0 ; i < temp.size() ; i++){
+                JointExternalEffort[i] = temp[i];
+            }
+            for (int i=temp.size() ; i < JointExternalEffort.size() ; i++){
+                JointExternalEffort[i] = 0.0;
+            }
+        }
     }
 
     // add gravity compensation if needed
