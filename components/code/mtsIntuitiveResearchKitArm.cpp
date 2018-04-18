@@ -377,7 +377,7 @@ void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
     mJacobianSpatial.SetSize(6, NumberOfJointsKinematics());
     mJacobianBodyTranspose.ForceAssign(mJacobianBody.Transpose());
     mJacobianPInverseData.Allocate(mJacobianBodyTranspose);
-    JointExternalEffort.SetSize(NumberOfJointsKinematics());
+    JointExternalEffort.SetSize(NumberOfJoints());
 }
 
 void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
@@ -633,7 +633,7 @@ void mtsIntuitiveResearchKitArm::StateChanged(void)
     mStateTableState.Start();
     mStateTableStateCurrent = newState;
     mStateTableState.Advance();
-    // event
+    // eventNumberOfJoints()
     MessageEvents.CurrentState(newState);
     RobotInterface->SendStatus(this->GetName() + ": current state " + newState);
 }
@@ -1188,7 +1188,6 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
 {
     // update torques based on wrench
     vctDoubleVec force(6);
-
     // body wrench
     if (mWrenchType == WRENCH_BODY) {
         // either using wrench provided by user or cartesian impedance
@@ -1215,12 +1214,20 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
                 force.Assign(mWrenchSet.Force());
             }
         }
-        JointExternalEffort.ProductOf(mJacobianBody.Transpose(), force);
+        vctDoubleVec temp;
+        temp.SetSize(6);
+        temp.ProductOf(mJacobianBody.Transpose(), force);
+        JointExternalEffort.Assign(temp, 0.0);
+        //JointExternalEffort.ProductOf(mJacobianBody.Transpose(), force);
     }
     // spatial wrench
     else if (mWrenchType == WRENCH_SPATIAL) {
         force.Assign(mWrenchSet.Force());
-        JointExternalEffort.ProductOf(mJacobianSpatial.Transpose(), force);
+        vctDoubleVec temp;
+        temp.SetSize(6);
+        temp.ProductOf(mJacobianSpatial.Transpose(), force);
+        JointExternalEffort.Assign(temp, 0.0);
+        //JointExternalEffort.ProductOf(mJacobianSpatial.Transpose(), force);
     }
 
     // add gravity compensation if needed
