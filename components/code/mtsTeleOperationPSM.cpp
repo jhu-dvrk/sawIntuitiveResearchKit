@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <iostream>
 
 // cisst
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
@@ -279,6 +280,8 @@ void mtsTeleOperationPSM::ClutchEventHandler(const prmEventButton & button)
     // if the teleoperation is activated
     if (mTeleopState.DesiredState() == "ENABLED") {
         Clutch(mIsClutched);
+    } else {
+        mGripperJawTransitions = 0;
     }
 }
 
@@ -286,6 +289,10 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
 {
     // if the teleoperation is activated
     if (clutch) {
+        // keep track of last follow mode
+        if (mIsFollowing) {
+            mGripperJawTransitions = -1;
+        }
         SetFollowing(false);
         mMTM.PositionCartesianSet.Goal().Rotation().FromNormalized(mPSM.PositionCartesianCurrent.Position().Rotation());
         mMTM.PositionCartesianSet.Goal().Translation().Assign(mMTM.PositionCartesianCurrent.Position().Translation());
@@ -466,10 +473,45 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
     // reset timer
     mInStateTimer = StateTable.GetTic();
     mTimeSinceLastAlign = 0.0;
+
+    // reset number of transitions for gripper/jaw
+    if (!mIgnoreJaw) {
+        // if -1, it's because we're back from clutch and we were following
+        if (mGripperJawTransitions == -1) {
+            mGripperJawTransitions = 1;
+            mGripperJawMatchingPrevious = false;
+        } else {
+            mGripperJawTransitions = 0;
+            double gripperJawErrorInDegrees = 0.0;
+            // compare angles
+            if (mMTM.GetStateGripper.IsValid()) {
+                mMTM.GetStateGripper(mMTM.StateGripper);
+                mPSM.GetStateJaw(mPSM.StateJaw);
+                const double gripperInDegrees = cmn180_PI * mMTM.StateGripper.Position()[0];
+                const double jawInDegrees = cmn180_PI * mPSM.StateJaw.Position()[0];
+                // MTMs can't really open above 60 degrees so if both ends are above 55, just engage
+                if ((gripperInDegrees > mtsIntuitiveResearchKit::TeleOperationPSMGripperJawFullOpen)
+                    && (jawInDegrees > mtsIntuitiveResearchKit::TeleOperationPSMGripperJawFullOpen)) {
+                    gripperJawErrorInDegrees = 0.0;
+                } else {
+                    gripperJawErrorInDegrees = fabs(gripperInDegrees - jawInDegrees);
+                }
+            }
+            // compute number of transitions
+            mGripperJawMatchingPrevious = (gripperJawErrorInDegrees <= mtsIntuitiveResearchKit::TeleOperationPSMGripperJawTolerance);
+        }
+    } else {
+        mGripperJawTransitions = 2;
+    }
 }
 
 void mtsTeleOperationPSM::RunAligningMTM(void)
 {
+    // if clutched, do nothing
+    if (mIsClutched) {
+        return;
+    }
+
     // set trajectory goal periodically, this will track PSM motion
     const double currentTime = StateTable.GetTic();
     if ((currentTime - mTimeSinceLastAlign) > 10.0 * cmn_ms) {
@@ -514,30 +556,40 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     double gripperJawErrorInDegrees = 0.0;
 
     if (!mIgnoreJaw) {
+        // compare angles
         if (mMTM.GetStateGripper.IsValid()) {
             mMTM.GetStateGripper(mMTM.StateGripper);
             mPSM.GetStateJaw(mPSM.StateJaw);
             const double gripperInDegrees = cmn180_PI * mMTM.StateGripper.Position()[0];
             const double jawInDegrees = cmn180_PI * mPSM.StateJaw.Position()[0];
             // MTMs can't really open above 60 degrees so if both ends are above 55, just engage
-            if ((gripperInDegrees > 55) && (jawInDegrees > 55)) {
+            if ((gripperInDegrees > mtsIntuitiveResearchKit::TeleOperationPSMGripperJawFullOpen)
+                && (jawInDegrees > mtsIntuitiveResearchKit::TeleOperationPSMGripperJawFullOpen)) {
                 gripperJawErrorInDegrees = 0.0;
             } else {
                 gripperJawErrorInDegrees = fabs(gripperInDegrees - jawInDegrees);
             }
         }
+        // compute number of transitions
+        bool gripperJawMatching = (gripperJawErrorInDegrees <= mtsIntuitiveResearchKit::TeleOperationPSMGripperJawTolerance);
+        if (gripperJawMatching != mGripperJawMatchingPrevious) {
+            mGripperJawTransitions += 1;
+            mGripperJawMatchingPrevious = gripperJawMatching;
+        }
     }
 
-    if (orientationErrorInDegrees <= 5.0 && gripperJawErrorInDegrees <= 5.0) {
+    // finally check for transition
+    if ((orientationErrorInDegrees <= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance)
+        && (mGripperJawTransitions > 1)) {
         mTeleopState.SetCurrentState("ENABLED");
     } else {
         // check timer and issue a message
         if ((StateTable.GetTic() - mInStateTimer) > 2.0 * cmn_s) {
             std::stringstream message;
-            if (orientationErrorInDegrees >= 5.0) {
+            if (orientationErrorInDegrees >= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance) {
                 message << this->GetName() + ": unable to align master, current angle error is " << orientationErrorInDegrees;
             } else {
-                message << this->GetName() + ": unable to match gripper/jaw angle, current error is " << gripperJawErrorInDegrees;
+                message << this->GetName() + ": unable to match gripper/jaw angle, pinch and release the gripper";
             }
             mInterface->SendWarning(message.str());
             mInStateTimer = StateTable.GetTic();

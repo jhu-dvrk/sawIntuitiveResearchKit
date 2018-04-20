@@ -132,6 +132,8 @@ protected:
     vctMatRot3 mRegistrationRotation;
 
     bool mIgnoreJaw;
+    int mGripperJawTransitions;
+    bool mGripperJawMatchingPrevious;
     bool mIsClutched;
     bool mRotationLocked;
     bool mTranslationLocked;

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -19,6 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKit_h
 #define _mtsIntuitiveResearchKit_h
 
+#include <cisstCommon/cmnUnits.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 namespace mtsIntuitiveResearchKit {
@@ -27,6 +28,11 @@ namespace mtsIntuitiveResearchKit {
     const double TeleopPeriod = 1.0 * cmn_ms;
     const double WatchdogTimeout = 30.0 * cmn_ms;
     const double TimeToPower = 5.0 * cmn_s;
+
+    // teleoperation constants
+    const double TeleOperationPSMOrientationTolerance = 5.0; // in degrees
+    const double TeleOperationPSMGripperJawTolerance = 5.0;
+    const double TeleOperationPSMGripperJawFullOpen = 55.0;  // in degrees
 };
 
 #endif // _mtsIntuitiveResearchKitArm_h
