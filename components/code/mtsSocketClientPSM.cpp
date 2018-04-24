@@ -5,7 +5,7 @@
   Author(s):  Pretham Chalasani, Anton Deguet
   Created on: 2016-11-04
 
-  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -26,13 +26,14 @@ mtsSocketClientPSM::mtsSocketClientPSM(const std::string & componentName, const 
     mtsSocketBasePSM(componentName, periodInSeconds, ip, port, false)
 {
     this->StateTable.AddData(PositionCartesianCurrent, "PositionCartesianCurrent");
-    this->StateTable.AddData(JawPosition, "JawPosition");
+    StateJaw.Position().resize(1);
+    this->StateTable.AddData(StateJaw, "StateJaw");
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
     if (interfaceProvided) {
         interfaceProvided->AddMessageEvents();
         interfaceProvided->AddCommandReadState(this->StateTable, PositionCartesianCurrent, "GetPositionCartesian");
-        interfaceProvided->AddCommandReadState(this->StateTable, JawPosition, "GetJawPosition");
+        interfaceProvided->AddCommandReadState(this->StateTable, StateJaw, "GetStateJaw");
 
         interfaceProvided->AddCommandVoid(&mtsSocketClientPSM::Freeze,
                                           this, "Freeze");
@@ -73,7 +74,7 @@ void mtsSocketClientPSM::UpdateApplication(void)
     CurrentState = State.Data.RobotControlState;
     PositionCartesianCurrent.Valid() = (CurrentState >= socketMessages::SCK_HOMED);
     PositionCartesianCurrent.Position().FromNormalized(State.Data.CurrentPose);
-    JawPosition = State.Data.CurrentJaw;
+    StateJaw.Position().at(0) = State.Data.CurrentJaw;
 }
 
 void mtsSocketClientPSM::Freeze(void)
