@@ -224,6 +224,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     this->StateTable.AddData(BaseFrame, "BaseFrame");
 
     CartesianVelocityGetParam.SetAutomaticTimestamp(false); // keep PID timestamp
+    CartesianVelocityGetParam.SetMovingFrame(GetName());
+    CartesianVelocityGetParam.SetReferenceFrame(GetName() + "_base");
     this->StateTable.AddData(CartesianVelocityGetParam, "CartesianVelocityGetParam");
 
     mWrenchGet.SetAutomaticTimestamp(false); // keep PID timestamp
