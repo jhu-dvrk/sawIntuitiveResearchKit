@@ -131,6 +131,7 @@ public:
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
+    virtual void SetEffortJointLocal(const vctDoubleVec & newEffort);
 
     /*! Methods used for commands */
     virtual void Freeze(void);

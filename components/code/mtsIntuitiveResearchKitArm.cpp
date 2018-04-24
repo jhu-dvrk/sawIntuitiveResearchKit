@@ -380,7 +380,7 @@ void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
     mJacobianSpatial.SetSize(6, NumberOfJointsKinematics());
     mJacobianBodyTranspose.ForceAssign(mJacobianBody.Transpose());
     mJacobianPInverseData.Allocate(mJacobianBodyTranspose);
-    JointExternalEffort.SetSize(NumberOfJoints());
+    JointExternalEffort.SetSize(NumberOfJointsKinematics());
 }
 
 void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
@@ -1281,40 +1281,12 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
                 force.Assign(mWrenchSet.Force());
             }
         }
-        // Assuming that the NumberOfJoints is always greater than or equal to NumberOfJointsKinematics()
-        if (NumberOfJoints() == NumberOfJointsKinematics()){
-            JointExternalEffort.ProductOf(mJacobianBody.Transpose(), force);
-        }
-        else{
-            vctDoubleVec temp(NumberOfJointsKinematics(), 0.0);
-            temp.ProductOf(mJacobianBody.Transpose(), force);
-            // No way to assing two vctDynamicVectors to a vctDynamicVector, so setting each element in a loop
-            for (int i=0 ; i < temp.size() ; i++){
-                JointExternalEffort[i] = temp[i];
-            }
-            for (int i=temp.size() ; i < JointExternalEffort.size() ; i++){
-                JointExternalEffort[i] = 0.0;
-            }
-        }
+        JointExternalEffort.ProductOf(mJacobianBody.Transpose(), force);
     }
     // spatial wrench
     else if (mWrenchType == WRENCH_SPATIAL) {
         force.Assign(mWrenchSet.Force());
-        // Assuming that the NumberOfJoints is always greater than or equal to NumberOfJointsKinematics()
-        if (NumberOfJoints() == NumberOfJointsKinematics()){
-            JointExternalEffort.ProductOf(mJacobianSpatial.Transpose(), force);
-        }
-        else{
-            vctDoubleVec temp(NumberOfJointsKinematics(), 0.0);
-            temp.ProductOf(mJacobianSpatial.Transpose(), force);
-            // No way to assing two vctDynamicVectors to a vctDynamicVector, so setting each element in a loop
-            for (int i=0 ; i < temp.size() ; i++){
-                JointExternalEffort[i] = temp[i];
-            }
-            for (int i=temp.size() ; i < JointExternalEffort.size() ; i++){
-                JointExternalEffort[i] = 0.0;
-            }
-        }
+        JointExternalEffort.ProductOf(mJacobianSpatial.Transpose(), force);
     }
 
     // add gravity compensation if needed
@@ -1325,13 +1297,8 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
     // add custom efforts
     AddCustomEfforts(JointExternalEffort);
 
-    // pad array for PID
-    vctDoubleVec torqueDesired(NumberOfJoints(), 0.0); // for PID
-    torqueDesired.Assign(JointExternalEffort, NumberOfJoints());
-
-    // convert to cisstParameterTypes
-    TorqueSetParam.SetForceTorque(torqueDesired);
-    PID.SetTorqueJoint(TorqueSetParam);
+    // send to PID
+    SetEffortJointLocal(JointExternalEffort);
 
     // lock orientation if needed
     if (mEffortOrientationLocked) {
@@ -1344,6 +1311,13 @@ void mtsIntuitiveResearchKitArm::ControlEffortOrientationLocked(void)
     CMN_LOG_CLASS_RUN_ERROR << GetName()
                             << ": ControlEffortOrientationLocked, this method should never be called, MTMs are the only arms able to lock orientation and the derived implementation of this method should be called"
                             << std::endl;
+}
+
+void mtsIntuitiveResearchKitArm::SetEffortJointLocal(const vctDoubleVec & newEffort)
+{
+    // convert to cisstParameterTypes
+    TorqueSetParam.SetForceTorque(newEffort);
+    PID.SetTorqueJoint(TorqueSetParam);
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newPosition)

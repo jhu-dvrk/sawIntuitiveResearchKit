@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -81,7 +81,7 @@ protected:
     void RunArmHomed(void); // mostly to allow joint control without tool nor adapter
     void LeaveArmHomed(void);
     void TransitionArmHomed(void);
-    
+
     // engaging adapter
     void EnterChangingCouplingAdapter(void);
     inline void RunChangingCouplingAdapter(void) {
@@ -116,7 +116,10 @@ protected:
 
     void SetPositionJaw(const prmPositionJointSet & jawPosition);
     void SetPositionGoalJaw(const prmPositionJointSet & jawPosition);
+    void SetEffortJaw(const prmForceTorqueJointSet & effort);
+
     void SetPositionJointLocal(const vctDoubleVec & newPosition);
+    void SetEffortJointLocal(const vctDoubleVec & newEffort);
 
     void EnableJointsEventHandler(const vctBoolVec & enable);
     void CouplingEventHandler(const prmActuatorJointCoupling & coupling);
@@ -155,6 +158,7 @@ protected:
 
     prmStateJoint Jaw, JawDesired;
     double JawGoal;
+    double EffortJawSet;
 
     // Home Action
     unsigned int EngagingStage; // 0 requested
