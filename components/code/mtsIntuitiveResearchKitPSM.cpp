@@ -1072,12 +1072,16 @@ void mtsIntuitiveResearchKitPSM::SetEffortJointLocal(const vctDoubleVec & newEff
 
     // pad array for PID
     vctDoubleVec torqueDesired(NumberOfJoints(), 0.0); // for PID
-    torqueDesired.Assign(JointExternalEffort, NumberOfJoints());
+    if (mSnakeLike) {
+        std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for PID control" << std::endl;
+    } else {
+        torqueDesired.Assign(mEffortJoint, NumberOfJointsKinematics());
+    }
     torqueDesired.at(6) = EffortJawSet;
 
     // convert to cisstParameterTypes
-    TorqueSetParam.SetForceTorque(torqueDesired);
-    PID.SetTorqueJoint(TorqueSetParam);
+    mTorqueSetParam.SetForceTorque(torqueDesired);
+    PID.SetTorqueJoint(mTorqueSetParam);
 }
 
 void mtsIntuitiveResearchKitPSM::CouplingEventHandler(const prmActuatorJointCoupling & coupling)

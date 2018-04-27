@@ -262,11 +262,13 @@ public:
 
     // efforts
     vctDoubleMat mJacobianBody, mJacobianBodyTranspose, mJacobianSpatial;
-    vctDoubleVec JointExternalEffort;
     WrenchType mWrenchType;
     prmForceCartesianSet mWrenchSet;
     bool mWrenchBodyOrientationAbsolute;
-    prmForceTorqueJointSet TorqueSetParam, mEffortJointSet;
+    prmForceTorqueJointSet
+        mTorqueSetParam, // number of joints PID, used in SetEffortJointLocal
+        mEffortJointSet; // number of joints for kinematics
+    vctDoubleVec mEffortJoint; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData mJacobianPInverseData;
     prmForceCartesianGet mWrenchGet;
