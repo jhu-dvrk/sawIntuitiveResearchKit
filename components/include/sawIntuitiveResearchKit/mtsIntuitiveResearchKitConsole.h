@@ -315,6 +315,7 @@ protected:
         mtsFunctionWrite StringToSpeech;
     } mAudio;
     double mAudioVolume;
+    bool mChatty;
 
     struct {
         mtsFunctionWrite Clutch;

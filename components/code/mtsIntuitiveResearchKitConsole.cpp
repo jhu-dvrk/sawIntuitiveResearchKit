@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 // cisst
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnClassRegister.h>
+#include <cisstCommon/cmnRandomSequence.h>
 #include <cisstOSAbstraction/osaDynamicLoader.h>
 
 #include <cisstMultiTask/mtsInterfaceRequired.h>
@@ -589,6 +590,13 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     sawRobotIO1394::ProtocolType protocol = sawRobotIO1394::PROTOCOL_SEQ_R_BC_W;
     double watchdogTimeout = mtsIntuitiveResearchKit::WatchdogTimeout;
 
+    jsonValue = jsonConfig["chatty"];
+    if (!jsonValue.empty()) {
+        mChatty = jsonValue.asBool();
+    } else {
+        mChatty = false;
+    }
+    
     // get user preferences
     jsonValue = jsonConfig["io"];
     if (!jsonValue.empty()) {
@@ -955,7 +963,33 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
     message.append(" / cisst ");
     message.append(CISST_VERSION);
     mInterface->SendStatus(message);
-    mAudio.StringToSpeech(std::string("Hello"));
+
+    if (mChatty) {
+        // someone is going to hate me for this :-)
+        std::vector<std::string> prompts;
+        prompts.push_back("Hello");
+        prompts.push_back("It will not work!");
+        prompts.push_back("It might work");
+        prompts.push_back("It will work!");
+        prompts.push_back("Are we there yet?");
+        prompts.push_back("When is that paper deadline already?");
+        prompts.push_back("Don't you have something better to do?");
+        prompts.push_back("Today is the day!");
+        prompts.push_back("It's free software, what did you expect?");
+        prompts.push_back("I didn't do it!");
+        prompts.push_back("Be careful!");
+        prompts.push_back("Peter will fix it");
+        prompts.push_back("Ask Google");
+        prompts.push_back("Did you forget to re-compile?");
+        prompts.push_back("Reboot me");
+        int index;
+        cmnRandomSequence & randomSequence = cmnRandomSequence::GetInstance();
+        cmnRandomSequence::SeedType seed
+            = static_cast<cmnRandomSequence::SeedType>(mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime() * 100000.0);
+        randomSequence.SetSeed(seed % 1000);
+        randomSequence.ExtractRandomValue<int>(0, prompts.size() - 1, index);
+        mAudio.StringToSpeech(prompts.at(index));
+    }
 }
 
 void mtsIntuitiveResearchKitConsole::Run(void)
