@@ -27,7 +27,12 @@ namespace mtsIntuitiveResearchKit {
     const double ArmPeriod = 0.5 * cmn_ms;
     const double TeleopPeriod = 1.0 * cmn_ms;
     const double WatchdogTimeout = 30.0 * cmn_ms;
-    const double TimeToPower = 5.0 * cmn_s;
+
+    // DO NOT INCREASE THIS ABOVE 3 SECONDS!!!  Some power supplies
+    // (SUJ) will overheat the QLA while trying to turn on power in
+    // some specific conditions.  Ask Peter!  See also
+    // https://github.com/jhu-cisst/QLA/issues/1
+    const double TimeToPower = 3.0 * cmn_s;    
 
     // teleoperation constants
     const double TeleOperationPSMOrientationTolerance = 5.0; // in degrees
