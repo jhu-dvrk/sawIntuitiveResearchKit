@@ -724,6 +724,7 @@ void mtsIntuitiveResearchKitSUJ::EnterUninitialized(void)
     ResetMux();
 
     mFallbackState = "UNINITIALIZED";
+    mPowered = false;
 }
 
 void mtsIntuitiveResearchKitSUJ::TransitionUninitialized(void)
@@ -735,9 +736,12 @@ void mtsIntuitiveResearchKitSUJ::TransitionUninitialized(void)
 
 void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
 {
+    mPowered = false;
+
     if (mIsSimulated) {
         return;
     }
+
     const double currentTime = this->StateTable.GetTic();
     mHomingTimer = currentTime;
     // pre-load the boards with zero current
@@ -764,6 +768,7 @@ void mtsIntuitiveResearchKitSUJ::TransitionPowering(void)
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         if (actuatorAmplifiersStatus.All()) {
             DispatchStatus(this->GetName() + ": power on");
+            mPowered = true;
             mArmState.SetCurrentState("POWERED");
         } else {
             DispatchError(this->GetName() + ": failed to enable power");
@@ -906,6 +911,18 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
 {
     if (mIsSimulated) {
         return;
+    }
+
+    // check that the robot still has power
+    if (mPowered) {
+        vctBoolVec actuatorAmplifiersStatus(4);
+        RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
+        if (!actuatorAmplifiersStatus.All()) {
+            mPowered = false;
+            DispatchError(this->GetName() + ": detected power loss");
+            mArmState.SetDesiredState("UNINITIALIZED");
+            return;
+        }
     }
 
     // 30 ms is to make sure A2D stabilizes
@@ -1213,7 +1230,7 @@ void mtsIntuitiveResearchKitSUJ::ErrorEventHandler(const mtsMessage & message)
 {
     RobotIO.DisablePower();
     DispatchError(this->GetName() + ": received [" + message.Message + "]");
-    mArmState.SetCurrentState("UNINITIALIZED");
+    mArmState.SetDesiredState(mFallbackState);
 }
 
 void mtsIntuitiveResearchKitSUJ::DispatchError(const std::string & message)

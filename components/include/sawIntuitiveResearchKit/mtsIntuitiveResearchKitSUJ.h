@@ -90,6 +90,7 @@ protected:
     // Arm state machine
     mtsStateMachine mArmState;
     std::string mFallbackState;
+    bool mPowered;
     // Just to have read commands to retrieve states
     mtsStateTable mStateTableState;
     mtsStdString mStateTableStateCurrent;
