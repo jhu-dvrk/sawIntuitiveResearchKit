@@ -170,6 +170,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionJaw, this, "SetPositionJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionGoalJaw, this, "SetPositionGoalJaw");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetEffortJaw, this, "SetEffortJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolPresent, this, "SetToolPresent");
 
     CMN_ASSERT(PIDInterface);
@@ -1021,6 +1022,66 @@ void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newP
     ToJointsPID(newPosition, JointSetParam.Goal());
     JointSetParam.Goal().at(6) = JawGoal;
     PID.SetPositionJoint(JointSetParam);
+}
+
+void mtsIntuitiveResearchKitPSM::SetEffortJaw(const prmForceTorqueJointSet & effort)
+{
+    if (!ArmIsReady("SetEffortJoint", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+        return;
+    }
+
+    // keep cartesian space is already there, otherwise use joint_space
+    switch (mControlSpace) {
+    case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
+        if (mControlMode != mtsIntuitiveResearchKitArmTypes::EFFORT_MODE) {
+            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                                   mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+            // make sure all other joints have a reasonable cartesian
+            // goal
+            mWrenchSet.Force().SetAll(0.0);
+            break;
+        }
+    case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+        if (mControlMode != mtsIntuitiveResearchKitArmTypes::EFFORT_MODE) {
+            // we are initiating the control mode switch so we need to
+            // set a reasonable JointSet
+            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                                   mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+            // make sure all other joints have a reasonable goal
+            mEffortJointSet.ForceTorque().SetAll(0.0);
+        }
+        break;
+    default:
+        // we are initiating the control mode switch
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                               mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+        // make sure all other joints have a reasonable goal
+        mEffortJointSet.ForceTorque().SetAll(0.0);
+    }
+
+    // save the desired effort
+    EffortJawSet = effort.ForceTorque().at(0);
+}
+
+void mtsIntuitiveResearchKitPSM::SetEffortJointLocal(const vctDoubleVec & newEffort)
+{
+    if (mArmState.CurrentState() != "READY") {
+        mtsIntuitiveResearchKitArm::SetEffortJointLocal(newEffort);
+        return;
+    }
+
+    // pad array for PID
+    vctDoubleVec torqueDesired(NumberOfJoints(), 0.0); // for PID
+    if (mSnakeLike) {
+        std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for PID control" << std::endl;
+    } else {
+        torqueDesired.Assign(mEffortJoint, NumberOfJointsKinematics());
+    }
+    torqueDesired.at(6) = EffortJawSet;
+
+    // convert to cisstParameterTypes
+    mTorqueSetParam.SetForceTorque(torqueDesired);
+    PID.SetTorqueJoint(mTorqueSetParam);
 }
 
 void mtsIntuitiveResearchKitPSM::CouplingEventHandler(const prmActuatorJointCoupling & coupling)

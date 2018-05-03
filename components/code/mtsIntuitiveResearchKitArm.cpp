@@ -192,8 +192,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     this->StateTable.AddData(mJacobianBody, "JacobianBody");
     this->StateTable.AddData(mJacobianSpatial, "JacobianSpatial");
 
-    // efforts for PID
-    mEffortJointSet.SetSize(NumberOfJoints());
+    // efforts for kinematics
+    mEffortJointSet.SetSize(NumberOfJointsKinematics());
     mEffortJointSet.ForceTorque().SetAll(0.0);
     mWrenchGet.SetValid(false);
 
@@ -380,7 +380,10 @@ void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
     mJacobianSpatial.SetSize(6, NumberOfJointsKinematics());
     mJacobianBodyTranspose.ForceAssign(mJacobianBody.Transpose());
     mJacobianPInverseData.Allocate(mJacobianBodyTranspose);
-    JointExternalEffort.SetSize(NumberOfJoints());
+    mEffortJointSet.SetSize(NumberOfJointsKinematics());
+    mEffortJointSet.ForceTorque().SetAll(0.0);
+    mEffortJoint.SetSize(NumberOfJointsKinematics());
+    mEffortJoint.SetAll(0.0);
 }
 
 void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
@@ -481,13 +484,6 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
 
     // we can start reporting some joint values after the robot is powered
     if (mJointReady) {
-
-
-
-        try {
-
-
-
         mtsExecutionResult executionResult;
         // joint state
         executionResult = PID.GetStateJoint(JointsPID);
@@ -588,18 +584,6 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             CartesianGetLocalDesiredParam.SetValid(false);
             CartesianGetDesiredParam.SetValid(false);
         }
-
-
-        } catch (...) {
-            std::cerr << "Oops in " << this->GetName() << std::endl
-                      << CMN_LOG_DETAILS
-                      << "------ pid measured " << JointsPID << std::endl
-                      << "------ pid desired  " << JointsDesiredPID << std::endl
-                      << "------ kin measured " << JointsKinematics << std::endl
-                      << "------ kin desired  " << JointsDesiredKinematics << std::endl;
-            abort();
-        }
-
 
         CartesianGetLocalParam.Position().From(CartesianGetLocal);
         CartesianGetParam.Position().From(CartesianGet);
@@ -1137,6 +1121,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
                 || (mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE)) {
                 JointVelocitySet.Assign(JointsPID.Velocity(), NumberOfJoints());
             } else {
+                // we're switching from effort or no mode
                 JointVelocitySet.SetSize(NumberOfJoints());
                 JointVelocitySet.SetAll(0.0);
             }
@@ -1148,7 +1133,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
         case mtsIntuitiveResearchKitArmTypes::EFFORT_MODE:
             // configure PID
             PID.EnableTrackingError(false);
-            JointExternalEffort.Assign(vctDoubleVec(NumberOfJoints(), 0.0));
+            mEffortJoint.Assign(vctDoubleVec(NumberOfJointsKinematics(), 0.0));
             SetControlEffortActiveJoints();
             break;
         default:
@@ -1235,20 +1220,18 @@ void mtsIntuitiveResearchKitArm::SetControlEffortActiveJoints(void)
 void mtsIntuitiveResearchKitArm::ControlEffortJoint(void)
 {
     // effort required
-    JointExternalEffort.Assign(mEffortJointSet.ForceTorque());
+    mEffortJoint.Assign(mEffortJointSet.ForceTorque());
 
     // add gravity compensation if needed
     if (mGravityCompensation) {
-        AddGravityCompensationEfforts(JointExternalEffort);
+        AddGravityCompensationEfforts(mEffortJoint);
     }
 
     // add custom efforts
-    AddCustomEfforts(JointExternalEffort);
+    AddCustomEfforts(mEffortJoint);
 
     // convert to cisstParameterTypes
-    TorqueSetParam.SetForceTorque(JointExternalEffort);
-
-    PID.SetTorqueJoint(TorqueSetParam);
+    SetEffortJointLocal(mEffortJoint);
 }
 
 void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
@@ -1281,57 +1264,24 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
                 force.Assign(mWrenchSet.Force());
             }
         }
-        // Assuming that the NumberOfJoints is always greater than or equal to NumberOfJointsKinematics()
-        if (NumberOfJoints() == NumberOfJointsKinematics()){
-            JointExternalEffort.ProductOf(mJacobianBody.Transpose(), force);
-        }
-        else{
-            vctDoubleVec temp(NumberOfJointsKinematics(), 0.0);
-            temp.ProductOf(mJacobianBody.Transpose(), force);
-            // No way to assing two vctDynamicVectors to a vctDynamicVector, so setting each element in a loop
-            for (int i=0 ; i < temp.size() ; i++){
-                JointExternalEffort[i] = temp[i];
-            }
-            for (int i=temp.size() ; i < JointExternalEffort.size() ; i++){
-                JointExternalEffort[i] = 0.0;
-            }
-        }
+        mEffortJoint.ProductOf(mJacobianBody.Transpose(), force);
     }
     // spatial wrench
     else if (mWrenchType == WRENCH_SPATIAL) {
         force.Assign(mWrenchSet.Force());
-        // Assuming that the NumberOfJoints is always greater than or equal to NumberOfJointsKinematics()
-        if (NumberOfJoints() == NumberOfJointsKinematics()){
-            JointExternalEffort.ProductOf(mJacobianSpatial.Transpose(), force);
-        }
-        else{
-            vctDoubleVec temp(NumberOfJointsKinematics(), 0.0);
-            temp.ProductOf(mJacobianSpatial.Transpose(), force);
-            // No way to assing two vctDynamicVectors to a vctDynamicVector, so setting each element in a loop
-            for (int i=0 ; i < temp.size() ; i++){
-                JointExternalEffort[i] = temp[i];
-            }
-            for (int i=temp.size() ; i < JointExternalEffort.size() ; i++){
-                JointExternalEffort[i] = 0.0;
-            }
-        }
+        mEffortJoint.ProductOf(mJacobianSpatial.Transpose(), force);
     }
 
     // add gravity compensation if needed
     if (mGravityCompensation) {
-        AddGravityCompensationEfforts(JointExternalEffort);
+        AddGravityCompensationEfforts(mEffortJoint);
     }
 
     // add custom efforts
-    AddCustomEfforts(JointExternalEffort);
+    AddCustomEfforts(mEffortJoint);
 
-    // pad array for PID
-    vctDoubleVec torqueDesired(NumberOfJoints(), 0.0); // for PID
-    torqueDesired.Assign(JointExternalEffort, NumberOfJoints());
-
-    // convert to cisstParameterTypes
-    TorqueSetParam.SetForceTorque(torqueDesired);
-    PID.SetTorqueJoint(TorqueSetParam);
+    // send to PID
+    SetEffortJointLocal(mEffortJoint);
 
     // lock orientation if needed
     if (mEffortOrientationLocked) {
@@ -1344,6 +1294,13 @@ void mtsIntuitiveResearchKitArm::ControlEffortOrientationLocked(void)
     CMN_LOG_CLASS_RUN_ERROR << GetName()
                             << ": ControlEffortOrientationLocked, this method should never be called, MTMs are the only arms able to lock orientation and the derived implementation of this method should be called"
                             << std::endl;
+}
+
+void mtsIntuitiveResearchKitArm::SetEffortJointLocal(const vctDoubleVec & newEffort)
+{
+    // convert to cisstParameterTypes
+    mTorqueSetParam.SetForceTorque(newEffort);
+    PID.SetTorqueJoint(mTorqueSetParam);
 }
 
 void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newPosition)

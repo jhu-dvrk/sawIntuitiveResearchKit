@@ -131,6 +131,7 @@ public:
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
+    virtual void SetEffortJointLocal(const vctDoubleVec & newEffort);
 
     /*! Methods used for commands */
     virtual void Freeze(void);
@@ -261,11 +262,13 @@ public:
 
     // efforts
     vctDoubleMat mJacobianBody, mJacobianBodyTranspose, mJacobianSpatial;
-    vctDoubleVec JointExternalEffort;
     WrenchType mWrenchType;
     prmForceCartesianSet mWrenchSet;
     bool mWrenchBodyOrientationAbsolute;
-    prmForceTorqueJointSet TorqueSetParam, mEffortJointSet;
+    prmForceTorqueJointSet
+        mTorqueSetParam, // number of joints PID, used in SetEffortJointLocal
+        mEffortJointSet; // number of joints for kinematics
+    vctDoubleVec mEffortJoint; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData mJacobianPInverseData;
     prmForceCartesianGet mWrenchGet;
