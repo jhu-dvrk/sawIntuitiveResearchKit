@@ -109,7 +109,8 @@ protected:
     /*! Set tool present.  This should only be used by the tool event
       handler or for custom tools that can't be detected
       automatically. */
-    void SetToolPresent(const bool & inserted);
+    void SetAdapterPresent(const bool & present);
+    void SetToolPresent(const bool & present);
 
     void EventHandlerTool(const prmEventButton & button);
     void EventHandlerManipClutch(const prmEventButton & button);

@@ -171,6 +171,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionJaw, this, "SetPositionJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionGoalJaw, this, "SetPositionGoalJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetEffortJaw, this, "SetEffortJaw");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetAdapterPresent, this, "SetAdapterPresent");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolPresent, this, "SetToolPresent");
 
     CMN_ASSERT(PIDInterface);
@@ -563,7 +564,7 @@ void mtsIntuitiveResearchKitPSM::TransitionArmHomed(void)
 {
     if (mArmState.DesiredStateIsNotCurrent()) {
         Adapter.GetButton(Adapter.IsPresent);
-        if (Adapter.IsPresent || mIsSimulated) {
+        if (Adapter.IsPresent || mIsSimulated || mAdapterNeedEngage) {
             mArmState.SetCurrentState("CHANGING_COUPLING_ADAPTER");
         }
     }
@@ -1098,13 +1099,23 @@ void mtsIntuitiveResearchKitPSM::EnableJointsEventHandler(const vctBoolVec & ena
     CouplingChange.LastEnabledJoints.Assign(enable);
 }
 
+void mtsIntuitiveResearchKitPSM::SetAdapterPresent(const bool & present)
+{
+    if (present) {
+        // we will need to engage this adapter
+        mAdapterNeedEngage = true;
+    } else {
+        mCartesianReady = false;
+        mArmState.SetCurrentState("ARM_HOMED");
+    }
+}
+
 void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
-        mAdapterNeedEngage = true;
+        SetAdapterPresent(true);
     } else {
-        // set current state, not desired one - this needs to be immediate
-        mArmState.SetCurrentState("ARM_HOMED");
+        SetAdapterPresent(false);
     }
 }
 
@@ -1115,7 +1126,7 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
         mToolNeedEngage = true;
     } else {
         mCartesianReady = false;
-        mArmState.SetCurrentState("ARM_HOMED");
+        mArmState.SetCurrentState("ADAPTER_ENGAGED");
     }
 }
 
