@@ -14,17 +14,8 @@
         ]
     }
     ,
-    "console-inputs":
-    {
-        "operator-present": {
-            "component": "ForceDimensionSDK",
-            "interface": "MTMR-Center" // see file keyboard-dVRK-console.json
-        }
-        ,
-        "clutch": {
-            "component": "ForceDimensionSDK",
-            "interface": "MTMR-Top"
-        }
+    "io": {
+        "footpedals": "sawRobotIO1394-PSM3-foot-pedals.xml"
     }
     ,
     "arms":
