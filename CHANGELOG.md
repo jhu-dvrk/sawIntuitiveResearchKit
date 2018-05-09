@@ -17,6 +17,7 @@ Change log
   * Teleoperation PSM:
     * Match gripper/jaw angle before starting teleoperation
     * Use structs for MTM and PSM instead of pointers
+    * Added option to ignore jaw in PSM if MTM doesn't have a gripper (e.g. Falcon)
   * General:
     * Fixed interval statistics with better load estimation, updated Qt widget
     * Fixed 3D rotation widget, show reference frame and allow to rotate view with mouse
@@ -29,6 +30,8 @@ Change log
   * Arm:
     * Added relative position commands in joint and cartesian space
     * Console JSON configuration file, added `base-frame` with static transformation and name of reference frame for each arm
+    * For all cartesian velocities/twist, added name of moving frame
+    * PSM: added set_effort_jaw command, this can be along with set_effort_joint or set_wrench on PSM
   * SUJ:
     * Better/faster propagation of base frames
     * Added simulation mode, can set joint values using ROS topic
@@ -40,6 +43,7 @@ Change log
     * Initial support for crtk topics
   * sawRobotIO1394:
     * New velocity estimation on FPGA with firmware rev 6, improved PID and cartesian impedance controllers
+    * Software will not allow firmware different from 4, 5 or 6.  6 is recommended
     * If pot/encoder tolerance distance is set to 0, ignore axis in safety checks
     * Code refactor to reduce number of classes and ease maintenance
 * Bug fixes:
