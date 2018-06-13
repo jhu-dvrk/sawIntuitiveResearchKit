@@ -10,6 +10,9 @@
 
 # Brief: this file is written for people who are not familiar with cisst
 
+# Release Mode by Default
+set (CMAKE_BUILD_TYPE Release CACHE PATH "")
+
 # Build with cisst netlib (for numerical)
 set (CISST_HAS_CISSTNETLIB ON CACHE BOOL "")
 set (CISSTNETLIB_DIR ${CMAKE_BINARY_DIR}/../cisstNetlib-Linux/ CACHE PATH "")

@@ -4,11 +4,11 @@
 # Date: 2013-05-01
 # EmaiL: zihan.chen@jhu.edu
 
-# create source & build dir
+# create build
 mkdir build
 
 # git clone source
-git clone https://github.com/jhu-cisst/cisst-saw.git --recursive
+git clone https://github.com/jhu-cisst/cisst-saw.git --recursive source
 
 # download cisstNetlib based on system architecture
 if [ $(uname -m) == "x86_64" ]; then
@@ -30,7 +30,7 @@ cd build
 wget https://raw.githubusercontent.com/jhu-dvrk/sawIntuitiveResearchKit/master/share/dvrk.cisst.initial.cmake
 
 # cmake
-cmake -C dvrk.cisst.initial.cmake ../cisst-saw
+cmake -C dvrk.cisst.initial.cmake ../source
 # build
 make -j4 -l
 
