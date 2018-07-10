@@ -29,6 +29,9 @@ class {
             name POSITION_MODE;
         }
         enum-value {
+            name POSITION_INCREMENT_MODE;
+        }
+        enum-value {
             name TRAJECTORY_MODE;
         }
         enum-value {

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -28,6 +28,7 @@ class QPushButton;
 class QRadioButton;
 class QTabWidget;
 class QDoubleSpinBox;
+class QSlider;
 
 #include <QWidget>
 
@@ -67,6 +68,7 @@ private slots:
     void SlotClutchEventHandler(bool clutch);
     void SlotOperatorPresentEventHandler(bool operatorPresent);
     void SlotCameraEventHandler(bool camera);
+    void SlotSetVolume(void);
     void SlotComponentViewer(void);
 
 protected:
@@ -80,6 +82,7 @@ protected:
         mtsFunctionVoid Home;
         mtsFunctionWrite TeleopEnable;
         mtsFunctionWrite SetScale;
+        mtsFunctionWrite SetVolume;
     } Console;
 
     void ScaleEventHandler(const double & scale);
@@ -96,6 +99,8 @@ protected:
     QRadioButton * QRBClutch;
     QRadioButton * QRBOperatorPresent;
     QRadioButton * QRBCamera;
+    QSlider * QSVolume;
+    
     QPushButton * QPBComponentViewer;
     QTabWidget * QTWidgets;
     mtsMessageQtWidget * QMMessage;

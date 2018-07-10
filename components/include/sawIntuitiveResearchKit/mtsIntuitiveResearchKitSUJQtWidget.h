@@ -39,7 +39,6 @@ protected:
     void setupUiDerived(void);
     void timerEventDerived(void);
 
-    vctQtWidgetDynamicVectorDoubleRead * QVJointWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVBrakeCurrentWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVExtraVoltagesWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVPrimaryVoltagesWidget;
@@ -58,7 +57,6 @@ protected:
     mtsFunctionWrite Clutch;
     mtsFunctionWrite SetLiftVelocity;
 
-    prmStateJoint StateJoint;
     vctDoubleVec PrimaryJointOffset;
     vctDoubleVec SecondaryJointOffset;
     vctDoubleVec JointPositionStart;
@@ -67,7 +65,6 @@ protected:
     vctDoubleVec JointVoltageFinish;
     double BrakeCurrent;
 
-    mtsFunctionRead GetPositionJoint;
     mtsFunctionRead GetBrakeCurrent;
 
     mtsFunctionRead GetPrimaryVoltages;

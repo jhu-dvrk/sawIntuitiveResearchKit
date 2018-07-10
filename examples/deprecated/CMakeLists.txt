@@ -26,7 +26,7 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstQt)
 
 # find cisst and make sure the required libraries have been compiled
-find_package (cisst 1.0.9 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.0.10 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -40,9 +40,9 @@ if (cisst_FOUND_AS_REQUIRED)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
-  find_package (sawRobotIO1394          1.5.0 REQUIRED)
-  find_package (sawControllers          1.5.0 REQUIRED)
-  find_package (sawIntuitiveResearchKit 1.5.0 REQUIRED)
+  find_package (sawRobotIO1394          1.6.0 REQUIRED)
+  find_package (sawControllers          1.6.0 REQUIRED)
+  find_package (sawIntuitiveResearchKit 1.6.0 REQUIRED)
   find_package (sawTextToSpeech REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsTaskFromSignal.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmPositionCartesianSet.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -31,6 +32,11 @@ http://www.cisst.org/cisst/license.txt.
 namespace dvrk {
     class console;
 }
+
+class mtsTextToSpeech;
+class mtsDaVinciHeadSensor;
+class mtsDaVinciEndoscopeFocus;
+class mtsIntuitiveResearchKitArm;
 
 class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 {
@@ -69,6 +75,10 @@ public:
         void ConfigureArm(const ArmType armType,
                           const std::string & configFile,
                           const double & periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
+
+        /*! Check if mBaseFrame has a valid name and if it does
+          SetBaseFrame on the arm. */
+        void SetBaseFrameIfNeeded(mtsIntuitiveResearchKitArm * armPointer);
 
         /*! Connect all interfaces specific to this arm. */
         bool Connect(void);
@@ -109,6 +119,8 @@ public:
         std::string mConstructorArgJSON;
 
         // base frame
+        // (name and frame) OR (component and interface)
+        prmPositionCartesianSet mBaseFrame;
         std::string mBaseFrameComponentName;
         std::string mBaseFrameInterfaceName;
 
@@ -153,8 +165,8 @@ public:
 
         /*! Create and configure the robot arm. */
         void ConfigureTeleop(const TeleopECMType type,
-                             const vctMatRot3 & orientation,
-                             const double & periodInSeconds = mtsIntuitiveResearchKit::TeleopPeriod);
+                             const double & periodInSeconds,
+                             const Json::Value & jsonConfig);
 
         /*! Connect all interfaces specific to this teleop. */
         bool Connect(void);
@@ -192,8 +204,8 @@ public:
 
         /*! Create and configure the robot arm. */
         void ConfigureTeleop(const TeleopPSMType type,
-                             const vctMatRot3 & orientation,
-                             const double & periodInSeconds = mtsIntuitiveResearchKit::TeleopPeriod);
+                             const double & periodInSeconds,
+                             const Json::Value & jsonConfig);
 
         /*! Connect all interfaces specific to this teleop. */
         bool Connect(void);
@@ -256,12 +268,21 @@ protected:
     typedef std::map<std::string, Arm *> ArmList;
     ArmList mArms;
 
+    /*! Pointer to mtsTextToSpeech component */
+    mtsTextToSpeech * mTextToSpeech;
+
     /*! List to manage multiple PSM teleoperations */
     typedef std::map<std::string, TeleopPSM *> TeleopPSMList;
     TeleopPSMList mTeleopsPSM;
 
     /*! Single ECM bimanual teleoperation */
     TeleopECM * mTeleopECM;
+
+    /*! daVinci Head Sensor */
+    mtsDaVinciHeadSensor * mDaVinciHeadSensor;
+
+    /*! daVinci Endoscope Focus */
+    mtsDaVinciEndoscopeFocus * mDaVinciEndoscopeFocus;
 
     /*! Find all arm data from JSON configuration. */
     bool ConfigureArmJSON(const Json::Value & jsonArm,
@@ -283,10 +304,18 @@ protected:
     void TeleopEnable(const bool & enable);
     void UpdateTeleopState(void);
     void SetScale(const double & scale);
+    void SetVolume(const double & volume);
     bool mHasIO;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
+
+    struct {
+        mtsFunctionWrite Beep;
+        mtsFunctionWrite StringToSpeech;
+    } mAudio;
+    double mAudioVolume;
+    bool mChatty;
 
     struct {
         mtsFunctionWrite Clutch;
@@ -311,15 +340,6 @@ protected:
     void ErrorEventHandler(const mtsMessage & message);
     void WarningEventHandler(const mtsMessage & message);
     void StatusEventHandler(const mtsMessage & message);
-
-    void ECMManipClutchEventHandler(const prmEventButton & button);
-
-    // Getting position from ECM and ECM SUJ to create base frame event for all other SUJs
-    mtsInterfaceRequired * mSUJECMInterfaceRequired;
-    mtsInterfaceProvided * mECMBaseFrameInterfaceProvided;
-    mtsFunctionRead mGetPositionCartesianLocalFromECM;
-    mtsFunctionWrite mECMBaseFrameEvent;
-    void SUJECMBaseFrameHandler(const prmPositionCartesianGet & baseFrameParam);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsole);

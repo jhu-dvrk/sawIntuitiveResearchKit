@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -55,6 +55,8 @@ inline double nearbyint(double x) { return floor(x+0.5); }
 class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
+
+    friend class mtsIntuitiveResearchKitConsole;
 
 public:
     mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
@@ -129,12 +131,15 @@ public:
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
+    virtual void SetEffortJointLocal(const vctDoubleVec & newEffort);
 
     /*! Methods used for commands */
     virtual void Freeze(void);
     virtual void SetPositionJoint(const prmPositionJointSet & newPosition);
+    virtual void SetPositionRelativeJoint(const prmPositionJointSet & difference);
     virtual void SetPositionGoalJoint(const prmPositionJointSet & newPosition);
     virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
+    virtual void SetPositionRelativeCartesian(const prmPositionCartesianSet & difference);
     virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
     virtual void SetEffortJoint(const prmForceTorqueJointSet & newEffort);
     virtual void SetWrenchSpatial(const prmForceCartesianSet & newForce);
@@ -145,7 +150,6 @@ public:
     virtual void SetCartesianImpedanceGains(const prmCartesianImpedanceGains & gains);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
-    virtual void SetBaseFrameEventHandler(const prmPositionCartesianGet & newBaseFrame);
     virtual void SetBaseFrame(const prmPositionCartesianSet & newBaseFrame);
 
     /*! Event handler for PID position limit. */
@@ -221,9 +225,6 @@ public:
         mtsFunctionVoid  BrakeEngage;
     } RobotIO;
 
-    // Interface to SUJ component
-    mtsInterfaceRequired * SUJInterface;
-
     // Main provided interface
     mtsInterfaceProvided * RobotInterface;
 
@@ -235,9 +236,11 @@ public:
 
     robManipulator * Manipulator;
 
-    // Cache cartesian goal position
-    prmPositionCartesianSet CartesianSetParam;
+    // cache cartesian goal position and increment
     bool mHasNewPIDGoal;
+    prmPositionCartesianSet CartesianSetParam;
+    vctDoubleVec mJointRelative;
+    vctFrm3 mCartesianRelative;
 
     // internal kinematics
     prmPositionCartesianGet CartesianGetLocalParam;
@@ -259,11 +262,13 @@ public:
 
     // efforts
     vctDoubleMat mJacobianBody, mJacobianBodyTranspose, mJacobianSpatial;
-    vctDoubleVec JointExternalEffort;
     WrenchType mWrenchType;
     prmForceCartesianSet mWrenchSet;
     bool mWrenchBodyOrientationAbsolute;
-    prmForceTorqueJointSet TorqueSetParam, mEffortJointSet;
+    prmForceTorqueJointSet
+        mTorqueSetParam, // number of joints PID, used in SetEffortJointLocal
+        mEffortJointSet; // number of joints for kinematics
+    vctDoubleVec mEffortJoint; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData mJacobianPInverseData;
     prmForceCartesianGet mWrenchGet;
@@ -348,8 +353,10 @@ public:
     mtsCallableVoidBase * mControlCallback;
 
     virtual void ControlPositionJoint(void);
+    virtual void ControlPositionRelativeJoint(void);
     virtual void ControlPositionGoalJoint(void);
     virtual void ControlPositionCartesian(void);
+    virtual void ControlPositionRelativeCartesian(void);
     virtual void ControlPositionGoalCartesian(void);
     virtual void ControlEffortJoint(void);
     virtual void ControlEffortCartesian(void);

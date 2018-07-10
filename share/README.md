@@ -1,6 +1,8 @@
 dVRK configuration files
 ========================
 
+The console class which loads a `console-XYZ.json` file has a search path that include this `share` directory.   You should always use a relative path when using the configuration files from this directory and subdirectories.
+
 # Directories per system
 
 Directories are used to store system specific files.  Directory names start with the institution name
@@ -17,6 +19,12 @@ number.  You might also want to store the original `.cal` files provided by Intu
 
 # Shared files
 
+## IOs
+
+There are some IO files shared accross systems/sites.  These are used to define inputs/outputs used to communicate with the daVinci foot pedals, head sensor, camera focus controllers, ...
+
+These files are stored in the subdirectory `io`.  The console class will search for files in this directory, there's no need to specify the full path to the standard IO files. 
+
 ## PID
 
 The PID files, `sawControllersPID-xxx.xml`, should work fine on most systems.  There are 4 files provided, `ECM`, `PSM`, `MTML` and `MTMR`.  We maintain two MTM configuration files simply because the joint limits are different.  Everything else should be the same.  If you need to edit one of the MTM files, make sure you keep the other in sync.
@@ -29,7 +37,8 @@ The kinematic parameters (DH and dynamic model) are store in two different types
    * `psm-<tool-type>.json`: includes DH parameters and other info specific to each tool.  **Important:** some parameters (e.g. DH of first 3 dofs) are shared across all `psm-xxx.json` files.  If you find an issue in one, fix them all.
  * MTM:
    * `dvmtm.rob`: not used anymore
-   * `mtm.json`, `mtml.json` and `mtmr.json`: DH and dynamic parameters for MTMs.  The `mtml` and `mtmr` version include a base transformation to match the ISI API convention, i.e. use the stereo display as base frame.  **Important:** most parameters are shared across all `mtm{,l,r}.json` files.  If you find an issue in one, fix them all.
+   * `mtm.json`: DH and dynamic parameters for MTMs.
+   * `mtml.json` and `mtmr.json`: these files are **deprecated**, they include a base transformation to match the ISI API convention, i.e. use the stereo display as base frame.  As of **version 1.6** it is recommended to use the `base-frame` option in the console.json file to specify the base frame.
 
 ## Console
 

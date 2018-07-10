@@ -117,6 +117,6 @@ void mtsDerivedTeleOperationPSM::RunEnabled(void)
         force = mRegistrationRotation.Inverse() * force;
         // Set wrench for MTM
         wrenchMTM.Force().Ref<3>(0) = force;
-        mMTM->SetWrenchBody(wrenchMTM);
+        mMTM.SetWrenchBody(wrenchMTM);
     }
 }

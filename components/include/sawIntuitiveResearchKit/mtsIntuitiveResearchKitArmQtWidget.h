@@ -20,11 +20,16 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitArmQtWidget_h
 #define _mtsIntuitiveResearchKitArmQtWidget_h
 
-#include <cisstVector/vctQtWidgetFrame.h>
+#include <cisstVector/vctForceTorqueQtWidget.h>
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
+
+#include <cisstParameterTypes/prmStateJoint.h>
+#include <cisstParameterTypes/prmStateJointQtWidget.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmPositionCartesianGetQtWidget.h>
+#include <cisstParameterTypes/prmForceCartesianGet.h>
 
 #include <QWidget>
 
@@ -69,7 +74,9 @@ private:
 
 protected:
     struct ArmStruct {
+        mtsFunctionRead GetStateJoint;
         mtsFunctionRead GetPositionCartesian;
+        mtsFunctionRead GetWrenchBody;
         mtsFunctionWrite SetDesiredState;
         mtsFunctionRead GetPeriodStatistics;
     } Arm;
@@ -83,8 +90,14 @@ protected:
 private:
     bool DirectControl;
 
+    prmStateJoint StateJoint;
+    prmStateJointQtWidget * QSJWidget;
+
     prmPositionCartesianGet Position;
-    vctQtWidgetFrameDoubleRead * QFRPositionWidget;
+    prmPositionCartesianGetQtWidget * QCPGWidget;
+
+    prmForceCartesianGet Wrench;
+    vctForceTorqueQtWidget * QFTWidget;
 
     // timing
     mtsIntervalStatistics IntervalStatistics;

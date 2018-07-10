@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -55,11 +55,15 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
     vctDouble3 shaft = cartesianGoal.Translation();
     shaft.NormalizedSelf();
     const vctDouble3 z = cartesianGoal.Rotation().Column(2).Ref<3>(); // last column of rotation matrix
-    vctDouble3 axis;
-    axis.CrossProductOf(z, shaft);
-    const double angle = acos(vctDotProduct(z, shaft));
+    vctMatRot3 reAlign;
+    vct3 axis;
+    double angle;
+    if (! z.AlmostEqual(shaft, 0.0001)) {
+        axis.CrossProductOf(z, shaft);
+        angle = acos(vctDotProduct(z, shaft));
+        reAlign.From(vctAxAnRot3(axis, angle, VCT_NORMALIZE));
+    }
 
-    const vctMatRot3 reAlign(vctAxAnRot3(axis, angle, VCT_NORMALIZE));
     vctFrm4x4 newGoal;
     newGoal.Translation().Assign(cartesianGoal.Translation());
     newGoal.Rotation().ProductOf(reAlign, cartesianGoal.Rotation());
@@ -90,6 +94,8 @@ void mtsIntuitiveResearchKitECM::Init(void)
     // main initialization from base type
     mtsIntuitiveResearchKitArm::Init();
 
+    ToolOffset = 0;
+
     // state machine specific to ECM, see base class for other states
     mArmState.AddState("MANUAL");
 
@@ -103,15 +109,20 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                this);
 
     // initialize trajectory data
-    mJointTrajectory.Velocity.Assign(30.0 * cmnPI_180, // degrees per second
-                                     30.0 * cmnPI_180,
-                                     0.05,            // m per second
-                                     20.0 * cmnPI_180);
-    mJointTrajectory.Acceleration.Assign(30.0 * cmnPI_180,
-                                         30.0 * cmnPI_180,
-                                         0.05,
-                                         30.0 * cmnPI_180);
+    mJointTrajectory.Velocity.Assign(60.0 * cmnPI_180, // degrees per second
+                                     60.0 * cmnPI_180,
+                                     30.0 * cmn_mm,    // mm per second
+                                     60.0 * cmnPI_180);
+    mJointTrajectory.Acceleration.Assign(90.0 * cmnPI_180,
+                                         90.0 * cmnPI_180,
+                                         15.0 * cmn_mm,
+                                         90.0 * cmnPI_180);
     mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
+
+    // default PID tracking errors
+    PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
+    PID.DefaultTrackingErrorTolerance.SetAll(7.0 * cmnPI_180); // 7 degrees on angles
+    PID.DefaultTrackingErrorTolerance.Element(2) = 10.0 * cmn_mm; // 10 mm
 
     mtsInterfaceRequired * interfaceRequired;
 
@@ -179,11 +190,8 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
         return;
     }
 
-    // configure PID to fail in case of tracking error
-    vctDoubleVec tolerances(NumberOfJoints());
-    tolerances.SetAll(7.0 * cmnPI_180); // 7 degrees on angles
-    tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
-    PID.SetTrackingErrorTolerance(tolerances);
+    // make sure tracking error is set
+    PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
     PID.EnableTrackingError(true);
 
     // compute joint goal position

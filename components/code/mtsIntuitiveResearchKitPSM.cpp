@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -54,6 +54,11 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 {
     // main initialization from base type
     mtsIntuitiveResearchKitArm::Init();
+    mSnakeLike = false;
+
+    mSnakeLike = false;
+    ManipulatorPSMSnake = 0;
+    ToolOffset = 0;
 
     mAdapterNeedEngage = false;
     mToolNeedEngage = false;
@@ -165,6 +170,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionJaw, this, "SetPositionJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionGoalJaw, this, "SetPositionGoalJaw");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetEffortJaw, this, "SetEffortJaw");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetAdapterPresent, this, "SetAdapterPresent");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolPresent, this, "SetToolPresent");
 
     CMN_ASSERT(PIDInterface);
@@ -204,12 +211,16 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
     if (Jaw.Name().size() == 0) {
         Jaw.Name().SetSize(1);
         Jaw.Name().at(0) = JointsPID.Name().at(jawIndex);
+        Jaw.Type().SetSize(1);
+        Jaw.Type().at(0) = JointsPID.Type().at(jawIndex);
         Jaw.Position().SetSize(1);
         Jaw.Velocity().SetSize(1);
         Jaw.Effort().SetSize(1);
 
         JawDesired.Name().SetSize(1);
         JawDesired.Name().at(0) = JointsDesiredPID.Name().at(jawIndex);
+        JawDesired.Type().SetSize(1);
+        JawDesired.Type().at(0) = JointsDesiredPID.Type().at(jawIndex);
         JawDesired.Position().SetSize(1);
         JawDesired.Velocity().SetSize(0);
         JawDesired.Effort().SetSize(1);
@@ -229,15 +240,22 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
 
     if (JointsKinematics.Name().size() != NumberOfJointsKinematics()) {
         JointsKinematics.Name().SetSize(NumberOfJointsKinematics());
+        JointsKinematics.Type().SetSize(NumberOfJointsKinematics());
         JointsKinematics.Position().SetSize(NumberOfJointsKinematics());
         JointsKinematics.Velocity().SetSize(NumberOfJointsKinematics());
         JointsKinematics.Effort().SetSize(NumberOfJointsKinematics());
 
         JointsKinematics.Name().Assign(JointsPID.Name(), 4);
-        JointsKinematics.Name().at(4) = JointsPID.Name().at(4) +"1";
-        JointsKinematics.Name().at(5) = JointsPID.Name().at(5) +"1";
-        JointsKinematics.Name().at(6) = JointsPID.Name().at(5) +"2";
-        JointsKinematics.Name().at(7) = JointsPID.Name().at(4) +"2";
+        JointsKinematics.Name().at(4) = JointsPID.Name().at(4) + "1";
+        JointsKinematics.Name().at(5) = JointsPID.Name().at(5) + "1";
+        JointsKinematics.Name().at(6) = JointsPID.Name().at(5) + "2";
+        JointsKinematics.Name().at(7) = JointsPID.Name().at(4) + "2";
+
+        JointsKinematics.Type().Assign(JointsPID.Type(), 4);
+        JointsKinematics.Type().at(4) = JointsPID.Type().at(4);
+        JointsKinematics.Type().at(5) = JointsPID.Type().at(5);
+        JointsKinematics.Type().at(6) = JointsPID.Type().at(5);
+        JointsKinematics.Type().at(7) = JointsPID.Type().at(4);
     }
 
     // Position
@@ -258,6 +276,7 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
 
     if (JointsDesiredKinematics.Name().size() != NumberOfJointsKinematics()) {
         JointsDesiredKinematics.Name().SetSize(NumberOfJointsKinematics());
+        JointsDesiredKinematics.Type().SetSize(NumberOfJointsKinematics());
         JointsDesiredKinematics.Position().SetSize(NumberOfJointsKinematics());
         JointsDesiredKinematics.Velocity().SetSize(NumberOfJointsKinematics());
         JointsDesiredKinematics.Effort().SetSize(NumberOfJointsKinematics());
@@ -267,6 +286,12 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
         JointsDesiredKinematics.Name().at(5) = JointsDesiredPID.Name().at(5) + "1";
         JointsDesiredKinematics.Name().at(6) = JointsDesiredPID.Name().at(5) + "2";
         JointsDesiredKinematics.Name().at(7) = JointsDesiredPID.Name().at(4) + "2";
+
+        JointsDesiredKinematics.Type().Assign(JointsDesiredPID.Type(), 4);
+        JointsDesiredKinematics.Type().at(4) = JointsDesiredPID.Type().at(4);
+        JointsDesiredKinematics.Type().at(5) = JointsDesiredPID.Type().at(5);
+        JointsDesiredKinematics.Type().at(6) = JointsDesiredPID.Type().at(5);
+        JointsDesiredKinematics.Type().at(7) = JointsDesiredPID.Type().at(4);
     }
 
     // Position
@@ -353,10 +378,11 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         }
 
         if (mSnakeLike) {
+            ManipulatorPSMSnake = new robManipulatorPSMSnake();
             if (Manipulator) {
+                ManipulatorPSMSnake->Rtw0.Assign(Manipulator->Rtw0);
                 delete Manipulator;
             }
-            ManipulatorPSMSnake = new robManipulatorPSMSnake();
             Manipulator = ManipulatorPSMSnake;
         }
         ConfigureDH(jsonConfig);
@@ -538,7 +564,7 @@ void mtsIntuitiveResearchKitPSM::TransitionArmHomed(void)
 {
     if (mArmState.DesiredStateIsNotCurrent()) {
         Adapter.GetButton(Adapter.IsPresent);
-        if (Adapter.IsPresent || mIsSimulated) {
+        if (Adapter.IsPresent || mIsSimulated || mAdapterNeedEngage) {
             mArmState.SetCurrentState("CHANGING_COUPLING_ADAPTER");
         }
     }
@@ -912,7 +938,8 @@ void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawP
     // keep cartesian space is already there, otherwise use joint_space
     switch (mControlSpace) {
     case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-        if (mControlMode != mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
+        if (! ((mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)
+               || (mControlMode != mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE))) {
             SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                    mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
             // make sure all other joints have a reasonable cartesian
@@ -998,6 +1025,66 @@ void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newP
     PID.SetPositionJoint(JointSetParam);
 }
 
+void mtsIntuitiveResearchKitPSM::SetEffortJaw(const prmForceTorqueJointSet & effort)
+{
+    if (!ArmIsReady("SetEffortJoint", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+        return;
+    }
+
+    // keep cartesian space is already there, otherwise use joint_space
+    switch (mControlSpace) {
+    case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
+        if (mControlMode != mtsIntuitiveResearchKitArmTypes::EFFORT_MODE) {
+            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                                   mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+            // make sure all other joints have a reasonable cartesian
+            // goal
+            mWrenchSet.Force().SetAll(0.0);
+            break;
+        }
+    case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+        if (mControlMode != mtsIntuitiveResearchKitArmTypes::EFFORT_MODE) {
+            // we are initiating the control mode switch so we need to
+            // set a reasonable JointSet
+            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                                   mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+            // make sure all other joints have a reasonable goal
+            mEffortJointSet.ForceTorque().SetAll(0.0);
+        }
+        break;
+    default:
+        // we are initiating the control mode switch
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                               mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+        // make sure all other joints have a reasonable goal
+        mEffortJointSet.ForceTorque().SetAll(0.0);
+    }
+
+    // save the desired effort
+    EffortJawSet = effort.ForceTorque().at(0);
+}
+
+void mtsIntuitiveResearchKitPSM::SetEffortJointLocal(const vctDoubleVec & newEffort)
+{
+    if (mArmState.CurrentState() != "READY") {
+        mtsIntuitiveResearchKitArm::SetEffortJointLocal(newEffort);
+        return;
+    }
+
+    // pad array for PID
+    vctDoubleVec torqueDesired(NumberOfJoints(), 0.0); // for PID
+    if (mSnakeLike) {
+        std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for PID control" << std::endl;
+    } else {
+        torqueDesired.Assign(mEffortJoint, NumberOfJointsKinematics());
+    }
+    torqueDesired.at(6) = EffortJawSet;
+
+    // convert to cisstParameterTypes
+    mTorqueSetParam.SetForceTorque(torqueDesired);
+    PID.SetTorqueJoint(mTorqueSetParam);
+}
+
 void mtsIntuitiveResearchKitPSM::CouplingEventHandler(const prmActuatorJointCoupling & coupling)
 {
     CouplingChange.ReceivedCoupling = true;
@@ -1012,13 +1099,23 @@ void mtsIntuitiveResearchKitPSM::EnableJointsEventHandler(const vctBoolVec & ena
     CouplingChange.LastEnabledJoints.Assign(enable);
 }
 
+void mtsIntuitiveResearchKitPSM::SetAdapterPresent(const bool & present)
+{
+    if (present) {
+        // we will need to engage this adapter
+        mAdapterNeedEngage = true;
+    } else {
+        mCartesianReady = false;
+        mArmState.SetCurrentState("ARM_HOMED");
+    }
+}
+
 void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
-        mAdapterNeedEngage = true;
+        SetAdapterPresent(true);
     } else {
-        // set current state, not desired one - this needs to be immediate
-        mArmState.SetCurrentState("ARM_HOMED");
+        SetAdapterPresent(false);
     }
 }
 
@@ -1029,7 +1126,7 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
         mToolNeedEngage = true;
     } else {
         mCartesianReady = false;
-        mArmState.SetCurrentState("ARM_HOMED");
+        mArmState.SetCurrentState("ADAPTER_ENGAGED");
     }
 }
 

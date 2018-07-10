@@ -5,7 +5,7 @@
   Author(s):  Pretham Chalasani, Anton Deguet
   Created on: 2016-11-04
 
-  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -47,8 +47,7 @@ protected:
 
 private:
     prmPositionCartesianGet PositionCartesianCurrent;
-
-    double JawPosition;
+    prmStateJoint StateJaw;
     mtsInterfaceProvided * mInterface;
 };
 

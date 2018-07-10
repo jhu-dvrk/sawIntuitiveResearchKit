@@ -55,7 +55,9 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
         InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::CurrentStateEventHandler,
                                                 this, "CurrentState");
         QMMessage->SetInterfaceRequired(InterfaceRequired);
+        InterfaceRequired->AddFunction("GetStateJoint", Arm.GetStateJoint);
         InterfaceRequired->AddFunction("GetPositionCartesian", Arm.GetPositionCartesian);
+        InterfaceRequired->AddFunction("GetWrenchBody", Arm.GetWrenchBody, MTS_OPTIONAL);
         InterfaceRequired->AddFunction("SetDesiredState", Arm.SetDesiredState);
         InterfaceRequired->AddFunction("GetPeriodStatistics", Arm.GetPeriodStatistics);
     }
@@ -104,12 +106,23 @@ void mtsIntuitiveResearchKitArmQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(eve
     }
 
     mtsExecutionResult executionResult;
-    executionResult = Arm.GetPositionCartesian(Position);
-    if (!executionResult) {
-        CMN_LOG_CLASS_RUN_ERROR << "Manipulator.GetPositionCartesian failed, \""
-                                << executionResult << "\"" << std::endl;
+
+    executionResult = Arm.GetStateJoint(StateJoint);
+    if (executionResult) {
+        QSJWidget->SetValue(StateJoint);
     }
-    QFRPositionWidget->SetValue(Position.Position());
+
+    executionResult = Arm.GetPositionCartesian(Position);
+    if (executionResult) {
+        QCPGWidget->SetValue(Position);
+    }
+
+    executionResult = Arm.GetWrenchBody(Wrench);
+    if (executionResult) {
+        if (Wrench.Valid()) {
+            QFTWidget->SetValue(Wrench.F(), Wrench.T(), Wrench.Timestamp());
+        }
+    }
 
     Arm.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
@@ -162,23 +175,36 @@ void mtsIntuitiveResearchKitArmQtWidget::SlotCurrentStateEventHandler(QString st
 void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
 {
     MainLayout = new QVBoxLayout;
+    MainLayout->setContentsMargins(2, 2, 2, 2);
 
-    QHBoxLayout * topLayout = new QHBoxLayout;
+    QGridLayout * topLayout = new QGridLayout;
+    topLayout->setContentsMargins(2, 2, 2, 2);
+    topLayout->setColumnStretch(1, 1);
+
     MainLayout->addLayout(topLayout);
 
-    // 3D position
-    QFRPositionWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    topLayout->addWidget(QFRPositionWidget, 0, 0);
-
     // timing
-    QVBoxLayout * timingLayout = new QVBoxLayout();
     QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
-    timingLayout->addWidget(QMIntervalStatistics);
-    timingLayout->addStretch();
-    topLayout->addLayout(timingLayout);
+    topLayout->addWidget(QMIntervalStatistics, 0, 0);
+
+    // joint state
+    QSJWidget = new prmStateJointQtWidget();
+    QSJWidget->setupUi();
+    QSJWidget->SetPrismaticRevoluteFactors(1.0 / cmn_mm, cmn180_PI);
+    topLayout->addWidget(QSJWidget, 0, 1);
+
+    // 3D position
+    QCPGWidget = new prmPositionCartesianGetQtWidget();
+    QCPGWidget->SetPrismaticRevoluteFactors(1.0 / cmn_mm, cmn180_PI);
+    topLayout->addWidget(QCPGWidget, 1, 0);
+
+    // wrench, make large
+    QFTWidget = new vctForceTorqueQtWidget();
+    topLayout->addWidget(QFTWidget, 1, 1);
 
     // state
     QHBoxLayout * stateLayout = new QHBoxLayout;
+    stateLayout->setContentsMargins(2, 2, 2, 2);
     MainLayout->addLayout(stateLayout);
 
     // messages on/off

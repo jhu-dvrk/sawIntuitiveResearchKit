@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -41,7 +41,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <QPixmap>
 #include <QShortcut>
 #include <QDoubleSpinBox>
+#include <QSlider>
 #include <QRadioButton>
+#include <QApplication>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
 
@@ -60,6 +62,7 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequired->AddFunction("SetScale", Console.SetScale);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
                                                 this, "Scale");
+        interfaceRequired->AddFunction("SetVolume", Console.SetVolume);
     }
     interfaceRequired = AddInterfaceRequired("Clutch");
     if (interfaceRequired) {
@@ -170,6 +173,12 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetScale(double scale)
     Console.SetScale(scale);
 }
 
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetVolume(void)
+{
+    double volume01 = static_cast<double>(QSVolume->value()) / 100.0;
+    Console.SetVolume(volume01);
+}
+
 void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 {
     QHBoxLayout * mainLayout = new QHBoxLayout;
@@ -235,6 +244,15 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QRBCamera->setEnabled(false);
     inputsLayout->addWidget(QRBCamera);
 
+    QGroupBox * audioBox = new QGroupBox("Audio");
+    boxLayout->addWidget(audioBox);
+    QVBoxLayout * audioLayout = new QVBoxLayout();
+    audioBox->setLayout(audioLayout);
+    QSVolume = new QSlider(Qt::Horizontal);
+    QSVolume->setRange(0, 100);
+    QSVolume->setValue(50);
+    audioLayout->addWidget(QSVolume);
+
     boxLayout->addStretch(100);
     buttonsWidget->setFixedWidth(buttonsWidget->sizeHint().width());
     mainLayout->addWidget(buttonsWidget);
@@ -287,6 +305,8 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotOperatorPresentEventHandler(bool)));
     connect(this, SIGNAL(SignalCamera(bool)),
             this, SLOT(SlotCameraEventHandler(bool)));
+    connect(QSVolume, SIGNAL(sliderReleased()),
+            this, SLOT(SlotSetVolume()));
     connect(QPBComponentViewer, SIGNAL(clicked()),
             this, SLOT(SlotComponentViewer()));
 
@@ -320,6 +340,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler(const prmEventBu
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotOperatorPresentEventHandler(bool operatorPresent)
 {
     QRBOperatorPresent->setChecked(operatorPresent);
+    QApplication::beep();
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler(const prmEventButton & button)

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -26,7 +26,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmStateJoint.h>
+#include <cisstParameterTypes/prmPositionJointSet.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstRobot/robManipulator.h>
 
@@ -37,9 +39,9 @@ const size_t MUX_MAX_INDEX = 15;
 // input
 const size_t ANALOG_SAMPLE_NUMBER = 60;
 
-// DO NOT set value below 2, this value should probably go
-// down when the QLA/dSIB are properly grounded.
-const size_t NUMBER_OF_MUX_CYCLE_BEFORE_STABLE = 4;
+// DO NOT set value below 3, this value might go down when the
+// QLA/dSIB are properly grounded.
+const size_t NUMBER_OF_MUX_CYCLE_BEFORE_STABLE = 3;
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJ, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
 
@@ -52,10 +54,15 @@ public:
     inline mtsIntuitiveResearchKitSUJArmData(const std::string & name,
                                              const SujType type,
                                              const unsigned int plugNumber,
-                                             mtsInterfaceProvided * interfaceProvided):
+                                             const bool isSimulated,
+                                             mtsInterfaceProvided * interfaceProvided,
+                                             mtsInterfaceRequired * interfaceRequired):
         mName(name),
         mType(type),
         mPlugNumber(plugNumber),
+        mIsSimulated(isSimulated),
+        mInterfaceProvided(0),
+        mInterfaceRequired(0),
         mStateTable(500, name),
         mStateTableConfiguration(100, name + "Configuration"),
         mStateTableBrakeCurrent(100, name + "BrakeCurrent")
@@ -65,7 +72,7 @@ public:
         mBrakeDesiredCurrent = 0.0;
 
         // emit an event the first time we have a valid position
-        mNeedToUpdatePositionCartesianDesired = 1;
+        mNumberOfMuxCyclesBeforeStable = 0;
 
         // joints
         mJointGet.SetSize(6);
@@ -107,71 +114,81 @@ public:
         std::stringstream jointName;
         for (size_t index = 0; index < MUX_ARRAY_SIZE; ++index) {
             jointName.str("");
-            jointName << "SUJ-" << name << "-j" << index;
+            jointName << "SUJ_" << name << "_J" << index;
             mStateJoint.Name().at(index) = jointName.str();
         }
-        mStateTable.AddData(this->mVoltages[0], "Voltages[0]");
-        mStateTable.AddData(this->mVoltages[1], "Voltages[1]");
-        mStateTable.AddData(this->mVoltagesExtra, "VoltagesExtra");
-        mStateTable.AddData(this->mStateJoint, "PositionJoint");
-        mStateTable.AddData(this->mPositionCartesianParam,             "PositionCartesian");
-        mStateTable.AddData(this->mPositionCartesianLocalParam,        "PositionCartesianLocal");
-        mStateTable.AddData(this->mPositionCartesianDesiredParam,      "PositionCartesianDesired");
-        mStateTable.AddData(this->mPositionCartesianLocalDesiredParam, "PositionCartesianLocalDesired");
-        mStateTable.AddData(this->mBaseFrame, "BaseFrame");
-        mStateTableConfiguration.AddData(this->mName, "Name");
-        mStateTableConfiguration.AddData(this->mSerialNumber, "SerialNumber");
-        mStateTableConfiguration.AddData(this->mPlugNumber, "PlugNumber");
-        mStateTableConfiguration.AddData(this->mVoltageToPositionOffsets[0], "PrimaryJointOffset");
-        mStateTableConfiguration.AddData(this->mVoltageToPositionOffsets[1], "SecondaryJointOffset");
-        mStateTableBrakeCurrent.AddData(this->mBrakeDesiredCurrent, "BrakeCurrent");
+
+        mStateJoint.Type().SetSize(MUX_ARRAY_SIZE);
+        mStateJoint.Type().SetAll(PRM_JOINT_REVOLUTE);
+        mStateJoint.Type().at(0) = PRM_JOINT_PRISMATIC;
+
+        mStateTable.AddData(mVoltages[0], "Voltages[0]");
+        mStateTable.AddData(mVoltages[1], "Voltages[1]");
+        mStateTable.AddData(mVoltagesExtra, "VoltagesExtra");
+        mStateTable.AddData(mStateJoint, "PositionJoint");
+
+        mPositionCartesianParam.SetReferenceFrame("Cart");
+        mPositionCartesianParam.SetMovingFrame(name + "_base");
+        mStateTable.AddData(mPositionCartesianParam, "PositionCartesian");
+
+        mPositionCartesianLocalParam.SetReferenceFrame("Cart");
+        mPositionCartesianLocalParam.SetMovingFrame(name + "_base");
+        mStateTable.AddData(mPositionCartesianLocalParam, "PositionCartesianLocal");
+
+        mStateTable.AddData(mBaseFrame, "BaseFrame");
+        mStateTableConfiguration.AddData(mName, "Name");
+        mStateTableConfiguration.AddData(mSerialNumber, "SerialNumber");
+        mStateTableConfiguration.AddData(mPlugNumber, "PlugNumber");
+        mStateTableConfiguration.AddData(mVoltageToPositionOffsets[0], "PrimaryJointOffset");
+        mStateTableConfiguration.AddData(mVoltageToPositionOffsets[1], "SecondaryJointOffset");
+        mStateTableBrakeCurrent.AddData(mBrakeDesiredCurrent, "BrakeCurrent");
 
         CMN_ASSERT(interfaceProvided);
-        mInterface = interfaceProvided;
+        mInterfaceProvided = interfaceProvided;
         // read commands
-        mInterface->AddCommandReadState(mStateTable, mStateJoint, "GetPositionJoint");
-        mInterface->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0],
-                                        "GetPrimaryJointOffset");
-        mInterface->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[1],
-                                        "GetSecondaryJointOffset");
-        mInterface->AddCommandReadState(mStateTable, mPositionCartesianParam,
-                                        "GetPositionCartesian");
-        mInterface->AddCommandReadState(mStateTable, mPositionCartesianLocalParam,
-                                        "GetPositionCartesianLocal");
-        mInterface->AddCommandReadState(mStateTable, mPositionCartesianDesiredParam,
-                                        "GetPositionCartesianDesired");
-        mInterface->AddCommandReadState(mStateTable, mPositionCartesianLocalDesiredParam,
-                                        "GetPositionCartesianLocalDesired");
-        mInterface->AddCommandReadState(mStateTable, mBaseFrame, "GetBaseFrame");
-        mInterface->AddCommandReadState(mStateTable, mVoltages[0], "GetVoltagesPrimary");
-        mInterface->AddCommandReadState(mStateTable, mVoltages[1], "GetVoltagesSecondary");
-        mInterface->AddCommandReadState(mStateTable, mVoltagesExtra, "GetVoltagesExtra");
-        mInterface->AddCommandReadState(mStateTableConfiguration, mName, "GetName");
-        mInterface->AddCommandReadState(mStateTableConfiguration, mSerialNumber, "GetSerialNumber");
-        mInterface->AddCommandReadState(mStateTableConfiguration, mPlugNumber, "GetPlugNumber");
-        mInterface->AddCommandReadState(mStateTableBrakeCurrent, mBrakeDesiredCurrent, "GetBrakeCurrent");
+        mInterfaceProvided->AddCommandReadState(mStateTable, mStateJoint, "GetStateJoint");
+        mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::SetPositionJoint,
+                                            this, "SetPositionJoint");
+        mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0],
+                                                "GetPrimaryJointOffset");
+        mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[1],
+                                                "GetSecondaryJointOffset");
+        mInterfaceProvided->AddCommandReadState(mStateTable, mPositionCartesianParam,
+                                                "GetPositionCartesian");
+        mInterfaceProvided->AddCommandReadState(mStateTable, mPositionCartesianLocalParam,
+                                                "GetPositionCartesianLocal");
+        mInterfaceProvided->AddCommandReadState(mStateTable, mBaseFrame, "GetBaseFrame");
+        mInterfaceProvided->AddCommandReadState(mStateTable, mVoltages[0], "GetVoltagesPrimary");
+        mInterfaceProvided->AddCommandReadState(mStateTable, mVoltages[1], "GetVoltagesSecondary");
+        mInterfaceProvided->AddCommandReadState(mStateTable, mVoltagesExtra, "GetVoltagesExtra");
+        mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mName, "GetName");
+        mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mSerialNumber, "GetSerialNumber");
+        mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mPlugNumber, "GetPlugNumber");
+        mInterfaceProvided->AddCommandReadState(mStateTableBrakeCurrent, mBrakeDesiredCurrent, "GetBrakeCurrent");
 
         // write commands
-        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCommand, this,
-                                    "Clutch", false);
-        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::CalibratePotentiometers, this,
-                                    "SetRecalibrationMatrix", mRecalibrationMatrix);
+        mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCommand, this,
+                                            "Clutch", false);
+        mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::CalibratePotentiometers, this,
+                                            "SetRecalibrationMatrix", mRecalibrationMatrix);
 
         // cartesian position events
         // BaseFrame is send everytime the mux has found all joint values
-        mInterface->AddEventWrite(EventPositionCartesian, "PositionCartesian", prmPositionCartesianGet());
-        mInterface->AddEventWrite(EventPositionCartesianLocal, "PositionCartesianLocal", prmPositionCartesianGet());
-        // BaseFrameDesired is sent only when the brakes are released, constant value afterwards
-        mInterface->AddEventWrite(EventPositionCartesianDesired, "PositionCartesianDesired", prmPositionCartesianGet());
-        mInterface->AddEventWrite(EventPositionCartesianLocalDesired, "PositionCartesianLocalDesired", prmPositionCartesianGet());
+        mInterfaceProvided->AddEventWrite(EventPositionCartesian, "PositionCartesian", prmPositionCartesianGet());
+        mInterfaceProvided->AddEventWrite(EventPositionCartesianLocal, "PositionCartesianLocal", prmPositionCartesianGet());
 
         // Events
-        mInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
-        mInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
-        mInterface->AddMessageEvents();
+        mInterfaceProvided->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
+        mInterfaceProvided->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
+        mInterfaceProvided->AddMessageEvents();
         // Stats
-        mInterface->AddCommandReadState(mStateTable, mStateTable.PeriodStats,
+        mInterfaceProvided->AddCommandReadState(mStateTable, mStateTable.PeriodStats,
                                         "GetPeriodStatistics");
+
+        CMN_ASSERT(interfaceRequired);
+        mInterfaceRequired = interfaceRequired;
+        mInterfaceRequired->AddFunction("SetBaseFrame", mSetArmBaseFrame);
+        mInterfaceRequired->AddFunction("GetPositionCartesianLocal", mGetArmPositionCartesianLocal);
     }
 
     inline void ClutchCallback(const prmEventButton & button) {
@@ -179,20 +196,30 @@ public:
             mClutched += 1;
             if (mClutched == 1) {
                 // clutch is pressed, arm is moving around and we know the pots are slow, we mark position as invalid
-                mInterface->SendStatus(mName.Data + ": SUJ clutched");
-                mPositionCartesianDesiredParam.SetTimestamp(mStateJoint.Timestamp());
-                mPositionCartesianDesiredParam.SetValid(false);
-                EventPositionCartesianDesired(mPositionCartesianDesiredParam);
-                mPositionCartesianLocalDesiredParam.SetTimestamp(mStateJoint.Timestamp());
-                mPositionCartesianLocalDesiredParam.SetValid(false);
-                EventPositionCartesianLocalDesired(mPositionCartesianLocalDesiredParam);
+                mInterfaceProvided->SendStatus(mName.Data + ": SUJ clutched");
+                mPositionCartesianParam.SetTimestamp(mStateJoint.Timestamp());
+                mPositionCartesianParam.SetValid(false);
+                EventPositionCartesian(mPositionCartesianParam);
+                mPositionCartesianLocalParam.SetTimestamp(mStateJoint.Timestamp());
+                mPositionCartesianLocalParam.SetValid(false);
+                EventPositionCartesianLocal(mPositionCartesianLocalParam);
             }
         } else {
             mClutched -= 1;
             if (mClutched == 0) {
-                mInterface->SendStatus(mName.Data + ": SUJ not clutched");
+                mInterfaceProvided->SendStatus(mName.Data + ": SUJ not clutched");
             }
         }
+    }
+
+    inline void SetPositionJoint(const prmPositionJointSet & newPosition) {
+        if (!mIsSimulated) {
+            mInterfaceProvided->SendWarning(mName.Data + ": SetPositionJoint can't be used unless the SUJs are in simulated mode");
+            return;
+        }
+        // save the desired position
+        mStateJoint.Position().Assign(newPosition.Goal());
+        mStateJoint.Timestamp() = newPosition.Timestamp();
     }
 
     inline void ClutchCommand(const bool & clutch) {
@@ -271,8 +298,12 @@ public:
     // plug on back of controller, 1 to 4
     unsigned int mPlugNumber;
 
-    // interface provided
-    mtsInterfaceProvided * mInterface;
+    // simulated or not
+    bool mIsSimulated;
+
+    // interfaces
+    mtsInterfaceProvided * mInterfaceProvided;
+    mtsInterfaceRequired * mInterfaceRequired;
 
     // state of this SUJ arm
     mtsStateTable mStateTable; // for positions, fairly slow, i.e 12 * delay for a2d
@@ -288,32 +319,34 @@ public:
     vctDoubleVec mVoltageToPositionScales[2];
     vctDoubleVec mVoltageToPositionOffsets[2];
     prmStateJoint mStateJoint;
+     // 0 is no, 1 tells we need to send, 2 is for first full mux cycle has started
+    unsigned int mNumberOfMuxCyclesBeforeStable;
+    vctFrm4x4 mPositionCartesianLocal;
     prmPositionCartesianGet mPositionCartesianParam;
     prmPositionCartesianGet mPositionCartesianLocalParam;
-    unsigned int mNeedToUpdatePositionCartesianDesired; // 0 is no, 1 tells we need to send, 2 is for first full mux cycle has started
-    vctFrm4x4 mPositionCartesianLocalDesired;
-    prmPositionCartesianGet mPositionCartesianDesiredParam; // set when user releases brakes
-    prmPositionCartesianGet mPositionCartesianLocalDesiredParam;
 
-    // Exta analog feedback
+    // exta analog feedback
     // plugs 1-3:  spare1, spare2, brake-voltage, gnd
     // plug 4: I_MOT+, I_MOT-, VA_BIAS, brake-voltage
     vctDoubleVec mVoltagesExtra;
 
-    // Kinematics
+    // kinematics
     robManipulator mManipulator;
     vctDoubleVec mJointGet;
     vctMat mRecalibrationMatrix;
     vctDoubleVec mNewJointScales[2];
     vctDoubleVec mNewJointOffsets[2];
 
-    // Setup transformations from json file
+    // setup transformations from json file
     vctFrame4x4<double> mWorldToSUJ;
     vctFrame4x4<double> mSUJToArmBase;
 
-    // Base frame
+    // base frame
+    mtsFunctionWrite mSetArmBaseFrame;
     vctFrame4x4<double> mBaseFrame;
     bool mBaseFrameValid;
+    // for ECM only, get current position
+    mtsFunctionRead mGetArmPositionCartesianLocal;
 
     // clutch data
     unsigned int mClutched;
@@ -322,11 +355,9 @@ public:
     double mBrakeEngagedCurrent;
     double mBrakeDirectionCurrent;
 
-    // Functions for events
+    // functions for events
     mtsFunctionWrite EventPositionCartesian;
     mtsFunctionWrite EventPositionCartesianLocal;
-    mtsFunctionWrite EventPositionCartesianDesired;
-    mtsFunctionWrite EventPositionCartesianLocalDesired;
 
     struct {
         mtsFunctionWrite CurrentState;
@@ -354,6 +385,13 @@ mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicCons
 
 void mtsIntuitiveResearchKitSUJ::Init(void)
 {
+    mSimulatedTimer = 0.0;
+
+    // initialize arm pointers
+    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        Arms[armIndex] = 0;
+    }
+
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
     mArmState.AddState("POWERING");
@@ -415,6 +453,7 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     mStateTableState.SetAutomaticAdvance(false);
 
     // default values
+    mIsSimulated = false;
     mMuxTimer = 0.0;
     mMuxState.SetSize(4);
     mVoltages.SetSize(4);
@@ -459,20 +498,15 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::MotorDownEventHandler, this, "Button");
     }
-    interfaceRequired = AddInterfaceRequired("BaseFrame", MTS_OPTIONAL);
-    if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::SetBaseFrame, this, "PositionCartesianDesired");
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::ErrorEventHandler, this, "Error");
-    }
 
     mInterface = AddInterfaceProvided("Robot");
     if (mInterface) {
         // Robot State
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetDesiredState,
                                     this, "SetDesiredState", std::string(""));
-        mInterface->AddCommandReadState(this->mStateTableState,
+        mInterface->AddCommandReadState(mStateTableState,
                                         mStateTableStateCurrent, "GetCurrentState");
-        mInterface->AddCommandReadState(this->mStateTableState,
+        mInterface->AddCommandReadState(mStateTableState,
                                         mStateTableStateDesired, "GetDesiredState");
         // Events
         mInterface->AddMessageEvents();
@@ -539,36 +573,55 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
                                      << std::endl;
             return;
         }
+
+        if (!jsonArm["plug-number"]) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: plug number is missing for SUJ \""
+                                     << name << "\", must be an integer between 1 and 4"
+                                     << std::endl;
+            return;
+        }
         unsigned int plugNumber = jsonArm["plug-number"].asInt();
         unsigned int armIndex = plugNumber - 1;
 
-        mtsInterfaceProvided * armInterface = this->AddInterfaceProvided(name);
-        arm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, armInterface);
+        // add interfaces, one is provided so users can find the SUJ
+        // info, the other is required to the SUJ can get position of
+        // ECM and change base frame on attached arms
+        mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided(name);
+        mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
+        arm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, mIsSimulated,
+                                                    interfaceProvided, interfaceRequired);
         Arms[armIndex] = arm;
 
+        // save which arm is the ECM
+        if (type == mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
+            ECMIndex = armIndex;
+        }
+
         // Robot State so GUI widget for each arm can set/get state
-        armInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetDesiredState,
-                                      this, "SetDesiredState", std::string(""));
+        interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetDesiredState,
+                                           this, "SetDesiredState", std::string(""));
 
         // Add motor up/down for the motorized arm
         if (type == mtsIntuitiveResearchKitSUJArmData::SUJ_MOTORIZED_PSM) {
-            armInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetLiftVelocity, this,
-                                          "SetLiftVelocity", 0.0);
+            interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetLiftVelocity, this,
+                                               "SetLiftVelocity", 0.0);
         }
 
         // create a required interface for each arm to handle clutch button
-        std::stringstream interfaceName;
-        interfaceName << "SUJ-Clutch-" << plugNumber;
-        mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
-        if (requiredInterface) {
-            requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCallback, arm,
-                                                    "Button");
-        } else {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: can't add required interface for SUJ \""
-                                     << name << "\" clutch button because this interface already exists: \""
-                                     << interfaceName.str() << "\".  Make sure all arms have a different plug number."
-                                     << std::endl;
-            return;
+        if (!mIsSimulated) {
+            std::stringstream interfaceName;
+            interfaceName << "SUJ-Clutch-" << plugNumber;
+            mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
+            if (requiredInterface) {
+                requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCallback, arm,
+                                                        "Button");
+            } else {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: can't add required interface for SUJ \""
+                                         << name << "\" clutch button because this interface already exists: \""
+                                         << interfaceName.str() << "\".  Make sure all arms have a different plug number."
+                                         << std::endl;
+                return;
+            }
         }
 
         // find serial number
@@ -671,6 +724,7 @@ void mtsIntuitiveResearchKitSUJ::EnterUninitialized(void)
     ResetMux();
 
     mFallbackState = "UNINITIALIZED";
+    mPowered = false;
 }
 
 void mtsIntuitiveResearchKitSUJ::TransitionUninitialized(void)
@@ -682,6 +736,12 @@ void mtsIntuitiveResearchKitSUJ::TransitionUninitialized(void)
 
 void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
 {
+    mPowered = false;
+
+    if (mIsSimulated) {
+        return;
+    }
+
     const double currentTime = this->StateTable.GetTic();
     mHomingTimer = currentTime;
     // pre-load the boards with zero current
@@ -694,6 +754,11 @@ void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
 
 void mtsIntuitiveResearchKitSUJ::TransitionPowering(void)
 {
+    if (mIsSimulated) {
+        mArmState.SetCurrentState("POWERED");
+        return;
+    }
+
     const double currentTime = this->StateTable.GetTic();
 
     // check status
@@ -703,6 +768,7 @@ void mtsIntuitiveResearchKitSUJ::TransitionPowering(void)
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         if (actuatorAmplifiersStatus.All()) {
             DispatchStatus(this->GetName() + ": power on");
+            mPowered = true;
             mArmState.SetCurrentState("POWERED");
         } else {
             DispatchError(this->GetName() + ": failed to enable power");
@@ -721,6 +787,10 @@ void mtsIntuitiveResearchKitSUJ::TransitionPowered(void)
 
 void mtsIntuitiveResearchKitSUJ::EnterReady(void)
 {
+    if (mIsSimulated) {
+        return;
+    }
+
     // enable power on PWM
     PWM.DisablePWM(false);
 
@@ -756,6 +826,55 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
     // trigger ExecOut event
     RunEvent();
     ProcessQueuedCommands();
+
+    // update all base frame kinematics
+    // first see if there's an ECM connected
+    prmPositionCartesianGet ecmPositionParam;
+    prmPositionCartesianGet ecmTipToSUJBase;
+
+    mtsIntuitiveResearchKitSUJArmData * arm = Arms[ECMIndex];
+    if (! (Arms[ECMIndex]->mGetArmPositionCartesianLocal(ecmPositionParam))) {
+        // interface not connected, reporting wrt cart
+        ecmTipToSUJBase.SetValid(true);
+        ecmTipToSUJBase.SetReferenceFrame("Cart");
+    } else {
+        // get position from ECM and convert to useful type
+        vctFrm3 sujBaseToSUJTip = arm->mPositionCartesianLocalParam.Position() * ecmPositionParam.Position();
+        // compute and send new base frame for all SUJs (SUJ will handle ECM differently)
+        ecmTipToSUJBase.Position().From(sujBaseToSUJTip.Inverse());
+        // it's an inverse, swap moving and reference frames
+        ecmTipToSUJBase.SetReferenceFrame(ecmPositionParam.MovingFrame());
+        ecmTipToSUJBase.SetMovingFrame(arm->mPositionCartesianLocalParam.ReferenceFrame());
+        // valid only if both are valid
+        ecmTipToSUJBase.SetValid(arm->mPositionCartesianLocalParam.Valid()
+                                 && ecmPositionParam.Valid());
+        ecmTipToSUJBase.SetTimestamp(ecmPositionParam.Timestamp());
+    }
+
+    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        arm = Arms[armIndex];
+        // update positions with base frame, local positions are only
+        // updated from FK when joints are ready
+        if (arm->mType != mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
+            arm->mBaseFrame.From(ecmTipToSUJBase.Position());
+            arm->mBaseFrameValid = ecmTipToSUJBase.Valid();
+            arm->mPositionCartesianParam.SetReferenceFrame(ecmTipToSUJBase.ReferenceFrame());
+        }
+        vctFrm4x4 armLocal(arm->mPositionCartesianLocalParam.Position());
+        vctFrm4x4 armBase = arm->mBaseFrame * armLocal;
+        // - with base frame
+        arm->mPositionCartesianParam.Position().From(armBase);
+        arm->mPositionCartesianParam.SetTimestamp(arm->mStateJoint.Timestamp());
+        arm->EventPositionCartesian(arm->mPositionCartesianParam);
+        // - set base frame for the arm
+        prmPositionCartesianSet positionSet;
+        positionSet.Goal().Assign(arm->mPositionCartesianParam.Position());
+        positionSet.Valid() = arm->mPositionCartesianParam.Valid();
+        positionSet.Timestamp() = arm->mPositionCartesianParam.Timestamp();
+        positionSet.ReferenceFrame() = arm->mPositionCartesianParam.ReferenceFrame();
+        positionSet.MovingFrame() = arm->mPositionCartesianParam.MovingFrame();
+        arm->mSetArmBaseFrame(positionSet);
+    }
 }
 
 void mtsIntuitiveResearchKitSUJ::Cleanup(void)
@@ -769,8 +888,43 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
     RobotIO.DisablePower();
 }
 
+void mtsIntuitiveResearchKitSUJ::SetSimulated(void)
+{
+    mIsSimulated = true;
+    // set all arms simulated
+    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+        if (Arms[armIndex]) {
+            Arms[armIndex]->mIsSimulated = true;
+        }
+    }
+    // in simulation mode, we don't need IOs
+    RemoveInterfaceRequired("RobotIO");
+    RemoveInterfaceRequired("NoMuxReset");
+    RemoveInterfaceRequired("MuxIncrement");
+    RemoveInterfaceRequired("ControlPWM");
+    RemoveInterfaceRequired("DisablePWM");
+    RemoveInterfaceRequired("MotorUp");
+    RemoveInterfaceRequired("MotorDown");
+}
+
 void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
 {
+    if (mIsSimulated) {
+        return;
+    }
+
+    // check that the robot still has power
+    if (mPowered) {
+        vctBoolVec actuatorAmplifiersStatus(4);
+        RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
+        if (!actuatorAmplifiersStatus.All()) {
+            mPowered = false;
+            DispatchError(this->GetName() + ": detected power loss");
+            mArmState.SetDesiredState("UNINITIALIZED");
+            return;
+        }
+    }
+
     // 30 ms is to make sure A2D stabilizes
     const double muxCycle = 30.0 * cmn_ms;
 
@@ -872,50 +1026,15 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                     arm->mPositions[1][5] = 0.0;
                 }
 
-                // use average of positions reported by potentiometers
-                arm->mStateJoint.Position().SumOf(arm->mPositions[0],
-                                                  arm->mPositions[1]);
-                arm->mStateJoint.Position().Divide(2.0);
-                arm->mStateJoint.SetValid(true);
-
-                // Joint forward kinematics
-                arm->mJointGet.Assign(arm->mStateJoint.Position(),arm->mManipulator.links.size());
-                // forward kinematic
-                vctFrame4x4<double> suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
-                // pre and post transformations loaded from JSON file, base frame updated using events
-                vctFrm4x4 armLocal = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
-                // apply base frame
-                vctFrm4x4 armBase = arm->mBaseFrame * armLocal;
-                // emit events for continuous positions
-                // - with base
-                arm->mPositionCartesianParam.Position().From(armBase);
-                arm->mPositionCartesianParam.SetTimestamp(arm->mStateJoint.Timestamp());
-                arm->mPositionCartesianParam.SetValid(arm->mBaseFrameValid);
-                arm->EventPositionCartesian(arm->mPositionCartesianParam);
-                // - local
-                arm->mPositionCartesianLocalParam.Position().From(armLocal);
-                arm->mPositionCartesianLocalParam.SetTimestamp(arm->mStateJoint.Timestamp());
-                arm->mPositionCartesianLocalParam.SetValid(arm->mBaseFrameValid);
-                arm->EventPositionCartesianLocal(arm->mPositionCartesianLocalParam);
-                // this mux cycle might have started before brakes where engaged
-                if (arm->mNeedToUpdatePositionCartesianDesired > 0) {
-                    if (arm->mNeedToUpdatePositionCartesianDesired < NUMBER_OF_MUX_CYCLE_BEFORE_STABLE) {
-                        arm->mNeedToUpdatePositionCartesianDesired++;
-                    } else {
-                        // at that point we know there has been a full mux cycle with brakes engaged
-                        // so we treat this as a fixed transformation until the SUJ move again (user clutch)
-                        arm->mPositionCartesianLocalDesired = armLocal;
-                        arm->mPositionCartesianLocalDesiredParam.SetValid(true);
-                        arm->mPositionCartesianLocalDesiredParam.SetTimestamp(arm->mStateJoint.Timestamp());
-                        arm->mPositionCartesianLocalDesiredParam.Position().From(arm->mPositionCartesianLocalDesired);
-                        arm->mNeedToUpdatePositionCartesianDesired = 0;
-                    }
+                // if the arm is clutched, we keep resetting mux counter
+                if (arm->mClutched > 0) {
+                    arm->mNumberOfMuxCyclesBeforeStable = 0;
                 }
 
                 // check pots when the SUJ is not clutch and if the
                 // counter for update cartesian desired position is
                 // back to zero (pot values should now be stable).
-                if ((arm->mClutched == 0) && (arm->mNeedToUpdatePositionCartesianDesired == 0)) {
+                if ((arm->mClutched == 0) && (arm->mNumberOfMuxCyclesBeforeStable >= NUMBER_OF_MUX_CYCLE_BEFORE_STABLE)) {
                     // compare primary and secondary pots when arm is not clutched
                     const double angleTolerance = 1.0 * cmnPI / 180.0;
                     const double distanceTolerance = 2.0 * cmn_mm;
@@ -941,13 +1060,36 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                     }
                 }
 
-                // update and send desired position
-                arm->mPositionCartesianDesiredParam.Position().From(arm->mBaseFrame * arm->mPositionCartesianLocalDesired);
-                arm->mPositionCartesianDesiredParam.SetTimestamp(arm->mStateJoint.Timestamp());
-                arm->mPositionCartesianDesiredParam.SetValid(arm->mBaseFrameValid * arm->mPositionCartesianLocalDesiredParam.Valid());
-                arm->EventPositionCartesianDesired(arm->mPositionCartesianDesiredParam);
-                // local is constant, no computation needed here
-                arm->EventPositionCartesianLocalDesired(arm->mPositionCartesianLocalDesiredParam);
+                // use average of positions reported by potentiometers
+                arm->mStateJoint.Position().SumOf(arm->mPositions[0],
+                                                  arm->mPositions[1]);
+                arm->mStateJoint.Position().Divide(2.0);
+                arm->mStateJoint.SetValid(true);
+
+                // Joint forward kinematics
+                arm->mJointGet.Assign(arm->mStateJoint.Position(), arm->mManipulator.links.size());
+
+                // this mux cycle might have started before brakes where engaged so we can set the valid flag
+                if (arm->mNumberOfMuxCyclesBeforeStable < NUMBER_OF_MUX_CYCLE_BEFORE_STABLE) {
+                    arm->mNumberOfMuxCyclesBeforeStable++;
+                } else {
+                    // at that point we know there has been a full mux cycle with brakes engaged
+                    // so we treat this as a fixed transformation until the SUJ move again (user clutch)
+                    arm->mPositionCartesianLocalParam.SetValid(true);
+                }
+
+                // always update the global position valid flag to take into account base frame valid
+                arm->mPositionCartesianParam.SetValid(arm->mBaseFrameValid && arm->mPositionCartesianLocalParam.Valid());
+
+                // forward kinematic
+                vctFrm4x4 suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
+                // pre and post transformations loaded from JSON file, base frame updated using events
+                arm->mPositionCartesianLocal = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
+                // update local only
+                arm->mPositionCartesianLocalParam.Position().From(arm->mPositionCartesianLocal);
+                arm->mPositionCartesianLocalParam.SetTimestamp(arm->mStateJoint.Timestamp());
+                arm->EventPositionCartesianLocal(arm->mPositionCartesianLocalParam);
+
                 // advance this arm state table
                 arm->mStateTable.Advance();
             }
@@ -982,6 +1124,38 @@ void mtsIntuitiveResearchKitSUJ::SetDesiredState(const std::string & state)
 
 void mtsIntuitiveResearchKitSUJ::RunReady(void)
 {
+    if (mIsSimulated) {
+        const double currentTime = this->StateTable.GetTic();
+        if (currentTime - mSimulatedTimer > 1.0 * cmn_s) {
+            mSimulatedTimer = currentTime;
+            for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+                mtsIntuitiveResearchKitSUJArmData * arm = Arms[armIndex];
+                arm->mStateTable.Start();
+                // Joint forward kinematics
+                arm->mJointGet.Assign(arm->mStateJoint.Position(), arm->mManipulator.links.size());
+                // forward kinematic
+                vctFrm4x4 suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
+                // pre and post transformations loaded from JSON file, base frame updated using events
+                vctFrm4x4 armLocal = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
+                // apply base frame
+                vctFrm4x4 armBase = arm->mBaseFrame * armLocal;
+                // emit events for continuous positions
+                // - with base
+                arm->mPositionCartesianParam.Position().From(armBase);
+                arm->mPositionCartesianParam.SetTimestamp(arm->mStateJoint.Timestamp());
+                arm->mPositionCartesianParam.SetValid(arm->mBaseFrameValid);
+                arm->EventPositionCartesian(arm->mPositionCartesianParam);
+                // - local
+                arm->mPositionCartesianLocalParam.Position().From(armLocal);
+                arm->mPositionCartesianLocalParam.SetTimestamp(arm->mStateJoint.Timestamp());
+                arm->mPositionCartesianLocalParam.SetValid(arm->mBaseFrameValid);
+                arm->EventPositionCartesianLocal(arm->mPositionCartesianLocalParam);
+                arm->mStateTable.Advance();
+            }
+        }
+        return;
+    }
+
     double currentTic = this->StateTable.GetTic();
     const double timeDelta = currentTic - mPreviousTic;
 
@@ -1009,11 +1183,11 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
                     arm->mBrakeDesiredCurrent -= brakeCurrentRate * timeDelta;
                     // if by any luck we have reached arm->mBrakeEngagedCurrent, need to update cartesian desired
                     if (arm->mBrakeDesiredCurrent == arm->mBrakeEngagedCurrent) {
-                        arm->mNeedToUpdatePositionCartesianDesired = 1;
+                        arm->mNumberOfMuxCyclesBeforeStable = 0;
                     }
                 } else {
                     arm->mBrakeDesiredCurrent = arm->mBrakeEngagedCurrent;
-                    arm->mNeedToUpdatePositionCartesianDesired = 1;
+                    arm->mNumberOfMuxCyclesBeforeStable = 0;
                 }
                 arm->mStateTableBrakeCurrent.Advance();
             }
@@ -1031,20 +1205,6 @@ void mtsIntuitiveResearchKitSUJ::SetLiftVelocity(const double & velocity)
         PWM.SetPWMDutyCycle(dutyCyle);
     } else {
         CMN_LOG_CLASS_RUN_ERROR << "MotorVelocity: value must be between -1.0 and 1.0" << std::endl;
-    }
-}
-
-void mtsIntuitiveResearchKitSUJ::SetBaseFrame(const prmPositionCartesianGet & newBaseFrame)
-{
-    mtsIntuitiveResearchKitSUJArmData * arm;
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        arm = Arms[armIndex];
-        if (arm->mType != mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
-            vctFrm4x4 base;
-            base.From(newBaseFrame.Position());
-            arm->mBaseFrame = base;
-            arm->mBaseFrameValid = newBaseFrame.Valid();
-        }
     }
 }
 
@@ -1070,14 +1230,14 @@ void mtsIntuitiveResearchKitSUJ::ErrorEventHandler(const mtsMessage & message)
 {
     RobotIO.DisablePower();
     DispatchError(this->GetName() + ": received [" + message.Message + "]");
-    mArmState.SetCurrentState("UNINITIALIZED");
+    mArmState.SetDesiredState(mFallbackState);
 }
 
 void mtsIntuitiveResearchKitSUJ::DispatchError(const std::string & message)
 {
     mInterface->SendError(message);
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->mInterface->SendError(Arms[armIndex]->mName.Data + " " + message);
+        Arms[armIndex]->mInterfaceProvided->SendError(Arms[armIndex]->mName.Data + " " + message);
     }
 }
 
@@ -1085,7 +1245,7 @@ void mtsIntuitiveResearchKitSUJ::DispatchWarning(const std::string & message)
 {
     mInterface->SendWarning(message);
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->mInterface->SendWarning(Arms[armIndex]->mName.Data + " " + message);
+        Arms[armIndex]->mInterfaceProvided->SendWarning(Arms[armIndex]->mName.Data + " " + message);
     }
 }
 
@@ -1093,7 +1253,7 @@ void mtsIntuitiveResearchKitSUJ::DispatchStatus(const std::string & message)
 {
     mInterface->SendStatus(message);
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->mInterface->SendStatus(Arms[armIndex]->mName.Data + " " + message);
+        Arms[armIndex]->mInterfaceProvided->SendStatus(Arms[armIndex]->mName.Data + " " + message);
     }
 }
 

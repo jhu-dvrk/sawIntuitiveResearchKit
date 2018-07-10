@@ -1,5 +1,13 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
+
+    // This file is now deprecated (rev 1.6.0), it is recommended to
+    // use the kinematic definition without a base offset and specify
+    // the base frame for the mtm in the console.json file using
+    // base-frame field.
+
+
+
     // transformation to match ISI convention (for read-only research
     // API on commercial da Vinci), uses stereo display as origin
     "base-offset" : [[ -1.0,  0.0,          0.0,          0.180],

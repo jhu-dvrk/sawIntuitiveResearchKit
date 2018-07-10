@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -46,6 +46,8 @@ public:
     void Run(void);
     void Cleanup(void);
 
+    void SetSimulated(void);
+
 protected:
 
     void Init(void);
@@ -76,9 +78,6 @@ protected:
     /*! Set velocity for motorized PSM lift. normalized between -1.0 and 1.0. */
     void SetLiftVelocity(const double & velocity);
 
-    /*! Set base coordinate frame, this will be added to the kinematics of all SUJs except ECM. */
-    void SetBaseFrame(const prmPositionCartesianGet & newBaseFrame);
-
     /*! Event handler for PID errors. */
     void ErrorEventHandler(const mtsMessage & message);
 
@@ -91,6 +90,7 @@ protected:
     // Arm state machine
     mtsStateMachine mArmState;
     std::string mFallbackState;
+    bool mPowered;
     // Just to have read commands to retrieve states
     mtsStateTable mStateTableState;
     mtsStdString mStateTableStateCurrent;
@@ -151,6 +151,11 @@ protected:
     size_t mVoltageSamplesCounter;
     vctDoubleVec mVoltages;
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> Arms;
+    size_t ECMIndex;
+
+    // Flag to determine if this is connected to actual IO/hardware or simulated
+    bool mIsSimulated;
+    double mSimulatedTimer;
 
     void DispatchError(const std::string & message);
     void DispatchWarning(const std::string & message);

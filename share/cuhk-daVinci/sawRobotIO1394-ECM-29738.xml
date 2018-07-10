@@ -38,8 +38,8 @@
          <AnalogBrake AxisID="1" BoardID="5">
             <AmpsToBits Offset="32795" Scale="5242.88"/>
             <BitsToFeedbackAmps Offset="-6.258586" Scale="0.000190738"/>
-            <MaxCurrent Unit="A" Value="0.220"/>
-            <ReleaseCurrent Unit="A" Value="0.22"/>
+            <MaxCurrent Unit="A" Value="0.50"/>
+            <ReleaseCurrent Unit="A" Value="0.5"/>
             <ReleaseTime Value="0.200"/>
             <ReleasedCurrent Unit="A" Value="0.1"/>
             <EngagedCurrent Unit="A" Value="0.000"/>
@@ -100,7 +100,12 @@
             <VoltsToPosSI Offset="102.142275" Scale="-45.424298"/>
          </AnalogIn>
       </Actuator>
-      <Potentiometers Position="Actuators"/>
+      <Potentiometers Position="Actuators">
+         <Tolerance Axis="0" Distance="5.00" Latency="0.01" Unit="deg"/>
+         <Tolerance Axis="1" Distance="5.00" Latency="0.01" Unit="deg"/>
+         <Tolerance Axis="2" Distance="5.00" Latency="0.01" Unit="mm"/>
+         <Tolerance Axis="3" Distance="5.00" Latency="0.01" Unit="deg"/>
+      </Potentiometers>
    </Robot><!--Digital Input Configuration-->
    <DigitalIn BitID="0" BoardID="4" Debounce="0.2" Name="ECM-ManipClutch" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="2" BoardID="4" Debounce="0.2" Name="ECM-SUJClutch" Pressed="1" Trigger="all"/>

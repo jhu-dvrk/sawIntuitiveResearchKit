@@ -1,0 +1,62 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "component-manager": {
+        "components":
+        [
+            {
+                "shared-library": "sawForceDimensionSDK",
+                "class-name": "mtsForceDimension",
+                "constructor-arg": {
+                    "Name": "ForceDimensionSDK"
+                },
+                "configure-parameter": "sawForceDimensionSDK-MTMR.json"
+            }
+        ]
+    }
+    ,
+    "console-inputs":
+    {
+        "operator-present": {
+            "component": "ForceDimensionSDK",
+            "interface": "MTMR-Center" // see file keyboard-dVRK-console.json
+        }
+        ,
+        "clutch": {
+            "component": "ForceDimensionSDK",
+            "interface": "MTMR-Top"
+        }
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "PSM3",
+            "type": "PSM",
+            "io": "sawRobotIO1394-PSM3-28613.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json"
+        }
+        ,
+        {
+            "name": "MTMR",
+            "type": "MTM_GENERIC",
+            "component": "ForceDimensionSDK",
+            "interface": "MTMR"
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            "master": "MTMR",
+            "slave": "PSM3",
+            "configure-parameter": {
+                "ignore-jaw": true,
+                "scale": 0.4,
+                "rotation": [[ 0.0000, -1.0000,  0.0000],
+                             [ 1.0000,  0.0000,  0.0000],
+                             [ 0.0000,  0.0000,  1.0000]]
+            }
+        }
+    ]
+}

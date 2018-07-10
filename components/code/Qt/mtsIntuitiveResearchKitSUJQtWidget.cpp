@@ -40,7 +40,6 @@ mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std
     mShowMore(false)
 {
     CMN_ASSERT(InterfaceRequired);
-    InterfaceRequired->AddFunction("GetPositionJoint", GetPositionJoint);
     InterfaceRequired->AddFunction("GetBrakeCurrent", GetBrakeCurrent);
     InterfaceRequired->AddFunction("Clutch", Clutch);
     InterfaceRequired->AddFunction("SetLiftVelocity", SetLiftVelocity, MTS_OPTIONAL);
@@ -86,25 +85,19 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
     QGridLayout * sujLayout = new QGridLayout;
     MainLayout->addLayout(sujLayout);
 
-    QLabel * labelJoints = new QLabel("Joints");
-    sujLayout->addWidget(labelJoints, 0, 0);
-    QVJointWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    QVJointWidget->SetPrecision(5);
-    sujLayout->addWidget(QVJointWidget, 0, 1, 1, -1);
-
     QPushButton * clutchButton = new QPushButton("Clutch");
-    sujLayout->addWidget(clutchButton, 1, 0);
+    sujLayout->addWidget(clutchButton, 0, 0);
     QPBLiftDown = new QPushButton("Lift down");
-    sujLayout->addWidget(QPBLiftDown, 1, 1);
+    sujLayout->addWidget(QPBLiftDown, 0, 1);
     QPBLiftUp = new QPushButton("Lift up");
-    sujLayout->addWidget(QPBLiftUp, 1, 2);
+    sujLayout->addWidget(QPBLiftUp, 0, 2);
     QPBShowMore = new QPushButton("Show more");
     QPBShowMore->setCheckable(true);
-    sujLayout->addWidget(QPBShowMore, 1, 3);
+    sujLayout->addWidget(QPBShowMore, 0, 3);
 
     // show more
     QWMore = new QWidget();
-    sujLayout->addWidget(QWMore, 2, 0, 1, -1);
+    sujLayout->addWidget(QWMore, 1, 0, 1, -1);
     QGridLayout * moreLayout = new QGridLayout();
     QWMore->setLayout(moreLayout);
     int row = 0;
@@ -156,7 +149,7 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
     row++;
 
     moreLayout->addWidget(ManualRecalibrationButton, row, 2, 1, 1);
-    
+
     QWMore->hide();
 
     connect(clutchButton, SIGNAL(pressed()),
@@ -186,17 +179,6 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
 
 void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)
 {
-    // get data
-    GetPositionJoint(StateJoint);
-    vctDoubleVec position(StateJoint.Position());
-    // first axis is a translation, convert to mm
-    position.Element(0) *= 1000.0;
-    // all others are angles, convert to degrees
-    for (size_t index = 1; index < position.size(); ++index) {
-        position.Element(index) *= (180.0 / cmnPI);
-    }
-    QVJointWidget->SetValue(position);
-
     // display more if needed
     if (mShowMore) {
         // brake voltage

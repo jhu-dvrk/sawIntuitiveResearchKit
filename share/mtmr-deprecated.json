@@ -1,11 +1,19 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
+
+    // This file is now deprecated (rev 1.6.0), it is recommended to
+    // use the kinematic definition without a base offset and specify
+    // the base frame for the mtm in the console.json file using
+    // base-frame field.
+
+
+
     // transformation to match ISI convention (for read-only research
     // API on commercial da Vinci), uses stereo display as origin
-    "base-offset" : [[ -1.0,  0.0,          0.0,         -0.180],
-                     [  0.0, -0.866025404, -0.5,         -0.400],
-                     [  0.0, -0.5,          0.866025404, -0.325],
-                     [  0.0,  0.0,          0.0,          1.0]]
+    "base-offset" : [[ -1.0,  0.0,            0.0,         -0.180],
+                     [  0.0, -0.866025404,   -0.5,         -0.400],
+                     [  0.0, -0.5,            0.866025404, -0.325],
+                     [  0.0,  0.0,            0.0,          1.0]]
     ,
     // see dVRK user guide
     "DH": {
@@ -25,7 +33,7 @@
             },
             { // 2
                 "convention": "standard",
-      
+
           "alpha":  0.0000, "A":  0.2794, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
