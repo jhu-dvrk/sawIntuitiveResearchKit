@@ -196,8 +196,10 @@ public:
         friend class dvrk::console;
 
         TeleopPSM(const std::string & name,
+                  const std::string & nameMTM,
                   const std::string & masterComponentName,
                   const std::string & masterInterfaceName,
+                  const std::string & namePSM,
                   const std::string & slaveComponentName,
                   const std::string & slaveInterfaceName,
                   const std::string & consoleName);
@@ -213,11 +215,22 @@ public:
         /*! Accessors */
         const std::string & Name(void) const;
 
+        /*! Turn on/off selected */
+        inline const bool & Selected(void) const {
+            return mSelected;
+        }
+        inline void SetSelected(const bool selected) {
+            mSelected = selected;
+        }
+
     protected:
+        bool mSelected;
         std::string mName;
         TeleopPSMType mType;
+        std::string mMTMName;
         std::string mMTMComponentName;
         std::string mMTMInterfaceName;
+        std::string mPSMName;
         std::string mPSMComponentName;
         std::string mPSMInterfaceName;
         std::string mConsoleName;
@@ -275,6 +288,11 @@ protected:
     typedef std::map<std::string, TeleopPSM *> TeleopPSMList;
     TeleopPSMList mTeleopsPSM;
 
+    /*! List to manage the teleopPSM components for each MTM */
+    typedef std::multimap<std::string, TeleopPSM *> TeleopPSMByMTMList;
+    typedef TeleopPSMByMTMList::iterator TeleopPSMByMTMIterator;
+    TeleopPSMByMTMList mTeleopsPSMByMTM;
+
     /*! Single ECM bimanual teleoperation */
     TeleopECM * mTeleopECM;
 
@@ -302,6 +320,7 @@ protected:
     void PowerOn(void);
     void Home(void);
     void TeleopEnable(const bool & enable);
+    void CycleTeleopPSMByMTM(const std::string & mtmName);
     void UpdateTeleopState(void);
     void SetScale(const double & scale);
     void SetVolume(const double & volume);
@@ -335,6 +354,8 @@ protected:
     mtsInterfaceProvided * mInterface;
     struct {
         mtsFunctionWrite Scale;
+        mtsFunctionWrite TeleopPSMSelected;
+        mtsFunctionWrite TeleopPSMUnselected;
     } ConfigurationEvents;
 
     void ErrorEventHandler(const mtsMessage & message);

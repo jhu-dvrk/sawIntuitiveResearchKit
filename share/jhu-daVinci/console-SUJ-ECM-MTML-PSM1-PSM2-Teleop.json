@@ -83,5 +83,10 @@
             "master": "MTML",
             "slave": "PSM1"
         }
+        ,
+        {
+            "master": "MTML",
+            "slave": "PSM2"
+        }
     ]
 }

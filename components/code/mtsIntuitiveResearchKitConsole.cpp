@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstParameterTypes/prmEventButton.h>
+#include <cisstParameterTypes/prmKeyValue.h>
 
 #include <sawTextToSpeech/mtsTextToSpeech.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
@@ -426,14 +427,18 @@ const std::string & mtsIntuitiveResearchKitConsole::TeleopECM::Name(void) const 
 
 
 mtsIntuitiveResearchKitConsole::TeleopPSM::TeleopPSM(const std::string & name,
+                                                     const std::string & nameMTM,
                                                      const std::string & masterComponentName,
                                                      const std::string & masterInterfaceName,
+                                                     const std::string & namePSM,
                                                      const std::string & slaveComponentName,
                                                      const std::string & slaveInterfaceName,
                                                      const std::string & consoleName):
     mName(name),
+    mMTMName(nameMTM),
     mMTMComponentName(masterComponentName),
     mMTMInterfaceName(masterInterfaceName),
+    mPSMName(namePSM),
     mPSMComponentName(slaveComponentName),
     mPSMInterfaceName(slaveInterfaceName),
     mConsoleName(consoleName)
@@ -521,10 +526,16 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
                                    "Home");
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::TeleopEnable, this,
                                     "TeleopEnable", false);
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::CycleTeleopPSMByMTM, this,
+                                    "CycleTeleopPSMByMTM", std::string(""));
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetScale, this,
                                     "SetScale", 0.5);
         mInterface->AddEventWrite(ConfigurationEvents.Scale,
                                   "Scale", 0.5);
+        mInterface->AddEventWrite(ConfigurationEvents.TeleopPSMSelected,
+                                  "TeleopPSMSelected", prmKeyValue("MTM", "PSM"));
+        mInterface->AddEventWrite(ConfigurationEvents.TeleopPSMUnselected,
+                                  "TeleopPSMUnselected", prmKeyValue("MTM", "PSM"));
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetVolume, this,
                                     "SetVolume", 0.5);
     }
@@ -596,7 +607,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     } else {
         mChatty = false;
     }
-    
+
     // get user preferences
     jsonValue = jsonConfig["io"];
     if (!jsonValue.empty()) {
@@ -1073,8 +1084,8 @@ bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name,
         return false;
     }
     TeleopPSM * teleop = new TeleopPSM(name,
-                                       masterName, "Robot",
-                                       slaveName, "Robot",
+                                       masterName, masterName, "Robot",
+                                       slaveName, slaveName, "Robot",
                                        this->GetName());
     mTeleopsPSM[name] = teleop;
     if (AddTeleopPSMInterfaces(teleop)) {
@@ -1595,10 +1606,17 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
     if (teleopIterator == mTeleopsPSM.end()) {
         // create a new teleop if needed
         teleopPointer = new TeleopPSM(name,
-                                      masterComponent, masterInterface,
-                                      slaveComponent, slaveInterface,
+                                      masterName, masterComponent, masterInterface,
+                                      slaveName, slaveComponent, slaveInterface,
                                       this->GetName());
         mTeleopsPSM[name] = teleopPointer;
+        mTeleopsPSMByMTM.insert(std::make_pair(masterName, teleopPointer));
+        // only the first teleop by MTM is marked as selected during configuration
+        if (mTeleopsPSMByMTM.count(masterName) == 1) {
+            teleopPointer->SetSelected(true);
+        } else {
+            teleopPointer->SetSelected(false);
+        }
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: there is already a teleop for the pair \""
                                  << name << "\"" << std::endl;
@@ -1838,6 +1856,72 @@ void mtsIntuitiveResearchKitConsole::TeleopEnable(const bool & enable)
     UpdateTeleopState();
 }
 
+void mtsIntuitiveResearchKitConsole::CycleTeleopPSMByMTM(const std::string & mtmName)
+{
+    // try to cycle through all the teleopPSMs associated to the MTM
+    if (mTeleopsPSMByMTM.count(mtmName) == 0) {
+        mInterface->SendWarning(this->GetName()
+                                + ": CycleTeleopPSMByMTM, no PSM teleoperation found for MTM "
+                                + mtmName);
+    } else if (mTeleopsPSMByMTM.count(mtmName) == 1) {
+        mInterface->SendStatus(this->GetName()
+                               + ": CycleTeleopPSMByMTM, only one PSM teleoperation found for MTM "
+                               + mtmName
+                               + ", cycling has no effect");
+    } else {
+        // find range of teleops
+        std::pair<TeleopPSMByMTMIterator, TeleopPSMByMTMIterator> range;
+        range = mTeleopsPSMByMTM.equal_range(mtmName);
+        for (TeleopPSMByMTMIterator iter = range.first;
+             iter != range.second;
+             ++iter) {
+            // find first teleop currently selected
+            if (iter->second->Selected()) {
+                // toggle to next one
+                TeleopPSMByMTMIterator nextTeleop = iter;
+                nextTeleop++;
+                // if next one is last one, go back to first
+                if (nextTeleop == range.second) {
+                    nextTeleop = range.first;
+                }
+                // mark which one should be active
+                iter->second->SetSelected(false);
+                nextTeleop->second->SetSelected(true);
+                // if teleop PSM is active, enable/disable components now
+                if (mTeleopEnabled) {
+                    iter->second->SetDesiredState(std::string("DISABLED"));
+                    if (mTeleopPSMRunning) {
+                        nextTeleop->second->SetDesiredState(std::string("ENABLED"));
+                    } else {
+                        nextTeleop->second->SetDesiredState(std::string("ALIGNING_MTM"));
+                    }
+                }
+                // message
+                mInterface->SendStatus(this->GetName()
+                                       + ": CycleTeleopPSMByMTM, cycling from "
+                                       + iter->second->mName
+                                       + " to "
+                                       + nextTeleop->second->mName);
+                // stop for loop
+                break;
+            }
+        }
+    }
+    // in all cases, emit events so users can figure out which components are selected
+    const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
+    for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
+         iterTeleopPSM != endTeleopPSM;
+         ++iterTeleopPSM) {
+        if (iterTeleopPSM->second->Selected()) {
+            ConfigurationEvents.TeleopPSMSelected(prmKeyValue(iterTeleopPSM->second->mMTMName,
+                                                              iterTeleopPSM->second->mPSMName));
+        } else {
+            ConfigurationEvents.TeleopPSMUnselected(prmKeyValue(iterTeleopPSM->second->mMTMName,
+                                                                iterTeleopPSM->second->mPSMName));
+        }
+    }
+}
+
 void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
 {
     const ArmList::iterator endArms = mArms.end();
@@ -1905,7 +1989,11 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
              iterTeleopPSM != endTeleopPSM;
              ++iterTeleopPSM) {
-            iterTeleopPSM->second->SetDesiredState(std::string("ALIGNING_MTM"));
+            if (iterTeleopPSM->second->Selected()) {
+                iterTeleopPSM->second->SetDesiredState(std::string("ALIGNING_MTM"));
+            } else {
+                iterTeleopPSM->second->SetDesiredState(std::string("DISABLED"));
+            }
         }
         mTeleopPSMRunning = false;
 
@@ -1949,7 +2037,11 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
             for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
                  iterTeleopPSM != endTeleopPSM;
                  ++iterTeleopPSM) {
-                iterTeleopPSM->second->SetDesiredState(std::string("ENABLED"));
+                if (iterTeleopPSM->second->Selected()) {
+                    iterTeleopPSM->second->SetDesiredState(std::string("ENABLED"));
+                } else {
+                    iterTeleopPSM->second->SetDesiredState(std::string("DISABLED"));
+                }
                 mTeleopPSMRunning = true;
             }
         }
