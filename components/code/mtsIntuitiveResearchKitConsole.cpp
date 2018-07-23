@@ -1604,6 +1604,19 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
     const TeleopPSMList::iterator teleopIterator = mTeleopsPSM.find(name);
     TeleopPSM * teleopPointer = 0;
     if (teleopIterator == mTeleopsPSM.end()) {
+        // check if we already have a teleop for the same PSM
+        const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
+        for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
+             iterTeleopPSM != endTeleopPSM;
+             ++iterTeleopPSM) {
+            if (iterTeleopPSM->second->mPSMName == slaveName) {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: can't add teleop \""
+                                         << name << "\" since \""
+                                         << iterTeleopPSM->second->mName << "\" already uses the PSM \""
+                                         << slaveName << "\"" << std::endl;
+                return false;
+            }
+        }
         // create a new teleop if needed
         teleopPointer = new TeleopPSM(name,
                                       masterName, masterComponent, masterInterface,
@@ -2118,6 +2131,7 @@ void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventB
 void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & message) {
     TeleopEnable(false);
     mInterface->SendError(message.Message);
+    mAudio.Beep(vct3(0.3, 3000.0, 1.0 /* max volume */));
 }
 
 void mtsIntuitiveResearchKitConsole::WarningEventHandler(const mtsMessage & message) {
