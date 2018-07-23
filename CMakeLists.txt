@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2009-2016 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2018 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -11,9 +11,9 @@
 
 cmake_minimum_required (VERSION 3.1)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD_REQUIRED ON)
+set (CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory (components)
 add_subdirectory (applications)
