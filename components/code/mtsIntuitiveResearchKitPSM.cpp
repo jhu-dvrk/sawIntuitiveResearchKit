@@ -1112,10 +1112,15 @@ void mtsIntuitiveResearchKitPSM::SetAdapterPresent(const bool & present)
 
 void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & button)
 {
-    if (button.Type() == prmEventButton::PRESSED) {
+    switch (button.Type()) {
+    case prmEventButton::PRESSED:
         SetAdapterPresent(true);
-    } else {
+        break;
+    case prmEventButton::RELEASED:
         SetAdapterPresent(false);
+        break;
+    default:
+        break;
     }
 }
 
@@ -1132,10 +1137,15 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
 
 void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
 {
-    if (button.Type() == prmEventButton::PRESSED) {
+    switch (button.Type()) {
+    case prmEventButton::PRESSED:
         SetToolPresent(true);
-    } else if (button.Type() == prmEventButton::RELEASED) {
+        break;
+    case prmEventButton::RELEASED:
         SetToolPresent(false);
+        break;
+    default:
+        break;
     }
 }
 
@@ -1145,15 +1155,20 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
     ClutchEvents.ManipClutch(button);
 
     // Start manual mode but save the previous state
-    if (button.Type() == prmEventButton::PRESSED) {
+    switch (button.Type()) {
+    case prmEventButton::PRESSED:
         ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
         PID.Enabled(ClutchEvents.PIDEnabledPreviousState);
         mArmState.SetCurrentState("MANUAL");
-    } else {
+        break;
+    case prmEventButton::RELEASED:
         if (mArmState.CurrentState() == "MANUAL") {
             // go back to state before clutching
             mArmState.SetCurrentState(ClutchEvents.ManipClutchPreviousState);
             PID.Enable(ClutchEvents.PIDEnabledPreviousState);
         }
+        break;
+    default:
+        break;
     }
 }

@@ -543,7 +543,7 @@ void mtsTeleOperationECM::RunEnabled(void)
             changeDir[1] = -changeDir[1];
         }
     }
-    
+
     // - Direction 2 - in/out
     changeDir[2] = mScale * (mInitial.C.Norm() - c.Norm());
 
@@ -653,10 +653,15 @@ void mtsTeleOperationECM::ECMErrorEventHandler(const mtsMessage & message)
 
 void mtsTeleOperationECM::ClutchEventHandler(const prmEventButton & button)
 {
-    if (button.Type() == prmEventButton::PRESSED) {
+    switch (button.Type()) {
+    case prmEventButton::PRESSED:
         mIsClutched = true;
-    } else {
+        break;
+    case prmEventButton::RELEASED:
         mIsClutched = false;
+        break;
+    default:
+        break;
     }
 
     // if the teleoperation is activated

@@ -508,6 +508,7 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mTeleopPSMRunning(false),
     mTeleopPSMAligning(false),
     mTeleopECMRunning(false),
+    mTeleopMTMToCycle(""),
     mTeleopECM(0),
     mDaVinciHeadSensor(0),
     mDaVinciEndoscopeFocus(0),
@@ -1628,6 +1629,10 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         if (mTeleopsPSMByMTM.count(masterName) == 1) {
             teleopPointer->SetSelected(true);
         } else {
+            // this MTM has at least two teleops, set it as default to cycle with pedal
+            if (mTeleopMTMToCycle == "") {
+                mTeleopMTMToCycle = masterName;
+            }
             teleopPointer->SetSelected(false);
         }
     } else {
@@ -1874,11 +1879,11 @@ void mtsIntuitiveResearchKitConsole::CycleTeleopPSMByMTM(const std::string & mtm
     // try to cycle through all the teleopPSMs associated to the MTM
     if (mTeleopsPSMByMTM.count(mtmName) == 0) {
         mInterface->SendWarning(this->GetName()
-                                + ": CycleTeleopPSMByMTM, no PSM teleoperation found for MTM "
+                                + ": no PSM teleoperation found for MTM "
                                 + mtmName);
     } else if (mTeleopsPSMByMTM.count(mtmName) == 1) {
         mInterface->SendStatus(this->GetName()
-                               + ": CycleTeleopPSMByMTM, only one PSM teleoperation found for MTM "
+                               + ": only one PSM teleoperation found for MTM "
                                + mtmName
                                + ", cycling has no effect");
     } else {
@@ -1911,7 +1916,7 @@ void mtsIntuitiveResearchKitConsole::CycleTeleopPSMByMTM(const std::string & mtm
                 }
                 // message
                 mInterface->SendStatus(this->GetName()
-                                       + ": CycleTeleopPSMByMTM, cycling from "
+                                       + ": cycling from "
                                        + iter->second->mName
                                        + " to "
                                        + nextTeleop->second->mName);
@@ -2088,26 +2093,42 @@ void mtsIntuitiveResearchKitConsole::SetVolume(const double & volume)
 
 void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & button)
 {
-    if (button.Type() == prmEventButton::PRESSED) {
+    switch (button.Type()) {
+    case prmEventButton::PRESSED:
         mInterface->SendStatus(this->GetName() + ": clutch pressed");
         mAudio.Beep(vct3(0.1, 700.0, mAudioVolume));
-    } else {
+        break;
+    case prmEventButton::RELEASED:
         mInterface->SendStatus(this->GetName() + ": clutch released");
         mAudio.Beep(vct3(0.1, 700.0, mAudioVolume));
+        break;
+    case prmEventButton::CLICKED:
+        if (mTeleopMTMToCycle != "") {
+            mAudio.Beep(vct3(0.1, 1000.0, mAudioVolume));
+            CycleTeleopPSMByMTM(mTeleopMTMToCycle);
+        }
+        break;
+    default:
+        break;
     }
     ConsoleEvents.Clutch(button);
 }
 
 void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & button)
 {
-    if (button.Type() == prmEventButton::PRESSED) {
+    switch (button.Type()) {
+    case prmEventButton::PRESSED:
         mCameraPressed = true;
         mInterface->SendStatus(this->GetName() + ": camera pressed");
         mAudio.Beep(vct3(0.1, 1000.0, mAudioVolume));
-    } else {
+        break;
+    case prmEventButton::RELEASED:
         mCameraPressed = false;
         mInterface->SendStatus(this->GetName() + ": camera released");
         mAudio.Beep(vct3(0.1, 1000.0, mAudioVolume));
+        break;
+    default:
+        break;
     }
     UpdateTeleopState();
     ConsoleEvents.Camera(button);
@@ -2115,14 +2136,19 @@ void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & b
 
 void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventButton & button)
 {
-    if (button.Type() == prmEventButton::PRESSED) {
+    switch (button.Type()) {
+    case prmEventButton::PRESSED:
         mOperatorPresent = true;
         mInterface->SendStatus(this->GetName() + ": operator present");
         mAudio.Beep(vct3(0.3, 1500.0, mAudioVolume));
-    } else {
+        break;
+    case prmEventButton::RELEASED:
         mOperatorPresent = false;
         mInterface->SendStatus(this->GetName() + ": operator not present");
         mAudio.Beep(vct3(0.3, 1200.0, mAudioVolume));
+        break;
+    default:
+        break;
     }
     UpdateTeleopState();
     ConsoleEvents.OperatorPresent(button);

@@ -271,10 +271,15 @@ void mtsTeleOperationPSM::PSMErrorEventHandler(const mtsMessage & message)
 
 void mtsTeleOperationPSM::ClutchEventHandler(const prmEventButton & button)
 {
-    if (button.Type() == prmEventButton::PRESSED) {
+    switch (button.Type()) {
+    case prmEventButton::PRESSED:
         mIsClutched = true;
-    } else {
+        break;
+    case prmEventButton::RELEASED:
         mIsClutched = false;
+        break;
+    default:
+        break;
     }
 
     // if the teleoperation is activated

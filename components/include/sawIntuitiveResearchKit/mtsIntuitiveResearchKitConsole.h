@@ -292,6 +292,8 @@ protected:
     typedef std::multimap<std::string, TeleopPSM *> TeleopPSMByMTMList;
     typedef TeleopPSMByMTMList::iterator TeleopPSMByMTMIterator;
     TeleopPSMByMTMList mTeleopsPSMByMTM;
+    /*! Name of default MTM to cycle teleops if no name is provided */
+    std::string mTeleopMTMToCycle;
 
     /*! Single ECM bimanual teleoperation */
     TeleopECM * mTeleopECM;

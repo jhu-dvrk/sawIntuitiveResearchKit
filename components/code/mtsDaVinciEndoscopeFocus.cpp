@@ -83,18 +83,28 @@ void mtsDaVinciEndoscopeFocus::Cleanup(void)
 
 void mtsDaVinciEndoscopeFocus::FocusIn(const prmEventButton & event)
 {
-    if (event.Type() == prmEventButton::PRESSED) {
+    switch (event.Type()) {
+    case prmEventButton::PRESSED:
         RobotIO.FocusIn(false);
-    } else {
+        break;
+    case prmEventButton::RELEASED:
         RobotIO.FocusIn(true);
+        break;
+    default:
+        break;
     }
 }
 
 void mtsDaVinciEndoscopeFocus::FocusOut(const prmEventButton & event)
 {
-    if (event.Type() == prmEventButton::PRESSED) {
+    switch (event.Type()) {
+    case prmEventButton::PRESSED:
         RobotIO.FocusOut(false);
-    } else {
+        break;
+    case prmEventButton::RELEASED:
         RobotIO.FocusOut(true);
+        break;
+    default:
+        break;
     }
 }
