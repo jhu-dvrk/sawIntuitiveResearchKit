@@ -28,7 +28,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstParameterTypes/prmEventButton.h>
-#include <cisstParameterTypes/prmKeyValue.h>
 
 #include <sawTextToSpeech/mtsTextToSpeech.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
@@ -529,6 +528,8 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
                                     "TeleopEnable", false);
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::CycleTeleopPSMByMTM, this,
                                     "CycleTeleopPSMByMTM", std::string(""));
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SelectTeleopPSM, this,
+                                    "SelectTeleopPSM", prmKeyValue("mtm", "psm"));
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetScale, this,
                                     "SetScale", 0.5);
         mInterface->AddEventWrite(ConfigurationEvents.Scale,
@@ -984,7 +985,7 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
         prompts.push_back("It might work");
         prompts.push_back("It will work!");
         prompts.push_back("Are we there yet?");
-        prompts.push_back("When is that paper deadline already?");
+        prompts.push_back("When is that paper deadline?");
         prompts.push_back("Don't you have something better to do?");
         prompts.push_back("Today is the day!");
         prompts.push_back("It's free software, what did you expect?");
@@ -994,6 +995,11 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
         prompts.push_back("Ask Google");
         prompts.push_back("Did you forget to re-compile?");
         prompts.push_back("Reboot me");
+        prompts.push_back("Coffee break?");
+        prompts.push_back("If you can hear this, the code compiles!");
+        prompts.push_back("I'm a bit tired");
+        prompts.push_back("Commit often, always pull!");
+        prompts.push_back("Feel free to fix it");
         int index;
         cmnRandomSequence & randomSequence = cmnRandomSequence::GetInstance();
         cmnRandomSequence::SeedType seed
@@ -1430,84 +1436,100 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
 
 bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & jsonTeleop)
 {
-    const std::string masterLeftName = jsonTeleop["master-left"].asString();
-    const std::string masterRightName = jsonTeleop["master-right"].asString();
-    const std::string slaveName = jsonTeleop["slave"].asString();
-    if ((masterLeftName == "") || (masterRightName == "") || (slaveName == "")) {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: \"master-left\", \"master-right\" and \"slave\" must be provided as strings" << std::endl;
+    std::string mtmLeftName = jsonTeleop["mtm-left"].asString();
+    // for backward compatibility
+    if (mtmLeftName == "") {
+        mtmLeftName = jsonTeleop["master-left"].asString();
+        CMN_LOG_CLASS_INIT_WARNING << "ConfigureECMTeleopJSON: keyword \"master-left\" is deprecated, use \"mtm-left\" instead" << std::endl;
+    }
+    std::string mtmRightName = jsonTeleop["mtm-right"].asString();
+    // for backward compatibility
+    if (mtmRightName == "") {
+        mtmRightName = jsonTeleop["master-right"].asString();
+        CMN_LOG_CLASS_INIT_WARNING << "ConfigureECMTeleopJSON: keyword \"master-right\" is deprecated, use \"mtm-right\" instead" << std::endl;
+    }
+    std::string ecmName = jsonTeleop["ecm"].asString();
+    // for backward compatibility
+    if (ecmName == "") {
+        ecmName = jsonTeleop["slave"].asString();
+        CMN_LOG_CLASS_INIT_WARNING << "ConfigureECMTeleopJSON: keyword \"slave\" is deprecated, use \"ecm\" instead" << std::endl;
+    }
+    // all must be provided
+    if ((mtmLeftName == "") || (mtmRightName == "") || (ecmName == "")) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: \"mtm-left\", \"mtm-right\" and \"ecm\" must be provided as strings" << std::endl;
         return false;
     }
 
-    if (masterLeftName == masterRightName) {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: \"master-left\" and \"master-right\" must be different" << std::endl;
+    if (mtmLeftName == mtmRightName) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: \"mtm-left\" and \"mtm-right\" must be different" << std::endl;
         return false;
     }
     std::string
-        masterLeftComponent, masterLeftInterface,
-        masterRightComponent, masterRightInterface,
-        slaveComponent, slaveInterface;
+        mtmLeftComponent, mtmLeftInterface,
+        mtmRightComponent, mtmRightInterface,
+        ecmComponent, ecmInterface;
     // check that both arms have been defined and have correct type
     Arm * armPointer;
-    ArmList::iterator armIterator = mArms.find(masterLeftName);
+    ArmList::iterator armIterator = mArms.find(mtmLeftName);
     if (armIterator == mArms.end()) {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: master left\""
-                                 << masterLeftName << "\" is not defined in \"arms\"" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm left\""
+                                 << mtmLeftName << "\" is not defined in \"arms\"" << std::endl;
         return false;
     } else {
         armPointer = armIterator->second;
         if (!((armPointer->mType == Arm::ARM_MTM_GENERIC) ||
               (armPointer->mType == Arm::ARM_MTM_DERIVED) ||
               (armPointer->mType == Arm::ARM_MTM))) {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: master left\""
-                                     << masterLeftName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm left\""
+                                     << mtmLeftName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
             return false;
         }
-        masterLeftComponent = armPointer->ComponentName();
-        masterLeftInterface = armPointer->InterfaceName();
+        mtmLeftComponent = armPointer->ComponentName();
+        mtmLeftInterface = armPointer->InterfaceName();
     }
-    armIterator = mArms.find(masterRightName);
+    armIterator = mArms.find(mtmRightName);
     if (armIterator == mArms.end()) {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: master right\""
-                                 << masterRightName << "\" is not defined in \"arms\"" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm right\""
+                                 << mtmRightName << "\" is not defined in \"arms\"" << std::endl;
         return false;
     } else {
         armPointer = armIterator->second;
         if (!((armPointer->mType == Arm::ARM_MTM_GENERIC) ||
               (armPointer->mType == Arm::ARM_MTM_DERIVED) ||
               (armPointer->mType == Arm::ARM_MTM))) {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: master right\""
-                                     << masterRightName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm right\""
+                                     << mtmRightName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
             return false;
         }
-        masterRightComponent = armPointer->ComponentName();
-        masterRightInterface = armPointer->InterfaceName();
+        mtmRightComponent = armPointer->ComponentName();
+        mtmRightInterface = armPointer->InterfaceName();
     }
-    armIterator = mArms.find(slaveName);
+    armIterator = mArms.find(ecmName);
     if (armIterator == mArms.end()) {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: slave \""
-                                 << slaveName << "\" is not defined in \"arms\"" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: ecm \""
+                                 << ecmName << "\" is not defined in \"arms\"" << std::endl;
         return false;
     } else {
         armPointer = armIterator->second;
         if (!((armPointer->mType == Arm::ARM_ECM_GENERIC) ||
               (armPointer->mType == Arm::ARM_ECM_DERIVED) ||
               (armPointer->mType == Arm::ARM_ECM))) {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: slave \""
-                                     << slaveName << "\" type must be \"ECM\" or \"GENERIC_ECM\"" << std::endl;
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: ecm \""
+                                     << ecmName << "\" type must be \"ECM\" or \"GENERIC_ECM\"" << std::endl;
             return false;
         }
-        slaveComponent = armPointer->ComponentName();
-        slaveInterface = armPointer->InterfaceName();
+        ecmComponent = armPointer->ComponentName();
+        ecmInterface = armPointer->InterfaceName();
     }
 
     // check if pair already exist and then add
-    const std::string name = masterLeftName + "-" + masterRightName + "-" + slaveName;
+    const std::string name = mtmLeftName + "-" + mtmRightName + "-" + ecmName;
     if (mTeleopECM == 0) {
         // create a new teleop if needed
         mTeleopECM = new TeleopECM(name,
-                                   masterLeftComponent, masterLeftInterface,
-                                   masterRightComponent, masterRightInterface,
-                                   slaveComponent, slaveInterface,
+                                   mtmLeftComponent, mtmLeftInterface,
+                                   mtmRightComponent, mtmRightInterface,
+                                   ecmComponent, ecmInterface,
                                    this->GetName());
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: there is already an ECM teleop" << std::endl;
@@ -1554,37 +1576,48 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
 
 bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop)
 {
-    const std::string masterName = jsonTeleop["master"].asString();
-    const std::string slaveName = jsonTeleop["slave"].asString();
-    if ((masterName == "") || (slaveName == "")) {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: both \"master\" and \"slave\" must be provided as strings" << std::endl;
+    std::string mtmName = jsonTeleop["mtm"].asString();
+    // for backward compatibility
+    if (mtmName == "") {
+        mtmName = jsonTeleop["master"].asString();
+        CMN_LOG_CLASS_INIT_WARNING << "ConfigurePSMTeleopJSON: keyword \"master\" is deprecated, use \"mtm\" instead" << std::endl;
+    }
+    std::string psmName = jsonTeleop["psm"].asString();
+    // for backward compatibility
+    if (psmName == "") {
+        psmName = jsonTeleop["slave"].asString();
+        CMN_LOG_CLASS_INIT_WARNING << "ConfigurePSMTeleopJSON: keyword \"slave\" is deprecated, use \"psm\" instead" << std::endl;
+    }
+    // both are required
+    if ((mtmName == "") || (psmName == "")) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: both \"mtm\" and \"psm\" must be provided as strings" << std::endl;
         return false;
     }
 
-    std::string masterComponent, masterInterface, slaveComponent, slaveInterface;
+    std::string mtmComponent, mtmInterface, psmComponent, psmInterface;
     // check that both arms have been defined and have correct type
     Arm * armPointer;
-    ArmList::iterator armIterator = mArms.find(masterName);
+    ArmList::iterator armIterator = mArms.find(mtmName);
     if (armIterator == mArms.end()) {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: master \""
-                                 << masterName << "\" is not defined in \"arms\"" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: mtm \""
+                                 << mtmName << "\" is not defined in \"arms\"" << std::endl;
         return false;
     } else {
         armPointer = armIterator->second;
         if (!((armPointer->mType == Arm::ARM_MTM_GENERIC) ||
               (armPointer->mType == Arm::ARM_MTM_DERIVED) ||
               (armPointer->mType == Arm::ARM_MTM))) {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: master \""
-                                     << masterName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: mtm \""
+                                     << mtmName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
             return false;
         }
-        masterComponent = armPointer->ComponentName();
-        masterInterface = armPointer->InterfaceName();
+        mtmComponent = armPointer->ComponentName();
+        mtmInterface = armPointer->InterfaceName();
     }
-    armIterator = mArms.find(slaveName);
+    armIterator = mArms.find(psmName);
     if (armIterator == mArms.end()) {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: slave \""
-                                 << slaveName << "\" is not defined in \"arms\"" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: psm \""
+                                 << psmName << "\" is not defined in \"arms\"" << std::endl;
         return false;
     } else {
         armPointer = armIterator->second;
@@ -1592,49 +1625,58 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
               (armPointer->mType == Arm::ARM_PSM_DERIVED) ||
               (armPointer->mType == Arm::ARM_PSM_SOCKET)  ||
               (armPointer->mType == Arm::ARM_PSM))) {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: slave \""
-                                     << slaveName << "\" type must be \"PSM\", \"PSM_DERIVED\" or \"PSM_GENERIC\"" << std::endl;
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: psm \""
+                                     << psmName << "\" type must be \"PSM\", \"PSM_DERIVED\" or \"PSM_GENERIC\"" << std::endl;
             return false;
         }
-        slaveComponent = armPointer->ComponentName();
-        slaveInterface = armPointer->InterfaceName();
+        psmComponent = armPointer->ComponentName();
+        psmInterface = armPointer->InterfaceName();
     }
 
     // check if pair already exist and then add
-    const std::string name = masterName + "-" + slaveName;
+    const std::string name = mtmName + "-" + psmName;
     const TeleopPSMList::iterator teleopIterator = mTeleopsPSM.find(name);
     TeleopPSM * teleopPointer = 0;
     if (teleopIterator == mTeleopsPSM.end()) {
-        // check if we already have a teleop for the same PSM
-        const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
-        for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
-             iterTeleopPSM != endTeleopPSM;
-             ++iterTeleopPSM) {
-            if (iterTeleopPSM->second->mPSMName == slaveName) {
-                CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: can't add teleop \""
-                                         << name << "\" since \""
-                                         << iterTeleopPSM->second->mName << "\" already uses the PSM \""
-                                         << slaveName << "\"" << std::endl;
-                return false;
-            }
-        }
         // create a new teleop if needed
         teleopPointer = new TeleopPSM(name,
-                                      masterName, masterComponent, masterInterface,
-                                      slaveName, slaveComponent, slaveInterface,
+                                      mtmName, mtmComponent, mtmInterface,
+                                      psmName, psmComponent, psmInterface,
                                       this->GetName());
-        mTeleopsPSM[name] = teleopPointer;
-        mTeleopsPSMByMTM.insert(std::make_pair(masterName, teleopPointer));
-        // only the first teleop by MTM is marked as selected during configuration
-        if (mTeleopsPSMByMTM.count(masterName) == 1) {
-            teleopPointer->SetSelected(true);
-        } else {
-            // this MTM has at least two teleops, set it as default to cycle with pedal
-            if (mTeleopMTMToCycle == "") {
-                mTeleopMTMToCycle = masterName;
-            }
-            teleopPointer->SetSelected(false);
+        mTeleopsPSMByMTM.insert(std::make_pair(mtmName, teleopPointer));
+        // first MTM with multiple PSMs is selected for single tap
+        if ((mTeleopsPSMByMTM.count(mtmName) > 1)
+            && (mTeleopMTMToCycle == "")) {
+                mTeleopMTMToCycle = mtmName;
         }
+        // check if we already have a teleop for the same PSM
+        std::string mtmUsingThatPSM;
+        GetMTMSelectedForPSM(psmName, mtmUsingThatPSM);
+        if (mtmUsingThatPSM != "") {
+            teleopPointer->SetSelected(false);
+            CMN_LOG_CLASS_INIT_WARNING << "ConfigurePSMTeleopJSON: psm \""
+                                       << psmName << "\" is already selected to be controlled by mtm \""
+                                       << mtmUsingThatPSM << "\", component \""
+                                       << name << "\" is added but not selected"
+                                       << std::endl;
+        } else {
+            // check if we already have a teleop for the same PSM
+            std::string psmUsingThatMTM;
+            GetPSMSelectedForMTM(mtmName, psmUsingThatMTM);
+            if (psmUsingThatMTM != "") {
+                teleopPointer->SetSelected(false);
+                CMN_LOG_CLASS_INIT_WARNING << "ConfigurePSMTeleopJSON: mtm \""
+                                           << mtmName << "\" is already selected to control psm \""
+                                           << psmUsingThatMTM << "\", component \""
+                                           << name << "\" is added but not selected"
+                                           << std::endl;
+            } else {
+                // neither the MTM nor PSM are used, let's activate that pair
+                teleopPointer->SetSelected(true);
+            }
+        }
+        // finally add the new teleop
+        mTeleopsPSM[name] = teleopPointer;
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: there is already a teleop for the pair \""
                                  << name << "\"" << std::endl;
@@ -1878,14 +1920,18 @@ void mtsIntuitiveResearchKitConsole::CycleTeleopPSMByMTM(const std::string & mtm
 {
     // try to cycle through all the teleopPSMs associated to the MTM
     if (mTeleopsPSMByMTM.count(mtmName) == 0) {
-        mInterface->SendWarning(this->GetName()
-                                + ": no PSM teleoperation found for MTM "
-                                + mtmName);
+        // we use empty string to query, no need to send warning about bad mtm name
+        if (mtmName != "") {
+            mInterface->SendWarning(this->GetName()
+                                    + ": no PSM teleoperation found for MTM \""
+                                    + mtmName
+                                    + "\"");
+        }
     } else if (mTeleopsPSMByMTM.count(mtmName) == 1) {
         mInterface->SendStatus(this->GetName()
-                               + ": only one PSM teleoperation found for MTM "
+                               + ": only one PSM teleoperation found for MTM \""
                                + mtmName
-                               + ", cycling has no effect");
+                               + "\", cycling has no effect");
     } else {
         // find range of teleops
         std::pair<TeleopPSMByMTMIterator, TeleopPSMByMTMIterator> range;
@@ -1902,40 +1948,164 @@ void mtsIntuitiveResearchKitConsole::CycleTeleopPSMByMTM(const std::string & mtm
                 if (nextTeleop == range.second) {
                     nextTeleop = range.first;
                 }
-                // mark which one should be active
-                iter->second->SetSelected(false);
-                nextTeleop->second->SetSelected(true);
-                // if teleop PSM is active, enable/disable components now
-                if (mTeleopEnabled) {
-                    iter->second->SetDesiredState(std::string("DISABLED"));
-                    if (mTeleopPSMRunning) {
-                        nextTeleop->second->SetDesiredState(std::string("ENABLED"));
-                    } else {
-                        nextTeleop->second->SetDesiredState(std::string("ALIGNING_MTM"));
+                // now make sure the PSM in next teleop is not used
+                std::string mtmUsingThatPSM;
+                GetMTMSelectedForPSM(nextTeleop->second->mPSMName, mtmUsingThatPSM);
+                if (mtmUsingThatPSM != "") {
+                    // message
+                    mInterface->SendWarning(this->GetName()
+                                            + ": cycling from \""
+                                            + iter->second->mName
+                                            + "\" to \""
+                                            + nextTeleop->second->mName
+                                            + "\" failed, PSM is already controlled by \""
+                                            + mtmUsingThatPSM
+                                            + "\"");
+                } else {
+                    // mark which one should be active
+                    iter->second->SetSelected(false);
+                    nextTeleop->second->SetSelected(true);
+                    // if teleop PSM is active, enable/disable components now
+                    if (mTeleopEnabled) {
+                        iter->second->SetDesiredState(std::string("DISABLED"));
+                        if (mTeleopPSMRunning) {
+                            nextTeleop->second->SetDesiredState(std::string("ENABLED"));
+                        } else {
+                            nextTeleop->second->SetDesiredState(std::string("ALIGNING_MTM"));
+                        }
                     }
+                    // message
+                    mInterface->SendStatus(this->GetName()
+                                           + ": cycling from \""
+                                           + iter->second->mName
+                                           + "\" to \""
+                                           + nextTeleop->second->mName
+                                           + "\"");
                 }
-                // message
-                mInterface->SendStatus(this->GetName()
-                                       + ": cycling from "
-                                       + iter->second->mName
-                                       + " to "
-                                       + nextTeleop->second->mName);
                 // stop for loop
                 break;
             }
         }
     }
     // in all cases, emit events so users can figure out which components are selected
-    const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
-    for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
-         iterTeleopPSM != endTeleopPSM;
-         ++iterTeleopPSM) {
-        if (iterTeleopPSM->second->Selected()) {
-            ConfigurationEvents.TeleopPSMSelected(prmKeyValue(iterTeleopPSM->second->mMTMName,
-                                                              iterTeleopPSM->second->mPSMName));
+    EventSelectedTeleopPSMs();
+}
+
+void mtsIntuitiveResearchKitConsole::SelectTeleopPSM(const prmKeyValue & mtmPsm)
+{
+    // for readability
+    const std::string mtmName = mtmPsm.Key;
+    const std::string psmName = mtmPsm.Value;
+
+    // if the psm value is empty, disable any teleop for the mtm -- this can be used to free the mtm
+    if (psmName == "") {
+        std::pair<TeleopPSMByMTMIterator, TeleopPSMByMTMIterator> range;
+        range = mTeleopsPSMByMTM.equal_range(mtmName);
+        for (TeleopPSMByMTMIterator iter = range.first;
+             iter != range.second;
+             ++iter) {
+            // look for the teleop that was selected if any
+            if (iter->second->Selected()) {
+                iter->second->SetSelected(false);
+                // if teleop PSM is active, enable/disable components now
+                if (mTeleopEnabled) {
+                    iter->second->SetDesiredState(std::string("DISABLED"));
+                }
+                // message
+                mInterface->SendWarning(this->GetName()
+                                        + ": teleop \""
+                                        + iter->second->Name()
+                                        + "\" has been unselected ");
+            }
+        }
+        EventSelectedTeleopPSMs();
+        return;
+    }
+
+    // actual teleop to select
+    std::string name = mtmName + "-" + psmName;
+    const TeleopPSMList::iterator teleopIterator = mTeleopsPSM.find(name);
+    if (teleopIterator == mTeleopsPSM.end()) {
+        mInterface->SendWarning(this->GetName()
+                                + ": unable to select \""
+                                + name
+                                + "\", this component doesn't exist");
+        EventSelectedTeleopPSMs();
+        return;
+    }
+    // there seems to be some redundant information here, let's use it for a safety check
+    CMN_ASSERT(mtmName == teleopIterator->second->mMTMName);
+    CMN_ASSERT(psmName = teleopIterator->second->mPSMName);
+    // check that the PSM is available to be used
+    std::string mtmUsingThatPSM;
+    GetMTMSelectedForPSM(psmName, mtmUsingThatPSM);
+    if (mtmUsingThatPSM != "") {
+        mInterface->SendWarning(this->GetName()
+                                + ": unable to select \""
+                                + name
+                                + "\", PSM is already controlled by \""
+                                + mtmUsingThatPSM
+                                + "\"");
+        EventSelectedTeleopPSMs();
+        return;
+    }
+
+
+    std::cer << CMN_LOG_DETAILS << " implement this, basically look for the current teleop for that mtm, unselect/disable and then select/enable the new one" << std::endl;
+
+
+    // always send a message to let user know the current status
+    EventSelectedTeleopPSMs();
+}
+
+bool mtsIntuitiveResearchKitConsole::GetPSMSelectedForMTM(const std::string & mtmName, std::string & psmName) const
+{
+    bool mtmFound = false;
+    psmName = "";
+    // find range of teleops
+    std::pair<TeleopPSMByMTMConstIterator, TeleopPSMByMTMConstIterator> range;
+    range = mTeleopsPSMByMTM.equal_range(mtmName);
+    for (TeleopPSMByMTMConstIterator iter = range.first;
+         iter != range.second;
+         ++iter) {
+        mtmFound = true;
+        if (iter->second->Selected()) {
+            psmName = iter->second->mPSMName;
+        }
+    }
+    return mtmFound;
+}
+
+bool mtsIntuitiveResearchKitConsole::GetMTMSelectedForPSM(const std::string & psmName, std::string & mtmName) const
+{
+    bool psmFound = false;
+    mtmName = "";
+    const TeleopPSMList::const_iterator end = mTeleopsPSM.end();
+    for (TeleopPSMList::const_iterator iter = mTeleopsPSM.begin();
+         iter != end;
+         ++iter) {
+        if (iter->second->mPSMName == psmName) {
+            psmFound = true;
+            if (iter->second->Selected()) {
+                mtmName = iter->second->mMTMName;
+            }
+        }
+    }
+    return psmFound;
+}
+
+void mtsIntuitiveResearchKitConsole::EventSelectedTeleopPSMs(void) const
+{
+    const TeleopPSMList::const_iterator end = mTeleopsPSM.end();
+    for (TeleopPSMList::const_iterator iter = mTeleopsPSM.begin();
+         iter != end;
+         ++iter) {
+        if (iter->second->Selected()) {
+            ConfigurationEvents.TeleopPSMSelected(prmKeyValue(iter->second->mMTMName,
+                                                              iter->second->mPSMName));
         } else {
-            ConfigurationEvents.TeleopPSMUnselected(prmKeyValue(iterTeleopPSM->second->mMTMName,
-                                                                iterTeleopPSM->second->mPSMName));
+            ConfigurationEvents.TeleopPSMUnselected(prmKeyValue(iter->second->mMTMName,
+                                                                iter->second->mPSMName));
         }
     }
 }

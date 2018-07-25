@@ -1,7 +1,5 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "chatty": true
-    ,
     "io": {
         "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
     }
@@ -73,18 +71,22 @@
     [
         {
             "mtm": "MTMR",
-            "psm": "PSM1",
-            "configure-parameter": {
-                "scale": 0.4
-            }
+            "psm": "PSM1"
+        }
+        ,
+        {
+            "mtm": "MTMR",
+            "psm": "PSM2"
         }
         ,
         {
             "mtm": "MTML",
-            "psm": "PSM2",
-            "configure-parameter": {
-                "scale": 0.4
-            }
+            "psm": "PSM1"
+        }
+        ,
+        {
+            "mtm": "MTML",
+            "psm": "PSM2"
         }
     ]
 }

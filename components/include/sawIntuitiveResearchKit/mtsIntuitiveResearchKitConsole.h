@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsTaskFromSignal.h>
 #include <cisstParameterTypes/prmEventButton.h>
+#include <cisstParameterTypes/prmKeyValue.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 
@@ -291,6 +292,7 @@ protected:
     /*! List to manage the teleopPSM components for each MTM */
     typedef std::multimap<std::string, TeleopPSM *> TeleopPSMByMTMList;
     typedef TeleopPSMByMTMList::iterator TeleopPSMByMTMIterator;
+    typedef TeleopPSMByMTMList::const_iterator TeleopPSMByMTMConstIterator;
     TeleopPSMByMTMList mTeleopsPSMByMTM;
     /*! Name of default MTM to cycle teleops if no name is provided */
     std::string mTeleopMTMToCycle;
@@ -323,6 +325,10 @@ protected:
     void Home(void);
     void TeleopEnable(const bool & enable);
     void CycleTeleopPSMByMTM(const std::string & mtmName);
+    void SelectTeleopPSM(const prmKeyValue & mtmPsm);
+    bool GetPSMSelectedForMTM(const std::string & mtmName, std::string & psmName) const;
+    bool GetMTMSelectedForPSM(const std::string & psmName, std::string & mtmName) const;
+    void EventSelectedTeleopPSMs(void) const;
     void UpdateTeleopState(void);
     void SetScale(const double & scale);
     void SetVolume(const double & volume);
