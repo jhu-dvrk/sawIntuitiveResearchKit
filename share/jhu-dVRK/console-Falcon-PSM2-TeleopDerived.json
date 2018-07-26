@@ -53,8 +53,8 @@
             // this is where we tell the console to use our manually
             // loaded teleop, using "type"
             "type": "TELEOP_PSM_DERIVED",
-            "master": "MTML",
-            "slave": "PSM2",
+            "mtm": "MTML",
+            "psm": "PSM2",
             "configure-parameter": {
                 "ignore-jaw": true,
                 "scale": 0.4,

@@ -26,8 +26,8 @@
     "psm-teleops":
     [
         {
-            "master": "MTMR",
-            "slave": "PSM1",
+            "mtm": "MTMR",
+            "psm": "PSM1",
             "configure-parameter": {
                 "rotation" : [[-1.0000,  0.0000,  0.0000],
                               [ 0.0000, -1.0000,  0.0000],

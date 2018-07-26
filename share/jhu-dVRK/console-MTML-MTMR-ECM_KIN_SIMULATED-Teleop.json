@@ -48,8 +48,8 @@
     ,
     "ecm-teleop":
     {
-        "master-left": "MTML",
-        "master-right": "MTMR",
-        "slave": "ECM"
+        "mtm-left": "MTML",
+        "mtm-right": "MTMR",
+        "ecm": "ECM"
     }
 }
