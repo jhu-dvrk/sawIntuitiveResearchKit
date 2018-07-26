@@ -2050,9 +2050,24 @@ void mtsIntuitiveResearchKitConsole::SelectTeleopPSM(const prmKeyValue & mtmPsm)
         return;
     }
 
+    // make sure the teleop using that MTM is unselected
+    SelectTeleopPSM(prmKeyValue(mtmName, ""));
 
-    std::cer << CMN_LOG_DETAILS << " implement this, basically look for the current teleop for that mtm, unselect/disable and then select/enable the new one" << std::endl;
-
+    // now turn on the teleop
+    teleopIterator->second->SetSelected(true);
+    // if teleop PSM is active, enable/disable components now
+    if (mTeleopEnabled) {
+        if (mTeleopPSMRunning) {
+            teleopIterator->second->SetDesiredState(std::string("ENABLED"));
+        } else {
+            teleopIterator->second->SetDesiredState(std::string("ALIGNING_MTM"));
+        }
+    }
+    // message
+    mInterface->SendStatus(this->GetName()
+                           + ": \""
+                           + teleopIterator->second->mName
+                           + "\" has been selected");
 
     // always send a message to let user know the current status
     EventSelectedTeleopPSMs();
