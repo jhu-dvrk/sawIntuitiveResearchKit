@@ -26,8 +26,8 @@
     "psm-teleops":
     [
         {
-            "master": "MTMR",
-            "slave": "PSM1"
+            "mtm": "MTMR",
+            "psm": "PSM1"
         }
     ]
 }

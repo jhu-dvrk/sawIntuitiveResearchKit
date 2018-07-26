@@ -39,8 +39,8 @@
     "psm-teleops":
     [
         {
-            "master": "MTMR",
-            "slave": "PSM3",
+            "mtm": "MTMR",
+            "psm": "PSM3",
             "configure-parameter": {
                 "ignore-jaw": true,
                 "scale": 0.4,

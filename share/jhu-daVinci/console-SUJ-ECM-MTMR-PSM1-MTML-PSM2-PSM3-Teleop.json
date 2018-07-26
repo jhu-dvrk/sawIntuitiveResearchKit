@@ -2,6 +2,8 @@
 {
     "io": {
         "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
+        , "watchdog-timeout": 0.04 // in seconds
+        , "firewire-protocol": "broadcast-read-write"
     }
     ,
     "operator-present": {
@@ -50,6 +52,18 @@
         }
         ,
         {
+            "name": "PSM3",
+            "type": "PSM",
+            "io": "sawRobotIO1394-PSM3-28613.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json",
+            "base-frame": {
+                "component": "SUJ",
+                "interface": "PSM3"
+            }
+        }
+        ,
+        {
             "name": "ECM",
             "type": "ECM",
             "io": "sawRobotIO1394-ECM-29738.xml",
@@ -58,6 +72,21 @@
             "base-frame": {
                 "component": "SUJ",
                 "interface": "ECM"
+            }
+        }
+        ,
+        {
+            "name": "MTMR",
+            "type": "MTM",
+            "io": "sawRobotIO1394-MTMR-32336.xml",
+            "pid": "sawControllersPID-MTMR.xml",
+            "kinematic": "mtm.json",
+            "base-frame": {
+                "reference-frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,         -0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
             }
         }
         ,
@@ -80,7 +109,7 @@
     "psm-teleops":
     [
         {
-            "mtm": "MTML",
+            "mtm": "MTMR",
             "psm": "PSM1"
         }
         ,
@@ -88,5 +117,17 @@
             "mtm": "MTML",
             "psm": "PSM2"
         }
+        ,
+        {
+            "mtm": "MTML",
+            "psm": "PSM3"
+        }
     ]
+    ,
+    "ecm-teleop":
+    {
+        "mtm-left": "MTML",
+        "mtm-right": "MTMR",
+        "ecm": "ECM"
+    }
 }

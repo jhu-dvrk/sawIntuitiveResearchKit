@@ -43,21 +43,15 @@
     "psm-teleops":
     [
         {
-            "master": "MTMR",
-            "slave": "PSM3" ,
-            "rotation" : [[-1.0000,  0.0000,  0.0000],
-                          [ 0.0000, -1.0000,  0.0000],
-                          [ 0.0000,  0.0000,  1.0000]]
+            "mtm": "MTMR",
+            "psm": "PSM3"
         }
     ]
     ,
     "ecm-teleop":
     {
-        "master-left": "MTML",
-        "master-right": "MTMR",
-        "slave": "ECM",
-        "rotation" : [[ 1.0000,  0.0000,  0.0000],
-                      [ 0.0000,  1.0000,  0.0000],
-                      [ 0.0000,  0.0000,  1.0000]]
+        "mtm-left": "MTML",
+        "mtm-right": "MTMR",
+        "ecm": "ECM"
     }
 }

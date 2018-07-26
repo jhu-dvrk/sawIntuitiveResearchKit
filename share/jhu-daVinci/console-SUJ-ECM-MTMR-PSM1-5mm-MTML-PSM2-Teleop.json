@@ -73,13 +73,13 @@
     "psm-teleops":
     [
         {
-            "master": "MTMR",
-            "slave": "PSM1"
+            "mtm": "MTMR",
+            "psm": "PSM1"
         }
         ,
         {
-            "master": "MTML",
-            "slave": "PSM2"
+            "mtm": "MTML",
+            "psm": "PSM2"
         }
     ]
 }
