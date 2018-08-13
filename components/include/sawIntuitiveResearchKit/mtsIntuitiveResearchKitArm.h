@@ -33,7 +33,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
-#include <cisstRobot/robManipulator.h>
+#include <sawIntuitiveResearchKit/robManipulatorRMRC.h>
 #include <cisstRobot/robReflexxes.h>
 
 #include <sawControllers/osaCartesianImpedanceController.h>

@@ -114,6 +114,7 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketClientPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketServerPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/robManipulatorPSMSnake.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/robManipulatorRMRC.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsPSMCompensation.h
         )
 
@@ -133,6 +134,7 @@ if (cisst_FOUND)
          code/mtsSocketBasePSM.cpp
          code/mtsSocketClientPSM.cpp
          code/mtsSocketServerPSM.cpp
+         code/robManipulatorRMRC.cpp
          code/robManipulatorPSMSnake.cpp
          code/mtsPSMCompensation.cpp
         )

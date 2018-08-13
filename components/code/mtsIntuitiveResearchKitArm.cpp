@@ -185,7 +185,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianVelocityGetParam.SetValid(false);
 
     //Manipulator
-    Manipulator = new robManipulator();
+    Manipulator = new robManipulatorRMRC();
 
     // jacobian
     ResizeKinematicsData();
