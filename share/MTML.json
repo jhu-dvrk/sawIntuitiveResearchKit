@@ -9,6 +9,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset":  -1.5708,
+                "qmin": -0.69813, // -40 deg
+                "qmax": -1.13446, //  65 deg
                 "mass":    0.0000,
                 "cx":   0.0000, "cy":   0.0000, "cz":   0.0000,
                 "Ixx":  0.0001, "Iyy":  0.0001, "Izz":  0.0001,
@@ -22,6 +24,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset": -1.5708,
+                "qmin": -0.26179, // -15 deg
+                "qmax":  0.87266, //  50 deg
                 "mass":    0.1000,
                 "cx":  -0.1500, "cy":   0.0000, "cz":   0.0000,
                 "Ixx":  0.0001, "Iyy":  0.0001, "Izz":  0.0001,
@@ -35,6 +39,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset":  1.5708,
+                "qmin": -0.87266, // -50 deg
+                "qmax":  0.61086, //  35 deg
                 "mass":    0.0300,
                 "cx":  -0.1500, "cy":   0.0000, "cz":   0.0000,
                 "Ixx":  0.0001, "Iyy":  0.0001, "Izz":  0.0001,
@@ -48,6 +54,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset":  0.0000,
+                "qmin": -3.49066, // -200 deg
+                "qmax":  1.5708,  //   90 deg
                 "mass":    0.0500,
                 "cx":   0.0000, "cy":  -0.1500, "cz":  -0.1500,
                 "Ixx":  0.0001, "Iyy":  0.0001, "Izz":  0.0001,
@@ -61,6 +69,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset":  0.0000,
+                "qmin": -1.5708,  // -90 deg
+                "qmax":  3.14159, // 180 deg
                 "mass":    0.0000,
                 "cx":   0.0000, "cy":   0.0300, "cz":   0.0300,
                 "Ixx":  0.0001, "Iyy":  0.0001, "Izz":  0.0001,
@@ -74,6 +84,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset": -1.5708,
+                "qmin": -0.785398, // -45 deg
+                "qmax":  0.785398, //  45 deg
                 "mass":    0.0000,
                 "cx":   0.0000, "cy":  -0.0200, "cz":   0.0200,
                 "Ixx":  0.0001, "Iyy":  0.0001, "Izz":  0.0001,
@@ -87,6 +99,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset":  1.5708,
+                "qmin": -8.37758, // -480 deg
+                "qmax":  7.85398,  //  450 deg
                 "mass":    0.0000,
                 "cx":   0.0000, "cy":   0.0000, "cz":   0.0000,
                 "Ixx":  0.0001, "Iyy":  0.0001, "Izz":  0.0001,

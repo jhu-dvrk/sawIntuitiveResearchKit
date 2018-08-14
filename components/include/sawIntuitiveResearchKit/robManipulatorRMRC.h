@@ -31,10 +31,10 @@ public:
     robManipulatorRMRC(const vctFrame4x4<double>& Rtw0 = vctFrame4x4<double>());
 
     robManipulatorRMRC(const std::string& robotfilename,
-                           const vctFrame4x4<double>& Rtw0 = vctFrame4x4<double>());
+                       const vctFrame4x4<double>& Rtw0 = vctFrame4x4<double>());
 
     robManipulatorRMRC(const std::vector<robKinematics *> linkParms,
-                           const vctFrame4x4<double>& Rtw0 = vctFrame4x4<double>());
+                       const vctFrame4x4<double>& Rtw0 = vctFrame4x4<double>());
 
     ~robManipulatorRMRC() {}
 
@@ -44,9 +44,10 @@ public:
 
     robManipulator::Errno
     InverseKinematics(vctDynamicVector<double> & q,
-                       const vctFrame4x4<double> & Rts,
-                       double tolerance = 1e-12,
-                       size_t Niterations = 1000);
+                      const vctFrame4x4<double> & Rts,
+                      double tolerance = 1e-12,
+                      size_t Niterations = 1000,
+                      double LAMBDA = 000.1);
 
 private:
     void Resize(void);

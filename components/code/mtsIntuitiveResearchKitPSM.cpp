@@ -635,6 +635,8 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                     PID.SetPositionUpperLimit(CouplingChange.ToolPositionUpperLimit);
                     PID.SetTorqueLowerLimit(CouplingChange.ToolTorqueLowerLimit);
                     PID.SetTorqueUpperLimit(CouplingChange.ToolTorqueUpperLimit);
+                    Manipulator->SetJointLimits(CouplingChange.ToolTorqueLowerLimit,
+                                                CouplingChange.ToolTorqueUpperLimit);
                 } else {
                     PID.SetPositionLowerLimit(CouplingChange.NoToolPositionLowerLimit);
                     PID.SetPositionUpperLimit(CouplingChange.NoToolPositionUpperLimit);
@@ -801,6 +803,8 @@ void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
     // set PID limits
     PID.SetPositionLowerLimit(CouplingChange.ToolPositionLowerLimit);
     PID.SetPositionUpperLimit(CouplingChange.ToolPositionUpperLimit);
+    Manipulator->SetJointLimits(CouplingChange.ToolPositionLowerLimit,
+                                CouplingChange.ToolPositionUpperLimit);
 
     // if for some reason we don't need to engage, basically, tool was
     // found before homing

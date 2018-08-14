@@ -19,18 +19,18 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/robManipulatorRMRC.h>
 
 robManipulatorRMRC::robManipulatorRMRC(const std::vector<robKinematics *> linkParms,
-                                               const vctFrame4x4<double> &Rtw0)
+                                       const vctFrame4x4<double> & Rtw0)
     : robManipulator(linkParms, Rtw0)
 {
 }
 
-robManipulatorRMRC::robManipulatorRMRC(const std::string &robotfilename,
-                                               const vctFrame4x4<double> &Rtw0)
+robManipulatorRMRC::robManipulatorRMRC(const std::string & robotfilename,
+                                       const vctFrame4x4<double> & Rtw0)
     : robManipulator(robotfilename, Rtw0)
 {
 }
 
-robManipulatorRMRC::robManipulatorRMRC(const vctFrame4x4<double> &Rtw0)
+robManipulatorRMRC::robManipulatorRMRC(const vctFrame4x4<double> & Rtw0)
     : robManipulator(Rtw0)
 {
 }
@@ -50,15 +50,32 @@ void robManipulatorRMRC::Resize(void)
     m.A.SetAll(0.0);
     m.b.SetSize(6, 1, VCT_COL_MAJOR);
     m.b.SetAll(0.0);
+#if 0
+    // Gx >= h
+    m.G.SetSize(2 * links.size(), links.size(), VCT_COL_MAJOR);
+    m.G.SetAll(0.0);
+    m.h.SetSize(2 * links.size(), 1, VCT_COL_MAJOR );
+    m.h.SetAll(0.0);
+
+    for (size_t i = 0; i < links.size(); i++) {
+        m.G.Element(i, i) = 1.0;
+        m.G.Element(links.size() + i, i) = -1.0;
+        // m.h.Element(i, 0) = links[i].GetKinematics()->PositionMin();
+        // m.h.Element(links.size() + i, 0) = -links[i].GetKinematics()->PositionMax();
+    }
+
+    m.lsei.Allocate(m.E, m.A, m.G);
+#endif
 }
 
 vctReturnDynamicVector<double>
 robManipulatorRMRC::ConstrainedRMRC(const vctDynamicVector<double> & q,
-                                        const vctFixedSizeVector<double, 6> & vw)
+                                    const vctFixedSizeVector<double, 6> & vw)
 {
     JacobianSpatial(q, m.A);
     m.b.Column(0) = vw;
 
+#if 1
     // compute size of G
     size_t sizeG = 0;
     for (size_t i = 0; i < q.size(); i++ ) {
@@ -78,22 +95,34 @@ robManipulatorRMRC::ConstrainedRMRC(const vctDynamicVector<double> & q,
     size_t indexG = 0;
     for (size_t i = 0; i < links.size(); i++) {
         if (q[i] <= links[i].GetKinematics()->PositionMin()) {
-            m.G[indexG++][i] = 1;
+            m.G[indexG][i] = 1.0;
+            m.h[indexG][0] = links[i].GetKinematics()->PositionMin();
+            indexG++;
         }
         if (q[i] >= links[i].GetKinematics()->PositionMax()) {
-            m.G[indexG++][i] = -1;
+            m.G[indexG][i] = -1.0;
+            m.h[indexG][0] = -links[i].GetKinematics()->PositionMax();
+            indexG++;
         }
     }
 
     m.lsei.Allocate(m.E, m.A, m.G);
+
+#else
+    for (size_t i = 0; i < links.size(); i++) {
+        m.h.Element(i, 0) = links[i].GetKinematics()->PositionMin() - q[i];
+        m.h.Element(links.size() + i, 0) = q[i] - links[i].GetKinematics()->PositionMax();
+    }
+
+#endif
     m.lsei.Solve(m.E, m.f, m.A, m.b, m.G, m.h);
     return vctReturnDynamicVector<double>(m.lsei.GetX().Column(0));
 }
 
 robManipulator::Errno
 robManipulatorRMRC::InverseKinematics(vctDynamicVector<double> & q,
-                                          const vctFrame4x4<double> & Rts,
-                                          double tolerance, size_t Niterations)
+                                      const vctFrame4x4<double> & Rts,
+                                      double tolerance, size_t Niterations, double)
 {
     if (q.size() != links.size()) {
         CMN_LOG_RUN_ERROR << CMN_LOG_DETAILS
@@ -118,23 +147,22 @@ robManipulatorRMRC::InverseKinematics(vctDynamicVector<double> & q,
     for (i = 0; i < Niterations && tolerance < ndq; i++) {
 
         // Evaluate the forward kinematics
-        vctFrame4x4<double,VCT_ROW_MAJOR> Rt = ForwardKinematics( q );
+        vctFrame4x4<double,VCT_ROW_MAJOR> Rt = ForwardKinematics(q);
 
         // compute the translation error
-        vctFixedSizeVector<double,3> dt( Rts[0][3] - Rt[0][3],
-                                         Rts[1][3] - Rt[1][3],
-                                         Rts[2][3] - Rt[2][3] );
-
+        vctFixedSizeVector<double,3> dt(Rts[0][3] - Rt[0][3],
+                                        Rts[1][3] - Rt[1][3],
+                                        Rts[2][3] - Rt[2][3]);
+        
         // compute the orientation error
-        // This is the orientation error
-        vctFixedSizeVector<double,3> dr = 0.5 * ( (Rt.Rotation().Column(0) % Rts.Rotation().Column(0)) +
-                                                  (Rt.Rotation().Column(1) % Rts.Rotation().Column(1)) +
-                                                  (Rt.Rotation().Column(2) % Rts.Rotation().Column(2)) );
+        vctFixedSizeVector<double,3> dr = 0.5 * ((Rt.Rotation().Column(0) % Rts.Rotation().Column(0)) +
+                                                 (Rt.Rotation().Column(1) % Rts.Rotation().Column(1)) +
+                                                 (Rt.Rotation().Column(2) % Rts.Rotation().Column(2)));
 
         // combine both errors in one R^6 vector
-        vctFixedSizeVector<double,6> e( dt[0], dt[1], dt[2], dr[0], dr[1], dr[2] );
+        vctFixedSizeVector<double,6> e(dt[0], dt[1], dt[2], dr[0], dr[1], dr[2]);
 
-        vctDynamicVector<double> dq = ConstrainedRMRC( q, e );
+        vctDynamicVector<double> dq = ConstrainedRMRC(q, e);
 
         // compute the L2 norm of the error
         ndq = dq.Norm();

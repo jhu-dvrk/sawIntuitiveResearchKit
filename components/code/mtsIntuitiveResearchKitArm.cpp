@@ -184,7 +184,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianVelocityGetParam.SetVelocityAngular(vct3(0.0));
     CartesianVelocityGetParam.SetValid(false);
 
-    //Manipulator
+    // manipulator
     Manipulator = new robManipulatorRMRC();
 
     // jacobian
