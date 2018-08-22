@@ -1237,7 +1237,20 @@ void mtsIntuitiveResearchKitArm::ControlEffortJoint(void)
 void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
 {
     // update torques based on wrench
-    vctDoubleVec force(6);
+    vctDoubleVec wrench(6);
+
+    // get force preload from derived classes, in most cases 0, platform control for MTM
+    vctDoubleVec effortPreload(NumberOfJointsKinematics());
+    
+    ControlEffortCartesianPreload(effortPreload);
+    vctDoubleVec wrenchPreload(6);
+    //  \todo this looks seriously wrong, needs to be fixed using
+    if (mWrenchType == WRENCH_SPATIAL) {
+        std::cerr << CMN_LOG_DETAILS << " this needs to be fixed, mJacobianPInverseData is for body frame, not spatial" << std::endl;
+    } else {
+        wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
+    }
+    
     // body wrench
     if (mWrenchType == WRENCH_BODY) {
         // either using wrench provided by user or cartesian impedance
@@ -1246,30 +1259,32 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
                                                  CartesianVelocityGetParam,
                                                  mWrenchSet,
                                                  mWrenchBodyOrientationAbsolute);
-            force.Assign(mWrenchSet.Force());
+            wrench.Assign(mWrenchSet.Force());
         } else {
             // user provided wrench
             if (mWrenchBodyOrientationAbsolute) {
                 // use forward kinematics orientation to have constant wrench orientation
                 vct3 relative, absolute;
-                // force
+                // wrench
                 relative.Assign(mWrenchSet.Force().Ref<3>(0));
                 CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
-                force.Ref(3, 0).Assign(absolute);
+                wrench.Ref(3, 0).Assign(absolute);
                 // torque
                 relative.Assign(mWrenchSet.Force().Ref<3>(3));
                 CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
-                force.Ref(3, 3).Assign(absolute);
+                wrench.Ref(3, 3).Assign(absolute);
             } else {
-                force.Assign(mWrenchSet.Force());
+                wrench.Assign(mWrenchSet.Force());
             }
         }
-        mEffortJoint.ProductOf(mJacobianBody.Transpose(), force);
+        mEffortJoint.ProductOf(mJacobianBody.Transpose(), wrench - wrenchPreload);
+        mEffortJoint.Add(effortPreload);
     }
     // spatial wrench
     else if (mWrenchType == WRENCH_SPATIAL) {
-        force.Assign(mWrenchSet.Force());
-        mEffortJoint.ProductOf(mJacobianSpatial.Transpose(), force);
+        wrench.Assign(mWrenchSet.Force());
+        mEffortJoint.ProductOf(mJacobianSpatial.Transpose(), wrench - wrenchPreload);
+        mEffortJoint.Add(effortPreload);
     }
 
     // add gravity compensation if needed

@@ -71,11 +71,55 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
     }
 }
 
+vct3 SO3toRPY(const vctMatRot3 & R)
+{
+    vct3 rpy;
+    if (fabs(R[2][2]) < 1e-12 && fabs(R[1][2]) < 1e-12) {
+        rpy[0] = 0.0;
+        rpy[1] = atan2(R[0][2], R[2][2]);
+        rpy[2] = atan2(R[1][0], R[1][1]);
+    }
+    else {
+        rpy[0] = atan2(-R[1][2], R[2][2]);
+        double sr = sin(rpy[0]);
+        double cr = cos(rpy[0]);
+        rpy[1] = atan2(R[0][2], cr*R[2][2] - sr*R[1][2]);
+        rpy[2] = atan2(-R[0][1], R[0][0] );
+    }
+    return rpy;
+}
+
 robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
-    // pre-feed inverse kinematics with preferred values for joint 6
-    jointSet[5] = 0.0;
+    // current orientations
+    vctMatRot3 R04(Manipulator->ForwardKinematics(jointSet, 4).Rotation());
+    vctMatRot3 R07(Manipulator->ForwardKinematics(jointSet, 7 ).Rotation());
+
+    vctMatRot3 R47s(R04.Transpose() * cartesianGoal.Rotation());
+    vctMatRot3 R47(R04.Transpose() * R07);
+
+    vct3 rpys = SO3toRPY(R47s);
+    vct3 rpy = SO3toRPY(R47);
+
+    vct3 e = rpys - rpy;
+    jointSet[4] += e[1];
+    jointSet[5] -= e[0];
+    jointSet[6] += e[2];
+
+    // pre-feed inverse kinematics with preferred values for joint 3
+    jointSet[3] = 0.0; // \todo there is room for improvement here, this should be based on RPY above
+
+    // clamp the initial joint values just to be safe
+    // \todo these values should probably be copied at beginning instead of finding them everytime
+    vctDoubleVec lowerLimit(NumberOfJointsKinematics());
+    vctDoubleVec upperLimit(NumberOfJointsKinematics());
+    Manipulator->GetJointLimits(lowerLimit, upperLimit);
+    for (size_t index = 0; index < NumberOfJointsKinematics(); ++index) {
+        jointSet[index] = std::max(jointSet[index], lowerLimit[index]);
+        jointSet[index] = std::min(jointSet[index], upperLimit[index]);
+    }
+
     if (Manipulator->InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = JointsKinematics.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
@@ -477,18 +521,13 @@ void mtsIntuitiveResearchKitMTM::ControlEffortOrientationLocked(void)
     // compute desired position from current position and locked orientation
     CartesianPositionFrm.Translation().Assign(CartesianGetLocal.Translation());
     CartesianPositionFrm.Rotation().From(mEffortOrientation);
-    if (Manipulator->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
-        // find closest solution mod 2 pi
-        const double difference = JointsPID.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
-        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
-
+    if (InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // assign to joints used for kinematics
         JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
         // finally send new joint values
         SetPositionJointLocal(JointSet);
     } else {
-        RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics");
+        RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortOrientationLocked");
     }
 }
 
@@ -506,6 +545,24 @@ void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
         torqueMode.SetAll(true);
     }
     PID.EnableTorqueMode(torqueMode);
+}
+
+void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & effortPreload)
+{
+    // most efforts will be 0
+    effortPreload.Zeros();
+    // find ideal position for platform using IK
+    vctDoubleVec jointGoal(JointsKinematics.Position());
+
+    if (InverseKinematics(jointGoal, CartesianGetLocal) == robManipulator::ESUCCESS) {
+        // apply a linear force on joint 3 to move toward the "ideal" position
+        effortPreload[3] = -0.5 * (JointsKinematics.Position()[3] - jointGoal[3]);
+        // cap effort
+        effortPreload[3] = std::max(effortPreload[3], -0.2);
+        effortPreload[3] = std::min(effortPreload[3],  0.2);
+    } else {
+        RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortCartesianPreload");
+    }
 }
 
 void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)

@@ -365,7 +365,17 @@ public:
       effort cartesian mode or gravity compensation. */
     virtual void ControlEffortOrientationLocked(void);
 
+    /*! Determine which joints should be in effort mode.  MTM will
+      redefine this so one can lock orientation using position PID. */
     virtual void SetControlEffortActiveJoints(void);
+
+    /*! Used for derived arms to apply arm specific efforts (joint
+      space).  E.g. MTM to control platform orientation.  Derived
+      methods must ensure that all elements are set properly, i.e. the
+      input vector is not set to zero by default. */
+    inline virtual void ControlEffortCartesianPreload(vctDoubleVec & effortPreload) {
+        effortPreload.Zeros();
+    };
 
     struct {
         robReflexxes Reflexxes;
