@@ -8,28 +8,36 @@
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
-                "offset":  1.5708
+                "offset":  1.5708,
+                "qmin": -1.5708, // -90
+                "qmax":  1.5708  //  90
             },
             {
                 "convention": "modified",
                 "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
-                "offset": -1.5708
+                "offset": -1.5708,
+                "qmin": -0.7853, // -45
+                "qmax":  1.1344  //  65
             },
             {
                 "convention": "modified",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "prismatic",
                 "mode": "active",
-                "offset": -0.3822
+                "offset": -0.3822,
+                "qmin": 0.0,
+                "qmax": 0.235 // meters
             },
             {
                 "convention": "modified",
                 "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.3829,
                 "type": "revolute",
                 "mode": "active",
-                "offset":  0.0000
+                "offset":  0.0000,
+                "qmin": -1.5708, // -90
+                "qmax":  1.5708  //  90
             }
         ]
     }
