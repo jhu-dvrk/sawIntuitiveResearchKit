@@ -393,6 +393,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
     if (result == robManipulator::EFAILURE) {
         CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
                                  << filename << "\"" << std::endl;
+        exit(EXIT_FAILURE);
     }
     ResizeKinematicsData();
 }
@@ -408,6 +409,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": the base offset rotation doesn't seem to be orthonormal"
                                      << std::endl;
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -416,6 +418,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
     if (jsonDH.isNull()) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                  << ": can find \"DH\" data in configuration file" << std::endl;
+        exit(EXIT_FAILURE);
     }
     this->Manipulator->LoadRobot(jsonDH);
     std::stringstream dhResult;
@@ -1241,7 +1244,7 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
 
     // get force preload from derived classes, in most cases 0, platform control for MTM
     vctDoubleVec effortPreload(NumberOfJointsKinematics());
-    
+
     ControlEffortCartesianPreload(effortPreload);
     vctDoubleVec wrenchPreload(6);
     //  \todo this looks seriously wrong, needs to be fixed using
@@ -1250,7 +1253,7 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
     } else {
         wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
     }
-    
+
     // body wrench
     if (mWrenchType == WRENCH_BODY) {
         // either using wrench provided by user or cartesian impedance

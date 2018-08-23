@@ -363,7 +363,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": failed to parse configuration\n"
                                      << jsonReader.getFormattedErrorMessages();
-            return;
+            exit(EXIT_FAILURE);
         }
 
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
@@ -400,7 +400,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
                                      << ": incorrect number of joints (DH), found "
                                      << numberOfJointsLoaded << ", expected " << expectedNumberOfJoint
                                      << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
 
         // should arm go to zero position when homing, default set in Init method
@@ -425,7 +425,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         if (jsonCoupling.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": can find \"coupling\" data in \"" << filename << "\"" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
         cmnDataJSON<prmActuatorJointCoupling>::DeSerializeText(CouplingChange.ToolCoupling,
                                                                jsonCoupling);
@@ -435,7 +435,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         if (jsonEngagePosition.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": can find \"tool-engage-position\" data in \"" << filename << "\"" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
         // lower
         cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolEngageLowerPosition,
@@ -444,7 +444,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": \"tool-engage-position\" : \"lower\" must contain " << NumberOfJoints()
                                      << " elements in \"" << filename << "\"" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
         // upper
         cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolEngageUpperPosition,
@@ -453,7 +453,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": \"tool-engage-position\" : \"upper\" must contain " << NumberOfJoints()
                                      << " elements in \"" << filename << "\"" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
         // convert to radians or meters
         CouplingChange.ToolEngageUpperPosition.Ref(2, 0) *= cmnPI_180;
@@ -468,7 +468,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         if (jsonJointLimit.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": can find \"tool-joint-limit\" data in \"" << filename << "\"" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
         // lower
         cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolPositionLowerLimit,
@@ -477,7 +477,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": \"tool-joint-limit\" : \"lower\" must contain " << NumberOfJoints()
                                      << " elements in \"" << filename << "\"" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
         // upper
         cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolPositionUpperLimit,
@@ -486,7 +486,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": \"tool-joint-limit\" : \"lower\" must contain " << NumberOfJoints()
                                      << " elements in \"" << filename << "\"" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
         // convert to radians or meters
         CouplingChange.ToolPositionUpperLimit.Ref(2, 0) *= cmnPI_180;
@@ -501,7 +501,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         if (jsonTorqueLimit.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": can find \"tool-torque-limit\" data in \"" << filename << "\"" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
         // lower
         cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolTorqueLowerLimit,
@@ -510,7 +510,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": \"tool-torque-limit\" : \"lower\" must contain " << NumberOfJoints()
                                      << " elements in \"" << filename << "\"" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
         // upper
         cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolTorqueUpperLimit,
@@ -519,11 +519,12 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": \"tool-torque-limit\" : \"lower\" must contain " << NumberOfJoints()
                                      << " elements in \"" << filename << "\"" << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
                                  << filename << "\" is in JSON format" << std::endl;
+        exit(EXIT_FAILURE);
     }
 }
 

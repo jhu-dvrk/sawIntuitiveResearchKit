@@ -54,7 +54,7 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                      << ": failed to parse configuration\n"
                                      << jsonReader.getFormattedErrorMessages();
-            return;
+            exit(EXIT_FAILURE);
         }
 
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
@@ -68,6 +68,7 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
                                  << filename << "\" is in JSON format" << std::endl;
+        exit(EXIT_FAILURE);
     }
 }
 
