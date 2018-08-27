@@ -143,8 +143,8 @@ void mtsTeleOperationPSM::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", mPSM.GetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", mPSM.SetPositionCartesian);
-        interfaceRequired->AddFunction("GetStateJaw", mPSM.GetStateJaw);
-        interfaceRequired->AddFunction("SetPositionJaw", mPSM.SetPositionJaw);
+        interfaceRequired->AddFunction("GetStateJaw", mPSM.GetStateJaw, MTS_OPTIONAL);
+        interfaceRequired->AddFunction("SetPositionJaw", mPSM.SetPositionJaw, MTS_OPTIONAL);
         interfaceRequired->AddFunction("GetCurrentState", mPSM.GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState", mPSM.GetDesiredState);
         interfaceRequired->AddFunction("SetDesiredState", mPSM.SetDesiredState);
@@ -241,6 +241,15 @@ void mtsTeleOperationPSM::Startup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
     SetScale(mScale);
     SetFollowing(false);
+
+    // check if functions for jaw are connected
+    if (!mIgnoreJaw) {
+        if (!mPSM.GetStateJaw.IsValid()
+            || !mPSM.SetPositionJaw.IsValid()) {
+            mInterface->SendError(this->GetName() + ": optional functions \"SetPositionJaw\" and \"GetStateJaw\" are not connected, setting \"ignore-jaw\" to true");
+            mIgnoreJaw = true;
+        }
+    }
 }
 
 void mtsTeleOperationPSM::Run(void)
