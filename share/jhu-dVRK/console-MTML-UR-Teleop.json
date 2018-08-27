@@ -10,7 +10,7 @@
                 "constructor-arg": {
                     "Name": "UR"
                 },
-                "configure-parameter": "10.162.34.72" // JHU UR3 DHCP reserved IP is 10.162.34.61?
+                "configure-parameter": "10.162.34.61" // JHU UR3 DHCP reserved IP is 10.162.34.61
             }
         ]
     }
@@ -42,7 +42,10 @@
     [
         {
             "mtm": "MTML",
-            "psm": "UR"
+            "psm": "UR",
+            "configure-parameter": {
+                "ignore-jaw": true
+            }
         }
     ]
 }
