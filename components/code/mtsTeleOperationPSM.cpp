@@ -590,6 +590,9 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
             mGripperJawTransitions += 1;
             mGripperJawMatchingPrevious = gripperJawMatching;
         }
+    } else {
+        // pretend we have two transitions to ignore gripper matching
+        mGripperJawTransitions = 2;
     }
 
     // finally check for transition
