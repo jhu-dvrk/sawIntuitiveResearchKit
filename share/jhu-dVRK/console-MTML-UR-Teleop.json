@@ -1,0 +1,51 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "component-manager": {
+        "components":
+        [
+            // to use UR
+            {
+                "shared-library": "sawUniversalRobot",
+                "class-name": "mtsUniversalRobotScriptRT",
+                "constructor-arg": {
+                    "Name": "UR"
+                },
+                "configure-parameter": "10.162.34.61" // JHU UR3 DHCP reserved IP is 10.162.34.61
+            }
+        ]
+    }
+    ,
+    "io":
+    {
+        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "UR",
+            "type": "PSM_GENERIC",
+            "component": "UR",
+            "interface": "control"
+        }
+        ,
+        {
+            "name": "MTML",
+            "type": "MTM",
+            "io": "sawRobotIO1394-MTML-22723.xml",
+            "pid": "sawControllersPID-MTML.xml",
+            "kinematic": "mtm.json"
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            "mtm": "MTML",
+            "psm": "UR",
+            "configure-parameter": {
+                "ignore-jaw": true
+            }
+        }
+    ]
+}

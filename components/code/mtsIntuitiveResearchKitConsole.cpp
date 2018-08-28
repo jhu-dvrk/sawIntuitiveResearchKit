@@ -433,6 +433,7 @@ mtsIntuitiveResearchKitConsole::TeleopPSM::TeleopPSM(const std::string & name,
                                                      const std::string & slaveComponentName,
                                                      const std::string & slaveInterfaceName,
                                                      const std::string & consoleName):
+    mSelected(false),
     mName(name),
     mMTMName(nameMTM),
     mMTMComponentName(masterComponentName),
