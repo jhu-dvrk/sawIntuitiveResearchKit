@@ -108,10 +108,6 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                &mtsIntuitiveResearchKitECM::EnterManual,
                                this);
 
-    mArmState.SetRunCallback("MANUAL",
-                             &mtsIntuitiveResearchKitECM::RunManual,
-                             this);
-
     // initialize trajectory data
     mJointTrajectory.Velocity.Assign(60.0 * cmnPI_180, // degrees per second
                                      60.0 * cmnPI_180,
