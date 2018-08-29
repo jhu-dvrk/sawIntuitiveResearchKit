@@ -504,6 +504,7 @@ const std::string & mtsIntuitiveResearchKitConsole::TeleopPSM::Name(void) const 
 mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string & componentName):
     mtsTaskFromSignal(componentName, 100),
     mConfigured(false),
+    mTimeOfLastErrorBeep(0.0),
     mTeleopEnabled(false),
     mTeleopPSMRunning(false),
     mTeleopPSMAligning(false),
@@ -2343,7 +2344,12 @@ void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventB
 void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & message) {
     TeleopEnable(false);
     mInterface->SendError(message.Message);
-    mAudio.Beep(vct3(0.3, 3000.0, 1.0 /* max volume */));
+    // throttle error beeps
+    double currentTime = mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime();
+    if ((currentTime - mTimeOfLastErrorBeep) > 2.0 * cmn_s) {
+        mAudio.Beep(vct3(0.3, 3000.0, 1.0 /* max volume */));
+        mTimeOfLastErrorBeep = currentTime;
+    }
 }
 
 void mtsIntuitiveResearchKitConsole::WarningEventHandler(const mtsMessage & message) {
