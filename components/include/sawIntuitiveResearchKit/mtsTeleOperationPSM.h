@@ -114,6 +114,7 @@ protected:
     struct {
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionWrite SetPositionCartesian;
+        mtsFunctionVoid Freeze;
         mtsFunctionRead GetStateJaw;
         mtsFunctionWrite SetPositionJaw;
 

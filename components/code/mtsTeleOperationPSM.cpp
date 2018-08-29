@@ -143,6 +143,7 @@ void mtsTeleOperationPSM::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetPositionCartesian", mPSM.GetPositionCartesian);
         interfaceRequired->AddFunction("SetPositionCartesian", mPSM.SetPositionCartesian);
+        interfaceRequired->AddFunction("Freeze", mPSM.Freeze);
         interfaceRequired->AddFunction("GetStateJaw", mPSM.GetStateJaw, MTS_OPTIONAL);
         interfaceRequired->AddFunction("SetPositionJaw", mPSM.SetPositionJaw, MTS_OPTIONAL);
         interfaceRequired->AddFunction("GetCurrentState", mPSM.GetCurrentState);
@@ -317,6 +318,9 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         mMTM.SetWrenchBody(wrench);
         mMTM.SetGravityCompensation(true);
         mMTM.LockOrientation(mMTM.PositionCartesianCurrent.Position().Rotation());
+
+        // make sure PSM stops moving
+        mPSM.Freeze();
     } else {
         mInterface->SendStatus(this->GetName() + ": console clutch released");
         mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
