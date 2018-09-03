@@ -151,10 +151,10 @@ protected:
     } ClutchEvents;
 
     /*! 5mm tools with 8 joints */
-    bool mSnakeLike;
+    bool mSnakeLike = false;
 
-    robManipulatorPSMSnake * ManipulatorPSMSnake;
-    robManipulator * ToolOffset;
+    robManipulatorPSMSnake * ManipulatorPSMSnake = nullptr;
+    robManipulator * ToolOffset = nullptr;
     vctFrm4x4 ToolOffsetTransformation;
 
     prmStateJoint Jaw, JawDesired;
@@ -165,8 +165,8 @@ protected:
     unsigned int EngagingStage; // 0 requested
     unsigned int LastEngagingStage;
 
-    bool mAdapterNeedEngage;
-    bool mToolNeedEngage;
+    bool mAdapterNeedEngage = false;
+    bool mToolNeedEngage = false;
 
     struct {
         bool Started;
