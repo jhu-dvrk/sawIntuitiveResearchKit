@@ -108,6 +108,14 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                &mtsIntuitiveResearchKitECM::EnterManual,
                                this);
 
+    mArmState.SetRunCallback("MANUAL",
+                             &mtsIntuitiveResearchKitECM::RunManual,
+                             this);
+
+    mArmState.SetLeaveCallback("MANUAL",
+                               &mtsIntuitiveResearchKitECM::LeaveManual,
+                               this);
+
     // initialize trajectory data
     mJointTrajectory.Velocity.Assign(60.0 * cmnPI_180, // degrees per second
                                      60.0 * cmnPI_180,
@@ -216,8 +224,43 @@ void mtsIntuitiveResearchKitECM::TransitionArmHomed(void)
 
 void mtsIntuitiveResearchKitECM::EnterManual(void)
 {
-    SetGravityCompensation(true);
-    SetWrenchSpatial(prmForceCartesianSet());
+    // set ready flag so Arm::GetRobotData updates all joint and
+    // cartesian data members
+    mJointControlReady = true;
+    mCartesianControlReady = true;
+
+    PID.EnableTrackingError(false);
+    SetControlEffortActiveJoints();
+
+    mEffortJoint.SetAll(0.0);
+    SetEffortJointLocal(mEffortJoint);
+}
+
+void mtsIntuitiveResearchKitECM::RunManual(void)
+{
+    vct3 up(0.0, -1.0, 1.0);
+    up.NormalizedSelf();
+
+    vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0); 
+    
+    std::cerr << up << std::endl;
+    
+    // zero efforts
+    mEffortJoint.Assign(Manipulator->CCG(JointsKinematics.Position(),
+                                         qd,
+                                         9.81,
+                                         up));
+    
+    // add custom efforts
+    AddCustomEfforts(mEffortJoint);
+
+    // send to PID
+    SetEffortJointLocal(mEffortJoint);
+}
+
+void mtsIntuitiveResearchKitECM::LeaveManual(void)
+{
+    Freeze();
 }
 
 void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)
@@ -234,8 +277,12 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
     // Start manual mode but save the previous state
     switch (button.Type()) {
     case prmEventButton::PRESSED:
-        ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
-        mArmState.SetCurrentState("MANUAL");
+        if (mArmState.CurrentState() == "READY") {
+            ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
+            mArmState.SetCurrentState("MANUAL");
+        } else {
+            RobotInterface->SendWarning(this->GetName() + ": arm not ready yet, manipulator clutch ignored");
+        }
         break;
     case prmEventButton::RELEASED:
         if (mArmState.CurrentState() == "MANUAL") {

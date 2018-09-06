@@ -68,6 +68,8 @@ protected:
     void SetGoalHomingArm(void);
     void TransitionArmHomed(void);
     void EnterManual(void);
+    void RunManual(void);
+    void LeaveManual(void);
 
     void EventHandlerTrackingError(void);
     void EventHandlerManipClutch(const prmEventButton & button);
