@@ -273,6 +273,7 @@ public:
 
 protected:
     bool mConfigured;
+    double mTimeOfLastErrorBeep;
     bool mTeleopEnabled;
     bool mTeleopPSMRunning;
     bool mTeleopPSMAligning;

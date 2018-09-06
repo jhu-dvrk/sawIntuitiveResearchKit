@@ -54,14 +54,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 {
     // main initialization from base type
     mtsIntuitiveResearchKitArm::Init();
-    mSnakeLike = false;
-
-    mSnakeLike = false;
-    ManipulatorPSMSnake = 0;
-    ToolOffset = 0;
-
-    mAdapterNeedEngage = false;
-    mToolNeedEngage = false;
 
     // state machine specific to PSM, see base class for other states
     mArmState.AddState("CHANGING_COUPLING_ADAPTER");
@@ -118,9 +110,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mArmState.SetEnterCallback("MANUAL",
                                &mtsIntuitiveResearchKitPSM::EnterManual,
                                this);
-
-    // kinematics
-    mSnakeLike = false;
 
     // initialize trajectory data
     mJointTrajectory.Velocity.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
