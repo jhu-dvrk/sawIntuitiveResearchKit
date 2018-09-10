@@ -117,10 +117,10 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                this);
 
     // initialize trajectory data
-    mJointTrajectory.Velocity.Assign(60.0 * cmnPI_180, // degrees per second
-                                     60.0 * cmnPI_180,
+    mJointTrajectory.Velocity.Assign(30.0 * cmnPI_180, // degrees per second
+                                     30.0 * cmnPI_180,
                                      30.0 * cmn_mm,    // mm per second
-                                     60.0 * cmnPI_180);
+                                     30.0 * cmnPI_180);
     mJointTrajectory.Acceleration.Assign(90.0 * cmnPI_180,
                                          90.0 * cmnPI_180,
                                          15.0 * cmn_mm,
@@ -238,22 +238,15 @@ void mtsIntuitiveResearchKitECM::EnterManual(void)
 
 void mtsIntuitiveResearchKitECM::RunManual(void)
 {
-    vct3 up(0.0, -1.0, 1.0);
+    vct3 up(0.0, -1.0, 1.0); // up when mounted on setup joints
     up.NormalizedSelf();
-
     vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0); 
-    
-    std::cerr << up << std::endl;
     
     // zero efforts
     mEffortJoint.Assign(Manipulator->CCG(JointsKinematics.Position(),
                                          qd,
                                          9.81,
                                          up));
-    
-    // add custom efforts
-    AddCustomEfforts(mEffortJoint);
-
     // send to PID
     SetEffortJointLocal(mEffortJoint);
 }
