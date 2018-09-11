@@ -1220,6 +1220,13 @@ void mtsIntuitiveResearchKitArm::SetControlEffortActiveJoints(void)
     PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), true));
 }
 
+void mtsIntuitiveResearchKitArm::ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
+                                                               vctDoubleVec & wrenchPreload)
+{
+    effortPreload.Zeros();
+    wrenchPreload.Zeros();
+}
+
 void mtsIntuitiveResearchKitArm::ControlEffortJoint(void)
 {
     // effort required
@@ -1244,15 +1251,9 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
 
     // get force preload from derived classes, in most cases 0, platform control for MTM
     vctDoubleVec effortPreload(NumberOfJointsKinematics());
-
-    ControlEffortCartesianPreload(effortPreload);
     vctDoubleVec wrenchPreload(6);
-    //  \todo this looks seriously wrong, needs to be fixed using
-    if (mWrenchType == WRENCH_SPATIAL) {
-        std::cerr << CMN_LOG_DETAILS << " this needs to be fixed, mJacobianPInverseData is for body frame, not spatial" << std::endl;
-    } else {
-        wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
-    }
+
+    ControlEffortCartesianPreload(effortPreload, wrenchPreload);
 
     // body wrench
     if (mWrenchType == WRENCH_BODY) {
@@ -1280,13 +1281,13 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
                 wrench.Assign(mWrenchSet.Force());
             }
         }
-        mEffortJoint.ProductOf(mJacobianBody.Transpose(), wrench - wrenchPreload);
+        mEffortJoint.ProductOf(mJacobianBody.Transpose(), wrench + wrenchPreload);
         mEffortJoint.Add(effortPreload);
     }
     // spatial wrench
     else if (mWrenchType == WRENCH_SPATIAL) {
         wrench.Assign(mWrenchSet.Force());
-        mEffortJoint.ProductOf(mJacobianSpatial.Transpose(), wrench - wrenchPreload);
+        mEffortJoint.ProductOf(mJacobianSpatial.Transpose(), wrench + wrenchPreload);
         mEffortJoint.Add(effortPreload);
     }
 

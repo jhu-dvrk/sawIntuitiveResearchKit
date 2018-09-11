@@ -109,7 +109,8 @@ protected:
     // see base class
     void ControlEffortOrientationLocked(void);
     void SetControlEffortActiveJoints(void);
-    void ControlEffortCartesianPreload(vctDoubleVec & effortPreload);
+    void ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
+                                       vctDoubleVec & wrenchPreload);
 
     /*! Lock master orientation when in cartesian effort mode */
     virtual void LockOrientation(const vctMatRot3 & orientation);
