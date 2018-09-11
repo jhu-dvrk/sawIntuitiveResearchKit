@@ -585,6 +585,18 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
 {
     if (mIsSimulated) {
         mArmState.SetCurrentState(CouplingChange.NextState);
+        if (CouplingChange.CouplingForTool) {
+            PID.SetPositionLowerLimit(CouplingChange.ToolPositionLowerLimit);
+            PID.SetPositionUpperLimit(CouplingChange.ToolPositionUpperLimit);
+            if (!Manipulator->SetJointLimits(CouplingChange.ToolPositionLowerLimit.Ref(NumberOfJointsKinematics()),
+                                             CouplingChange.ToolPositionUpperLimit.Ref(NumberOfJointsKinematics()))) {
+                RobotInterface->SendError(this->GetName() + ": failed to set joint limits for kinematic.");
+                mArmState.SetDesiredState(mFallbackState);
+            }
+        } else {
+            PID.SetPositionLowerLimit(CouplingChange.NoToolPositionLowerLimit);
+            PID.SetPositionUpperLimit(CouplingChange.NoToolPositionUpperLimit);
+        }
         return;
     }
 
