@@ -62,6 +62,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.AddAllowedDesiredState("UNINITIALIZED");
     mArmState.AddAllowedDesiredState("ENCODERS_BIASED");
     mArmState.AddAllowedDesiredState("POWERED");
+    mArmState.AddAllowedDesiredState("ARM_HOMED");
     mArmState.AddAllowedDesiredState("READY");
 
     mFallbackState = "UNINITIALIZED";
@@ -139,6 +140,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     // state table to maintain state :-)
     mStateTableState.AddData(mStateTableStateCurrent, "Current");
     mStateTableState.AddData(mStateTableStateDesired, "Desired");
+    mStateTableState.AddData(mDeviceState, "crtkState");
     AddStateTable(&mStateTableState);
     mStateTableState.SetAutomaticAdvance(false);
 
@@ -300,6 +302,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                             mStateTableStateCurrent, "GetCurrentState");
         RobotInterface->AddCommandReadState(this->mStateTableState,
                                             mStateTableStateDesired, "GetDesiredState");
+        RobotInterface->AddCommandReadState(this->mStateTableState,
+                                            mDeviceState, "GetDeviceState"); // crtk
         // Set
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame,
                                         this, "SetBaseFrame");
@@ -335,9 +339,12 @@ void mtsIntuitiveResearchKitArm::Init(void)
         // Robot State
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetDesiredState,
                                         this, "SetDesiredState", std::string(""));
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetDeviceState,
+                                        this, "SetDeviceState", std::string(""));
         // Human readable messages
         RobotInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
         RobotInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
+        RobotInterface->AddEventWrite(MessageEvents.DeviceState, "DeviceState", std::string(""));
 
         // Stats
         RobotInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
@@ -372,6 +379,19 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
 
     MessageEvents.DesiredState(state);
     RobotInterface->SendStatus(this->GetName() + ": desired state " + state);
+}
+
+void mtsIntuitiveResearchKitArm::SetDeviceState(const std::string & state)
+{
+    if (state == "ENABLED") {
+        SetDesiredState("ARM_HOMED");
+        return;
+    }
+    if (state == "DISABLED") {
+        SetDesiredState("UNINITIALIZED");
+        return;
+    }
+    RobotInterface->SendError(this->GetName() + ": unsupported state " + state);
 }
 
 void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
@@ -636,12 +656,19 @@ void mtsIntuitiveResearchKitArm::ToJointsPID(const vctDoubleVec & jointsKinemati
 void mtsIntuitiveResearchKitArm::StateChanged(void)
 {
     const std::string newState = mArmState.CurrentState();
+    // update crtk meta state
+    if (mJointControlReady) {
+        mDeviceState = "ENABLED";
+    } else {
+        mDeviceState = "DISABLED";
+    }
     // update state table
     mStateTableState.Start();
     mStateTableStateCurrent = newState;
     mStateTableState.Advance();
-    // eventNumberOfJoints()
+    // event
     MessageEvents.CurrentState(newState);
+    MessageEvents.DeviceState(mDeviceState);
     RobotInterface->SendStatus(this->GetName() + ": current state " + newState);
 }
 

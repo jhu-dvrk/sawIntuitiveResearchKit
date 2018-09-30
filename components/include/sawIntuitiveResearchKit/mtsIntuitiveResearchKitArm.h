@@ -88,6 +88,10 @@ public:
       state. */
     virtual void SetDesiredState(const std::string & state);
 
+    /*! Set crtk meta state.  Currently supports ENABLED and
+      DISABLED. */
+    virtual void SetDeviceState(const std::string & state);
+
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
     virtual void UpdateJointsKinematics(void);
@@ -128,6 +132,7 @@ public:
     mtsStateTable mStateTableState;
     mtsStdString mStateTableStateCurrent;
     mtsStdString mStateTableStateDesired;
+    mtsStdString mDeviceState; // crtk meta state
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
@@ -232,6 +237,7 @@ public:
     struct {
         mtsFunctionWrite DesiredState;
         mtsFunctionWrite CurrentState;
+        mtsFunctionWrite DeviceState; // crtk
     } MessageEvents;
 
     robManipulator * Manipulator;

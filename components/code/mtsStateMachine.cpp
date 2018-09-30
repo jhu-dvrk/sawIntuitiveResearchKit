@@ -61,17 +61,18 @@ void mtsStateMachine::Run(void)
         // update callbacks
         UpdateCurrentCallbacks();
 
-        // user callback if provided
-        if (mStateChangeCallback) {
-            mStateChangeCallback->Execute();
-        }
-
         // find new state enter callback
         CallbackMap::iterator callback;
         callback = mEnterCallbacks.find(mCurrentState);
         if (callback != mEnterCallbacks.end()) {
             callback->second->Execute();
         }
+
+        // user callback if provided
+        if (mStateChangeCallback) {
+            mStateChangeCallback->Execute();
+        }
+
         mFirstRun = false;
     }
     // check if a transition should happen
@@ -122,16 +123,17 @@ void mtsStateMachine::SetCurrentState(const StateType & newState)
     mCurrentState = newState;
     mDesiredStateIsNotCurrent = (mDesiredState != mCurrentState);
 
-    // user callback if provided
-    if (mStateChangeCallback) {
-        mStateChangeCallback->Execute();
-    }
-
     // find new state enter callback
     callback = mEnterCallbacks.find(mCurrentState);
     if (callback != mEnterCallbacks.end()) {
         callback->second->Execute();
     }
+
+    // user callback if provided
+    if (mStateChangeCallback) {
+        mStateChangeCallback->Execute();
+    }
+
     // update current callbacks
     UpdateCurrentCallbacks();
 }
