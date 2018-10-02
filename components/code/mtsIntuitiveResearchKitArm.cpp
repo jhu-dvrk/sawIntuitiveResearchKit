@@ -336,6 +336,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
         // Trajectory events
         RobotInterface->AddEventWrite(mJointTrajectory.GoalReachedEvent, "GoalReached", bool());
+        RobotInterface->AddEventWrite(mJointTrajectory.IsMovingEvent, "IsMoving", bool());
         // Robot State
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetDesiredState,
                                         this, "SetDesiredState", std::string(""));
@@ -1017,10 +1018,13 @@ void mtsIntuitiveResearchKitArm::ControlPositionGoalJoint(void)
         break;
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         mJointTrajectory.GoalReachedEvent(true);
+        mJointTrajectory.IsMovingEvent(false);
         mJointTrajectory.IsWorking = false;
         break;
     default:
         RobotInterface->SendError(this->GetName() + ": error while evaluating trajectory");
+        mJointTrajectory.GoalReachedEvent(false);
+        mJointTrajectory.IsMovingEvent(false);
         mJointTrajectory.IsWorking = false;
         break;
     }
@@ -1389,6 +1393,9 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalJoint(const prmPositionJointSet 
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
     // make sure trajectory is reset
+    if (!mJointTrajectory.IsWorking) {
+        mJointTrajectory.IsMovingEvent(true);
+    }
     mJointTrajectory.IsWorking = true;
     mJointTrajectory.EndTime = 0.0;
     // new goal
@@ -1442,6 +1449,9 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
 
     if (this->InverseKinematics(jointSet, BaseFrame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // make sure trajectory is reset
+        if (!mJointTrajectory.IsWorking) {
+            mJointTrajectory.IsMovingEvent(true);
+        }
         mJointTrajectory.IsWorking = true;
         mJointTrajectory.EndTime = 0.0;
         // new goal
@@ -1450,6 +1460,7 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
     } else {
         RobotInterface->SendError(this->GetName() + ": SetPositionGoalCartesian, unable to solve inverse kinematics");
         mJointTrajectory.GoalReachedEvent(false);
+        mJointTrajectory.IsMovingEvent(false);
     }
 }
 

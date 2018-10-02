@@ -385,6 +385,7 @@ public:
         bool IsWorking;
         double EndTime;
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
+        mtsFunctionWrite IsMovingEvent;
     } mJointTrajectory;
 
     // Home Action
