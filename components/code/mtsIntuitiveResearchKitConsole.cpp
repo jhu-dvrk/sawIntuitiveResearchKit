@@ -2037,7 +2037,7 @@ void mtsIntuitiveResearchKitConsole::SelectTeleopPSM(const prmKeyValue & mtmPsm)
     }
     // there seems to be some redundant information here, let's use it for a safety check
     CMN_ASSERT(mtmName == teleopIterator->second->mMTMName);
-    CMN_ASSERT(psmName = teleopIterator->second->mPSMName);
+    CMN_ASSERT(psmName == teleopIterator->second->mPSMName);
     // check that the PSM is available to be used
     std::string mtmUsingThatPSM;
     GetMTMSelectedForPSM(psmName, mtmUsingThatPSM);
