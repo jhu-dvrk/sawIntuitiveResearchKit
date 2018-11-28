@@ -259,8 +259,7 @@ robGravityCompensationMTM::assign_regressor(vctFixedSizeVector<double, R_ROWS> q
 
 
 vctDynamicVector<double>
-robGravityCompensationMTM::LGC(const std::string & Arm_Name,
-                               const vctDynamicVector<double>& q,
+robGravityCompensationMTM::LGC(const vctDynamicVector<double>& q,
                                const vctDynamicVector<double>& q_dot)
 {
     vctFixedSizeMatrix<double, R_ROWS, R_COLUMNS> _Regressor;
@@ -268,17 +267,7 @@ robGravityCompensationMTM::LGC(const std::string & Arm_Name,
     vctFixedSizeVector<double, R_ROWS> beta;
     vctDynamicVector<double> tau(7,0.0);
     if (assign_regressor(q)) {
-        if (Arm_Name == "MTML") {
-            _tau_pos = regressor * this->MTML_dynamic_parameter_pos;
-            _tau_neg = regressor * this->MTML_dynamic_parameter_neg;
-        }
-        else if (Arm_Name == "MTMR") {
-            _tau_pos = regressor * this->MTMR_dynamic_parameter_pos;
-            _tau_neg = regressor * this->MTMR_dynamic_parameter_neg;
-        }
-        else {
-            CMN_LOG_INIT_ERROR << "Input string of Arm" << Arm_Name << " is Neither MTML or MTMR" <<std::endl;
-        }
+
 
         beta = beta_vel(q_dot);
         for (size_t i = 0; i < R_ROWS; i++) {

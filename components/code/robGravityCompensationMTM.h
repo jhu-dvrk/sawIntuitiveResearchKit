@@ -77,7 +77,7 @@ class CISST_EXPORT robGravityCompensationMTM
     bool Load_Param(const Json::Value &config);
 
     bool assign_regressor(vctFixedSizeVector<double, R_ROWS> q);
-    vctDynamicVector<double> LGC(const std::string & Arm_Name,const vctDynamicVector<double>& q, const vctDynamicVector<double>& q_dot);
+    vctDynamicVector<double> LGC(const vctDynamicVector<double>& q, const vctDynamicVector<double>& q_dot);
     vctDynamicVector<double> Torque_Safe_Limit(vctDynamicVector<double> &tau);
     vctFixedSizeVector<double, R_ROWS> beta_vel(const vctDynamicVector<double>& q_dot);
 };
