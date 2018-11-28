@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
+#include "robGravityCompensationMTM.h"
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitMTM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -42,7 +43,19 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
     Init();
 }
 
-void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
+mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM()
+{
+    delete GravityCompensationMTM;
+}
+
+void mtsIntuitiveResearchKitMTM::Configure(const std::string & kinematicfilename,const std::string gcfilename)
+{
+    ConfigureKinematic(kinematicfilename);
+    if (!gcfilename.empty())
+        ConfigureGC(gcfilename);
+}
+
+void mtsIntuitiveResearchKitMTM::ConfigureKinematic(const std::string & filename)
 {
     try {
         std::ifstream jsonStream;
@@ -64,6 +77,46 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
                                    << "<----" << std::endl;
 
         ConfigureDH(jsonConfig);
+
+    } catch (...) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
+                                 << filename << "\" is in JSON format" << std::endl;
+    }
+}
+
+void mtsIntuitiveResearchKitMTM::ConfigureGC(const std::string & filename)
+{
+    try {
+        std::ifstream jsonStream;
+        Json::Value jsonConfig;
+        Json::Reader jsonReader;
+
+        jsonStream.open(filename.c_str());
+        if (!jsonReader.parse(jsonStream, jsonConfig)) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": failed to parse gravity compensation (GC) configuration\n"
+                                     << jsonReader.getFormattedErrorMessages();
+            return;
+        }
+
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
+                                   << " using file \"" << filename << "\"" << std::endl
+                                   << "----> content of gravity compensation (GC) configuration file: " << std::endl
+                                   << jsonConfig << std::endl
+                                   << "<----" << std::endl;
+
+        if (!jsonConfig.isNull()) {
+            auto results = robGravityCompensationMTM::create(jsonConfig);
+            if (!results.gc) {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                         << ": failed to create an instance of robGravityCompensationMTM\n because "
+                                         << results.errorMsg
+                                         << jsonReader.getFormattedErrorMessages();
+                return;
+            }
+            GravityCompensationMTM = results.gc;
+        }
+
 
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""

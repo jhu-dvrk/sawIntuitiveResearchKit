@@ -91,12 +91,13 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & confi
 }
 
 void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
-                                                       const std::string & configFile,
-                                                       const double & periodInSeconds)
+                                                       const std::string & kinematicsConfigFile,
+                                                       const double & periodInSeconds,
+                                                       const std::string & gcConfigFile)
 {
     mType = armType;
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    mArmConfigurationFile = configFile;
+    mArmConfigurationFile = kinematicsConfigFile;
     // for research kit arms, create, add to manager and connect to
     // extra IO, PID, etc.  For generic arms, do nothing.
     switch (armType) {
@@ -106,7 +107,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             if (mSimulation == SIMULATION_KINEMATIC) {
                 mtm->SetSimulated();
             }
-            mtm->Configure(mArmConfigurationFile);
+            mtm->Configure(mArmConfigurationFile,gcConfigFile);
             SetBaseFrameIfNeeded(mtm);
             componentManager->AddComponent(mtm);
         }
@@ -831,8 +832,9 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         // for generic arms, nothing to do
         if (!iter->second->mIsGeneric) {
             const std::string armConfig = iter->second->mArmConfigurationFile;
+            const std::string armGCConfig = iter->second->mArmGCConfigurationFile;
             iter->second->ConfigureArm(iter->second->mType, armConfig,
-                                       iter->second->mArmPeriod);
+                                       iter->second->mArmPeriod,armGCConfig);
         }
     }
 
@@ -1420,6 +1422,16 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                     return false;
                 }
             }
+        }
+        jsonValue = jsonArm["gravity-compensation"];
+        if (!jsonValue.empty()) {
+            armPointer->mArmGCConfigurationFile = configPath.Find(jsonValue.asString());
+            if (armPointer->mArmGCConfigurationFile == "") {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find Gravity Compensation (GC) configuration file " << jsonValue.asString() << std::endl;
+                return false;
+            }
+        } else {
+            CMN_LOG_CLASS_INIT_WARNING << "Please estimate " << armPointer->Name() << " dynamic parameters for gravity compensation for " << std::endl;
         }
     }
 

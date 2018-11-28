@@ -25,6 +25,8 @@ http://www.cisst.org/cisst/license.txt.
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
+class robGravityCompensationMTM;
+
 class CISST_EXPORT mtsIntuitiveResearchKitMTM: public mtsIntuitiveResearchKitArm
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -36,7 +38,7 @@ public:
 
     mtsIntuitiveResearchKitMTM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
-    inline ~mtsIntuitiveResearchKitMTM() {}
+    ~mtsIntuitiveResearchKitMTM() override;
 
     /*!
      \brief Set MTM type, either MTM_LEFT or MTM_RIGHT
@@ -45,7 +47,7 @@ public:
      \param type MTM type either MTM_LEFT or MTM_RIGHT
     */
     void SetMTMType(const bool autodetect = true, const MTM_TYPE type = MTM_NULL);
-    void Configure(const std::string & filename);
+    void Configure(const std::string & kinematicfilename,const std::string gcfilename = "");
 
 protected:
     enum JointName {
@@ -59,6 +61,8 @@ protected:
         JNT_GRIPPER = 7
     };
 
+    void ConfigureKinematic(const std::string & filename);
+    void ConfigureGC(const std::string & filename);
     /*! Configuration methods */
     inline size_t NumberOfAxes(void) const {
         return 8;
@@ -136,6 +140,7 @@ protected:
     bool mHomedOnce;
     double mHomingCalibrateRollLower;
     bool mHomingRollEncoderReset;
+    robGravityCompensationMTM *GravityCompensationMTM = nullptr;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);
