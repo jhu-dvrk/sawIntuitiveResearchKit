@@ -59,7 +59,12 @@ http://www.cisst.org/cisst/license.txt.
 class CISST_EXPORT robGravityCompensationMTM
 {
  public:
+    struct CreationResult {
+        robGravityCompensationMTM* gc = nullptr;
+        std::string errorMsg = "";
+    };
 
+    static CreationResult create(const Json::Value & jsonConfig);
     double q1,q2,q3,q4,q5,q6,q7;
     double g;
     vctFixedSizeVector<double, R_ROWS> Torques_Max_Limit;

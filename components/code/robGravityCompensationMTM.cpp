@@ -307,3 +307,8 @@ vctFixedSizeVector<double, R_ROWS> robGravityCompensationMTM::beta_vel(const vct
     }
     return beta;
 }
+
+robGravityCompensationMTM::CreationResult robGravityCompensationMTM::create(const Json::Value &jsonConfig)
+{
+    return {nullptr,"WIP"};
+}
