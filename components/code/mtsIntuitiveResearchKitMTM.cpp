@@ -582,3 +582,14 @@ void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)
         SetControlEffortActiveJoints();
     }
 }
+
+
+void mtsIntuitiveResearchKitMTM::AddGravityCompensationEfforts(vctDoubleVec &efforts)
+{
+    if (GravityCompensationMTM) {
+        vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
+        vctDoubleVec gravityEfforts;
+        gravityEfforts.ForceAssign(GravityCompensationMTM->LGC(JointsKinematics.Position(), qd));  // should this take joint velocities?
+        efforts.Add(gravityEfforts);
+    }
+}
