@@ -1423,15 +1423,19 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                 }
             }
         }
-        jsonValue = jsonArm["gravity-compensation"];
-        if (!jsonValue.empty()) {
-            armPointer->mArmGCConfigurationFile = configPath.Find(jsonValue.asString());
-            if (armPointer->mArmGCConfigurationFile == "") {
-                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find Gravity Compensation (GC) configuration file " << jsonValue.asString() << std::endl;
-                return false;
+        if ((armPointer->mType == Arm::ARM_MTM)
+            || (armPointer->mType == Arm::ARM_MTM_DERIVED)) {
+
+            jsonValue = jsonArm["gravity-compensation"];
+            if (!jsonValue.empty()) {
+                armPointer->mArmGCConfigurationFile = configPath.Find(jsonValue.asString());
+                if (armPointer->mArmGCConfigurationFile.empty()) {
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find Gravity Compensation (GC) configuration file " << jsonValue.asString() << std::endl;
+                    return false;
+                }
+            } else {
+                CMN_LOG_CLASS_INIT_WARNING << "Please estimate " << armPointer->Name() << " dynamic parameters for gravity compensation." << std::endl;
             }
-        } else {
-            CMN_LOG_CLASS_INIT_WARNING << "Please estimate " << armPointer->Name() << " dynamic parameters for gravity compensation for " << std::endl;
         }
     }
 
