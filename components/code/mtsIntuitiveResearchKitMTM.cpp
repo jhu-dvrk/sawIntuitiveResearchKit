@@ -106,12 +106,11 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const std::string & filename)
                                    << "<----" << std::endl;
 
         if (!jsonConfig.isNull()) {
-            auto results = robGravityCompensationMTM::create(jsonConfig);
+            auto results = robGravityCompensationMTM::Create(jsonConfig);
             if (!results.gc) {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                         << ": failed to create an instance of robGravityCompensationMTM\n because "
-                                         << results.errorMsg
-                                         << jsonReader.getFormattedErrorMessages();
+                                         << ": failed to create an instance of robGravityCompensationMTM with "
+                                         << filename << " because " << results.errorMsg;
                 return;
             }
             GravityCompensationMTM = results.gc;
@@ -587,9 +586,6 @@ void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)
 void mtsIntuitiveResearchKitMTM::AddGravityCompensationEfforts(vctDoubleVec &efforts)
 {
     if (GravityCompensationMTM) {
-        vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
-        vctDoubleVec gravityEfforts;
-        gravityEfforts.ForceAssign(GravityCompensationMTM->LGC(JointsKinematics.Position(), qd));  // should this take joint velocities?
-        efforts.Add(gravityEfforts);
+        GravityCompensationMTM->AddGCeffortsTo(JointsKinematics.Position(), JointsKinematics.Velocity(),efforts);
     }
 }

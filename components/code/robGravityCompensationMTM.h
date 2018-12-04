@@ -19,72 +19,48 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _robGravityCompensationMTM_h
 #define _robGravityCompensationMTM_h
 
-#include <cisstVector/vctMatrixRotation3.h>
-#include <cisstVector/vctFrame4x4.h>
-#if CISST_HAS_JSON
-#include <json/json.h>
-#endif
-#include <cisstRobot/robExport.h>
-#include <vector>
-#include <math.h>
-#include <string>
-#include <iostream>
+#include <cisstVector/vctDynamicVectorTypes.h>
 #include <cisstVector/vctFixedSizeMatrix.h>
-#include <cisstVector/vctDynamicVector.h>
+#include <cisstVector/vctFixedSizeVectorTypes.h>
+#include <json/json.h>
 
-// number of gravity compensation dynamics parameters
-#define PARAM_NUM 70
+using vct40 = vctFixedSizeVector<double, 40>;
+using vct7x40 = vctFixedSizeMatrix<double, 7, 40>;
 
-// number of parameters related to center of mass
-#define CM_PARAM_NUM 10
-
-// row size of regressor matrix
-#define R_ROWS 7
-
-// column size of regressor matrix
-#define R_COLUMNS 40
-
-#define GRAVITY_CONSTANT 9.81
-
-// hard code path (still finding some other solution like JSON)
-#define DEFAULT_JSON_PATH  "/home/ben/dvrk_ws/src/cisst-saw/sawIntuitiveResearchKit/share/cuhk-daVinci/lgc_config.json"
-
-// maximum torque output for safety
-#define Tau_Max_Amplitude 1
-
-// velocity amplitude for low friction compensation
-#define Beta_Vel_Amplitude 2
-
+class robGravityCompensationMTM;
 
 class CISST_EXPORT robGravityCompensationMTM
 {
- public:
+public:
     struct CreationResult {
-        robGravityCompensationMTM* gc = nullptr;
-        std::string errorMsg = "";
+      robGravityCompensationMTM *gc = nullptr;
+      std::string errorMsg = "";
     };
 
-    static CreationResult create(const Json::Value & jsonConfig);
-    double q1,q2,q3,q4,q5,q6,q7;
-    double g;
-    vctFixedSizeVector<double, R_ROWS> Torques_Max_Limit;
-    vctFixedSizeVector<double, R_ROWS> Beta_Vel_Amplitude_List;
+    struct Params {
+      Params()
+          : pos(0.0), neg(0.0), betaVelAmp(0.0), upperEffortsLimit(0.0),
+            lowerEffortsLimit(0.0) {}
+      vct40 pos;
+      vct40 neg;
+      vct7 betaVelAmp;
+      vct7 upperEffortsLimit;
+      vct7 lowerEffortsLimit;
+    };
 
+    static CreationResult Create(const Json::Value &jsonConfig);
+    robGravityCompensationMTM(const Params &params);
+    void AddGCeffortsTo(const vctVec &q, const vctVec &q_dot,
+                        vctVec &totalEfforts);
 
-    vctFixedSizeVector<double, R_COLUMNS> MTML_dynamic_parameter_pos;
-    vctFixedSizeVector<double, R_COLUMNS> MTML_dynamic_parameter_neg;
-    vctFixedSizeVector<double, R_COLUMNS> MTMR_dynamic_parameter_pos;
-    vctFixedSizeVector<double, R_COLUMNS> MTMR_dynamic_parameter_neg;
-    vctFixedSizeMatrix<double, R_ROWS, R_COLUMNS> regressor;
-
-    robGravityCompensationMTM();
-    bool Load_Default_JSON();
-    bool Load_Param(const Json::Value &config);
-
-    bool assign_regressor(vctFixedSizeVector<double, R_ROWS> q);
-    vctDynamicVector<double> LGC(const vctDynamicVector<double>& q, const vctDynamicVector<double>& q_dot);
-    vctDynamicVector<double> Torque_Safe_Limit(vctDynamicVector<double> &tau);
-    vctFixedSizeVector<double, R_ROWS> beta_vel(const vctDynamicVector<double>& q_dot);
+private:
+    static void AssignRegressor(const vctVec &q, vct7x40 &regressor);
+    void LimitEfforts(vct7 &efforts);
+    vct7 computeBetaVel(const vctVec &q_dot);
+    Params p_;
+    vct7x40 regressor_;
+    const vct7 ones_;
+    vct7 gravityEfforts_;
 };
 
 #endif // _robGravityCompensationMTM_h
