@@ -1,0 +1,21 @@
+GetStateJoint = measured_js
+GetStateJointDesired = setpoint_js
+
+GetPositionCartesianLocal = measured_cp_local
+GetPositionCartesianLocalDesired = setpoint_cp_local
+GetPositionCartesian = measured_cp
+GetPositionCartesianDesired = setpoint_cp
+GetVelocityCartesian = measured_cv
+GetWrenchBody = measured_cf_body
+
+SetPositionJoint = servo_jp
+SetPositionRelativeJoint = servo_jr
+SetPositionGoalJoint = move_jp
+SetTorqueJoint = servo_jf
+SetEffortJoint = servo_jf
+
+SetPositionCartesian = servo_cp
+SetPositionRelativeCartesian = servo_cr
+SetPositionGoalCartesian = move_cp
+SetWrenchBody = servo_cf_body
+SetWrenchSpatial = servo_cf_spatial
