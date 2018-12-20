@@ -75,8 +75,7 @@ public:
         /*! Create and configure the robot arm. */
         void ConfigureArm(const ArmType armType,
                           const std::string & kinematicsConfigFile,
-                          const double & periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod,
-                          const std::string & gcConfigFile = "");
+                          const double & periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
 
         /*! Check if mBaseFrame has a valid name and if it does
           SetBaseFrame on the arm. */
@@ -108,7 +107,6 @@ public:
         std::string mComponentName;
         std::string mInterfaceName;
         std::string mArmConfigurationFile;
-        std::string mArmGCConfigurationFile = "";
         double mArmPeriod;
         // socket
         std::string mIp;

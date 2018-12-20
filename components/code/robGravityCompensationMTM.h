@@ -27,40 +27,40 @@ http://www.cisst.org/cisst/license.txt.
 using vct40 = vctFixedSizeVector<double, 40>;
 using vct7x40 = vctFixedSizeMatrix<double, 7, 40>;
 
-class robGravityCompensationMTM;
-
+// always include last
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 class CISST_EXPORT robGravityCompensationMTM
 {
 public:
     struct CreationResult {
-      robGravityCompensationMTM *gc = nullptr;
-      std::string errorMsg = "";
+      robGravityCompensationMTM * Pointer = nullptr;
+      std::string ErrorMessage = "";
     };
 
-    struct Params {
-      Params()
-          : pos(0.0), neg(0.0), betaVelAmp(0.0), upperEffortsLimit(0.0),
-            lowerEffortsLimit(0.0) {}
-      vct40 pos;
-      vct40 neg;
-      vct7 betaVelAmp;
-      vct7 upperEffortsLimit;
-      vct7 lowerEffortsLimit;
+    struct Parameters {
+        Parameters()
+            : Pos(0.0), Neg(0.0), BetaVelAmp(0.0), UpperEffortsLimit(0.0),
+              LowerEffortsLimit(0.0) {}
+      vct40 Pos;
+      vct40 Neg;
+      vct7 BetaVelAmp;
+      vct7 UpperEffortsLimit;
+      vct7 LowerEffortsLimit;
     };
 
-    static CreationResult Create(const Json::Value &jsonConfig);
-    robGravityCompensationMTM(const Params &params);
-    void AddGCeffortsTo(const vctVec &q, const vctVec &q_dot,
-                        vctVec &totalEfforts);
+    static CreationResult Create(const Json::Value & jsonConfig);
+    robGravityCompensationMTM(const Parameters & parameters);
+    void AddGravityCompensationEfforts(const vctVec & q, const vctVec & q_dot,
+                                       vctVec & totalEfforts);
 
 private:
-    static void AssignRegressor(const vctVec &q, vct7x40 &regressor);
-    void LimitEfforts(vct7 &efforts);
-    vct7 computeBetaVel(const vctVec &q_dot);
-    Params p_;
-    vct7x40 regressor_;
-    const vct7 ones_;
-    vct7 gravityEfforts_;
+    static void AssignRegressor(const vctVec & q, vct7x40 & regressor);
+    void LimitEfforts(vct7 & efforts) const;
+    vct7 ComputeBetaVel(const vctVec & q_dot) const;
+    Parameters mParameters;
+    vct7x40 mRegressor;
+    const vct7 mOnes;
+    vct7 mGravityEfforts;
 };
 
 #endif // _robGravityCompensationMTM_h

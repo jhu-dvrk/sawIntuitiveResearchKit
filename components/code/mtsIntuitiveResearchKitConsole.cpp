@@ -92,8 +92,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & confi
 
 void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                                        const std::string & kinematicsConfigFile,
-                                                       const double & periodInSeconds,
-                                                       const std::string & gcConfigFile)
+                                                       const double & periodInSeconds)
 {
     mType = armType;
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
@@ -107,7 +106,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             if (mSimulation == SIMULATION_KINEMATIC) {
                 mtm->SetSimulated();
             }
-            mtm->Configure(mArmConfigurationFile,gcConfigFile);
+            mtm->Configure(mArmConfigurationFile);
             SetBaseFrameIfNeeded(mtm);
             componentManager->AddComponent(mtm);
         }
@@ -832,9 +831,8 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         // for generic arms, nothing to do
         if (!iter->second->mIsGeneric) {
             const std::string armConfig = iter->second->mArmConfigurationFile;
-            const std::string armGCConfig = iter->second->mArmGCConfigurationFile;
             iter->second->ConfigureArm(iter->second->mType, armConfig,
-                                       iter->second->mArmPeriod,armGCConfig);
+                                       iter->second->mArmPeriod);
         }
     }
 
@@ -1385,18 +1383,46 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     // only configure kinematics if not arm socket client
     if ((armPointer->mType != Arm::ARM_PSM_SOCKET)
         && (!armPointer->mIsGeneric)) {
+        // renamed "kinematic" to "arm" so we can have a more complex configuration file for the arm class
+        if ((armPointer->mType == Arm::ARM_MTM)
+            || (armPointer->mType == Arm::ARM_MTM_DERIVED)) {
+            jsonValue = jsonArm["arm"];
+            if (!jsonValue.empty()) {
+                armPointer->mArmConfigurationFile = configPath.Find(jsonValue.asString());
+                if (armPointer->mArmConfigurationFile == "") {
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find configuration file " << jsonValue.asString() << std::endl;
+                    return false;
+                }
+            }
+        }
         jsonValue = jsonArm["kinematic"];
         if (!jsonValue.empty()) {
-            armPointer->mArmConfigurationFile = configPath.Find(jsonValue.asString());
-            if (armPointer->mArmConfigurationFile == "") {
-                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find Kinematic file " << jsonValue.asString() << std::endl;
+            if (armPointer->mArmConfigurationFile != "") {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm configuration file is already set using \"configure-parameter\", remove the deprecated \"kinetic\" field:"
+                                         << jsonValue.asString() << std::endl;
                 return false;
+            } else {
+                armPointer->mArmConfigurationFile = configPath.Find(jsonValue.asString());
+                if (armPointer->mArmConfigurationFile == "") {
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find Kinematic file " << jsonValue.asString() << std::endl;
+                    return false;
+                }
             }
-        } else {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"kinematic\" setting for arm \""
-                                     << armName << "\"" << std::endl;
+        }
+
+        // make sure we have an arm configuration file
+        if (armPointer->mArmConfigurationFile == "") {
+            if ((armPointer->mType == Arm::ARM_MTM)
+                || (armPointer->mType == Arm::ARM_MTM_DERIVED)) {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"arm\" setting for arm \""
+                                         << armName << "\"" << std::endl;
+            } else {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"kinematic\" setting for arm \""
+                                         << armName << "\"" << std::endl;
+            }
             return false;
         }
+
         jsonValue = jsonArm["base-frame"];
         if (!jsonValue.empty()) {
             Json::Value fixedJson = jsonValue["transform"];
@@ -1421,20 +1447,6 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                                              << armName << "\"" << std::endl;
                     return false;
                 }
-            }
-        }
-        if ((armPointer->mType == Arm::ARM_MTM)
-            || (armPointer->mType == Arm::ARM_MTM_DERIVED)) {
-
-            jsonValue = jsonArm["gravity-compensation"];
-            if (!jsonValue.empty()) {
-                armPointer->mArmGCConfigurationFile = configPath.Find(jsonValue.asString());
-                if (armPointer->mArmGCConfigurationFile.empty()) {
-                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find Gravity Compensation (GC) configuration file " << jsonValue.asString() << std::endl;
-                    return false;
-                }
-            } else {
-                CMN_LOG_CLASS_INIT_WARNING << "Please estimate " << armPointer->Name() << " dynamic parameters for gravity compensation." << std::endl;
             }
         }
     }

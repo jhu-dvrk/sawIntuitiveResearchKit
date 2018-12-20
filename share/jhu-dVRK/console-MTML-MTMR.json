@@ -8,17 +8,17 @@
     "arms":
     [
         {
-            "name": "PSM2",
-            "type": "PSM",
-            "io": "sawRobotIO1394-PSM2-27374.xml",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json",
+            "name": "MTML",
+            "type": "MTM",
+            "io": "sawRobotIO1394-MTML-22723.xml",
+            "pid": "sawControllersPID-MTML.xml",
+            "arm": "MTML-22723.json",
             "base-frame": {
-                "reference-frame": "ECM",
-                "transform": [[  1.0,  0.0,          0.0,          0.20],
-                              [  0.0, -0.866025404,  0.5,          0.0 ],
-                              [  0.0, -0.5,         -0.866025404,  0.0 ],
-                              [  0.0,  0.0,          0.0,          1.0 ]]
+                "reference-frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,          0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
             }
         }
         ,
@@ -35,14 +35,6 @@
                               [  0.0,  0.5,         -0.866025404,  0.475],
                               [  0.0,  0.0,          0.0,          1.0]]
             }
-        }
-    ]
-    ,
-    "psm-teleops":
-    [
-        {
-            "mtm": "MTMR",
-            "psm": "PSM2"
         }
     ]
 }

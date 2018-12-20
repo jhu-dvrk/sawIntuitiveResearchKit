@@ -23,22 +23,21 @@ http://www.cisst.org/cisst/license.txt.
 #include <iostream>
 
 namespace {
-inline void Add(const vct7 &gravityEfforts, vctVec &totalEfforts)
-{
-    auto geItr = gravityEfforts.begin();
-    for (auto &te : totalEfforts) {
-        te += *geItr;
-        geItr++;
+    inline void Add(const vct7 & gravityEfforts, vctVec & totalEfforts)
+    {
+        auto geItr = gravityEfforts.begin();
+        for (auto &te : totalEfforts) {
+            te += *geItr;
+            geItr++;
+        }
     }
 }
-}
 
-robGravityCompensationMTM::robGravityCompensationMTM(
-    const robGravityCompensationMTM::Params &params)
-    : p_(params), regressor_(0.0), ones_(1.0), gravityEfforts_(0.0) {}
+robGravityCompensationMTM::robGravityCompensationMTM(const robGravityCompensationMTM::Parameters & parameters)
+    : mParameters(parameters), mRegressor(0.0), mOnes(1.0), mGravityEfforts(0.0) {}
 
-void robGravityCompensationMTM::AssignRegressor(const vctVec &q,
-                                                vct7x40 &regressor)
+void robGravityCompensationMTM::AssignRegressor(const vctVec & q,
+                                                vct7x40 & regressor)
 {
     constexpr double g = 9.81;
     const double q1 = q[0];
@@ -62,25 +61,25 @@ void robGravityCompensationMTM::AssignRegressor(const vctVec &q,
     regressor[1][5] =
         g * sin(q2) * sin(q3) * sin(q4) - g * cos(q2) * cos(q3) * sin(q4);
     regressor[1][6] = g * cos(q4) * sin(q2) * sin(q3) * sin(q5) -
-                      g * cos(q3) * cos(q5) * sin(q2) -
-                      g * cos(q2) * cos(q3) * cos(q4) * sin(q5) -
-                      g * cos(q2) * cos(q5) * sin(q3);
+        g * cos(q3) * cos(q5) * sin(q2) -
+        g * cos(q2) * cos(q3) * cos(q4) * sin(q5) -
+        g * cos(q2) * cos(q5) * sin(q3);
     regressor[1][7] = g * cos(q2) * cos(q3) * cos(q4) * cos(q5) -
-                      g * cos(q3) * sin(q2) * sin(q5) -
-                      g * cos(q2) * sin(q3) * sin(q5) -
-                      g * cos(q4) * cos(q5) * sin(q2) * sin(q3);
+        g * cos(q3) * sin(q2) * sin(q5) -
+        g * cos(q2) * sin(q3) * sin(q5) -
+        g * cos(q4) * cos(q5) * sin(q2) * sin(q3);
     regressor[1][8] = g * cos(q2) * cos(q3) * sin(q4) * sin(q6) +
-                      g * cos(q2) * cos(q6) * sin(q3) * sin(q5) +
-                      g * cos(q3) * cos(q6) * sin(q2) * sin(q5) -
-                      g * sin(q2) * sin(q3) * sin(q4) * sin(q6) +
-                      g * cos(q4) * cos(q5) * cos(q6) * sin(q2) * sin(q3) -
-                      g * cos(q2) * cos(q3) * cos(q4) * cos(q5) * cos(q6);
+        g * cos(q2) * cos(q6) * sin(q3) * sin(q5) +
+        g * cos(q3) * cos(q6) * sin(q2) * sin(q5) -
+        g * sin(q2) * sin(q3) * sin(q4) * sin(q6) +
+        g * cos(q4) * cos(q5) * cos(q6) * sin(q2) * sin(q3) -
+        g * cos(q2) * cos(q3) * cos(q4) * cos(q5) * cos(q6);
     regressor[1][9] = g * cos(q2) * cos(q3) * cos(q6) * sin(q4) -
-                      g * cos(q6) * sin(q2) * sin(q3) * sin(q4) -
-                      g * cos(q2) * sin(q3) * sin(q5) * sin(q6) -
-                      g * cos(q3) * sin(q2) * sin(q5) * sin(q6) -
-                      g * cos(q4) * cos(q5) * sin(q2) * sin(q3) * sin(q6) +
-                      g * cos(q2) * cos(q3) * cos(q4) * cos(q5) * sin(q6);
+        g * cos(q6) * sin(q2) * sin(q3) * sin(q4) -
+        g * cos(q2) * sin(q3) * sin(q5) * sin(q6) -
+        g * cos(q3) * sin(q2) * sin(q5) * sin(q6) -
+        g * cos(q4) * cos(q5) * sin(q2) * sin(q3) * sin(q6) +
+        g * cos(q2) * cos(q3) * cos(q4) * cos(q5) * sin(q6);
     regressor[1][15] = 1.0;
     regressor[1][16] = q2;
     regressor[1][17] = std::pow(q2, 2);
@@ -93,25 +92,25 @@ void robGravityCompensationMTM::AssignRegressor(const vctVec &q,
     regressor[2][5] =
         g * sin(q2) * sin(q3) * sin(q4) - g * cos(q2) * cos(q3) * sin(q4);
     regressor[2][6] = g * cos(q4) * sin(q2) * sin(q3) * sin(q5) -
-                      g * cos(q3) * cos(q5) * sin(q2) -
-                      g * cos(q2) * cos(q3) * cos(q4) * sin(q5) -
-                      g * cos(q2) * cos(q5) * sin(q3);
+        g * cos(q3) * cos(q5) * sin(q2) -
+        g * cos(q2) * cos(q3) * cos(q4) * sin(q5) -
+        g * cos(q2) * cos(q5) * sin(q3);
     regressor[2][7] = g * cos(q2) * cos(q3) * cos(q4) * cos(q5) -
-                      g * cos(q3) * sin(q2) * sin(q5) -
-                      g * cos(q2) * sin(q3) * sin(q5) -
-                      g * cos(q4) * cos(q5) * sin(q2) * sin(q3);
+        g * cos(q3) * sin(q2) * sin(q5) -
+        g * cos(q2) * sin(q3) * sin(q5) -
+        g * cos(q4) * cos(q5) * sin(q2) * sin(q3);
     regressor[2][8] = g * cos(q2) * cos(q3) * sin(q4) * sin(q6) +
-                      g * cos(q2) * cos(q6) * sin(q3) * sin(q5) +
-                      g * cos(q3) * cos(q6) * sin(q2) * sin(q5) -
-                      g * sin(q2) * sin(q3) * sin(q4) * sin(q6) +
-                      g * cos(q4) * cos(q5) * cos(q6) * sin(q2) * sin(q3) -
-                      g * cos(q2) * cos(q3) * cos(q4) * cos(q5) * cos(q6);
+        g * cos(q2) * cos(q6) * sin(q3) * sin(q5) +
+        g * cos(q3) * cos(q6) * sin(q2) * sin(q5) -
+        g * sin(q2) * sin(q3) * sin(q4) * sin(q6) +
+        g * cos(q4) * cos(q5) * cos(q6) * sin(q2) * sin(q3) -
+        g * cos(q2) * cos(q3) * cos(q4) * cos(q5) * cos(q6);
     regressor[2][9] = g * cos(q2) * cos(q3) * cos(q6) * sin(q4) -
-                      g * cos(q6) * sin(q2) * sin(q3) * sin(q4) -
-                      g * cos(q2) * sin(q3) * sin(q5) * sin(q6) -
-                      g * cos(q3) * sin(q2) * sin(q5) * sin(q6) -
-                      g * cos(q4) * cos(q5) * sin(q2) * sin(q3) * sin(q6) +
-                      g * cos(q2) * cos(q3) * cos(q4) * cos(q5) * sin(q6);
+        g * cos(q6) * sin(q2) * sin(q3) * sin(q4) -
+        g * cos(q2) * sin(q3) * sin(q5) * sin(q6) -
+        g * cos(q3) * sin(q2) * sin(q5) * sin(q6) -
+        g * cos(q4) * cos(q5) * sin(q2) * sin(q3) * sin(q6) +
+        g * cos(q2) * cos(q3) * cos(q4) * cos(q5) * sin(q6);
     regressor[2][20] = 1.0;
     regressor[2][21] = q3;
     regressor[2][22] = std::pow(q3, 2);
@@ -170,76 +169,79 @@ void robGravityCompensationMTM::AssignRegressor(const vctVec &q,
     regressor[5][39] = std::pow(q6, 4);
 }
 
-void robGravityCompensationMTM::AddGCeffortsTo(const vctVec &q,
-                                               const vctVec &q_dot,
-                                               vctVec &totalEfforts)
+void robGravityCompensationMTM::AddGravityCompensationEfforts(const vctVec & q,
+                                                              const vctVec & q_dot,
+                                                              vctVec & totalEfforts)
 {
-    AssignRegressor(q, regressor_);
-    const vct7 beta = computeBetaVel(q_dot);
-    vct7 tau_pos = regressor_ * p_.pos;
-    vct7 tau_neg = regressor_ * p_.neg;
+    AssignRegressor(q, mRegressor);
+    const vct7 beta = ComputeBetaVel(q_dot);
+    vct7 tau_pos = mRegressor * mParameters.Pos;
+    vct7 tau_neg = mRegressor * mParameters.Neg;
 
-    gravityEfforts_ = tau_pos.ElementwiseMultiply(beta) + tau_neg.ElementwiseMultiply(ones_ - beta);
-    LimitEfforts(gravityEfforts_);
-    Add(gravityEfforts_, totalEfforts);
+    mGravityEfforts = tau_pos.ElementwiseMultiply(beta) + tau_neg.ElementwiseMultiply(mOnes - beta);
+    LimitEfforts(mGravityEfforts);
+    Add(mGravityEfforts, totalEfforts);
 }
 
-void robGravityCompensationMTM::LimitEfforts(vct7 &efforts)
+void robGravityCompensationMTM::LimitEfforts(vct7 & efforts) const
 {
     for (size_t i = 0; i < efforts.size(); i++) {
-        if (efforts[i] > p_.upperEffortsLimit[i]) {
-            efforts[i] = p_.upperEffortsLimit[i];
-        } else if (efforts[i] < p_.lowerEffortsLimit[i]) {
-            efforts[i] = p_.lowerEffortsLimit[i];
+        if (efforts[i] > mParameters.UpperEffortsLimit[i]) {
+            efforts[i] = mParameters.UpperEffortsLimit[i];
+        } else if (efforts[i] < mParameters.LowerEffortsLimit[i]) {
+            efforts[i] = mParameters.LowerEffortsLimit[i];
         }
     }
 }
 
-vct7 robGravityCompensationMTM::computeBetaVel(const vctVec &q_dot)
+vct7 robGravityCompensationMTM::ComputeBetaVel(const vctVec & q_dot) const
 {
     vct7 beta;
     for (size_t i = 0; i < q_dot.size(); i++) {
-        if (q_dot[i] > p_.betaVelAmp[i]) {
+        if (q_dot[i] > mParameters.BetaVelAmp[i]) {
             beta[i] = 1.0;
         }
-        if (q_dot[i] < -p_.betaVelAmp[i]) {
-            beta[i] = 0;
+        if (q_dot[i] < -mParameters.BetaVelAmp[i]) {
+            beta[i] = 0.0;
         } else {
-            beta[i] = 0.5 + sin(q_dot[i] * M_PI / (2 * p_.betaVelAmp[i])) / 2;
+            beta[i] = 0.5 + sin(q_dot[i] * M_PI / (2.0 * mParameters.BetaVelAmp[i])) / 2.0;
         }
     }
     return beta;
 }
 
 robGravityCompensationMTM::CreationResult
-robGravityCompensationMTM::Create(const Json::Value &jsonConfig)
+robGravityCompensationMTM::Create(const Json::Value & jsonConfig)
 {
-    if (jsonConfig["version"].asString() == "1.0") {
-
-        robGravityCompensationMTM::Params params;
-        auto jpos = jsonConfig["GC_controller"]["gc_dynamic_params_pos"];
-        auto jneg = jsonConfig["GC_controller"]["gc_dynamic_params_neg"];
-        auto jbeta = jsonConfig["GC_controller"]["beta_vel_amplitude"];
-        auto jupper = jsonConfig["GC_controller"]["safe_upper_torque_limit"];
-        auto jlower = jsonConfig["GC_controller"]["safe_lower_torque_limit"];
-
-        if (params.pos.size() == jpos.size() &&
-            params.neg.size() == jneg.size() &&
-            params.betaVelAmp.size() == jbeta.size() &&
-            params.lowerEffortsLimit.size() == jlower.size() &&
-            params.upperEffortsLimit.size() == jupper.size()) {
-
-            cmnDataJSON<vct40>::DeSerializeText(params.pos, jpos);
-            cmnDataJSON<vct40>::DeSerializeText(params.neg, jneg);
-            cmnDataJSON<vct7>::DeSerializeText(params.betaVelAmp, jbeta);
-            cmnDataJSON<vct7>::DeSerializeText(params.upperEffortsLimit, jupper);
-            cmnDataJSON<vct7>::DeSerializeText(params.lowerEffortsLimit, jlower);
-
-            return {new robGravityCompensationMTM(params), ""};
-        }
-        return {nullptr,
-                "the array size in the JSON object is not matched with the "
-                "expected size\n"};
+    // check version
+    if (jsonConfig["version"].asString() != "1.0") {
+        return {nullptr, "the version of dynamic parameters is not 1.0"};
     }
-    return {nullptr, "the version of dynamic parameters is not 1.0\n"};
+
+    // load
+    robGravityCompensationMTM::Parameters params;
+    auto jpos = jsonConfig["GC_controller"]["gc_dynamic_params_pos"];
+    auto jneg = jsonConfig["GC_controller"]["gc_dynamic_params_neg"];
+    auto jbeta = jsonConfig["GC_controller"]["beta_vel_amplitude"];
+    auto jupper = jsonConfig["GC_controller"]["safe_upper_torque_limit"];
+    auto jlower = jsonConfig["GC_controller"]["safe_lower_torque_limit"];
+
+    // check sizes
+    if (!(params.Pos.size() == jpos.size() &&
+          params.Neg.size() == jneg.size() &&
+          params.BetaVelAmp.size() == jbeta.size() &&
+          params.LowerEffortsLimit.size() == jlower.size() &&
+          params.UpperEffortsLimit.size() == jupper.size())) {
+        return {nullptr,
+                "the arrays size in the JSON object are not matching the "
+                "expected size"};        
+    }
+
+    cmnDataJSON<vct40>::DeSerializeText(params.Pos, jpos);
+    cmnDataJSON<vct40>::DeSerializeText(params.Neg, jneg);
+    cmnDataJSON<vct7>::DeSerializeText(params.BetaVelAmp, jbeta);
+    cmnDataJSON<vct7>::DeSerializeText(params.UpperEffortsLimit, jupper);
+    cmnDataJSON<vct7>::DeSerializeText(params.LowerEffortsLimit, jlower);
+    
+    return {new robGravityCompensationMTM(params), ""};
 }
