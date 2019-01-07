@@ -60,9 +60,9 @@ void robGravityCompensationMTM::AssignRegressor(const vctVec & q,
 
     regressor.Element(0,10) = 1.0;
     regressor.Element(0,11) = q1;
-    regressor.Element(0,12) = std::pow(q1, 2);
-    regressor.Element(0,13) = std::pow(q1, 3);
-    regressor.Element(0,14) = std::pow(q1, 4);
+    regressor.Element(0,12) = q1*q1;
+    regressor.Element(0,13) = q1*q1*q1;
+    regressor.Element(0,14) = q1*q1*q1*q1;
     regressor.Element(1,0) = g * sq2;
     regressor.Element(1,1) = g * cq2;
     regressor.Element(1,2) = g * cq2 * cq3 - g * sq2 *sq3;
@@ -93,9 +93,9 @@ void robGravityCompensationMTM::AssignRegressor(const vctVec & q,
         g * cq2 * cq3 * cq4 * cq5 *sq6;
     regressor.Element(1,15) = 1.0;
     regressor.Element(1,16) = q2;
-    regressor.Element(1,17) = std::pow(q2, 2);
-    regressor.Element(1,18) = std::pow(q2, 3);
-    regressor.Element(1,19) = std::pow(q2, 4);
+    regressor.Element(1,17) = q2*q2;
+    regressor.Element(1,18) = q2*q2*q2;
+    regressor.Element(1,19) = q2*q2*q2*q2;
     regressor.Element(2,2) = g * cq2 * cq3 - g * sq2 *sq3;
     regressor.Element(2,3) = -g * cq2 *sq3 - g * cq3 * sq2;
     regressor.Element(2,4) =
@@ -124,9 +124,9 @@ void robGravityCompensationMTM::AssignRegressor(const vctVec & q,
         g * cq2 * cq3 * cq4 * cq5 *sq6;
     regressor.Element(2,20) = 1.0;
     regressor.Element(2,21) = q3;
-    regressor.Element(2,22) = std::pow(q3, 2);
-    regressor.Element(2,23) = std::pow(q3, 3);
-    regressor.Element(2,24) = std::pow(q3, 4);
+    regressor.Element(2,22) = q3*q3;
+    regressor.Element(2,23) = q3*q3*q3;
+    regressor.Element(2,24) = q3*q3*q3*q3;
     regressor.Element(3,4) = -g * sq2pq3 *sq4;
     regressor.Element(3,5) = -g * sq2pq3 * cq4;
     regressor.Element(3,6) = g * sq2pq3 *sq4 *sq5;
@@ -137,9 +137,9 @@ void robGravityCompensationMTM::AssignRegressor(const vctVec & q,
         g * sq2pq3 * (cq4 * cq6 - cq5 *sq4 *sq6);
     regressor.Element(3,25) = 1.0;
     regressor.Element(3,26) = q4;
-    regressor.Element(3,27) = std::pow(q4, 2);
-    regressor.Element(3,28) = std::pow(q4, 3);
-    regressor.Element(3,29) = std::pow(q4, 4);
+    regressor.Element(3,27) = q4*q4;
+    regressor.Element(3,28) = q4*q4*q4;
+    regressor.Element(3,29) = q4*q4*q4*q4;
     regressor.Element(4,6) =
         -g * (cq2 * cq3 *sq5 - sq2 *sq3 *sq5 +
               cq2 * cq4 * cq5 *sq3 +
@@ -158,9 +158,9 @@ void robGravityCompensationMTM::AssignRegressor(const vctVec & q,
                             cq3 * cq4 * sq2 *sq5 *sq6);
     regressor.Element(4,30) = 1.0;
     regressor.Element(4,31) = q5;
-    regressor.Element(4,32) = std::pow(q5, 2);
-    regressor.Element(4,33) = std::pow(q5, 3);
-    regressor.Element(4,34) = std::pow(q5, 4);
+    regressor.Element(4,32) = q5*q5;
+    regressor.Element(4,33) = q5*q5*q5;
+    regressor.Element(4,34) = q5*q5*q5*q5;
     regressor.Element(5,8) = g * (cq2 * cq6 *sq3 *sq4 +
                            cq3 * cq6 * sq2 *sq4 +
                            cq2 * cq3 *sq5 *sq6 -
@@ -175,9 +175,9 @@ void robGravityCompensationMTM::AssignRegressor(const vctVec & q,
                            cq3 * cq4 * cq5 * cq6 * sq2);
     regressor.Element(5,35) = 1.0;
     regressor.Element(5,36) = q6;
-    regressor.Element(5,37) = std::pow(q6, 2);
-    regressor.Element(5,38) = std::pow(q6, 3);
-    regressor.Element(5,39) = std::pow(q6, 4);
+    regressor.Element(5,37) = q6*q6;
+    regressor.Element(5,38) = q6*q6*q6;
+    regressor.Element(5,39) = q6*q6*q6*q6;
 }
 
 void robGravityCompensationMTM::AddGravityCompensationEfforts(const vctVec & q,
