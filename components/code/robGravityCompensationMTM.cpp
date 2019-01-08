@@ -30,7 +30,8 @@ robGravityCompensationMTM::robGravityCompensationMTM(const robGravityCompensatio
       , mTauPos(parameters.JointCount(),0.0)
       , mTauNeg(parameters.JointCount(),0.0)
       , mBeta(parameters.JointCount(),0.0)
-      , mOneMinusBeta(parameters.JointCount(),0.0) {}
+      , mOneMinusBeta(parameters.JointCount(),0.0)
+      , mClippedQ(parameters.JointCount(),0.0) {}
 
 void robGravityCompensationMTM::AssignRegressor(const vctVec & q,vctMat & regressor)
 {
@@ -179,6 +180,9 @@ void robGravityCompensationMTM::AddGravityCompensationEfforts(const vctVec & q,
                                                               const vctVec & q_dot,
                                                               vctVec & totalEfforts)
 {
+    mClippedQ.Assign(q);
+    mClippedQ.ElementwiseClipAbove(mParameters.UpperPositionsLimit);
+    mClippedQ.ElementwiseClipBelow(mParameters.LowerPositionsLimit);
     AssignRegressor(q, mRegressor);
     ComputeBetaVel(q_dot);
     mOnes.SetAll(1.0);
@@ -255,6 +259,8 @@ robGravityCompensationMTM::Create(const Json::Value & jsonConfig)
         GCMTM_GetParam("beta_vel_amplitude",params.BetaVelAmp)
         GCMTM_GetParam("safe_upper_torque_limit",params.UpperEffortsLimit)
         GCMTM_GetParam("safe_lower_torque_limit",params.LowerEffortsLimit)
+        GCMTM_GetParam("joint_position_upper_limit",params.UpperPositionsLimit)
+        GCMTM_GetParam("joint_position_lower_limit",params.LowerPositionsLimit)
 
         #undef GCMTM_GetParam
 

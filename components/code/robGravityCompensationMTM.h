@@ -40,6 +40,8 @@ public:
       vctVec BetaVelAmp;
       vctVec UpperEffortsLimit;
       vctVec LowerEffortsLimit;
+      vctVec UpperPositionsLimit;
+      vctVec LowerPositionsLimit;
 
       size_t JointCount() const {
           return BetaVelAmp.size();
@@ -66,6 +68,7 @@ private:
     vctVec mTauNeg;
     vctVec mBeta;
     vctVec mOneMinusBeta;
+    vctVec mClippedQ;
 };
 
 #endif // _robGravityCompensationMTM_h
