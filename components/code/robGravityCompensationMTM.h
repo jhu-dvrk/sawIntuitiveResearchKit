@@ -29,26 +29,26 @@ class CISST_EXPORT robGravityCompensationMTM
 {
 public:
     struct CreationResult {
-      robGravityCompensationMTM * Pointer = nullptr;
-      std::string ErrorMessage = "";
+        robGravityCompensationMTM * Pointer = nullptr;
+        std::string ErrorMessage = "";
     };
 
     struct Parameters {
 
-      vctVec Pos;
-      vctVec Neg;
-      vctVec BetaVelAmp;
-      vctVec UpperEffortsLimit;
-      vctVec LowerEffortsLimit;
-      vctVec UpperPositionsLimit;
-      vctVec LowerPositionsLimit;
+        vctVec Pos;
+        vctVec Neg;
+        vctVec BetaVelAmp;
+        vctVec UpperEffortsLimit;
+        vctVec LowerEffortsLimit;
+        vctVec UpperPositionsLimit;
+        vctVec LowerPositionsLimit;
 
-      size_t JointCount() const {
-          return BetaVelAmp.size();
-      }
-      size_t DynamicParameterCount() const {
-          return Pos.size();
-      }
+        size_t JointCount(void) const {
+            return BetaVelAmp.size();
+        }
+        size_t DynamicParameterCount(void) const {
+            return Pos.size();
+        }
     };
 
     static CreationResult Create(const Json::Value & jsonConfig);
