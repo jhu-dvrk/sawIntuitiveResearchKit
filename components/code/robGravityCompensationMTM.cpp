@@ -195,10 +195,10 @@ void robGravityCompensationMTM::AddGravityCompensationEfforts(const vctVec & q,
 void robGravityCompensationMTM::LimitEfforts(vctVec & efforts) const
 {
     for (size_t i = 0; i < efforts.size(); i++) {
-        if (efforts[i] > mParameters.UpperEffortsLimit[i]) {
-            efforts[i] = mParameters.UpperEffortsLimit[i];
-        } else if (efforts[i] < mParameters.LowerEffortsLimit[i]) {
-            efforts[i] = mParameters.LowerEffortsLimit[i];
+        if (efforts.Element(i) > mParameters.UpperEffortsLimit.Element(i)) {
+            efforts.Element(i) = mParameters.UpperEffortsLimit.Element(i);
+        } else if (efforts.Element(i) < mParameters.LowerEffortsLimit.Element(i)) {
+            efforts.Element(i) = mParameters.LowerEffortsLimit.Element(i);
         }
     }
 }
@@ -206,13 +206,13 @@ void robGravityCompensationMTM::LimitEfforts(vctVec & efforts) const
 void robGravityCompensationMTM::ComputeBetaVel(const vctVec & q_dot)
 {
     for (size_t i = 0; i < q_dot.size(); i++) {
-        if (q_dot[i] > mParameters.BetaVelAmp[i]) {
+        if (q_dot.Element(i) > mParameters.BetaVelAmp.Element(i)) {
             mBeta.Element(i) = 1.0;
         }
-        if (q_dot[i] < -mParameters.BetaVelAmp[i]) {
+        if (q_dot.Element(i) < -mParameters.BetaVelAmp.Element(i)) {
             mBeta.Element(i) = 0.0;
         } else {
-            mBeta.Element(i) = 0.5 + sin(q_dot[i] * M_PI / (2.0 * mParameters.BetaVelAmp[i])) / 2.0;
+            mBeta.Element(i) = 0.5 + sin(q_dot.Element(i) * M_PI / (2.0 * mParameters.BetaVelAmp.Element(i))) / 2.0;
         }
     }
 }
