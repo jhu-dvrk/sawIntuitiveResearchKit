@@ -19,13 +19,9 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _robGravityCompensationMTM_h
 #define _robGravityCompensationMTM_h
 
+#include <cisstVector/vctDynamicMatrixTypes.h>
 #include <cisstVector/vctDynamicVectorTypes.h>
-#include <cisstVector/vctFixedSizeMatrix.h>
-#include <cisstVector/vctFixedSizeVectorTypes.h>
 #include <json/json.h>
-
-using vct40 = vctFixedSizeVector<double, 40>;
-using vct7x40 = vctFixedSizeMatrix<double, 7, 40>;
 
 // always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -38,14 +34,19 @@ public:
     };
 
     struct Parameters {
-        Parameters()
-            : Pos(0.0), Neg(0.0), BetaVelAmp(0.0), UpperEffortsLimit(0.0),
-              LowerEffortsLimit(0.0) {}
-      vct40 Pos;
-      vct40 Neg;
-      vct7 BetaVelAmp;
-      vct7 UpperEffortsLimit;
-      vct7 LowerEffortsLimit;
+
+      vctVec Pos;
+      vctVec Neg;
+      vctVec BetaVelAmp;
+      vctVec UpperEffortsLimit;
+      vctVec LowerEffortsLimit;
+
+      size_t JointCount() const {
+          return BetaVelAmp.size();
+      }
+      size_t DynamicParameterCount() const {
+          return Pos.size();
+      }
     };
 
     static CreationResult Create(const Json::Value & jsonConfig);
@@ -54,13 +55,17 @@ public:
                                        vctVec & totalEfforts);
 
 private:
-    static void AssignRegressor(const vctVec & q, vct7x40 & regressor);
-    void LimitEfforts(vct7 & efforts) const;
-    vct7 ComputeBetaVel(const vctVec & q_dot) const;
+    static void AssignRegressor(const vctVec & q, vctMat & regressor);
+    void LimitEfforts(vctVec & efforts) const;
+    void ComputeBetaVel(const vctVec & q_dot);
     Parameters mParameters;
-    vct7x40 mRegressor;
-    const vct7 mOnes;
-    vct7 mGravityEfforts;
+    vctMat mRegressor;
+    vctVec mOnes;
+    vctVec mGravityEfforts;
+    vctVec mTauPos;
+    vctVec mTauNeg;
+    vctVec mBeta;
+    vctVec mOneMinusBeta;
 };
 
 #endif // _robGravityCompensationMTM_h

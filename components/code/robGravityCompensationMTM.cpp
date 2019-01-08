@@ -22,22 +22,17 @@ http://www.cisst.org/cisst/license.txt.
 #include <cmath>
 #include <iostream>
 
-namespace {
-    inline void Add(const vct7 & gravityEfforts, vctVec & totalEfforts)
-    {
-        auto geItr = gravityEfforts.begin();
-        for (auto &te : totalEfforts) {
-            te += *geItr;
-            geItr++;
-        }
-    }
-}
-
 robGravityCompensationMTM::robGravityCompensationMTM(const robGravityCompensationMTM::Parameters & parameters)
-    : mParameters(parameters), mRegressor(0.0), mOnes(1.0), mGravityEfforts(0.0) {}
+    : mParameters(parameters)
+      , mRegressor(parameters.JointCount(),parameters.DynamicParameterCount(),0.0)
+      , mOnes(parameters.JointCount(),1.0)
+      , mGravityEfforts(parameters.JointCount(),0.0)
+      , mTauPos(parameters.JointCount(),0.0)
+      , mTauNeg(parameters.JointCount(),0.0)
+      , mBeta(parameters.JointCount(),0.0)
+      , mOneMinusBeta(parameters.JointCount(),0.0) {}
 
-void robGravityCompensationMTM::AssignRegressor(const vctVec & q,
-                                                vct7x40 & regressor)
+void robGravityCompensationMTM::AssignRegressor(const vctVec & q,vctMat & regressor)
 {
     constexpr double g = 9.81;
     const double q1 = q[0];
@@ -185,16 +180,19 @@ void robGravityCompensationMTM::AddGravityCompensationEfforts(const vctVec & q,
                                                               vctVec & totalEfforts)
 {
     AssignRegressor(q, mRegressor);
-    const vct7 beta = ComputeBetaVel(q_dot);
-    vct7 tau_pos = mRegressor * mParameters.Pos;
-    vct7 tau_neg = mRegressor * mParameters.Neg;
-
-    mGravityEfforts = tau_pos.ElementwiseMultiply(beta) + tau_neg.ElementwiseMultiply(mOnes - beta);
+    ComputeBetaVel(q_dot);
+    mOnes.SetAll(1.0);
+    mOneMinusBeta = mOnes.Subtract(mBeta);
+    mTauPos.ProductOf(mRegressor,mParameters.Pos).ElementwiseMultiply(mBeta);
+    mTauNeg.ProductOf(mRegressor,mParameters.Neg).ElementwiseMultiply(mOneMinusBeta);
+    mGravityEfforts.SetAll(0.0);
+    mGravityEfforts.Add(mTauPos);
+    mGravityEfforts.Add(mTauNeg);
     LimitEfforts(mGravityEfforts);
-    Add(mGravityEfforts, totalEfforts);
+    totalEfforts.Add(mGravityEfforts);
 }
 
-void robGravityCompensationMTM::LimitEfforts(vct7 & efforts) const
+void robGravityCompensationMTM::LimitEfforts(vctVec & efforts) const
 {
     for (size_t i = 0; i < efforts.size(); i++) {
         if (efforts[i] > mParameters.UpperEffortsLimit[i]) {
@@ -205,54 +203,63 @@ void robGravityCompensationMTM::LimitEfforts(vct7 & efforts) const
     }
 }
 
-vct7 robGravityCompensationMTM::ComputeBetaVel(const vctVec & q_dot) const
+void robGravityCompensationMTM::ComputeBetaVel(const vctVec & q_dot)
 {
-    vct7 beta;
     for (size_t i = 0; i < q_dot.size(); i++) {
         if (q_dot[i] > mParameters.BetaVelAmp[i]) {
-            beta[i] = 1.0;
+            mBeta.Element(i) = 1.0;
         }
         if (q_dot[i] < -mParameters.BetaVelAmp[i]) {
-            beta[i] = 0.0;
+            mBeta.Element(i) = 0.0;
         } else {
-            beta[i] = 0.5 + sin(q_dot[i] * M_PI / (2.0 * mParameters.BetaVelAmp[i])) / 2.0;
+            mBeta.Element(i) = 0.5 + sin(q_dot[i] * M_PI / (2.0 * mParameters.BetaVelAmp[i])) / 2.0;
         }
     }
-    return beta;
 }
 
 robGravityCompensationMTM::CreationResult
 robGravityCompensationMTM::Create(const Json::Value & jsonConfig)
 {
     // check version
-    if (jsonConfig["version"].asString() != "1.0") {
-        return {nullptr, "the version of dynamic parameters is not 1.0"};
+    if (jsonConfig["version"].asString() == "1.0") {
+
+        auto getTuple = [&jsonConfig](const std::string &fieldName) {
+            auto jarray = jsonConfig["GC_controller"][fieldName];
+            if ( jarray.empty()) {
+                std::string errorMessage = std::string("the field name \"") + fieldName + std::string("\" cannot be empty.");
+                return std::make_tuple(jarray,true,errorMessage);
+            }
+            return std::make_tuple(jarray,false,std::string(""));
+        };
+
+        auto isEmpty = [](const auto &paramTuple) {
+            return std::get<1>(paramTuple);
+        };
+
+        auto createReturnValue = [](const auto &paramTuple) {
+            return robGravityCompensationMTM::CreationResult({nullptr,std::get<2>(paramTuple)});
+        };
+
+        #define GCMTM_GetParam(fieldname,param)                                             \
+            {                                                                               \
+                auto paramTuple = getTuple(fieldname);                                      \
+                if (isEmpty(paramTuple))                                                    \
+                    return createReturnValue(paramTuple);                                   \
+                cmnDataJSON<vctVec>::DeSerializeText(param, std::get<0>(paramTuple));  \
+            }
+
+        robGravityCompensationMTM::Parameters params;
+        // load
+        GCMTM_GetParam("gc_dynamic_params_pos",params.Pos)
+        GCMTM_GetParam("gc_dynamic_params_neg",params.Neg)
+        GCMTM_GetParam("beta_vel_amplitude",params.BetaVelAmp)
+        GCMTM_GetParam("safe_upper_torque_limit",params.UpperEffortsLimit)
+        GCMTM_GetParam("safe_lower_torque_limit",params.LowerEffortsLimit)
+
+        #undef GCMTM_GetParam
+
+        return {new robGravityCompensationMTM(params), ""};
     }
+    return {nullptr, "the version of dynamic parameters is not 1.0"};
 
-    // load
-    robGravityCompensationMTM::Parameters params;
-    auto jpos = jsonConfig["GC_controller"]["gc_dynamic_params_pos"];
-    auto jneg = jsonConfig["GC_controller"]["gc_dynamic_params_neg"];
-    auto jbeta = jsonConfig["GC_controller"]["beta_vel_amplitude"];
-    auto jupper = jsonConfig["GC_controller"]["safe_upper_torque_limit"];
-    auto jlower = jsonConfig["GC_controller"]["safe_lower_torque_limit"];
-
-    // check sizes
-    if (!(params.Pos.size() == jpos.size() &&
-          params.Neg.size() == jneg.size() &&
-          params.BetaVelAmp.size() == jbeta.size() &&
-          params.LowerEffortsLimit.size() == jlower.size() &&
-          params.UpperEffortsLimit.size() == jupper.size())) {
-        return {nullptr,
-                "the arrays size in the JSON object are not matching the "
-                "expected size"};        
-    }
-
-    cmnDataJSON<vct40>::DeSerializeText(params.Pos, jpos);
-    cmnDataJSON<vct40>::DeSerializeText(params.Neg, jneg);
-    cmnDataJSON<vct7>::DeSerializeText(params.BetaVelAmp, jbeta);
-    cmnDataJSON<vct7>::DeSerializeText(params.UpperEffortsLimit, jupper);
-    cmnDataJSON<vct7>::DeSerializeText(params.LowerEffortsLimit, jlower);
-    
-    return {new robGravityCompensationMTM(params), ""};
 }
