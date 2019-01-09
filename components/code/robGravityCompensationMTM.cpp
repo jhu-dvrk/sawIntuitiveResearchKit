@@ -19,6 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "robGravityCompensationMTM.h"
 #include <cisstCommon/cmnDataFunctionsJSON.h>
 #include <cisstCommon/cmnLogger.h>
+#include <cisstCommon/cmnConstants.h>
 #include <cmath>
 #include <iostream>
 
@@ -200,8 +201,8 @@ void robGravityCompensationMTM::LimitEfforts(vctVec & efforts) const
 {
     auto end = efforts.end();
     auto effort = efforts.begin();
-    auto upper = mParameters.UpperPositionsLimit.begin();
-    auto lower = mParameters.LowerPositionsLimit.begin();
+    auto upper = mParameters.UpperEffortsLimit.begin();
+    auto lower = mParameters.LowerEffortsLimit.begin();
     for (;
          effort != end;
          ++effort,
@@ -270,17 +271,20 @@ robGravityCompensationMTM::Create(const Json::Value & jsonConfig)
 
         robGravityCompensationMTM::Parameters params;
         // load
-        GCMTM_GetParam("gc_dynamic_params_pos", params.Pos)
-            GCMTM_GetParam("gc_dynamic_params_neg", params.Neg)
-            GCMTM_GetParam("beta_vel_amplitude", params.BetaVelAmp)
-            GCMTM_GetParam("safe_upper_torque_limit", params.UpperEffortsLimit)
-            GCMTM_GetParam("safe_lower_torque_limit", params.LowerEffortsLimit)
-            GCMTM_GetParam("joint_position_upper_limit", params.UpperPositionsLimit)
-            GCMTM_GetParam("joint_position_lower_limit", params.LowerPositionsLimit)
+        GCMTM_GetParam("gc_dynamic_params_pos", params.Pos);
+        GCMTM_GetParam("gc_dynamic_params_neg", params.Neg);
+        GCMTM_GetParam("beta_vel_amplitude", params.BetaVelAmp);
+        GCMTM_GetParam("safe_upper_torque_limit", params.UpperEffortsLimit);
+        GCMTM_GetParam("safe_lower_torque_limit", params.LowerEffortsLimit);
+        GCMTM_GetParam("joint_position_upper_limit", params.UpperPositionsLimit);
+        GCMTM_GetParam("joint_position_lower_limit", params.LowerPositionsLimit);
 
 #undef GCMTM_GetParam
+        
+        params.UpperPositionsLimit.Multiply(cmnPI_180);
+        params.LowerPositionsLimit.Multiply(cmnPI_180);
 
-            return {new robGravityCompensationMTM(params), ""};
+        return {new robGravityCompensationMTM(params), ""};
     }
     return {nullptr, "the version of dynamic parameters is not 1.0"};
 
