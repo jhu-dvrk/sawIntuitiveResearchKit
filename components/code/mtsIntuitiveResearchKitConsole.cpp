@@ -776,6 +776,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 // these can be overwritten using console-inputs
                 mDInputSources["Clutch"] = InterfaceComponentType(mIOComponentName, "Clutch");
                 mDInputSources["OperatorPresent"] = InterfaceComponentType(mIOComponentName, "Coag");
+                mDInputSources["Coag"] = InterfaceComponentType(mIOComponentName, "Coag");
                 mDInputSources["BiCoag"] = InterfaceComponentType(mIOComponentName, "BiCoag");
                 mDInputSources["Camera"] = InterfaceComponentType(mIOComponentName, "Camera");
                 mDInputSources["Cam-"] = InterfaceComponentType(mIOComponentName, "Cam-");
