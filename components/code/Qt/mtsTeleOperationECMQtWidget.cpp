@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -119,19 +119,29 @@ void mtsTeleOperationECMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 
     // retrieve transformations
     TeleOperation.GetPositionCartesianMTML(PositionMTML);
+    QCPGMTMLWidget->SetValue(PositionMTML);
+
     TeleOperation.GetPositionCartesianMTMR(PositionMTMR);
+    QCPGMTMRWidget->SetValue(PositionMTMR);
+
+    // for ECM, check if the registration rotation is needed
     TeleOperation.GetPositionCartesianECM(PositionECM);
     TeleOperation.GetRegistrationRotation(RegistrationRotation);
-
-    // apply registration orientation
-    vctFrm3 registeredECM;
-    RegistrationRotation.ApplyInverseTo(PositionECM.Position().Rotation(), registeredECM.Rotation());
-    RegistrationRotation.ApplyInverseTo(PositionECM.Position().Translation(), registeredECM.Translation());
-
-    // update display
-    QFRPositionMTMLWidget->SetValue(PositionMTML.Position());
-    QFRPositionMTMRWidget->SetValue(PositionMTMR.Position());
-    QFRPositionECMWidget->SetValue(registeredECM);
+    if (RegistrationRotation.Equal(vctMatRot3::Identity())) {
+        QCPGECMWidget->SetValue(PositionECM);
+    } else {
+        // apply registration orientation
+        prmPositionCartesianGet registeredECM;
+        registeredECM.Valid() = PositionECM.Valid();
+        registeredECM.Timestamp() = PositionECM.Timestamp();
+        registeredECM.MovingFrame() = PositionECM.MovingFrame();
+        registeredECM.ReferenceFrame() = "rot * " + PositionECM.ReferenceFrame();
+        RegistrationRotation.ApplyInverseTo(PositionECM.Position().Rotation(),
+                                            registeredECM.Position().Rotation());
+        RegistrationRotation.ApplyInverseTo(PositionECM.Position().Translation(),
+                                            registeredECM.Position().Translation());
+        QCPGECMWidget->SetValue(registeredECM);
+    }
 
     TeleOperation.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
@@ -164,18 +174,18 @@ void mtsTeleOperationECMQtWidget::setupUi(void)
     QLabel * masterLabel = new QLabel("<b>MTML</b>");
     masterLabel->setAlignment(Qt::AlignCenter);
     frameLayout->addWidget(masterLabel, 0, 0);
-    QFRPositionMTMLWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    frameLayout->addWidget(QFRPositionMTMLWidget, 1, 0);
+    QCPGMTMLWidget = new prmPositionCartesianGetQtWidget();
+    frameLayout->addWidget(QCPGMTMLWidget, 1, 0);
     masterLabel = new QLabel("<b>MTMR</b>");
     masterLabel->setAlignment(Qt::AlignCenter);
     frameLayout->addWidget(masterLabel, 0, 1);
-    QFRPositionMTMRWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    frameLayout->addWidget(QFRPositionMTMRWidget, 1, 1);
+    QCPGMTMRWidget = new prmPositionCartesianGetQtWidget();
+    frameLayout->addWidget(QCPGMTMRWidget, 1, 1);
     QLabel * slaveLabel = new QLabel("<b>ECM</b>");
     slaveLabel->setAlignment(Qt::AlignCenter);
     frameLayout->addWidget(slaveLabel, 2, 0, 1, 2);
-    QFRPositionECMWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    frameLayout->addWidget(QFRPositionECMWidget, 3, 0, 1, 2);
+    QCPGECMWidget = new prmPositionCartesianGetQtWidget();
+    frameLayout->addWidget(QCPGECMWidget, 3, 0, 1, 2);
 
     // right side
     QVBoxLayout * controlLayout = new QVBoxLayout;
