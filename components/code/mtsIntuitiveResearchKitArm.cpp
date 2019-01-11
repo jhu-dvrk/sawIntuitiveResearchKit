@@ -405,24 +405,62 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
         // save the transform as Manipulator Rtw0
         cmnDataJSON<vctFrm4x4>::DeSerializeText(Manipulator->Rtw0, jsonBase);
         if (!nmrIsOrthonormal(Manipulator->Rtw0.Rotation())) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
                                      << ": the base offset rotation doesn't seem to be orthonormal"
                                      << std::endl;
+            exit(EXIT_FAILURE);
         }
     }
 
     // load DH parameters
     const Json::Value jsonDH = jsonConfig["DH"];
     if (jsonDH.isNull()) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
                                  << ": can find \"DH\" data in configuration file" << std::endl;
+        exit(EXIT_FAILURE);
     }
-    this->Manipulator->LoadRobot(jsonDH);
+    if (this->Manipulator->LoadRobot(jsonDH) != robManipulator::ESUCCESS) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
+                                 << ": failed to load \"DH\" parameters" << std::endl;
+        exit(EXIT_FAILURE);
+    }
     std::stringstream dhResult;
     this->Manipulator->PrintKinematics(dhResult);
-    CMN_LOG_CLASS_INIT_VERBOSE << "Configure " << this->GetName()
+    CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureDH " << this->GetName()
                                << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
     ResizeKinematicsData();
+}
+
+void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)
+{
+    try {
+        std::ifstream jsonStream;
+        Json::Value jsonConfig;
+        Json::Reader jsonReader;
+
+        jsonStream.open(filename.c_str());
+        if (!jsonReader.parse(jsonStream, jsonConfig)) {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
+                                     << ": failed to parse kinematic (DH) configuration\n"
+                                     << jsonReader.getFormattedErrorMessages();
+            return;
+        }
+
+        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureDH: " << this->GetName()
+                                   << " using file \"" << filename << "\"" << std::endl
+                                   << "----> content of kinematic (GC) configuration file: " << std::endl
+                                   << jsonConfig << std::endl
+                                   << "<----" << std::endl;
+
+        if (!jsonConfig.isNull()) {
+            ConfigureDH(jsonConfig);
+        }
+
+    } catch (...) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName() << ": make sure the file \""
+                                 << filename << "\" is in JSON format" << std::endl;
+    }
+
 }
 
 void mtsIntuitiveResearchKitArm::Startup(void)

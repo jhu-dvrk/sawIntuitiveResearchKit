@@ -139,7 +139,9 @@ if (cisst_FOUND)
          code/mtsSocketServerPSM.cpp
          code/robManipulatorPSMSnake.cpp
          code/mtsPSMCompensation.cpp
-        )
+         code/robGravityCompensationMTM.cpp
+         code/robGravityCompensationMTM.h
+         )
 
     add_library (sawIntuitiveResearchKit
                  ${HEADER_FILES} ${SOURCE_FILES}

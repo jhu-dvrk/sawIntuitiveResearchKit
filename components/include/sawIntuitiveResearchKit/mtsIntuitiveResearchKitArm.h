@@ -63,10 +63,10 @@ public:
     mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg);
     virtual inline ~mtsIntuitiveResearchKitArm() {}
 
-    void Configure(const std::string & filename);
-    void Startup(void);
-    void Run(void);
-    void Cleanup(void);
+    void Configure(const std::string & filename) override;
+    void Startup(void) override;
+    void Run(void) override;
+    void Cleanup(void) override;
 
     virtual void SetSimulated(void);
 
@@ -77,6 +77,7 @@ public:
 
     /*! Load BaseFrame and DH parameters from JSON */
     void ConfigureDH(const Json::Value & jsonConfig);
+    void ConfigureDH(const std::string & filename);
 
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
@@ -283,7 +284,7 @@ public:
     vctMatRot3 mEffortOrientation;
     // gravity compensation
     bool mGravityCompensation;
-    void AddGravityCompensationEfforts(vctDoubleVec & efforts);
+    virtual void AddGravityCompensationEfforts(vctDoubleVec & efforts);
     // add custom efforts for derived classes
     inline virtual void AddCustomEfforts(vctDoubleVec & CMN_UNUSED(efforts)) {};
 

@@ -25,6 +25,8 @@ http://www.cisst.org/cisst/license.txt.
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
+class robGravityCompensationMTM;
+
 class CISST_EXPORT mtsIntuitiveResearchKitMTM: public mtsIntuitiveResearchKitArm
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -36,7 +38,7 @@ public:
 
     mtsIntuitiveResearchKitMTM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
-    inline ~mtsIntuitiveResearchKitMTM() {}
+    ~mtsIntuitiveResearchKitMTM() override;
 
     /*!
      \brief Set MTM type, either MTM_LEFT or MTM_RIGHT
@@ -45,7 +47,7 @@ public:
      \param type MTM type either MTM_LEFT or MTM_RIGHT
     */
     void SetMTMType(const bool autodetect = true, const MTM_TYPE type = MTM_NULL);
-    void Configure(const std::string & filename);
+    void Configure(const std::string & filename) override;
 
 protected:
     enum JointName {
@@ -60,31 +62,32 @@ protected:
     };
 
     /*! Configuration methods */
-    inline size_t NumberOfAxes(void) const {
+    inline size_t NumberOfAxes(void) const override {
         return 8;
     }
 
-    inline size_t NumberOfJoints(void) const {
+    inline size_t NumberOfJoints(void) const override {
         return 7;
     }
 
-
-    inline size_t NumberOfJointsKinematics(void) const {
+    inline size_t NumberOfJointsKinematics(void) const override {
         return 7;
     }
 
-    inline size_t NumberOfBrakes(void) const {
+    inline size_t NumberOfBrakes(void) const override {
         return 0;
     }
 
-    inline bool UsePIDTrackingError(void) const {
+    inline bool UsePIDTrackingError(void) const override {
         return false;
     }
 
-    robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                            const vctFrm4x4 & cartesianGoal);
+    void ConfigureGC(const std::string & filename);
 
-    inline bool IsSafeForCartesianControl(void) const {
+    robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
+                                            const vctFrm4x4 & cartesianGoal) override;
+
+    inline bool IsSafeForCartesianControl(void) const override {
         return true;
     };
 
@@ -107,12 +110,14 @@ protected:
     void GetRobotData(void);
 
     // see base class
-    void ControlEffortOrientationLocked(void);
-    void SetControlEffortActiveJoints(void);
+    void ControlEffortOrientationLocked(void) override;
+    void SetControlEffortActiveJoints(void) override;
 
     /*! Lock master orientation when in cartesian effort mode */
     virtual void LockOrientation(const vctMatRot3 & orientation);
     virtual void UnlockOrientation(void);
+
+    void AddGravityCompensationEfforts(vctDoubleVec & efforts) override;
 
     // Functions for events
     struct {
@@ -136,6 +141,7 @@ protected:
     bool mHomedOnce;
     double mHomingCalibrateRollLower;
     bool mHomingRollEncoderReset;
+    robGravityCompensationMTM * GravityCompensationMTM = 0;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);
