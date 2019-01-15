@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -138,9 +138,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                this);
 
     // state table to maintain state :-)
-    mStateTableState.AddData(mStateTableStateCurrent, "Current");
-    mStateTableState.AddData(mStateTableStateDesired, "Desired");
-    mStateTableState.AddData(mDeviceState, "crtkState");
+    mStateTableState.AddData(mStateTableStateCurrent, "CurrentState");
+    mStateTableState.AddData(mStateTableStateDesired, "DesiredState");
+    mStateTableState.AddData(mOperatingState, "OperatingState");
     AddStateTable(&mStateTableState);
     mStateTableState.SetAutomaticAdvance(false);
 
@@ -303,7 +303,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandReadState(this->mStateTableState,
                                             mStateTableStateDesired, "GetDesiredState");
         RobotInterface->AddCommandReadState(this->mStateTableState,
-                                            mDeviceState, "GetDeviceState"); // crtk
+                                            mOperatingState, "GetOperatingState"); // crtk
         // Set
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame,
                                         this, "SetBaseFrame");
@@ -340,12 +340,12 @@ void mtsIntuitiveResearchKitArm::Init(void)
         // Robot State
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetDesiredState,
                                         this, "SetDesiredState", std::string(""));
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetDeviceState,
-                                        this, "SetDeviceState", std::string(""));
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetOperatingState,
+                                        this, "SetOperatingState", std::string(""));
         // Human readable messages
         RobotInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
         RobotInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
-        RobotInterface->AddEventWrite(MessageEvents.DeviceState, "DeviceState", std::string(""));
+        RobotInterface->AddEventWrite(MessageEvents.OperatingState, "OperatingState", prmOperatingState());
 
         // Stats
         RobotInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
@@ -382,7 +382,7 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
     RobotInterface->SendStatus(this->GetName() + ": desired state " + state);
 }
 
-void mtsIntuitiveResearchKitArm::SetDeviceState(const std::string & state)
+void mtsIntuitiveResearchKitArm::SetOperatingState(const std::string & state)
 {
     if (state == "ENABLED") {
         SetDesiredState("ARM_HOMED");
@@ -392,7 +392,7 @@ void mtsIntuitiveResearchKitArm::SetDeviceState(const std::string & state)
         SetDesiredState("UNINITIALIZED");
         return;
     }
-    RobotInterface->SendError(this->GetName() + ": unsupported state " + state);
+    RobotInterface->SendWarning(this->GetName() + ": unsupported operating state " + state);
 }
 
 void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
@@ -697,9 +697,9 @@ void mtsIntuitiveResearchKitArm::StateChanged(void)
     const std::string newState = mArmState.CurrentState();
     // update crtk meta state
     if (mJointControlReady) {
-        mDeviceState = "ENABLED";
+        mOperatingState.State() = "ENABLED";
     } else {
-        mDeviceState = "DISABLED";
+        mOperatingState.State() = "DISABLED";
     }
     // update state table
     mStateTableState.Start();
@@ -707,7 +707,7 @@ void mtsIntuitiveResearchKitArm::StateChanged(void)
     mStateTableState.Advance();
     // event
     MessageEvents.CurrentState(newState);
-    MessageEvents.DeviceState(mDeviceState);
+    MessageEvents.OperatingState(mOperatingState);
     RobotInterface->SendStatus(this->GetName() + ": current state " + newState);
 }
 

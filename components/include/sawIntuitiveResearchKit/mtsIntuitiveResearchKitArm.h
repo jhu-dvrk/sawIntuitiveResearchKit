@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstNumerical/nmrPInverse.h>
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
+#include <cisstParameterTypes/prmOperatingState.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
 #include <cisstParameterTypes/prmStateJoint.h>
@@ -89,9 +90,9 @@ public:
       state. */
     virtual void SetDesiredState(const std::string & state);
 
-    /*! Set crtk meta state.  Currently supports ENABLED and
+    /*! Set crtk operating state.  Currently supports ENABLED and
       DISABLED. */
-    virtual void SetDeviceState(const std::string & state);
+    virtual void SetOperatingState(const std::string & state);
 
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
@@ -133,7 +134,7 @@ public:
     mtsStateTable mStateTableState;
     mtsStdString mStateTableStateCurrent;
     mtsStdString mStateTableStateDesired;
-    mtsStdString mDeviceState; // crtk meta state
+    prmOperatingState mOperatingState; // crtk operating state
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
@@ -238,7 +239,7 @@ public:
     struct {
         mtsFunctionWrite DesiredState;
         mtsFunctionWrite CurrentState;
-        mtsFunctionWrite DeviceState; // crtk
+        mtsFunctionWrite OperatingState; // crtk
     } MessageEvents;
 
     robManipulator * Manipulator;
