@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -30,6 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianGetQtWidget.h>
 #include <cisstParameterTypes/prmForceCartesianGet.h>
+#include <cisstParameterTypes/prmOperatingStateQtWidget.h>
 
 #include <QWidget>
 
@@ -58,11 +59,13 @@ protected:
 signals:
     void SignalDesiredState(QString state);
     void SignalCurrentState(QString state);
+    void SignalOperatingState(const prmOperatingState & state);
 
 private slots:
     void timerEvent(QTimerEvent * event);
     void SlotDesiredStateEventHandler(QString state);
     void SlotCurrentStateEventHandler(QString state);
+    void SlotOperatingStateEventHandler(const prmOperatingState & state);
     void SlotLogEnabled(void);
     void SlotEnableDirectControl(bool toggle);
     void SlotHome(void);
@@ -112,6 +115,8 @@ private:
     void DesiredStateEventHandler(const std::string & state);
     void CurrentStateEventHandler(const std::string & state);
 
+    prmOperatingStateQtWidget * QPOState;
+    void OperatingStateEventHandler(const prmOperatingState & state);
 
     // messages
     bool LogEnabled;

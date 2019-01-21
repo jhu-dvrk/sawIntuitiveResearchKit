@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -54,6 +54,8 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
                                                 this, "DesiredState");
         InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::CurrentStateEventHandler,
                                                 this, "CurrentState");
+        InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::OperatingStateEventHandler,
+                                                this, "OperatingState");
         QMMessage->SetInterfaceRequired(InterfaceRequired);
         InterfaceRequired->AddFunction("GetStateJoint", Arm.GetStateJoint);
         InterfaceRequired->AddFunction("GetPositionCartesian", Arm.GetPositionCartesian);
@@ -141,6 +143,11 @@ void mtsIntuitiveResearchKitArmQtWidget::CurrentStateEventHandler(const std::str
     emit SignalCurrentState(QString(state.c_str()));
 }
 
+void mtsIntuitiveResearchKitArmQtWidget::OperatingStateEventHandler(const prmOperatingState & state)
+{
+    emit SignalOperatingState(state);
+}
+
 void mtsIntuitiveResearchKitArmQtWidget::SlotLogEnabled(void)
 {
     LogEnabled = QPBLog->isChecked();
@@ -170,6 +177,11 @@ void mtsIntuitiveResearchKitArmQtWidget::SlotDesiredStateEventHandler(QString st
 void mtsIntuitiveResearchKitArmQtWidget::SlotCurrentStateEventHandler(QString state)
 {
     QLECurrentState->setText(state);
+}
+
+void mtsIntuitiveResearchKitArmQtWidget::SlotOperatingStateEventHandler(const prmOperatingState & state)
+{
+    QPOState->SetValue(state);
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
@@ -228,6 +240,10 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     QLECurrentState->setReadOnly(true);
     stateLayout->addWidget(QLECurrentState);
 
+    // operating state
+    QPOState = new prmOperatingStateQtWidget();
+    stateLayout->addWidget(QPOState);
+
     // for derived classes
     this->setupUiDerived();
 
@@ -244,6 +260,8 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
             this, SLOT(SlotDesiredStateEventHandler(QString)));
     connect(this, SIGNAL(SignalCurrentState(QString)),
             this, SLOT(SlotCurrentStateEventHandler(QString)));
+    connect(this, SIGNAL(SignalOperatingState(prmOperatingState)),
+            this, SLOT(SlotOperatingStateEventHandler(prmOperatingState)));
     connect(QPBLog, SIGNAL(clicked()),
             this, SLOT(SlotLogEnabled()));
     connect(QCBEnableDirectControl, SIGNAL(toggled(bool)),
