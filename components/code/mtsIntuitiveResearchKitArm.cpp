@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -171,7 +171,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
     JointSet.SetSize(NumberOfJoints());
     JointVelocitySet.SetSize(NumberOfJoints());
     JointSetParam.Goal().SetSize(NumberOfJoints());
+    mJointTrajectory.VelocityMaximum.SetSize(NumberOfJoints());
     mJointTrajectory.Velocity.SetSize(NumberOfJoints());
+    mJointTrajectory.AccelerationMaximum.SetSize(NumberOfJoints());
     mJointTrajectory.Acceleration.SetSize(NumberOfJoints());
     mJointTrajectory.Goal.SetSize(NumberOfJoints());
     mJointTrajectory.GoalVelocity.SetSize(NumberOfJoints());
@@ -331,6 +333,12 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                         this, "SetCartesianImpedanceGains");
 
         // Trajectory events
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetJointVelocityRatio,
+                                        this, "SetJointVelocityRatio");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetJointAccelerationRatio,
+                                        this, "SetJointAccelerationRatio");
+        RobotInterface->AddEventWrite(mJointTrajectory.VelocityRatioEvent, "JointVelocityRatio", double());
+        RobotInterface->AddEventWrite(mJointTrajectory.AccelerationRatioEvent, "JointAccelerationRatio", double());
         RobotInterface->AddEventWrite(mJointTrajectory.GoalReachedEvent, "GoalReached", bool());
         // Robot State
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetDesiredState,
@@ -1098,6 +1106,32 @@ bool mtsIntuitiveResearchKitArm::ArmIsReady(const std::string & methodName,
     }
     mArmNotReadyCounter++;
     return false;
+}
+
+void mtsIntuitiveResearchKitArm::SetJointVelocityRatio(const double & ratio)
+{
+    if (ratio > 0.0 && ratio <= 1.0) {
+        mJointTrajectory.Velocity.ProductOf(ratio, mJointTrajectory.VelocityMaximum);
+        mJointTrajectory.VelocityRatio = ratio;
+        mJointTrajectory.VelocityRatioEvent(ratio);
+    } else {
+        std::stringstream message;
+        message << this->GetName() << ": SetJointVelocityRatio, ratio must be within ]0;1], received " << ratio;
+        RobotInterface->SendWarning(message.str());
+    }
+}
+
+void mtsIntuitiveResearchKitArm::SetJointAccelerationRatio(const double & ratio)
+{
+    if (ratio > 0.0 && ratio <= 1.0) {
+        mJointTrajectory.Acceleration.ProductOf(ratio, mJointTrajectory.AccelerationMaximum);
+        mJointTrajectory.AccelerationRatio = ratio;
+        mJointTrajectory.AccelerationRatioEvent(ratio);
+    } else {
+        std::stringstream message;
+        message << this->GetName() << ": SetJointAccelerationRatio, ratio must be within ]0;1], received " << ratio;
+        RobotInterface->SendWarning(message.str());
+    }
 }
 
 void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,

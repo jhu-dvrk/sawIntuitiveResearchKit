@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -237,10 +237,13 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     Gripper.Position().SetSize(1);
     GripperClosed = false;
 
-    mJointTrajectory.Velocity.SetAll(90.0 * cmnPI_180); // degrees per second
-    mJointTrajectory.Acceleration.SetAll(90.0 * cmnPI_180);
-    mJointTrajectory.Velocity.Element(JNT_WRIST_ROLL) = 360.0 * cmnPI_180; // roll can go fast
-    mJointTrajectory.Acceleration.Element(JNT_WRIST_ROLL) = 360.0 * cmnPI_180;
+    // initialize trajectory data
+    mJointTrajectory.VelocityMaximum.SetAll(90.0 * cmnPI_180); // degrees per second
+    mJointTrajectory.VelocityMaximum.Element(JNT_WRIST_ROLL) = 360.0 * cmnPI_180; // roll can go fast
+    SetJointVelocityRatio(1.0);
+    mJointTrajectory.AccelerationMaximum.SetAll(90.0 * cmnPI_180);
+    mJointTrajectory.AccelerationMaximum.Element(JNT_WRIST_ROLL) = 360.0 * cmnPI_180;
+    SetJointAccelerationRatio(1.0);
     mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
     mJointTrajectory.GoalTolerance.Element(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
 
