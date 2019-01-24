@@ -384,9 +384,8 @@ public:
       space).  E.g. MTM to control platform orientation.  Derived
       methods must ensure that all elements are set properly, i.e. the
       input vector is not set to zero by default. */
-    inline virtual void ControlEffortCartesianPreload(vctDoubleVec & effortPreload) {
-        effortPreload.Zeros();
-    };
+    virtual void ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
+                                               vctDoubleVec & wrenchPreload);
 
     struct {
         robReflexxes Reflexxes;
