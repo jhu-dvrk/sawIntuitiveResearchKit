@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -63,10 +63,10 @@ public:
     mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg);
     virtual inline ~mtsIntuitiveResearchKitArm() {}
 
-    void Configure(const std::string & filename);
-    void Startup(void);
-    void Run(void);
-    void Cleanup(void);
+    void Configure(const std::string & filename) override;
+    void Startup(void) override;
+    void Run(void) override;
+    void Cleanup(void) override;
 
     virtual void SetSimulated(void);
 
@@ -77,6 +77,7 @@ public:
 
     /*! Load BaseFrame and DH parameters from JSON */
     void ConfigureDH(const Json::Value & jsonConfig);
+    void ConfigureDH(const std::string & filename);
 
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
@@ -283,7 +284,7 @@ public:
     vctMatRot3 mEffortOrientation;
     // gravity compensation
     bool mGravityCompensation;
-    void AddGravityCompensationEfforts(vctDoubleVec & efforts);
+    virtual void AddGravityCompensationEfforts(vctDoubleVec & efforts);
     // add custom efforts for derived classes
     inline virtual void AddCustomEfforts(vctDoubleVec & CMN_UNUSED(efforts)) {};
 
@@ -310,6 +311,16 @@ public:
                     const mtsIntuitiveResearchKitArmTypes::ControlSpace space);
     size_t mArmNotReadyCounter;
     double mArmNotReadyTimeLastMessage;
+
+    /*! Set joint velocity ratio for trajectory generation.  Computes
+      joint velocities based on maximum joint velocities.  Ratio must
+      be greater than 0 and lesser or equal to 1. */
+    virtual void SetJointVelocityRatio(const double & ratio);
+
+    /*! Set joint acceleration ratio for trajectory generation.  Computes
+      joint accelerations based on maximum joint accelerations.  Ratio must
+      be greater than 0 and lesser or equal to 1. */
+    virtual void SetJointAccelerationRatio(const double & ratio);
 
     /*! Sets control space and mode.  If none are user defined, the
       callbacks will be using the methods provided in this class.
@@ -379,8 +390,14 @@ public:
 
     struct {
         robReflexxes Reflexxes;
-        vctDoubleVec Velocity;
-        vctDoubleVec Acceleration;
+        vctDoubleVec VelocityMaximum;
+        vctDoubleVec Velocity; // max * ratio
+        double VelocityRatio;
+        mtsFunctionWrite VelocityRatioEvent;
+        vctDoubleVec AccelerationMaximum;
+        vctDoubleVec Acceleration; // max * ratio
+        double AccelerationRatio;
+        mtsFunctionWrite AccelerationRatioEvent;
         vctDoubleVec Goal;
         vctDoubleVec GoalVelocity;
         vctDoubleVec GoalError;

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -171,7 +171,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
     JointSet.SetSize(NumberOfJoints());
     JointVelocitySet.SetSize(NumberOfJoints());
     JointSetParam.Goal().SetSize(NumberOfJoints());
+    mJointTrajectory.VelocityMaximum.SetSize(NumberOfJoints());
     mJointTrajectory.Velocity.SetSize(NumberOfJoints());
+    mJointTrajectory.AccelerationMaximum.SetSize(NumberOfJoints());
     mJointTrajectory.Acceleration.SetSize(NumberOfJoints());
     mJointTrajectory.Goal.SetSize(NumberOfJoints());
     mJointTrajectory.GoalVelocity.SetSize(NumberOfJoints());
@@ -331,6 +333,12 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                         this, "SetCartesianImpedanceGains");
 
         // Trajectory events
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetJointVelocityRatio,
+                                        this, "SetJointVelocityRatio");
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetJointAccelerationRatio,
+                                        this, "SetJointAccelerationRatio");
+        RobotInterface->AddEventWrite(mJointTrajectory.VelocityRatioEvent, "JointVelocityRatio", double());
+        RobotInterface->AddEventWrite(mJointTrajectory.AccelerationRatioEvent, "JointAccelerationRatio", double());
         RobotInterface->AddEventWrite(mJointTrajectory.GoalReachedEvent, "GoalReached", bool());
         // Robot State
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetDesiredState,
@@ -406,7 +414,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
         // save the transform as Manipulator Rtw0
         cmnDataJSON<vctFrm4x4>::DeSerializeText(Manipulator->Rtw0, jsonBase);
         if (!nmrIsOrthonormal(Manipulator->Rtw0.Rotation())) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
                                      << ": the base offset rotation doesn't seem to be orthonormal"
                                      << std::endl;
             exit(EXIT_FAILURE);
@@ -416,16 +424,52 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
     // load DH parameters
     const Json::Value jsonDH = jsonConfig["DH"];
     if (jsonDH.isNull()) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
                                  << ": can find \"DH\" data in configuration file" << std::endl;
         exit(EXIT_FAILURE);
     }
-    this->Manipulator->LoadRobot(jsonDH);
+    if (this->Manipulator->LoadRobot(jsonDH) != robManipulator::ESUCCESS) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
+                                 << ": failed to load \"DH\" parameters" << std::endl;
+        exit(EXIT_FAILURE);
+    }
     std::stringstream dhResult;
     this->Manipulator->PrintKinematics(dhResult);
-    CMN_LOG_CLASS_INIT_VERBOSE << "Configure " << this->GetName()
+    CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureDH " << this->GetName()
                                << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
     ResizeKinematicsData();
+}
+
+void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)
+{
+    try {
+        std::ifstream jsonStream;
+        Json::Value jsonConfig;
+        Json::Reader jsonReader;
+
+        jsonStream.open(filename.c_str());
+        if (!jsonReader.parse(jsonStream, jsonConfig)) {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
+                                     << ": failed to parse kinematic (DH) configuration\n"
+                                     << jsonReader.getFormattedErrorMessages();
+            return;
+        }
+
+        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureDH: " << this->GetName()
+                                   << " using file \"" << filename << "\"" << std::endl
+                                   << "----> content of kinematic (GC) configuration file: " << std::endl
+                                   << jsonConfig << std::endl
+                                   << "<----" << std::endl;
+
+        if (!jsonConfig.isNull()) {
+            ConfigureDH(jsonConfig);
+        }
+
+    } catch (...) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName() << ": make sure the file \""
+                                 << filename << "\" is in JSON format" << std::endl;
+    }
+
 }
 
 void mtsIntuitiveResearchKitArm::Startup(void)
@@ -1063,6 +1107,32 @@ bool mtsIntuitiveResearchKitArm::ArmIsReady(const std::string & methodName,
     }
     mArmNotReadyCounter++;
     return false;
+}
+
+void mtsIntuitiveResearchKitArm::SetJointVelocityRatio(const double & ratio)
+{
+    if (ratio > 0.0 && ratio <= 1.0) {
+        mJointTrajectory.Velocity.ProductOf(ratio, mJointTrajectory.VelocityMaximum);
+        mJointTrajectory.VelocityRatio = ratio;
+        mJointTrajectory.VelocityRatioEvent(ratio);
+    } else {
+        std::stringstream message;
+        message << this->GetName() << ": SetJointVelocityRatio, ratio must be within ]0;1], received " << ratio;
+        RobotInterface->SendWarning(message.str());
+    }
+}
+
+void mtsIntuitiveResearchKitArm::SetJointAccelerationRatio(const double & ratio)
+{
+    if (ratio > 0.0 && ratio <= 1.0) {
+        mJointTrajectory.Acceleration.ProductOf(ratio, mJointTrajectory.AccelerationMaximum);
+        mJointTrajectory.AccelerationRatio = ratio;
+        mJointTrajectory.AccelerationRatioEvent(ratio);
+    } else {
+        std::stringstream message;
+        message << this->GetName() << ": SetJointAccelerationRatio, ratio must be within ]0;1], received " << ratio;
+        RobotInterface->SendWarning(message.str());
+    }
 }
 
 void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,

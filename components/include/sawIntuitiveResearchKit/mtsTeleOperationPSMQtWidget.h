@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -19,11 +19,11 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsTeleOperationPSMQtWidget_h
 #define _mtsTeleOperationPSMQtWidget_h
 
-#include <cisstVector/vctQtWidgetFrame.h>
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmPositionCartesianGetQtWidget.h>
 
 #include <QSplitter>
 
@@ -104,9 +104,9 @@ private:
     QCheckBox * QCBLockTranslation;
     QDoubleSpinBox * QSBScale;
     prmPositionCartesianGet PositionMTM;
-    vctQtWidgetFrameDoubleRead * QFRPositionMTMWidget;
+    prmPositionCartesianGetQtWidget * QCPGMTMWidget;
     prmPositionCartesianGet PositionPSM;
-    vctQtWidgetFrameDoubleRead * QFRPositionPSMWidget;
+    prmPositionCartesianGetQtWidget * QCPGPSMWidget;
     vctMatRot3 RegistrationRotation;
 
     // timing

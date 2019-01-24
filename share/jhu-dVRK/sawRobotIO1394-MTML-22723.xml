@@ -126,7 +126,7 @@
          <Tolerance Axis="1" Distance="5.00" Latency="0.01" Unit="deg"/>
          <Tolerance Axis="2" Distance="5.00" Latency="0.01" Unit="deg"/>
          <Tolerance Axis="3" Distance="5.00" Latency="0.01" Unit="deg"/>
-         <Tolerance Axis="4" Distance="5.00" Latency="5.00" Unit="deg"/>
+         <Tolerance Axis="4" Distance="5.00" Latency="0.01" Unit="deg"/>
          <Tolerance Axis="5" Distance="5.00" Latency="0.01" Unit="deg"/>
          <Tolerance Axis="6" Distance="0.00" Latency="0.00" Unit="deg"/>
          <Tolerance Axis="7" Distance="0.00" Latency="0.00" Unit="deg"/>

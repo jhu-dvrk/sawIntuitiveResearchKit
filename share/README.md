@@ -37,7 +37,8 @@ The kinematic parameters (DH and dynamic model) are store in two different types
    * `psm-<tool-type>.json`: includes DH parameters and other info specific to each tool.  **Important:** some parameters (e.g. DH of first 3 dofs) are shared across all `psm-xxx.json` files.  If you find an issue in one, fix them all.
  * MTM:
    * `dvmtm.rob`: not used anymore
-   * `mtm.json`, `mtml.json` and `mtmr.json`: DH and dynamic parameters for MTMs.  The `mtml` and `mtmr` version include a base transformation to match the ISI API convention, i.e. use the stereo display as base frame.  **Important:** most parameters are shared across all `mtm{,l,r}.json` files.  If you find an issue in one, fix them all.
+   * `mtm.json`: DH and dynamic parameters for MTMs.
+   * `mtml.json` and `mtmr.json`: these files are **deprecated**, they include a base transformation to match the ISI API convention, i.e. use the stereo display as base frame.  As of **version 1.6** it is recommended to use the `base-frame` option in the console.json file to specify the base frame.
 
 ## Console
 

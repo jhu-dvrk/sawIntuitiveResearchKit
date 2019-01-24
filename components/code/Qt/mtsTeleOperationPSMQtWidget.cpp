@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -122,17 +122,25 @@ void mtsTeleOperationPSMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 
     // retrieve transformations
     TeleOperation.GetPositionCartesianMTM(PositionMTM);
+    QCPGMTMWidget->SetValue(PositionMTM);
+
+    // for PSM, check if the registration rotation is needed
     TeleOperation.GetPositionCartesianPSM(PositionPSM);
     TeleOperation.GetRegistrationRotation(RegistrationRotation);
-
-    // apply registration orientation
-    vctFrm3 registeredPSM;
-    RegistrationRotation.ApplyInverseTo(PositionPSM.Position().Rotation(), registeredPSM.Rotation());
-    RegistrationRotation.ApplyInverseTo(PositionPSM.Position().Translation(), registeredPSM.Translation());
-
-    // update display
-    QFRPositionMTMWidget->SetValue(PositionMTM.Position());
-    QFRPositionPSMWidget->SetValue(registeredPSM);
+    if (RegistrationRotation.Equal(vctMatRot3::Identity())) {
+        QCPGPSMWidget->SetValue(PositionPSM);        
+    } else {
+        prmPositionCartesianGet registeredPSM;
+        registeredPSM.Valid() = PositionPSM.Valid();
+        registeredPSM.Timestamp() = PositionPSM.Timestamp();
+        registeredPSM.MovingFrame() = PositionPSM.MovingFrame();
+        registeredPSM.ReferenceFrame() = "rot * " + PositionPSM.ReferenceFrame();
+        RegistrationRotation.ApplyInverseTo(PositionPSM.Position().Rotation(),
+                                            registeredPSM.Position().Rotation());
+        RegistrationRotation.ApplyInverseTo(PositionPSM.Position().Translation(),
+                                            registeredPSM.Position().Translation());
+        QCPGPSMWidget->SetValue(registeredPSM);
+    }
 
     TeleOperation.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
@@ -191,21 +199,21 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
 {
     // 3D frames
     QGridLayout * frameLayout = new QGridLayout;
-    QLabel * masterLabel = new QLabel("<b>MTM</b>");
-    masterLabel->setAlignment(Qt::AlignCenter);
-    frameLayout->addWidget(masterLabel, 0, 0);
-    QFRPositionMTMWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    frameLayout->addWidget(QFRPositionMTMWidget, 1, 0);
-    QLabel * slaveLabel = new QLabel("<b>PSM</b>");
-    slaveLabel->setAlignment(Qt::AlignCenter);
-    frameLayout->addWidget(slaveLabel, 2, 0);
-    QFRPositionPSMWidget = new vctQtWidgetFrameDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
-    frameLayout->addWidget(QFRPositionPSMWidget, 3, 0);
+    QLabel * mtmLabel = new QLabel("<b>MTM</b>");
+    mtmLabel->setAlignment(Qt::AlignCenter);
+    frameLayout->addWidget(mtmLabel, 0, 0);
+    QCPGMTMWidget = new prmPositionCartesianGetQtWidget();
+    frameLayout->addWidget(QCPGMTMWidget, 1, 0);
+    QLabel * psmLabel = new QLabel("<b>PSM</b>");
+    psmLabel->setAlignment(Qt::AlignCenter);
+    frameLayout->addWidget(psmLabel, 2, 0);
+    QCPGPSMWidget = new prmPositionCartesianGetQtWidget();
+    frameLayout->addWidget(QCPGPSMWidget, 3, 0);
 
     // right side
     QVBoxLayout * controlLayout = new QVBoxLayout;
 
-    QLabel * instructionsLabel = new QLabel("To start tele-operation you must first insert the tool past the cannula tip (push tool clutch button and manually insert tool).\nOperator must be present to operate (sometime using COAG pedal).\nYou can use the clutch pedal to re-position your masters.");
+    QLabel * instructionsLabel = new QLabel("To start tele-operation you must first insert the tool past the cannula tip (push tool clutch button and manually insert tool).\nOperator must be present to operate (sometime using COAG pedal).\nYou can use the clutch pedal to re-position your MTMs.");
     instructionsLabel->setWordWrap(true);
     controlLayout->addWidget(instructionsLabel);
 
