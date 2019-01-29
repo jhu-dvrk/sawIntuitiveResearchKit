@@ -112,7 +112,8 @@ protected:
     // see base class
     void ControlEffortOrientationLocked(void) override;
     void SetControlEffortActiveJoints(void) override;
-    void ControlEffortCartesianPreload(vctDoubleVec & effortPreload) override;
+    void ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
+                                       vctDoubleVec & wrenchPreload) override;
 
     /*! Lock master orientation when in cartesian effort mode */
     virtual void LockOrientation(const vctMatRot3 & orientation);
