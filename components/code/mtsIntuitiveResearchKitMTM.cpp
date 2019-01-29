@@ -185,6 +185,45 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const std::string & filename)
     }
 }
 
+void mtsIntuitiveResearchKitMTM::ConfigureGC(const std::string & filename)
+{
+    try {
+        std::ifstream jsonStream;
+        Json::Value jsonConfig;
+        Json::Reader jsonReader;
+
+        jsonStream.open(filename.c_str());
+        if (!jsonReader.parse(jsonStream, jsonConfig)) {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC " << this->GetName()
+                                     << ": failed to parse gravity compensation (GC) configuration\n"
+                                     << jsonReader.getFormattedErrorMessages();
+            return;
+        }
+
+        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << this->GetName()
+                                   << " using file \"" << filename << "\"" << std::endl
+                                   << "----> content of gravity compensation (GC) configuration file: " << std::endl
+                                   << jsonConfig << std::endl
+                                   << "<----" << std::endl;
+
+        if (!jsonConfig.isNull()) {
+            auto result = robGravityCompensationMTM::Create(jsonConfig);
+            if (!result.Pointer) {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC " << this->GetName()
+                                         << ": failed to create an instance of robGravityCompensationMTM with \""
+                                         << filename << "\" because " << result.ErrorMessage << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            GravityCompensationMTM = result.Pointer;
+
+        }
+
+    } catch (...) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC " << this->GetName() << ": make sure the file \""
+                                 << filename << "\" is in JSON format" << std::endl;
+    }
+}
+
 robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
