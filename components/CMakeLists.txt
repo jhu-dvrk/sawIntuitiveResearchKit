@@ -11,6 +11,8 @@
 
 project (sawIntuitiveResearchKit)
 
+cmake_minimum_required (VERSION 2.8)
+
 set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_EXTENSIONS OFF)
@@ -137,7 +139,9 @@ if (cisst_FOUND)
          code/mtsSocketServerPSM.cpp
          code/robManipulatorPSMSnake.cpp
          code/mtsPSMCompensation.cpp
-        )
+         code/robGravityCompensationMTM.cpp
+         code/robGravityCompensationMTM.h
+         )
 
     add_library (sawIntuitiveResearchKit
                  ${HEADER_FILES} ${SOURCE_FILES}

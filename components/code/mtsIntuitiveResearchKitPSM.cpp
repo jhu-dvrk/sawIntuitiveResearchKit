@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -112,12 +112,14 @@ void mtsIntuitiveResearchKitPSM::Init(void)
                                this);
 
     // initialize trajectory data
-    mJointTrajectory.Velocity.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
-    mJointTrajectory.Velocity.Element(2) = 0.2; // m per second
-    mJointTrajectory.Velocity.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
-    mJointTrajectory.Acceleration.Ref(2, 0).SetAll(180.0 * cmnPI_180);
-    mJointTrajectory.Acceleration.Element(2) = 0.2; // m per second
-    mJointTrajectory.Acceleration.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
+    mJointTrajectory.VelocityMaximum.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
+    mJointTrajectory.VelocityMaximum.Element(2) = 0.2; // m per second
+    mJointTrajectory.VelocityMaximum.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
+    SetJointVelocityRatio(1.0);
+    mJointTrajectory.AccelerationMaximum.Ref(2, 0).SetAll(180.0 * cmnPI_180);
+    mJointTrajectory.AccelerationMaximum.Element(2) = 0.2; // m per second
+    mJointTrajectory.AccelerationMaximum.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
+    SetJointAccelerationRatio(1.0);
     mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
 
     // default PID tracking errors
