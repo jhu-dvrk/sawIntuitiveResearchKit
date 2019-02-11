@@ -5,9 +5,9 @@
         {
             "name": "MTML",
             "type": "MTM",
-            "io": "xml/sawRobotIO1394-MTML-30594.xml",
-            "pid": "sawControllersPID-MTML.xml",
-            "kinematic": "mtm.json"
+            "io"  : "xml/sawRobotIO1394-MTML-30594.xml",
+            "pid" : "sawControllersPID-MTML.xml",
+            "arm" : "MTML-30594.json"
         }
     ]
 }
