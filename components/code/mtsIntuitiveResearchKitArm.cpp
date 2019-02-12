@@ -533,16 +533,22 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         mtsExecutionResult executionResult;
         // joint state
         executionResult = PID.GetStateJoint(JointsPID);
-        if (!executionResult.IsOK()) {
+        if (executionResult.IsOK()) {
+            JointsPID.Valid() = true;
+        } else {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointState failed \""
                                     << executionResult << "\"" << std::endl;
+            JointsPID.Valid() = false;
         }
 
         // desired joint state
         executionResult = PID.GetStateJointDesired(JointsDesiredPID);
-        if (!executionResult.IsOK()) {
+        if (executionResult.IsOK()) {
+            JointsDesiredPID.Valid() = true;
+        } else {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointStateDesired failed \""
                                     << executionResult << "\"" << std::endl;
+            JointsDesiredPID.Valid() = false;
         }
 
         // update joint states used for kinematics
