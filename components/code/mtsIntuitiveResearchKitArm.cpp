@@ -669,6 +669,7 @@ void mtsIntuitiveResearchKitArm::UpdateJointsKinematics(void)
     JointsKinematics.Velocity().ForceAssign(JointsPID.Velocity().Ref(NumberOfJointsKinematics()));
     JointsKinematics.Effort().ForceAssign(JointsPID.Effort().Ref(NumberOfJointsKinematics()));
     JointsKinematics.Timestamp() = JointsPID.Timestamp();
+    JointsKinematics.Valid() = JointsPID.Valid();
     // commanded
     if (JointsDesiredKinematics.Name().size() != NumberOfJointsKinematics()) {
         JointsDesiredKinematics.Name().ForceAssign(JointsDesiredPID.Name().Ref(NumberOfJointsKinematics()));
@@ -678,6 +679,7 @@ void mtsIntuitiveResearchKitArm::UpdateJointsKinematics(void)
     // JointsDesiredKinematics.Velocity().ForceAssign(JointsDesiredPID.Velocity().Ref(NumberOfJointsKinematics()));
     JointsDesiredKinematics.Effort().ForceAssign(JointsDesiredPID.Effort().Ref(NumberOfJointsKinematics()));
     JointsDesiredKinematics.Timestamp() = JointsDesiredPID.Timestamp();
+    JointsDesiredKinematics.Valid() = JointsDesiredPID.Valid();
 }
 
 void mtsIntuitiveResearchKitArm::ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID)
