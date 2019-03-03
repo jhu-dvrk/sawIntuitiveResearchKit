@@ -7,7 +7,7 @@
             "type": "MTM",
             "simulation": "KINEMATIC",
             "pid": "sawControllersPID-MTML.xml",
-            "kinematic": "mtml.json"
+            "kinematic": "MTML.json"
         }
     ]
 }
