@@ -220,9 +220,13 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
     Jaw.Position().at(0) = JointsPID.Position().at(jawIndex);
     Jaw.Velocity().at(0) = JointsPID.Velocity().at(jawIndex);
     Jaw.Effort().at(0)   = JointsPID.Effort().at(jawIndex);
+    Jaw.Timestamp() = JointsPID.Timestamp();
+    Jaw.Valid() = JointsPID.Valid();
 
     JawDesired.Position().at(0) = JointsDesiredPID.Position().at(jawIndex);
     JawDesired.Effort().at(0)   = JointsDesiredPID.Effort().at(jawIndex);
+    JawDesired.Timestamp() = JointsDesiredPID.Timestamp();
+    JawDesired.Valid() = JointsDesiredPID.Timestamp();
 
     if (!mSnakeLike) {
         mtsIntuitiveResearchKitArm::UpdateJointsKinematics();
@@ -264,6 +268,7 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
     JointsKinematics.Effort().at(4) = JointsKinematics.Effort().at(7) = JointsPID.Effort().at(4) / 2.0;
     JointsKinematics.Effort().at(5) = JointsKinematics.Effort().at(6) = JointsPID.Effort().at(5) / 2.0;
     JointsKinematics.Timestamp() = JointsPID.Timestamp();
+    JointsKinematics.Valid() = JointsPID.Valid();
 
     if (JointsDesiredKinematics.Name().size() != NumberOfJointsKinematics()) {
         JointsDesiredKinematics.Name().SetSize(NumberOfJointsKinematics());
@@ -295,6 +300,7 @@ void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
     JointsDesiredKinematics.Effort().at(4) = JointsDesiredKinematics.Effort().at(7) = JointsDesiredPID.Effort().at(4) / 2.0;
     JointsDesiredKinematics.Effort().at(5) = JointsDesiredKinematics.Effort().at(6) = JointsDesiredPID.Effort().at(5) / 2.0;
     JointsDesiredKinematics.Timestamp() = JointsDesiredPID.Timestamp();
+    JointsDesiredKinematics.Valid() = JointsDesiredPID.Valid();
 }
 
 void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID)
