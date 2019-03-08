@@ -23,7 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cmath>
 #include <iostream>
 
-robGravityCompensationMTM::robGravityCompensationMTM(const robGravityCompensationMTM::Parameters & parameters)
+robGravityCompensationMTM::robGravityCompensationMTM(const robGravityCompensationMTM::Parameters & parameters,int version)
     : mParameters(parameters)
     , mRegressor(parameters.JointCount(), parameters.DynamicParameterCount(), 0.0)
     , mOnes(parameters.JointCount(), 1.0)
@@ -32,6 +32,9 @@ robGravityCompensationMTM::robGravityCompensationMTM(const robGravityCompensatio
     , mTauNeg(parameters.JointCount(), 0.0)
     , mBeta(parameters.JointCount(), 0.0)
     , mOneMinusBeta(parameters.JointCount(), 0.0)
+    , mAlpha(parameters.JointCount(), 0.0)
+    , mOneMinusAlpha(parameters.JointCount(), 0.0)
+    , mVersion(version)
 {}
 
 void robGravityCompensationMTM::AssignRegressor(const vctVec & q, vctMat & regressor)
@@ -182,11 +185,24 @@ void robGravityCompensationMTM::AddGravityCompensationEfforts(const vctVec & q,
                                                               vctVec & totalEfforts)
 {
     AssignRegressor(q, mRegressor);
-    ComputeBetaVel(q_dot);
-    mOnes.SetAll(1.0);
-    mOneMinusBeta = mOnes.Subtract(mBeta);
-    mTauPos.ProductOf(mRegressor, mParameters.Pos).ElementwiseMultiply(mBeta);
-    mTauNeg.ProductOf(mRegressor, mParameters.Neg).ElementwiseMultiply(mOneMinusBeta);
+    if ( 1 == mVersion ) {
+        ComputeBetaVel(q_dot);
+        mOnes.SetAll(1.0);
+        mOneMinusBeta = mOnes.Subtract(mBeta);
+        mTauPos.ProductOf(mRegressor, mParameters.Pos).ElementwiseMultiply(mBeta);
+        mTauNeg.ProductOf(mRegressor, mParameters.Neg).ElementwiseMultiply(mOneMinusBeta);
+    } else if ( 2 == mVersion ) {
+        ComputeAlphaVel(q_dot);
+        mOnes.SetAll(1.0);
+        mOneMinusAlpha = mOnes.Subtract(mAlpha);
+        mTauPos.ProductOf(mRegressor, mParameters.Pos).ElementwiseMultiply(mAlpha);
+        mTauNeg.ProductOf(mRegressor, mParameters.Neg).ElementwiseMultiply(mOneMinusAlpha);
+
+    } else {
+        mTauPos.SetAll(0.0);
+        mTauNeg.SetAll(0.0);
+    }
+
     mGravityEfforts.SetAll(0.0);
     mGravityEfforts.Add(mTauPos);
     mGravityEfforts.Add(mTauNeg);
@@ -209,6 +225,37 @@ void robGravityCompensationMTM::LimitEfforts(vctVec & efforts) const
             *effort = *upper;
         } else if (*effort < *lower) {
             *effort = *lower;
+        }
+    }
+}
+
+void robGravityCompensationMTM::ComputeAlphaVel(const vctVec &q_dot)
+{
+    auto end = q_dot.end();
+    auto qd = q_dot.begin();
+    auto bd_vel = mParameters.DBVel.begin();
+    auto sat_vel = mParameters.SatVel.begin();
+    auto fric_comp_ratio = mParameters.FricCompRatio.begin();
+    auto alpha = mAlpha.begin();
+
+    for (;
+         qd != end;
+         ++qd,
+         ++bd_vel,
+         ++sat_vel,
+         ++fric_comp_ratio,
+         ++alpha) {
+
+        if (*qd >= *sat_vel) {
+            *alpha = 0.5 + 0.5*(*fric_comp_ratio);
+        } else if (*qd <= -(*sat_vel)) {
+            *alpha = 0.5 - 0.5*(*fric_comp_ratio);
+        } else if ( (*qd <= *bd_vel) && (*qd >= -(*bd_vel)) ) {
+            *alpha = 0.5;
+        } else if ( (*qd > *bd_vel) && (*qd < *sat_vel) ) {
+            *alpha = 0.5*(*fric_comp_ratio)*(*qd - *bd_vel)/(*sat_vel - *bd_vel) + 0.5;
+        } else {
+            *alpha = -0.5*(*fric_comp_ratio)*(*qd - *bd_vel)/(*sat_vel - *bd_vel) + 0.5;
         }
     }
 }
@@ -239,45 +286,58 @@ robGravityCompensationMTM::CreationResult
 robGravityCompensationMTM::Create(const Json::Value & jsonConfig)
 {
     // check version
-    if (jsonConfig["version"].asString() == "1.0") {
+    const int version = (int)std::stod(jsonConfig["version"].asString());
 
-        auto getTuple = [&jsonConfig](const std::string &fieldName) {
-            auto jarray = jsonConfig["GC_controller"][fieldName];
-            if (jarray.empty()) {
-                std::string errorMessage = std::string("the field name \"") + fieldName + std::string("\" cannot be empty.");
-                return std::make_tuple(jarray, true, errorMessage);
-            }
-            return std::make_tuple(jarray, false, std::string(""));
-        };
-
-        auto isEmpty = [](const auto &paramTuple) {
-            return std::get<1>(paramTuple);
-        };
-
-        auto createReturnValue = [](const auto &paramTuple) {
-            return robGravityCompensationMTM::CreationResult({nullptr, std::get<2>(paramTuple)});
-        };
-
-#define GCMTM_GetParam(fieldname, param)                                 \
-        {                                                               \
-            auto paramTuple = getTuple(fieldname);                      \
-            if (isEmpty(paramTuple))                                    \
-                return createReturnValue(paramTuple);                   \
-            cmnDataJSON<vctVec>::DeSerializeText(param, std::get<0>(paramTuple)); \
+    auto getTuple = [&jsonConfig](const std::string &fieldName) {
+        auto jarray = jsonConfig["GC_controller"][fieldName];
+        if (jarray.empty()) {
+            std::string errorMessage = std::string("the field name \"") + fieldName + std::string("\" cannot be empty.");
+            return std::make_tuple(jarray, true, errorMessage);
         }
+        return std::make_tuple(jarray, false, std::string(""));
+    };
 
-        robGravityCompensationMTM::Parameters params;
-        // load
+    auto isEmpty = [](const auto &paramTuple) {
+        return std::get<1>(paramTuple);
+    };
+
+    auto createReturnValue = [](const auto &paramTuple) {
+        return robGravityCompensationMTM::CreationResult({nullptr, std::get<2>(paramTuple)});
+    };
+
+#define GCMTM_GetParam(fieldname, param)                            \
+    {                                                               \
+        auto paramTuple = getTuple(fieldname);                      \
+        if (isEmpty(paramTuple))                                    \
+            return createReturnValue(paramTuple);                   \
+        cmnDataJSON<vctVec>::DeSerializeText(param, std::get<0>(paramTuple)); \
+    }
+
+    robGravityCompensationMTM::Parameters params;
+
+    if ( 1 == version) {
+
         GCMTM_GetParam("gc_dynamic_params_pos", params.Pos);
         GCMTM_GetParam("gc_dynamic_params_neg", params.Neg);
         GCMTM_GetParam("beta_vel_amplitude", params.BetaVelAmp);
         GCMTM_GetParam("safe_upper_torque_limit", params.UpperEffortsLimit);
         GCMTM_GetParam("safe_lower_torque_limit", params.LowerEffortsLimit);
+        return {new robGravityCompensationMTM(params,version), ""};
+
+    }
+    if ( 2 == version) {
+
+        GCMTM_GetParam("gc_dynamic_params_pos", params.Pos);
+        GCMTM_GetParam("gc_dynamic_params_neg", params.Neg);
+        GCMTM_GetParam("safe_upper_torque_limit", params.UpperEffortsLimit);
+        GCMTM_GetParam("safe_lower_torque_limit", params.LowerEffortsLimit);
+        GCMTM_GetParam("db_vel_vec", params.DBVel);
+        GCMTM_GetParam("sat_vec_vec", params.SatVel);
+        GCMTM_GetParam("fric_comp_ratio_vec", params.FricCompRatio);
+        return {new robGravityCompensationMTM(params,version), ""};
+    }
+
+    return {nullptr, "the version of dynamic parameters is invalid"};
+}
 
 #undef GCMTM_GetParam
-
-        return {new robGravityCompensationMTM(params), ""};
-    }
-    return {nullptr, "the version of dynamic parameters is not 1.0"};
-
-}
