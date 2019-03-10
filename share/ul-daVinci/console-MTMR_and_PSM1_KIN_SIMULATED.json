@@ -1,5 +1,5 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-{   
+{
     "arms":
     [
          {
@@ -15,7 +15,7 @@
             "type": "MTM",
             "simulation": "KINEMATIC",
             "pid": "sawControllersPID-MTML.xml",
-            "kinematic": "mtmr.json"
+            "kinematic": "mtm.json"
         }
     ]
 }
