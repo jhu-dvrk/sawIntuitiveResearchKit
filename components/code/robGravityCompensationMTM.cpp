@@ -2,10 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):
+  Author(s): Vincent Hui
   Created on: 2018
 
-  (C) Copyright 2018, Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2018-2019, Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -23,7 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cmath>
 #include <iostream>
 
-robGravityCompensationMTM::robGravityCompensationMTM(const robGravityCompensationMTM::Parameters & parameters,int version)
+robGravityCompensationMTM::robGravityCompensationMTM(const robGravityCompensationMTM::Parameters & parameters, int version)
     : mParameters(parameters)
     , mRegressor(parameters.JointCount(), parameters.DynamicParameterCount(), 0.0)
     , mOnes(parameters.JointCount(), 1.0)
@@ -229,7 +229,7 @@ void robGravityCompensationMTM::LimitEfforts(vctVec & efforts) const
     }
 }
 
-void robGravityCompensationMTM::ComputeAlphaVel(const vctVec &q_dot)
+void robGravityCompensationMTM::ComputeAlphaVel(const vctVec & q_dot)
 {
     auto end = q_dot.end();
     auto qd = q_dot.begin();
@@ -322,7 +322,7 @@ robGravityCompensationMTM::Create(const Json::Value & jsonConfig)
         GCMTM_GetParam("beta_vel_amplitude", params.BetaVelAmp);
         GCMTM_GetParam("safe_upper_torque_limit", params.UpperEffortsLimit);
         GCMTM_GetParam("safe_lower_torque_limit", params.LowerEffortsLimit);
-        return {new robGravityCompensationMTM(params,version), ""};
+        return {new robGravityCompensationMTM(params,version), "version 1 is still supported but you should recalibrate your MTM for version 2"};
 
     }
     if ( 2 == version) {
