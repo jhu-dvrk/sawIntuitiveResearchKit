@@ -7,7 +7,7 @@
             "type": "MTM",
             "io": "sawRobotIO1394-MTMR-foot-pedal-35185_cal.xml",
             "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtmr.json"
+            "kinematic": "mtm.json"
         }
     ]
 }

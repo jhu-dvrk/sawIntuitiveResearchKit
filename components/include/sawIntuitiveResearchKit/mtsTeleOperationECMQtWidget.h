@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -19,11 +19,11 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsTeleOperationECMQtWidget_h
 #define _mtsTeleOperationECMQtWidget_h
 
-#include <cisstVector/vctQtWidgetFrame.h>
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmPositionCartesianGetQtWidget.h>
 
 #include <QSplitter>
 
@@ -88,11 +88,11 @@ private:
     QLineEdit * QLECurrentState;
     QDoubleSpinBox * QSBScale;
     prmPositionCartesianGet PositionMTML;
-    vctQtWidgetFrameDoubleRead * QFRPositionMTMLWidget;
+    prmPositionCartesianGetQtWidget * QCPGMTMLWidget;
     prmPositionCartesianGet PositionMTMR;
-    vctQtWidgetFrameDoubleRead * QFRPositionMTMRWidget;
+    prmPositionCartesianGetQtWidget * QCPGMTMRWidget;
     prmPositionCartesianGet PositionECM;
-    vctQtWidgetFrameDoubleRead * QFRPositionECMWidget;
+    prmPositionCartesianGetQtWidget * QCPGECMWidget;
     vctMatRot3 RegistrationRotation;
 
     // timing

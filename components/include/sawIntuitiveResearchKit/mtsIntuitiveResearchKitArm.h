@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -312,6 +312,16 @@ public:
     size_t mArmNotReadyCounter;
     double mArmNotReadyTimeLastMessage;
 
+    /*! Set joint velocity ratio for trajectory generation.  Computes
+      joint velocities based on maximum joint velocities.  Ratio must
+      be greater than 0 and lesser or equal to 1. */
+    virtual void SetJointVelocityRatio(const double & ratio);
+
+    /*! Set joint acceleration ratio for trajectory generation.  Computes
+      joint accelerations based on maximum joint accelerations.  Ratio must
+      be greater than 0 and lesser or equal to 1. */
+    virtual void SetJointAccelerationRatio(const double & ratio);
+
     /*! Sets control space and mode.  If none are user defined, the
       callbacks will be using the methods provided in this class.
       If either the space or mode is "USER", a callback must be
@@ -370,8 +380,14 @@ public:
 
     struct {
         robReflexxes Reflexxes;
-        vctDoubleVec Velocity;
-        vctDoubleVec Acceleration;
+        vctDoubleVec VelocityMaximum;
+        vctDoubleVec Velocity; // max * ratio
+        double VelocityRatio;
+        mtsFunctionWrite VelocityRatioEvent;
+        vctDoubleVec AccelerationMaximum;
+        vctDoubleVec Acceleration; // max * ratio
+        double AccelerationRatio;
+        mtsFunctionWrite AccelerationRatioEvent;
         vctDoubleVec Goal;
         vctDoubleVec GoalVelocity;
         vctDoubleVec GoalError;
