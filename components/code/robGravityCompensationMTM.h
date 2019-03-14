@@ -40,9 +40,12 @@ public:
         vctVec BetaVelAmp;
         vctVec UpperEffortsLimit;
         vctVec LowerEffortsLimit;
+        vctVec DBVel;
+        vctVec SatVel;
+        vctVec FricCompRatio;
 
         size_t JointCount(void) const {
-            return BetaVelAmp.size();
+            return UpperEffortsLimit.size();
         }
         size_t DynamicParameterCount(void) const {
             return Pos.size();
@@ -50,15 +53,17 @@ public:
     };
 
     static CreationResult Create(const Json::Value & jsonConfig);
-    robGravityCompensationMTM(const Parameters & parameters);
+    robGravityCompensationMTM(const Parameters & parameters,int version);
     void AddGravityCompensationEfforts(const vctVec & q, const vctVec & q_dot,
                                        vctVec & totalEfforts);
 
 private:
     static void AssignRegressor(const vctVec & q, vctMat & regressor);
     void LimitEfforts(vctVec & efforts) const;
+    void ComputeAlphaVel(const vctVec & q_dot);
     void ComputeBetaVel(const vctVec & q_dot);
-    Parameters mParameters;
+
+    const Parameters mParameters;
     vctMat mRegressor;
     vctVec mOnes;
     vctVec mGravityEfforts;
@@ -66,6 +71,9 @@ private:
     vctVec mTauNeg;
     vctVec mBeta;
     vctVec mOneMinusBeta;
+    vctVec mAlpha;
+    vctVec mOneMinusAlpha;
+    const int mVersion = 0;
 };
 
 #endif // _robGravityCompensationMTM_h

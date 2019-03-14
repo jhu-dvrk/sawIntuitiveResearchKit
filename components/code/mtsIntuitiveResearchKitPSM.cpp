@@ -942,8 +942,8 @@ void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawP
             // make sure all other joints have a reasonable cartesian
             // goal for all other joints
             CartesianSetParam.Goal().Assign(CartesianGetDesiredParam.Position());
-            break;
         }
+        break;
     case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
         if (mControlMode != mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
             // we are initiating the control mode switch so we need to
@@ -1006,6 +1006,10 @@ void mtsIntuitiveResearchKitPSM::SetPositionGoalJaw(const prmPositionJointSet & 
     mJointTrajectory.IsWorking = true;
     mJointTrajectory.Goal[6] = jawPosition.Goal().at(0);
     mJointTrajectory.EndTime = 0.0;
+
+    // save position jaw goal, this might lead to jump if the user
+    // interupts the jaw trajectory
+    JawGoal = jawPosition.Goal().at(0);
 }
 
 void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
@@ -1037,8 +1041,8 @@ void mtsIntuitiveResearchKitPSM::SetEffortJaw(const prmForceTorqueJointSet & eff
             // make sure all other joints have a reasonable cartesian
             // goal
             mWrenchSet.Force().SetAll(0.0);
-            break;
         }
+        break;
     case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
         if (mControlMode != mtsIntuitiveResearchKitArmTypes::EFFORT_MODE) {
             // we are initiating the control mode switch so we need to
