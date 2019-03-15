@@ -712,9 +712,9 @@ void mtsIntuitiveResearchKitArm::StateChanged(void)
     const std::string newState = mArmState.CurrentState();
     // update crtk meta state
     if (mJointControlReady) {
-        mOperatingState.State() = "ENABLED";
+        mOperatingState.State() = prmOperatingState::ENABLED;
     } else {
-        mOperatingState.State() = "DISABLED";
+        mOperatingState.State() = prmOperatingState::DISABLED;
     }
     mOperatingState.Valid() = true;
 
