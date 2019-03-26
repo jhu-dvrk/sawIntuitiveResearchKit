@@ -58,7 +58,6 @@ int main(int argc, char ** argv)
 
     // parse options
     cmnCommandLineOptions options;
-    std::string gcmip = "-1";
     std::string jsonMainConfigFile;
     std::string jsonCollectionConfigFile;
     typedef std::map<std::string, std::string> ConfigFilesType;
@@ -68,12 +67,6 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
-
-#if CISST_HAS_ICE
-    options.AddOptionOneValue("g", "gcmip",
-                              "global component manager IP address",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &gcmip);
-#endif
 
     options.AddOptionOneValue("c", "collection-config",
                               "json configuration file for data collection",
@@ -93,20 +86,7 @@ int main(int argc, char ** argv)
     // make sure the json config file exists and can be parsed
     fileExists("JSON configuration", jsonMainConfigFile);
 
-
-    std::string processname = "dvTeleop";
-    mtsManagerLocal * componentManager = 0;
-    if (gcmip != "-1") {
-        try {
-            componentManager = mtsManagerLocal::GetInstance(gcmip, processname);
-        } catch(...) {
-            std::cerr << "Failed to get GCM instance." << std::endl;
-            return -1;
-        }
-    } else {
-        componentManager = mtsManagerLocal::GetInstance();
-    }
-
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
     // console
     mtsIntuitiveResearchKitConsole * console = new mtsIntuitiveResearchKitConsole("console");
