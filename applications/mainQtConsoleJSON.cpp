@@ -72,7 +72,7 @@ int main(int argc, char ** argv)
                               cmnCommandLineOptions::OPTIONAL_OPTION, &jsonCollectionConfigFile);
 
     options.AddOptionMultipleValues("m", "component-manager",
-                                    "JSON file to configure component manager",
+                                    "JSON files to configure component manager",
                                     cmnCommandLineOptions::OPTIONAL_OPTION, &managerConfig);
 
     // check that all required options have been provided
@@ -126,17 +126,18 @@ int main(int argc, char ** argv)
     }
 
     // custom user component
-    const managerConfigType::iterator end = managerConfig.end();
-    for (managerConfigType::iterator iter = managerConfig.begin();
-         iter != end;
-         ++iter) {
-        if (!iter->empty()) {
-            if (!cmnPath::Exists(*iter)) {
-                CMN_LOG_INIT_ERROR << "File " << *iter
+    const managerConfigType::iterator endConfig = managerConfig.end();
+    for (managerConfigType::iterator iterConfig = managerConfig.begin();
+         iterConfig != endConfig;
+         ++iterConfig) {
+        if (!iterConfig->empty()) {
+            if (!cmnPath::Exists(*iterConfig)) {
+                CMN_LOG_INIT_ERROR << "File " << *iterConfig
                                    << " not found!" << std::endl;
             } else {
-                if (!componentManager->ConfigureJSON(*iter)) {
-                    CMN_LOG_INIT_ERROR << "Configure: failed to configure component-manager" << std::endl;
+                if (!componentManager->ConfigureJSON(*iterConfig)) {
+                    CMN_LOG_INIT_ERROR << "Configure: failed to configure component-manager for "
+                                       << *iterConfig << std::endl;
                     return -1;
                 }
             }
