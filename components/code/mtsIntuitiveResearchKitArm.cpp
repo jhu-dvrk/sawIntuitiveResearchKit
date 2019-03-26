@@ -347,8 +347,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         // Robot State
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetDesiredState,
                                         this, "SetDesiredState", std::string(""));
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetOperatingState,
-                                        this, "SetOperatingState", std::string(""));
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::OperatingStateCommand,
+                                        this, "OperatingStateCommand", std::string(""));
         // Human readable messages
         RobotInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
         RobotInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
@@ -368,6 +368,8 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
 {
     // try to find the state in state machine
     if (!mArmState.StateExists(state)) {
+        MessageEvents.DesiredState(state);
+        MessageEvents.OperatingState(mOperatingState);
         RobotInterface->SendError(this->GetName() + ": unsupported state " + state);
         return;
     }
@@ -377,6 +379,8 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
     try {
         mArmState.SetDesiredState(state);
     } catch (...) {
+        MessageEvents.DesiredState(state);
+        MessageEvents.OperatingState(mOperatingState);
         RobotInterface->SendError(this->GetName() + ": " + state + " is not an allowed desired state");
         return;
     }
@@ -386,20 +390,21 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
     mStateTableState.Advance();
 
     MessageEvents.DesiredState(state);
+    MessageEvents.OperatingState(mOperatingState);
     RobotInterface->SendStatus(this->GetName() + ": desired state " + state);
 }
 
-void mtsIntuitiveResearchKitArm::SetOperatingState(const std::string & state)
+void mtsIntuitiveResearchKitArm::OperatingStateCommand(const std::string & command)
 {
-    if (state == "ENABLED") {
-        SetDesiredState("ARM_HOMED");
+    if (command == "enable") {
+        SetDesiredState("READY");
         return;
     }
-    if (state == "DISABLED") {
+    if (command == "disable") {
         SetDesiredState("UNINITIALIZED");
         return;
     }
-    RobotInterface->SendWarning(this->GetName() + ": unsupported operating state " + state);
+    RobotInterface->SendWarning(this->GetName() + ": unsupported operating state command \"" + command + "\"");
 }
 
 void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)

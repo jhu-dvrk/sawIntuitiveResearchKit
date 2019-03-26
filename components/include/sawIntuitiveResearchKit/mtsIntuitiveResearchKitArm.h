@@ -90,9 +90,9 @@ public:
       state. */
     virtual void SetDesiredState(const std::string & state);
 
-    /*! Set crtk operating state.  Currently supports ENABLED and
-      DISABLED. */
-    virtual void SetOperatingState(const std::string & state);
+    /*! crtk operating state command.  Currently supports "enable" and
+      "disable". */
+    virtual void OperatingStateCommand(const std::string & command);
 
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
