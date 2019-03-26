@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -58,26 +58,22 @@ int main(int argc, char ** argv)
 
     // parse options
     cmnCommandLineOptions options;
-    std::string gcmip = "-1";
     std::string jsonMainConfigFile;
     std::string jsonCollectionConfigFile;
-    typedef std::map<std::string, std::string> ConfigFilesType;
-    ConfigFilesType configFiles;
-    std::string masterName, slaveName;
+    typedef std::list<std::string> managerConfigType;
+    managerConfigType managerConfig;
 
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
 
-#if CISST_HAS_ICE
-    options.AddOptionOneValue("g", "gcmip",
-                              "global component manager IP address",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &gcmip);
-#endif
-
     options.AddOptionOneValue("c", "collection-config",
                               "json configuration file for data collection",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &jsonCollectionConfigFile);
+
+    options.AddOptionMultipleValues("m", "component-manager",
+                                    "JSON files to configure component manager",
+                                    cmnCommandLineOptions::OPTIONAL_OPTION, &managerConfig);
 
     // check that all required options have been provided
     std::string errorMessage;
@@ -93,20 +89,7 @@ int main(int argc, char ** argv)
     // make sure the json config file exists and can be parsed
     fileExists("JSON configuration", jsonMainConfigFile);
 
-
-    std::string processname = "dvTeleop";
-    mtsManagerLocal * componentManager = 0;
-    if (gcmip != "-1") {
-        try {
-            componentManager = mtsManagerLocal::GetInstance(gcmip, processname);
-        } catch(...) {
-            std::cerr << "Failed to get GCM instance." << std::endl;
-            return -1;
-        }
-    } else {
-        componentManager = mtsManagerLocal::GetInstance();
-    }
-
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
     // console
     mtsIntuitiveResearchKitConsole * console = new mtsIntuitiveResearchKitConsole("console");
@@ -140,6 +123,25 @@ int main(int argc, char ** argv)
         componentManager->AddComponent(collectorQtFactory);
         collectorQtFactory->Connect();
         collectorQtFactory->ConnectToWidget(collectorQtWidget);
+    }
+
+    // custom user component
+    const managerConfigType::iterator endConfig = managerConfig.end();
+    for (managerConfigType::iterator iterConfig = managerConfig.begin();
+         iterConfig != endConfig;
+         ++iterConfig) {
+        if (!iterConfig->empty()) {
+            if (!cmnPath::Exists(*iterConfig)) {
+                CMN_LOG_INIT_ERROR << "File " << *iterConfig
+                                   << " not found!" << std::endl;
+            } else {
+                if (!componentManager->ConfigureJSON(*iterConfig)) {
+                    CMN_LOG_INIT_ERROR << "Configure: failed to configure component-manager for "
+                                       << *iterConfig << std::endl;
+                    return -1;
+                }
+            }
+        }
     }
 
     //-------------- create the components ------------------
