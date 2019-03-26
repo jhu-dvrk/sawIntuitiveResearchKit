@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -60,9 +60,8 @@ int main(int argc, char ** argv)
     cmnCommandLineOptions options;
     std::string jsonMainConfigFile;
     std::string jsonCollectionConfigFile;
-    typedef std::map<std::string, std::string> ConfigFilesType;
-    ConfigFilesType configFiles;
-    std::string masterName, slaveName;
+    typedef std::list<std::string> managerConfigType;
+    managerConfigType managerConfig;
 
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
@@ -71,6 +70,10 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("c", "collection-config",
                               "json configuration file for data collection",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &jsonCollectionConfigFile);
+
+    options.AddOptionMultipleValues("m", "component-manager",
+                                    "JSON file to configure component manager",
+                                    cmnCommandLineOptions::OPTIONAL_OPTION, &managerConfig);
 
     // check that all required options have been provided
     std::string errorMessage;
@@ -120,6 +123,24 @@ int main(int argc, char ** argv)
         componentManager->AddComponent(collectorQtFactory);
         collectorQtFactory->Connect();
         collectorQtFactory->ConnectToWidget(collectorQtWidget);
+    }
+
+    // custom user component
+    const managerConfigType::iterator end = managerConfig.end();
+    for (managerConfigType::iterator iter = managerConfig.begin();
+         iter != end;
+         ++iter) {
+        if (!iter->empty()) {
+            if (!cmnPath::Exists(*iter)) {
+                CMN_LOG_INIT_ERROR << "File " << *iter
+                                   << " not found!" << std::endl;
+            } else {
+                if (!componentManager->ConfigureJSON(*iter)) {
+                    CMN_LOG_INIT_ERROR << "Configure: failed to configure component-manager" << std::endl;
+                    return -1;
+                }
+            }
+        }
     }
 
     //-------------- create the components ------------------
