@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2017-12-18
 
-  (C) Copyright 2017-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2017-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -116,10 +116,15 @@ void mtsDaVinciHeadSensor::HeadSensorEventHandler(const size_t sensorNumber,
     }
 
     // changed
+    prmEventButton payload;
+    payload.SetValid(true);
+    payload.SetTimestamp(StateTable.GetTic());
     if (operatorPresent) {
-        MessageEvents.OperatorPresent(prmEventButton(prmEventButton::PRESSED));
+        payload.SetType(prmEventButton::PRESSED);
+        MessageEvents.OperatorPresent(payload);
     } else {
-        MessageEvents.OperatorPresent(prmEventButton(prmEventButton::RELEASED));
+        payload.SetType(prmEventButton::RELEASED);
+        MessageEvents.OperatorPresent(payload);
     }
 
     mOperatorPresent = operatorPresent;
