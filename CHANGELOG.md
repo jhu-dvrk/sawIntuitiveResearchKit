@@ -5,7 +5,7 @@ Change log
 ==================
 
 * API changes:
-
+  * Using c++ 14 features: **Ubuntu 16.04 or higher required**
 * Deprecated features:
   * `kinematic` field in JSON console config file has been replaced by `arm` for MTMs to support gravity compensation (see New features)
 * New features:
