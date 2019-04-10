@@ -1,7 +1,7 @@
 Change log
 ==========
 
-1.7.0 (2019-03-xx)
+1.7.0 (2019-04-09)
 ==================
 
 * API changes:
@@ -9,7 +9,7 @@ Change log
 * Deprecated features:
   * `kinematic` field in JSON console config file has been replaced by `arm` for MTMs to support gravity compensation (see New features)
 * New features:
-  * Added gravity compensation for the MTM.  Contribution from CUHK. Thank you! 
+  * Added gravity compensation for the MTM.  Contribution from CUHK. Thank you!
   * Support for multiple teleop components per MTM or PSM (ee issue #97)
     * Using the console, operator can use a "clutch" quick tap to toggle between PSMs.
     * Using ROS topics, programs can select which pairs to activate or de-activate.
