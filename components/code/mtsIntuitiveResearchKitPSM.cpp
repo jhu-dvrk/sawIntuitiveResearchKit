@@ -580,6 +580,16 @@ void mtsIntuitiveResearchKitPSM::LeaveArmHomed(void)
 void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
 {
     if (mIsSimulated) {
+        // now set PID limits based on tool/no tool
+        if (CouplingChange.CouplingForTool) {
+            PID.SetPositionLowerLimit(CouplingChange.ToolPositionLowerLimit);
+            PID.SetPositionUpperLimit(CouplingChange.ToolPositionUpperLimit);
+            PID.SetTorqueLowerLimit(CouplingChange.ToolTorqueLowerLimit);
+            PID.SetTorqueUpperLimit(CouplingChange.ToolTorqueUpperLimit);
+        } else {
+            PID.SetPositionLowerLimit(CouplingChange.NoToolPositionLowerLimit);
+            PID.SetPositionUpperLimit(CouplingChange.NoToolPositionUpperLimit);
+        }
         mArmState.SetCurrentState(CouplingChange.NextState);
         return;
     }
