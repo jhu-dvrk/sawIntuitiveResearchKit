@@ -1,0 +1,52 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "components":
+    [
+        {
+            "shared-library": "sawSocketStreamer",
+            "class-name": "mtsSocketStreamer",
+            "constructor-arg": {
+                "Name": "streamerMTML",
+                "Period": 0.01
+            },
+            "configure-parameter": "streamerMTML.json"
+        }
+        ,
+        {
+            "shared-library": "sawSocketStreamer",
+            "class-name": "mtsSocketStreamer",
+            "constructor-arg": {
+                "Name": "streamerMTMR",
+                "Period": 0.01
+            },
+            "configure-parameter": "streamerMTMR.json"
+        }
+    ]
+    ,
+    "connections":
+    [
+        {
+            "required": {
+                "component": "streamerMTML",
+                "interface": "Required"
+            }
+            ,
+            "provided": {
+                "component": "MTML",
+                "interface": "Robot"
+            }
+        }
+        ,
+        {
+            "required": {
+                "component": "streamerMTMR",
+                "interface": "Required"
+            }
+            ,
+            "provided": {
+                "component": "MTMR",
+                "interface": "Robot"
+            }
+        }
+    ]
+}

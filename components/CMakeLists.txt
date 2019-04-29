@@ -27,7 +27,7 @@ set (REQUIRED_CISST_LIBRARIES
      cisstRobot
      cisstNumerical)
 
-find_package (cisst 1.0.10 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.0.11 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND)
 
@@ -44,8 +44,8 @@ if (cisst_FOUND)
 
   # saw components have been compiled within cisst, we should find them automatically
   find_package (sawTextToSpeech         1.2.0 REQUIRED)
-  find_package (sawRobotIO1394          1.6.0 REQUIRED)
-  find_package (sawControllers          1.6.0 REQUIRED)
+  find_package (sawRobotIO1394          1.7.0 REQUIRED)
+  find_package (sawControllers          1.7.0 REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
@@ -77,7 +77,7 @@ if (cisst_FOUND)
 
     # Set the version number
     set (sawIntuitiveResearchKit_VERSION_MAJOR "1")
-    set (sawIntuitiveResearchKit_VERSION_MINOR "6")
+    set (sawIntuitiveResearchKit_VERSION_MINOR "7")
     set (sawIntuitiveResearchKit_VERSION_PATCH "0")
     set (sawIntuitiveResearchKit_VERSION "${sawIntuitiveResearchKit_VERSION_MAJOR}.${sawIntuitiveResearchKit_VERSION_MINOR}.${sawIntuitiveResearchKit_VERSION_PATCH}")
 
@@ -139,7 +139,9 @@ if (cisst_FOUND)
          code/mtsSocketServerPSM.cpp
          code/robManipulatorPSMSnake.cpp
          code/mtsPSMCompensation.cpp
-        )
+         code/robGravityCompensationMTM.cpp
+         code/robGravityCompensationMTM.h
+         )
 
     add_library (sawIntuitiveResearchKit
                  ${HEADER_FILES} ${SOURCE_FILES}

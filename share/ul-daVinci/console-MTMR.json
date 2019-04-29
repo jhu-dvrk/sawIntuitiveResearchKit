@@ -8,8 +8,7 @@
             "type": "MTM",
             "io": "xml/sawRobotIO1394-MTMR-31093.xml",
             "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtmr.json"
+            "kinematic": "mtm.json"
         }
     ]
-    
 }

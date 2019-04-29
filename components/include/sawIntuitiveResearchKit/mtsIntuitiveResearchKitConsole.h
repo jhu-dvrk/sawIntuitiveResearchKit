@@ -74,7 +74,7 @@ public:
 
         /*! Create and configure the robot arm. */
         void ConfigureArm(const ArmType armType,
-                          const std::string & configFile,
+                          const std::string & kinematicsConfigFile,
                           const double & periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
 
         /*! Check if mBaseFrame has a valid name and if it does

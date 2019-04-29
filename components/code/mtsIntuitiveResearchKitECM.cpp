@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -109,14 +109,16 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                this);
 
     // initialize trajectory data
-    mJointTrajectory.Velocity.Assign(60.0 * cmnPI_180, // degrees per second
-                                     60.0 * cmnPI_180,
-                                     30.0 * cmn_mm,    // mm per second
-                                     60.0 * cmnPI_180);
-    mJointTrajectory.Acceleration.Assign(90.0 * cmnPI_180,
-                                         90.0 * cmnPI_180,
-                                         15.0 * cmn_mm,
-                                         90.0 * cmnPI_180);
+    mJointTrajectory.VelocityMaximum.Assign(60.0 * cmnPI_180, // degrees per second
+                                            60.0 * cmnPI_180,
+                                            30.0 * cmn_mm,    // mm per second
+                                            60.0 * cmnPI_180);
+    SetJointVelocityRatio(1.0);
+    mJointTrajectory.AccelerationMaximum.Assign(90.0 * cmnPI_180,
+                                                90.0 * cmnPI_180,
+                                                15.0 * cmn_mm,
+                                                90.0 * cmnPI_180);
+    SetJointAccelerationRatio(1.0);
     mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
 
     // default PID tracking errors

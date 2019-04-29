@@ -1,0 +1,11 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "ip": "10.194.86.119",
+    "port": "48055",
+    "data": [
+        {
+            "name": "GetStateJoint",
+            "type": "prmStateJoint"
+        }
+    ]
+}
