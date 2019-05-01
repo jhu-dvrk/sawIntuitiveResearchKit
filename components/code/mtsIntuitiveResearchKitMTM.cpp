@@ -128,7 +128,8 @@ void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
     }
 }
 
-vct3 SO3toRPY(const vctMatRot3 & R)
+template <typename _rotationMatrix>
+vct3 SO3toRPY(const _rotationMatrix & R)
 {
     vct3 rpy;
     if (fabs(R[2][2]) < 1e-12 && fabs(R[1][2]) < 1e-12) {
@@ -224,8 +225,80 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
         const double difference = JointsKinematics.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
+
+#ifdef CLOSED_SOLUTION
+        // test code to validate closed form kinematics
+        vctFrm4x4 goal07;
+        // "remove" optional Rtw0 from manipulator
+        Manipulator->Rtw0.ApplyInverseTo(cartesianGoal, goal07);
+
+        vctDoubleVec closedSolution(NumberOfJointsKinematics());
+        closedSolution.SetAll(0.0);
+        closedSolution.Element(0) = atan2l(goal07.Translation().X(),
+                                           -goal07.Translation().Y());
+
+        // arm is provided in ISI DH
+        const double l1 = 0.2794;
+        const double l1_sqr = l1 * l1;
+
+        // create a triangle "above" forarm to find position
+        const double forarmBase = 0.3645; // from ISI documentation
+        const double forarmHeight = 0.1506; // for ISI documentation
+        const double l2_sqr = forarmBase * forarmBase + forarmHeight * forarmHeight;
+        const double l2 = sqrt(l2_sqr) ;
+        const double angleOffset = asinl(forarmHeight / l2);
+
+        // project in plane formed by links 2 & 3 to find q2 and q3 (joint[1] and joint[2])
+        const double x = -goal07.Translation().Z();
+        const double y = sqrt(goal07.Translation().X() * goal07.Translation().X()
+                              + goal07.Translation().Y() * goal07.Translation().Y());
+
+        // 2 dof IK in plane
+        const double d_sqr = x * x + y * y;
+        const double d = sqrt(d_sqr);
+        const double a1 = atan2l(y, x);
+        const double a2 = acosl((l1_sqr - l2_sqr + d_sqr) / (2.0 * l1 * d));
+        const double q1 = a1 - a2;
+        const double q2 = -acosl((l1_sqr + l2_sqr - d_sqr) / (2.0 * l1 * l2));
+
+        closedSolution.Element(1) = q1;
+        closedSolution.Element(2) = q2 - angleOffset + cmnPI_2;
+
+        // for now, use result of numerical IK so we can compare
+        closedSolution.Element(3) = jointSet.Element(3);
+
+        // compute orientation of platform
+        const vctFrm4x4 fwd04 = Manipulator->ForwardKinematics(jointSet, 4);
+        vctFrm4x4 goal57;
+        fwd04.ApplyInverseTo(goal07, goal57);
+        vct3 closed57 = SO3toRPY(goal57.Rotation());
+
+        // this is wrong!
+        closedSolution.Element(4) = closed57.Element(1) + cmnPI_2;
+        closedSolution.Element(5) = -closed57.Element(0);
+        closedSolution.Element(6) = closed57.Element(2);
+        
+        vctFrm4x4 fwd;
+
+        // fwd = Manipulator->ForwardKinematics(jointSet);
+        // std::cerr << "D numerical: " << (fwd.Translation() - cartesianGoal.Translation()) * cmn_mm << std::endl;
+
+        fwd = Manipulator->ForwardKinematics(closedSolution);
+        std::cerr << "Goal:   " << goal57 << std::endl
+                  << "Closed: " << fwd << std::endl;
+        std::cerr << "D closed:    " << (fwd.Translation() - cartesianGoal.Translation()).Norm() * cmn_mm << std::endl;
+        
+#if 1
+        std::cerr << std::endl
+                  << "numerical: " << jointSet << std::endl
+                  << "closed:    " << closedSolution << std::endl;
+#endif
+
+#endif // CLOSED_SOLUTION
+
         return robManipulator::ESUCCESS;
     }
+
     return robManipulator::EFAILURE;
 }
 
