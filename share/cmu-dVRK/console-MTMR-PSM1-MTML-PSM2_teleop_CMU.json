@@ -27,7 +27,7 @@
             "type": "MTM",
             "io": "xml/sawRobotIO1394-MTMR-23877.xml",
             "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtm.json"
+            "arm" : "MTMR-23877.json"
         }
         ,
         {
@@ -35,15 +35,15 @@
             "type": "MTM",
             "io": "xml/sawRobotIO1394-MTML-30594.xml",
             "pid": "sawControllersPID-MTML.xml",
-            "kinematic": "mtm.json"
+            "arm" : "MTML-30594.json"
         }
     ]
     ,
     "psm-teleops":
     [
         {
-            "master": "MTMR",
-            "slave": "PSM1",
+            "mtm": "MTMR",
+            "psm": "PSM1",
             "configure-parameter":
             {
                 "rotation": [[-1.0, 0.0, 0.0],
@@ -53,8 +53,8 @@
         }
         ,
         {
-            "master": "MTML",
-            "slave": "PSM2",
+            "mtm": "MTML",
+            "psm": "PSM2",
             "configure-parameter":
             {
                 "rotation": [[-1.0, 0.0, 0.0],

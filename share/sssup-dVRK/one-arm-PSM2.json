@@ -7,7 +7,7 @@
             "type": "MTM",
             "io": "sawRobotIO1394-MTMR-foot-pedal-35185_cal.xml",
             "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtmr.json"
+            "kinematic": "mtm.json"
         }
         ,
         {
@@ -17,18 +17,15 @@
             "pid": "sawControllersPID-PSM.xml",
             "kinematic": "psm-large-needle-driver.json"
         }
-        
-        
+
+
     ]
     ,
     "psm-teleops":
     [
         {
-            "master": "MTMR",
-            "slave": "PSM2",
-            "rotation" : [[ 1.0000,  0.0000,  0.0000],
-                          [ 0.0000,  1.0000,  0.0000],
-                          [ 0.0000,  0.0000,  1.0000]]
+            "mtm": "MTMR",
+            "psm": "PSM2"
         }
     ]
 }

@@ -534,16 +534,22 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         mtsExecutionResult executionResult;
         // joint state
         executionResult = PID.GetStateJoint(JointsPID);
-        if (!executionResult.IsOK()) {
+        if (executionResult.IsOK()) {
+            JointsPID.Valid() = true;
+        } else {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointState failed \""
                                     << executionResult << "\"" << std::endl;
+            JointsPID.Valid() = false;
         }
 
         // desired joint state
         executionResult = PID.GetStateJointDesired(JointsDesiredPID);
-        if (!executionResult.IsOK()) {
+        if (executionResult.IsOK()) {
+            JointsDesiredPID.Valid() = true;
+        } else {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointStateDesired failed \""
                                     << executionResult << "\"" << std::endl;
+            JointsDesiredPID.Valid() = false;
         }
 
         // update joint states used for kinematics
@@ -664,6 +670,7 @@ void mtsIntuitiveResearchKitArm::UpdateJointsKinematics(void)
     JointsKinematics.Velocity().ForceAssign(JointsPID.Velocity().Ref(NumberOfJointsKinematics()));
     JointsKinematics.Effort().ForceAssign(JointsPID.Effort().Ref(NumberOfJointsKinematics()));
     JointsKinematics.Timestamp() = JointsPID.Timestamp();
+    JointsKinematics.Valid() = JointsPID.Valid();
     // commanded
     if (JointsDesiredKinematics.Name().size() != NumberOfJointsKinematics()) {
         JointsDesiredKinematics.Name().ForceAssign(JointsDesiredPID.Name().Ref(NumberOfJointsKinematics()));
@@ -673,6 +680,7 @@ void mtsIntuitiveResearchKitArm::UpdateJointsKinematics(void)
     // JointsDesiredKinematics.Velocity().ForceAssign(JointsDesiredPID.Velocity().Ref(NumberOfJointsKinematics()));
     JointsDesiredKinematics.Effort().ForceAssign(JointsDesiredPID.Effort().Ref(NumberOfJointsKinematics()));
     JointsDesiredKinematics.Timestamp() = JointsDesiredPID.Timestamp();
+    JointsDesiredKinematics.Valid() = JointsDesiredPID.Valid();
 }
 
 void mtsIntuitiveResearchKitArm::ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID)
@@ -1329,7 +1337,7 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
     if (mWrenchType == WRENCH_BODY) {
         // either using wrench provided by user or cartesian impedance
         if (mCartesianImpedance) {
-            mCartesianImpedanceController.Update(CartesianGetLocalParam,
+            mCartesianImpedanceController.Update(CartesianGetParam,
                                                  CartesianVelocityGetParam,
                                                  mWrenchSet,
                                                  mWrenchBodyOrientationAbsolute);

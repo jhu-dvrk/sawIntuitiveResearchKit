@@ -20,15 +20,15 @@
             "type": "MTM",
             "io": "xml/sawRobotIO1394-MTML-30594.xml",
             "pid": "sawControllersPID-MTML.xml",
-            "kinematic": "mtm.json"
+            "arm" : "MTML-30594.json"
         }
     ]
     ,
     "psm-teleops":
     [
         {
-            "master": "MTML",
-            "slave": "PSM2",
+            "mtm": "MTML",
+            "psm": "PSM2",
             "configure-parameter":
             {
                 "rotation": [[-1.0, 0.0, 0.0],

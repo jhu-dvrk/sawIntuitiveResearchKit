@@ -1,6 +1,31 @@
 Change log
 ==========
 
+1.7.0 (2019-04-09)
+==================
+
+* API changes:
+
+* Deprecated features:
+  * `kinematic` field in JSON console config file has been replaced by `arm` for MTMs to support gravity compensation (see New features)
+* New features:
+  * Added gravity compensation for the MTM.  Contribution from CUHK. Thank you!
+  * Support for multiple teleop components per MTM or PSM (ee issue #97)
+    * Using the console, operator can use a "clutch" quick tap to toggle between PSMs.
+    * Using ROS topics, programs can select which pairs to activate or de-activate.
+  * TeleopPSM: added options to disable jaw on PSM side
+  * Teleop Qt widgets: use prmPositionCartesianGet widget
+  * Arms: added set ratio velocity and acceleration to control max velocity used in joint tractories
+* Bug fixes:
+  * Console:
+    * Throttle error messages
+    * Fixed Coag digital input when operator present is using a different input
+    * Fixed valid/timestamp for head sensor events
+  * Arms:
+    * Fixed valid/timestamp for jaw/gripper joint states
+    * Fixed PSM jaw transitions between servo and move modes (see issue #112)
+    * Removed reference to deprecated `mtml.json` and `mtmr.json` in configuration files (see issue #106)
+
 1.6.0 (2018-05-16)
 ==================
 

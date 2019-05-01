@@ -176,9 +176,12 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const std::string & filename)
                 exit(EXIT_FAILURE);
             }
             GravityCompensationMTM = result.Pointer;
-
+            if (!result.ErrorMessage.empty()) {
+                CMN_LOG_CLASS_INIT_WARNING << "ConfigureGC " << this->GetName()
+                                           << ": robGravityCompensationMTM created from file \""
+                                           << filename << "\" warns " << result.ErrorMessage << std::endl;
+            }
         }
-
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC " << this->GetName() << ": make sure the file \""
                                  << filename << "\" is in JSON format" << std::endl;
