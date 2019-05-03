@@ -618,7 +618,9 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     // finally check for transition
     if ((orientationErrorInDegrees <= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance)
         && (mGripperJawTransitions > 1)) {
-        mTeleopState.SetCurrentState("ENABLED");
+        if (mTeleopState.DesiredState() == "ENABLED") {
+            mTeleopState.SetCurrentState("ENABLED");
+        }
     } else {
         // check timer and issue a message
         if ((StateTable.GetTic() - mInStateTimer) > 2.0 * cmn_s) {
