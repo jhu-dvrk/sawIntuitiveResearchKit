@@ -119,6 +119,7 @@ void mtsTeleOperationECM::Init(void)
                                        mMTML.SetWrenchBodyOrientationAbsolute);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::MTMLErrorEventHandler,
                                                 this, "Error");
+        interfaceRequired->AddFunction("SetGravityCompensation", mMTML.SetGravityCompensation);
     }
 
     interfaceRequired = AddInterfaceRequired("MTMR");
@@ -141,6 +142,7 @@ void mtsTeleOperationECM::Init(void)
                                        mMTMR.SetWrenchBodyOrientationAbsolute);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::MTMRErrorEventHandler,
                                                 this, "Error");
+        interfaceRequired->AddFunction("SetGravityCompensation", mMTMR.SetGravityCompensation);
     }
 
     interfaceRequired = AddInterfaceRequired("ECM");
