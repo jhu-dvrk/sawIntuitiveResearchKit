@@ -226,6 +226,8 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
 
+#define CLOSED_SOLUTION
+
 #ifdef CLOSED_SOLUTION
         // test code to validate closed form kinematics
         vctFrm4x4 goal07;
@@ -268,30 +270,37 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
         closedSolution.Element(3) = jointSet.Element(3);
 
         // compute orientation of platform
-        const vctFrm4x4 fwd04 = Manipulator->ForwardKinematics(jointSet, 4);
+        const vctFrm4x4 fwd04 = Manipulator->ForwardKinematics(closedSolution, 4);
         vctFrm4x4 goal57;
         fwd04.ApplyInverseTo(goal07, goal57);
         vct3 closed57 = SO3toRPY(goal57.Rotation());
 
-        // this is wrong!
+        // applying DH offsets
         closedSolution.Element(4) = closed57.Element(1) + cmnPI_2;
-        closedSolution.Element(5) = -closed57.Element(0);
-        closedSolution.Element(6) = closed57.Element(2);
-        
-        vctFrm4x4 fwd;
+        closedSolution.Element(5) = -closed57.Element(0) + cmnPI_2;
+        closedSolution.Element(6) = closed57.Element(2) + cmnPI;
 
-        // fwd = Manipulator->ForwardKinematics(jointSet);
-        // std::cerr << "D numerical: " << (fwd.Translation() - cartesianGoal.Translation()) * cmn_mm << std::endl;
+        // shove this in the joint state velocities for debug (since these were not used :-))
+        JointsDesiredKinematics.Velocity().ForceAssign(closedSolution);
 
-        fwd = Manipulator->ForwardKinematics(closedSolution);
-        std::cerr << "Goal:   " << goal57 << std::endl
-                  << "Closed: " << fwd << std::endl;
-        std::cerr << "D closed:    " << (fwd.Translation() - cartesianGoal.Translation()).Norm() * cmn_mm << std::endl;
-        
 #if 1
-        std::cerr << std::endl
-                  << "numerical: " << jointSet << std::endl
-                  << "closed:    " << closedSolution << std::endl;
+        std::cerr << "--------------------" << std::endl
+                  << "numerical: " << jointSet * cmn180_PI << std::endl
+                  << "closed   : " << closedSolution * cmn180_PI << std::endl;
+
+        vctFrm4x4 fwdNumerical, fwdClosed;
+
+        fwdNumerical = Manipulator->ForwardKinematics(jointSet);
+        std::cerr << "D T numerical: " << (fwdNumerical.Translation() - cartesianGoal.Translation()).Norm() * cmn_mm << std::endl;
+        std::cerr << "D R numerical: " << (fwdNumerical.Rotation() - cartesianGoal.Rotation()).Norm() << std::endl;
+        
+        fwdClosed = Manipulator->ForwardKinematics(closedSolution);
+        //std::cerr << "Goal:   " << goal57 << std::endl
+        //          << "Closed: " << fwd << std::endl;
+        std::cerr << "D T closed:    " << (fwdClosed.Translation() - cartesianGoal.Translation()).Norm() * cmn_mm << std::endl;
+        std::cerr << "D R closed:    " << (fwdClosed.Rotation() - cartesianGoal.Rotation()).Norm() << std::endl;
+
+        std::cerr << "D joint: " << (jointSet - closedSolution).Norm() << std::endl;
 #endif
 
 #endif // CLOSED_SOLUTION
