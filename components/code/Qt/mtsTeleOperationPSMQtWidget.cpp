@@ -57,6 +57,7 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
         interfaceRequired->AddFunction("SetScale", TeleOperation.SetScale);
         interfaceRequired->AddFunction("LockRotation", TeleOperation.LockRotation);
         interfaceRequired->AddFunction("LockTranslation", TeleOperation.LockTranslation);
+        interfaceRequired->AddFunction("SetAlignMTM", TeleOperation.SetAlignMTM);
         interfaceRequired->AddFunction("GetPositionCartesianMTM", TeleOperation.GetPositionCartesianMTM);
         interfaceRequired->AddFunction("GetPositionCartesianPSM", TeleOperation.GetPositionCartesianPSM);
         interfaceRequired->AddFunction("GetRegistrationRotation", TeleOperation.GetRegistrationRotation);
@@ -74,6 +75,8 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
                                                 this, "RotationLocked");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::TranslationLockedEventHandler,
                                                 this, "TranslationLocked");
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::AlignMTMEventHandler,
+                                                this, "AlignMTM");
     }
 }
 
@@ -128,7 +131,7 @@ void mtsTeleOperationPSMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     TeleOperation.GetPositionCartesianPSM(PositionPSM);
     TeleOperation.GetRegistrationRotation(RegistrationRotation);
     if (RegistrationRotation.Equal(vctMatRot3::Identity())) {
-        QCPGPSMWidget->SetValue(PositionPSM);        
+        QCPGPSMWidget->SetValue(PositionPSM);
     } else {
         prmPositionCartesianGet registeredPSM;
         registeredPSM.Valid() = PositionPSM.Valid();
@@ -159,6 +162,11 @@ void mtsTeleOperationPSMQtWidget::SlotLockRotation(bool lock)
 void mtsTeleOperationPSMQtWidget::SlotLockTranslation(bool lock)
 {
     TeleOperation.LockTranslation(lock);
+}
+
+void mtsTeleOperationPSMQtWidget::SlotSetAlignMTM(bool align)
+{
+    TeleOperation.SetAlignMTM(align);
 }
 
 void mtsTeleOperationPSMQtWidget::SlotDesiredStateEventHandler(QString state)
@@ -193,6 +201,11 @@ void mtsTeleOperationPSMQtWidget::SlotRotationLockedEventHandler(bool lock)
 void mtsTeleOperationPSMQtWidget::SlotTranslationLockedEventHandler(bool lock)
 {
     QCBLockTranslation->setChecked(lock);
+}
+
+void mtsTeleOperationPSMQtWidget::SlotAlignMTMEventHandler(bool align)
+{
+    QCBAlignMTM->setChecked(align);
 }
 
 void mtsTeleOperationPSMQtWidget::setupUi(void)
@@ -235,6 +248,11 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
 
     QCBLockTranslation = new QCheckBox("Lock Translation");
     buttonsLayout->addWidget(QCBLockTranslation);
+
+    // align MTM
+    QCBAlignMTM = new QCheckBox("Align MTM");
+    QCBAlignMTM->setChecked(true);
+    buttonsLayout->addWidget(QCBAlignMTM);
 
     // messages on/off
     QPBLog = new QPushButton("Messages");
@@ -314,6 +332,11 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     connect(this, SIGNAL(SignalTranslationLocked(bool)),
             this, SLOT(SlotTranslationLockedEventHandler(bool)));
 
+    connect(QCBAlignMTM, SIGNAL(clicked(bool)),
+            this, SLOT(SlotSetAlignMTM(bool)));
+    connect(this, SIGNAL(SignalAlignMTM(bool)),
+            this, SLOT(SlotAlignMTMEventHandler(bool)));
+
     // messages
     connect(QPBLog, SIGNAL(clicked()),
             this, SLOT(SlotLogEnabled()));
@@ -347,6 +370,11 @@ void mtsTeleOperationPSMQtWidget::RotationLockedEventHandler(const bool & lock)
 void mtsTeleOperationPSMQtWidget::TranslationLockedEventHandler(const bool & lock)
 {
     emit SignalTranslationLocked(lock);
+}
+
+void mtsTeleOperationPSMQtWidget::AlignMTMEventHandler(const bool & align)
+{
+    emit SignalAlignMTM(align);
 }
 
 void mtsTeleOperationPSMQtWidget::SlotLogEnabled(void)

@@ -57,6 +57,7 @@ signals:
     void SignalScale(double scale);
     void SignalRotationLocked(bool lock);
     void SignalTranslationLocked(bool lock);
+    void SignalAlignMTM(bool align);
 
 private slots:
     void timerEvent(QTimerEvent * event);
@@ -65,6 +66,7 @@ private slots:
     void SlotSetScale(double scale);
     void SlotLockRotation(bool lock);
     void SlotLockTranslation(bool lock);
+    void SlotSetAlignMTM(bool align);
     // to update GUI from component's events
     void SlotDesiredStateEventHandler(QString state);
     void SlotCurrentStateEventHandler(QString state);
@@ -72,6 +74,7 @@ private slots:
     void SlotScaleEventHandler(double scale);
     void SlotRotationLockedEventHandler(bool lock);
     void SlotTranslationLockedEventHandler(bool lock);
+    void SlotAlignMTMEventHandler(bool align);
 
 private:
     //! setup TeleOperationPSM controller GUI
@@ -84,12 +87,14 @@ private:
     void ScaleEventHandler(const double & scale);
     void RotationLockedEventHandler(const bool & lock);
     void TranslationLockedEventHandler(const bool & lock);
+    void AlignMTMEventHandler(const bool & align);
 
 protected:
     struct {
         mtsFunctionWrite SetScale;
         mtsFunctionWrite LockRotation;
         mtsFunctionWrite LockTranslation;
+        mtsFunctionWrite SetAlignMTM;
         mtsFunctionRead GetPositionCartesianMTM;
         mtsFunctionRead GetPositionCartesianPSM;
         mtsFunctionRead GetRegistrationRotation;
@@ -102,6 +107,7 @@ private:
     QLineEdit * QLEFollowing;
     QCheckBox * QCBLockRotation;
     QCheckBox * QCBLockTranslation;
+    QCheckBox * QCBAlignMTM;
     QDoubleSpinBox * QSBScale;
     prmPositionCartesianGet PositionMTM;
     prmPositionCartesianGetQtWidget * QCPGMTMWidget;
