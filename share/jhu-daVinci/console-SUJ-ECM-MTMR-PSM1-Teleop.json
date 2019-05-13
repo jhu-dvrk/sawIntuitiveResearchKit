@@ -2,6 +2,7 @@
 {
     "io": {
         "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
+        , "firewire-protocol": "broadcast-read-write"
     }
     ,
     "arms":
@@ -46,7 +47,14 @@
             "type": "MTM",
             "io": "sawRobotIO1394-MTMR-32336.xml",
             "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtm.json"
+            "arm": "MTMR-32336.json",
+            "base-frame": {
+                "reference-frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,         -0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
+            }
         }
     ]
     ,

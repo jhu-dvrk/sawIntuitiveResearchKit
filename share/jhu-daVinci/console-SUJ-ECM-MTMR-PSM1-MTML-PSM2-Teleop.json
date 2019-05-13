@@ -1,8 +1,9 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
     "io": {
-        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml",
-        "watchdog-timeout": 0.04 // in seconds
+        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
+        , "watchdog-timeout": 0.04 // in seconds
+        , "firewire-protocol": "broadcast-read-write"
     }
     ,
     "operator-present": {

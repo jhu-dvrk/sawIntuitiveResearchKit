@@ -95,14 +95,13 @@ protected:
         mtsFunctionRead  GetPositionCartesianDesired;
         mtsFunctionWrite SetPositionGoalCartesian;
         mtsFunctionRead  GetStateGripper;
-
-        mtsFunctionRead  GetCurrentState;
-        mtsFunctionRead  GetDesiredState;
-        mtsFunctionWrite SetDesiredState;
         mtsFunctionWrite LockOrientation;
         mtsFunctionVoid  UnlockOrientation;
         mtsFunctionWrite SetWrenchBody;
         mtsFunctionWrite SetGravityCompensation;
+        mtsFunctionRead  GetCurrentState;
+        mtsFunctionRead  GetDesiredState;
+        mtsFunctionWrite SetDesiredState;
 
         prmStateJoint StateGripper;
         prmPositionCartesianGet PositionCartesianCurrent;
