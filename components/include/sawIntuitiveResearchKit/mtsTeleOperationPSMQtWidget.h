@@ -97,6 +97,7 @@ protected:
         mtsFunctionWrite SetAlignMTM;
         mtsFunctionRead GetPositionCartesianMTM;
         mtsFunctionRead GetPositionCartesianPSM;
+        mtsFunctionRead GetAlignMTM;
         mtsFunctionRead GetAlignOffset;
         mtsFunctionRead GetRegistrationRotation;
         mtsFunctionRead GetPeriodStatistics;

@@ -60,6 +60,7 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
         interfaceRequired->AddFunction("SetAlignMTM", TeleOperation.SetAlignMTM);
         interfaceRequired->AddFunction("GetPositionCartesianMTM", TeleOperation.GetPositionCartesianMTM);
         interfaceRequired->AddFunction("GetPositionCartesianPSM", TeleOperation.GetPositionCartesianPSM);
+        interfaceRequired->AddFunction("GetAlignMTM", TeleOperation.GetAlignMTM);
         interfaceRequired->AddFunction("GetAlignOffset", TeleOperation.GetAlignOffset);
         interfaceRequired->AddFunction("GetRegistrationRotation", TeleOperation.GetRegistrationRotation);
         interfaceRequired->AddFunction("GetPeriodStatistics", TeleOperation.GetPeriodStatistics);
@@ -95,6 +96,11 @@ void mtsTeleOperationPSMQtWidget::Startup(void)
     }
     if (!parent()) {
         show();
+    }
+
+    bool align;
+    if (TeleOperation.GetAlignMTM(align)) {
+        emit SignalAlignMTM(align);
     }
 }
 
