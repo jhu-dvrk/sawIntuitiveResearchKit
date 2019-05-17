@@ -34,7 +34,7 @@ class QDoubleSpinBox;
 class QPushButton;
 class QTextEdit;
 
-class CISST_EXPORT mtsTeleOperationPSMQtWidget: public QSplitter, public mtsComponent
+class CISST_EXPORT mtsTeleOperationPSMQtWidget: public QWidget, public mtsComponent
 {
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -97,6 +97,7 @@ protected:
         mtsFunctionWrite SetAlignMTM;
         mtsFunctionRead GetPositionCartesianMTM;
         mtsFunctionRead GetPositionCartesianPSM;
+        mtsFunctionRead GetAlignOffset;
         mtsFunctionRead GetRegistrationRotation;
         mtsFunctionRead GetPeriodStatistics;
     } TeleOperation;
@@ -113,6 +114,8 @@ private:
     prmPositionCartesianGetQtWidget * QCPGMTMWidget;
     prmPositionCartesianGet PositionPSM;
     prmPositionCartesianGetQtWidget * QCPGPSMWidget;
+    vctMatRot3 AlignOffset;
+    vctQtWidgetRotationDoubleRead * QVRAlignOffset;
     vctMatRot3 RegistrationRotation;
 
     // timing

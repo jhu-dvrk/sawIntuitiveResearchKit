@@ -105,6 +105,7 @@ void mtsTeleOperationPSM::Init(void)
     this->StateTable.AddData(mMTM.PositionCartesianCurrent, "MTMCartesianPositionCurrent");
     this->StateTable.AddData(mMTM.PositionCartesianDesired, "MTMCartesianPositionDesired");
     this->StateTable.AddData(mPSM.PositionCartesianCurrent, "PSMCartesianPosition");
+    this->StateTable.AddData(mAlignOffset, "AlignOffset");
 
     mConfigurationStateTable = new mtsStateTable(100, "Configuration");
     mConfigurationStateTable->SetAutomaticAdvance(false);
@@ -190,6 +191,9 @@ void mtsTeleOperationPSM::Init(void)
         mInterface->AddCommandReadState(this->StateTable,
                                         mPSM.PositionCartesianCurrent,
                                         "GetPositionCartesianPSM");
+        mInterface->AddCommandReadState(this->StateTable,
+                                        mAlignOffset,
+                                        "GetAlignOffset");
         // events
         mInterface->AddEventWrite(MessageEvents.DesiredState,
                                   "DesiredState", std::string(""));

@@ -60,6 +60,7 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
         interfaceRequired->AddFunction("SetAlignMTM", TeleOperation.SetAlignMTM);
         interfaceRequired->AddFunction("GetPositionCartesianMTM", TeleOperation.GetPositionCartesianMTM);
         interfaceRequired->AddFunction("GetPositionCartesianPSM", TeleOperation.GetPositionCartesianPSM);
+        interfaceRequired->AddFunction("GetAlignOffset", TeleOperation.GetAlignOffset);
         interfaceRequired->AddFunction("GetRegistrationRotation", TeleOperation.GetRegistrationRotation);
         interfaceRequired->AddFunction("GetPeriodStatistics", TeleOperation.GetPeriodStatistics);
         // events
@@ -145,6 +146,10 @@ void mtsTeleOperationPSMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
         QCPGPSMWidget->SetValue(registeredPSM);
     }
 
+    // alignment offset
+    TeleOperation.GetAlignOffset(AlignOffset);
+    QVRAlignOffset->SetValue(AlignOffset);
+
     TeleOperation.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
@@ -210,29 +215,40 @@ void mtsTeleOperationPSMQtWidget::SlotAlignMTMEventHandler(bool align)
 
 void mtsTeleOperationPSMQtWidget::setupUi(void)
 {
-    // 3D frames
-    QGridLayout * frameLayout = new QGridLayout;
-    QLabel * mtmLabel = new QLabel("<b>MTM</b>");
-    mtmLabel->setAlignment(Qt::AlignCenter);
-    frameLayout->addWidget(mtmLabel, 0, 0);
-    QCPGMTMWidget = new prmPositionCartesianGetQtWidget();
-    frameLayout->addWidget(QCPGMTMWidget, 1, 0);
-    QLabel * psmLabel = new QLabel("<b>PSM</b>");
-    psmLabel->setAlignment(Qt::AlignCenter);
-    frameLayout->addWidget(psmLabel, 2, 0);
-    QCPGPSMWidget = new prmPositionCartesianGetQtWidget();
-    frameLayout->addWidget(QCPGPSMWidget, 3, 0);
+    // main layout
+    QVBoxLayout * mainLayout = new QVBoxLayout();
+    setLayout(mainLayout);
 
-    // right side
-    QVBoxLayout * controlLayout = new QVBoxLayout;
-
+    // instructions
     QLabel * instructionsLabel = new QLabel("To start tele-operation you must first insert the tool past the cannula tip (push tool clutch button and manually insert tool).\nOperator must be present to operate (sometime using COAG pedal).\nYou can use the clutch pedal to re-position your MTMs.");
     instructionsLabel->setWordWrap(true);
-    controlLayout->addWidget(instructionsLabel);
+    mainLayout->addWidget(instructionsLabel);
+
+    // 3D frames
+    QGridLayout * frameLayout = new QGridLayout;
+    mainLayout->addLayout(frameLayout);
+    int column = 0;
+    QLabel * mtmLabel = new QLabel("<b>MTM</b>");
+    mtmLabel->setAlignment(Qt::AlignCenter);
+    frameLayout->addWidget(mtmLabel, 0, column);
+    QCPGMTMWidget = new prmPositionCartesianGetQtWidget();
+    frameLayout->addWidget(QCPGMTMWidget, 1, column);
+    column++;
+    QLabel * psmLabel = new QLabel("<b>PSM</b>");
+    psmLabel->setAlignment(Qt::AlignCenter);
+    frameLayout->addWidget(psmLabel, 0, column);
+    QCPGPSMWidget = new prmPositionCartesianGetQtWidget();
+    frameLayout->addWidget(QCPGPSMWidget, 1, column);
+    column++;
+    QLabel * alignLabel = new QLabel("<b>Alignment</b>");
+    alignLabel->setAlignment(Qt::AlignCenter);
+    frameLayout->addWidget(alignLabel, 0, column);
+    QVRAlignOffset = new vctQtWidgetRotationDoubleRead(vctQtWidgetRotationDoubleRead::OPENGL_WIDGET);
+    frameLayout->addWidget(QVRAlignOffset, 1, column);
 
     // scale/lock/unlock/messages
     QHBoxLayout * buttonsLayout = new QHBoxLayout;
-    controlLayout->addLayout(buttonsLayout);
+    mainLayout->addLayout(buttonsLayout);
 
     // scale
     QSBScale = new QDoubleSpinBox();
@@ -259,9 +275,16 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     QPBLog->setCheckable(true);
     buttonsLayout->addWidget(QPBLog);
 
+    // state and timing
+    QHBoxLayout * stateAndTimingLayout = new QHBoxLayout();
+    mainLayout->addLayout(stateAndTimingLayout);
+    
     // state info
+    QVBoxLayout * stateLayout = new QVBoxLayout();
+    stateAndTimingLayout->addLayout(stateLayout);
+    
     QHBoxLayout * stateDesiredLayout = new QHBoxLayout;
-    controlLayout->addLayout(stateDesiredLayout);
+    stateLayout->addLayout(stateDesiredLayout);
     QLabel * label = new QLabel("Desired state");
     stateDesiredLayout->addWidget(label);
     QLEDesiredState = new QLineEdit("");
@@ -270,7 +293,7 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     stateDesiredLayout->addStretch();
 
     QHBoxLayout * stateCurrentLayout = new QHBoxLayout;
-    controlLayout->addLayout(stateCurrentLayout);
+    stateLayout->addLayout(stateCurrentLayout);
     label = new QLabel("Current state");
     stateCurrentLayout->addWidget(label);
     QLECurrentState = new QLineEdit("");
@@ -279,7 +302,7 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     stateCurrentLayout->addStretch();
 
     QHBoxLayout * followingLayout = new QHBoxLayout;
-    controlLayout->addLayout(followingLayout);
+    stateLayout->addLayout(followingLayout);
     label = new QLabel("Teleoperation \"mode\"");
     followingLayout->addWidget(label);
     QLEFollowing = new QLineEdit("");
@@ -289,22 +312,11 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
 
     // Timing
     QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
-    controlLayout->addWidget(QMIntervalStatistics);
+    stateAndTimingLayout->addWidget(QMIntervalStatistics);
 
     // messages
     QMMessage->setupUi();
-    controlLayout->addWidget(QMMessage);
-
-    // add stretch
-    controlLayout->addStretch();
-
-    QWidget * leftWidget = new QWidget();
-    leftWidget->setLayout(frameLayout);
-    addWidget(leftWidget);
-
-    QWidget * rightWidget = new QWidget();
-    rightWidget->setLayout(controlLayout);
-    addWidget(rightWidget);
+    mainLayout->addWidget(QMMessage);
 
     setWindowTitle("TeleOperation Controller");
     resize(sizeHint());
