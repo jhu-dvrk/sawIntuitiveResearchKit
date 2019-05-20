@@ -95,6 +95,7 @@ public:
     protected:
         std::string mName;
         ArmType mType;
+        std::string mSerial;
         SimulationType mSimulation;
 
         // low level
