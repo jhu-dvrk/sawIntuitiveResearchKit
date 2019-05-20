@@ -43,7 +43,7 @@
             "type": "MTM",
             "io": "sawRobotIO1394-MTMR-28247.xml",
             "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtm.json",
+            "arm": "MTMR-28247.json",
             "base-frame": {
                 "reference-frame": "HRSV",
                 "transform": [[ -1.0,  0.0,          0.0,         -0.180],
@@ -58,7 +58,7 @@
             "type": "MTM",
             "io": "sawRobotIO1394-MTML-22723.xml",
             "pid": "sawControllersPID-MTML.xml",
-            "kinematic": "mtm.json",
+            "arm": "MTML-22723.json",
             "base-frame": {
                 "reference-frame": "HRSV",
                 "transform": [[ -1.0,  0.0,          0.0,          0.180],
