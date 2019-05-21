@@ -1445,13 +1445,20 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         if (armPointer->mArmConfigurationFile == "") {
             if ((armPointer->mType == Arm::ARM_MTM)
                 || (armPointer->mType == Arm::ARM_MTM_DERIVED)) {
-                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"arm\" setting for arm \""
-                                         << armName << "\"" << std::endl;
+                // try to find the arm file using default
+                std::string defaultFile = armName + "-" + armPointer->mSerial + ".json";
+                armPointer->mArmConfigurationFile = configPath.Find(defaultFile);
+                if (armPointer->mArmConfigurationFile == "") {
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"arm\" setting for arm \""
+                                             << armName << "\", alternatively, make sure you have created the file \""
+                                             << defaultFile << "\"" << std::endl;
+                    return false;
+                }
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"kinematic\" setting for arm \""
                                          << armName << "\"" << std::endl;
+                return false;
             }
-            return false;
         }
 
         jsonValue = jsonArm["base-frame"];
