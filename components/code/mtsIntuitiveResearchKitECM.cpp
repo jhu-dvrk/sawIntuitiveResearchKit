@@ -188,6 +188,13 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
                                  << filename << "\" is in JSON format" << std::endl;
     }
+
+    vctFrame4x4<double> Rt( vctMatrixRotation3<double>(1.0,           0.0,           0.0,
+                                                       0.0, sqrt(2.0)/2.0, sqrt(2.0)/2.0,
+                                                       0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
+                            vctFixedSizeVector<double,3>(0.0, 0.0, 0.0));
+    Manipulator->Rtw0 = Rt;
+
 }
 
 
@@ -240,17 +247,13 @@ void mtsIntuitiveResearchKitECM::EnterManual(void)
 
 void mtsIntuitiveResearchKitECM::RunManual(void)
 {
-    vct3 up(0.0, -1.0, 1.0); // up when mounted on setup joints
-    up.NormalizedSelf();
+    vct3 up(0.0, 0.0, 1.0); // up when mounted on setup joints
     vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
 
     // zero efforts
-    mEffortJoint.Assign(Manipulator->CCG_MDH(JointsKinematics.Position(),
-                                             qd,
-                                             9.81,
-                                             up));
-    // send to PID
+    mEffortJoint.Assign(Manipulator->CCG_MDH(JointsKinematics.Position(), qd, 9.81, up ) );
     SetEffortJointLocal(mEffortJoint);
+    
 }
 
 void mtsIntuitiveResearchKitECM::LeaveManual(void)
