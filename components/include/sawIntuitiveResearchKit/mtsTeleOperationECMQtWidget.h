@@ -82,7 +82,6 @@ protected:
         mtsFunctionRead GetPositionCartesianMTML;
         mtsFunctionRead GetPositionCartesianMTMR;
         mtsFunctionRead GetPositionCartesianECM;
-        mtsFunctionRead GetRegistrationRotation;
         mtsFunctionRead GetPeriodStatistics;
     } TeleOperation;
 
@@ -97,7 +96,6 @@ private:
     prmPositionCartesianGetQtWidget * QCPGMTMRWidget;
     prmPositionCartesianGet PositionECM;
     prmPositionCartesianGetQtWidget * QCPGECMWidget;
-    vctMatRot3 RegistrationRotation;
 
     // timing
     mtsIntervalStatistics IntervalStatistics;

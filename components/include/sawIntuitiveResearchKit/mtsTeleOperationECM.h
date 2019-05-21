@@ -48,7 +48,6 @@ public:
     void Cleanup(void);
 
     void SetScale(const double & scale);
-    void SetRegistrationRotation(const vctMatRot3 & rotation);
 
 protected:
 
@@ -117,7 +116,6 @@ protected:
     } mECM;
 
     double mScale;
-    vctMatRot3 mRegistrationRotation;
     mtsStateTable * mConfigurationStateTable;
 
     bool mIsClutched;

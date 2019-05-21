@@ -61,8 +61,6 @@ mtsTeleOperationECMQtWidget::mtsTeleOperationECMQtWidget(const std::string & com
                                        TeleOperation.GetPositionCartesianMTMR);
         interfaceRequired->AddFunction("GetPositionCartesianECM",
                                        TeleOperation.GetPositionCartesianECM);
-        interfaceRequired->AddFunction("GetRegistrationRotation",
-                                       TeleOperation.GetRegistrationRotation);
         interfaceRequired->AddFunction("GetPeriodStatistics", TeleOperation.GetPeriodStatistics);
         // events
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::DesiredStateEventHandler,
@@ -126,24 +124,8 @@ void mtsTeleOperationECMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     TeleOperation.GetPositionCartesianMTMR(PositionMTMR);
     QCPGMTMRWidget->SetValue(PositionMTMR);
 
-    // for ECM, check if the registration rotation is needed
     TeleOperation.GetPositionCartesianECM(PositionECM);
-    TeleOperation.GetRegistrationRotation(RegistrationRotation);
-    if (RegistrationRotation.Equal(vctMatRot3::Identity())) {
-        QCPGECMWidget->SetValue(PositionECM);
-    } else {
-        // apply registration orientation
-        prmPositionCartesianGet registeredECM;
-        registeredECM.Valid() = PositionECM.Valid();
-        registeredECM.Timestamp() = PositionECM.Timestamp();
-        registeredECM.MovingFrame() = PositionECM.MovingFrame();
-        registeredECM.ReferenceFrame() = "rot * " + PositionECM.ReferenceFrame();
-        RegistrationRotation.ApplyInverseTo(PositionECM.Position().Rotation(),
-                                            registeredECM.Position().Rotation());
-        RegistrationRotation.ApplyInverseTo(PositionECM.Position().Translation(),
-                                            registeredECM.Position().Translation());
-        QCPGECMWidget->SetValue(registeredECM);
-    }
+    QCPGECMWidget->SetValue(PositionECM);
 
     TeleOperation.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
