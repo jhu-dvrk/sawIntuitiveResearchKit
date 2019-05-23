@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -259,6 +259,8 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
                                       IOComponentName(), Name() + "-Tool");
             componentManager->Connect(Name(), "ManipClutch",
                                       IOComponentName(), Name() + "-ManipClutch");
+            componentManager->Connect(Name(), "Dallas",
+                                      IOComponentName(), Name() + "-Dallas");
         }
         if (mSocketServer) {
             componentManager->Connect(SocketComponentName(), "PSM",

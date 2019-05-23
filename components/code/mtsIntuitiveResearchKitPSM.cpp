@@ -192,6 +192,13 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerManipClutch, this, "Button");
     }
+
+    // Dallas: read tool type from Dallas Chip
+    interfaceRequired = AddInterfaceRequired("Dallas");
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("TriggerRead", Dallas.TriggerRead);
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerToolType, this, "ToolType");
+    }
 }
 
 void mtsIntuitiveResearchKitPSM::UpdateJointsKinematics(void)
@@ -1151,6 +1158,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
     switch (button.Type()) {
     case prmEventButton::PRESSED:
         SetToolPresent(true);
+        Dallas.TriggerRead();
         break;
     case prmEventButton::RELEASED:
         SetToolPresent(false);
@@ -1182,4 +1190,9 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
     default:
         break;
     }
+}
+
+void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolType)
+{
+    std::cerr << CMN_LOG_DETAILS << " tool type ---> " << toolType << std::endl;
 }
