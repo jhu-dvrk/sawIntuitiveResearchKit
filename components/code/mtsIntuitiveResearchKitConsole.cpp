@@ -1809,6 +1809,25 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
                                      << arm->Name() << "\"" << std::endl;
             return false;
         }
+        // is the arm is a PSM, since it has an IO, it also has a
+        // Dallas chip interface and we want to see the messages
+        if ((arm->mType == Arm::ARM_PSM)
+            || (arm->mType == Arm::ARM_PSM_DERIVED)) {
+            const std::string interfaceNameIODallas = "IO-Dallas-" + arm->Name();
+            arm->IODallasInterfaceRequired = AddInterfaceRequired(interfaceNameIODallas);
+            if (arm->IODallasInterfaceRequired) {
+                arm->IODallasInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
+                                                                     this, "Error");
+                arm->IODallasInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
+                                                                     this, "Warning");
+                arm->IODallasInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
+                                                                     this, "Status");
+            } else {
+                CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO Dallase interface for arm \""
+                                         << arm->Name() << "\"" << std::endl;
+                return false;
+            }
+        }
     }
 
     // PID
@@ -1869,6 +1888,11 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
         if (arm->IOInterfaceRequired) {
             componentManager->Connect(this->GetName(), "IO-" + arm->Name(),
                                       arm->IOComponentName(), arm->Name());
+        }
+        // IO Dallas
+        if (arm->IODallasInterfaceRequired) {
+            componentManager->Connect(this->GetName(), "IO-Dallas-" + arm->Name(),
+                                      arm->IOComponentName(), arm->Name() + "-Dallas");
         }
         // PID
         if (arm->mType != Arm::ARM_SUJ) {

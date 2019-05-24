@@ -1194,5 +1194,5 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
 
 void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolType)
 {
-    std::cerr << CMN_LOG_DETAILS << " tool type ---> " << toolType << std::endl;
+    RobotInterface->SendStatus(this->GetName() + ": setting up for tool type \"" + toolType + "\"");
 }
