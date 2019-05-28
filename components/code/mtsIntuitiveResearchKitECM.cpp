@@ -189,12 +189,19 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
                                  << filename << "\" is in JSON format" << std::endl;
     }
 
-    vctFrame4x4<double> Rt( vctMatrixRotation3<double>(1.0,           0.0,           0.0,
-                                                       0.0, sqrt(2.0)/2.0, sqrt(2.0)/2.0,
-                                                       0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
-                            vctFixedSizeVector<double,3>(0.0, 0.0, 0.0));
-    Manipulator->Rtw0 = Rt;
+    // check that Rtw0 is not set
+    if (Manipulator->Rtw0 != vctFrm4x4::Identity()) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": you can't define the base-offset for the ECM, it is hard coded so gravity compensation works properly.  We always assume the ECM is mounted at 45 degrees!"
+                                 << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
+    vctFrame4x4<double> Rt(vctMatrixRotation3<double>(1.0,            0.0,            0.0,
+                                                      0.0,  sqrt(2.0)/2.0,  sqrt(2.0)/2.0,
+                                                      0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
+                           vctFixedSizeVector<double,3>(0.0, 0.0, 0.0));
+    Manipulator->Rtw0 = Rt;
 }
 
 
@@ -247,13 +254,11 @@ void mtsIntuitiveResearchKitECM::EnterManual(void)
 
 void mtsIntuitiveResearchKitECM::RunManual(void)
 {
-    vct3 up(0.0, 0.0, 1.0); // up when mounted on setup joints
     vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
 
     // zero efforts
-    mEffortJoint.Assign(Manipulator->CCG_MDH(JointsKinematics.Position(), qd, 9.81, up ) );
+    mEffortJoint.Assign(Manipulator->CCG_MDH(JointsKinematics.Position(), qd, 9.81));
     SetEffortJointLocal(mEffortJoint);
-    
 }
 
 void mtsIntuitiveResearchKitECM::LeaveManual(void)
