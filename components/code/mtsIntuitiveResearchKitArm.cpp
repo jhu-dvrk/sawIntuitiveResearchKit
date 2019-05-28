@@ -1322,7 +1322,7 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
     if (mWrenchType == WRENCH_BODY) {
         // either using wrench provided by user or cartesian impedance
         if (mCartesianImpedance) {
-            mCartesianImpedanceController.Update(CartesianGetLocalParam,
+            mCartesianImpedanceController.Update(CartesianGetParam,
                                                  CartesianVelocityGetParam,
                                                  mWrenchSet,
                                                  mWrenchBodyOrientationAbsolute);

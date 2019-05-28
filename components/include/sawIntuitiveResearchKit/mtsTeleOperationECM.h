@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Nicole Ortega
   Created on: 2016-01-21
 
-  (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -48,7 +48,6 @@ public:
     void Cleanup(void);
 
     void SetScale(const double & scale);
-    void SetRegistrationRotation(const vctMatRot3 & rotation);
 
 protected:
 
@@ -89,13 +88,14 @@ protected:
     struct {
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionRead  GetVelocityCartesian;
-        mtsFunctionRead  GetCurrentState;
-        mtsFunctionRead  GetDesiredState;
-        mtsFunctionWrite SetDesiredState;
         mtsFunctionWrite LockOrientation;
         mtsFunctionWrite SetWrenchBody;
         mtsFunctionWrite SetWrenchBodyOrientationAbsolute;
         mtsFunctionWrite SetGravityCompensation;
+
+        mtsFunctionRead  GetCurrentState;
+        mtsFunctionRead  GetDesiredState;
+        mtsFunctionWrite SetDesiredState;
 
         prmPositionCartesianGet PositionCartesianCurrent;
         prmVelocityCartesianGet VelocityCartesianCurrent;
@@ -105,6 +105,7 @@ protected:
         mtsFunctionRead  GetPositionCartesian;
         mtsFunctionRead  GetStateJointDesired;
         mtsFunctionWrite SetPositionJoint;
+
         mtsFunctionRead  GetCurrentState;
         mtsFunctionRead  GetDesiredState;
         mtsFunctionWrite SetDesiredState;
@@ -115,7 +116,6 @@ protected:
     } mECM;
 
     double mScale;
-    vctMatRot3 mRegistrationRotation;
     mtsStateTable * mConfigurationStateTable;
 
     bool mIsClutched;

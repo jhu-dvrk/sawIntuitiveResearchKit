@@ -50,6 +50,7 @@ public:
     void SetRegistrationRotation(const vctMatRot3 & rotation);
     void LockRotation(const bool & lock);
     void LockTranslation(const bool & lock);
+    void SetAlignMTM(const bool & alignMTM);
 
 protected:
 
@@ -74,6 +75,7 @@ protected:
         mtsFunctionWrite Scale;
         mtsFunctionWrite RotationLocked;
         mtsFunctionWrite TranslationLocked;
+        mtsFunctionWrite AlignMTM;
     } ConfigurationEvents;
 
     void SetDesiredState(const std::string & state);
@@ -95,14 +97,13 @@ protected:
         mtsFunctionRead  GetPositionCartesianDesired;
         mtsFunctionWrite SetPositionGoalCartesian;
         mtsFunctionRead  GetStateGripper;
-
-        mtsFunctionRead  GetCurrentState;
-        mtsFunctionRead  GetDesiredState;
-        mtsFunctionWrite SetDesiredState;
         mtsFunctionWrite LockOrientation;
         mtsFunctionVoid  UnlockOrientation;
         mtsFunctionWrite SetWrenchBody;
         mtsFunctionWrite SetGravityCompensation;
+        mtsFunctionRead  GetCurrentState;
+        mtsFunctionRead  GetDesiredState;
+        mtsFunctionWrite SetDesiredState;
 
         prmStateJoint StateGripper;
         prmPositionCartesianGet PositionCartesianCurrent;
@@ -129,15 +130,18 @@ protected:
         vctFrm4x4 CartesianPrevious;
     } mPSM;
 
-    double mScale;
-    vctMatRot3 mRegistrationRotation;
+    double mScale = 0.2;
+    vctMatRot3 mRegistrationRotation; // optional registration between PSM and MTM orientation
+    vctMatRot3 mAlignOffset; // rotation offset between MTM and PSM when tele-operation goes in follow mode
 
-    bool mIgnoreJaw;
+    bool mIgnoreJaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
     int mGripperJawTransitions;
     bool mGripperJawMatchingPrevious;
-    bool mIsClutched;
-    bool mRotationLocked;
-    bool mTranslationLocked;
+    bool mIsClutched = false;
+    bool mRotationLocked = false;
+    bool mTranslationLocked = false;
+    bool mAlignMTM = true; // default on da Vinci
+
     vctMatRot3 mMTMClutchedOrientation;
     mtsStateTable * mConfigurationStateTable;
 

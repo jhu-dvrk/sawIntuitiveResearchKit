@@ -61,14 +61,14 @@ mtsTeleOperationECMQtWidget::mtsTeleOperationECMQtWidget(const std::string & com
                                        TeleOperation.GetPositionCartesianMTMR);
         interfaceRequired->AddFunction("GetPositionCartesianECM",
                                        TeleOperation.GetPositionCartesianECM);
-        interfaceRequired->AddFunction("GetRegistrationRotation",
-                                       TeleOperation.GetRegistrationRotation);
         interfaceRequired->AddFunction("GetPeriodStatistics", TeleOperation.GetPeriodStatistics);
         // events
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::DesiredStateEventHandler,
                                                 this, "DesiredState");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::CurrentStateEventHandler,
                                                 this, "CurrentState");
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::FollowingEventHandler,
+                                                this, "Following");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::ScaleEventHandler,
                                                 this, "Scale");
     }
@@ -124,24 +124,8 @@ void mtsTeleOperationECMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     TeleOperation.GetPositionCartesianMTMR(PositionMTMR);
     QCPGMTMRWidget->SetValue(PositionMTMR);
 
-    // for ECM, check if the registration rotation is needed
     TeleOperation.GetPositionCartesianECM(PositionECM);
-    TeleOperation.GetRegistrationRotation(RegistrationRotation);
-    if (RegistrationRotation.Equal(vctMatRot3::Identity())) {
-        QCPGECMWidget->SetValue(PositionECM);
-    } else {
-        // apply registration orientation
-        prmPositionCartesianGet registeredECM;
-        registeredECM.Valid() = PositionECM.Valid();
-        registeredECM.Timestamp() = PositionECM.Timestamp();
-        registeredECM.MovingFrame() = PositionECM.MovingFrame();
-        registeredECM.ReferenceFrame() = "rot * " + PositionECM.ReferenceFrame();
-        RegistrationRotation.ApplyInverseTo(PositionECM.Position().Rotation(),
-                                            registeredECM.Position().Rotation());
-        RegistrationRotation.ApplyInverseTo(PositionECM.Position().Translation(),
-                                            registeredECM.Position().Translation());
-        QCPGECMWidget->SetValue(registeredECM);
-    }
+    QCPGECMWidget->SetValue(PositionECM);
 
     TeleOperation.GetPeriodStatistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
@@ -162,6 +146,15 @@ void mtsTeleOperationECMQtWidget::SlotCurrentStateEventHandler(QString state)
     QLECurrentState->setText(state);
 }
 
+void mtsTeleOperationECMQtWidget::SlotFollowingEventHandler(bool following)
+{
+    if (following) {
+        QLEFollowing->setText("FOLLOWING");
+    } else {
+        QLEFollowing->setText("INDEPENDANT");
+    }
+}
+
 void mtsTeleOperationECMQtWidget::SlotScaleEventHandler(double scale)
 {
     QSBScale->setValue(scale);
@@ -169,34 +162,40 @@ void mtsTeleOperationECMQtWidget::SlotScaleEventHandler(double scale)
 
 void mtsTeleOperationECMQtWidget::setupUi(void)
 {
-    // 3D frames
-    QGridLayout * frameLayout = new QGridLayout;
-    QLabel * masterLabel = new QLabel("<b>MTML</b>");
-    masterLabel->setAlignment(Qt::AlignCenter);
-    frameLayout->addWidget(masterLabel, 0, 0);
-    QCPGMTMLWidget = new prmPositionCartesianGetQtWidget();
-    frameLayout->addWidget(QCPGMTMLWidget, 1, 0);
-    masterLabel = new QLabel("<b>MTMR</b>");
-    masterLabel->setAlignment(Qt::AlignCenter);
-    frameLayout->addWidget(masterLabel, 0, 1);
-    QCPGMTMRWidget = new prmPositionCartesianGetQtWidget();
-    frameLayout->addWidget(QCPGMTMRWidget, 1, 1);
-    QLabel * slaveLabel = new QLabel("<b>ECM</b>");
-    slaveLabel->setAlignment(Qt::AlignCenter);
-    frameLayout->addWidget(slaveLabel, 2, 0, 1, 2);
-    QCPGECMWidget = new prmPositionCartesianGetQtWidget();
-    frameLayout->addWidget(QCPGECMWidget, 3, 0, 1, 2);
+    // main layout
+    QVBoxLayout * mainLayout = new QVBoxLayout();
+    setLayout(mainLayout);
 
-    // right side
-    QVBoxLayout * controlLayout = new QVBoxLayout;
-
+    // instructions
     QLabel * instructionsLabel = new QLabel("Operator must be present to operate (sometime using COAG pedal).");
     instructionsLabel->setWordWrap(true);
-    controlLayout->addWidget(instructionsLabel);
+    mainLayout->addWidget(instructionsLabel);
+
+    // 3D frames
+    QGridLayout * frameLayout = new QGridLayout;
+    mainLayout->addLayout(frameLayout);
+    int column = 0;
+    QLabel * masterLabel = new QLabel("<b>MTML</b>");
+    masterLabel->setAlignment(Qt::AlignCenter);
+    frameLayout->addWidget(masterLabel, 0, column);
+    QCPGMTMLWidget = new prmPositionCartesianGetQtWidget();
+    frameLayout->addWidget(QCPGMTMLWidget, 1, column);
+    column++;
+    masterLabel = new QLabel("<b>MTMR</b>");
+    masterLabel->setAlignment(Qt::AlignCenter);
+    frameLayout->addWidget(masterLabel, 0, column);
+    QCPGMTMRWidget = new prmPositionCartesianGetQtWidget();
+    frameLayout->addWidget(QCPGMTMRWidget, 1, column);
+    column++;
+    QLabel * ecmLabel = new QLabel("<b>ECM</b>");
+    ecmLabel->setAlignment(Qt::AlignCenter);
+    frameLayout->addWidget(ecmLabel, 0, column);
+    QCPGECMWidget = new prmPositionCartesianGetQtWidget();
+    frameLayout->addWidget(QCPGECMWidget, 1, column);
 
     // scale/lock/unlock/messages
     QHBoxLayout * buttonsLayout = new QHBoxLayout;
-    controlLayout->addLayout(buttonsLayout);
+    mainLayout->addLayout(buttonsLayout);
 
     // scale
     QSBScale = new QDoubleSpinBox();
@@ -211,40 +210,48 @@ void mtsTeleOperationECMQtWidget::setupUi(void)
     QPBLog->setCheckable(true);
     buttonsLayout->addWidget(QPBLog);
 
-    // state info
-    QHBoxLayout * stateLayout = new QHBoxLayout;
-    controlLayout->addLayout(stateLayout);
+    // state and timing
+    QHBoxLayout * stateAndTimingLayout = new QHBoxLayout();
+    mainLayout->addLayout(stateAndTimingLayout);
 
-    QLabel * label = new QLabel("Desired");
-    stateLayout->addWidget(label);
+    // state info
+    QVBoxLayout * stateLayout = new QVBoxLayout();
+    stateAndTimingLayout->addLayout(stateLayout);
+
+    QHBoxLayout * stateDesiredLayout = new QHBoxLayout;
+    stateLayout->addLayout(stateDesiredLayout);
+    QLabel * label = new QLabel("Desired state");
+    stateDesiredLayout->addWidget(label);
     QLEDesiredState = new QLineEdit("");
     QLEDesiredState->setReadOnly(true);
-    stateLayout->addWidget(QLEDesiredState);
+    stateDesiredLayout->addWidget(QLEDesiredState);
+    stateDesiredLayout->addStretch();
 
-    label = new QLabel("Current");
-    stateLayout->addWidget(label);
+    QHBoxLayout * stateCurrentLayout = new QHBoxLayout;
+    stateLayout->addLayout(stateCurrentLayout);
+    label = new QLabel("Current state");
+    stateCurrentLayout->addWidget(label);
     QLECurrentState = new QLineEdit("");
     QLECurrentState->setReadOnly(true);
-    stateLayout->addWidget(QLECurrentState);
+    stateCurrentLayout->addWidget(QLECurrentState);
+    stateCurrentLayout->addStretch();
+
+    QHBoxLayout * followingLayout = new QHBoxLayout;
+    stateLayout->addLayout(followingLayout);
+    label = new QLabel("Teleoperation \"mode\"");
+    followingLayout->addWidget(label);
+    QLEFollowing = new QLineEdit("");
+    QLEFollowing->setReadOnly(true);
+    followingLayout->addWidget(QLEFollowing);
+    followingLayout->addStretch();
 
     // Timing
     QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
-    controlLayout->addWidget(QMIntervalStatistics);
+    stateAndTimingLayout->addWidget(QMIntervalStatistics);
 
     // messages
     QMMessage->setupUi();
-    controlLayout->addWidget(QMMessage);
-
-    // add stretch
-    controlLayout->addStretch();
-
-    QWidget * leftWidget = new QWidget();
-    leftWidget->setLayout(frameLayout);
-    addWidget(leftWidget);
-
-    QWidget * rightWidget = new QWidget();
-    rightWidget->setLayout(controlLayout);
-    addWidget(rightWidget);
+    mainLayout->addWidget(QMMessage);
 
     setWindowTitle("TeleOperation Controller");
     resize(sizeHint());
@@ -254,6 +261,8 @@ void mtsTeleOperationECMQtWidget::setupUi(void)
             this, SLOT(SlotDesiredStateEventHandler(QString)));
     connect(this, SIGNAL(SignalCurrentState(QString)),
             this, SLOT(SlotCurrentStateEventHandler(QString)));
+    connect(this, SIGNAL(SignalFollowing(bool)),
+            this, SLOT(SlotFollowingEventHandler(bool)));
 
     connect(QSBScale, SIGNAL(valueChanged(double)),
             this, SLOT(SlotSetScale(double)));
@@ -273,6 +282,11 @@ void mtsTeleOperationECMQtWidget::DesiredStateEventHandler(const std::string & s
 void mtsTeleOperationECMQtWidget::CurrentStateEventHandler(const std::string & state)
 {
     emit SignalCurrentState(QString(state.c_str()));
+}
+
+void mtsTeleOperationECMQtWidget::FollowingEventHandler(const bool & following)
+{
+    emit SignalFollowing(following);
 }
 
 void mtsTeleOperationECMQtWidget::ScaleEventHandler(const double & scale)

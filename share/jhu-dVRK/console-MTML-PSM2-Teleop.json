@@ -10,8 +10,7 @@
         {
             "name": "PSM2",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM2-27374.xml",
-            "pid": "sawControllersPID-PSM.xml",
+            "serial": "27374",
             "kinematic": "psm-large-needle-driver-tip.json",
             "base-frame": {
                 "reference-frame": "ECM",
@@ -25,9 +24,7 @@
         {
             "name": "MTML",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTML-22723.xml",
-            "pid": "sawControllersPID-MTML.xml",
-            "arm": "MTML-22723.json",
+            "serial": "22723",
             "base-frame": {
                 "reference-frame": "HRSV",
                 "transform": [[ -1.0,  0.0,          0.0,          0.180],
