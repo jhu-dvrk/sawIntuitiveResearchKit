@@ -96,6 +96,9 @@ void mtsIntuitiveResearchKitECM::Init(void)
 
     ToolOffset = 0;
 
+    // set gravity compensation by default
+    mGravityCompensation = true;
+
     // state machine specific to ECM, see base class for other states
     mArmState.AddState("MANUAL");
 
@@ -254,10 +257,11 @@ void mtsIntuitiveResearchKitECM::EnterManual(void)
 
 void mtsIntuitiveResearchKitECM::RunManual(void)
 {
-    vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
-
     // zero efforts
-    mEffortJoint.Assign(Manipulator->CCG_MDH(JointsKinematics.Position(), qd, 9.81));
+    mEffortJoint.SetAll(0.0);
+    if (mGravityCompensation) {
+        AddGravityCompensationEfforts(mEffortJoint);
+    }
     SetEffortJointLocal(mEffortJoint);
 }
 
@@ -296,4 +300,10 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
     default:
         break;
     }
+}
+
+void mtsIntuitiveResearchKitECM::AddGravityCompensationEfforts(vctDoubleVec & efforts)
+{
+    vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
+    efforts.Add(Manipulator->CCG_MDH(JointsKinematics.Position(), qd, 9.81));
 }

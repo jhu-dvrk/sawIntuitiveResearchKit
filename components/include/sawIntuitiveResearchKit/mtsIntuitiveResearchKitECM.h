@@ -74,6 +74,8 @@ protected:
     void EventHandlerTrackingError(void);
     void EventHandlerManipClutch(const prmEventButton & button);
 
+    void AddGravityCompensationEfforts(vctDoubleVec & efforts);
+
     struct {
         mtsFunctionRead GetButton;
         bool IsPressed;
