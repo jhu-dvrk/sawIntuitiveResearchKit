@@ -250,9 +250,6 @@ void mtsIntuitiveResearchKitECM::EnterManual(void)
 
     PID.EnableTrackingError(false);
     SetControlEffortActiveJoints();
-
-    mEffortJoint.SetAll(0.0);
-    SetEffortJointLocal(mEffortJoint);
 }
 
 void mtsIntuitiveResearchKitECM::RunManual(void)
@@ -300,6 +297,12 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
     default:
         break;
     }
+}
+
+void mtsIntuitiveResearchKitECM::UpdateFeedForward(vctDoubleVec & feedForward)
+{
+    feedForward.SetAll(0.0);
+    AddGravityCompensationEfforts(feedForward);
 }
 
 void mtsIntuitiveResearchKitECM::AddGravityCompensationEfforts(vctDoubleVec & efforts)

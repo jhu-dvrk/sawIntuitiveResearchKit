@@ -54,6 +54,10 @@ protected:
         return 3;
     }
 
+    inline bool UseFeedForward(void) const {
+        return true;
+    }
+
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal);
 
@@ -74,6 +78,7 @@ protected:
     void EventHandlerTrackingError(void);
     void EventHandlerManipClutch(const prmEventButton & button);
 
+    void UpdateFeedForward(vctDoubleVec & feedForward);
     void AddGravityCompensationEfforts(vctDoubleVec & efforts);
 
     struct {
