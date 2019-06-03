@@ -1381,6 +1381,7 @@ void mtsIntuitiveResearchKitArm::SetEffortJointLocal(const vctDoubleVec & newEff
 {
     // convert to cisstParameterTypes
     mTorqueSetParam.SetForceTorque(newEffort);
+    mTorqueSetParam.SetTimestamp(StateTable.GetTic());
     PID.SetTorqueJoint(mTorqueSetParam);
 }
 
@@ -1394,6 +1395,7 @@ void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newP
     // position
     JointSetParam.Goal().Zeros();
     JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
+    JointSetParam.SetTimestamp(StateTable.GetTic());
     PID.SetPositionJoint(JointSetParam);
 }
 
