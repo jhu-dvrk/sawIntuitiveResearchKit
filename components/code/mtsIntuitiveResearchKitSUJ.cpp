@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -205,10 +205,9 @@ public:
                 EventPositionCartesianLocal(mPositionCartesianLocalParam);
             }
         } else {
-            mClutched -= 1;
-            if (mClutched == 0) {
-                mInterfaceProvided->SendStatus(mName.Data + ": SUJ not clutched");
-            }
+            // first event to release (physical button or GUI) forces release
+            mClutched = 0;
+            mInterfaceProvided->SendStatus(mName.Data + ": SUJ not clutched");
         }
     }
 

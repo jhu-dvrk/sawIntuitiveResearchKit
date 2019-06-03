@@ -173,6 +173,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     JointSet.SetSize(NumberOfJoints());
     JointVelocitySet.SetSize(NumberOfJoints());
     JointSetParam.Goal().SetSize(NumberOfJoints());
+    FeedForwardParam.ForceTorque().SetSize(NumberOfJoints());
     mJointTrajectory.VelocityMaximum.SetSize(NumberOfJoints());
     mJointTrajectory.Velocity.SetSize(NumberOfJoints());
     mJointTrajectory.AccelerationMaximum.SetSize(NumberOfJoints());
@@ -251,6 +252,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("GetStateJoint", PID.GetStateJoint);
         PIDInterface->AddFunction("GetStateJointDesired", PID.GetStateJointDesired);
         PIDInterface->AddFunction("SetPositionJoint", PID.SetPositionJoint);
+        PIDInterface->AddFunction("SetFeedForwardJoint", PID.SetFeedForwardJoint);
         PIDInterface->AddFunction("SetCheckPositionLimit", PID.SetCheckPositionLimit);
         PIDInterface->AddFunction("SetPositionLowerLimit", PID.SetPositionLowerLimit);
         PIDInterface->AddFunction("SetPositionUpperLimit", PID.SetPositionUpperLimit);
@@ -258,7 +260,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("SetTorqueUpperLimit", PID.SetTorqueUpperLimit);
         PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
         PIDInterface->AddFunction("SetTorqueJoint", PID.SetTorqueJoint);
-        PIDInterface->AddFunction("SetTorqueOffset", PID.SetTorqueOffset);
         PIDInterface->AddFunction("EnableTrackingError", PID.EnableTrackingError);
         PIDInterface->AddFunction("SetTrackingErrorTolerances", PID.SetTrackingErrorTolerance);
         PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::PositionLimitEventHandler, this, "PositionLimit");
@@ -1425,6 +1426,12 @@ void mtsIntuitiveResearchKitArm::SetEffortJointLocal(const vctDoubleVec & newEff
 
 void mtsIntuitiveResearchKitArm::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
+    // feed forward
+    if (UseFeedForward()) {
+        UpdateFeedForward(FeedForwardParam.ForceTorque());
+        PID.SetFeedForwardJoint(FeedForwardParam);
+    }
+    // position
     JointSetParam.Goal().Zeros();
     JointSetParam.Goal().Assign(newPosition, NumberOfJoints());
     PID.SetPositionJoint(JointSetParam);

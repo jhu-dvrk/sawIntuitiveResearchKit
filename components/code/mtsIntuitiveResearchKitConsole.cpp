@@ -1256,6 +1256,11 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         return false;
     }
 
+    jsonValue = jsonArm["serial"];
+    if (!jsonValue.empty()) {
+        armPointer->mSerial = jsonValue.asString();
+    }
+
     jsonValue = jsonArm["simulation"];
     if (!jsonValue.empty()) {
         std::string typeString = jsonValue.asString();
@@ -1353,9 +1358,20 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                     return false;
                 }
             } else {
-                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"io\" setting for arm \""
-                                         << armName << "\"" << std::endl;
-                return false;
+                // try to find default if serial number has been provided
+                if (armPointer->mSerial != "") {
+                    std::string defaultFile = "sawRobotIO1394-" + armName + "-" + armPointer->mSerial + ".xml";
+                    armPointer->mIOConfigurationFile = configPath.Find(defaultFile);
+                    if (armPointer->mIOConfigurationFile == "") {
+                        CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO file " << defaultFile << std::endl;
+                        return false;
+                    }
+                } else {
+                    // no io nor serial
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"io\" setting for arm \""
+                                             << armName << "\" and \"serial\" is not provided so we can't search for it" << std::endl;
+                    return false;
+                }
             }
         }
     }
@@ -1375,9 +1391,23 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                 return false;
             }
         } else {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"pid\" setting for arm \""
-                                     << armName << "\"" << std::endl;
-            return false;
+            // try to find default
+            std::string defaultFile;
+            if ((armPointer->mType == Arm::ARM_PSM) || (armPointer->mType == Arm::ARM_PSM_DERIVED)) {
+                defaultFile = "sawControllersPID-PSM.xml";
+            } else if ((armPointer->mType == Arm::ARM_ECM) || (armPointer->mType == Arm::ARM_ECM_DERIVED)) {
+                defaultFile = "sawControllersPID-ECM.xml";
+            } else {
+                defaultFile = "sawControllersPID-" + armName + ".xml";
+            }
+            CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureArmJSON: can't find \"pid\" setting for arm \""
+                                       << armName << "\", using default: \""
+                                       << defaultFile << "\"" << std::endl;
+            armPointer->mPIDConfigurationFile = configPath.Find(defaultFile);
+            if (armPointer->mPIDConfigurationFile == "") {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find PID file " << defaultFile << std::endl;
+                return false;
+            }
         }
     }
 
@@ -1415,13 +1445,20 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         if (armPointer->mArmConfigurationFile == "") {
             if ((armPointer->mType == Arm::ARM_MTM)
                 || (armPointer->mType == Arm::ARM_MTM_DERIVED)) {
-                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"arm\" setting for arm \""
-                                         << armName << "\"" << std::endl;
+                // try to find the arm file using default
+                std::string defaultFile = armName + "-" + armPointer->mSerial + ".json";
+                armPointer->mArmConfigurationFile = configPath.Find(defaultFile);
+                if (armPointer->mArmConfigurationFile == "") {
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"arm\" setting for arm \""
+                                             << armName << "\", alternatively, make sure you have created the file \""
+                                             << defaultFile << "\"" << std::endl;
+                    return false;
+                }
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"kinematic\" setting for arm \""
                                          << armName << "\"" << std::endl;
+                return false;
             }
-            return false;
         }
 
         jsonValue = jsonArm["base-frame"];

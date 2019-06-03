@@ -33,7 +33,7 @@ class QDoubleSpinBox;
 class QPushButton;
 class QTextEdit;
 
-class CISST_EXPORT mtsTeleOperationECMQtWidget: public QSplitter, public mtsComponent
+class CISST_EXPORT mtsTeleOperationECMQtWidget: public QWidget, public mtsComponent
 {
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -52,6 +52,7 @@ protected:
 signals:
     void SignalDesiredState(QString state);
     void SignalCurrentState(QString state);
+    void SignalFollowing(bool following);
     void SignalScale(double scale);
 
 private slots:
@@ -62,6 +63,7 @@ private slots:
     void SlotCurrentStateEventHandler(QString state);
     void SlotSetScale(double scale);
     // to update GUI from component's events
+    void SlotFollowingEventHandler(bool following);
     void SlotScaleEventHandler(double scale);
 
 private:
@@ -71,6 +73,7 @@ private:
 
     void DesiredStateEventHandler(const std::string & state);
     void CurrentStateEventHandler(const std::string & state);
+    void FollowingEventHandler(const bool & following);
     void ScaleEventHandler(const double & scale);
 
 protected:
@@ -79,13 +82,13 @@ protected:
         mtsFunctionRead GetPositionCartesianMTML;
         mtsFunctionRead GetPositionCartesianMTMR;
         mtsFunctionRead GetPositionCartesianECM;
-        mtsFunctionRead GetRegistrationRotation;
         mtsFunctionRead GetPeriodStatistics;
     } TeleOperation;
 
 private:
     QLineEdit * QLEDesiredState;
     QLineEdit * QLECurrentState;
+    QLineEdit * QLEFollowing;
     QDoubleSpinBox * QSBScale;
     prmPositionCartesianGet PositionMTML;
     prmPositionCartesianGetQtWidget * QCPGMTMLWidget;
@@ -93,7 +96,6 @@ private:
     prmPositionCartesianGetQtWidget * QCPGMTMRWidget;
     prmPositionCartesianGet PositionECM;
     prmPositionCartesianGetQtWidget * QCPGECMWidget;
-    vctMatRot3 RegistrationRotation;
 
     // timing
     mtsIntervalStatistics IntervalStatistics;

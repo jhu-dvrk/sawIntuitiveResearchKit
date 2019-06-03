@@ -139,6 +139,7 @@ public:
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
     virtual void SetEffortJointLocal(const vctDoubleVec & newEffort);
+    inline virtual void UpdateFeedForward(vctDoubleVec & CMN_UNUSED(feedForward)) {};
 
     /*! Methods used for commands */
     virtual void Freeze(void);
@@ -178,6 +179,10 @@ public:
         return true;
     }
 
+    inline virtual bool UseFeedForward(void) const {
+        return false;
+    }
+
     /*! Inverse kinematics must be redefined for each arm type. */
     virtual robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                                     const vctFrm4x4 & cartesianGoal) = 0;
@@ -202,6 +207,7 @@ public:
         mtsFunctionRead  GetStateJoint;
         mtsFunctionRead  GetStateJointDesired;
         mtsFunctionWrite SetPositionJoint;
+        mtsFunctionWrite SetFeedForwardJoint;
         mtsFunctionWrite SetCheckPositionLimit;
         mtsFunctionWrite SetPositionLowerLimit;
         mtsFunctionWrite SetPositionUpperLimit;
@@ -209,7 +215,6 @@ public:
         mtsFunctionWrite SetTorqueUpperLimit;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite SetTorqueJoint;
-        mtsFunctionWrite SetTorqueOffset;
         mtsFunctionWrite EnableTrackingError;
         mtsFunctionWrite SetTrackingErrorTolerance;
         vctDoubleVec DefaultTrackingErrorTolerance;
@@ -266,6 +271,7 @@ public:
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
     vctDoubleVec JointVelocitySet;
+    prmForceTorqueJointSet FeedForwardParam;
     prmStateJoint JointsPID, JointsDesiredPID, JointsKinematics, JointsDesiredKinematics;
 
     // efforts

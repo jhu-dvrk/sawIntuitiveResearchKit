@@ -97,7 +97,6 @@ void mtsTeleOperationECM::Init(void)
     mConfigurationStateTable->SetAutomaticAdvance(false);
     AddStateTable(mConfigurationStateTable);
     mConfigurationStateTable->AddData(mScale, "Scale");
-    mConfigurationStateTable->AddData(mRegistrationRotation, "RegistrationRotation");
 
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MTML");
     if (interfaceRequired) {
@@ -183,14 +182,9 @@ void mtsTeleOperationECM::Init(void)
                                     "SetDesiredState", std::string("DISABLED"));
         mInterface->AddCommandWrite(&mtsTeleOperationECM::SetScale, this,
                                     "SetScale", 0.5);
-        mInterface->AddCommandWrite(&mtsTeleOperationECM::SetRegistrationRotation, this,
-                                    "SetRegistrationRotation", vctMatRot3());
         mInterface->AddCommandReadState(*mConfigurationStateTable,
                                         mScale,
                                         "GetScale");
-        mInterface->AddCommandReadState(*mConfigurationStateTable,
-                                        mRegistrationRotation,
-                                        "GetRegistrationRotation");
         mInterface->AddCommandReadState(StateTable,
                                         mMTML.PositionCartesianCurrent,
                                         "GetPositionCartesianMTML");
@@ -225,14 +219,6 @@ void mtsTeleOperationECM::Configure(const Json::Value & jsonConfig)
     jsonValue = jsonConfig["scale"];
     if (!jsonValue.empty()) {
         mScale = jsonValue.asDouble();
-    }
-
-    // read orientation if present
-    jsonValue = jsonConfig["rotation"];
-    if (!jsonValue.empty()) {
-        vctMatRot3 orientation; // identity by default
-        cmnDataJSON<vctMatRot3>::DeSerializeText(orientation, jsonConfig["rotation"]);
-        SetRegistrationRotation(orientation);
     }
 }
 
@@ -743,11 +729,4 @@ void mtsTeleOperationECM::SetScale(const double & scale)
     mScale = scale;
     mConfigurationStateTable->Advance();
     ConfigurationEvents.Scale(mScale);
-}
-
-void mtsTeleOperationECM::SetRegistrationRotation(const vctMatRot3 & rotation)
-{
-    mConfigurationStateTable->Start();
-    mRegistrationRotation = rotation;
-    mConfigurationStateTable->Advance();
 }
