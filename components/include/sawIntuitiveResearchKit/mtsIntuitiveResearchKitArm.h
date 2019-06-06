@@ -252,7 +252,6 @@ public:
     // cache cartesian goal position and increment
     bool mHasNewPIDGoal;
     prmPositionCartesianSet CartesianSetParam;
-    vctDoubleVec mJointRelative;
     vctFrm3 mCartesianRelative;
 
     // internal kinematics
@@ -377,10 +376,8 @@ public:
     mtsCallableVoidBase * mControlCallback;
 
     virtual void ControlPositionJoint(void);
-    virtual void ControlPositionRelativeJoint(void);
     virtual void ControlPositionGoalJoint(void);
     virtual void ControlPositionCartesian(void);
-    virtual void ControlPositionRelativeCartesian(void);
     virtual void ControlPositionGoalCartesian(void);
     virtual void ControlEffortJoint(void);
     virtual void ControlEffortCartesian(void);

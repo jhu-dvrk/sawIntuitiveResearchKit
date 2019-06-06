@@ -160,8 +160,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mCartesianImpedance = false;
 
     mHasNewPIDGoal = false;
-    mJointRelative.SetSize(NumberOfJoints());
-    mJointRelative.Zeros();
 
     mEffortOrientationLocked = false;
 
@@ -1043,18 +1041,6 @@ void mtsIntuitiveResearchKitArm::ControlPositionJoint(void)
     }
 }
 
-void mtsIntuitiveResearchKitArm::ControlPositionRelativeJoint(void)
-{
-    if (mHasNewPIDGoal) {
-
-        std::cerr << CMN_LOG_DETAILS << " --------- tbd" << std::endl;
-
-        // reset flag
-        mJointRelative.Zeros();
-        mHasNewPIDGoal = false;
-    }
-}
-
 void mtsIntuitiveResearchKitArm::ControlPositionGoalJoint(void)
 {
     // check if there's anything to do
@@ -1109,18 +1095,6 @@ void mtsIntuitiveResearchKitArm::ControlPositionCartesian(void)
             RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
         }
         // reset flag
-        mHasNewPIDGoal = false;
-    }
-}
-
-void mtsIntuitiveResearchKitArm::ControlPositionRelativeCartesian(void)
-{
-    if (mHasNewPIDGoal) {
-
-        std::cerr << CMN_LOG_DETAILS << " --------- tbd" << std::endl;
-
-        // reset flag
-        mCartesianRelative = vctFrm3::Identity();
         mHasNewPIDGoal = false;
     }
 }
@@ -1228,7 +1202,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), false));
             mHasNewPIDGoal = false;
             mCartesianRelative = vctFrm3::Identity();
-            mJointRelative.Zeros();
+            JointSet.Assign(JointsDesiredPID.Position(), NumberOfJoints());
             mEffortOrientationLocked = false;
             break;
         case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
@@ -1268,24 +1242,13 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
     // set control callback for RunReady
     switch (mControlMode) {
     case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
+    case mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE:
         switch (mControlSpace) {
         case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionJoint, this);
             break;
         case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionCartesian, this);
-            break;
-        default:
-            break;
-        }
-        break;
-    case mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE:
-        switch (mControlSpace) {
-        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
-            SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionRelativeJoint, this);
-            break;
-        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-            SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionRelativeCartesian, this);
             break;
         default:
             break;
@@ -1477,7 +1440,7 @@ void mtsIntuitiveResearchKitArm::SetPositionRelativeJoint(const prmPositionJoint
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE);
     // set goal
-    mJointRelative.Add(difference.Goal());
+    JointSet.Add(difference.Goal());
     mHasNewPIDGoal = true;
 }
 
