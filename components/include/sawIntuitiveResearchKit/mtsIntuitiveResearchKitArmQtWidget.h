@@ -59,13 +59,11 @@ protected:
 signals:
     void SignalDesiredState(QString state);
     void SignalCurrentState(QString state);
-    void SignalOperatingState(const prmOperatingState & state);
 
 private slots:
     void timerEvent(QTimerEvent * event);
     void SlotDesiredStateEventHandler(QString state);
     void SlotCurrentStateEventHandler(QString state);
-    void SlotOperatingStateEventHandler(const prmOperatingState & state);
     void SlotLogEnabled(void);
     void SlotEnableDirectControl(bool toggle);
     void SlotHome(void);
@@ -116,7 +114,6 @@ private:
     void CurrentStateEventHandler(const std::string & state);
 
     prmOperatingStateQtWidget * QPOState;
-    void OperatingStateEventHandler(const prmOperatingState & state);
 
     // messages
     bool LogEnabled;
