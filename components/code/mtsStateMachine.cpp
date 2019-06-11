@@ -22,7 +22,7 @@ void mtsStateMachine::AddState(const StateType state)
 {
     if (StateExists(state)) {
         cmnThrow("mtsStateMachine::AddState: "
-                 + mName + ", state already exists");
+                 + mName + ", state " + state + " already exists");
     }
     mStates[state] = false;
 }
@@ -50,7 +50,7 @@ void mtsStateMachine::AddAllowedDesiredState(const StateType allowedState)
         mStates[allowedState] = true;
     } else {
         cmnThrow("mtsStateMachine::AddAllowedDesiredState: "
-                 + mName + ", state needs to be added first");
+                 + mName + ", state " + allowedState + " needs to be added first");
     }
 }
 
