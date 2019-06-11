@@ -57,6 +57,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.AddState("HOMING_ARM");
     mArmState.AddState("ARM_HOMED");
     mArmState.AddState("READY");
+    mArmState.AddState("PAUSE");
+    mArmState.AddState("FAULT");
 
     // possible desired states
     mArmState.AddAllowedDesiredState("UNINITIALIZED");
@@ -64,6 +66,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.AddAllowedDesiredState("POWERED");
     mArmState.AddAllowedDesiredState("ARM_HOMED");
     mArmState.AddAllowedDesiredState("READY");
+    mArmState.AddAllowedDesiredState("PAUSE");
 
     mFallbackState = "UNINITIALIZED";
 
@@ -395,15 +398,21 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
 
 void mtsIntuitiveResearchKitArm::OperatingStateCommand(const std::string & command)
 {
-    if (command == "enable") {
-        SetDesiredState("READY");
-        return;
+    std::string humanReadableMessage;
+    prmOperatingState::StateType newOperatingState;
+    if (mOperatingState.ValidCommand(prmOperatingState::CommandTypeFromString(command),
+                                     newOperatingState, humanReadableMessage)) {
+        if (command == "enable") {
+            SetDesiredState("READY");
+            return;
+        }
+        if (command == "disable") {
+            SetDesiredState("UNINITIALIZED");
+            return;
+        }
+    } else {
+        RobotInterface->SendWarning(this->GetName() + ": " + humanReadableMessage);
     }
-    if (command == "disable") {
-        SetDesiredState("UNINITIALIZED");
-        return;
-    }
-    RobotInterface->SendWarning(this->GetName() + ": unsupported operating state command \"" + command + "\"");
 }
 
 void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
