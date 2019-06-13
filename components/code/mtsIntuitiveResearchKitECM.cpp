@@ -96,6 +96,9 @@ void mtsIntuitiveResearchKitECM::Init(void)
 
     ToolOffset = 0;
 
+    // set gravity compensation by default
+    mGravityCompensation = true;
+
     // state machine specific to ECM, see base class for other states
     mArmState.AddState("MANUAL");
 
@@ -108,11 +111,19 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                &mtsIntuitiveResearchKitECM::EnterManual,
                                this);
 
+    mArmState.SetRunCallback("MANUAL",
+                             &mtsIntuitiveResearchKitECM::RunManual,
+                             this);
+
+    mArmState.SetLeaveCallback("MANUAL",
+                               &mtsIntuitiveResearchKitECM::LeaveManual,
+                               this);
+
     // initialize trajectory data
-    mJointTrajectory.VelocityMaximum.Assign(60.0 * cmnPI_180, // degrees per second
-                                            60.0 * cmnPI_180,
+    mJointTrajectory.VelocityMaximum.Assign(30.0 * cmnPI_180, // degrees per second
+                                            30.0 * cmnPI_180,
                                             30.0 * cmn_mm,    // mm per second
-                                            60.0 * cmnPI_180);
+                                            30.0 * cmnPI_180);
     SetJointVelocityRatio(1.0);
     mJointTrajectory.AccelerationMaximum.Assign(90.0 * cmnPI_180,
                                                 90.0 * cmnPI_180,
@@ -180,6 +191,20 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
                                  << filename << "\" is in JSON format" << std::endl;
     }
+
+    // check that Rtw0 is not set
+    if (Manipulator->Rtw0 != vctFrm4x4::Identity()) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": you can't define the base-offset for the ECM, it is hard coded so gravity compensation works properly.  We always assume the ECM is mounted at 45 degrees!"
+                                 << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    vctFrame4x4<double> Rt(vctMatrixRotation3<double>(1.0,            0.0,            0.0,
+                                                      0.0,  sqrt(2.0)/2.0,  sqrt(2.0)/2.0,
+                                                      0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
+                           vctFixedSizeVector<double,3>(0.0, 0.0, 0.0));
+    Manipulator->Rtw0 = Rt;
 }
 
 
@@ -218,7 +243,28 @@ void mtsIntuitiveResearchKitECM::TransitionArmHomed(void)
 
 void mtsIntuitiveResearchKitECM::EnterManual(void)
 {
-    PID.Enable(false);
+    // set ready flag so Arm::GetRobotData updates all joint and
+    // cartesian data members
+    mJointControlReady = true;
+    mCartesianControlReady = true;
+
+    PID.EnableTrackingError(false);
+    SetControlEffortActiveJoints();
+}
+
+void mtsIntuitiveResearchKitECM::RunManual(void)
+{
+    // zero efforts
+    mEffortJoint.SetAll(0.0);
+    if (mGravityCompensation) {
+        AddGravityCompensationEfforts(mEffortJoint);
+    }
+    SetEffortJointLocal(mEffortJoint);
+}
+
+void mtsIntuitiveResearchKitECM::LeaveManual(void)
+{
+    Freeze();
 }
 
 void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)
@@ -235,8 +281,12 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
     // Start manual mode but save the previous state
     switch (button.Type()) {
     case prmEventButton::PRESSED:
-        ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
-        mArmState.SetCurrentState("MANUAL");
+        if (mArmState.CurrentState() == "READY") {
+            ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
+            mArmState.SetCurrentState("MANUAL");
+        } else {
+            RobotInterface->SendWarning(this->GetName() + ": arm not ready yet, manipulator clutch ignored");
+        }
         break;
     case prmEventButton::RELEASED:
         if (mArmState.CurrentState() == "MANUAL") {
@@ -247,4 +297,16 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
     default:
         break;
     }
+}
+
+void mtsIntuitiveResearchKitECM::UpdateFeedForward(vctDoubleVec & feedForward)
+{
+    feedForward.SetAll(0.0);
+    AddGravityCompensationEfforts(feedForward);
+}
+
+void mtsIntuitiveResearchKitECM::AddGravityCompensationEfforts(vctDoubleVec & efforts)
+{
+    vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
+    efforts.Add(Manipulator->CCG_MDH(JointsKinematics.Position(), qd, 9.81));
 }

@@ -1033,6 +1033,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newP
     JointSetParam.Goal().Zeros();
     ToJointsPID(newPosition, JointSetParam.Goal());
     JointSetParam.Goal().at(6) = JawGoal;
+    JointSetParam.SetTimestamp(StateTable.GetTic());
     PID.SetPositionJoint(JointSetParam);
 }
 
@@ -1093,6 +1094,7 @@ void mtsIntuitiveResearchKitPSM::SetEffortJointLocal(const vctDoubleVec & newEff
 
     // convert to cisstParameterTypes
     mTorqueSetParam.SetForceTorque(torqueDesired);
+    mTorqueSetParam.SetTimestamp(StateTable.GetTic());
     PID.SetTorqueJoint(mTorqueSetParam);
 }
 

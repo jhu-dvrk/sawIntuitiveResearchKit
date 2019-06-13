@@ -65,11 +65,19 @@
                               [1.0000,  0.0000,  0.0000],
                               [ 0.0000,  0.0000,  1.0000]]
             },
+            /* original offset provided by ISI, but we need to have z up for GC in ECM code
             "suj-tip-to-tool-origin": {
                 "Translation": [0.6126, 0.0000,   0.1016],
                 "Rotation" : [[ 0.0000, 1.0000,  0.0000],
                               [ -1.0000,  0.0000,  0.0000],
                               [ 0.0000,  0.0000,  1.0000]]
+            } */
+            /* offset with 45 degree rotation so z is defined up */
+            "suj-tip-to-tool-origin": {
+                "Translation": [0.6126, 0.0000,   0.1016],
+                "Rotation" : [[  0.0,  0.707106781, -0.707106781],
+                              [ -1.0,  0.0,          0.0        ],
+                              [  0.0,  0.707106781,  0.707106781]]
             }
         }
         ,

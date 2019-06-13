@@ -90,7 +90,7 @@
       <Potentiometers Position="Actuators">
          <Tolerance Axis="0" Distance="5.00" Latency="0.01" Unit="deg" />
          <Tolerance Axis="1" Distance="5.00" Latency="0.01" Unit="deg" />
-         <Tolerance Axis="2" Distance="5.00" Latency="0.01" Unit="mm" />
+         <Tolerance Axis="2" Distance="5.00" Latency="0.05" Unit="mm" />
          <Tolerance Axis="3" Distance="5.00" Latency="0.01" Unit="deg" />
       </Potentiometers>
    </Robot>
