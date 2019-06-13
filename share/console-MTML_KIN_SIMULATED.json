@@ -7,7 +7,7 @@
             "type": "MTM",
             "simulation": "KINEMATIC",
             "pid": "sawControllersPID-MTML.xml",
-            "kinematic": "mtm.json"
+            "arm": "jhu-dVRK/MTML-22723.json"
         }
     ]
 }
