@@ -350,11 +350,11 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetDesiredState,
                                         this, "SetDesiredState", std::string(""));
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::OperatingStateCommand,
-                                        this, "OperatingStateCommand", std::string(""));
+                                        this, "state_command", std::string(""));
         // Human readable messages
         RobotInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
         RobotInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
-        RobotInterface->AddEventWrite(MessageEvents.OperatingState, "OperatingState", prmOperatingState());
+        RobotInterface->AddEventWrite(MessageEvents.OperatingState, "operating_state", prmOperatingState());
 
         // Stats
         RobotInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
@@ -400,18 +400,22 @@ void mtsIntuitiveResearchKitArm::OperatingStateCommand(const std::string & comma
 {
     std::string humanReadableMessage;
     prmOperatingState::StateType newOperatingState;
-    if (mOperatingState.ValidCommand(prmOperatingState::CommandTypeFromString(command),
-                                     newOperatingState, humanReadableMessage)) {
-        if (command == "enable") {
-            SetDesiredState("READY");
-            return;
+    try {
+        if (mOperatingState.ValidCommand(prmOperatingState::CommandTypeFromString(command),
+                                         newOperatingState, humanReadableMessage)) {
+            if (command == "enable") {
+                SetDesiredState("READY");
+                return;
+            }
+            if (command == "disable") {
+                SetDesiredState("UNINITIALIZED");
+                return;
+            }
+        } else {
+            RobotInterface->SendWarning(this->GetName() + ": " + humanReadableMessage);
         }
-        if (command == "disable") {
-            SetDesiredState("UNINITIALIZED");
-            return;
-        }
-    } else {
-        RobotInterface->SendWarning(this->GetName() + ": " + humanReadableMessage);
+    } catch (std::runtime_error & e) {
+        RobotInterface->SendWarning(this->GetName() + ": " + command + " doesn't seem to be a valid state_command (" + e.what() + ")");
     }
 }
 
