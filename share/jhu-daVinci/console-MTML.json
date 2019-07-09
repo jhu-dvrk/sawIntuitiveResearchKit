@@ -5,9 +5,7 @@
         {
             "name": "MTML",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTML-34863.xml",
-            "pid": "sawControllersPID-MTML.xml",
-            "arm": "MTML-34863.json"
+            "serial": "34863"
         }
     ]
 }

@@ -1,5 +1,5 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "kinematic": "arm/mtm.json",
-    "gravity-compensation": "gc-MTML-34863.json"
+    "kinematic": "arm/psm.json",
+    "tool-detection": "chip"
 }

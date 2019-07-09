@@ -5,9 +5,7 @@
         {
             "name": "PSM2",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM2-32204.xml",
-            "pid": "pid/sawControllersPID-PSM.xml",
-            "kinematic": "arm/psm-large-needle-driver.json"
+            "serial": "32204"
         }
     ]
 }

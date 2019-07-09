@@ -40,6 +40,7 @@ public:
 
     void SetSimulated(void);
     void Configure(const std::string & filename);
+    void ConfigureTool(const std::string & filename);
 
 protected:
 

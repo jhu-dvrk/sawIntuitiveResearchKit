@@ -580,7 +580,6 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // will work as long as this component is located in the same
     // parent directory as the "shared" directory.
     configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
-    configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/io", cmnPath::TAIL);
 
     mtsComponentManager * manager = mtsComponentManager::GetInstance();
 
@@ -1396,11 +1395,11 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             // try to find default
             std::string defaultFile;
             if ((armPointer->mType == Arm::ARM_PSM) || (armPointer->mType == Arm::ARM_PSM_DERIVED)) {
-                defaultFile = "sawControllersPID-PSM.xml";
+                defaultFile = "pid/sawControllersPID-PSM.xml";
             } else if ((armPointer->mType == Arm::ARM_ECM) || (armPointer->mType == Arm::ARM_ECM_DERIVED)) {
-                defaultFile = "sawControllersPID-ECM.xml";
+                defaultFile = "pid/sawControllersPID-ECM.xml";
             } else {
-                defaultFile = "sawControllersPID-" + armName + ".xml";
+                defaultFile = "pid/sawControllersPID-" + armName + ".xml";
             }
             CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureArmJSON: can't find \"pid\" setting for arm \""
                                        << armName << "\", using default: \""
@@ -1418,7 +1417,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         && (!armPointer->mIsGeneric)) {
         // renamed "kinematic" to "arm" so we can have a more complex configuration file for the arm class
         if ((armPointer->mType == Arm::ARM_MTM)
-            || (armPointer->mType == Arm::ARM_MTM_DERIVED)) {
+            || (armPointer->mType == Arm::ARM_MTM_DERIVED)
+            || (armPointer->mType == Arm::ARM_PSM)
+            || (armPointer->mType == Arm::ARM_PSM_DERIVED)) {
             jsonValue = jsonArm["arm"];
             if (!jsonValue.empty()) {
                 armPointer->mArmConfigurationFile = configPath.Find(jsonValue.asString());
@@ -1446,7 +1447,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         // make sure we have an arm configuration file
         if (armPointer->mArmConfigurationFile == "") {
             if ((armPointer->mType == Arm::ARM_MTM)
-                || (armPointer->mType == Arm::ARM_MTM_DERIVED)) {
+                || (armPointer->mType == Arm::ARM_MTM_DERIVED)
+                || (armPointer->mType == Arm::ARM_PSM)
+                || (armPointer->mType == Arm::ARM_PSM_DERIVED)) {
                 // try to find the arm file using default
                 std::string defaultFile = armName + "-" + armPointer->mSerial + ".json";
                 armPointer->mArmConfigurationFile = configPath.Find(defaultFile);
