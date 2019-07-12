@@ -1,0 +1,53 @@
+class {
+    name mtsIntuitiveResearchKitToolTypes;
+
+    enum {
+        name Detection;
+        enum-value {
+            name AUTOMATIC;
+        }
+        enum-value {
+            name MANUAL;
+        }
+        enum-value {
+            name FIXED;
+        }
+    }
+
+    enum {
+        name Type;
+        enum-value {
+            name LARGE_NEEDLE_DRIVER_400006;
+	    description Large Needle Driver 400006 (Classic);
+        }
+        enum-value {
+            name LARGE_NEEDLE_DRIVER_420006;
+	    description Large Needle Driver 420006 (S);
+        }
+        enum-value {
+            name RESANO_FORCEPS_400181;
+	    description Resano Forceps 400181 (Classic);
+        }
+        enum-value {
+            name CUSTOM_TOOL_000001;
+	    description Custom Tool 000001;
+        }
+        enum-value {
+            name CUSTOM_TOOL_000002;
+	    description Custom Tool 000002;
+        }
+        enum-value {
+            name CUSTOM_TOOL_000003;
+	    description Custom Tool 000003;
+        }
+        enum-value {
+            name CUSTOM_TOOL_000004;
+	    description Custom Tool 000004;
+        }
+        enum-value {
+            name CUSTOM_TOOL_000005;
+	    description Custom Tool 000005;
+        }
+    }
+
+}

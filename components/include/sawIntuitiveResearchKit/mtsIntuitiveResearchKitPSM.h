@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitToolTypes.h>
 
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -148,6 +149,13 @@ protected:
         mtsFunctionVoid TriggerRead;
     } Dallas;
 
+    /*! Set tool type.  Uses string as defined in
+      mtsIntuitiveResearchKitToolTypes.cdg, upper case with separating
+      underscores. */
+    void SetToolType(const std::string & toolType);
+
+    /*! Event handler for tool types sent by the IO level based on
+      info from Dallas Chip on tools */
     void EventHandlerToolType(const std::string & toolType);
 
     // Functions for events
@@ -158,6 +166,7 @@ protected:
     } ClutchEvents;
 
     /*! 5mm tools with 8 joints */
+    mtsIntuitiveResearchKitToolTypes::Detection mToolDetection;
     bool mSnakeLike = false;
 
     robManipulatorPSMSnake * ManipulatorPSMSnake = nullptr;

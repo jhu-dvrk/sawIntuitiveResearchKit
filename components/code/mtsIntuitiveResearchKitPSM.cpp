@@ -379,7 +379,7 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
                                    << jsonConfig << std::endl
                                    << "<----" << std::endl;
 
-        // detect is we're using 1.7 and up with two fields, kinematic and tool-detection
+        // detect if we're using 1.8 and up with two fields, kinematic and tool-detection
         const auto jsonKinematic = jsonConfig["kinematic"];
         if (!jsonKinematic.isNull()) {
             // extract path of main json config file to search other files relative to it
@@ -403,26 +403,53 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             // tool detection
             const auto jsonToolDetection = jsonConfig["tool-detection"];
             if (!jsonToolDetection.isNull()) {
-                std::cerr << CMN_LOG_DETAILS << " save tool-detection: " << jsonToolDetection.asString() << std::endl;
+                std::string toolDetection = jsonToolDetection.asString();
+                mToolDetection = mtsIntuitiveResearchKitToolTypes::DetectionFromString(toolDetection);
+                if (mToolDetection == mtsIntuitiveResearchKitToolTypes::FIXED) {
+                    const auto jsonFixedTool = jsonConfig["tool"];
+                    if (!jsonFixedTool.isNull()) {
+                        std::string fixedTool = configPath.Find(jsonFixedTool.asString());
+                        if (fixedTool == "") {
+                            CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                                     << " using file \"" << filename << "\" can't find tool file \""
+                                                     << fixedTool << "\"" << std::endl;
+                            exit(EXIT_FAILURE);
+                        } else {
+                            ConfigureTool(fixedTool);
+                        }            
+                    } else {
+                        CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                                 << " using file \"" << filename
+                                                 << "\" can't find field \"tool\" which is required since \"tool-detection\" is set to \"FIXED\"" << std::endl;
+                        exit(EXIT_FAILURE);
+                    }
+                }        
+            } else {
+                mToolDetection = mtsIntuitiveResearchKitToolTypes::AUTOMATIC;
             }
         } else {
             std::stringstream message;
             message << "Configure " << this->GetName() << ":" << std::endl
                     << "----------------------------------------------------" << std::endl
-                    << " Warning:" << std::endl
+                    << " ERROR:" << std::endl
                     << "   To allow runtime tool swapping " << std::endl
                     << "   you should have a \"arm\" file for each PSM in the console" << std::endl
                     << "   file.  The arm file should contain the fields" << std::endl
-                    << "   \"kinematic\" and \"tool-detection\"." << std::endl
+                    << "   \"kinematic\" and optionally \"tool-detection\"." << std::endl
                     << "----------------------------------------------------";
             std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
-            CMN_LOG_CLASS_INIT_VERBOSE << message.str() << std::endl;
-            ConfigureDH(jsonConfig);
+            CMN_LOG_CLASS_INIT_ERROR << message.str() << std::endl;
+            exit(EXIT_FAILURE);
         }
 
+    } catch (std::exception & e) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": parsing file \""
+                                 << filename << "\", got error: " << e.what() << std::endl;
+        exit(EXIT_FAILURE);
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
                                  << filename << "\" is in JSON format" << std::endl;
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -1230,8 +1257,19 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
 {
     switch (button.Type()) {
     case prmEventButton::PRESSED:
-        SetToolPresent(true);
-        Dallas.TriggerRead();
+        switch (mToolDetection) {
+        case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
+            Dallas.TriggerRead();
+            break;
+        case mtsIntuitiveResearchKitToolTypes::MANUAL:
+            std::cerr << CMN_LOG_DETAILS << " manual not implemented";
+            break;
+        case mtsIntuitiveResearchKitToolTypes::FIXED:
+            SetToolPresent(true);
+            break;
+        default:
+            break;
+        }
         break;
     case prmEventButton::RELEASED:
         SetToolPresent(false);
@@ -1267,5 +1305,17 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
 
 void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolType)
 {
-    RobotInterface->SendStatus(this->GetName() + ": setting up for tool type \"" + toolType + "\"");
+    RobotInterface->SendStatus(this->GetName() + ": detected tool type \"" + toolType + "\"");
+    // check if the tool is in the supported list
+    auto found =
+        std::find(mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin(),
+                  mtsIntuitiveResearchKitToolTypes::TypeVectorString().end(),
+                  toolType);
+    if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
+        RobotInterface->SendError(this->GetName() + ": tool type \"" + toolType + "\" is not supported");
+        return;
+    }
+    // supported tools
+    ConfigureTool(toolType);
+    SetToolPresent(true);        
 }
