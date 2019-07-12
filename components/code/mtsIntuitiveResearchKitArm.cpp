@@ -465,11 +465,15 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)
             ConfigureDH(jsonConfig);
         }
 
+    } catch (std::exception & e) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName() << ": parsing file \""
+                                 << filename << "\", got error: " << e.what() << std::endl;
+        exit(EXIT_FAILURE);
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName() << ": make sure the file \""
                                  << filename << "\" is in JSON format" << std::endl;
+        exit(EXIT_FAILURE);
     }
-
 }
 
 void mtsIntuitiveResearchKitArm::Startup(void)

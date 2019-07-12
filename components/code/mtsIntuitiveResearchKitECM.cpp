@@ -187,9 +187,14 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
             ToolOffset = new robManipulator(ToolOffsetTransformation);
             Manipulator->Attach(ToolOffset);
         }
+    } catch (std::exception & e) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": parsing file \""
+                                 << filename << "\", got error: " << e.what() << std::endl;
+        exit(EXIT_FAILURE);
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
                                  << filename << "\" is in JSON format" << std::endl;
+        exit(EXIT_FAILURE);
     }
 
     // check that Rtw0 is not set
