@@ -161,9 +161,10 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
         jsonStream.open(filename.c_str());
         if (!jsonReader.parse(jsonStream, jsonConfig)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": failed to parse configuration\n"
+                                     << ": failed to parse configuration file \""
+                                     << filename << "\"\n"
                                      << jsonReader.getFormattedErrorMessages();
-            return;
+            exit(EXIT_FAILURE);
         }
 
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()

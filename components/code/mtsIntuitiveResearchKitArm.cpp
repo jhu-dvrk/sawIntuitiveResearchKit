@@ -450,9 +450,10 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)
         jsonStream.open(filename.c_str());
         if (!jsonReader.parse(jsonStream, jsonConfig)) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
-                                     << ": failed to parse kinematic (DH) configuration\n"
+                                     << ": failed to parse kinematic (DH) configuration file \""
+                                     << filename << "\"\n"
                                      << jsonReader.getFormattedErrorMessages();
-            return;
+            exit(EXIT_FAILURE);
         }
 
         CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureDH: " << this->GetName()

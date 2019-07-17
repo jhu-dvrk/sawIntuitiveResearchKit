@@ -526,9 +526,11 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
     Json::Value jsonConfig;
     Json::Reader jsonReader;
     if (!jsonReader.parse(jsonStream, jsonConfig)) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to parse configuration\n"
+        CMN_LOG_CLASS_INIT_ERROR << "Configure "<< this->GetName()
+                                 << ": failed to parse configuration file \""
+                                 << filename << "\"\n"
                                  << jsonReader.getFormattedErrorMessages();
-        return;
+        exit(EXIT_FAILURE);
     }
 
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
@@ -541,7 +543,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
     const Json::Value jsonArms = jsonConfig["arms"];
     if (jsonArms.size() != 4) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to find 4 SUJ arms" << std::endl;
-        return;
+        exit(EXIT_FAILURE);
     }
 
     mtsIntuitiveResearchKitSUJArmData * arm;
@@ -553,7 +555,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
             CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect arm name for SUJ \""
                                      << name << "\", must be one of \"PSM1\", \"PSM2\", \"PSM3\" or \"ECM\""
                                      << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
         std::string typeString = jsonArm["type"].asString();
         mtsIntuitiveResearchKitSUJArmData::SujType type;
@@ -570,14 +572,14 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
             CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect arm type for SUJ \""
                                      << name << "\", must be one of \"PSM\", \"ECM\" or \"Motorized PSM\""
                                      << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
 
         if (!jsonArm["plug-number"]) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: plug number is missing for SUJ \""
                                      << name << "\", must be an integer between 1 and 4"
                                      << std::endl;
-            return;
+            exit(EXIT_FAILURE);
         }
         unsigned int plugNumber = jsonArm["plug-number"].asInt();
         unsigned int armIndex = plugNumber - 1;
@@ -619,7 +621,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
                                          << name << "\" clutch button because this interface already exists: \""
                                          << interfaceName.str() << "\".  Make sure all arms have a different plug number."
                                          << std::endl;
-                return;
+                exit(EXIT_FAILURE);
             }
         }
 
