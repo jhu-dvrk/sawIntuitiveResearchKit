@@ -84,6 +84,10 @@ protected:
     void LeaveArmHomed(void);
     void TransitionArmHomed(void);
 
+    // methods used in change coupling/engaging
+    void RunChangingCoupling(void);
+    void UpdatePIDLimits(const bool toolPresent);
+
     // engaging adapter
     void EnterChangingCouplingAdapter(void);
     inline void RunChangingCouplingAdapter(void) {
@@ -101,11 +105,8 @@ protected:
     void RunEngagingTool(void);
     void TransitionToolEngaged(void);
 
+    // manual mode
     void EnterManual(void);
-
-    // shared method for changing coupling
-    void RunChangingCoupling(void);
-
     void EventHandlerAdapter(const prmEventButton & button);
 
     /*! Set tool present.  This should only be used by the tool event
@@ -165,8 +166,12 @@ protected:
         bool PIDEnabledPreviousState;
     } ClutchEvents;
 
-    /*! 5mm tools with 8 joints */
+    /*! Configuration for tool detection, either using Dallas Chip,
+      manual or fixed based on configuration file. */
     mtsIntuitiveResearchKitToolTypes::Detection mToolDetection;
+    bool mToolConfigured = false;
+
+    /*! 5mm tools with 8 joints */
     bool mSnakeLike = false;
 
     robManipulatorPSMSnake * ManipulatorPSMSnake = nullptr;
@@ -196,6 +201,8 @@ protected:
         vctDoubleVec ToolPositionLowerLimit, ToolPositionUpperLimit;
         vctDoubleVec NoToolPositionLowerLimit, NoToolPositionUpperLimit;
         vctDoubleVec ToolTorqueLowerLimit, ToolTorqueUpperLimit;
+        double JawPositionLowerLimit, JawPositionUpperLimit;
+        double JawTorqueLowerLimit, JawTorqueUpperLimit;
     } CouplingChange;
 };
 
