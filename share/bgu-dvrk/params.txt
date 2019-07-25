@@ -1,5 +1,0 @@
-1.5
-2
-
-first line - amplitude
-second line - frequency

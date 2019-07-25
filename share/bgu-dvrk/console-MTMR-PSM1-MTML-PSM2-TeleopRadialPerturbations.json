@@ -5,8 +5,8 @@
         [
             // to use derived teleop with force feedback
             {
-                "shared-library": "sawIntuitiveResearchKitDerivedTeleOperationPSMLidor",
-                "class-name": "mtsDerivedTeleOperationPSMLidor",
+                "shared-library": "sawIntuitiveResearchKitDerivedTeleOperationPSMexperimental",
+                "class-name": "mtsDerivedTeleOperationPSMexperimental",
                 "constructor-arg": {
                     "Name": "MTMR-PSM1",
                     "Period": 0.001
@@ -27,7 +27,15 @@
             "type": "PSM",
             "io": "sawRobotIO1394-PSM1-31817.xml",
             "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm1-15-deg-large-needle-driver.json"
+            "kinematic": "psm-large-needle-driver.json",
+            "base-frame": {
+            "reference-frame": "TableCenter",
+            "transform": [[ 0.965925826, -0.258819045, 0.0,  0.0823832],
+                          [ 0.258819045,  0.965925826, 0.0, -0.0365175],
+                          [ 0.0,          0.0,         1.0,  0.0     ],
+                          [ 0.0,          0.0,         0.0, 1.0]]
+            }
+
         }
         ,
         {
@@ -35,7 +43,14 @@
             "type": "PSM",
             "io": "sawRobotIO1394-PSM2-28060.xml",
             "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm2-15-deg-large-needle-driver.json"
+            "kinematic": "psm-large-needle-driver.json",
+            "base-frame": {
+            "reference-frame": "TableCenter",
+            "transform": [[  0.965925826,  0.258819045, 0.0,  -0.120322 ],
+                          [ -0.258819045,  0.965925826, 0.0,  -0.0276494],
+                          [  0.0,          0.0,         1.0,   0.0     ],
+                          [  0.0,          0.0,         0.0,   1.0      ]]
+            }
         }
         ,
         {
@@ -58,19 +73,19 @@
     "psm-teleops":
     [
         {
+            "type": "TELEOP_PSM_DERIVED",
             "master": "MTMR",
             "slave": "PSM1",
-            "rotation" : [[ 1.0000,  0.0000,  0.0000],
-                          [ 0.0000,  1.0000,  0.0000],
-                          [ 0.0000,  0.0000,  1.0000]]
+            "configure-parameter" : {
+                "rotation" : [[ 1.0000,  0.0000,  0.0000],
+                              [ 0.0000,  1.0000,  0.0000],
+                              [ 0.0000,  0.0000,  1.0000]]
+            }
         }
         ,
         {
             "master": "MTML",
-            "slave": "PSM2",
-            "rotation" : [[ 1.0000,  0.0000,  0.0000],
-                          [ 0.0000,  1.0000,  0.0000],
-                          [ 0.0000,  0.0000,  1.0000]]
+            "slave": "PSM2"
         }
     ]
 }

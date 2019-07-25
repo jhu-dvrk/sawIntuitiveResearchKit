@@ -1,4 +1,0 @@
-Options provided:
- - json configuration file [console-MTML-PSM2-MTMR-PSM1-Teleop-with-cams-derivedForces-experimental.json]
-Using compatibility mode: v1_4_0
-File found: console JSON configuration file; console-MTML-PSM2-MTMR-PSM1-Teleop-with-cams-derivedForces-experimental.json
