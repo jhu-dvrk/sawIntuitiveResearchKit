@@ -1,123 +1,122 @@
-<?xml version="1.0"?>
 <Config Version="3">
    <Robot Name="PSM2" NumOfActuator="7" NumOfJoint="7" SN="32204">
       <Actuator ActuatorID="0" AxisID="0" BoardID="8" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32776" Scale="-5242.88"/>
-            <BitsToFeedbackAmps Offset="6.245291" Scale="-0.000190738"/>
-            <NmToAmps Scale="0.404089"/>
-            <MaxCurrent Unit="A" Value="1.340"/>
+            <AmpsToBits Offset="32776" Scale="-5242.88" />
+            <BitsToFeedbackAmps Offset="6.245617" Scale="-0.000190738" />
+            <NmToAmps Scale="0.404089" />
+            <MaxCurrent Unit="A" Value="1.340" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="-0.00044248"/>
+            <BitsToPosSI Scale="-0.00044248" />
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
-            <VoltsToPosSI Offset="98.954108" Scale="-43.5513747171"/>
+            <BitsToVolts Offset="0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="98.954108" Scale="-43.5709949917" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="1" AxisID="1" BoardID="8" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32770" Scale="-5242.88"/>
-            <BitsToFeedbackAmps Offset="6.237920" Scale="-0.000190738"/>
-            <NmToAmps Scale="0.404089"/>
-            <MaxCurrent Unit="A" Value="1.340"/>
+            <AmpsToBits Offset="32762" Scale="-5242.88" />
+            <BitsToFeedbackAmps Offset="6.237796" Scale="-0.000190738" />
+            <NmToAmps Scale="0.404089" />
+            <MaxCurrent Unit="A" Value="1.340" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="-0.00044248"/>
+            <BitsToPosSI Scale="-0.00044248" />
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
-            <VoltsToPosSI Offset="65.033976" Scale="-28.8342654959"/>
+            <BitsToVolts Offset="0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="65.033976" Scale="-28.9499186003" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="2" AxisID="2" BoardID="8" Type="Prismatic">
          <Drive>
-            <AmpsToBits Offset="32838" Scale="5242.88"/>
-            <BitsToFeedbackAmps Offset="-6.252901" Scale="0.000190738"/>
-            <NmToAmps Scale="0.067828"/>
-            <MaxCurrent Unit="A" Value="0.670"/>
+            <AmpsToBits Offset="32834" Scale="5242.88" />
+            <BitsToFeedbackAmps Offset="-6.252684" Scale="0.000190738" />
+            <NmToAmps Scale="0.067828" />
+            <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="0.00129629"/>
+            <BitsToPosSI Scale="0.00129629" />
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
-            <VoltsToPosSI Offset="-7.779003" Scale="59.2523949126"/>
+            <BitsToVolts Offset="0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="-7.779003" Scale="58.9906493614" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="3" AxisID="3" BoardID="8" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32849" Scale="-5242.88"/>
-            <BitsToFeedbackAmps Offset="6.233400" Scale="-0.000190738"/>
-            <NmToAmps Scale="1.949705"/>
-            <MaxCurrent Unit="A" Value="0.670"/>
+            <AmpsToBits Offset="32840" Scale="-5242.88" />
+            <BitsToFeedbackAmps Offset="6.233475" Scale="-0.000190738" />
+            <NmToAmps Scale="1.949705" />
+            <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="-0.00768574"/>
+            <BitsToPosSI Scale="-0.00768574" />
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
-            <VoltsToPosSI Offset="178.448883709" Scale="-79.3668946939"/>
+            <BitsToVolts Offset="0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="178.425887348" Scale="-79.3591563635" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="4" AxisID="0" BoardID="9" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32867" Scale="-5242.88"/>
-            <BitsToFeedbackAmps Offset="6.269819" Scale="-0.000190738"/>
-            <NmToAmps Scale="1.949705"/>
-            <MaxCurrent Unit="A" Value="0.670"/>
+            <AmpsToBits Offset="32977" Scale="-5242.88" />
+            <BitsToFeedbackAmps Offset="6.253045" Scale="-0.000190738" />
+            <NmToAmps Scale="1.949705" />
+            <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Offset="0" Scale="-0.00768574"/>
+            <BitsToPosSI Offset="0" Scale="-0.00768574" />
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
-            <VoltsToPosSI Offset="159.604356906" Scale="-82.5066183051"/>
+            <BitsToVolts Offset="0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="176.925724172" Scale="-78.6335220041" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="5" AxisID="1" BoardID="9" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32792" Scale="5242.88"/>
-            <BitsToFeedbackAmps Offset="-6.238247" Scale="0.000190738"/>
-            <NmToAmps Scale="1.949705"/>
-            <MaxCurrent Unit="A" Value="0.670"/>
+            <AmpsToBits Offset="32865" Scale="5242.88" />
+            <BitsToFeedbackAmps Offset="-6.264711" Scale="0.000190738" />
+            <NmToAmps Scale="1.949705" />
+            <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="0.00768574"/>
+            <BitsToPosSI Scale="0.00768574" />
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
-            <VoltsToPosSI Offset="154.749763946" Scale="-82.4759080085"/>
+            <BitsToVolts Offset="0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="177.182220386" Scale="-79.0732795354" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="6" AxisID="2" BoardID="9" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32924" Scale="5242.88"/>
-            <BitsToFeedbackAmps Offset="-6.263424" Scale="0.000190738"/>
-            <NmToAmps Scale="1.949705"/>
-            <MaxCurrent Unit="A" Value="0.670"/>
+            <AmpsToBits Offset="32932" Scale="5242.88" />
+            <BitsToFeedbackAmps Offset="-6.258423" Scale="0.000190738" />
+            <NmToAmps Scale="1.949705" />
+            <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="0.00768574"/>
+            <BitsToPosSI Scale="0.00768574" />
          </Encoder>
          <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
-            <VoltsToPosSI Offset="170.111997594" Scale="-82.7826250429"/>
+            <BitsToVolts Offset="0" Scale="6.86656e-05" />
+            <VoltsToPosSI Offset="177.626962638" Scale="-78.940917432" />
          </AnalogIn>
       </Actuator>
       <Potentiometers Position="Actuators">
-	<Tolerance Axis="0" Distance="5.0" Latency="0.01" Unit="deg"/>
-	<Tolerance Axis="1" Distance="5.0" Latency="0.01" Unit="deg"/>
-	<Tolerance Axis="2" Distance="5.0" Latency="0.01" Unit="mm"/>
-	<Tolerance Axis="3" Distance="5.0" Latency="0.01" Unit="deg"/>
-	<Tolerance Axis="4" Distance="25.0" Latency="0.05" Unit="deg"/>
-	<Tolerance Axis="5" Distance="25.0" Latency="0.05" Unit="deg"/>
-	<Tolerance Axis="6" Distance="25.0" Latency="0.05" Unit="deg"/>
+	<Tolerance Axis="0" Distance="5.0" Latency="0.01" Unit="deg" />
+	<Tolerance Axis="1" Distance="5.0" Latency="0.01" Unit="deg" />
+	<Tolerance Axis="2" Distance="5.0" Latency="0.01" Unit="mm" />
+	<Tolerance Axis="3" Distance="5.0" Latency="0.01" Unit="deg" />
+	<Tolerance Axis="4" Distance="25.0" Latency="0.05" Unit="deg" />
+	<Tolerance Axis="5" Distance="25.0" Latency="0.05" Unit="deg" />
+	<Tolerance Axis="6" Distance="25.0" Latency="0.05" Unit="deg" />
       </Potentiometers>
    </Robot>
-   <DigitalIn BitID="0" BoardID="8" Debounce="0.2" Name="PSM2-SUJClutch" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="2" BoardID="8" Debounce="0.2" Name="PSM2-ManipClutch" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="7" BoardID="9" Debounce="1.5" Name="PSM2-Tool" Pressed="1" Trigger="all"/>
-   <DigitalIn BitID="10" BoardID="9" Debounce="1.5" Name="PSM2-Adapter" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="0" BoardID="8" Debounce="0.2" Name="PSM2-SUJClutch" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="2" BoardID="8" Debounce="0.2" Name="PSM2-ManipClutch" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="7" BoardID="9" Debounce="1.5" Name="PSM2-Tool" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="10" BoardID="9" Debounce="1.5" Name="PSM2-Adapter" Pressed="1" Trigger="all" />
 </Config>
