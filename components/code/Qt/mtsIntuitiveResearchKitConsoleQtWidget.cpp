@@ -104,11 +104,11 @@ void mtsIntuitiveResearchKitConsoleQtWidget::Startup(void)
         message.append(" Release mode for better performance and stability");
 
         QMessageBox * msgBox = new QMessageBox(this);
-        msgBox->setAttribute(Qt::WA_DeleteOnClose); // makes sure the msgbox is deleted automatically when closed
+        msgBox->setAttribute(Qt::WA_DeleteOnClose);
         msgBox->setStandardButtons(QMessageBox::Ok);
         msgBox->setWindowTitle("Warning");
         msgBox->setText(message.c_str());
-        msgBox->setModal(false); // if you want it non-modal
+        msgBox->setModal(true);
         msgBox->show();
     }
 }
