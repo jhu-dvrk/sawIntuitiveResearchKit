@@ -122,4 +122,3 @@
    <DigitalIn BitID="10" BoardID="9" Debounce="1.5" Name="PSM2-Adapter" Pressed="1" Trigger="all"/>
    <DallasChip BoardID="9" Name="PSM2-Dallas"/>
 </Config>
-==== BASE ====
