@@ -29,6 +29,10 @@ class {
 	    description Resano Forceps 400181 (Classic);
         }
         enum-value {
+            name SMALL_CLIP_APPLIER_400003;
+	    description Small Clip Applier 400181 (Classic);
+        }
+        enum-value {
             name CUSTOM_TOOL_000001;
 	    description Custom Tool 000001;
         }
