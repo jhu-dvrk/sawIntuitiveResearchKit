@@ -136,18 +136,23 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // gripper
     PID.DefaultTrackingErrorTolerance.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
 
-    // joint limits when no tool is present
+    // joint limits when tool is not present
     CouplingChange.NoToolPositionLowerLimit.SetSize(NumberOfJoints());
     CouplingChange.NoToolPositionUpperLimit.SetSize(NumberOfJoints());
-    CouplingChange.NoToolPositionLowerLimit.Assign(-91.0, -53.0,   0.0, -175.0, -175.0 , -175.0, -175.0);
-    CouplingChange.NoToolPositionUpperLimit.Assign( 91.0,  53.0, 240.0,  175.0,  175.0 ,  175.0,  175.0);
-    // convert to radians or meters
-    CouplingChange.NoToolPositionLowerLimit.Ref(2, 0) *= cmnPI_180;
-    CouplingChange.NoToolPositionLowerLimit.Element(2) *= cmn_mm;
-    CouplingChange.NoToolPositionLowerLimit.Ref(4, 3) *= cmnPI_180;
-    CouplingChange.NoToolPositionUpperLimit.Ref(2, 0) *= cmnPI_180;
-    CouplingChange.NoToolPositionUpperLimit.Element(2) *= cmn_mm;
-    CouplingChange.NoToolPositionUpperLimit.Ref(4, 3) *= cmnPI_180;
+    CouplingChange.NoToolPositionLowerLimit.Assign(-91.0 * cmnPI_180,
+                                                   -53.0 * cmnPI_180,
+                                                   0.0 * cmn_mm,
+                                                   -175.0 * cmnPI_180,
+                                                   -175.0 * cmnPI_180,
+                                                   -175.0 * cmnPI_180,
+                                                   -175.0 * cmnPI_180);
+    CouplingChange.NoToolPositionUpperLimit.Assign(91.0 * cmnPI_180,
+                                                   53.0 * cmnPI_180,
+                                                   240.0 * cmn_mm,
+                                                   175.0 * cmnPI_180,
+                                                   175.0 * cmnPI_180,
+                                                   175.0 * cmnPI_180,
+                                                   175.0 * cmnPI_180);
 
     mtsInterfaceRequired * interfaceRequired;
 
@@ -390,6 +395,12 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             configPath.Add(configDir, cmnPath::TAIL); // for arm file
             configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL); // for kinematic file
 
+            // should arm go to zero position when homing, default set in Init method
+            const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
+            if (!jsonHomingGoesToZero.isNull()) {
+                mHomingGoesToZero = jsonHomingGoesToZero.asBool();
+            }
+
             // kinematic
             const auto fileKinematic = configPath.Find(jsonKinematic.asString());
             if (fileKinematic == "") {
@@ -537,12 +548,6 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
             return;
         }
 
-        // should arm go to zero position when homing, default set in Init method
-        const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
-        if (!jsonHomingGoesToZero.isNull()) {
-            mHomingGoesToZero = jsonHomingGoesToZero.asBool();
-        }
-
         // load tool tip transform if any (with warning)
         const Json::Value jsonToolTip = jsonConfig["tooltip-offset"];
         if (jsonToolTip.isNull()) {
@@ -569,6 +574,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         // build a coupling matrix for all 7 actuators/dofs
         CouplingChange.ToolCoupling
             .ActuatorToJointPosition().ForceAssign(vctDynamicMatrix<double>::Eye(NumberOfJoints()));
+        // assign 4x4 matrix starting at position 3, 3
         CouplingChange.ToolCoupling
             .ActuatorToJointPosition().Ref(4, 4, 3, 3).Assign(toolCoupling4.ActuatorToJointPosition());
 
@@ -733,7 +739,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 CouplingChange.ReceivedCoupling = false;
                 return;
             } else {
-                RobotInterface->SendWarning(this->GetName() + ": can't disable last four axis to change coupling.");
+                RobotInterface->SendError(this->GetName() + ": can't disable last four axis to change coupling.");
                 mArmState.SetDesiredState(mFallbackState);
             }
         } else {
@@ -751,7 +757,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 // finally move to next state
                 mArmState.SetCurrentState(CouplingChange.NextState);
             } else {
-                RobotInterface->SendWarning(this->GetName() + ": can't set coupling.");
+                RobotInterface->SendError(this->GetName() + ": can't set coupling.");
                 mArmState.SetDesiredState(mFallbackState);
             }
         } else {
@@ -764,22 +770,32 @@ void mtsIntuitiveResearchKitPSM::UpdatePIDLimits(const bool toolPresent)
 {
     // now set PID limits based on tool/no tool
     if (toolPresent && mToolConfigured) {
-        vctDoubleVec lower(NumberOfJoints());
-        vctDoubleVec upper(NumberOfJoints());
+        vctDoubleVec lowerFromKinematics(NumberOfJointsKinematics());
+        vctDoubleVec upperFromKinematics(NumberOfJointsKinematics());
+        vctDoubleVec lowerToPID(NumberOfJoints());
+        vctDoubleVec upperToPID(NumberOfJoints());
         // position limits
-        Manipulator->GetJointLimits(lower.Ref(NumberOfJoints() - 1),
-                                    upper.Ref(NumberOfJoints() - 1));
-        lower.at(NumberOfJoints() - 1) = CouplingChange.JawPositionLowerLimit;
-        upper.at(NumberOfJoints() - 1) = CouplingChange.JawPositionUpperLimit;
-        PID.SetPositionLowerLimit(lower);
-        PID.SetPositionUpperLimit(upper);
+        Manipulator->GetJointLimits(lowerFromKinematics,
+                                    upperFromKinematics);
+        // use kinematic joints...
+        lowerToPID.Ref(NumberOfJointsKinematics()).Assign(lowerFromKinematics);
+        upperToPID.Ref(NumberOfJointsKinematics()).Assign(upperFromKinematics);
+        // ...and jaw
+        lowerToPID.at(NumberOfJoints() - 1) = CouplingChange.JawPositionLowerLimit;
+        upperToPID.at(NumberOfJoints() - 1) = CouplingChange.JawPositionUpperLimit;
+        // set
+        PID.SetPositionLowerLimit(lowerToPID);
+        PID.SetPositionUpperLimit(upperToPID);
         // force torque
-        Manipulator->GetFTMaximums(upper.Ref(NumberOfJoints() - 1));
-        lower.ProductOf(-1.0, lower); // manipulator assumes symmetry
-        lower.at(NumberOfJoints() - 1) = CouplingChange.JawTorqueLowerLimit;
-        upper.at(NumberOfJoints() - 1) = CouplingChange.JawTorqueUpperLimit;
-        PID.SetTorqueLowerLimit(lower);
-        PID.SetTorqueUpperLimit(upper);
+        Manipulator->GetFTMaximums(upperFromKinematics);
+        // use kinematic joints...
+        upperToPID.Ref(NumberOfJointsKinematics()).Assign(upperFromKinematics);
+        // ...and jaw
+        upperToPID.at(NumberOfJoints() - 1) = CouplingChange.JawTorqueUpperLimit;
+        lowerToPID.ProductOf(-1.0, upperToPID); // manipulator assumes symmetry
+        // set
+        PID.SetTorqueLowerLimit(lowerToPID);
+        PID.SetTorqueUpperLimit(upperToPID);
     } else {
         PID.SetPositionLowerLimit(CouplingChange.NoToolPositionLowerLimit);
         PID.SetPositionUpperLimit(CouplingChange.NoToolPositionUpperLimit);
@@ -990,7 +1006,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition);
         mJointTrajectory.GoalVelocity.SetAll(0.0);
         mJointTrajectory.EndTime = 0.0;
-        std::cerr << "goal: " << mJointTrajectory.Goal * cmn180_PI << std::endl;
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
         EngagingStage = 2;
@@ -1033,7 +1048,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
                 } else {
                     mJointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
                 }
-                std::cerr << "goal: " << mJointTrajectory.Goal * cmn180_PI << std::endl;
                 mJointTrajectory.EndTime = 0.0;
                 std::stringstream message;
                 message << this->GetName() << ": engaging tool " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
