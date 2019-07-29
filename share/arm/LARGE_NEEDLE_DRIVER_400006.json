@@ -9,8 +9,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset":  0.0000,
-                "qmin": -4.53786, // -260
-                "qmax":  4.53786, //  260
+                "qmin": -4.53786, // -260 degrees
+                "qmax":  4.53786, //  260 degrees
                 "ftmax": 0.33
             },
             {
@@ -19,8 +19,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset": -1.5708,
-                "qmin": -1.39626, // -80
-                "qmax":  1.39626, //  80
+                "qmin": -1.39626, // -80 degrees
+                "qmax":  1.39626, //  80 degrees
                 "ftmax": 0.25
             },
             {
@@ -29,8 +29,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset": -1.5708,
-                "qmin": -1.39626, // -80
-                "qmax":  1.39626, //  80
+                "qmin": -1.39626, // -80 degrees
+                "qmax":  1.39626, //  80 degrees
                 "ftmax": 0.20
             }
         ]
@@ -38,8 +38,8 @@
     ,
     "jaw" : {
         // for last joint, manual says [0, 30] but we need -20 to allow stronger torque, 80 to open wide
-        "qmin": -0.349066, // -20
-        "qmax":  1.39626,  //  80
+        "qmin": -0.349066, // -20 degrees
+        "qmax":  1.39626,  //  80 degrees
         "ftmax": 0.16
     }
     ,
@@ -59,9 +59,9 @@
     ,
     // angles used to engage the tool, in radians
     // make sure these are within the range of motion IN the cannula
-    // 270, 15, 15, 0
+    // 270, 15, 15, 0 degrees
     "tool-engage-position" : {
-        "lower" : [-4.71239, -0.261799,  0.261799, 0.0],
-        "upper" : [ 4.71239,  0.261799, -0.261799, 0.0]
+        "lower" : [-4.71239, -0.261799, -0.261799, 0.0],
+        "upper" : [ 4.71239,  0.261799,  0.261799, 0.0]
     }
 }
