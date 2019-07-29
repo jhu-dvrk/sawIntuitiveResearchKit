@@ -3,8 +3,8 @@
    <Robot Name="PSM1" NumOfActuator="7" NumOfJoint="7" SN="49695">
       <Actuator ActuatorID="0" AxisID="0" BoardID="6" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32920" Scale="-5242.88"/>
-            <BitsToFeedbackAmps Offset="6.250034" Scale="-0.000190738"/>
+            <AmpsToBits Offset="33087" Scale="-5242.88"/>
+            <BitsToFeedbackAmps Offset="6.289671" Scale="-0.000190738"/>
             <NmToAmps Scale="0.404089"/>
             <MaxCurrent Unit="A" Value="1.340"/>
          </Drive>
@@ -18,8 +18,8 @@
       </Actuator>
       <Actuator ActuatorID="1" AxisID="1" BoardID="6" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32972" Scale="-5242.88"/>
-            <BitsToFeedbackAmps Offset="6.246085" Scale="-0.000190738"/>
+            <AmpsToBits Offset="32650" Scale="-5242.88"/>
+            <BitsToFeedbackAmps Offset="6.234748" Scale="-0.000190738"/>
             <NmToAmps Scale="0.404089"/>
             <MaxCurrent Unit="A" Value="1.340"/>
          </Drive>
@@ -33,8 +33,8 @@
       </Actuator>
       <Actuator ActuatorID="2" AxisID="2" BoardID="6" Type="Prismatic">
          <Drive>
-            <AmpsToBits Offset="32890" Scale="5242.88"/>
-            <BitsToFeedbackAmps Offset="-6.256101" Scale="0.000190738"/>
+            <AmpsToBits Offset="33060" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.274847" Scale="0.000190738"/>
             <NmToAmps Scale="0.067828"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
@@ -48,8 +48,8 @@
       </Actuator>
       <Actuator ActuatorID="3" AxisID="3" BoardID="6" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32922" Scale="-5242.88"/>
-            <BitsToFeedbackAmps Offset="6.247172" Scale="-0.000190738"/>
+            <AmpsToBits Offset="33035" Scale="-5242.88"/>
+            <BitsToFeedbackAmps Offset="6.277398" Scale="-0.000190738"/>
             <NmToAmps Scale="1.949705"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
@@ -63,8 +63,8 @@
       </Actuator>
       <Actuator ActuatorID="4" AxisID="0" BoardID="7" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="33086" Scale="-5242.88"/>
-            <BitsToFeedbackAmps Offset="6.289569" Scale="-0.000190738"/>
+            <AmpsToBits Offset="32919" Scale="-5242.88"/>
+            <BitsToFeedbackAmps Offset="6.249768" Scale="-0.000190738"/>
             <NmToAmps Scale="1.949705"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
@@ -78,8 +78,8 @@
       </Actuator>
       <Actuator ActuatorID="5" AxisID="1" BoardID="7" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32652" Scale="5242.88"/>
-            <BitsToFeedbackAmps Offset="-6.234773" Scale="0.000190738"/>
+            <AmpsToBits Offset="32971" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.246145" Scale="0.000190738"/>
             <NmToAmps Scale="1.949705"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
@@ -93,8 +93,8 @@
       </Actuator>
       <Actuator ActuatorID="6" AxisID="2" BoardID="7" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="33060" Scale="5242.88"/>
-            <BitsToFeedbackAmps Offset="-6.274832" Scale="0.000190738"/>
+            <AmpsToBits Offset="32894" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.256122" Scale="0.000190738"/>
             <NmToAmps Scale="1.949705"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
