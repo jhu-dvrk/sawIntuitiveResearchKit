@@ -9,6 +9,7 @@ Links
  * Documentation: http://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki
  * License: http://github.com/jhu-cisst/cisst/blob/master/license.txt
  * JHU-LCSR software: http://jhu-lcsr.github.io/software/
+ * [Code of conduct](CODE_OF_CONDUCT.md)
  
 Dependencies
 ============

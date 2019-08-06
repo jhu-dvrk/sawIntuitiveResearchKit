@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -134,16 +134,20 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
 
     // calibration stuff
     QLabel * labelRecalibrationInputStart = new QLabel("Joint Start");
+    labelRecalibrationInputStart->setToolTip("Measured height or angle in mm or degrees");
     moreLayout->addWidget(labelRecalibrationInputStart, row, 0);
     QVPotentiometerRecalibrationStartWidget
         = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::TEXT_WIDGET);
+    QVPotentiometerRecalibrationStartWidget->setToolTip("Measured height or angle in mm or degrees");
     moreLayout->addWidget(QVPotentiometerRecalibrationStartWidget, row, 1, 1, -1);
     row++;
 
     QLabel * labelRecalibrationInputFinish = new QLabel("Joint Finish");
+    labelRecalibrationInputFinish->setToolTip("Measured height or angle in mm or degrees");
     moreLayout->addWidget(labelRecalibrationInputFinish, row, 0);
     QVPotentiometerRecalibrationFinishWidget
         = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::TEXT_WIDGET);
+    QVPotentiometerRecalibrationFinishWidget->setToolTip("Measured height or angle in mm or degrees");
     moreLayout->addWidget(QVPotentiometerRecalibrationFinishWidget, row, 1, 1, -1);
     QPushButton * ManualRecalibrationButton = new QPushButton("Manual Recalibration");
     row++;
