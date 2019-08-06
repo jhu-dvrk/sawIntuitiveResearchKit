@@ -251,8 +251,6 @@ public:
 
             mNewJointOffsets[0][col] = mat.Element(0, col) - mat.Element(1, col) * mNewJointScales[0][col];
             mNewJointOffsets[1][col] = mat.Element(0, col) - mat.Element(2, col) * mNewJointScales[1][col];
-            mNewJointScales[0][col] /= 1000.0;
-            mNewJointScales[1][col] /= 1000.0;
         }
 
 
@@ -645,20 +643,15 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         arm->mBrakeEngagedCurrent = brakeCurrent;
 
         // read pot settings
+        arm->mStateTableConfiguration.Start();
         cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionOffsets[0], jsonArm["primary-offsets"]);
         cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionOffsets[1], jsonArm["secondary-offsets"]);
         cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionScales[0], jsonArm["primary-scales"]);
         cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionScales[1], jsonArm["secondary-scales"]);
-
+        arm->mStateTableConfiguration.Advance();
+        
         // look for DH
         arm->mManipulator.LoadRobot(jsonArm["DH"]);
-
-        // mV vs V?
-        arm->mStateTableConfiguration.Start();
-        for (size_t potIndex = 0; potIndex < 2; potIndex++) {
-            arm->mVoltageToPositionScales[potIndex].Multiply(1000.0);
-        }
-        arm->mStateTableConfiguration.Advance();
 
         // Read setup transforms
         vctFrm3 transform;
