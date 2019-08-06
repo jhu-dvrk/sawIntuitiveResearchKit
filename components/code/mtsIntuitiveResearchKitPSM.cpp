@@ -167,6 +167,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     RobotInterface->AddCommandReadState(this->StateTable, Jaw, "GetStateJaw");
     RobotInterface->AddCommandReadState(this->StateTable, JawDesired, "GetStateJawDesired");
     RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
+    RobotInterface->AddEventWrite(ToolEvents.ToolType, "ToolType", std::string());
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionJaw, this, "SetPositionJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionGoalJaw, this, "SetPositionGoalJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetEffortJaw, this, "SetEffortJaw");
@@ -392,8 +393,8 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
             cmnPath configPath(cmnPath::GetWorkingDirectory());
             std::string fullname = configPath.Find(filename);
             std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
-            configPath.Add(configDir, cmnPath::TAIL); // for arm file
-            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL); // for kinematic file
+            configPath.Add(configDir, cmnPath::TAIL); // for user files
+            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL); // for arm file
 
             // should arm go to zero position when homing, default set in Init method
             const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
@@ -420,14 +421,31 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
                 if (mToolDetection == mtsIntuitiveResearchKitToolTypes::FIXED) {
                     const auto jsonFixedTool = jsonConfig["tool"];
                     if (!jsonFixedTool.isNull()) {
-                        std::string fixedTool = configPath.Find(jsonFixedTool.asString());
-                        if (fixedTool == "") {
+                        std::string fixedTool = jsonFixedTool.asString();
+                        // check if the tool is in the supported list (string name)
+                        auto found =
+                            std::find(mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin(),
+                                      mtsIntuitiveResearchKitToolTypes::TypeVectorString().end(),
+                                      fixedTool);
+                        if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
+                            CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                                     << " using file \"" << filename << "\", \""
+                                                     << fixedTool << "\" is not a supported type" << std::endl;
+                            exit(EXIT_FAILURE);
+                        } else {
+                            mToolType = mtsIntuitiveResearchKitToolTypes::TypeFromString(fixedTool);
+                        }
+                        // now look for the file to configure the tool
+                        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/arm", cmnPath::TAIL);
+                        std::string fixedToolFile = configPath.Find(fixedTool + ".json");
+                        if (fixedToolFile == "") {
                             CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
                                                      << " using file \"" << filename << "\" can't find tool file \""
+                                                     << fixedTool << ".json\" for tool \""
                                                      << fixedTool << "\"" << std::endl;
                             exit(EXIT_FAILURE);
                         } else {
-                            ConfigureTool(fixedTool);
+                            ConfigureTool(fixedToolFile);
                             if (!mToolConfigured) {
                                 exit(EXIT_FAILURE);
                             }
@@ -948,6 +966,9 @@ void mtsIntuitiveResearchKitPSM::EnterChangingCouplingTool(void)
 
 void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
 {
+    // even to inform which tool is used
+    ToolEvents.ToolType(mtsIntuitiveResearchKitToolTypes::TypeToString(mToolType));
+
     // set PID limits for tool present
     UpdatePIDLimits(true);
 
@@ -1285,7 +1306,6 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
         // we will need to engage this tool
         mToolNeedEngage = true;
     } else {
-        mToolConfigured = false;
         mCartesianReady = false;
         mArmState.SetCurrentState("ADAPTER_ENGAGED");
     }
@@ -1311,7 +1331,14 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         }
         break;
     case prmEventButton::RELEASED:
-        SetToolPresent(false);
+        switch (mToolDetection) {
+        case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
+        case mtsIntuitiveResearchKitToolTypes::MANUAL:
+            mToolConfigured = false;
+        case mtsIntuitiveResearchKitToolTypes::FIXED:
+        default:
+            SetToolPresent(false);
+        }
         break;
     default:
         break;
@@ -1353,6 +1380,8 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
     if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
         RobotInterface->SendError(this->GetName() + ": tool type \"" + toolType + "\" is not supported");
         return;
+    } else {
+        mToolType = mtsIntuitiveResearchKitToolTypes::TypeFromString(toolType);
     }
     // supported tools
     ConfigureTool(toolType + ".json");

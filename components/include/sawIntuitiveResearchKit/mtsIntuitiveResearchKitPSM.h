@@ -169,7 +169,11 @@ protected:
     /*! Configuration for tool detection, either using Dallas Chip,
       manual or fixed based on configuration file. */
     mtsIntuitiveResearchKitToolTypes::Detection mToolDetection;
+    mtsIntuitiveResearchKitToolTypes::Type mToolType;
     bool mToolConfigured = false;
+    struct {
+        mtsFunctionWrite ToolType;
+    } ToolEvents;
 
     /*! 5mm tools with 8 joints */
     bool mSnakeLike = false;
