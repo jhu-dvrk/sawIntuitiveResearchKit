@@ -1285,6 +1285,7 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
         // we will need to engage this tool
         mToolNeedEngage = true;
     } else {
+        mToolConfigured = false;
         mCartesianReady = false;
         mArmState.SetCurrentState("ADAPTER_ENGAGED");
     }
