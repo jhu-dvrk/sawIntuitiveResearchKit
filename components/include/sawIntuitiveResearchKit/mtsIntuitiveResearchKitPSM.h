@@ -171,8 +171,10 @@ protected:
     mtsIntuitiveResearchKitToolTypes::Detection mToolDetection;
     mtsIntuitiveResearchKitToolTypes::Type mToolType;
     bool mToolConfigured = false;
+    bool mToolTypeRequested = false;
     struct {
         mtsFunctionWrite ToolType;
+        mtsFunctionVoid ToolTypeRequest;
     } ToolEvents;
 
     /*! 5mm tools with 8 joints */

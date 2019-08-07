@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -36,6 +36,7 @@ if (cisst_FOUND_AS_REQUIRED)
     qt4_wrap_cpp (sawIntuitiveResearchKit_QT_WRAP_CPP
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArmQtWidget.h
+                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSMQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECMQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h
@@ -69,6 +70,8 @@ if (cisst_FOUND_AS_REQUIRED)
                  mtsTeleOperationECMQtWidget.cpp
                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArmQtWidget.h
                  mtsIntuitiveResearchKitArmQtWidget.cpp
+                 ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSMQtWidget.h
+                 mtsIntuitiveResearchKitPSMQtWidget.cpp
                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
                  mtsIntuitiveResearchKitSUJQtWidget.cpp
                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBaseQtWidget.h

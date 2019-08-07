@@ -164,15 +164,21 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     JawDesired.SetAutomaticTimestamp(false);
     StateTable.AddData(JawDesired, "JawDesired");
 
+    // jaw interface
     RobotInterface->AddCommandReadState(this->StateTable, Jaw, "GetStateJaw");
     RobotInterface->AddCommandReadState(this->StateTable, JawDesired, "GetStateJawDesired");
-    RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
-    RobotInterface->AddEventWrite(ToolEvents.ToolType, "ToolType", std::string());
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionJaw, this, "SetPositionJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionGoalJaw, this, "SetPositionGoalJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetEffortJaw, this, "SetEffortJaw");
+
+    // tool specific interface
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetAdapterPresent, this, "SetAdapterPresent");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolPresent, this, "SetToolPresent");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolType, this, "SetToolType");
+    RobotInterface->AddEventWrite(ToolEvents.ToolType, "ToolType", std::string());
+    RobotInterface->AddEventVoid(ToolEvents.ToolTypeRequest, "ToolTypeRequest");
+
+    RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
 
     CMN_ASSERT(PIDInterface);
     PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::CouplingEventHandler, this, "Coupling");
@@ -1311,6 +1317,11 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
     }
 }
 
+void mtsIntuitiveResearchKitPSM::SetToolType(const std::string & toolType)
+{
+    std::cerr << CMN_LOG_DETAILS << " SetToolType: " << toolType << std::endl;
+}
+
 void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
 {
     switch (button.Type()) {
@@ -1320,8 +1331,8 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
             Dallas.TriggerRead();
             break;
         case mtsIntuitiveResearchKitToolTypes::MANUAL:
-            std::cerr << CMN_LOG_DETAILS << " manual not implemented";
-            exit(EXIT_FAILURE);
+            mToolTypeRequested = true;
+            ToolEvents.ToolTypeRequest();
             break;
         case mtsIntuitiveResearchKitToolTypes::FIXED:
             SetToolPresent(true);
