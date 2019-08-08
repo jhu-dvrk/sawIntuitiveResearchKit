@@ -37,14 +37,20 @@ protected:
 
 signals:
     void SignalToolType(QString toolType);
+    void SignalToolTypeRequest(void);
 
 private slots:
     void SlotToolTypeEventHandler(QString toolType);
+    void SlotToolTypeRequestEventHandler(void);
+    void SlotToolTypeSelected(QString toolType);
 
 private:
     void ToolTypeEventHandler(const std::string & toolType);
+    void ToolTypeRequestEventHandler(void);
 
     QLineEdit * QLEToolType;
+    QComboBox * QCBToolOptions;
+    mtsFunctionWrite SetToolType;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitPSMQtWidget);

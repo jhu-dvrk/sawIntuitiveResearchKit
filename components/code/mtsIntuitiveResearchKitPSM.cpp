@@ -1319,7 +1319,14 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
 
 void mtsIntuitiveResearchKitPSM::SetToolType(const std::string & toolType)
 {
-    std::cerr << CMN_LOG_DETAILS << " SetToolType: " << toolType << std::endl;
+    if (mToolTypeRequested) {
+        EventHandlerToolType(toolType);
+        if (mToolConfigured) {
+            mToolTypeRequested = false;
+        }
+    } else {
+        RobotInterface->SendWarning(this->GetName() + ": received request to set tool type but not expecting it now.  Request ignored.");
+    }
 }
 
 void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
@@ -1382,7 +1389,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
 
 void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolType)
 {
-    RobotInterface->SendStatus(this->GetName() + ": detected tool type \"" + toolType + "\"");
+    RobotInterface->SendStatus(this->GetName() + ": setting up for tool type \"" + toolType + "\"");
     // check if the tool is in the supported list
     auto found =
         std::find(mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin(),
