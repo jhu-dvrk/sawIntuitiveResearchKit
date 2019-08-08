@@ -9,17 +9,13 @@
         {
             "name": "MTMR",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTMR-32336.xml",
-            "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtm.json"
+            "serial": "32336"
         }
         ,
         {
             "name": "MTML",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTML-34863.xml",
-            "pid": "sawControllersPID-MTML.xml",
-            "kinematic": "mtm.json"
+            "serial": "34863"
         }
         ,
         {
@@ -34,9 +30,7 @@
         {
             "name": "PSM3",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM3-28613.xml",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json"
+            "serial": "28613"
         }
     ]
     ,
