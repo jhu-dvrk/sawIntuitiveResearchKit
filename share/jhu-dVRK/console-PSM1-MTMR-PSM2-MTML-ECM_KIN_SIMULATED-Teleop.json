@@ -37,8 +37,7 @@
             "name": "PSM1",
             "type": "PSM",
             "simulation": "KINEMATIC",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json",
+            "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
             "base-frame": {
                 "reference-frame": "ECM",
                 "transform": [[  1.0,  0.0,          0.0,         -0.20],
@@ -52,8 +51,7 @@
             "name": "PSM2",
             "type": "PSM",
             "simulation": "KINEMATIC",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json",
+            "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
             "base-frame": {
                 "reference-frame": "ECM",
                 "transform": [[  1.0,  0.0,          0.0,          0.20],

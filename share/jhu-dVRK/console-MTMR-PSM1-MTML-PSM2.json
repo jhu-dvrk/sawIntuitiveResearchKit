@@ -5,20 +5,18 @@
         {
             "name": "PSM1",
             "type": "PSM",
-            "serial": "28007",
-            "kinematic": "psm-large-needle-driver.json"
+            "serial": "28007"
         }
         ,
         {
             "name": "PSM2",
             "type": "PSM",
-            "serial": "27374",
-            "kinematic": "psm-large-needle-driver.json"
+            "serial": "27374"
         }
         ,
         {
             "name": "MTMR",
-            "type": "MTM",
+            "type": "MTM"
             "serial": "28247"
         }
         ,

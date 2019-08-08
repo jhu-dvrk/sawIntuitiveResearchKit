@@ -9,9 +9,7 @@
         {
             "name": "MTMR",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTMR-28247.xml",
-            "pid": "sawControllersPID-MTMR.xml",
-            "arm": "MTMR-28247.json"
+            "serial": "28247"
         }
     ]
 }

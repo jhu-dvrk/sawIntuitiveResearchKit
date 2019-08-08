@@ -10,9 +10,7 @@
         {
             "name": "MTML",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTML-22723.xml",
-            "pid": "sawControllersPID-MTML.xml",
-            "arm": "MTML-22723.json",
+            "serial": "22723",
             "base-frame": {
                 "reference-frame": "HRSV",
                 "transform": [[ -1.0,  0.0,          0.0,          0.180],
@@ -25,9 +23,7 @@
         {
             "name": "MTMR",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTMR-28247.xml",
-            "pid": "sawControllersPID-MTMR.xml",
-            "arm": "MTMR-28247.json",
+            "serial": "28247",
             "base-frame": {
                 "reference-frame": "HRSV",
                 "transform": [[ -1.0,  0.0,          0.0,         -0.180],
