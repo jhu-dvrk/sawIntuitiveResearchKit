@@ -95,6 +95,7 @@ public:
     protected:
         std::string mName;
         ArmType mType;
+        bool mIsNativeOrDerived;
         std::string mSerial;
         SimulationType mSimulation;
 

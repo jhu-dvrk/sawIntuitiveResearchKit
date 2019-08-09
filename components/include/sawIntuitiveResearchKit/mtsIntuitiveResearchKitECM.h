@@ -33,9 +33,12 @@ public:
     inline ~mtsIntuitiveResearchKitECM() {}
 
     void SetSimulated(void);
-    void Configure(const std::string & filename);
 
 protected:
+
+    void ConfigureArmSpecific(const Json::Value & jsonConfig,
+                              const cmnPath & configPath,
+                              const std::string & filename) override;
 
     /*! Configuration methods */
     inline size_t NumberOfAxes(void) const {

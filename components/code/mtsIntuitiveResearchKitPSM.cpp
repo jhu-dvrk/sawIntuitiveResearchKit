@@ -371,125 +371,58 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
     return robManipulator::EFAILURE;
 }
 
-void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
+void mtsIntuitiveResearchKitPSM::ConfigureArmSpecific(const Json::Value & jsonConfig,
+                                                      const cmnPath & configPath,
+                                                      const std::string & filename)
 {
-    try {
-        std::ifstream jsonStream;
-        Json::Value jsonConfig;
-        Json::Reader jsonReader;
-
-        jsonStream.open(filename.c_str());
-        if (!jsonReader.parse(jsonStream, jsonConfig)) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": failed to parse configuration file \""
-                                     << filename << "\"\n"
-                                     << jsonReader.getFormattedErrorMessages();
-            exit(EXIT_FAILURE);
-        }
-
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
-                                   << " using file \"" << filename << "\"" << std::endl
-                                   << "----> content of configuration file: " << std::endl
-                                   << jsonConfig << std::endl
-                                   << "<----" << std::endl;
-
-        // detect if we're using 1.8 and up with two fields, kinematic and tool-detection
-        const auto jsonKinematic = jsonConfig["kinematic"];
-        if (!jsonKinematic.isNull()) {
-            // extract path of main json config file to search other files relative to it
-            cmnPath configPath(cmnPath::GetWorkingDirectory());
-            std::string fullname = configPath.Find(filename);
-            std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
-            configPath.Add(configDir, cmnPath::TAIL); // for user files
-            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL); // for arm file
-
-            // should arm go to zero position when homing, default set in Init method
-            const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
-            if (!jsonHomingGoesToZero.isNull()) {
-                mHomingGoesToZero = jsonHomingGoesToZero.asBool();
-            }
-
-            // kinematic
-            const auto fileKinematic = configPath.Find(jsonKinematic.asString());
-            if (fileKinematic == "") {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                         << " using file \"" << filename << "\" can't find kinematic file \""
-                                         << jsonKinematic.asString() << "\"" << std::endl;
-                exit(EXIT_FAILURE);
-            } else {
-                ConfigureDH(fileKinematic);
-            }
-
-            // tool detection
-            const auto jsonToolDetection = jsonConfig["tool-detection"];
-            if (!jsonToolDetection.isNull()) {
-                std::string toolDetection = jsonToolDetection.asString();
-                mToolDetection = mtsIntuitiveResearchKitToolTypes::DetectionFromString(toolDetection);
-                if (mToolDetection == mtsIntuitiveResearchKitToolTypes::FIXED) {
-                    const auto jsonFixedTool = jsonConfig["tool"];
-                    if (!jsonFixedTool.isNull()) {
-                        std::string fixedTool = jsonFixedTool.asString();
-                        // check if the tool is in the supported list (string name)
-                        auto found =
-                            std::find(mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin(),
-                                      mtsIntuitiveResearchKitToolTypes::TypeVectorString().end(),
-                                      fixedTool);
-                        if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
-                            CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                                     << " using file \"" << filename << "\", \""
-                                                     << fixedTool << "\" is not a supported type" << std::endl;
-                            exit(EXIT_FAILURE);
-                        } else {
-                            mToolType = mtsIntuitiveResearchKitToolTypes::TypeFromString(fixedTool);
-                        }
-                        // now look for the file to configure the tool
-                        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/arm", cmnPath::TAIL);
-                        std::string fixedToolFile = configPath.Find(fixedTool + ".json");
-                        if (fixedToolFile == "") {
-                            CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                                     << " using file \"" << filename << "\" can't find tool file \""
-                                                     << fixedTool << ".json\" for tool \""
-                                                     << fixedTool << "\"" << std::endl;
-                            exit(EXIT_FAILURE);
-                        } else {
-                            ConfigureTool(fixedToolFile);
-                            if (!mToolConfigured) {
-                                exit(EXIT_FAILURE);
-                            }
-                        }
-                    } else {
-                        CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                                 << " using file \"" << filename
-                                                 << "\" can't find field \"tool\" which is required since \"tool-detection\" is set to \"FIXED\"" << std::endl;
+    // tool detection
+    const auto jsonToolDetection = jsonConfig["tool-detection"];
+    if (!jsonToolDetection.isNull()) {
+        std::string toolDetection = jsonToolDetection.asString();
+        mToolDetection = mtsIntuitiveResearchKitToolTypes::DetectionFromString(toolDetection);
+        if (mToolDetection == mtsIntuitiveResearchKitToolTypes::FIXED) {
+            const auto jsonFixedTool = jsonConfig["tool"];
+            if (!jsonFixedTool.isNull()) {
+                std::string fixedTool = jsonFixedTool.asString();
+                // check if the tool is in the supported list (string name)
+                auto found =
+                    std::find(mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin(),
+                              mtsIntuitiveResearchKitToolTypes::TypeVectorString().end(),
+                              fixedTool);
+                if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmSpecific: " << this->GetName()
+                                             << "\"" << fixedTool << "\" found in file \""
+                                             << filename << "\" is not a supported type" << std::endl;
+                    exit(EXIT_FAILURE);
+                } else {
+                    mToolType = mtsIntuitiveResearchKitToolTypes::TypeFromString(fixedTool);
+                }
+                // now look for the file to configure the tool
+                cmnPath newConfigPath(configPath);
+                newConfigPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/arm", cmnPath::TAIL);
+                std::string fixedToolFile = newConfigPath.Find(fixedTool + ".json");
+                if (fixedToolFile == "") {
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmSpecific: " << this->GetName()
+                                             << " can't find tool file \""
+                                             << fixedTool << ".json\" for tool \""
+                                             << fixedTool << "\" defined in file \""
+                                             << filename << "\"" << std::endl;
+                    exit(EXIT_FAILURE);
+                } else {
+                    ConfigureTool(fixedToolFile);
+                    if (!mToolConfigured) {
                         exit(EXIT_FAILURE);
                     }
                 }
             } else {
-                mToolDetection = mtsIntuitiveResearchKitToolTypes::AUTOMATIC;
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                         << " can't find field \"tool\" in file \""
+                                         << filename << "\" which is required since \"tool-detection\" is set to \"FIXED\"" << std::endl;
+                exit(EXIT_FAILURE);
             }
-        } else {
-            std::stringstream message;
-            message << "Configure " << this->GetName() << ":" << std::endl
-                    << "----------------------------------------------------" << std::endl
-                    << " ERROR:" << std::endl
-                    << "   To allow runtime tool swapping " << std::endl
-                    << "   you should have a \"arm\" file for each PSM in the console" << std::endl
-                    << "   file.  The arm file should contain the fields" << std::endl
-                    << "   \"kinematic\" and optionally \"tool-detection\"." << std::endl
-                    << "----------------------------------------------------";
-            std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
-            CMN_LOG_CLASS_INIT_ERROR << message.str() << std::endl;
-            exit(EXIT_FAILURE);
         }
-
-    } catch (std::exception & e) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": parsing file \""
-                                 << filename << "\", got error: " << e.what() << std::endl;
-        exit(EXIT_FAILURE);
-    } catch (...) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
-                                 << filename << "\" is in JSON format" << std::endl;
-        exit(EXIT_FAILURE);
+    } else {
+        mToolDetection = mtsIntuitiveResearchKitToolTypes::AUTOMATIC;
     }
 }
 
@@ -554,7 +487,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
             }
             Manipulator = ManipulatorPSMSnake;
         }
-        ConfigureDH(jsonConfig);
+        ConfigureDH(jsonConfig, fullFilename);
 
         // check that the kinematic chain length makes sense
         size_t expectedNumberOfJoint;

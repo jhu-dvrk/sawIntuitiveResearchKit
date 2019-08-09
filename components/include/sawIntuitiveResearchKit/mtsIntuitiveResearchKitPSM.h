@@ -39,12 +39,15 @@ public:
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitPSM() {}
 
-    void SetSimulated(void);
-    void Configure(const std::string & filename);
-    void ConfigureTool(const std::string & filename);
+    void SetSimulated(void) override;
 
 protected:
 
+    void ConfigureArmSpecific(const Json::Value & jsonConfig,
+                              const cmnPath & configPath,
+                              const std::string & filename) override;
+    void ConfigureTool(const std::string & filename);
+    
     /*! Configuration methods */
     inline size_t NumberOfAxes(void) const {
         return 7;

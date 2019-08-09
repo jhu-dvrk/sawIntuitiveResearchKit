@@ -50,8 +50,7 @@
         {
             "name": "ECM",
             "type": "ECM",
-            "io": "sawRobotIO1394-ECM-29738.xml",
-            "kinematic": "arm/ecm-straight.json",
+            "serial": "29738",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "ECM"

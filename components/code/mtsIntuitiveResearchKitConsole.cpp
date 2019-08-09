@@ -305,12 +305,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
     }
 
     // if the arm is a research kit arm
-    if ((mType == ARM_PSM) ||
-        (mType == ARM_PSM_DERIVED) ||
-        (mType == ARM_MTM) ||
-        (mType == ARM_MTM_DERIVED) ||
-        (mType == ARM_ECM) ||
-        (mType == ARM_ECM_DERIVED)) {
+    if (mIsNativeOrDerived) {
         // Connect arm to IO if not simulated
         if (mSimulation == SIMULATION_NONE) {
             componentManager->Connect(Name(), "RobotIO",
@@ -1219,20 +1214,27 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     Json::Value jsonValue;
     jsonValue = jsonArm["type"];
     armPointer->mIsGeneric = false; // default value
+    armPointer->mIsNativeOrDerived = false;
     if (!jsonValue.empty()) {
         std::string typeString = jsonValue.asString();
         if (typeString == "MTM") {
             armPointer->mType = Arm::ARM_MTM;
+            armPointer->mIsNativeOrDerived = true;
         } else if (typeString == "PSM") {
             armPointer->mType = Arm::ARM_PSM;
+            armPointer->mIsNativeOrDerived = true;
         } else if (typeString == "ECM") {
             armPointer->mType = Arm::ARM_ECM;
+            armPointer->mIsNativeOrDerived = true;
         } else if (typeString == "MTM_DERIVED") {
             armPointer->mType = Arm::ARM_MTM_DERIVED;
+            armPointer->mIsNativeOrDerived = true;
         } else if (typeString == "PSM_DERIVED") {
             armPointer->mType = Arm::ARM_PSM_DERIVED;
+            armPointer->mIsNativeOrDerived = true;
         } else if (typeString == "ECM_DERIVED") {
             armPointer->mType = Arm::ARM_ECM_DERIVED;
+            armPointer->mIsNativeOrDerived = true;
         } else if (typeString == "MTM_GENERIC") {
             armPointer->mType = Arm::ARM_MTM_GENERIC;
             armPointer->mIsGeneric = true;
@@ -1248,12 +1250,12 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             armPointer->mType = Arm::ARM_SUJ;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName << ": invalid type \""
-                                     << typeString << "\", needs to be MTM(_DERIVED), PSM(_DERIVED) or ECM(_DERIVED)" << std::endl;
+                                     << typeString << "\", needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC}" << std::endl;
             return false;
         }
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName
-                                 << ": doesn't have a \"type\" specified, needs to be MTM(_DERIVED), PSM(_DERIVED) or ECM(_DERIVED)" << std::endl;
+                                 << ": doesn't have a \"type\" specified, needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC}" << std::endl;
         return false;
     }
 
@@ -1377,13 +1379,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         }
     }
 
-    // PID only required for MTM, PSM and ECM
-    if ((armPointer->mType == Arm::ARM_MTM)
-        || (armPointer->mType == Arm::ARM_MTM_DERIVED)
-        || (armPointer->mType == Arm::ARM_PSM)
-        || (armPointer->mType == Arm::ARM_PSM_DERIVED)
-        || (armPointer->mType == Arm::ARM_ECM)
-        || (armPointer->mType == Arm::ARM_ECM_DERIVED)) {
+    // PID only required for MTM, PSM and ECM (and derived)
+    if (armPointer->mIsNativeOrDerived) {
         jsonValue = jsonArm["pid"];
         if (!jsonValue.empty()) {
             armPointer->mPIDConfigurationFile = configPath.Find(jsonValue.asString());
@@ -1416,10 +1413,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     if ((armPointer->mType != Arm::ARM_PSM_SOCKET)
         && (!armPointer->mIsGeneric)) {
         // renamed "kinematic" to "arm" so we can have a more complex configuration file for the arm class
-        if ((armPointer->mType == Arm::ARM_MTM)
-            || (armPointer->mType == Arm::ARM_MTM_DERIVED)
-            || (armPointer->mType == Arm::ARM_PSM)
-            || (armPointer->mType == Arm::ARM_PSM_DERIVED)) {
+        if (armPointer->mIsNativeOrDerived) {
             jsonValue = jsonArm["arm"];
             if (!jsonValue.empty()) {
                 armPointer->mArmConfigurationFile = configPath.Find(jsonValue.asString());
@@ -1432,7 +1426,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         jsonValue = jsonArm["kinematic"];
         if (!jsonValue.empty()) {
             if (armPointer->mArmConfigurationFile != "") {
-                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm configuration file is already set using \"configure-parameter\", remove the deprecated \"kinetic\" field:"
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm configuration file is already set using \"arm\", you should remove the deprecated \"kinetic\" field:"
                                          << jsonValue.asString() << std::endl;
                 return false;
             } else {
@@ -1446,17 +1440,14 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
 
         // make sure we have an arm configuration file
         if (armPointer->mArmConfigurationFile == "") {
-            if ((armPointer->mType == Arm::ARM_MTM)
-                || (armPointer->mType == Arm::ARM_MTM_DERIVED)
-                || (armPointer->mType == Arm::ARM_PSM)
-                || (armPointer->mType == Arm::ARM_PSM_DERIVED)) {
+            if (armPointer->mIsNativeOrDerived) {
                 // try to find the arm file using default
                 std::string defaultFile = armName + "-" + armPointer->mSerial + ".json";
                 armPointer->mArmConfigurationFile = configPath.Find(defaultFile);
                 if (armPointer->mArmConfigurationFile == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"arm\" setting for arm \""
-                                             << armName << "\", alternatively, make sure you have created the file \""
-                                             << defaultFile << "\"" << std::endl;
+                                             << armName << "\".  \"arm\" is not set and the default file \""
+                                             << defaultFile << "\" doesn't seem to exist either." << std::endl;
                     return false;
                 }
             } else {

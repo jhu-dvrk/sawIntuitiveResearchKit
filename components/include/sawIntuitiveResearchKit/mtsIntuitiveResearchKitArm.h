@@ -76,8 +76,14 @@ public:
     typedef enum {WRENCH_UNDEFINED, WRENCH_SPATIAL, WRENCH_BODY} WrenchType;
 
     /*! Load BaseFrame and DH parameters from JSON */
-    void ConfigureDH(const Json::Value & jsonConfig);
+    void ConfigureDH(const Json::Value & jsonConfig, const std::string & filename);
     void ConfigureDH(const std::string & filename);
+
+    /*! Arm specific configuration for derived classes PSM,
+      MTM... Called by Configure method. */
+    inline virtual void ConfigureArmSpecific(const Json::Value & CMN_UNUSED(jsonConfig),
+                                             const cmnPath & CMN_UNUSED(configPath),
+                                             const std::string & CMN_UNUSED(filename)) {};
 
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */

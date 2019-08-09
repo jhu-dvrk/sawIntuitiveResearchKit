@@ -26,6 +26,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
+
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -397,16 +400,83 @@ void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
 
 void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
 {
-    robManipulator::Errno result;
-    result = this->Manipulator->LoadRobot(filename);
-    if (result == robManipulator::EFAILURE) {
-        CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
-                                 << filename << "\"" << std::endl;
+    try {
+        std::ifstream jsonStream;
+        Json::Value jsonConfig;
+        Json::Reader jsonReader;
+
+        jsonStream.open(filename.c_str());
+        if (!jsonReader.parse(jsonStream, jsonConfig)) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": failed to parse configuration file \""
+                                     << filename << "\"\n"
+                                     << jsonReader.getFormattedErrorMessages();
+            exit(EXIT_FAILURE);
+        }
+
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
+                                   << " using file \"" << filename << "\"" << std::endl
+                                   << "----> content of configuration file: " << std::endl
+                                   << jsonConfig << std::endl
+                                   << "<----" << std::endl;
+
+        // detect if we're using 1.8 and up with two fields, kinematic and tool-detection
+        const auto jsonKinematic = jsonConfig["kinematic"];
+        if (!jsonKinematic.isNull()) {
+            // extract path of main json config file to search other files relative to it
+            cmnPath configPath(cmnPath::GetWorkingDirectory());
+            std::string fullname = configPath.Find(filename);
+            std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
+            configPath.Add(configDir, cmnPath::TAIL); // for user files
+            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL); // for arm file
+
+            // kinematic
+            const auto fileKinematic = configPath.Find(jsonKinematic.asString());
+            if (fileKinematic == "") {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                         << " using file \"" << filename << "\" can't find kinematic file \""
+                                         << jsonKinematic.asString() << "\"" << std::endl;
+                exit(EXIT_FAILURE);
+            } else {
+                ConfigureDH(fileKinematic);
+            }
+
+            // Arm specific configuration
+            ConfigureArmSpecific(jsonConfig, configPath, filename);
+
+        } else {
+            std::stringstream message;
+            message << "Configure " << this->GetName() << ":" << std::endl
+                    << "----------------------------------------------------" << std::endl
+                    << " ERROR:" << std::endl
+                    << "   You should have a \"arm\" file for each arm in the console" << std::endl
+                    << "   file.  The arm file should contain the fields" << std::endl
+                    << "   \"kinematic\" and options specific to each arm type." << std::endl
+                    << "----------------------------------------------------";
+            std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
+            CMN_LOG_CLASS_INIT_ERROR << message.str() << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        // should arm go to zero position when homing, default set in Init method
+        const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
+        if (!jsonHomingGoesToZero.isNull()) {
+            mHomingGoesToZero = jsonHomingGoesToZero.asBool();
+        }
+
+    } catch (std::exception & e) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": parsing file \""
+                                 << filename << "\", got error: " << e.what() << std::endl;
+        exit(EXIT_FAILURE);
+    } catch (...) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
+                                 << filename << "\" is in JSON format" << std::endl;
+        exit(EXIT_FAILURE);
     }
-    ResizeKinematicsData();
 }
 
-void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
+void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
+                                             const std::string & filename)
 {
     // load base offset transform if any (without warning)
     const Json::Value jsonBase = jsonConfig["base-offset"];
@@ -425,12 +495,14 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
     const Json::Value jsonDH = jsonConfig["DH"];
     if (jsonDH.isNull()) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
-                                 << ": can find \"DH\" data in configuration file" << std::endl;
+                                 << ": can find \"DH\" data in configuration file \""
+                                 << filename << "\"" << std::endl;
         exit(EXIT_FAILURE);
     }
     if (this->Manipulator->LoadRobot(jsonDH) != robManipulator::ESUCCESS) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
-                                 << ": failed to load \"DH\" parameters" << std::endl;
+                                 << ": failed to load \"DH\" parameters from file \""
+                                 << filename << "\"" << std::endl;
         exit(EXIT_FAILURE);
     }
     std::stringstream dhResult;
@@ -463,7 +535,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)
                                    << "<----" << std::endl;
 
         if (!jsonConfig.isNull()) {
-            ConfigureDH(jsonConfig);
+            ConfigureDH(jsonConfig, filename);
         }
 
     } catch (std::exception & e) {

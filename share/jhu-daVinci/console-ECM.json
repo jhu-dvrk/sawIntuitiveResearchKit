@@ -5,9 +5,7 @@
         {
             "name": "ECM",
             "type": "ECM",
-            "io": "sawRobotIO1394-ECM-29738.xml",
-            "pid": "sawControllersPID-ECM.xml",
-            "kinematic": "ecm-straight.json"
+            "serial": "29738"
         }
     ]
 }

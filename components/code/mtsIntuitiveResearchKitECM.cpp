@@ -150,59 +150,23 @@ void mtsIntuitiveResearchKitECM::Init(void)
     }
 }
 
-
-void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
+void mtsIntuitiveResearchKitECM::ConfigureArmSpecific(const Json::Value & jsonConfig,
+                                                      const cmnPath & CMN_UNUSED(configPath),
+                                                      const std::string & filename)
 {
-    try {
-        std::ifstream jsonStream;
-        Json::Value jsonConfig;
-        Json::Reader jsonReader;
-
-        jsonStream.open(filename.c_str());
-        if (!jsonReader.parse(jsonStream, jsonConfig)) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": failed to parse configuration file \""
-                                     << filename << "\"\n"
-                                     << jsonReader.getFormattedErrorMessages();
-            exit(EXIT_FAILURE);
-        }
-
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
-                                   << " using file \"" << filename << "\"" << std::endl
-                                   << "----> content of configuration file: " << std::endl
-                                   << jsonConfig << std::endl
-                                   << "<----" << std::endl;
-
-        ConfigureDH(jsonConfig);
-
-        // should arm go to zero position when homing, default set in Init method
-        const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
-        if (!jsonHomingGoesToZero.isNull()) {
-            mHomingGoesToZero = jsonHomingGoesToZero.asBool();
-        }
-
-        // load tool tip transform if any (for up/down endoscopes)
-        const Json::Value jsonToolTip = jsonConfig["tooltip-offset"];
-        if (!jsonToolTip.isNull()) {
-            cmnDataJSON<vctFrm4x4>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
-            ToolOffset = new robManipulator(ToolOffsetTransformation);
-            Manipulator->Attach(ToolOffset);
-        }
-    } catch (std::exception & e) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": parsing file \""
-                                 << filename << "\", got error: " << e.what() << std::endl;
-        exit(EXIT_FAILURE);
-    } catch (...) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
-                                 << filename << "\" is in JSON format" << std::endl;
-        exit(EXIT_FAILURE);
+    // load tool tip transform if any (for up/down endoscopes)
+    const Json::Value jsonToolTip = jsonConfig["tooltip-offset"];
+    if (!jsonToolTip.isNull()) {
+        cmnDataJSON<vctFrm4x4>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
+        ToolOffset = new robManipulator(ToolOffsetTransformation);
+        Manipulator->Attach(ToolOffset);
     }
 
     // check that Rtw0 is not set
     if (Manipulator->Rtw0 != vctFrm4x4::Identity()) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": you can't define the base-offset for the ECM, it is hard coded so gravity compensation works properly.  We always assume the ECM is mounted at 45 degrees!"
-                                 << std::endl;
+                                 << ": you can't define the base-offset for the ECM, it is hard coded so gravity compensation works properly.  We always assume the ECM is mounted at 45 degrees! (from file \""
+                                 << filename << "\")" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -212,7 +176,6 @@ void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
                            vctFixedSizeVector<double,3>(0.0, 0.0, 0.0));
     Manipulator->Rtw0 = Rt;
 }
-
 
 void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
 {
