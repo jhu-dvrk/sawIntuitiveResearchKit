@@ -513,6 +513,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
                                        << ": can find \"tooltip-offset\" data in \"" << fullFilename << "\"" << std::endl;
         } else {
             cmnDataJSON<vctFrm4x4>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
+            Manipulator->DeleteTools();
             ToolOffset = new robManipulator(ToolOffsetTransformation);
             Manipulator->Attach(ToolOffset);
         }
@@ -1339,5 +1340,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
     ConfigureTool(toolType + ".json");
     if (mToolConfigured) {
         SetToolPresent(true);
+    } else {
+        RobotInterface->SendError(this->GetName() + ": failed to configure tool \"" + toolType + "\"");
     }
 }
