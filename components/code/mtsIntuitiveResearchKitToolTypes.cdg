@@ -18,6 +18,11 @@ class {
         name Type;
 	prefix _;
         enum-value {
+            name ERROR;
+	    description Error;
+	    value 0;
+        }
+        enum-value {
             name CADIERE_FORCEPS_400049;
 	    description Cadiere Forceps 400049 (Classic);
         }

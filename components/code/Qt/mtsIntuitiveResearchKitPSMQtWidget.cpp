@@ -63,11 +63,13 @@ void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
     auto iter = mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin();
     auto end = mtsIntuitiveResearchKitToolTypes::TypeVectorString().end();
     for (; iter != end; ++iter) {
-        QCBToolOptions->addItem((*iter).c_str());
+        if (*iter != "ERROR") {
+            QCBToolOptions->addItem((*iter).c_str());
+        }
     }
     QCBToolOptions->setEnabled(false);
     toolLayout->addWidget(QCBToolOptions);
-    
+
 
     toolLayout->addStretch();
 
@@ -78,7 +80,7 @@ void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
             this, SLOT(SlotToolTypeRequestEventHandler(void)));
     connect(QCBToolOptions, SIGNAL(activated(QString)),
             this, SLOT(SlotToolTypeSelected(QString)));
-        
+
 }
 
 void mtsIntuitiveResearchKitPSMQtWidget::SlotToolTypeEventHandler(QString toolType)

@@ -1332,6 +1332,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
                   toolType);
     if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
         RobotInterface->SendError(this->GetName() + ": tool type \"" + toolType + "\" is not supported");
+        ToolEvents.ToolType(std::string("ERROR"));
         return;
     } else {
         mToolType = mtsIntuitiveResearchKitToolTypes::TypeFromString(toolType);
@@ -1342,5 +1343,6 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
         SetToolPresent(true);
     } else {
         RobotInterface->SendError(this->GetName() + ": failed to configure tool \"" + toolType + "\"");
+        ToolEvents.ToolType(std::string("ERROR"));
     }
 }
