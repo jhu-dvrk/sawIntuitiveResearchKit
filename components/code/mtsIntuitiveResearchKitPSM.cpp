@@ -889,6 +889,7 @@ void mtsIntuitiveResearchKitPSM::TransitionAdapterEngaged(void)
     if (mArmState.DesiredStateIsNotCurrent()) {
         Tool.GetButton(Tool.IsPresent);
         if ((Tool.IsPresent || mIsSimulated) && mToolConfigured) {
+            SetToolPresent(true);
             mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
         }
     }
@@ -907,9 +908,6 @@ void mtsIntuitiveResearchKitPSM::EnterChangingCouplingTool(void)
 
 void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
 {
-    // even to inform which tool is used
-    ToolEvents.ToolType(mtsIntuitiveResearchKitToolTypes::TypeToString(mToolType));
-
     // set PID limits for tool present
     UpdatePIDLimits(true);
 
@@ -1246,9 +1244,11 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
     if (present) {
         // we will need to engage this tool
         mToolNeedEngage = true;
+        ToolEvents.ToolType(mtsIntuitiveResearchKitToolTypes::TypeToString(mToolType));
     } else {
         mCartesianReady = false;
         mArmState.SetCurrentState("ADAPTER_ENGAGED");
+        ToolEvents.ToolType(std::string());    
     }
 }
 
@@ -1342,7 +1342,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
     if (mToolConfigured) {
         SetToolPresent(true);
     } else {
-        RobotInterface->SendError(this->GetName() + ": failed to configure tool \"" + toolType + "\"");
+        RobotInterface->SendError(this->GetName() + ": failed to configure tool \"" + toolType + "\", check terminal output and cisstLog file");
         ToolEvents.ToolType(std::string("ERROR"));
     }
 }

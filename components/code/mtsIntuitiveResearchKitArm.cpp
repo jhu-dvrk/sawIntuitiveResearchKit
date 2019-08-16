@@ -772,7 +772,7 @@ void mtsIntuitiveResearchKitArm::StateChanged(void)
     mStateTableState.Start();
     mStateTableStateCurrent = newState;
     mStateTableState.Advance();
-    // eventNumberOfJoints()
+    // event
     MessageEvents.CurrentState(newState);
     RobotInterface->SendStatus(this->GetName() + ": current state " + newState);
 }
