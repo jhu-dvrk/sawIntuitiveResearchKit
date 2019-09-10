@@ -49,6 +49,13 @@ mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicCons
 {
 }
 
+mtsIntuitiveResearchKitArm::~mtsIntuitiveResearchKitArm()
+{
+    if (Manipulator) {
+        delete Manipulator;
+    }
+}
+
 void mtsIntuitiveResearchKitArm::Init(void)
 {
     // configure state machine common to all arms (ECM/MTM/PSM)
@@ -190,7 +197,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianVelocityGetParam.SetVelocityAngular(vct3(0.0));
     CartesianVelocityGetParam.SetValid(false);
 
-    //Manipulator
+    // base manipulator class used by most arms (except PSM with snake like tool)
     Manipulator = new robManipulator();
 
     // jacobian
@@ -509,6 +516,15 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
     this->Manipulator->PrintKinematics(dhResult);
     CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureDH " << this->GetName()
                                << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
+    // save the base arm configuration file, this is useful for PSM
+    // when changing tool and we need to reload the base arm
+    // configuration
+    if (mConfigurationFile == "") {        
+        mConfigurationFile = filename;
+        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureDH " << this->GetName()
+                                   << ": saved base configuration file name: "
+                                   << mConfigurationFile << std::endl;
+    }
     ResizeKinematicsData();
 }
 
@@ -874,6 +890,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
     if (mIsSimulated) {
         PID.EnableTrackingError(false);
         PID.Enable(true);
+        PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         vctDoubleVec goal(NumberOfJoints());
         goal.SetAll(0.0);
         mtsIntuitiveResearchKitArm::SetPositionJointLocal(goal);
@@ -970,8 +987,9 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
     PID.SetCheckPositionLimit(false);
     // enable tracking errors
     PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
-    // enable PID
+    // enable PID on all joints
     PID.Enable(true);
+    PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
 
     // release brakes if any
     if ((NumberOfBrakes() > 0) && !mIsSimulated) {
@@ -1057,6 +1075,7 @@ void mtsIntuitiveResearchKitArm::EnterReady(void)
     PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
     PID.SetCheckPositionLimit(true);
     PID.Enable(true);
+    PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
 }
 
 void mtsIntuitiveResearchKitArm::LeaveReady(void)

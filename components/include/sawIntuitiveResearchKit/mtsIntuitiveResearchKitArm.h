@@ -61,7 +61,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 public:
     mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
     mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg);
-    virtual inline ~mtsIntuitiveResearchKitArm() {}
+    virtual ~mtsIntuitiveResearchKitArm();
 
     void Configure(const std::string & filename) override;
     void Startup(void) override;
@@ -247,6 +247,7 @@ public:
     } MessageEvents;
 
     robManipulator * Manipulator;
+    std::string mConfigurationFile;
 
     // cache cartesian goal position and increment
     bool mHasNewPIDGoal;

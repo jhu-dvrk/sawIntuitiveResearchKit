@@ -21,8 +21,6 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitPSM_h
 
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
-
-#include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitToolTypes.h>
 
@@ -183,7 +181,6 @@ protected:
     /*! 5mm tools with 8 joints */
     bool mSnakeLike = false;
 
-    robManipulatorPSMSnake * ManipulatorPSMSnake = nullptr;
     robManipulator * ToolOffset = nullptr;
     vctFrm4x4 ToolOffsetTransformation;
 

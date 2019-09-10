@@ -22,6 +22,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <time.h>
 
 // cisst
+#include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
+
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
@@ -346,7 +348,7 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
 {
     robManipulator::Errno Err;
     if (mSnakeLike) {
-        Err = ManipulatorPSMSnake->InverseKinematics(jointSet, cartesianGoal);
+        Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);
         // Check for equality Snake joints (4,7) and (5,6)
         if (fabs(jointSet.at(4) - jointSet.at(7)) > 0.00001 ||
                 fabs(jointSet.at(5) - jointSet.at(6)) > 0.00001) {
@@ -468,25 +470,50 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
                                    << jsonConfig << std::endl
                                    << "<----" << std::endl;
 
-        // first, reduce the size of the kinematic chain to only preserve the first 3 links
-        Manipulator->Truncate(3);
-
+        mSnakeLike = false;
         const Json::Value snakeLike = jsonConfig["snake-like"];
         if (!snakeLike.isNull()) {
             mSnakeLike = snakeLike.asBool();
         }
 
+        // snake require the derived manipulator class so we might
+        // have to delete create manipulator
+
+        // preserve Rtw0 just in case we need to create a new instance
+        // of robManipulator
+        CMN_ASSERT(Manipulator);
+        vctFrm4x4 oldRtw0 = Manipulator->Rtw0;
+        bool newInstance = false;
+
         if (mSnakeLike) {
-            std::cerr << CMN_LOG_DETAILS << " ----- this is so not supported right now!!! " << std::endl;
-            return;
-            // we'll have to somehow copy the Rtw0 as well as 3 first links in rosManipulatorPSMSnake
-            ManipulatorPSMSnake = new robManipulatorPSMSnake();
-            if (Manipulator) {
-                ManipulatorPSMSnake->Rtw0.Assign(Manipulator->Rtw0);
-                delete Manipulator;
+            // maybe we already have it?
+            if (!dynamic_cast<robManipulatorPSMSnake *>(this->Manipulator)) {
+                delete this->Manipulator;
+                this->Manipulator = new robManipulatorPSMSnake();
+                newInstance = true;
             }
-            Manipulator = ManipulatorPSMSnake;
+        } else {
+            // make sure we have the base robManipulator class
+            if (dynamic_cast<robManipulatorPSMSnake *>(this->Manipulator)) {
+                delete this->Manipulator;
+                this->Manipulator = new robManipulator();
+                newInstance = true;
+            }
         }
+
+        // configure new instance and restore Rtw0 in case user have
+        // overriden the content of config file
+        if (newInstance) {
+            ConfigureDH(mConfigurationFile);
+            Manipulator->Rtw0.Assign(oldRtw0);
+        }
+
+        // remove tool tip offset
+        Manipulator->DeleteTools();
+        // in any case, we just need the first 3 links
+        Manipulator->Truncate(3);
+
+        // now configure the links specific to the tool
         ConfigureDH(jsonConfig, fullFilename);
 
         // check that the kinematic chain length makes sense
@@ -513,7 +540,6 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
                                        << ": can find \"tooltip-offset\" data in \"" << fullFilename << "\"" << std::endl;
         } else {
             cmnDataJSON<vctFrm4x4>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
-            Manipulator->DeleteTools();
             ToolOffset = new robManipulator(ToolOffsetTransformation);
             Manipulator->Attach(ToolOffset);
         }
@@ -733,24 +759,41 @@ void mtsIntuitiveResearchKitPSM::UpdatePIDLimits(const bool toolPresent)
         vctDoubleVec upperFromKinematics(NumberOfJointsKinematics());
         vctDoubleVec lowerToPID(NumberOfJoints());
         vctDoubleVec upperToPID(NumberOfJoints());
+
+        // just to be absolutely totally sure
+        CMN_ASSERT(NumberOfJoints() == 7);
+        const size_t jawIndex = 6;
+
         // position limits
         Manipulator->GetJointLimits(lowerFromKinematics,
                                     upperFromKinematics);
-        // use kinematic joints...
-        lowerToPID.Ref(NumberOfJointsKinematics()).Assign(lowerFromKinematics);
-        upperToPID.Ref(NumberOfJointsKinematics()).Assign(upperFromKinematics);
+        // use kinematic joints... all but last
+        lowerToPID.Ref(6).Assign(lowerFromKinematics.Ref(6));
+        upperToPID.Ref(6).Assign(upperFromKinematics.Ref(6));
+        if (mSnakeLike) {
+            // add kinematic joint limits
+            lowerToPID(4) += lowerFromKinematics(7);
+            lowerToPID(5) += lowerFromKinematics(6);
+            upperToPID(4) += upperFromKinematics(7);
+            upperToPID(5) += upperFromKinematics(6);
+        }
         // ...and jaw
-        lowerToPID.at(NumberOfJoints() - 1) = CouplingChange.JawPositionLowerLimit;
-        upperToPID.at(NumberOfJoints() - 1) = CouplingChange.JawPositionUpperLimit;
+        lowerToPID.at(jawIndex) = CouplingChange.JawPositionLowerLimit;
+        upperToPID.at(jawIndex) = CouplingChange.JawPositionUpperLimit;
         // set
         PID.SetPositionLowerLimit(lowerToPID);
         PID.SetPositionUpperLimit(upperToPID);
         // force torque
         Manipulator->GetFTMaximums(upperFromKinematics);
-        // use kinematic joints...
-        upperToPID.Ref(NumberOfJointsKinematics()).Assign(upperFromKinematics);
+        // use kinematic joints... all but last
+        upperToPID.Ref(6).Assign(upperFromKinematics.Ref(6));
+        if (mSnakeLike) {
+            // add kinematic joint limits
+            upperToPID(4) += upperFromKinematics(7);
+            upperToPID(5) += upperFromKinematics(6);
+        }
         // ...and jaw
-        upperToPID.at(NumberOfJoints() - 1) = CouplingChange.JawTorqueUpperLimit;
+        upperToPID.at(jawIndex) = CouplingChange.JawTorqueUpperLimit;
         lowerToPID.ProductOf(-1.0, upperToPID); // manipulator assumes symmetry
         // set
         PID.SetTorqueLowerLimit(lowerToPID);
@@ -955,7 +998,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         if (JointsPID.Position().Element(2) > 50.0 * cmn_mm) {
             std::string message = this->GetName();
             message.append(": tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
-            message.append("  If the tool is not engaged properly, move sterile adpater all the way up and re-insert tool.");
+            message.append("  If the tool is not engaged properly, move the sterile adapter all the way up and re-insert the tool.");
             RobotInterface->SendStatus(message);
             mArmState.SetCurrentState("TOOL_ENGAGED");
         }
@@ -1248,7 +1291,7 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
     } else {
         mCartesianReady = false;
         mArmState.SetCurrentState("ADAPTER_ENGAGED");
-        ToolEvents.ToolType(std::string());    
+        ToolEvents.ToolType(std::string());
     }
 }
 
@@ -1288,9 +1331,13 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
         case mtsIntuitiveResearchKitToolTypes::MANUAL:
             mToolConfigured = false;
-        case mtsIntuitiveResearchKitToolTypes::FIXED:
-        default:
             SetToolPresent(false);
+            break;
+        case mtsIntuitiveResearchKitToolTypes::FIXED:
+            SetToolPresent(false);
+            break;
+        default:
+            break;
         }
         break;
     default:
