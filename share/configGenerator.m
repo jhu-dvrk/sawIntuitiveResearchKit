@@ -420,6 +420,14 @@ for b = 1:2
     end
 end
 
+% ---------- DallasChip ---------------
+if (rType == CONST_SLV)
+    DallasChip = docNode.createElement('DallasChip');
+    DallasChip.setAttribute('BoardID', num2str(boardID(2)));
+    DallasChip.setAttribute('Name', strcat(aRobotName, '-Dallas'));
+    Config.appendChild(DallasChip);
+end
+
 % generate xml file
 fileName = [fileName '-' num2str(serial_number) '.xml'];
 xmlwrite(fileName,docNode);
