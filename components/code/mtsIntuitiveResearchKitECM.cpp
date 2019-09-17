@@ -155,11 +155,29 @@ void mtsIntuitiveResearchKitECM::ConfigureArmSpecific(const Json::Value & jsonCo
                                                       const std::string & filename)
 {
     // load tool tip transform if any (for up/down endoscopes)
-    const Json::Value jsonToolTip = jsonConfig["tooltip-offset"];
-    if (!jsonToolTip.isNull()) {
-        cmnDataJSON<vctFrm4x4>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
+    // future work: add UP/DOWN, _HD and set mass for GC, also create separate method with ROS topic + GUI to set the endoscope
+    const Json::Value jsonEndoscope = jsonConfig["endoscope"];
+    if (!jsonEndoscope.isNull()) {
+        std::string endoscope = jsonEndoscope.asString();
+        if (endoscope == "STRAIGHT") {
+            ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
+                                            -1.0,  0.0,  0.0,  0.0,
+                                             0.0,  0.0,  1.0,  0.0,
+                                             0.0,  0.0,  0.0,  1.0);
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"endoscope\" type \"" << endoscope
+                                     << "\" is not supported.  Options are STRAIGHT (from file \""
+                                     << filename << "\")" << std::endl;
+            exit(EXIT_FAILURE);
+        }
         ToolOffset = new robManipulator(ToolOffsetTransformation);
         Manipulator->Attach(ToolOffset);
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": \"endoscope\" must be defined (from file \""
+                                 << filename << "\")" << std::endl;
+        exit(EXIT_FAILURE);
     }
 
     // check that Rtw0 is not set
@@ -170,10 +188,12 @@ void mtsIntuitiveResearchKitECM::ConfigureArmSpecific(const Json::Value & jsonCo
         exit(EXIT_FAILURE);
     }
 
-    vctFrame4x4<double> Rt(vctMatrixRotation3<double>(1.0,            0.0,            0.0,
-                                                      0.0,  sqrt(2.0)/2.0,  sqrt(2.0)/2.0,
-                                                      0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
-                           vctFixedSizeVector<double,3>(0.0, 0.0, 0.0));
+    // 45 degrees rotation to make sure Z points up, this helps with
+    // cisstRobot::robManipulator gravity compensation
+    vctFrame4x4<double> Rt(vctMatRot3(1.0,            0.0,            0.0,
+                                      0.0,  sqrt(2.0)/2.0,  sqrt(2.0)/2.0,
+                                      0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
+                           vct3(0.0, 0.0, 0.0));
     Manipulator->Rtw0 = Rt;
 }
 
