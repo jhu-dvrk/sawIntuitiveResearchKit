@@ -15,7 +15,7 @@
     }
     ,
     "io": {
-        "footpedals": "sawRobotIO1394-PSM3-foot-pedals.xml"
+        "footpedals": "io/sawRobotIO1394-PSM3-foot-pedals.xml"
     }
     ,
     "arms":
