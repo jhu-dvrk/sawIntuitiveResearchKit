@@ -3,11 +3,10 @@
     "arms":
     [
         {
-            "name": "ECM",
-            "type": "ECM",
+            "name": "PSM1",
+            "type": "PSM",
             "simulation": "KINEMATIC",
-            "pid": "sawControllersPID-ECM.xml",
-            "kinematic": "ecm-straight.json"
+            "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json"
         }
     ]
 }

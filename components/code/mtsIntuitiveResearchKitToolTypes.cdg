@@ -16,83 +16,87 @@ class {
 
     enum {
         name Type;
-	prefix _;
+        prefix _;
         enum-value {
             name ERROR;
-	    description Error;
-	    value 0;
+            description Error;
+            value 0;
         }
         enum-value {
             name CADIERE_FORCEPS_400049;
-	    description Cadiere Forceps 400049 (Classic);
+            description Cadiere Forceps 400049 (Classic);
         }
         enum-value {
             name CURVED_SCISSORS_400178;
-	    description Curved Scissors 400178 (Classic);
+            description Curved Scissors 400178 (Classic);
         }
         enum-value {
             name DEBAKEY_FORCEPS_400036;
-	    description DeBakey Forceps 400036 (Classic);
+            description DeBakey Forceps 400036 (Classic);
         }
         enum-value {
             name LARGE_NEEDLE_DRIVER_400006;
-	    description Large Needle Driver 400006 (Classic);
+            description Large Needle Driver 400006 (Classic);
         }
         enum-value {
             name LARGE_NEEDLE_DRIVER_420006;
-	    description Large Needle Driver 420006 (S);
+            description Large Needle Driver 420006 (S);
         }
         enum-value {
             name LONG_TIP_FORCEPS_400048;
-	    description Long Tip Forceps 400048 (Classic);
+            description Long Tip Forceps 400048 (Classic);
         }
         enum-value {
             name MEGA_NEEDLE_DRIVER_400194;
-	    description Mega Needle Driver 400194 (Classic);
+            description Mega Needle Driver 400194 (Classic);
         }
         enum-value {
             name MICRO_FORCEPS_400033;
-	    description Micro Forceps 400006 (Classic);
+            description Micro Forceps 400006 (Classic);
+        }
+        enum-value {
+            name MONOPOLAR_CURVED_SCISSOR_400179;
+            description Monopolar Curved Scissors 400179 (Classic);
         }
         enum-value {
             name RESANO_FORCEPS_400181;
-	    description Resano Forceps 400181 (Classic);
+            description Resano Forceps 400181 (Classic);
         }
         enum-value {
             name SMALL_CLIP_APPLIER_400003;
-	    description Small Clip Applier 400181 (Classic);
+            description Small Clip Applier 400181 (Classic);
         }
         enum-value {
             name THORACIC_GRASPER_400208;
-	    description Thoracic Grasper 400208 (Classic);
+            description Thoracic Grasper 400208 (Classic);
         }
-	enum-value {
+        enum-value {
             name 5MM_MARYLAND_DISSECTOR_400143;
-	    description 5mm Maryland Dissector 400143 (Classic);
+            description 5mm Maryland Dissector 400143 (Classic);
         }
         enum-value {
             name 5MM_NEEDLE_DRIVER_400117;
-	    description 5mm Needle Driver 400117 (Classic);
+            description 5mm Needle Driver 400117 (Classic);
         }
-	enum-value {
+        enum-value {
             name CUSTOM_TOOL_000001;
-	    description Custom Tool 000001;
+            description Custom Tool 000001;
         }
         enum-value {
             name CUSTOM_TOOL_000002;
-	    description Custom Tool 000002;
+            description Custom Tool 000002;
         }
         enum-value {
             name CUSTOM_TOOL_000003;
-	    description Custom Tool 000003;
+            description Custom Tool 000003;
         }
         enum-value {
             name CUSTOM_TOOL_000004;
-	    description Custom Tool 000004;
+            description Custom Tool 000004;
         }
         enum-value {
             name CUSTOM_TOOL_000005;
-	    description Custom Tool 000005;
+            description Custom Tool 000005;
         }
     }
 

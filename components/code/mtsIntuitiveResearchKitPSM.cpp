@@ -400,9 +400,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureArmSpecific(const Json::Value & jsonCo
                     mToolType = mtsIntuitiveResearchKitToolTypes::TypeFromString(fixedTool);
                 }
                 // now look for the file to configure the tool
-                cmnPath newConfigPath(configPath);
-                newConfigPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/arm", cmnPath::TAIL);
-                std::string fixedToolFile = newConfigPath.Find(fixedTool + ".json");
+                std::string fixedToolFile = configPath.Find(fixedTool + ".json");
                 if (fixedToolFile == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmSpecific: " << this->GetName()
                                              << " can't find tool file \""
@@ -439,7 +437,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
     } else {
         // construct path using working directory and share/arm
         cmnPath path(cmnPath::GetWorkingDirectory());
-        path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/arm", cmnPath::TAIL);
+        path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
         fullFilename = path.Find(filename);
         // still not found, try to add suffix to search again
         if (fullFilename == "") {

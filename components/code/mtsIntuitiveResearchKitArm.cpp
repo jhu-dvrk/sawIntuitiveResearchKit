@@ -434,8 +434,12 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
             cmnPath configPath(cmnPath::GetWorkingDirectory());
             std::string fullname = configPath.Find(filename);
             std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
-            configPath.Add(configDir, cmnPath::TAIL); // for user files
-            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL); // for arm file
+            // for user files first
+            configPath.Add(configDir, cmnPath::TAIL);
+            // for standard files using io/xyz.json, arm/xyz.json
+            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
+            // for tool definition files
+            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
 
             // kinematic
             const auto fileKinematic = configPath.Find(jsonKinematic.asString());
