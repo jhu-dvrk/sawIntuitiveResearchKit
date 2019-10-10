@@ -1,7 +1,7 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
     "io": {
-        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
+        "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
     }
     ,
     "arms":
@@ -9,17 +9,13 @@
         {
             "name": "PSM3",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM3-28613.xml",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json"
+            "serial": "28613"
         }
         ,
         {
             "name": "MTMR",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTMR-32336.xml",
-            "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtm.json"
+            "serial": "32336"
         }
     ]
     ,

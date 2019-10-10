@@ -1,0 +1,75 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "io": 
+    {
+        "footpedals": "sawRobotIO1394-MTML-foot-pedals.xml"
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "io": "sawRobotIO1394-PSM1-31817.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json",
+            "base-frame": {
+            "reference-frame": "TableCenter",
+            "transform": [[ 0.965925826, -0.258819045, 0.0,  0.0823832],
+                          [ 0.258819045,  0.965925826, 0.0, -0.0765175],
+                          [ 0.0,          0.0,         1.0,  0.0     ],
+                          [ 0.0,          0.0,         0.0, 1.0]]
+            }
+
+        }
+        ,
+        {
+            "name": "PSM2",
+            "type": "PSM",
+            "io": "sawRobotIO1394-PSM2-28060.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json",
+            "base-frame": {
+            "reference-frame": "TableCenter",
+            "transform": [[  0.965925826,  0.258819045, 0.0,  -0.120322 ],
+                          [ -0.258819045,  0.965925826, 0.0,  -0.0676494],
+                          [  0.0,          0.0,         1.0,   0.0     ],
+                          [  0.0,          0.0,         0.0,   1.0      ]]
+            }
+        }
+        ,
+        {
+            "name": "MTMR",
+            "type": "MTM",
+            "io": "sawRobotIO1394-MTMR-13879.xml",
+            "pid": "sawControllersPID-MTMR.xml",
+            "kinematic": "mtm.json"
+        }
+        ,
+        {
+            "name": "MTML",
+            "type": "MTM",
+            "io": "sawRobotIO1394-MTML-28129.xml",
+            "pid": "sawControllersPID-MTML.xml",
+            "kinematic": "mtm.json"
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            "master": "MTMR",
+            "slave": "PSM1",
+            "configure-parameter" : {
+                "rotation" : [[ 1.0000,  0.0000,  0.0000],
+                              [ 0.0000,  1.0000,  0.0000],
+                              [ 0.0000,  0.0000,  1.0000]]
+            }
+        }
+        ,
+        {
+            "master": "MTML",
+            "slave": "PSM2"
+        }
+    ]
+}

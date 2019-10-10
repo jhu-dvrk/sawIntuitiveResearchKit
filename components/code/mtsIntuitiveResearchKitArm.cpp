@@ -26,6 +26,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
+
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -44,6 +47,13 @@ mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicCons
     mStateTableState(100, "State"),
     mControlCallback(0)
 {
+}
+
+mtsIntuitiveResearchKitArm::~mtsIntuitiveResearchKitArm()
+{
+    if (Manipulator) {
+        delete Manipulator;
+    }
 }
 
 void mtsIntuitiveResearchKitArm::Init(void)
@@ -190,7 +200,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianVelocityGetParam.SetVelocityAngular(vct3(0.0));
     CartesianVelocityGetParam.SetValid(false);
 
-    //Manipulator
+    // base manipulator class used by most arms (except PSM with snake like tool)
     Manipulator = new robManipulator();
 
     // jacobian
@@ -433,16 +443,87 @@ void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
 
 void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
 {
-    robManipulator::Errno result;
-    result = this->Manipulator->LoadRobot(filename);
-    if (result == robManipulator::EFAILURE) {
-        CMN_LOG_CLASS_INIT_ERROR << GetName() << ": Configure: failed to load manipulator configuration file \""
-                                 << filename << "\"" << std::endl;
+    try {
+        std::ifstream jsonStream;
+        Json::Value jsonConfig;
+        Json::Reader jsonReader;
+
+        jsonStream.open(filename.c_str());
+        if (!jsonReader.parse(jsonStream, jsonConfig)) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": failed to parse configuration file \""
+                                     << filename << "\"\n"
+                                     << jsonReader.getFormattedErrorMessages();
+            exit(EXIT_FAILURE);
+        }
+
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
+                                   << " using file \"" << filename << "\"" << std::endl
+                                   << "----> content of configuration file: " << std::endl
+                                   << jsonConfig << std::endl
+                                   << "<----" << std::endl;
+
+        // detect if we're using 1.8 and up with two fields, kinematic and tool-detection
+        const auto jsonKinematic = jsonConfig["kinematic"];
+        if (!jsonKinematic.isNull()) {
+            // extract path of main json config file to search other files relative to it
+            cmnPath configPath(cmnPath::GetWorkingDirectory());
+            std::string fullname = configPath.Find(filename);
+            std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
+            // for user files first
+            configPath.Add(configDir, cmnPath::TAIL);
+            // for standard files using io/xyz.json, arm/xyz.json
+            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
+            // for tool definition files
+            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
+
+            // kinematic
+            const auto fileKinematic = configPath.Find(jsonKinematic.asString());
+            if (fileKinematic == "") {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                         << " using file \"" << filename << "\" can't find kinematic file \""
+                                         << jsonKinematic.asString() << "\"" << std::endl;
+                exit(EXIT_FAILURE);
+            } else {
+                ConfigureDH(fileKinematic);
+            }
+
+            // Arm specific configuration
+            ConfigureArmSpecific(jsonConfig, configPath, filename);
+
+        } else {
+            std::stringstream message;
+            message << "Configure " << this->GetName() << ":" << std::endl
+                    << "----------------------------------------------------" << std::endl
+                    << " ERROR:" << std::endl
+                    << "   You should have a \"arm\" file for each arm in the console" << std::endl
+                    << "   file.  The arm file should contain the fields" << std::endl
+                    << "   \"kinematic\" and options specific to each arm type." << std::endl
+                    << "----------------------------------------------------";
+            std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
+            CMN_LOG_CLASS_INIT_ERROR << message.str() << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        // should arm go to zero position when homing, default set in Init method
+        const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
+        if (!jsonHomingGoesToZero.isNull()) {
+            mHomingGoesToZero = jsonHomingGoesToZero.asBool();
+        }
+
+    } catch (std::exception & e) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": parsing file \""
+                                 << filename << "\", got error: " << e.what() << std::endl;
+        exit(EXIT_FAILURE);
+    } catch (...) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
+                                 << filename << "\" is in JSON format" << std::endl;
+        exit(EXIT_FAILURE);
     }
-    ResizeKinematicsData();
 }
 
-void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
+void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
+                                             const std::string & filename)
 {
     // load base offset transform if any (without warning)
     const Json::Value jsonBase = jsonConfig["base-offset"];
@@ -461,18 +542,29 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig)
     const Json::Value jsonDH = jsonConfig["DH"];
     if (jsonDH.isNull()) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
-                                 << ": can find \"DH\" data in configuration file" << std::endl;
+                                 << ": can find \"DH\" data in configuration file \""
+                                 << filename << "\"" << std::endl;
         exit(EXIT_FAILURE);
     }
     if (this->Manipulator->LoadRobot(jsonDH) != robManipulator::ESUCCESS) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
-                                 << ": failed to load \"DH\" parameters" << std::endl;
+                                 << ": failed to load \"DH\" parameters from file \""
+                                 << filename << "\"" << std::endl;
         exit(EXIT_FAILURE);
     }
     std::stringstream dhResult;
     this->Manipulator->PrintKinematics(dhResult);
     CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureDH " << this->GetName()
                                << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
+    // save the base arm configuration file, this is useful for PSM
+    // when changing tool and we need to reload the base arm
+    // configuration
+    if (mConfigurationFile == "") {        
+        mConfigurationFile = filename;
+        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureDH " << this->GetName()
+                                   << ": saved base configuration file name: "
+                                   << mConfigurationFile << std::endl;
+    }
     ResizeKinematicsData();
 }
 
@@ -486,9 +578,10 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)
         jsonStream.open(filename.c_str());
         if (!jsonReader.parse(jsonStream, jsonConfig)) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
-                                     << ": failed to parse kinematic (DH) configuration\n"
+                                     << ": failed to parse kinematic (DH) configuration file \""
+                                     << filename << "\"\n"
                                      << jsonReader.getFormattedErrorMessages();
-            return;
+            exit(EXIT_FAILURE);
         }
 
         CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureDH: " << this->GetName()
@@ -498,14 +591,18 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)
                                    << "<----" << std::endl;
 
         if (!jsonConfig.isNull()) {
-            ConfigureDH(jsonConfig);
+            ConfigureDH(jsonConfig, filename);
         }
 
+    } catch (std::exception & e) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName() << ": parsing file \""
+                                 << filename << "\", got error: " << e.what() << std::endl;
+        exit(EXIT_FAILURE);
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName() << ": make sure the file \""
                                  << filename << "\" is in JSON format" << std::endl;
+        exit(EXIT_FAILURE);
     }
-
 }
 
 void mtsIntuitiveResearchKitArm::Startup(void)
@@ -842,6 +939,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
     if (mIsSimulated) {
         PID.EnableTrackingError(false);
         PID.Enable(true);
+        PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         vctDoubleVec goal(NumberOfJoints());
         goal.SetAll(0.0);
         mtsIntuitiveResearchKitArm::SetPositionJointLocal(goal);
@@ -938,8 +1036,9 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
     PID.SetCheckPositionLimit(false);
     // enable tracking errors
     PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
-    // enable PID
+    // enable PID on all joints
     PID.Enable(true);
+    PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
 
     // release brakes if any
     if ((NumberOfBrakes() > 0) && !mIsSimulated) {
@@ -1026,6 +1125,7 @@ void mtsIntuitiveResearchKitArm::EnterReady(void)
     PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
     PID.SetCheckPositionLimit(true);
     PID.Enable(true);
+    PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
 }
 
 void mtsIntuitiveResearchKitArm::LeaveReady(void)

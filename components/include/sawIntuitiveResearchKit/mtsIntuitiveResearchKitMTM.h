@@ -47,7 +47,6 @@ public:
      \param type MTM type either MTM_LEFT or MTM_RIGHT
     */
     void SetMTMType(const bool autodetect = true, const MTM_TYPE type = MTM_NULL);
-    void Configure(const std::string & filename) override;
 
 protected:
     enum JointName {
@@ -60,6 +59,10 @@ protected:
         JNT_WRIST_ROLL = 6,
         JNT_GRIPPER = 7
     };
+
+    void ConfigureArmSpecific(const Json::Value & jsonConfig,
+                              const cmnPath & configPath,
+                              const std::string & filename) override;
 
     /*! Configuration methods */
     inline size_t NumberOfAxes(void) const override {

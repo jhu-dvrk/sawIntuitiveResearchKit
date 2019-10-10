@@ -1,11 +1,23 @@
 Change log
 ==========
 
+1.7.1 (2019-07-04)
+==================
+
+* API changes:
+  * None
+* Deprecated features:
+  * None
+* New features:
+  * None
+* Bug fixes:
+  * Fixed joint velocity abs bug in GC controller: https://github.com/jhu-dvrk/sawIntuitiveResearchKit/pull/117
+
 1.7.0 (2019-04-09)
 ==================
 
 * API changes:
-
+  * Using c++ 14 features: **Ubuntu 16.04 or higher required**
 * Deprecated features:
   * `kinematic` field in JSON console config file has been replaced by `arm` for MTMs to support gravity compensation (see New features)
 * New features:

@@ -70,7 +70,9 @@ robManipulatorPSMSnake::ConstrainedRMRC(const vctDynamicVector<double> & q,
 robManipulator::Errno
 robManipulatorPSMSnake::InverseKinematics(vctDynamicVector<double> & q,
                                           const vctFrame4x4<double> & Rts,
-                                          double tolerance, size_t Niterations)
+                                          double tolerance,
+                                          size_t Niterations,
+                                          double CMN_UNUSED(LAMBDA))
 {
     if (q.size() != links.size()) {
         CMN_LOG_RUN_ERROR << CMN_LOG_DETAILS

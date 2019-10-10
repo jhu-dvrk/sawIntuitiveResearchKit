@@ -37,7 +37,7 @@ if (cisst_FOUND)
 
   # sawIntuitiveResearchKit has been compiled within cisst, we should
   # find it automatically
-  find_package(sawIntuitiveResearchKit 1.7.0 REQUIRED)
+  find_package(sawIntuitiveResearchKit 1.7.1 REQUIRED)
 
   if (sawIntuitiveResearchKit_FOUND)
 

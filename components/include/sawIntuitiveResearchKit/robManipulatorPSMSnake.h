@@ -44,9 +44,10 @@ public:
 
     robManipulator::Errno
     InverseKinematics(vctDynamicVector<double> & q,
-                       const vctFrame4x4<double> & Rts,
-                       double tolerance = 1e-12,
-                       size_t Niterations = 1000);
+                      const vctFrame4x4<double> & Rts,
+                      double tolerance = 1e-12,
+                      size_t Niterations = 1000,
+                      double LAMBDA = 0.001);
 
 private:
     void Resize(void);

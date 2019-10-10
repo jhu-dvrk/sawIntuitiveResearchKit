@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,9 +21,8 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitPSM_h
 
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
-
-#include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitToolTypes.h>
 
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -38,11 +37,15 @@ public:
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitPSM() {}
 
-    void SetSimulated(void);
-    void Configure(const std::string & filename);
+    void SetSimulated(void) override;
 
 protected:
 
+    void ConfigureArmSpecific(const Json::Value & jsonConfig,
+                              const cmnPath & configPath,
+                              const std::string & filename) override;
+    void ConfigureTool(const std::string & filename);
+    
     /*! Configuration methods */
     inline size_t NumberOfAxes(void) const {
         return 7;
@@ -82,6 +85,10 @@ protected:
     void LeaveArmHomed(void);
     void TransitionArmHomed(void);
 
+    // methods used in change coupling/engaging
+    void RunChangingCoupling(void);
+    void UpdatePIDLimits(const bool toolPresent);
+
     // engaging adapter
     void EnterChangingCouplingAdapter(void);
     inline void RunChangingCouplingAdapter(void) {
@@ -99,11 +106,8 @@ protected:
     void RunEngagingTool(void);
     void TransitionToolEngaged(void);
 
+    // manual mode
     void EnterManual(void);
-
-    // shared method for changing coupling
-    void RunChangingCoupling(void);
-
     void EventHandlerAdapter(const prmEventButton & button);
 
     /*! Set tool present.  This should only be used by the tool event
@@ -143,6 +147,19 @@ protected:
         bool IsPressed;
     } ManipClutch;
 
+    struct {
+        mtsFunctionVoid TriggerRead;
+    } Dallas;
+
+    /*! Set tool type.  Uses string as defined in
+      mtsIntuitiveResearchKitToolTypes.cdg, upper case with separating
+      underscores. */
+    void SetToolType(const std::string & toolType);
+
+    /*! Event handler for tool types sent by the IO level based on
+      info from Dallas Chip on tools */
+    void EventHandlerToolType(const std::string & toolType);
+
     // Functions for events
     struct {
         mtsFunctionWrite ManipClutch;
@@ -150,10 +167,20 @@ protected:
         bool PIDEnabledPreviousState;
     } ClutchEvents;
 
+    /*! Configuration for tool detection, either using Dallas Chip,
+      manual or fixed based on configuration file. */
+    mtsIntuitiveResearchKitToolTypes::Detection mToolDetection;
+    mtsIntuitiveResearchKitToolTypes::Type mToolType;
+    bool mToolConfigured = false;
+    bool mToolTypeRequested = false;
+    struct {
+        mtsFunctionWrite ToolType;
+        mtsFunctionVoid ToolTypeRequest;
+    } ToolEvents;
+
     /*! 5mm tools with 8 joints */
     bool mSnakeLike = false;
 
-    robManipulatorPSMSnake * ManipulatorPSMSnake = nullptr;
     robManipulator * ToolOffset = nullptr;
     vctFrm4x4 ToolOffsetTransformation;
 
@@ -180,6 +207,8 @@ protected:
         vctDoubleVec ToolPositionLowerLimit, ToolPositionUpperLimit;
         vctDoubleVec NoToolPositionLowerLimit, NoToolPositionUpperLimit;
         vctDoubleVec ToolTorqueLowerLimit, ToolTorqueUpperLimit;
+        double JawPositionLowerLimit, JawPositionUpperLimit;
+        double JawTorqueLowerLimit, JawTorqueUpperLimit;
     } CouplingChange;
 };
 

@@ -22,9 +22,14 @@ http://www.cisst.org/cisst/license.txt.
 #include <time.h>
 
 // cisst
+#include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
+
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
+
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -44,10 +49,11 @@ mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicCons
 void mtsIntuitiveResearchKitPSM::SetSimulated(void)
 {
     mtsIntuitiveResearchKitArm::SetSimulated();
-    // in simulation mode, we don't need clutch, adapter nor tool IO
+    // in simulation mode, we don't need clutch, adapter, tool IO nor Dallas
     RemoveInterfaceRequired("ManipClutch");
     RemoveInterfaceRequired("Adapter");
     RemoveInterfaceRequired("Tool");
+    RemoveInterfaceRequired("Dallas");
 }
 
 void mtsIntuitiveResearchKitPSM::Init(void)
@@ -133,18 +139,23 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // gripper
     PID.DefaultTrackingErrorTolerance.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
 
-    // Joint limits when empty
+    // joint limits when tool is not present
     CouplingChange.NoToolPositionLowerLimit.SetSize(NumberOfJoints());
     CouplingChange.NoToolPositionUpperLimit.SetSize(NumberOfJoints());
-    CouplingChange.NoToolPositionLowerLimit.Assign(-91.0, -53.0,   0.0, -175.0, -175.0 , -175.0, -175.0);
-    CouplingChange.NoToolPositionUpperLimit.Assign( 91.0,  53.0, 240.0,  175.0,  175.0 ,  175.0,  175.0);
-    // convert to radians or meters
-    CouplingChange.NoToolPositionLowerLimit.Ref(2, 0) *= cmnPI_180;
-    CouplingChange.NoToolPositionLowerLimit.Element(2) *= cmn_mm;
-    CouplingChange.NoToolPositionLowerLimit.Ref(4, 3) *= cmnPI_180;
-    CouplingChange.NoToolPositionUpperLimit.Ref(2, 0) *= cmnPI_180;
-    CouplingChange.NoToolPositionUpperLimit.Element(2) *= cmn_mm;
-    CouplingChange.NoToolPositionUpperLimit.Ref(4, 3) *= cmnPI_180;
+    CouplingChange.NoToolPositionLowerLimit.Assign(-91.0 * cmnPI_180,
+                                                   -53.0 * cmnPI_180,
+                                                   0.0 * cmn_mm,
+                                                   -175.0 * cmnPI_180,
+                                                   -175.0 * cmnPI_180,
+                                                   -175.0 * cmnPI_180,
+                                                   -175.0 * cmnPI_180);
+    CouplingChange.NoToolPositionUpperLimit.Assign(91.0 * cmnPI_180,
+                                                   53.0 * cmnPI_180,
+                                                   240.0 * cmn_mm,
+                                                   175.0 * cmnPI_180,
+                                                   175.0 * cmnPI_180,
+                                                   175.0 * cmnPI_180,
+                                                   175.0 * cmnPI_180);
 
     mtsInterfaceRequired * interfaceRequired;
 
@@ -156,14 +167,21 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     JawDesired.SetAutomaticTimestamp(false);
     StateTable.AddData(JawDesired, "JawDesired");
 
+    // jaw interface
     RobotInterface->AddCommandReadState(this->StateTable, Jaw, "GetStateJaw");
     RobotInterface->AddCommandReadState(this->StateTable, JawDesired, "GetStateJawDesired");
-    RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionJaw, this, "SetPositionJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionGoalJaw, this, "SetPositionGoalJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetEffortJaw, this, "SetEffortJaw");
+
+    // tool specific interface
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetAdapterPresent, this, "SetAdapterPresent");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolPresent, this, "SetToolPresent");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolType, this, "SetToolType");
+    RobotInterface->AddEventWrite(ToolEvents.ToolType, "ToolType", std::string());
+    RobotInterface->AddEventVoid(ToolEvents.ToolTypeRequest, "ToolTypeRequest");
+
+    RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
 
     CMN_ASSERT(PIDInterface);
     PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::CouplingEventHandler, this, "Coupling");
@@ -191,6 +209,13 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     interfaceRequired = AddInterfaceRequired("ManipClutch");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerManipClutch, this, "Button");
+    }
+
+    // Dallas: read tool type from Dallas Chip
+    interfaceRequired = AddInterfaceRequired("Dallas");
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("TriggerRead", Dallas.TriggerRead);
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerToolType, this, "ToolType");
     }
 }
 
@@ -323,7 +348,7 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
 {
     robManipulator::Errno Err;
     if (mSnakeLike) {
-        Err = ManipulatorPSMSnake->InverseKinematics(jointSet, cartesianGoal);
+        Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);
         // Check for equality Snake joints (4,7) and (5,6)
         if (fabs(jointSet.at(4) - jointSet.at(7)) > 0.00001 ||
                 fabs(jointSet.at(5) - jointSet.at(6)) > 0.00001) {
@@ -348,42 +373,148 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
     return robManipulator::EFAILURE;
 }
 
-void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
+void mtsIntuitiveResearchKitPSM::ConfigureArmSpecific(const Json::Value & jsonConfig,
+                                                      const cmnPath & configPath,
+                                                      const std::string & filename)
 {
+    // tool detection
+    const auto jsonToolDetection = jsonConfig["tool-detection"];
+    if (!jsonToolDetection.isNull()) {
+        std::string toolDetection = jsonToolDetection.asString();
+        mToolDetection = mtsIntuitiveResearchKitToolTypes::DetectionFromString(toolDetection);
+        if (mToolDetection == mtsIntuitiveResearchKitToolTypes::FIXED) {
+            const auto jsonFixedTool = jsonConfig["tool"];
+            if (!jsonFixedTool.isNull()) {
+                std::string fixedTool = jsonFixedTool.asString();
+                // check if the tool is in the supported list (string name)
+                auto found =
+                    std::find(mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin(),
+                              mtsIntuitiveResearchKitToolTypes::TypeVectorString().end(),
+                              fixedTool);
+                if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmSpecific: " << this->GetName()
+                                             << "\"" << fixedTool << "\" found in file \""
+                                             << filename << "\" is not a supported type" << std::endl;
+                    exit(EXIT_FAILURE);
+                } else {
+                    mToolType = mtsIntuitiveResearchKitToolTypes::TypeFromString(fixedTool);
+                }
+                // now look for the file to configure the tool
+                std::string fixedToolFile = configPath.Find(fixedTool + ".json");
+                if (fixedToolFile == "") {
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmSpecific: " << this->GetName()
+                                             << " can't find tool file \""
+                                             << fixedTool << ".json\" for tool \""
+                                             << fixedTool << "\" defined in file \""
+                                             << filename << "\"" << std::endl;
+                    exit(EXIT_FAILURE);
+                } else {
+                    ConfigureTool(fixedToolFile);
+                    if (!mToolConfigured) {
+                        exit(EXIT_FAILURE);
+                    }
+                }
+            } else {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                         << " can't find field \"tool\" in file \""
+                                         << filename << "\" which is required since \"tool-detection\" is set to \"FIXED\"" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+    } else {
+        mToolDetection = mtsIntuitiveResearchKitToolTypes::AUTOMATIC;
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
+{
+    std::string fullFilename;
+    mToolConfigured = false;
+
+    // try to locate the file based on tool type
+    if (cmnPath::Exists(filename)) {
+        fullFilename = filename;
+    } else {
+        // construct path using working directory and share/arm
+        cmnPath path(cmnPath::GetWorkingDirectory());
+        path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
+        fullFilename = path.Find(filename);
+        // still not found, try to add suffix to search again
+        if (fullFilename == "") {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
+                                     << ": failed to locate tool file for \""
+                                     << filename << "\"" << std::endl;
+            return;
+        }
+    }
+
     try {
         std::ifstream jsonStream;
         Json::Value jsonConfig;
         Json::Reader jsonReader;
 
-        jsonStream.open(filename.c_str());
+        jsonStream.open(fullFilename.c_str());
         if (!jsonReader.parse(jsonStream, jsonConfig)) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": failed to parse configuration\n"
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
+                                     << ": failed to parse configuration file \""
+                                     << fullFilename << "\"\n"
                                      << jsonReader.getFormattedErrorMessages();
             return;
         }
 
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
-                                   << " using file \"" << filename << "\"" << std::endl
+                                   << " using file \"" << fullFilename << "\"" << std::endl
                                    << "----> content of configuration file: " << std::endl
                                    << jsonConfig << std::endl
                                    << "<----" << std::endl;
 
+        mSnakeLike = false;
         const Json::Value snakeLike = jsonConfig["snake-like"];
         if (!snakeLike.isNull()) {
             mSnakeLike = snakeLike.asBool();
         }
 
-        if (mSnakeLike) {
-            ManipulatorPSMSnake = new robManipulatorPSMSnake();
-            if (Manipulator) {
-                ManipulatorPSMSnake->Rtw0.Assign(Manipulator->Rtw0);
-                delete Manipulator;
-            }
-            Manipulator = ManipulatorPSMSnake;
-        }
-        ConfigureDH(jsonConfig);
+        // snake require the derived manipulator class so we might
+        // have to delete create manipulator
 
+        // preserve Rtw0 just in case we need to create a new instance
+        // of robManipulator
+        CMN_ASSERT(Manipulator);
+        vctFrm4x4 oldRtw0 = Manipulator->Rtw0;
+        bool newInstance = false;
+
+        if (mSnakeLike) {
+            // maybe we already have it?
+            if (!dynamic_cast<robManipulatorPSMSnake *>(this->Manipulator)) {
+                delete this->Manipulator;
+                this->Manipulator = new robManipulatorPSMSnake();
+                newInstance = true;
+            }
+        } else {
+            // make sure we have the base robManipulator class
+            if (dynamic_cast<robManipulatorPSMSnake *>(this->Manipulator)) {
+                delete this->Manipulator;
+                this->Manipulator = new robManipulator();
+                newInstance = true;
+            }
+        }
+
+        // configure new instance and restore Rtw0 in case user have
+        // overriden the content of config file
+        if (newInstance) {
+            ConfigureDH(mConfigurationFile);
+            Manipulator->Rtw0.Assign(oldRtw0);
+        }
+
+        // remove tool tip offset
+        Manipulator->DeleteTools();
+        // in any case, we just need the first 3 links
+        Manipulator->Truncate(3);
+
+        // now configure the links specific to the tool
+        ConfigureDH(jsonConfig, fullFilename);
+
+        // check that the kinematic chain length makes sense
         size_t expectedNumberOfJoint;
         if (mSnakeLike) {
             expectedNumberOfJoint = 8;
@@ -393,24 +524,18 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         size_t numberOfJointsLoaded = this->Manipulator->links.size();
 
         if (expectedNumberOfJoint != numberOfJointsLoaded) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": incorrect number of joints (DH), found "
                                      << numberOfJointsLoaded << ", expected " << expectedNumberOfJoint
                                      << std::endl;
             return;
         }
 
-        // should arm go to zero position when homing, default set in Init method
-        const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
-        if (!jsonHomingGoesToZero.isNull()) {
-            mHomingGoesToZero = jsonHomingGoesToZero.asBool();
-        }
-
         // load tool tip transform if any (with warning)
         const Json::Value jsonToolTip = jsonConfig["tooltip-offset"];
         if (jsonToolTip.isNull()) {
-            CMN_LOG_CLASS_INIT_WARNING << "Configure " << this->GetName()
-                                       << ": can find \"tooltip-offset\" data in \"" << filename << "\"" << std::endl;
+            CMN_LOG_CLASS_INIT_WARNING << "ConfigureTool " << this->GetName()
+                                       << ": can find \"tooltip-offset\" data in \"" << fullFilename << "\"" << std::endl;
         } else {
             cmnDataJSON<vctFrm4x4>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
             ToolOffset = new robManipulator(ToolOffsetTransformation);
@@ -420,108 +545,88 @@ void mtsIntuitiveResearchKitPSM::Configure(const std::string & filename)
         // load coupling information (required)
         const Json::Value jsonCoupling = jsonConfig["coupling"];
         if (jsonCoupling.isNull()) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": can find \"coupling\" data in \"" << filename << "\"" << std::endl;
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
+                                     << ": can find \"coupling\" data in \"" << fullFilename << "\"" << std::endl;
             return;
         }
-        cmnDataJSON<prmActuatorJointCoupling>::DeSerializeText(CouplingChange.ToolCoupling,
+
+        // read 4x4 coupling for last 3 DOFs and jaws
+        prmActuatorJointCoupling toolCoupling4;
+        cmnDataJSON<prmActuatorJointCoupling>::DeSerializeText(toolCoupling4,
                                                                jsonCoupling);
+        // build a coupling matrix for all 7 actuators/dofs
+        CouplingChange.ToolCoupling
+            .ActuatorToJointPosition().ForceAssign(vctDynamicMatrix<double>::Eye(NumberOfJoints()));
+        // assign 4x4 matrix starting at position 3, 3
+        CouplingChange.ToolCoupling
+            .ActuatorToJointPosition().Ref(4, 4, 3, 3).Assign(toolCoupling4.ActuatorToJointPosition());
+
+        // load jaw data, i.e. joint and torque limits
+        const Json::Value jsonJaw = jsonConfig["jaw"];
+        if (jsonJaw.isNull()) {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
+                                     << ": can find \"jaw\" data in \"" << fullFilename << "\"" << std::endl;
+            return;
+        }
+        const Json::Value jsonJawQMin = jsonJaw["qmin"];
+        if (jsonJawQMin.isNull()) {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
+                                     << ": can find \"jaw::qmin\" data in \"" << fullFilename << "\"" << std::endl;
+            return;
+        } else {
+            CouplingChange.JawPositionLowerLimit = jsonJawQMin.asDouble();
+        }
+        const Json::Value jsonJawQMax = jsonJaw["qmax"];
+        if (jsonJawQMax.isNull()) {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
+                                     << ": can find \"jaw::qmax\" data in \"" << fullFilename << "\"" << std::endl;
+            return;
+        } else {
+            CouplingChange.JawPositionUpperLimit = jsonJawQMax.asDouble();
+        }
+        const Json::Value jsonJawFTMax = jsonJaw["ftmax"];
+        if (jsonJawFTMax.isNull()) {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
+                                     << ": can find \"jaw::ftmax\" data in \"" << fullFilename << "\"" << std::endl;
+            return;
+        } else {
+            CouplingChange.JawTorqueUpperLimit = jsonJawFTMax.asDouble();
+            CouplingChange.JawTorqueLowerLimit = -CouplingChange.JawTorqueUpperLimit;
+        }
 
         // load lower/upper position used to engage the tool(required)
         const Json::Value jsonEngagePosition = jsonConfig["tool-engage-position"];
         if (jsonEngagePosition.isNull()) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": can find \"tool-engage-position\" data in \"" << filename << "\"" << std::endl;
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
+                                     << ": can find \"tool-engage-position\" data in \"" << fullFilename << "\"" << std::endl;
             return;
         }
         // lower
         cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolEngageLowerPosition,
                                                    jsonEngagePosition["lower"]);
-        if (CouplingChange.ToolEngageLowerPosition.size() != NumberOfJoints()) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": \"tool-engage-position\" : \"lower\" must contain " << NumberOfJoints()
-                                     << " elements in \"" << filename << "\"" << std::endl;
+        if (CouplingChange.ToolEngageLowerPosition.size() != 4) {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
+                                     << ": \"tool-engage-position\" : \"lower\" must contain 4 elements in \""
+                                     << fullFilename << "\"" << std::endl;
             return;
         }
         // upper
         cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolEngageUpperPosition,
                                                    jsonEngagePosition["upper"]);
-        if (CouplingChange.ToolEngageUpperPosition.size() != NumberOfJoints()) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": \"tool-engage-position\" : \"upper\" must contain " << NumberOfJoints()
-                                     << " elements in \"" << filename << "\"" << std::endl;
+        if (CouplingChange.ToolEngageUpperPosition.size() != 4) {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
+                                     << ": \"tool-engage-position\" : \"upper\" must contain 4 elements in \""
+                                     << fullFilename << "\"" << std::endl;
             return;
         }
-        // convert to radians or meters
-        CouplingChange.ToolEngageUpperPosition.Ref(2, 0) *= cmnPI_180;
-        CouplingChange.ToolEngageUpperPosition.Element(2) *= cmn_mm;
-        CouplingChange.ToolEngageUpperPosition.Ref(4, 3) *= cmnPI_180;
-        CouplingChange.ToolEngageLowerPosition.Ref(2, 0) *= cmnPI_180;
-        CouplingChange.ToolEngageLowerPosition.Element(2) *= cmn_mm;
-        CouplingChange.ToolEngageLowerPosition.Ref(4, 3) *= cmnPI_180;
 
-        // load lower/upper joint limit for the tool(required)
-        const Json::Value jsonJointLimit = jsonConfig["tool-joint-limit"];
-        if (jsonJointLimit.isNull()) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": can find \"tool-joint-limit\" data in \"" << filename << "\"" << std::endl;
-            return;
-        }
-        // lower
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolPositionLowerLimit,
-                                                   jsonJointLimit["lower"]);
-        if (CouplingChange.ToolPositionLowerLimit.size() != NumberOfJoints()) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": \"tool-joint-limit\" : \"lower\" must contain " << NumberOfJoints()
-                                     << " elements in \"" << filename << "\"" << std::endl;
-            return;
-        }
-        // upper
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolPositionUpperLimit,
-                                                   jsonJointLimit["upper"]);
-        if (CouplingChange.ToolPositionUpperLimit.size() != NumberOfJoints()) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": \"tool-joint-limit\" : \"lower\" must contain " << NumberOfJoints()
-                                     << " elements in \"" << filename << "\"" << std::endl;
-            return;
-        }
-        // convert to radians or meters
-        CouplingChange.ToolPositionUpperLimit.Ref(2, 0) *= cmnPI_180;
-        CouplingChange.ToolPositionUpperLimit.Element(2) *= cmn_mm;
-        CouplingChange.ToolPositionUpperLimit.Ref(4, 3) *= cmnPI_180;
-        CouplingChange.ToolPositionLowerLimit.Ref(2, 0) *= cmnPI_180;
-        CouplingChange.ToolPositionLowerLimit.Element(2) *= cmn_mm;
-        CouplingChange.ToolPositionLowerLimit.Ref(4, 3) *= cmnPI_180;
-
-        // load lower/upper torque limit for the tool(required)
-        const Json::Value jsonTorqueLimit = jsonConfig["tool-torque-limit"];
-        if (jsonTorqueLimit.isNull()) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": can find \"tool-torque-limit\" data in \"" << filename << "\"" << std::endl;
-            return;
-        }
-        // lower
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolTorqueLowerLimit,
-                                                   jsonTorqueLimit["lower"]);
-        if (CouplingChange.ToolTorqueLowerLimit.size() != NumberOfJoints()) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": \"tool-torque-limit\" : \"lower\" must contain " << NumberOfJoints()
-                                     << " elements in \"" << filename << "\"" << std::endl;
-            return;
-        }
-        // upper
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolTorqueUpperLimit,
-                                                   jsonTorqueLimit["upper"]);
-        if (CouplingChange.ToolTorqueUpperLimit.size() != NumberOfJoints()) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": \"tool-torque-limit\" : \"lower\" must contain " << NumberOfJoints()
-                                     << " elements in \"" << filename << "\"" << std::endl;
-            return;
-        }
     } catch (...) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
-                                 << filename << "\" is in JSON format" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName() << ": make sure the file \""
+                                 << fullFilename << "\" is in JSON format" << std::endl;
     }
+
+    // update class data member for next steps/states
+    mToolConfigured = true;
 }
 
 void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
@@ -581,22 +686,16 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
 {
     if (mIsSimulated) {
         // now set PID limits based on tool/no tool
-        if (CouplingChange.CouplingForTool) {
-            PID.SetPositionLowerLimit(CouplingChange.ToolPositionLowerLimit);
-            PID.SetPositionUpperLimit(CouplingChange.ToolPositionUpperLimit);
-            PID.SetTorqueLowerLimit(CouplingChange.ToolTorqueLowerLimit);
-            PID.SetTorqueUpperLimit(CouplingChange.ToolTorqueUpperLimit);
-        } else {
-            PID.SetPositionLowerLimit(CouplingChange.NoToolPositionLowerLimit);
-            PID.SetPositionUpperLimit(CouplingChange.NoToolPositionUpperLimit);
-        }
+        UpdatePIDLimits(CouplingChange.CouplingForTool);
         mArmState.SetCurrentState(CouplingChange.NextState);
         return;
     }
 
     // first phase, disable last 4 joints and wait
     if (!CouplingChange.Started) {
+        // keep first 3 on
         CouplingChange.DesiredEnabledJoints.Ref(3, 0).SetAll(true);
+        // turn off last 4
         CouplingChange.DesiredEnabledJoints.Ref(4, 3).SetAll(false);
         PID.EnableJoints(CouplingChange.DesiredEnabledJoints);
         CouplingChange.WaitingForEnabledJoints = true;
@@ -623,7 +722,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 CouplingChange.ReceivedCoupling = false;
                 return;
             } else {
-                RobotInterface->SendWarning(this->GetName() + ": can't disable last four axis to change coupling.");
+                RobotInterface->SendError(this->GetName() + ": can't disable last four axis to change coupling.");
                 mArmState.SetDesiredState(mFallbackState);
             }
         } else {
@@ -637,19 +736,11 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
             if (CouplingChange.DesiredCoupling.Equal(CouplingChange.LastCoupling)) {
                 CouplingChange.WaitingForCoupling = false;
                 // now set PID limits based on tool/no tool
-                if (CouplingChange.CouplingForTool) {
-                    PID.SetPositionLowerLimit(CouplingChange.ToolPositionLowerLimit);
-                    PID.SetPositionUpperLimit(CouplingChange.ToolPositionUpperLimit);
-                    PID.SetTorqueLowerLimit(CouplingChange.ToolTorqueLowerLimit);
-                    PID.SetTorqueUpperLimit(CouplingChange.ToolTorqueUpperLimit);
-                } else {
-                    PID.SetPositionLowerLimit(CouplingChange.NoToolPositionLowerLimit);
-                    PID.SetPositionUpperLimit(CouplingChange.NoToolPositionUpperLimit);
-                }
+                UpdatePIDLimits(CouplingChange.CouplingForTool);
                 // finally move to next state
                 mArmState.SetCurrentState(CouplingChange.NextState);
             } else {
-                RobotInterface->SendWarning(this->GetName() + ": can't set coupling.");
+                RobotInterface->SendError(this->GetName() + ": can't set coupling.");
                 mArmState.SetDesiredState(mFallbackState);
             }
         } else {
@@ -658,6 +749,58 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
     }
 }
 
+void mtsIntuitiveResearchKitPSM::UpdatePIDLimits(const bool toolPresent)
+{
+    // now set PID limits based on tool/no tool
+    if (toolPresent && mToolConfigured) {
+        vctDoubleVec lowerFromKinematics(NumberOfJointsKinematics());
+        vctDoubleVec upperFromKinematics(NumberOfJointsKinematics());
+        vctDoubleVec lowerToPID(NumberOfJoints());
+        vctDoubleVec upperToPID(NumberOfJoints());
+
+        // just to be absolutely totally sure
+        CMN_ASSERT(NumberOfJoints() == 7);
+        const size_t jawIndex = 6;
+
+        // position limits
+        Manipulator->GetJointLimits(lowerFromKinematics,
+                                    upperFromKinematics);
+        // use kinematic joints... all but last
+        lowerToPID.Ref(6).Assign(lowerFromKinematics.Ref(6));
+        upperToPID.Ref(6).Assign(upperFromKinematics.Ref(6));
+        if (mSnakeLike) {
+            // add kinematic joint limits
+            lowerToPID(4) += lowerFromKinematics(7);
+            lowerToPID(5) += lowerFromKinematics(6);
+            upperToPID(4) += upperFromKinematics(7);
+            upperToPID(5) += upperFromKinematics(6);
+        }
+        // ...and jaw
+        lowerToPID.at(jawIndex) = CouplingChange.JawPositionLowerLimit;
+        upperToPID.at(jawIndex) = CouplingChange.JawPositionUpperLimit;
+        // set
+        PID.SetPositionLowerLimit(lowerToPID);
+        PID.SetPositionUpperLimit(upperToPID);
+        // force torque
+        Manipulator->GetFTMaximums(upperFromKinematics);
+        // use kinematic joints... all but last
+        upperToPID.Ref(6).Assign(upperFromKinematics.Ref(6));
+        if (mSnakeLike) {
+            // add kinematic joint limits
+            upperToPID(4) += upperFromKinematics(7);
+            upperToPID(5) += upperFromKinematics(6);
+        }
+        // ...and jaw
+        upperToPID.at(jawIndex) = CouplingChange.JawTorqueUpperLimit;
+        lowerToPID.ProductOf(-1.0, upperToPID); // manipulator assumes symmetry
+        // set
+        PID.SetTorqueLowerLimit(lowerToPID);
+        PID.SetTorqueUpperLimit(upperToPID);
+    } else {
+        PID.SetPositionLowerLimit(CouplingChange.NoToolPositionLowerLimit);
+        PID.SetPositionUpperLimit(CouplingChange.NoToolPositionUpperLimit);
+    }
+}
 
 void mtsIntuitiveResearchKitPSM::EnterChangingCouplingAdapter(void)
 {
@@ -786,7 +929,8 @@ void mtsIntuitiveResearchKitPSM::TransitionAdapterEngaged(void)
     mAdapterNeedEngage = false;
     if (mArmState.DesiredStateIsNotCurrent()) {
         Tool.GetButton(Tool.IsPresent);
-        if (Tool.IsPresent || mIsSimulated) {
+        if ((Tool.IsPresent || mIsSimulated) && mToolConfigured) {
+            SetToolPresent(true);
             mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
         }
     }
@@ -805,9 +949,8 @@ void mtsIntuitiveResearchKitPSM::EnterChangingCouplingTool(void)
 
 void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
 {
-    // set PID limits
-    PID.SetPositionLowerLimit(CouplingChange.ToolPositionLowerLimit);
-    PID.SetPositionUpperLimit(CouplingChange.ToolPositionUpperLimit);
+    // set PID limits for tool present
+    UpdatePIDLimits(true);
 
     // if for some reason we don't need to engage, basically, tool was
     // found before homing
@@ -853,7 +996,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         if (JointsPID.Position().Element(2) > 50.0 * cmn_mm) {
             std::string message = this->GetName();
             message.append(": tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
-            message.append("  If the tool is not engaged properly, move sterile adpater all the way up and re-insert tool.");
+            message.append("  If the tool is not engaged properly, move the sterile adapter all the way up and re-insert the tool.");
             RobotInterface->SendStatus(message);
             mArmState.SetCurrentState("TOOL_ENGAGED");
         }
@@ -861,7 +1004,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         // keep first three joint values as is
         mJointTrajectory.Goal.Ref(3, 0).Assign(JointsDesiredPID.Position().Ref(3, 0));
         // set last 4 to user preferences
-        mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
+        mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition);
         mJointTrajectory.GoalVelocity.SetAll(0.0);
         mJointTrajectory.EndTime = 0.0;
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
@@ -899,9 +1042,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
                 if (EngagingStage != LastEngagingStage) {
                     // toggle between lower and upper
                     if (EngagingStage % 2 == 0) {
-                        mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageUpperPosition.Ref(4, 3));
+                        mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageUpperPosition);
                     } else {
-                        mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition.Ref(4, 3));
+                        mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition);
                     }
                 } else {
                     mJointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
@@ -1142,9 +1285,23 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
     if (present) {
         // we will need to engage this tool
         mToolNeedEngage = true;
+        ToolEvents.ToolType(mtsIntuitiveResearchKitToolTypes::TypeToString(mToolType));
     } else {
         mCartesianReady = false;
         mArmState.SetCurrentState("ADAPTER_ENGAGED");
+        ToolEvents.ToolType(std::string());
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::SetToolType(const std::string & toolType)
+{
+    if (mToolTypeRequested) {
+        EventHandlerToolType(toolType);
+        if (mToolConfigured) {
+            mToolTypeRequested = false;
+        }
+    } else {
+        RobotInterface->SendWarning(this->GetName() + ": received request to set tool type but not expecting it now.  Request ignored.");
     }
 }
 
@@ -1152,10 +1309,34 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
 {
     switch (button.Type()) {
     case prmEventButton::PRESSED:
-        SetToolPresent(true);
+        switch (mToolDetection) {
+        case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
+            Dallas.TriggerRead();
+            break;
+        case mtsIntuitiveResearchKitToolTypes::MANUAL:
+            mToolTypeRequested = true;
+            ToolEvents.ToolTypeRequest();
+            break;
+        case mtsIntuitiveResearchKitToolTypes::FIXED:
+            SetToolPresent(true);
+            break;
+        default:
+            break;
+        }
         break;
     case prmEventButton::RELEASED:
-        SetToolPresent(false);
+        switch (mToolDetection) {
+        case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
+        case mtsIntuitiveResearchKitToolTypes::MANUAL:
+            mToolConfigured = false;
+            SetToolPresent(false);
+            break;
+        case mtsIntuitiveResearchKitToolTypes::FIXED:
+            SetToolPresent(false);
+            break;
+        default:
+            break;
+        }
         break;
     default:
         break;
@@ -1183,5 +1364,30 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
         break;
     default:
         break;
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolType)
+{
+    RobotInterface->SendStatus(this->GetName() + ": setting up for tool type \"" + toolType + "\"");
+    // check if the tool is in the supported list
+    auto found =
+        std::find(mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin(),
+                  mtsIntuitiveResearchKitToolTypes::TypeVectorString().end(),
+                  toolType);
+    if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
+        RobotInterface->SendError(this->GetName() + ": tool type \"" + toolType + "\" is not supported");
+        ToolEvents.ToolType(std::string("ERROR"));
+        return;
+    } else {
+        mToolType = mtsIntuitiveResearchKitToolTypes::TypeFromString(toolType);
+    }
+    // supported tools
+    ConfigureTool(toolType + ".json");
+    if (mToolConfigured) {
+        SetToolPresent(true);
+    } else {
+        RobotInterface->SendError(this->GetName() + ": failed to configure tool \"" + toolType + "\", check terminal output and cisstLog file");
+        ToolEvents.ToolType(std::string("ERROR"));
     }
 }

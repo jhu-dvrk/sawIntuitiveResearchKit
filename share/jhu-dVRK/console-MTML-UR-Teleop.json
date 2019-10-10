@@ -17,7 +17,7 @@
     ,
     "io":
     {
-        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
+        "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
     }
     ,
     "arms":
@@ -32,9 +32,7 @@
         {
             "name": "MTML",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTML-22723.xml",
-            "pid": "sawControllersPID-MTML.xml",
-            "arm": "MTML-22723.json"
+            "serial": "22723"
         }
     ]
     ,

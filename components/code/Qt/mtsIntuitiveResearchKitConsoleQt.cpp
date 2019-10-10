@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-07-13
 
-  (C) Copyright 2015-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -28,9 +28,10 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSMQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSMQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationECMQtWidget.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsSocketBaseQtWidget.h>
 
 #include <QTabWidget>
@@ -141,7 +142,12 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             pidTabWidget->addTab(pidGUI, (name + " PID").c_str());
 
             // Arm widget
-            armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");
+            if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM)
+                || (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED)) {
+                armGUI = new mtsIntuitiveResearchKitPSMQtWidget(name + "-GUI");
+            } else {
+                armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");
+            }
             armGUI->Configure();
             componentManager->AddComponent(armGUI);
             Connections.push_back(new ConnectionType(armGUI->GetName(), "Manipulator",

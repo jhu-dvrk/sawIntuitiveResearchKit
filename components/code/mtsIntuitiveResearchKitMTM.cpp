@@ -27,8 +27,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 
-#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
-#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
 #include "robGravityCompensationMTM.h"
 
@@ -51,79 +49,23 @@ mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM()
     delete GravityCompensationMTM;
 }
 
-void mtsIntuitiveResearchKitMTM::Configure(const std::string & filename)
+void mtsIntuitiveResearchKitMTM::ConfigureArmSpecific(const Json::Value & jsonConfig,
+                                                      const cmnPath & configPath,
+                                                      const std::string & filename)
 {
-    try {
-        std::ifstream jsonStream;
-        Json::Value jsonConfig;
-        Json::Reader jsonReader;
-
-        jsonStream.open(filename.c_str());
-        if (!jsonReader.parse(jsonStream, jsonConfig)) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": failed to parse configuration\n"
-                                     << jsonReader.getFormattedErrorMessages();
-            return;
-        }
-
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
-                                   << " using file \"" << filename << "\"" << std::endl
-                                   << "----> content of configuration file: " << std::endl
-                                   << jsonConfig << std::endl
-                                   << "<----" << std::endl;
-
-        // detect is we're using 1.7 and up with two fields, kinematic and gravity-compensation
-        const auto jsonKinematic = jsonConfig["kinematic"];
-        if (!jsonKinematic.isNull()) {
-            // extract path of main json config file to search other files relative to it
-            cmnPath configPath(cmnPath::GetWorkingDirectory());
-            std::string fullname = configPath.Find(filename);
-            std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
-            configPath.Add(configDir, cmnPath::TAIL); // for arm file
-            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL); // for kinematic file
-
-            // kinematic
-            const auto fileKinematic = configPath.Find(jsonKinematic.asString());
-            if (fileKinematic == "") {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                         << " using file \"" << filename << "\" can't find kinematic file \""
-                                         << jsonKinematic.asString() << "\"" << std::endl;
-                exit(EXIT_FAILURE);
-            } else {
-                ConfigureDH(fileKinematic);
-            }
-
-            // gravity compensation
-            const auto jsonGC = jsonConfig["gravity-compensation"];
-            if (!jsonGC.isNull()) {
-                const auto fileGC = configPath.Find(jsonGC.asString());
-                if (fileGC == "") {
-                    CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                             << " using file \"" << filename << "\" can't find gravity-compensation file \""
-                                             << jsonGC.asString() << "\"" << std::endl;
-                    exit(EXIT_FAILURE);
-                } else {
-                    ConfigureGC(fileGC);
-                }
-            }
+    // gravity compensation
+    const auto jsonGC = jsonConfig["gravity-compensation"];
+    if (!jsonGC.isNull()) {
+        const auto fileGC = configPath.Find(jsonGC.asString());
+        if (fileGC == "") {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                     << " can't find gravity-compensation file \""
+                                     << jsonGC.asString() << "\" defined in \""
+                                     << filename << "\"" << std::endl;
+            exit(EXIT_FAILURE);
         } else {
-            std::stringstream message;
-            message << "Configure " << this->GetName() << ":" << std::endl
-                    << "----------------------------------------------------" << std::endl
-                    << " Warning:" << std::endl
-                    << "   To take advantage of the MTM CUHK gravity compensation" << std::endl
-                    << "   you should have a \"arm\" file for each MTM in the console" << std::endl
-                    << "   file.  The arm file should contain the fields" << std::endl
-                    << "   \"kinematic\" and \"gravity-compensation\"." << std::endl
-                    << "----------------------------------------------------";
-            std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
-            CMN_LOG_CLASS_INIT_VERBOSE << message.str() << std::endl;
-            ConfigureDH(jsonConfig);
+            ConfigureGC(fileGC);
         }
-
-    } catch (...) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
-                                 << filename << "\" is in JSON format" << std::endl;
     }
 }
 
@@ -137,7 +79,8 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const std::string & filename)
         jsonStream.open(filename.c_str());
         if (!jsonReader.parse(jsonStream, jsonConfig)) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC " << this->GetName()
-                                     << ": failed to parse gravity compensation (GC) configuration\n"
+                                     << ": failed to parse gravity compensation (GC) configuration file \""
+                                     << filename << "\"\n"
                                      << jsonReader.getFormattedErrorMessages();
             return;
         }

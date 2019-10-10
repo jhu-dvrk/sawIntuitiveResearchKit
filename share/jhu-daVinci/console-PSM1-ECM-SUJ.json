@@ -6,7 +6,7 @@
             "name": "SUJ",
             "type": "SUJ",
             "io": "sawRobotIO1394-SUJ.xml",
-            "kinematic": "suj_modified.json",
+            "kinematic": "suj-ECM-1-2-3.json",
             "base-frame": {
                 "component": "ECM",
                 "interface": "Robot"
@@ -16,9 +16,7 @@
         {
             "name": "PSM1",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM1-49695.xml",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json",
+            "serial": "49695",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "PSM1"
@@ -28,9 +26,7 @@
         {
             "name": "ECM",
             "type": "ECM",
-            "io": "sawRobotIO1394-ECM-29738.xml",
-            "pid": "sawControllersPID-ECM.xml",
-            "kinematic": "ecm-straight.json",
+            "serial": "29738",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "ECM"

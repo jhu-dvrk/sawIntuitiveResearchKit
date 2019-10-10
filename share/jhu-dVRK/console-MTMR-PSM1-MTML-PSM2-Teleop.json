@@ -3,7 +3,7 @@
     "chatty": true
     ,
     "io": {
-        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
+        "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
     }
     ,
     "arms":
@@ -12,7 +12,6 @@
             "name": "PSM1",
             "type": "PSM",
             "serial": "28007",
-            "kinematic": "psm-large-needle-driver.json",
             "base-frame": {
                 "reference-frame": "ECM",
                 "transform": [[  1.0,  0.0,          0.0,         -0.20],
@@ -26,7 +25,6 @@
             "name": "PSM2",
             "type": "PSM",
             "serial": "27374",
-            "kinematic": "psm-large-needle-driver.json",
             "base-frame": {
                 "reference-frame": "ECM",
                 "transform": [[  1.0,  0.0,          0.0,          0.20],

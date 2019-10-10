@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -259,6 +259,8 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
                                       IOComponentName(), Name() + "-Tool");
             componentManager->Connect(Name(), "ManipClutch",
                                       IOComponentName(), Name() + "-ManipClutch");
+            componentManager->Connect(Name(), "Dallas",
+                                      IOComponentName(), Name() + "-Dallas");
         }
         if (mSocketServer) {
             componentManager->Connect(SocketComponentName(), "PSM",
@@ -303,12 +305,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
     }
 
     // if the arm is a research kit arm
-    if ((mType == ARM_PSM) ||
-        (mType == ARM_PSM_DERIVED) ||
-        (mType == ARM_MTM) ||
-        (mType == ARM_MTM_DERIVED) ||
-        (mType == ARM_ECM) ||
-        (mType == ARM_ECM_DERIVED)) {
+    if (mIsNativeOrDerived) {
         // Connect arm to IO if not simulated
         if (mSimulation == SIMULATION_NONE) {
             componentManager->Connect(Name(), "RobotIO",
@@ -578,7 +575,6 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // will work as long as this component is located in the same
     // parent directory as the "shared" directory.
     configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
-    configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/io", cmnPath::TAIL);
 
     mtsComponentManager * manager = mtsComponentManager::GetInstance();
 
@@ -1218,20 +1214,27 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     Json::Value jsonValue;
     jsonValue = jsonArm["type"];
     armPointer->mIsGeneric = false; // default value
+    armPointer->mIsNativeOrDerived = false;
     if (!jsonValue.empty()) {
         std::string typeString = jsonValue.asString();
         if (typeString == "MTM") {
             armPointer->mType = Arm::ARM_MTM;
+            armPointer->mIsNativeOrDerived = true;
         } else if (typeString == "PSM") {
             armPointer->mType = Arm::ARM_PSM;
+            armPointer->mIsNativeOrDerived = true;
         } else if (typeString == "ECM") {
             armPointer->mType = Arm::ARM_ECM;
+            armPointer->mIsNativeOrDerived = true;
         } else if (typeString == "MTM_DERIVED") {
             armPointer->mType = Arm::ARM_MTM_DERIVED;
+            armPointer->mIsNativeOrDerived = true;
         } else if (typeString == "PSM_DERIVED") {
             armPointer->mType = Arm::ARM_PSM_DERIVED;
+            armPointer->mIsNativeOrDerived = true;
         } else if (typeString == "ECM_DERIVED") {
             armPointer->mType = Arm::ARM_ECM_DERIVED;
+            armPointer->mIsNativeOrDerived = true;
         } else if (typeString == "MTM_GENERIC") {
             armPointer->mType = Arm::ARM_MTM_GENERIC;
             armPointer->mIsGeneric = true;
@@ -1247,12 +1250,12 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             armPointer->mType = Arm::ARM_SUJ;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName << ": invalid type \""
-                                     << typeString << "\", needs to be MTM(_DERIVED), PSM(_DERIVED) or ECM(_DERIVED)" << std::endl;
+                                     << typeString << "\", needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC}" << std::endl;
             return false;
         }
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName
-                                 << ": doesn't have a \"type\" specified, needs to be MTM(_DERIVED), PSM(_DERIVED) or ECM(_DERIVED)" << std::endl;
+                                 << ": doesn't have a \"type\" specified, needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC}" << std::endl;
         return false;
     }
 
@@ -1376,13 +1379,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         }
     }
 
-    // PID only required for MTM, PSM and ECM
-    if ((armPointer->mType == Arm::ARM_MTM)
-        || (armPointer->mType == Arm::ARM_MTM_DERIVED)
-        || (armPointer->mType == Arm::ARM_PSM)
-        || (armPointer->mType == Arm::ARM_PSM_DERIVED)
-        || (armPointer->mType == Arm::ARM_ECM)
-        || (armPointer->mType == Arm::ARM_ECM_DERIVED)) {
+    // PID only required for MTM, PSM and ECM (and derived)
+    if (armPointer->mIsNativeOrDerived) {
         jsonValue = jsonArm["pid"];
         if (!jsonValue.empty()) {
             armPointer->mPIDConfigurationFile = configPath.Find(jsonValue.asString());
@@ -1394,11 +1392,11 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             // try to find default
             std::string defaultFile;
             if ((armPointer->mType == Arm::ARM_PSM) || (armPointer->mType == Arm::ARM_PSM_DERIVED)) {
-                defaultFile = "sawControllersPID-PSM.xml";
+                defaultFile = "pid/sawControllersPID-PSM.xml";
             } else if ((armPointer->mType == Arm::ARM_ECM) || (armPointer->mType == Arm::ARM_ECM_DERIVED)) {
-                defaultFile = "sawControllersPID-ECM.xml";
+                defaultFile = "pid/sawControllersPID-ECM.xml";
             } else {
-                defaultFile = "sawControllersPID-" + armName + ".xml";
+                defaultFile = "pid/sawControllersPID-" + armName + ".xml";
             }
             CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureArmJSON: can't find \"pid\" setting for arm \""
                                        << armName << "\", using default: \""
@@ -1415,8 +1413,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     if ((armPointer->mType != Arm::ARM_PSM_SOCKET)
         && (!armPointer->mIsGeneric)) {
         // renamed "kinematic" to "arm" so we can have a more complex configuration file for the arm class
-        if ((armPointer->mType == Arm::ARM_MTM)
-            || (armPointer->mType == Arm::ARM_MTM_DERIVED)) {
+        if (armPointer->mIsNativeOrDerived) {
             jsonValue = jsonArm["arm"];
             if (!jsonValue.empty()) {
                 armPointer->mArmConfigurationFile = configPath.Find(jsonValue.asString());
@@ -1429,7 +1426,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         jsonValue = jsonArm["kinematic"];
         if (!jsonValue.empty()) {
             if (armPointer->mArmConfigurationFile != "") {
-                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm configuration file is already set using \"configure-parameter\", remove the deprecated \"kinetic\" field:"
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm configuration file is already set using \"arm\", you should remove the deprecated \"kinetic\" field:"
                                          << jsonValue.asString() << std::endl;
                 return false;
             } else {
@@ -1443,15 +1440,14 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
 
         // make sure we have an arm configuration file
         if (armPointer->mArmConfigurationFile == "") {
-            if ((armPointer->mType == Arm::ARM_MTM)
-                || (armPointer->mType == Arm::ARM_MTM_DERIVED)) {
+            if (armPointer->mIsNativeOrDerived) {
                 // try to find the arm file using default
                 std::string defaultFile = armName + "-" + armPointer->mSerial + ".json";
                 armPointer->mArmConfigurationFile = configPath.Find(defaultFile);
                 if (armPointer->mArmConfigurationFile == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"arm\" setting for arm \""
-                                             << armName << "\", alternatively, make sure you have created the file \""
-                                             << defaultFile << "\"" << std::endl;
+                                             << armName << "\".  \"arm\" is not set and the default file \""
+                                             << defaultFile << "\" doesn't seem to exist either." << std::endl;
                     return false;
                 }
             } else {
@@ -1807,6 +1803,25 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
                                      << arm->Name() << "\"" << std::endl;
             return false;
         }
+        // is the arm is a PSM, since it has an IO, it also has a
+        // Dallas chip interface and we want to see the messages
+        if ((arm->mType == Arm::ARM_PSM)
+            || (arm->mType == Arm::ARM_PSM_DERIVED)) {
+            const std::string interfaceNameIODallas = "IO-Dallas-" + arm->Name();
+            arm->IODallasInterfaceRequired = AddInterfaceRequired(interfaceNameIODallas);
+            if (arm->IODallasInterfaceRequired) {
+                arm->IODallasInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
+                                                                     this, "Error");
+                arm->IODallasInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
+                                                                     this, "Warning");
+                arm->IODallasInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
+                                                                     this, "Status");
+            } else {
+                CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO Dallase interface for arm \""
+                                         << arm->Name() << "\"" << std::endl;
+                return false;
+            }
+        }
     }
 
     // PID
@@ -1867,6 +1882,11 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
         if (arm->IOInterfaceRequired) {
             componentManager->Connect(this->GetName(), "IO-" + arm->Name(),
                                       arm->IOComponentName(), arm->Name());
+        }
+        // IO Dallas
+        if (arm->IODallasInterfaceRequired) {
+            componentManager->Connect(this->GetName(), "IO-Dallas-" + arm->Name(),
+                                      arm->IOComponentName(), arm->Name() + "-Dallas");
         }
         // PID
         if (arm->mType != Arm::ARM_SUJ) {

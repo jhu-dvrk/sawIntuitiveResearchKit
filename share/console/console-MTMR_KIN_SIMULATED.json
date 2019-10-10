@@ -3,11 +3,10 @@
     "arms":
     [
         {
-            "name": "MTML",
+            "name": "MTMR",
             "type": "MTM",
             "simulation": "KINEMATIC",
-            "pid": "sawControllersPID-MTML.xml",
-            "arm": "jhu-dVRK/MTML-22723.json"
+            "arm": "arm/MTM_KIN_SIMULATED.json"
         }
     ]
 }

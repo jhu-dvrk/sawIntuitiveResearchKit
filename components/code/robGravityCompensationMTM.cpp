@@ -255,7 +255,7 @@ void robGravityCompensationMTM::ComputeAlphaVel(const vctVec & q_dot)
         } else if ( (*qd > *bd_vel) && (*qd < *sat_vel) ) {
             *alpha = 0.5*(*fric_comp_ratio)*(*qd - *bd_vel)/(*sat_vel - *bd_vel) + 0.5;
         } else {
-            *alpha = -0.5*(*fric_comp_ratio)*(*qd - *bd_vel)/(*sat_vel - *bd_vel) + 0.5;
+            *alpha = -0.5*(*fric_comp_ratio)*((-*qd) - *bd_vel)/(*sat_vel - *bd_vel) + 0.5;
         }
     }
 }

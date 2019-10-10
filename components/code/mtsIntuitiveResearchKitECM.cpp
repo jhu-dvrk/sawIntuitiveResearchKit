@@ -150,63 +150,52 @@ void mtsIntuitiveResearchKitECM::Init(void)
     }
 }
 
-
-void mtsIntuitiveResearchKitECM::Configure(const std::string & filename)
+void mtsIntuitiveResearchKitECM::ConfigureArmSpecific(const Json::Value & jsonConfig,
+                                                      const cmnPath & CMN_UNUSED(configPath),
+                                                      const std::string & filename)
 {
-    try {
-        std::ifstream jsonStream;
-        Json::Value jsonConfig;
-        Json::Reader jsonReader;
-
-        jsonStream.open(filename.c_str());
-        if (!jsonReader.parse(jsonStream, jsonConfig)) {
+    // load tool tip transform if any (for up/down endoscopes)
+    // future work: add UP/DOWN, _HD and set mass for GC, also create separate method with ROS topic + GUI to set the endoscope
+    const Json::Value jsonEndoscope = jsonConfig["endoscope"];
+    if (!jsonEndoscope.isNull()) {
+        std::string endoscope = jsonEndoscope.asString();
+        if (endoscope == "STRAIGHT") {
+            ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
+                                            -1.0,  0.0,  0.0,  0.0,
+                                             0.0,  0.0,  1.0,  0.0,
+                                             0.0,  0.0,  0.0,  1.0);
+        } else {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": failed to parse configuration\n"
-                                     << jsonReader.getFormattedErrorMessages();
-            return;
+                                     << ": \"endoscope\" type \"" << endoscope
+                                     << "\" is not supported.  Options are STRAIGHT (from file \""
+                                     << filename << "\")" << std::endl;
+            exit(EXIT_FAILURE);
         }
-
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
-                                   << " using file \"" << filename << "\"" << std::endl
-                                   << "----> content of configuration file: " << std::endl
-                                   << jsonConfig << std::endl
-                                   << "<----" << std::endl;
-
-        ConfigureDH(jsonConfig);
-
-        // should arm go to zero position when homing, default set in Init method
-        const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
-        if (!jsonHomingGoesToZero.isNull()) {
-            mHomingGoesToZero = jsonHomingGoesToZero.asBool();
-        }
-
-        // load tool tip transform if any (for up/down endoscopes)
-        const Json::Value jsonToolTip = jsonConfig["tooltip-offset"];
-        if (!jsonToolTip.isNull()) {
-            cmnDataJSON<vctFrm4x4>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
-            ToolOffset = new robManipulator(ToolOffsetTransformation);
-            Manipulator->Attach(ToolOffset);
-        }
-    } catch (...) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": make sure the file \""
-                                 << filename << "\" is in JSON format" << std::endl;
+        ToolOffset = new robManipulator(ToolOffsetTransformation);
+        Manipulator->Attach(ToolOffset);
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": \"endoscope\" must be defined (from file \""
+                                 << filename << "\")" << std::endl;
+        exit(EXIT_FAILURE);
     }
 
     // check that Rtw0 is not set
     if (Manipulator->Rtw0 != vctFrm4x4::Identity()) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": you can't define the base-offset for the ECM, it is hard coded so gravity compensation works properly.  We always assume the ECM is mounted at 45 degrees!"
-                                 << std::endl;
+                                 << ": you can't define the base-offset for the ECM, it is hard coded so gravity compensation works properly.  We always assume the ECM is mounted at 45 degrees! (from file \""
+                                 << filename << "\")" << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    vctFrame4x4<double> Rt(vctMatrixRotation3<double>(1.0,            0.0,            0.0,
-                                                      0.0,  sqrt(2.0)/2.0,  sqrt(2.0)/2.0,
-                                                      0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
-                           vctFixedSizeVector<double,3>(0.0, 0.0, 0.0));
+    // 45 degrees rotation to make sure Z points up, this helps with
+    // cisstRobot::robManipulator gravity compensation
+    vctFrame4x4<double> Rt(vctMatRot3(1.0,            0.0,            0.0,
+                                      0.0,  sqrt(2.0)/2.0,  sqrt(2.0)/2.0,
+                                      0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
+                           vct3(0.0, 0.0, 0.0));
     Manipulator->Rtw0 = Rt;
 }
-
 
 void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
 {

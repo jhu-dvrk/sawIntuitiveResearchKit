@@ -1,17 +1,17 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
     "io": {
-        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
+        "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
         , "watchdog-timeout": 0.04 // in seconds
         , "firewire-protocol": "broadcast-read-write"
     }
     ,
     "operator-present": {
-        "io": "sawRobotIO1394-MTMR-dv-head-sensor.xml"
+        "io": "io/sawRobotIO1394-MTMR-dv-head-sensor.xml"
     }
     ,
     "endoscope-focus": {
-        "io": "sawRobotIO1394-MTML-dv-endoscope-focus.xml"
+        "io": "io/sawRobotIO1394-MTML-dv-endoscope-focus.xml"
     }
     ,
     "arms":
@@ -30,9 +30,7 @@
         {
             "name": "PSM1",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM1-49695.xml",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json",
+            "serial": "49695",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "PSM1"
@@ -42,9 +40,7 @@
         {
             "name": "PSM2",
             "type": "PSM",
-            "io": "sawRobotIO1394-PSM2-32204.xml",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json",
+            "serial": "32204",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "PSM2"
@@ -54,9 +50,7 @@
         {
             "name": "ECM",
             "type": "ECM",
-            "io": "sawRobotIO1394-ECM-29738.xml",
-            "pid": "sawControllersPID-ECM.xml",
-            "kinematic": "ecm-straight.json",
+            "serial": "29738",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "ECM"
@@ -66,9 +60,7 @@
         {
             "name": "MTMR",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTMR-32336.xml",
-            "pid": "sawControllersPID-MTMR.xml",
-            "arm": "MTMR-32336.json",
+            "serial": "32336",
             "base-frame": {
                 "reference-frame": "HRSV",
                 "transform": [[ -1.0,  0.0,          0.0,         -0.180],
@@ -81,9 +73,7 @@
         {
             "name": "MTML",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTML-34863.xml",
-            "pid": "sawControllersPID-MTML.xml",
-            "arm": "MTML-34863.json",
+            "serial": "34863",
             "base-frame": {
                 "reference-frame": "HRSV",
                 "transform": [[ -1.0,  0.0,          0.0,          0.180],
