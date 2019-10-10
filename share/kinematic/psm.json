@@ -2,9 +2,9 @@
 {
     // see dVRK user guide
     "DH": {
-        "links": [
+        "convention": "modified",
+        "joints": [
             {
-                "convention": "modified",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -14,7 +14,6 @@
                 "ftmax": 4.97
             },
             {
-                "convention": "modified",
                 "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -24,7 +23,6 @@
                 "ftmax": 4.97
             },
             {
-                "convention": "modified",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "prismatic",
                 "mode": "active",

@@ -2,9 +2,9 @@
 {
     // see dVRK user guide - THIS IS A S/Si TOOL! Longer shaft! "D" = 0.4670
     "DH": {
-        "links": [
+        "convention": "modified",
+        "joints": [
             {
-                "convention": "modified",
                 "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4670,
                 "type": "revolute",
                 "mode": "active",
@@ -14,7 +14,6 @@
                 "ftmax": 0.33
             },
             {
-                "convention": "modified",
                 "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -24,7 +23,6 @@
                 "ftmax": 0.25
             },
             {
-                "convention": "modified",
                 "alpha": -1.5708, "A":  0.0091, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",

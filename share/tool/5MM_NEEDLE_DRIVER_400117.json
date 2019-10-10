@@ -2,10 +2,10 @@
 {
     // see dVRK user guide
     "snake-like" : true,
+    "convention": "modified",
     "DH": {
-        "links": [
+        "joints": [
             {
-                "convention": "modified",
                 "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4024,
                 "type": "revolute",
                 "mode": "active",
@@ -15,7 +15,6 @@
                 "ftmax": 0.33
             },
             {
-                "convention": "modified",
                 "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -25,7 +24,6 @@
                 "ftmax": 0.1
             },
             {
-                "convention": "modified",
                 "alpha": -1.5708, "A":  0.0034, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -35,7 +33,6 @@
                 "ftmax": 0.1
             },
             {
-                "convention": "modified",
                 "alpha": 0.0000, "A":  0.0034, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -45,7 +42,6 @@
                 "ftmax": 0.1
             },
             {
-                "convention": "modified",
                 "alpha": 1.5708, "A":  0.0034, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
