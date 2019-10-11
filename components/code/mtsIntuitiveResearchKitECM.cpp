@@ -143,6 +143,10 @@ void mtsIntuitiveResearchKitECM::Init(void)
     CMN_ASSERT(RobotInterface);
     RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
 
+    // endoscope commands and events
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitECM::SetEndoscopeType, this, "SetEndoscopeType");
+    RobotInterface->AddEventWrite(EndoscopeEvents.EndoscopeType, "EndoscopeType", std::string());
+
     // ManipClutch: digital input button event from ECM
     interfaceRequired = AddInterfaceRequired("ManipClutch");
     if (interfaceRequired) {
@@ -159,24 +163,15 @@ void mtsIntuitiveResearchKitECM::ConfigureArmSpecific(const Json::Value & jsonCo
     const Json::Value jsonEndoscope = jsonConfig["endoscope"];
     if (!jsonEndoscope.isNull()) {
         std::string endoscope = jsonEndoscope.asString();
-        if (endoscope == "STRAIGHT") {
-            ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
-                                            -1.0,  0.0,  0.0,  0.0,
-                                             0.0,  0.0,  1.0,  0.0,
-                                             0.0,  0.0,  0.0,  1.0);
-        } else {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": \"endoscope\" type \"" << endoscope
-                                     << "\" is not supported.  Options are STRAIGHT (from file \""
-                                     << filename << "\")" << std::endl;
-            exit(EXIT_FAILURE);
-        }
-        ToolOffset = new robManipulator(ToolOffsetTransformation);
-        Manipulator->Attach(ToolOffset);
+        SetEndoscopeType(endoscope);
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                  << ": \"endoscope\" must be defined (from file \""
                                  << filename << "\")" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    if (!mEndoscopeConfigured) {
         exit(EXIT_FAILURE);
     }
 
@@ -223,6 +218,9 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
 
 void mtsIntuitiveResearchKitECM::TransitionArmHomed(void)
 {
+    // event to propagate endoscope type based on configuration file
+    EndoscopeEvents.EndoscopeType(mtsIntuitiveResearchKitEndoscopeTypes::TypeToString(mEndoscopeType));
+
     // on ECM, arm homed means arm ready
     if (mArmState.DesiredStateIsNotCurrent()) {
         mCartesianReady = true;
@@ -298,4 +296,66 @@ void mtsIntuitiveResearchKitECM::AddGravityCompensationEfforts(vctDoubleVec & ef
 {
     vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
     efforts.Add(Manipulator->CCG_MDH(JointsKinematics.Position(), qd, 9.81));
+}
+
+void mtsIntuitiveResearchKitECM::SetEndoscopeType(const std::string & endoscopeType)
+{
+    // initialize configured flag
+    mEndoscopeConfigured = false;
+
+    RobotInterface->SendStatus(this->GetName() + ": setting up for endoscope type \"" + endoscopeType + "\"");
+    // check if the endoscope is in the supported list
+    auto found =
+        std::find(mtsIntuitiveResearchKitEndoscopeTypes::TypeVectorString().begin(),
+                  mtsIntuitiveResearchKitEndoscopeTypes::TypeVectorString().end(),
+                  endoscopeType);
+    if (found == mtsIntuitiveResearchKitEndoscopeTypes::TypeVectorString().end()) {
+        RobotInterface->SendError(this->GetName() + ": endoscope type \"" + endoscopeType + "\" is not supported");
+        EndoscopeEvents.EndoscopeType(std::string("ERROR"));
+        return;
+    }
+    // supported endoscopes
+    mEndoscopeType = mtsIntuitiveResearchKitEndoscopeTypes::TypeFromString(endoscopeType);
+
+    // update tool tip offset
+    ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
+                                    -1.0,  0.0,  0.0,  0.0,
+                                     0.0,  0.0,  1.0,  0.0,
+                                     0.0,  0.0,  0.0,  1.0);
+    switch (mEndoscopeType) {
+    case mtsIntuitiveResearchKitEndoscopeTypes::SD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::HD_UP:
+        break;
+    case mtsIntuitiveResearchKitEndoscopeTypes::SD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::HD_DOWN:
+        break;
+    default:
+        break;
+    }
+    ToolOffset = new robManipulator(ToolOffsetTransformation);
+    Manipulator->Attach(ToolOffset);
+
+    // update estimated mass for gravity compensation
+    double mass;
+    switch (mEndoscopeType) {
+    case mtsIntuitiveResearchKitEndoscopeTypes::SD_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SD_DOWN:
+        mass = 1.5;
+        break;
+    case mtsIntuitiveResearchKitEndoscopeTypes::HD_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::HD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::HD_DOWN:
+        mass = 3.0;
+        break;
+    default:
+        mass = 0.0;
+        break;
+    }
+
+    // set configured flag
+    mEndoscopeConfigured = true;
+
+    // event to inform other components (GUI/ROS)
+    EndoscopeEvents.EndoscopeType(endoscopeType);
 }

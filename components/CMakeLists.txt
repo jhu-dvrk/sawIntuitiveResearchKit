@@ -95,6 +95,7 @@ if (cisst_FOUND)
                           "sawIntuitiveResearchKit/"    # sub directory for include
                           code/mtsIntuitiveResearchKitArmTypes.cdg
                           code/mtsIntuitiveResearchKitToolTypes.cdg
+                          code/mtsIntuitiveResearchKitEndoscopeTypes.cdg
                           code/socketMessages.cdg)
 
     include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})

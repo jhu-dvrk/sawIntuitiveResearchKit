@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,6 +21,9 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitECM_h
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitEndoscopeTypes.h>
+
+// Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
@@ -94,6 +97,17 @@ protected:
         mtsFunctionWrite ManipClutch;
         std::string ManipClutchPreviousState;
     } ClutchEvents;
+
+    /*! Set endoscope type.  Uses string as defined in
+      mtsIntuitiveResearchKitEndoscopeTypes.cdg, upper case with separating
+      underscores. */
+    void SetEndoscopeType(const std::string & endoscopeType);
+    
+    mtsIntuitiveResearchKitEndoscopeTypes::Type mEndoscopeType;
+    bool mEndoscopeConfigured = false;
+    struct {
+        mtsFunctionWrite EndoscopeType;
+    } EndoscopeEvents;
 
     // tooltip, used for up/down endoscopes
     robManipulator * ToolOffset;
