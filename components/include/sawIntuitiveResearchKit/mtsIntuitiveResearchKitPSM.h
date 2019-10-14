@@ -47,39 +47,39 @@ protected:
     void ConfigureTool(const std::string & filename);
     
     /*! Configuration methods */
-    inline size_t NumberOfAxes(void) const {
+    inline size_t NumberOfAxes(void) const override {
         return 7;
     }
 
-    inline size_t NumberOfJoints(void) const {
+    inline size_t NumberOfJoints(void) const override {
         return 7;
     }
 
-    inline size_t NumberOfJointsKinematics(void) const {
+    inline size_t NumberOfJointsKinematics(void) const override {
         return mSnakeLike ? 8 : 6;
     }
 
-    inline size_t NumberOfBrakes(void) const {
+    inline size_t NumberOfBrakes(void) const override {
         return 0;
     }
 
-    void UpdateJointsKinematics(void);
-    void ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID);
+    void UpdateJointsKinematics(void) override;
+    void ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID) override;
 
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                            const vctFrm4x4 & cartesianGoal);
+                                            const vctFrm4x4 & cartesianGoal) override;
 
     // see base class
-    inline bool IsSafeForCartesianControl(void) const {
+    inline bool IsSafeForCartesianControl(void) const override {
         return (JointsKinematics.Position().at(2) > 50.0 * cmn_mm);
     }
 
 
-    void Init(void);
+    void Init(void) override;
 
 
     // state related methods
-    void SetGoalHomingArm(void);
+    void SetGoalHomingArm(void) override;
     void EnterArmHomed(void);
     void RunArmHomed(void); // mostly to allow joint control without tool nor adapter
     void LeaveArmHomed(void);
@@ -123,8 +123,8 @@ protected:
     void SetPositionGoalJaw(const prmPositionJointSet & jawPosition);
     void SetEffortJaw(const prmForceTorqueJointSet & effort);
 
-    void SetPositionJointLocal(const vctDoubleVec & newPosition);
-    void SetEffortJointLocal(const vctDoubleVec & newEffort);
+    void SetPositionJointLocal(const vctDoubleVec & newPosition) override;
+    void SetEffortJointLocal(const vctDoubleVec & newEffort) override;
 
     void EnableJointsEventHandler(const vctBoolVec & enable);
     void CouplingEventHandler(const prmActuatorJointCoupling & coupling);

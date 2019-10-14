@@ -94,10 +94,10 @@ protected:
         return true;
     };
 
-    virtual void Init(void);
+    virtual void Init(void) override;
 
     // state related methods
-    void SetGoalHomingArm(void);
+    void SetGoalHomingArm(void) override;
     void TransitionArmHomed(void);
     void EnterCalibratingRoll(void);
     void RunCalibratingRoll(void);
@@ -110,7 +110,7 @@ protected:
 
     /*! Get data specific to the MTM (gripper angle using analog inputs) after
       calling mtsIntuitiveResearchKitArm::GetRobotData. */
-    void GetRobotData(void);
+    void GetRobotData(void) override;
 
     // see base class
     void ControlEffortOrientationLocked(void) override;
