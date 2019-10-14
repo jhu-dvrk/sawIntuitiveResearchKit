@@ -346,12 +346,16 @@ void mtsIntuitiveResearchKitECM::SetEndoscopeType(const std::string & endoscopeT
     case mtsIntuitiveResearchKitEndoscopeTypes::HD_STRAIGHT:
     case mtsIntuitiveResearchKitEndoscopeTypes::HD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::HD_DOWN:
-        mass = 3.0;
+        mass = 2.5;
         break;
     default:
         mass = 0.0;
         break;
     }
+
+    // make sure we have enough joints in the kinematic chain
+    CMN_ASSERT(Manipulator->links.size() == 4);
+    Manipulator->links.at(3).MassData().Mass() = mass;
 
     // set configured flag
     mEndoscopeConfigured = true;
