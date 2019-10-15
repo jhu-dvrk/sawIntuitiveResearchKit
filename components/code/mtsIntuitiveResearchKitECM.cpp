@@ -322,16 +322,26 @@ void mtsIntuitiveResearchKitECM::SetEndoscopeType(const std::string & endoscopeT
                                     -1.0,  0.0,  0.0,  0.0,
                                      0.0,  0.0,  1.0,  0.0,
                                      0.0,  0.0,  0.0,  1.0);
+    vctFrm4x4 tip;
+    tip.Translation().Assign(vct3(0.0, 0.0, 0.0));
     switch (mEndoscopeType) {
     case mtsIntuitiveResearchKitEndoscopeTypes::SD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::HD_UP:
+        // -30 degree rotation along X axis
+        tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), -30.0 * cmnPI_180));
+        ToolOffsetTransformation = ToolOffsetTransformation * tip;
         break;
     case mtsIntuitiveResearchKitEndoscopeTypes::SD_DOWN:
     case mtsIntuitiveResearchKitEndoscopeTypes::HD_DOWN:
+        // 30 degree rotation along X axis
+        tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), 30.0 * cmnPI_180));
+        ToolOffsetTransformation = ToolOffsetTransformation * tip;
         break;
     default:
         break;
     }
+    // remove old tip and replace by new one
+    Manipulator->DeleteTools();
     ToolOffset = new robManipulator(ToolOffsetTransformation);
     Manipulator->Attach(ToolOffset);
 
