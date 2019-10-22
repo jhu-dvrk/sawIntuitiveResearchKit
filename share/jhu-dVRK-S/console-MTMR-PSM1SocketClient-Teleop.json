@@ -17,9 +17,7 @@
         {
             "name": "MTMR",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTMR-22403.xml",
-            "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtm.json"
+            "serial": "22403"
         }
     ]
     ,
