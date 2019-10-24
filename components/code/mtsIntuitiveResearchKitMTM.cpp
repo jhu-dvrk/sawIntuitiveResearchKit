@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <iostream>
 
 // cisst
+#include <cisstCommon/cmnPath.h>
 #include <cisstNumerical/nmrLSMinNorm.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>

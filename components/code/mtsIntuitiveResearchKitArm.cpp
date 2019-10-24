@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <time.h>
 
 // cisst
+#include <cisstCommon/cmnPath.h>
 #include <cisstNumerical/nmrIsOrthonormal.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>

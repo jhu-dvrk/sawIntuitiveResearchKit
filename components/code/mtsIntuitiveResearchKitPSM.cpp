@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 // cisst
 #include <sawIntuitiveResearchKit/robManipulatorPSMSnake.h>
 
+#include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>

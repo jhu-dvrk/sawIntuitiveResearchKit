@@ -30,6 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsCollectorFactory.h>
 #include <cisstMultiTask/mtsCollectorQtFactory.h>
 #include <cisstMultiTask/mtsCollectorQtWidget.h>
+#include <cisstMultiTask/mtsManagerLocal.h>
 
 #include <QApplication>
 #include <QIcon>

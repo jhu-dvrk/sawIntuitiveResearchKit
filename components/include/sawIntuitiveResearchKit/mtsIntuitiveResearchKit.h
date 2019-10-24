@@ -32,7 +32,7 @@ namespace mtsIntuitiveResearchKit {
     // (SUJ) will overheat the QLA while trying to turn on power in
     // some specific conditions.  Ask Peter!  See also
     // https://github.com/jhu-cisst/QLA/issues/1
-    const double TimeToPower = 3.0 * cmn_s;    
+    const double TimeToPower = 3.0 * cmn_s;
 
     // teleoperation constants
     const double TeleOperationPSMOrientationTolerance = 5.0; // in degrees
