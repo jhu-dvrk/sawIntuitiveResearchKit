@@ -1317,6 +1317,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         case mtsIntuitiveResearchKitToolTypes::MANUAL:
             mToolTypeRequested = true;
             ToolEvents.ToolTypeRequest();
+            RobotInterface->SendWarning(this->GetName() + ": tool type requested from user");
             break;
         case mtsIntuitiveResearchKitToolTypes::FIXED:
             SetToolPresent(true);
