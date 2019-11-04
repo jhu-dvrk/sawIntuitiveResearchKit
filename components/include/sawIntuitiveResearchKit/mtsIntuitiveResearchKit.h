@@ -23,9 +23,10 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 namespace mtsIntuitiveResearchKit {
-    const double IOPeriod = 0.3 * cmn_ms;
-    const double ArmPeriod = 0.5 * cmn_ms;
-    const double TeleopPeriod = 1.0 * cmn_ms;
+    const double PeriodDelay = 0.06 * cmn_ms; // fixed delay
+    const double IOPeriod = cmnHzToPeriod(1500.0) - PeriodDelay;
+    const double ArmPeriod = cmnHzToPeriod(1500.0) - PeriodDelay;
+    const double TeleopPeriod = cmnHzToPeriod(1000.0) - PeriodDelay;
     const double WatchdogTimeout = 30.0 * cmn_ms;
 
     // DO NOT INCREASE THIS ABOVE 3 SECONDS!!!  Some power supplies
