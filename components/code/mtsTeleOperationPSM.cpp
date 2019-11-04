@@ -239,6 +239,18 @@ void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
         SetRegistrationRotation(orientation);
     }
 
+    // rotation locked
+    jsonValue = jsonConfig["rotation-locked"];
+    if (!jsonValue.empty()) {
+        mRotationLocked = jsonValue.asBool();
+    }
+
+    // rotation locked
+    jsonValue = jsonConfig["translation-locked"];
+    if (!jsonValue.empty()) {
+        mTranslationLocked = jsonValue.asBool();
+    }
+
     // ignore jaw if needed
     jsonValue = jsonConfig["ignore-jaw"];
     if (!jsonValue.empty()) {

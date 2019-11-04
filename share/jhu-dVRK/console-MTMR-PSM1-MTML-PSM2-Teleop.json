@@ -4,6 +4,7 @@
     ,
     "io": {
         "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
+        , "firewire-protocol": "broadcast-read-write"
     }
     ,
     "arms":
@@ -67,7 +68,8 @@
             "mtm": "MTMR",
             "psm": "PSM1",
             "configure-parameter": {
-                "scale": 0.4
+                "scale": 0.4,
+                "rotation-locked": true
             }
         }
         ,
@@ -75,7 +77,8 @@
             "mtm": "MTML",
             "psm": "PSM2",
             "configure-parameter": {
-                "scale": 0.4
+                "scale": 0.4,
+                "translation-locked": true
             }
         }
     ]
