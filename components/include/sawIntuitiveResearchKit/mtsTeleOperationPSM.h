@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -133,6 +133,7 @@ protected:
     double mScale = 0.2;
     vctMatRot3 mRegistrationRotation; // optional registration between PSM and MTM orientation
     vctMatRot3 mAlignOffset; // rotation offset between MTM and PSM when tele-operation goes in follow mode
+    double mJawOffset;
 
     bool mIgnoreJaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
     int mGripperJawTransitions;

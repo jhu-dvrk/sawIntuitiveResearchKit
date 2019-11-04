@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -106,6 +106,7 @@ void mtsTeleOperationPSM::Init(void)
     this->StateTable.AddData(mMTM.PositionCartesianDesired, "MTMCartesianPositionDesired");
     this->StateTable.AddData(mPSM.PositionCartesianCurrent, "PSMCartesianPosition");
     this->StateTable.AddData(mAlignOffset, "AlignOffset");
+    this->StateTable.AddData(mJawOffset, "JawOffset");
 
     mConfigurationStateTable = new mtsStateTable(100, "Configuration");
     mConfigurationStateTable->SetAutomaticAdvance(false);
@@ -194,6 +195,9 @@ void mtsTeleOperationPSM::Init(void)
         mInterface->AddCommandReadState(this->StateTable,
                                         mAlignOffset,
                                         "GetAlignOffset");
+        mInterface->AddCommandReadState(this->StateTable,
+                                        mJawOffset,
+                                        "GetJawOffset");
         // events
         mInterface->AddEventWrite(MessageEvents.DesiredState,
                                   "DesiredState", std::string(""));
@@ -535,7 +539,7 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
     // reset timer
     mInStateTimer = StateTable.GetTic();
     mTimeSinceLastAlign = 0.0;
-    
+
     // if we don't align MTM, just stay in same position
     if (!mAlignMTM) {
         // convert to prm type
@@ -658,6 +662,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     if ((orientationErrorInDegrees <= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance)
         && (mGripperJawTransitions > 1)) {
         if (mTeleopState.DesiredState() == "ENABLED") {
+            mJawOffset = mPSM.StateJaw.Position()[0] - mMTM.StateGripper.Position()[0];
             mTeleopState.SetCurrentState("ENABLED");
         }
     } else {
@@ -740,7 +745,7 @@ void mtsTeleOperationPSM::RunEnabled(void)
                 if (mMTM.GetStateGripper.IsValid()) {
                     prmStateJoint gripper;
                     mMTM.GetStateGripper(gripper);
-                    mPSM.PositionJointSet.Goal()[0] = gripper.Position()[0];
+                    mPSM.PositionJointSet.Goal()[0] = gripper.Position()[0] + mJawOffset;
                     mPSM.SetPositionJaw(mPSM.PositionJointSet);
                 } else {
                     mPSM.PositionJointSet.Goal()[0] = 45.0 * cmnPI_180;
