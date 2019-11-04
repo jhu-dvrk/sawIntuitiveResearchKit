@@ -540,6 +540,8 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
                                   "TeleopPSMUnselected", prmKeyValue("MTM", "PSM"));
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetVolume, this,
                                     "SetVolume", 0.5);
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::StringToSpeech, this,
+                                    "StringToSpeech", std::string());
     }
 }
 
@@ -2363,6 +2365,11 @@ void mtsIntuitiveResearchKitConsole::SetVolume(const double & volume)
     std::stringstream message;
     message << this->GetName() << ": volume set to " << static_cast<int>(volume * 100.0);
     mInterface->SendStatus(message.str());
+}
+
+void mtsIntuitiveResearchKitConsole::StringToSpeech(const std::string & text)
+{
+    mAudio.StringToSpeech(text);
 }
 
 void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & button)

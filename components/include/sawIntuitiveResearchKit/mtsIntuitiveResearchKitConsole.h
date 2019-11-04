@@ -336,6 +336,7 @@ protected:
     void UpdateTeleopState(void);
     void SetScale(const double & scale);
     void SetVolume(const double & volume);
+    void StringToSpeech(const std::string & text);
     bool mHasIO;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
