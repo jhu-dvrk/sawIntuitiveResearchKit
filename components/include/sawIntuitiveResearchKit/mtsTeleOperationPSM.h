@@ -130,6 +130,12 @@ protected:
         vctFrm4x4 CartesianPrevious;
     } mPSM;
 
+    struct {
+        mtsFunctionRead  GetPositionCartesian;
+        prmPositionCartesianGet PositionCartesianCurrent;
+        vctFrm4x4 CartesianPrevious;
+    } mBaseFrame;
+
     double mScale = 0.2;
     vctMatRot3 mRegistrationRotation; // optional registration between PSM and MTM orientation
     vctMatRot3 mAlignOffset; // rotation offset between MTM and PSM when tele-operation goes in follow mode

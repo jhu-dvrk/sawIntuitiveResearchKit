@@ -155,6 +155,11 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::ClutchEventHandler, this, "Button");
     }
 
+    interfaceRequired = AddInterfaceRequired("PSM-base-frame", MTS_OPTIONAL);
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("GetPositionCartesian", mBaseFrame.GetPositionCartesian);
+    }
+
     mInterface = AddInterfaceProvided("Setting");
     if (mInterface) {
         mInterface->AddMessageEvents();
@@ -476,6 +481,17 @@ void mtsTeleOperationPSM::RunAllStates(void)
         this->SetDesiredState("DISABLED");
     }
 
+    // get base-frame cartesian position if available
+    if (mBaseFrame.GetPositionCartesian.IsValid()) {
+        executionResult = mBaseFrame.GetPositionCartesian(mBaseFrame.PositionCartesianCurrent);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << "Run: call to BaseFrame.GetPositionCartesian failed \""
+                                    << executionResult << "\"" << std::endl;
+            mInterface->SendError(this->GetName() + ": unable to get cartesian position from base frame");
+            this->SetDesiredState("DISABLED");
+        }
+    }
+
     // check if anyone wanted to disable anyway
     if ((mTeleopState.DesiredState() == "DISABLED")
         && (mTeleopState.CurrentState() != "DISABLED")) {
@@ -697,6 +713,9 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     // update MTM/PSM previous position
     mMTM.CartesianPrevious.From(mMTM.PositionCartesianCurrent.Position());
     mPSM.CartesianPrevious.From(mPSM.PositionCartesianCurrent.Position());
+    if (mBaseFrame.GetPositionCartesian.IsValid()) {
+        mBaseFrame.CartesianPrevious.From(mBaseFrame.PositionCartesianCurrent.Position());
+    }
 
     // set MTM/PSM to Teleop (Cartesian Position Mode)
     mMTM.SetGravityCompensation(true);
@@ -747,9 +766,15 @@ void mtsTeleOperationPSM::RunEnabled(void)
             vctFrm4x4 psmCartesianGoal;
             psmCartesianGoal.Translation().Assign(psmTranslation);
             psmCartesianGoal.Rotation().FromNormalized(psmRotation);
-            mPSM.PositionCartesianSet.Goal().FromNormalized(psmCartesianGoal);
+
+            // take into account changes in PSM base frame if any
+            if (mBaseFrame.GetPositionCartesian.IsValid()) {
+                vctFrm4x4 baseFrame(mBaseFrame.PositionCartesianCurrent.Position());
+                psmCartesianGoal = baseFrame.Inverse() * mBaseFrame.CartesianPrevious * psmCartesianGoal;
+            }
 
             // PSM go this cartesian position
+            mPSM.PositionCartesianSet.Goal().FromNormalized(psmCartesianGoal);
             mPSM.SetPositionCartesian(mPSM.PositionCartesianSet);
 
             if (!mIgnoreJaw) {

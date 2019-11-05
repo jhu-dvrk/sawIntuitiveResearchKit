@@ -430,7 +430,9 @@ mtsIntuitiveResearchKitConsole::TeleopPSM::TeleopPSM(const std::string & name,
                                                      const std::string & namePSM,
                                                      const std::string & slaveComponentName,
                                                      const std::string & slaveInterfaceName,
-                                                     const std::string & consoleName):
+                                                     const std::string & consoleName,
+                                                     const std::string & baseFrameComponentName,
+                                                     const std::string & baseFrameInterfaceName):
     mSelected(false),
     mName(name),
     mMTMName(nameMTM),
@@ -439,7 +441,9 @@ mtsIntuitiveResearchKitConsole::TeleopPSM::TeleopPSM(const std::string & name,
     mPSMName(namePSM),
     mPSMComponentName(slaveComponentName),
     mPSMInterfaceName(slaveInterfaceName),
-    mConsoleName(consoleName)
+    mConsoleName(consoleName),
+    mBaseFrameComponentName(baseFrameComponentName),
+    mBaseFrameInterfaceName(baseFrameInterfaceName)
 {
 }
 
@@ -490,6 +494,11 @@ bool mtsIntuitiveResearchKitConsole::TeleopPSM::Connect(void)
     componentManager->Connect(mName, "PSM", mPSMComponentName, mPSMInterfaceName);
     componentManager->Connect(mName, "Clutch", mConsoleName, "Clutch");
     componentManager->Connect(mConsoleName, mName, mName, "Setting");
+    if ((mBaseFrameComponentName != "")
+        && (mBaseFrameInterfaceName != "")) {
+        componentManager->Connect(mName, "PSM-base-frame",
+                                  mBaseFrameComponentName, mBaseFrameInterfaceName);
+    }
     return true;
 }
 
@@ -1095,7 +1104,7 @@ bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name,
     TeleopPSM * teleop = new TeleopPSM(name,
                                        masterName, masterName, "Robot",
                                        slaveName, slaveName, "Robot",
-                                       this->GetName());
+                                       this->GetName(), "", "");
     mTeleopsPSM[name] = teleop;
     if (AddTeleopPSMInterfaces(teleop)) {
         return true;
@@ -1632,7 +1641,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
     // for backward compatibility, send warning
     jsonValue = jsonTeleop["rotation"];
     if (!jsonValue.empty()) {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: teleop " << name << ": \"rotation\" must now be defined under \"configure-parameter\" or in a separate configuration file" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: teleop " << name << ": \"rotation\" must now be defined under \"configure-parameter\" or in a separate configuration file" << std::endl;
         return false;
     }
     const Json::Value jsonTeleopConfig = jsonTeleop["configure-parameter"];
@@ -1700,6 +1709,19 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         psmInterface = armPointer->InterfaceName();
     }
 
+    // see if there is a base frame defined for the PSM
+    Json::Value jsonValue = jsonTeleop["psm-base-frame"];
+    std::string baseFrameComponent, baseFrameInterface;
+    if (!jsonValue.empty()) {
+        baseFrameComponent = jsonValue.get("component", "").asString();
+        baseFrameInterface = jsonValue.get("interface", "").asString();
+        if ((baseFrameComponent == "") || (baseFrameInterface == "")) {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: both \"component\" and \"interface\" must be provided with \"psm-base-frame\" for teleop \""
+                                     << mtmName << "-" << psmName << "\"" << std::endl;
+            return false;
+        }
+    }
+
     // check if pair already exist and then add
     const std::string name = mtmName + "-" + psmName;
     const TeleopPSMList::iterator teleopIterator = mTeleopsPSM.find(name);
@@ -1709,7 +1731,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         teleopPointer = new TeleopPSM(name,
                                       mtmName, mtmComponent, mtmInterface,
                                       psmName, psmComponent, psmInterface,
-                                      this->GetName());
+                                      this->GetName(),
+                                      baseFrameComponent, baseFrameInterface);
         mTeleopsPSMByMTM.insert(std::make_pair(mtmName, teleopPointer));
         // first MTM with multiple PSMs is selected for single tap
         if ((mTeleopsPSMByMTM.count(mtmName) > 1)
@@ -1750,7 +1773,6 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         return false;
     }
 
-    Json::Value jsonValue;
     jsonValue = jsonTeleop["type"];
     if (!jsonValue.empty()) {
         std::string typeString = jsonValue.asString();
