@@ -109,7 +109,7 @@ protected:
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianGet PositionCartesianDesired;
         prmPositionCartesianSet PositionCartesianSet;
-        vctFrm4x4 CartesianPrevious;
+        vctFrm4x4 CartesianInitial;
     } mMTM;
 
     struct {
@@ -127,18 +127,18 @@ protected:
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
         prmPositionJointSet     PositionJointSet;
-        vctFrm4x4 CartesianPrevious;
+        vctFrm4x4 CartesianInitial;
     } mPSM;
 
     struct {
         mtsFunctionRead  GetPositionCartesian;
         prmPositionCartesianGet PositionCartesianCurrent;
-        vctFrm4x4 CartesianPrevious;
+        vctFrm4x4 CartesianInitial;
     } mBaseFrame;
 
     double mScale = 0.2;
     vctMatRot3 mRegistrationRotation; // optional registration between PSM and MTM orientation
-    vctMatRot3 mAlignOffset; // rotation offset between MTM and PSM when tele-operation goes in follow mode
+    vctMatRot3 mAlignOffset, mAlignOffsetInitial; // rotation offset between MTM and PSM when tele-operation goes in follow mode
     double mJawOffset;
 
     bool mIgnoreJaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws

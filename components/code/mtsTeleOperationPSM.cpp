@@ -395,8 +395,8 @@ void mtsTeleOperationPSM::SetScale(const double & scale)
     ConfigurationEvents.Scale(mScale);
 
     // update MTM/PSM previous position to prevent jumps
-    mMTM.CartesianPrevious.From(mMTM.PositionCartesianCurrent.Position());
-    mPSM.CartesianPrevious.From(mPSM.PositionCartesianCurrent.Position());
+    mMTM.CartesianInitial.From(mMTM.PositionCartesianCurrent.Position());
+    mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
 }
 
 void mtsTeleOperationPSM::SetRegistrationRotation(const vctMatRot3 & rotation)
@@ -419,8 +419,8 @@ void mtsTeleOperationPSM::LockRotation(const bool & lock)
         mTeleopState.SetCurrentState("DISABLED");
     } else {
         // update MTM/PSM previous position
-        mMTM.CartesianPrevious.From(mMTM.PositionCartesianDesired.Position());
-        mPSM.CartesianPrevious.From(mPSM.PositionCartesianCurrent.Position());
+        mMTM.CartesianInitial.From(mMTM.PositionCartesianDesired.Position());
+        mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
         // lock orientation is the arm is running
         if (mTeleopState.CurrentState() == "ENABLED") {
             mMTM.LockOrientation(mMTM.PositionCartesianCurrent.Position().Rotation());
@@ -435,8 +435,8 @@ void mtsTeleOperationPSM::LockTranslation(const bool & lock)
     mConfigurationStateTable->Advance();
     ConfigurationEvents.TranslationLocked(mTranslationLocked);
     // update MTM/PSM previous position
-    mMTM.CartesianPrevious.From(mMTM.PositionCartesianDesired.Position());
-    mPSM.CartesianPrevious.From(mPSM.PositionCartesianCurrent.Position());
+    mMTM.CartesianInitial.From(mMTM.PositionCartesianDesired.Position());
+    mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
 }
 
 void mtsTeleOperationPSM::SetAlignMTM(const bool & alignMTM)
@@ -711,10 +711,11 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
 void mtsTeleOperationPSM::EnterEnabled(void)
 {
     // update MTM/PSM previous position
-    mMTM.CartesianPrevious.From(mMTM.PositionCartesianCurrent.Position());
-    mPSM.CartesianPrevious.From(mPSM.PositionCartesianCurrent.Position());
+    mMTM.CartesianInitial.From(mMTM.PositionCartesianCurrent.Position());
+    mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
+    mAlignOffsetInitial = mAlignOffset;
     if (mBaseFrame.GetPositionCartesian.IsValid()) {
-        mBaseFrame.CartesianPrevious.From(mBaseFrame.PositionCartesianCurrent.Position());
+        mBaseFrame.CartesianInitial.From(mBaseFrame.PositionCartesianCurrent.Position());
     }
 
     // set MTM/PSM to Teleop (Cartesian Position Mode)
@@ -748,18 +749,18 @@ void mtsTeleOperationPSM::RunEnabled(void)
             vct3 mtmTranslation;
             vct3 psmTranslation;
             if (mTranslationLocked) {
-                psmTranslation = mPSM.CartesianPrevious.Translation();
+                psmTranslation = mPSM.CartesianInitial.Translation();
             } else {
-                mtmTranslation = (mtmPosition.Translation() - mMTM.CartesianPrevious.Translation());
+                mtmTranslation = (mtmPosition.Translation() - mMTM.CartesianInitial.Translation());
                 psmTranslation = mtmTranslation * mScale;
-                psmTranslation = mRegistrationRotation * psmTranslation + mPSM.CartesianPrevious.Translation();
+                psmTranslation = mRegistrationRotation * psmTranslation + mPSM.CartesianInitial.Translation();
             }
             // rotation
             vctMatRot3 psmRotation;
             if (mRotationLocked) {
-                psmRotation.From(mPSM.CartesianPrevious.Rotation());
+                psmRotation.From(mPSM.CartesianInitial.Rotation());
             } else {
-                psmRotation = mRegistrationRotation * mtmPosition.Rotation() * mAlignOffset;
+                psmRotation = mRegistrationRotation * mtmPosition.Rotation() * mAlignOffsetInitial;
             }
 
             // compute desired psm position
@@ -770,7 +771,15 @@ void mtsTeleOperationPSM::RunEnabled(void)
             // take into account changes in PSM base frame if any
             if (mBaseFrame.GetPositionCartesian.IsValid()) {
                 vctFrm4x4 baseFrame(mBaseFrame.PositionCartesianCurrent.Position());
-                psmCartesianGoal = baseFrame.Inverse() * mBaseFrame.CartesianPrevious * psmCartesianGoal;
+                vctFrm4x4 baseFrameChange = baseFrame.Inverse() * mBaseFrame.CartesianInitial;
+                // update PSM position goal
+                psmCartesianGoal = baseFrameChange * psmCartesianGoal;
+                // update alignment offset
+                vctMatRot3 desiredOrientation;
+                vctFrm4x4 updatedPSMInitial;
+                baseFrameChange.ApplyTo(mPSM.CartesianInitial, updatedPSMInitial);
+                mRegistrationRotation.ApplyInverseTo(updatedPSMInitial.Rotation(), desiredOrientation);
+                mMTM.CartesianInitial.Rotation().ApplyInverseTo(desiredOrientation, mAlignOffset);
             }
 
             // PSM go this cartesian position
