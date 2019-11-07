@@ -51,6 +51,10 @@ class {
             description Long Tip Forceps 400048 (Classic);
         }
         enum-value {
+            name MARYLAND_BIPOLAR_FORCEPS_400172;
+            description Maryland Bipolar Forceps 400172 (Classic);
+        }
+        enum-value {
             name MEGA_NEEDLE_DRIVER_400194;
             description Mega Needle Driver 400194 (Classic);
         }
