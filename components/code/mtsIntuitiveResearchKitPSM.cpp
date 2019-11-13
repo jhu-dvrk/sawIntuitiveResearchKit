@@ -141,6 +141,16 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     PID.DefaultTrackingErrorTolerance.Element(6) = 90.0 * cmnPI_180; // 90 degrees for gripper, until we change the master gripper matches tool angle
 
     // joint limits when tool is not present
+    CouplingChange.NoToolConfiguration.Name().SetSize(7);
+    CouplingChange.NoToolConfiguration.Name().at(0) = "outer_yaw";
+    CouplingChange.NoToolConfiguration.Name().at(1) = "outer_pitch";
+    CouplingChange.NoToolConfiguration.Name().at(2) = "outer_insertion";
+    CouplingChange.NoToolConfiguration.Name().at(3) = "disc_1";
+    CouplingChange.NoToolConfiguration.Name().at(4) = "disc_2";
+    CouplingChange.NoToolConfiguration.Name().at(5) = "disc_3";
+    CouplingChange.NoToolConfiguration.Name().at(6) = "disc_4";
+    CouplingChange.NoToolConfiguration.Type().SetSize(7);
+    CouplingChange.NoToolConfiguration.Type().SetAll(PRM_JOINT_REVOLUTE);
     CouplingChange.NoToolConfiguration.PositionMin().SetSize(NumberOfJoints());
     CouplingChange.NoToolConfiguration.PositionMax().SetSize(NumberOfJoints());
     CouplingChange.NoToolConfiguration.PositionMin().Assign(-91.0 * cmnPI_180,
@@ -685,7 +695,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
 {
     if (mIsSimulated) {
         // now set PID limits based on tool/no tool
-        UpdatePIDLimits(CouplingChange.CouplingForTool);
+        UpdateConfigurationJointPID(CouplingChange.CouplingForTool);
         mArmState.SetCurrentState(CouplingChange.NextState);
         return;
     }
@@ -735,7 +745,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
             if (CouplingChange.DesiredCoupling.Equal(CouplingChange.LastCoupling)) {
                 CouplingChange.WaitingForCoupling = false;
                 // now set PID limits based on tool/no tool
-                UpdatePIDLimits(CouplingChange.CouplingForTool);
+                UpdateConfigurationJointPID(CouplingChange.CouplingForTool);
                 // finally move to next state
                 mArmState.SetCurrentState(CouplingChange.NextState);
             } else {
@@ -748,7 +758,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
     }
 }
 
-void mtsIntuitiveResearchKitPSM::UpdatePIDLimits(const bool toolPresent)
+void mtsIntuitiveResearchKitPSM::UpdateConfigurationJointPID(const bool toolPresent)
 {
     // now set PID limits based on tool/no tool
     if (toolPresent && mToolConfigured) {
@@ -951,7 +961,7 @@ void mtsIntuitiveResearchKitPSM::EnterChangingCouplingTool(void)
 void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
 {
     // set PID limits for tool present
-    UpdatePIDLimits(true);
+    UpdateConfigurationJointPID(true);
 
     // if for some reason we don't need to engage, basically, tool was
     // found before homing

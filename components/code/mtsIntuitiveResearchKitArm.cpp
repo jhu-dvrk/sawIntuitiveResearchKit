@@ -648,12 +648,6 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             StateJointDesiredPID.Valid() = false;
         }
 
-        // check that joint configuration has at least the correct
-        // length, if not get the joint configuration from the PID
-        if (ConfigurationJointPID.Name().size() != StateJointPID.Name().size()) {
-            PID.GetConfigurationJoint(ConfigurationJointPID);
-        }
-
         // update joint states used for kinematics
         UpdateStateJointKinematics();
 

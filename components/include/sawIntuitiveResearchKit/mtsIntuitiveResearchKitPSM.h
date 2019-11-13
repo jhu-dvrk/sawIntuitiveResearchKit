@@ -87,7 +87,7 @@ protected:
 
     // methods used in change coupling/engaging
     void RunChangingCoupling(void);
-    void UpdatePIDLimits(const bool toolPresent);
+    void UpdateConfigurationJointPID(const bool toolPresent);
 
     // engaging adapter
     void EnterChangingCouplingAdapter(void);
