@@ -528,6 +528,35 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
                                    << ": saved base configuration file name: "
                                    << mConfigurationFile << std::endl;
     }
+
+    // get names, types and joint limits for kinematics config from the manipulator
+    // name and types need conversion
+    ConfigurationJointKinematics.Name().SetSize(NumberOfJointsKinematics());
+    ConfigurationJointKinematics.Type().SetSize(NumberOfJointsKinematics());
+    std::vector<std::string> names(NumberOfJointsKinematics());
+    std::vector<robJoint::Type> types(NumberOfJointsKinematics());
+    this->Manipulator->GetJointNames(names);
+    this->Manipulator->GetJointTypes(types);
+    for (size_t index = 0; index < NumberOfJointsKinematics(); ++index) {
+        ConfigurationJointKinematics.Name().at(index) = names.at(index);
+        switch (types.at(index)) {
+        case robJoint::HINGE:
+            ConfigurationJointKinematics.Type().at(index) = PRM_JOINT_REVOLUTE;
+            break;
+        case robJoint::SLIDER:
+            ConfigurationJointKinematics.Type().at(index) = PRM_JOINT_PRISMATIC;
+            break;
+        default:
+            ConfigurationJointKinematics.Type().at(index) = PRM_JOINT_UNDEFINED;
+            break;
+        }
+    }
+    // position limits can be read as is
+    ConfigurationJointKinematics.PositionMin().SetSize(NumberOfJointsKinematics());
+    ConfigurationJointKinematics.PositionMax().SetSize(NumberOfJointsKinematics());
+    this->Manipulator->GetJointLimits(ConfigurationJointKinematics.PositionMin(),
+                                      ConfigurationJointKinematics.PositionMax());
+
     ResizeKinematicsData();
 }
 
@@ -756,13 +785,6 @@ void mtsIntuitiveResearchKitArm::UpdateStateJointKinematics(void)
 {
     // for most cases, joints used for the kinematics are the first n joints
     // from PID
-
-    // copy names and types only if first time
-    if (StateJointKinematics.Name().size() != NumberOfJointsKinematics()) {
-        StateJointKinematics.Name().ForceAssign(StateJointPID.Name().Ref(NumberOfJointsKinematics()));
-        ConfigurationJointKinematics.Name().ForceAssign(ConfigurationJointPID.Name().Ref(NumberOfJointsKinematics()));
-        ConfigurationJointKinematics.Type().ForceAssign(ConfigurationJointPID.Type().Ref(NumberOfJointsKinematics()));
-    }
     StateJointKinematics.Position().ForceAssign(StateJointPID.Position().Ref(NumberOfJointsKinematics()));
     StateJointKinematics.Velocity().ForceAssign(StateJointPID.Velocity().Ref(NumberOfJointsKinematics()));
     StateJointKinematics.Effort().ForceAssign(StateJointPID.Effort().Ref(NumberOfJointsKinematics()));
