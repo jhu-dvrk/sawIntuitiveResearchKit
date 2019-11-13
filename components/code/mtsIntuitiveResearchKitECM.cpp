@@ -70,7 +70,7 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
 
     if (Manipulator->InverseKinematics(jointSet, newGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
-        const double difference = JointsKinematics.Position()[3] - jointSet[3];
+        const double difference = StateJointKinematics.Position()[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
         // make sure we are away from RCM point, this test is
@@ -212,7 +212,7 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
         mJointTrajectory.Goal.SetAll(0.0);
     } else {
         // stay at current position by default
-        mJointTrajectory.Goal.Assign(JointsDesiredPID.Position(), NumberOfJoints());
+        mJointTrajectory.Goal.Assign(StateJointDesiredPID.Position(), NumberOfJoints());
     }
 }
 
@@ -295,7 +295,7 @@ void mtsIntuitiveResearchKitECM::UpdateFeedForward(vctDoubleVec & feedForward)
 void mtsIntuitiveResearchKitECM::AddGravityCompensationEfforts(vctDoubleVec & efforts)
 {
     vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
-    efforts.Add(Manipulator->CCG_MDH(JointsKinematics.Position(), qd, 9.81));
+    efforts.Add(Manipulator->CCG_MDH(StateJointKinematics.Position(), qd, 9.81));
 }
 
 void mtsIntuitiveResearchKitECM::SetEndoscopeType(const std::string & endoscopeType)

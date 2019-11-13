@@ -69,7 +69,7 @@ protected:
 
     // see base class
     inline bool IsSafeForCartesianControl(void) const override {
-        return (JointsKinematics.Position().at(2) > 50.0 * cmn_mm);
+        return (StateJointKinematics.Position().at(2) > 50.0 * cmn_mm);
     }
 
     void Init(void) override;
