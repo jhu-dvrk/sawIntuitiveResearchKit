@@ -89,6 +89,7 @@ public:
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
     virtual void Init(void);
+    void UpdateConfigurationJointKinematic(void);
     void ResizeKinematicsData(void);
 
     /*! Verify that the state transition is possible, initialize
@@ -136,6 +137,9 @@ public:
     mtsStateTable mStateTableState;
     mtsStdString mStateTableStateCurrent;
     mtsStdString mStateTableStateDesired;
+
+    // state table for configuration parameters
+    mtsStateTable mStateTableConfiguration;
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);

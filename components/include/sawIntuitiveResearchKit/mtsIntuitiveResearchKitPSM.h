@@ -185,7 +185,6 @@ protected:
     vctFrm4x4 ToolOffsetTransformation;
 
     prmStateJoint StateJaw, StateJawDesired;
-    prmConfigurationJoint ConfigurationJaw, ConfigurationJawDesired;
     double JawGoal;
     double EffortJawSet;
 

@@ -74,6 +74,7 @@ private:
 
 protected:
     struct ArmStruct {
+        mtsFunctionRead GetConfigurationJoint;
         mtsFunctionRead GetStateJoint;
         mtsFunctionRead GetPositionCartesian;
         mtsFunctionRead GetWrenchBody;
@@ -90,6 +91,7 @@ protected:
 private:
     bool DirectControl;
 
+    prmConfigurationJoint ConfigurationJoint;
     prmStateJoint StateJoint;
     prmStateJointQtWidget * QSJWidget;
 

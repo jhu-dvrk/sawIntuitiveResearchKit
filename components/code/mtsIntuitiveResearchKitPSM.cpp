@@ -247,11 +247,6 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
         StateJawDesired.Position().SetSize(1);
         StateJawDesired.Velocity().SetSize(0);
         StateJawDesired.Effort().SetSize(1);
-
-        ConfigurationJaw.Name().SetSize(1);
-        ConfigurationJaw.Name().at(0) = ConfigurationJointPID.Name().at(jawIndex);
-        ConfigurationJaw.Type().SetSize(1);
-        ConfigurationJaw.Type().at(0) = ConfigurationJointPID.Type().at(jawIndex);
     }
 
     StateJaw.Position().at(0) = StateJointPID.Position().at(jawIndex);
@@ -270,26 +265,6 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
         return;
     }
 
-    if (StateJointKinematics.Name().size() != NumberOfJointsKinematics()) {
-        StateJointKinematics.Name().SetSize(NumberOfJointsKinematics());
-        StateJointKinematics.Position().SetSize(NumberOfJointsKinematics());
-        StateJointKinematics.Velocity().SetSize(NumberOfJointsKinematics());
-        StateJointKinematics.Effort().SetSize(NumberOfJointsKinematics());
-
-        StateJointKinematics.Name().Assign(StateJointPID.Name(), 4);
-        StateJointKinematics.Name().at(4) = StateJointPID.Name().at(4) + "1";
-        StateJointKinematics.Name().at(5) = StateJointPID.Name().at(5) + "1";
-        StateJointKinematics.Name().at(6) = StateJointPID.Name().at(5) + "2";
-        StateJointKinematics.Name().at(7) = StateJointPID.Name().at(4) + "2";
-
-        ConfigurationJointKinematics.Name().Assign(StateJointKinematics.Name());
-        ConfigurationJointKinematics.Type().Assign(ConfigurationJointPID.Type(), 4);
-        ConfigurationJointKinematics.Type().at(4) = ConfigurationJointPID.Type().at(4);
-        ConfigurationJointKinematics.Type().at(5) = ConfigurationJointPID.Type().at(5);
-        ConfigurationJointKinematics.Type().at(6) = ConfigurationJointPID.Type().at(5);
-        ConfigurationJointKinematics.Type().at(7) = ConfigurationJointPID.Type().at(4);
-    }
-
     // Position
     StateJointKinematics.Position().Assign(StateJointPID.Position(), 4);
     StateJointKinematics.Position().at(4) = StateJointKinematics.Position().at(7) = StateJointPID.Position().at(4) / 2.0;
@@ -306,19 +281,6 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
     StateJointKinematics.Effort().at(5) = StateJointKinematics.Effort().at(6) = StateJointPID.Effort().at(5) / 2.0;
     StateJointKinematics.Timestamp() = StateJointPID.Timestamp();
     StateJointKinematics.Valid() = StateJointPID.Valid();
-
-    if (StateJointDesiredKinematics.Name().size() != NumberOfJointsKinematics()) {
-        StateJointDesiredKinematics.Name().SetSize(NumberOfJointsKinematics());
-        StateJointDesiredKinematics.Position().SetSize(NumberOfJointsKinematics());
-        StateJointDesiredKinematics.Velocity().SetSize(NumberOfJointsKinematics());
-        StateJointDesiredKinematics.Effort().SetSize(NumberOfJointsKinematics());
-
-        StateJointDesiredKinematics.Name().Assign(StateJointDesiredPID.Name(), 4);
-        StateJointDesiredKinematics.Name().at(4) = StateJointDesiredPID.Name().at(4) + "1";
-        StateJointDesiredKinematics.Name().at(5) = StateJointDesiredPID.Name().at(5) + "1";
-        StateJointDesiredKinematics.Name().at(6) = StateJointDesiredPID.Name().at(5) + "2";
-        StateJointDesiredKinematics.Name().at(7) = StateJointDesiredPID.Name().at(4) + "2";
-    }
 
     // Position
     StateJointDesiredKinematics.Position().Assign(StateJointDesiredPID.Position(), 4);
@@ -547,6 +509,18 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
             Manipulator->Attach(ToolOffset);
         }
 
+        // keep info in log
+        std::stringstream dhResult;
+        this->Manipulator->PrintKinematics(dhResult);
+        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureTool " << this->GetName()
+                                   << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
+
+        // update ConfigurationJointKinematic from manipulator
+        UpdateConfigurationJointKinematic();
+
+        // resize data members using kinematics (jacobians and effort vectors)
+        ResizeKinematicsData();
+
         // load coupling information (required)
         const Json::Value jsonCoupling = jsonConfig["coupling"];
         if (jsonCoupling.isNull()) {
@@ -602,6 +576,11 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
             CouplingChange.JawConfiguration.EffortMax().at(0) = jsonJawFTMax.asDouble();
             CouplingChange.JawConfiguration.EffortMin().at(0) = -jsonJawFTMax.asDouble();
         }
+
+        CouplingChange.JawConfiguration.Name().SetSize(1);
+        CouplingChange.JawConfiguration.Name().at(0) = "jaw";
+        CouplingChange.JawConfiguration.Type().SetSize(1);
+        CouplingChange.JawConfiguration.Type().at(0) = PRM_JOINT_REVOLUTE;
 
         // load lower/upper position used to engage the tool(required)
         const Json::Value jsonEngagePosition = jsonConfig["tool-engage-position"];
@@ -762,15 +741,39 @@ void mtsIntuitiveResearchKitPSM::UpdateConfigurationJointPID(const bool toolPres
 {
     // now set PID limits based on tool/no tool
     if (toolPresent && mToolConfigured) {
+
+        // get names, types and joint limits for kinematics config from the manipulator
+        // name and types need conversion
+        mStateTableConfiguration.Start();
+        ConfigurationJointPID.Name().SetSize(NumberOfJoints());
+        ConfigurationJointPID.Type().SetSize(NumberOfJoints());
+        std::vector<std::string> names(NumberOfJointsKinematics());
+        std::vector<robJoint::Type> types(NumberOfJointsKinematics());
+        this->Manipulator->GetJointNames(names);
+        this->Manipulator->GetJointTypes(types);
+        for (size_t index = 0; index < NumberOfJointsKinematics(); ++index) {
+            ConfigurationJointPID.Name().at(index) = names.at(index);
+            switch (types.at(index)) {
+            case robJoint::HINGE:
+                ConfigurationJointPID.Type().at(index) = PRM_JOINT_REVOLUTE;
+                break;
+            case robJoint::SLIDER:
+                ConfigurationJointPID.Type().at(index) = PRM_JOINT_PRISMATIC;
+                break;
+            default:
+                ConfigurationJointPID.Type().at(index) = PRM_JOINT_UNDEFINED;
+                break;
+            }
+        }
+
+        // limits need to take into account snake case
         vctDoubleVec lowerFromKinematics(NumberOfJointsKinematics());
         vctDoubleVec upperFromKinematics(NumberOfJointsKinematics());
 
-        prmConfigurationJoint configToPID;
-        configToPID.Name().ForceAssign(ConfigurationJointPID.Name());
-        configToPID.PositionMin().SetSize(NumberOfJoints());
-        configToPID.PositionMax().SetSize(NumberOfJoints());
-        configToPID.EffortMin().SetSize(NumberOfJoints());
-        configToPID.EffortMax().SetSize(NumberOfJoints());
+        ConfigurationJointPID.PositionMin().SetSize(NumberOfJoints());
+        ConfigurationJointPID.PositionMax().SetSize(NumberOfJoints());
+        ConfigurationJointPID.EffortMin().SetSize(NumberOfJoints());
+        ConfigurationJointPID.EffortMax().SetSize(NumberOfJoints());
 
         // just to be absolutely totally sure
         CMN_ASSERT(NumberOfJoints() == 7);
@@ -780,34 +783,36 @@ void mtsIntuitiveResearchKitPSM::UpdateConfigurationJointPID(const bool toolPres
         Manipulator->GetJointLimits(lowerFromKinematics,
                                     upperFromKinematics);
         // use kinematic joints... all but last
-        configToPID.PositionMin().Ref(6).Assign(lowerFromKinematics.Ref(6));
-        configToPID.PositionMin().Ref(6).Assign(upperFromKinematics.Ref(6));
+        ConfigurationJointPID.PositionMin().Ref(6).Assign(lowerFromKinematics.Ref(6));
+        ConfigurationJointPID.PositionMax().Ref(6).Assign(upperFromKinematics.Ref(6));
         if (mSnakeLike) {
             // add kinematic joint limits
-            configToPID.PositionMin().at(4) += lowerFromKinematics.at(7);
-            configToPID.PositionMin().at(5) += lowerFromKinematics.at(6);
-            configToPID.PositionMax().at(4) += upperFromKinematics.at(7);
-            configToPID.PositionMax().at(5) += upperFromKinematics.at(6);
+            ConfigurationJointPID.PositionMin().at(4) += lowerFromKinematics.at(7);
+            ConfigurationJointPID.PositionMin().at(5) += lowerFromKinematics.at(6);
+            ConfigurationJointPID.PositionMax().at(4) += upperFromKinematics.at(7);
+            ConfigurationJointPID.PositionMax().at(5) += upperFromKinematics.at(6);
         }
         // ...and jaw
-        configToPID.PositionMin().at(jawIndex) = CouplingChange.JawConfiguration.PositionMin().at(0);
-        configToPID.PositionMax().at(jawIndex) = CouplingChange.JawConfiguration.PositionMax().at(0);
+        ConfigurationJointPID.PositionMin().at(jawIndex) = CouplingChange.JawConfiguration.PositionMin().at(0);
+        ConfigurationJointPID.PositionMax().at(jawIndex) = CouplingChange.JawConfiguration.PositionMax().at(0);
 
         // force torque
         Manipulator->GetFTMaximums(upperFromKinematics);
         // use kinematic joints... all but last
-        configToPID.EffortMax().Ref(6).Assign(upperFromKinematics.Ref(6));
+        ConfigurationJointPID.EffortMax().Ref(6).Assign(upperFromKinematics.Ref(6));
         if (mSnakeLike) {
             // add kinematic joint limits
-            configToPID.EffortMax().at(4) += upperFromKinematics.at(7);
-            configToPID.EffortMax().at(5) += upperFromKinematics.at(6);
+            ConfigurationJointPID.EffortMax().at(4) += upperFromKinematics.at(7);
+            ConfigurationJointPID.EffortMax().at(5) += upperFromKinematics.at(6);
         }
         // ...and jaw
-        configToPID.EffortMax().at(jawIndex) = CouplingChange.JawConfiguration.EffortMax().at(0);
-        configToPID.EffortMin().ProductOf(-1.0, configToPID.EffortMax()); // manipulator assumes symmetry
+        ConfigurationJointPID.EffortMax().at(jawIndex) = CouplingChange.JawConfiguration.EffortMax().at(0);
+        ConfigurationJointPID.EffortMin().ProductOf(-1.0, ConfigurationJointPID.EffortMax()); // manipulator assumes symmetry
+
+        mStateTableConfiguration.Advance();
 
         // set
-        PID.SetConfigurationJoint(configToPID);
+        PID.SetConfigurationJoint(ConfigurationJointPID);
     } else {
         PID.SetConfigurationJoint(CouplingChange.NoToolConfiguration);
     }
