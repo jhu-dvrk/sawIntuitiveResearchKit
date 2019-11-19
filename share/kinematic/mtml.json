@@ -2,10 +2,10 @@
 {
     // see dVRK user guide
     "DH": {
+        "convention": "standard",
         "links": [
             { // 1
                 "name": "outer_yaw",
-                "convention": "standard",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -14,7 +14,6 @@
                 "qmax":  1.13446   //  65.0
             },
             { // 2
-                "convention": "standard",
                 "name": "shoulder_pitch",
                 "alpha":  0.0000, "A":  0.2794, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
@@ -24,7 +23,6 @@
                 "qmax":  0.872665  //  50.0
             },
             { // 3
-                "convention": "standard",
                 "name": "elbow_pitch",
                 "alpha": -1.5708, "A":  0.3645, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
@@ -34,7 +32,6 @@
                 "qmax":  0.610865  //  35.0
             },
             { // 4
-                "convention": "standard",
                 "name": "wrist_platform",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.1506,
                 "type": "revolute",
@@ -44,7 +41,6 @@
                 "qmax":  1.5708   //  90.0
             },
             { // 5
-                "convention": "standard",
                 "name": "wrist_pitch",
                 "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
@@ -54,7 +50,6 @@
                 "qmax":  3.14159 //  180.0
             },
             { // 6
-                "convention": "standard",
                 "name": "wrist_yaw",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
@@ -64,7 +59,6 @@
                 "qmax":  0.785398  //  45.0
             },
             { // 7
-                "convention": "standard",
                 "name": "wrist_roll",
                 "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",

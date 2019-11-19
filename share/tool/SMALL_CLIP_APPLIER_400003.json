@@ -5,6 +5,7 @@
         "convention": "modified",
         "joints": [
             {
+                "name": "outer_roll",
                 "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4162,
                 "type": "revolute",
                 "mode": "active",
@@ -14,6 +15,7 @@
                 "ftmax": 0.33
             },
             {
+                "name": "outer_wrist_pitch",
                 "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -23,6 +25,7 @@
                 "ftmax": 0.25
             },
             {
+                "name": "outer_wrist_yaw",
                 "alpha": -1.5708, "A":  0.0091, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
