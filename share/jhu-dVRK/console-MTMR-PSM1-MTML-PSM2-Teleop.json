@@ -68,8 +68,7 @@
             "mtm": "MTMR",
             "psm": "PSM1",
             "configure-parameter": {
-                "scale": 0.4,
-                "rotation-locked": true
+                "scale": 0.4
             }
         }
         ,
@@ -77,8 +76,7 @@
             "mtm": "MTML",
             "psm": "PSM2",
             "configure-parameter": {
-                "scale": 0.4,
-                "translation-locked": true
+                "scale": 0.4
             }
         }
     ]
