@@ -17,6 +17,7 @@
 */
 
 #include <sawIntuitiveResearchKit/robManipulatorECM.h>
+#include <math.h>
 
 robManipulatorECM::robManipulatorECM(const std::vector<robKinematics *> linkParms,
                                      const vctFrame4x4<double> &Rtw0)
@@ -57,7 +58,63 @@ robManipulatorECM::InverseKinematics(vctDynamicVector<double> & q,
         return robManipulator::EFAILURE;
     }
 
-    std::cerr << CMN_LOG_DETAILS << " - add IK computation here " << std::endl;
+    // take Rtw0 into account
+    vctFrm4x4 Rt04;
+    Rtw0.ApplyInverseTo(Rts, Rt04);
+
+    const double x = Rt04.Translation().X();
+    const double x2 = x * x;
+    const double y = Rt04.Translation().Y();
+    const double y2 = y * y;
+    const double z = Rt04.Translation().Z();
+    const double z2 = z * z;
+
+    // hard coded check for dVRK classic, wouldn't work on S/Si system
+    if (z > cmnTypeTraits<double>::Tolerance()) {
+        std::cerr << "z is positive, out of reach: " << Rts << std::endl;
+        return robManipulator::EFAILURE;
+    }
+
+    // first joint controls x position
+    if (std::abs(x) < cmnTypeTraits<double>::Tolerance()) {
+        q[0] = 0.0;
+    } else {
+        const double depthX = std::sqrt(x2 + z2);
+        if (depthX < cmnTypeTraits<double>::Tolerance()) {
+            q[0] = 0.0;
+        } else {
+            q[0] = asinl(x / depthX);
+        }
+    }
+
+    // similar computation for second joint
+    const double depth = std::sqrt(x2 + y2 + z2);
+    if (std::abs(y) < cmnTypeTraits<double>::Tolerance()) {
+        q[1] = 0.0;
+    } else {
+        const double depth = std::sqrt(x2 + y2 + z2);
+        if (depth < cmnTypeTraits<double>::Tolerance()) {
+            q[1] = 0.0;
+        } else {
+            q[1] = -asinl(y / depth);
+        }
+    }
+
+    // third is translation, i.e. depth
+    q[2] = depth - 0.0007; // 0.0007 is from DH link_3.offset - link_4.D
+
+    // check that depth is reachable
+    if (q[2] > links[2].GetKinematics()->PositionMax()) {
+        std::cerr << "goal is too far, out of reach: " << Rts << std::endl;
+        return robManipulator::EFAILURE;
+    }
+
+    // for orientation, we assume the goal is reachable
+    vctFrm4x4 Rt03 = ForwardKinematics(q, 3);
+    vctFrm4x4 Rt34; // rotation for last link
+    Rt03.ApplyInverseTo(Rt04, Rt34);
+    // find angle to align x axis
+    q[3] = -acosl(vctDotProduct(Rt34.Rotation().Column(0).Ref<3>(), vct3(1.0, 0.0, 0.0)));
 
     return robManipulator::ESUCCESS;
 }

@@ -119,7 +119,7 @@ void robManipulatorTest::TestECMIKSampleJointSpace(void)
     vctDoubleVec lowerLimits(numberOfLinks), upperLimits(numberOfLinks);
     manipulator.GetJointLimits(lowerLimits,
                                upperLimits);
-    vctDoubleVec increments(numberOfLinks, 5.0 * cmnPI_180); // use 10 degrees sampling
+    vctDoubleVec increments(numberOfLinks, 3.0 * cmnPI_180); // use 3 degrees sampling
     increments.at(2) = 2.0 * cmn_cm; // except for the translation stage
     robManipulatorTest::SampleJointSpace(manipulator,
                                          lowerLimits,
@@ -149,7 +149,36 @@ void robManipulatorTest::TestECMIKSampleJointSpace(void)
                                      robManipulator::ESUCCESS,
                                      result);
 
-        std::cerr << CMN_LOG_DETAILS << " - add tests on IK results " << std::endl;
+        vctDoubleVec jointError(numberOfLinks), jointErrorAbsolute(numberOfLinks);
+        jointError.DifferenceOf(solution, joint);
+        jointErrorAbsolute.AbsOf(jointError);
+
+        // compare joint values
+        CPPUNIT_ASSERT_MESSAGE("Joint 0 solution is incorrect",
+                               (jointErrorAbsolute[0] < 0.0000001 * cmn180_PI)); // asinl is not that precise
+
+        CPPUNIT_ASSERT_MESSAGE("Joint 1 solution is incorrect",
+                               (jointErrorAbsolute[1] < 0.0000001 * cmn180_PI)); // asinl
+
+        CPPUNIT_ASSERT_MESSAGE("Joint 2 solution is incorrect",
+                               (jointErrorAbsolute[2] < 0.000000001 * cmn_mm)); // just a sqrt, higher precision expected
+
+        CPPUNIT_ASSERT_MESSAGE("Joint 3 solution is incorrect",
+                               (jointErrorAbsolute[3] < 0.0000001 * cmn180_PI)); // acosl
+
+        // compare cartesian positions
+        vctFrm4x4 solutionPosition = manipulator.ForwardKinematics(solution);
+
+        // translation
+        vct3 positionTranslationError = position.Translation() - solutionPosition.Translation();
+        CPPUNIT_ASSERT_MESSAGE("Cartesian translation error is too high",
+                               positionTranslationError.Norm() < 0.005 * cmn_mm);
+
+        // rotation
+        vctMatRot3 positionRotationError;
+        position.Rotation().ApplyInverseTo(solutionPosition.Rotation(), positionRotationError);
+        CPPUNIT_ASSERT_MESSAGE("Cartesian rotation error is too high",
+                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmn180_PI); // acosl
 
         // set solution from current joint for next loop, it's close
         // to the next joint so it somewhat simulates a continuous
