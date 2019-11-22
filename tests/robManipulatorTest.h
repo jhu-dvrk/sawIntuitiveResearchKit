@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstVector/vctDynamicVectorTypes.h>
 #include <sawIntuitiveResearchKit/robManipulatorECM.h>
+#include <sawIntuitiveResearchKit/robManipulatorMTM.h>
 
 class robManipulatorTest : public CppUnit::TestFixture
 {
@@ -29,6 +30,7 @@ protected:
     CPPUNIT_TEST_SUITE(robManipulatorTest);
     {
         CPPUNIT_TEST(TestECMIKSampleJointSpace);
+        CPPUNIT_TEST(TestMTMIKSampleJointSpace);
     }
     CPPUNIT_TEST_SUITE_END();
 
@@ -54,6 +56,8 @@ public:
     }
 
     void TestECMIKSampleJointSpace(void);
+
+    void TestMTMIKSampleJointSpace(void);
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(robManipulatorTest);

@@ -186,3 +186,88 @@ void robManipulatorTest::TestECMIKSampleJointSpace(void)
         solution = joint;
     }
 }
+
+
+void robManipulatorTest::TestMTMIKSampleJointSpace(void)
+{
+    // load manipulator
+    const size_t numberOfLinks = 7;
+    robManipulatorMTM manipulator;
+    robManipulatorTest::LoadKinematics(manipulator, "mtmr.json", numberOfLinks);
+
+    std::list<vctDoubleVec> joints;
+    std::list<vctFrm4x4> positions;
+
+    // generate trajectory
+    vctDoubleVec lowerLimits(numberOfLinks), upperLimits(numberOfLinks);
+    manipulator.GetJointLimits(lowerLimits,
+                               upperLimits);
+    vctDoubleVec increments(numberOfLinks, 15.0 * cmnPI_180); // use 15 degrees sampling
+    // reduce space on roll
+    lowerLimits[6] = -cmnPI;
+    upperLimits[6] =  cmnPI;
+
+    robManipulatorTest::SampleJointSpace(manipulator,
+                                         lowerLimits,
+                                         upperLimits,
+                                         increments,
+                                         joints,
+                                         positions);
+
+    CPPUNIT_ASSERT_EQUAL_MESSAGE("SampleJointSpace should generate same number of joints and positions",
+                                 joints.size(), positions.size());
+
+    // initialize the solution with first position
+    vctDoubleVec solution = joints.front();
+    for (size_t positionIndex = 0;
+         positionIndex < joints.size();
+         ++positionIndex) {
+        // pop joint and position
+        vctDoubleVec joint = joints.front();
+        joints.pop_front();
+        vctFrm4x4 position = positions.front();
+        positions.pop_front();
+        // solve IK
+        robManipulator::Errno result;
+        result = manipulator.InverseKinematics(solution, position);
+        // make sure IK didn't complain
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("robManipulatorMTM::InverseKinematics result",
+                                     robManipulator::ESUCCESS,
+                                     result);
+
+        vctDoubleVec jointError(numberOfLinks), jointErrorAbsolute(numberOfLinks);
+        jointError.DifferenceOf(solution, joint);
+        jointErrorAbsolute.AbsOf(jointError);
+
+        // compare joint values
+        CPPUNIT_ASSERT_MESSAGE("Joint 0 solution is incorrect",
+                               (jointErrorAbsolute[0] < 0.0000001 * cmn180_PI)); // asinl is not that precise
+
+        CPPUNIT_ASSERT_MESSAGE("Joint 1 solution is incorrect",
+                               (jointErrorAbsolute[1] < 0.0000001 * cmn180_PI)); // asinl
+
+        CPPUNIT_ASSERT_MESSAGE("Joint 2 solution is incorrect",
+                               (jointErrorAbsolute[2] < 0.0000001 * cmn180_PI)); // asinl
+
+        // compare cartesian positions
+        vctFrm4x4 solutionPosition = manipulator.ForwardKinematics(solution);
+
+        // translation
+        vct3 positionTranslationError = position.Translation() - solutionPosition.Translation();
+        CPPUNIT_ASSERT_MESSAGE("Cartesian translation error is too high",
+                               positionTranslationError.Norm() < 0.005 * cmn_mm);
+
+#if 0
+        // rotation
+        vctMatRot3 positionRotationError;
+        position.Rotation().ApplyInverseTo(solutionPosition.Rotation(), positionRotationError);
+        CPPUNIT_ASSERT_MESSAGE("Cartesian rotation error is too high",
+                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmn180_PI); // acosl
+#endif
+
+        // set solution from current joint for next loop, it's close
+        // to the next joint so it somewhat simulates a continuous
+        // trajectory for the IK
+        solution = joint;
+    }
+}
