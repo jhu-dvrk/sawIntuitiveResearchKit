@@ -114,7 +114,14 @@ robManipulatorECM::InverseKinematics(vctDynamicVector<double> & q,
     vctFrm4x4 Rt34; // rotation for last link
     Rt03.ApplyInverseTo(Rt04, Rt34);
     // find angle to align x axis
-    q[3] = -acosl(vctDotProduct(Rt34.Rotation().Column(0).Ref<3>(), vct3(1.0, 0.0, 0.0)));
+    const long double q3 = -acosl(vctDotProduct(Rt34.Rotation().Column(0).Ref<3>(), vct3(1.0, 0.0, 0.0)));
+
+    // find sign for q3
+    if (std::abs(q[3] - q3) < std::abs(q[3] + q3)) {
+        q[3] = q3;
+    } else {
+        q[3] = -q3;
+    }
 
     return robManipulator::ESUCCESS;
 }

@@ -49,7 +49,7 @@ public:
                                (jointErrorsAbsolute[2] < 0.000000001 * cmn_mm)); // just a sqrt, higher precision expected
 
         CPPUNIT_ASSERT_MESSAGE("Joint 3 solution is incorrect",
-                               (jointErrorsAbsolute[3] < 0.0000005 * cmn180_PI)); // acosl
+                               (jointErrorsAbsolute[3] < 0.0000001 * cmn180_PI)); // acosl
 
         // translation
         vct3 positionTranslationError = ActualPose.Translation() - SolutionPose.Translation();
@@ -153,6 +153,7 @@ void robManipulatorTest::ComputeAndTestIK(ManipulatorTestData & data)
     // compute FK
     data.ActualPose = data.Manipulator->ForwardKinematics(data.ActualJoints);
     // compute IK
+    data.SolutionJoints.Assign(data.ActualJoints);
     robManipulator::Errno result = data.Manipulator->InverseKinematics(data.SolutionJoints,
                                                                        data.ActualPose);
     // make sure IK didn't complain
@@ -192,10 +193,10 @@ void robManipulatorTest::TestSampleJointSpace(ManipulatorTestData & data)
                     data.PreviousActualJoints.Assign(data.ActualJoints);
                     data.ActualJoints[index] = future;
                     nextDimensionIncrement = false;
+                    ComputeAndTestIK(data);
                 }
             }
         }
-        ComputeAndTestIK(data);
     }
 }
 
