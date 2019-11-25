@@ -23,6 +23,22 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/robManipulatorECM.h>
 #include <sawIntuitiveResearchKit/robManipulatorMTM.h>
 
+class ManipulatorTestData {
+public:
+    std::string Name;
+    size_t NumberOfLinks;
+    robManipulator * Manipulator;
+    vctDoubleVec LowerLimits;
+    vctDoubleVec UpperLimits;
+    vctDoubleVec Increments;
+    vctDoubleVec ActualJoints, PreviousActualJoints;
+    vctFrm4x4 ActualPose;
+    vctDoubleVec SolutionJoints;
+    vctFrm4x4 SolutionPose;
+
+    virtual void CheckIKResults(void) = 0;
+};
+
 class robManipulatorTest : public CppUnit::TestFixture
 {
 protected:
@@ -35,18 +51,15 @@ protected:
     CPPUNIT_TEST_SUITE_END();
 
     // helper method to load kinematics with some basic tests
-    void LoadKinematics(robManipulator & manipulator,
-                        const std::string & filename,
-                        const size_t expectedNumberOfLinks);
+    void SetupTestData(ManipulatorTestData & data,
+                       const std::string & filename);
+
+    void ComputeAndTestIK(ManipulatorTestData & data);
 
     // create a trajectory of points over the whole joint space and
     // returns joint values as well as forward kinematic
-    void SampleJointSpace(const robManipulator & manipulator,
-                          const vctDoubleVec & lowerLimits,
-                          const vctDoubleVec & upperLimits,
-                          const vctDoubleVec & increments,
-                          std::list<vctDoubleVec> & joints,
-                          std::list<vctFrm4x4> & positions);
+    void TestSampleJointSpace(ManipulatorTestData & data);
+
 public:
 
     void setUp(void) {
