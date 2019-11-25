@@ -402,7 +402,7 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
 }
 
 void mtsIntuitiveResearchKitArm::UpdateConfigurationJointKinematic(void)
-{    
+{
     // get names, types and joint limits for kinematics config from the manipulator
     // name and types need conversion
     mStateTableConfiguration.Start();
@@ -1440,6 +1440,13 @@ void mtsIntuitiveResearchKitArm::SetControlEffortActiveJoints(void)
     PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), true));
 }
 
+void mtsIntuitiveResearchKitArm::ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
+                                                               vctDoubleVec & wrenchPreload)
+{
+    effortPreload.Zeros();
+    wrenchPreload.Zeros();
+}
+
 void mtsIntuitiveResearchKitArm::ControlEffortJoint(void)
 {
     // effort required
@@ -1460,7 +1467,14 @@ void mtsIntuitiveResearchKitArm::ControlEffortJoint(void)
 void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
 {
     // update torques based on wrench
-    vctDoubleVec force(6);
+    vctDoubleVec wrench(6);
+
+    // get force preload from derived classes, in most cases 0, platform control for MTM
+    vctDoubleVec effortPreload(NumberOfJointsKinematics());
+    vctDoubleVec wrenchPreload(6);
+    
+    ControlEffortCartesianPreload(effortPreload, wrenchPreload);
+
     // body wrench
     if (mWrenchType == WRENCH_BODY) {
         // either using wrench provided by user or cartesian impedance
@@ -1469,7 +1483,7 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
                                                  CartesianVelocityGetParam,
                                                  mWrenchSet,
                                                  mWrenchBodyOrientationAbsolute);
-            force.Assign(mWrenchSet.Force());
+            wrench.Assign(mWrenchSet.Force());
         } else {
             // user provided wrench
             if (mWrenchBodyOrientationAbsolute) {
@@ -1478,21 +1492,23 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
                 // force
                 relative.Assign(mWrenchSet.Force().Ref<3>(0));
                 CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
-                force.Ref(3, 0).Assign(absolute);
+                wrench.Ref(3, 0).Assign(absolute);
                 // torque
                 relative.Assign(mWrenchSet.Force().Ref<3>(3));
                 CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
-                force.Ref(3, 3).Assign(absolute);
+                wrench.Ref(3, 3).Assign(absolute);
             } else {
-                force.Assign(mWrenchSet.Force());
+                wrench.Assign(mWrenchSet.Force());
             }
         }
-        mEffortJoint.ProductOf(mJacobianBody.Transpose(), force);
+        mEffortJoint.ProductOf(mJacobianBody.Transpose(), wrench + wrenchPreload);
+        mEffortJoint.Add(effortPreload);
     }
     // spatial wrench
     else if (mWrenchType == WRENCH_SPATIAL) {
-        force.Assign(mWrenchSet.Force());
-        mEffortJoint.ProductOf(mJacobianSpatial.Transpose(), force);
+        wrench.Assign(mWrenchSet.Force());
+        mEffortJoint.ProductOf(mJacobianSpatial.Transpose(), wrench + wrenchPreload);
+        mEffortJoint.Add(effortPreload);
     }
 
     // add gravity compensation if needed

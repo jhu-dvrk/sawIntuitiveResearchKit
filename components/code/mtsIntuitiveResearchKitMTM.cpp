@@ -541,7 +541,7 @@ void mtsIntuitiveResearchKitMTM::ControlEffortOrientationLocked(void)
         // finally send new joint values
         SetPositionJointLocal(JointSet);
     } else {
-        RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics");
+        RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortOrientationLocked");
     }
 }
 
@@ -559,6 +559,34 @@ void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
         torqueMode.SetAll(true);
     }
     PID.EnableTorqueMode(torqueMode);
+}
+
+void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
+                                                               vctDoubleVec & wrenchPreload)
+{
+    if (mWrenchType == WRENCH_SPATIAL) {
+        effortPreload.SetAll(0.0);
+        wrenchPreload.SetAll(0.0);
+        return;
+    }
+    // most efforts will be 0
+    effortPreload.Zeros();
+    // find ideal position for platform using IK
+    vctDoubleVec jointGoal(StateJointKinematics.Position());
+
+    if (InverseKinematics(jointGoal, CartesianGetLocal) == robManipulator::ESUCCESS) {
+        // apply a linear force on joint 3 to move toward the "ideal" position
+        effortPreload[3] = -0.5 * (StateJointKinematics.Position()[3] - jointGoal[3]);
+        // cap effort
+        effortPreload[3] = std::max(effortPreload[3], -0.2);
+        effortPreload[3] = std::min(effortPreload[3],  0.2);
+
+        // find equivalent wrench but don't apply all (too much torque on roll)
+        wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
+        wrenchPreload.Multiply(0.3);
+    } else {
+        RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortCartesianPreload");
+    }
 }
 
 void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)

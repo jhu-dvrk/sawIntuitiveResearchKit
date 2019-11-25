@@ -172,6 +172,7 @@ void robManipulatorTest::TestSampleJointSpace(ManipulatorTestData & data)
 {
     vctDoubleVec directions(data.NumberOfLinks, 1.0);
 
+    // initial position
     data.ActualJoints.Assign(data.LowerLimits);
     data.PreviousActualJoints.Assign(data.LowerLimits);
     ComputeAndTestIK(data);
@@ -190,6 +191,7 @@ void robManipulatorTest::TestSampleJointSpace(ManipulatorTestData & data)
                 } else if (future < data.LowerLimits[index]) {
                     directions[index] = 1.0;
                 } else {
+                    // valid position
                     data.PreviousActualJoints.Assign(data.ActualJoints);
                     data.ActualJoints[index] = future;
                     nextDimensionIncrement = false;
