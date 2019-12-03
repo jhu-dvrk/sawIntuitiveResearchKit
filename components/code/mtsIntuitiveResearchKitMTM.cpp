@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 
+#include <sawIntuitiveResearchKit/robManipulatorMTM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
 #include "robGravityCompensationMTM.h"
 
@@ -117,7 +118,7 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
                                                                     const vctFrm4x4 & cartesianGoal)
 {
     // pre-feed inverse kinematics with preferred values for joint 6
-    jointSet[5] = 0.0;
+    // jointSet[5] = 0.0;
     if (Manipulator->InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = StateJointKinematics.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
@@ -131,6 +132,12 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
 void mtsIntuitiveResearchKitMTM::Init(void)
 {
     mtsIntuitiveResearchKitArm::Init();
+
+    // replace the default manipulator class created in base arm class
+    if (this->Manipulator) {
+        delete this->Manipulator;
+    }
+    this->Manipulator = new robManipulatorMTM();
 
     mHomedOnce = false;
 
@@ -576,14 +583,16 @@ void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & ef
 
     if (InverseKinematics(jointGoal, CartesianGetLocal) == robManipulator::ESUCCESS) {
         // apply a linear force on joint 3 to move toward the "ideal" position
-        effortPreload[3] = -0.5 * (StateJointKinematics.Position()[3] - jointGoal[3]);
+        effortPreload[3] = -0.2 * (StateJointKinematics.Position()[3] - jointGoal[3])
+            - 0.1 * StateJointKinematics.Velocity()[3];
         // cap effort
         effortPreload[3] = std::max(effortPreload[3], -0.2);
         effortPreload[3] = std::min(effortPreload[3],  0.2);
 
         // find equivalent wrench but don't apply all (too much torque on roll)
-        wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
-        wrenchPreload.Multiply(0.3);
+        // wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
+        // wrenchPreload.Multiply(0.3);
+        wrenchPreload.SetAll(0.0);
     } else {
         RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortCartesianPreload");
     }

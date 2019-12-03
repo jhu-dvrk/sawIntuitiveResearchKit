@@ -36,26 +36,6 @@ robManipulatorMTM::robManipulatorMTM(const vctFrame4x4<double> &Rtw0)
 {
 }
 
-template <typename _rotationMatrix>
-vct3 SO3toRPY(const _rotationMatrix & R)
-{
-    vct3 rpy;
-    if (fabs(R[2][2]) < 1e-12 && fabs(R[1][2]) < 1e-12) {
-        rpy[0] = 0.0;
-        rpy[1] = atan2(R[0][2], R[2][2]);
-        rpy[2] = atan2(R[1][0], R[1][1]);
-    }
-    else {
-        rpy[0] = atan2(-R[1][2], R[2][2]);
-        double sr = sin(rpy[0]);
-        double cr = cos(rpy[0]);
-        rpy[1] = atan2(R[0][2], cr*R[2][2] - sr*R[1][2]);
-        rpy[2] = atan2(-R[0][1], R[0][0] );
-    }
-    return rpy;
-}
-
-
 robManipulator::Errno
 robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
                                      const vctFrame4x4<double> & Rts,
@@ -112,19 +92,34 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
     q[1] = q1;
     q[2] = q2 - angleOffset + cmnPI_2;
 
-    // this needs to be replaced by optimized placement of platform
+    // optimized placement of platform
+    // compute projection of roll axis on platform plane
+    const vctFrm4x4 Rt03 = this->ForwardKinematics(q, 3);
+    vctFrm4x4 Rt37;
+    Rt03.ApplyInverseTo(Rt07, Rt37);
+    // work in progress......
+    //std::cerr << Rt37.Column(2) << std::endl;
     q[3] = q[3];
 
+    // make sure we respect joint limits
+    const double q3Max = links[3].GetKinematics()->PositionMax();
+    const double q3Min = links[3].GetKinematics()->PositionMin();
+    if (q[3] > q3Max) {
+        q[3] = q3Max;
+    } else if (q[3] < q3Min) {
+        q[3] = q3Min;
+    }
+
     // compute orientation of platform
-    const vctFrm4x4 fwd04 = this->ForwardKinematics(q, 4);
-    vctFrm4x4 Rt57;
-    fwd04.ApplyInverseTo(Rt07, Rt57);
-    vct3 closed57 = SO3toRPY(Rt57.Rotation());
+    const vctFrm4x4 Rt04 = this->ForwardKinematics(q, 4);
+    vctFrm4x4 Rt47;
+    Rt04.ApplyInverseTo(Rt07, Rt47);
+    vctEulerZXZRotation3 closed57(Rt47.Rotation());
 
     // applying DH offsets
-    q[4] = closed57.Element(1) + cmnPI_2;
-    q[5] = -closed57.Element(0) + cmnPI_2;
-    q[6] = closed57.Element(2) + cmnPI;
+    q[4] = closed57.alpha() + cmnPI_2;
+    q[5] = -closed57.beta() + cmnPI_2;
+    q[6] = closed57.gamma() + cmnPI;
 
     return robManipulator::ESUCCESS;
 }

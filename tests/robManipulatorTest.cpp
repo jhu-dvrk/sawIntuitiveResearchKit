@@ -60,7 +60,7 @@ public:
         vctMatRot3 positionRotationError;
         ActualPose.Rotation().ApplyInverseTo(SolutionPose.Rotation(), positionRotationError);
         CPPUNIT_ASSERT_MESSAGE("Cartesian rotation error is too high",
-                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmn180_PI); // acosl
+                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmn180_PI);
     }
 };
 
@@ -95,12 +95,10 @@ public:
                                positionTranslationError.Norm() < 0.005 * cmn_mm);
 
         // rotation
-#if 0
         vctMatRot3 positionRotationError;
         ActualPose.Rotation().ApplyInverseTo(SolutionPose.Rotation(), positionRotationError);
         CPPUNIT_ASSERT_MESSAGE("Cartesian rotation error is too high",
-                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmn180_PI); // acosl
-#endif
+                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmn180_PI);
     }
 };
 
