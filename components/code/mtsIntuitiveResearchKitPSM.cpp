@@ -111,6 +111,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mArmState.SetRunCallback("ENGAGING_TOOL",
                              &mtsIntuitiveResearchKitPSM::RunEngagingTool,
                              this);
+    mArmState.SetEnterCallback("TOOL_ENGAGED",
+                               &mtsIntuitiveResearchKitPSM::EnterToolEngaged,
+                               this);
     mArmState.SetTransitionCallback("TOOL_ENGAGED",
                                     &mtsIntuitiveResearchKitPSM::TransitionToolEngaged,
                                     this);
@@ -178,9 +181,14 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     StateJawDesired.SetAutomaticTimestamp(false);
     StateTable.AddData(StateJawDesired, "StateJawDesired");
 
+    // state table for configuration
+    mStateTableConfiguration.AddData(CouplingChange.JawConfiguration, "ConfigurationJaw");
+
     // jaw interface
     RobotInterface->AddCommandReadState(this->StateTable, StateJaw, "GetStateJaw");
     RobotInterface->AddCommandReadState(this->StateTable, StateJawDesired, "GetStateJawDesired");
+    RobotInterface->AddCommandReadState(this->mStateTableConfiguration,
+                                        CouplingChange.JawConfiguration, "GetConfigurationJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionJaw, this, "SetPositionJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionGoalJaw, this, "SetPositionGoalJaw");
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetEffortJaw, this, "SetEffortJaw");
@@ -1079,6 +1087,12 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         this->SetDesiredState(mFallbackState);
         break;
     }
+}
+
+void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
+{
+    // restore default PID tracking error
+    PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
 }
 
 void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)

@@ -45,7 +45,7 @@ protected:
                               const cmnPath & configPath,
                               const std::string & filename) override;
     void ConfigureTool(const std::string & filename);
-    
+
     /*! Configuration methods */
     inline size_t NumberOfAxes(void) const override {
         return 7;
@@ -104,6 +104,7 @@ protected:
     }
     void EnterEngagingTool(void);
     void RunEngagingTool(void);
+    void EnterToolEngaged(void);
     void TransitionToolEngaged(void);
 
     // manual mode
