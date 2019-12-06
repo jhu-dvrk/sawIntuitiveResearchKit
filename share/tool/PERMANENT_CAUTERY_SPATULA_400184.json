@@ -38,9 +38,9 @@
     }
     ,
     "jaw" : {
-        // spatula doesn't have a jaw
+        // spatula doesn't have jaws
         "qmin":  0.0, // 0 degrees
-        "qmax":  0.0, // 0 degrees
+        "qmax":  0.5, // 0 degrees, but not exactly to avoid warnings in
         "ftmax": 0.0
     }
     ,
