@@ -27,13 +27,13 @@
             "type": "PSM",
             "io": "sawRobotIO1394-PSM1-31817.xml",
             "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json",
+            "kinematic": "psm-large-needle-driver-tip.json",
             "base-frame": {
             "reference-frame": "TableCenter",
-            "transform": [[ 0.965925826, -0.258819045, 0.0,  0.0823832],
-                          [ 0.258819045,  0.965925826, 0.0, -0.0365175],
-                          [ 0.0,          0.0,         1.0,  0.0     ],
-                          [ 0.0,          0.0,         0.0, 1.0]]
+            "transform": [[ 0.965925826, -0.258819045, 0.0,   0.0868201],
+                          [ 0.258819045,  0.965925826, 0.0,  -0.110485],
+                          [ 0.0,          0.0,         1.0,   0.0],
+                          [ 0.0,          0.0,         0.0,  1.0]]
             }
 
         }
@@ -43,22 +43,22 @@
             "type": "PSM",
             "io": "sawRobotIO1394-PSM2-28060.xml",
             "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json",
+            "kinematic": "psm-large-needle-driver-tip.json",
             "base-frame": {
             "reference-frame": "TableCenter",
-            "transform": [[  0.965925826,  0.258819045, 0.0,  -0.120322 ],
-                          [ -0.258819045,  0.965925826, 0.0,  -0.0276494],
-                          [  0.0,          0.0,         1.0,   0.0     ],
-                          [  0.0,          0.0,         0.0,   1.0      ]]
+            "transform": [[  0.965925826,  0.258819045, 0.0,  -0.110619],
+                          [ -0.258819045,  0.965925826, 0.0,  -0.100955],
+                          [  0.0,          0.0,         1.0,   0.0],
+                          [  0.0,          0.0,         0.0,   1.0]]
             }
         }
         ,
         {
             "name": "MTMR",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTMR-13879.xml",
+            "io": "sawRobotIO1394-MTMR-33569.xml",
             "pid": "sawControllersPID-MTMR.xml",
-            "kinematic": "mtm.json"
+            "arm": "MTMR-33569.json"
         }
         ,
         {
@@ -66,7 +66,7 @@
             "type": "MTM",
             "io": "sawRobotIO1394-MTML-28129.xml",
             "pid": "sawControllersPID-MTML.xml",
-            "kinematic": "mtm.json"
+            "arm": "MTML-28129.json"
         }
     ]
     ,
