@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2018 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2019 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -119,6 +119,8 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBasePSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketClientPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketServerPSM.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/robManipulatorECM.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/robManipulatorMTM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/robManipulatorPSMSnake.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsPSMCompensation.h
         )
@@ -139,6 +141,8 @@ if (cisst_FOUND)
          code/mtsSocketBasePSM.cpp
          code/mtsSocketClientPSM.cpp
          code/mtsSocketServerPSM.cpp
+         code/robManipulatorECM.cpp
+         code/robManipulatorMTM.cpp
          code/robManipulatorPSMSnake.cpp
          code/mtsPSMCompensation.cpp
          code/robGravityCompensationMTM.cpp

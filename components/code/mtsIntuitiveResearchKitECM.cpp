@@ -52,25 +52,29 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
                                                                     const vctFrm4x4 & cartesianGoal)
 {
     // re-align desired frame to 4 axis direction to reduce free space
+    vctFrm4x4 newGoal;
+    newGoal.Translation().Assign(cartesianGoal.Translation());
+
     vctDouble3 shaft = cartesianGoal.Translation();
     shaft.NormalizedSelf();
     const vctDouble3 z = cartesianGoal.Rotation().Column(2).Ref<3>(); // last column of rotation matrix
-    vctMatRot3 reAlign;
-    vct3 axis;
-    double angle;
+        
     if (! z.AlmostEqual(shaft, 0.0001)) {
+        vctMatRot3 reAlign;
+        vct3 axis;
+        double angle;
         axis.CrossProductOf(z, shaft);
         angle = acos(vctDotProduct(z, shaft));
         reAlign.From(vctAxAnRot3(axis, angle, VCT_NORMALIZE));
+        newGoal.Rotation().ProductOf(reAlign, cartesianGoal.Rotation());
+    } else {
+        newGoal.Rotation().Assign(cartesianGoal.Rotation());
     }
 
-    vctFrm4x4 newGoal;
-    newGoal.Translation().Assign(cartesianGoal.Translation());
-    newGoal.Rotation().ProductOf(reAlign, cartesianGoal.Rotation());
-
+    // solve IK
     if (Manipulator->InverseKinematics(jointSet, newGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
-        const double difference = JointsKinematics.Position()[3] - jointSet[3];
+        const double difference = StateJointKinematics.Position()[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
         // make sure we are away from RCM point, this test is
@@ -212,7 +216,7 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
         mJointTrajectory.Goal.SetAll(0.0);
     } else {
         // stay at current position by default
-        mJointTrajectory.Goal.Assign(JointsDesiredPID.Position(), NumberOfJoints());
+        mJointTrajectory.Goal.Assign(StateJointDesiredPID.Position(), NumberOfJoints());
     }
 }
 
@@ -295,7 +299,7 @@ void mtsIntuitiveResearchKitECM::UpdateFeedForward(vctDoubleVec & feedForward)
 void mtsIntuitiveResearchKitECM::AddGravityCompensationEfforts(vctDoubleVec & efforts)
 {
     vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
-    efforts.Add(Manipulator->CCG_MDH(JointsKinematics.Position(), qd, 9.81));
+    efforts.Add(Manipulator->CCG_MDH(StateJointKinematics.Position(), qd, 9.81));
 }
 
 void mtsIntuitiveResearchKitECM::SetEndoscopeType(const std::string & endoscopeType)

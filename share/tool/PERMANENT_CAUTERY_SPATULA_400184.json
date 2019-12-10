@@ -26,22 +26,22 @@
             },
             {
                 "name": "outer_wrist_yaw",
-                "alpha": -1.5708, "A":  0.0091, "theta":  0.0000, "D":  0.0000,
+                "alpha": -1.5708, "A":  0.0093, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
                 "offset": -1.5708,
-                "qmin": -1.39626, // -80 degrees
-                "qmax":  1.39626, //  80 degrees
+                "qmin": -1.4835, // -85 degrees
+                "qmax":  1.4835, //  85 degrees
                 "ftmax": 0.20
             }
         ]
     }
     ,
     "jaw" : {
-        // for last joint, manual says [0, 30] but we need -20 to allow stronger torque, 80 to open wide
-        "qmin": -0.349066, // -20 degrees
-        "qmax":  1.39626,  //  80 degrees
-        "ftmax": 0.16
+        // spatula doesn't have jaws
+        "qmin":  0.0, // 0 degrees
+        "qmax":  0.5, // 0 degrees, but not exactly to avoid warnings in
+        "ftmax": 0.0
     }
     ,
     // rotation to match ISI convention (for read-only research API on commercial da Vinci)
@@ -52,17 +52,23 @@
     ,
     // values from the dVRK user guide, see tool appendix C
     "coupling" : {
+        // -- this is the proper coupling matrix assuming that we can use last 2 actuators for the last joint
+        // "ActuatorToJointPosition" : [[ -1.5632,  0.0000,  0.0000,  0.0000],
+        //                              [  0.0000,  1.1353,  0.0000,  0.0000],
+        //                              [  0.0000,  0.7827, -0.5291, -0.5291],
+        //                              [  0.0000,  0.0000,  1.0583,  1.0583]]
+        // -- this is the dVRK hack, assuming that last disk if removed on the tool
         "ActuatorToJointPosition" : [[ -1.5632,  0.0000,  0.0000,  0.0000],
-                                     [  0.0000,  1.0186,  0.0000,  0.0000],
-                                     [  0.0000, -0.8306,  0.6089,  0.6089],
-                                     [  0.0000,  0.0000, -1.2177,  1.2177]]
+                                     [  0.0000,  1.1353,  0.0000,  0.0000],
+                                     [  0.0000,  0.7827, -0.5291,  0.0000],
+                                     [  0.0000,  0.0000,  0.0000,  1.0000]] // note that we don't use the last actuator
     }
     ,
     // angles used to engage the tool, in radians
     // make sure these are within the range of motion IN the cannula
-    // 270, 10, 10, 0 degrees
+    // 270, 15, 15, 0 degrees
     "tool-engage-position" : {
-        "lower" : [-4.71239, -0.174533, -0.174533, 0.0],
-        "upper" : [ 4.71239,  0.174533,  0.174533, 0.0]
+        "lower" : [-4.71239, -0.261799, -0.261799, 0.0],
+        "upper" : [ 4.71239,  0.261799,  0.261799, 0.0]
     }
 }

@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmStateJoint.h>
+#include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
@@ -111,21 +112,24 @@ public:
 
         mStateJoint.Position().SetSize(MUX_ARRAY_SIZE);
         mStateJoint.Name().SetSize(MUX_ARRAY_SIZE);
+        mConfigurationJoint.Name().SetSize(MUX_ARRAY_SIZE);
         std::stringstream jointName;
         for (size_t index = 0; index < MUX_ARRAY_SIZE; ++index) {
             jointName.str("");
             jointName << "SUJ_" << name << "_J" << index;
             mStateJoint.Name().at(index) = jointName.str();
+            mConfigurationJoint.Name().at(index) = jointName.str();
         }
 
-        mStateJoint.Type().SetSize(MUX_ARRAY_SIZE);
-        mStateJoint.Type().SetAll(PRM_JOINT_REVOLUTE);
-        mStateJoint.Type().at(0) = PRM_JOINT_PRISMATIC;
+        mConfigurationJoint.Type().SetSize(MUX_ARRAY_SIZE);
+        mConfigurationJoint.Type().SetAll(PRM_JOINT_REVOLUTE);
+        mConfigurationJoint.Type().at(0) = PRM_JOINT_PRISMATIC;
 
         mStateTable.AddData(mVoltages[0], "Voltages[0]");
         mStateTable.AddData(mVoltages[1], "Voltages[1]");
         mStateTable.AddData(mVoltagesExtra, "VoltagesExtra");
-        mStateTable.AddData(mStateJoint, "PositionJoint");
+        mStateTable.AddData(mStateJoint, "StateJoint");
+        mStateTable.AddData(mConfigurationJoint, "ConfigurationJoint");
 
         mPositionCartesianParam.SetReferenceFrame("Cart");
         mPositionCartesianParam.SetMovingFrame(name + "_base");
@@ -147,6 +151,7 @@ public:
         mInterfaceProvided = interfaceProvided;
         // read commands
         mInterfaceProvided->AddCommandReadState(mStateTable, mStateJoint, "GetStateJoint");
+        mInterfaceProvided->AddCommandReadState(mStateTable, mConfigurationJoint, "GetConfigurationJoint");
         mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::SetPositionJoint,
                                             this, "SetPositionJoint");
         mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0],
@@ -316,6 +321,7 @@ public:
     vctDoubleVec mVoltageToPositionScales[2];
     vctDoubleVec mVoltageToPositionOffsets[2];
     prmStateJoint mStateJoint;
+    prmConfigurationJoint mConfigurationJoint;
      // 0 is no, 1 tells we need to send, 2 is for first full mux cycle has started
     unsigned int mNumberOfMuxCyclesBeforeStable;
     vctFrm4x4 mPositionCartesianLocal;
@@ -651,7 +657,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionScales[0], jsonArm["primary-scales"]);
         cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionScales[1], jsonArm["secondary-scales"]);
         arm->mStateTableConfiguration.Advance();
-        
+
         // look for DH
         arm->mManipulator.LoadRobot(jsonArm["DH"]);
 

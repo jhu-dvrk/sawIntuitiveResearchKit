@@ -51,6 +51,10 @@ class {
             description Long Tip Forceps 400048 (Classic);
         }
         enum-value {
+            name MARYLAND_BIPOLAR_FORCEPS_400172;
+            description Maryland Bipolar Forceps 400172 (Classic);
+        }
+        enum-value {
             name MEGA_NEEDLE_DRIVER_400194;
             description Mega Needle Driver 400194 (Classic);
         }
@@ -61,6 +65,10 @@ class {
         enum-value {
             name MONOPOLAR_CURVED_SCISSOR_400179;
             description Monopolar Curved Scissors 400179 (Classic);
+        }
+        enum-value {
+            name PERMANENT_CAUTERY_SPATULA_400184;
+            description Permanent Cautery Spatula 400184 (Classic);
         }
         enum-value {
             name PROGRASP_FORCEPS_400093;

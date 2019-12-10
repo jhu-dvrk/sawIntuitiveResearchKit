@@ -55,6 +55,7 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
         InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::CurrentStateEventHandler,
                                                 this, "CurrentState");
         QMMessage->SetInterfaceRequired(InterfaceRequired);
+        InterfaceRequired->AddFunction("GetConfigurationJoint", Arm.GetConfigurationJoint);
         InterfaceRequired->AddFunction("GetStateJoint", Arm.GetStateJoint);
         InterfaceRequired->AddFunction("GetPositionCartesian", Arm.GetPositionCartesian);
         InterfaceRequired->AddFunction("GetWrenchBody", Arm.GetWrenchBody, MTS_OPTIONAL);
@@ -109,6 +110,11 @@ void mtsIntuitiveResearchKitArmQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(eve
 
     executionResult = Arm.GetStateJoint(StateJoint);
     if (executionResult) {
+        if ((ConfigurationJoint.Name().size() != StateJoint.Name().size())
+            && (Arm.GetConfigurationJoint.IsValid())) {
+            Arm.GetConfigurationJoint(ConfigurationJoint);
+            QSJWidget->SetConfiguration(ConfigurationJoint);
+        }
         QSJWidget->SetValue(StateJoint);
     }
 

@@ -37,8 +37,8 @@
             "name": "ECM",
             "type": "ECM",
             "simulation": "KINEMATIC",
-            "pid": "sawControllersPID-ECM.xml",
-            "kinematic": "ecm-straight.json"
+            "arm": "arm/ECM_KIN_SIMULATED_STRAIGHT.json"
+
         }
     ]
     ,

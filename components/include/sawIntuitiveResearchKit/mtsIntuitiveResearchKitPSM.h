@@ -45,7 +45,7 @@ protected:
                               const cmnPath & configPath,
                               const std::string & filename) override;
     void ConfigureTool(const std::string & filename);
-    
+
     /*! Configuration methods */
     inline size_t NumberOfAxes(void) const override {
         return 7;
@@ -63,7 +63,7 @@ protected:
         return 0;
     }
 
-    void UpdateJointsKinematics(void) override;
+    void UpdateStateJointKinematics(void) override;
     void ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID) override;
 
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
@@ -71,7 +71,7 @@ protected:
 
     // see base class
     inline bool IsSafeForCartesianControl(void) const override {
-        return (JointsKinematics.Position().at(2) > 50.0 * cmn_mm);
+        return (StateJointKinematics.Position().at(2) > 50.0 * cmn_mm);
     }
 
 
@@ -87,7 +87,7 @@ protected:
 
     // methods used in change coupling/engaging
     void RunChangingCoupling(void);
-    void UpdatePIDLimits(const bool toolPresent);
+    void UpdateConfigurationJointPID(const bool toolPresent);
 
     // engaging adapter
     void EnterChangingCouplingAdapter(void);
@@ -104,6 +104,7 @@ protected:
     }
     void EnterEngagingTool(void);
     void RunEngagingTool(void);
+    void EnterToolEngaged(void);
     void TransitionToolEngaged(void);
 
     // manual mode
@@ -184,7 +185,7 @@ protected:
     robManipulator * ToolOffset = nullptr;
     vctFrm4x4 ToolOffsetTransformation;
 
-    prmStateJoint Jaw, JawDesired;
+    prmStateJoint StateJaw, StateJawDesired;
     double JawGoal;
     double EffortJawSet;
 
@@ -204,11 +205,9 @@ protected:
         bool WaitingForCoupling, ReceivedCoupling;
         prmActuatorJointCoupling LastCoupling, DesiredCoupling, ToolCoupling;
         vctDoubleVec ToolEngageLowerPosition, ToolEngageUpperPosition;
-        vctDoubleVec ToolPositionLowerLimit, ToolPositionUpperLimit;
-        vctDoubleVec NoToolPositionLowerLimit, NoToolPositionUpperLimit;
-        vctDoubleVec ToolTorqueLowerLimit, ToolTorqueUpperLimit;
-        double JawPositionLowerLimit, JawPositionUpperLimit;
-        double JawTorqueLowerLimit, JawTorqueUpperLimit;
+        prmConfigurationJoint ToolConfiguration;
+        prmConfigurationJoint NoToolConfiguration;
+        prmConfigurationJoint JawConfiguration;
     } CouplingChange;
 };
 
