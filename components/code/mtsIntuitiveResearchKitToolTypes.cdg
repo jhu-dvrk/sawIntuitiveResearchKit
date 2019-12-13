@@ -67,6 +67,10 @@ class {
             description Monopolar Curved Scissors 400179 (Classic);
         }
         enum-value {
+            name PERMANENT_CAUTERY_SPATULA_400184;
+            description Permanent Cautery Spatula 400184 (Classic);
+        }
+        enum-value {
             name PROGRASP_FORCEPS_400093;
             description Prograsp Forceps 400093 (Classic);
         }

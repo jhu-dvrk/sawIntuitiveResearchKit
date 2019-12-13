@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmStateJoint.h>
+#include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
@@ -117,6 +118,7 @@ protected:
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionVoid Freeze;
         mtsFunctionRead GetStateJaw;
+        mtsFunctionRead GetConfigurationJaw;
         mtsFunctionWrite SetPositionJaw;
 
         mtsFunctionRead  GetCurrentState;
@@ -124,6 +126,7 @@ protected:
         mtsFunctionWrite SetDesiredState;
 
         prmStateJoint StateJaw;
+        prmConfigurationJoint ConfigurationJaw;
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
         prmPositionJointSet     PositionJointSet;
@@ -139,7 +142,22 @@ protected:
     double mScale = 0.2;
     vctMatRot3 mRegistrationRotation; // optional registration between PSM and MTM orientation
     vctMatRot3 mAlignOffset, mAlignOffsetInitial; // rotation offset between MTM and PSM when tele-operation goes in follow mode
+
+    // initial offset in jaw (PSM) space when teleop starts
     double mJawOffset;
+
+    // conversion from gripper (MTM) to jaw (PSM)
+    // j = s * g + o
+    // g = (j - o) / s
+    struct {
+        double Scale;
+        double Offset;
+        double PositionMin;
+    } mGripperToJaw;
+
+    double virtual GripperToJaw(const double & gripperAngle) const;
+    double virtual JawToGripper(const double & jawAngle) const;
+    double virtual UpdateGripperToJawConfiguration(void);
 
     bool mIgnoreJaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
     int mGripperJawTransitions;
