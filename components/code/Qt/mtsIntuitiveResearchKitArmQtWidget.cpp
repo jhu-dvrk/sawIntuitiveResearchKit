@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -59,6 +59,7 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
         InterfaceRequired->AddFunction("GetStateJoint", Arm.GetStateJoint);
         InterfaceRequired->AddFunction("GetPositionCartesian", Arm.GetPositionCartesian);
         InterfaceRequired->AddFunction("GetWrenchBody", Arm.GetWrenchBody, MTS_OPTIONAL);
+        InterfaceRequired->AddFunction("SetPositionGoalJoint", Arm.SetPositionGoalJoint, MTS_OPTIONAL);
         InterfaceRequired->AddFunction("SetDesiredState", Arm.SetDesiredState);
         InterfaceRequired->AddFunction("GetPeriodStatistics", Arm.GetPeriodStatistics);
     }
@@ -161,6 +162,13 @@ void mtsIntuitiveResearchKitArmQtWidget::SlotEnableDirectControl(bool toggle)
 {
     DirectControl = toggle;
     QPBHome->setEnabled(toggle);
+    if (toggle) {
+        QPJSWidget->show();
+        QPJSWidget->setEnabled(toggle);
+        QPJSWidget->Reset();
+    } else {
+        QPJSWidget->hide();
+    }
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::SlotHome(void)
@@ -204,7 +212,7 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     QCPGWidget->SetPrismaticRevoluteFactors(1.0 / cmn_mm, cmn180_PI);
     topLayout->addWidget(QCPGWidget, 1, 0);
 
-    // wrench, make large
+    // wrench
     QFTWidget = new vctForceTorqueQtWidget();
     topLayout->addWidget(QFTWidget, 1, 1);
 
@@ -233,6 +241,15 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     QLECurrentState = new QLineEdit("");
     QLECurrentState->setReadOnly(true);
     stateLayout->addWidget(QLECurrentState);
+
+    // set joint goal
+    QPJSWidget = new prmPositionJointSetQtWidget();
+    QPJSWidget->setupUi();
+    QPJSWidget->GetStateJoint = &(Arm.GetStateJoint);
+    QPJSWidget->GetConfigurationJoint = &(Arm.GetConfigurationJoint);
+    QPJSWidget->SetPositionGoalJoint = &(Arm.SetPositionGoalJoint);
+    QPJSWidget->SetPrismaticRevoluteFactors(1.0 / cmn_mm, cmn180_PI);
+    MainLayout->addWidget(QPJSWidget);
 
     // for derived classes
     this->setupUiDerived();
