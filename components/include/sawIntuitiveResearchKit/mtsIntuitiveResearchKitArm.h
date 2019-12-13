@@ -88,7 +88,9 @@ public:
 
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
+    virtual void CreateManipulator(void);
     virtual void Init(void);
+
     void UpdateConfigurationJointKinematic(void);
     void ResizeKinematicsData(void);
 

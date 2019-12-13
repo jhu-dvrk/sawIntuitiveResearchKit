@@ -59,6 +59,14 @@ mtsIntuitiveResearchKitArm::~mtsIntuitiveResearchKitArm()
     }
 }
 
+void mtsIntuitiveResearchKitArm::CreateManipulator(void)
+{
+    if (Manipulator) {
+        delete Manipulator;
+    }
+    Manipulator = new robManipulator();
+}
+
 void mtsIntuitiveResearchKitArm::Init(void)
 {
     // configure state machine common to all arms (ECM/MTM/PSM)
@@ -207,7 +215,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianVelocityGetParam.SetValid(false);
 
     // base manipulator class used by most arms (except PSM with snake like tool)
-    Manipulator = new robManipulator();
+    CreateManipulator();
 
     // jacobian
     ResizeKinematicsData();

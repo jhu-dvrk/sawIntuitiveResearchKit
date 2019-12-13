@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
+#include <sawIntuitiveResearchKit/robManipulatorECM.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitECM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -91,6 +92,14 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
         return robManipulator::ESUCCESS;
     }
     return robManipulator::EFAILURE;
+}
+
+void mtsIntuitiveResearchKitECM::CreateManipulator(void)
+{
+    if (Manipulator) {
+        delete Manipulator;
+    }
+    Manipulator = new robManipulatorECM();
 }
 
 void mtsIntuitiveResearchKitECM::Init(void)

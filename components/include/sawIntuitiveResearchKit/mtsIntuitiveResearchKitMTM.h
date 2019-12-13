@@ -94,6 +94,7 @@ protected:
         return true;
     };
 
+    virtual void CreateManipulator(void) override;
     virtual void Init(void) override;
 
     // state related methods

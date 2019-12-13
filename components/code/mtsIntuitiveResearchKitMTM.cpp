@@ -129,15 +129,17 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
     return robManipulator::EFAILURE;
 }
 
+void mtsIntuitiveResearchKitMTM::CreateManipulator(void)
+{
+    if (Manipulator) {
+        delete Manipulator;
+    }
+    Manipulator = new robManipulatorMTM();
+}
+
 void mtsIntuitiveResearchKitMTM::Init(void)
 {
     mtsIntuitiveResearchKitArm::Init();
-
-    // replace the default manipulator class created in base arm class
-    if (this->Manipulator) {
-        delete this->Manipulator;
-    }
-    this->Manipulator = new robManipulatorMTM();
 
     mHomedOnce = false;
 
