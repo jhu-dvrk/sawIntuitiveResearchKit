@@ -781,11 +781,7 @@ void mtsTeleOperationPSM::RunEnabled(void)
                 // update PSM position goal
                 psmCartesianGoal = baseFrameChange * psmCartesianGoal;
                 // update alignment offset
-                vctMatRot3 desiredOrientation;
-                vctFrm4x4 updatedPSMInitial;
-                baseFrameChange.ApplyTo(mPSM.CartesianInitial, updatedPSMInitial);
-                mRegistrationRotation.ApplyInverseTo(updatedPSMInitial.Rotation(), desiredOrientation);
-                mMTM.CartesianInitial.Rotation().ApplyInverseTo(desiredOrientation, mAlignOffset);
+                mtmPosition.Rotation().ApplyInverseTo(psmCartesianGoal.Rotation(), mAlignOffset);
             }
 
             // PSM go this cartesian position
