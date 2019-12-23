@@ -157,7 +157,7 @@ protected:
 
     double virtual GripperToJaw(const double & gripperAngle) const;
     double virtual JawToGripper(const double & jawAngle) const;
-    double virtual UpdateGripperToJawConfiguration(void);
+    void virtual UpdateGripperToJawConfiguration(void);
 
     bool mIgnoreJaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
     int mGripperJawTransitions;
