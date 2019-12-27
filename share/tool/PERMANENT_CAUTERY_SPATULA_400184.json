@@ -58,9 +58,11 @@
         //                              [  0.0000,  0.7827, -0.5291, -0.5291],
         //                              [  0.0000,  0.0000,  1.0583,  1.0583]]
         // -- this is the dVRK hack, assuming that last disk if removed on the tool
+        // also note that the coupling value for disk 6 is doubled, assuming ISI has a matrix for two motors
+        // so each motor is responsible for 1/2 torque
         "ActuatorToJointPosition" : [[ -1.5632,  0.0000,  0.0000,  0.0000],
                                      [  0.0000,  1.1353,  0.0000,  0.0000],
-                                     [  0.0000,  0.7827, -0.5291,  0.0000],
+                                     [  0.0000,  0.7827, -1.0582,  0.0000],
                                      [  0.0000,  0.0000,  0.0000,  1.0000]] // note that we don't use the last actuator
     }
     ,

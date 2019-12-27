@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Config Version="3">
+<Config Version="4">
    <Robot Name="PSM3" NumOfActuator="7" NumOfJoint="7" SN="28613">
       <Actuator ActuatorID="0" AxisID="0" BoardID="10" Type="Revolute">
          <Drive>
@@ -120,4 +120,5 @@
    <DigitalIn BitID="2" BoardID="10" Debounce="0.2" Name="PSM3-ManipClutch" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="7" BoardID="11" Debounce="1.5" Name="PSM3-Tool" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="10" BoardID="11" Debounce="1.5" Name="PSM3-Adapter" Pressed="1" Trigger="all"/>
+   <DallasChip BoardID="11" Name="PSM3-Dallas"/>
 </Config>

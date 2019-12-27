@@ -170,6 +170,17 @@ void mtsIntuitiveResearchKitPSM::Init(void)
                                                             175.0 * cmnPI_180,
                                                             175.0 * cmnPI_180,
                                                             175.0 * cmnPI_180);
+    // using values from sawControllersPID.xml: max_amp / nm_to_amp
+    CouplingChange.NoToolConfiguration.EffortMin().SetSize(NumberOfJoints());
+    CouplingChange.NoToolConfiguration.EffortMax().SetSize(NumberOfJoints());
+    CouplingChange.NoToolConfiguration.EffortMax().Assign(3.316101,
+                                                          3.316101,
+                                                          9.877926,
+                                                          0.343642,
+                                                          0.343642,
+                                                          0.343642,
+                                                          0.343642);
+    CouplingChange.NoToolConfiguration.EffortMin().Assign(-CouplingChange.NoToolConfiguration.EffortMax());
 
     mtsInterfaceRequired * interfaceRequired;
 

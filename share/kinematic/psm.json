@@ -12,7 +12,7 @@
                 "offset":  1.5708,
                 "qmin": -4.71239, // -270
                 "qmax": 4.71239,  //  270
-                "ftmax": 4.97
+                "ftmax": 3.316101
             },
             {
                 "name": "outer_pitch",
@@ -22,7 +22,7 @@
                 "offset": -1.5708,
                 "qmin": -0.925025, // -53
                 "qmax":  0.925025, //  53
-                "ftmax": 4.97
+                "ftmax": 3.316101
             },
             {
                 "name": "outer_insertion",
@@ -32,7 +32,7 @@
                 "offset": -0.4318,
                 "qmin": 0.0,
                 "qmax": 0.24,  // 240 mm
-                "ftmax": 14.81
+                "ftmax": 9.877926
             }
         ]
     }

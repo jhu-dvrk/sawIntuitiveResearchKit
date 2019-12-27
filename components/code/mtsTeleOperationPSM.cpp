@@ -842,7 +842,7 @@ double mtsTeleOperationPSM::JawToGripper(const double & jawAngle) const
     return (jawAngle - mGripperToJaw.Offset) / mGripperToJaw.Scale;
 }
 
-double mtsTeleOperationPSM::UpdateGripperToJawConfiguration(void)
+void mtsTeleOperationPSM::UpdateGripperToJawConfiguration(void)
 {
     // default values
     mGripperToJaw.Scale = 1.0;
