@@ -416,11 +416,12 @@ void mtsIntuitiveResearchKitArm::UpdateConfigurationJointKinematic(void)
     mStateTableConfiguration.Start();
     ConfigurationJointKinematics.Name().SetSize(NumberOfJointsKinematics());
     ConfigurationJointKinematics.Type().SetSize(NumberOfJointsKinematics());
-    std::vector<std::string> names(NumberOfJointsKinematics());
-    std::vector<robJoint::Type> types(NumberOfJointsKinematics());
+    const size_t jointsConfiguredSoFar = this->Manipulator->links.size();
+    std::vector<std::string> names(jointsConfiguredSoFar);
+    std::vector<robJoint::Type> types(jointsConfiguredSoFar);
     this->Manipulator->GetJointNames(names);
     this->Manipulator->GetJointTypes(types);
-    for (size_t index = 0; index < NumberOfJointsKinematics(); ++index) {
+    for (size_t index = 0; index < jointsConfiguredSoFar; ++index) {
         ConfigurationJointKinematics.Name().at(index) = names.at(index);
         switch (types.at(index)) {
         case robJoint::HINGE:
@@ -437,8 +438,8 @@ void mtsIntuitiveResearchKitArm::UpdateConfigurationJointKinematic(void)
     // position limits can be read as is
     ConfigurationJointKinematics.PositionMin().SetSize(NumberOfJointsKinematics());
     ConfigurationJointKinematics.PositionMax().SetSize(NumberOfJointsKinematics());
-    this->Manipulator->GetJointLimits(ConfigurationJointKinematics.PositionMin(),
-                                      ConfigurationJointKinematics.PositionMax());
+    this->Manipulator->GetJointLimits(ConfigurationJointKinematics.PositionMin().Ref(jointsConfiguredSoFar),
+                                      ConfigurationJointKinematics.PositionMax().Ref(jointsConfiguredSoFar));
     mStateTableConfiguration.Advance();
 }
 
@@ -562,7 +563,8 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
     if (this->Manipulator->LoadRobot(jsonDH) != robManipulator::ESUCCESS) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
                                  << ": failed to load \"DH\" parameters from file \""
-                                 << filename << "\"" << std::endl;
+                                 << filename << "\", error is "
+                                 << this->Manipulator->LastError() << std::endl;
         exit(EXIT_FAILURE);
     }
     std::stringstream dhResult;
@@ -1216,7 +1218,14 @@ void mtsIntuitiveResearchKitArm::ControlPositionCartesian(void)
             // finally send new joint values
             SetPositionJointLocal(jointSet);
         } else {
-            RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
+            // shows robManipulator error if used
+            if (this->Manipulator) {
+                RobotInterface->SendError(this->GetName()
+                                          + ": unable to solve inverse kinematics ("
+                                          + this->Manipulator->LastError() + ")");
+            } else {
+                RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
+            }
         }
         // reset flag
         mHasNewPIDGoal = false;
@@ -1480,7 +1489,7 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
     // get force preload from derived classes, in most cases 0, platform control for MTM
     vctDoubleVec effortPreload(NumberOfJointsKinematics());
     vctDoubleVec wrenchPreload(6);
-    
+
     ControlEffortCartesianPreload(effortPreload, wrenchPreload);
 
     // body wrench

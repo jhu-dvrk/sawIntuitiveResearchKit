@@ -44,17 +44,17 @@ robManipulatorECM::InverseKinematics(vctDynamicVector<double> & q,
                                      double CMN_UNUSED(LAMBDA))
 {
     if (q.size() != links.size()) {
-        CMN_LOG_RUN_ERROR << CMN_LOG_DETAILS
-                          << ": robManipulatorECM::InverseKinematics: expected " << links.size() << " joints values. "
-                          << " Got " << q.size()
-                          << std::endl;
+        std::stringstream ss;
+        ss << "robManipulatorECM::InverseKinematics: expected " << links.size()
+           << " joints values but received " << q.size();
+        mLastError = ss.str();
+        CMN_LOG_RUN_ERROR << mLastError << std::endl;
         return robManipulator::EFAILURE;
     }
 
     if (links.size() == 0) {
-        CMN_LOG_RUN_ERROR << CMN_LOG_DETAILS
-                          << ": robManipulatorECM::InverseKinematics: the manipulator has no links."
-                          << std::endl;
+        mLastError = "robManipulatorECM::InverseKinematics: the manipulator has no links";
+        CMN_LOG_RUN_ERROR << mLastError << std::endl;
         return robManipulator::EFAILURE;
     }
 
@@ -69,10 +69,14 @@ robManipulatorECM::InverseKinematics(vctDynamicVector<double> & q,
     const double z = Rt04.Translation().Z();
     const double z2 = z * z;
 
+    // if we encounter a joint limit, keep computing a solution but at
+    // the end return failure
+    bool hasReachedJointLimit = false;
+
     // hard coded check for dVRK classic, wouldn't work on S/Si system
     if (z > cmnTypeTraits<double>::Tolerance()) {
-        std::cerr << "z is positive, out of reach: " << Rts << std::endl;
-        return robManipulator::EFAILURE;
+        mLastError = "robManipulatorECM::InverseKinematics: z is positive, out of reach";
+        hasReachedJointLimit = true;
     }
 
     // first joint controls x position
@@ -100,13 +104,21 @@ robManipulatorECM::InverseKinematics(vctDynamicVector<double> & q,
         }
     }
 
+    // make sure we respect joint limits
+    if (ClampJointValueAndUpdateError(0, q[0])) {
+        hasReachedJointLimit = true;
+    }
+    if (ClampJointValueAndUpdateError(1, q[1])) {
+        hasReachedJointLimit = true;
+    }
+
     // third is translation, i.e. depth
     q[2] = depth - 0.0007; // 0.0007 is from DH link_3.offset - link_4.D
 
     // check that depth is reachable
     if (q[2] > links[2].GetKinematics()->PositionMax()) {
-        std::cerr << "goal is too far, out of reach: " << Rts << std::endl;
-        return robManipulator::EFAILURE;
+        mLastError = "robManipulatorECM::InverseKinematics: goal is too far, out of reach for q[2]";
+        hasReachedJointLimit = true;
     }
 
     // for orientation, we assume the goal is reachable
@@ -121,6 +133,14 @@ robManipulatorECM::InverseKinematics(vctDynamicVector<double> & q,
         q[3] = q3;
     } else {
         q[3] = -q3;
+    }
+
+    if (ClampJointValueAndUpdateError(3, q[3])) {
+        hasReachedJointLimit = true;
+    }
+
+    if (hasReachedJointLimit) {
+        return robManipulator::EFAILURE;
     }
 
     return robManipulator::ESUCCESS;

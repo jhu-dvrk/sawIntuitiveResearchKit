@@ -44,19 +44,23 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
                                      double CMN_UNUSED(LAMBDA))
 {
     if (q.size() != links.size()) {
-        CMN_LOG_RUN_ERROR << CMN_LOG_DETAILS
-                          << ": robManipulatorMTM::InverseKinematics: expected " << links.size() << " joints values. "
-                          << " Got " << q.size()
-                          << std::endl;
+        std::stringstream ss;
+        ss << "robManipulatorMTM::InverseKinematics: expected " << links.size()
+           << " joints values but received " << q.size();
+        mLastError = ss.str();
+        CMN_LOG_RUN_ERROR << mLastError << std::endl;
         return robManipulator::EFAILURE;
     }
 
     if (links.size() == 0) {
-        CMN_LOG_RUN_ERROR << CMN_LOG_DETAILS
-                          << ": robManipulatorMTM::InverseKinematics: the manipulator has no links."
-                          << std::endl;
+        mLastError = "robManipulatorMTM::InverseKinematics: the manipulator has no links";
+        CMN_LOG_RUN_ERROR << mLastError << std::endl;
         return robManipulator::EFAILURE;
     }
+
+    // if we encounter a joint limit, keep computing a solution but at
+    // the end return failure
+    bool hasReachedJointLimit = false;
 
     // take Rtw0 into account
     vctFrm4x4 Rt07;
@@ -92,6 +96,13 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
     q[1] = q1;
     q[2] = q2 - angleOffset + cmnPI_2;
 
+    // check joint limits for first 3 joints
+    for (size_t joint = 0; joint < 3; joint++) {
+        if (ClampJointValueAndUpdateError(joint, q[joint])) {
+            hasReachedJointLimit = true;
+        }
+    }
+
     // optimized placement of platform
     // compute projection of roll axis on platform plane
     const vctFrm4x4 Rt03 = this->ForwardKinematics(q, 3);
@@ -120,6 +131,10 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
     q[4] = closed57.alpha() + cmnPI_2;
     q[5] = -closed57.beta() + cmnPI_2;
     q[6] = closed57.gamma() + cmnPI;
+
+    if (hasReachedJointLimit) {
+        return robManipulator::EFAILURE;
+    }
 
     return robManipulator::ESUCCESS;
 }
