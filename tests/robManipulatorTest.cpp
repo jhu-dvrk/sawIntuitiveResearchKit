@@ -155,7 +155,8 @@ void robManipulatorTest::ComputeAndTestIK(ManipulatorTestData & data)
     robManipulator::Errno result = data.Manipulator->InverseKinematics(data.SolutionJoints,
                                                                        data.ActualPose);
     // make sure IK didn't complain
-    CPPUNIT_ASSERT_EQUAL_MESSAGE("robManipulator::InverseKinematics result for " + data.Name,
+    CPPUNIT_ASSERT_EQUAL_MESSAGE("robManipulator::InverseKinematics result for "
+                                 + data.Name + ": " + data.Manipulator->LastError(),
                                  robManipulator::ESUCCESS,
                                  result);
 
