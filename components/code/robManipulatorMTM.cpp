@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2019-11-11
 
-  (C) Copyright 2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2019-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -98,7 +98,7 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
 
     // check joint limits for first 3 joints
     for (size_t joint = 0; joint < 3; joint++) {
-        if (ClampJointValueAndUpdateError(joint, q[joint])) {
+        if (ClampJointValueAndUpdateError(joint, q[joint], 1e-5)) {
             hasReachedJointLimit = true;
         }
     }

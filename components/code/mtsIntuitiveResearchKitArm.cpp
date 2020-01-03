@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -1685,7 +1685,14 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
         ToJointsPID(jointSet, mJointTrajectory.Goal);
         mJointTrajectory.GoalVelocity.SetAll(0.0);
     } else {
-        RobotInterface->SendError(this->GetName() + ": SetPositionGoalCartesian, unable to solve inverse kinematics");
+        // shows robManipulator error if used
+        if (this->Manipulator) {
+            RobotInterface->SendError(this->GetName()
+                                      + ": unable to solve inverse kinematics ("
+                                      + this->Manipulator->LastError() + ")");
+        } else {
+            RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
+        }
         mJointTrajectory.GoalReachedEvent(false);
     }
 }

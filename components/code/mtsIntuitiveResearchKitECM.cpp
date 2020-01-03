@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -52,28 +52,8 @@ void mtsIntuitiveResearchKitECM::SetSimulated(void)
 robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
-    // re-align desired frame to 4 axis direction to reduce free space
-    vctFrm4x4 newGoal;
-    newGoal.Translation().Assign(cartesianGoal.Translation());
-
-    vctDouble3 shaft = cartesianGoal.Translation();
-    shaft.NormalizedSelf();
-    const vctDouble3 z = cartesianGoal.Rotation().Column(2).Ref<3>(); // last column of rotation matrix
-        
-    if (! z.AlmostEqual(shaft, 0.0001)) {
-        vctMatRot3 reAlign;
-        vct3 axis;
-        double angle;
-        axis.CrossProductOf(z, shaft);
-        angle = acos(vctDotProduct(z, shaft));
-        reAlign.From(vctAxAnRot3(axis, angle, VCT_NORMALIZE));
-        newGoal.Rotation().ProductOf(reAlign, cartesianGoal.Rotation());
-    } else {
-        newGoal.Rotation().Assign(cartesianGoal.Rotation());
-    }
-
     // solve IK
-    if (Manipulator->InverseKinematics(jointSet, newGoal) == robManipulator::ESUCCESS) {
+    if (Manipulator->InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = StateJointKinematics.Position()[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
@@ -86,7 +66,7 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
 #if 0
         vctFrm4x4 forward = Manipulator->ForwardKinematics(jointSet);
         vctDouble3 diff;
-        diff.DifferenceOf(forward.Translation(), newGoal.Translation());
+        diff.DifferenceOf(forward.Translation(), cartesianGoal.Translation());
         std::cerr << cmnInternalTo_mm(diff.Norm()) << "mm ";
 #endif
         return robManipulator::ESUCCESS;
