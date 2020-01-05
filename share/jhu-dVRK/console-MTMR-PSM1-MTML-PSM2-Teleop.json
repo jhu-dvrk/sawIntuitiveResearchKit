@@ -4,6 +4,7 @@
     ,
     "io": {
         "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
+        , "firewire-protocol": "broadcast-read-write"
     }
     ,
     "arms":

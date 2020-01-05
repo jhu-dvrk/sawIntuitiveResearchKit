@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -106,6 +106,7 @@ void mtsTeleOperationPSM::Init(void)
     this->StateTable.AddData(mMTM.PositionCartesianDesired, "MTMCartesianPositionDesired");
     this->StateTable.AddData(mPSM.PositionCartesianCurrent, "PSMCartesianPosition");
     this->StateTable.AddData(mAlignOffset, "AlignOffset");
+    this->StateTable.AddData(mJawOffset, "JawOffset");
 
     mConfigurationStateTable = new mtsStateTable(100, "Configuration");
     mConfigurationStateTable->SetAutomaticAdvance(false);
@@ -140,6 +141,7 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("SetPositionCartesian", mPSM.SetPositionCartesian);
         interfaceRequired->AddFunction("Freeze", mPSM.Freeze);
         interfaceRequired->AddFunction("GetStateJaw", mPSM.GetStateJaw, MTS_OPTIONAL);
+        interfaceRequired->AddFunction("GetConfigurationJaw", mPSM.GetConfigurationJaw, MTS_OPTIONAL);
         interfaceRequired->AddFunction("SetPositionJaw", mPSM.SetPositionJaw, MTS_OPTIONAL);
         interfaceRequired->AddFunction("GetCurrentState", mPSM.GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState", mPSM.GetDesiredState);
@@ -152,6 +154,11 @@ void mtsTeleOperationPSM::Init(void)
     interfaceRequired = AddInterfaceRequired("Clutch");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::ClutchEventHandler, this, "Button");
+    }
+
+    interfaceRequired = AddInterfaceRequired("PSM-base-frame", MTS_OPTIONAL);
+    if (interfaceRequired) {
+        interfaceRequired->AddFunction("GetPositionCartesian", mBaseFrame.GetPositionCartesian);
     }
 
     mInterface = AddInterfaceProvided("Setting");
@@ -194,6 +201,9 @@ void mtsTeleOperationPSM::Init(void)
         mInterface->AddCommandReadState(this->StateTable,
                                         mAlignOffset,
                                         "GetAlignOffset");
+        mInterface->AddCommandReadState(this->StateTable,
+                                        mJawOffset,
+                                        "GetJawOffset");
         // events
         mInterface->AddEventWrite(MessageEvents.DesiredState,
                                   "DesiredState", std::string(""));
@@ -233,6 +243,18 @@ void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
         vctMatRot3 orientation; // identity by default
         cmnDataJSON<vctMatRot3>::DeSerializeText(orientation, jsonConfig["rotation"]);
         SetRegistrationRotation(orientation);
+    }
+
+    // rotation locked
+    jsonValue = jsonConfig["rotation-locked"];
+    if (!jsonValue.empty()) {
+        mRotationLocked = jsonValue.asBool();
+    }
+
+    // rotation locked
+    jsonValue = jsonConfig["translation-locked"];
+    if (!jsonValue.empty()) {
+        mTranslationLocked = jsonValue.asBool();
     }
 
     // ignore jaw if needed
@@ -374,8 +396,8 @@ void mtsTeleOperationPSM::SetScale(const double & scale)
     ConfigurationEvents.Scale(mScale);
 
     // update MTM/PSM previous position to prevent jumps
-    mMTM.CartesianPrevious.From(mMTM.PositionCartesianCurrent.Position());
-    mPSM.CartesianPrevious.From(mPSM.PositionCartesianCurrent.Position());
+    mMTM.CartesianInitial.From(mMTM.PositionCartesianCurrent.Position());
+    mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
 }
 
 void mtsTeleOperationPSM::SetRegistrationRotation(const vctMatRot3 & rotation)
@@ -398,8 +420,8 @@ void mtsTeleOperationPSM::LockRotation(const bool & lock)
         mTeleopState.SetCurrentState("DISABLED");
     } else {
         // update MTM/PSM previous position
-        mMTM.CartesianPrevious.From(mMTM.PositionCartesianDesired.Position());
-        mPSM.CartesianPrevious.From(mPSM.PositionCartesianCurrent.Position());
+        mMTM.CartesianInitial.From(mMTM.PositionCartesianDesired.Position());
+        mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
         // lock orientation is the arm is running
         if (mTeleopState.CurrentState() == "ENABLED") {
             mMTM.LockOrientation(mMTM.PositionCartesianCurrent.Position().Rotation());
@@ -414,8 +436,8 @@ void mtsTeleOperationPSM::LockTranslation(const bool & lock)
     mConfigurationStateTable->Advance();
     ConfigurationEvents.TranslationLocked(mTranslationLocked);
     // update MTM/PSM previous position
-    mMTM.CartesianPrevious.From(mMTM.PositionCartesianDesired.Position());
-    mPSM.CartesianPrevious.From(mPSM.PositionCartesianCurrent.Position());
+    mMTM.CartesianInitial.From(mMTM.PositionCartesianDesired.Position());
+    mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
 }
 
 void mtsTeleOperationPSM::SetAlignMTM(const bool & alignMTM)
@@ -458,6 +480,17 @@ void mtsTeleOperationPSM::RunAllStates(void)
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from PSM");
         this->SetDesiredState("DISABLED");
+    }
+
+    // get base-frame cartesian position if available
+    if (mBaseFrame.GetPositionCartesian.IsValid()) {
+        executionResult = mBaseFrame.GetPositionCartesian(mBaseFrame.PositionCartesianCurrent);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << "Run: call to BaseFrame.GetPositionCartesian failed \""
+                                    << executionResult << "\"" << std::endl;
+            mInterface->SendError(this->GetName() + ": unable to get cartesian position from base frame");
+            this->SetDesiredState("DISABLED");
+        }
     }
 
     // check if anyone wanted to disable anyway
@@ -535,7 +568,7 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
     // reset timer
     mInStateTimer = StateTable.GetTic();
     mTimeSinceLastAlign = 0.0;
-    
+
     // if we don't align MTM, just stay in same position
     if (!mAlignMTM) {
         // convert to prm type
@@ -545,6 +578,8 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 
     // reset number of transitions for gripper/jaw
     if (!mIgnoreJaw) {
+        // figure out the mapping between the MTM gripper angle and the PSM jaw angle
+        UpdateGripperToJawConfiguration();
         // if -1, it's because we're back from clutch and we were following
         if (mGripperJawTransitions == -1) {
             mGripperJawTransitions = 1;
@@ -556,8 +591,9 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
             if (mMTM.GetStateGripper.IsValid()) {
                 mMTM.GetStateGripper(mMTM.StateGripper);
                 mPSM.GetStateJaw(mPSM.StateJaw);
+                // here we compute all angles in MTM scale
                 const double gripperInDegrees = cmn180_PI * mMTM.StateGripper.Position()[0];
-                const double jawInDegrees = cmn180_PI * mPSM.StateJaw.Position()[0];
+                const double jawInDegrees = cmn180_PI * JawToGripper(mPSM.StateJaw.Position()[0]);
                 // MTMs can't really open above 60 degrees so if both ends are above 55, just engage
                 if ((gripperInDegrees > mtsIntuitiveResearchKit::TeleOperationPSMGripperJawFullOpen)
                     && (jawInDegrees > mtsIntuitiveResearchKit::TeleOperationPSMGripperJawFullOpen)) {
@@ -633,8 +669,9 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
         if (mMTM.GetStateGripper.IsValid()) {
             mMTM.GetStateGripper(mMTM.StateGripper);
             mPSM.GetStateJaw(mPSM.StateJaw);
+            // here we compute all angles in MTM scale
             const double gripperInDegrees = cmn180_PI * mMTM.StateGripper.Position()[0];
-            const double jawInDegrees = cmn180_PI * mPSM.StateJaw.Position()[0];
+            const double jawInDegrees = cmn180_PI * JawToGripper(mPSM.StateJaw.Position()[0]);
             // MTMs can't really open above 60 degrees so if both ends are above 55, just engage
             if ((gripperInDegrees > mtsIntuitiveResearchKit::TeleOperationPSMGripperJawFullOpen)
                 && (jawInDegrees > mtsIntuitiveResearchKit::TeleOperationPSMGripperJawFullOpen)) {
@@ -658,6 +695,8 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     if ((orientationErrorInDegrees <= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance)
         && (mGripperJawTransitions > 1)) {
         if (mTeleopState.DesiredState() == "ENABLED") {
+            // jaw offset is in PSM scale so we need to convert gripper to jaw scale
+            mJawOffset = mPSM.StateJaw.Position()[0] - GripperToJaw(mMTM.StateGripper.Position()[0]);
             mTeleopState.SetCurrentState("ENABLED");
         }
     } else {
@@ -678,8 +717,12 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
 void mtsTeleOperationPSM::EnterEnabled(void)
 {
     // update MTM/PSM previous position
-    mMTM.CartesianPrevious.From(mMTM.PositionCartesianCurrent.Position());
-    mPSM.CartesianPrevious.From(mPSM.PositionCartesianCurrent.Position());
+    mMTM.CartesianInitial.From(mMTM.PositionCartesianCurrent.Position());
+    mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
+    mAlignOffsetInitial = mAlignOffset;
+    if (mBaseFrame.GetPositionCartesian.IsValid()) {
+        mBaseFrame.CartesianInitial.From(mBaseFrame.PositionCartesianCurrent.Position());
+    }
 
     // set MTM/PSM to Teleop (Cartesian Position Mode)
     mMTM.SetGravityCompensation(true);
@@ -712,27 +755,37 @@ void mtsTeleOperationPSM::RunEnabled(void)
             vct3 mtmTranslation;
             vct3 psmTranslation;
             if (mTranslationLocked) {
-                psmTranslation = mPSM.CartesianPrevious.Translation();
+                psmTranslation = mPSM.CartesianInitial.Translation();
             } else {
-                mtmTranslation = (mtmPosition.Translation() - mMTM.CartesianPrevious.Translation());
+                mtmTranslation = (mtmPosition.Translation() - mMTM.CartesianInitial.Translation());
                 psmTranslation = mtmTranslation * mScale;
-                psmTranslation = mRegistrationRotation * psmTranslation + mPSM.CartesianPrevious.Translation();
+                psmTranslation = mRegistrationRotation * psmTranslation + mPSM.CartesianInitial.Translation();
             }
             // rotation
             vctMatRot3 psmRotation;
             if (mRotationLocked) {
-                psmRotation.From(mPSM.CartesianPrevious.Rotation());
+                psmRotation.From(mPSM.CartesianInitial.Rotation());
             } else {
-                psmRotation = mRegistrationRotation * mtmPosition.Rotation() * mAlignOffset;
+                psmRotation = mRegistrationRotation * mtmPosition.Rotation() * mAlignOffsetInitial;
             }
 
             // compute desired psm position
             vctFrm4x4 psmCartesianGoal;
             psmCartesianGoal.Translation().Assign(psmTranslation);
             psmCartesianGoal.Rotation().FromNormalized(psmRotation);
-            mPSM.PositionCartesianSet.Goal().FromNormalized(psmCartesianGoal);
+
+            // take into account changes in PSM base frame if any
+            if (mBaseFrame.GetPositionCartesian.IsValid()) {
+                vctFrm4x4 baseFrame(mBaseFrame.PositionCartesianCurrent.Position());
+                vctFrm4x4 baseFrameChange = baseFrame.Inverse() * mBaseFrame.CartesianInitial;
+                // update PSM position goal
+                psmCartesianGoal = baseFrameChange * psmCartesianGoal;
+                // update alignment offset
+                mtmPosition.Rotation().ApplyInverseTo(psmCartesianGoal.Rotation(), mAlignOffset);
+            }
 
             // PSM go this cartesian position
+            mPSM.PositionCartesianSet.Goal().FromNormalized(psmCartesianGoal);
             mPSM.SetPositionCartesian(mPSM.PositionCartesianSet);
 
             if (!mIgnoreJaw) {
@@ -740,7 +793,11 @@ void mtsTeleOperationPSM::RunEnabled(void)
                 if (mMTM.GetStateGripper.IsValid()) {
                     prmStateJoint gripper;
                     mMTM.GetStateGripper(gripper);
-                    mPSM.PositionJointSet.Goal()[0] = gripper.Position()[0];
+                    mPSM.PositionJointSet.Goal()[0] = GripperToJaw(gripper.Position()[0])
+                        + mJawOffset;
+                    if (mPSM.PositionJointSet.Goal()[0] < mGripperToJaw.PositionMin) {
+                        mPSM.PositionJointSet.Goal()[0] = mGripperToJaw.PositionMin;
+                    }
                     mPSM.SetPositionJaw(mPSM.PositionJointSet);
                 } else {
                     mPSM.PositionJointSet.Goal()[0] = 45.0 * cmnPI_180;
@@ -772,6 +829,43 @@ void mtsTeleOperationPSM::TransitionEnabled(void)
     if (mTeleopState.DesiredStateIsNotCurrent()) {
         SetFollowing(false);
         mTeleopState.SetCurrentState(mTeleopState.DesiredState());
+    }
+}
+
+double mtsTeleOperationPSM::GripperToJaw(const double & gripperAngle) const
+{
+    return mGripperToJaw.Scale * gripperAngle + mGripperToJaw.Offset;
+}
+
+double mtsTeleOperationPSM::JawToGripper(const double & jawAngle) const
+{
+    return (jawAngle - mGripperToJaw.Offset) / mGripperToJaw.Scale;
+}
+
+void mtsTeleOperationPSM::UpdateGripperToJawConfiguration(void)
+{
+    // default values
+    mGripperToJaw.Scale = 1.0;
+    mGripperToJaw.Offset = 0.0;
+    mGripperToJaw.PositionMin = cmnTypeTraits<double>::MinNegativeValue();
+    // get the PSM jaw configuration if possible to find range
+    if (mPSM.GetConfigurationJaw.IsValid()) {
+        mPSM.GetConfigurationJaw(mPSM.ConfigurationJaw);
+        if ((mPSM.ConfigurationJaw.PositionMin().size() == 1)
+            && (mPSM.ConfigurationJaw.PositionMax().size() == 1)) {
+            // for now we assume MTM is from 0 to 60 degrees
+            double min = mPSM.ConfigurationJaw.PositionMin()[0];
+            double max = mPSM.ConfigurationJaw.PositionMax()[0];
+            // save min for later so we never ask PSM to close jaws more than min
+            mGripperToJaw.PositionMin = min;
+            // if the PSM can close its jaws past 0 (tighter), we map from 0 to qmax
+            // negative values just mean tighter jaws
+            if (min < 0.0) {
+                min = 0.0;
+            }
+            mGripperToJaw.Scale = (max - min) / (60.0 * cmnPI_180);
+            mGripperToJaw.Offset = min;
+        }
     }
 }
 

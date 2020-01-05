@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,6 +21,9 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitECM_h
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitEndoscopeTypes.h>
+
+// Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
@@ -32,7 +35,7 @@ public:
     mtsIntuitiveResearchKitECM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitECM() {}
 
-    void SetSimulated(void);
+    void SetSimulated(void) override;
 
 protected:
 
@@ -41,38 +44,38 @@ protected:
                               const std::string & filename) override;
 
     /*! Configuration methods */
-    inline size_t NumberOfAxes(void) const {
+    inline size_t NumberOfAxes(void) const override {
         return 4;
     }
 
-    inline size_t NumberOfJoints(void) const {
+    inline size_t NumberOfJoints(void) const override {
         return 4;
     }
 
-    inline size_t NumberOfJointsKinematics(void) const {
+    inline size_t NumberOfJointsKinematics(void) const override {
         return 4;
     }
 
-    inline size_t NumberOfBrakes(void) const {
+    inline size_t NumberOfBrakes(void) const override {
         return 3;
     }
 
-    inline bool UseFeedForward(void) const {
+    inline bool UseFeedForward(void) const override {
         return true;
     }
 
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                            const vctFrm4x4 & cartesianGoal);
+                                            const vctFrm4x4 & cartesianGoal) override;
 
     // see base class
-    inline bool IsSafeForCartesianControl(void) const {
-        return (JointsKinematics.Position().at(2) > 50.0 * cmn_mm);
+    inline bool IsSafeForCartesianControl(void) const override {
+        return (StateJointKinematics.Position().at(2) > 50.0 * cmn_mm);
     }
 
-    void Init(void);
+    void Init(void) override;
 
     // state related methods
-    void SetGoalHomingArm(void);
+    void SetGoalHomingArm(void) override;
     void TransitionArmHomed(void);
     void EnterManual(void);
     void RunManual(void);
@@ -81,8 +84,8 @@ protected:
     void EventHandlerTrackingError(void);
     void EventHandlerManipClutch(const prmEventButton & button);
 
-    void UpdateFeedForward(vctDoubleVec & feedForward);
-    void AddGravityCompensationEfforts(vctDoubleVec & efforts);
+    void UpdateFeedForward(vctDoubleVec & feedForward) override;
+    void AddGravityCompensationEfforts(vctDoubleVec & efforts) override;
 
     struct {
         mtsFunctionRead GetButton;
@@ -94,6 +97,17 @@ protected:
         mtsFunctionWrite ManipClutch;
         std::string ManipClutchPreviousState;
     } ClutchEvents;
+
+    /*! Set endoscope type.  Uses string as defined in
+      mtsIntuitiveResearchKitEndoscopeTypes.cdg, upper case with separating
+      underscores. */
+    void SetEndoscopeType(const std::string & endoscopeType);
+    
+    mtsIntuitiveResearchKitEndoscopeTypes::Type mEndoscopeType;
+    bool mEndoscopeConfigured = false;
+    struct {
+        mtsFunctionWrite EndoscopeType;
+    } EndoscopeEvents;
 
     // tooltip, used for up/down endoscopes
     robManipulator * ToolOffset;

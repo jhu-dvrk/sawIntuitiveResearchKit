@@ -2,10 +2,11 @@
 {
     // see dVRK user guide
     "snake-like" : true,
+    "convention": "modified",
     "DH": {
-        "links": [
+        "joints": [
             {
-                "convention": "modified",
+                "name": "outer_roll",
                 "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4024,
                 "type": "revolute",
                 "mode": "active",
@@ -15,7 +16,7 @@
                 "ftmax": 0.33
             },
             {
-                "convention": "modified",
+                "name": "outer_wrist_pitch1",
                 "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -25,7 +26,7 @@
                 "ftmax": 0.1
             },
             {
-                "convention": "modified",
+                "name": "outer_wrist_yaw1",
                 "alpha": -1.5708, "A":  0.0034, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -35,7 +36,7 @@
                 "ftmax": 0.1
             },
             {
-                "convention": "modified",
+                "name": "outer_wrist_yaw2",
                 "alpha": 0.0000, "A":  0.0034, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -45,7 +46,7 @@
                 "ftmax": 0.1
             },
             {
-                "convention": "modified",
+                "name": "outer_wrist_pitch2",
                 "alpha": 1.5708, "A":  0.0034, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",

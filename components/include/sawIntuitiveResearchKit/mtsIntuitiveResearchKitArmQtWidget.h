@@ -30,6 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianGetQtWidget.h>
 #include <cisstParameterTypes/prmForceCartesianGet.h>
+#include <cisstParameterTypes/prmPositionJointSetQtWidget.h>
 #include <cisstParameterTypes/prmOperatingStateQtWidget.h>
 
 #include <QWidget>
@@ -75,9 +76,11 @@ private:
 
 protected:
     struct ArmStruct {
+        mtsFunctionRead GetConfigurationJoint;
         mtsFunctionRead GetStateJoint;
         mtsFunctionRead GetPositionCartesian;
         mtsFunctionRead GetWrenchBody;
+        mtsFunctionWrite SetPositionGoalJoint;
         mtsFunctionWrite SetDesiredState;
         mtsFunctionRead GetPeriodStatistics;
     } Arm;
@@ -91,6 +94,7 @@ protected:
 private:
     bool DirectControl;
 
+    prmConfigurationJoint ConfigurationJoint;
     prmStateJoint StateJoint;
     prmStateJointQtWidget * QSJWidget;
 
@@ -99,6 +103,8 @@ private:
 
     prmForceCartesianGet Wrench;
     vctForceTorqueQtWidget * QFTWidget;
+
+    prmPositionJointSetQtWidget * QPJSWidget;
 
     // timing
     mtsIntervalStatistics IntervalStatistics;

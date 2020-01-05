@@ -52,25 +52,29 @@ robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec
                                                                     const vctFrm4x4 & cartesianGoal)
 {
     // re-align desired frame to 4 axis direction to reduce free space
+    vctFrm4x4 newGoal;
+    newGoal.Translation().Assign(cartesianGoal.Translation());
+
     vctDouble3 shaft = cartesianGoal.Translation();
     shaft.NormalizedSelf();
     const vctDouble3 z = cartesianGoal.Rotation().Column(2).Ref<3>(); // last column of rotation matrix
-    vctMatRot3 reAlign;
-    vct3 axis;
-    double angle;
+        
     if (! z.AlmostEqual(shaft, 0.0001)) {
+        vctMatRot3 reAlign;
+        vct3 axis;
+        double angle;
         axis.CrossProductOf(z, shaft);
         angle = acos(vctDotProduct(z, shaft));
         reAlign.From(vctAxAnRot3(axis, angle, VCT_NORMALIZE));
+        newGoal.Rotation().ProductOf(reAlign, cartesianGoal.Rotation());
+    } else {
+        newGoal.Rotation().Assign(cartesianGoal.Rotation());
     }
 
-    vctFrm4x4 newGoal;
-    newGoal.Translation().Assign(cartesianGoal.Translation());
-    newGoal.Rotation().ProductOf(reAlign, cartesianGoal.Rotation());
-
+    // solve IK
     if (Manipulator->InverseKinematics(jointSet, newGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
-        const double difference = JointsKinematics.Position()[3] - jointSet[3];
+        const double difference = StateJointKinematics.Position()[3] - jointSet[3];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[3] = jointSet[3] + differenceInTurns * 2.0 * cmnPI;
         // make sure we are away from RCM point, this test is
@@ -143,6 +147,10 @@ void mtsIntuitiveResearchKitECM::Init(void)
     CMN_ASSERT(RobotInterface);
     RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
 
+    // endoscope commands and events
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitECM::SetEndoscopeType, this, "SetEndoscopeType");
+    RobotInterface->AddEventWrite(EndoscopeEvents.EndoscopeType, "EndoscopeType", std::string());
+
     // ManipClutch: digital input button event from ECM
     interfaceRequired = AddInterfaceRequired("ManipClutch");
     if (interfaceRequired) {
@@ -159,24 +167,15 @@ void mtsIntuitiveResearchKitECM::ConfigureArmSpecific(const Json::Value & jsonCo
     const Json::Value jsonEndoscope = jsonConfig["endoscope"];
     if (!jsonEndoscope.isNull()) {
         std::string endoscope = jsonEndoscope.asString();
-        if (endoscope == "STRAIGHT") {
-            ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
-                                            -1.0,  0.0,  0.0,  0.0,
-                                             0.0,  0.0,  1.0,  0.0,
-                                             0.0,  0.0,  0.0,  1.0);
-        } else {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": \"endoscope\" type \"" << endoscope
-                                     << "\" is not supported.  Options are STRAIGHT (from file \""
-                                     << filename << "\")" << std::endl;
-            exit(EXIT_FAILURE);
-        }
-        ToolOffset = new robManipulator(ToolOffsetTransformation);
-        Manipulator->Attach(ToolOffset);
+        SetEndoscopeType(endoscope);
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                  << ": \"endoscope\" must be defined (from file \""
                                  << filename << "\")" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    if (!mEndoscopeConfigured) {
         exit(EXIT_FAILURE);
     }
 
@@ -217,12 +216,15 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
         mJointTrajectory.Goal.SetAll(0.0);
     } else {
         // stay at current position by default
-        mJointTrajectory.Goal.Assign(JointsDesiredPID.Position(), NumberOfJoints());
+        mJointTrajectory.Goal.Assign(StateJointDesiredPID.Position(), NumberOfJoints());
     }
 }
 
 void mtsIntuitiveResearchKitECM::TransitionArmHomed(void)
 {
+    // event to propagate endoscope type based on configuration file
+    EndoscopeEvents.EndoscopeType(mtsIntuitiveResearchKitEndoscopeTypes::TypeToString(mEndoscopeType));
+
     // on ECM, arm homed means arm ready
     if (mArmState.DesiredStateIsNotCurrent()) {
         mCartesianReady = true;
@@ -297,5 +299,81 @@ void mtsIntuitiveResearchKitECM::UpdateFeedForward(vctDoubleVec & feedForward)
 void mtsIntuitiveResearchKitECM::AddGravityCompensationEfforts(vctDoubleVec & efforts)
 {
     vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
-    efforts.Add(Manipulator->CCG_MDH(JointsKinematics.Position(), qd, 9.81));
+    efforts.Add(Manipulator->CCG_MDH(StateJointKinematics.Position(), qd, 9.81));
+}
+
+void mtsIntuitiveResearchKitECM::SetEndoscopeType(const std::string & endoscopeType)
+{
+    // initialize configured flag
+    mEndoscopeConfigured = false;
+
+    RobotInterface->SendStatus(this->GetName() + ": setting up for endoscope type \"" + endoscopeType + "\"");
+    // check if the endoscope is in the supported list
+    auto found =
+        std::find(mtsIntuitiveResearchKitEndoscopeTypes::TypeVectorString().begin(),
+                  mtsIntuitiveResearchKitEndoscopeTypes::TypeVectorString().end(),
+                  endoscopeType);
+    if (found == mtsIntuitiveResearchKitEndoscopeTypes::TypeVectorString().end()) {
+        RobotInterface->SendError(this->GetName() + ": endoscope type \"" + endoscopeType + "\" is not supported");
+        EndoscopeEvents.EndoscopeType(std::string("ERROR"));
+        return;
+    }
+    // supported endoscopes
+    mEndoscopeType = mtsIntuitiveResearchKitEndoscopeTypes::TypeFromString(endoscopeType);
+
+    // update tool tip offset
+    ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
+                                    -1.0,  0.0,  0.0,  0.0,
+                                     0.0,  0.0,  1.0,  0.0,
+                                     0.0,  0.0,  0.0,  1.0);
+    vctFrm4x4 tip;
+    tip.Translation().Assign(vct3(0.0, 0.0, 0.0));
+    switch (mEndoscopeType) {
+    case mtsIntuitiveResearchKitEndoscopeTypes::SD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::HD_UP:
+        // -30 degree rotation along X axis
+        tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), -30.0 * cmnPI_180));
+        ToolOffsetTransformation = ToolOffsetTransformation * tip;
+        break;
+    case mtsIntuitiveResearchKitEndoscopeTypes::SD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::HD_DOWN:
+        // 30 degree rotation along X axis
+        tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), 30.0 * cmnPI_180));
+        ToolOffsetTransformation = ToolOffsetTransformation * tip;
+        break;
+    default:
+        break;
+    }
+    // remove old tip and replace by new one
+    Manipulator->DeleteTools();
+    ToolOffset = new robManipulator(ToolOffsetTransformation);
+    Manipulator->Attach(ToolOffset);
+
+    // update estimated mass for gravity compensation
+    double mass;
+    switch (mEndoscopeType) {
+    case mtsIntuitiveResearchKitEndoscopeTypes::SD_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SD_DOWN:
+        mass = 1.5;
+        break;
+    case mtsIntuitiveResearchKitEndoscopeTypes::HD_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::HD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::HD_DOWN:
+        mass = 2.5;
+        break;
+    default:
+        mass = 0.0;
+        break;
+    }
+
+    // make sure we have enough joints in the kinematic chain
+    CMN_ASSERT(Manipulator->links.size() == 4);
+    Manipulator->links.at(3).MassData().Mass() = mass;
+
+    // set configured flag
+    mEndoscopeConfigured = true;
+
+    // event to inform other components (GUI/ROS)
+    EndoscopeEvents.EndoscopeType(endoscopeType);
 }

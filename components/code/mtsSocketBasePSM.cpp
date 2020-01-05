@@ -18,6 +18,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsSocketBasePSM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
+#include <cisstMultiTask/mtsManagerLocal.h>
 
 mtsSocketBasePSM::mtsSocketBasePSM(const std::string & componentName, const double periodInSeconds,
                                    const std::string & ip, const unsigned int port, bool isServer) :

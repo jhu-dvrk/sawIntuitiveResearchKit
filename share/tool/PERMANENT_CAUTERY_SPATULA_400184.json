@@ -1,0 +1,76 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    // see dVRK user guide
+    "DH": {
+        "convention": "modified",
+        "joints": [
+            {
+                "name": "outer_roll",
+                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4162,
+                "type": "revolute",
+                "mode": "active",
+                "offset":  0.0000,
+                "qmin": -4.53786, // -260 degrees
+                "qmax":  4.53786, //  260 degrees
+                "ftmax": 0.33
+            },
+            {
+                "name": "outer_wrist_pitch",
+                "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset": -1.5708,
+                "qmin": -1.39626, // -80 degrees
+                "qmax":  1.39626, //  80 degrees
+                "ftmax": 0.25
+            },
+            {
+                "name": "outer_wrist_yaw",
+                "alpha": -1.5708, "A":  0.0093, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset": -1.5708,
+                "qmin": -1.4835, // -85 degrees
+                "qmax":  1.4835, //  85 degrees
+                "ftmax": 0.20
+            }
+        ]
+    }
+    ,
+    "jaw" : {
+        // spatula doesn't have jaws
+        "qmin":  0.0, // 0 degrees
+        "qmax":  0.5, // 0 degrees, but not exactly to avoid warnings in
+        "ftmax": 0.0
+    }
+    ,
+    // rotation to match ISI convention (for read-only research API on commercial da Vinci)
+    "tooltip-offset" : [[ 0.0, -1.0,  0.0,  0.0],
+                        [ 0.0,  0.0,  1.0,  0.0],
+                        [-1.0,  0.0,  0.0,  0.0],
+                        [ 0.0,  0.0,  0.0,  1.0]]
+    ,
+    // values from the dVRK user guide, see tool appendix C
+    "coupling" : {
+        // -- this is the proper coupling matrix assuming that we can use last 2 actuators for the last joint
+        // "ActuatorToJointPosition" : [[ -1.5632,  0.0000,  0.0000,  0.0000],
+        //                              [  0.0000,  1.1353,  0.0000,  0.0000],
+        //                              [  0.0000,  0.7827, -0.5291, -0.5291],
+        //                              [  0.0000,  0.0000,  1.0583,  1.0583]]
+        // -- this is the dVRK hack, assuming that last disk if removed on the tool
+        // also note that the coupling value for disk 6 is doubled, assuming ISI has a matrix for two motors
+        // so each motor is responsible for 1/2 torque
+        "ActuatorToJointPosition" : [[ -1.5632,  0.0000,  0.0000,  0.0000],
+                                     [  0.0000,  1.1353,  0.0000,  0.0000],
+                                     [  0.0000,  0.7827, -1.0582,  0.0000],
+                                     [  0.0000,  0.0000,  0.0000,  1.0000]] // note that we don't use the last actuator
+    }
+    ,
+    // angles used to engage the tool, in radians
+    // make sure these are within the range of motion IN the cannula
+    // 270, 15, 15, 0 degrees
+    "tool-engage-position" : {
+        "lower" : [-4.71239, -0.261799, -0.261799, 0.0],
+        "upper" : [ 4.71239,  0.261799,  0.261799, 0.0]
+    }
+}

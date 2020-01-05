@@ -56,10 +56,12 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
         InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::CurrentStateEventHandler,
                                                 this, "CurrentState");
         QMMessage->SetInterfaceRequired(InterfaceRequired);
+        InterfaceRequired->AddFunction("GetConfigurationJoint", Arm.GetConfigurationJoint);
         QPOState->SetInterfaceRequired(InterfaceRequired);
         InterfaceRequired->AddFunction("GetStateJoint", Arm.GetStateJoint);
         InterfaceRequired->AddFunction("GetPositionCartesian", Arm.GetPositionCartesian);
         InterfaceRequired->AddFunction("GetWrenchBody", Arm.GetWrenchBody, MTS_OPTIONAL);
+        InterfaceRequired->AddFunction("SetPositionGoalJoint", Arm.SetPositionGoalJoint, MTS_OPTIONAL);
         InterfaceRequired->AddFunction("SetDesiredState", Arm.SetDesiredState);
         InterfaceRequired->AddFunction("GetPeriodStatistics", Arm.GetPeriodStatistics);
     }
@@ -111,6 +113,11 @@ void mtsIntuitiveResearchKitArmQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(eve
 
     executionResult = Arm.GetStateJoint(StateJoint);
     if (executionResult) {
+        if ((ConfigurationJoint.Name().size() != StateJoint.Name().size())
+            && (Arm.GetConfigurationJoint.IsValid())) {
+            Arm.GetConfigurationJoint(ConfigurationJoint);
+            QSJWidget->SetConfiguration(ConfigurationJoint);
+        }
         QSJWidget->SetValue(StateJoint);
     }
 
@@ -157,6 +164,13 @@ void mtsIntuitiveResearchKitArmQtWidget::SlotEnableDirectControl(bool toggle)
 {
     DirectControl = toggle;
     QPBHome->setEnabled(toggle);
+    if (toggle) {
+        QPJSWidget->show();
+        QPJSWidget->setEnabled(toggle);
+        QPJSWidget->Reset();
+    } else {
+        QPJSWidget->hide();
+    }
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::SlotHome(void)
@@ -200,7 +214,7 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     QCPGWidget->SetPrismaticRevoluteFactors(1.0 / cmn_mm, cmn180_PI);
     topLayout->addWidget(QCPGWidget, 1, 0);
 
-    // wrench, make large
+    // wrench
     QFTWidget = new vctForceTorqueQtWidget();
     topLayout->addWidget(QFTWidget, 1, 1);
 
@@ -233,6 +247,15 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     // operating state
     QPOState->setupUi();
     stateLayout->addWidget(QPOState);
+
+    // set joint goal
+    QPJSWidget = new prmPositionJointSetQtWidget();
+    QPJSWidget->setupUi();
+    QPJSWidget->GetStateJoint = &(Arm.GetStateJoint);
+    QPJSWidget->GetConfigurationJoint = &(Arm.GetConfigurationJoint);
+    QPJSWidget->SetPositionGoalJoint = &(Arm.SetPositionGoalJoint);
+    QPJSWidget->SetPrismaticRevoluteFactors(1.0 / cmn_mm, cmn180_PI);
+    MainLayout->addWidget(QPJSWidget);
 
     // for derived classes
     this->setupUiDerived();

@@ -1,0 +1,40 @@
+class {
+    name mtsIntuitiveResearchKitEndoscopeTypes;
+
+    enum {
+        name Type;
+        enum-value {
+            name ERROR;
+            description Error;
+            value 0;
+        }
+        enum-value {
+            name NONE;
+            description No endoscope (zero weight);
+        }
+        enum-value {
+            name SD_STRAIGHT;
+            description SD Straight;
+        }
+        enum-value {
+            name SD_UP;
+            description SD Up;
+        }
+        enum-value {
+            name SD_DOWN;
+            description SD Down;
+        }
+        enum-value {
+            name HD_STRAIGHT;
+            description HD Straight;
+        }
+        enum-value {
+            name HD_UP;
+            description HD Up;
+        }
+        enum-value {
+            name HD_DOWN;
+            description HD Down;
+        }
+    }
+}

@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmStateJoint.h>
+#include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
@@ -109,7 +110,7 @@ protected:
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianGet PositionCartesianDesired;
         prmPositionCartesianSet PositionCartesianSet;
-        vctFrm4x4 CartesianPrevious;
+        vctFrm4x4 CartesianInitial;
     } mMTM;
 
     struct {
@@ -117,6 +118,7 @@ protected:
         mtsFunctionWrite SetPositionCartesian;
         mtsFunctionVoid Freeze;
         mtsFunctionRead GetStateJaw;
+        mtsFunctionRead GetConfigurationJaw;
         mtsFunctionWrite SetPositionJaw;
 
         mtsFunctionRead  GetCurrentState;
@@ -124,15 +126,38 @@ protected:
         mtsFunctionWrite SetDesiredState;
 
         prmStateJoint StateJaw;
+        prmConfigurationJoint ConfigurationJaw;
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
         prmPositionJointSet     PositionJointSet;
-        vctFrm4x4 CartesianPrevious;
+        vctFrm4x4 CartesianInitial;
     } mPSM;
+
+    struct {
+        mtsFunctionRead  GetPositionCartesian;
+        prmPositionCartesianGet PositionCartesianCurrent;
+        vctFrm4x4 CartesianInitial;
+    } mBaseFrame;
 
     double mScale = 0.2;
     vctMatRot3 mRegistrationRotation; // optional registration between PSM and MTM orientation
-    vctMatRot3 mAlignOffset; // rotation offset between MTM and PSM when tele-operation goes in follow mode
+    vctMatRot3 mAlignOffset, mAlignOffsetInitial; // rotation offset between MTM and PSM when tele-operation goes in follow mode
+
+    // initial offset in jaw (PSM) space when teleop starts
+    double mJawOffset;
+
+    // conversion from gripper (MTM) to jaw (PSM)
+    // j = s * g + o
+    // g = (j - o) / s
+    struct {
+        double Scale;
+        double Offset;
+        double PositionMin;
+    } mGripperToJaw;
+
+    double virtual GripperToJaw(const double & gripperAngle) const;
+    double virtual JawToGripper(const double & jawAngle) const;
+    void virtual UpdateGripperToJawConfiguration(void);
 
     bool mIgnoreJaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
     int mGripperJawTransitions;

@@ -2,36 +2,37 @@
 {
     // see dVRK user guide
     "DH": {
-        "links": [
+        "convention": "modified",
+        "joints": [
             {
-                "convention": "modified",
+                "name": "outer_yaw",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
                 "offset":  1.5708,
                 "qmin": -4.71239, // -270
                 "qmax": 4.71239,  //  270
-                "ftmax": 4.97
+                "ftmax": 3.316101
             },
             {
-                "convention": "modified",
+                "name": "outer_pitch",
                 "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
                 "offset": -1.5708,
                 "qmin": -0.925025, // -53
                 "qmax":  0.925025, //  53
-                "ftmax": 4.97
+                "ftmax": 3.316101
             },
             {
-                "convention": "modified",
+                "name": "outer_insertion",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "prismatic",
                 "mode": "active",
                 "offset": -0.4318,
                 "qmin": 0.0,
                 "qmax": 0.24,  // 240 mm
-                "ftmax": 14.81
+                "ftmax": 9.877926
             }
         ]
     }

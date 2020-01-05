@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmOperatingState.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
+#include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
@@ -89,6 +90,7 @@ public:
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
     virtual void Init(void);
+    void UpdateConfigurationJointKinematic(void);
     void ResizeKinematicsData(void);
 
     /*! Verify that the state transition is possible, initialize
@@ -102,7 +104,7 @@ public:
 
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
-    virtual void UpdateJointsKinematics(void);
+    virtual void UpdateStateJointKinematics(void);
     virtual void ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID);
 
     // state machine
@@ -141,6 +143,9 @@ public:
     mtsStdString mStateTableStateCurrent;
     mtsStdString mStateTableStateDesired;
     prmOperatingState mOperatingState; // crtk operating state
+
+    // state table for configuration parameters
+    mtsStateTable mStateTableConfiguration;
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
     virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
@@ -215,10 +220,8 @@ public:
         mtsFunctionWrite SetPositionJoint;
         mtsFunctionWrite SetFeedForwardJoint;
         mtsFunctionWrite SetCheckPositionLimit;
-        mtsFunctionWrite SetPositionLowerLimit;
-        mtsFunctionWrite SetPositionUpperLimit;
-        mtsFunctionWrite SetTorqueLowerLimit;
-        mtsFunctionWrite SetTorqueUpperLimit;
+        mtsFunctionRead  GetConfigurationJoint;
+        mtsFunctionWrite SetConfigurationJoint;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite SetTorqueJoint;
         mtsFunctionWrite EnableTrackingError;
@@ -278,7 +281,8 @@ public:
     vctDoubleVec JointSet;
     vctDoubleVec JointVelocitySet;
     prmForceTorqueJointSet FeedForwardParam;
-    prmStateJoint JointsPID, JointsDesiredPID, JointsKinematics, JointsDesiredKinematics;
+    prmStateJoint StateJointPID, StateJointDesiredPID, StateJointKinematics, StateJointDesiredKinematics;
+    prmConfigurationJoint ConfigurationJointPID, ConfigurationJointKinematics;
 
     // efforts
     vctDoubleMat mJacobianBody, mJacobianBodyTranspose, mJacobianSpatial;

@@ -206,7 +206,9 @@ public:
                   const std::string & namePSM,
                   const std::string & slaveComponentName,
                   const std::string & slaveInterfaceName,
-                  const std::string & consoleName);
+                  const std::string & consoleName,
+                  const std::string & baseFrameComponentName,
+                  const std::string & baseFrameInterfaceName);
 
         /*! Create and configure the robot arm. */
         void ConfigureTeleop(const TeleopPSMType type,
@@ -238,6 +240,8 @@ public:
         std::string mPSMComponentName;
         std::string mPSMInterfaceName;
         std::string mConsoleName;
+        std::string mBaseFrameComponentName;
+        std::string mBaseFrameInterfaceName;
         mtsFunctionWrite SetDesiredState;
         mtsFunctionWrite SetScale;
         mtsInterfaceRequired * InterfaceRequired;
@@ -336,6 +340,7 @@ protected:
     void UpdateTeleopState(void);
     void SetScale(const double & scale);
     void SetVolume(const double & volume);
+    void StringToSpeech(const std::string & text);
     bool mHasIO;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
