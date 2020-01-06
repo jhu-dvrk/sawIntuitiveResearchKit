@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -57,6 +57,14 @@ mtsIntuitiveResearchKitArm::~mtsIntuitiveResearchKitArm()
     if (Manipulator) {
         delete Manipulator;
     }
+}
+
+void mtsIntuitiveResearchKitArm::CreateManipulator(void)
+{
+    if (Manipulator) {
+        delete Manipulator;
+    }
+    Manipulator = new robManipulator();
 }
 
 void mtsIntuitiveResearchKitArm::Init(void)
@@ -207,7 +215,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     CartesianVelocityGetParam.SetValid(false);
 
     // base manipulator class used by most arms (except PSM with snake like tool)
-    Manipulator = new robManipulator();
+    CreateManipulator();
 
     // jacobian
     ResizeKinematicsData();
@@ -402,17 +410,18 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
 }
 
 void mtsIntuitiveResearchKitArm::UpdateConfigurationJointKinematic(void)
-{    
+{
     // get names, types and joint limits for kinematics config from the manipulator
     // name and types need conversion
     mStateTableConfiguration.Start();
     ConfigurationJointKinematics.Name().SetSize(NumberOfJointsKinematics());
     ConfigurationJointKinematics.Type().SetSize(NumberOfJointsKinematics());
-    std::vector<std::string> names(NumberOfJointsKinematics());
-    std::vector<robJoint::Type> types(NumberOfJointsKinematics());
+    const size_t jointsConfiguredSoFar = this->Manipulator->links.size();
+    std::vector<std::string> names(jointsConfiguredSoFar);
+    std::vector<robJoint::Type> types(jointsConfiguredSoFar);
     this->Manipulator->GetJointNames(names);
     this->Manipulator->GetJointTypes(types);
-    for (size_t index = 0; index < NumberOfJointsKinematics(); ++index) {
+    for (size_t index = 0; index < jointsConfiguredSoFar; ++index) {
         ConfigurationJointKinematics.Name().at(index) = names.at(index);
         switch (types.at(index)) {
         case robJoint::HINGE:
@@ -429,8 +438,8 @@ void mtsIntuitiveResearchKitArm::UpdateConfigurationJointKinematic(void)
     // position limits can be read as is
     ConfigurationJointKinematics.PositionMin().SetSize(NumberOfJointsKinematics());
     ConfigurationJointKinematics.PositionMax().SetSize(NumberOfJointsKinematics());
-    this->Manipulator->GetJointLimits(ConfigurationJointKinematics.PositionMin(),
-                                      ConfigurationJointKinematics.PositionMax());
+    this->Manipulator->GetJointLimits(ConfigurationJointKinematics.PositionMin().Ref(jointsConfiguredSoFar),
+                                      ConfigurationJointKinematics.PositionMax().Ref(jointsConfiguredSoFar));
     mStateTableConfiguration.Advance();
 }
 
@@ -554,7 +563,8 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
     if (this->Manipulator->LoadRobot(jsonDH) != robManipulator::ESUCCESS) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
                                  << ": failed to load \"DH\" parameters from file \""
-                                 << filename << "\"" << std::endl;
+                                 << filename << "\", error is "
+                                 << this->Manipulator->LastError() << std::endl;
         exit(EXIT_FAILURE);
     }
     std::stringstream dhResult;
@@ -1208,7 +1218,14 @@ void mtsIntuitiveResearchKitArm::ControlPositionCartesian(void)
             // finally send new joint values
             SetPositionJointLocal(jointSet);
         } else {
-            RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
+            // shows robManipulator error if used
+            if (this->Manipulator) {
+                RobotInterface->SendError(this->GetName()
+                                          + ": unable to solve inverse kinematics ("
+                                          + this->Manipulator->LastError() + ")");
+            } else {
+                RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
+            }
         }
         // reset flag
         mHasNewPIDGoal = false;
@@ -1440,6 +1457,13 @@ void mtsIntuitiveResearchKitArm::SetControlEffortActiveJoints(void)
     PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), true));
 }
 
+void mtsIntuitiveResearchKitArm::ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
+                                                               vctDoubleVec & wrenchPreload)
+{
+    effortPreload.Zeros();
+    wrenchPreload.Zeros();
+}
+
 void mtsIntuitiveResearchKitArm::ControlEffortJoint(void)
 {
     // effort required
@@ -1460,7 +1484,14 @@ void mtsIntuitiveResearchKitArm::ControlEffortJoint(void)
 void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
 {
     // update torques based on wrench
-    vctDoubleVec force(6);
+    vctDoubleVec wrench(6);
+
+    // get force preload from derived classes, in most cases 0, platform control for MTM
+    vctDoubleVec effortPreload(NumberOfJointsKinematics());
+    vctDoubleVec wrenchPreload(6);
+
+    ControlEffortCartesianPreload(effortPreload, wrenchPreload);
+
     // body wrench
     if (mWrenchType == WRENCH_BODY) {
         // either using wrench provided by user or cartesian impedance
@@ -1469,7 +1500,7 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
                                                  CartesianVelocityGetParam,
                                                  mWrenchSet,
                                                  mWrenchBodyOrientationAbsolute);
-            force.Assign(mWrenchSet.Force());
+            wrench.Assign(mWrenchSet.Force());
         } else {
             // user provided wrench
             if (mWrenchBodyOrientationAbsolute) {
@@ -1478,21 +1509,23 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
                 // force
                 relative.Assign(mWrenchSet.Force().Ref<3>(0));
                 CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
-                force.Ref(3, 0).Assign(absolute);
+                wrench.Ref(3, 0).Assign(absolute);
                 // torque
                 relative.Assign(mWrenchSet.Force().Ref<3>(3));
                 CartesianGet.Rotation().ApplyInverseTo(relative, absolute);
-                force.Ref(3, 3).Assign(absolute);
+                wrench.Ref(3, 3).Assign(absolute);
             } else {
-                force.Assign(mWrenchSet.Force());
+                wrench.Assign(mWrenchSet.Force());
             }
         }
-        mEffortJoint.ProductOf(mJacobianBody.Transpose(), force);
+        mEffortJoint.ProductOf(mJacobianBody.Transpose(), wrench + wrenchPreload);
+        mEffortJoint.Add(effortPreload);
     }
     // spatial wrench
     else if (mWrenchType == WRENCH_SPATIAL) {
-        force.Assign(mWrenchSet.Force());
-        mEffortJoint.ProductOf(mJacobianSpatial.Transpose(), force);
+        wrench.Assign(mWrenchSet.Force());
+        mEffortJoint.ProductOf(mJacobianSpatial.Transpose(), wrench + wrenchPreload);
+        mEffortJoint.Add(effortPreload);
     }
 
     // add gravity compensation if needed
@@ -1652,7 +1685,14 @@ void mtsIntuitiveResearchKitArm::SetPositionGoalCartesian(const prmPositionCarte
         ToJointsPID(jointSet, mJointTrajectory.Goal);
         mJointTrajectory.GoalVelocity.SetAll(0.0);
     } else {
-        RobotInterface->SendError(this->GetName() + ": SetPositionGoalCartesian, unable to solve inverse kinematics");
+        // shows robManipulator error if used
+        if (this->Manipulator) {
+            RobotInterface->SendError(this->GetName()
+                                      + ": unable to solve inverse kinematics ("
+                                      + this->Manipulator->LastError() + ")");
+        } else {
+            RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
+        }
         mJointTrajectory.GoalReachedEvent(false);
     }
 }

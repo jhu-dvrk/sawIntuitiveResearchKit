@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2019-11-11
 
-  (C) Copyright 2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2019-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -17,6 +17,8 @@
 */
 
 #include <sawIntuitiveResearchKit/robManipulatorECM.h>
+
+#include <cisstCommon/cmnUnits.h>
 #include <math.h>
 
 robManipulatorECM::robManipulatorECM(const std::vector<robKinematics *> linkParms,
@@ -44,35 +46,83 @@ robManipulatorECM::InverseKinematics(vctDynamicVector<double> & q,
                                      double CMN_UNUSED(LAMBDA))
 {
     if (q.size() != links.size()) {
-        CMN_LOG_RUN_ERROR << CMN_LOG_DETAILS
-                          << ": robManipulatorECM::InverseKinematics: expected " << links.size() << " joints values. "
-                          << " Got " << q.size()
-                          << std::endl;
+        std::stringstream ss;
+        ss << "robManipulatorECM::InverseKinematics: expected " << links.size()
+           << " joints values but received " << q.size();
+        mLastError = ss.str();
+        CMN_LOG_RUN_ERROR << mLastError << std::endl;
         return robManipulator::EFAILURE;
     }
 
     if (links.size() == 0) {
-        CMN_LOG_RUN_ERROR << CMN_LOG_DETAILS
-                          << ": robManipulatorECM::InverseKinematics: the manipulator has no links."
-                          << std::endl;
+        mLastError = "robManipulatorECM::InverseKinematics: the manipulator has no links";
+        CMN_LOG_RUN_ERROR << mLastError << std::endl;
         return robManipulator::EFAILURE;
     }
 
     // take Rtw0 into account
-    vctFrm4x4 Rt04;
-    Rtw0.ApplyInverseTo(Rts, Rt04);
+    vctFrm4x4 Rt04t, Rt04; // t for "with tool"
+    Rtw0.ApplyInverseTo(Rts, Rt04t);
 
-    const double x = Rt04.Translation().X();
+    // take tool into account -> Rt04 from Rt04t
+    if (tools.size() > 1) {
+        mLastError = "robManipulatorECM::InverseKinematics: the manipulator has more than one tool attached";
+        CMN_LOG_RUN_ERROR << mLastError << std::endl;
+        return robManipulator::EFAILURE;
+    } else if (tools.size() == 1) {
+        CMN_ASSERT(tools[0]);
+        Rt04t.ApplyTo(tools[0]->Rtw0.Inverse(), Rt04);
+    } else {
+        Rt04 = Rt04t;
+    }
+
+    // re-align desired frame to 4 axis direction to reduce free space
+    vctFrm4x4 Rt04a; // a for "aligned"
+    Rt04a.Translation().Assign(Rt04.Translation());
+
+    vctDouble3 shaft = Rt04.Translation();
+    const double shaftNorm = shaft.Norm();
+    // we should not allow anything in the cannula but at least make
+    // sure it's numerically stable using 1mm
+    if (shaftNorm < 0.1 * cmn_mm) {
+        mLastError = "robManipulatorECM::InverseKinematics: cartesian goal is too close to RCM point";
+        CMN_LOG_RUN_ERROR << mLastError << std::endl;
+        return robManipulator::EFAILURE;
+    }
+    // normalize
+    shaft.Divide(shaftNorm);
+    const vctDouble3 Z = Rt04.Rotation().Column(2).Ref<3>(); // last column of rotation matrix
+
+    if (! Z.AlmostEqual(shaft, 0.0001)) {
+        vctMatRot3 reAlign;
+        vct3 axis;
+        double angle;
+        axis.CrossProductOf(Z, shaft);
+        axis.NormalizedSelf();
+        angle = acos(vctDotProduct(Z, shaft));
+        reAlign.From(vctAxAnRot3(axis, angle, VCT_NORMALIZE));
+        Rt04a.Rotation().ProductOf(reAlign, Rt04.Rotation());
+    } else {
+        Rt04a.Rotation().Assign(Rt04.Rotation());
+    }
+
+    // now compute close kinematics without tool nor base frame and
+    // knowing that solution exists
+    const double x = Rt04a.Translation().X();
     const double x2 = x * x;
-    const double y = Rt04.Translation().Y();
+    const double y = Rt04a.Translation().Y();
     const double y2 = y * y;
-    const double z = Rt04.Translation().Z();
+    const double z = Rt04a.Translation().Z();
     const double z2 = z * z;
+
+    // if we encounter a joint limit, keep computing a solution but at
+    // the end return failure
+    bool hasReachedJointLimit = false;
 
     // hard coded check for dVRK classic, wouldn't work on S/Si system
     if (z > cmnTypeTraits<double>::Tolerance()) {
-        std::cerr << "z is positive, out of reach: " << Rts << std::endl;
-        return robManipulator::EFAILURE;
+        mLastError = "robManipulatorECM::InverseKinematics: z is positive, out of reach";
+        hasReachedJointLimit = true;
     }
 
     // first joint controls x position
@@ -100,27 +150,46 @@ robManipulatorECM::InverseKinematics(vctDynamicVector<double> & q,
         }
     }
 
+    // make sure we respect joint limits
+    if (ClampJointValueAndUpdateError(0, q[0], 1e-5)) {
+        hasReachedJointLimit = true;
+    }
+    if (ClampJointValueAndUpdateError(1, q[1], 1e-5)) {
+        hasReachedJointLimit = true;
+    }
+
     // third is translation, i.e. depth
     q[2] = depth - 0.0007; // 0.0007 is from DH link_3.offset - link_4.D
 
     // check that depth is reachable
     if (q[2] > links[2].GetKinematics()->PositionMax()) {
-        std::cerr << "goal is too far, out of reach: " << Rts << std::endl;
-        return robManipulator::EFAILURE;
+        mLastError = "robManipulatorECM::InverseKinematics: goal is too far, out of reach for q[2]";
+        hasReachedJointLimit = true;
     }
 
     // for orientation, we assume the goal is reachable
-    vctFrm4x4 Rt03 = ForwardKinematics(q, 3);
-    vctFrm4x4 Rt34; // rotation for last link
-    Rt03.ApplyInverseTo(Rt04, Rt34);
-    // find angle to align x axis
-    const long double q3 = -acosl(vctDotProduct(Rt34.Rotation().Column(0).Ref<3>(), vct3(1.0, 0.0, 0.0)));
+    vctFrm4x4 Rt03w = ForwardKinematics(q, 3);
+    vctFrm4x4 Rt03; // same but w/o Rtw0
+    Rtw0.ApplyInverseTo(Rt03w, Rt03);
 
-    // find sign for q3
-    if (std::abs(q[3] - q3) < std::abs(q[3] + q3)) {
-        q[3] = q3;
+    vctFrm4x4 Rt34; // rotation for last link
+    Rt03.ApplyInverseTo(Rt04a, Rt34);
+
+    vctMatRot3 rotationMatrix(Rt34.Rotation());
+    vctAxAnRot3 axisAngle(rotationMatrix);
+    // it's a rotation along z or -z
+    if (axisAngle.Axis()[2] < 0) {
+        q[3] = -axisAngle.Angle();
     } else {
-        q[3] = -q3;
+        q[3] = axisAngle.Angle();
+    }
+
+    if (ClampJointValueAndUpdateError(3, q[3], 1e-5)) {
+        hasReachedJointLimit = true;
+    }
+
+    if (hasReachedJointLimit) {
+        return robManipulator::EFAILURE;
     }
 
     return robManipulator::ESUCCESS;

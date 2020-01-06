@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -94,6 +94,7 @@ protected:
         return true;
     };
 
+    virtual void CreateManipulator(void) override;
     virtual void Init(void) override;
 
     // state related methods
@@ -115,6 +116,8 @@ protected:
     // see base class
     void ControlEffortOrientationLocked(void) override;
     void SetControlEffortActiveJoints(void) override;
+    void ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
+                                       vctDoubleVec & wrenchPreload) override;
 
     /*! Lock master orientation when in cartesian effort mode */
     virtual void LockOrientation(const vctMatRot3 & orientation);

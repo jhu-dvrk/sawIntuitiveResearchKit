@@ -88,7 +88,9 @@ public:
 
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
+    virtual void CreateManipulator(void);
     virtual void Init(void);
+
     void UpdateConfigurationJointKinematic(void);
     void ResizeKinematicsData(void);
 
@@ -393,7 +395,16 @@ public:
       effort cartesian mode or gravity compensation. */
     virtual void ControlEffortOrientationLocked(void);
 
+    /*! Determine which joints should be in effort mode.  MTM will
+      redefine this so one can lock orientation using position PID. */
     virtual void SetControlEffortActiveJoints(void);
+
+    /*! Used for derived arms to apply arm specific efforts (joint
+      space).  E.g. MTM to control platform orientation.  Derived
+      methods must ensure that all elements are set properly, i.e. the
+      input vector is not set to zero by default. */
+    virtual void ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
+                                               vctDoubleVec & wrenchPreload);
 
     struct {
         robReflexxes Reflexxes;
