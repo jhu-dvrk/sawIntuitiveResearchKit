@@ -108,10 +108,54 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
     const vctFrm4x4 Rt03 = this->ForwardKinematics(q, 3);
     vctFrm4x4 Rt37;
     Rt03.ApplyInverseTo(Rt07, Rt37);
-    // work in progress......
-    //std::cerr << Rt37.Column(2) << std::endl;
-    q[3] = q[3];
 
+    // find the angle difference between the gripper and the third joint to calculate auto-correct angle
+    double angleDifference = acosl(-Rt37.Element(0, 2) /
+                                   sqrt(Rt37.Element(1, 2) * Rt37.Element(1, 2) +
+                                        Rt37.Element(0, 2) * Rt37.Element(0, 2)));
+    if (Rt37.Element(1, 2) > 0.0) {
+        angleDifference = -angleDifference;
+    }
+
+    // calculate Angle Option 1 (The correct choice when right-side-up)
+    double option1 = angleDifference;
+
+    // calculate Angle Option 2 (The correct choice when upside-down)
+    double option2 = option1 - cmnPI;
+
+    // Normalize within joint space
+    if (option2 > cmnPI) {
+        option2 -= 2.0 * cmnPI;
+    } else if (option2 < (-3.0 * cmnPI_2)) {
+        option2 += 2.0 * cmnPI;
+    }
+
+    // Normalize within joint space
+    if ((option2 < -cmnPI)
+        && (option2 > -3.0 * cmnPI_2)
+        && (q[3] > 0.0)) {
+        option2 += 2.0 * cmnPI;
+    }
+
+    // Normalize within joint space
+    if ((option1 > cmnPI_2)
+        && (option1 < cmnPI)
+        && (q[3] < 0.0)) {
+        option1 -= 2.0 * cmnPI;
+    }
+
+    // Choose either Option 1 or Option 2 based on which one is closer to the platform angle
+    double solution;
+    if (std::abs(q[3] - option2) < std::abs(q[3] - option1)) {
+        solution = option2;
+    } else {
+        solution = option1;
+    }
+
+    // average with current position based on projection angle
+    const double cosProjectionAngle = std::abs(cos(q[4]));
+    q[3] = solution * cosProjectionAngle + q[4] * (1 - cosProjectionAngle);
+    
     // make sure we respect joint limits
     const double q3Max = links[3].GetKinematics()->PositionMax();
     const double q3Min = links[3].GetKinematics()->PositionMin();

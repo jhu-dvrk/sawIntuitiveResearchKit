@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -585,16 +585,16 @@ void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & ef
 
     if (InverseKinematics(jointGoal, CartesianGetLocal) == robManipulator::ESUCCESS) {
         // apply a linear force on joint 3 to move toward the "ideal" position
-        effortPreload[3] = -0.2 * (StateJointKinematics.Position()[3] - jointGoal[3])
-            - 0.1 * StateJointKinematics.Velocity()[3];
+        effortPreload[3] = -0.1 * (StateJointKinematics.Position()[3] - jointGoal[3])
+            - 0.05 * StateJointKinematics.Velocity()[3];
         // cap effort
-        effortPreload[3] = std::max(effortPreload[3], -0.2);
-        effortPreload[3] = std::min(effortPreload[3],  0.2);
+        effortPreload[3] = std::max(effortPreload[3], -0.1);
+        effortPreload[3] = std::min(effortPreload[3],  0.1);
 
         // find equivalent wrench but don't apply all (too much torque on roll)
-        // wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
-        // wrenchPreload.Multiply(0.3);
-        wrenchPreload.SetAll(0.0);
+        wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
+        wrenchPreload.Multiply(0.2);
+        // wrenchPreload.SetAll(0.0);
     } else {
         RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortCartesianPreload");
     }
