@@ -118,7 +118,7 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
                                                                     const vctFrm4x4 & cartesianGoal)
 {
     // pre-feed inverse kinematics with preferred values for joint 6
-    // jointSet[5] = 0.0;
+    jointSet[5] = 0.0;
     if (Manipulator->InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = StateJointKinematics.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
@@ -135,6 +135,7 @@ void mtsIntuitiveResearchKitMTM::CreateManipulator(void)
         delete Manipulator;
     }
     Manipulator = new robManipulatorMTM();
+    // Manipulator = new robManipulator();
 }
 
 void mtsIntuitiveResearchKitMTM::Init(void)
@@ -580,24 +581,37 @@ void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & ef
     }
     // most efforts will be 0
     effortPreload.Zeros();
-    // find ideal position for platform using IK
+
+    // find ideal position for platform using IK or robManipulator::FindOptimalPlatformAngle
     vctDoubleVec jointGoal(StateJointKinematics.Position());
 
-    if (InverseKinematics(jointGoal, CartesianGetLocal) == robManipulator::ESUCCESS) {
-        // apply a linear force on joint 3 to move toward the "ideal" position
-        effortPreload[3] = -0.1 * (StateJointKinematics.Position()[3] - jointGoal[3])
-            - 0.05 * StateJointKinematics.Velocity()[3];
-        // cap effort
-        effortPreload[3] = std::max(effortPreload[3], -0.1);
-        effortPreload[3] = std::min(effortPreload[3],  0.1);
-
-        // find equivalent wrench but don't apply all (too much torque on roll)
-        wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
-        wrenchPreload.Multiply(0.2);
-        // wrenchPreload.SetAll(0.0);
+    // check if we're using robManipulatorMTM
+    robManipulatorMTM * manip = dynamic_cast<robManipulatorMTM *>(this->Manipulator);
+    if (manip) {
+        // compute FK from platform to tip
+        const vctFrm4x4 Rt03 = manip->ForwardKinematics(jointGoal, 3);
+        vctFrm4x4 Rt37;
+        Rt03.ApplyInverseTo(CartesianGetLocal, Rt37);
+        // find where the platform should be
+        jointGoal[3] = manip->FindOptimalPlatformAngle(jointGoal, Rt37);
     } else {
-        RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortCartesianPreload");
+        if (InverseKinematics(jointGoal, CartesianGetLocal) != robManipulator::ESUCCESS) {
+            RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortCartesianPreload");
+            return;
+        }
     }
+
+    // apply a linear force on joint 3 to move toward the "ideal" position
+    effortPreload[3] = -0.2 * (StateJointKinematics.Position()[3] - jointGoal[3])
+        - 0.05 * StateJointKinematics.Velocity()[3];
+    // cap effort
+    effortPreload[3] = std::max(effortPreload[3], -0.1);
+    effortPreload[3] = std::min(effortPreload[3],  0.1);
+
+    // find equivalent wrench but don't apply all (too much torque on roll)
+    // wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
+    // wrenchPreload.Multiply(0.2);
+    wrenchPreload.SetAll(0.0);
 }
 
 void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)

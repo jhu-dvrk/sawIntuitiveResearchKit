@@ -109,7 +109,32 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
     vctFrm4x4 Rt37;
     Rt03.ApplyInverseTo(Rt07, Rt37);
 
-    // find the angle difference between the gripper and the third joint to calculate auto-correct angle
+    // find where the platform should be
+    q[3] = FindOptimalPlatformAngle(q, Rt37);
+
+    // compute orientation of platform
+    const vctFrm4x4 Rt04 = this->ForwardKinematics(q, 4);
+    vctFrm4x4 Rt47;
+    Rt04.ApplyInverseTo(Rt07, Rt47);
+    vctEulerZXZRotation3 closed57(Rt47.Rotation());
+
+    // applying DH offsets
+    q[4] = closed57.alpha() + cmnPI_2;
+    q[5] = -closed57.beta() + cmnPI_2;
+    q[6] = closed57.gamma() + cmnPI;
+
+    if (hasReachedJointLimit) {
+        return robManipulator::EFAILURE;
+    }
+
+    return robManipulator::ESUCCESS;
+}
+
+
+double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double> & q,
+                                                   const vctFrame4x4<double> & Rt37) const
+{
+   // find the angle difference between the gripper and the third joint to calculate auto-correct angle
     double angleDifference = acosl(-Rt37.Element(0, 2) /
                                    sqrt(Rt37.Element(1, 2) * Rt37.Element(1, 2) +
                                         Rt37.Element(0, 2) * Rt37.Element(0, 2)));
@@ -154,31 +179,16 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
 
     // average with current position based on projection angle
     const double cosProjectionAngle = std::abs(cos(q[4]));
-    q[3] = solution * cosProjectionAngle + q[4] * (1 - cosProjectionAngle);
-    
+    double q3 = solution * cosProjectionAngle + q[3] * (1 - cosProjectionAngle);
+
     // make sure we respect joint limits
     const double q3Max = links[3].GetKinematics()->PositionMax();
     const double q3Min = links[3].GetKinematics()->PositionMin();
-    if (q[3] > q3Max) {
-        q[3] = q3Max;
-    } else if (q[3] < q3Min) {
-        q[3] = q3Min;
+    if (q3 > q3Max) {
+        q3 = q3Max;
+    } else if (q3 < q3Min) {
+        q3 = q3Min;
     }
 
-    // compute orientation of platform
-    const vctFrm4x4 Rt04 = this->ForwardKinematics(q, 4);
-    vctFrm4x4 Rt47;
-    Rt04.ApplyInverseTo(Rt07, Rt47);
-    vctEulerZXZRotation3 closed57(Rt47.Rotation());
-
-    // applying DH offsets
-    q[4] = closed57.alpha() + cmnPI_2;
-    q[5] = -closed57.beta() + cmnPI_2;
-    q[6] = closed57.gamma() + cmnPI;
-
-    if (hasReachedJointLimit) {
-        return robManipulator::EFAILURE;
-    }
-
-    return robManipulator::ESUCCESS;
+    return q3;
 }
