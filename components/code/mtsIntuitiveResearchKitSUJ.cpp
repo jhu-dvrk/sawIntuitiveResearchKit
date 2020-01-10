@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -124,6 +124,14 @@ public:
         mConfigurationJoint.Type().SetSize(MUX_ARRAY_SIZE);
         mConfigurationJoint.Type().SetAll(PRM_JOINT_REVOLUTE);
         mConfigurationJoint.Type().at(0) = PRM_JOINT_PRISMATIC;
+        // joint limits are only used in simulation mode to we can set
+        // arbitrarily wide limits
+        mConfigurationJoint.PositionMin().SetSize(MUX_ARRAY_SIZE);
+        mConfigurationJoint.PositionMax().SetSize(MUX_ARRAY_SIZE);
+        mConfigurationJoint.PositionMin().SetAll(-cmnPI);
+        mConfigurationJoint.PositionMax().SetAll( cmnPI);
+        mConfigurationJoint.PositionMin().at(0) = -2.0 * cmn_m;
+        mConfigurationJoint.PositionMax().at(0) =  2.0 * cmn_m;
 
         mStateTable.AddData(mVoltages[0], "Voltages[0]");
         mStateTable.AddData(mVoltages[1], "Voltages[1]");
@@ -152,8 +160,11 @@ public:
         // read commands
         mInterfaceProvided->AddCommandReadState(mStateTable, mStateJoint, "GetStateJoint");
         mInterfaceProvided->AddCommandReadState(mStateTable, mConfigurationJoint, "GetConfigurationJoint");
+        // set position is only for simulation, allows both servo and move
         mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::SetPositionJoint,
                                             this, "SetPositionJoint");
+        mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::SetPositionJoint,
+                                            this, "SetPositionGoalJoint");
         mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0],
                                                 "GetPrimaryJointOffset");
         mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[1],
@@ -1140,6 +1151,8 @@ void mtsIntuitiveResearchKitSUJ::RunReady(void)
                 // apply base frame
                 vctFrm4x4 armBase = arm->mBaseFrame * armLocal;
                 // emit events for continuous positions
+                // - joint state
+                arm->mStateJoint.SetValid(true);
                 // - with base
                 arm->mPositionCartesianParam.Position().From(armBase);
                 arm->mPositionCartesianParam.SetTimestamp(arm->mStateJoint.Timestamp());
