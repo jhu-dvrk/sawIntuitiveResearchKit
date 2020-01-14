@@ -1,0 +1,48 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "component-manager": {
+        "components":
+        [
+            // this is to use the dvrk_arm_from_ros class
+            {
+                "shared-library": "dvrk_arm_from_ros",
+                "class-name": "dvrk_arm_from_ros",
+                "constructor-arg": {
+                    "Name": "PSM1",
+                    "Period": 0.01
+
+                }
+            }
+        ]
+    }
+    ,
+    "io":
+    {
+        "footpedals": "io/sawRobotIO1394-MTML-foot-pedals.xml"
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "PSM1",  // created previously using custom components
+            "type": "PSM_GENERIC",
+            "component": "PSM1",
+            "interface": "PSM1",
+            "skip-ros-bridge": true
+        }
+        ,
+        {
+            "name": "MTML",
+            "type": "MTM",
+            "serial": "22723"
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            "mtm": "MTML",
+            "psm": "PSM1"
+        }
+    ]
+}
