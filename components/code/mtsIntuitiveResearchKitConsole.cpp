@@ -1276,6 +1276,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         armPointer->mSerial = jsonValue.asString();
     }
 
+    // type of simulation, if any
     jsonValue = jsonArm["simulation"];
     if (!jsonValue.empty()) {
         std::string typeString = jsonValue.asString();
@@ -1292,6 +1293,13 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         }
     } else {
         armPointer->mSimulation = Arm::SIMULATION_NONE;
+    }
+
+    // should we automatically create ROS bridge for this arm
+    armPointer->mSkipROSBridge = false;
+    jsonValue = jsonArm["skip-ros-bridge"];
+    if (!jsonValue.empty()) {
+        armPointer->mSkipROSBridge = jsonValue.asBool();
     }
 
     // component and interface, defaults

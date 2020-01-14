@@ -120,6 +120,7 @@ public:
         std::string mSharedLibrary;
         std::string mClassName;
         std::string mConstructorArgJSON;
+        bool mSkipROSBridge;
 
         // base frame
         // (name and frame) OR (component and interface)
