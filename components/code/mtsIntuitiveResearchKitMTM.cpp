@@ -598,12 +598,8 @@ void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & ef
     // check if we're using robManipulatorMTM
     robManipulatorMTM * manip = dynamic_cast<robManipulatorMTM *>(this->Manipulator);
     if (manip) {
-        // compute FK from platform to tip
-        const vctFrm4x4 Rt03 = manip->ForwardKinematics(jointGoal, 3);
-        vctFrm4x4 Rt37;
-        Rt03.ApplyInverseTo(CartesianGetLocal, Rt37);
         // find where the platform should be
-        jointGoal[3] = manip->FindOptimalPlatformAngle(jointGoal, Rt37);
+        jointGoal[3] = manip->FindOptimalPlatformAngle(jointGoal, CartesianGetLocal);
     } else {
         if (InverseKinematics(jointGoal, CartesianGetLocal) != robManipulator::ESUCCESS) {
             RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortCartesianPreload");

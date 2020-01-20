@@ -105,12 +105,7 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
 
     // optimized placement of platform
     // compute projection of roll axis on platform plane
-    const vctFrm4x4 Rt03 = this->ForwardKinematics(q, 3);
-    vctFrm4x4 Rt37;
-    Rt03.ApplyInverseTo(Rt07, Rt37);
-
-    // find where the platform should be
-    q[3] = FindOptimalPlatformAngle(q, Rt37);
+    q[3] = FindOptimalPlatformAngle(q, Rt07);
 
     // compute orientation of platform
     const vctFrm4x4 Rt04 = this->ForwardKinematics(q, 4);
@@ -132,9 +127,14 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
 
 
 double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double> & q,
-                                                   const vctFrame4x4<double> & Rt37) const
+                                                   const vctFrame4x4<double> & Rt07) const
 {
-   // find the angle difference between the gripper and the third joint to calculate auto-correct angle
+#if 1
+    const vctFrm4x4 Rt03 = ForwardKinematics(q, 3);
+    vctFrm4x4 Rt37;
+    Rt03.ApplyInverseTo(Rt07, Rt37);
+
+    // find the angle difference between the gripper and the third joint to calculate auto-correct angle
     double angleDifference = acosl(-Rt37.Element(0, 2) /
                                    sqrt(Rt37.Element(1, 2) * Rt37.Element(1, 2) +
                                         Rt37.Element(0, 2) * Rt37.Element(0, 2)));
@@ -191,4 +191,40 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
     }
 
     return q3;
+
+#else
+    vctDynamicVector<double> jointGoal(q);
+    jointGoal[3] = 0.0;
+    const vctFrm4x4 Rt04 = ForwardKinematics(jointGoal, 4);
+    vctFrm4x4 Rt47;
+    Rt04.ApplyInverseTo(Rt07, Rt47);
+    vctEulerZXZRotation3 closed47(Rt47.Rotation());
+
+    // applying DH offsets
+    const double q4 = closed47.alpha() + cmnPI_2;
+    const double q5 = -closed47.beta() + cmnPI_2;
+
+    double q3;
+    // upside-down case
+    if ((q4 > -cmnPI_2) && (q4 < cmnPI_2)) {
+        q3 = q5;
+    } else {
+        q3 = -q5;
+    }
+
+    // average with current position based on projection angle
+    const double cosProjectionAngle = std::abs(cos(q4));
+    q3 = q3 * cosProjectionAngle + q[3] * (1 - cosProjectionAngle);
+
+    // make sure we respect joint limits
+    const double q3Max = links[3].GetKinematics()->PositionMax();
+    const double q3Min = links[3].GetKinematics()->PositionMin();
+    if (q3 > q3Max) {
+        q3 = q3Max;
+    } else if (q3 < q3Min) {
+        q3 = q3Min;
+    }
+
+    return q3;
+#endif
 }
