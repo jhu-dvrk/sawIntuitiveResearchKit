@@ -541,15 +541,25 @@ void mtsIntuitiveResearchKitMTM::ControlEffortOrientationLocked(void)
     CartesianPositionFrm.Translation().Assign(CartesianGetLocal.Translation());
     CartesianPositionFrm.Rotation().From(mEffortOrientation);
     // important note, lock uses numerical IK as it finds a solution close to current position
-    if (Manipulator->robManipulator::InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
+    if (Manipulator->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = StateJointPID.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
-        // assign to joints used for kinematics
-        JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
+#if 0
         // finally send new joint values
         SetPositionJointLocal(JointSet);
+        // assign to joints used for kinematics
+        JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
+#else
+        mJointTrajectory.Goal.Ref(NumberOfJointsKinematics()).Assign(jointSet);
+        mJointTrajectory.Reflexxes.Evaluate(JointSet,
+                                            JointVelocitySet,
+                                            mJointTrajectory.Goal,
+                                            mJointTrajectory.GoalVelocity);
+        mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
+#endif
+        
     } else {
         RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortOrientationLocked");
     }
@@ -620,6 +630,16 @@ void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
     if (!mEffortOrientationLocked) {
         mEffortOrientationLocked = true;
         SetControlEffortActiveJoints();
+#if 0
+#else
+        // initialize trajectory
+        JointSet.Assign(StateJointPID.Position(), NumberOfJoints());
+        JointVelocitySet.Assign(StateJointPID.Velocity(), NumberOfJoints());
+        mJointTrajectory.Reflexxes.Set(mJointTrajectory.Velocity,
+                                       mJointTrajectory.Acceleration,
+                                       StateTable.PeriodStats.PeriodAvg(),
+                                       robReflexxes::Reflexxes_TIME);
+#endif
     }
     // in any case, update desired orientation in local coordinate system
     // mEffortOrientation.Assign(BaseFrame.Rotation().Inverse() * orientation);
