@@ -26,7 +26,7 @@
     <joint index="3" name="wrist_platform" type="Revolute">
       <pid PGain="2.0" DGain="0.15" IGain="0.5" OffsetTorque="0.0" Forget="0.9" Nonlinear="0.0"/>
       <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
-      <pos LowerLimit="-90" UpperLimit="200" Units="deg"/>
+      <pos LowerLimit="-70" UpperLimit="230" Units="deg"/>
     </joint>
 
     <joint index="4" name="wrist_pitch" type="Revolute">
