@@ -963,10 +963,27 @@ void mtsIntuitiveResearchKitPSM::TransitionAdapterEngaged(void)
 {
     mAdapterNeedEngage = false;
     if (mArmState.DesiredStateIsNotCurrent()) {
-        Tool.GetButton(Tool.IsPresent);
-        if ((Tool.IsPresent || mIsSimulated) && mToolConfigured) {
+        // real case, check if there is a tool and it is properly configured
+        if (!mIsSimulated) {
+            Tool.GetButton(Tool.IsPresent);
+            if (Tool.IsPresent && mToolConfigured) {
+                SetToolPresent(true);
+                mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
+            }
+        } else {
+            // simulated case
             SetToolPresent(true);
-            mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
+            // check if we tool is configured, i.e. fixed or manual
+            if (mToolConfigured) {
+                mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
+            } else {
+                // request tool type if needed
+                if (!mToolTypeRequested) {
+                    mToolTypeRequested = true;
+                    ToolEvents.ToolTypeRequest();
+                    RobotInterface->SendWarning(this->GetName() + ": tool type requested from user");
+                }
+            }
         }
     }
 }
@@ -1336,7 +1353,7 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
 
 void mtsIntuitiveResearchKitPSM::SetToolType(const std::string & toolType)
 {
-    if (mToolTypeRequested) {
+    if (mToolTypeRequested || mIsSimulated) {
         EventHandlerToolType(toolType);
         if (mToolConfigured) {
             mToolTypeRequested = false;
