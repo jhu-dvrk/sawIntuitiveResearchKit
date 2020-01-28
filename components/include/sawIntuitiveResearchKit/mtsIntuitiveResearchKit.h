@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -34,6 +34,9 @@ namespace mtsIntuitiveResearchKit {
     // some specific conditions.  Ask Peter!  See also
     // https://github.com/jhu-cisst/QLA/issues/1
     const double TimeToPower = 3.0 * cmn_s;
+
+    // PSM constants
+    const double PSMOutsideCannula = 50.0 * cmn_ms;
 
     // teleoperation constants
     const double TeleOperationPSMOrientationTolerance = 5.0; // in degrees

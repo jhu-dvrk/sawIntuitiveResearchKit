@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -71,7 +71,7 @@ protected:
 
     // see base class
     inline bool IsSafeForCartesianControl(void) const override {
-        return (StateJointKinematics.Position().at(2) > 50.0 * cmn_mm);
+        return (StateJointKinematics.Position().at(2) >= mtsIntuitiveResearchKit::PSMOutsideCannula);
     }
 
 
