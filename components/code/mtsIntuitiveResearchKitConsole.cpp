@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -53,8 +53,10 @@ http://www.cisst.org/cisst/license.txt.
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsole);
 
 
-mtsIntuitiveResearchKitConsole::Arm::Arm(const std::string & name,
+mtsIntuitiveResearchKitConsole::Arm::Arm(mtsIntuitiveResearchKitConsole * console,
+                                         const std::string & name,
                                          const std::string & ioComponentName):
+    mConsole(console),
     mName(name),
     mIOComponentName(ioComponentName),
     mArmPeriod(mtsIntuitiveResearchKit::ArmPeriod),
@@ -347,6 +349,10 @@ const std::string & mtsIntuitiveResearchKitConsole::Arm::PIDComponentName(void) 
     return mPIDComponentName;
 }
 
+void mtsIntuitiveResearchKitConsole::Arm::CurrentStateEventHandler(const std::string & currentState)
+{
+    mConsole->SetArmCurrentState(mName, currentState);
+}
 
 mtsIntuitiveResearchKitConsole::TeleopECM::TeleopECM(const std::string & name,
                                                      const std::string & masterLeftComponentName,
@@ -533,6 +539,8 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
                                    "PowerOn");
         mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::Home, this,
                                    "Home");
+        mInterface->AddEventWrite(ConfigurationEvents.ArmCurrentState,
+                                  "ArmCurrentState", prmKeyValue());
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::TeleopEnable, this,
                                     "TeleopEnable", false);
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::CycleTeleopPSMByMTM, this,
@@ -1067,7 +1075,7 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
 bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mtsIntuitiveResearchKitConsole::Arm::ArmType CMN_UNUSED(armType))
 {
     // create new required interfaces to communicate with the components we created
-    Arm * newArm = new Arm(genericArm->GetName(), "");
+    Arm * newArm = new Arm(this, genericArm->GetName(), "");
     if (AddArmInterfaces(newArm)) {
         ArmList::iterator armIterator = mArms.find(newArm->mName);
         if (armIterator != mArms.end()) {
@@ -1217,7 +1225,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     Arm * armPointer = 0;
     if (armIterator == mArms.end()) {
         // create a new arm if needed
-        armPointer = new Arm(armName, ioComponentName);
+        armPointer = new Arm(this, armName, ioComponentName);
     } else {
         armPointer = armIterator->second;
     }
@@ -1889,6 +1897,8 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
                                                         this, "Warning");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
                                                         this, "Status");
+        arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::Arm::CurrentStateEventHandler,
+                                                        arm, "CurrentState");
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add Main interface for arm \""
                                  << arm->Name() << "\"" << std::endl;
@@ -2482,4 +2492,16 @@ void mtsIntuitiveResearchKitConsole::WarningEventHandler(const mtsMessage & mess
 
 void mtsIntuitiveResearchKitConsole::StatusEventHandler(const mtsMessage & message) {
     mInterface->SendStatus(message.Message);
+}
+
+void mtsIntuitiveResearchKitConsole::SetArmCurrentState(const std::string & armName,
+                                                        const std::string & currentState)
+{
+    // update teleop state in case this arm is used for one of the selected teleops
+    if (currentState == "READY") {
+        UpdateTeleopState();
+    }
+
+    // emit event
+    ConfigurationEvents.ArmCurrentState(prmKeyValue(armName, currentState));
 }

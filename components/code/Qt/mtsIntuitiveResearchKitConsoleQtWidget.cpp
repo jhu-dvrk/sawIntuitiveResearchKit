@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -45,6 +45,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <QSlider>
 #include <QRadioButton>
 #include <QApplication>
+#include <QListWidget>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
 
@@ -59,6 +60,8 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequired->AddFunction("PowerOff", Console.PowerOff);
         interfaceRequired->AddFunction("PowerOn", Console.PowerOn);
         interfaceRequired->AddFunction("Home", Console.Home);
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler,
+                                                this, "ArmCurrentState");
         interfaceRequired->AddFunction("TeleopEnable", Console.TeleopEnable);
         interfaceRequired->AddFunction("SetScale", Console.SetScale);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
@@ -159,6 +162,28 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotHome(void)
     Console.Home();
 }
 
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(ArmCurrentStateType armState)
+{
+    const std::string arm = armState.first.toStdString();
+    auto iter = ArmLabels.find(arm);
+    QLabel * label;
+    // insert new arm if needed
+    if (iter == ArmLabels.end()) {
+        label = new QLabel(arm.c_str());
+        label->setAlignment(Qt::AlignCenter);
+        QVBArms->addWidget(label);
+        ArmLabels[arm] = label;
+    } else {
+        label = iter->second;
+    }
+    // color code state
+    if (armState.second.toStdString() == "READY") {
+        label->setStyleSheet("QLabel { background-color: rgb(50, 255, 50) }");
+    } else {
+        label->setStyleSheet("QLabel { background-color: rgb(255, 100, 100) }");
+    }
+}
+
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStart(void)
 {
     Console.TeleopEnable(true);
@@ -192,6 +217,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QGroupBox * armsBox = new QGroupBox("Arms");
     boxLayout->addWidget(armsBox);
     QVBoxLayout * armsLayout = new QVBoxLayout();
+    armsLayout->setContentsMargins(2, 2, 2, 2);
     armsBox->setLayout(armsLayout);
     QPBPowerOff = new QPushButton("Power Off");
     QPBPowerOff->setToolTip("ctrl + O");
@@ -205,10 +231,13 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QPBHome->setToolTip("ctrl + H");
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_H), this, SLOT(SlotHome()));
     armsLayout->addWidget(QPBHome);
+    QVBArms = new QVBoxLayout();
+    armsLayout->addLayout(QVBArms);
 
     QGroupBox * teleopBox = new QGroupBox("Tele operation");
     boxLayout->addWidget(teleopBox);
     QVBoxLayout * teleopLayout = new QVBoxLayout();
+    teleopLayout->setContentsMargins(2, 2, 2, 2);
     teleopBox->setLayout(teleopLayout);
     QPBTeleopStart = new QPushButton("Start");
     QPBTeleopStart->setToolTip("ctrl + T");
@@ -228,6 +257,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QGroupBox * inputsBox = new QGroupBox("Inputs");
     boxLayout->addWidget(inputsBox);
     QVBoxLayout * inputsLayout = new QVBoxLayout();
+    inputsLayout->setContentsMargins(2, 2, 2, 2);
     inputsBox->setLayout(inputsLayout);
     QRBClutch = new QRadioButton("Clutch");
     QRBClutch->setAutoExclusive(false);
@@ -248,6 +278,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QGroupBox * audioBox = new QGroupBox("Audio");
     boxLayout->addWidget(audioBox);
     QVBoxLayout * audioLayout = new QVBoxLayout();
+    audioLayout->setContentsMargins(2, 2, 2, 2);
     audioBox->setLayout(audioLayout);
     QSVolume = new QSlider(Qt::Horizontal);
     QSVolume->setRange(0, 100);
@@ -292,6 +323,9 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotPowerOn()));
     connect(QPBHome, SIGNAL(clicked()),
             this, SLOT(SlotHome()));
+    qRegisterMetaType<ArmCurrentStateType>("ArmCurrentStateType");
+    connect(this, SIGNAL(SignalArmCurrentState(ArmCurrentStateType)),
+            this, SLOT(SlotArmCurrentStateEventHandler(ArmCurrentStateType)));
     connect(QPBTeleopStart, SIGNAL(clicked()),
             this, SLOT(SlotTeleopStart()));
     connect(QPBTeleopStop, SIGNAL(clicked()),
@@ -312,6 +346,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotComponentViewer()));
 
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q), this, SLOT(close()));
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler(const prmKeyValue & armState)
+{
+    ArmCurrentStateType currentState;
+    currentState.first = armState.Key.c_str();
+    currentState.second = armState.Value.c_str();
+    emit SignalArmCurrentState(currentState);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotScaleEventHandler(double scale)

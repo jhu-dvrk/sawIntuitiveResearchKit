@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -76,7 +76,7 @@ int main(int argc, char ** argv)
     const double periodKinematics = 1.0 * cmn_ms;
     const double periodTeleop = 1.0 * cmn_ms;
     const double periodUDP = 20.0 * cmn_ms;
- 
+
     // log configuration
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
@@ -228,7 +228,7 @@ int main(int argc, char ** argv)
         fileExists(masterName + " PID", masterPIDFile);
         fileExists(masterName + " kinematic", masterKinematicFile);
         mtsIntuitiveResearchKitConsole::Arm * mtm
-                = new mtsIntuitiveResearchKitConsole::Arm(masterName, io->GetName());
+            = new mtsIntuitiveResearchKitConsole::Arm(console, masterName, io->GetName());
         mtm->ConfigurePID(masterPIDFile);
         mtm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_MTM,
                           masterKinematicFile, periodKinematics);
@@ -260,7 +260,7 @@ int main(int argc, char ** argv)
         fileExists(slaveName + " PID", slavePIDFile);
         fileExists(slaveName + " kinematic", slaveKinematicFile);
         mtsIntuitiveResearchKitConsole::Arm * psm
-                = new mtsIntuitiveResearchKitConsole::Arm(slaveName, io->GetName());
+            = new mtsIntuitiveResearchKitConsole::Arm(console, slaveName, io->GetName());
         psm->ConfigurePID(slavePIDFile);
         psm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_PSM,
                           slaveKinematicFile, periodKinematics);
