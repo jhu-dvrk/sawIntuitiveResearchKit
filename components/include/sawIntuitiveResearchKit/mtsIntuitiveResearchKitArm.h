@@ -428,6 +428,7 @@ public:
 
     // Home Action
     bool mEncoderBiased;
+    bool mAllEncodersBiased = false; // value read from FPGA  
     bool mHomingGoesToZero;
     bool mHomingBiasEncoderRequested;
     double mHomingTimer;

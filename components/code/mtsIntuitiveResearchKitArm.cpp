@@ -908,7 +908,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 
     // request bias encoder
     const double currentTime = this->StateTable.GetTic();
-    RobotIO.BiasEncoder(1970); // birth date, state table only contain 1999 elements anyway
+    RobotIO.BiasEncoder(-1970); // birth date, state table only contain 1999 elements anyway, negative numbers means that we first check if encoders have already been preloaded
     mHomingBiasEncoderRequested = true;
     mHomingTimer = currentTime;
 }
@@ -1722,9 +1722,15 @@ void mtsIntuitiveResearchKitArm::PositionLimitEventHandler(const vctBoolVec & CM
 
 void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 {
-    std::stringstream nbSamplesString;
-    nbSamplesString << nbSamples;
-    RobotInterface->SendStatus(this->GetName() + ": encoders biased using " + nbSamplesString.str() + " potentiometer values");
+    if (nbSamples > 0) {
+        std::stringstream nbSamplesString;
+        nbSamplesString << nbSamples;
+        RobotInterface->SendStatus(this->GetName() + ": encoders biased using " + nbSamplesString.str() + " potentiometer values");
+        mAllEncodersBiased = false;
+    } else {
+        RobotInterface->SendStatus(this->GetName() + ": encoders seem to be already biased");
+        mAllEncodersBiased = true; // this is mostly for MTM homing to skip roll homing
+    }
     if (mHomingBiasEncoderRequested) {
         mHomingBiasEncoderRequested = false;
         mEncoderBiased = true;

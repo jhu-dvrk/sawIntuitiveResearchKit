@@ -287,7 +287,7 @@ void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
     // compute joint goal position
     mJointTrajectory.Goal.SetAll(0.0);
     // last joint is calibrated later
-    if (!mHomedOnce) {
+    if (!(mHomedOnce || mAllEncodersBiased)) {
         mJointTrajectory.Goal.Element(JNT_WRIST_ROLL) = StateJointDesiredPID.Position().Element(JNT_WRIST_ROLL);
     }
 }
@@ -301,7 +301,7 @@ void mtsIntuitiveResearchKitMTM::TransitionArmHomed(void)
 
 void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 {
-    if (mIsSimulated || this->mHomedOnce) {
+    if (mIsSimulated || this->mHomedOnce || this->mAllEncodersBiased) {
         return;
     }
 
@@ -329,7 +329,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 
 void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 {
-    if (mIsSimulated || this->mHomedOnce) {
+    if (mIsSimulated || this->mHomedOnce || this->mAllEncodersBiased) {
         mArmState.SetCurrentState("ROLL_CALIBRATED");
         return;
     }
@@ -401,7 +401,7 @@ void mtsIntuitiveResearchKitMTM::TransitionRollCalibrated(void)
 
 void mtsIntuitiveResearchKitMTM::EnterHomingRoll(void)
 {
-    if (mIsSimulated || this->mHomedOnce) {
+    if (mIsSimulated || this->mHomedOnce || this->mAllEncodersBiased) {
         return;
     }
     // compute joint goal position, we assume PID is on from previous state
@@ -420,7 +420,7 @@ void mtsIntuitiveResearchKitMTM::EnterHomingRoll(void)
 
 void mtsIntuitiveResearchKitMTM::RunHomingRoll(void)
 {
-    if (mIsSimulated || this->mHomedOnce) {
+    if (mIsSimulated || this->mHomedOnce || this->mAllEncodersBiased) {
         mHomedOnce = true;
         mArmState.SetCurrentState("ROLL_ENCODER_RESET");
         return;
