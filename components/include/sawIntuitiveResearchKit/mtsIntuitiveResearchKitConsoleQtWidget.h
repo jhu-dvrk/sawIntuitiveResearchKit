@@ -31,7 +31,6 @@ class QTabWidget;
 class QDoubleSpinBox;
 class QSlider;
 class QVBoxLayout;
-class QLabel;
 
 #include <QWidget>
 
@@ -76,6 +75,7 @@ private slots:
     void SlotCameraEventHandler(bool camera);
     void SlotSetVolume(void);
     void SlotComponentViewer(void);
+    void SlotArmButton(const QString & armName);
 
 protected:
     void closeEvent(QCloseEvent * event);
@@ -98,7 +98,7 @@ protected:
     void CameraEventHandler(const prmEventButton & button);
 
     QVBoxLayout * QVBArms;
-    std::map<std::string, QLabel *> ArmLabels;
+    std::map<std::string, QPushButton *> ArmButtons;
 
     QPushButton * QPBPowerOff;
     QPushButton * QPBPowerOn;

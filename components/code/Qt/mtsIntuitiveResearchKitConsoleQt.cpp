@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-07-13
 
-  (C) Copyright 2015-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -96,8 +96,10 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     QTabWidget * armTabWidget;
     if (console->mArms.size() > 1) {
         pidTabWidget = new QTabWidget();
+        pidTabWidget->setObjectName(QString("PIDs"));
         TabWidget->addTab(pidTabWidget, "PIDs");
         armTabWidget = new QTabWidget();
+        armTabWidget->setObjectName(QString("Arms"));
         TabWidget->addTab(armTabWidget, "Arms");
     } else {
         pidTabWidget = TabWidget; // use current tab widget
@@ -157,6 +159,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             Connections.push_back(new ConnectionType(armGUI->GetName(), "Manipulator",
                                                      armIter->second->ComponentName(),
                                                      armIter->second->InterfaceName()));
+            armGUI->setObjectName(name.c_str());
             armTabWidget->addTab(armGUI, name.c_str());
 
             // PSM server

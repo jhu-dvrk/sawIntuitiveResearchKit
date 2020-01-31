@@ -45,7 +45,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <QSlider>
 #include <QRadioButton>
 #include <QApplication>
-#include <QListWidget>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
 
@@ -165,22 +164,23 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotHome(void)
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(ArmCurrentStateType armState)
 {
     const std::string arm = armState.first.toStdString();
-    auto iter = ArmLabels.find(arm);
-    QLabel * label;
+    auto iter = ArmButtons.find(arm);
+    QPushButton * button;
     // insert new arm if needed
-    if (iter == ArmLabels.end()) {
-        label = new QLabel(arm.c_str());
-        label->setAlignment(Qt::AlignCenter);
-        QVBArms->addWidget(label);
-        ArmLabels[arm] = label;
+    if (iter == ArmButtons.end()) {
+        button = new QPushButton(arm.c_str());
+        QVBArms->addWidget(button);
+        ArmButtons[arm] = button;
+        connect(button, &QPushButton::clicked,
+                [ = ] { emit SlotArmButton(armState.first); });
     } else {
-        label = iter->second;
+        button = iter->second;
     }
     // color code state
     if (armState.second.toStdString() == "READY") {
-        label->setStyleSheet("QLabel { background-color: rgb(50, 255, 50) }");
+        button->setStyleSheet("QPushButton { background-color: rgb(50, 255, 50); border: none }");
     } else {
-        label->setStyleSheet("QLabel { background-color: rgb(255, 100, 100) }");
+        button->setStyleSheet("QPushButton { background-color: rgb(255, 100, 100); border: none }");
     }
 }
 
@@ -231,6 +231,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QPBHome->setToolTip("ctrl + H");
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_H), this, SLOT(SlotHome()));
     armsLayout->addWidget(QPBHome);
+    // arm buttons
     QVBArms = new QVBoxLayout();
     armsLayout->addLayout(QVBArms);
 
@@ -415,6 +416,27 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotComponentViewer(void)
     componentViewer->Start();
 }
 
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmButton(const QString & armName)
+{
+    // determine which tab to search
+    QTabWidget * subTab;
+    subTab = QTWidgets->findChild<QTabWidget *>(QString("Arms"));
+    if (subTab) {
+        QTWidgets->setCurrentWidget(subTab);
+    } else {
+        subTab = QTWidgets;
+    }
+
+    // now find the arm widget
+    QWidget * child;
+    child = subTab->findChild<QWidget *>(armName);
+    if (child) {
+        subTab->setCurrentWidget(child);
+    } else {
+        std::cerr << CMN_LOG_DETAILS << " can't find arm nor Arms tab widget, this should not happen" << std::endl;
+    }
+}
+
 void mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
@@ -422,5 +444,4 @@ void mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler(const prmEventBu
     } else {
         emit SignalCamera(false);
     }
-
 }
