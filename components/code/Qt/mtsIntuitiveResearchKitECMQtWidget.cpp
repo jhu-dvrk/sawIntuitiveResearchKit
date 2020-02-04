@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2019-10-10
 
-  (C) Copyright 2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2019-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -76,9 +76,6 @@ void mtsIntuitiveResearchKitECMQtWidget::setupUiDerived(void)
 
 void mtsIntuitiveResearchKitECMQtWidget::SlotEndoscopeTypeEventHandler(QString endoscopeType)
 {
-    QPalette palette;
-    palette.setColor(QPalette::Base, Qt::white);
-    QLEEndoscopeType->setPalette(palette);
     QLEEndoscopeType->setText(endoscopeType);
 }
 
