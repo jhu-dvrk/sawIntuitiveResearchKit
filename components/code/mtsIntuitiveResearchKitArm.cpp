@@ -525,6 +525,12 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
             mHomingGoesToZero = jsonHomingGoesToZero.asBool();
         }
 
+        // should ignore preloaded encoders and force homing
+        const Json::Value jsonAlwaysHome = jsonConfig["always-home"];
+        if (!jsonAlwaysHome.isNull()) {
+            mAlwaysHome = jsonAlwaysHome.asBool();
+        }
+
     } catch (std::exception & e) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": parsing file \""
                                  << filename << "\", got error: " << e.what() << std::endl;
@@ -908,7 +914,13 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 
     // request bias encoder
     const double currentTime = this->StateTable.GetTic();
-    RobotIO.BiasEncoder(-1970); // birth date, state table only contain 1999 elements anyway, negative numbers means that we first check if encoders have already been preloaded
+    const int numberOfSample = 1970; // birth date, state table only contain 1999 elements anyway
+    if (mAlwaysHome) {
+        RobotIO.BiasEncoder(numberOfSample);
+    } else {
+        // negative numbers means that we first check if encoders have already been preloaded
+        RobotIO.BiasEncoder(-numberOfSample);
+    }
     mHomingBiasEncoderRequested = true;
     mHomingTimer = currentTime;
 }
