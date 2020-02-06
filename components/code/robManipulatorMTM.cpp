@@ -125,106 +125,217 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
     return robManipulator::ESUCCESS;
 }
 
+int method = 2;
+bool print_fk = true;
 
+// METHOD 0 -> RISHI'S METHOD
+// METHOD 1 -> ANTON'S METHOD
+// METHOD 2 -> ADNAN'S METHOD
 double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double> & q,
                                                    const vctFrame4x4<double> & Rt07) const
 {
-#if 1
-    const vctFrm4x4 Rt03 = ForwardKinematics(q, 3);
-    vctFrm4x4 Rt37;
-    Rt03.ApplyInverseTo(Rt07, Rt37);
+    // RISHI'S METHOD
+    if(method == 0){
+        const vctFrm4x4 Rt03 = ForwardKinematics(q, 3);
+        vctFrm4x4 Rt37;
+        Rt03.ApplyInverseTo(Rt07, Rt37);
 
-    // find the angle difference between the gripper and the third joint to calculate auto-correct angle
-    double angleDifference = acosl(-Rt37.Element(0, 2) /
-                                   sqrt(Rt37.Element(1, 2) * Rt37.Element(1, 2) +
-                                        Rt37.Element(0, 2) * Rt37.Element(0, 2)));
-    if (Rt37.Element(1, 2) > 0.0) {
-        angleDifference = -angleDifference;
+        // find the angle difference between the gripper and the third joint to calculate auto-correct angle
+        double angleDifference = acosl(-Rt37.Element(0, 2) /
+                                       sqrt(Rt37.Element(1, 2) * Rt37.Element(1, 2) +
+                                            Rt37.Element(0, 2) * Rt37.Element(0, 2)));
+        if (Rt37.Element(1, 2) > 0.0) {
+            angleDifference = -angleDifference;
+        }
+
+        // calculate Angle Option 1 (The correct choice when right-side-up)
+        double option1 = angleDifference;
+
+        // calculate Angle Option 2 (The correct choice when upside-down)
+        double option2 = option1 - cmnPI;
+
+        // Normalize within joint space
+        if (option2 > cmnPI) {
+            option2 -= 2.0 * cmnPI;
+        } else if (option2 < (-3.0 * cmnPI_2)) {
+            option2 += 2.0 * cmnPI;
+        }
+
+        // Normalize within joint space
+        if ((option2 < -cmnPI)
+                && (option2 > -3.0 * cmnPI_2)
+                && (q[3] > 0.0)) {
+            option2 += 2.0 * cmnPI;
+        }
+
+        // Normalize within joint space
+        if ((option1 > cmnPI_2)
+                && (option1 < cmnPI)
+                && (q[3] < 0.0)) {
+            option1 -= 2.0 * cmnPI;
+        }
+
+        // Choose either Option 1 or Option 2 based on which one is closer to the platform angle
+        double solution;
+        if (std::abs(q[3] - option2) < std::abs(q[3] - option1)) {
+            solution = option2;
+        } else {
+            solution = option1;
+        }
+
+        // average with current position based on projection angle
+        const double cosProjectionAngle = std::abs(cos(q[4]));
+        double q3 = solution * cosProjectionAngle + q[3] * (1 - cosProjectionAngle);
+
+        // make sure we respect joint limits
+        const double q3Max = links[3].GetKinematics()->PositionMax();
+        const double q3Min = links[3].GetKinematics()->PositionMin();
+        if (q3 > q3Max) {
+            q3 = q3Max;
+        } else if (q3 < q3Min) {
+            q3 = q3Min;
+        }
+
+        std::cerr << "\r" << "Joint 3 Value: " << q3 << std::endl;
+
+        return q3;
     }
+    // ANTON'S METHOD
+    else if(method == 1){
+        vctDynamicVector<double> jointGoal(q);
+        jointGoal[3] = 0.0;
+        const vctFrm4x4 Rt04 = ForwardKinematics(jointGoal, 4);
+        vctFrm4x4 Rt47;
+        Rt04.ApplyInverseTo(Rt07, Rt47);
+        vctEulerZXZRotation3 closed47(Rt47.Rotation());
 
-    // calculate Angle Option 1 (The correct choice when right-side-up)
-    double option1 = angleDifference;
+        // applying DH offsets
+        const double q4 = closed47.alpha() + cmnPI_2;
+        const double q5 = -closed47.beta() + cmnPI_2;
 
-    // calculate Angle Option 2 (The correct choice when upside-down)
-    double option2 = option1 - cmnPI;
+        double q3;
+        // upside-down case
+        if ((q4 > -cmnPI_2) && (q4 < cmnPI_2)) {
+            q3 = q5;
+        } else {
+            q3 = -q5;
+        }
 
-    // Normalize within joint space
-    if (option2 > cmnPI) {
-        option2 -= 2.0 * cmnPI;
-    } else if (option2 < (-3.0 * cmnPI_2)) {
-        option2 += 2.0 * cmnPI;
+        // average with current position based on projection angle
+        const double cosProjectionAngle = std::abs(cos(q4));
+        q3 = q3 * cosProjectionAngle + q[3] * (1 - cosProjectionAngle);
+
+        // make sure we respect joint limits
+        const double q3Max = links[3].GetKinematics()->PositionMax();
+        const double q3Min = links[3].GetKinematics()->PositionMin();
+        if (q3 > q3Max) {
+            q3 = q3Max;
+        } else if (q3 < q3Min) {
+            q3 = q3Min;
+        }
+
+        return q3;
     }
+    // ADNAN'S METHOD
+    else if (method==2){
+        //
+        // Test all the Forward Kinematic Joints
+        //
+        if(print_fk){
+            vctDynamicVector<double> testJointAngles;
+            testJointAngles.resize(7);
 
-    // Normalize within joint space
-    if ((option2 < -cmnPI)
-        && (option2 > -3.0 * cmnPI_2)
-        && (q[3] > 0.0)) {
-        option2 += 2.0 * cmnPI;
+            for(int i = 0 ; i < testJointAngles.size() ; i ++){
+                testJointAngles[i] = 0.0;
+            }
+
+            testJointAngles.resize(8);
+            for(int i = 1 ; i < testJointAngles.size() + 1 ; i ++){
+                vctFrm4x4 T = ForwardKinematics(testJointAngles, i);
+                std::cout << "FK LINK " << i << " IN LINK " << 0 << std::endl;
+                std::cout << std::fixed << std::showpoint;
+                std::cout.precision(3);
+                std::cout << T << "\n --- \n";
+            }
+            std::cout << "\n";
+            print_fk = false;
+        }
+        //
+        //
+        //
+
+        // Limits for Wrist Pitch (Joint 5)
+        double a_lim_5 = -1.5;
+        double b_lim_5 = 1.2;
+        double c_lim_5 = 1.8;
+
+
+        vctEulerYZXRotation3 euler_offset;
+        euler_offset.Assign(cmnPI_2, 0, 0);
+
+        vctMatrixRotation3<double, true> Rt8;
+        vctEulerToMatrixRotation3(euler_offset, Rt8);
+
+        vctFrm4x4 Rt08, Rt78;
+        Rt78.Rotation().Assign(Rt8);
+        Rt08 = Rt07 * Rt78;
+
+        vctDynamicVector<double> jointGoal(q);
+        jointGoal[3] = 0.0;
+        const vctFrm4x4 Rt03 = ForwardKinematics(jointGoal, 3);
+        vctFrm4x4 Rt38;
+        Rt03.ApplyInverseTo(Rt08, Rt38);
+
+        vctEulerYZXRotation3 closed38(Rt38.Rotation());
+
+        // applying DH offsets
+        const double q4 = closed38.alpha();
+        const double q5 = closed38.beta();
+
+        double sign;
+        double range;
+        double centered_val;
+        double normalized_val;
+
+        if (a_lim_5 < q4 && q4 <= b_lim_5){
+            sign = 1;
+        }
+        else if (b_lim_5 < q4 & q4 < c_lim_5){
+            range = c_lim_5 - b_lim_5;
+            normalized_val = (q4 - b_lim_5) / range;
+            centered_val = normalized_val - 0.5;
+            sign = -centered_val * 2;
+//            std::cerr << "MID VAL: " <<  sign << std::endl ;
+            sign = 0;
+        }
+        else{
+            sign = -1;
+        }
+
+
+
+        double Kp_3 = 1.0;
+        double Kd_3 = 0.05;
+        double e;
+        double q3;
+
+        e = q5;
+
+        q3 = Kp_3 * e * sign;
+
+        // make sure we respect joint limits
+        const double q3Max = links[3].GetKinematics()->PositionMax();
+        const double q3Min = links[3].GetKinematics()->PositionMin();
+        if (q3 > q3Max) {
+            q3 = q3Max;
+        } else if (q3 < q3Min) {
+            q3 = q3Min;
+        }
+
+        std::cout.precision(3);
+        std::cout << std::fixed;
+        std::cout << "\r" << "Joint 3: ("  << q3 << "), 4: (" << q4 << "), (5: "  << q5 << ")";
+
+        return q3;
     }
-
-    // Normalize within joint space
-    if ((option1 > cmnPI_2)
-        && (option1 < cmnPI)
-        && (q[3] < 0.0)) {
-        option1 -= 2.0 * cmnPI;
-    }
-
-    // Choose either Option 1 or Option 2 based on which one is closer to the platform angle
-    double solution;
-    if (std::abs(q[3] - option2) < std::abs(q[3] - option1)) {
-        solution = option2;
-    } else {
-        solution = option1;
-    }
-
-    // average with current position based on projection angle
-    const double cosProjectionAngle = std::abs(cos(q[4]));
-    double q3 = solution * cosProjectionAngle + q[3] * (1 - cosProjectionAngle);
-
-    // make sure we respect joint limits
-    const double q3Max = links[3].GetKinematics()->PositionMax();
-    const double q3Min = links[3].GetKinematics()->PositionMin();
-    if (q3 > q3Max) {
-        q3 = q3Max;
-    } else if (q3 < q3Min) {
-        q3 = q3Min;
-    }
-
-    return q3;
-
-#else
-    vctDynamicVector<double> jointGoal(q);
-    jointGoal[3] = 0.0;
-    const vctFrm4x4 Rt04 = ForwardKinematics(jointGoal, 4);
-    vctFrm4x4 Rt47;
-    Rt04.ApplyInverseTo(Rt07, Rt47);
-    vctEulerZXZRotation3 closed47(Rt47.Rotation());
-
-    // applying DH offsets
-    const double q4 = closed47.alpha() + cmnPI_2;
-    const double q5 = -closed47.beta() + cmnPI_2;
-
-    double q3;
-    // upside-down case
-    if ((q4 > -cmnPI_2) && (q4 < cmnPI_2)) {
-        q3 = q5;
-    } else {
-        q3 = -q5;
-    }
-
-    // average with current position based on projection angle
-    const double cosProjectionAngle = std::abs(cos(q4));
-    q3 = q3 * cosProjectionAngle + q[3] * (1 - cosProjectionAngle);
-
-    // make sure we respect joint limits
-    const double q3Max = links[3].GetKinematics()->PositionMax();
-    const double q3Min = links[3].GetKinematics()->PositionMin();
-    if (q3 > q3Max) {
-        q3 = q3Max;
-    } else if (q3 < q3Min) {
-        q3 = q3Min;
-    }
-
-    return q3;
-#endif
 }
