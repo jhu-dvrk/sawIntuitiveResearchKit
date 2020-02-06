@@ -127,7 +127,7 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
 
 int method = 2;
 bool print_fk = true;
-
+double q3_pre = 0.0;
 // METHOD 0 -> RISHI'S METHOD
 // METHOD 1 -> ANTON'S METHOD
 // METHOD 2 -> ADNAN'S METHOD
@@ -250,12 +250,26 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
             }
 
             testJointAngles.resize(8);
-            for(int i = 1 ; i < testJointAngles.size() + 1 ; i ++){
+            for(int i = 0 ; i < testJointAngles.size() ; i ++){
                 vctFrm4x4 T = ForwardKinematics(testJointAngles, i);
-                std::cout << "FK LINK " << i << " IN LINK " << 0 << std::endl;
+                std::cout << "FK: TRANSFORM OF LINK (" << i << ") IN LINK " << "(Base)" << std::endl;
                 std::cout << std::fixed << std::showpoint;
                 std::cout.precision(3);
                 std::cout << T << "\n --- \n";
+            }
+
+            int test_link = 4;
+            std::cout << "*************\n" ;
+            std::cout << "TESTING FK ON JOINT "<< test_link << "\n" ;
+            testJointAngles[test_link - 1] += -1.57;
+            for(int i = 0 ; i < 10 ; i ++){
+                vctFrm4x4 T = ForwardKinematics(testJointAngles, test_link);
+                std::cout << "FK: ROTATION OF LINK (" << test_link << ") IN LINK " << "(Base)" << std::endl;
+                std::cout << test_link - 1 << "th Joint Angle = " << testJointAngles[test_link - 1] << "\n" ;
+                std::cout << std::fixed << std::showpoint;
+                std::cout.precision(3);
+                std::cout << T.Rotation() << "\n --- \n";
+                testJointAngles[test_link - 1] += (3.14 / 10.0);
             }
             std::cout << "\n";
             print_fk = false;
@@ -271,7 +285,8 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
 
 
         vctEulerYZXRotation3 euler_offset;
-        euler_offset.Assign(cmnPI_2, 0, 0);
+        // Rotation to align frame 7 with frame 4
+        euler_offset.Assign(cmnPI_2, 0, cmnPI_2);
 
         vctMatrixRotation3<double, true> Rt8;
         vctEulerToMatrixRotation3(euler_offset, Rt8);
@@ -281,16 +296,20 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
         Rt08 = Rt07 * Rt78;
 
         vctDynamicVector<double> jointGoal(q);
-        jointGoal[3] = 0.0;
-        const vctFrm4x4 Rt03 = ForwardKinematics(jointGoal, 3);
-        vctFrm4x4 Rt38;
-        Rt03.ApplyInverseTo(Rt08, Rt38);
+        jointGoal[3] = 0;
+        const vctFrm4x4 Rt04 = ForwardKinematics(jointGoal, 4);
 
-        vctEulerYZXRotation3 closed38(Rt38.Rotation());
+//        std::cout << Rt03.Rotation() << "\n --- \n";
+        vctFrm4x4 Rt48;
+        Rt04.ApplyInverseTo(Rt08, Rt48);
+
+//        std::cout << std::setprecision(2) << Rt48.Rotation() << "\n --- \n";
+
+        vctEulerZYXRotation3 closed48(Rt48.Rotation());
 
         // applying DH offsets
-        const double q4 = closed38.alpha();
-        const double q5 = closed38.beta();
+        const double q4 = closed48.alpha();
+        const double q5 = closed48.beta();
 
         double sign;
         double range;
@@ -332,8 +351,8 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
             q3 = q3Min;
         }
 
-        std::cout.precision(3);
-        std::cout << std::fixed;
+        q3_pre = q3;
+
         std::cout << "\r" << "Joint 3: ("  << q3 << "), 4: (" << q4 << "), (5: "  << q5 << ")";
 
         return q3;
