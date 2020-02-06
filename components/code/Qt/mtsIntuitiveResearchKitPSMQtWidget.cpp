@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2019-08-07
 
-  (C) Copyright 2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2019-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -86,7 +86,7 @@ void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
 void mtsIntuitiveResearchKitPSMQtWidget::SlotToolTypeEventHandler(QString toolType)
 {
     QPalette palette;
-    palette.setColor(QPalette::Base, Qt::white);
+    palette.setColor(QPalette::Base, this->palette().color(QPalette::Base));
     QLEToolType->setPalette(palette);
     QLEToolType->setText(toolType);
 }

@@ -695,8 +695,10 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     if ((orientationErrorInDegrees <= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance)
         && (mGripperJawTransitions > 1)) {
         if (mTeleopState.DesiredState() == "ENABLED") {
-            // jaw offset is in PSM scale so we need to convert gripper to jaw scale
-            mJawOffset = mPSM.StateJaw.Position()[0] - GripperToJaw(mMTM.StateGripper.Position()[0]);
+            if (!mIgnoreJaw){ // compute jaw offset only when jaw is not ignored, otherwise segmentation fault
+                // jaw offset is in PSM scale so we need to convert gripper to jaw scale
+                mJawOffset = mPSM.StateJaw.Position()[0] - GripperToJaw(mMTM.StateGripper.Position()[0]);
+            }
             mTeleopState.SetCurrentState("ENABLED");
         }
     } else {

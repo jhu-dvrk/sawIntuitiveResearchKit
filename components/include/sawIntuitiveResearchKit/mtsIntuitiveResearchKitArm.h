@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -428,7 +428,8 @@ public:
 
     // Home Action
     bool mEncoderBiased;
-    bool mAllEncodersBiased = false; // value read from FPGA  
+    bool mAllEncodersBiased = false; // value read from FPGA
+    bool mAlwaysHome = false;
     bool mHomingGoesToZero;
     bool mHomingBiasEncoderRequested;
     double mHomingTimer;
