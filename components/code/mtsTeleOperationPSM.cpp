@@ -106,7 +106,6 @@ void mtsTeleOperationPSM::Init(void)
     this->StateTable.AddData(mMTM.PositionCartesianDesired, "MTMCartesianPositionDesired");
     this->StateTable.AddData(mPSM.PositionCartesianCurrent, "PSMCartesianPosition");
     this->StateTable.AddData(mAlignOffset, "AlignOffset");
-    this->StateTable.AddData(mJawOffset, "JawOffset");
 
     mConfigurationStateTable = new mtsStateTable(100, "Configuration");
     mConfigurationStateTable->SetAutomaticAdvance(false);
@@ -201,9 +200,6 @@ void mtsTeleOperationPSM::Init(void)
         mInterface->AddCommandReadState(this->StateTable,
                                         mAlignOffset,
                                         "GetAlignOffset");
-        mInterface->AddCommandReadState(this->StateTable,
-                                        mJawOffset,
-                                        "GetJawOffset");
         // events
         mInterface->AddEventWrite(MessageEvents.DesiredState,
                                   "DesiredState", std::string(""));
@@ -689,8 +685,9 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
         if (gripperJawMatching != mGripperJawMatchingPrevious) {
             mGripperJawTransitions += 1;
             mGripperJawMatchingPrevious = gripperJawMatching;
-            if (mGripperJawTransitions > 1) {
+            if ((mGripperJawTransitions > 1) && gripperJawMatching) {
                 mIsOperatorActive = true;
+                mGripperGhost = mMTM.StateGripper.Position()[0];
             }
         }
     }
@@ -699,8 +696,6 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     if ((orientationErrorInDegrees <= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance)
         && mIsOperatorActive) {
         if (mTeleopState.DesiredState() == "ENABLED") {
-            // jaw offset is in PSM scale so we need to convert gripper to jaw scale
-            mJawOffset = mPSM.StateJaw.Position()[0] - GripperToJaw(mMTM.StateGripper.Position()[0]);
             mTeleopState.SetCurrentState("ENABLED");
         }
     } else {
@@ -795,12 +790,23 @@ void mtsTeleOperationPSM::RunEnabled(void)
             if (!mIgnoreJaw) {
                 // Gripper
                 if (mMTM.GetStateGripper.IsValid()) {
-                    prmStateJoint gripper;
-                    mMTM.GetStateGripper(gripper);
-                    mPSM.PositionJointSet.Goal()[0] = GripperToJaw(gripper.Position()[0])
-                        + mJawOffset;
+                    mMTM.GetStateGripper(mMTM.StateGripper);
+                    double currentGripper = mMTM.StateGripper.Position()[0];
+                    const double rate = 270.0 * cmnPI_180 * cmn_ms;
+                    const double threshold = 2.0 * cmnPI_180;
+                    // gripper ghost below, add to catch up
+                    if (mGripperGhost <= (currentGripper - threshold)) {
+                        mGripperGhost += rate;
+                    } else {
+                        // gripper ghost above, subtract to catch up
+                        if (mGripperGhost >= (currentGripper + threshold)) {
+                            mGripperGhost -= rate;
+                        }
+                    }
+                    mPSM.PositionJointSet.Goal()[0] = GripperToJaw(mGripperGhost);
                     if (mPSM.PositionJointSet.Goal()[0] < mGripperToJaw.PositionMin) {
                         mPSM.PositionJointSet.Goal()[0] = mGripperToJaw.PositionMin;
+                        mGripperGhost = JawToGripper(mGripperToJaw.PositionMin);
                     }
                     mPSM.SetPositionJaw(mPSM.PositionJointSet);
                 } else {
