@@ -162,7 +162,10 @@ protected:
     bool mIgnoreJaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
     int mGripperJawTransitions;
     bool mGripperJawMatchingPrevious;
+    bool mIsOperatorActive = false;
+    bool mWasOperatorActiveBeforeClutch = false;
     bool mIsClutched = false;
+    bool mBackFromClutch = false;
     bool mRotationLocked = false;
     bool mTranslationLocked = false;
     bool mAlignMTM = true; // default on da Vinci

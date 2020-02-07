@@ -331,8 +331,6 @@ void mtsTeleOperationPSM::ClutchEventHandler(const prmEventButton & button)
     // if the teleoperation is activated
     if (mTeleopState.DesiredState() == "ENABLED") {
         Clutch(mIsClutched);
-    } else {
-        mGripperJawTransitions = 0;
     }
 }
 
@@ -341,9 +339,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
     // if the teleoperation is activated
     if (clutch) {
         // keep track of last follow mode
-        if (mIsFollowing) {
-            mGripperJawTransitions = -1;
-        }
+        mWasOperatorActiveBeforeClutch = mIsOperatorActive;
         SetFollowing(false);
         mMTM.PositionCartesianSet.Goal().Rotation().FromNormalized(mPSM.PositionCartesianCurrent.Position().Rotation());
         mMTM.PositionCartesianSet.Goal().Translation().Assign(mMTM.PositionCartesianCurrent.Position().Translation());
@@ -366,6 +362,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
     } else {
         mInterface->SendStatus(this->GetName() + ": console clutch released");
         mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
+        mBackFromClutch = true;
     }
 }
 
@@ -383,6 +380,8 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
         mInterface->SendError(this->GetName() + ": " + state + " is not an allowed desired state");
         return;
     }
+    // force operator to indicate they are present
+    mIsOperatorActive = false;
     MessageEvents.DesiredState(state);
     mInterface->SendStatus(this->GetName() + ": set desired state to " + state);
 }
@@ -576,15 +575,16 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
         mMTM.SetPositionGoalCartesian(mMTM.PositionCartesianSet);
     }
 
+    if (mBackFromClutch) {
+        mIsOperatorActive = mWasOperatorActiveBeforeClutch;
+        mBackFromClutch = false;
+    }
+
     // reset number of transitions for gripper/jaw
     if (!mIgnoreJaw) {
         // figure out the mapping between the MTM gripper angle and the PSM jaw angle
         UpdateGripperToJawConfiguration();
-        // if -1, it's because we're back from clutch and we were following
-        if (mGripperJawTransitions == -1) {
-            mGripperJawTransitions = 1;
-            mGripperJawMatchingPrevious = false;
-        } else {
+        if (!mIsOperatorActive) {
             mGripperJawTransitions = 0;
             double gripperJawErrorInDegrees = 0.0;
             // compare angles
@@ -605,8 +605,6 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
             // compute number of transitions
             mGripperJawMatchingPrevious = (gripperJawErrorInDegrees <= mtsIntuitiveResearchKit::TeleOperationPSMGripperJawTolerance);
         }
-    } else {
-        mGripperJawTransitions = 2;
     }
 }
 
@@ -664,7 +662,13 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     // find difference between gripper (MTM) and jaw (PSM)
     double gripperJawErrorInDegrees = 0.0;
 
-    if (!mIgnoreJaw) {
+    // if we don't have jaws, we assume operator is active.  We need different way to detect operator
+    if (mIgnoreJaw) {
+        mIsOperatorActive = true;
+    }
+
+    // if not active, use jaw motion to detect if the user is ready
+    if (!mIsOperatorActive) {
         // compare angles
         if (mMTM.GetStateGripper.IsValid()) {
             mMTM.GetStateGripper(mMTM.StateGripper);
@@ -685,15 +689,15 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
         if (gripperJawMatching != mGripperJawMatchingPrevious) {
             mGripperJawTransitions += 1;
             mGripperJawMatchingPrevious = gripperJawMatching;
+            if (mGripperJawTransitions > 1) {
+                mIsOperatorActive = true;
+            }
         }
-    } else {
-        // pretend we have two transitions to ignore gripper matching
-        mGripperJawTransitions = 2;
     }
 
     // finally check for transition
     if ((orientationErrorInDegrees <= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance)
-        && (mGripperJawTransitions > 1)) {
+        && mIsOperatorActive) {
         if (mTeleopState.DesiredState() == "ENABLED") {
             // jaw offset is in PSM scale so we need to convert gripper to jaw scale
             mJawOffset = mPSM.StateJaw.Position()[0] - GripperToJaw(mMTM.StateGripper.Position()[0]);
