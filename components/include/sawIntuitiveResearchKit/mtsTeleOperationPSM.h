@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 
 // always include last
@@ -139,7 +140,7 @@ protected:
         vctFrm4x4 CartesianInitial;
     } mBaseFrame;
 
-    double mScale = 0.2;
+    double mScale = mtsIntuitiveResearchKit::TeleOperationPSMScale;
     vctMatRot3 mRegistrationRotation; // optional registration between PSM and MTM orientation
     vctMatRot3 mAlignOffset, mAlignOffsetInitial; // rotation offset between MTM and PSM when tele-operation goes in follow mode
 

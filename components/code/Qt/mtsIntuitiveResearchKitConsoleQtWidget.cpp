@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsComponentViewer.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 
@@ -252,7 +253,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QSBScale->setRange(0.1, 1.0);
     QSBScale->setSingleStep(0.1);
     QSBScale->setPrefix("scale ");
-    QSBScale->setValue(0.2);
+    QSBScale->setValue(mtsIntuitiveResearchKit::TeleOperationPSMScale);
     teleopLayout->addWidget(QSBScale);
 
     QGroupBox * inputsBox = new QGroupBox("Inputs");

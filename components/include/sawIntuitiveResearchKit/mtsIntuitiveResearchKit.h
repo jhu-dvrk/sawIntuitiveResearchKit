@@ -40,6 +40,7 @@ namespace mtsIntuitiveResearchKit {
     const double PSMOutsideCannula = 50.0 * cmn_ms;
 
     // teleoperation constants
+    const double TeleOperationPSMScale = 0.2;
     const double TeleOperationPSMOrientationTolerance = 5.0; // in degrees
     const double TeleOperationPSMGripperJawTolerance = 5.0;
     const double TeleOperationPSMJawRate =  4 * cmnPI * cmn_s; // 720 d/s
