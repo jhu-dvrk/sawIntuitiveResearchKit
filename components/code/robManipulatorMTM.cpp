@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2019-11-11
 
-  (C) Copyright 2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2019-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -36,26 +36,6 @@ robManipulatorMTM::robManipulatorMTM(const vctFrame4x4<double> &Rtw0)
 {
 }
 
-template <typename _rotationMatrix>
-vct3 SO3toRPY(const _rotationMatrix & R)
-{
-    vct3 rpy;
-    if (fabs(R[2][2]) < 1e-12 && fabs(R[1][2]) < 1e-12) {
-        rpy[0] = 0.0;
-        rpy[1] = atan2(R[0][2], R[2][2]);
-        rpy[2] = atan2(R[1][0], R[1][1]);
-    }
-    else {
-        rpy[0] = atan2(-R[1][2], R[2][2]);
-        double sr = sin(rpy[0]);
-        double cr = cos(rpy[0]);
-        rpy[1] = atan2(R[0][2], cr*R[2][2] - sr*R[1][2]);
-        rpy[2] = atan2(-R[0][1], R[0][0] );
-    }
-    return rpy;
-}
-
-
 robManipulator::Errno
 robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
                                      const vctFrame4x4<double> & Rts,
@@ -64,19 +44,23 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
                                      double CMN_UNUSED(LAMBDA))
 {
     if (q.size() != links.size()) {
-        CMN_LOG_RUN_ERROR << CMN_LOG_DETAILS
-                          << ": robManipulatorMTM::InverseKinematics: expected " << links.size() << " joints values. "
-                          << " Got " << q.size()
-                          << std::endl;
+        std::stringstream ss;
+        ss << "robManipulatorMTM::InverseKinematics: expected " << links.size()
+           << " joints values but received " << q.size();
+        mLastError = ss.str();
+        CMN_LOG_RUN_ERROR << mLastError << std::endl;
         return robManipulator::EFAILURE;
     }
 
     if (links.size() == 0) {
-        CMN_LOG_RUN_ERROR << CMN_LOG_DETAILS
-                          << ": robManipulatorMTM::InverseKinematics: the manipulator has no links."
-                          << std::endl;
+        mLastError = "robManipulatorMTM::InverseKinematics: the manipulator has no links";
+        CMN_LOG_RUN_ERROR << mLastError << std::endl;
         return robManipulator::EFAILURE;
     }
+
+    // if we encounter a joint limit, keep computing a solution but at
+    // the end return failure
+    bool hasReachedJointLimit = false;
 
     // take Rtw0 into account
     vctFrm4x4 Rt07;
@@ -112,19 +96,135 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
     q[1] = q1;
     q[2] = q2 - angleOffset + cmnPI_2;
 
-    // this needs to be replaced by optimized placement of platform
-    q[3] = q[3];
+    // check joint limits for first 3 joints
+    for (size_t joint = 0; joint < 3; joint++) {
+        if (ClampJointValueAndUpdateError(joint, q[joint], 1e-5)) {
+            hasReachedJointLimit = true;
+        }
+    }
+
+    // optimized placement of platform
+    // compute projection of roll axis on platform plane
+    q[3] = FindOptimalPlatformAngle(q, Rt07);
 
     // compute orientation of platform
-    const vctFrm4x4 fwd04 = this->ForwardKinematics(q, 4);
-    vctFrm4x4 Rt57;
-    fwd04.ApplyInverseTo(Rt07, Rt57);
-    vct3 closed57 = SO3toRPY(Rt57.Rotation());
+    const vctFrm4x4 Rt04 = this->ForwardKinematics(q, 4);
+    vctFrm4x4 Rt47;
+    Rt04.ApplyInverseTo(Rt07, Rt47);
+    vctEulerZXZRotation3 closed57(Rt47.Rotation());
 
     // applying DH offsets
-    q[4] = closed57.Element(1) + cmnPI_2;
-    q[5] = -closed57.Element(0) + cmnPI_2;
-    q[6] = closed57.Element(2) + cmnPI;
+    q[4] = closed57.alpha() + cmnPI_2;
+    q[5] = -closed57.beta() + cmnPI_2;
+    q[6] = closed57.gamma() + cmnPI;
+
+    if (hasReachedJointLimit) {
+        return robManipulator::EFAILURE;
+    }
 
     return robManipulator::ESUCCESS;
+}
+
+
+double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double> & q,
+                                                   const vctFrame4x4<double> & Rt07) const
+{
+#if 1
+    const vctFrm4x4 Rt03 = ForwardKinematics(q, 3);
+    vctFrm4x4 Rt37;
+    Rt03.ApplyInverseTo(Rt07, Rt37);
+
+    // find the angle difference between the gripper and the third joint to calculate auto-correct angle
+    double angleDifference = acosl(-Rt37.Element(0, 2) /
+                                   sqrt(Rt37.Element(1, 2) * Rt37.Element(1, 2) +
+                                        Rt37.Element(0, 2) * Rt37.Element(0, 2)));
+    if (Rt37.Element(1, 2) > 0.0) {
+        angleDifference = -angleDifference;
+    }
+
+    // calculate Angle Option 1 (The correct choice when right-side-up)
+    double option1 = angleDifference;
+
+    // calculate Angle Option 2 (The correct choice when upside-down)
+    double option2 = option1 - cmnPI;
+
+    // Normalize within joint space
+    if (option2 > cmnPI) {
+        option2 -= 2.0 * cmnPI;
+    } else if (option2 < (-3.0 * cmnPI_2)) {
+        option2 += 2.0 * cmnPI;
+    }
+
+    // Normalize within joint space
+    if ((option2 < -cmnPI)
+        && (option2 > -3.0 * cmnPI_2)
+        && (q[3] > 0.0)) {
+        option2 += 2.0 * cmnPI;
+    }
+
+    // Normalize within joint space
+    if ((option1 > cmnPI_2)
+        && (option1 < cmnPI)
+        && (q[3] < 0.0)) {
+        option1 -= 2.0 * cmnPI;
+    }
+
+    // Choose either Option 1 or Option 2 based on which one is closer to the platform angle
+    double solution;
+    if (std::abs(q[3] - option2) < std::abs(q[3] - option1)) {
+        solution = option2;
+    } else {
+        solution = option1;
+    }
+
+    // average with current position based on projection angle
+    const double cosProjectionAngle = std::abs(cos(q[4]));
+    double q3 = solution * cosProjectionAngle + q[3] * (1 - cosProjectionAngle);
+
+    // make sure we respect joint limits
+    const double q3Max = links[3].GetKinematics()->PositionMax();
+    const double q3Min = links[3].GetKinematics()->PositionMin();
+    if (q3 > q3Max) {
+        q3 = q3Max;
+    } else if (q3 < q3Min) {
+        q3 = q3Min;
+    }
+
+    return q3;
+
+#else
+    vctDynamicVector<double> jointGoal(q);
+    jointGoal[3] = 0.0;
+    const vctFrm4x4 Rt04 = ForwardKinematics(jointGoal, 4);
+    vctFrm4x4 Rt47;
+    Rt04.ApplyInverseTo(Rt07, Rt47);
+    vctEulerZXZRotation3 closed47(Rt47.Rotation());
+
+    // applying DH offsets
+    const double q4 = closed47.alpha() + cmnPI_2;
+    const double q5 = -closed47.beta() + cmnPI_2;
+
+    double q3;
+    // upside-down case
+    if ((q4 > -cmnPI_2) && (q4 < cmnPI_2)) {
+        q3 = q5;
+    } else {
+        q3 = -q5;
+    }
+
+    // average with current position based on projection angle
+    const double cosProjectionAngle = std::abs(cos(q4));
+    q3 = q3 * cosProjectionAngle + q[3] * (1 - cosProjectionAngle);
+
+    // make sure we respect joint limits
+    const double q3Max = links[3].GetKinematics()->PositionMax();
+    const double q3Min = links[3].GetKinematics()->PositionMin();
+    if (q3 > q3Max) {
+        q3 = q3Max;
+    } else if (q3 < q3Min) {
+        q3 = q3Min;
+    }
+
+    return q3;
+#endif
 }

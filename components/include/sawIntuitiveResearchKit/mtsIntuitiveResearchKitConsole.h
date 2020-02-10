@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -63,7 +63,8 @@ public:
         friend class mtsIntuitiveResearchKitConsoleQt;
         friend class dvrk::console;
 
-        Arm(const std::string & name,
+        Arm(mtsIntuitiveResearchKitConsole * console,
+            const std::string & name,
             const std::string & ioComponentName);
 
         /*! Create a new PID component and connect it to the proper RobotIO
@@ -93,6 +94,7 @@ public:
         const std::string & PIDComponentName(void) const;
 
     protected:
+        mtsIntuitiveResearchKitConsole * mConsole = nullptr;
         std::string mName;
         ArmType mType;
         bool mIsNativeOrDerived;
@@ -120,6 +122,7 @@ public:
         std::string mSharedLibrary;
         std::string mClassName;
         std::string mConstructorArgJSON;
+        bool mSkipROSBridge;
 
         // base frame
         // (name and frame) OR (component and interface)
@@ -149,6 +152,8 @@ public:
                 SUJClutch(false);
             }
         }
+
+        void CurrentStateEventHandler(const std::string & currentState);
     };
 
     class CISST_EXPORT TeleopECM {
@@ -370,6 +375,7 @@ protected:
 
     mtsInterfaceProvided * mInterface;
     struct {
+        mtsFunctionWrite ArmCurrentState;
         mtsFunctionWrite Scale;
         mtsFunctionWrite TeleopPSMSelected;
         mtsFunctionWrite TeleopPSMUnselected;
@@ -378,6 +384,9 @@ protected:
     void ErrorEventHandler(const mtsMessage & message);
     void WarningEventHandler(const mtsMessage & message);
     void StatusEventHandler(const mtsMessage & message);
+
+    void SetArmCurrentState(const std::string & armName,
+                            const std::string & currentState);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsole);

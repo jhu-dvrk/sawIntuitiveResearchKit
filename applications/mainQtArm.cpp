@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -143,7 +143,7 @@ int main(int argc, char ** argv)
     // Create the arm
     unsigned int numberOfAxis = 0;
     mtsIntuitiveResearchKitConsole::Arm * arm
-            = new mtsIntuitiveResearchKitConsole::Arm(armName, io->GetName());
+        = new mtsIntuitiveResearchKitConsole::Arm(console, armName, io->GetName());
     arm->ConfigurePID(configFiles["pid"]);
     // Configure based on arm type assuming name
     if ((armName == "PSM1") || (armName == "PSM2") || (armName == "PSM3")) {

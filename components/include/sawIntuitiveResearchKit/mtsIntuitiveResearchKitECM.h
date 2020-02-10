@@ -72,6 +72,7 @@ protected:
         return (StateJointKinematics.Position().at(2) > 50.0 * cmn_mm);
     }
 
+    void CreateManipulator(void) override;
     void Init(void) override;
 
     // state related methods
@@ -102,7 +103,7 @@ protected:
       mtsIntuitiveResearchKitEndoscopeTypes.cdg, upper case with separating
       underscores. */
     void SetEndoscopeType(const std::string & endoscopeType);
-    
+
     mtsIntuitiveResearchKitEndoscopeTypes::Type mEndoscopeType;
     bool mEndoscopeConfigured = false;
     struct {

@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -123,7 +123,7 @@ int main(int argc, char ** argv)
     componentManager->AddComponent(io);
 
     mtsIntuitiveResearchKitConsole::Arm * mtm
-            = new mtsIntuitiveResearchKitConsole::Arm(masterName, io->GetName());
+        = new mtsIntuitiveResearchKitConsole::Arm(console, masterName, io->GetName());
     mtm->ConfigurePID(configFiles["pid-master"]);
     mtm->ConfigureArm(mtsIntuitiveResearchKitConsole::Arm::ARM_MTM,
                                configFiles["kinematic-master"], 3.0 * cmn_ms);

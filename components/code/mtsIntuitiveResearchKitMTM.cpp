@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 
+#include <sawIntuitiveResearchKit/robManipulatorMTM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
 #include "robGravityCompensationMTM.h"
 
@@ -126,6 +127,15 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
         return robManipulator::ESUCCESS;
     }
     return robManipulator::EFAILURE;
+}
+
+void mtsIntuitiveResearchKitMTM::CreateManipulator(void)
+{
+    if (Manipulator) {
+        delete Manipulator;
+    }
+    Manipulator = new robManipulatorMTM();
+    // Manipulator = new robManipulator();
 }
 
 void mtsIntuitiveResearchKitMTM::Init(void)
@@ -277,7 +287,7 @@ void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
     // compute joint goal position
     mJointTrajectory.Goal.SetAll(0.0);
     // last joint is calibrated later
-    if (!mHomedOnce) {
+    if (!(mHomedOnce || mAllEncodersBiased)) {
         mJointTrajectory.Goal.Element(JNT_WRIST_ROLL) = StateJointDesiredPID.Position().Element(JNT_WRIST_ROLL);
     }
 }
@@ -291,7 +301,7 @@ void mtsIntuitiveResearchKitMTM::TransitionArmHomed(void)
 
 void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 {
-    if (mIsSimulated || this->mHomedOnce) {
+    if (mIsSimulated || this->mHomedOnce || this->mAllEncodersBiased) {
         return;
     }
 
@@ -319,7 +329,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 
 void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 {
-    if (mIsSimulated || this->mHomedOnce) {
+    if (mIsSimulated || this->mHomedOnce || this->mAllEncodersBiased) {
         mArmState.SetCurrentState("ROLL_CALIBRATED");
         return;
     }
@@ -391,7 +401,7 @@ void mtsIntuitiveResearchKitMTM::TransitionRollCalibrated(void)
 
 void mtsIntuitiveResearchKitMTM::EnterHomingRoll(void)
 {
-    if (mIsSimulated || this->mHomedOnce) {
+    if (mIsSimulated || this->mHomedOnce || this->mAllEncodersBiased) {
         return;
     }
     // compute joint goal position, we assume PID is on from previous state
@@ -410,7 +420,7 @@ void mtsIntuitiveResearchKitMTM::EnterHomingRoll(void)
 
 void mtsIntuitiveResearchKitMTM::RunHomingRoll(void)
 {
-    if (mIsSimulated || this->mHomedOnce) {
+    if (mIsSimulated || this->mHomedOnce || this->mAllEncodersBiased) {
         mHomedOnce = true;
         mArmState.SetCurrentState("ROLL_ENCODER_RESET");
         return;
@@ -530,18 +540,28 @@ void mtsIntuitiveResearchKitMTM::ControlEffortOrientationLocked(void)
     // compute desired position from current position and locked orientation
     CartesianPositionFrm.Translation().Assign(CartesianGetLocal.Translation());
     CartesianPositionFrm.Rotation().From(mEffortOrientation);
+    // important note, lock uses numerical IK as it finds a solution close to current position
     if (Manipulator->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = StateJointPID.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
-
-        // assign to joints used for kinematics
-        JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
+#if 0
         // finally send new joint values
         SetPositionJointLocal(JointSet);
+        // assign to joints used for kinematics
+        JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
+#else
+        mJointTrajectory.Goal.Ref(NumberOfJointsKinematics()).Assign(jointSet);
+        mJointTrajectory.Reflexxes.Evaluate(JointSet,
+                                            JointVelocitySet,
+                                            mJointTrajectory.Goal,
+                                            mJointTrajectory.GoalVelocity);
+        mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
+#endif
+        
     } else {
-        RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics");
+        RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortOrientationLocked");
     }
 }
 
@@ -561,12 +581,61 @@ void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
     PID.EnableTorqueMode(torqueMode);
 }
 
+void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
+                                                               vctDoubleVec & wrenchPreload)
+{
+    if (mWrenchType == WRENCH_SPATIAL) {
+        effortPreload.SetAll(0.0);
+        wrenchPreload.SetAll(0.0);
+        return;
+    }
+    // most efforts will be 0
+    effortPreload.Zeros();
+
+    // find ideal position for platform using IK or robManipulator::FindOptimalPlatformAngle
+    vctDoubleVec jointGoal(StateJointKinematics.Position());
+
+    // check if we're using robManipulatorMTM
+    robManipulatorMTM * manip = dynamic_cast<robManipulatorMTM *>(this->Manipulator);
+    if (manip) {
+        // find where the platform should be
+        jointGoal[3] = manip->FindOptimalPlatformAngle(jointGoal, CartesianGetLocal);
+    } else {
+        if (InverseKinematics(jointGoal, CartesianGetLocal) != robManipulator::ESUCCESS) {
+            RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortCartesianPreload");
+            return;
+        }
+    }
+
+    // apply a linear force on joint 3 to move toward the "ideal" position
+    effortPreload[3] = -0.2 * (StateJointKinematics.Position()[3] - jointGoal[3])
+        - 0.05 * StateJointKinematics.Velocity()[3];
+    // cap effort
+    effortPreload[3] = std::max(effortPreload[3], -0.1);
+    effortPreload[3] = std::min(effortPreload[3],  0.1);
+
+    // find equivalent wrench but don't apply all (too much torque on roll)
+    // wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
+    // wrenchPreload.Multiply(0.2);
+    wrenchPreload.SetAll(0.0);
+}
+
 void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
 {
     // if we just started lock
     if (!mEffortOrientationLocked) {
         mEffortOrientationLocked = true;
         SetControlEffortActiveJoints();
+#if 0
+#else
+        // initialize trajectory
+        JointSet.Assign(StateJointPID.Position(), NumberOfJoints());
+        JointVelocitySet.Assign(StateJointPID.Velocity(), NumberOfJoints());
+        mJointTrajectory.Reflexxes.Set(mJointTrajectory.Velocity,
+                                       mJointTrajectory.Acceleration,
+                                       StateTable.PeriodStats.PeriodAvg(),
+                                       robReflexxes::Reflexxes_TIME);
+#endif
     }
     // in any case, update desired orientation in local coordinate system
     // mEffortOrientation.Assign(BaseFrame.Rotation().Inverse() * orientation);

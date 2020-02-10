@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsComponentViewer.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 
@@ -59,6 +60,8 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequired->AddFunction("PowerOff", Console.PowerOff);
         interfaceRequired->AddFunction("PowerOn", Console.PowerOn);
         interfaceRequired->AddFunction("Home", Console.Home);
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler,
+                                                this, "ArmCurrentState");
         interfaceRequired->AddFunction("TeleopEnable", Console.TeleopEnable);
         interfaceRequired->AddFunction("SetScale", Console.SetScale);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
@@ -159,6 +162,29 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotHome(void)
     Console.Home();
 }
 
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(ArmCurrentStateType armState)
+{
+    const std::string arm = armState.first.toStdString();
+    auto iter = ArmButtons.find(arm);
+    QPushButton * button;
+    // insert new arm if needed
+    if (iter == ArmButtons.end()) {
+        button = new QPushButton(arm.c_str());
+        QVBArms->addWidget(button);
+        ArmButtons[arm] = button;
+        connect(button, &QPushButton::clicked,
+                [ = ] { emit SlotArmButton(armState.first); });
+    } else {
+        button = iter->second;
+    }
+    // color code state
+    if (armState.second.toStdString() == "READY") {
+        button->setStyleSheet("QPushButton { background-color: rgb(50, 255, 50); border: none }");
+    } else {
+        button->setStyleSheet("QPushButton { background-color: rgb(255, 100, 100); border: none }");
+    }
+}
+
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStart(void)
 {
     Console.TeleopEnable(true);
@@ -192,6 +218,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QGroupBox * armsBox = new QGroupBox("Arms");
     boxLayout->addWidget(armsBox);
     QVBoxLayout * armsLayout = new QVBoxLayout();
+    armsLayout->setContentsMargins(2, 2, 2, 2);
     armsBox->setLayout(armsLayout);
     QPBPowerOff = new QPushButton("Power Off");
     QPBPowerOff->setToolTip("ctrl + O");
@@ -205,10 +232,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QPBHome->setToolTip("ctrl + H");
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_H), this, SLOT(SlotHome()));
     armsLayout->addWidget(QPBHome);
+    // arm buttons
+    QVBArms = new QVBoxLayout();
+    armsLayout->addLayout(QVBArms);
 
     QGroupBox * teleopBox = new QGroupBox("Tele operation");
     boxLayout->addWidget(teleopBox);
     QVBoxLayout * teleopLayout = new QVBoxLayout();
+    teleopLayout->setContentsMargins(2, 2, 2, 2);
     teleopBox->setLayout(teleopLayout);
     QPBTeleopStart = new QPushButton("Start");
     QPBTeleopStart->setToolTip("ctrl + T");
@@ -222,12 +253,13 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QSBScale->setRange(0.1, 1.0);
     QSBScale->setSingleStep(0.1);
     QSBScale->setPrefix("scale ");
-    QSBScale->setValue(0.2);
+    QSBScale->setValue(mtsIntuitiveResearchKit::TeleOperationPSMScale);
     teleopLayout->addWidget(QSBScale);
 
     QGroupBox * inputsBox = new QGroupBox("Inputs");
     boxLayout->addWidget(inputsBox);
     QVBoxLayout * inputsLayout = new QVBoxLayout();
+    inputsLayout->setContentsMargins(2, 2, 2, 2);
     inputsBox->setLayout(inputsLayout);
     QRBClutch = new QRadioButton("Clutch");
     QRBClutch->setAutoExclusive(false);
@@ -248,6 +280,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QGroupBox * audioBox = new QGroupBox("Audio");
     boxLayout->addWidget(audioBox);
     QVBoxLayout * audioLayout = new QVBoxLayout();
+    audioLayout->setContentsMargins(2, 2, 2, 2);
     audioBox->setLayout(audioLayout);
     QSVolume = new QSlider(Qt::Horizontal);
     QSVolume->setRange(0, 100);
@@ -292,6 +325,9 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotPowerOn()));
     connect(QPBHome, SIGNAL(clicked()),
             this, SLOT(SlotHome()));
+    qRegisterMetaType<ArmCurrentStateType>("ArmCurrentStateType");
+    connect(this, SIGNAL(SignalArmCurrentState(ArmCurrentStateType)),
+            this, SLOT(SlotArmCurrentStateEventHandler(ArmCurrentStateType)));
     connect(QPBTeleopStart, SIGNAL(clicked()),
             this, SLOT(SlotTeleopStart()));
     connect(QPBTeleopStop, SIGNAL(clicked()),
@@ -312,6 +348,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotComponentViewer()));
 
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q), this, SLOT(close()));
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler(const prmKeyValue & armState)
+{
+    ArmCurrentStateType currentState;
+    currentState.first = armState.Key.c_str();
+    currentState.second = armState.Value.c_str();
+    emit SignalArmCurrentState(currentState);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotScaleEventHandler(double scale)
@@ -373,6 +417,27 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotComponentViewer(void)
     componentViewer->Start();
 }
 
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmButton(const QString & armName)
+{
+    // determine which tab to search
+    QTabWidget * subTab;
+    subTab = QTWidgets->findChild<QTabWidget *>(QString("Arms"));
+    if (subTab) {
+        QTWidgets->setCurrentWidget(subTab);
+    } else {
+        subTab = QTWidgets;
+    }
+
+    // now find the arm widget
+    QWidget * child;
+    child = subTab->findChild<QWidget *>(armName);
+    if (child) {
+        subTab->setCurrentWidget(child);
+    } else {
+        std::cerr << CMN_LOG_DETAILS << " can't find arm nor Arms tab widget, this should not happen" << std::endl;
+    }
+}
+
 void mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
@@ -380,5 +445,4 @@ void mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler(const prmEventBu
     } else {
         emit SignalCamera(false);
     }
-
 }

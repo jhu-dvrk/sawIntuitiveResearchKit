@@ -351,8 +351,8 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
         jointSet.at(3) = jointSet.at(3) + differenceInTurns * 2.0 * cmnPI;
         // make sure we are away from RCM point, this test is
         // simplistic and might not work with all tools
-        if (jointSet.at(2) < 40.0 * cmn_mm) {
-            jointSet.at(2) = 40.0 * cmn_mm;
+        if (jointSet.at(2) < mtsIntuitiveResearchKit::PSMOutsideCannula) {
+            jointSet.at(2) = mtsIntuitiveResearchKit::PSMOutsideCannula;
         }
         return robManipulator::ESUCCESS;
     }
@@ -963,10 +963,27 @@ void mtsIntuitiveResearchKitPSM::TransitionAdapterEngaged(void)
 {
     mAdapterNeedEngage = false;
     if (mArmState.DesiredStateIsNotCurrent()) {
-        Tool.GetButton(Tool.IsPresent);
-        if ((Tool.IsPresent || mIsSimulated) && mToolConfigured) {
+        // real case, check if there is a tool and it is properly configured
+        if (!mIsSimulated) {
+            Tool.GetButton(Tool.IsPresent);
+            if (Tool.IsPresent && mToolConfigured) {
+                SetToolPresent(true);
+                mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
+            }
+        } else {
+            // simulated case
             SetToolPresent(true);
-            mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
+            // check if we tool is configured, i.e. fixed or manual
+            if (mToolConfigured) {
+                mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
+            } else {
+                // request tool type if needed
+                if (!mToolTypeRequested) {
+                    mToolTypeRequested = true;
+                    ToolEvents.ToolTypeRequest();
+                    RobotInterface->SendWarning(this->GetName() + ": tool type requested from user");
+                }
+            }
         }
     }
 }
@@ -1028,7 +1045,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         JointVelocitySet.Assign(StateJointPID.Velocity());
 
         // check if the tool in outside the cannula
-        if (StateJointPID.Position().Element(2) > 50.0 * cmn_mm) {
+        if (StateJointPID.Position().Element(2) >= mtsIntuitiveResearchKit::PSMOutsideCannula) {
             std::string message = this->GetName();
             message.append(": tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
             message.append("  If the tool is not engaged properly, move the sterile adapter all the way up and re-insert the tool.");
@@ -1336,7 +1353,7 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
 
 void mtsIntuitiveResearchKitPSM::SetToolType(const std::string & toolType)
 {
-    if (mToolTypeRequested) {
+    if (mToolTypeRequested || mIsSimulated) {
         EventHandlerToolType(toolType);
         if (mToolConfigured) {
             mToolTypeRequested = false;

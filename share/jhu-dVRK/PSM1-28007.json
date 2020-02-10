@@ -2,4 +2,6 @@
 {
     "kinematic": "kinematic/psm.json",
     "tool-detection": "MANUAL"
+    // "tool-detection": "FIXED",
+    // "tool": "DEBAKEY_FORCEPS_400036"
 }

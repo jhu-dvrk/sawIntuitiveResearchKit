@@ -2,7 +2,7 @@
 {
     "io":
     {
-        "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
+        "footpedals": "io/sawRobotIO1394-MTML-foot-pedals.xml"
     }
     ,
     "arms":
@@ -38,7 +38,11 @@
     [
         {
             "mtm": "MTML",
-            "psm": "PSM2"
+            "psm": "PSM2",
+            "configure-parameter": {
+                "scale": 0.4,
+                "jaw-rate": 6.3 // rad per second
+            }
         }
     ]
 }

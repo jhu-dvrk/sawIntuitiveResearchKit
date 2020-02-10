@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -23,12 +23,14 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>
 #include <cisstParameterTypes/prmEventButton.h>
+#include <cisstParameterTypes/prmKeyValue.h>
 
 class QPushButton;
 class QRadioButton;
 class QTabWidget;
 class QDoubleSpinBox;
 class QSlider;
+class QVBoxLayout;
 
 #include <QWidget>
 
@@ -39,6 +41,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsoleQtWidget: public QWidget, publi
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
+    typedef QPair<QString, QString> ArmCurrentStateType;
 public:
     mtsIntuitiveResearchKitConsoleQtWidget(const std::string & componentName);
     inline virtual ~mtsIntuitiveResearchKitConsoleQtWidget() {}
@@ -52,6 +55,7 @@ public:
     void HasTeleOp(const bool & hasTeleOp);
 
 signals:
+    void SignalArmCurrentState(ArmCurrentStateType armState);
     void SignalScale(double scale);
     void SignalClutch(bool clutch);
     void SignalOperatorPresent(bool operatorPresent);
@@ -61,6 +65,7 @@ private slots:
     void SlotPowerOff(void);
     void SlotPowerOn(void);
     void SlotHome(void);
+    void SlotArmCurrentStateEventHandler(ArmCurrentStateType armState);
     void SlotTeleopStart(void);
     void SlotTeleopStop(void);
     void SlotSetScale(double scale);
@@ -70,6 +75,7 @@ private slots:
     void SlotCameraEventHandler(bool camera);
     void SlotSetVolume(void);
     void SlotComponentViewer(void);
+    void SlotArmButton(const QString & armName);
 
 protected:
     void closeEvent(QCloseEvent * event);
@@ -85,10 +91,14 @@ protected:
         mtsFunctionWrite SetVolume;
     } Console;
 
+    void ArmCurrentStateEventHandler(const prmKeyValue & armState);
     void ScaleEventHandler(const double & scale);
     void ClutchEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
+
+    QVBoxLayout * QVBArms;
+    std::map<std::string, QPushButton *> ArmButtons;
 
     QPushButton * QPBPowerOff;
     QPushButton * QPBPowerOn;
@@ -100,7 +110,7 @@ protected:
     QRadioButton * QRBOperatorPresent;
     QRadioButton * QRBCamera;
     QSlider * QSVolume;
-    
+
     QPushButton * QPBComponentViewer;
     QTabWidget * QTWidgets;
     mtsMessageQtWidget * QMMessage;

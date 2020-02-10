@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -39,6 +39,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionJointGet.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSMQtWidget.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationPSMQtWidget, mtsComponent, std::string);
@@ -261,7 +262,7 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     QSBScale->setRange(0.1, 1.0);
     QSBScale->setSingleStep(0.1);
     QSBScale->setPrefix("scale ");
-    QSBScale->setValue(0.2);
+    QSBScale->setValue(mtsIntuitiveResearchKit::TeleOperationPSMScale);
     buttonsLayout->addWidget(QSBScale);
 
     // enable/disable rotation/translation
@@ -284,11 +285,11 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     // state and timing
     QHBoxLayout * stateAndTimingLayout = new QHBoxLayout();
     mainLayout->addLayout(stateAndTimingLayout);
-    
+
     // state info
     QVBoxLayout * stateLayout = new QVBoxLayout();
     stateAndTimingLayout->addLayout(stateLayout);
-    
+
     QHBoxLayout * stateDesiredLayout = new QHBoxLayout;
     stateLayout->addLayout(stateDesiredLayout);
     QLabel * label = new QLabel("Desired state");

@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
+#include <cisstCommon/cmnQt.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQt.h>
 
@@ -63,6 +64,7 @@ int main(int argc, char ** argv)
     std::string jsonCollectionConfigFile;
     typedef std::list<std::string> managerConfigType;
     managerConfigType managerConfig;
+    std::string qtStyle;
 
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
@@ -75,6 +77,13 @@ int main(int argc, char ** argv)
     options.AddOptionMultipleValues("m", "component-manager",
                                     "JSON files to configure component manager",
                                     cmnCommandLineOptions::OPTIONAL_OPTION, &managerConfig);
+
+    options.AddOptionOneValue("S", "qt-style",
+                              "Qt style, use this option with a random name to see available styles",
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &qtStyle);
+
+    options.AddOptionNoValue("D", "dark-mode",
+                             "replaces the default Qt palette with darker colors");
 
     // check that all required options have been provided
     std::string errorMessage;
@@ -101,6 +110,17 @@ int main(int argc, char ** argv)
     // add all Qt widgets
     QApplication application(argc, argv);
     application.setWindowIcon(QIcon(":/dVRK.png"));
+    cmnQt::QApplicationExitsOnCtrlC();
+    if (options.IsSet("qt-style")) {
+        std::string errorMessage = cmnQt::SetStyle(qtStyle);
+        if (errorMessage != "") {
+            std::cerr << errorMessage << std::endl;
+            return -1;
+        }
+    }
+    if (options.IsSet("dark-mode")) {
+        cmnQt::SetDarkMode();
+    }
 
     mtsIntuitiveResearchKitConsoleQt * consoleQt = new mtsIntuitiveResearchKitConsoleQt();
     consoleQt->Configure(console);

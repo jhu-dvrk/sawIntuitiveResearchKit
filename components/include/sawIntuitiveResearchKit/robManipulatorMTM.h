@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2019-11-11
 
-  (C) Copyright 2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2019-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -44,6 +44,9 @@ public:
                       double tolerance = 1e-12,
                       size_t Niterations = 1000,
                       double LAMBDA = 0.001);
+
+    double FindOptimalPlatformAngle(const vctDynamicVector<double> & q,
+                                    const vctFrame4x4<double> & Rt07) const;
 };
 
 #endif // _robManipulatorMTM_h

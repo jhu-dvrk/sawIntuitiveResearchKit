@@ -37,8 +37,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset":  0.0000,
-                "qmin": -3.49066, // -200.0
-                "qmax":  1.5708   //  90.0
+                "qmin": -4.01426, // -230.0
+                "qmax":  1.22173  //  70.0
             },
             { // 5
                 "name": "wrist_pitch",

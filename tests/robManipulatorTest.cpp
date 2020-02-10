@@ -60,7 +60,7 @@ public:
         vctMatRot3 positionRotationError;
         ActualPose.Rotation().ApplyInverseTo(SolutionPose.Rotation(), positionRotationError);
         CPPUNIT_ASSERT_MESSAGE("Cartesian rotation error is too high",
-                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmn180_PI); // acosl
+                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmn180_PI);
     }
 };
 
@@ -95,12 +95,10 @@ public:
                                positionTranslationError.Norm() < 0.005 * cmn_mm);
 
         // rotation
-#if 0
         vctMatRot3 positionRotationError;
         ActualPose.Rotation().ApplyInverseTo(SolutionPose.Rotation(), positionRotationError);
         CPPUNIT_ASSERT_MESSAGE("Cartesian rotation error is too high",
-                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmn180_PI); // acosl
-#endif
+                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmn180_PI);
     }
 };
 
@@ -157,7 +155,8 @@ void robManipulatorTest::ComputeAndTestIK(ManipulatorTestData & data)
     robManipulator::Errno result = data.Manipulator->InverseKinematics(data.SolutionJoints,
                                                                        data.ActualPose);
     // make sure IK didn't complain
-    CPPUNIT_ASSERT_EQUAL_MESSAGE("robManipulator::InverseKinematics result for " + data.Name,
+    CPPUNIT_ASSERT_EQUAL_MESSAGE("robManipulator::InverseKinematics result for "
+                                 + data.Name + ": " + data.Manipulator->LastError(),
                                  robManipulator::ESUCCESS,
                                  result);
 
@@ -172,6 +171,7 @@ void robManipulatorTest::TestSampleJointSpace(ManipulatorTestData & data)
 {
     vctDoubleVec directions(data.NumberOfLinks, 1.0);
 
+    // initial position
     data.ActualJoints.Assign(data.LowerLimits);
     data.PreviousActualJoints.Assign(data.LowerLimits);
     ComputeAndTestIK(data);
@@ -190,6 +190,7 @@ void robManipulatorTest::TestSampleJointSpace(ManipulatorTestData & data)
                 } else if (future < data.LowerLimits[index]) {
                     directions[index] = 1.0;
                 } else {
+                    // valid position
                     data.PreviousActualJoints.Assign(data.ActualJoints);
                     data.ActualJoints[index] = future;
                     nextDimensionIncrement = false;

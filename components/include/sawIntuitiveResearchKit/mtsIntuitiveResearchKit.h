@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKit_h
 
 #include <cisstCommon/cmnUnits.h>
+#include <cisstCommon/cmnConstants.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 namespace mtsIntuitiveResearchKit {
@@ -35,9 +36,14 @@ namespace mtsIntuitiveResearchKit {
     // https://github.com/jhu-cisst/QLA/issues/1
     const double TimeToPower = 3.0 * cmn_s;
 
+    // PSM constants
+    const double PSMOutsideCannula = 50.0 * cmn_ms;
+
     // teleoperation constants
+    const double TeleOperationPSMScale = 0.2;
     const double TeleOperationPSMOrientationTolerance = 5.0; // in degrees
     const double TeleOperationPSMGripperJawTolerance = 5.0;
+    const double TeleOperationPSMJawRate =  4 * cmnPI * cmn_s; // 720 d/s
     const double TeleOperationPSMGripperJawFullOpen = 55.0;  // in degrees
 };
 
