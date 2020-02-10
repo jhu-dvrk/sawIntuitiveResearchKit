@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2017-12-18
 
-  (C) Copyright 2017-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2017-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -37,14 +37,26 @@ mtsDaVinciEndoscopeFocus::mtsDaVinciEndoscopeFocus(const mtsTaskConstructorArg &
 
 void mtsDaVinciEndoscopeFocus::Init(void)
 {
+    mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Control");
+    if (interfaceProvided) {
+        interfaceProvided->AddCommandWrite(&mtsDaVinciEndoscopeFocus::Lock,
+                                           this, "Lock");
+        interfaceProvided->AddCommandWrite(&mtsDaVinciEndoscopeFocus::FocusIn,
+                                           this, "FocusIn");
+        interfaceProvided->AddCommandWrite(&mtsDaVinciEndoscopeFocus::FocusOut,
+                                           this, "FocusOut");
+        interfaceProvided->AddEventWrite(mEvents.Locked, "Locked", false);
+        interfaceProvided->AddEventWrite(mEvents.FocusingIn, "FocusingIn", false);
+        interfaceProvided->AddEventWrite(mEvents.FocusingOut, "FocusingOut", false);
+    }
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("FocusIn");
     if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsDaVinciEndoscopeFocus::FocusIn,
+        interfaceRequired->AddEventHandlerWrite(&mtsDaVinciEndoscopeFocus::FocusInEventHandler,
                                                 this, "Button");
     }
     interfaceRequired = AddInterfaceRequired("FocusOut");
     if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsDaVinciEndoscopeFocus::FocusOut,
+        interfaceRequired->AddEventHandlerWrite(&mtsDaVinciEndoscopeFocus::FocusOutEventHandler,
                                                 this, "Button");
     }
     interfaceRequired = AddInterfaceRequired("EndoscopeFocusIn");
@@ -77,34 +89,86 @@ void mtsDaVinciEndoscopeFocus::Run(void)
 
 void mtsDaVinciEndoscopeFocus::Cleanup(void)
 {
-    RobotIO.FocusOut(true);
-    RobotIO.FocusIn(true);
+    FocusOut(false);
+    FocusIn(false);
 }
 
-void mtsDaVinciEndoscopeFocus::FocusIn(const prmEventButton & event)
+void mtsDaVinciEndoscopeFocus::FocusInEventHandler(const prmEventButton & event)
 {
     switch (event.Type()) {
     case prmEventButton::PRESSED:
-        RobotIO.FocusIn(false);
+        FocusIn(true);
         break;
     case prmEventButton::RELEASED:
-        RobotIO.FocusIn(true);
+        FocusIn(false);
         break;
     default:
         break;
     }
 }
 
-void mtsDaVinciEndoscopeFocus::FocusOut(const prmEventButton & event)
+void mtsDaVinciEndoscopeFocus::FocusOutEventHandler(const prmEventButton & event)
 {
     switch (event.Type()) {
     case prmEventButton::PRESSED:
-        RobotIO.FocusOut(false);
+        FocusOut(true);
         break;
     case prmEventButton::RELEASED:
-        RobotIO.FocusOut(true);
+        FocusOut(false);
         break;
     default:
         break;
+    }
+}
+
+void mtsDaVinciEndoscopeFocus::Lock(const bool & lock)
+{
+    mLocked = lock;
+    mEvents.Locked(mLocked);
+    // turn off any focusing happening
+    if (mFocusingIn) {
+        FocusIn(false);
+    } else if (mFocusingOut) {
+        FocusOut(false);
+    }
+}
+
+void mtsDaVinciEndoscopeFocus::FocusIn(const bool & focus)
+{
+    // skip if locked
+    if (mLocked) {
+        return;
+    }
+    if (focus) {
+        // can only focus once at a time
+        if (!(mFocusingIn || mFocusingOut)) {
+            RobotIO.FocusIn(false); // IO is high/low
+            mFocusingIn = true;
+            mEvents.FocusingIn(true);
+        }
+    } else {
+        RobotIO.FocusIn(true);
+        mFocusingIn = false;
+        mEvents.FocusingIn(false);
+    }
+}
+
+void mtsDaVinciEndoscopeFocus::FocusOut(const bool & focus)
+{
+    // skip if locked
+    if (mLocked) {
+        return;
+    }
+    if (focus) {
+        // can only focus once at a time
+        if (!(mFocusingIn || mFocusingOut)) {
+            RobotIO.FocusOut(false); // IO is high/low
+            mFocusingOut = true;
+            mEvents.FocusingOut(true);
+        }
+    } else {
+        RobotIO.FocusOut(true);
+        mFocusingOut = false;
+        mEvents.FocusingOut(false);
     }
 }
