@@ -127,7 +127,6 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
 
 int method = 2;
 bool print_fk = true;
-double q3_pre = 0.0;
 // METHOD 0 -> RISHI'S METHOD
 // METHOD 1 -> ANTON'S METHOD
 // METHOD 2 -> ADNAN'S METHOD
@@ -238,51 +237,10 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
     }
     // ADNAN'S METHOD
     else if (method==2){
-        //
-        // Test all the Forward Kinematic Joints
-        //
-        if(print_fk){
-            vctDynamicVector<double> testJointAngles;
-            testJointAngles.resize(7);
-
-            for(int i = 0 ; i < testJointAngles.size() ; i ++){
-                testJointAngles[i] = 0.0;
-            }
-
-            testJointAngles.resize(8);
-            for(int i = 0 ; i < testJointAngles.size() ; i ++){
-                vctFrm4x4 T = ForwardKinematics(testJointAngles, i);
-                std::cout << "FK: TRANSFORM OF LINK (" << i << ") IN LINK " << "(Base)" << std::endl;
-                std::cout << std::fixed << std::showpoint;
-                std::cout.precision(3);
-                std::cout << T << "\n --- \n";
-            }
-
-            int test_link = 4;
-            std::cout << "*************\n" ;
-            std::cout << "TESTING FK ON JOINT "<< test_link << "\n" ;
-            testJointAngles[test_link - 1] += -1.57;
-            for(int i = 0 ; i < 10 ; i ++){
-                vctFrm4x4 T = ForwardKinematics(testJointAngles, test_link);
-                std::cout << "FK: ROTATION OF LINK (" << test_link << ") IN LINK " << "(Base)" << std::endl;
-                std::cout << test_link - 1 << "th Joint Angle = " << testJointAngles[test_link - 1] << "\n" ;
-                std::cout << std::fixed << std::showpoint;
-                std::cout.precision(3);
-                std::cout << T.Rotation() << "\n --- \n";
-                testJointAngles[test_link - 1] += (3.14 / 10.0);
-            }
-            std::cout << "\n";
-            print_fk = false;
-        }
-        //
-        //
-        //
-
-        // Limits for Wrist Pitch (Joint 5)
-        double a_lim_5 = -1.5;
+        // Limits for Wrist Pitch (Joint 5 at Index 4)
+        double a_lim_5 = -1.58;
         double b_lim_5 = 1.2;
         double c_lim_5 = 1.8;
-
 
         vctEulerYZXRotation3 euler_offset;
         // Rotation to align frame 7 with frame 4
@@ -296,14 +254,12 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
         Rt08 = Rt07 * Rt78;
 
         vctDynamicVector<double> jointGoal(q);
-        jointGoal[3] = 0;
+        double q3_curr;
+        q3_curr = jointGoal[3];
         const vctFrm4x4 Rt04 = ForwardKinematics(jointGoal, 4);
 
-//        std::cout << Rt03.Rotation() << "\n --- \n";
         vctFrm4x4 Rt48;
         Rt04.ApplyInverseTo(Rt08, Rt48);
-
-//        std::cout << std::setprecision(2) << Rt48.Rotation() << "\n --- \n";
 
         vctEulerZYXRotation3 closed48(Rt48.Rotation());
 
@@ -324,23 +280,20 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
             normalized_val = (q4 - b_lim_5) / range;
             centered_val = normalized_val - 0.5;
             sign = -centered_val * 2;
-//            std::cerr << "MID VAL: " <<  sign << std::endl ;
             sign = 0;
         }
         else{
             sign = -1;
         }
 
-
-
-        double Kp_3 = 1.0;
+        double Kp_3 = 2.0;
         double Kd_3 = 0.05;
         double e;
         double q3;
 
         e = q5;
 
-        q3 = Kp_3 * e * sign;
+        q3 = Kp_3 * e * sign + q3_curr;
 
         // make sure we respect joint limits
         const double q3Max = links[3].GetKinematics()->PositionMax();
@@ -351,9 +304,7 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
             q3 = q3Min;
         }
 
-        q3_pre = q3;
-
-        std::cout << "\r" << "Joint 3: ("  << q3 << "), 4: (" << q4 << "), (5: "  << q5 << ")";
+//        std::cout << "\r" << "Joint 3: ("  << q3 << "), 3_c: (" << q3_curr << "), 4: (" << q4 << "), (5: "  << q5 << ")";
 
         return q3;
     }
