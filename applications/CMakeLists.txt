@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2009-2017 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2020 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -23,6 +23,7 @@ add_subdirectory (gripper-calibration)
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstCommonXML
+                              cisstCommonQt
                               cisstVector
                               cisstVectorQt
                               cisstNumerical
