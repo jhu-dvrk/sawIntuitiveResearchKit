@@ -143,9 +143,6 @@ protected:
     vctMatRot3 mRegistrationRotation; // optional registration between PSM and MTM orientation
     vctMatRot3 mAlignOffset, mAlignOffsetInitial; // rotation offset between MTM and PSM when tele-operation goes in follow mode
 
-    // initial offset in jaw (PSM) space when teleop starts
-    double mJawOffset;
-
     // conversion from gripper (MTM) to jaw (PSM)
     // j = s * g + o
     // g = (j - o) / s
@@ -155,14 +152,20 @@ protected:
         double PositionMin;
     } mGripperToJaw;
 
+    double mGripperGhost;
+    
     double virtual GripperToJaw(const double & gripperAngle) const;
     double virtual JawToGripper(const double & jawAngle) const;
     void virtual UpdateGripperToJawConfiguration(void);
 
     bool mIgnoreJaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
+    double mJawRate = mtsIntuitiveResearchKit::TeleOperationPSMJawRate;
     int mGripperJawTransitions;
     bool mGripperJawMatchingPrevious;
+    bool mIsOperatorActive = false;
+    bool mWasOperatorActiveBeforeClutch = false;
     bool mIsClutched = false;
+    bool mBackFromClutch = false;
     bool mRotationLocked = false;
     bool mTranslationLocked = false;
     bool mAlignMTM = true; // default on da Vinci

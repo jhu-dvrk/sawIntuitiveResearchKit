@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKit_h
 
 #include <cisstCommon/cmnUnits.h>
+#include <cisstCommon/cmnConstants.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 namespace mtsIntuitiveResearchKit {
@@ -41,6 +42,7 @@ namespace mtsIntuitiveResearchKit {
     // teleoperation constants
     const double TeleOperationPSMOrientationTolerance = 5.0; // in degrees
     const double TeleOperationPSMGripperJawTolerance = 5.0;
+    const double TeleOperationPSMJawRate =  4 * cmnPI * cmn_s; // 720 d/s
     const double TeleOperationPSMGripperJawFullOpen = 55.0;  // in degrees
 };
 
