@@ -125,6 +125,113 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
     return robManipulator::ESUCCESS;
 }
 
+double robManipulatorMTM::ComuteGimbalIK(vctDynamicVector<double> &q,
+                                         const vctFrame4x4<double> &Rt07) const
+{
+    vctEulerYZXRotation3 euler_offset;
+    // Rotation to align frame 7 with frame 4
+    euler_offset.Assign(cmnPI_2, 0, cmnPI_2);
+
+    vctMatrixRotation3<double, true> Rt8;
+    vctEulerToMatrixRotation3(euler_offset, Rt8);
+
+    vctFrm4x4 Rt08, Rt78;
+    Rt78.Rotation().Assign(Rt8);
+    Rt08 = Rt07 * Rt78;
+
+    const vctFrm4x4 Rt04 = ForwardKinematics(q, 4);
+
+    vctFrm4x4 Rt48;
+    Rt04.ApplyInverseTo(Rt08, Rt48);
+
+    vctEulerZYXRotation3 closed48(Rt48.Rotation());
+
+    q[4] = closed48.alpha();
+    q[5] = closed48.beta();
+    q[6] = closed48.gamma();
+
+    double scalar_mapping;
+    double range;
+    double centered_val;
+    double normalized_val;
+
+    // Limits for Wrist Pitch (Joint 5 at Index 4)
+    // Consider the Wrist Pitch Joint at the Home position (0 Deg).
+    // The upwards pitch corresponds to a negative angle and and
+    // the downward pitch corresponds to a positive angle.
+    // The Upper Limit A and B are two points defined for the upward
+    // pitch angle and the Lower Limit A and B are two points defined
+    // for the lower pitch angle. Based on where the position of the joint
+    // angle is, a scalar mapping [-1.0 - 1.0] is calculated.
+    // The scalar mapping is a function of q4, i.e. scalar_mapping(q4)
+    // See the logic labeled Scalar Mapping Calculation Below
+
+    // Changing the values of these two pairs of points, one
+    // can change the attenuation as well the center point of direction
+    // switching between each pair of points.
+
+    // For example: consider lim_dn_a = 1.5 Rad and lim_dn_b = 2.0 Rad. The
+    // midpoint for these two limits is:
+    // mid_point_dn = 0.5 * (2.0 - 1.5) + 1.5
+    // mid_point_dn => 1.75 Rad
+    // Thus the scalar mapping at these three points, i.e. [lim_dn_a, mid_point_dn, lim_dn_b]
+    // become:
+
+    // scalar_mapping(lim_dn_a) =  1.0
+    // scalar_mapping(mid_point_dn) =  0.0
+    // scalar_mapping(lim_dn_b) = -1.0
+
+    // And for all values in between
+    // scalar_mapping(q4) = ((q4 - lim_dn_a) / (lim_dn_b - lim_dn_a) - 0.5) x 2.0
+
+    double lim_up_a = -2.0; // Upper Limit A for Pitch Joint
+    double lim_up_b = -1.5; // Upper Limit B for Pitch Joint
+    double lim_dn_a = 1.2; // Lower Limit A for Pitch Joint
+    double lim_dn_b = 1.8; // Lower Limit B for Pitch Joint
+
+    // LOGIC:
+    // SCALAR MAPPING CALCULATION
+    if (lim_up_a < q[4] & q[4] < lim_up_b){
+        range = lim_up_b - lim_up_a;
+        normalized_val = (q[4] - lim_up_a) / range;
+        centered_val = normalized_val - 0.5;
+        scalar_mapping = centered_val * 2;
+//            sign = 0;
+    }
+    else if (lim_up_b < q[4] && q[4] <= lim_dn_a){
+        scalar_mapping = 1;
+    }
+    else if (lim_dn_a < q[4] & q[4] < lim_dn_b){
+        range = lim_dn_b - lim_dn_a;
+        normalized_val = (q[4] - lim_dn_a) / range;
+        centered_val = normalized_val - 0.5;
+        scalar_mapping = -centered_val * 2;
+//            sign = 0;
+    }
+    else{
+        scalar_mapping = -1;
+    }
+
+//        std::cerr << "\r" << "Scalar Mapping: " << scalar_mapping;
+
+    double Kp_3 = 2.0;
+    double Kd_3 = 0.05;
+    double e;
+
+    e = q[5];
+
+    q[3] = Kp_3 * e * scalar_mapping + q[3];
+
+    // make sure we respect joint limits
+    const double q3Max = links[3].GetKinematics()->PositionMax();
+    const double q3Min = links[3].GetKinematics()->PositionMin();
+    if (q[3] > q3Max) {
+        q[3] = q3Max;
+    } else if (q[3] < q3Min) {
+        q[3] = q3Min;
+    }
+}
+
 int method = 2;
 bool print_fk = true;
 // METHOD 0 -> RISHI'S METHOD
@@ -237,39 +344,6 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
     }
     // ADNAN'S METHOD
     else if (method==2){
-        // Limits for Wrist Pitch (Joint 5 at Index 4)
-        // Consider the Wrist Pitch Joint at the Home position (0 Deg).
-        // The upwards pitch corresponds to a negative angle and and
-        // the downward pitch corresponds to a positive angle.
-        // The Upper Limit A and B are two points defined for the upward
-        // pitch angle and the Lower Limit A and B are two points defined
-        // for the lower pitch angle. Based on where the position of the joint
-        // angle is, a scalar mapping [-1.0 - 1.0] is calculated.
-        // The scalar mapping is a function of q4, i.e. scalar_mapping(q4)
-        // See the logic labeled Scalar Mapping Calculation Below
-
-        // Changing the values of these two pairs of points, one
-        // can change the attenuation as well the center point of direction
-        // switching between each pair of points.
-
-        // For example: consider lim_dn_a = 1.5 Rad and lim_dn_b = 2.0 Rad. The
-        // midpoint for these two limits is:
-        // mid_point_dn = 0.5 * (2.0 - 1.5) + 1.5
-        // mid_point_dn => 1.75 Rad
-        // Thus the scalar mapping at these three points, i.e. [lim_dn_a, mid_point_dn, lim_dn_b]
-        // become:
-
-        // scalar_mapping(lim_dn_a) =  1.0
-        // scalar_mapping(mid_point_dn) =  0.0
-        // scalar_mapping(lim_dn_b) = -1.0
-
-        // And for all values in between
-        // scalar_mapping(q4) = ((q4 - lim_dn_a) / (lim_dn_b - lim_dn_a) - 0.5) x 2.0
-
-        double lim_up_a = -2.0; // Upper Limit A for Pitch Joint
-        double lim_up_b = -1.5; // Upper Limit B for Pitch Joint
-        double lim_dn_a = 1.2; // Lower Limit A for Pitch Joint
-        double lim_dn_b = 1.8; // Lower Limit B for Pitch Joint
 
         vctEulerYZXRotation3 euler_offset;
         // Rotation to align frame 7 with frame 4
@@ -301,6 +375,40 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
         double centered_val;
         double normalized_val;
 
+        // Limits for Wrist Pitch (Joint 5 at Index 4)
+        // Consider the Wrist Pitch Joint at the Home position (0 Deg).
+        // The upwards pitch corresponds to a negative angle and and
+        // the downward pitch corresponds to a positive angle.
+        // The Upper Limit A and B are two points defined for the upward
+        // pitch angle and the Lower Limit A and B are two points defined
+        // for the lower pitch angle. Based on where the position of the joint
+        // angle is, a scalar mapping [-1.0 - 1.0] is calculated.
+        // The scalar mapping is a function of q4, i.e. scalar_mapping(q4)
+        // See the logic labeled Scalar Mapping Calculation Below
+
+        // Changing the values of these two pairs of points, one
+        // can change the attenuation as well the center point of direction
+        // switching between each pair of points.
+
+        // For example: consider lim_dn_a = 1.5 Rad and lim_dn_b = 2.0 Rad. The
+        // midpoint for these two limits is:
+        // mid_point_dn = 0.5 * (2.0 - 1.5) + 1.5
+        // mid_point_dn => 1.75 Rad
+        // Thus the scalar mapping at these three points, i.e. [lim_dn_a, mid_point_dn, lim_dn_b]
+        // become:
+
+        // scalar_mapping(lim_dn_a) =  1.0
+        // scalar_mapping(mid_point_dn) =  0.0
+        // scalar_mapping(lim_dn_b) = -1.0
+
+        // And for all values in between
+        // scalar_mapping(q4) = ((q4 - lim_dn_a) / (lim_dn_b - lim_dn_a) - 0.5) x 2.0
+
+        double lim_up_a = -2.0; // Upper Limit A for Pitch Joint
+        double lim_up_b = -1.5; // Upper Limit B for Pitch Joint
+        double lim_dn_a = 1.0; // Lower Limit A for Pitch Joint
+        double lim_dn_b = 2.0; // Lower Limit B for Pitch Joint
+
         // LOGIC:
         // SCALAR MAPPING CALCULATION
         if (lim_up_a < q4 & q4 < lim_up_b){
@@ -308,7 +416,7 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
             normalized_val = (q4 - lim_up_a) / range;
             centered_val = normalized_val - 0.5;
             scalar_mapping = centered_val * 2;
-//            sign = 0;
+//            scalar_mapping = 0;
         }
         else if (lim_up_b < q4 && q4 <= lim_dn_a){
             scalar_mapping = 1;
@@ -318,7 +426,7 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
             normalized_val = (q4 - lim_dn_a) / range;
             centered_val = normalized_val - 0.5;
             scalar_mapping = -centered_val * 2;
-//            sign = 0;
+//            scalar_mapping = 0;
         }
         else{
             scalar_mapping = -1;
@@ -326,14 +434,14 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
 
 //        std::cerr << "\r" << "Scalar Mapping: " << scalar_mapping;
 
-        double Kp_3 = 2.0;
+        double Kp_3 = 1.0;
         double Kd_3 = 0.05;
         double e;
         double q3;
 
         e = q5;
 
-        q3 = Kp_3 * e * scalar_mapping + q3_curr;
+        q3 = Kp_3 * q5 * scalar_mapping + q3_curr;
 
         // make sure we respect joint limits
         const double q3Max = links[3].GetKinematics()->PositionMax();
