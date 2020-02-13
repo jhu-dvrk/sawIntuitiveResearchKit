@@ -105,18 +105,21 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
 
     // optimized placement of platform
     // compute projection of roll axis on platform plane
-    q[3] = FindOptimalPlatformAngle(q, Rt07);
+//    q[3] = FindOptimalPlatformAngle(q, Rt07);
 
-    // compute orientation of platform
-    const vctFrm4x4 Rt04 = this->ForwardKinematics(q, 4);
-    vctFrm4x4 Rt47;
-    Rt04.ApplyInverseTo(Rt07, Rt47);
-    vctEulerZXZRotation3 closed57(Rt47.Rotation());
+//    // compute orientation of platform
+//    const vctFrm4x4 Rt04 = this->ForwardKinematics(q, 4);
+//    vctFrm4x4 Rt47;
+//    Rt04.ApplyInverseTo(Rt07, Rt47);
+//    vctEulerZXZRotation3 closed57(Rt47.Rotation());
 
-    // applying DH offsets
-    q[4] = closed57.alpha() + cmnPI_2;
-    q[5] = -closed57.beta() + cmnPI_2;
-    q[6] = closed57.gamma() + cmnPI;
+//    // applying DH offsets
+//    q[4] = closed57.alpha() + cmnPI_2;
+//    q[5] = -closed57.beta() + cmnPI_2;
+//    q[6] = closed57.gamma() + cmnPI;
+
+    // Or Use this function to calculate all the joints in the Gimbal
+    ComputeGimbalIK(q, Rt07);
 
     if (hasReachedJointLimit) {
         return robManipulator::EFAILURE;
@@ -125,7 +128,11 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
     return robManipulator::ESUCCESS;
 }
 
-double robManipulatorMTM::ComuteGimbalIK(vctDynamicVector<double> &q,
+
+int method = 2;
+double q3_pre = 0.0;
+
+double robManipulatorMTM::ComputeGimbalIK(vctDynamicVector<double> &q,
                                          const vctFrame4x4<double> &Rt07) const
 {
     vctEulerYZXRotation3 euler_offset;
@@ -215,12 +222,14 @@ double robManipulatorMTM::ComuteGimbalIK(vctDynamicVector<double> &q,
 //        std::cerr << "\r" << "Scalar Mapping: " << scalar_mapping;
 
     double Kp_3 = 2.0;
-    double Kd_3 = 0.05;
+    double Kd_3 = 0.1;
     double e;
 
     e = q[5];
 
-    q[3] = Kp_3 * e * scalar_mapping + q[3];
+    // Implicit dt incorporated into Kd_3
+    q[3] = Kp_3 * e * scalar_mapping + q[3] - Kd_3 * (q[3] - q3_pre);
+    q3_pre = q[3];
 
     // make sure we respect joint limits
     const double q3Max = links[3].GetKinematics()->PositionMax();
@@ -232,9 +241,6 @@ double robManipulatorMTM::ComuteGimbalIK(vctDynamicVector<double> &q,
     }
 }
 
-int method = 2;
-bool print_fk = true;
-double q3_pre = 0.0;
 // METHOD 0 -> RISHI'S METHOD
 // METHOD 1 -> ANTON'S METHOD
 // METHOD 2 -> ADNAN'S METHOD
@@ -433,7 +439,7 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
 //        std::cerr << "\r" << "Scalar Mapping: " << scalar_mapping;
 
         double Kp_3 = 1.0;
-        double Kd_3 = 0.05;
+        double Kd_3 = 0.1;
         double e;
         double q3;
 

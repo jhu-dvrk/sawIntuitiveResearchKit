@@ -48,7 +48,7 @@ public:
     double FindOptimalPlatformAngle(const vctDynamicVector<double> & q,
                                     const vctFrame4x4<double> & Rt07) const;
 
-    double ComuteGimbalIK(vctDynamicVector<double> & q, const vctFrame4x4<double> & Rt07) const;
+    double ComputeGimbalIK(vctDynamicVector<double> & q, const vctFrame4x4<double> & Rt07) const;
 };
 
 #endif // _robManipulatorMTM_h
