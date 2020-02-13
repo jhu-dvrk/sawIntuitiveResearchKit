@@ -234,6 +234,7 @@ double robManipulatorMTM::ComuteGimbalIK(vctDynamicVector<double> &q,
 
 int method = 2;
 bool print_fk = true;
+double q3_pre = 0.0;
 // METHOD 0 -> RISHI'S METHOD
 // METHOD 1 -> ANTON'S METHOD
 // METHOD 2 -> ADNAN'S METHOD
@@ -356,10 +357,7 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
         Rt78.Rotation().Assign(Rt8);
         Rt08 = Rt07 * Rt78;
 
-        vctDynamicVector<double> jointGoal(q);
-        double q3_curr;
-        q3_curr = jointGoal[3];
-        const vctFrm4x4 Rt04 = ForwardKinematics(jointGoal, 4);
+        const vctFrm4x4 Rt04 = ForwardKinematics(q, 4);
 
         vctFrm4x4 Rt48;
         Rt04.ApplyInverseTo(Rt08, Rt48);
@@ -441,7 +439,9 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
 
         e = q5;
 
-        q3 = Kp_3 * q5 * scalar_mapping + q3_curr;
+        // Implicit dt incorporated into Kd_3
+        q3 = Kp_3 * q5 * scalar_mapping + q[3] - Kd_3 * (q[3] - q3_pre);
+        q3_pre = q[3];
 
         // make sure we respect joint limits
         const double q3Max = links[3].GetKinematics()->PositionMax();
