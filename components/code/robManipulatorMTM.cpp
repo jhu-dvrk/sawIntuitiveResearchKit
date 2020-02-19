@@ -105,7 +105,7 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
 
     // optimized placement of platform
     // compute projection of roll axis on platform plane
-//    q[3] = FindOptimalPlatformAngle(q, Rt07);
+    q[3] = FindOptimalPlatformAngle(q, Rt07);
 
 //    // compute orientation of platform
 //    const vctFrm4x4 Rt04 = this->ForwardKinematics(q, 4);
@@ -137,7 +137,7 @@ double robManipulatorMTM::ComputeGimbalIK(vctDynamicVector<double> &q,
 {
     vctEulerYZXRotation3 euler_offset;
     // Rotation to align frame 7 with frame 4
-    euler_offset.Assign(cmnPI_2, 0, cmnPI_2);
+    euler_offset.Assign(cmnPI_2, 0, -cmnPI_2);
 
     vctMatrixRotation3<double, true> Rt8;
     vctEulerToMatrixRotation3(euler_offset, Rt8);
@@ -153,9 +153,21 @@ double robManipulatorMTM::ComputeGimbalIK(vctDynamicVector<double> &q,
 
     vctEulerZYXRotation3 closed48(Rt48.Rotation());
 
-    q[4] = closed48.alpha();
-    q[5] = closed48.beta();
-    q[6] = closed48.gamma();
+    double q3, q4, q5, q6;
+
+
+    q4 = closed48.alpha();
+    q5 = closed48.beta();
+    q6 = -(closed48.gamma() - cmnPI);
+
+
+//    std::cerr << "ZYZ :" << q[4] << ", " << q[5] << ", " << q[6] << "\n" ;
+//    std::cerr << "ZYX :" << q4 << ", " << q5 << ", " << q6 << "\n" ;
+//    std::cerr << "-----------\n";
+
+    q[4] = q4;
+    q[5] = q5;
+    q[6] = q6;
 
     double scalar_mapping;
     double range;
@@ -228,7 +240,7 @@ double robManipulatorMTM::ComputeGimbalIK(vctDynamicVector<double> &q,
     e = q[5];
 
     // Implicit dt incorporated into Kd_3
-    q[3] = Kp_3 * e * scalar_mapping + q[3] - Kd_3 * (q[3] - q3_pre);
+    q3 = Kp_3 * e * scalar_mapping + q[3] - Kd_3 * (q[3] - q3_pre);
     q3_pre = q[3];
 
     // make sure we respect joint limits
@@ -354,7 +366,7 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
 
         vctEulerYZXRotation3 euler_offset;
         // Rotation to align frame 7 with frame 4
-        euler_offset.Assign(cmnPI_2, 0, cmnPI_2);
+        euler_offset.Assign(cmnPI_2, 0, -cmnPI_2);
 
         vctMatrixRotation3<double, true> Rt8;
         vctEulerToMatrixRotation3(euler_offset, Rt8);
@@ -373,6 +385,11 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
         // applying DH offsets
         const double q4 = closed48.alpha();
         const double q5 = closed48.beta();
+
+
+        vctDynamicVector<double> qCopy(q);
+
+//        ComputeGimbalIK(qCopy, Rt07);
 
         double scalar_mapping;
         double range;
@@ -446,7 +463,15 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
         e = q5;
 
         // Implicit dt incorporated into Kd_3
-        q3 = Kp_3 * q5 * scalar_mapping + q[3] - Kd_3 * (q[3] - q3_pre);
+        double q3_increment = Kp_3 * q5 * scalar_mapping;
+        const double max_q3_dot = cmnPI * 0.1; // assume kHz
+        if (q3_increment > max_q3_dot) {
+            q3_increment = max_q3_dot;
+        } else if (q3_increment < -max_q3_dot) {
+            q3_increment = -max_q3_dot;
+        }
+        q3 = q[3] + q3_increment;
+//        q3 = Kp_3 * q5 * scalar_mapping + q[3]; // - Kd_3 * (q[3] - q3_pre);
         q3_pre = q[3];
 
         // make sure we respect joint limits
