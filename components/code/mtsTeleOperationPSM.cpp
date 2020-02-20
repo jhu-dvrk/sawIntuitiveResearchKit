@@ -592,32 +592,19 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
         mBackFromClutch = false;
     }
 
-    // reset number of transitions for gripper/jaw
     if (!mIgnoreJaw) {
         // figure out the mapping between the MTM gripper angle and the PSM jaw angle
         UpdateGripperToJawConfiguration();
-        if (!mIsOperatorActive) {
-            mGripperJawTransitions = 0;
-            double gripperJawErrorInDegrees = 0.0;
-            // compare angles
-            if (mMTM.GetStateGripper.IsValid()) {
-                mMTM.GetStateGripper(mMTM.StateGripper);
-                mPSM.GetStateJaw(mPSM.StateJaw);
-                // here we compute all angles in MTM scale
-                const double gripperInDegrees = cmn180_PI * mMTM.StateGripper.Position()[0];
-                const double jawInDegrees = cmn180_PI * JawToGripper(mPSM.StateJaw.Position()[0]);
-                // MTMs can't really open above 60 degrees so if both ends are above 55, just engage
-                if ((gripperInDegrees > mtsIntuitiveResearchKit::TeleOperationPSMGripperJawFullOpen)
-                    && (jawInDegrees > mtsIntuitiveResearchKit::TeleOperationPSMGripperJawFullOpen)) {
-                    gripperJawErrorInDegrees = 0.0;
-                } else {
-                    gripperJawErrorInDegrees = fabs(gripperInDegrees - jawInDegrees);
-                }
-            }
-            // compute number of transitions
-            mGripperJawMatchingPrevious = (gripperJawErrorInDegrees <= mtsIntuitiveResearchKit::TeleOperationPSMGripperJawTolerance);
-        }
     }
+
+    // reset number of transitions around roll to decide when to enable
+    mRollTransitions = 0;
+    vctMatRot3 desiredOrientation;
+    mRegistrationRotation.ApplyInverseTo(mPSM.PositionCartesianCurrent.Position().Rotation(),
+                                         desiredOrientation);
+    const double rollError = acos(vctDotProduct(desiredOrientation.Column(1),
+                                          mMTM.PositionCartesianCurrent.Position().Rotation().Column(1)));
+    mRollMatchingPrevious = (rollError <= mtsIntuitiveResearchKit::TeleOperationPSMRollTolerance);
 }
 
 void mtsTeleOperationPSM::RunAligningMTM(void)
@@ -671,9 +658,6 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
         orientationErrorInDegrees = axisAngle.Angle() * 180.0 / cmnPI;
     }
 
-    // find difference between gripper (MTM) and jaw (PSM)
-    double gripperJawErrorInDegrees = 0.0;
-
     // if we don't have jaws, we assume operator is active.  We need different way to detect operator
     if (mIgnoreJaw) {
         mIsOperatorActive = true;
@@ -681,29 +665,15 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
 
     // if not active, use jaw motion to detect if the user is ready
     if (!mIsOperatorActive) {
-        // compare angles
-        if (mMTM.GetStateGripper.IsValid()) {
-            mMTM.GetStateGripper(mMTM.StateGripper);
-            mPSM.GetStateJaw(mPSM.StateJaw);
-            // here we compute all angles in MTM scale
-            const double gripperInDegrees = cmn180_PI * mMTM.StateGripper.Position()[0];
-            const double jawInDegrees = cmn180_PI * JawToGripper(mPSM.StateJaw.Position()[0]);
-            // MTMs can't really open above 60 degrees so if both ends are above 55, just engage
-            if ((gripperInDegrees > mtsIntuitiveResearchKit::TeleOperationPSMGripperJawFullOpen)
-                && (jawInDegrees > mtsIntuitiveResearchKit::TeleOperationPSMGripperJawFullOpen)) {
-                gripperJawErrorInDegrees = 0.0;
-            } else {
-                gripperJawErrorInDegrees = fabs(gripperInDegrees - jawInDegrees);
-            }
-        }
-        // compute number of transitions
-        bool gripperJawMatching = (gripperJawErrorInDegrees <= mtsIntuitiveResearchKit::TeleOperationPSMGripperJawTolerance);
-        if (gripperJawMatching != mGripperJawMatchingPrevious) {
-            mGripperJawTransitions += 1;
-            mGripperJawMatchingPrevious = gripperJawMatching;
-            if ((mGripperJawTransitions > 1) && gripperJawMatching) {
+        // checking roll
+        const double rollError = acos(vctDotProduct(desiredOrientation.Column(1),
+                                                    mMTM.PositionCartesianCurrent.Position().Rotation().Column(1)));
+        bool rollMatching = (rollError <= mtsIntuitiveResearchKit::TeleOperationPSMRollTolerance);
+        if (rollMatching != mRollMatchingPrevious) {
+            mRollTransitions += 1;
+            mRollMatchingPrevious = rollMatching;
+            if ((mRollTransitions > 0) && rollMatching) {
                 mIsOperatorActive = true;
-                mGripperGhost = mMTM.StateGripper.Position()[0];
             }
         }
     }

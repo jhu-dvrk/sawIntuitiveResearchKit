@@ -154,15 +154,15 @@ protected:
     } mGripperToJaw;
 
     double mGripperGhost;
-    
+
     double virtual GripperToJaw(const double & gripperAngle) const;
     double virtual JawToGripper(const double & jawAngle) const;
     void virtual UpdateGripperToJawConfiguration(void);
 
     bool mIgnoreJaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
     double mJawRate = mtsIntuitiveResearchKit::TeleOperationPSMJawRate;
-    int mGripperJawTransitions;
-    bool mGripperJawMatchingPrevious;
+    int mRollTransitions;
+    bool mRollMatchingPrevious;
     bool mIsOperatorActive = false;
     bool mWasOperatorActiveBeforeClutch = false;
     bool mIsClutched = false;
