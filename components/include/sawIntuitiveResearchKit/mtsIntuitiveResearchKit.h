@@ -43,7 +43,7 @@ namespace mtsIntuitiveResearchKit {
     const double TeleOperationPSMScale = 0.2;
     const double TeleOperationPSMOrientationTolerance = 5.0; // in degrees
     const double TeleOperationPSMGripperJawTolerance = 5.0;
-    const double TeleOperationPSMJawRate =  4 * cmnPI * cmn_s; // 720 d/s
+    const double TeleOperationPSMJawRate =  2 * cmnPI * cmn_s; // 360 d/s
     const double TeleOperationPSMGripperJawFullOpen = 55.0;  // in degrees
 };
 
