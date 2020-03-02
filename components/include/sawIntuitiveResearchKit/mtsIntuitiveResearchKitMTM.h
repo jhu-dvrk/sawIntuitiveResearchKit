@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -32,21 +32,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitMTM: public mtsIntuitiveResearchKitArm
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    enum MTM_TYPE {
-        MTM_NULL, MTM_LEFT, MTM_RIGHT
-    };
-
     mtsIntuitiveResearchKitMTM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsIntuitiveResearchKitMTM() override;
-
-    /*!
-     \brief Set MTM type, either MTM_LEFT or MTM_RIGHT
-     \param autodetect TRUE by default, will set type based on MTM name, otherwise
-                       manually sepcify MTM type
-     \param type MTM type either MTM_LEFT or MTM_RIGHT
-    */
-    void SetMTMType(const bool autodetect = true, const MTM_TYPE type = MTM_NULL);
 
 protected:
     enum JointName {
@@ -60,9 +48,9 @@ protected:
         JNT_GRIPPER = 7
     };
 
-    void ConfigureArmSpecific(const Json::Value & jsonConfig,
-                              const cmnPath & configPath,
-                              const std::string & filename) override;
+    void PreConfigure(const Json::Value & jsonConfig,
+                      const cmnPath & configPath,
+                      const std::string & filename) override;
 
     /*! Configuration methods */
     inline size_t NumberOfAxes(void) const override {
@@ -93,6 +81,11 @@ protected:
     inline bool IsSafeForCartesianControl(void) const override {
         return true;
     };
+
+    enum KinematicType {
+        MTM_ITERATIVE,
+        MTM_CLOSED
+    } mKinematicType = MTM_ITERATIVE;
 
     virtual void CreateManipulator(void) override;
     virtual void Init(void) override;
@@ -140,9 +133,6 @@ protected:
     prmStateJoint StateGripper;
     prmConfigurationJoint ConfigurationGripper;
     bool GripperClosed;
-
-    //! robot type
-    MTM_TYPE RobotType;
 
     // Roll position when hitting lower limit before encoder preload
     bool mHomedOnce;

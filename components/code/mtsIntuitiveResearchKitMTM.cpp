@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet, Zihan Chen
+  Author(s):  Anton Deguet, Zihan Chen, Rishibrata Biswas, Adnan Munawar
   Created on: 2013-05-15
 
   (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
@@ -16,10 +16,11 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-
 // system include
 #include <cmath>
 #include <iostream>
+#include <algorithm>
+#include <numeric>
 
 // cisst
 #include <cisstCommon/cmnPath.h>
@@ -51,9 +52,9 @@ mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM()
     delete GravityCompensationMTM;
 }
 
-void mtsIntuitiveResearchKitMTM::ConfigureArmSpecific(const Json::Value & jsonConfig,
-                                                      const cmnPath & configPath,
-                                                      const std::string & filename)
+void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
+                                              const cmnPath & configPath,
+                                              const std::string & filename)
 {
     // gravity compensation
     const auto jsonGC = jsonConfig["gravity-compensation"];
@@ -67,6 +68,31 @@ void mtsIntuitiveResearchKitMTM::ConfigureArmSpecific(const Json::Value & jsonCo
             exit(EXIT_FAILURE);
         } else {
             ConfigureGC(fileGC);
+        }
+    }
+
+    // which IK to use
+    const auto jsonKinematic = jsonConfig["kinematic-type"];
+    if (!jsonKinematic.isNull()) {
+        const auto kinematicType = jsonKinematic.asString();
+        const std::list<std::string> options {"ITERATIVE", "CLOSED"};
+        if (std::find(options.begin(), options.end(), kinematicType) != options.end()) {
+            if (kinematicType == "ITERATIVE") {
+                mKinematicType = MTM_ITERATIVE;
+            } else if (kinematicType == "CLOSED") {
+                mKinematicType = MTM_CLOSED;
+            }
+            CreateManipulator();
+        } else {
+            const std::string allOptions = std::accumulate(options.begin(),
+                                                           options.end(),
+                                                           std::string{},
+                                                           [](const std::string & a, const std::string & b) {
+                                                               return a.empty() ? b : a + ", " + b; });
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                     << " kinematic-type \"" << kinematicType << "\" is not valid.  Valid options are: "
+                                     << allOptions << std::endl;
+            exit(EXIT_FAILURE);
         }
     }
 }
@@ -117,8 +143,23 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const std::string & filename)
 robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
-    // pre-feed inverse kinematics with preferred values for joint 6
-    jointSet[5] = 0.0;
+    if (mKinematicType == MTM_ITERATIVE) {
+        // projection of roll axis on platform tells us how the platform
+        // should move.  the projection angle is +/- q5 based on q4.  we
+        // also scale the increment based on cos(q[4]) so increment is
+        // null if roll axis is perpendicular to platform
+        jointSet[3] += jointSet[5] * cos(jointSet[4]);
+
+        // make sure we respect joint limits
+        const double q3Max = Manipulator->links[3].GetKinematics()->PositionMax();
+        const double q3Min = Manipulator->links[3].GetKinematics()->PositionMin();
+        if (jointSet[3] > q3Max) {
+            jointSet[3] = q3Max;
+        } else if (jointSet[3] < q3Min) {
+            jointSet[3] = q3Min;
+        }
+    }
+
     if (Manipulator->InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = StateJointKinematics.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
@@ -134,8 +175,12 @@ void mtsIntuitiveResearchKitMTM::CreateManipulator(void)
     if (Manipulator) {
         delete Manipulator;
     }
-    Manipulator = new robManipulatorMTM();
-    // Manipulator = new robManipulator();
+
+    if (mKinematicType == MTM_ITERATIVE) {
+        Manipulator = new robManipulator();
+    } else {
+        Manipulator = new robManipulatorMTM();
+    }
 }
 
 void mtsIntuitiveResearchKitMTM::Init(void)
@@ -179,9 +224,6 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     mArmState.SetTransitionCallback("ROLL_ENCODER_RESET",
                                     &mtsIntuitiveResearchKitMTM::TransitionRollEncoderReset,
                                     this);
-
-    RobotType = MTM_NULL;
-    SetMTMType();
 
     // joint values when orientation is locked
     mEffortOrientationJoint.SetSize(NumberOfJoints());
@@ -229,21 +271,6 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     RobotInterface->AddCommandReadState(this->StateTable, StateGripper, "GetStateGripper");
     RobotInterface->AddEventVoid(GripperEvents.GripperPinch, "GripperPinchEvent");
     RobotInterface->AddEventWrite(GripperEvents.GripperClosed, "GripperClosedEvent", true);
-}
-
-void mtsIntuitiveResearchKitMTM::SetMTMType(const bool autodetect, const MTM_TYPE type)
-{
-    if (autodetect) {
-        if (GetName() == "MTML") {
-            RobotType = MTM_LEFT;
-        } else if (GetName() == "MTMR") {
-            RobotType = MTM_RIGHT;
-        } else {
-            CMN_LOG_CLASS_INIT_WARNING << "SetMTMType: auto set type failed, please set type manually" << std::endl;
-        }
-    } else {
-        RobotType = type;
-    }
 }
 
 void mtsIntuitiveResearchKitMTM::GetRobotData(void)
@@ -546,20 +573,13 @@ void mtsIntuitiveResearchKitMTM::ControlEffortOrientationLocked(void)
         const double difference = StateJointPID.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
-#if 0
-        // finally send new joint values
-        SetPositionJointLocal(JointSet);
-        // assign to joints used for kinematics
-        JointSet.Ref(NumberOfJointsKinematics()).Assign(jointSet);
-#else
+        // initialize trajectory
         mJointTrajectory.Goal.Ref(NumberOfJointsKinematics()).Assign(jointSet);
         mJointTrajectory.Reflexxes.Evaluate(JointSet,
                                             JointVelocitySet,
                                             mJointTrajectory.Goal,
                                             mJointTrajectory.GoalVelocity);
         mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
-#endif
-        
     } else {
         RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortOrientationLocked");
     }
@@ -592,25 +612,40 @@ void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & ef
     // most efforts will be 0
     effortPreload.Zeros();
 
-    // find ideal position for platform using IK or robManipulator::FindOptimalPlatformAngle
-    vctDoubleVec jointGoal(StateJointKinematics.Position());
+    // create a vector reference make code more readable
+    vctDynamicConstVectorRef<double> q(StateJointKinematics.Position());
 
-    // check if we're using robManipulatorMTM
-    robManipulatorMTM * manip = dynamic_cast<robManipulatorMTM *>(this->Manipulator);
-    if (manip) {
-        // find where the platform should be
-        jointGoal[3] = manip->FindOptimalPlatformAngle(jointGoal, CartesianGetLocal);
-    } else {
-        if (InverseKinematics(jointGoal, CartesianGetLocal) != robManipulator::ESUCCESS) {
-            RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortCartesianPreload");
-            return;
-        }
+    // projection of roll axis on platform tells us how the platform
+    // should move.  the projection angle is +/- q5 based on q4.  we
+    // also scale the increment based on cos(q[4]) so increment is
+    // null if roll axis is perpendicular to platform
+    double q3Increment = q[5] * cos(q[4]);
+
+    // now make sure incremental is now too large, i.e. cap the rate
+    const double q3MaxIncrement = cmnPI * 0.05; // this is a velocity
+    if (q3Increment > q3MaxIncrement) {
+        q3Increment = q3MaxIncrement;
+    } else if (q3Increment < -q3MaxIncrement) {
+        q3Increment = -q3MaxIncrement;
     }
 
-    // apply a linear force on joint 3 to move toward the "ideal" position
-    effortPreload[3] = -0.2 * (StateJointKinematics.Position()[3] - jointGoal[3])
+    // set goal
+    double q3Goal = q[3] + q3Increment;
+
+    // make sure we respect joint limits
+    const double q3Max = Manipulator->links[3].GetKinematics()->PositionMax();
+    const double q3Min = Manipulator->links[3].GetKinematics()->PositionMin();
+    if (q3Goal > q3Max) {
+        q3Goal = q3Max;
+    } else if (q3Goal < q3Min) {
+        q3Goal = q3Min;
+    }
+
+    // apply a linear force on joint 3 to move toward the goal position
+    effortPreload[3] = -0.4 * (StateJointKinematics.Position()[3] - q3Goal)
         - 0.05 * StateJointKinematics.Velocity()[3];
-    // cap effort
+
+    // cap effort to be totally safe - this has to be the most non-linear behavior around
     effortPreload[3] = std::max(effortPreload[3], -0.1);
     effortPreload[3] = std::min(effortPreload[3],  0.1);
 
@@ -626,8 +661,6 @@ void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
     if (!mEffortOrientationLocked) {
         mEffortOrientationLocked = true;
         SetControlEffortActiveJoints();
-#if 0
-#else
         // initialize trajectory
         JointSet.Assign(StateJointPID.Position(), NumberOfJoints());
         JointVelocitySet.Assign(StateJointPID.Velocity(), NumberOfJoints());
@@ -635,7 +668,6 @@ void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
                                        mJointTrajectory.Acceleration,
                                        StateTable.PeriodStats.PeriodAvg(),
                                        robReflexxes::Reflexxes_TIME);
-#endif
     }
     // in any case, update desired orientation in local coordinate system
     // mEffortOrientation.Assign(BaseFrame.Rotation().Inverse() * orientation);

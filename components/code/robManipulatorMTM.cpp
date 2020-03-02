@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet
+  Author(s):  Anton Deguet, Rishibrata Biswas, Adnan Munawar
   Created on: 2019-11-11
 
   (C) Copyright 2019-2020 Johns Hopkins University (JHU), All Rights Reserved.
@@ -210,7 +210,7 @@ double robManipulatorMTM::ComputeGimbalIK(vctDynamicVector<double> &q,
 
     // LOGIC:
     // SCALAR MAPPING CALCULATION
-    if (lim_up_a < q[4] & q[4] < lim_up_b){
+    if (lim_up_a < q[4] && q[4] < lim_up_b){
         range = lim_up_b - lim_up_a;
         normalized_val = (q[4] - lim_up_a) / range;
         centered_val = normalized_val - 0.5;
@@ -220,7 +220,7 @@ double robManipulatorMTM::ComputeGimbalIK(vctDynamicVector<double> &q,
     else if (lim_up_b < q[4] && q[4] <= lim_dn_a){
         scalar_mapping = 1;
     }
-    else if (lim_dn_a < q[4] & q[4] < lim_dn_b){
+    else if (lim_dn_a < q[4] && q[4] < lim_dn_b){
         range = lim_dn_b - lim_dn_a;
         normalized_val = (q[4] - lim_dn_a) / range;
         centered_val = normalized_val - 0.5;
@@ -254,13 +254,12 @@ double robManipulatorMTM::ComputeGimbalIK(vctDynamicVector<double> &q,
 }
 
 // METHOD 0 -> RISHI'S METHOD
-// METHOD 1 -> ANTON'S METHOD
-// METHOD 2 -> ADNAN'S METHOD
+// METHOD 1 -> ADNAN'S METHOD
 double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double> & q,
                                                    const vctFrame4x4<double> & Rt07) const
 {
     // RISHI'S METHOD
-    if(method == 0){
+    if (method == 0) {
         const vctFrm4x4 Rt03 = ForwardKinematics(q, 3);
         vctFrm4x4 Rt37;
         Rt03.ApplyInverseTo(Rt07, Rt37);
@@ -325,44 +324,9 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
 
         return q3;
     }
-    // ANTON'S METHOD
-    else if(method == 1){
-        vctDynamicVector<double> jointGoal(q);
-        jointGoal[3] = 0.0;
-        const vctFrm4x4 Rt04 = ForwardKinematics(jointGoal, 4);
-        vctFrm4x4 Rt47;
-        Rt04.ApplyInverseTo(Rt07, Rt47);
-        vctEulerZXZRotation3 closed47(Rt47.Rotation());
 
-        // applying DH offsets
-        const double q4 = closed47.alpha() + cmnPI_2;
-        const double q5 = -closed47.beta() + cmnPI_2;
-
-        double q3;
-        // upside-down case
-        if ((q4 > -cmnPI_2) && (q4 < cmnPI_2)) {
-            q3 = q5;
-        } else {
-            q3 = -q5;
-        }
-
-        // average with current position based on projection angle
-        const double cosProjectionAngle = std::abs(cos(q4));
-        q3 = q3 * cosProjectionAngle + q[3] * (1 - cosProjectionAngle);
-
-        // make sure we respect joint limits
-        const double q3Max = links[3].GetKinematics()->PositionMax();
-        const double q3Min = links[3].GetKinematics()->PositionMin();
-        if (q3 > q3Max) {
-            q3 = q3Max;
-        } else if (q3 < q3Min) {
-            q3 = q3Min;
-        }
-
-        return q3;
-    }
     // ADNAN'S METHOD
-    else if (method==2){
+    else if (method==1){
 
         vctEulerYZXRotation3 euler_offset;
         // Rotation to align frame 7 with frame 4
@@ -453,8 +417,6 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
             scalar_mapping = -1;
         }
 
-//        std::cerr << "\r" << "Scalar Mapping: " << scalar_mapping;
-
         double Kp_3 = 1.0;
         double Kd_3 = 0.1;
         double e;
@@ -482,8 +444,6 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
         } else if (q3 < q3Min) {
             q3 = q3Min;
         }
-
-//        std::cout << "\r" << "Joint 3: ("  << q3 << "), 3_c: (" << q3_curr << "), 4: (" << q4 << "), (5: "  << q5 << ")";
 
         return q3;
     }

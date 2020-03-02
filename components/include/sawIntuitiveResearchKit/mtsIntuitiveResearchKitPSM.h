@@ -41,9 +41,9 @@ public:
 
 protected:
 
-    void ConfigureArmSpecific(const Json::Value & jsonConfig,
-                              const cmnPath & configPath,
-                              const std::string & filename) override;
+    void PostConfigure(const Json::Value & jsonConfig,
+                       const cmnPath & configPath,
+                       const std::string & filename) override;
     void ConfigureTool(const std::string & filename);
 
     /*! Configuration methods */

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -359,9 +359,9 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
     return robManipulator::EFAILURE;
 }
 
-void mtsIntuitiveResearchKitPSM::ConfigureArmSpecific(const Json::Value & jsonConfig,
-                                                      const cmnPath & configPath,
-                                                      const std::string & filename)
+void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
+                                               const cmnPath & configPath,
+                                               const std::string & filename)
 {
     // tool detection
     const auto jsonToolDetection = jsonConfig["tool-detection"];

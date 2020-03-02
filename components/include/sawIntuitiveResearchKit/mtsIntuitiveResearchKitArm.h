@@ -82,9 +82,12 @@ public:
 
     /*! Arm specific configuration for derived classes PSM,
       MTM... Called by Configure method. */
-    inline virtual void ConfigureArmSpecific(const Json::Value & CMN_UNUSED(jsonConfig),
-                                             const cmnPath & CMN_UNUSED(configPath),
-                                             const std::string & CMN_UNUSED(filename)) {};
+    inline virtual void PreConfigure(const Json::Value & CMN_UNUSED(jsonConfig),
+                                     const cmnPath & CMN_UNUSED(configPath),
+                                     const std::string & CMN_UNUSED(filename)) {};
+    inline virtual void PostConfigure(const Json::Value & CMN_UNUSED(jsonConfig),
+                                      const cmnPath & CMN_UNUSED(configPath),
+                                      const std::string & CMN_UNUSED(filename)) {};
 
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
