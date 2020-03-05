@@ -45,6 +45,7 @@ namespace mtsIntuitiveResearchKit {
     const double TeleOperationPSMRollTolerance = 3.0 * cmnPI_180; // in radians
     const double TeleOperationPSMJawRate =  2.0 * cmnPI * cmn_s; // 360 d/s
     const double TeleOperationPSMJawRateBackFromClutch =  0.2 * cmnPI * cmn_s; // 36.0 d/s
+    const double TeleOperationPSMToleranceBackFromClutch =  2.0 * cmnPI_180; // in radians 
 };
 
 #endif // _mtsIntuitiveResearchKitArm_h

@@ -723,7 +723,8 @@ void mtsTeleOperationPSM::EnterEnabled(void)
 
     // set gripper ghost if needed
     if (!mIgnoreJaw) {
-        // gripper
+        mJawCaughtUpAfterClutch = false;
+        // gripper ghost
         if (mPSM.GetStateJaw.IsValid()) {
             mPSM.GetStateJaw(mPSM.StateJaw);
             double currentJaw = mPSM.StateJaw.Position()[0];
@@ -799,8 +800,15 @@ void mtsTeleOperationPSM::RunEnabled(void)
                 // gripper
                 if (mMTM.GetStateGripper.IsValid()) {
                     mMTM.GetStateGripper(mMTM.StateGripper);
-                    double currentGripper = mMTM.StateGripper.Position()[0];
-                    // pick the rate based on back from clutch
+                    const double currentGripper = mMTM.StateGripper.Position()[0];
+                    // see if we caught up
+                    if (!mJawCaughtUpAfterClutch) {
+                        const double error = std::abs(currentGripper - mGripperGhost);
+                        if (error < mtsIntuitiveResearchKit::TeleOperationPSMToleranceBackFromClutch) {
+                            mJawCaughtUpAfterClutch = true;
+                        }
+                    }
+                    // pick the rate based on back from clutch or not
                     const double delta = mJawCaughtUpAfterClutch ?
                         mJawRate * StateTable.PeriodStats.PeriodAvg()
                         : mJawRateBackFromClutch * StateTable.PeriodStats.PeriodAvg();
@@ -811,8 +819,6 @@ void mtsTeleOperationPSM::RunEnabled(void)
                         // gripper ghost above, subtract to catch up
                         if (mGripperGhost >= (currentGripper + delta)) {
                             mGripperGhost -= delta;
-                        } else {
-                            mJawCaughtUpAfterClutch = true;
                         }
                     }
                     mPSM.PositionJointSet.Goal()[0] = GripperToJaw(mGripperGhost);
