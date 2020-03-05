@@ -275,6 +275,17 @@ void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
         exit(EXIT_FAILURE);
     }
 
+    // jaw rate of opening-closing after clutch
+    jsonValue = jsonConfig["jaw-rate-back-from-clutch"];
+    if (!jsonValue.empty()) {
+        mJawRateBackFromClutch = jsonValue.asDouble();
+    }
+    if (mJawRateBackFromClutch <= 0.0) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": \"jaw-rate-back-from-clutch\" must be a positive number.  Found " << mJawRate << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     // align MTM if needed
     jsonValue = jsonConfig["align-mtm"];
     if (!jsonValue.empty()) {
@@ -375,6 +386,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         mInterface->SendStatus(this->GetName() + ": console clutch released");
         mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
         mBackFromClutch = true;
+        mJawCaughtUpAfterClutch = false;
     }
 }
 
@@ -652,10 +664,10 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
                                          desiredOrientation);
     mMTM.PositionCartesianCurrent.Position().Rotation().ApplyInverseTo(desiredOrientation, mAlignOffset);
     vctAxAnRot3 axisAngle(mAlignOffset, VCT_NORMALIZE);
-    double orientationErrorInDegrees = 0.0;
+    double orientationError = 0.0;
     // set error only if we need to align MTM to PSM
     if (mAlignMTM) {
-        orientationErrorInDegrees = axisAngle.Angle() * 180.0 / cmnPI;
+        orientationError = axisAngle.Angle();
     }
 
     // if we don't have jaws, we assume operator is active.  We need different way to detect operator
@@ -679,7 +691,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     }
 
     // finally check for transition
-    if ((orientationErrorInDegrees <= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance)
+    if ((orientationError <= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance)
         && mIsOperatorActive) {
         if (mTeleopState.DesiredState() == "ENABLED") {
             mTeleopState.SetCurrentState("ENABLED");
@@ -688,8 +700,8 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
         // check timer and issue a message
         if ((StateTable.GetTic() - mInStateTimer) > 2.0 * cmn_s) {
             std::stringstream message;
-            if (orientationErrorInDegrees >= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance) {
-                message << this->GetName() + ": unable to align MTM, current angle error is " << orientationErrorInDegrees;
+            if (orientationError >= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance) {
+                message << this->GetName() + ": unable to align MTM, current angle error is " << orientationError * cmn180_PI;
             } else {
                 message << this->GetName() + ": unable to match gripper/jaw angle, pinch and release the gripper";
             }
@@ -707,6 +719,16 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     mAlignOffsetInitial = mAlignOffset;
     if (mBaseFrame.GetPositionCartesian.IsValid()) {
         mBaseFrame.CartesianInitial.From(mBaseFrame.PositionCartesianCurrent.Position());
+    }
+
+    // set gripper ghost if needed
+    if (!mIgnoreJaw) {
+        // gripper
+        if (mPSM.GetStateJaw.IsValid()) {
+            mPSM.GetStateJaw(mPSM.StateJaw);
+            double currentJaw = mPSM.StateJaw.Position()[0];
+            mGripperGhost = JawToGripper(currentJaw);
+        }
     }
 
     // set MTM/PSM to Teleop (Cartesian Position Mode)
@@ -774,11 +796,14 @@ void mtsTeleOperationPSM::RunEnabled(void)
             mPSM.SetPositionCartesian(mPSM.PositionCartesianSet);
 
             if (!mIgnoreJaw) {
-                // Gripper
+                // gripper
                 if (mMTM.GetStateGripper.IsValid()) {
                     mMTM.GetStateGripper(mMTM.StateGripper);
                     double currentGripper = mMTM.StateGripper.Position()[0];
-                    const double delta = mJawRate * StateTable.PeriodStats.PeriodAvg();
+                    // pick the rate based on back from clutch
+                    const double delta = mJawCaughtUpAfterClutch ?
+                        mJawRate * StateTable.PeriodStats.PeriodAvg()
+                        : mJawRateBackFromClutch * StateTable.PeriodStats.PeriodAvg();
                     // gripper ghost below, add to catch up
                     if (mGripperGhost <= (currentGripper - delta)) {
                         mGripperGhost += delta;
@@ -786,9 +811,12 @@ void mtsTeleOperationPSM::RunEnabled(void)
                         // gripper ghost above, subtract to catch up
                         if (mGripperGhost >= (currentGripper + delta)) {
                             mGripperGhost -= delta;
+                        } else {
+                            mJawCaughtUpAfterClutch = true;
                         }
                     }
                     mPSM.PositionJointSet.Goal()[0] = GripperToJaw(mGripperGhost);
+                    // make sure we don't send goal past joint limits
                     if (mPSM.PositionJointSet.Goal()[0] < mGripperToJaw.PositionMin) {
                         mPSM.PositionJointSet.Goal()[0] = mGripperToJaw.PositionMin;
                         mGripperGhost = JawToGripper(mGripperToJaw.PositionMin);

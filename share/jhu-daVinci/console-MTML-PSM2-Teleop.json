@@ -38,7 +38,11 @@
     [
         {
             "mtm": "MTML",
-            "psm": "PSM2"
+            "psm": "PSM2",
+            "configure-parameter": {
+                "jaw-rate": 6.28,
+                "jaw-rate-back-from-clutch": 0.628 
+            }
         }
     ]
 }

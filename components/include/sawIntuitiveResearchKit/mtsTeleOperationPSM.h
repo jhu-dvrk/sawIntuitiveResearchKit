@@ -161,12 +161,14 @@ protected:
 
     bool mIgnoreJaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
     double mJawRate = mtsIntuitiveResearchKit::TeleOperationPSMJawRate;
+    double mJawRateBackFromClutch = mtsIntuitiveResearchKit::TeleOperationPSMJawRateBackFromClutch;
     int mRollTransitions;
     bool mRollMatchingPrevious;
     bool mIsOperatorActive = false;
     bool mWasOperatorActiveBeforeClutch = false;
     bool mIsClutched = false;
     bool mBackFromClutch = false;
+    bool mJawCaughtUpAfterClutch = false;
     bool mRotationLocked = false;
     bool mTranslationLocked = false;
     bool mAlignMTM = true; // default on da Vinci

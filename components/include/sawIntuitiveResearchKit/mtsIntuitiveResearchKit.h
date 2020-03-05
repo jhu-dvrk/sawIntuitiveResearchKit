@@ -41,10 +41,10 @@ namespace mtsIntuitiveResearchKit {
 
     // teleoperation constants
     const double TeleOperationPSMScale = 0.2;
-    const double TeleOperationPSMOrientationTolerance = 5.0; // in degrees
+    const double TeleOperationPSMOrientationTolerance = 5.0 * cmnPI_180; // in radians
     const double TeleOperationPSMRollTolerance = 3.0 * cmnPI_180; // in radians
-    const double TeleOperationPSMJawRate =  2 * cmnPI * cmn_s; // 360 d/s
-    const double TeleOperationPSMGripperJawFullOpen = 55.0;  // in degrees
+    const double TeleOperationPSMJawRate =  2.0 * cmnPI * cmn_s; // 360 d/s
+    const double TeleOperationPSMJawRateBackFromClutch =  0.2 * cmnPI * cmn_s; // 36.0 d/s
 };
 
 #endif // _mtsIntuitiveResearchKitArm_h
