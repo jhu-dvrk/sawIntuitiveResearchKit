@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
+#include <sawControllers/osaCartesianImpedanceController.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
@@ -41,6 +42,7 @@ mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const std::string & compo
     mStateTableConfiguration(100, "Configuration"),
     mControlCallback(0)
 {
+    mCartesianImpedanceController = new osaCartesianImpedanceController();
 }
 
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg):
@@ -50,12 +52,16 @@ mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicCons
     mStateTableConfiguration(100, "Configuration"),
     mControlCallback(0)
 {
+    mCartesianImpedanceController = new osaCartesianImpedanceController();
 }
 
 mtsIntuitiveResearchKitArm::~mtsIntuitiveResearchKitArm()
 {
     if (Manipulator) {
         delete Manipulator;
+    }
+    if (mCartesianImpedanceController) {
+        delete mCartesianImpedanceController;
     }
 }
 
@@ -1508,10 +1514,10 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
     if (mWrenchType == WRENCH_BODY) {
         // either using wrench provided by user or cartesian impedance
         if (mCartesianImpedance) {
-            mCartesianImpedanceController.Update(CartesianGetParam,
-                                                 CartesianVelocityGetParam,
-                                                 mWrenchSet,
-                                                 mWrenchBodyOrientationAbsolute);
+            mCartesianImpedanceController->Update(CartesianGetParam,
+                                                  CartesianVelocityGetParam,
+                                                  mWrenchSet,
+                                                  mWrenchBodyOrientationAbsolute);
             wrench.Assign(mWrenchSet.Force());
         } else {
             // user provided wrench
@@ -1836,7 +1842,7 @@ void mtsIntuitiveResearchKitArm::SetCartesianImpedanceGains(const prmCartesianIm
     // set new wrench
     mCartesianImpedance = true;
     mWrenchBodyOrientationAbsolute = true;
-    mCartesianImpedanceController.SetGains(gains);
+    mCartesianImpedanceController->SetGains(gains);
     if (mWrenchType != WRENCH_BODY) {
         mWrenchType = WRENCH_BODY;
         RobotInterface->SendStatus(this->GetName() + ": effort cartesian WRENCH_BODY");
