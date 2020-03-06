@@ -262,7 +262,7 @@ void mtsTeleOperationPSMQtWidget::setupUi(void)
     QSBScale->setRange(0.1, 1.0);
     QSBScale->setSingleStep(0.1);
     QSBScale->setPrefix("scale ");
-    QSBScale->setValue(mtsIntuitiveResearchKit::TeleOperationPSMScale);
+    QSBScale->setValue(mtsIntuitiveResearchKit::TeleOperationPSM::Scale);
     buttonsLayout->addWidget(QSBScale);
 
     // enable/disable rotation/translation

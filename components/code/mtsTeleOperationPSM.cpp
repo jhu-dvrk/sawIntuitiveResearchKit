@@ -286,6 +286,42 @@ void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
         exit(EXIT_FAILURE);
     }
 
+    // orientation tolerance to start teleop
+    jsonValue = jsonConfig["start-orientation-tolerance"];
+    if (!jsonValue.empty()) {
+        mOperator.OrientationTolerance = jsonValue.asDouble();
+    }
+    if (mOperator.OrientationTolerance < 0.0) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": \"start-orientation-tolerance\" must be a positive number.  Found "
+                                 << mOperator.OrientationTolerance << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // gripper threshold to start teleop
+    jsonValue = jsonConfig["start-gripper-threshold"];
+    if (!jsonValue.empty()) {
+        mOperator.GripperThreshold = jsonValue.asDouble();
+    }
+    if (mOperator.GripperThreshold < 0.0) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": \"start-gripper-threshold\" must be a positive number.  Found "
+                                 << mOperator.GripperThreshold << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // roll threshold to start teleop
+    jsonValue = jsonConfig["start-roll-threshold"];
+    if (!jsonValue.empty()) {
+        mOperator.RollThreshold = jsonValue.asDouble();
+    }
+    if (mOperator.RollThreshold < 0.0) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": \"start-roll-threshold\" must be a positive number.  Found "
+                                 << mOperator.RollThreshold << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     // align MTM if needed
     jsonValue = jsonConfig["align-mtm"];
     if (!jsonValue.empty()) {
@@ -362,7 +398,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
     // if the teleoperation is activated
     if (clutch) {
         // keep track of last follow mode
-        mWasOperatorActiveBeforeClutch = mIsOperatorActive;
+        mOperator.WasActiveBeforeClutch = mOperator.IsActive;
         SetFollowing(false);
         mMTM.PositionCartesianSet.Goal().Rotation().FromNormalized(mPSM.PositionCartesianCurrent.Position().Rotation());
         mMTM.PositionCartesianSet.Goal().Translation().Assign(mMTM.PositionCartesianCurrent.Position().Translation());
@@ -405,7 +441,7 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
         return;
     }
     // force operator to indicate they are present
-    mIsOperatorActive = false;
+    mOperator.IsActive = false;
     MessageEvents.DesiredState(state);
     mInterface->SendStatus(this->GetName() + ": set desired state to " + state);
 }
@@ -600,7 +636,7 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
     }
 
     if (mBackFromClutch) {
-        mIsOperatorActive = mWasOperatorActiveBeforeClutch;
+        mOperator.IsActive = mOperator.WasActiveBeforeClutch;
         mBackFromClutch = false;
     }
 
@@ -609,14 +645,11 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
         UpdateGripperToJawConfiguration();
     }
 
-    // reset number of transitions around roll to decide when to enable
-    mRollTransitions = 0;
-    vctMatRot3 desiredOrientation;
-    mRegistrationRotation.ApplyInverseTo(mPSM.PositionCartesianCurrent.Position().Rotation(),
-                                         desiredOrientation);
-    const double rollError = acos(vctDotProduct(desiredOrientation.Column(1),
-                                          mMTM.PositionCartesianCurrent.Position().Rotation().Column(1)));
-    mRollMatchingPrevious = (rollError <= mtsIntuitiveResearchKit::TeleOperationPSMRollTolerance);
+    // set min/max for roll outside bounds
+    mOperator.RollMin = cmnPI * 100.0;
+    mOperator.RollMax = -cmnPI * 100.0;
+    mOperator.GripperMin = cmnPI * 100.0;
+    mOperator.GripperMax = -cmnPI * 100.0;
 }
 
 void mtsTeleOperationPSM::RunAligningMTM(void)
@@ -670,29 +703,43 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
         orientationError = axisAngle.Angle();
     }
 
-    // if we don't have jaws, we assume operator is active.  We need different way to detect operator
-    if (mIgnoreJaw) {
-        mIsOperatorActive = true;
-    }
+    // if not active, use gripper and/or roll to detect if the user is ready
+    if (!mOperator.IsActive) {
+        // update gripper values
+        mMTM.GetStateGripper(mMTM.StateGripper);
+        const double gripper = mMTM.StateGripper.Position()[0];
+        if (gripper > mOperator.GripperMax) {
+            mOperator.GripperMax = gripper;
+        } else if (gripper < mOperator.GripperMin) {
+            mOperator.GripperMin = gripper;
+        }
+        const double gripperRange = mOperator.GripperMax - mOperator.GripperMin;
 
-    // if not active, use jaw motion to detect if the user is ready
-    if (!mIsOperatorActive) {
         // checking roll
-        const double rollError = acos(vctDotProduct(desiredOrientation.Column(1),
-                                                    mMTM.PositionCartesianCurrent.Position().Rotation().Column(1)));
-        bool rollMatching = (rollError <= mtsIntuitiveResearchKit::TeleOperationPSMRollTolerance);
-        if (rollMatching != mRollMatchingPrevious) {
-            mRollTransitions += 1;
-            mRollMatchingPrevious = rollMatching;
-            if ((mRollTransitions > 0) && rollMatching) {
-                mIsOperatorActive = true;
-            }
+        const double roll = acos(vctDotProduct(desiredOrientation.Column(1),
+                                               mMTM.PositionCartesianCurrent.Position().Rotation().Column(1)));
+        if (roll > mOperator.RollMax) {
+            mOperator.RollMax = roll;
+        } else if (roll < mOperator.RollMin) {
+            mOperator.RollMin = roll;
+        }
+        const double rollRange = mOperator.RollMax - mOperator.RollMin;
+
+        // different conditions to set operator active
+        if (gripperRange >= mOperator.GripperThreshold) {
+            mOperator.IsActive = true;
+        } else if (rollRange >= mOperator.RollThreshold) {
+            mOperator.IsActive = true;
+        } else if ((gripperRange + rollRange)
+                   > 0.8 * (mOperator.GripperThreshold
+                            + mOperator.RollThreshold)) {
+            mOperator.IsActive = true;
         }
     }
 
     // finally check for transition
-    if ((orientationError <= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance)
-        && mIsOperatorActive) {
+    if ((orientationError <= mOperator.OrientationTolerance)
+        && mOperator.IsActive) {
         if (mTeleopState.DesiredState() == "ENABLED") {
             mTeleopState.SetCurrentState("ENABLED");
         }
@@ -700,10 +747,11 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
         // check timer and issue a message
         if ((StateTable.GetTic() - mInStateTimer) > 2.0 * cmn_s) {
             std::stringstream message;
-            if (orientationError >= mtsIntuitiveResearchKit::TeleOperationPSMOrientationTolerance) {
-                message << this->GetName() + ": unable to align MTM, current angle error is " << orientationError * cmn180_PI;
-            } else {
-                message << this->GetName() + ": unable to match gripper/jaw angle, pinch and release the gripper";
+            if (orientationError >= mOperator.OrientationTolerance) {
+                message << this->GetName() + ": unable to align MTM, angle error is "
+                        << orientationError * cmn180_PI << " (deg)";
+            } else if (!mOperator.IsActive) {
+                message << this->GetName() + ": pinch/twist MTM gripper a bit";
             }
             mInterface->SendWarning(message.str());
             mInStateTimer = StateTable.GetTic();
@@ -725,11 +773,9 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     if (!mIgnoreJaw) {
         mJawCaughtUpAfterClutch = false;
         // gripper ghost
-        if (mPSM.GetStateJaw.IsValid()) {
-            mPSM.GetStateJaw(mPSM.StateJaw);
-            double currentJaw = mPSM.StateJaw.Position()[0];
-            mGripperGhost = JawToGripper(currentJaw);
-        }
+        mPSM.GetStateJaw(mPSM.StateJaw);
+        double currentJaw = mPSM.StateJaw.Position()[0];
+        mGripperGhost = JawToGripper(currentJaw);
     }
 
     // set MTM/PSM to Teleop (Cartesian Position Mode)
@@ -804,7 +850,7 @@ void mtsTeleOperationPSM::RunEnabled(void)
                     // see if we caught up
                     if (!mJawCaughtUpAfterClutch) {
                         const double error = std::abs(currentGripper - mGripperGhost);
-                        if (error < mtsIntuitiveResearchKit::TeleOperationPSMToleranceBackFromClutch) {
+                        if (error < mtsIntuitiveResearchKit::TeleOperationPSM::ToleranceBackFromClutch) {
                             mJawCaughtUpAfterClutch = true;
                         }
                     }

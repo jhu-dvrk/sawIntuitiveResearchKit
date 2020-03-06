@@ -40,12 +40,15 @@ namespace mtsIntuitiveResearchKit {
     const double PSMOutsideCannula = 50.0 * cmn_ms;
 
     // teleoperation constants
-    const double TeleOperationPSMScale = 0.2;
-    const double TeleOperationPSMOrientationTolerance = 5.0 * cmnPI_180; // in radians
-    const double TeleOperationPSMRollTolerance = 3.0 * cmnPI_180; // in radians
-    const double TeleOperationPSMJawRate =  2.0 * cmnPI * cmn_s; // 360 d/s
-    const double TeleOperationPSMJawRateBackFromClutch =  0.2 * cmnPI * cmn_s; // 36.0 d/s
-    const double TeleOperationPSMToleranceBackFromClutch =  2.0 * cmnPI_180; // in radians 
+    namespace TeleOperationPSM {
+        const double Scale = 0.2;
+        const double OrientationTolerance = 5.0 * cmnPI_180; // in radians
+        const double GripperThreshold = 5.0 * cmnPI_180; // in radians
+        const double RollThreshold = 3.0 * cmnPI_180; // in radians
+        const double JawRate =  2.0 * cmnPI * cmn_s; // 360 d/s
+        const double JawRateBackFromClutch =  0.2 * cmnPI * cmn_s; // 36.0 d/s
+        const double ToleranceBackFromClutch =  2.0 * cmnPI_180; // in radians
+    }
 };
 
 #endif // _mtsIntuitiveResearchKitArm_h
