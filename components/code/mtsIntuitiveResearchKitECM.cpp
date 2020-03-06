@@ -147,9 +147,9 @@ void mtsIntuitiveResearchKitECM::Init(void)
     }
 }
 
-void mtsIntuitiveResearchKitECM::ConfigureArmSpecific(const Json::Value & jsonConfig,
-                                                      const cmnPath & CMN_UNUSED(configPath),
-                                                      const std::string & filename)
+void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
+                                               const cmnPath & CMN_UNUSED(configPath),
+                                               const std::string & filename)
 {
     // load tool tip transform if any (for up/down endoscopes)
     // future work: add UP/DOWN, _HD and set mass for GC, also create separate method with ROS topic + GUI to set the endoscope

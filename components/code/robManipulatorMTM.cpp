@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Anton Deguet
+  Author(s):  Anton Deguet, Rishibrata Biswas, Adnan Munawar
   Created on: 2019-11-11
 
   (C) Copyright 2019-2020 Johns Hopkins University (JHU), All Rights Reserved.
@@ -107,16 +107,19 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
     // compute projection of roll axis on platform plane
     q[3] = FindOptimalPlatformAngle(q, Rt07);
 
-    // compute orientation of platform
-    const vctFrm4x4 Rt04 = this->ForwardKinematics(q, 4);
-    vctFrm4x4 Rt47;
-    Rt04.ApplyInverseTo(Rt07, Rt47);
-    vctEulerZXZRotation3 closed57(Rt47.Rotation());
+//    // compute orientation of platform
+//    const vctFrm4x4 Rt04 = this->ForwardKinematics(q, 4);
+//    vctFrm4x4 Rt47;
+//    Rt04.ApplyInverseTo(Rt07, Rt47);
+//    vctEulerZXZRotation3 closed57(Rt47.Rotation());
 
-    // applying DH offsets
-    q[4] = closed57.alpha() + cmnPI_2;
-    q[5] = -closed57.beta() + cmnPI_2;
-    q[6] = closed57.gamma() + cmnPI;
+//    // applying DH offsets
+//    q[4] = closed57.alpha() + cmnPI_2;
+//    q[5] = -closed57.beta() + cmnPI_2;
+//    q[6] = closed57.gamma() + cmnPI;
+
+    // Or Use this function to calculate all the joints in the Gimbal
+    ComputeGimbalIK(q, Rt07);
 
     if (hasReachedJointLimit) {
         return robManipulator::EFAILURE;
@@ -126,105 +129,322 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double> & q,
 }
 
 
+int method = 2;
+double q3_pre = 0.0;
+
+double robManipulatorMTM::ComputeGimbalIK(vctDynamicVector<double> &q,
+                                         const vctFrame4x4<double> &Rt07) const
+{
+    vctEulerYZXRotation3 euler_offset;
+    // Rotation to align frame 7 with frame 4
+    euler_offset.Assign(cmnPI_2, 0, -cmnPI_2);
+
+    vctMatrixRotation3<double, true> Rt8;
+    vctEulerToMatrixRotation3(euler_offset, Rt8);
+
+    vctFrm4x4 Rt08, Rt78;
+    Rt78.Rotation().Assign(Rt8);
+    Rt08 = Rt07 * Rt78;
+
+    const vctFrm4x4 Rt04 = ForwardKinematics(q, 4);
+
+    vctFrm4x4 Rt48;
+    Rt04.ApplyInverseTo(Rt08, Rt48);
+
+    vctEulerZYXRotation3 closed48(Rt48.Rotation());
+
+    double q3, q4, q5, q6;
+
+
+    q4 = closed48.alpha();
+    q5 = closed48.beta();
+    q6 = -(closed48.gamma() - cmnPI);
+
+
+//    std::cerr << "ZYZ :" << q[4] << ", " << q[5] << ", " << q[6] << "\n" ;
+//    std::cerr << "ZYX :" << q4 << ", " << q5 << ", " << q6 << "\n" ;
+//    std::cerr << "-----------\n";
+
+    q[4] = q4;
+    q[5] = q5;
+    q[6] = q6;
+
+    double scalar_mapping;
+    double range;
+    double centered_val;
+    double normalized_val;
+
+    // Limits for Wrist Pitch (Joint 5 at Index 4)
+    // Consider the Wrist Pitch Joint at the Home position (0 Deg).
+    // The upwards pitch corresponds to a negative angle and and
+    // the downward pitch corresponds to a positive angle.
+    // The Upper Limit A and B are two points defined for the upward
+    // pitch angle and the Lower Limit A and B are two points defined
+    // for the lower pitch angle. Based on where the position of the joint
+    // angle is, a scalar mapping [-1.0 - 1.0] is calculated.
+    // The scalar mapping is a function of q4, i.e. scalar_mapping(q4)
+    // See the logic labeled Scalar Mapping Calculation Below
+
+    // Changing the values of these two pairs of points, one
+    // can change the attenuation as well the center point of direction
+    // switching between each pair of points.
+
+    // For example: consider lim_dn_a = 1.5 Rad and lim_dn_b = 2.0 Rad. The
+    // midpoint for these two limits is:
+    // mid_point_dn = 0.5 * (2.0 - 1.5) + 1.5
+    // mid_point_dn => 1.75 Rad
+    // Thus the scalar mapping at these three points, i.e. [lim_dn_a, mid_point_dn, lim_dn_b]
+    // become:
+
+    // scalar_mapping(lim_dn_a) =  1.0
+    // scalar_mapping(mid_point_dn) =  0.0
+    // scalar_mapping(lim_dn_b) = -1.0
+
+    // And for all values in between
+    // scalar_mapping(q4) = ((q4 - lim_dn_a) / (lim_dn_b - lim_dn_a) - 0.5) x 2.0
+
+    double lim_up_a = -2.0; // Upper Limit A for Pitch Joint
+    double lim_up_b = -1.5; // Upper Limit B for Pitch Joint
+    double lim_dn_a = 1.2; // Lower Limit A for Pitch Joint
+    double lim_dn_b = 1.8; // Lower Limit B for Pitch Joint
+
+    // LOGIC:
+    // SCALAR MAPPING CALCULATION
+    if (lim_up_a < q[4] && q[4] < lim_up_b){
+        range = lim_up_b - lim_up_a;
+        normalized_val = (q[4] - lim_up_a) / range;
+        centered_val = normalized_val - 0.5;
+        scalar_mapping = centered_val * 2;
+//            sign = 0;
+    }
+    else if (lim_up_b < q[4] && q[4] <= lim_dn_a){
+        scalar_mapping = 1;
+    }
+    else if (lim_dn_a < q[4] && q[4] < lim_dn_b){
+        range = lim_dn_b - lim_dn_a;
+        normalized_val = (q[4] - lim_dn_a) / range;
+        centered_val = normalized_val - 0.5;
+        scalar_mapping = -centered_val * 2;
+//            sign = 0;
+    }
+    else{
+        scalar_mapping = -1;
+    }
+
+//        std::cerr << "\r" << "Scalar Mapping: " << scalar_mapping;
+
+    double Kp_3 = 2.0;
+    double Kd_3 = 0.1;
+    double e;
+
+    e = q[5];
+
+    // Implicit dt incorporated into Kd_3
+    q3 = Kp_3 * e * scalar_mapping + q[3] - Kd_3 * (q[3] - q3_pre);
+    q3_pre = q[3];
+
+    // make sure we respect joint limits
+    const double q3Max = links[3].GetKinematics()->PositionMax();
+    const double q3Min = links[3].GetKinematics()->PositionMin();
+    if (q[3] > q3Max) {
+        q[3] = q3Max;
+    } else if (q[3] < q3Min) {
+        q[3] = q3Min;
+    }
+}
+
+// METHOD 0 -> RISHI'S METHOD
+// METHOD 1 -> ADNAN'S METHOD
 double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double> & q,
                                                    const vctFrame4x4<double> & Rt07) const
 {
-#if 1
-    const vctFrm4x4 Rt03 = ForwardKinematics(q, 3);
-    vctFrm4x4 Rt37;
-    Rt03.ApplyInverseTo(Rt07, Rt37);
+    // RISHI'S METHOD
+    if (method == 0) {
+        const vctFrm4x4 Rt03 = ForwardKinematics(q, 3);
+        vctFrm4x4 Rt37;
+        Rt03.ApplyInverseTo(Rt07, Rt37);
 
-    // find the angle difference between the gripper and the third joint to calculate auto-correct angle
-    double angleDifference = acosl(-Rt37.Element(0, 2) /
-                                   sqrt(Rt37.Element(1, 2) * Rt37.Element(1, 2) +
-                                        Rt37.Element(0, 2) * Rt37.Element(0, 2)));
-    if (Rt37.Element(1, 2) > 0.0) {
-        angleDifference = -angleDifference;
+        // find the angle difference between the gripper and the third joint to calculate auto-correct angle
+        double angleDifference = acosl(-Rt37.Element(0, 2) /
+                                       sqrt(Rt37.Element(1, 2) * Rt37.Element(1, 2) +
+                                            Rt37.Element(0, 2) * Rt37.Element(0, 2)));
+        if (Rt37.Element(1, 2) > 0.0) {
+            angleDifference = -angleDifference;
+        }
+
+        // calculate Angle Option 1 (The correct choice when right-side-up)
+        double option1 = angleDifference;
+
+        // calculate Angle Option 2 (The correct choice when upside-down)
+        double option2 = option1 - cmnPI;
+
+        // Normalize within joint space
+        if (option2 > cmnPI) {
+            option2 -= 2.0 * cmnPI;
+        } else if (option2 < (-3.0 * cmnPI_2)) {
+            option2 += 2.0 * cmnPI;
+        }
+
+        // Normalize within joint space
+        if ((option2 < -cmnPI)
+                && (option2 > -3.0 * cmnPI_2)
+                && (q[3] > 0.0)) {
+            option2 += 2.0 * cmnPI;
+        }
+
+        // Normalize within joint space
+        if ((option1 > cmnPI_2)
+                && (option1 < cmnPI)
+                && (q[3] < 0.0)) {
+            option1 -= 2.0 * cmnPI;
+        }
+
+        // Choose either Option 1 or Option 2 based on which one is closer to the platform angle
+        double solution;
+        if (std::abs(q[3] - option2) < std::abs(q[3] - option1)) {
+            solution = option2;
+        } else {
+            solution = option1;
+        }
+
+        // average with current position based on projection angle
+        const double cosProjectionAngle = std::abs(cos(q[4]));
+        double q3 = solution * cosProjectionAngle + q[3] * (1 - cosProjectionAngle);
+
+        // make sure we respect joint limits
+        const double q3Max = links[3].GetKinematics()->PositionMax();
+        const double q3Min = links[3].GetKinematics()->PositionMin();
+        if (q3 > q3Max) {
+            q3 = q3Max;
+        } else if (q3 < q3Min) {
+            q3 = q3Min;
+        }
+
+        std::cerr << "\r" << "Joint 3 Value: " << q3 << std::endl;
+
+        return q3;
     }
 
-    // calculate Angle Option 1 (The correct choice when right-side-up)
-    double option1 = angleDifference;
+    // ADNAN'S METHOD
+    else if (method==1){
 
-    // calculate Angle Option 2 (The correct choice when upside-down)
-    double option2 = option1 - cmnPI;
+        vctEulerYZXRotation3 euler_offset;
+        // Rotation to align frame 7 with frame 4
+        euler_offset.Assign(cmnPI_2, 0, -cmnPI_2);
 
-    // Normalize within joint space
-    if (option2 > cmnPI) {
-        option2 -= 2.0 * cmnPI;
-    } else if (option2 < (-3.0 * cmnPI_2)) {
-        option2 += 2.0 * cmnPI;
+        vctMatrixRotation3<double, true> Rt8;
+        vctEulerToMatrixRotation3(euler_offset, Rt8);
+
+        vctFrm4x4 Rt08, Rt78;
+        Rt78.Rotation().Assign(Rt8);
+        Rt08 = Rt07 * Rt78;
+
+        const vctFrm4x4 Rt04 = ForwardKinematics(q, 4);
+
+        vctFrm4x4 Rt48;
+        Rt04.ApplyInverseTo(Rt08, Rt48);
+
+        vctEulerZYXRotation3 closed48(Rt48.Rotation());
+
+        // applying DH offsets
+        const double q4 = closed48.alpha();
+        const double q5 = closed48.beta();
+
+
+        vctDynamicVector<double> qCopy(q);
+
+//        ComputeGimbalIK(qCopy, Rt07);
+
+        double scalar_mapping;
+        double range;
+        double centered_val;
+        double normalized_val;
+
+        // Limits for Wrist Pitch (Joint 5 at Index 4)
+        // Consider the Wrist Pitch Joint at the Home position (0 Deg).
+        // The upwards pitch corresponds to a negative angle and and
+        // the downward pitch corresponds to a positive angle.
+        // The Upper Limit A and B are two points defined for the upward
+        // pitch angle and the Lower Limit A and B are two points defined
+        // for the lower pitch angle. Based on where the position of the joint
+        // angle is, a scalar mapping [-1.0 - 1.0] is calculated.
+        // The scalar mapping is a function of q4, i.e. scalar_mapping(q4)
+        // See the logic labeled Scalar Mapping Calculation Below
+
+        // Changing the values of these two pairs of points, one
+        // can change the attenuation as well the center point of direction
+        // switching between each pair of points.
+
+        // For example: consider lim_dn_a = 1.5 Rad and lim_dn_b = 2.0 Rad. The
+        // midpoint for these two limits is:
+        // mid_point_dn = 0.5 * (2.0 - 1.5) + 1.5
+        // mid_point_dn => 1.75 Rad
+        // Thus the scalar mapping at these three points, i.e. [lim_dn_a, mid_point_dn, lim_dn_b]
+        // become:
+
+        // scalar_mapping(lim_dn_a) =  1.0
+        // scalar_mapping(mid_point_dn) =  0.0
+        // scalar_mapping(lim_dn_b) = -1.0
+
+        // And for all values in between
+        // scalar_mapping(q4) = ((q4 - lim_dn_a) / (lim_dn_b - lim_dn_a) - 0.5) x 2.0
+
+        double lim_up_a = -2.0; // Upper Limit A for Pitch Joint
+        double lim_up_b = -1.5; // Upper Limit B for Pitch Joint
+        double lim_dn_a = 1.0; // Lower Limit A for Pitch Joint
+        double lim_dn_b = 2.0; // Lower Limit B for Pitch Joint
+
+        // LOGIC:
+        // SCALAR MAPPING CALCULATION
+        if (lim_up_a < q4 & q4 < lim_up_b){
+            range = lim_up_b - lim_up_a;
+            normalized_val = (q4 - lim_up_a) / range;
+            centered_val = normalized_val - 0.5;
+            scalar_mapping = centered_val * 2;
+//            scalar_mapping = 0;
+        }
+        else if (lim_up_b < q4 && q4 <= lim_dn_a){
+            scalar_mapping = 1;
+        }
+        else if (lim_dn_a < q4 & q4 < lim_dn_b){
+            range = lim_dn_b - lim_dn_a;
+            normalized_val = (q4 - lim_dn_a) / range;
+            centered_val = normalized_val - 0.5;
+            scalar_mapping = -centered_val * 2;
+//            scalar_mapping = 0;
+        }
+        else{
+            scalar_mapping = -1;
+        }
+
+        double Kp_3 = 1.0;
+        double Kd_3 = 0.1;
+        double e;
+        double q3;
+
+        e = q5;
+
+        // Implicit dt incorporated into Kd_3
+        double q3_increment = Kp_3 * q5 * scalar_mapping;
+        const double max_q3_dot = cmnPI * 0.1; // assume kHz
+        if (q3_increment > max_q3_dot) {
+            q3_increment = max_q3_dot;
+        } else if (q3_increment < -max_q3_dot) {
+            q3_increment = -max_q3_dot;
+        }
+        q3 = q[3] + q3_increment;
+//        q3 = Kp_3 * q5 * scalar_mapping + q[3]; // - Kd_3 * (q[3] - q3_pre);
+        q3_pre = q[3];
+
+        // make sure we respect joint limits
+        const double q3Max = links[3].GetKinematics()->PositionMax();
+        const double q3Min = links[3].GetKinematics()->PositionMin();
+        if (q3 > q3Max) {
+            q3 = q3Max;
+        } else if (q3 < q3Min) {
+            q3 = q3Min;
+        }
+
+        return q3;
     }
-
-    // Normalize within joint space
-    if ((option2 < -cmnPI)
-        && (option2 > -3.0 * cmnPI_2)
-        && (q[3] > 0.0)) {
-        option2 += 2.0 * cmnPI;
-    }
-
-    // Normalize within joint space
-    if ((option1 > cmnPI_2)
-        && (option1 < cmnPI)
-        && (q[3] < 0.0)) {
-        option1 -= 2.0 * cmnPI;
-    }
-
-    // Choose either Option 1 or Option 2 based on which one is closer to the platform angle
-    double solution;
-    if (std::abs(q[3] - option2) < std::abs(q[3] - option1)) {
-        solution = option2;
-    } else {
-        solution = option1;
-    }
-
-    // average with current position based on projection angle
-    const double cosProjectionAngle = std::abs(cos(q[4]));
-    double q3 = solution * cosProjectionAngle + q[3] * (1 - cosProjectionAngle);
-
-    // make sure we respect joint limits
-    const double q3Max = links[3].GetKinematics()->PositionMax();
-    const double q3Min = links[3].GetKinematics()->PositionMin();
-    if (q3 > q3Max) {
-        q3 = q3Max;
-    } else if (q3 < q3Min) {
-        q3 = q3Min;
-    }
-
-    return q3;
-
-#else
-    vctDynamicVector<double> jointGoal(q);
-    jointGoal[3] = 0.0;
-    const vctFrm4x4 Rt04 = ForwardKinematics(jointGoal, 4);
-    vctFrm4x4 Rt47;
-    Rt04.ApplyInverseTo(Rt07, Rt47);
-    vctEulerZXZRotation3 closed47(Rt47.Rotation());
-
-    // applying DH offsets
-    const double q4 = closed47.alpha() + cmnPI_2;
-    const double q5 = -closed47.beta() + cmnPI_2;
-
-    double q3;
-    // upside-down case
-    if ((q4 > -cmnPI_2) && (q4 < cmnPI_2)) {
-        q3 = q5;
-    } else {
-        q3 = -q5;
-    }
-
-    // average with current position based on projection angle
-    const double cosProjectionAngle = std::abs(cos(q4));
-    q3 = q3 * cosProjectionAngle + q[3] * (1 - cosProjectionAngle);
-
-    // make sure we respect joint limits
-    const double q3Max = links[3].GetKinematics()->PositionMax();
-    const double q3Min = links[3].GetKinematics()->PositionMin();
-    if (q3 > q3Max) {
-        q3 = q3Max;
-    } else if (q3 < q3Min) {
-        q3 = q3Min;
-    }
-
-    return q3;
-#endif
 }

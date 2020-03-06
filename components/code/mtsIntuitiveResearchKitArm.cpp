@@ -497,6 +497,9 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
             // for tool definition files
             configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
 
+            // arm specific configuration
+            PreConfigure(jsonConfig, configPath, filename);
+
             // kinematic
             const auto fileKinematic = configPath.Find(jsonKinematic.asString());
             if (fileKinematic == "") {
@@ -508,8 +511,8 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
                 ConfigureDH(fileKinematic);
             }
 
-            // Arm specific configuration
-            ConfigureArmSpecific(jsonConfig, configPath, filename);
+            // arm specific configuration
+            PostConfigure(jsonConfig, configPath, filename);
 
         } else {
             std::stringstream message;

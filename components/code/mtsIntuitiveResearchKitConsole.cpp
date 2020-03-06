@@ -2425,7 +2425,9 @@ void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & b
         break;
     case prmEventButton::CLICKED:
         if (mTeleopMTMToCycle != "") {
-            mAudio.Beep(vct3(0.1, 1000.0, mAudioVolume));
+            mInterface->SendStatus(this->GetName() + ": clutch quick tap");
+            mAudio.Beep(vct3(0.05, 2000.0, mAudioVolume));
+            mAudio.Beep(vct3(0.05, 2000.0, mAudioVolume));
             CycleTeleopPSMByMTM(mTeleopMTMToCycle);
         }
         break;
@@ -2481,7 +2483,7 @@ void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & messag
     // throttle error beeps
     double currentTime = mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime();
     if ((currentTime - mTimeOfLastErrorBeep) > 2.0 * cmn_s) {
-        mAudio.Beep(vct3(0.3, 3000.0, 1.0 /* max volume */));
+        mAudio.Beep(vct3(0.3, 3000.0, mAudioVolume));
         mTimeOfLastErrorBeep = currentTime;
     }
 }
