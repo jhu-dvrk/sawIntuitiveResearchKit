@@ -446,6 +446,26 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
     mInterface->SendStatus(this->GetName() + ": set desired state to " + state);
 }
 
+vctMatRot3 mtsTeleOperationPSM::UpdateAlignOffset(void)
+{
+    vctMatRot3 desiredOrientation;
+    mRegistrationRotation.ApplyInverseTo(mPSM.PositionCartesianCurrent.Position().Rotation(),
+                                         desiredOrientation);
+    mMTM.PositionCartesianCurrent.Position().Rotation().ApplyInverseTo(desiredOrientation, mAlignOffset);
+    return desiredOrientation;
+}
+
+void mtsTeleOperationPSM::UpdateInitialState(void)
+{
+    mMTM.CartesianInitial.From(mMTM.PositionCartesianCurrent.Position());
+    mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
+    UpdateAlignOffset();
+    mAlignOffsetInitial = mAlignOffset;
+    if (mBaseFrame.GetPositionCartesian.IsValid()) {
+        mBaseFrame.CartesianInitial.From(mBaseFrame.PositionCartesianCurrent.Position());
+    }
+}
+
 void mtsTeleOperationPSM::SetScale(const double & scale)
 {
     // set scale
@@ -455,8 +475,7 @@ void mtsTeleOperationPSM::SetScale(const double & scale)
     ConfigurationEvents.Scale(mScale);
 
     // update MTM/PSM previous position to prevent jumps
-    mMTM.CartesianInitial.From(mMTM.PositionCartesianCurrent.Position());
-    mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
+    UpdateInitialState();
 }
 
 void mtsTeleOperationPSM::SetRegistrationRotation(const vctMatRot3 & rotation)
@@ -479,9 +498,8 @@ void mtsTeleOperationPSM::LockRotation(const bool & lock)
         mTeleopState.SetCurrentState("DISABLED");
     } else {
         // update MTM/PSM previous position
-        mMTM.CartesianInitial.From(mMTM.PositionCartesianDesired.Position());
-        mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
-        // lock orientation is the arm is running
+        UpdateInitialState();
+        // lock orientation if the arm is running
         if (mTeleopState.CurrentState() == "ENABLED") {
             mMTM.LockOrientation(mMTM.PositionCartesianCurrent.Position().Rotation());
         }
@@ -495,8 +513,7 @@ void mtsTeleOperationPSM::LockTranslation(const bool & lock)
     mConfigurationStateTable->Advance();
     ConfigurationEvents.TranslationLocked(mTranslationLocked);
     // update MTM/PSM previous position
-    mMTM.CartesianInitial.From(mMTM.PositionCartesianDesired.Position());
-    mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
+    UpdateInitialState();
 }
 
 void mtsTeleOperationPSM::SetAlignMTM(const bool & alignMTM)
@@ -505,6 +522,10 @@ void mtsTeleOperationPSM::SetAlignMTM(const bool & alignMTM)
     mAlignMTM = alignMTM;
     mConfigurationStateTable->Advance();
     ConfigurationEvents.AlignMTM(mAlignMTM);
+    // force re-align if the teleop is already enabled
+    if (mTeleopState.CurrentState() == "ENABLED") {
+        mTeleopState.SetCurrentState("DISABLED");        
+    }
 }
 
 void mtsTeleOperationPSM::StateChanged(void)
@@ -692,10 +713,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     }
 
     // check difference of orientation between mtm and PSM to enable
-    vctMatRot3 desiredOrientation;
-    mRegistrationRotation.ApplyInverseTo(mPSM.PositionCartesianCurrent.Position().Rotation(),
-                                         desiredOrientation);
-    mMTM.PositionCartesianCurrent.Position().Rotation().ApplyInverseTo(desiredOrientation, mAlignOffset);
+    vctMatRot3 desiredOrientation = UpdateAlignOffset();
     vctAxAnRot3 axisAngle(mAlignOffset, VCT_NORMALIZE);
     double orientationError = 0.0;
     // set error only if we need to align MTM to PSM
@@ -762,12 +780,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
 void mtsTeleOperationPSM::EnterEnabled(void)
 {
     // update MTM/PSM previous position
-    mMTM.CartesianInitial.From(mMTM.PositionCartesianCurrent.Position());
-    mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
-    mAlignOffsetInitial = mAlignOffset;
-    if (mBaseFrame.GetPositionCartesian.IsValid()) {
-        mBaseFrame.CartesianInitial.From(mBaseFrame.PositionCartesianCurrent.Position());
-    }
+    UpdateInitialState();
 
     // set gripper ghost if needed
     if (!mIgnoreJaw) {
