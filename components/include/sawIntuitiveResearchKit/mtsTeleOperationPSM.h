@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -81,6 +81,9 @@ protected:
     } ConfigurationEvents;
 
     void SetDesiredState(const std::string & state);
+
+    vctMatRot3 UpdateAlignOffset(void);
+    void UpdateInitialState(void);
 
     void StateChanged(void);
     void RunAllStates(void); // this should happen for all states
