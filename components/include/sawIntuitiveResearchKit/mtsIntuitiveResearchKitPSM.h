@@ -44,7 +44,7 @@ protected:
     void PostConfigure(const Json::Value & jsonConfig,
                        const cmnPath & configPath,
                        const std::string & filename) override;
-    void ConfigureTool(const std::string & filename);
+    virtual void ConfigureTool(const std::string & filename);
 
     /*! Configuration methods */
     inline size_t NumberOfAxes(void) const override {

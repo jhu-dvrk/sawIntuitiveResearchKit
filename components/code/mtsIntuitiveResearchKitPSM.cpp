@@ -378,7 +378,7 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
                               mtsIntuitiveResearchKitToolTypes::TypeVectorString().end(),
                               fixedTool);
                 if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
-                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmSpecific: " << this->GetName()
+                    CMN_LOG_CLASS_INIT_ERROR << "PostConfigure: " << this->GetName()
                                              << "\"" << fixedTool << "\" found in file \""
                                              << filename << "\" is not a supported type" << std::endl;
                     exit(EXIT_FAILURE);
@@ -388,7 +388,7 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
                 // now look for the file to configure the tool
                 std::string fixedToolFile = configPath.Find(fixedTool + ".json");
                 if (fixedToolFile == "") {
-                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmSpecific: " << this->GetName()
+                    CMN_LOG_CLASS_INIT_ERROR << "PostConfigure: " << this->GetName()
                                              << " can't find tool file \""
                                              << fixedTool << ".json\" for tool \""
                                              << fixedTool << "\" defined in file \""
@@ -401,7 +401,7 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
                     }
                 }
             } else {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                CMN_LOG_CLASS_INIT_ERROR << "PostConfigure: " << this->GetName()
                                          << " can't find field \"tool\" in file \""
                                          << filename << "\" which is required since \"tool-detection\" is set to \"FIXED\"" << std::endl;
                 exit(EXIT_FAILURE);
