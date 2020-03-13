@@ -10,7 +10,6 @@
                 "constructor-arg": {
                     "Name": "PSM1",
                     "Period": 0.01
-
                 }
             }
         ]
