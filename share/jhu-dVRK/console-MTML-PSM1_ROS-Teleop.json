@@ -28,7 +28,7 @@
             "type": "PSM_GENERIC",
             "component": "PSM1",
             "interface": "PSM1",
-            "skip-ros-bridge": true
+            "skip-ros-bridge": true // this is to make sure we don't republish on the same topics as the remote PSM
         }
         ,
         {
