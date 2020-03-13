@@ -217,6 +217,10 @@ void mtsTeleOperationPSM::Init(void)
         mInterface->AddEventWrite(ConfigurationEvents.AlignMTM,
                                   "AlignMTM", mAlignMTM);
     }
+
+    // so sent commands can be used with ros-bridge
+    mPSM.PositionCartesianSet.Valid() = true;
+    mPSM.PositionJointSet.Valid() = true;
 }
 
 void mtsTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
@@ -524,7 +528,7 @@ void mtsTeleOperationPSM::SetAlignMTM(const bool & alignMTM)
     ConfigurationEvents.AlignMTM(mAlignMTM);
     // force re-align if the teleop is already enabled
     if (mTeleopState.CurrentState() == "ENABLED") {
-        mTeleopState.SetCurrentState("DISABLED");        
+        mTeleopState.SetCurrentState("DISABLED");
     }
 }
 
