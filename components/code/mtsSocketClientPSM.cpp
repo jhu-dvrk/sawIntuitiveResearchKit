@@ -32,13 +32,13 @@ mtsSocketClientPSM::mtsSocketClientPSM(const std::string & componentName, const 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
     if (interfaceProvided) {
         interfaceProvided->AddMessageEvents();
-        interfaceProvided->AddCommandReadState(this->StateTable, PositionCartesianCurrent, "GetPositionCartesian");
+        interfaceProvided->AddCommandReadState(this->StateTable, PositionCartesianCurrent, "measured_cp");
         interfaceProvided->AddCommandReadState(this->StateTable, StateJaw, "GetStateJaw");
 
         interfaceProvided->AddCommandVoid(&mtsSocketClientPSM::Freeze,
                                           this, "Freeze");
-        interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::SetPositionCartesian,
-                                           this , "SetPositionCartesian");
+        interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::servo_cp,
+                                           this , "servo_cp");
         interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::SetPositionJaw,
                                            this , "SetPositionJaw");
         interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::SetDesiredState,
@@ -99,7 +99,7 @@ void mtsSocketClientPSM::SetDesiredState(const std::string & state)
     Command.Data.GoalJaw = State.Data.CurrentJaw;
 }
 
-void mtsSocketClientPSM::SetPositionCartesian(const prmPositionCartesianSet & position)
+void mtsSocketClientPSM::servo_cp(const prmPositionCartesianSet & position)
 {
     DesiredState = socketMessages::SCK_CART_POS;
     Command.Data.GoalPose.From(position.Goal());

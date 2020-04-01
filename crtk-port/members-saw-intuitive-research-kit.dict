@@ -1,0 +1,24 @@
+ConfigurationJointKinematics = m_configuration_js_kin
+ConfigurationJointPID = m_configuration_js_pid
+StateJointKinematics = m_measured_js_kin
+StateJointDesiredKinematics = m_setpoint_js_kin
+StateJointPID = m_measured_js_pid
+StateJointDesiredPID = m_setpoint_js_pid
+
+BaseFrame = m_base_frame
+
+CartesianGet = m_measured_cp_frame
+CartesianGetDesired = m_setpoint_cp_frame
+CartesianGetLocal = m_measured_cp_local_frame
+CartesianGetLocalDesired = m_setpoint_cp_local_frame
+
+CartesianGetParam = m_measured_cp
+CartesianGetDesiredParam = m_setpoint_cp
+CartesianGetLocalParam = m_measured_cp_local
+CartesianGetLocalDesiredParam = m_setpoint_cp_local
+
+mIsSimulated = m_simulated
+mEncoderBiased = m_encoders_biased
+mCartesianReady = m_cartesian_ready
+mJointReady = m_joint_ready
+mOperatingState = m_operating_state

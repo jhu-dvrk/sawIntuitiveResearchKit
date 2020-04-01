@@ -76,13 +76,13 @@ private:
 
 protected:
     struct ArmStruct {
-        mtsFunctionRead GetConfigurationJoint;
-        mtsFunctionRead GetStateJoint;
-        mtsFunctionRead GetPositionCartesian;
-        mtsFunctionRead GetWrenchBody;
-        mtsFunctionWrite SetPositionGoalJoint;
+        mtsFunctionRead configuration_js;
+        mtsFunctionRead measured_js;
+        mtsFunctionRead measured_cp;
+        mtsFunctionRead measured_cf_body;
+        mtsFunctionWrite move_jp;
         mtsFunctionWrite SetDesiredState;
-        mtsFunctionRead GetPeriodStatistics;
+        mtsFunctionRead period_statistics;
     } Arm;
 
     // so derived class has access to custom parts of widget

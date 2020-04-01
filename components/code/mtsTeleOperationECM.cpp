@@ -101,14 +101,14 @@ void mtsTeleOperationECM::Init(void)
 
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MTML");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("GetPositionCartesian",
-                                       mMTML.GetPositionCartesian);
-        interfaceRequired->AddFunction("GetVelocityCartesian",
-                                       mMTML.GetVelocityCartesian);
+        interfaceRequired->AddFunction("measured_cp",
+                                       mMTML.measured_cp);
+        interfaceRequired->AddFunction("measured_cv",
+                                       mMTML.measured_cv);
         interfaceRequired->AddFunction("LockOrientation",
                                        mMTML.LockOrientation);
-        interfaceRequired->AddFunction("SetWrenchBody",
-                                       mMTML.SetWrenchBody);
+        interfaceRequired->AddFunction("servo_cf_body",
+                                       mMTML.servo_cf_body);
         interfaceRequired->AddFunction("SetWrenchBodyOrientationAbsolute",
                                        mMTML.SetWrenchBodyOrientationAbsolute);
         interfaceRequired->AddFunction("SetGravityCompensation",
@@ -125,14 +125,14 @@ void mtsTeleOperationECM::Init(void)
 
     interfaceRequired = AddInterfaceRequired("MTMR");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("GetPositionCartesian",
-                                       mMTMR.GetPositionCartesian);
-        interfaceRequired->AddFunction("GetVelocityCartesian",
-                                       mMTMR.GetVelocityCartesian);
+        interfaceRequired->AddFunction("measured_cp",
+                                       mMTMR.measured_cp);
+        interfaceRequired->AddFunction("measured_cv",
+                                       mMTMR.measured_cv);
         interfaceRequired->AddFunction("LockOrientation",
                                        mMTMR.LockOrientation);
-        interfaceRequired->AddFunction("SetWrenchBody",
-                                       mMTMR.SetWrenchBody);
+        interfaceRequired->AddFunction("servo_cf_body",
+                                       mMTMR.servo_cf_body);
         interfaceRequired->AddFunction("SetWrenchBodyOrientationAbsolute",
                                        mMTMR.SetWrenchBodyOrientationAbsolute);
         interfaceRequired->AddFunction("SetGravityCompensation",
@@ -150,12 +150,12 @@ void mtsTeleOperationECM::Init(void)
     interfaceRequired = AddInterfaceRequired("ECM");
     if (interfaceRequired) {
         // ECM, use PID desired position to make sure there is no jump when engaging
-        interfaceRequired->AddFunction("GetPositionCartesianDesired",
-                                       mECM.GetPositionCartesian);
-        interfaceRequired->AddFunction("GetStateJointDesired",
-                                       mECM.GetStateJointDesired);
-        interfaceRequired->AddFunction("SetPositionJoint",
-                                       mECM.SetPositionJoint);
+        interfaceRequired->AddFunction("setpoint_cp",
+                                       mECM.measured_cp);
+        interfaceRequired->AddFunction("setpoint_js",
+                                       mECM.setpoint_js);
+        interfaceRequired->AddFunction("servo_jp",
+                                       mECM.servo_jp);
         interfaceRequired->AddFunction("GetCurrentState",
                                        mECM.GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState",
@@ -177,7 +177,7 @@ void mtsTeleOperationECM::Init(void)
         mInterface->AddMessageEvents();
         // commands
         mInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
-                                        "GetPeriodStatistics"); // mtsIntervalStatistics
+                                        "period_statistics"); // mtsIntervalStatistics
 
         mInterface->AddCommandWrite(&mtsTeleOperationECM::SetDesiredState, this,
                                     "SetDesiredState", std::string("DISABLED"));
@@ -256,49 +256,49 @@ void mtsTeleOperationECM::RunAllStates(void)
     mtsExecutionResult executionResult;
 
     // get MTML Cartesian position/velocity
-    executionResult = mMTML.GetPositionCartesian(mMTML.PositionCartesianCurrent);
+    executionResult = mMTML.measured_cp(mMTML.PositionCartesianCurrent);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTML.GetPositionCartesian failed \""
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTML.measured_cp failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTML");
         this->SetDesiredState("DISABLED");
     }
-    executionResult = mMTML.GetVelocityCartesian(mMTML.VelocityCartesianCurrent);
+    executionResult = mMTML.measured_cv(mMTML.VelocityCartesianCurrent);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTML.GetVelocityCartesian failed \""
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTML.measured_cv failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian velocity from MTML");
         this->SetDesiredState("DISABLED");
     }
 
     // get MTMR Cartesian position
-    executionResult = mMTMR.GetPositionCartesian(mMTMR.PositionCartesianCurrent);
+    executionResult = mMTMR.measured_cp(mMTMR.PositionCartesianCurrent);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTMR.GetPositionCartesian failed \""
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTMR.measured_cp failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTMR");
         this->SetDesiredState("DISABLED");
     }
-    executionResult = mMTMR.GetVelocityCartesian(mMTMR.VelocityCartesianCurrent);
+    executionResult = mMTMR.measured_cv(mMTMR.VelocityCartesianCurrent);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTMR.GetVelocityCartesian failed \""
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTMR.measured_cv failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian velocity from MTMR");
         this->SetDesiredState("DISABLED");
     }
 
     // get ECM Cartesian position for GUI
-    executionResult = mECM.GetPositionCartesian(mECM.PositionCartesianCurrent);
+    executionResult = mECM.measured_cp(mECM.PositionCartesianCurrent);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.GetPositionCartesian failed \""
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.measured_cp failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from ECM");
         this->SetDesiredState("DISABLED");
     }
     // for motion computation
-    executionResult = mECM.GetStateJointDesired(mECM.StateJointDesired);
+    executionResult = mECM.setpoint_js(mECM.StateJointDesired);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.GetStateJointDesired failed \""
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.setpoint_js failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get joint state from ECM");
         this->SetDesiredState("DISABLED");
@@ -506,7 +506,7 @@ void mtsTeleOperationECM::RunEnabled(void)
                                        mMTMR.VelocityCartesianCurrent.VelocityLinear());
     wrenchR.Force().Ref<3>(0).Add(forceFriction);
     // apply
-    mMTMR.SetWrenchBody(wrenchR);
+    mMTMR.servo_cf_body(wrenchR);
 
     // MTML
     // apply force
@@ -519,7 +519,7 @@ void mtsTeleOperationECM::RunEnabled(void)
                                        mMTML.VelocityCartesianCurrent.VelocityLinear());
     wrenchL.Force().Ref<3>(0).Add(forceFriction);
     // apply
-    mMTML.SetWrenchBody(wrenchL);
+    mMTML.servo_cf_body(wrenchL);
 
     /* --- Joint Control --- */
     static const vct3 normXZ(0.0, 1.0, 0.0);
@@ -583,7 +583,7 @@ void mtsTeleOperationECM::RunEnabled(void)
 
     goalJoints.Add(changeJoints);
     mECM.PositionJointSet.Goal().ForceAssign(goalJoints);
-    mECM.SetPositionJoint(mECM.PositionJointSet);
+    mECM.servo_jp(mECM.PositionJointSet);
 
     /* --- Lock Orientation --- */
 
@@ -693,10 +693,10 @@ void mtsTeleOperationECM::Clutch(const bool & clutch)
 
         // set MTMs in effort mode, no force applied but gravity and locked orientation
         prmForceCartesianSet wrench;
-        mMTML.SetWrenchBody(wrench);
+        mMTML.servo_cf_body(wrench);
         mMTML.SetGravityCompensation(true);
         mMTML.LockOrientation(mMTML.PositionCartesianCurrent.Position().Rotation());
-        mMTMR.SetWrenchBody(wrench);
+        mMTMR.servo_cf_body(wrench);
         mMTMR.SetGravityCompensation(true);
         mMTMR.LockOrientation(mMTMR.PositionCartesianCurrent.Position().Rotation());
     } else {

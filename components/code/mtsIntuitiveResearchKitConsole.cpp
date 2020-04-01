@@ -314,7 +314,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
             componentManager->Connect(Name(), "RobotIO",
                                       IOComponentName(), Name());
         }
-        // Connect PID and BaseFrame if needed
+        // Connect PID and m_base_frame if needed
         componentManager->Connect(Name(), "PID",
                                   PIDComponentName(), "Controller");
         if ((mBaseFrameComponentName != "") && (mBaseFrameInterfaceName != "")) {

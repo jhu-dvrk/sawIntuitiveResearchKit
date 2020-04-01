@@ -71,7 +71,7 @@ protected:
 
     // see base class
     inline bool IsSafeForCartesianControl(void) const override {
-        return (StateJointKinematics.Position().at(2) >= mtsIntuitiveResearchKit::PSMOutsideCannula);
+        return (m_measured_js_kin.Position().at(2) >= mtsIntuitiveResearchKit::PSMOutsideCannula);
     }
 
 

@@ -61,7 +61,7 @@ public:
         mName(name),
         mType(type),
         mPlugNumber(plugNumber),
-        mIsSimulated(isSimulated),
+        m_simulated(isSimulated),
         mInterfaceProvided(0),
         mInterfaceRequired(0),
         mStateTable(500, name),
@@ -147,7 +147,7 @@ public:
         mPositionCartesianLocalParam.SetMovingFrame(name + "_base");
         mStateTable.AddData(mPositionCartesianLocalParam, "PositionCartesianLocal");
 
-        mStateTable.AddData(mBaseFrame, "BaseFrame");
+        mStateTable.AddData(mBaseFrame, "m_base_frame");
         mStateTableConfiguration.AddData(mName, "Name");
         mStateTableConfiguration.AddData(mSerialNumber, "SerialNumber");
         mStateTableConfiguration.AddData(mPlugNumber, "PlugNumber");
@@ -158,21 +158,21 @@ public:
         CMN_ASSERT(interfaceProvided);
         mInterfaceProvided = interfaceProvided;
         // read commands
-        mInterfaceProvided->AddCommandReadState(mStateTable, mStateJoint, "GetStateJoint");
-        mInterfaceProvided->AddCommandReadState(mStateTable, mConfigurationJoint, "GetConfigurationJoint");
+        mInterfaceProvided->AddCommandReadState(mStateTable, mStateJoint, "measured_js");
+        mInterfaceProvided->AddCommandReadState(mStateTable, mConfigurationJoint, "configuration_js");
         // set position is only for simulation, allows both servo and move
-        mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::SetPositionJoint,
-                                            this, "SetPositionJoint");
-        mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::SetPositionJoint,
-                                            this, "SetPositionGoalJoint");
+        mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::servo_jp,
+                                            this, "servo_jp");
+        mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::servo_jp,
+                                            this, "move_jp");
         mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0],
                                                 "GetPrimaryJointOffset");
         mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[1],
                                                 "GetSecondaryJointOffset");
         mInterfaceProvided->AddCommandReadState(mStateTable, mPositionCartesianParam,
-                                                "GetPositionCartesian");
+                                                "measured_cp");
         mInterfaceProvided->AddCommandReadState(mStateTable, mPositionCartesianLocalParam,
-                                                "GetPositionCartesianLocal");
+                                                "measured_cp_local");
         mInterfaceProvided->AddCommandReadState(mStateTable, mBaseFrame, "GetBaseFrame");
         mInterfaceProvided->AddCommandReadState(mStateTable, mVoltages[0], "GetVoltagesPrimary");
         mInterfaceProvided->AddCommandReadState(mStateTable, mVoltages[1], "GetVoltagesSecondary");
@@ -189,7 +189,7 @@ public:
                                             "SetRecalibrationMatrix", mRecalibrationMatrix);
 
         // cartesian position events
-        // BaseFrame is send everytime the mux has found all joint values
+        // m_base_frame is send everytime the mux has found all joint values
         mInterfaceProvided->AddEventWrite(EventPositionCartesian, "PositionCartesian", prmPositionCartesianGet());
         mInterfaceProvided->AddEventWrite(EventPositionCartesianLocal, "PositionCartesianLocal", prmPositionCartesianGet());
 
@@ -199,12 +199,12 @@ public:
         mInterfaceProvided->AddMessageEvents();
         // Stats
         mInterfaceProvided->AddCommandReadState(mStateTable, mStateTable.PeriodStats,
-                                        "GetPeriodStatistics");
+                                        "period_statistics");
 
         CMN_ASSERT(interfaceRequired);
         mInterfaceRequired = interfaceRequired;
         mInterfaceRequired->AddFunction("SetBaseFrame", mSetArmBaseFrame);
-        mInterfaceRequired->AddFunction("GetPositionCartesianLocal", mGetArmPositionCartesianLocal);
+        mInterfaceRequired->AddFunction("measured_cp_local", mGetArmPositionCartesianLocal);
     }
 
     inline void ClutchCallback(const prmEventButton & button) {
@@ -227,9 +227,9 @@ public:
         }
     }
 
-    inline void SetPositionJoint(const prmPositionJointSet & newPosition) {
-        if (!mIsSimulated) {
-            mInterfaceProvided->SendWarning(mName.Data + ": SetPositionJoint can't be used unless the SUJs are in simulated mode");
+    inline void servo_jp(const prmPositionJointSet & newPosition) {
+        if (!m_simulated) {
+            mInterfaceProvided->SendWarning(mName.Data + ": servo_jp can't be used unless the SUJs are in simulated mode");
             return;
         }
         // save the desired position
@@ -312,7 +312,7 @@ public:
     unsigned int mPlugNumber;
 
     // simulated or not
-    bool mIsSimulated;
+    bool m_simulated;
 
     // interfaces
     mtsInterfaceProvided * mInterfaceProvided;
@@ -467,7 +467,7 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     mStateTableState.SetAutomaticAdvance(false);
 
     // default values
-    mIsSimulated = false;
+    m_simulated = false;
     mMuxTimer = 0.0;
     mMuxState.SetSize(4);
     mVoltages.SetSize(4);
@@ -528,7 +528,7 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
         mInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
         // Stats
         mInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
-                                        "GetPeriodStatistics");
+                                        "period_statistics");
     }
 }
 
@@ -604,7 +604,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         // ECM and change base frame on attached arms
         mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided(name);
         mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
-        arm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, mIsSimulated,
+        arm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, m_simulated,
                                                     interfaceProvided, interfaceRequired);
         Arms[armIndex] = arm;
 
@@ -624,7 +624,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         }
 
         // create a required interface for each arm to handle clutch button
-        if (!mIsSimulated) {
+        if (!m_simulated) {
             std::stringstream interfaceName;
             interfaceName << "SUJ-Clutch-" << plugNumber;
             mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
@@ -749,7 +749,7 @@ void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
 {
     mPowered = false;
 
-    if (mIsSimulated) {
+    if (m_simulated) {
         return;
     }
 
@@ -765,7 +765,7 @@ void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
 
 void mtsIntuitiveResearchKitSUJ::TransitionPowering(void)
 {
-    if (mIsSimulated) {
+    if (m_simulated) {
         mArmState.SetCurrentState("POWERED");
         return;
     }
@@ -798,7 +798,7 @@ void mtsIntuitiveResearchKitSUJ::TransitionPowered(void)
 
 void mtsIntuitiveResearchKitSUJ::EnterReady(void)
 {
-    if (mIsSimulated) {
+    if (m_simulated) {
         return;
     }
 
@@ -901,11 +901,11 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
 
 void mtsIntuitiveResearchKitSUJ::SetSimulated(void)
 {
-    mIsSimulated = true;
+    m_simulated = true;
     // set all arms simulated
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
         if (Arms[armIndex]) {
-            Arms[armIndex]->mIsSimulated = true;
+            Arms[armIndex]->m_simulated = true;
         }
     }
     // in simulation mode, we don't need IOs
@@ -920,7 +920,7 @@ void mtsIntuitiveResearchKitSUJ::SetSimulated(void)
 
 void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
 {
-    if (mIsSimulated) {
+    if (m_simulated) {
         return;
     }
 
@@ -1135,7 +1135,7 @@ void mtsIntuitiveResearchKitSUJ::SetDesiredState(const std::string & state)
 
 void mtsIntuitiveResearchKitSUJ::RunReady(void)
 {
-    if (mIsSimulated) {
+    if (m_simulated) {
         const double currentTime = this->StateTable.GetTic();
         if (currentTime - mSimulatedTimer > 1.0 * cmn_s) {
             mSimulatedTimer = currentTime;

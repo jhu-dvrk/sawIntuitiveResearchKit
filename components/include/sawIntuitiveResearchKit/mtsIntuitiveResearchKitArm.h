@@ -79,7 +79,7 @@ public:
     /*! Define wrench reference frame */
     typedef enum {WRENCH_UNDEFINED, WRENCH_SPATIAL, WRENCH_BODY} WrenchType;
 
-    /*! Load BaseFrame and DH parameters from JSON */
+    /*! Load m_base_frame and DH parameters from JSON */
     void ConfigureDH(const Json::Value & jsonConfig, const std::string & filename);
     void ConfigureDH(const std::string & filename);
 
@@ -149,7 +149,7 @@ public:
     mtsStateTable mStateTableState;
     mtsStdString mStateTableStateCurrent;
     mtsStdString mStateTableStateDesired;
-    prmOperatingState mOperatingState; // crtk operating state
+    prmOperatingState m_operating_state; // crtk operating state
 
     // state table for configuration parameters
     mtsStateTable mStateTableConfiguration;
@@ -161,15 +161,15 @@ public:
 
     /*! Methods used for commands */
     virtual void Freeze(void);
-    virtual void SetPositionJoint(const prmPositionJointSet & newPosition);
-    virtual void SetPositionRelativeJoint(const prmPositionJointSet & difference);
-    virtual void SetPositionGoalJoint(const prmPositionJointSet & newPosition);
-    virtual void SetPositionCartesian(const prmPositionCartesianSet & newPosition);
-    virtual void SetPositionRelativeCartesian(const prmPositionCartesianSet & difference);
-    virtual void SetPositionGoalCartesian(const prmPositionCartesianSet & newPosition);
-    virtual void SetEffortJoint(const prmForceTorqueJointSet & newEffort);
-    virtual void SetWrenchSpatial(const prmForceCartesianSet & newForce);
-    virtual void SetWrenchBody(const prmForceCartesianSet & newForce);
+    virtual void servo_jp(const prmPositionJointSet & newPosition);
+    virtual void servo_jr(const prmPositionJointSet & difference);
+    virtual void move_jp(const prmPositionJointSet & newPosition);
+    virtual void servo_cp(const prmPositionCartesianSet & newPosition);
+    virtual void servo_cr(const prmPositionCartesianSet & difference);
+    virtual void move_cp(const prmPositionCartesianSet & newPosition);
+    virtual void servo_jf(const prmForceTorqueJointSet & newEffort);
+    virtual void servo_cf_spatial(const prmForceCartesianSet & newForce);
+    virtual void servo_cf_body(const prmForceCartesianSet & newForce);
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
     virtual void SetWrenchBodyOrientationAbsolute(const bool & absolute);
     virtual void SetGravityCompensation(const bool & gravityCompensation);
@@ -222,15 +222,15 @@ public:
         mtsFunctionWrite Enable;
         mtsFunctionWrite EnableJoints;
         mtsFunctionRead  Enabled;
-        mtsFunctionRead  GetStateJoint;
-        mtsFunctionRead  GetStateJointDesired;
-        mtsFunctionWrite SetPositionJoint;
+        mtsFunctionRead  measured_js;
+        mtsFunctionRead  setpoint_js;
+        mtsFunctionWrite servo_jp;
         mtsFunctionWrite SetFeedForwardJoint;
         mtsFunctionWrite SetCheckPositionLimit;
-        mtsFunctionRead  GetConfigurationJoint;
-        mtsFunctionWrite SetConfigurationJoint;
+        mtsFunctionRead  configuration_js;
+        mtsFunctionWrite configure_js;
         mtsFunctionWrite EnableTorqueMode;
-        mtsFunctionWrite SetTorqueJoint;
+        mtsFunctionWrite servo_jf;
         mtsFunctionWrite EnableTrackingError;
         mtsFunctionWrite SetTrackingErrorTolerance;
         vctDoubleVec DefaultTrackingErrorTolerance;
@@ -272,24 +272,24 @@ public:
     vctFrm3 mCartesianRelative;
 
     // internal kinematics
-    prmPositionCartesianGet CartesianGetLocalParam;
-    vctFrm4x4 CartesianGetLocal;
-    prmPositionCartesianGet CartesianGetLocalDesiredParam;
-    vctFrm4x4 CartesianGetLocalDesired;
+    prmPositionCartesianGet m_measured_cp_local;
+    vctFrm4x4 m_measured_cp_local_frame;
+    prmPositionCartesianGet m_setpoint_cp_local;
+    vctFrm4x4 m_setpoint_cp_local_frame;
 
     // with base frame included
-    prmPositionCartesianGet CartesianGetParam, CartesianGetPreviousParam;
-    vctFrm4x4 CartesianGet;
-    prmPositionCartesianGet CartesianGetDesiredParam;
-    vctFrm4x4 CartesianGetDesired;
+    prmPositionCartesianGet m_measured_cp, CartesianGetPreviousParam;
+    vctFrm4x4 m_measured_cp_frame;
+    prmPositionCartesianGet m_setpoint_cp;
+    vctFrm4x4 m_setpoint_cp_frame;
 
     // joints
     prmPositionJointSet JointSetParam;
     vctDoubleVec JointSet;
     vctDoubleVec JointVelocitySet;
     prmForceTorqueJointSet FeedForwardParam;
-    prmStateJoint StateJointPID, StateJointDesiredPID, StateJointKinematics, StateJointDesiredKinematics;
-    prmConfigurationJoint ConfigurationJointPID, ConfigurationJointKinematics;
+    prmStateJoint m_measured_js_pid, m_setpoint_js_pid, m_measured_js_kin, m_setpoint_js_kin;
+    prmConfigurationJoint m_configuration_js_pid, m_configuration_js_kin;
 
     // efforts
     vctDoubleMat mJacobianBody, mJacobianBodyTranspose, mJacobianSpatial;
@@ -324,12 +324,12 @@ public:
     vctFrm4x4 CartesianPositionFrm;
 
     // Base frame
-    vctFrm4x4 BaseFrame;
+    vctFrm4x4 m_base_frame;
     bool BaseFrameValid;
 
     bool mPowered;
-    bool mJointReady;
-    bool mCartesianReady;
+    bool m_joint_ready;
+    bool m_cartesian_ready;
     bool mJointControlReady;
     bool mCartesianControlReady;
 
@@ -436,7 +436,7 @@ public:
     } mJointTrajectory;
 
     // Home Action
-    bool mEncoderBiased;
+    bool m_encoders_biased;
     bool mAllEncodersBiased = false; // value read from FPGA
     bool mAlwaysHome = false;
     bool mHomingGoesToZero;
@@ -446,7 +446,7 @@ public:
     unsigned int mCounter;
 
     // Flag to determine if this is connected to actual IO/hardware or simulated
-    bool mIsSimulated;
+    bool m_simulated;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitArm);

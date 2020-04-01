@@ -53,7 +53,7 @@ protected:
         mtsFunctionRead GetLoopTime;
         mtsFunctionRead GetLastReceivedPacketId;
         mtsFunctionRead GetLastSentPacketId;
-        mtsFunctionRead GetPeriodStatistics;
+        mtsFunctionRead period_statistics;
 
         QLabel * QLPacketsLost;
         QLabel * QLPacketsDelayed;

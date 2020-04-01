@@ -44,7 +44,7 @@ mtsSocketBaseQtWidget::mtsSocketBaseQtWidget(const std::string & componentName, 
         interfaceRequired->AddFunction("GetLoopTime", SocketBase.GetLoopTime);
         interfaceRequired->AddFunction("GetLastReceivedPacketId", SocketBase.GetLastReceivedPacketId);
         interfaceRequired->AddFunction("GetLastSentPacketId", SocketBase.GetLastSentPacketId);
-        interfaceRequired->AddFunction("GetPeriodStatistics", SocketBase.GetPeriodStatistics);
+        interfaceRequired->AddFunction("period_statistics", SocketBase.period_statistics);
     }
 }
 
@@ -104,7 +104,7 @@ void mtsSocketBaseQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     SocketBase.GetLoopTime(loopTime);
     SocketBase.QLLoopTime->setText(QString::number(loopTime * 1000.0, 'g', 3));
 
-    SocketBase.GetPeriodStatistics(IntervalStatistics);
+    SocketBase.period_statistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
 

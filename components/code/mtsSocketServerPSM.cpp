@@ -29,8 +29,8 @@ mtsSocketServerPSM::mtsSocketServerPSM(const std::string & componentName, const 
 {
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("PSM");
     if(interfaceRequired) {
-        interfaceRequired->AddFunction("GetPositionCartesian", GetPositionCartesian);
-        interfaceRequired->AddFunction("SetPositionCartesian", SetPositionCartesian);
+        interfaceRequired->AddFunction("measured_cp", measured_cp);
+        interfaceRequired->AddFunction("servo_cp", servo_cp);
         interfaceRequired->AddFunction("SetPositionJaw", SetPositionJaw);
         interfaceRequired->AddFunction("GetCurrentState", GetCurrentState);
         interfaceRequired->AddFunction("SetDesiredState", SetDesiredState);
@@ -90,7 +90,7 @@ void mtsSocketServerPSM::ExecutePSMCommands(void)
     case socketMessages::SCK_CART_POS:
         // send cartesian goal
         PositionCartesianSet.Goal().From(Command.Data.GoalPose);
-        SetPositionCartesian(PositionCartesianSet);
+        servo_cp(PositionCartesianSet);
         // send jaw goal
         PositionJointSet.Goal().SetSize(1);
         PositionJointSet.Goal().Element(0) = Command.Data.GoalJaw;
@@ -147,7 +147,7 @@ void mtsSocketServerPSM::UpdatePSMState(void)
     mtsExecutionResult executionResult;
 
     // Get Cartesian position
-    executionResult = GetPositionCartesian(PositionCartesianCurrent);
+    executionResult = measured_cp(PositionCartesianCurrent);
     State.Data.CurrentPose.Assign(PositionCartesianCurrent.Position());
 
     // Get Robot State

@@ -162,7 +162,7 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
 
     if (Manipulator->InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
-        const double difference = StateJointKinematics.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
+        const double difference = m_measured_js_kin.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
         return robManipulator::ESUCCESS;
@@ -277,7 +277,7 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
 {
     mtsIntuitiveResearchKitArm::GetRobotData();
 
-    if (mIsSimulated) {
+    if (m_simulated) {
         return;
     }
 
@@ -291,8 +291,8 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
     // for timestamp, we assume the value ws collected at the same time as other joints
     const double position = AnalogInputPosSI.Element(JNT_GRIPPER);
     StateGripper.Position()[0] = position;
-    StateGripper.Timestamp() = StateJointPID.Timestamp();
-    StateGripper.Valid() = StateJointPID.Valid();
+    StateGripper.Timestamp() = m_measured_js_pid.Timestamp();
+    StateGripper.Valid() = m_measured_js_pid.Valid();
 
     // events associated to gripper
     if (GripperClosed) {
@@ -315,7 +315,7 @@ void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
     mJointTrajectory.Goal.SetAll(0.0);
     // last joint is calibrated later
     if (!(mHomedOnce || mAllEncodersBiased)) {
-        mJointTrajectory.Goal.Element(JNT_WRIST_ROLL) = StateJointDesiredPID.Position().Element(JNT_WRIST_ROLL);
+        mJointTrajectory.Goal.Element(JNT_WRIST_ROLL) = m_setpoint_js_pid.Position().Element(JNT_WRIST_ROLL);
     }
 }
 
@@ -328,7 +328,7 @@ void mtsIntuitiveResearchKitMTM::TransitionArmHomed(void)
 
 void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 {
-    if (mIsSimulated || this->mHomedOnce || this->mAllEncodersBiased) {
+    if (m_simulated || this->mHomedOnce || this->mAllEncodersBiased) {
         return;
     }
 
@@ -344,7 +344,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 
     // compute joint goal position, we assume PID is on from previous state
     mJointTrajectory.Goal.SetAll(0.0);
-    const double currentRoll = StateJointDesiredPID.Position().Element(JNT_WRIST_ROLL);
+    const double currentRoll = m_setpoint_js_pid.Position().Element(JNT_WRIST_ROLL);
     mJointTrajectory.Goal.Element(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
     mJointTrajectory.GoalVelocity.SetAll(0.0);
     mJointTrajectory.EndTime = 0.0;
@@ -356,7 +356,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 
 void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 {
-    if (mIsSimulated || this->mHomedOnce || this->mAllEncodersBiased) {
+    if (m_simulated || this->mHomedOnce || this->mAllEncodersBiased) {
         mArmState.SetCurrentState("ROLL_CALIBRATED");
         return;
     }
@@ -384,11 +384,11 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
         }
 
         // detect tracking error and set lower limit
-        trackingError = std::abs(StateJointPID.Position().Element(JNT_WRIST_ROLL) - JointSet.Element(JNT_WRIST_ROLL));
+        trackingError = std::abs(m_measured_js_pid.Position().Element(JNT_WRIST_ROLL) - JointSet.Element(JNT_WRIST_ROLL));
         if (trackingError > maxTrackingError) {
-            mHomingCalibrateRollLower = StateJointPID.Position().Element(JNT_WRIST_ROLL);
+            mHomingCalibrateRollLower = m_measured_js_pid.Position().Element(JNT_WRIST_ROLL);
             // reset PID to go to current position to avoid applying too much torque
-            JointSet.Element(JNT_WRIST_ROLL) = StateJointPID.Position().Element(JNT_WRIST_ROLL);
+            JointSet.Element(JNT_WRIST_ROLL) = m_measured_js_pid.Position().Element(JNT_WRIST_ROLL);
             SetPositionJointLocal(JointSet);
             // reset PID tracking errors to something reasonable
             PID.DefaultTrackingErrorTolerance.SetAll(20.0 * cmnPI_180);
@@ -428,7 +428,7 @@ void mtsIntuitiveResearchKitMTM::TransitionRollCalibrated(void)
 
 void mtsIntuitiveResearchKitMTM::EnterHomingRoll(void)
 {
-    if (mIsSimulated || this->mHomedOnce || this->mAllEncodersBiased) {
+    if (m_simulated || this->mHomedOnce || this->mAllEncodersBiased) {
         return;
     }
     // compute joint goal position, we assume PID is on from previous state
@@ -447,7 +447,7 @@ void mtsIntuitiveResearchKitMTM::EnterHomingRoll(void)
 
 void mtsIntuitiveResearchKitMTM::RunHomingRoll(void)
 {
-    if (mIsSimulated || this->mHomedOnce || this->mAllEncodersBiased) {
+    if (m_simulated || this->mHomedOnce || this->mAllEncodersBiased) {
         mHomedOnce = true;
         mArmState.SetCurrentState("ROLL_ENCODER_RESET");
         return;
@@ -477,7 +477,7 @@ void mtsIntuitiveResearchKitMTM::RunHomingRoll(void)
 
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         // check position
-        mJointTrajectory.GoalError.DifferenceOf(mJointTrajectory.Goal, StateJointPID.Position());
+        mJointTrajectory.GoalError.DifferenceOf(mJointTrajectory.Goal, m_measured_js_pid.Position());
         mJointTrajectory.GoalError.AbsSelf();
         isHomed = !mJointTrajectory.GoalError.ElementwiseGreaterOrEqual(mJointTrajectory.GoalTolerance).Any();
         if (isHomed) {
@@ -545,8 +545,8 @@ void mtsIntuitiveResearchKitMTM::RunResettingRollEncoder(void)
     enableJoints.SetAll(true);
     PID.EnableJoints(enableJoints);
     // pre-load JointsDesiredPID since EnterReady will use them and
-    // we're not sure the arm is already mJointReady
-    StateJointDesiredPID.Position().SetAll(0.0);
+    // we're not sure the arm is already m_joint_ready
+    m_setpoint_js_pid.Position().SetAll(0.0);
 
     mHomedOnce = true;
     mArmState.SetCurrentState("ROLL_ENCODER_RESET");
@@ -565,12 +565,12 @@ void mtsIntuitiveResearchKitMTM::ControlEffortOrientationLocked(void)
     // always initialize IK from position when locked
     vctDoubleVec jointSet(mEffortOrientationJoint);
     // compute desired position from current position and locked orientation
-    CartesianPositionFrm.Translation().Assign(CartesianGetLocal.Translation());
+    CartesianPositionFrm.Translation().Assign(m_measured_cp_local_frame.Translation());
     CartesianPositionFrm.Rotation().From(mEffortOrientation);
     // important note, lock uses numerical IK as it finds a solution close to current position
     if (Manipulator->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
-        const double difference = StateJointPID.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
+        const double difference = m_measured_js_pid.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
         // initialize trajectory
@@ -613,7 +613,7 @@ void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & ef
     effortPreload.Zeros();
 
     // create a vector reference make code more readable
-    vctDynamicConstVectorRef<double> q(StateJointKinematics.Position());
+    vctDynamicConstVectorRef<double> q(m_measured_js_kin.Position());
 
     // projection of roll axis on platform tells us how the platform
     // should move.  the projection angle is +/- q5 based on q4.  we
@@ -642,8 +642,8 @@ void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & ef
     }
 
     // apply a linear force on joint 3 to move toward the goal position
-    effortPreload[3] = -0.4 * (StateJointKinematics.Position()[3] - q3Goal)
-        - 0.05 * StateJointKinematics.Velocity()[3];
+    effortPreload[3] = -0.4 * (m_measured_js_kin.Position()[3] - q3Goal)
+        - 0.05 * m_measured_js_kin.Velocity()[3];
 
     // cap effort to be totally safe - this has to be the most non-linear behavior around
     effortPreload[3] = std::max(effortPreload[3], -0.1);
@@ -662,17 +662,17 @@ void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
         mEffortOrientationLocked = true;
         SetControlEffortActiveJoints();
         // initialize trajectory
-        JointSet.Assign(StateJointPID.Position(), NumberOfJoints());
-        JointVelocitySet.Assign(StateJointPID.Velocity(), NumberOfJoints());
+        JointSet.Assign(m_measured_js_pid.Position(), NumberOfJoints());
+        JointVelocitySet.Assign(m_measured_js_pid.Velocity(), NumberOfJoints());
         mJointTrajectory.Reflexxes.Set(mJointTrajectory.Velocity,
                                        mJointTrajectory.Acceleration,
                                        StateTable.PeriodStats.PeriodAvg(),
                                        robReflexxes::Reflexxes_TIME);
     }
     // in any case, update desired orientation in local coordinate system
-    // mEffortOrientation.Assign(BaseFrame.Rotation().Inverse() * orientation);
-    BaseFrame.Rotation().ApplyInverseTo(orientation, mEffortOrientation);
-    mEffortOrientationJoint.Assign(StateJointPID.Position());
+    // mEffortOrientation.Assign(m_base_frame.Rotation().Inverse() * orientation);
+    m_base_frame.Rotation().ApplyInverseTo(orientation, mEffortOrientation);
+    mEffortOrientationJoint.Assign(m_measured_js_pid.Position());
 }
 
 void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)
@@ -688,8 +688,8 @@ void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)
 void mtsIntuitiveResearchKitMTM::AddGravityCompensationEfforts(vctDoubleVec & efforts)
 {
     if (GravityCompensationMTM) {
-        GravityCompensationMTM->AddGravityCompensationEfforts(StateJointKinematics.Position(),
-                                                              StateJointKinematics.Velocity(),
+        GravityCompensationMTM->AddGravityCompensationEfforts(m_measured_js_kin.Position(),
+                                                              m_measured_js_kin.Velocity(),
                                                               efforts);
     }
 }

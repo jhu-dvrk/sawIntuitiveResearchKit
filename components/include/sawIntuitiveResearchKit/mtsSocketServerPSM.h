@@ -41,9 +41,9 @@ protected:
     void ErrorEventHandler(const mtsMessage & message);
 
 private:
-    mtsFunctionWrite SetPositionCartesian;
+    mtsFunctionWrite servo_cp;
     mtsFunctionWrite SetPositionJaw;
-    mtsFunctionRead GetPositionCartesian;
+    mtsFunctionRead measured_cp;
 
     mtsFunctionWrite SetDesiredState;
     mtsFunctionRead GetCurrentState;

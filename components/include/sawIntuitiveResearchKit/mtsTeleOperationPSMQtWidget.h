@@ -100,7 +100,7 @@ protected:
         mtsFunctionRead GetAlignMTM;
         mtsFunctionRead GetAlignOffset;
         mtsFunctionRead GetRegistrationRotation;
-        mtsFunctionRead GetPeriodStatistics;
+        mtsFunctionRead period_statistics;
     } TeleOperation;
 
 private:

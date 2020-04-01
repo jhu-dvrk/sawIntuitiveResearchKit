@@ -396,7 +396,7 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
 
         // LOGIC:
         // SCALAR MAPPING CALCULATION
-        if (lim_up_a < q4 & q4 < lim_up_b){
+        if (lim_up_a < q4 && q4 < lim_up_b){
             range = lim_up_b - lim_up_a;
             normalized_val = (q4 - lim_up_a) / range;
             centered_val = normalized_val - 0.5;
@@ -406,7 +406,7 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
         else if (lim_up_b < q4 && q4 <= lim_dn_a){
             scalar_mapping = 1;
         }
-        else if (lim_dn_a < q4 & q4 < lim_dn_b){
+        else if (lim_dn_a < q4 && q4 < lim_dn_b){
             range = lim_dn_b - lim_dn_a;
             normalized_val = (q4 - lim_dn_a) / range;
             centered_val = normalized_val - 0.5;
@@ -418,7 +418,7 @@ double robManipulatorMTM::FindOptimalPlatformAngle(const vctDynamicVector<double
         }
 
         double Kp_3 = 1.0;
-        double Kd_3 = 0.1;
+        // double Kd_3 = 0.1;
         double e;
         double q3;
 

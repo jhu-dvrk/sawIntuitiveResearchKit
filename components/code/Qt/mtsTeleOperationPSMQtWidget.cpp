@@ -64,7 +64,7 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
         interfaceRequired->AddFunction("GetAlignMTM", TeleOperation.GetAlignMTM);
         interfaceRequired->AddFunction("GetAlignOffset", TeleOperation.GetAlignOffset);
         interfaceRequired->AddFunction("GetRegistrationRotation", TeleOperation.GetRegistrationRotation);
-        interfaceRequired->AddFunction("GetPeriodStatistics", TeleOperation.GetPeriodStatistics);
+        interfaceRequired->AddFunction("period_statistics", TeleOperation.period_statistics);
         // events
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::DesiredStateEventHandler,
                                                 this, "DesiredState");
@@ -157,7 +157,7 @@ void mtsTeleOperationPSMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     TeleOperation.GetAlignOffset(AlignOffset);
     QVRAlignOffset->SetValue(AlignOffset);
 
-    TeleOperation.GetPeriodStatistics(IntervalStatistics);
+    TeleOperation.period_statistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
 

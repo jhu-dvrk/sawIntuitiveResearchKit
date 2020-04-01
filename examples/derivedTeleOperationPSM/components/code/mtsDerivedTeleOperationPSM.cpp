@@ -62,11 +62,11 @@ void mtsDerivedTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filena
     // That interface should exist, abort otherwise
     CMN_ASSERT(interfacePSM);
     // Add a required function
-    interfacePSM->AddFunction("GetWrenchBody",
+    interfacePSM->AddFunction("measured_cf_body",
                               PSMGetWrenchBody);
     interfacePSM->AddFunction("SetWrenchBodyOrientationAbsolute",
                               PSMSetWrenchBodyOrientationAbsolute);
-    interfacePSM->AddFunction("GetVelocityCartesian",
+    interfacePSM->AddFunction("measured_cv",
                               PSMGetVelocityCartesian);
 
     // Same for MTM
@@ -117,6 +117,6 @@ void mtsDerivedTeleOperationPSM::RunEnabled(void)
         force = mRegistrationRotation.Inverse() * force;
         // Set wrench for MTM
         wrenchMTM.Force().Ref<3>(0) = force;
-        mMTM.SetWrenchBody(wrenchMTM);
+        mMTM.servo_cf_body(wrenchMTM);
     }
 }

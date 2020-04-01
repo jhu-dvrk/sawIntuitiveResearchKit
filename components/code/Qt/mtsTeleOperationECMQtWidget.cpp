@@ -61,7 +61,7 @@ mtsTeleOperationECMQtWidget::mtsTeleOperationECMQtWidget(const std::string & com
                                        TeleOperation.GetPositionCartesianMTMR);
         interfaceRequired->AddFunction("GetPositionCartesianECM",
                                        TeleOperation.GetPositionCartesianECM);
-        interfaceRequired->AddFunction("GetPeriodStatistics", TeleOperation.GetPeriodStatistics);
+        interfaceRequired->AddFunction("period_statistics", TeleOperation.period_statistics);
         // events
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::DesiredStateEventHandler,
                                                 this, "DesiredState");
@@ -127,7 +127,7 @@ void mtsTeleOperationECMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     TeleOperation.GetPositionCartesianECM(PositionECM);
     QCPGECMWidget->SetValue(PositionECM);
 
-    TeleOperation.GetPeriodStatistics(IntervalStatistics);
+    TeleOperation.period_statistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
 }
 

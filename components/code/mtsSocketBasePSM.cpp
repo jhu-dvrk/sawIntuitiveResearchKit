@@ -43,7 +43,7 @@ mtsSocketBasePSM::mtsSocketBasePSM(const std::string & componentName, const doub
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("System");
     if (interfaceProvided) {
-        interfaceProvided->AddCommandReadState(this->StateTable, StateTable.PeriodStats, "GetPeriodStatistics");
+        interfaceProvided->AddCommandReadState(this->StateTable, StateTable.PeriodStats, "period_statistics");
         interfaceProvided->AddCommandReadState(this->StateTable, mPacketsLost, "GetPacketsLost");
         interfaceProvided->AddCommandReadState(this->StateTable, mPacketsDelayed, "GetPacketsDelayed");
         interfaceProvided->AddCommandReadState(this->StateTable, mLoopTime, "GetLoopTime");

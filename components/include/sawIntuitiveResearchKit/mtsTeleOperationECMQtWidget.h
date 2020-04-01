@@ -82,7 +82,7 @@ protected:
         mtsFunctionRead GetPositionCartesianMTML;
         mtsFunctionRead GetPositionCartesianMTMR;
         mtsFunctionRead GetPositionCartesianECM;
-        mtsFunctionRead GetPeriodStatistics;
+        mtsFunctionRead period_statistics;
     } TeleOperation;
 
 private:

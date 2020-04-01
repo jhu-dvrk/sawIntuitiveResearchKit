@@ -119,13 +119,13 @@ void mtsTeleOperationPSM::Init(void)
     // setup cisst interfaces
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MTM");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("GetPositionCartesian", mMTM.GetPositionCartesian);
-        interfaceRequired->AddFunction("GetPositionCartesianDesired", mMTM.GetPositionCartesianDesired);
-        interfaceRequired->AddFunction("SetPositionGoalCartesian", mMTM.SetPositionGoalCartesian);
+        interfaceRequired->AddFunction("measured_cp", mMTM.measured_cp);
+        interfaceRequired->AddFunction("setpoint_cp", mMTM.setpoint_cp);
+        interfaceRequired->AddFunction("move_cp", mMTM.move_cp);
         interfaceRequired->AddFunction("GetStateGripper", mMTM.GetStateGripper);
         interfaceRequired->AddFunction("LockOrientation", mMTM.LockOrientation);
         interfaceRequired->AddFunction("UnlockOrientation", mMTM.UnlockOrientation);
-        interfaceRequired->AddFunction("SetWrenchBody", mMTM.SetWrenchBody);
+        interfaceRequired->AddFunction("servo_cf_body", mMTM.servo_cf_body);
         interfaceRequired->AddFunction("SetGravityCompensation", mMTM.SetGravityCompensation);
         interfaceRequired->AddFunction("GetCurrentState", mMTM.GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState", mMTM.GetDesiredState);
@@ -136,8 +136,8 @@ void mtsTeleOperationPSM::Init(void)
 
     interfaceRequired = AddInterfaceRequired("PSM");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("GetPositionCartesian", mPSM.GetPositionCartesian);
-        interfaceRequired->AddFunction("SetPositionCartesian", mPSM.SetPositionCartesian);
+        interfaceRequired->AddFunction("measured_cp", mPSM.measured_cp);
+        interfaceRequired->AddFunction("servo_cp", mPSM.servo_cp);
         interfaceRequired->AddFunction("Freeze", mPSM.Freeze);
         interfaceRequired->AddFunction("GetStateJaw", mPSM.GetStateJaw, MTS_OPTIONAL);
         interfaceRequired->AddFunction("GetConfigurationJaw", mPSM.GetConfigurationJaw, MTS_OPTIONAL);
@@ -157,7 +157,7 @@ void mtsTeleOperationPSM::Init(void)
 
     interfaceRequired = AddInterfaceRequired("PSM-base-frame", MTS_OPTIONAL);
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("GetPositionCartesian", mBaseFrame.GetPositionCartesian);
+        interfaceRequired->AddFunction("measured_cp", mBaseFrame.measured_cp);
     }
 
     mInterface = AddInterfaceProvided("Setting");
@@ -165,7 +165,7 @@ void mtsTeleOperationPSM::Init(void)
         mInterface->AddMessageEvents();
         // commands
         mInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
-                                        "GetPeriodStatistics"); // mtsIntervalStatistics
+                                        "period_statistics"); // mtsIntervalStatistics
 
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::SetDesiredState, this,
                                     "SetDesiredState", mTeleopState.CurrentState());
@@ -410,7 +410,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
 
         // no force applied but gravity and locked orientation
         prmForceCartesianSet wrench;
-        mMTM.SetWrenchBody(wrench);
+        mMTM.servo_cf_body(wrench);
         mMTM.SetGravityCompensation(true);
         if (mAlignMTM || mRotationLocked) {
             // lock in current position
@@ -465,7 +465,7 @@ void mtsTeleOperationPSM::UpdateInitialState(void)
     mPSM.CartesianInitial.From(mPSM.PositionCartesianCurrent.Position());
     UpdateAlignOffset();
     mAlignOffsetInitial = mAlignOffset;
-    if (mBaseFrame.GetPositionCartesian.IsValid()) {
+    if (mBaseFrame.measured_cp.IsValid()) {
         mBaseFrame.CartesianInitial.From(mBaseFrame.PositionCartesianCurrent.Position());
     }
 }
@@ -544,33 +544,33 @@ void mtsTeleOperationPSM::RunAllStates(void)
     mtsExecutionResult executionResult;
 
     // get MTM Cartesian position
-    executionResult = mMTM.GetPositionCartesian(mMTM.PositionCartesianCurrent);
+    executionResult = mMTM.measured_cp(mMTM.PositionCartesianCurrent);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.GetPositionCartesian failed \""
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.measured_cp failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTM");
         this->SetDesiredState("DISABLED");
     }
-    executionResult = mMTM.GetPositionCartesianDesired(mMTM.PositionCartesianDesired);
+    executionResult = mMTM.setpoint_cp(mMTM.PositionCartesianDesired);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.GetPositionCartesianDesired failed \""
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.setpoint_cp failed \""
                                 << executionResult << "\"" << std::endl;
     }
 
     // get PSM Cartesian position
-    executionResult = mPSM.GetPositionCartesian(mPSM.PositionCartesianCurrent);
+    executionResult = mPSM.measured_cp(mPSM.PositionCartesianCurrent);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: call to PSM.GetPositionCartesian failed \""
+        CMN_LOG_CLASS_RUN_ERROR << "Run: call to PSM.measured_cp failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from PSM");
         this->SetDesiredState("DISABLED");
     }
 
     // get base-frame cartesian position if available
-    if (mBaseFrame.GetPositionCartesian.IsValid()) {
-        executionResult = mBaseFrame.GetPositionCartesian(mBaseFrame.PositionCartesianCurrent);
+    if (mBaseFrame.measured_cp.IsValid()) {
+        executionResult = mBaseFrame.measured_cp(mBaseFrame.PositionCartesianCurrent);
         if (!executionResult.IsOK()) {
-            CMN_LOG_CLASS_RUN_ERROR << "Run: call to BaseFrame.GetPositionCartesian failed \""
+            CMN_LOG_CLASS_RUN_ERROR << "Run: call to m_base_frame.measured_cp failed \""
                                     << executionResult << "\"" << std::endl;
             mInterface->SendError(this->GetName() + ": unable to get cartesian position from base frame");
             this->SetDesiredState("DISABLED");
@@ -657,7 +657,7 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
     if (!mAlignMTM) {
         // convert to prm type
         mMTM.PositionCartesianSet.Goal().Assign(mMTM.PositionCartesianDesired.Position());
-        mMTM.SetPositionGoalCartesian(mMTM.PositionCartesianSet);
+        mMTM.move_cp(mMTM.PositionCartesianSet);
     }
 
     if (mBackFromClutch) {
@@ -696,7 +696,7 @@ void mtsTeleOperationPSM::RunAligningMTM(void)
         mtmCartesianGoal.Rotation().FromNormalized(mtmRotation);
         // convert to prm type
         mMTM.PositionCartesianSet.Goal().From(mtmCartesianGoal);
-        mMTM.SetPositionGoalCartesian(mMTM.PositionCartesianSet);
+        mMTM.move_cp(mMTM.PositionCartesianSet);
     }
 }
 
@@ -799,7 +799,7 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     mMTM.SetGravityCompensation(true);
     // set forces to zero and lock/unlock orientation as needed
     prmForceCartesianSet wrench;
-    mMTM.SetWrenchBody(wrench);
+    mMTM.servo_cf_body(wrench);
     if (mRotationLocked) {
         mMTM.LockOrientation(mMTM.PositionCartesianCurrent.Position().Rotation());
     } else {
@@ -846,7 +846,7 @@ void mtsTeleOperationPSM::RunEnabled(void)
             psmCartesianGoal.Rotation().FromNormalized(psmRotation);
 
             // take into account changes in PSM base frame if any
-            if (mBaseFrame.GetPositionCartesian.IsValid()) {
+            if (mBaseFrame.measured_cp.IsValid()) {
                 vctFrm4x4 baseFrame(mBaseFrame.PositionCartesianCurrent.Position());
                 vctFrm4x4 baseFrameChange = baseFrame.Inverse() * mBaseFrame.CartesianInitial;
                 // update PSM position goal
@@ -857,7 +857,7 @@ void mtsTeleOperationPSM::RunEnabled(void)
 
             // PSM go this cartesian position
             mPSM.PositionCartesianSet.Goal().FromNormalized(psmCartesianGoal);
-            mPSM.SetPositionCartesian(mPSM.PositionCartesianSet);
+            mPSM.servo_cp(mPSM.PositionCartesianSet);
 
             if (!mIgnoreJaw) {
                 // gripper

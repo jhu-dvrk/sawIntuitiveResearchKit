@@ -39,7 +39,7 @@ mtsIntuitiveResearchKitUDPStreamer::mtsIntuitiveResearchKitUDPStreamer(const std
     }
     mtsInterfaceRequired * required = AddInterfaceRequired("Robot");
     if (required) {
-        required->AddFunction("GetPositionCartesian", GetPositionCartesian);
+        required->AddFunction("measured_cp", measured_cp);
         required->AddFunction("GetGripperPosition", GetGripperPosition);
     }
     required = AddInterfaceRequired("Clutch");
@@ -87,7 +87,7 @@ void mtsIntuitiveResearchKitUDPStreamer::Run(void)
             packet[0] += 2.0;
         GetGripperPosition(packet[1]);
         prmPositionCartesianGet posCart;
-        GetPositionCartesian(posCart);
+        measured_cp(posCart);
         vct3 pos = posCart.Position().Translation();
         packet[2] = pos.X();
         packet[3] = pos.Y();

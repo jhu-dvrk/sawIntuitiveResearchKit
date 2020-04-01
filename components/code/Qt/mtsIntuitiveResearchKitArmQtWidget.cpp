@@ -56,14 +56,14 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
         InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::CurrentStateEventHandler,
                                                 this, "CurrentState");
         QMMessage->SetInterfaceRequired(InterfaceRequired);
-        InterfaceRequired->AddFunction("GetConfigurationJoint", Arm.GetConfigurationJoint);
+        InterfaceRequired->AddFunction("configuration_js", Arm.configuration_js);
         QPOState->SetInterfaceRequired(InterfaceRequired);
-        InterfaceRequired->AddFunction("GetStateJoint", Arm.GetStateJoint);
-        InterfaceRequired->AddFunction("GetPositionCartesian", Arm.GetPositionCartesian);
-        InterfaceRequired->AddFunction("GetWrenchBody", Arm.GetWrenchBody, MTS_OPTIONAL);
-        InterfaceRequired->AddFunction("SetPositionGoalJoint", Arm.SetPositionGoalJoint, MTS_OPTIONAL);
+        InterfaceRequired->AddFunction("measured_js", Arm.measured_js);
+        InterfaceRequired->AddFunction("measured_cp", Arm.measured_cp);
+        InterfaceRequired->AddFunction("measured_cf_body", Arm.measured_cf_body, MTS_OPTIONAL);
+        InterfaceRequired->AddFunction("move_jp", Arm.move_jp, MTS_OPTIONAL);
         InterfaceRequired->AddFunction("SetDesiredState", Arm.SetDesiredState);
-        InterfaceRequired->AddFunction("GetPeriodStatistics", Arm.GetPeriodStatistics);
+        InterfaceRequired->AddFunction("period_statistics", Arm.period_statistics);
     }
 }
 
@@ -111,29 +111,29 @@ void mtsIntuitiveResearchKitArmQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(eve
 
     mtsExecutionResult executionResult;
 
-    executionResult = Arm.GetStateJoint(StateJoint);
+    executionResult = Arm.measured_js(StateJoint);
     if (executionResult) {
         if ((ConfigurationJoint.Name().size() != StateJoint.Name().size())
-            && (Arm.GetConfigurationJoint.IsValid())) {
-            Arm.GetConfigurationJoint(ConfigurationJoint);
+            && (Arm.configuration_js.IsValid())) {
+            Arm.configuration_js(ConfigurationJoint);
             QSJWidget->SetConfiguration(ConfigurationJoint);
         }
         QSJWidget->SetValue(StateJoint);
     }
 
-    executionResult = Arm.GetPositionCartesian(Position);
+    executionResult = Arm.measured_cp(Position);
     if (executionResult) {
         QCPGWidget->SetValue(Position);
     }
 
-    executionResult = Arm.GetWrenchBody(Wrench);
+    executionResult = Arm.measured_cf_body(Wrench);
     if (executionResult) {
         if (Wrench.Valid()) {
             QFTWidget->SetValue(Wrench.F(), Wrench.T(), Wrench.Timestamp());
         }
     }
 
-    Arm.GetPeriodStatistics(IntervalStatistics);
+    Arm.period_statistics(IntervalStatistics);
     QMIntervalStatistics->SetValue(IntervalStatistics);
 
     // for derived classes
@@ -251,9 +251,9 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     // set joint goal
     QPJSWidget = new prmPositionJointSetQtWidget();
     QPJSWidget->setupUi();
-    QPJSWidget->GetStateJoint = &(Arm.GetStateJoint);
-    QPJSWidget->GetConfigurationJoint = &(Arm.GetConfigurationJoint);
-    QPJSWidget->SetPositionGoalJoint = &(Arm.SetPositionGoalJoint);
+    QPJSWidget->measured_js = &(Arm.measured_js);
+    QPJSWidget->configuration_js = &(Arm.configuration_js);
+    QPJSWidget->move_jp = &(Arm.move_jp);
     QPJSWidget->SetPrismaticRevoluteFactors(1.0 / cmn_mm, cmn180_PI);
     MainLayout->addWidget(QPJSWidget);
 

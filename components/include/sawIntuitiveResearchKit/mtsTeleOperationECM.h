@@ -86,10 +86,10 @@ protected:
 
 
     struct {
-        mtsFunctionRead  GetPositionCartesian;
-        mtsFunctionRead  GetVelocityCartesian;
+        mtsFunctionRead  measured_cp;
+        mtsFunctionRead  measured_cv;
         mtsFunctionWrite LockOrientation;
-        mtsFunctionWrite SetWrenchBody;
+        mtsFunctionWrite servo_cf_body;
         mtsFunctionWrite SetWrenchBodyOrientationAbsolute;
         mtsFunctionWrite SetGravityCompensation;
 
@@ -102,9 +102,9 @@ protected:
     } mMTMR, mMTML;
 
     struct {
-        mtsFunctionRead  GetPositionCartesian;
-        mtsFunctionRead  GetStateJointDesired;
-        mtsFunctionWrite SetPositionJoint;
+        mtsFunctionRead  measured_cp;
+        mtsFunctionRead  setpoint_js;
+        mtsFunctionWrite servo_jp;
 
         mtsFunctionRead  GetCurrentState;
         mtsFunctionRead  GetDesiredState;

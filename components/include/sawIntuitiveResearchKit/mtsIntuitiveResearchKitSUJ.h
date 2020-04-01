@@ -154,7 +154,7 @@ protected:
     size_t ECMIndex;
 
     // Flag to determine if this is connected to actual IO/hardware or simulated
-    bool mIsSimulated;
+    bool m_simulated;
     double mSimulatedTimer;
 
     void DispatchError(const std::string & message);

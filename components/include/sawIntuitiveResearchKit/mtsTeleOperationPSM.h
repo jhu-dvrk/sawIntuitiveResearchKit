@@ -98,13 +98,13 @@ protected:
     void TransitionEnabled(void); // performs actual teleoperation
 
     struct {
-        mtsFunctionRead  GetPositionCartesian;
-        mtsFunctionRead  GetPositionCartesianDesired;
-        mtsFunctionWrite SetPositionGoalCartesian;
+        mtsFunctionRead  measured_cp;
+        mtsFunctionRead  setpoint_cp;
+        mtsFunctionWrite move_cp;
         mtsFunctionRead  GetStateGripper;
         mtsFunctionWrite LockOrientation;
         mtsFunctionVoid  UnlockOrientation;
-        mtsFunctionWrite SetWrenchBody;
+        mtsFunctionWrite servo_cf_body;
         mtsFunctionWrite SetGravityCompensation;
         mtsFunctionRead  GetCurrentState;
         mtsFunctionRead  GetDesiredState;
@@ -118,8 +118,8 @@ protected:
     } mMTM;
 
     struct {
-        mtsFunctionRead  GetPositionCartesian;
-        mtsFunctionWrite SetPositionCartesian;
+        mtsFunctionRead  measured_cp;
+        mtsFunctionWrite servo_cp;
         mtsFunctionVoid Freeze;
         mtsFunctionRead GetStateJaw;
         mtsFunctionRead GetConfigurationJaw;
@@ -138,7 +138,7 @@ protected:
     } mPSM;
 
     struct {
-        mtsFunctionRead  GetPositionCartesian;
+        mtsFunctionRead  measured_cp;
         prmPositionCartesianGet PositionCartesianCurrent;
         vctFrm4x4 CartesianInitial;
     } mBaseFrame;

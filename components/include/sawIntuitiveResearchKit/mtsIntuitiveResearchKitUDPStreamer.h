@@ -38,7 +38,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitUDPStreamer : public mtsTaskPeriodic
     osaSocket Socket;
     bool SocketConfigured;
 
-    mtsFunctionRead GetPositionCartesian;
+    mtsFunctionRead measured_cp;
     mtsFunctionRead GetGripperPosition;
     bool Clutch;
     bool Coag;
