@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2018-03-14
 
-  (C) Copyright 2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2018-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -28,7 +28,7 @@ class CISST_EXPORT mtsDaVinciEndoscopeFocus: public mtsTaskFromSignal
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
-public:
+ public:
     mtsDaVinciEndoscopeFocus(const std::string & componentName);
     mtsDaVinciEndoscopeFocus(const mtsTaskConstructorArg & arg);
     inline ~mtsDaVinciEndoscopeFocus() {}
@@ -42,7 +42,7 @@ protected:
 
     void Init(void);
 
-    // Required interface
+    // required interface
     struct {
         mtsFunctionWrite FocusIn;
         mtsFunctionWrite FocusOut;
@@ -51,8 +51,25 @@ protected:
     mtsInterfaceProvided * mInterface;
 
     // callbacks for each event
-    void FocusIn(const prmEventButton & event);
-    void FocusOut(const prmEventButton & event);
+    void FocusInEventHandler(const prmEventButton & event);
+    void FocusOutEventHandler(const prmEventButton & event);
+
+    // locking focus
+    void Lock(const bool & lock);
+    bool mLocked = false;
+    bool mFocusingIn = false;
+    bool mFocusingOut = false;
+
+    // direct commands
+    void FocusIn(const bool & focus);
+    void FocusOut(const bool & focus);
+
+    // events
+    struct {
+        mtsFunctionWrite Locked;
+        mtsFunctionWrite FocusingIn;
+        mtsFunctionWrite FocusingOut;
+    } mEvents;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsDaVinciEndoscopeFocus);

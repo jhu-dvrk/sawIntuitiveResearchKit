@@ -34,11 +34,10 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
+#include <cisstParameterTypes/prmCartesianImpedanceGains.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
-
-#include <sawControllers/osaCartesianImpedanceController.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
@@ -50,6 +49,9 @@ http://www.cisst.org/cisst/license.txt.
 #if (CISST_COMPILER == CISST_DOTNET2008)
 inline double nearbyint(double x) { return floor(x+0.5); }
 #endif
+
+// forward declarations
+class osaCartesianImpedanceController;
 
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -83,9 +85,12 @@ public:
 
     /*! Arm specific configuration for derived classes PSM,
       MTM... Called by Configure method. */
-    inline virtual void ConfigureArmSpecific(const Json::Value & CMN_UNUSED(jsonConfig),
-                                             const cmnPath & CMN_UNUSED(configPath),
-                                             const std::string & CMN_UNUSED(filename)) {};
+    inline virtual void PreConfigure(const Json::Value & CMN_UNUSED(jsonConfig),
+                                     const cmnPath & CMN_UNUSED(configPath),
+                                     const std::string & CMN_UNUSED(filename)) {};
+    inline virtual void PostConfigure(const Json::Value & CMN_UNUSED(jsonConfig),
+                                      const cmnPath & CMN_UNUSED(configPath),
+                                      const std::string & CMN_UNUSED(filename)) {};
 
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
@@ -300,7 +305,7 @@ public:
     prmForceCartesianGet mWrenchGet;
 
     // cartesian impendance controller
-    osaCartesianImpedanceController mCartesianImpedanceController;
+    osaCartesianImpedanceController * mCartesianImpedanceController;
     bool mCartesianImpedance;
 
     // used by MTM only

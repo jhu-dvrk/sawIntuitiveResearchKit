@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2019-11-11
 
-  (C) Copyright 2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2019-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -40,16 +40,16 @@ public:
 
         // compare joint values
         CPPUNIT_ASSERT_MESSAGE("Joint 0 solution is incorrect",
-                               (jointErrorsAbsolute[0] < 0.0000001 * cmn180_PI)); // asinl is not that precise
+                               (jointErrorsAbsolute[0] < 0.001 * cmnPI_180)); // asinl is not that precise
 
         CPPUNIT_ASSERT_MESSAGE("Joint 1 solution is incorrect",
-                               (jointErrorsAbsolute[1] < 0.0000001 * cmn180_PI)); // asinl
+                               (jointErrorsAbsolute[1] < 0.001 * cmnPI_180)); // asinl
 
         CPPUNIT_ASSERT_MESSAGE("Joint 2 solution is incorrect",
                                (jointErrorsAbsolute[2] < 0.000000001 * cmn_mm)); // just a sqrt, higher precision expected
 
         CPPUNIT_ASSERT_MESSAGE("Joint 3 solution is incorrect",
-                               (jointErrorsAbsolute[3] < 0.0000001 * cmn180_PI)); // acosl
+                               (jointErrorsAbsolute[3] < 0.001 * cmnPI_180)); // acosl
 
         // translation
         vct3 positionTranslationError = ActualPose.Translation() - SolutionPose.Translation();
@@ -60,7 +60,7 @@ public:
         vctMatRot3 positionRotationError;
         ActualPose.Rotation().ApplyInverseTo(SolutionPose.Rotation(), positionRotationError);
         CPPUNIT_ASSERT_MESSAGE("Cartesian rotation error is too high",
-                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmn180_PI);
+                               vctAxAnRot3(positionRotationError).Angle() < 0.0000001 * cmnPI_180);
     }
 };
 
@@ -79,15 +79,20 @@ public:
         jointErrors.DifferenceOf(SolutionJoints, ActualJoints);
         jointErrorsAbsolute.AbsOf(jointErrors);
 
+        std::string details =
+            "Actual joints: " + (SolutionJoints * cmn180_PI).ToString() + "\n"
+            "Solution     : " + (ActualJoints * cmn180_PI).ToString() + "\n"
+            "Error        : " + (jointErrors * cmn180_PI).ToString() + "\n";
+
         // compare joint values
-        CPPUNIT_ASSERT_MESSAGE("Joint 0 solution is incorrect",
-                               (jointErrorsAbsolute[0] < 0.0000001 * cmn180_PI)); // asinl is not that precise
+        CPPUNIT_ASSERT_MESSAGE("Joint 0 solution is incorrect\n" + details,
+                               (jointErrorsAbsolute[0] < 0.001 * cmnPI_180)); // asinl is not that precise
 
-        CPPUNIT_ASSERT_MESSAGE("Joint 1 solution is incorrect",
-                               (jointErrorsAbsolute[1] < 0.0000001 * cmn180_PI)); // asinl
+        CPPUNIT_ASSERT_MESSAGE("Joint 1 solution is incorrect\n" + details,
+                               (jointErrorsAbsolute[1] < 0.001 * cmnPI_180)); // asinl
 
-        CPPUNIT_ASSERT_MESSAGE("Joint 2 solution is incorrect",
-                               (jointErrorsAbsolute[2] < 0.0000001 * cmn180_PI)); // asinl
+        CPPUNIT_ASSERT_MESSAGE("Joint 2 solution is incorrect\n" + details,
+                               (jointErrorsAbsolute[2] < 0.001 * cmnPI_180)); // asinl
 
         // translation
         vct3 positionTranslationError = ActualPose.Translation() - SolutionPose.Translation();

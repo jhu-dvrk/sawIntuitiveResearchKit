@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -82,6 +82,9 @@ protected:
 
     void SetDesiredState(const std::string & state);
 
+    vctMatRot3 UpdateAlignOffset(void);
+    void UpdateInitialState(void);
+
     void StateChanged(void);
     void RunAllStates(void); // this should happen for all states
     void TransitionDisabled(void); // checks for desired state
@@ -140,7 +143,7 @@ protected:
         vctFrm4x4 CartesianInitial;
     } mBaseFrame;
 
-    double mScale = mtsIntuitiveResearchKit::TeleOperationPSMScale;
+    double mScale = mtsIntuitiveResearchKit::TeleOperationPSM::Scale;
     vctMatRot3 mRegistrationRotation; // optional registration between PSM and MTM orientation
     vctMatRot3 mAlignOffset, mAlignOffsetInitial; // rotation offset between MTM and PSM when tele-operation goes in follow mode
 
@@ -154,19 +157,28 @@ protected:
     } mGripperToJaw;
 
     double mGripperGhost;
-    
+
     double virtual GripperToJaw(const double & gripperAngle) const;
     double virtual JawToGripper(const double & jawAngle) const;
     void virtual UpdateGripperToJawConfiguration(void);
 
     bool mIgnoreJaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
-    double mJawRate = mtsIntuitiveResearchKit::TeleOperationPSMJawRate;
-    int mGripperJawTransitions;
-    bool mGripperJawMatchingPrevious;
-    bool mIsOperatorActive = false;
-    bool mWasOperatorActiveBeforeClutch = false;
+    double mJawRate = mtsIntuitiveResearchKit::TeleOperationPSM::JawRate;
+    double mJawRateBackFromClutch = mtsIntuitiveResearchKit::TeleOperationPSM::JawRateBackFromClutch;
+    struct {
+        double OrientationTolerance = mtsIntuitiveResearchKit::TeleOperationPSM::OrientationTolerance;
+        double RollMin;
+        double RollMax;
+        double RollThreshold = mtsIntuitiveResearchKit::TeleOperationPSM::RollThreshold;
+        double GripperMin;
+        double GripperMax;
+        double GripperThreshold = mtsIntuitiveResearchKit::TeleOperationPSM::GripperThreshold;
+        bool IsActive = false;
+        bool WasActiveBeforeClutch = false;
+    } mOperator;
     bool mIsClutched = false;
     bool mBackFromClutch = false;
+    bool mJawCaughtUpAfterClutch = false;
     bool mRotationLocked = false;
     bool mTranslationLocked = false;
     bool mAlignMTM = true; // default on da Vinci

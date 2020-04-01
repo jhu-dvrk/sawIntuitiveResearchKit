@@ -26,6 +26,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
 #include <sawControllers/mtsPIDQtWidget.h>
 
+#include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h>
+#include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocusQtWidget.h>
+
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECMQtWidget.h>
@@ -265,6 +268,16 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         componentManager->AddComponent(teleopGUI);
         Connections.push_back(new ConnectionType(teleopGUI->GetName(), "TeleOperation", name, "Setting"));
         TabWidget->addTab(teleopGUI, name.c_str());
+    }
+
+    // add endoscope focus widget
+    if (console->mDaVinciEndoscopeFocus) {
+        const std::string name = console->mDaVinciEndoscopeFocus->GetName();
+        mtsDaVinciEndoscopeFocusQtWidget * endoscopeGUI = new mtsDaVinciEndoscopeFocusQtWidget(name + "-GUI");
+        endoscopeGUI->Configure();
+        componentManager->AddComponent(endoscopeGUI);
+        Connections.push_back(new ConnectionType(endoscopeGUI->GetName(), "Endoscope", name, "Control"));
+        TabWidget->addTab(endoscopeGUI, "Focus");
     }
 
     consoleGUI->HasTeleOp(hasTeleOp);

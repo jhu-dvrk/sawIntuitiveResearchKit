@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -39,9 +39,9 @@ public:
 
 protected:
 
-    void ConfigureArmSpecific(const Json::Value & jsonConfig,
-                              const cmnPath & configPath,
-                              const std::string & filename) override;
+    void PostConfigure(const Json::Value & jsonConfig,
+                       const cmnPath & configPath,
+                       const std::string & filename) override;
 
     /*! Configuration methods */
     inline size_t NumberOfAxes(void) const override {

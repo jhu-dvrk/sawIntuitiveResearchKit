@@ -41,6 +41,7 @@ if (cisst_FOUND_AS_REQUIRED)
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECMQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h
+                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciEndoscopeFocusQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBaseQtWidget.h)
     qt4_add_resources (sawIntuitiveResearchKit_QT_RESOURCES
                        ${CMAKE_CURRENT_SOURCE_DIR}/logo.qrc)
@@ -70,6 +71,8 @@ if (cisst_FOUND_AS_REQUIRED)
                mtsIntuitiveResearchKitPSMQtWidget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
                mtsIntuitiveResearchKitSUJQtWidget.cpp
+               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciEndoscopeFocusQtWidget.h
+               mtsDaVinciEndoscopeFocusQtWidget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBaseQtWidget.h
                mtsSocketBaseQtWidget.cpp
                ${sawIntuitiveResearchKit_QT_WRAP_CPP}
