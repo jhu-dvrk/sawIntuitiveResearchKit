@@ -123,14 +123,14 @@ public:
     virtual void EnterDisabled(void);
     virtual void TransitionDisabled(void);
 
-    virtual void EnterCalibratingEncodersFromPots(void);
-    virtual void TransitionCalibratingEncodersFromPots(void);
-    virtual void TransitionEncodersBiased(void);
-
     virtual void EnterPowering(void);
     virtual void TransitionPowering(void);
     virtual void EnterEnabled(void);
     virtual void TransitionEnabled(void);
+
+    virtual void EnterCalibratingEncodersFromPots(void);
+    virtual void TransitionCalibratingEncodersFromPots(void);
+    virtual void TransitionEncodersBiased(void);
 
     virtual void EnterHomingArm(void);
     virtual void SetGoalHomingArm(void) = 0;

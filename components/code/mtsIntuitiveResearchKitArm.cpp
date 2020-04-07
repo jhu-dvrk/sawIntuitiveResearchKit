@@ -77,10 +77,10 @@ void mtsIntuitiveResearchKitArm::Init(void)
 {
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
-    mArmState.AddState("CALIBRATING_ENCODERS_FROM_POTS");
-    mArmState.AddState("ENCODERS_BIASED");
     mArmState.AddState("POWERING");
     mArmState.AddState("ENABLED");
+    mArmState.AddState("CALIBRATING_ENCODERS_FROM_POTS");
+    mArmState.AddState("ENCODERS_BIASED");
     mArmState.AddState("HOMING_ARM");
     mArmState.AddState("ARM_HOMED");
     mArmState.AddState("READY");
@@ -89,8 +89,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     // possible desired states
     mArmState.AddAllowedDesiredState("DISABLED");
-    mArmState.AddAllowedDesiredState("ENCODERS_BIASED");
     mArmState.AddAllowedDesiredState("ENABLED");
+    mArmState.AddAllowedDesiredState("ENCODERS_BIASED");
     mArmState.AddAllowedDesiredState("ARM_HOMED");
     mArmState.AddAllowedDesiredState("READY");
     mArmState.AddAllowedDesiredState("PAUSE");
@@ -114,19 +114,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                     &mtsIntuitiveResearchKitArm::TransitionDisabled,
                                     this);
 
-    // bias encoders
-    mArmState.SetEnterCallback("CALIBRATING_ENCODERS_FROM_POTS",
-                               &mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots,
-                               this);
-
-    mArmState.SetTransitionCallback("CALIBRATING_ENCODERS_FROM_POTS",
-                                    &mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots,
-                                    this);
-
-    mArmState.SetTransitionCallback("ENCODERS_BIASED",
-                                    &mtsIntuitiveResearchKitArm::TransitionEncodersBiased,
-                                    this);
-
     // power
     mArmState.SetEnterCallback("POWERING",
                                &mtsIntuitiveResearchKitArm::EnterPowering,
@@ -142,6 +129,19 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     mArmState.SetTransitionCallback("ENABLED",
                                     &mtsIntuitiveResearchKitArm::TransitionEnabled,
+                                    this);
+
+    // bias encoders
+    mArmState.SetEnterCallback("CALIBRATING_ENCODERS_FROM_POTS",
+                               &mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots,
+                               this);
+
+    mArmState.SetTransitionCallback("CALIBRATING_ENCODERS_FROM_POTS",
+                                    &mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots,
+                                    this);
+
+    mArmState.SetTransitionCallback("ENCODERS_BIASED",
+                                    &mtsIntuitiveResearchKitArm::TransitionEncodersBiased,
                                     this);
 
     // arm homing
@@ -950,57 +950,6 @@ void mtsIntuitiveResearchKitArm::EnterDisabled(void)
 void mtsIntuitiveResearchKitArm::TransitionDisabled(void)
 {
     if (mArmState.DesiredStateIsNotCurrent()) {
-        mArmState.SetCurrentState("CALIBRATING_ENCODERS_FROM_POTS");
-    }
-}
-
-void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
-{
-    // if simulated, no need to bias encoders
-    if (m_simulated) {
-        RobotInterface->SendStatus(this->GetName() + ": simulated mode, no need to calibrate encoders");
-        return;
-    }
-    if (m_encoders_biased) {
-        RobotInterface->SendStatus(this->GetName() + ": encoders have already been calibrated, skipping");
-        return;
-    }
-
-    // request bias encoder
-    const double currentTime = this->StateTable.GetTic();
-    const int numberOfSample = 1970; // birth date, state table only contain 1999 elements anyway
-    if (mAlwaysHome) {
-        RobotIO.BiasEncoder(numberOfSample);
-    } else {
-        // negative numbers means that we first check if encoders have already been preloaded
-        RobotIO.BiasEncoder(-numberOfSample);
-    }
-    mHomingBiasEncoderRequested = true;
-    mHomingTimer = currentTime;
-}
-
-void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
-{
-    if (m_simulated || m_encoders_biased) {
-        m_joint_ready = true;
-        mArmState.SetCurrentState("ENCODERS_BIASED");
-        return;
-    }
-
-    const double currentTime = this->StateTable.GetTic();
-    const double timeToBias = 30.0 * cmn_s; // large timeout
-    if ((currentTime - mHomingTimer) > timeToBias) {
-        mHomingBiasEncoderRequested = false;
-        RobotInterface->SendError(this->GetName() + ": failed to bias encoders (timeout)");
-        this->SetDesiredState(mFallbackState);
-    }
-}
-
-void mtsIntuitiveResearchKitArm::TransitionEncodersBiased(void)
-{
-    // move to next stage if desired state is anything past post pot
-    // calibration
-    if (mArmState.DesiredStateIsNotCurrent()) {
         mArmState.SetCurrentState("POWERING");
     }
 }
@@ -1095,11 +1044,58 @@ void mtsIntuitiveResearchKitArm::TransitionEnabled(void)
     // move to next stage if desired state is anything past power
     // unless user request new pots calibration
     if (mArmState.DesiredStateIsNotCurrent()) {
-        if (mArmState.DesiredState() == "ENCODERS_BIASED") {
-            mArmState.SetCurrentState("CALIBRATING_ENCODERS_FROM_POTS");
-        } else {
-            mArmState.SetCurrentState("HOMING_ARM");
-        }
+        mArmState.SetCurrentState("CALIBRATING_ENCODERS_FROM_POTS");
+    }
+}
+
+void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
+{
+    // if simulated, no need to bias encoders
+    if (m_simulated) {
+        RobotInterface->SendStatus(this->GetName() + ": simulated mode, no need to calibrate encoders");
+        return;
+    }
+    if (m_encoders_biased) {
+        RobotInterface->SendStatus(this->GetName() + ": encoders have already been calibrated, skipping");
+        return;
+    }
+
+    // request bias encoder
+    const double currentTime = this->StateTable.GetTic();
+    const int numberOfSample = 1970; // birth date, state table only contain 1999 elements anyway
+    if (mAlwaysHome) {
+        RobotIO.BiasEncoder(numberOfSample);
+    } else {
+        // negative numbers means that we first check if encoders have already been preloaded
+        RobotIO.BiasEncoder(-numberOfSample);
+    }
+    mHomingBiasEncoderRequested = true;
+    mHomingTimer = currentTime;
+}
+
+void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
+{
+    if (m_simulated || m_encoders_biased) {
+        m_joint_ready = true;
+        mArmState.SetCurrentState("ENCODERS_BIASED");
+        return;
+    }
+
+    const double currentTime = this->StateTable.GetTic();
+    const double timeToBias = 30.0 * cmn_s; // large timeout
+    if ((currentTime - mHomingTimer) > timeToBias) {
+        mHomingBiasEncoderRequested = false;
+        RobotInterface->SendError(this->GetName() + ": failed to bias encoders (timeout)");
+        this->SetDesiredState(mFallbackState);
+    }
+}
+
+void mtsIntuitiveResearchKitArm::TransitionEncodersBiased(void)
+{
+    // move to next stage if desired state is anything past post pot
+    // calibration
+    if (mArmState.DesiredStateIsNotCurrent()) {
+        mArmState.SetCurrentState("HOMING_ARM");
     }
 }
 
@@ -1117,6 +1113,9 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
     if ((NumberOfBrakes() > 0) && !m_simulated) {
         RobotIO.BrakeRelease();
     }
+
+    // get robot data to make sure we have latest state
+    GetRobotData();
 
     // compute joint goal position
     this->SetGoalHomingArm();
