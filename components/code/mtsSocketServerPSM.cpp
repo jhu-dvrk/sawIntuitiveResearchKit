@@ -35,7 +35,7 @@ mtsSocketServerPSM::mtsSocketServerPSM(const std::string & componentName, const 
         interfaceRequired->AddFunction("GetCurrentState", GetCurrentState);
         interfaceRequired->AddFunction("SetDesiredState", SetDesiredState);
         interfaceRequired->AddEventHandlerWrite(&mtsSocketServerPSM::ErrorEventHandler,
-                                                this, "Error");
+                                                this, "error");
     }
 }
 
@@ -65,7 +65,7 @@ void mtsSocketServerPSM::ExecutePSMCommands(void)
         DesiredState = Command.Data.RobotControlState;
         switch (DesiredState) {
         case socketMessages::SCK_UNINITIALIZED:
-            state = "UNINITIALIZED";
+            state = "DISABLED";
             break;
         case socketMessages::SCK_HOMED:
             if (CurrentState != socketMessages::SCK_HOMING) {
@@ -155,7 +155,7 @@ void mtsSocketServerPSM::UpdatePSMState(void)
     GetCurrentState(psmState);
 
     // Switch to socket states
-    if (psmState.Data == "UNINITIALIZED") {
+    if (psmState.Data == "DISABLED") {
         CurrentState = socketMessages::SCK_UNINITIALIZED;
     } else if ((psmState.Data == "READY")) {
         if ((CurrentState != socketMessages::SCK_HOMED)

@@ -120,7 +120,7 @@ void mtsTeleOperationECM::Init(void)
         interfaceRequired->AddFunction("SetDesiredState",
                                        mMTML.SetDesiredState);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::MTMLErrorEventHandler,
-                                                this, "Error");
+                                                this, "error");
     }
 
     interfaceRequired = AddInterfaceRequired("MTMR");
@@ -138,7 +138,7 @@ void mtsTeleOperationECM::Init(void)
         interfaceRequired->AddFunction("SetGravityCompensation",
                                        mMTMR.SetGravityCompensation);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::MTMRErrorEventHandler,
-                                                this, "Error");
+                                                this, "error");
         interfaceRequired->AddFunction("GetCurrentState",
                                        mMTMR.GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState",
@@ -163,7 +163,7 @@ void mtsTeleOperationECM::Init(void)
         interfaceRequired->AddFunction("SetDesiredState",
                                        mECM.SetDesiredState);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::ECMErrorEventHandler,
-                                                this, "Error");
+                                                this, "error");
     }
 
     // footpedal events

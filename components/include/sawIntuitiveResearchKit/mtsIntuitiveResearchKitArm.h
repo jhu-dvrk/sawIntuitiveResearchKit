@@ -120,8 +120,8 @@ public:
     void StateChanged(void);
     void RunAllStates(void); // this should happen for all states
 
-    virtual void EnterUninitialized(void);
-    virtual void TransitionUninitialized(void);
+    virtual void EnterDisabled(void);
+    virtual void TransitionDisabled(void);
 
     virtual void EnterCalibratingEncodersFromPots(void);
     virtual void TransitionCalibratingEncodersFromPots(void);
@@ -129,8 +129,8 @@ public:
 
     virtual void EnterPowering(void);
     virtual void TransitionPowering(void);
-    virtual void EnterPowered(void);
-    virtual void TransitionPowered(void);
+    virtual void EnterEnabled(void);
+    virtual void TransitionEnabled(void);
 
     virtual void EnterHomingArm(void);
     virtual void SetGoalHomingArm(void) = 0;

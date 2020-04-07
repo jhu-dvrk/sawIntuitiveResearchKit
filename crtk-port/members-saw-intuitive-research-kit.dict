@@ -22,3 +22,11 @@ mEncoderBiased = m_encoders_biased
 mCartesianReady = m_cartesian_ready
 mJointReady = m_joint_ready
 mOperatingState = m_operating_state
+
+UNINITIALIZED = DISABLED
+EnterUninitialized = EnterDisabled
+TransitionUninitialized = TransitionDisabled
+
+POWERED = ENABLED
+EnterPowered = EnterEnabled
+TransitionPowered = TransitionEnabled

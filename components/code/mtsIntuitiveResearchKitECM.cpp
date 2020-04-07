@@ -250,7 +250,7 @@ void mtsIntuitiveResearchKitECM::LeaveManual(void)
 void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)
 {
     RobotInterface->SendError(this->GetName() + ": PID tracking error");
-    this->SetDesiredState("UNINITIALIZED");
+    this->SetDesiredState("DISABLED");
 }
 
 void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & button)

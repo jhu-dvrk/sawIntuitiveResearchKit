@@ -381,7 +381,7 @@ public:
 
 mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds),
-    mArmState(componentName, "UNINITIALIZED"),
+    mArmState(componentName, "DISABLED"),
     mStateTableState(100, "State"),
     mVoltageSamplesNumber(ANALOG_SAMPLE_NUMBER)
 {
@@ -390,7 +390,7 @@ mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const std::string & compo
 
 mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg),
-    mArmState(arg.Name, "UNINITIALIZED"),
+    mArmState(arg.Name, "DISABLED"),
     mStateTableState(100, "State"),
     mVoltageSamplesNumber(ANALOG_SAMPLE_NUMBER)
 {
@@ -409,15 +409,15 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
     mArmState.AddState("POWERING");
-    mArmState.AddState("POWERED");
+    mArmState.AddState("ENABLED");
     mArmState.AddState("READY");
 
     // possible desired states
-    mArmState.AddAllowedDesiredState("UNINITIALIZED");
-    mArmState.AddAllowedDesiredState("POWERED");
+    mArmState.AddAllowedDesiredState("DISABLED");
+    mArmState.AddAllowedDesiredState("ENABLED");
     mArmState.AddAllowedDesiredState("READY");
 
-    mFallbackState = "UNINITIALIZED";
+    mFallbackState = "DISABLED";
 
     // state change, to convert to string events for users (Qt, ROS)
     mArmState.SetStateChangedCallback(&mtsIntuitiveResearchKitSUJ::StateChanged,
@@ -427,13 +427,13 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     mArmState.SetRunCallback(&mtsIntuitiveResearchKitSUJ::RunAllStates,
                              this);
 
-    // unitialized
-    mArmState.SetEnterCallback("UNINITIALIZED",
-                               &mtsIntuitiveResearchKitSUJ::EnterUninitialized,
+    // disabled
+    mArmState.SetEnterCallback("DISABLED",
+                               &mtsIntuitiveResearchKitSUJ::EnterDisabled,
                                this);
 
-    mArmState.SetTransitionCallback("UNINITIALIZED",
-                                    &mtsIntuitiveResearchKitSUJ::TransitionUninitialized,
+    mArmState.SetTransitionCallback("DISABLED",
+                                    &mtsIntuitiveResearchKitSUJ::TransitionDisabled,
                                     this);
 
     // power
@@ -446,8 +446,8 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
                                     this);
 
     // powered
-    mArmState.SetTransitionCallback("POWERED",
-                                    &mtsIntuitiveResearchKitSUJ::TransitionPowered,
+    mArmState.SetTransitionCallback("ENABLED",
+                                    &mtsIntuitiveResearchKitSUJ::TransitionEnabled,
                                     this);
 
     // state between ARM_HOMED and READY depends on the arm type, see
@@ -484,7 +484,7 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
         interfaceRequired->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
         interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
         interfaceRequired->AddFunction("GetAnalogInputVolts", RobotIO.GetAnalogInputVolts);
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::ErrorEventHandler, this, "Error");
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::ErrorEventHandler, this, "error");
     }
     interfaceRequired = AddInterfaceRequired("NoMuxReset");
     if (interfaceRequired) {
@@ -698,10 +698,10 @@ void mtsIntuitiveResearchKitSUJ::RunAllStates(void)
     // get robot data, i.e. process mux/pots
     GetRobotData();
 
-    // always allow to go to unitialized
+    // always allow to go to disabled
     if (mArmState.DesiredStateIsNotCurrent()) {
-        if (mArmState.DesiredState() == "UNINITIALIZED") {
-            mArmState.SetCurrentState("UNINITIALIZED");
+        if (mArmState.DesiredState() == "DISABLED") {
+            mArmState.SetCurrentState("DISABLED");
         } else {
             // error handling will require to swith to fallback state
             if (mArmState.DesiredState() == mFallbackState) {
@@ -720,7 +720,7 @@ void mtsIntuitiveResearchKitSUJ::ResetMux(void)
     mMuxIndexExpected = 0;
 }
 
-void mtsIntuitiveResearchKitSUJ::EnterUninitialized(void)
+void mtsIntuitiveResearchKitSUJ::EnterDisabled(void)
 {
     // power off brakes
     RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
@@ -734,11 +734,11 @@ void mtsIntuitiveResearchKitSUJ::EnterUninitialized(void)
     // reset mux
     ResetMux();
 
-    mFallbackState = "UNINITIALIZED";
+    mFallbackState = "DISABLED";
     mPowered = false;
 }
 
-void mtsIntuitiveResearchKitSUJ::TransitionUninitialized(void)
+void mtsIntuitiveResearchKitSUJ::TransitionDisabled(void)
 {
     if (mArmState.DesiredStateIsNotCurrent()) {
         mArmState.SetCurrentState("POWERING");
@@ -766,7 +766,7 @@ void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
 void mtsIntuitiveResearchKitSUJ::TransitionPowering(void)
 {
     if (m_simulated) {
-        mArmState.SetCurrentState("POWERED");
+        mArmState.SetCurrentState("ENABLED");
         return;
     }
 
@@ -780,7 +780,7 @@ void mtsIntuitiveResearchKitSUJ::TransitionPowering(void)
         if (actuatorAmplifiersStatus.All()) {
             DispatchStatus(this->GetName() + ": power on");
             mPowered = true;
-            mArmState.SetCurrentState("POWERED");
+            mArmState.SetCurrentState("ENABLED");
         } else {
             DispatchError(this->GetName() + ": failed to enable power");
             this->SetDesiredState(mFallbackState);
@@ -788,7 +788,7 @@ void mtsIntuitiveResearchKitSUJ::TransitionPowering(void)
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::TransitionPowered(void)
+void mtsIntuitiveResearchKitSUJ::TransitionEnabled(void)
 {
     // move to next stage if desired state is different
     if (mArmState.DesiredStateIsNotCurrent()) {
@@ -820,7 +820,7 @@ void mtsIntuitiveResearchKitSUJ::EnterReady(void)
 
 void mtsIntuitiveResearchKitSUJ::Startup(void)
 {
-    this->SetDesiredState("UNINITIALIZED");
+    this->SetDesiredState("DISABLED");
 }
 
 void mtsIntuitiveResearchKitSUJ::Run(void)
@@ -832,7 +832,7 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
     } catch (std::exception & e) {
         DispatchError(this->GetName() + ": in state " + mArmState.CurrentState()
                       + ", caught exception \"" + e.what() + "\"");
-        this->SetDesiredState("UNINITIALIZED");
+        this->SetDesiredState("DISABLED");
     }
     // trigger ExecOut event
     RunEvent();
@@ -931,7 +931,7 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
         if (!actuatorAmplifiersStatus.All()) {
             mPowered = false;
             DispatchError(this->GetName() + ": detected power loss");
-            mArmState.SetDesiredState("UNINITIALIZED");
+            mArmState.SetDesiredState("DISABLED");
             return;
         }
     }

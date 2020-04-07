@@ -131,7 +131,7 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("GetDesiredState", mMTM.GetDesiredState);
         interfaceRequired->AddFunction("SetDesiredState", mMTM.SetDesiredState);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::MTMErrorEventHandler,
-                                                this, "Error");
+                                                this, "error");
     }
 
     interfaceRequired = AddInterfaceRequired("PSM");
@@ -146,7 +146,7 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("GetDesiredState", mPSM.GetDesiredState);
         interfaceRequired->AddFunction("SetDesiredState", mPSM.SetDesiredState);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::PSMErrorEventHandler,
-                                                this, "Error");
+                                                this, "error");
     }
 
     // footpedal events

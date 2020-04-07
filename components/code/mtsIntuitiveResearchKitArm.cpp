@@ -37,7 +37,7 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodi
 
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds),
-    mArmState(componentName, "UNINITIALIZED"),
+    mArmState(componentName, "DISABLED"),
     mStateTableState(100, "State"),
     mStateTableConfiguration(100, "Configuration"),
     mControlCallback(0)
@@ -47,7 +47,7 @@ mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const std::string & compo
 
 mtsIntuitiveResearchKitArm::mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg),
-    mArmState(arg.Name, "UNINITIALIZED"),
+    mArmState(arg.Name, "DISABLED"),
     mStateTableState(100, "State"),
     mStateTableConfiguration(100, "Configuration"),
     mControlCallback(0)
@@ -80,7 +80,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.AddState("CALIBRATING_ENCODERS_FROM_POTS");
     mArmState.AddState("ENCODERS_BIASED");
     mArmState.AddState("POWERING");
-    mArmState.AddState("POWERED");
+    mArmState.AddState("ENABLED");
     mArmState.AddState("HOMING_ARM");
     mArmState.AddState("ARM_HOMED");
     mArmState.AddState("READY");
@@ -88,14 +88,14 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.AddState("FAULT");
 
     // possible desired states
-    mArmState.AddAllowedDesiredState("UNINITIALIZED");
+    mArmState.AddAllowedDesiredState("DISABLED");
     mArmState.AddAllowedDesiredState("ENCODERS_BIASED");
-    mArmState.AddAllowedDesiredState("POWERED");
+    mArmState.AddAllowedDesiredState("ENABLED");
     mArmState.AddAllowedDesiredState("ARM_HOMED");
     mArmState.AddAllowedDesiredState("READY");
     mArmState.AddAllowedDesiredState("PAUSE");
 
-    mFallbackState = "UNINITIALIZED";
+    mFallbackState = "DISABLED";
 
     // state change, to convert to string events for users (Qt, ROS)
     mArmState.SetStateChangedCallback(&mtsIntuitiveResearchKitArm::StateChanged,
@@ -105,13 +105,13 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.SetRunCallback(&mtsIntuitiveResearchKitArm::RunAllStates,
                              this);
 
-    // unitialized
-    mArmState.SetEnterCallback("UNINITIALIZED",
-                               &mtsIntuitiveResearchKitArm::EnterUninitialized,
+    // disabled
+    mArmState.SetEnterCallback("DISABLED",
+                               &mtsIntuitiveResearchKitArm::EnterDisabled,
                                this);
 
-    mArmState.SetTransitionCallback("UNINITIALIZED",
-                                    &mtsIntuitiveResearchKitArm::TransitionUninitialized,
+    mArmState.SetTransitionCallback("DISABLED",
+                                    &mtsIntuitiveResearchKitArm::TransitionDisabled,
                                     this);
 
     // bias encoders
@@ -136,12 +136,12 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                     &mtsIntuitiveResearchKitArm::TransitionPowering,
                                     this);
 
-    mArmState.SetEnterCallback("POWERED",
-                               &mtsIntuitiveResearchKitArm::EnterPowered,
+    mArmState.SetEnterCallback("ENABLED",
+                               &mtsIntuitiveResearchKitArm::EnterEnabled,
                                this);
 
-    mArmState.SetTransitionCallback("POWERED",
-                                    &mtsIntuitiveResearchKitArm::TransitionPowered,
+    mArmState.SetTransitionCallback("ENABLED",
+                                    &mtsIntuitiveResearchKitArm::TransitionEnabled,
                                     this);
 
     // arm homing
@@ -170,7 +170,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     // state table to maintain state :-)
     mStateTableState.AddData(mStateTableStateCurrent, "CurrentState");
     mStateTableState.AddData(mStateTableStateDesired, "DesiredState");
-    mStateTableState.AddData(m_operating_state, "OperatingState");
+    mStateTableState.AddData(m_operating_state, "operating_state");
     AddStateTable(&mStateTableState);
     mStateTableState.SetAutomaticAdvance(false);
 
@@ -295,7 +295,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("EnableTrackingError", PID.EnableTrackingError);
         PIDInterface->AddFunction("SetTrackingErrorTolerances", PID.SetTrackingErrorTolerance);
         PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::PositionLimitEventHandler, this, "PositionLimit");
-        PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler, this, "Error");
+        PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler, this, "error");
     }
 
     // Robot IO
@@ -339,7 +339,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandReadState(this->mStateTableState,
                                             mStateTableStateDesired, "GetDesiredState");
         RobotInterface->AddCommandReadState(this->mStateTableState,
-                                            m_operating_state, "GetOperatingState"); // crtk
+                                            m_operating_state, "operating_state");
         // Set
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame,
                                         this, "SetBaseFrame");
@@ -395,7 +395,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     // SetState will send log events, it needs to happen after the
     // provided interface has been created
-    SetDesiredState("UNINITIALIZED");
+    SetDesiredState("DISABLED");
 }
 
 void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
@@ -440,7 +440,7 @@ void mtsIntuitiveResearchKitArm::OperatingStateCommand(const std::string & comma
                 return;
             }
             if (command == "disable") {
-                SetDesiredState("UNINITIALIZED");
+                SetDesiredState("DISABLED");
                 return;
             }
         } else {
@@ -678,8 +678,8 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)
 
 void mtsIntuitiveResearchKitArm::Startup(void)
 {
-    this->SetDesiredState("UNINITIALIZED");
-    MessageEvents.DesiredState(std::string("UNINITIALIZED"));
+    this->SetDesiredState("DISABLED");
+    MessageEvents.DesiredState(std::string("DISABLED"));
 }
 
 void mtsIntuitiveResearchKitArm::Run(void)
@@ -691,7 +691,7 @@ void mtsIntuitiveResearchKitArm::Run(void)
     } catch (std::exception & e) {
         RobotInterface->SendError(this->GetName() + ": in state " + mArmState.CurrentState()
                                   + ", caught exception \"" + e.what() + "\"");
-        this->SetDesiredState("UNINITIALIZED");
+        this->SetDesiredState("DISABLED");
     }
     // trigger ExecOut event
     RunEvent();
@@ -728,7 +728,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         if (!(actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All())) {
             mPowered = false;
             RobotInterface->SendError(this->GetName() + ": detected power loss");
-            mArmState.SetDesiredState("UNINITIALIZED");
+            mArmState.SetDesiredState("DISABLED");
             return;
         }
     }
@@ -913,10 +913,10 @@ void mtsIntuitiveResearchKitArm::RunAllStates(void)
 {
     GetRobotData();
 
-    // always allow to go to unitialized
+    // always allow to go to disabled
     if (mArmState.DesiredStateIsNotCurrent()) {
-        if (mArmState.DesiredState() == "UNINITIALIZED") {
-            mArmState.SetCurrentState("UNINITIALIZED");
+        if (mArmState.DesiredState() == "DISABLED") {
+            mArmState.SetCurrentState("DISABLED");
         } else {
             // error handling will require to swith to fallback state
             if (mArmState.DesiredState() == mFallbackState) {
@@ -926,9 +926,9 @@ void mtsIntuitiveResearchKitArm::RunAllStates(void)
     }
 }
 
-void mtsIntuitiveResearchKitArm::EnterUninitialized(void)
+void mtsIntuitiveResearchKitArm::EnterDisabled(void)
 {
-    mFallbackState = "UNINITIALIZED";
+    mFallbackState = "DISABLED";
     if (NumberOfBrakes() > 0) {
         RobotIO.BrakeEngage();
     }
@@ -947,7 +947,7 @@ void mtsIntuitiveResearchKitArm::EnterUninitialized(void)
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
 }
 
-void mtsIntuitiveResearchKitArm::TransitionUninitialized(void)
+void mtsIntuitiveResearchKitArm::TransitionDisabled(void)
 {
     if (mArmState.DesiredStateIsNotCurrent()) {
         mArmState.SetCurrentState("CALIBRATING_ENCODERS_FROM_POTS");
@@ -1039,7 +1039,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
 void mtsIntuitiveResearchKitArm::TransitionPowering(void)
 {
     if (m_simulated) {
-        mArmState.SetCurrentState("POWERED");
+        mArmState.SetCurrentState("ENABLED");
         return;
     }
 
@@ -1054,7 +1054,7 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
     }
     if (actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All()) {
         RobotInterface->SendStatus(this->GetName() + ": power on");
-        mArmState.SetCurrentState("POWERED");
+        mArmState.SetCurrentState("ENABLED");
     } else {
         if ((currentTime - mHomingTimer) > mtsIntuitiveResearchKit::TimeToPower) {
             RobotInterface->SendError(this->GetName() + ": failed to enable power");
@@ -1063,7 +1063,7 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
     }
 }
 
-void mtsIntuitiveResearchKitArm::EnterPowered(void)
+void mtsIntuitiveResearchKitArm::EnterEnabled(void)
 {
     if (m_simulated) {
         return;
@@ -1073,7 +1073,7 @@ void mtsIntuitiveResearchKitArm::EnterPowered(void)
     RobotIO.UsePotsForSafetyCheck(true);
 
     mPowered = true;
-    mFallbackState = "POWERED";
+    mFallbackState = "ENABLED";
 
     // disable PID for fallback
     RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
@@ -1090,7 +1090,7 @@ void mtsIntuitiveResearchKitArm::EnterPowered(void)
     }
 }
 
-void mtsIntuitiveResearchKitArm::TransitionPowered(void)
+void mtsIntuitiveResearchKitArm::TransitionEnabled(void)
 {
     // move to next stage if desired state is anything past power
     // unless user request new pots calibration

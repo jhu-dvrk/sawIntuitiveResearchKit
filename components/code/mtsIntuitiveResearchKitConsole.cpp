@@ -1125,9 +1125,9 @@ bool mtsIntuitiveResearchKitConsole::AddTeleopECMInterfaces(TeleopECM * teleop)
     teleop->InterfaceRequired = this->AddInterfaceRequired(teleop->Name());
     if (teleop->InterfaceRequired) {
         teleop->InterfaceRequired->AddFunction("SetDesiredState", teleop->SetDesiredState);
-        teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
-        teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
-        teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
+        teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "error");
+        teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "warning");
+        teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "status");
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "AddTeleopECMInterfaces: failed to add Main interface for teleop \""
                                  << teleop->Name() << "\"" << std::endl;
@@ -1142,9 +1142,9 @@ bool mtsIntuitiveResearchKitConsole::AddTeleopPSMInterfaces(TeleopPSM * teleop)
     if (teleop->InterfaceRequired) {
         teleop->InterfaceRequired->AddFunction("SetDesiredState", teleop->SetDesiredState);
         teleop->InterfaceRequired->AddFunction("SetScale", teleop->SetScale);
-        teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "Error");
-        teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "Warning");
-        teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "Status");
+        teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "error");
+        teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "warning");
+        teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "status");
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "AddTeleopPSMInterfaces: failed to add Main interface for teleop \""
                                  << teleop->Name() << "\"" << std::endl;
@@ -1834,11 +1834,11 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
         arm->IOInterfaceRequired = AddInterfaceRequired(interfaceNameIO);
         if (arm->IOInterfaceRequired) {
             arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
-                                                           this, "Error");
+                                                           this, "error");
             arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
-                                                           this, "Warning");
+                                                           this, "warning");
             arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
-                                                           this, "Status");
+                                                           this, "status");
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO interface for arm \""
                                      << arm->Name() << "\"" << std::endl;
@@ -1852,11 +1852,11 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
             arm->IODallasInterfaceRequired = AddInterfaceRequired(interfaceNameIODallas);
             if (arm->IODallasInterfaceRequired) {
                 arm->IODallasInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
-                                                                     this, "Error");
+                                                                     this, "error");
                 arm->IODallasInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
-                                                                     this, "Warning");
+                                                                     this, "warning");
                 arm->IODallasInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
-                                                                     this, "Status");
+                                                                     this, "status");
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO Dallase interface for arm \""
                                          << arm->Name() << "\"" << std::endl;
@@ -1871,11 +1871,11 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
         arm->PIDInterfaceRequired = AddInterfaceRequired(interfaceNamePID);
         if (arm->PIDInterfaceRequired) {
             arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
-                                                            this, "Error");
+                                                            this, "error");
             arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
-                                                            this, "Warning");
+                                                            this, "warning");
             arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
-                                                            this, "Status");
+                                                            this, "status");
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add PID interface for arm \""
                                      << arm->Name() << "\"" << std::endl;
@@ -1892,11 +1892,11 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
             arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze);
         }
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
-                                                        this, "Error");
+                                                        this, "error");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
-                                                        this, "Warning");
+                                                        this, "warning");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
-                                                        this, "Status");
+                                                        this, "status");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::Arm::CurrentStateEventHandler,
                                                         arm, "CurrentState");
     } else {
@@ -2011,7 +2011,7 @@ void mtsIntuitiveResearchKitConsole::PowerOff(void)
     for (ArmList::iterator arm = mArms.begin();
          arm != end;
          ++arm) {
-        arm->second->SetDesiredState(std::string("UNINITIALIZED"));
+        arm->second->SetDesiredState(std::string("DISABLED"));
     }
 }
 
@@ -2021,7 +2021,7 @@ void mtsIntuitiveResearchKitConsole::PowerOn(void)
     for (ArmList::iterator arm = mArms.begin();
          arm != end;
          ++arm) {
-        arm->second->SetDesiredState(std::string("POWERED"));
+        arm->second->SetDesiredState(std::string("ENABLED"));
     }
 }
 

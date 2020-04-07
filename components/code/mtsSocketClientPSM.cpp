@@ -86,7 +86,7 @@ void mtsSocketClientPSM::Freeze(void)
 
 void mtsSocketClientPSM::SetDesiredState(const std::string & state)
 {
-    if (state == "UNINITIALIZED") {
+    if (state == "DISABLED") {
         DesiredState = socketMessages::SCK_UNINITIALIZED;
     } else if (state == "READY") {
         DesiredState = socketMessages::SCK_HOMED;
@@ -115,7 +115,7 @@ void mtsSocketClientPSM::GetDesiredState(std::string & state) const
 {
     switch (DesiredState) {
     case socketMessages::SCK_UNINITIALIZED:
-        state = "UNINITIALIZED";
+        state = "DISABLED";
         break;
     case socketMessages::SCK_HOMING:
     case socketMessages::SCK_HOMED:
@@ -132,7 +132,7 @@ void mtsSocketClientPSM::GetCurrentState(std::string & state) const
 {
     switch (CurrentState) {
     case socketMessages::SCK_UNINITIALIZED:
-        state = "UNINITIALIZED";
+        state = "DISABLED";
         break;
     case socketMessages::SCK_HOMING:
     case socketMessages::SCK_HOMED:

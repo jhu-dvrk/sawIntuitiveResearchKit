@@ -62,13 +62,13 @@ protected:
     void StateChanged(void);
     void RunAllStates(void); // this should happen for all states
 
-    virtual void EnterUninitialized(void);
-    virtual void TransitionUninitialized(void);
+    virtual void EnterDisabled(void);
+    virtual void TransitionDisabled(void);
 
     virtual void EnterPowering(void);
     virtual void TransitionPowering(void);
 
-    virtual void TransitionPowered(void);
+    virtual void TransitionEnabled(void);
 
     virtual void EnterReady(void);
     virtual void RunReady(void);
