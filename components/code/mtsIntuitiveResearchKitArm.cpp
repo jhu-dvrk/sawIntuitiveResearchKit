@@ -140,6 +140,10 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                     &mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots,
                                     this);
 
+    mArmState.SetEnterCallback("ENCODERS_BIASED",
+                               &mtsIntuitiveResearchKitArm::EnterEncodersBiased,
+                               this);
+
     mArmState.SetTransitionCallback("ENCODERS_BIASED",
                                     &mtsIntuitiveResearchKitArm::TransitionEncodersBiased,
                                     this);
@@ -181,8 +185,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mStateTableConfiguration.SetAutomaticAdvance(false);
 
     mCounter = 0;
-    mControlSpace = mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE;
-    mControlMode = mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE;
+    m_control_space = mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE;
+    m_control_mode = mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE;
 
     mJointControlReady = false;
     mCartesianControlReady = false;
@@ -192,12 +196,12 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mHomingBiasEncoderRequested = false;
 
     mWrenchBodyOrientationAbsolute = false;
-    mGravityCompensation = false;
-    mCartesianImpedance = false;
+    m_gravity_compensation = false;
+    m_cartesianImpedance = false;
 
-    mHasNewPIDGoal = false;
+    m_new_pid_goal = false;
 
-    mEffortOrientationLocked = false;
+    m_effort_orientation_locked = false;
 
     mSafeForCartesianControlCounter = 0;
     mArmNotReadyCounter = 0;
@@ -1018,9 +1022,6 @@ void mtsIntuitiveResearchKitArm::EnterEnabled(void)
         return;
     }
 
-    // use pots for redundancy
-    RobotIO.UsePotsForSafetyCheck(true);
-
     mPowered = true;
     mFallbackState = "ENABLED";
 
@@ -1088,6 +1089,12 @@ void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
         RobotInterface->SendError(this->GetName() + ": failed to bias encoders (timeout)");
         this->SetDesiredState(mFallbackState);
     }
+}
+
+void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
+{
+    // use pots for redundancy
+    RobotIO.UsePotsForSafetyCheck(true);
 }
 
 void mtsIntuitiveResearchKitArm::TransitionEncodersBiased(void)
@@ -1219,10 +1226,10 @@ void mtsIntuitiveResearchKitArm::RunReady(void)
 
 void mtsIntuitiveResearchKitArm::ControlPositionJoint(void)
 {
-    if (mHasNewPIDGoal) {
+    if (m_new_pid_goal) {
         SetPositionJointLocal(JointSet);
         // reset flag
-        mHasNewPIDGoal = false;
+        m_new_pid_goal = false;
     }
 }
 
@@ -1267,7 +1274,7 @@ void mtsIntuitiveResearchKitArm::ControlPositionGoalJoint(void)
 
 void mtsIntuitiveResearchKitArm::ControlPositionCartesian(void)
 {
-    if (mHasNewPIDGoal) {
+    if (m_new_pid_goal) {
         // copy current position
         vctDoubleVec jointSet(m_measured_js_kin.Position());
 
@@ -1287,7 +1294,7 @@ void mtsIntuitiveResearchKitArm::ControlPositionCartesian(void)
             }
         }
         // reset flag
-        mHasNewPIDGoal = false;
+        m_new_pid_goal = false;
     }
 }
 
@@ -1354,7 +1361,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
                                                         mtsCallableVoidBase * callback)
 {
     // ignore if already in the same space
-    if ((space == mControlSpace) && (mode == mControlMode)) {
+    if ((space == m_control_space) && (mode == m_control_mode)) {
         if (callback) {
             delete callback;
         }
@@ -1362,12 +1369,12 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
     }
 
     // transitions
-    if (space != mControlSpace) {
+    if (space != m_control_space) {
         // check if the arm is ready to use in cartesian space
         if (space == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE) {
             if (this->IsSafeForCartesianControl()) {
                 // set flag
-                mControlSpace = space;
+                m_control_space = space;
                 mSafeForCartesianControlCounter = 0;
             } else {
                 if (mSafeForCartesianControlCounter == 0) {
@@ -1379,12 +1386,12 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             }
         } else {
             // all other spaces, just set the current space
-            mEffortOrientationLocked = false;
-            mControlSpace = space;
+            m_effort_orientation_locked = false;
+            m_control_space = space;
         }
     }
 
-    if (mode != mControlMode) {
+    if (mode != m_control_mode) {
 
         switch (mode) {
         case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
@@ -1392,20 +1399,20 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             // configure PID
             PID.EnableTrackingError(UsePIDTrackingError());
             PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), false));
-            mHasNewPIDGoal = false;
+            m_new_pid_goal = false;
             mCartesianRelative = vctFrm3::Identity();
             JointSet.Assign(m_setpoint_js_pid.Position(), NumberOfJoints());
-            mEffortOrientationLocked = false;
+            m_effort_orientation_locked = false;
             break;
         case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
             // configure PID
             PID.EnableTrackingError(UsePIDTrackingError());
             PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), false));
-            mEffortOrientationLocked = false;
+            m_effort_orientation_locked = false;
             // initialize trajectory
             JointSet.Assign(m_setpoint_js_pid.Position(), NumberOfJoints());
-            if ((mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)
-                || (mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE)) {
+            if ((m_control_mode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)
+                || (m_control_mode == mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE)) {
                 JointVelocitySet.Assign(m_measured_js_pid.Velocity(), NumberOfJoints());
             } else {
                 // we're switching from effort or no mode
@@ -1428,14 +1435,14 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
         }
 
         // set flag
-        mControlMode = mode;
+        m_control_mode = mode;
     }
 
     // set control callback for RunReady
-    switch (mControlMode) {
+    switch (m_control_mode) {
     case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
     case mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE:
-        switch (mControlSpace) {
+        switch (m_control_space) {
         case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionJoint, this);
             break;
@@ -1447,7 +1454,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
         }
         break;
     case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
-        switch (mControlSpace) {
+        switch (m_control_space) {
         case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionGoalJoint, this);
             break;
@@ -1459,7 +1466,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
         }
         break;
     case mtsIntuitiveResearchKitArmTypes::EFFORT_MODE:
-        switch (mControlSpace) {
+        switch (m_control_space) {
         case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::ControlEffortJoint, this);
             break;
@@ -1476,16 +1483,16 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
     }
 
     // use provided callback if the space or mode is user defined
-    if ((mControlMode == mtsIntuitiveResearchKitArmTypes::USER_MODE)
-        || (mControlSpace == mtsIntuitiveResearchKitArmTypes::USER_SPACE)) {
+    if ((m_control_mode == mtsIntuitiveResearchKitArmTypes::USER_MODE)
+        || (m_control_space == mtsIntuitiveResearchKitArmTypes::USER_SPACE)) {
         mControlCallback = callback;
     }
 
     // messages
     RobotInterface->SendStatus(this->GetName() + ": control "
-                               + cmnData<mtsIntuitiveResearchKitArmTypes::ControlSpace>::HumanReadable(mControlSpace)
+                               + cmnData<mtsIntuitiveResearchKitArmTypes::ControlSpace>::HumanReadable(m_control_space)
                                + '/'
-                               + cmnData<mtsIntuitiveResearchKitArmTypes::ControlMode>::HumanReadable(mControlMode));
+                               + cmnData<mtsIntuitiveResearchKitArmTypes::ControlMode>::HumanReadable(m_control_mode));
 }
 
 void mtsIntuitiveResearchKitArm::SetControlEffortActiveJoints(void)
@@ -1506,7 +1513,7 @@ void mtsIntuitiveResearchKitArm::ControlEffortJoint(void)
     mEffortJoint.Assign(mEffortJointSet.ForceTorque());
 
     // add gravity compensation if needed
-    if (mGravityCompensation) {
+    if (m_gravity_compensation) {
         AddGravityCompensationEfforts(mEffortJoint);
     }
 
@@ -1531,7 +1538,7 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
     // body wrench
     if (mWrenchType == WRENCH_BODY) {
         // either using wrench provided by user or cartesian impedance
-        if (mCartesianImpedance) {
+        if (m_cartesianImpedance) {
             mCartesianImpedanceController->Update(m_measured_cp,
                                                   CartesianVelocityGetParam,
                                                   mWrenchSet,
@@ -1565,7 +1572,7 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
     }
 
     // add gravity compensation if needed
-    if (mGravityCompensation) {
+    if (m_gravity_compensation) {
         AddGravityCompensationEfforts(mEffortJoint);
     }
 
@@ -1576,7 +1583,7 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
     SetEffortJointLocal(mEffortJoint);
 
     // lock orientation if needed
-    if (mEffortOrientationLocked) {
+    if (m_effort_orientation_locked) {
         ControlEffortOrientationLocked();
     }
 }
@@ -1621,7 +1628,7 @@ void mtsIntuitiveResearchKitArm::Freeze(void)
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     JointSet.Assign(m_setpoint_js_kin.Position(), NumberOfJointsKinematics());
-    mHasNewPIDGoal = true;
+    m_new_pid_goal = true;
 }
 
 void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & newPosition)
@@ -1635,7 +1642,7 @@ void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & newPositio
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     JointSet.Assign(newPosition.Goal(), NumberOfJointsKinematics());
-    mHasNewPIDGoal = true;
+    m_new_pid_goal = true;
 }
 
 void mtsIntuitiveResearchKitArm::servo_jr(const prmPositionJointSet & difference)
@@ -1649,7 +1656,7 @@ void mtsIntuitiveResearchKitArm::servo_jr(const prmPositionJointSet & difference
                            mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE);
     // set goal
     JointSet.Add(difference.Goal());
-    mHasNewPIDGoal = true;
+    m_new_pid_goal = true;
 }
 
 void mtsIntuitiveResearchKitArm::move_jp(const prmPositionJointSet & newPosition)
@@ -1684,7 +1691,7 @@ void mtsIntuitiveResearchKitArm::servo_cp(const prmPositionCartesianSet & newPos
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     CartesianSetParam = newPosition;
-    mHasNewPIDGoal = true;
+    m_new_pid_goal = true;
 }
 
 void mtsIntuitiveResearchKitArm::servo_cr(const prmPositionCartesianSet & difference)
@@ -1698,7 +1705,7 @@ void mtsIntuitiveResearchKitArm::servo_cr(const prmPositionCartesianSet & differ
                            mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE);
     // set goal
     mCartesianRelative = mCartesianRelative * difference.Goal();
-    mHasNewPIDGoal = true;
+    m_new_pid_goal = true;
 }
 
 void mtsIntuitiveResearchKitArm::move_cp(const prmPositionCartesianSet & newPosition)
@@ -1810,7 +1817,7 @@ void mtsIntuitiveResearchKitArm::servo_cf_body(const prmForceCartesianSet & wren
                            mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
 
     // set new wrench
-    mCartesianImpedance = false;
+    m_cartesianImpedance = false;
     mWrenchSet = wrench;
     if (mWrenchType != WRENCH_BODY) {
         mWrenchType = WRENCH_BODY;
@@ -1829,7 +1836,7 @@ void mtsIntuitiveResearchKitArm::servo_cf_spatial(const prmForceCartesianSet & w
                            mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
 
     // set new wrench
-    mCartesianImpedance = false;
+    m_cartesianImpedance = false;
     mWrenchSet = wrench;
     if (mWrenchType != WRENCH_SPATIAL) {
         mWrenchType = WRENCH_SPATIAL;
@@ -1844,7 +1851,7 @@ void mtsIntuitiveResearchKitArm::SetWrenchBodyOrientationAbsolute(const bool & a
 
 void mtsIntuitiveResearchKitArm::SetGravityCompensation(const bool & gravityCompensation)
 {
-    mGravityCompensation = gravityCompensation;
+    m_gravity_compensation = gravityCompensation;
 }
 
 void mtsIntuitiveResearchKitArm::AddGravityCompensationEfforts(vctDoubleVec & efforts)
@@ -1866,7 +1873,7 @@ void mtsIntuitiveResearchKitArm::SetCartesianImpedanceGains(const prmCartesianIm
                            mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
 
     // set new wrench
-    mCartesianImpedance = true;
+    m_cartesianImpedance = true;
     mWrenchBodyOrientationAbsolute = true;
     mCartesianImpedanceController->SetGains(gains);
     if (mWrenchType != WRENCH_BODY) {

@@ -1144,10 +1144,10 @@ void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawP
     }
 
     // keep cartesian space is already there, otherwise use joint_space
-    switch (mControlSpace) {
+    switch (m_control_space) {
     case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-        if (! ((mControlMode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)
-               || (mControlMode != mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE))) {
+        if (! ((m_control_mode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)
+               || (m_control_mode != mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE))) {
             SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                    mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
             // make sure all other joints have a reasonable cartesian
@@ -1156,7 +1156,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawP
         }
         break;
     case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
-        if (mControlMode != mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
+        if (m_control_mode != mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
             // we are initiating the control mode switch so we need to
             // set a reasonable JointSet
             SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
@@ -1175,7 +1175,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawP
 
     // save goal
     JawGoal = jawPosition.Goal().at(0);
-    mHasNewPIDGoal = true;
+    m_new_pid_goal = true;
 }
 
 void mtsIntuitiveResearchKitPSM::SetPositionGoalJaw(const prmPositionJointSet & jawPosition)
@@ -1186,9 +1186,9 @@ void mtsIntuitiveResearchKitPSM::SetPositionGoalJaw(const prmPositionJointSet & 
     }
 
     // keep cartesian space is already there, otherwise use joint_space
-    switch (mControlSpace) {
+    switch (m_control_space) {
     case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-        if (mControlMode != mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE) {
+        if (m_control_mode != mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE) {
             // we are initiating the control mode switch
             SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                    mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
@@ -1197,7 +1197,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionGoalJaw(const prmPositionJointSet & 
         }
         break;
     case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
-        if (mControlMode != mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE) {
+        if (m_control_mode != mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE) {
             // we are initiating the control mode switch
             SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                                    mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
@@ -1245,9 +1245,9 @@ void mtsIntuitiveResearchKitPSM::SetEffortJaw(const prmForceTorqueJointSet & eff
     }
 
     // keep cartesian space is already there, otherwise use joint_space
-    switch (mControlSpace) {
+    switch (m_control_space) {
     case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-        if (mControlMode != mtsIntuitiveResearchKitArmTypes::EFFORT_MODE) {
+        if (m_control_mode != mtsIntuitiveResearchKitArmTypes::EFFORT_MODE) {
             SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                    mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
             // make sure all other joints have a reasonable cartesian
@@ -1256,7 +1256,7 @@ void mtsIntuitiveResearchKitPSM::SetEffortJaw(const prmForceTorqueJointSet & eff
         }
         break;
     case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
-        if (mControlMode != mtsIntuitiveResearchKitArmTypes::EFFORT_MODE) {
+        if (m_control_mode != mtsIntuitiveResearchKitArmTypes::EFFORT_MODE) {
             // we are initiating the control mode switch so we need to
             // set a reasonable JointSet
             SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,

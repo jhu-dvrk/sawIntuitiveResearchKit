@@ -589,7 +589,7 @@ void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
 {
     vctBoolVec torqueMode(NumberOfJoints());
     // if orientation is locked
-    if (mEffortOrientationLocked) {
+    if (m_effort_orientation_locked) {
         // first 3 joints in torque mode
         torqueMode.Ref(3, 0).SetAll(true);
         // last 4 in PID mode
@@ -658,8 +658,8 @@ void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & ef
 void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
 {
     // if we just started lock
-    if (!mEffortOrientationLocked) {
-        mEffortOrientationLocked = true;
+    if (!m_effort_orientation_locked) {
+        m_effort_orientation_locked = true;
         SetControlEffortActiveJoints();
         // initialize trajectory
         JointSet.Assign(m_measured_js_pid.Position(), NumberOfJoints());
@@ -678,8 +678,8 @@ void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
 void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)
 {
     // only unlock if needed
-    if (mEffortOrientationLocked) {
-        mEffortOrientationLocked = false;
+    if (m_effort_orientation_locked) {
+        m_effort_orientation_locked = false;
         SetControlEffortActiveJoints();
     }
 }

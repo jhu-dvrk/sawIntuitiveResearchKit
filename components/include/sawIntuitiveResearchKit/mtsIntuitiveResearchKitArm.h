@@ -130,6 +130,7 @@ public:
 
     virtual void EnterCalibratingEncodersFromPots(void);
     virtual void TransitionCalibratingEncodersFromPots(void);
+    virtual void EnterEncodersBiased(void);
     virtual void TransitionEncodersBiased(void);
 
     virtual void EnterHomingArm(void);
@@ -267,7 +268,7 @@ public:
     std::string mConfigurationFile;
 
     // cache cartesian goal position and increment
-    bool mHasNewPIDGoal;
+    bool m_new_pid_goal;
     prmPositionCartesianSet CartesianSetParam;
     vctFrm3 mCartesianRelative;
 
@@ -306,14 +307,14 @@ public:
 
     // cartesian impendance controller
     osaCartesianImpedanceController * mCartesianImpedanceController;
-    bool mCartesianImpedance;
+    bool m_cartesianImpedance;
 
     // used by MTM only
-    bool mEffortOrientationLocked;
+    bool m_effort_orientation_locked;
     vctDoubleVec mEffortOrientationJoint;
     vctMatRot3 mEffortOrientation;
     // gravity compensation
-    bool mGravityCompensation;
+    bool m_gravity_compensation;
     virtual void AddGravityCompensationEfforts(vctDoubleVec & efforts);
     // add custom efforts for derived classes
     inline virtual void AddCustomEfforts(vctDoubleVec & CMN_UNUSED(efforts)) {};
@@ -333,8 +334,8 @@ public:
     bool mJointControlReady;
     bool mCartesianControlReady;
 
-    mtsIntuitiveResearchKitArmTypes::ControlSpace mControlSpace;
-    mtsIntuitiveResearchKitArmTypes::ControlMode mControlMode;
+    mtsIntuitiveResearchKitArmTypes::ControlSpace m_control_space;
+    mtsIntuitiveResearchKitArmTypes::ControlMode m_control_mode;
 
     /*! Method used to check if the arm is ready and throttle messages sent. */
     bool ArmIsReady(const std::string & methodName,

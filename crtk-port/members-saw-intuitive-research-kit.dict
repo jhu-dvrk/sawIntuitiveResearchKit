@@ -23,6 +23,14 @@ mCartesianReady = m_cartesian_ready
 mJointReady = m_joint_ready
 mOperatingState = m_operating_state
 
+mControlSpace = m_control_space
+mControlMode = m_control_mode
+
+mGravityCompensation = m_gravity_compensation
+mCartesianImpedance = m_cartesianImpedance
+mHasNewPIDGoal = m_new_pid_goal
+mEffortOrientationLocked = m_effort_orientation_locked
+
 UNINITIALIZED = DISABLED
 EnterUninitialized = EnterDisabled
 TransitionUninitialized = TransitionDisabled

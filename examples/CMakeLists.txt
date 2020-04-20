@@ -9,5 +9,4 @@
 #
 # --- end cisst license ---
 
-add_subdirectory (deprecated)
 add_subdirectory (derivedTeleOperationPSM/components)

@@ -90,7 +90,7 @@ void mtsIntuitiveResearchKitECM::Init(void)
     ToolOffset = 0;
 
     // set gravity compensation by default
-    mGravityCompensation = true;
+    m_gravity_compensation = true;
 
     // state machine specific to ECM, see base class for other states
     mArmState.AddState("MANUAL");
@@ -236,7 +236,7 @@ void mtsIntuitiveResearchKitECM::RunManual(void)
 {
     // zero efforts
     mEffortJoint.SetAll(0.0);
-    if (mGravityCompensation) {
+    if (m_gravity_compensation) {
         AddGravityCompensationEfforts(mEffortJoint);
     }
     SetEffortJointLocal(mEffortJoint);
