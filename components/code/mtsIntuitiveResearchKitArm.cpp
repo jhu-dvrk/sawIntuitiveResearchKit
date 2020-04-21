@@ -7,13 +7,13 @@
 
   (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
---- begin cisst license - do not edit ---
+  --- begin cisst license - do not edit ---
 
-This software is provided "as is" under an open source license, with
-no warranty.  The complete license can be found in license.txt and
-http://www.cisst.org/cisst/license.txt.
+  This software is provided "as is" under an open source license, with
+  no warranty.  The complete license can be found in license.txt and
+  http://www.cisst.org/cisst/license.txt.
 
---- end cisst license ---
+  --- end cisst license ---
 */
 
 
@@ -81,9 +81,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.AddState("ENABLED");
     mArmState.AddState("CALIBRATING_ENCODERS_FROM_POTS");
     mArmState.AddState("ENCODERS_BIASED");
-    mArmState.AddState("HOMING_ARM");
-    mArmState.AddState("ARM_HOMED");
-    mArmState.AddState("READY");
+    mArmState.AddState("HOMING");
+    mArmState.AddState("HOMED");
     mArmState.AddState("PAUSE");
     mArmState.AddState("FAULT");
 
@@ -91,8 +90,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.AddAllowedDesiredState("DISABLED");
     mArmState.AddAllowedDesiredState("ENABLED");
     mArmState.AddAllowedDesiredState("ENCODERS_BIASED");
-    mArmState.AddAllowedDesiredState("ARM_HOMED");
-    mArmState.AddAllowedDesiredState("READY");
+    mArmState.AddAllowedDesiredState("HOMED");
     mArmState.AddAllowedDesiredState("PAUSE");
 
     mFallbackState = "DISABLED";
@@ -149,31 +147,32 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                     this);
 
     // arm homing
-    mArmState.SetEnterCallback("HOMING_ARM",
-                               &mtsIntuitiveResearchKitArm::EnterHomingArm,
+    mArmState.SetEnterCallback("HOMING",
+                               &mtsIntuitiveResearchKitArm::EnterHoming,
                                this);
 
-    mArmState.SetRunCallback("HOMING_ARM",
-                             &mtsIntuitiveResearchKitArm::RunHomingArm,
+    mArmState.SetRunCallback("HOMING",
+                             &mtsIntuitiveResearchKitArm::RunHoming,
                              this);
 
-    // state between ARM_HOMED and READY depends on the arm type, see
+    // state HOMED depends on the arm type, see
     // derived classes
-    mArmState.SetEnterCallback("READY",
-                               &mtsIntuitiveResearchKitArm::EnterReady,
+    mArmState.SetEnterCallback("HOMED",
+                               &mtsIntuitiveResearchKitArm::EnterHomed,
                                this);
 
-    mArmState.SetRunCallback("READY",
-                             &mtsIntuitiveResearchKitArm::RunReady,
+    mArmState.SetRunCallback("HOMED",
+                             &mtsIntuitiveResearchKitArm::RunHomed,
                              this);
 
-    mArmState.SetLeaveCallback("READY",
-                               &mtsIntuitiveResearchKitArm::LeaveReady,
+    mArmState.SetLeaveCallback("HOMED",
+                               &mtsIntuitiveResearchKitArm::LeaveHomed,
                                this);
 
     // state table to maintain state :-)
     mStateTableState.AddData(mStateTableStateCurrent, "CurrentState");
     mStateTableState.AddData(mStateTableStateDesired, "DesiredState");
+    m_operating_state.Valid() = true;
     mStateTableState.AddData(m_operating_state, "operating_state");
     AddStateTable(&mStateTableState);
     mStateTableState.SetAutomaticAdvance(false);
@@ -339,10 +338,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandReadState(this->StateTable, mJacobianBody, "GetJacobianBody");
         RobotInterface->AddCommandReadState(this->StateTable, mJacobianSpatial, "GetJacobianSpatial");
         RobotInterface->AddCommandReadState(this->mStateTableState,
-                                            mStateTableStateCurrent, "GetCurrentState");
-        RobotInterface->AddCommandReadState(this->mStateTableState,
-                                            mStateTableStateDesired, "GetDesiredState");
-        RobotInterface->AddCommandReadState(this->mStateTableState,
                                             m_operating_state, "operating_state");
         // Set
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame,
@@ -383,9 +378,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddEventWrite(mJointTrajectory.AccelerationRatioEvent, "JointAccelerationRatio", double());
         RobotInterface->AddEventWrite(mJointTrajectory.GoalReachedEvent, "GoalReached", bool());
         // Robot State
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetDesiredState,
-                                        this, "SetDesiredState", std::string(""));
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::OperatingStateCommand,
+        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::state_command,
                                         this, "state_command", std::string(""));
         // Human readable messages
         RobotInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
@@ -432,20 +425,23 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
     RobotInterface->SendStatus(this->GetName() + ": desired state " + state);
 }
 
-void mtsIntuitiveResearchKitArm::OperatingStateCommand(const std::string & command)
+void mtsIntuitiveResearchKitArm::state_command(const std::string & command)
 {
     std::string humanReadableMessage;
     prmOperatingState::StateType newOperatingState;
     try {
         if (m_operating_state.ValidCommand(prmOperatingState::CommandTypeFromString(command),
-                                         newOperatingState, humanReadableMessage)) {
+                                           newOperatingState, humanReadableMessage)) {
             if (command == "enable") {
-                SetDesiredState("READY");
+                SetDesiredState("ENABLED");
                 return;
             }
             if (command == "disable") {
                 SetDesiredState("DISABLED");
                 return;
+            }
+            if (command == "home") {
+                SetDesiredState("HOMED");
             }
         } else {
             RobotInterface->SendWarning(this->GetName() + ": " + humanReadableMessage);
@@ -722,7 +718,7 @@ void mtsIntuitiveResearchKitArm::SetSimulated(void)
 void mtsIntuitiveResearchKitArm::GetRobotData(void)
 {
     // check that the robot still has power
-    if (mPowered) {
+    if (m_powered) {
         vctBoolVec actuatorAmplifiersStatus(NumberOfJoints());
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         vctBoolVec brakeAmplifiersStatus(NumberOfBrakes());
@@ -730,7 +726,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             RobotIO.GetBrakeAmpStatus(brakeAmplifiersStatus);
         }
         if (!(actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All())) {
-            mPowered = false;
+            m_powered = false;
             RobotInterface->SendError(this->GetName() + ": detected power loss");
             mArmState.SetDesiredState("DISABLED");
             return;
@@ -892,25 +888,29 @@ void mtsIntuitiveResearchKitArm::ToJointsPID(const vctDoubleVec & jointsKinemati
     jointsPID.Assign(jointsKinematics);
 }
 
+void mtsIntuitiveResearchKitArm::UpdateOperatingStateHomedBusy(const prmOperatingState::StateType & state,
+                                                               const bool isHomed,
+                                                               const bool isBusy)
+{
+    mStateTableState.Start();
+    m_operating_state.State() = state;
+    m_operating_state.IsHomed() = isHomed;
+    m_operating_state.IsBusy() = isBusy;
+    mStateTableState.Advance();
+    MessageEvents.OperatingState(m_operating_state);
+}
+
 void mtsIntuitiveResearchKitArm::StateChanged(void)
 {
-    const std::string newState = mArmState.CurrentState();
-    // update crtk operating state
-    if (mJointControlReady) {
-        m_operating_state.State() = prmOperatingState::ENABLED;
-    } else {
-        m_operating_state.State() = prmOperatingState::DISABLED;
-    }
-    m_operating_state.Valid() = true;
-
+    const std::string & state = mArmState.CurrentState();
     // update state table
     mStateTableState.Start();
-    mStateTableStateCurrent = newState;
+    mStateTableStateCurrent = state;
     mStateTableState.Advance();
     // event
-    MessageEvents.CurrentState(newState);
+    MessageEvents.CurrentState(state);
     MessageEvents.OperatingState(m_operating_state);
-    RobotInterface->SendStatus(this->GetName() + ": current state " + newState);
+    RobotInterface->SendStatus(this->GetName() + ": current state " + state);
 }
 
 void mtsIntuitiveResearchKitArm::RunAllStates(void)
@@ -932,6 +932,10 @@ void mtsIntuitiveResearchKitArm::RunAllStates(void)
 
 void mtsIntuitiveResearchKitArm::EnterDisabled(void)
 {
+    UpdateOperatingStateHomedBusy(prmOperatingState::DISABLED,
+                                  m_homed,
+                                  false);
+
     mFallbackState = "DISABLED";
     if (NumberOfBrakes() > 0) {
         RobotIO.BrakeEngage();
@@ -942,7 +946,7 @@ void mtsIntuitiveResearchKitArm::EnterDisabled(void)
     RobotIO.DisablePower();
     PID.Enable(false);
     PID.SetCheckPositionLimit(true);
-    mPowered = false;
+    m_powered = false;
     m_joint_ready = false;
     m_cartesian_ready = false;
     mJointControlReady = false;
@@ -960,7 +964,11 @@ void mtsIntuitiveResearchKitArm::TransitionDisabled(void)
 
 void mtsIntuitiveResearchKitArm::EnterPowering(void)
 {
-    mPowered = false;
+    UpdateOperatingStateHomedBusy(prmOperatingState::DISABLED,
+                                  m_homed,
+                                  true);
+
+    m_powered = false;
 
     if (m_simulated) {
         PID.EnableTrackingError(false);
@@ -1018,11 +1026,15 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
 
 void mtsIntuitiveResearchKitArm::EnterEnabled(void)
 {
+    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
+                                  m_homed,
+                                  false);
+
     if (m_simulated) {
         return;
     }
 
-    mPowered = true;
+    m_powered = true;
     mFallbackState = "ENABLED";
 
     // disable PID for fallback
@@ -1051,6 +1063,10 @@ void mtsIntuitiveResearchKitArm::TransitionEnabled(void)
 
 void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 {
+    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
+                                  false, // not homed until we're done calibrating
+                                  true);
+
     // if simulated, no need to bias encoders
     if (m_simulated) {
         RobotInterface->SendStatus(this->GetName() + ": simulated mode, no need to calibrate encoders");
@@ -1077,6 +1093,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
 {
     if (m_simulated || m_encoders_biased) {
+        m_homed = true;
         m_joint_ready = true;
         mArmState.SetCurrentState("ENCODERS_BIASED");
         return;
@@ -1093,6 +1110,9 @@ void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
 
 void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
 {
+    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
+                                  m_homed, false);
+
     // use pots for redundancy
     RobotIO.UsePotsForSafetyCheck(true);
 }
@@ -1102,12 +1122,15 @@ void mtsIntuitiveResearchKitArm::TransitionEncodersBiased(void)
     // move to next stage if desired state is anything past post pot
     // calibration
     if (mArmState.DesiredStateIsNotCurrent()) {
-        mArmState.SetCurrentState("HOMING_ARM");
+        mArmState.SetCurrentState("HOMING");
     }
 }
 
-void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
+void mtsIntuitiveResearchKitArm::EnterHoming(void)
 {
+    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
+                                  m_homed, true);
+
     // disable joint limits
     PID.SetCheckPositionLimit(false);
     // enable tracking errors
@@ -1132,7 +1155,7 @@ void mtsIntuitiveResearchKitArm::EnterHomingArm(void)
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
 }
 
-void mtsIntuitiveResearchKitArm::RunHomingArm(void)
+void mtsIntuitiveResearchKitArm::RunHoming(void)
 {
     static const double extraTime = 2.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
@@ -1164,11 +1187,11 @@ void mtsIntuitiveResearchKitArm::RunHomingArm(void)
         if (isHomed) {
             m_operating_state.IsHomed() = true;
             PID.SetCheckPositionLimit(true);
-            mArmState.SetCurrentState("ARM_HOMED");
+            mArmState.SetCurrentState("HOMED");
         } else {
             // time out
             if (currentTime > mHomingTimer + extraTime) {
-                CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHomingArm: unable to reach home position, error in degrees is "
+                CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHoming: unable to reach home position, error in degrees is "
                                            << mJointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
                 RobotInterface->SendError(this->GetName() + ": unable to reach home position during calibration on pots");
                 this->SetDesiredState(mFallbackState);
@@ -1183,8 +1206,11 @@ void mtsIntuitiveResearchKitArm::RunHomingArm(void)
     }
 }
 
-void mtsIntuitiveResearchKitArm::EnterReady(void)
+void mtsIntuitiveResearchKitArm::EnterHomed(void)
 {
+    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
+                                  m_homed, false);
+
     // set ready flags, some might have been set earlier by derived
     // classes (e.g. PSM allows joint commands without tool
     m_cartesian_ready = true;
@@ -1207,7 +1233,7 @@ void mtsIntuitiveResearchKitArm::EnterReady(void)
     PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
 }
 
-void mtsIntuitiveResearchKitArm::LeaveReady(void)
+void mtsIntuitiveResearchKitArm::LeaveHomed(void)
 {
     // set ready flag
     mJointControlReady = false;
@@ -1217,7 +1243,7 @@ void mtsIntuitiveResearchKitArm::LeaveReady(void)
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
 }
 
-void mtsIntuitiveResearchKitArm::RunReady(void)
+void mtsIntuitiveResearchKitArm::RunHomed(void)
 {
     if (mControlCallback) {
         mControlCallback->Execute();
@@ -1438,7 +1464,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
         m_control_mode = mode;
     }
 
-    // set control callback for RunReady
+    // set control callback for RunHomed
     switch (m_control_mode) {
     case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
     case mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE:

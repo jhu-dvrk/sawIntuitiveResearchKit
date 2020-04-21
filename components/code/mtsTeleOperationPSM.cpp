@@ -7,13 +7,13 @@
 
   (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
---- begin cisst license - do not edit ---
+  --- begin cisst license - do not edit ---
 
-This software is provided "as is" under an open source license, with
-no warranty.  The complete license can be found in license.txt and
-http://www.cisst.org/cisst/license.txt.
+  This software is provided "as is" under an open source license, with
+  no warranty.  The complete license can be found in license.txt and
+  http://www.cisst.org/cisst/license.txt.
 
---- end cisst license ---
+  --- end cisst license ---
 */
 
 
@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstParameterTypes/prmOperatingState.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -83,8 +84,8 @@ void mtsTeleOperationPSM::Init(void)
                                   &mtsTeleOperationPSM::EnterAligningMTM,
                                   this);
     mTeleopState.SetRunCallback("ALIGNING_MTM",
-                                  &mtsTeleOperationPSM::RunAligningMTM,
-                                  this);
+                                &mtsTeleOperationPSM::RunAligningMTM,
+                                this);
     mTeleopState.SetTransitionCallback("ALIGNING_MTM",
                                        &mtsTeleOperationPSM::TransitionAligningMTM,
                                        this);
@@ -127,9 +128,8 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("UnlockOrientation", mMTM.UnlockOrientation);
         interfaceRequired->AddFunction("servo_cf_body", mMTM.servo_cf_body);
         interfaceRequired->AddFunction("SetGravityCompensation", mMTM.SetGravityCompensation);
-        interfaceRequired->AddFunction("GetCurrentState", mMTM.GetCurrentState);
-        interfaceRequired->AddFunction("GetDesiredState", mMTM.GetDesiredState);
-        interfaceRequired->AddFunction("SetDesiredState", mMTM.SetDesiredState);
+        interfaceRequired->AddFunction("operating_state", mMTM.operating_state);
+        interfaceRequired->AddFunction("state_command", mMTM.state_command);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::MTMErrorEventHandler,
                                                 this, "error");
     }
@@ -142,9 +142,8 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("GetStateJaw", mPSM.GetStateJaw, MTS_OPTIONAL);
         interfaceRequired->AddFunction("GetConfigurationJaw", mPSM.GetConfigurationJaw, MTS_OPTIONAL);
         interfaceRequired->AddFunction("SetPositionJaw", mPSM.SetPositionJaw, MTS_OPTIONAL);
-        interfaceRequired->AddFunction("GetCurrentState", mPSM.GetCurrentState);
-        interfaceRequired->AddFunction("GetDesiredState", mPSM.GetDesiredState);
-        interfaceRequired->AddFunction("SetDesiredState", mPSM.SetDesiredState);
+        interfaceRequired->AddFunction("operating_state", mPSM.operating_state);
+        interfaceRequired->AddFunction("state_command", mPSM.state_command);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::PSMErrorEventHandler,
                                                 this, "error");
     }
@@ -167,8 +166,8 @@ void mtsTeleOperationPSM::Init(void)
         mInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                         "period_statistics"); // mtsIntervalStatistics
 
-        mInterface->AddCommandWrite(&mtsTeleOperationPSM::SetDesiredState, this,
-                                    "SetDesiredState", mTeleopState.CurrentState());
+        mInterface->AddCommandWrite(&mtsTeleOperationPSM::state_command, this,
+                                    "state_command", mTeleopState.CurrentState());
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::SetScale, this,
                                     "SetScale", mScale);
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::SetRegistrationRotation, this,
@@ -430,6 +429,25 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
     }
 }
 
+
+void mtsTeleOperationPSM::state_command(const std::string & command)
+{
+    if (command == "enable") {
+        SetDesiredState("ENABLED");
+        return;
+    }
+    if (command == "disable") {
+        SetDesiredState("DISABLED");
+        return;
+    }
+    if (command == "align_mtm") {
+        SetDesiredState("ALIGNING_MTM");
+        return;
+    }
+    mInterface->SendWarning(this->GetName() + ": " + command + " doesn't seem to be a valid state_command");
+}
+
+
 void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
 {
     // try to find the state in state machine
@@ -549,7 +567,7 @@ void mtsTeleOperationPSM::RunAllStates(void)
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.measured_cp failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTM");
-        this->SetDesiredState("DISABLED");
+        mTeleopState.SetDesiredState("DISABLED");
     }
     executionResult = mMTM.setpoint_cp(mMTM.PositionCartesianDesired);
     if (!executionResult.IsOK()) {
@@ -563,7 +581,7 @@ void mtsTeleOperationPSM::RunAllStates(void)
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to PSM.measured_cp failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from PSM");
-        this->SetDesiredState("DISABLED");
+        mTeleopState.SetDesiredState("DISABLED");
     }
 
     // get base-frame cartesian position if available
@@ -573,7 +591,7 @@ void mtsTeleOperationPSM::RunAllStates(void)
             CMN_LOG_CLASS_RUN_ERROR << "Run: call to m_base_frame.measured_cp failed \""
                                     << executionResult << "\"" << std::endl;
             mInterface->SendError(this->GetName() + ": unable to get cartesian position from base frame");
-            this->SetDesiredState("DISABLED");
+            mTeleopState.SetDesiredState("DISABLED");
         }
     }
 
@@ -588,15 +606,17 @@ void mtsTeleOperationPSM::RunAllStates(void)
     // monitor state of arms if needed
     if ((mTeleopState.CurrentState() != "DISABLED")
         && (mTeleopState.CurrentState() != "SETTING_ARMS_STATE")) {
-        std::string armState;
-        mPSM.GetDesiredState(armState);
-        if (armState != "READY") {
-            this->SetDesiredState("DISABLED");
-            mInterface->SendError(this->GetName() + ": PSM is not in state \"READY\" anymore");
+        prmOperatingState state;
+        mPSM.operating_state(state);
+        if ((state.State() != prmOperatingState::ENABLED)
+            || !state.IsHomed()) {
+            mTeleopState.SetDesiredState("DISABLED");
+            mInterface->SendError(this->GetName() + ": PSM is not in state \"ENABLED\" anymore");
         }
-        mMTM.GetDesiredState(armState);
-        if (armState != "READY") {
-            this->SetDesiredState("DISABLED");
+        mMTM.operating_state(state);
+        if ((state.State() != prmOperatingState::ENABLED)
+            || !state.IsHomed()) {
+            mTeleopState.SetDesiredState("DISABLED");
             mInterface->SendError(this->GetName() + ": MTM is not in state \"READY\" anymore");
         }
     }
@@ -615,32 +635,37 @@ void mtsTeleOperationPSM::EnterSettingArmsState(void)
     mInStateTimer = StateTable.GetTic();
 
     // request state if needed
-    std::string armState;
-    mPSM.GetDesiredState(armState);
-    if (armState != "READY") {
-        mPSM.SetDesiredState(std::string("READY"));
+    prmOperatingState state;
+    mPSM.operating_state(state);
+    if (state.State() != prmOperatingState::ENABLED) {
+        mPSM.state_command(std::string("enable"));
+    } else if (!state.IsHomed()) {
+        mPSM.state_command(std::string("home"));
     }
-    mMTM.GetDesiredState(armState);
-    if (armState != "READY") {
-        mMTM.SetDesiredState(std::string("READY"));
+
+    mMTM.operating_state(state);
+    if (state.State() != prmOperatingState::ENABLED) {
+        mMTM.state_command(std::string("enable"));
+    } else if (!state.IsHomed()) {
+        mMTM.state_command(std::string("home"));
     }
 }
 
 void mtsTeleOperationPSM::TransitionSettingArmsState(void)
 {
     // check state
-    std::string psmState, mtmState;
-    mPSM.GetCurrentState(psmState);
-    mMTM.GetCurrentState(mtmState);
-    if ((psmState == "READY")
-        && (mtmState == "READY")) {
+    prmOperatingState psmState, mtmState;
+    mPSM.operating_state(psmState);
+    mMTM.operating_state(mtmState);
+    if ((psmState.State() == prmOperatingState::ENABLED) && psmState.IsHomed()
+        && (mtmState.State() == prmOperatingState::ENABLED) && mtmState.IsHomed()) {
         mTeleopState.SetCurrentState("ALIGNING_MTM");
         return;
     }
     // check timer
     if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
         mInterface->SendError(this->GetName() + ": timed out while setting up MTM state");
-        this->SetDesiredState("DISABLED");
+        mTeleopState.SetDesiredState("DISABLED");
     }
 }
 
@@ -702,15 +727,6 @@ void mtsTeleOperationPSM::RunAligningMTM(void)
 
 void mtsTeleOperationPSM::TransitionAligningMTM(void)
 {
-    // check psm state
-    std::string armState;
-    mPSM.GetCurrentState(armState);
-    if ((armState != "READY") && (armState != "MANUAL")) {
-        mInterface->SendWarning(this->GetName() + ": PSM state has changed to [" + armState + "]");
-        mTeleopState.SetDesiredState("DISABLED");
-        return;
-    }
-
     // if the desired state is aligning MTM, just stay here
     if (!mTeleopState.DesiredStateIsNotCurrent()) {
         return;
@@ -902,22 +918,6 @@ void mtsTeleOperationPSM::RunEnabled(void)
 
 void mtsTeleOperationPSM::TransitionEnabled(void)
 {
-    std::string armState;
-
-    // check psm state
-    mPSM.GetCurrentState(armState);
-    if (armState != "READY") {
-        mInterface->SendWarning(this->GetName() + ": PSM state has changed to [" + armState + "]");
-        mTeleopState.SetDesiredState("DISABLED");
-    }
-
-    // check mtm state
-    mMTM.GetCurrentState(armState);
-    if (armState != "READY") {
-        mInterface->SendWarning(this->GetName() + ": MTM state has changed to [" + armState + "]");
-        mTeleopState.SetDesiredState("DISABLED");
-    }
-
     if (mTeleopState.DesiredStateIsNotCurrent()) {
         SetFollowing(false);
         mTeleopState.SetCurrentState(mTeleopState.DesiredState());

@@ -107,7 +107,7 @@ public:
 
     /*! crtk operating state command.  Currently supports "enable" and
       "disable". */
-    virtual void OperatingStateCommand(const std::string & command);
+    virtual void state_command(const std::string & command);
 
     /*! Get data from the PID level based on current state. */
     virtual void GetRobotData(void);
@@ -117,6 +117,9 @@ public:
     // state machine
     std::string mFallbackState;
 
+    void UpdateOperatingStateHomedBusy(const prmOperatingState::StateType & state,
+                                       const bool isHomed,
+                                       const bool isBusy);
     void StateChanged(void);
     void RunAllStates(void); // this should happen for all states
 
@@ -133,16 +136,16 @@ public:
     virtual void EnterEncodersBiased(void);
     virtual void TransitionEncodersBiased(void);
 
-    virtual void EnterHomingArm(void);
+    virtual void EnterHoming(void);
     virtual void SetGoalHomingArm(void) = 0;
-    virtual void RunHomingArm(void);
+    virtual void RunHoming(void);
 
-    // transitions and states between ARM_HOMED and READY are defined
+    // transitions to state HOMED are defined
     // in derived classes.
 
-    virtual void EnterReady(void);
-    virtual void LeaveReady(void);
-    virtual void RunReady(void);
+    virtual void EnterHomed(void);
+    virtual void LeaveHomed(void);
+    virtual void RunHomed(void);
 
     // Arm state machine
     mtsStateMachine mArmState;
@@ -328,9 +331,10 @@ public:
     vctFrm4x4 m_base_frame;
     bool BaseFrameValid;
 
-    bool mPowered;
-    bool m_joint_ready;
-    bool m_cartesian_ready;
+    bool m_powered = false;;
+    bool m_homed = false;
+    bool m_joint_ready = false;
+    bool m_cartesian_ready = false;
     bool mJointControlReady;
     bool mCartesianControlReady;
 

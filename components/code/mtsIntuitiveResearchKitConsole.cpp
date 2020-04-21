@@ -349,7 +349,7 @@ const std::string & mtsIntuitiveResearchKitConsole::Arm::PIDComponentName(void) 
     return mPIDComponentName;
 }
 
-void mtsIntuitiveResearchKitConsole::Arm::CurrentStateEventHandler(const std::string & currentState)
+void mtsIntuitiveResearchKitConsole::Arm::CurrentStateEventHandler(const prmOperatingState & currentState)
 {
     mConsole->SetArmCurrentState(mName, currentState);
 }
@@ -1124,7 +1124,7 @@ bool mtsIntuitiveResearchKitConsole::AddTeleopECMInterfaces(TeleopECM * teleop)
 {
     teleop->InterfaceRequired = this->AddInterfaceRequired(teleop->Name());
     if (teleop->InterfaceRequired) {
-        teleop->InterfaceRequired->AddFunction("SetDesiredState", teleop->SetDesiredState);
+        teleop->InterfaceRequired->AddFunction("state_command", teleop->state_command);
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "error");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "warning");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "status");
@@ -1140,7 +1140,7 @@ bool mtsIntuitiveResearchKitConsole::AddTeleopPSMInterfaces(TeleopPSM * teleop)
 {
     teleop->InterfaceRequired = this->AddInterfaceRequired(teleop->Name());
     if (teleop->InterfaceRequired) {
-        teleop->InterfaceRequired->AddFunction("SetDesiredState", teleop->SetDesiredState);
+        teleop->InterfaceRequired->AddFunction("state_command", teleop->state_command);
         teleop->InterfaceRequired->AddFunction("SetScale", teleop->SetScale);
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "error");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "warning");
@@ -1887,7 +1887,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     const std::string interfaceNameArm = arm->Name();
     arm->ArmInterfaceRequired = AddInterfaceRequired(interfaceNameArm);
     if (arm->ArmInterfaceRequired) {
-        arm->ArmInterfaceRequired->AddFunction("SetDesiredState", arm->SetDesiredState);
+        arm->ArmInterfaceRequired->AddFunction("state_command", arm->state_command);
         if (arm->mType != Arm::ARM_SUJ) {
             arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze);
         }
@@ -1898,7 +1898,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
                                                         this, "status");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::Arm::CurrentStateEventHandler,
-                                                        arm, "CurrentState");
+                                                        arm, "operating_state");
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add Main interface for arm \""
                                  << arm->Name() << "\"" << std::endl;
@@ -2011,7 +2011,7 @@ void mtsIntuitiveResearchKitConsole::PowerOff(void)
     for (ArmList::iterator arm = mArms.begin();
          arm != end;
          ++arm) {
-        arm->second->SetDesiredState(std::string("DISABLED"));
+        arm->second->state_command(std::string("disable"));
     }
 }
 
@@ -2021,7 +2021,7 @@ void mtsIntuitiveResearchKitConsole::PowerOn(void)
     for (ArmList::iterator arm = mArms.begin();
          arm != end;
          ++arm) {
-        arm->second->SetDesiredState(std::string("ENABLED"));
+        arm->second->state_command(std::string("enable"));
     }
 }
 
@@ -2032,7 +2032,7 @@ void mtsIntuitiveResearchKitConsole::Home(void)
     for (ArmList::iterator arm = mArms.begin();
          arm != end;
          ++arm) {
-        arm->second->SetDesiredState(std::string("READY"));
+        arm->second->state_command(std::string("home"));
     }
 }
 
@@ -2098,11 +2098,11 @@ void mtsIntuitiveResearchKitConsole::CycleTeleopPSMByMTM(const std::string & mtm
                     nextTeleop->second->SetSelected(true);
                     // if teleop PSM is active, enable/disable components now
                     if (mTeleopEnabled) {
-                        iter->second->SetDesiredState(std::string("DISABLED"));
+                        iter->second->state_command(std::string("disable"));
                         if (mTeleopPSMRunning) {
-                            nextTeleop->second->SetDesiredState(std::string("ENABLED"));
+                            nextTeleop->second->state_command(std::string("enable"));
                         } else {
-                            nextTeleop->second->SetDesiredState(std::string("ALIGNING_MTM"));
+                            nextTeleop->second->state_command(std::string("align_mtm"));
                         }
                     }
                     // message
@@ -2140,7 +2140,7 @@ void mtsIntuitiveResearchKitConsole::SelectTeleopPSM(const prmKeyValue & mtmPsm)
                 iter->second->SetSelected(false);
                 // if teleop PSM is active, enable/disable components now
                 if (mTeleopEnabled) {
-                    iter->second->SetDesiredState(std::string("DISABLED"));
+                    iter->second->state_command(std::string("disable"));
                 }
                 // message
                 mInterface->SendWarning(this->GetName()
@@ -2189,9 +2189,9 @@ void mtsIntuitiveResearchKitConsole::SelectTeleopPSM(const prmKeyValue & mtmPsm)
     // if teleop PSM is active, enable/disable components now
     if (mTeleopEnabled) {
         if (mTeleopPSMRunning) {
-            teleopIterator->second->SetDesiredState(std::string("ENABLED"));
+            teleopIterator->second->state_command(std::string("enable"));
         } else {
-            teleopIterator->second->SetDesiredState(std::string("ALIGNING_MTM"));
+            teleopIterator->second->state_command(std::string("align_mtm"));
         }
     }
     // message
@@ -2268,7 +2268,7 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
              iterTeleopPSM != endTeleopPSM;
              ++iterTeleopPSM) {
-            iterTeleopPSM->second->SetDesiredState(std::string("DISABLED"));
+            iterTeleopPSM->second->state_command(std::string("disable"));
             if (mTeleopPSMRunning) {
                 freezeNeeded = true;
             }
@@ -2276,7 +2276,7 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         }
 
         if (mTeleopECM) {
-            mTeleopECM->SetDesiredState(std::string("DISABLED"));
+            mTeleopECM->state_command(std::string("disable"));
             if (mTeleopECMRunning) {
                 freezeNeeded = true;
             }
@@ -2324,16 +2324,16 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
              iterTeleopPSM != endTeleopPSM;
              ++iterTeleopPSM) {
             if (iterTeleopPSM->second->Selected()) {
-                iterTeleopPSM->second->SetDesiredState(std::string("ALIGNING_MTM"));
+                iterTeleopPSM->second->state_command(std::string("align_mtm"));
             } else {
-                iterTeleopPSM->second->SetDesiredState(std::string("DISABLED"));
+                iterTeleopPSM->second->state_command(std::string("disable"));
             }
         }
         mTeleopPSMRunning = false;
 
         // stop ECM if needed
         if (mTeleopECMRunning) {
-            mTeleopECM->SetDesiredState(std::string("DISABLED"));
+            mTeleopECM->state_command(std::string("disable"));
             mTeleopECMRunning = false;
         }
         return;
@@ -2348,13 +2348,13 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
                 for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
                      iterTeleopPSM != endTeleopPSM;
                      ++iterTeleopPSM) {
-                    iterTeleopPSM->second->SetDesiredState(std::string("DISABLED"));
+                    iterTeleopPSM->second->state_command(std::string("disable"));
                 }
                 mTeleopPSMRunning = false;
             }
             // ECM wasn't running, let's start it
             if (mTeleopECM) {
-                mTeleopECM->SetDesiredState(std::string("ENABLED"));
+                mTeleopECM->state_command(std::string("enable"));
                 mTeleopECMRunning = true;
             }
         }
@@ -2363,7 +2363,7 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         if (!mTeleopPSMRunning) {
             // if ECM was running so we need to stop it
             if (mTeleopECMRunning) {
-                mTeleopECM->SetDesiredState(std::string("DISABLED"));
+                mTeleopECM->state_command(std::string("disable"));
                 mTeleopECMRunning = false;
             }
             // PSM wasn't running, let's start it
@@ -2372,9 +2372,9 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
                  iterTeleopPSM != endTeleopPSM;
                  ++iterTeleopPSM) {
                 if (iterTeleopPSM->second->Selected()) {
-                    iterTeleopPSM->second->SetDesiredState(std::string("ENABLED"));
+                    iterTeleopPSM->second->state_command(std::string("enable"));
                 } else {
-                    iterTeleopPSM->second->SetDesiredState(std::string("DISABLED"));
+                    iterTeleopPSM->second->state_command(std::string("disable"));
                 }
                 mTeleopPSMRunning = true;
             }
@@ -2497,13 +2497,17 @@ void mtsIntuitiveResearchKitConsole::StatusEventHandler(const mtsMessage & messa
 }
 
 void mtsIntuitiveResearchKitConsole::SetArmCurrentState(const std::string & armName,
-                                                        const std::string & currentState)
+                                                        const prmOperatingState & currentState)
 {
     // update teleop state in case this arm is used for one of the selected teleops
-    if (currentState == "READY") {
+    if (currentState.IsEnabledHomedAndNotBusy()) {
         UpdateTeleopState();
     }
 
     // emit event
-    ConfigurationEvents.ArmCurrentState(prmKeyValue(armName, currentState));
+    if (currentState.IsEnabledAndHomed()) {
+        ConfigurationEvents.ArmCurrentState(prmKeyValue(armName, "ENABLED"));
+    } else {
+        ConfigurationEvents.ArmCurrentState(prmKeyValue(armName, ""));
+    }
 }

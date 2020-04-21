@@ -178,7 +178,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(Arm
         button = iter->second;
     }
     // color code state
-    if (armState.second.toStdString() == "READY") {
+    if (armState.second.toStdString() == "ENABLED") {
         button->setStyleSheet("QPushButton { background-color: rgb(50, 255, 50); border: none }");
     } else {
         button->setStyleSheet("QPushButton { background-color: rgb(255, 100, 100); border: none }");

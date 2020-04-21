@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -62,7 +62,6 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
         InterfaceRequired->AddFunction("measured_cp", Arm.measured_cp);
         InterfaceRequired->AddFunction("measured_cf_body", Arm.measured_cf_body, MTS_OPTIONAL);
         InterfaceRequired->AddFunction("move_jp", Arm.move_jp, MTS_OPTIONAL);
-        InterfaceRequired->AddFunction("SetDesiredState", Arm.SetDesiredState);
         InterfaceRequired->AddFunction("period_statistics", Arm.period_statistics);
     }
 }
@@ -163,7 +162,6 @@ void mtsIntuitiveResearchKitArmQtWidget::SlotLogEnabled(void)
 void mtsIntuitiveResearchKitArmQtWidget::SlotEnableDirectControl(bool toggle)
 {
     DirectControl = toggle;
-    QPBHome->setEnabled(toggle);
     if (toggle) {
         QPJSWidget->show();
         QPJSWidget->setEnabled(toggle);
@@ -171,11 +169,6 @@ void mtsIntuitiveResearchKitArmQtWidget::SlotEnableDirectControl(bool toggle)
     } else {
         QPJSWidget->hide();
     }
-}
-
-void mtsIntuitiveResearchKitArmQtWidget::SlotHome(void)
-{
-    Arm.SetDesiredState(std::string("READY"));
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::SlotDesiredStateEventHandler(QString state)
@@ -229,8 +222,6 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     stateLayout->addWidget(QPBLog);
     QCBEnableDirectControl = new QCheckBox("Direct control");
     stateLayout->addWidget(QCBEnableDirectControl);
-    QPBHome = new QPushButton("Home");
-    stateLayout->addWidget(QPBHome);
 
     QLabel * label = new QLabel("Desired");
     stateLayout->addWidget(label);
@@ -277,8 +268,6 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
             this, SLOT(SlotLogEnabled()));
     connect(QCBEnableDirectControl, SIGNAL(toggled(bool)),
             this, SLOT(SlotEnableDirectControl(bool)));
-    connect(QPBHome, SIGNAL(clicked()),
-            this, SLOT(SlotHome()));
 
     // set initial values
     QCBEnableDirectControl->setChecked(DirectControl);

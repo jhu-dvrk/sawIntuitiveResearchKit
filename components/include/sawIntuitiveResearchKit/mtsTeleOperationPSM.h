@@ -7,13 +7,13 @@
 
   (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
---- begin cisst license - do not edit ---
+  --- begin cisst license - do not edit ---
 
-This software is provided "as is" under an open source license, with
-no warranty.  The complete license can be found in license.txt and
-http://www.cisst.org/cisst/license.txt.
+  This software is provided "as is" under an open source license, with
+  no warranty.  The complete license can be found in license.txt and
+  http://www.cisst.org/cisst/license.txt.
 
---- end cisst license ---
+  --- end cisst license ---
 */
 
 #ifndef _mtsTeleOperationPSM_h
@@ -37,7 +37,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
-public:
+ public:
     mtsTeleOperationPSM(const std::string & componentName, const double periodInSeconds);
     mtsTeleOperationPSM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsTeleOperationPSM();
@@ -54,7 +54,7 @@ public:
     void LockTranslation(const bool & lock);
     void SetAlignMTM(const bool & alignMTM);
 
-protected:
+ protected:
 
     virtual void Init(void);
 
@@ -81,6 +81,7 @@ protected:
     } ConfigurationEvents;
 
     void SetDesiredState(const std::string & state);
+    void state_command(const std::string & command);
 
     vctMatRot3 UpdateAlignOffset(void);
     void UpdateInitialState(void);
@@ -106,9 +107,9 @@ protected:
         mtsFunctionVoid  UnlockOrientation;
         mtsFunctionWrite servo_cf_body;
         mtsFunctionWrite SetGravityCompensation;
-        mtsFunctionRead  GetCurrentState;
-        mtsFunctionRead  GetDesiredState;
-        mtsFunctionWrite SetDesiredState;
+
+        mtsFunctionRead  operating_state;
+        mtsFunctionWrite state_command;
 
         prmStateJoint StateGripper;
         prmPositionCartesianGet PositionCartesianCurrent;
@@ -120,14 +121,13 @@ protected:
     struct {
         mtsFunctionRead  measured_cp;
         mtsFunctionWrite servo_cp;
-        mtsFunctionVoid Freeze;
-        mtsFunctionRead GetStateJaw;
-        mtsFunctionRead GetConfigurationJaw;
+        mtsFunctionVoid  Freeze;
+        mtsFunctionRead  GetStateJaw;
+        mtsFunctionRead  GetConfigurationJaw;
         mtsFunctionWrite SetPositionJaw;
 
-        mtsFunctionRead  GetCurrentState;
-        mtsFunctionRead  GetDesiredState;
-        mtsFunctionWrite SetDesiredState;
+        mtsFunctionRead  operating_state;
+        mtsFunctionWrite state_command;
 
         prmStateJoint StateJaw;
         prmConfigurationJoint ConfigurationJaw;

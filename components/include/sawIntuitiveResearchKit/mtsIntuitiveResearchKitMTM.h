@@ -92,7 +92,7 @@ protected:
 
     // state related methods
     void SetGoalHomingArm(void) override;
-    void TransitionArmHomed(void);
+    void TransitionEncodersBiased(void);
     void EnterCalibratingRoll(void);
     void RunCalibratingRoll(void);
     void TransitionRollCalibrated(void);
@@ -135,7 +135,6 @@ protected:
     bool GripperClosed;
 
     // Roll position when hitting lower limit before encoder preload
-    bool mHomedOnce;
     double mHomingCalibrateRollLower;
     bool mHomingRollEncoderReset;
     robGravityCompensationMTM * GravityCompensationMTM = 0;

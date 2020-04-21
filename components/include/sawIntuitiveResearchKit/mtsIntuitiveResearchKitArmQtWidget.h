@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -67,7 +67,6 @@ private slots:
     void SlotCurrentStateEventHandler(QString state);
     void SlotLogEnabled(void);
     void SlotEnableDirectControl(bool toggle);
-    void SlotHome(void);
 
 private:
     //! setup GUI
@@ -81,7 +80,6 @@ protected:
         mtsFunctionRead measured_cp;
         mtsFunctionRead measured_cf_body;
         mtsFunctionWrite move_jp;
-        mtsFunctionWrite SetDesiredState;
         mtsFunctionRead period_statistics;
     } Arm;
 
@@ -112,7 +110,6 @@ private:
 
     // state
     QCheckBox * QCBEnableDirectControl;
-    QPushButton * QPBHome;
 
     QLineEdit * QLEDesiredState;
     QLineEdit * QLECurrentState;

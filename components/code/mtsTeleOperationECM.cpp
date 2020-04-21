@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Nicole Ortega
   Created on: 2016-01-21
 
-  (C) Copyright 2016-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -117,8 +117,8 @@ void mtsTeleOperationECM::Init(void)
                                        mMTML.GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState",
                                        mMTML.GetDesiredState);
-        interfaceRequired->AddFunction("SetDesiredState",
-                                       mMTML.SetDesiredState);
+        interfaceRequired->AddFunction("state_command",
+                                       mMTML.state_command);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::MTMLErrorEventHandler,
                                                 this, "error");
     }
@@ -143,8 +143,8 @@ void mtsTeleOperationECM::Init(void)
                                        mMTMR.GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState",
                                        mMTMR.GetDesiredState);
-        interfaceRequired->AddFunction("SetDesiredState",
-                                       mMTMR.SetDesiredState);
+        interfaceRequired->AddFunction("state_command",
+                                       mMTMR.state_command);
     }
 
     interfaceRequired = AddInterfaceRequired("ECM");
@@ -160,8 +160,8 @@ void mtsTeleOperationECM::Init(void)
                                        mECM.GetCurrentState);
         interfaceRequired->AddFunction("GetDesiredState",
                                        mECM.GetDesiredState);
-        interfaceRequired->AddFunction("SetDesiredState",
-                                       mECM.SetDesiredState);
+        interfaceRequired->AddFunction("state_command",
+                                       mECM.state_command);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::ECMErrorEventHandler,
                                                 this, "error");
     }
@@ -179,8 +179,8 @@ void mtsTeleOperationECM::Init(void)
         mInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                         "period_statistics"); // mtsIntervalStatistics
 
-        mInterface->AddCommandWrite(&mtsTeleOperationECM::SetDesiredState, this,
-                                    "SetDesiredState", std::string("DISABLED"));
+        mInterface->AddCommandWrite(&mtsTeleOperationECM::state_command, this,
+                                    "state_command", std::string("DISABLED"));
         mInterface->AddCommandWrite(&mtsTeleOperationECM::SetScale, this,
                                     "SetScale", 0.5);
         mInterface->AddCommandReadState(*mConfigurationStateTable,
@@ -261,14 +261,14 @@ void mtsTeleOperationECM::RunAllStates(void)
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTML.measured_cp failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTML");
-        this->SetDesiredState("DISABLED");
+        mTeleopState.SetDesiredState("DISABLED");
     }
     executionResult = mMTML.measured_cv(mMTML.VelocityCartesianCurrent);
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTML.measured_cv failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian velocity from MTML");
-        this->SetDesiredState("DISABLED");
+        mTeleopState.SetDesiredState("DISABLED");
     }
 
     // get MTMR Cartesian position
@@ -277,14 +277,14 @@ void mtsTeleOperationECM::RunAllStates(void)
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTMR.measured_cp failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTMR");
-        this->SetDesiredState("DISABLED");
+        mTeleopState.SetDesiredState("DISABLED");
     }
     executionResult = mMTMR.measured_cv(mMTMR.VelocityCartesianCurrent);
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTMR.measured_cv failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian velocity from MTMR");
-        this->SetDesiredState("DISABLED");
+        mTeleopState.SetDesiredState("DISABLED");
     }
 
     // get ECM Cartesian position for GUI
@@ -293,7 +293,7 @@ void mtsTeleOperationECM::RunAllStates(void)
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.measured_cp failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from ECM");
-        this->SetDesiredState("DISABLED");
+        mTeleopState.SetDesiredState("DISABLED");
     }
     // for motion computation
     executionResult = mECM.setpoint_js(mECM.StateJointDesired);
@@ -301,7 +301,7 @@ void mtsTeleOperationECM::RunAllStates(void)
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to ECM.setpoint_js failed \""
                                 << executionResult << "\"" << std::endl;
         mInterface->SendError(this->GetName() + ": unable to get joint state from ECM");
-        this->SetDesiredState("DISABLED");
+        mTeleopState.SetDesiredState("DISABLED");
     }
 
     // check if anyone wanted to disable anyway
@@ -318,17 +318,17 @@ void mtsTeleOperationECM::RunAllStates(void)
         std::string armState;
         mECM.GetDesiredState(armState);
         if (armState != "READY") {
-            this->SetDesiredState("DISABLED");
+            mTeleopState.SetDesiredState("DISABLED");
             mInterface->SendError(this->GetName() + ": ECM is not in state \"READY\" anymore");
         }
         mMTML.GetDesiredState(armState);
         if (armState != "READY") {
-            this->SetDesiredState("DISABLED");
+            mTeleopState.SetDesiredState("DISABLED");
             mInterface->SendError(this->GetName() + ": MTML is not in state \"READY\" anymore");
         }
         mMTMR.GetDesiredState(armState);
         if (armState != "READY") {
-            this->SetDesiredState("DISABLED");
+            mTeleopState.SetDesiredState("DISABLED");
             mInterface->SendError(this->GetName() + ": MTMR is not in state \"READY\" anymore");
         }
     }
@@ -350,15 +350,15 @@ void mtsTeleOperationECM::EnterSettingArmsState(void)
     std::string armState;
     mECM.GetDesiredState(armState);
     if (armState != "READY") {
-        mECM.SetDesiredState(std::string("READY"));
+        mECM.state_command(std::string("READY"));
     }
     mMTML.GetDesiredState(armState);
     if (armState != "READY") {
-        mMTML.SetDesiredState(std::string("READY"));
+        mMTML.state_command(std::string("READY"));
     }
     mMTMR.GetDesiredState(armState);
     if (armState != "READY") {
-        mMTMR.SetDesiredState(std::string("READY"));
+        mMTMR.state_command(std::string("READY"));
     }
 }
 
@@ -383,7 +383,7 @@ void mtsTeleOperationECM::TransitionSettingArmsState(void)
     // check timer
     if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
         mInterface->SendError(this->GetName() + ": timed out while setting up arms state");
-        this->SetDesiredState("DISABLED");
+        mTeleopState.SetDesiredState("DISABLED");
     }
 }
 
@@ -649,19 +649,19 @@ void mtsTeleOperationECM::SetFollowing(const bool following)
 
 void mtsTeleOperationECM::MTMLErrorEventHandler(const mtsMessage & message)
 {
-    this->SetDesiredState("DISABLED");
+    mTeleopState.SetDesiredState("DISABLED");
     mInterface->SendError(this->GetName() + ": received from MTML [" + message.Message + "]");
 }
 
 void mtsTeleOperationECM::MTMRErrorEventHandler(const mtsMessage & message)
 {
-    this->SetDesiredState("DISABLED");
+    mTeleopState.SetDesiredState("DISABLED");
     mInterface->SendError(this->GetName() + ": received from MTMR [" + message.Message + "]");
 }
 
 void mtsTeleOperationECM::ECMErrorEventHandler(const mtsMessage & message)
 {
-    this->SetDesiredState("DISABLED");
+    mTeleopState.SetDesiredState("DISABLED");
     mInterface->SendError(this->GetName() + ": received from ECM [" + message.Message + "]");
 }
 
@@ -706,7 +706,7 @@ void mtsTeleOperationECM::Clutch(const bool & clutch)
     }
 }
 
-void mtsTeleOperationECM::SetDesiredState(const std::string & state)
+void mtsTeleOperationECM::state_command(const std::string & state)
 {
     // try to find the state in state machine
     if (!mTeleopState.StateExists(state)) {

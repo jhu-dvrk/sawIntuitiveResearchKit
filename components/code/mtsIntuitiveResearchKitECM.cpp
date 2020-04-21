@@ -96,7 +96,7 @@ void mtsIntuitiveResearchKitECM::Init(void)
     mArmState.AddState("MANUAL");
 
     // after arm homed
-    mArmState.SetTransitionCallback("ARM_HOMED",
+    mArmState.SetTransitionCallback("HOMED",
                                     &mtsIntuitiveResearchKitECM::TransitionArmHomed,
                                     this);
 

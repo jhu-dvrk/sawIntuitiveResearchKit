@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Nicole Ortega
   Created on: 2016-01-21
 
-  (C) Copyright 2016-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -73,7 +73,7 @@ protected:
         mtsFunctionWrite Scale;
     } ConfigurationEvents;
 
-    void SetDesiredState(const std::string & state);
+    void state_command(const std::string & state);
 
     void StateChanged(void);
     void RunAllStates(void);
@@ -95,7 +95,7 @@ protected:
 
         mtsFunctionRead  GetCurrentState;
         mtsFunctionRead  GetDesiredState;
-        mtsFunctionWrite SetDesiredState;
+        mtsFunctionWrite state_command;
 
         prmPositionCartesianGet PositionCartesianCurrent;
         prmVelocityCartesianGet VelocityCartesianCurrent;
@@ -108,7 +108,7 @@ protected:
 
         mtsFunctionRead  GetCurrentState;
         mtsFunctionRead  GetDesiredState;
-        mtsFunctionWrite SetDesiredState;
+        mtsFunctionWrite state_command;
 
         prmPositionCartesianGet PositionCartesianCurrent;
         prmStateJoint StateJointDesired;

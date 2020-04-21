@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitConsole_h
 
 #include <cisstMultiTask/mtsTaskFromSignal.h>
+#include <cisstParameterTypes/prmOperatingState.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmKeyValue.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
@@ -130,7 +131,7 @@ public:
         std::string mBaseFrameComponentName;
         std::string mBaseFrameInterfaceName;
 
-        mtsFunctionWrite SetDesiredState;
+        mtsFunctionWrite state_command;
         mtsFunctionVoid Freeze;
         mtsInterfaceRequired * IOInterfaceRequired;
         mtsInterfaceRequired * IODallasInterfaceRequired;
@@ -153,7 +154,7 @@ public:
             }
         }
 
-        void CurrentStateEventHandler(const std::string & currentState);
+        void CurrentStateEventHandler(const prmOperatingState & currentState);
     };
 
     class CISST_EXPORT TeleopECM {
@@ -193,7 +194,7 @@ public:
         std::string mECMComponentName;
         std::string mECMInterfaceName;
         std::string mConsoleName;
-        mtsFunctionWrite SetDesiredState;
+        mtsFunctionWrite state_command;
         mtsInterfaceRequired * InterfaceRequired;
     };
 
@@ -247,7 +248,7 @@ public:
         std::string mConsoleName;
         std::string mBaseFrameComponentName;
         std::string mBaseFrameInterfaceName;
-        mtsFunctionWrite SetDesiredState;
+        mtsFunctionWrite state_command;
         mtsFunctionWrite SetScale;
         mtsInterfaceRequired * InterfaceRequired;
     };
@@ -386,7 +387,7 @@ protected:
     void StatusEventHandler(const mtsMessage & message);
 
     void SetArmCurrentState(const std::string & armName,
-                            const std::string & currentState);
+                            const prmOperatingState & currentState);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsole);

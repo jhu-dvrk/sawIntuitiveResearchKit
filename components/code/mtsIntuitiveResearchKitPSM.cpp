@@ -65,24 +65,23 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // state machine specific to PSM, see base class for other states
     mArmState.AddState("CHANGING_COUPLING_ADAPTER");
     mArmState.AddState("ENGAGING_ADAPTER");
-    mArmState.AddState("ADAPTER_ENGAGED");
     mArmState.AddState("CHANGING_COUPLING_TOOL");
     mArmState.AddState("ENGAGING_TOOL");
     mArmState.AddState("TOOL_ENGAGED");
     mArmState.AddState("MANUAL");
 
     // after arm homed
-    mArmState.SetEnterCallback("ARM_HOMED",
-                               &mtsIntuitiveResearchKitPSM::EnterArmHomed,
+    mArmState.SetEnterCallback("HOMED",
+                               &mtsIntuitiveResearchKitPSM::EnterHomed,
                                this);
-    mArmState.SetRunCallback("ARM_HOMED",
-                             &mtsIntuitiveResearchKitPSM::RunArmHomed,
+    mArmState.SetRunCallback("HOMED",
+                             &mtsIntuitiveResearchKitPSM::RunHomed,
                              this);
-    mArmState.SetTransitionCallback("ARM_HOMED",
-                                    &mtsIntuitiveResearchKitPSM::TransitionArmHomed,
+    mArmState.SetTransitionCallback("HOMED",
+                                    &mtsIntuitiveResearchKitPSM::TransitionHomed,
                                     this);
-    mArmState.SetLeaveCallback("ARM_HOMED",
-                               &mtsIntuitiveResearchKitPSM::LeaveArmHomed,
+    mArmState.SetLeaveCallback("HOMED",
+                               &mtsIntuitiveResearchKitPSM::LeaveHomed,
                                this);
     mArmState.SetEnterCallback("CHANGING_COUPLING_ADAPTER",
                                &mtsIntuitiveResearchKitPSM::EnterChangingCouplingAdapter,
@@ -96,9 +95,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mArmState.SetRunCallback("ENGAGING_ADAPTER",
                              &mtsIntuitiveResearchKitPSM::RunEngagingAdapter,
                              this);
-    mArmState.SetTransitionCallback("ADAPTER_ENGAGED",
-                                    &mtsIntuitiveResearchKitPSM::TransitionAdapterEngaged,
-                                    this);
     mArmState.SetEnterCallback("CHANGING_COUPLING_TOOL",
                                &mtsIntuitiveResearchKitPSM::EnterChangingCouplingTool,
                                this);
@@ -657,29 +653,60 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
     }
 }
 
-void mtsIntuitiveResearchKitPSM::EnterArmHomed(void)
+void mtsIntuitiveResearchKitPSM::EnterHomed(void)
 {
+    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
+                                  m_homed, false); 
     mJointControlReady = true;
 }
 
-void mtsIntuitiveResearchKitPSM::RunArmHomed(void)
+void mtsIntuitiveResearchKitPSM::RunHomed(void)
 {
     if (mControlCallback) {
         mControlCallback->Execute();
     }
 }
 
-void mtsIntuitiveResearchKitPSM::TransitionArmHomed(void)
+void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
 {
-    if (mArmState.DesiredStateIsNotCurrent()) {
-        Adapter.GetButton(Adapter.IsPresent);
-        if (Adapter.IsPresent || m_simulated || mAdapterNeedEngage) {
-            mArmState.SetCurrentState("CHANGING_COUPLING_ADAPTER");
+    Adapter.GetButton(Adapter.IsPresent);
+    if (!Adapter.IsPresent) {
+        Adapter.IsEngaged = false;
+    }
+    if (!Adapter.IsEngaged &&
+        (Adapter.IsPresent || m_simulated || Adapter.NeedEngage)) {
+        mArmState.SetCurrentState("CHANGING_COUPLING_ADAPTER");
+    }
+
+    Tool.GetButton(Tool.IsPresent);
+    if (!Tool.IsPresent) {
+        Tool.IsEngaged = false;
+    }
+    if (Adapter.IsEngaged && !Tool.IsEngaged) {
+        if (!m_simulated) {
+            if (Tool.IsPresent && mToolConfigured) {
+                SetToolPresent(true);
+                mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
+            }
+        } else {
+            // simulated case
+            SetToolPresent(true);
+            // check if tool is configured, i.e. fixed or manual
+            if (mToolConfigured) {
+                mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
+            } else {
+                // request tool type if needed
+                if (!mToolTypeRequested) {
+                    mToolTypeRequested = true;
+                    ToolEvents.ToolTypeRequest();
+                    RobotInterface->SendWarning(this->GetName() + ": tool type requested from user");
+                }
+            }
         }
     }
 }
 
-void mtsIntuitiveResearchKitPSM::LeaveArmHomed(void)
+void mtsIntuitiveResearchKitPSM::LeaveHomed(void)
 {
     // turn off joint control ready until we have adapter and tool
     mJointControlReady = false;
@@ -839,6 +866,8 @@ void mtsIntuitiveResearchKitPSM::UpdateConfigurationJointPID(const bool toolPres
 
 void mtsIntuitiveResearchKitPSM::EnterChangingCouplingAdapter(void)
 {
+    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
+                                  false, true); 
     CouplingChange.Started = false;
     CouplingChange.CouplingForTool = false; // Load identity coupling
     CouplingChange.NextState = "ENGAGING_ADAPTER";
@@ -846,6 +875,8 @@ void mtsIntuitiveResearchKitPSM::EnterChangingCouplingAdapter(void)
 
 void mtsIntuitiveResearchKitPSM::EnterEngagingAdapter(void)
 {
+    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
+                                  false, true); 
     // if simulated, nothing to do
     if (m_simulated) {
         return;
@@ -856,14 +887,16 @@ void mtsIntuitiveResearchKitPSM::EnterEngagingAdapter(void)
     Tool.GetButton(Tool.IsPresent);
     if (Tool.IsPresent) {
         // we can skip engage later
-        mToolNeedEngage = false;
-        mArmState.SetCurrentState("ADAPTER_ENGAGED");
+        Tool.NeedEngage = false;
+        Adapter.IsEngaged = true;
+        mArmState.SetCurrentState("HOMED");
         return;
     }
     // if for some reason we don't need to engage, basically, adapter
     // was found before homing
-    if (!mAdapterNeedEngage) {
-        mArmState.SetCurrentState("ADAPTER_ENGAGED");
+    if (!Adapter.NeedEngage) {
+        Adapter.IsEngaged = true;
+        mArmState.SetCurrentState("HOMED");
         return;
     }
 
@@ -875,7 +908,9 @@ void mtsIntuitiveResearchKitPSM::EnterEngagingAdapter(void)
 void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 {
     if (m_simulated) {
-        mArmState.SetCurrentState("ADAPTER_ENGAGED");
+        Adapter.NeedEngage = false;
+        Adapter.IsEngaged = true;
+        mArmState.SetCurrentState("HOMED");
         return;
     }
 
@@ -936,7 +971,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         {
             // check if we were in last phase
             if (EngagingStage > LastEngagingStage) {
-                mArmState.SetCurrentState("ADAPTER_ENGAGED");
+                Adapter.NeedEngage = false;
+                Adapter.IsEngaged = true;
+                mArmState.SetCurrentState("HOMED");
             } else {
                 if (EngagingStage != LastEngagingStage) {
                     mJointTrajectory.Goal.Ref(4, 3) *= -1.0; // toggle back and forth
@@ -959,40 +996,13 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
     }
 }
 
-void mtsIntuitiveResearchKitPSM::TransitionAdapterEngaged(void)
-{
-    mAdapterNeedEngage = false;
-    if (mArmState.DesiredStateIsNotCurrent()) {
-        // real case, check if there is a tool and it is properly configured
-        if (!m_simulated) {
-            Tool.GetButton(Tool.IsPresent);
-            if (Tool.IsPresent && mToolConfigured) {
-                SetToolPresent(true);
-                mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
-            }
-        } else {
-            // simulated case
-            SetToolPresent(true);
-            // check if we tool is configured, i.e. fixed or manual
-            if (mToolConfigured) {
-                mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
-            } else {
-                // request tool type if needed
-                if (!mToolTypeRequested) {
-                    mToolTypeRequested = true;
-                    ToolEvents.ToolTypeRequest();
-                    RobotInterface->SendWarning(this->GetName() + ": tool type requested from user");
-                }
-            }
-        }
-    }
-}
-
 void mtsIntuitiveResearchKitPSM::EnterChangingCouplingTool(void)
 {
+    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
+                                  false, true); 
     CouplingChange.Started = false;
     CouplingChange.CouplingForTool = true; // Load tool coupling
-    if (mToolNeedEngage) {
+    if (Tool.NeedEngage) {
         CouplingChange.NextState = "ENGAGING_TOOL";
     } else {
         CouplingChange.NextState = "TOOL_ENGAGED";
@@ -1001,12 +1011,15 @@ void mtsIntuitiveResearchKitPSM::EnterChangingCouplingTool(void)
 
 void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
 {
+    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
+                                  false, true); 
+
     // set PID limits for tool present
     UpdateConfigurationJointPID(true);
 
     // if for some reason we don't need to engage, basically, tool was
     // found before homing
-    if (!mToolNeedEngage) {
+    if (!Tool.NeedEngage) {
         mArmState.SetCurrentState("TOOL_ENGAGED");
         return;
     }
@@ -1088,7 +1101,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         {
             // check if we were in last phase
             if (EngagingStage > LastEngagingStage) {
-                mToolNeedEngage = false;
+                Tool.NeedEngage = false;
                 mArmState.SetCurrentState("TOOL_ENGAGED");
             } else {
                 if (EngagingStage != LastEngagingStage) {
@@ -1119,13 +1132,16 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 
 void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
 {
+    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
+                                  m_homed, false); 
+
     // restore default PID tracking error
-    PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
+    PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);    
 }
 
 void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
 {
-    mToolNeedEngage = false;
+    Tool.NeedEngage = false;
     if (mArmState.DesiredStateIsNotCurrent()) {
         mArmState.SetCurrentState("READY");
     }
@@ -1133,6 +1149,8 @@ void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
 
 void mtsIntuitiveResearchKitPSM::EnterManual(void)
 {
+    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
+                                  m_homed, true); 
     PID.Enable(false);
 }
 
@@ -1315,12 +1333,14 @@ void mtsIntuitiveResearchKitPSM::EnableJointsEventHandler(const vctBoolVec & ena
 
 void mtsIntuitiveResearchKitPSM::SetAdapterPresent(const bool & present)
 {
+    Adapter.IsEngaged = false;
     if (present) {
         // we will need to engage this adapter
-        mAdapterNeedEngage = true;
+        Adapter.NeedEngage = true;
     } else {
+        Adapter.NeedEngage = false;
         m_cartesian_ready = false;
-        mArmState.SetCurrentState("ARM_HOMED");
+        mArmState.SetCurrentState("HOMED");
     }
 }
 
@@ -1342,11 +1362,10 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
 {
     if (present) {
         // we will need to engage this tool
-        mToolNeedEngage = true;
+        Tool.NeedEngage = true;
         ToolEvents.ToolType(mtsIntuitiveResearchKitToolTypes::TypeToString(mToolType));
     } else {
         m_cartesian_ready = false;
-        mArmState.SetCurrentState("ADAPTER_ENGAGED");
         ToolEvents.ToolType(std::string());
     }
 }

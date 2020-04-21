@@ -31,6 +31,8 @@ mCartesianImpedance = m_cartesianImpedance
 mHasNewPIDGoal = m_new_pid_goal
 mEffortOrientationLocked = m_effort_orientation_locked
 
+OperatingStateCommand = state_command
+
 UNINITIALIZED = DISABLED
 EnterUninitialized = EnterDisabled
 TransitionUninitialized = TransitionDisabled
@@ -38,3 +40,10 @@ TransitionUninitialized = TransitionDisabled
 POWERED = ENABLED
 EnterPowered = EnterEnabled
 TransitionPowered = TransitionEnabled
+
+ARM_HOMED = HOMED
+
+
+HOMING_ARM = HOMING
+EnterHomingArm = EnterHoming
+RunHomingArm = RunHoming

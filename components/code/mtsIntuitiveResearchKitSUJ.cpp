@@ -450,7 +450,7 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
                                     &mtsIntuitiveResearchKitSUJ::TransitionEnabled,
                                     this);
 
-    // state between ARM_HOMED and READY depends on the arm type, see
+    // state between HOMED and READY depends on the arm type, see
     // derived classes
     mArmState.SetEnterCallback("READY",
                                &mtsIntuitiveResearchKitSUJ::EnterReady,

@@ -80,10 +80,10 @@ protected:
 
     // state related methods
     void SetGoalHomingArm(void) override;
-    void EnterArmHomed(void);
-    void RunArmHomed(void); // mostly to allow joint control without tool nor adapter
-    void LeaveArmHomed(void);
-    void TransitionArmHomed(void);
+    void EnterHomed(void);
+    void RunHomed(void); // mostly to allow joint control without tool nor adapter
+    void LeaveHomed(void);
+    void TransitionHomed(void);
 
     // methods used in change coupling/engaging
     void RunChangingCoupling(void);
@@ -96,7 +96,6 @@ protected:
     }
     void EnterEngagingAdapter(void);
     void RunEngagingAdapter(void);
-    void TransitionAdapterEngaged(void);
     // engaging tool
     void EnterChangingCouplingTool(void);
     inline void RunChangingCouplingTool(void) {
@@ -135,11 +134,15 @@ protected:
     struct {
         mtsFunctionRead GetButton;
         bool IsPresent;
+        bool NeedEngage = false;
+        bool IsEngaged = false;
     } Adapter;
 
     struct {
         mtsFunctionRead GetButton;
         bool IsPresent;
+        bool NeedEngage = false;
+        bool IsEngaged = false;
     } Tool;
     //@}
 
@@ -192,9 +195,6 @@ protected:
     // Home Action
     unsigned int EngagingStage; // 0 requested
     unsigned int LastEngagingStage;
-
-    bool mAdapterNeedEngage = false;
-    bool mToolNeedEngage = false;
 
     struct {
         bool Started;
