@@ -62,7 +62,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     friend class mtsIntuitiveResearchKitConsole;
 
-public:
+ public:
     mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
     mtsIntuitiveResearchKitArm(const mtsTaskPeriodicConstructorArg & arg);
     virtual ~mtsIntuitiveResearchKitArm();
@@ -117,9 +117,10 @@ public:
     // state machine
     std::string mFallbackState;
 
-    void UpdateOperatingStateHomedBusy(const prmOperatingState::StateType & state,
-                                       const bool isHomed,
-                                       const bool isBusy);
+    void UpdateOperatingStateAndBusy(const prmOperatingState::StateType & state,
+                                     const bool isBusy);
+    void UpdateHomed(const bool isHomed);
+
     void StateChanged(void);
     void RunAllStates(void); // this should happen for all states
 
@@ -208,6 +209,10 @@ public:
     /*! Inverse kinematics must be redefined for each arm type. */
     virtual robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                                     const vctFrm4x4 & cartesianGoal) = 0;
+
+    /*! Each arm has a different homing procedure. */
+    virtual bool IsHomed(void) const = 0;
+    virtual void UnHome(void) = 0;
 
     /*! Each arm must provide a way to check if the arm is ready to be
       used in cartesian mode.  PSM and ECM need to make sure the
@@ -332,7 +337,6 @@ public:
     bool BaseFrameValid;
 
     bool m_powered = false;;
-    bool m_homed = false;
     bool m_joint_ready = false;
     bool m_cartesian_ready = false;
     bool mJointControlReady;
@@ -369,10 +373,10 @@ public:
       control.  The callback method will be use only if either the
       space or the mode is "USER". */
     template <class __classType>
-    inline void SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
-                                       const mtsIntuitiveResearchKitArmTypes::ControlMode mode,
-                                       void (__classType::*method)(void),
-                                       __classType * classInstantiation) {
+        inline void SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
+                                           const mtsIntuitiveResearchKitArmTypes::ControlMode mode,
+                                           void (__classType::*method)(void),
+                                           __classType * classInstantiation) {
         this->SetControlSpaceAndMode(space, mode,
                                      new mtsCallableVoidMethod<__classType>(method,
                                                                             classInstantiation));
@@ -382,8 +386,8 @@ public:
       use the SetControlSpaceAndMode method instead. */
     //@{
     template <class __classType>
-    inline void SetControlCallback(void (__classType::*method)(void),
-                                   __classType * classInstantiation) {
+        inline void SetControlCallback(void (__classType::*method)(void),
+                                       __classType * classInstantiation) {
         this->SetControlCallback(new mtsCallableVoidMethod<__classType>(method,
                                                                         classInstantiation));
     }
@@ -440,9 +444,9 @@ public:
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
     } mJointTrajectory;
 
-    // Home Action
-    bool m_encoders_biased;
-    bool mAllEncodersBiased = false; // value read from FPGA
+    // homing
+    bool m_arm_encoders_biased = false;
+    bool m_all_encoders_biased = false; // value read from FPGA
     bool mAlwaysHome = false;
     bool mHomingGoesToZero;
     bool mHomingBiasEncoderRequested;
@@ -450,7 +454,7 @@ public:
 
     unsigned int mCounter;
 
-    // Flag to determine if this is connected to actual IO/hardware or simulated
+    // flag to determine if this is connected to actual IO/hardware or simulated
     bool m_simulated;
 };
 

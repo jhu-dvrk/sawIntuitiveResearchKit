@@ -44,7 +44,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
-public:
+ public:
     friend class mtsIntuitiveResearchKitConsoleQt;
     friend class dvrk::console;
 
@@ -257,12 +257,12 @@ public:
     inline virtual ~mtsIntuitiveResearchKitConsole() {}
 
     /*! Configure console using JSON file. To test is the configuration
-        succeeded, used method Configured().
+      succeeded, used method Configured().
     */
     void Configure(const std::string & filename);
 
     /*! Method to check if the configuration was successful, ideally called
-        after a call to Configure.
+      after a call to Configure.
     */
     const bool & Configured(void) const;
 
@@ -284,7 +284,7 @@ public:
 
     bool Connect(void);
 
-protected:
+ protected:
     bool mConfigured;
     double mTimeOfLastErrorBeep;
     bool mTeleopEnabled;

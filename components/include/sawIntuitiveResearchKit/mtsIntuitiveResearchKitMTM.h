@@ -90,6 +90,9 @@ protected:
     virtual void CreateManipulator(void) override;
     virtual void Init(void) override;
 
+    bool IsHomed(void) const override;
+    void UnHome(void) override;
+
     // state related methods
     void SetGoalHomingArm(void) override;
     void TransitionEncodersBiased(void);

@@ -30,14 +30,14 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
-public:
+ public:
     mtsIntuitiveResearchKitECM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitECM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitECM() {}
 
     void SetSimulated(void) override;
 
-protected:
+ protected:
 
     void PostConfigure(const Json::Value & jsonConfig,
                        const cmnPath & configPath,
@@ -74,6 +74,10 @@ protected:
 
     void CreateManipulator(void) override;
     void Init(void) override;
+
+    bool IsHomed(void) const;
+    void UnHome(void);
+
 
     // state related methods
     void SetGoalHomingArm(void) override;

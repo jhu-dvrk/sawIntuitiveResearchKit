@@ -7,13 +7,13 @@
 
   (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
-  --- begin cisst license - do not edit ---
+--- begin cisst license - do not edit ---
 
-  This software is provided "as is" under an open source license, with
-  no warranty.  The complete license can be found in license.txt and
-  http://www.cisst.org/cisst/license.txt.
+This software is provided "as is" under an open source license, with
+no warranty.  The complete license can be found in license.txt and
+http://www.cisst.org/cisst/license.txt.
 
-  --- end cisst license ---
+--- end cisst license ---
 */
 
 
@@ -190,7 +190,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mJointControlReady = false;
     mCartesianControlReady = false;
     m_simulated = false;
-    m_encoders_biased = false;
+    m_arm_encoders_biased = false;
     mHomingGoesToZero = false; // MTM ignores this
     mHomingBiasEncoderRequested = false;
 
@@ -442,6 +442,11 @@ void mtsIntuitiveResearchKitArm::state_command(const std::string & command)
             }
             if (command == "home") {
                 SetDesiredState("HOMED");
+                return;
+            }
+            if (command == "unhome") {
+                UnHome();
+                UpdateHomed(false);
             }
         } else {
             RobotInterface->SendWarning(this->GetName() + ": " + humanReadableMessage);
@@ -888,14 +893,23 @@ void mtsIntuitiveResearchKitArm::ToJointsPID(const vctDoubleVec & jointsKinemati
     jointsPID.Assign(jointsKinematics);
 }
 
-void mtsIntuitiveResearchKitArm::UpdateOperatingStateHomedBusy(const prmOperatingState::StateType & state,
-                                                               const bool isHomed,
-                                                               const bool isBusy)
+void mtsIntuitiveResearchKitArm::UpdateOperatingStateAndBusy(const prmOperatingState::StateType & state,
+                                                             const bool isBusy)
 {
     mStateTableState.Start();
     m_operating_state.State() = state;
-    m_operating_state.IsHomed() = isHomed;
+    m_operating_state.IsHomed() = IsHomed();
     m_operating_state.IsBusy() = isBusy;
+    m_operating_state.SubState() = mArmState.CurrentState();
+    mStateTableState.Advance();
+    MessageEvents.OperatingState(m_operating_state);
+}
+
+void mtsIntuitiveResearchKitArm::UpdateHomed(const bool isHomed)
+{
+    mStateTableState.Start();
+    m_operating_state.IsHomed() = isHomed;
+    m_operating_state.SubState() = mArmState.CurrentState();
     mStateTableState.Advance();
     MessageEvents.OperatingState(m_operating_state);
 }
@@ -932,9 +946,7 @@ void mtsIntuitiveResearchKitArm::RunAllStates(void)
 
 void mtsIntuitiveResearchKitArm::EnterDisabled(void)
 {
-    UpdateOperatingStateHomedBusy(prmOperatingState::DISABLED,
-                                  m_homed,
-                                  false);
+    UpdateOperatingStateAndBusy(prmOperatingState::DISABLED, false);
 
     mFallbackState = "DISABLED";
     if (NumberOfBrakes() > 0) {
@@ -964,9 +976,7 @@ void mtsIntuitiveResearchKitArm::TransitionDisabled(void)
 
 void mtsIntuitiveResearchKitArm::EnterPowering(void)
 {
-    UpdateOperatingStateHomedBusy(prmOperatingState::DISABLED,
-                                  m_homed,
-                                  true);
+    UpdateOperatingStateAndBusy(prmOperatingState::DISABLED, true);
 
     m_powered = false;
 
@@ -1026,9 +1036,7 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
 
 void mtsIntuitiveResearchKitArm::EnterEnabled(void)
 {
-    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
-                                  m_homed,
-                                  false);
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
 
     if (m_simulated) {
         return;
@@ -1063,28 +1071,26 @@ void mtsIntuitiveResearchKitArm::TransitionEnabled(void)
 
 void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 {
-    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
-                                  false, // not homed until we're done calibrating
-                                  true);
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
     // if simulated, no need to bias encoders
     if (m_simulated) {
         RobotInterface->SendStatus(this->GetName() + ": simulated mode, no need to calibrate encoders");
         return;
     }
-    if (m_encoders_biased) {
+    if (m_arm_encoders_biased) {
         RobotInterface->SendStatus(this->GetName() + ": encoders have already been calibrated, skipping");
         return;
     }
 
     // request bias encoder
     const double currentTime = this->StateTable.GetTic();
-    const int numberOfSample = 1970; // birth date, state table only contain 1999 elements anyway
+    const int numberOfSamples = 1970; // birth date, state table only contain 1999 elements anyway
     if (mAlwaysHome) {
-        RobotIO.BiasEncoder(numberOfSample);
+        RobotIO.BiasEncoder(numberOfSamples);
     } else {
         // negative numbers means that we first check if encoders have already been preloaded
-        RobotIO.BiasEncoder(-numberOfSample);
+        RobotIO.BiasEncoder(-numberOfSamples);
     }
     mHomingBiasEncoderRequested = true;
     mHomingTimer = currentTime;
@@ -1092,8 +1098,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 
 void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
 {
-    if (m_simulated || m_encoders_biased) {
-        m_homed = true;
+    if (m_simulated || m_arm_encoders_biased) {
         m_joint_ready = true;
         mArmState.SetCurrentState("ENCODERS_BIASED");
         return;
@@ -1110,9 +1115,7 @@ void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
 
 void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
 {
-    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
-                                  m_homed, false);
-
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
     // use pots for redundancy
     RobotIO.UsePotsForSafetyCheck(true);
 }
@@ -1128,8 +1131,7 @@ void mtsIntuitiveResearchKitArm::TransitionEncodersBiased(void)
 
 void mtsIntuitiveResearchKitArm::EnterHoming(void)
 {
-    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
-                                  m_homed, true);
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
     // disable joint limits
     PID.SetCheckPositionLimit(false);
@@ -1208,8 +1210,7 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
 
 void mtsIntuitiveResearchKitArm::EnterHomed(void)
 {
-    UpdateOperatingStateHomedBusy(prmOperatingState::ENABLED,
-                                  m_homed, false);
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
 
     // set ready flags, some might have been set earlier by derived
     // classes (e.g. PSM allows joint commands without tool
@@ -1803,14 +1804,14 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
         std::stringstream nbSamplesString;
         nbSamplesString << nbSamples;
         RobotInterface->SendStatus(this->GetName() + ": encoders biased using " + nbSamplesString.str() + " potentiometer values");
-        mAllEncodersBiased = false;
+        m_all_encoders_biased = false;
     } else {
         RobotInterface->SendStatus(this->GetName() + ": encoders seem to be already biased");
-        mAllEncodersBiased = true; // this is mostly for MTM homing to skip roll homing
+        m_all_encoders_biased = true; // this is mostly for MTM homing to skip roll homing
     }
     if (mHomingBiasEncoderRequested) {
         mHomingBiasEncoderRequested = false;
-        m_encoders_biased = true;
+        m_arm_encoders_biased = true;
         m_joint_ready = true;
         mArmState.SetCurrentState("ENCODERS_BIASED");
     } else {

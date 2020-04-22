@@ -49,6 +49,45 @@ void mtsIntuitiveResearchKitECM::SetSimulated(void)
     RemoveInterfaceRequired("ManipClutch");
 }
 
+
+void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
+                                               const cmnPath & CMN_UNUSED(configPath),
+                                               const std::string & filename)
+{
+    // load tool tip transform if any (for up/down endoscopes)
+    // future work: add UP/DOWN, _HD and set mass for GC, also create separate method with ROS topic + GUI to set the endoscope
+    const Json::Value jsonEndoscope = jsonConfig["endoscope"];
+    if (!jsonEndoscope.isNull()) {
+        std::string endoscope = jsonEndoscope.asString();
+        SetEndoscopeType(endoscope);
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": \"endoscope\" must be defined (from file \""
+                                 << filename << "\")" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    if (!mEndoscopeConfigured) {
+        exit(EXIT_FAILURE);
+    }
+
+    // check that Rtw0 is not set
+    if (Manipulator->Rtw0 != vctFrm4x4::Identity()) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": you can't define the base-offset for the ECM, it is hard coded so gravity compensation works properly.  We always assume the ECM is mounted at 45 degrees! (from file \""
+                                 << filename << "\")" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // 45 degrees rotation to make sure Z points up, this helps with
+    // cisstRobot::robManipulator gravity compensation
+    vctFrame4x4<double> Rt(vctMatRot3(1.0,            0.0,            0.0,
+                                      0.0,  sqrt(2.0)/2.0,  sqrt(2.0)/2.0,
+                                      0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
+                           vct3(0.0, 0.0, 0.0));
+    Manipulator->Rtw0 = Rt;
+}
+
 robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
@@ -147,42 +186,14 @@ void mtsIntuitiveResearchKitECM::Init(void)
     }
 }
 
-void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
-                                               const cmnPath & CMN_UNUSED(configPath),
-                                               const std::string & filename)
+bool mtsIntuitiveResearchKitECM::IsHomed(void) const
 {
-    // load tool tip transform if any (for up/down endoscopes)
-    // future work: add UP/DOWN, _HD and set mass for GC, also create separate method with ROS topic + GUI to set the endoscope
-    const Json::Value jsonEndoscope = jsonConfig["endoscope"];
-    if (!jsonEndoscope.isNull()) {
-        std::string endoscope = jsonEndoscope.asString();
-        SetEndoscopeType(endoscope);
-    } else {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": \"endoscope\" must be defined (from file \""
-                                 << filename << "\")" << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    return m_arm_encoders_biased;
+}
 
-    if (!mEndoscopeConfigured) {
-        exit(EXIT_FAILURE);
-    }
-
-    // check that Rtw0 is not set
-    if (Manipulator->Rtw0 != vctFrm4x4::Identity()) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": you can't define the base-offset for the ECM, it is hard coded so gravity compensation works properly.  We always assume the ECM is mounted at 45 degrees! (from file \""
-                                 << filename << "\")" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // 45 degrees rotation to make sure Z points up, this helps with
-    // cisstRobot::robManipulator gravity compensation
-    vctFrame4x4<double> Rt(vctMatRot3(1.0,            0.0,            0.0,
-                                      0.0,  sqrt(2.0)/2.0,  sqrt(2.0)/2.0,
-                                      0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
-                           vct3(0.0, 0.0, 0.0));
-    Manipulator->Rtw0 = Rt;
+void mtsIntuitiveResearchKitECM::UnHome(void)
+{
+    m_arm_encoders_biased = false;
 }
 
 void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
@@ -223,6 +234,7 @@ void mtsIntuitiveResearchKitECM::TransitionArmHomed(void)
 
 void mtsIntuitiveResearchKitECM::EnterManual(void)
 {
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
     // set ready flag so Arm::GetRobotData updates all joint and
     // cartesian data members
     mJointControlReady = true;
@@ -244,6 +256,7 @@ void mtsIntuitiveResearchKitECM::RunManual(void)
 
 void mtsIntuitiveResearchKitECM::LeaveManual(void)
 {
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
     Freeze();
 }
 

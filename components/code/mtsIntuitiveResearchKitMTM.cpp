@@ -271,40 +271,14 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     RobotInterface->AddEventWrite(GripperEvents.GripperClosed, "GripperClosedEvent", true);
 }
 
-void mtsIntuitiveResearchKitMTM::GetRobotData(void)
+bool mtsIntuitiveResearchKitMTM::IsHomed(void) const
 {
-    mtsIntuitiveResearchKitArm::GetRobotData();
+    return m_all_encoders_biased;
+}
 
-    if (m_simulated) {
-        return;
-    }
-
-    // get gripper based on analog inputs
-    mtsExecutionResult executionResult = RobotIO.GetAnalogInputPosSI(AnalogInputPosSI);
-    if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetAnalogInputPosSI failed \""
-                                << executionResult << "\"" << std::endl;
-        return;
-    }
-    // for timestamp, we assume the value ws collected at the same time as other joints
-    const double position = AnalogInputPosSI.Element(JNT_GRIPPER);
-    StateGripper.Position()[0] = position;
-    StateGripper.Timestamp() = m_measured_js_pid.Timestamp();
-    StateGripper.Valid() = m_measured_js_pid.Valid();
-
-    // events associated to gripper
-    if (GripperClosed) {
-        if (position > 0.0) {
-            GripperClosed = false;
-            GripperEvents.GripperClosed(false);
-        }
-    } else {
-        if (position < 0.0) {
-            GripperClosed = true;
-            GripperEvents.GripperClosed(true);
-            GripperEvents.GripperPinch.Execute();
-        }
-    }
+void mtsIntuitiveResearchKitMTM::UnHome(void)
+{
+    m_all_encoders_biased = false;
 }
 
 void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
@@ -312,7 +286,7 @@ void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
     // compute joint goal position
     mJointTrajectory.Goal.SetAll(0.0);
     // last joint is calibrated later
-    if (!(m_homed || mAllEncodersBiased)) {
+    if (!(m_all_encoders_biased)) {
         mJointTrajectory.Goal.Element(JNT_WRIST_ROLL) = m_setpoint_js_pid.Position().Element(JNT_WRIST_ROLL);
     }
 }
@@ -326,7 +300,9 @@ void mtsIntuitiveResearchKitMTM::TransitionEncodersBiased(void)
 
 void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 {
-    if (m_simulated || this->m_homed || this->mAllEncodersBiased) {
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
+
+    if (m_simulated || IsHomed()) {
         return;
     }
 
@@ -354,7 +330,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 
 void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 {
-    if (m_simulated || this->m_homed || this->mAllEncodersBiased) {
+    if (m_simulated || IsHomed()) {
         mArmState.SetCurrentState("ROLL_CALIBRATED");
         return;
     }
@@ -426,7 +402,9 @@ void mtsIntuitiveResearchKitMTM::TransitionRollCalibrated(void)
 
 void mtsIntuitiveResearchKitMTM::EnterHomingRoll(void)
 {
-    if (m_simulated || this->m_homed || this->mAllEncodersBiased) {
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
+
+    if (m_simulated || IsHomed()) {
         return;
     }
     // compute joint goal position, we assume PID is on from previous state
@@ -445,8 +423,7 @@ void mtsIntuitiveResearchKitMTM::EnterHomingRoll(void)
 
 void mtsIntuitiveResearchKitMTM::RunHomingRoll(void)
 {
-    if (m_simulated || this->m_homed|| this->mAllEncodersBiased) {
-        m_homed = true;
+    if (m_simulated || IsHomed()) {
         mArmState.SetCurrentState("ROLL_ENCODER_RESET");
         return;
     }
@@ -498,6 +475,8 @@ void mtsIntuitiveResearchKitMTM::RunHomingRoll(void)
 
 void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
 {
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
+
     mHomingRollEncoderReset = false;
 
     // disable PID on roll joint
@@ -546,7 +525,7 @@ void mtsIntuitiveResearchKitMTM::RunResettingRollEncoder(void)
     // we're not sure the arm is already m_joint_ready
     m_setpoint_js_pid.Position().SetAll(0.0);
 
-    m_homed = true;
+    m_all_encoders_biased = true;
     mArmState.SetCurrentState("ROLL_ENCODER_RESET");
 }
 
@@ -554,6 +533,42 @@ void mtsIntuitiveResearchKitMTM::TransitionRollEncoderReset(void)
 {
     if (mArmState.DesiredStateIsNotCurrent()) {
         mArmState.SetCurrentState("HOMING");
+    }
+}
+
+void mtsIntuitiveResearchKitMTM::GetRobotData(void)
+{
+    mtsIntuitiveResearchKitArm::GetRobotData();
+
+    if (m_simulated) {
+        return;
+    }
+
+    // get gripper based on analog inputs
+    mtsExecutionResult executionResult = RobotIO.GetAnalogInputPosSI(AnalogInputPosSI);
+    if (!executionResult.IsOK()) {
+        CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetAnalogInputPosSI failed \""
+                                << executionResult << "\"" << std::endl;
+        return;
+    }
+    // for timestamp, we assume the value ws collected at the same time as other joints
+    const double position = AnalogInputPosSI.Element(JNT_GRIPPER);
+    StateGripper.Position()[0] = position;
+    StateGripper.Timestamp() = m_measured_js_pid.Timestamp();
+    StateGripper.Valid() = m_measured_js_pid.Valid();
+
+    // events associated to gripper
+    if (GripperClosed) {
+        if (position > 0.0) {
+            GripperClosed = false;
+            GripperEvents.GripperClosed(false);
+        }
+    } else {
+        if (position < 0.0) {
+            GripperClosed = true;
+            GripperEvents.GripperClosed(true);
+            GripperEvents.GripperPinch.Execute();
+        }
     }
 }
 

@@ -98,7 +98,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::Startup(void)
         show();
     }
 
-        // write warning to cerr if not compiled in Release mode
+    // write warning to cerr if not compiled in Release mode
     if (std::string(CISST_BUILD_TYPE) != "Release") {
         std::string message;
         message.append("Warning:\n");

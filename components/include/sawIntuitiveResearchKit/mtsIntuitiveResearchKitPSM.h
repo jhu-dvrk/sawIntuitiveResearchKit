@@ -32,14 +32,14 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
-public:
+ public:
     mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitPSM() {}
 
     void SetSimulated(void) override;
 
-protected:
+ protected:
 
     void PostConfigure(const Json::Value & jsonConfig,
                        const cmnPath & configPath,
@@ -66,10 +66,10 @@ protected:
     void UpdateStateJointKinematics(void) override;
     void ToJointsPID(const vctDoubleVec &jointsKinematics, vctDoubleVec &jointsPID) override;
 
+
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal) override;
 
-    // see base class
     inline bool IsSafeForCartesianControl(void) const override {
         return (m_measured_js_kin.Position().at(2) >= mtsIntuitiveResearchKit::PSMOutsideCannula);
     }
@@ -77,6 +77,8 @@ protected:
 
     void Init(void) override;
 
+    bool IsHomed(void) const override;
+    void UnHome(void) override;
 
     // state related methods
     void SetGoalHomingArm(void) override;

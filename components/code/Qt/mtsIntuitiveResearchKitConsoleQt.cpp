@@ -119,8 +119,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
 
         const std::string name = armIter->first;
 
-        switch(armIter->second->mType)
-        {
+        switch (armIter->second->mType) {
         case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM:

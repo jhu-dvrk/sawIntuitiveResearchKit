@@ -207,7 +207,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             }
         }
         break;
-     case ARM_ECM_DERIVED:
+    case ARM_ECM_DERIVED:
         {
             mtsComponent * component;
             component = componentManager->GetComponent(Name());
@@ -966,7 +966,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                  || (arm->mType == Arm::ARM_ECM_DERIVED)
                  || (arm->mType == Arm::ARM_PSM)
                  || (arm->mType == Arm::ARM_PSM_DERIVED)
-                )
+                 )
                 && (arm->mSimulation == Arm::SIMULATION_NONE)) {
                 arm->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJ-" + arm->Name() + "-IO");
                 arm->SUJInterfaceRequiredFromIO->AddEventHandlerWrite(&Arm::SUJClutchEventHandlerFromIO, arm, "Button");
@@ -1753,7 +1753,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         // first MTM with multiple PSMs is selected for single tap
         if ((mTeleopsPSMByMTM.count(mtmName) > 1)
             && (mTeleopMTMToCycle == "")) {
-                mTeleopMTMToCycle = mtmName;
+            mTeleopMTMToCycle = mtmName;
         }
         // check if we already have a teleop for the same PSM
         std::string mtmUsingThatPSM;
