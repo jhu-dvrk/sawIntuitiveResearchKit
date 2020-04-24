@@ -635,12 +635,12 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 bool mtsIntuitiveResearchKitPSM::IsHomed(void) const
 {
     if (Tool.IsPresent) {
-        return m_arm_encoders_biased && Adapter.IsEngaged && Tool.IsEngaged;
+        return m_encoders_biased_from_pots && Adapter.IsEngaged && Tool.IsEngaged;
     }
     if (Adapter.IsPresent) {
-        return m_arm_encoders_biased && Adapter.IsEngaged;
+        return m_encoders_biased_from_pots && Adapter.IsEngaged;
     }
-    return m_arm_encoders_biased;
+    return m_encoders_biased_from_pots;
 }
 
 void mtsIntuitiveResearchKitPSM::UnHome(void)
@@ -653,7 +653,7 @@ void mtsIntuitiveResearchKitPSM::UnHome(void)
         Adapter.IsEngaged = false;
         return;
     }
-    m_arm_encoders_biased = false;
+    m_encoders_biased_from_pots = false;
 }
 
 void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)

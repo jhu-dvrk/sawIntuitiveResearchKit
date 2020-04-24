@@ -254,7 +254,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionRead  GetActuatorAmpStatus;
         mtsFunctionRead  GetBrakeAmpStatus;
         mtsFunctionWrite BiasEncoder;
-        mtsFunctionWrite ResetSingleEncoder;
+        mtsFunctionWrite SetSomeEncoderPosition;
         mtsFunctionRead  GetAnalogInputPosSI;
         mtsFunctionWrite SetActuatorCurrent;
         mtsFunctionWrite UsePotsForSafetyCheck;
@@ -269,7 +269,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     struct {
         mtsFunctionWrite DesiredState;
         mtsFunctionWrite CurrentState;
-        mtsFunctionWrite OperatingState; // crtk
+        mtsFunctionWrite OperatingState;
     } MessageEvents;
 
     robManipulator * Manipulator;
@@ -445,14 +445,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     } mJointTrajectory;
 
     // homing
-    bool m_arm_encoders_biased = false;
-    bool m_all_encoders_biased = false; // value read from FPGA
-    bool mAlwaysHome = false;
+    bool m_encoders_biased_from_pots = false; // encoders biased from pots
+    bool m_encoders_biased = false; // encoder might have to be biased on joint limits (MTM roll)
+    bool m_re_home = false; // force re-biasing encoder even if values are found on FPGA
     bool mHomingGoesToZero;
     bool mHomingBiasEncoderRequested;
     double mHomingTimer;
-
-    unsigned int mCounter;
 
     // flag to determine if this is connected to actual IO/hardware or simulated
     bool m_simulated;

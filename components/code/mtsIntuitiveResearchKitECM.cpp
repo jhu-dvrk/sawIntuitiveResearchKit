@@ -188,12 +188,12 @@ void mtsIntuitiveResearchKitECM::Init(void)
 
 bool mtsIntuitiveResearchKitECM::IsHomed(void) const
 {
-    return m_arm_encoders_biased;
+    return m_encoders_biased_from_pots;
 }
 
 void mtsIntuitiveResearchKitECM::UnHome(void)
 {
-    m_arm_encoders_biased = false;
+    m_encoders_biased_from_pots = false;
 }
 
 void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)

@@ -2,5 +2,5 @@
 {
     "kinematic": "kinematic/mtmr.json"
     , "gravity-compensation": "gc-MTMR-28247.json"
-    // , "always-home": true
+    // , "re-home": true
 }

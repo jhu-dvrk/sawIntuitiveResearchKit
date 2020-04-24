@@ -99,8 +99,6 @@ protected:
     void EnterCalibratingRoll(void);
     void RunCalibratingRoll(void);
     void TransitionRollCalibrated(void);
-    void EnterHomingRoll(void);
-    void RunHomingRoll(void);
     void EnterResettingRollEncoder(void);
     void RunResettingRollEncoder(void);
     void TransitionRollEncoderReset(void);
@@ -137,9 +135,6 @@ protected:
     prmConfigurationJoint ConfigurationGripper;
     bool GripperClosed;
 
-    // Roll position when hitting lower limit before encoder preload
-    double mHomingCalibrateRollLower;
-    bool mHomingRollEncoderReset;
     robGravityCompensationMTM * GravityCompensationMTM = 0;
 };
 

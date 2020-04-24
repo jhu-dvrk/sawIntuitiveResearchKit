@@ -183,14 +183,13 @@ void mtsIntuitiveResearchKitArm::Init(void)
     AddStateTable(&mStateTableConfiguration);
     mStateTableConfiguration.SetAutomaticAdvance(false);
 
-    mCounter = 0;
     m_control_space = mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE;
     m_control_mode = mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE;
 
     mJointControlReady = false;
     mCartesianControlReady = false;
     m_simulated = false;
-    m_arm_encoders_biased = false;
+    m_encoders_biased_from_pots = false;
     mHomingGoesToZero = false; // MTM ignores this
     mHomingBiasEncoderRequested = false;
 
@@ -310,7 +309,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         IOInterface->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
         IOInterface->AddFunction("GetBrakeAmpStatus", RobotIO.GetBrakeAmpStatus);
         IOInterface->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
-        IOInterface->AddFunction("ResetSingleEncoder", RobotIO.ResetSingleEncoder);
+        IOInterface->AddFunction("SetSomeEncoderPosition", RobotIO.SetSomeEncoderPosition);
         IOInterface->AddFunction("GetAnalogInputPosSI", RobotIO.GetAnalogInputPosSI);
         IOInterface->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
         IOInterface->AddFunction("UsePotsForSafetyCheck", RobotIO.UsePotsForSafetyCheck);
@@ -576,9 +575,9 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         }
 
         // should ignore preloaded encoders and force homing
-        const Json::Value jsonAlwaysHome = jsonConfig["always-home"];
+        const Json::Value jsonAlwaysHome = jsonConfig["re-home"];
         if (!jsonAlwaysHome.isNull()) {
-            mAlwaysHome = jsonAlwaysHome.asBool();
+            m_re_home = jsonAlwaysHome.asBool();
         }
 
     } catch (std::exception & e) {
@@ -746,7 +745,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         if (executionResult.IsOK()) {
             m_measured_js_pid.Valid() = true;
         } else {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointState failed \""
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to PID.measured_js failed \""
                                     << executionResult << "\"" << std::endl;
             m_measured_js_pid.Valid() = false;
         }
@@ -756,7 +755,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         if (executionResult.IsOK()) {
             m_setpoint_js_pid.Valid() = true;
         } else {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetJointStateDesired failed \""
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to PID.setpoint_js failed \""
                                     << executionResult << "\"" << std::endl;
             m_setpoint_js_pid.Valid() = false;
         }
@@ -1078,19 +1077,20 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
         RobotInterface->SendStatus(this->GetName() + ": simulated mode, no need to calibrate encoders");
         return;
     }
-    if (m_arm_encoders_biased) {
+    if (m_encoders_biased_from_pots) {
         RobotInterface->SendStatus(this->GetName() + ": encoders have already been calibrated, skipping");
         return;
     }
 
     // request bias encoder
     const double currentTime = this->StateTable.GetTic();
-    const int numberOfSamples = 1970; // birth date, state table only contain 1999 elements anyway
-    if (mAlwaysHome) {
-        RobotIO.BiasEncoder(numberOfSamples);
+    const int nb_samples = 1970; // birth year, state table contains 1999 elements so anything under that would work
+    if (m_re_home) {
+        // positive number to ignore encoder preloads
+        RobotIO.BiasEncoder(nb_samples);
     } else {
         // negative numbers means that we first check if encoders have already been preloaded
-        RobotIO.BiasEncoder(-numberOfSamples);
+        RobotIO.BiasEncoder(-nb_samples);
     }
     mHomingBiasEncoderRequested = true;
     mHomingTimer = currentTime;
@@ -1098,7 +1098,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 
 void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
 {
-    if (m_simulated || m_arm_encoders_biased) {
+    if (m_simulated || m_encoders_biased_from_pots) {
         m_joint_ready = true;
         mArmState.SetCurrentState("ENCODERS_BIASED");
         return;
@@ -1133,13 +1133,10 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
-    // disable joint limits
+    // disable joint limits, arm might start outside them
     PID.SetCheckPositionLimit(false);
     // enable tracking errors
     PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
-    // enable PID on all joints
-    PID.Enable(true);
-    PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
 
     // release brakes if any
     if ((NumberOfBrakes() > 0) && !m_simulated) {
@@ -1147,14 +1144,23 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
     }
 
     // get robot data to make sure we have latest state
+    CMN_ASSERT(m_joint_ready);
     GetRobotData();
 
     // compute joint goal position
     this->SetGoalHomingArm();
+    // initialize trajectory with current position and velocities
+    JointSet.Assign(m_setpoint_js_pid.Position());
+    JointVelocitySet.Assign(m_measured_js_pid.Velocity());
     mJointTrajectory.GoalVelocity.SetAll(0.0);
     mJointTrajectory.EndTime = 0.0;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+
+    // enable PID on all joints
+    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
+    PID.Enable(true);
+    PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
 }
 
 void mtsIntuitiveResearchKitArm::RunHoming(void)
@@ -1800,19 +1806,27 @@ void mtsIntuitiveResearchKitArm::PositionLimitEventHandler(const vctBoolVec & CM
 
 void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 {
+    // encoders are biased from pots
+    m_encoders_biased_from_pots = true;
+    m_joint_ready = true;
+
     if (nbSamples > 0) {
+        // some encoders need to be biased not from pots: MTM roll
+        m_encoders_biased = false;
         std::stringstream nbSamplesString;
         nbSamplesString << nbSamples;
         RobotInterface->SendStatus(this->GetName() + ": encoders biased using " + nbSamplesString.str() + " potentiometer values");
-        m_all_encoders_biased = false;
     } else {
+        // we assume that all encoders were properly biased.  This is
+        // mostly for MTM homing to skip roll homing.  This could fail
+        // if the homing process was interrupted between bias from
+        // pots and MTM search for roll limits.
+        m_encoders_biased = true;
         RobotInterface->SendStatus(this->GetName() + ": encoders seem to be already biased");
-        m_all_encoders_biased = true; // this is mostly for MTM homing to skip roll homing
     }
+
     if (mHomingBiasEncoderRequested) {
         mHomingBiasEncoderRequested = false;
-        m_arm_encoders_biased = true;
-        m_joint_ready = true;
         mArmState.SetCurrentState("ENCODERS_BIASED");
     } else {
         RobotInterface->SendWarning(this->GetName() + ": encoders have been biased by another process");

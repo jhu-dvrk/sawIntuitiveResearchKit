@@ -2,4 +2,5 @@
 {
     "kinematic": "kinematic/mtml.json",
     "gravity-compensation": "gc-MTML-22723.json"
+    , "re-home": true
 }
