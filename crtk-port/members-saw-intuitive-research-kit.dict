@@ -17,6 +17,9 @@ CartesianGetDesiredParam = m_setpoint_cp
 CartesianGetLocalParam = m_measured_cp_local
 CartesianGetLocalDesiredParam = m_setpoint_cp_local
 
+CartesianVelocityGetParam = m_measured_cv
+mWrenchGet = m_measured_cf_body
+
 mIsSimulated = m_simulated
 mEncoderBiased = m_encoders_biased
 mCartesianReady = m_cartesian_ready
@@ -32,6 +35,11 @@ mHasNewPIDGoal = m_new_pid_goal
 mEffortOrientationLocked = m_effort_orientation_locked
 
 OperatingStateCommand = state_command
+
+GetJacobianBody = jacobian_body
+mJacobianBody = m_jacobian_body
+GetJacobianSpatial = jacobian_spatial
+mJacobianSpatial = m_jacobian_spatial
 
 UNINITIALIZED = DISABLED
 EnterUninitialized = EnterDisabled

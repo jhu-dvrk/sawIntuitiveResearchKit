@@ -273,6 +273,10 @@ bool mtsIntuitiveResearchKitMTM::IsHomed(void) const
 
 void mtsIntuitiveResearchKitMTM::UnHome(void)
 {
+    // to force re-bias on pots
+    m_re_home = true;
+    m_encoders_biased_from_pots = false;
+    // to force roll bias
     m_encoders_biased = false;
 }
 

@@ -170,7 +170,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                this);
 
     // state table to maintain state :-)
-    mStateTableState.AddData(mStateTableStateCurrent, "CurrentState");
     mStateTableState.AddData(mStateTableStateDesired, "DesiredState");
     m_operating_state.Valid() = true;
     mStateTableState.AddData(m_operating_state, "operating_state");
@@ -221,22 +220,22 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mJointTrajectory.IsWorking = false;
 
     // initialize velocity
-    CartesianVelocityGetParam.SetVelocityLinear(vct3(0.0));
-    CartesianVelocityGetParam.SetVelocityAngular(vct3(0.0));
-    CartesianVelocityGetParam.SetValid(false);
+    m_measured_cv.SetVelocityLinear(vct3(0.0));
+    m_measured_cv.SetVelocityAngular(vct3(0.0));
+    m_measured_cv.SetValid(false);
 
     // base manipulator class used by most arms (except PSM with snake like tool)
     CreateManipulator();
 
     // jacobian
     ResizeKinematicsData();
-    this->StateTable.AddData(mJacobianBody, "JacobianBody");
-    this->StateTable.AddData(mJacobianSpatial, "JacobianSpatial");
+    this->StateTable.AddData(m_jacobian_body, "JacobianBody");
+    this->StateTable.AddData(m_jacobian_spatial, "JacobianSpatial");
 
     // efforts for kinematics
     mEffortJointSet.SetSize(NumberOfJointsKinematics());
     mEffortJointSet.ForceTorque().SetAll(0.0);
-    mWrenchGet.SetValid(false);
+    m_measured_cf_body.SetValid(false);
 
     // base frame, mostly for cases where no base frame is set by user
     m_base_frame = vctFrm4x4::Identity();
@@ -249,28 +248,28 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     m_setpoint_cp.SetAutomaticTimestamp(false); // based on PID timestamp
     m_setpoint_cp.SetReferenceFrame(GetName() + "_base");
-    m_setpoint_cp.SetMovingFrame(GetName() + "_d");
-    this->StateTable.AddData(m_setpoint_cp, "CartesianPositionDesired");
+    m_setpoint_cp.SetMovingFrame(GetName() + "_setpoint");
+    this->StateTable.AddData(m_setpoint_cp, "setpoint_cp");
 
     m_measured_cp_local.SetAutomaticTimestamp(false); // based on PID timestamp
     m_measured_cp_local.SetReferenceFrame(GetName() + "_base");
     m_measured_cp_local.SetMovingFrame(GetName());
-    this->StateTable.AddData(m_measured_cp_local, "CartesianPositionLocal");
+    this->StateTable.AddData(m_measured_cp_local, "measured_cp_local");
 
     m_setpoint_cp_local.SetAutomaticTimestamp(false); // based on PID timestamp
     m_setpoint_cp_local.SetReferenceFrame(GetName() + "_base");
-    m_setpoint_cp_local.SetMovingFrame(GetName() + "_d");
-    this->StateTable.AddData(m_setpoint_cp_local, "CartesianPositionLocalDesired");
+    m_setpoint_cp_local.SetMovingFrame(GetName() + "_setpoint");
+    this->StateTable.AddData(m_setpoint_cp_local, "setpoint_cp_local");
 
     this->StateTable.AddData(m_base_frame, "m_base_frame");
 
-    CartesianVelocityGetParam.SetAutomaticTimestamp(false); // keep PID timestamp
-    CartesianVelocityGetParam.SetMovingFrame(GetName());
-    CartesianVelocityGetParam.SetReferenceFrame(GetName() + "_base");
-    this->StateTable.AddData(CartesianVelocityGetParam, "CartesianVelocityGetParam");
+    m_measured_cv.SetAutomaticTimestamp(false); // keep PID timestamp
+    m_measured_cv.SetMovingFrame(GetName());
+    m_measured_cv.SetReferenceFrame(GetName() + "_base");
+    this->StateTable.AddData(m_measured_cv, "m_measured_cv");
 
-    mWrenchGet.SetAutomaticTimestamp(false); // keep PID timestamp
-    this->StateTable.AddData(mWrenchGet, "WrenchGet");
+    m_measured_cf_body.SetAutomaticTimestamp(false); // keep PID timestamp
+    this->StateTable.AddData(m_measured_cf_body, "measured_cf_body");
 
     m_measured_js_kin.SetAutomaticTimestamp(false); // keep PID timestamp
     this->StateTable.AddData(m_measured_js_kin, "m_measured_js_kin");
@@ -332,10 +331,10 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandReadState(this->StateTable, m_measured_cp, "measured_cp");
         RobotInterface->AddCommandReadState(this->StateTable, m_setpoint_cp, "setpoint_cp");
         RobotInterface->AddCommandReadState(this->StateTable, m_base_frame, "GetBaseFrame");
-        RobotInterface->AddCommandReadState(this->StateTable, CartesianVelocityGetParam, "measured_cv");
-        RobotInterface->AddCommandReadState(this->StateTable, mWrenchGet, "measured_cf_body");
-        RobotInterface->AddCommandReadState(this->StateTable, mJacobianBody, "GetJacobianBody");
-        RobotInterface->AddCommandReadState(this->StateTable, mJacobianSpatial, "GetJacobianSpatial");
+        RobotInterface->AddCommandReadState(this->StateTable, m_measured_cv, "measured_cv");
+        RobotInterface->AddCommandReadState(this->StateTable, m_measured_cf_body, "measured_cf_body");
+        RobotInterface->AddCommandReadState(this->StateTable, m_jacobian_body, "jacobian_body");
+        RobotInterface->AddCommandReadState(this->StateTable, m_jacobian_spatial, "jacobian_spatial");
         RobotInterface->AddCommandReadState(this->mStateTableState,
                                             m_operating_state, "operating_state");
         // Set
@@ -491,9 +490,9 @@ void mtsIntuitiveResearchKitArm::UpdateConfigurationJointKinematic(void)
 
 void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
 {
-    mJacobianBody.SetSize(6, NumberOfJointsKinematics());
-    mJacobianSpatial.SetSize(6, NumberOfJointsKinematics());
-    mJacobianBodyTranspose.ForceAssign(mJacobianBody.Transpose());
+    m_jacobian_body.SetSize(6, NumberOfJointsKinematics());
+    m_jacobian_spatial.SetSize(6, NumberOfJointsKinematics());
+    mJacobianBodyTranspose.ForceAssign(m_jacobian_body.Transpose());
     mJacobianPInverseData.Allocate(mJacobianBodyTranspose);
     mEffortJointSet.SetSize(NumberOfJointsKinematics());
     mEffortJointSet.ForceTorque().SetAll(0.0);
@@ -777,29 +776,29 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             m_measured_cp.SetTimestamp(m_measured_js_kin.Timestamp());
             m_measured_cp.SetValid(BaseFrameValid);
             // update jacobians
-            Manipulator->JacobianSpatial(m_measured_js_kin.Position(), mJacobianSpatial);
-            Manipulator->JacobianBody(m_measured_js_kin.Position(), mJacobianBody);
+            Manipulator->JacobianSpatial(m_measured_js_kin.Position(), m_jacobian_spatial);
+            Manipulator->JacobianBody(m_measured_js_kin.Position(), m_jacobian_body);
 
             // update cartesian velocity using the jacobian and joint
             // velocities.
             vctDoubleVec cartesianVelocity(6);
-            cartesianVelocity.ProductOf(mJacobianBody, m_measured_js_kin.Velocity());
+            cartesianVelocity.ProductOf(m_jacobian_body, m_measured_js_kin.Velocity());
             vct3 relative, absolute;
             // linear
             relative.Assign(cartesianVelocity.Ref(3, 0));
             m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
-            CartesianVelocityGetParam.SetVelocityLinear(absolute);
+            m_measured_cv.SetVelocityLinear(absolute);
             // angular
             relative.Assign(cartesianVelocity.Ref(3, 3));
             m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
-            CartesianVelocityGetParam.SetVelocityAngular(absolute);
+            m_measured_cv.SetVelocityAngular(absolute);
             // valid/timestamp
-            CartesianVelocityGetParam.SetValid(true);
-            CartesianVelocityGetParam.SetTimestamp(m_measured_js_kin.Timestamp());
+            m_measured_cv.SetValid(true);
+            m_measured_cv.SetTimestamp(m_measured_js_kin.Timestamp());
 
 
             // update wrench based on measured joint current efforts
-            mJacobianBodyTranspose.Assign(mJacobianBody.Transpose());
+            mJacobianBodyTranspose.Assign(m_jacobian_body.Transpose());
             nmrPInverse(mJacobianBodyTranspose, mJacobianPInverseData);
             vctDoubleVec wrench(6);
             wrench.ProductOf(mJacobianPInverseData.PInverse(), m_measured_js_kin.Effort());
@@ -807,17 +806,17 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
                 // forces
                 relative.Assign(wrench.Ref(3, 0));
                 m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
-                mWrenchGet.Force().Ref<3>(0).Assign(absolute);
+                m_measured_cf_body.Force().Ref<3>(0).Assign(absolute);
                 // torques
                 relative.Assign(wrench.Ref(3, 3));
                 m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
-                mWrenchGet.Force().Ref<3>(3).Assign(absolute);
+                m_measured_cf_body.Force().Ref<3>(3).Assign(absolute);
             } else {
-                mWrenchGet.Force().Assign(wrench);
+                m_measured_cf_body.Force().Assign(wrench);
             }
             // valid/timestamp
-            mWrenchGet.SetValid(true);
-            mWrenchGet.SetTimestamp(m_measured_js_kin.Timestamp());
+            m_measured_cf_body.SetValid(true);
+            m_measured_cf_body.SetTimestamp(m_measured_js_kin.Timestamp());
 
             // update cartesian position desired based on joint desired
             m_setpoint_cp_local_frame = Manipulator->ForwardKinematics(m_setpoint_js_kin.Position());
@@ -830,20 +829,6 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
             m_setpoint_cp_local.SetValid(true);
             m_setpoint_cp.SetTimestamp(m_setpoint_js_kin.Timestamp());
             m_setpoint_cp.SetValid(BaseFrameValid);
-        } else {
-            // update cartesian position
-            m_measured_cp_local_frame.Assign(vctFrm4x4::Identity());
-            m_measured_cp_frame.Assign(vctFrm4x4::Identity());
-            m_measured_cp_local.SetValid(false);
-            m_measured_cp.SetValid(false);
-            // velocities and wrench
-            CartesianVelocityGetParam.SetValid(false);
-            mWrenchGet.SetValid(false);
-            // update cartesian position desired
-            m_setpoint_cp_local_frame.Assign(vctFrm4x4::Identity());
-            m_setpoint_cp_frame.Assign(vctFrm4x4::Identity());
-            m_setpoint_cp_local.SetValid(false);
-            m_setpoint_cp.SetValid(false);
         }
 
         m_measured_cp_local.Position().From(m_measured_cp_local_frame);
@@ -861,6 +846,20 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         m_measured_js_kin.Velocity().Zeros();
         m_measured_js_kin.Effort().Zeros();
         m_measured_js_kin.SetValid(false);
+
+        // set cartesian data to "zero"
+        m_measured_cp_local_frame.Assign(vctFrm4x4::Identity());
+        m_measured_cp_frame.Assign(vctFrm4x4::Identity());
+        m_measured_cp_local.SetValid(false);
+        m_measured_cp.SetValid(false);
+        // velocities and wrench
+        m_measured_cv.SetValid(false);
+        m_measured_cf_body.SetValid(false);
+        // update cartesian position desired
+        m_setpoint_cp_local_frame.Assign(vctFrm4x4::Identity());
+        m_setpoint_cp_frame.Assign(vctFrm4x4::Identity());
+        m_setpoint_cp_local.SetValid(false);
+        m_setpoint_cp.SetValid(false);
     }
 }
 
@@ -1573,7 +1572,7 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
         // either using wrench provided by user or cartesian impedance
         if (m_cartesianImpedance) {
             mCartesianImpedanceController->Update(m_measured_cp,
-                                                  CartesianVelocityGetParam,
+                                                  m_measured_cv,
                                                   mWrenchSet,
                                                   mWrenchBodyOrientationAbsolute);
             wrench.Assign(mWrenchSet.Force());
@@ -1594,13 +1593,13 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
                 wrench.Assign(mWrenchSet.Force());
             }
         }
-        mEffortJoint.ProductOf(mJacobianBody.Transpose(), wrench + wrenchPreload);
+        mEffortJoint.ProductOf(m_jacobian_body.Transpose(), wrench + wrenchPreload);
         mEffortJoint.Add(effortPreload);
     }
     // spatial wrench
     else if (mWrenchType == WRENCH_SPATIAL) {
         wrench.Assign(mWrenchSet.Force());
-        mEffortJoint.ProductOf(mJacobianSpatial.Transpose(), wrench + wrenchPreload);
+        mEffortJoint.ProductOf(m_jacobian_spatial.Transpose(), wrench + wrenchPreload);
         mEffortJoint.Add(effortPreload);
     }
 

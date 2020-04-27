@@ -301,7 +301,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmConfigurationJoint m_configuration_js_pid, m_configuration_js_kin;
 
     // efforts
-    vctDoubleMat mJacobianBody, mJacobianBodyTranspose, mJacobianSpatial;
+    vctDoubleMat m_jacobian_body, mJacobianBodyTranspose, m_jacobian_spatial;
     WrenchType mWrenchType;
     prmForceCartesianSet mWrenchSet;
     bool mWrenchBodyOrientationAbsolute;
@@ -311,7 +311,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctDoubleVec mEffortJoint; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData mJacobianPInverseData;
-    prmForceCartesianGet mWrenchGet;
+    prmForceCartesianGet m_measured_cf_body;
 
     // cartesian impendance controller
     osaCartesianImpedanceController * mCartesianImpedanceController;
@@ -329,7 +329,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     // Velocities
     vctFrm4x4 CartesianGetPrevious;
-    prmVelocityCartesianGet CartesianVelocityGetParam;
+    prmVelocityCartesianGet m_measured_cv;
     vctFrm4x4 CartesianPositionFrm;
 
     // Base frame

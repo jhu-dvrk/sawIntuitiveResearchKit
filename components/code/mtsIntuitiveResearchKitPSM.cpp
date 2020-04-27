@@ -653,6 +653,8 @@ void mtsIntuitiveResearchKitPSM::UnHome(void)
         Adapter.IsEngaged = false;
         return;
     }
+    // to force re-bias on pots
+    m_re_home = true;
     m_encoders_biased_from_pots = false;
 }
 

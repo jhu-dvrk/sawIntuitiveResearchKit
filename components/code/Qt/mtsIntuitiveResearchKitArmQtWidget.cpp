@@ -53,8 +53,6 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
     if (InterfaceRequired) {
         InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::DesiredStateEventHandler,
                                                 this, "DesiredState");
-        InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::CurrentStateEventHandler,
-                                                this, "CurrentState");
         QMMessage->SetInterfaceRequired(InterfaceRequired);
         InterfaceRequired->AddFunction("configuration_js", Arm.configuration_js);
         QPOState->SetInterfaceRequired(InterfaceRequired);
@@ -144,11 +142,6 @@ void mtsIntuitiveResearchKitArmQtWidget::DesiredStateEventHandler(const std::str
     emit SignalDesiredState(QString(state.c_str()));
 }
 
-void mtsIntuitiveResearchKitArmQtWidget::CurrentStateEventHandler(const std::string & state)
-{
-    emit SignalCurrentState(QString(state.c_str()));
-}
-
 void mtsIntuitiveResearchKitArmQtWidget::SlotLogEnabled(void)
 {
     LogEnabled = QPBLog->isChecked();
@@ -162,6 +155,7 @@ void mtsIntuitiveResearchKitArmQtWidget::SlotLogEnabled(void)
 void mtsIntuitiveResearchKitArmQtWidget::SlotEnableDirectControl(bool toggle)
 {
     DirectControl = toggle;
+    QPOState->setEnabled(toggle);
     if (toggle) {
         QPJSWidget->show();
         QPJSWidget->setEnabled(toggle);
@@ -174,11 +168,6 @@ void mtsIntuitiveResearchKitArmQtWidget::SlotEnableDirectControl(bool toggle)
 void mtsIntuitiveResearchKitArmQtWidget::SlotDesiredStateEventHandler(QString state)
 {
     QLEDesiredState->setText(state);
-}
-
-void mtsIntuitiveResearchKitArmQtWidget::SlotCurrentStateEventHandler(QString state)
-{
-    QLECurrentState->setText(state);
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
@@ -229,12 +218,6 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     QLEDesiredState->setReadOnly(true);
     stateLayout->addWidget(QLEDesiredState);
 
-    label = new QLabel("Current");
-    stateLayout->addWidget(label);
-    QLECurrentState = new QLineEdit("");
-    QLECurrentState->setReadOnly(true);
-    stateLayout->addWidget(QLECurrentState);
-
     // operating state
     QPOState->setupUi();
     stateLayout->addWidget(QPOState);
@@ -262,8 +245,6 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     // setup Qt Connection
     connect(this, SIGNAL(SignalDesiredState(QString)),
             this, SLOT(SlotDesiredStateEventHandler(QString)));
-    connect(this, SIGNAL(SignalCurrentState(QString)),
-            this, SLOT(SlotCurrentStateEventHandler(QString)));
     connect(QPBLog, SIGNAL(clicked()),
             this, SLOT(SlotLogEnabled()));
     connect(QCBEnableDirectControl, SIGNAL(toggled(bool)),
