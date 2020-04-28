@@ -42,7 +42,7 @@ protected:
 
 private:
     mtsFunctionWrite servo_cp;
-    mtsFunctionWrite SetPositionJaw;
+    mtsFunctionWrite jaw_servo_jp;
     mtsFunctionRead measured_cp;
 
     mtsFunctionWrite SetDesiredState;

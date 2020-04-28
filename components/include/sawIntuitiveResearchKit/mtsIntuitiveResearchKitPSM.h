@@ -117,9 +117,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void EventHandlerTool(const prmEventButton & button);
     void EventHandlerManipClutch(const prmEventButton & button);
 
-    void SetPositionJaw(const prmPositionJointSet & jawPosition);
-    void SetPositionGoalJaw(const prmPositionJointSet & jawPosition);
-    void SetEffortJaw(const prmForceTorqueJointSet & effort);
+    void jaw_servo_jp(const prmPositionJointSet & jawPosition);
+    void jaw_move_jp(const prmPositionJointSet & jawPosition);
+    void jaw_servo_jf(const prmForceTorqueJointSet & effort);
 
     void SetPositionJointLocal(const vctDoubleVec & newPosition) override;
     void SetEffortJointLocal(const vctDoubleVec & newEffort) override;
@@ -186,7 +186,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     robManipulator * ToolOffset = nullptr;
     vctFrm4x4 ToolOffsetTransformation;
 
-    prmStateJoint StateJaw, StateJawDesired;
+    prmStateJoint m_jaw_measured_js, m_jaw_setpoint_js;
     double JawGoal;
     double EffortJawSet;
 
@@ -205,7 +205,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
         vctDoubleVec ToolEngageLowerPosition, ToolEngageUpperPosition;
         prmConfigurationJoint ToolConfiguration;
         prmConfigurationJoint NoToolConfiguration;
-        prmConfigurationJoint JawConfiguration;
+        prmConfigurationJoint jaw_configuration_js;
     } CouplingChange;
 };
 

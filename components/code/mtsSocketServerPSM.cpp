@@ -31,7 +31,7 @@ mtsSocketServerPSM::mtsSocketServerPSM(const std::string & componentName, const 
     if(interfaceRequired) {
         interfaceRequired->AddFunction("measured_cp", measured_cp);
         interfaceRequired->AddFunction("servo_cp", servo_cp);
-        interfaceRequired->AddFunction("SetPositionJaw", SetPositionJaw);
+        interfaceRequired->AddFunction("jaw_servo_jp", jaw_servo_jp);
         interfaceRequired->AddFunction("GetCurrentState", GetCurrentState);
         interfaceRequired->AddFunction("SetDesiredState", SetDesiredState);
         interfaceRequired->AddEventHandlerWrite(&mtsSocketServerPSM::ErrorEventHandler,
@@ -94,7 +94,7 @@ void mtsSocketServerPSM::ExecutePSMCommands(void)
         // send jaw goal
         PositionJointSet.Goal().SetSize(1);
         PositionJointSet.Goal().Element(0) = Command.Data.GoalJaw;
-        SetPositionJaw(PositionJointSet);
+        jaw_servo_jp(PositionJointSet);
         break;
     default:
         break;

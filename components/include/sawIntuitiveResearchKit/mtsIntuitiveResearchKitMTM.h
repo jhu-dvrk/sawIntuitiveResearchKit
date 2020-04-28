@@ -118,7 +118,7 @@ protected:
     // Functions for events
     struct {
         mtsFunctionVoid GripperPinch;
-        mtsFunctionWrite GripperClosed;
+        mtsFunctionWrite m_gripper_closed;
     } GripperEvents;
 
     //! robot cartesian position when cluthed
@@ -130,9 +130,9 @@ protected:
     } GripperIO;
 
     //! Gripper angle
-    prmStateJoint StateGripper;
-    prmConfigurationJoint ConfigurationGripper;
-    bool GripperClosed;
+    prmStateJoint m_gripper_measured_js;
+    prmConfigurationJoint m_gripper_configuration_js;
+    bool m_gripper_closed;
 
     robGravityCompensationMTM * GravityCompensationMTM = 0;
 };

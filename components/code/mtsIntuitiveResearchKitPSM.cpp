@@ -270,8 +270,8 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
                                      << ": can find \"jaw::qmin\" data in \"" << fullFilename << "\"" << std::endl;
             return;
         } else {
-            CouplingChange.JawConfiguration.PositionMin().SetSize(1);
-            CouplingChange.JawConfiguration.PositionMin().at(0) = jsonJawQMin.asDouble();
+            CouplingChange.jaw_configuration_js.PositionMin().SetSize(1);
+            CouplingChange.jaw_configuration_js.PositionMin().at(0) = jsonJawQMin.asDouble();
         }
         const Json::Value jsonJawQMax = jsonJaw["qmax"];
         if (jsonJawQMax.isNull()) {
@@ -279,8 +279,8 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
                                      << ": can find \"jaw::qmax\" data in \"" << fullFilename << "\"" << std::endl;
             return;
         } else {
-            CouplingChange.JawConfiguration.PositionMax().SetSize(1);
-            CouplingChange.JawConfiguration.PositionMax().at(0) = jsonJawQMax.asDouble();
+            CouplingChange.jaw_configuration_js.PositionMax().SetSize(1);
+            CouplingChange.jaw_configuration_js.PositionMax().at(0) = jsonJawQMax.asDouble();
         }
         const Json::Value jsonJawFTMax = jsonJaw["ftmax"];
         if (jsonJawFTMax.isNull()) {
@@ -288,16 +288,16 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
                                      << ": can find \"jaw::ftmax\" data in \"" << fullFilename << "\"" << std::endl;
             return;
         } else {
-            CouplingChange.JawConfiguration.EffortMin().SetSize(1);
-            CouplingChange.JawConfiguration.EffortMax().SetSize(1);
-            CouplingChange.JawConfiguration.EffortMax().at(0) = jsonJawFTMax.asDouble();
-            CouplingChange.JawConfiguration.EffortMin().at(0) = -jsonJawFTMax.asDouble();
+            CouplingChange.jaw_configuration_js.EffortMin().SetSize(1);
+            CouplingChange.jaw_configuration_js.EffortMax().SetSize(1);
+            CouplingChange.jaw_configuration_js.EffortMax().at(0) = jsonJawFTMax.asDouble();
+            CouplingChange.jaw_configuration_js.EffortMin().at(0) = -jsonJawFTMax.asDouble();
         }
 
-        CouplingChange.JawConfiguration.Name().SetSize(1);
-        CouplingChange.JawConfiguration.Name().at(0) = "jaw";
-        CouplingChange.JawConfiguration.Type().SetSize(1);
-        CouplingChange.JawConfiguration.Type().at(0) = PRM_JOINT_REVOLUTE;
+        CouplingChange.jaw_configuration_js.Name().SetSize(1);
+        CouplingChange.jaw_configuration_js.Name().at(0) = "jaw";
+        CouplingChange.jaw_configuration_js.Type().SetSize(1);
+        CouplingChange.jaw_configuration_js.Type().at(0) = PRM_JOINT_REVOLUTE;
 
         // load lower/upper position used to engage the tool(required)
         const Json::Value jsonEngagePosition = jsonConfig["tool-engage-position"];
@@ -339,30 +339,30 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
     const size_t nbPIDJoints = m_measured_js_pid.Name().size();
     const size_t jawIndex = nbPIDJoints - 1;
 
-    if (StateJaw.Name().size() == 0) {
-        StateJaw.Name().SetSize(1);
-        StateJaw.Name().at(0) = m_measured_js_pid.Name().at(jawIndex);
-        StateJaw.Position().SetSize(1);
-        StateJaw.Velocity().SetSize(1);
-        StateJaw.Effort().SetSize(1);
+    if (m_jaw_measured_js.Name().size() == 0) {
+        m_jaw_measured_js.Name().SetSize(1);
+        m_jaw_measured_js.Name().at(0) = m_measured_js_pid.Name().at(jawIndex);
+        m_jaw_measured_js.Position().SetSize(1);
+        m_jaw_measured_js.Velocity().SetSize(1);
+        m_jaw_measured_js.Effort().SetSize(1);
 
-        StateJawDesired.Name().SetSize(1);
-        StateJawDesired.Name().at(0) = m_setpoint_js_pid.Name().at(jawIndex);
-        StateJawDesired.Position().SetSize(1);
-        StateJawDesired.Velocity().SetSize(0);
-        StateJawDesired.Effort().SetSize(1);
+        m_jaw_setpoint_js.Name().SetSize(1);
+        m_jaw_setpoint_js.Name().at(0) = m_setpoint_js_pid.Name().at(jawIndex);
+        m_jaw_setpoint_js.Position().SetSize(1);
+        m_jaw_setpoint_js.Velocity().SetSize(0);
+        m_jaw_setpoint_js.Effort().SetSize(1);
     }
 
-    StateJaw.Position().at(0) = m_measured_js_pid.Position().at(jawIndex);
-    StateJaw.Velocity().at(0) = m_measured_js_pid.Velocity().at(jawIndex);
-    StateJaw.Effort().at(0)   = m_measured_js_pid.Effort().at(jawIndex);
-    StateJaw.Timestamp() = m_measured_js_pid.Timestamp();
-    StateJaw.Valid() = m_measured_js_pid.Valid();
+    m_jaw_measured_js.Position().at(0) = m_measured_js_pid.Position().at(jawIndex);
+    m_jaw_measured_js.Velocity().at(0) = m_measured_js_pid.Velocity().at(jawIndex);
+    m_jaw_measured_js.Effort().at(0)   = m_measured_js_pid.Effort().at(jawIndex);
+    m_jaw_measured_js.Timestamp() = m_measured_js_pid.Timestamp();
+    m_jaw_measured_js.Valid() = m_measured_js_pid.Valid();
 
-    StateJawDesired.Position().at(0) = m_setpoint_js_pid.Position().at(jawIndex);
-    StateJawDesired.Effort().at(0)   = m_setpoint_js_pid.Effort().at(jawIndex);
-    StateJawDesired.Timestamp() = m_setpoint_js_pid.Timestamp();
-    StateJawDesired.Valid() = m_setpoint_js_pid.Timestamp();
+    m_jaw_setpoint_js.Position().at(0) = m_setpoint_js_pid.Position().at(jawIndex);
+    m_jaw_setpoint_js.Effort().at(0)   = m_setpoint_js_pid.Effort().at(jawIndex);
+    m_jaw_setpoint_js.Timestamp() = m_setpoint_js_pid.Timestamp();
+    m_jaw_setpoint_js.Valid() = m_setpoint_js_pid.Timestamp();
 
     if (!mSnakeLike) {
         mtsIntuitiveResearchKitArm::UpdateStateJointKinematics();
@@ -569,23 +569,23 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 
     // Main interface should have been created by base class init
     CMN_ASSERT(RobotInterface);
-    StateJaw.SetAutomaticTimestamp(false);
-    StateTable.AddData(StateJaw, "StateJaw");
+    m_jaw_measured_js.SetAutomaticTimestamp(false);
+    StateTable.AddData(m_jaw_measured_js, "m_jaw_measured_js");
 
-    StateJawDesired.SetAutomaticTimestamp(false);
-    StateTable.AddData(StateJawDesired, "StateJawDesired");
+    m_jaw_setpoint_js.SetAutomaticTimestamp(false);
+    StateTable.AddData(m_jaw_setpoint_js, "m_jaw_setpoint_js");
 
     // state table for configuration
-    mStateTableConfiguration.AddData(CouplingChange.JawConfiguration, "ConfigurationJaw");
+    mStateTableConfiguration.AddData(CouplingChange.jaw_configuration_js, "jaw_configuration_js");
 
     // jaw interface
-    RobotInterface->AddCommandReadState(this->StateTable, StateJaw, "GetStateJaw");
-    RobotInterface->AddCommandReadState(this->StateTable, StateJawDesired, "GetStateJawDesired");
+    RobotInterface->AddCommandReadState(this->StateTable, m_jaw_measured_js, "jaw_measured_js");
+    RobotInterface->AddCommandReadState(this->StateTable, m_jaw_setpoint_js, "jaw_setpoint_js");
     RobotInterface->AddCommandReadState(this->mStateTableConfiguration,
-                                        CouplingChange.JawConfiguration, "GetConfigurationJaw");
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionJaw, this, "SetPositionJaw");
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetPositionGoalJaw, this, "SetPositionGoalJaw");
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetEffortJaw, this, "SetEffortJaw");
+                                        CouplingChange.jaw_configuration_js, "jaw_configuration_js");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_servo_jp, this, "jaw_servo_jp");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_move_jp, this, "jaw_move_jp");
+    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_servo_jf, this, "jaw_servo_jf");
 
     // tool specific interface
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetAdapterPresent, this, "SetAdapterPresent");
@@ -864,8 +864,8 @@ void mtsIntuitiveResearchKitPSM::UpdateConfigurationJointPID(const bool toolPres
             m_configuration_js_pid.PositionMax().at(5) += upperFromKinematics.at(6);
         }
         // ...and jaw
-        m_configuration_js_pid.PositionMin().at(jawIndex) = CouplingChange.JawConfiguration.PositionMin().at(0);
-        m_configuration_js_pid.PositionMax().at(jawIndex) = CouplingChange.JawConfiguration.PositionMax().at(0);
+        m_configuration_js_pid.PositionMin().at(jawIndex) = CouplingChange.jaw_configuration_js.PositionMin().at(0);
+        m_configuration_js_pid.PositionMax().at(jawIndex) = CouplingChange.jaw_configuration_js.PositionMax().at(0);
 
         // force torque
         Manipulator->GetFTMaximums(upperFromKinematics);
@@ -877,7 +877,7 @@ void mtsIntuitiveResearchKitPSM::UpdateConfigurationJointPID(const bool toolPres
             m_configuration_js_pid.EffortMax().at(5) += upperFromKinematics.at(6);
         }
         // ...and jaw
-        m_configuration_js_pid.EffortMax().at(jawIndex) = CouplingChange.JawConfiguration.EffortMax().at(0);
+        m_configuration_js_pid.EffortMax().at(jawIndex) = CouplingChange.jaw_configuration_js.EffortMax().at(0);
         m_configuration_js_pid.EffortMin().ProductOf(-1.0, m_configuration_js_pid.EffortMax()); // manipulator assumes symmetry
 
         mStateTableConfiguration.Advance();
@@ -1173,10 +1173,10 @@ void mtsIntuitiveResearchKitPSM::EnterManual(void)
     PID.Enable(false);
 }
 
-void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawPosition)
+void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPosition)
 {
     // we need to need to at least ready to control in joint space
-    if (!ArmIsReady("SetPositionJaw", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    if (!ArmIsReady("jaw_servo_jp", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
         return;
     }
 
@@ -1215,10 +1215,10 @@ void mtsIntuitiveResearchKitPSM::SetPositionJaw(const prmPositionJointSet & jawP
     m_new_pid_goal = true;
 }
 
-void mtsIntuitiveResearchKitPSM::SetPositionGoalJaw(const prmPositionJointSet & jawPosition)
+void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosition)
 {
     // we need to need to at least ready to control in joint space
-    if (!ArmIsReady("SetPositionGoalJaw", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    if (!ArmIsReady("jaw_move_jp", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
         return;
     }
 
@@ -1275,7 +1275,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newP
     PID.servo_jp(JointSetParam);
 }
 
-void mtsIntuitiveResearchKitPSM::SetEffortJaw(const prmForceTorqueJointSet & effort)
+void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & effort)
 {
     if (!ArmIsReady("servo_jf", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
         return;

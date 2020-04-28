@@ -32,7 +32,7 @@ mtsIntuitiveResearchKitMTMQtWidget::mtsIntuitiveResearchKitMTMQtWidget(const std
     mtsIntuitiveResearchKitArmQtWidget(componentName, periodInSeconds)
 {
     CMN_ASSERT(InterfaceRequired);
-    InterfaceRequired->AddFunction("GetStateGripper", GetStateGripper);
+    InterfaceRequired->AddFunction("gripper_measured_js", gripper_measured_js);
 }
 
 void mtsIntuitiveResearchKitMTMQtWidget::setupUiDerived(void)
@@ -47,8 +47,8 @@ void mtsIntuitiveResearchKitMTMQtWidget::setupUiDerived(void)
 
 void mtsIntuitiveResearchKitMTMQtWidget::timerEventDerived(void)
 {
-    GetStateGripper(StateGripper);
+    gripper_measured_js(m_gripper_measured_js);
     QString text;
-    text.setNum(StateGripper.Position().at(0) * cmn180_PI, 'f', 3);
+    text.setNum(m_gripper_measured_js.Position().at(0) * cmn180_PI, 'f', 3);
     QLEGripperPosition->setText(text);
 }

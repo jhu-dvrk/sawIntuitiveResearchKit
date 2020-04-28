@@ -40,14 +40,14 @@ protected:
 
     void Freeze(void);
     void servo_cp(const prmPositionCartesianSet & position);
-    void SetPositionJaw(const prmPositionJointSet & position);
+    void jaw_servo_jp(const prmPositionJointSet & position);
     void UpdateApplication(void);
     void ReceivePSMStateData(void);
     void SendPSMCommandData(void);
 
 private:
     prmPositionCartesianGet PositionCartesianCurrent;
-    prmStateJoint StateJaw;
+    prmStateJoint m_jaw_measured_js;
     mtsInterfaceProvided * mInterface;
 };
 

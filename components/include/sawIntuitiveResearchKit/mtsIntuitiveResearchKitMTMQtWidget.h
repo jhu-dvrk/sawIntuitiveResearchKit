@@ -35,9 +35,9 @@ protected:
     void setupUiDerived(void);
     void timerEventDerived(void);
 
-    mtsFunctionRead GetStateGripper;
+    mtsFunctionRead gripper_measured_js;
     QLineEdit * QLEGripperPosition;
-    prmStateJoint StateGripper;
+    prmStateJoint m_gripper_measured_js;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTMQtWidget);

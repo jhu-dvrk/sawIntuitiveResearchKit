@@ -123,7 +123,7 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("measured_cp", mMTM.measured_cp);
         interfaceRequired->AddFunction("setpoint_cp", mMTM.setpoint_cp);
         interfaceRequired->AddFunction("move_cp", mMTM.move_cp);
-        interfaceRequired->AddFunction("GetStateGripper", mMTM.GetStateGripper);
+        interfaceRequired->AddFunction("gripper_measured_js", mMTM.gripper_measured_js);
         interfaceRequired->AddFunction("LockOrientation", mMTM.LockOrientation);
         interfaceRequired->AddFunction("UnlockOrientation", mMTM.UnlockOrientation);
         interfaceRequired->AddFunction("servo_cf_body", mMTM.servo_cf_body);
@@ -139,9 +139,9 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("measured_cp", mPSM.measured_cp);
         interfaceRequired->AddFunction("servo_cp", mPSM.servo_cp);
         interfaceRequired->AddFunction("Freeze", mPSM.Freeze);
-        interfaceRequired->AddFunction("GetStateJaw", mPSM.GetStateJaw, MTS_OPTIONAL);
-        interfaceRequired->AddFunction("GetConfigurationJaw", mPSM.GetConfigurationJaw, MTS_OPTIONAL);
-        interfaceRequired->AddFunction("SetPositionJaw", mPSM.SetPositionJaw, MTS_OPTIONAL);
+        interfaceRequired->AddFunction("jaw_measured_js", mPSM.jaw_measured_js, MTS_OPTIONAL);
+        interfaceRequired->AddFunction("jaw_configuration_js", mPSM.jaw_configuration_js, MTS_OPTIONAL);
+        interfaceRequired->AddFunction("jaw_servo_jp", mPSM.jaw_servo_jp, MTS_OPTIONAL);
         interfaceRequired->AddFunction("operating_state", mPSM.operating_state);
         interfaceRequired->AddFunction("state_command", mPSM.state_command);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::PSMErrorEventHandler,
@@ -343,9 +343,9 @@ void mtsTeleOperationPSM::Startup(void)
 
     // check if functions for jaw are connected
     if (!mIgnoreJaw) {
-        if (!mPSM.GetStateJaw.IsValid()
-            || !mPSM.SetPositionJaw.IsValid()) {
-            mInterface->SendError(this->GetName() + ": optional functions \"SetPositionJaw\" and \"GetStateJaw\" are not connected, setting \"ignore-jaw\" to true");
+        if (!mPSM.jaw_measured_js.IsValid()
+            || !mPSM.jaw_servo_jp.IsValid()) {
+            mInterface->SendError(this->GetName() + ": optional functions \"jaw_servo_jp\" and \"jaw_measured_js\" are not connected, setting \"ignore-jaw\" to true");
             mIgnoreJaw = true;
         }
     }
@@ -744,8 +744,8 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     // if not active, use gripper and/or roll to detect if the user is ready
     if (!mOperator.IsActive) {
         // update gripper values
-        mMTM.GetStateGripper(mMTM.StateGripper);
-        const double gripper = mMTM.StateGripper.Position()[0];
+        mMTM.gripper_measured_js(mMTM.m_gripper_measured_js);
+        const double gripper = mMTM.m_gripper_measured_js.Position()[0];
         if (gripper > mOperator.GripperMax) {
             mOperator.GripperMax = gripper;
         } else if (gripper < mOperator.GripperMin) {
@@ -806,8 +806,8 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     if (!mIgnoreJaw) {
         mJawCaughtUpAfterClutch = false;
         // gripper ghost
-        mPSM.GetStateJaw(mPSM.StateJaw);
-        double currentJaw = mPSM.StateJaw.Position()[0];
+        mPSM.jaw_measured_js(mPSM.m_jaw_measured_js);
+        double currentJaw = mPSM.m_jaw_measured_js.Position()[0];
         mGripperGhost = JawToGripper(currentJaw);
     }
 
@@ -877,9 +877,9 @@ void mtsTeleOperationPSM::RunEnabled(void)
 
             if (!mIgnoreJaw) {
                 // gripper
-                if (mMTM.GetStateGripper.IsValid()) {
-                    mMTM.GetStateGripper(mMTM.StateGripper);
-                    const double currentGripper = mMTM.StateGripper.Position()[0];
+                if (mMTM.gripper_measured_js.IsValid()) {
+                    mMTM.gripper_measured_js(mMTM.m_gripper_measured_js);
+                    const double currentGripper = mMTM.m_gripper_measured_js.Position()[0];
                     // see if we caught up
                     if (!mJawCaughtUpAfterClutch) {
                         const double error = std::abs(currentGripper - mGripperGhost);
@@ -906,10 +906,10 @@ void mtsTeleOperationPSM::RunEnabled(void)
                         mPSM.PositionJointSet.Goal()[0] = mGripperToJaw.PositionMin;
                         mGripperGhost = JawToGripper(mGripperToJaw.PositionMin);
                     }
-                    mPSM.SetPositionJaw(mPSM.PositionJointSet);
+                    mPSM.jaw_servo_jp(mPSM.PositionJointSet);
                 } else {
                     mPSM.PositionJointSet.Goal()[0] = 45.0 * cmnPI_180;
-                    mPSM.SetPositionJaw(mPSM.PositionJointSet);
+                    mPSM.jaw_servo_jp(mPSM.PositionJointSet);
                 }
             }
         }
@@ -941,13 +941,13 @@ void mtsTeleOperationPSM::UpdateGripperToJawConfiguration(void)
     mGripperToJaw.Offset = 0.0;
     mGripperToJaw.PositionMin = cmnTypeTraits<double>::MinNegativeValue();
     // get the PSM jaw configuration if possible to find range
-    if (mPSM.GetConfigurationJaw.IsValid()) {
-        mPSM.GetConfigurationJaw(mPSM.ConfigurationJaw);
-        if ((mPSM.ConfigurationJaw.PositionMin().size() == 1)
-            && (mPSM.ConfigurationJaw.PositionMax().size() == 1)) {
+    if (mPSM.jaw_configuration_js.IsValid()) {
+        mPSM.jaw_configuration_js(mPSM.m_jaw_configuration_js);
+        if ((mPSM.m_jaw_configuration_js.PositionMin().size() == 1)
+            && (mPSM.m_jaw_configuration_js.PositionMax().size() == 1)) {
             // for now we assume MTM is from 0 to 60 degrees
-            double min = mPSM.ConfigurationJaw.PositionMin()[0];
-            double max = mPSM.ConfigurationJaw.PositionMax()[0];
+            double min = mPSM.m_jaw_configuration_js.PositionMin()[0];
+            double max = mPSM.m_jaw_configuration_js.PositionMax()[0];
             // save min for later so we never ask PSM to close jaws more than min
             mGripperToJaw.PositionMin = min;
             // if the PSM can close its jaws past 0 (tighter), we map from 0 to qmax

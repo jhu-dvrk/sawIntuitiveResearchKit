@@ -41,6 +41,25 @@ mJacobianBody = m_jacobian_body
 GetJacobianSpatial = jacobian_spatial
 mJacobianSpatial = m_jacobian_spatial
 
+ConfigurationJaw = jaw_configuration_js
+JawConfiguration = jaw_configuration_js
+GetConfigurationJaw = jaw_configuration_js
+
+StateJaw = m_jaw_measured_js
+GetStateJaw = jaw_measured_js
+StateJawDesired = m_jaw_setpoint_js
+GetStateJawDesired = jaw_setpoint_js
+
+SetPositionJaw = jaw_servo_jp
+SetPositionGoalJaw = jaw_move_jp
+SetEffortJaw = jaw_servo_jf
+
+StateGripper = m_gripper_measured_js
+GetStateGripper = gripper_measured_js
+ConfigurationGripper = m_gripper_configuration_js
+
+GripperClosed = m_gripper_closed
+
 UNINITIALIZED = DISABLED
 EnterUninitialized = EnterDisabled
 TransitionUninitialized = TransitionDisabled

@@ -91,20 +91,20 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     mEffortOrientationJoint.SetSize(NumberOfJoints());
 
     // initialize gripper state
-    StateGripper.Name().SetSize(1);
-    StateGripper.Name().at(0) = "gripper";
-    StateGripper.Position().SetSize(1);
+    m_gripper_measured_js.Name().SetSize(1);
+    m_gripper_measured_js.Name().at(0) = "gripper";
+    m_gripper_measured_js.Position().SetSize(1);
 
-    ConfigurationGripper.Name().SetSize(1);
-    ConfigurationGripper.Name().at(0) = "gripper";
-    ConfigurationGripper.Type().SetSize(1);
-    ConfigurationGripper.Type().at(0) = PRM_JOINT_REVOLUTE;
-    ConfigurationGripper.PositionMin().SetSize(1);
-    ConfigurationGripper.PositionMin().at(0) = 0.0 * cmnPI_180;
-    ConfigurationGripper.PositionMax().SetSize(1);
-    ConfigurationGripper.PositionMax().at(0) = 60.0 * cmnPI_180; // based on dVRK MTM gripper calibration procedure
+    m_gripper_configuration_js.Name().SetSize(1);
+    m_gripper_configuration_js.Name().at(0) = "gripper";
+    m_gripper_configuration_js.Type().SetSize(1);
+    m_gripper_configuration_js.Type().at(0) = PRM_JOINT_REVOLUTE;
+    m_gripper_configuration_js.PositionMin().SetSize(1);
+    m_gripper_configuration_js.PositionMin().at(0) = 0.0 * cmnPI_180;
+    m_gripper_configuration_js.PositionMax().SetSize(1);
+    m_gripper_configuration_js.PositionMax().at(0) = 60.0 * cmnPI_180; // based on dVRK MTM gripper calibration procedure
 
-    GripperClosed = false;
+    m_gripper_closed = false;
 
     // initialize trajectory data
     mJointTrajectory.VelocityMaximum.SetAll(90.0 * cmnPI_180); // degrees per second
@@ -122,7 +122,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // last 3 joints tend to be weaker
     PID.DefaultTrackingErrorTolerance.Ref(3, 4) = 30.0 * cmnPI_180;
 
-    this->StateTable.AddData(StateGripper, "StateGripper");
+    this->StateTable.AddData(m_gripper_measured_js, "m_gripper_measured_js");
 
     // Gripper IO
     GripperIOInterface = AddInterfaceRequired("GripperIO");
@@ -136,9 +136,9 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     RobotInterface->AddCommandVoid(&mtsIntuitiveResearchKitMTM::UnlockOrientation, this, "UnlockOrientation");
 
     // Gripper
-    RobotInterface->AddCommandReadState(this->StateTable, StateGripper, "GetStateGripper");
+    RobotInterface->AddCommandReadState(this->StateTable, m_gripper_measured_js, "gripper_measured_js");
     RobotInterface->AddEventVoid(GripperEvents.GripperPinch, "GripperPinchEvent");
-    RobotInterface->AddEventWrite(GripperEvents.GripperClosed, "GripperClosedEvent", true);
+    RobotInterface->AddEventWrite(GripperEvents.m_gripper_closed, "GripperClosedEvent", true);
 }
 
 void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
@@ -462,26 +462,26 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
     }
 
     // get gripper based on analog inputs
-    mtsExecutionResult executionResult = GripperIO.GetAnalogInputPosSI(StateGripper.Position());
+    mtsExecutionResult executionResult = GripperIO.GetAnalogInputPosSI(m_gripper_measured_js.Position());
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetAnalogInputPosSI failed \""
                                 << executionResult << "\"" << std::endl;
         return;
     }
     // for timestamp, we assume the value ws collected at the same time as other joints
-    StateGripper.Timestamp() = m_measured_js_pid.Timestamp();
-    StateGripper.Valid() = m_measured_js_pid.Valid();
+    m_gripper_measured_js.Timestamp() = m_measured_js_pid.Timestamp();
+    m_gripper_measured_js.Valid() = m_measured_js_pid.Valid();
 
     // events associated to gripper
-    if (GripperClosed) {
-        if (StateGripper.Position().at(0) > 0.0) {
-            GripperClosed = false;
-            GripperEvents.GripperClosed(false);
+    if (m_gripper_closed) {
+        if (m_gripper_measured_js.Position().at(0) > 0.0) {
+            m_gripper_closed = false;
+            GripperEvents.m_gripper_closed(false);
         }
     } else {
-        if (StateGripper.Position().at(0) < 0.0) {
-            GripperClosed = true;
-            GripperEvents.GripperClosed(true);
+        if (m_gripper_measured_js.Position().at(0) < 0.0) {
+            m_gripper_closed = true;
+            GripperEvents.m_gripper_closed(true);
             GripperEvents.GripperPinch.Execute();
         }
     }

@@ -26,21 +26,21 @@ mtsSocketClientPSM::mtsSocketClientPSM(const std::string & componentName, const 
     mtsSocketBasePSM(componentName, periodInSeconds, ip, port, false)
 {
     this->StateTable.AddData(PositionCartesianCurrent, "PositionCartesianCurrent");
-    StateJaw.Position().resize(1);
-    this->StateTable.AddData(StateJaw, "StateJaw");
+    m_jaw_measured_js.Position().resize(1);
+    this->StateTable.AddData(m_jaw_measured_js, "m_jaw_measured_js");
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
     if (interfaceProvided) {
         interfaceProvided->AddMessageEvents();
         interfaceProvided->AddCommandReadState(this->StateTable, PositionCartesianCurrent, "measured_cp");
-        interfaceProvided->AddCommandReadState(this->StateTable, StateJaw, "GetStateJaw");
+        interfaceProvided->AddCommandReadState(this->StateTable, m_jaw_measured_js, "jaw_measured_js");
 
         interfaceProvided->AddCommandVoid(&mtsSocketClientPSM::Freeze,
                                           this, "Freeze");
         interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::servo_cp,
                                            this , "servo_cp");
-        interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::SetPositionJaw,
-                                           this , "SetPositionJaw");
+        interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::jaw_servo_jp,
+                                           this , "jaw_servo_jp");
         interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::SetDesiredState,
                                            this , "SetDesiredState");
         interfaceProvided->AddCommandRead(&mtsSocketClientPSM::GetDesiredState,
@@ -74,7 +74,7 @@ void mtsSocketClientPSM::UpdateApplication(void)
     CurrentState = State.Data.RobotControlState;
     PositionCartesianCurrent.Valid() = (CurrentState >= socketMessages::SCK_HOMED);
     PositionCartesianCurrent.Position().FromNormalized(State.Data.CurrentPose);
-    StateJaw.Position().at(0) = State.Data.CurrentJaw;
+    m_jaw_measured_js.Position().at(0) = State.Data.CurrentJaw;
 }
 
 void mtsSocketClientPSM::Freeze(void)
@@ -105,7 +105,7 @@ void mtsSocketClientPSM::servo_cp(const prmPositionCartesianSet & position)
     Command.Data.GoalPose.From(position.Goal());
 }
 
-void mtsSocketClientPSM::SetPositionJaw(const prmPositionJointSet & position)
+void mtsSocketClientPSM::jaw_servo_jp(const prmPositionJointSet & position)
 {
     DesiredState = socketMessages::SCK_CART_POS;
     Command.Data.GoalJaw = position.Goal().at(0);

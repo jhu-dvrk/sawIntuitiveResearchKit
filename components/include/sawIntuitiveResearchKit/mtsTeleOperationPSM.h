@@ -102,7 +102,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         mtsFunctionRead  measured_cp;
         mtsFunctionRead  setpoint_cp;
         mtsFunctionWrite move_cp;
-        mtsFunctionRead  GetStateGripper;
+        mtsFunctionRead  gripper_measured_js;
         mtsFunctionWrite LockOrientation;
         mtsFunctionVoid  UnlockOrientation;
         mtsFunctionWrite servo_cf_body;
@@ -111,7 +111,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         mtsFunctionRead  operating_state;
         mtsFunctionWrite state_command;
 
-        prmStateJoint StateGripper;
+        prmStateJoint m_gripper_measured_js;
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianGet PositionCartesianDesired;
         prmPositionCartesianSet PositionCartesianSet;
@@ -122,15 +122,15 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         mtsFunctionRead  measured_cp;
         mtsFunctionWrite servo_cp;
         mtsFunctionVoid  Freeze;
-        mtsFunctionRead  GetStateJaw;
-        mtsFunctionRead  GetConfigurationJaw;
-        mtsFunctionWrite SetPositionJaw;
+        mtsFunctionRead  jaw_measured_js;
+        mtsFunctionRead  jaw_configuration_js;
+        mtsFunctionWrite jaw_servo_jp;
 
         mtsFunctionRead  operating_state;
         mtsFunctionWrite state_command;
 
-        prmStateJoint StateJaw;
-        prmConfigurationJoint ConfigurationJaw;
+        prmStateJoint m_jaw_measured_js;
+        prmConfigurationJoint m_jaw_configuration_js;
         prmPositionCartesianGet PositionCartesianCurrent;
         prmPositionCartesianSet PositionCartesianSet;
         prmPositionJointSet     PositionJointSet;
