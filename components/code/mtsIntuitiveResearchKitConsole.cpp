@@ -314,6 +314,12 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
             componentManager->Connect(Name(), "RobotIO",
                                       IOComponentName(), Name());
         }
+        // connect MTM gripper to IO
+        if ((mType == ARM_MTM)
+            || (mType == ARM_MTM_DERIVED)) {
+            componentManager->Connect(Name(), "GripperIO",
+                                      IOComponentName(), Name() + "-Gripper");
+        }
         // Connect PID and m_base_frame if needed
         componentManager->Connect(Name(), "PID",
                                   PIDComponentName(), "Controller");
@@ -761,6 +767,11 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO using \"" << ioConfig << "\"" << std::endl;
                 io->Configure(ioConfig);
             }
+            std::string ioGripperConfig = iter->second->mIOGripperConfigurationFile;
+            if (ioGripperConfig != "") {
+                CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO gripper using \"" << ioGripperConfig << "\"" << std::endl;
+                io->Configure(ioGripperConfig);
+            }
         }
         // configure using extra configuration files
         jsonValue = jsonConfig["io"];
@@ -1019,6 +1030,8 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
         prompts.push_back("I'm a bit tired");
         prompts.push_back("Commit often, always pull!");
         prompts.push_back("Feel free to fix it");
+        prompts.push_back("What's the weather like outside?");
+        prompts.push_back("Call your parents");
         int index;
         cmnRandomSequence & randomSequence = cmnRandomSequence::GetInstance();
         cmnRandomSequence::SeedType seed
@@ -1402,6 +1415,34 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"io\" setting for arm \""
                                              << armName << "\" and \"serial\" is not provided so we can't search for it" << std::endl;
                     return false;
+                }
+            }
+            // IO for MTM gripper
+            if ((armPointer->mType == Arm::ARM_MTM)
+                || (armPointer->mType == Arm::ARM_MTM_DERIVED)) {
+                jsonValue = jsonArm["io-gripper"];
+                if (!jsonValue.empty()) {
+                    armPointer->mIOGripperConfigurationFile = configPath.Find(jsonValue.asString());
+                    if (armPointer->mIOGripperConfigurationFile == "") {
+                        CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO gripper file "
+                                                 << jsonValue.asString() << std::endl;
+                        return false;
+                    }
+                } else {
+                    // try to find default if serial number has been provided
+                    if (armPointer->mSerial != "") {
+                        std::string defaultFile = "sawRobotIO1394-" + armName + "-gripper-" + armPointer->mSerial + ".xml";
+                        armPointer->mIOGripperConfigurationFile = configPath.Find(defaultFile);
+                        if (armPointer->mIOGripperConfigurationFile == "") {
+                            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO gripper file " << defaultFile << std::endl;
+                            return false;
+                        }
+                    } else {
+                        // no io nor serial
+                        CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"io-gripper\" setting for arm \""
+                                                 << armName << "\" and \"serial\" is not provided so we can't search for it" << std::endl;
+                        return false;
+                    }
                 }
             }
         }

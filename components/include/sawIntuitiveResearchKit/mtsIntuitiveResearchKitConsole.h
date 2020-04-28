@@ -105,6 +105,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         // low level
         std::string mIOComponentName;
         std::string mIOConfigurationFile;
+        std::string mIOGripperConfigurationFile; // for MTMs only
         // PID
         std::string mPIDComponentName;
         std::string mPIDConfigurationFile;

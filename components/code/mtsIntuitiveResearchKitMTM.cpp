@@ -124,6 +124,12 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 
     this->StateTable.AddData(StateGripper, "StateGripper");
 
+    // Gripper IO
+    GripperIOInterface = AddInterfaceRequired("GripperIO");
+    if (GripperIOInterface) {
+        GripperIOInterface->AddFunction("GetAnalogInputPosSI", GripperIO.GetAnalogInputPosSI);
+    }
+
     // Main interface should have been created by base class init
     CMN_ASSERT(RobotInterface);
     RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::LockOrientation, this, "LockOrientation");
@@ -410,7 +416,7 @@ void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
     values.Data().SetAll(0.0); // this shouldn't be used but safe to zero
     values.Mask().at(JNT_WRIST_ROLL) = true;
     values.Data().at(JNT_WRIST_ROLL) = -480.0 * cmnPI_180;
-    RobotIO.SetSomeEncoderPosition(values);
+    IO.SetSomeEncoderPosition(values);
 
     // start timer
     const double currentTime = this->StateTable.GetTic();
@@ -456,26 +462,24 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
     }
 
     // get gripper based on analog inputs
-    mtsExecutionResult executionResult = RobotIO.GetAnalogInputPosSI(AnalogInputPosSI);
+    mtsExecutionResult executionResult = GripperIO.GetAnalogInputPosSI(StateGripper.Position());
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetAnalogInputPosSI failed \""
                                 << executionResult << "\"" << std::endl;
         return;
     }
     // for timestamp, we assume the value ws collected at the same time as other joints
-    const double position = AnalogInputPosSI.Element(JNT_GRIPPER);
-    StateGripper.Position()[0] = position;
     StateGripper.Timestamp() = m_measured_js_pid.Timestamp();
     StateGripper.Valid() = m_measured_js_pid.Valid();
 
     // events associated to gripper
     if (GripperClosed) {
-        if (position > 0.0) {
+        if (StateGripper.Position().at(0) > 0.0) {
             GripperClosed = false;
             GripperEvents.GripperClosed(false);
         }
     } else {
-        if (position < 0.0) {
+        if (StateGripper.Position().at(0) < 0.0) {
             GripperClosed = true;
             GripperEvents.GripperClosed(true);
             GripperEvents.GripperPinch.Execute();

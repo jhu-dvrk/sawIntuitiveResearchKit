@@ -302,18 +302,17 @@ void mtsIntuitiveResearchKitArm::Init(void)
     // Robot IO
     IOInterface = AddInterfaceRequired("RobotIO");
     if (IOInterface) {
-        IOInterface->AddFunction("GetSerialNumber", RobotIO.GetSerialNumber);
-        IOInterface->AddFunction("EnablePower", RobotIO.EnablePower);
-        IOInterface->AddFunction("DisablePower", RobotIO.DisablePower);
-        IOInterface->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
-        IOInterface->AddFunction("GetBrakeAmpStatus", RobotIO.GetBrakeAmpStatus);
-        IOInterface->AddFunction("BiasEncoder", RobotIO.BiasEncoder);
-        IOInterface->AddFunction("SetSomeEncoderPosition", RobotIO.SetSomeEncoderPosition);
-        IOInterface->AddFunction("GetAnalogInputPosSI", RobotIO.GetAnalogInputPosSI);
-        IOInterface->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
-        IOInterface->AddFunction("UsePotsForSafetyCheck", RobotIO.UsePotsForSafetyCheck);
-        IOInterface->AddFunction("BrakeRelease", RobotIO.BrakeRelease);
-        IOInterface->AddFunction("BrakeEngage", RobotIO.BrakeEngage);
+        IOInterface->AddFunction("GetSerialNumber", IO.GetSerialNumber);
+        IOInterface->AddFunction("EnablePower", IO.EnablePower);
+        IOInterface->AddFunction("DisablePower", IO.DisablePower);
+        IOInterface->AddFunction("GetActuatorAmpStatus", IO.GetActuatorAmpStatus);
+        IOInterface->AddFunction("GetBrakeAmpStatus", IO.GetBrakeAmpStatus);
+        IOInterface->AddFunction("BiasEncoder", IO.BiasEncoder);
+        IOInterface->AddFunction("SetSomeEncoderPosition", IO.SetSomeEncoderPosition);
+        IOInterface->AddFunction("SetActuatorCurrent", IO.SetActuatorCurrent);
+        IOInterface->AddFunction("UsePotsForSafetyCheck", IO.UsePotsForSafetyCheck);
+        IOInterface->AddFunction("BrakeRelease", IO.BrakeRelease);
+        IOInterface->AddFunction("BrakeEngage", IO.BrakeEngage);
         IOInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::BiasEncoderEventHandler, this, "BiasEncoder");
     }
 
@@ -706,7 +705,7 @@ void mtsIntuitiveResearchKitArm::Run(void)
 void mtsIntuitiveResearchKitArm::Cleanup(void)
 {
     if (NumberOfBrakes() > 0) {
-        RobotIO.BrakeEngage();
+        IO.BrakeEngage();
     }
     CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
 }
@@ -723,10 +722,10 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
     // check that the robot still has power
     if (m_powered) {
         vctBoolVec actuatorAmplifiersStatus(NumberOfJoints());
-        RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
+        IO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         vctBoolVec brakeAmplifiersStatus(NumberOfBrakes());
         if (NumberOfBrakes() > 0) {
-            RobotIO.GetBrakeAmpStatus(brakeAmplifiersStatus);
+            IO.GetBrakeAmpStatus(brakeAmplifiersStatus);
         }
         if (!(actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All())) {
             m_powered = false;
@@ -948,12 +947,12 @@ void mtsIntuitiveResearchKitArm::EnterDisabled(void)
 
     mFallbackState = "DISABLED";
     if (NumberOfBrakes() > 0) {
-        RobotIO.BrakeEngage();
+        IO.BrakeEngage();
     }
 
-    RobotIO.UsePotsForSafetyCheck(false);
-    RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
-    RobotIO.DisablePower();
+    IO.UsePotsForSafetyCheck(false);
+    IO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints(), 0.0));
+    IO.DisablePower();
     PID.Enable(false);
     PID.SetCheckPositionLimit(true);
     m_powered = false;
@@ -992,16 +991,16 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
 
     // in case we still have power but brakes are not engaged
     if (NumberOfBrakes() > 0) {
-        RobotIO.BrakeEngage();
+        IO.BrakeEngage();
     }
 
     mHomingTimer = currentTime;
     // make sure the PID is not sending currents
     PID.Enable(false);
     // pre-load the boards with zero current
-    RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
+    IO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints(), 0.0));
     // enable power and set a flags to move to next step
-    RobotIO.EnablePower();
+    IO.EnablePower();
     RobotInterface->SendStatus(this->GetName() + ": power requested");
 }
 
@@ -1016,10 +1015,10 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
 
     // check power status
     vctBoolVec actuatorAmplifiersStatus(NumberOfJoints());
-    RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
+    IO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
     vctBoolVec brakeAmplifiersStatus(NumberOfBrakes());
     if (NumberOfBrakes() > 0) {
-        RobotIO.GetBrakeAmpStatus(brakeAmplifiersStatus);
+        IO.GetBrakeAmpStatus(brakeAmplifiersStatus);
     }
     if (actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All()) {
         RobotInterface->SendStatus(this->GetName() + ": power on");
@@ -1044,7 +1043,7 @@ void mtsIntuitiveResearchKitArm::EnterEnabled(void)
     mFallbackState = "ENABLED";
 
     // disable PID for fallback
-    RobotIO.SetActuatorCurrent(vctDoubleVec(NumberOfAxes(), 0.0));
+    IO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints(), 0.0));
     PID.Enable(false);
     m_cartesian_ready = false;
     mJointControlReady = false;
@@ -1054,7 +1053,7 @@ void mtsIntuitiveResearchKitArm::EnterEnabled(void)
 
     // engage brakes for fallback
     if (NumberOfBrakes() > 0) {
-        RobotIO.BrakeEngage();
+        IO.BrakeEngage();
     }
 }
 
@@ -1086,10 +1085,10 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
     const int nb_samples = 1970; // birth year, state table contains 1999 elements so anything under that would work
     if (m_re_home) {
         // positive number to ignore encoder preloads
-        RobotIO.BiasEncoder(nb_samples);
+        IO.BiasEncoder(nb_samples);
     } else {
         // negative numbers means that we first check if encoders have already been preloaded
-        RobotIO.BiasEncoder(-nb_samples);
+        IO.BiasEncoder(-nb_samples);
     }
     mHomingBiasEncoderRequested = true;
     mHomingTimer = currentTime;
@@ -1116,7 +1115,7 @@ void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
     // use pots for redundancy
-    RobotIO.UsePotsForSafetyCheck(true);
+    IO.UsePotsForSafetyCheck(true);
 }
 
 void mtsIntuitiveResearchKitArm::TransitionEncodersBiased(void)
@@ -1139,7 +1138,7 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
 
     // release brakes if any
     if ((NumberOfBrakes() > 0) && !m_simulated) {
-        RobotIO.BrakeRelease();
+        IO.BrakeRelease();
     }
 
     // get robot data to make sure we have latest state

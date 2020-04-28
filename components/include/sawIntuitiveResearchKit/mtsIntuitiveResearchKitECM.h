@@ -44,10 +44,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
                        const std::string & filename) override;
 
     /*! Configuration methods */
-    inline size_t NumberOfAxes(void) const override {
-        return 4;
-    }
-
     inline size_t NumberOfJoints(void) const override {
         return 4;
     }

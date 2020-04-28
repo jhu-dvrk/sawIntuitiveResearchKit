@@ -47,10 +47,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     virtual void ConfigureTool(const std::string & filename);
 
     /*! Configuration methods */
-    inline size_t NumberOfAxes(void) const override {
-        return 7;
-    }
-
     inline size_t NumberOfJoints(void) const override {
         return 7;
     }

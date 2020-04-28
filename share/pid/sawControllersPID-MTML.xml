@@ -2,9 +2,10 @@
 
 <controller type="PID"
             interface="JointTorqueInterface"
-            numofjoints="8">
+            numofjoints="7">
 
   <joints>
+
     <joint index="0" name="outer_yaw" type="Revolute">
       <pid PGain="30.0" DGain="1.5" IGain="1.0" OffsetTorque="0.0" Forget="0.9" Nonlinear="0.0"/>
       <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
@@ -45,9 +46,6 @@
       <pid PGain="2.5" DGain="0.08" IGain="0.0" OffsetTorque="0.0" Forget="0.9" Nonlinear="1.0"/>
       <limit MinILimit="-100" MaxILimit="100" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
       <pos LowerLimit="-480" UpperLimit="450" Units="deg"/>
-    </joint>
-
-    <joint index="7" name="finger_grips" type="Inactive">
     </joint>
 
   </joints>

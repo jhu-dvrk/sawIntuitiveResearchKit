@@ -771,7 +771,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 if (CouplingChange.CouplingForTool) {
                     CouplingChange.DesiredCoupling.Assign(CouplingChange.ToolCoupling);
                 } else {
-                    const vctDoubleMat identity(vctDoubleMat::Eye(NumberOfAxes()));
+                    const vctDoubleMat identity(vctDoubleMat::Eye(NumberOfJoints()));
                     // set desired
                     CouplingChange.DesiredCoupling.Assign(identity);
                 }

@@ -193,7 +193,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     void BiasEncoderEventHandler(const int & nbSamples);
 
     /*! Configuration methods specific to derived classes. */
-    virtual size_t NumberOfAxes(void) const = 0;           // used IO: ECM 4, PSM 7, MTM 8
     virtual size_t NumberOfJoints(void) const = 0;         // used PID: ECM 4, PSM 7, MTM 7
     virtual size_t NumberOfJointsKinematics(void) const = 0; // ECM 4, MTM 7, PSM 6 or 8 (snake like tools)
     virtual size_t NumberOfBrakes(void) const = 0;         // ECM 3, PSM 0, MTM 0
@@ -247,7 +246,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     // Interface to IO component
     mtsInterfaceRequired * IOInterface;
-    struct InterfaceRobotTorque {
+    struct {
         mtsFunctionRead  GetSerialNumber;
         mtsFunctionVoid  EnablePower;
         mtsFunctionVoid  DisablePower;
@@ -255,12 +254,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionRead  GetBrakeAmpStatus;
         mtsFunctionWrite BiasEncoder;
         mtsFunctionWrite SetSomeEncoderPosition;
-        mtsFunctionRead  GetAnalogInputPosSI;
         mtsFunctionWrite SetActuatorCurrent;
         mtsFunctionWrite UsePotsForSafetyCheck;
         mtsFunctionVoid  BrakeRelease;
         mtsFunctionVoid  BrakeEngage;
-    } RobotIO;
+    } IO;
 
     // Main provided interface
     mtsInterfaceProvided * RobotInterface;

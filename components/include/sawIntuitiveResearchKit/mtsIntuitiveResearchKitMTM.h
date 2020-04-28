@@ -53,10 +53,6 @@ protected:
                       const std::string & filename) override;
 
     /*! Configuration methods */
-    inline size_t NumberOfAxes(void) const override {
-        return 8;
-    }
-
     inline size_t NumberOfJoints(void) const override {
         return 7;
     }
@@ -128,8 +124,11 @@ protected:
     //! robot cartesian position when cluthed
     vctFrm4x4 CartesianClutched;
 
-    //! Analog Input from Hardware for Gripper
-    vctDoubleVec AnalogInputPosSI;
+    mtsInterfaceRequired * GripperIOInterface;
+    struct {
+        mtsFunctionRead GetAnalogInputPosSI;
+    } GripperIO;
+
     //! Gripper angle
     prmStateJoint StateGripper;
     prmConfigurationJoint ConfigurationGripper;
