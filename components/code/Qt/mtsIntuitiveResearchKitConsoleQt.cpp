@@ -32,6 +32,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECMQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTMQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSMQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSMQtWidget.h>
@@ -150,6 +151,9 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM)
                 || (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED)) {
                 armGUI = new mtsIntuitiveResearchKitPSMQtWidget(name + "-GUI");
+            } else if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM)
+                       || (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED)) {
+                armGUI = new mtsIntuitiveResearchKitMTMQtWidget(name + "-GUI");
             } else if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM)
                        || (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED)) {
                 armGUI = new mtsIntuitiveResearchKitECMQtWidget(name + "-GUI");

@@ -40,6 +40,7 @@ if (cisst_FOUND_AS_REQUIRED)
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSMQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECMQtWidget.h
+                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationMTMQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciEndoscopeFocusQtWidget.h
                   ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBaseQtWidget.h)
@@ -67,6 +68,8 @@ if (cisst_FOUND_AS_REQUIRED)
                mtsIntuitiveResearchKitArmQtWidget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitECMQtWidget.h
                mtsIntuitiveResearchKitECMQtWidget.cpp
+               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitMTMQtWidget.h
+               mtsIntuitiveResearchKitMTMQtWidget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSMQtWidget.h
                mtsIntuitiveResearchKitPSMQtWidget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
