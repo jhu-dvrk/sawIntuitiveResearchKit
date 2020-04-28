@@ -48,7 +48,11 @@ void mtsIntuitiveResearchKitMTMQtWidget::setupUiDerived(void)
 void mtsIntuitiveResearchKitMTMQtWidget::timerEventDerived(void)
 {
     gripper_measured_js(m_gripper_measured_js);
-    QString text;
-    text.setNum(m_gripper_measured_js.Position().at(0) * cmn180_PI, 'f', 3);
-    QLEGripperPosition->setText(text);
+    if (m_gripper_measured_js.Position().size() > 0) {
+        QString text;
+        text.setNum(m_gripper_measured_js.Position().at(0) * cmn180_PI, 'f', 3);
+        QLEGripperPosition->setText(text);
+    } else {
+        QLEGripperPosition->setText("");
+    }
 }

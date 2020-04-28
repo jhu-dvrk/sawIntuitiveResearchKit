@@ -34,6 +34,7 @@ public:
 
 protected:
     void setupUiDerived(void);
+    void timerEventDerived(void);
 
 signals:
     void SignalToolType(QString toolType);
@@ -51,6 +52,13 @@ private:
     QLineEdit * QLEToolType;
     QComboBox * QCBToolOptions;
     mtsFunctionWrite SetToolType;
+
+    mtsFunctionRead jaw_measured_js;
+    QLineEdit * QLEJawPosition;
+    QLineEdit * QLEJawVelocity;
+    QLineEdit * QLEJawEffort;
+    prmStateJoint m_jaw_measured_js;
+
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitPSMQtWidget);

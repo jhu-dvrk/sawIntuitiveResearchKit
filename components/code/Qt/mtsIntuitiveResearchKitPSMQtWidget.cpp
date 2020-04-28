@@ -37,6 +37,7 @@ mtsIntuitiveResearchKitPSMQtWidget::mtsIntuitiveResearchKitPSMQtWidget(const std
     mtsIntuitiveResearchKitArmQtWidget(componentName, periodInSeconds)
 {
     CMN_ASSERT(InterfaceRequired);
+    InterfaceRequired->AddFunction("jaw_measured_js", jaw_measured_js);
     InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSMQtWidget::ToolTypeEventHandler,
                                             this, "ToolType");
     InterfaceRequired->AddEventHandlerVoid(&mtsIntuitiveResearchKitPSMQtWidget::ToolTypeRequestEventHandler,
@@ -46,6 +47,17 @@ mtsIntuitiveResearchKitPSMQtWidget::mtsIntuitiveResearchKitPSMQtWidget(const std
 
 void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
 {
+    QHBoxLayout * jawLayout = new QHBoxLayout;
+    MainLayout->addLayout(jawLayout);
+
+    jawLayout->addWidget(new QLabel("Jaw"));
+    QLEJawPosition = new QLineEdit();
+    jawLayout->addWidget(QLEJawPosition);
+    QLEJawVelocity = new QLineEdit();
+    jawLayout->addWidget(QLEJawVelocity);
+    QLEJawEffort = new QLineEdit();
+    jawLayout->addWidget(QLEJawEffort);
+
     QHBoxLayout * toolLayout = new QHBoxLayout;
     MainLayout->addLayout(toolLayout);
 
@@ -70,7 +82,6 @@ void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
     QCBToolOptions->setEnabled(false);
     toolLayout->addWidget(QCBToolOptions);
 
-
     toolLayout->addStretch();
 
     // setup Qt Connection
@@ -80,7 +91,30 @@ void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
             this, SLOT(SlotToolTypeRequestEventHandler(void)));
     connect(QCBToolOptions, SIGNAL(activated(QString)),
             this, SLOT(SlotToolTypeSelected(QString)));
+}
 
+void mtsIntuitiveResearchKitPSMQtWidget::timerEventDerived(void)
+{
+    jaw_measured_js(m_jaw_measured_js);
+    QString text;
+    if (m_jaw_measured_js.Position().size() > 0) {
+        text.setNum(m_jaw_measured_js.Position().at(0) * cmn180_PI, 'f', 3);
+        QLEJawPosition->setText(text);
+    } else {
+        QLEJawPosition->setText("");
+    }
+    if (m_jaw_measured_js.Velocity().size() > 0) {
+        text.setNum(m_jaw_measured_js.Velocity().at(0) * cmn180_PI, 'f', 3);
+        QLEJawVelocity->setText(text);
+    } else {
+        QLEJawVelocity->setText("");
+    }
+    if (m_jaw_measured_js.Effort().size() > 0) {
+        text.setNum(m_jaw_measured_js.Effort().at(0), 'f', 3);
+        QLEJawEffort->setText(text);
+    } else {
+        QLEJawEffort->setText("");
+    }
 }
 
 void mtsIntuitiveResearchKitPSMQtWidget::SlotToolTypeEventHandler(QString toolType)
