@@ -73,7 +73,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
 
     bool IsHomed(void) const;
     void UnHome(void);
-
+    bool IsJointReady(void) const override;
+    bool IsCartesianReady(void) const override;
 
     // state related methods
     void SetGoalHomingArm(void) override;

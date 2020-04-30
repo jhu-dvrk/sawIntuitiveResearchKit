@@ -274,7 +274,7 @@ void mtsIntuitiveResearchKitMTM::CreateManipulator(void)
 
 bool mtsIntuitiveResearchKitMTM::IsHomed(void) const
 {
-    return m_encoders_biased;
+    return m_powered && m_encoders_biased;
 }
 
 void mtsIntuitiveResearchKitMTM::UnHome(void)
@@ -284,6 +284,16 @@ void mtsIntuitiveResearchKitMTM::UnHome(void)
     m_encoders_biased_from_pots = false;
     // to force roll bias
     m_encoders_biased = false;
+}
+
+bool mtsIntuitiveResearchKitMTM::IsJointReady(void) const
+{
+    return m_powered && m_encoders_biased;
+}
+
+bool mtsIntuitiveResearchKitMTM::IsCartesianReady(void) const
+{
+    return m_powered && m_encoders_biased;
 }
 
 void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
@@ -311,8 +321,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     static const double maxRollRange = 6.0 * cmnPI + maxTrackingError; // that actual device is limited to ~2.6 turns
 
     // compute joint goal position, we assume PID is on from previous state
-    CMN_ASSERT(m_joint_ready);
-    GetRobotData();
+    PID.setpoint_js(m_setpoint_js_pid);
     mJointTrajectory.Goal.Assign(m_setpoint_js_pid.Position());
     const double currentRoll = m_setpoint_js_pid.Position().at(JNT_WRIST_ROLL);
     mJointTrajectory.Goal.at(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
@@ -364,8 +373,7 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
         }
 
         // detect tracking error and set lower limit
-        CMN_ASSERT(m_joint_ready);
-        GetRobotData();
+        PID.measured_js(m_measured_js_pid);
         trackingError = std::abs(m_measured_js_pid.Position().at(JNT_WRIST_ROLL) - JointSet.at(JNT_WRIST_ROLL));
         if (trackingError > maxTrackingError) {
             // disable PID

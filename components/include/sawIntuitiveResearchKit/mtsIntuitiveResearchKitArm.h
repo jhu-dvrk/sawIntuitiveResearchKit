@@ -212,6 +212,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     /*! Each arm has a different homing procedure. */
     virtual bool IsHomed(void) const = 0;
     virtual void UnHome(void) = 0;
+    virtual bool IsJointReady(void) const = 0;
+    virtual bool IsCartesianReady(void) const = 0;
 
     /*! Each arm must provide a way to check if the arm is ready to be
       used in cartesian mode.  PSM and ECM need to make sure the
@@ -335,10 +337,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     bool BaseFrameValid;
 
     bool m_powered = false;;
-    bool m_joint_ready = false;
-    bool m_cartesian_ready = false;
-    bool mJointControlReady;
-    bool mCartesianControlReady;
 
     mtsIntuitiveResearchKitArmTypes::ControlSpace m_control_space;
     mtsIntuitiveResearchKitArmTypes::ControlMode m_control_mode;

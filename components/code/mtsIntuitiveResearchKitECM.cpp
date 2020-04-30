@@ -188,12 +188,22 @@ void mtsIntuitiveResearchKitECM::Init(void)
 
 bool mtsIntuitiveResearchKitECM::IsHomed(void) const
 {
-    return m_encoders_biased_from_pots;
+    return m_powered && m_encoders_biased_from_pots;
 }
 
 void mtsIntuitiveResearchKitECM::UnHome(void)
 {
     m_encoders_biased_from_pots = false;
+}
+
+bool mtsIntuitiveResearchKitECM::IsJointReady(void) const
+{
+    return m_powered && m_encoders_biased_from_pots;
+}
+
+bool mtsIntuitiveResearchKitECM::IsCartesianReady(void) const
+{
+    return m_powered && m_encoders_biased_from_pots;
 }
 
 void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
@@ -227,7 +237,6 @@ void mtsIntuitiveResearchKitECM::TransitionArmHomed(void)
 
     // on ECM, arm homed means arm ready
     if (mArmState.DesiredStateIsNotCurrent()) {
-        m_cartesian_ready = true;
         mArmState.SetCurrentState("READY");
     }
 }
@@ -235,11 +244,6 @@ void mtsIntuitiveResearchKitECM::TransitionArmHomed(void)
 void mtsIntuitiveResearchKitECM::EnterManual(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
-    // set ready flag so Arm::GetRobotData updates all joint and
-    // cartesian data members
-    mJointControlReady = true;
-    mCartesianControlReady = true;
-
     PID.EnableTrackingError(false);
     SetControlEffortActiveJoints();
 }

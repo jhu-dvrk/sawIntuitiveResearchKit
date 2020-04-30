@@ -88,6 +88,8 @@ protected:
 
     bool IsHomed(void) const override;
     void UnHome(void) override;
+    bool IsJointReady(void) const override;
+    bool IsCartesianReady(void) const override;
 
     // state related methods
     void SetGoalHomingArm(void) override;

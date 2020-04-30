@@ -171,7 +171,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     // state table to maintain state :-)
     mStateTableState.AddData(mStateTableStateDesired, "DesiredState");
-    m_operating_state.Valid() = true;
+    m_operating_state.SetValid(true);
     mStateTableState.AddData(m_operating_state, "operating_state");
     AddStateTable(&mStateTableState);
     mStateTableState.SetAutomaticAdvance(false);
@@ -185,8 +185,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
     m_control_space = mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE;
     m_control_mode = mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE;
 
-    mJointControlReady = false;
-    mCartesianControlReady = false;
     m_simulated = false;
     m_encoders_biased_from_pots = false;
     mHomingGoesToZero = false; // MTM ignores this
@@ -736,104 +734,31 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
     }
 
     // we can start reporting some joint values after the robot is powered
-    if (m_joint_ready) {
+    if (IsJointReady()) {
         mtsExecutionResult executionResult;
         // joint state
         executionResult = PID.measured_js(m_measured_js_pid);
         if (executionResult.IsOK()) {
-            m_measured_js_pid.Valid() = true;
+            m_measured_js_pid.SetValid(true);
         } else {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to PID.measured_js failed \""
                                     << executionResult << "\"" << std::endl;
-            m_measured_js_pid.Valid() = false;
+            m_measured_js_pid.SetValid(false);
         }
 
         // desired joint state
         executionResult = PID.setpoint_js(m_setpoint_js_pid);
         if (executionResult.IsOK()) {
-            m_setpoint_js_pid.Valid() = true;
+            m_setpoint_js_pid.SetValid(true);
         } else {
             CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to PID.setpoint_js failed \""
                                     << executionResult << "\"" << std::endl;
-            m_setpoint_js_pid.Valid() = false;
+            m_setpoint_js_pid.SetValid(false);
         }
 
         // update joint states used for kinematics
         UpdateStateJointKinematics();
 
-        // when the robot is ready, we can compute cartesian position
-        if (m_cartesian_ready) {
-            // update cartesian position
-            m_measured_cp_local_frame = Manipulator->ForwardKinematics(m_measured_js_kin.Position());
-            m_measured_cp_frame = m_base_frame * m_measured_cp_local_frame;
-            // normalize
-            m_measured_cp_local_frame.Rotation().NormalizedSelf();
-            m_measured_cp_frame.Rotation().NormalizedSelf();
-            // flags
-            m_measured_cp_local.SetTimestamp(m_measured_js_kin.Timestamp());
-            m_measured_cp_local.SetValid(true);
-            m_measured_cp.SetTimestamp(m_measured_js_kin.Timestamp());
-            m_measured_cp.SetValid(BaseFrameValid);
-            // update jacobians
-            Manipulator->JacobianSpatial(m_measured_js_kin.Position(), m_jacobian_spatial);
-            Manipulator->JacobianBody(m_measured_js_kin.Position(), m_jacobian_body);
-
-            // update cartesian velocity using the jacobian and joint
-            // velocities.
-            vctDoubleVec cartesianVelocity(6);
-            cartesianVelocity.ProductOf(m_jacobian_body, m_measured_js_kin.Velocity());
-            vct3 relative, absolute;
-            // linear
-            relative.Assign(cartesianVelocity.Ref(3, 0));
-            m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
-            m_measured_cv.SetVelocityLinear(absolute);
-            // angular
-            relative.Assign(cartesianVelocity.Ref(3, 3));
-            m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
-            m_measured_cv.SetVelocityAngular(absolute);
-            // valid/timestamp
-            m_measured_cv.SetValid(true);
-            m_measured_cv.SetTimestamp(m_measured_js_kin.Timestamp());
-
-
-            // update wrench based on measured joint current efforts
-            mJacobianBodyTranspose.Assign(m_jacobian_body.Transpose());
-            nmrPInverse(mJacobianBodyTranspose, mJacobianPInverseData);
-            vctDoubleVec wrench(6);
-            wrench.ProductOf(mJacobianPInverseData.PInverse(), m_measured_js_kin.Effort());
-            if (mWrenchBodyOrientationAbsolute) {
-                // forces
-                relative.Assign(wrench.Ref(3, 0));
-                m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
-                m_measured_cf_body.Force().Ref<3>(0).Assign(absolute);
-                // torques
-                relative.Assign(wrench.Ref(3, 3));
-                m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
-                m_measured_cf_body.Force().Ref<3>(3).Assign(absolute);
-            } else {
-                m_measured_cf_body.Force().Assign(wrench);
-            }
-            // valid/timestamp
-            m_measured_cf_body.SetValid(true);
-            m_measured_cf_body.SetTimestamp(m_measured_js_kin.Timestamp());
-
-            // update cartesian position desired based on joint desired
-            m_setpoint_cp_local_frame = Manipulator->ForwardKinematics(m_setpoint_js_kin.Position());
-            m_setpoint_cp_frame = m_base_frame * m_setpoint_cp_local_frame;
-            // normalize
-            m_setpoint_cp_local_frame.Rotation().NormalizedSelf();
-            m_setpoint_cp_frame.Rotation().NormalizedSelf();
-            // flags
-            m_setpoint_cp_local.SetTimestamp(m_setpoint_js_kin.Timestamp());
-            m_setpoint_cp_local.SetValid(true);
-            m_setpoint_cp.SetTimestamp(m_setpoint_js_kin.Timestamp());
-            m_setpoint_cp.SetValid(BaseFrameValid);
-        }
-
-        m_measured_cp_local.Position().From(m_measured_cp_local_frame);
-        m_measured_cp.Position().From(m_measured_cp_frame);
-        m_setpoint_cp_local.Position().From(m_setpoint_cp_local_frame);
-        m_setpoint_cp.Position().From(m_setpoint_cp_frame);
     } else {
         // set joint to zeros
         m_measured_js_pid.Position().Zeros();
@@ -845,7 +770,82 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         m_measured_js_kin.Velocity().Zeros();
         m_measured_js_kin.Effort().Zeros();
         m_measured_js_kin.SetValid(false);
+    }
 
+    // when the robot is ready, we can compute cartesian position
+    if (IsCartesianReady()) {
+        CMN_ASSERT(IsJointReady());
+        // update cartesian position
+        m_measured_cp_local_frame = Manipulator->ForwardKinematics(m_measured_js_kin.Position());
+        m_measured_cp_frame = m_base_frame * m_measured_cp_local_frame;
+        // normalize
+        m_measured_cp_local_frame.Rotation().NormalizedSelf();
+        m_measured_cp_frame.Rotation().NormalizedSelf();
+        // prm types
+        m_measured_cp_local.Position().From(m_measured_cp_local_frame);
+        m_measured_cp_local.SetTimestamp(m_measured_js_kin.Timestamp());
+        m_measured_cp_local.SetValid(true);
+        m_measured_cp.Position().From(m_measured_cp_frame);
+        m_measured_cp.SetTimestamp(m_measured_js_kin.Timestamp());
+        m_measured_cp.SetValid(BaseFrameValid);
+
+        // update jacobians
+        Manipulator->JacobianSpatial(m_measured_js_kin.Position(), m_jacobian_spatial);
+        Manipulator->JacobianBody(m_measured_js_kin.Position(), m_jacobian_body);
+
+        // update cartesian velocity using the jacobian and joint
+        // velocities.
+        vctDoubleVec cartesianVelocity(6);
+        cartesianVelocity.ProductOf(m_jacobian_body, m_measured_js_kin.Velocity());
+        vct3 relative, absolute;
+        // linear
+        relative.Assign(cartesianVelocity.Ref(3, 0));
+        m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
+        m_measured_cv.SetVelocityLinear(absolute);
+        // angular
+        relative.Assign(cartesianVelocity.Ref(3, 3));
+        m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
+        m_measured_cv.SetVelocityAngular(absolute);
+        // valid/timestamp
+        m_measured_cv.SetValid(true);
+        m_measured_cv.SetTimestamp(m_measured_js_kin.Timestamp());
+
+        // update wrench based on measured joint current efforts
+        mJacobianBodyTranspose.Assign(m_jacobian_body.Transpose());
+        nmrPInverse(mJacobianBodyTranspose, mJacobianPInverseData);
+        vctDoubleVec wrench(6);
+        wrench.ProductOf(mJacobianPInverseData.PInverse(), m_measured_js_kin.Effort());
+        if (mWrenchBodyOrientationAbsolute) {
+            // forces
+            relative.Assign(wrench.Ref(3, 0));
+            m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
+            m_measured_cf_body.Force().Ref<3>(0).Assign(absolute);
+            // torques
+            relative.Assign(wrench.Ref(3, 3));
+            m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
+            m_measured_cf_body.Force().Ref<3>(3).Assign(absolute);
+        } else {
+            m_measured_cf_body.Force().Assign(wrench);
+        }
+        // valid/timestamp
+        m_measured_cf_body.SetValid(true);
+        m_measured_cf_body.SetTimestamp(m_measured_js_kin.Timestamp());
+
+        // update cartesian position desired based on joint desired
+        m_setpoint_cp_local_frame = Manipulator->ForwardKinematics(m_setpoint_js_kin.Position());
+        m_setpoint_cp_frame = m_base_frame * m_setpoint_cp_local_frame;
+        // normalize
+        m_setpoint_cp_local_frame.Rotation().NormalizedSelf();
+        m_setpoint_cp_frame.Rotation().NormalizedSelf();
+        // prm type
+        m_setpoint_cp_local.Position().From(m_setpoint_cp_local_frame);
+        m_setpoint_cp_local.SetTimestamp(m_setpoint_js_kin.Timestamp());
+        m_setpoint_cp_local.SetValid(true);
+        m_setpoint_cp.Position().From(m_setpoint_cp_frame);
+        m_setpoint_cp.SetTimestamp(m_setpoint_js_kin.Timestamp());
+        m_setpoint_cp.SetValid(BaseFrameValid);
+
+    } else {
         // set cartesian data to "zero"
         m_measured_cp_local_frame.Assign(vctFrm4x4::Identity());
         m_measured_cp_frame.Assign(vctFrm4x4::Identity());
@@ -872,8 +872,8 @@ void mtsIntuitiveResearchKitArm::UpdateStateJointKinematics(void)
     m_measured_js_kin.Position().ForceAssign(m_measured_js_pid.Position().Ref(NumberOfJointsKinematics()));
     m_measured_js_kin.Velocity().ForceAssign(m_measured_js_pid.Velocity().Ref(NumberOfJointsKinematics()));
     m_measured_js_kin.Effort().ForceAssign(m_measured_js_pid.Effort().Ref(NumberOfJointsKinematics()));
-    m_measured_js_kin.Timestamp() = m_measured_js_pid.Timestamp();
-    m_measured_js_kin.Valid() = m_measured_js_pid.Valid();
+    m_measured_js_kin.SetTimestamp(m_measured_js_pid.Timestamp());
+    m_measured_js_kin.SetValid(m_measured_js_pid.Valid());
     // commanded
     if (m_setpoint_js_kin.Name().size() != NumberOfJointsKinematics()) {
         m_setpoint_js_kin.Name().ForceAssign(m_setpoint_js_pid.Name().Ref(NumberOfJointsKinematics()));
@@ -881,8 +881,8 @@ void mtsIntuitiveResearchKitArm::UpdateStateJointKinematics(void)
     m_setpoint_js_kin.Position().ForceAssign(m_setpoint_js_pid.Position().Ref(NumberOfJointsKinematics()));
     // m_setpoint_js_kin.Velocity().ForceAssign(m_setpoint_js_pid.Velocity().Ref(NumberOfJointsKinematics()));
     m_setpoint_js_kin.Effort().ForceAssign(m_setpoint_js_pid.Effort().Ref(NumberOfJointsKinematics()));
-    m_setpoint_js_kin.Timestamp() = m_setpoint_js_pid.Timestamp();
-    m_setpoint_js_kin.Valid() = m_setpoint_js_pid.Valid();
+    m_setpoint_js_kin.SetTimestamp(m_setpoint_js_pid.Timestamp());
+    m_setpoint_js_kin.SetValid(m_setpoint_js_pid.Valid());
 }
 
 void mtsIntuitiveResearchKitArm::ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID)
@@ -956,10 +956,6 @@ void mtsIntuitiveResearchKitArm::EnterDisabled(void)
     PID.Enable(false);
     PID.SetCheckPositionLimit(true);
     m_powered = false;
-    m_joint_ready = false;
-    m_cartesian_ready = false;
-    mJointControlReady = false;
-    mCartesianControlReady = false;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
 }
@@ -1045,9 +1041,6 @@ void mtsIntuitiveResearchKitArm::EnterEnabled(void)
     // disable PID for fallback
     IO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints(), 0.0));
     PID.Enable(false);
-    m_cartesian_ready = false;
-    mJointControlReady = false;
-    mCartesianControlReady = false;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
 
@@ -1097,7 +1090,6 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
 {
     if (m_simulated || m_encoders_biased_from_pots) {
-        m_joint_ready = true;
         mArmState.SetCurrentState("ENCODERS_BIASED");
         return;
     }
@@ -1142,7 +1134,7 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
     }
 
     // get robot data to make sure we have latest state
-    CMN_ASSERT(m_joint_ready);
+    CMN_ASSERT(IsJointReady());
     GetRobotData();
 
     // compute joint goal position
@@ -1216,11 +1208,6 @@ void mtsIntuitiveResearchKitArm::EnterHomed(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
 
-    // set ready flags, some might have been set earlier by derived
-    // classes (e.g. PSM allows joint commands without tool
-    m_cartesian_ready = true;
-    mJointControlReady = true;
-    mCartesianControlReady = true;
     // no control mode defined
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
@@ -1240,9 +1227,6 @@ void mtsIntuitiveResearchKitArm::EnterHomed(void)
 
 void mtsIntuitiveResearchKitArm::LeaveHomed(void)
 {
-    // set ready flag
-    mJointControlReady = false;
-    mCartesianControlReady = false;
     // no control mode defined
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
@@ -1339,13 +1323,15 @@ bool mtsIntuitiveResearchKitArm::ArmIsReady(const std::string & methodName,
                                             const mtsIntuitiveResearchKitArmTypes::ControlSpace space)
 {
     // reset counter if ready
-    if (((space == mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)
-         && mJointControlReady)
-        || ((space == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)
-            && mCartesianControlReady)) {
-        mArmNotReadyCounter = 0;
-        mArmNotReadyTimeLastMessage = 0.0;
-        return true;
+    if (m_operating_state.State() == prmOperatingState::ENABLED) {
+        if (((space == mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)
+             && IsJointReady())
+            || ((space == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)
+                && IsCartesianReady())) {
+            mArmNotReadyCounter = 0;
+            mArmNotReadyTimeLastMessage = 0.0;
+            return true;
+        }
     }
     // throttle messages in time
     if ((StateTable.GetTic() - mArmNotReadyTimeLastMessage) > 2.0 * cmn_s) {
@@ -1806,7 +1792,6 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
 {
     // encoders are biased from pots
     m_encoders_biased_from_pots = true;
-    m_joint_ready = true;
 
     if (nbSamples > 0) {
         // some encoders need to be biased not from pots: MTM roll

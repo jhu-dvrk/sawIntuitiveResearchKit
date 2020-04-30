@@ -458,18 +458,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mArmState.AddState("MANUAL");
 
     // after arm homed
-    mArmState.SetEnterCallback("HOMED",
-                               &mtsIntuitiveResearchKitPSM::EnterHomed,
-                               this);
-    mArmState.SetRunCallback("HOMED",
-                             &mtsIntuitiveResearchKitPSM::RunHomed,
-                             this);
     mArmState.SetTransitionCallback("HOMED",
                                     &mtsIntuitiveResearchKitPSM::TransitionHomed,
                                     this);
-    mArmState.SetLeaveCallback("HOMED",
-                               &mtsIntuitiveResearchKitPSM::LeaveHomed,
-                               this);
     mArmState.SetEnterCallback("CHANGING_COUPLING_ADAPTER",
                                &mtsIntuitiveResearchKitPSM::EnterChangingCouplingAdapter,
                                this);
@@ -635,12 +626,12 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 bool mtsIntuitiveResearchKitPSM::IsHomed(void) const
 {
     if (Tool.IsPresent) {
-        return m_encoders_biased_from_pots && Adapter.IsEngaged && Tool.IsEngaged;
+        return m_powered && m_encoders_biased_from_pots && Adapter.IsEngaged && Tool.IsEngaged;
     }
     if (Adapter.IsPresent) {
-        return m_encoders_biased_from_pots && Adapter.IsEngaged;
+        return m_powered && m_encoders_biased_from_pots && Adapter.IsEngaged;
     }
-    return m_encoders_biased_from_pots;
+    return m_powered && m_encoders_biased_from_pots;
 }
 
 void mtsIntuitiveResearchKitPSM::UnHome(void)
@@ -656,6 +647,16 @@ void mtsIntuitiveResearchKitPSM::UnHome(void)
     // to force re-bias on pots
     m_re_home = true;
     m_encoders_biased_from_pots = false;
+}
+
+bool mtsIntuitiveResearchKitPSM::IsJointReady(void) const
+{
+    return m_powered && m_encoders_biased_from_pots;
+}
+
+bool mtsIntuitiveResearchKitPSM::IsCartesianReady(void) const
+{
+    return m_powered && m_encoders_biased_from_pots && Tool.IsEngaged;
 }
 
 void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
@@ -676,19 +677,6 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
     } else {
         // stay at current position by default
         mJointTrajectory.Goal.Assign(m_setpoint_js_pid.Position());
-    }
-}
-
-void mtsIntuitiveResearchKitPSM::EnterHomed(void)
-{
-    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
-    mJointControlReady = true;
-}
-
-void mtsIntuitiveResearchKitPSM::RunHomed(void)
-{
-    if (mControlCallback) {
-        mControlCallback->Execute();
     }
 }
 
@@ -729,16 +717,6 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
             }
         }
     }
-}
-
-void mtsIntuitiveResearchKitPSM::LeaveHomed(void)
-{
-    // turn off joint control ready until we have adapter and tool
-    mJointControlReady = false;
-
-    // no control mode defined
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
 }
 
 void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
@@ -1154,7 +1132,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
-
+    Tool.IsEngaged = true;
     // restore default PID tracking error
     PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
 }
@@ -1163,7 +1141,7 @@ void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
 {
     Tool.NeedEngage = false;
     if (mArmState.DesiredStateIsNotCurrent()) {
-        mArmState.SetCurrentState("READY");
+        mArmState.SetCurrentState("ENABLED");
     }
 }
 
@@ -1262,7 +1240,7 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
 
 void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
-    if (mArmState.CurrentState() != "READY") {
+    if (mArmState.CurrentState() != "ENABLED") {
         mtsIntuitiveResearchKitArm::SetPositionJointLocal(newPosition);
         return;
     }
@@ -1316,7 +1294,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
 
 void mtsIntuitiveResearchKitPSM::SetEffortJointLocal(const vctDoubleVec & newEffort)
 {
-    if (mArmState.CurrentState() != "READY") {
+    if (mArmState.CurrentState() != "ENABLED") {
         mtsIntuitiveResearchKitArm::SetEffortJointLocal(newEffort);
         return;
     }
@@ -1359,7 +1337,6 @@ void mtsIntuitiveResearchKitPSM::SetAdapterPresent(const bool & present)
         Adapter.NeedEngage = true;
     } else {
         Adapter.NeedEngage = false;
-        m_cartesian_ready = false;
         mArmState.SetCurrentState("HOMED");
     }
 }
@@ -1386,7 +1363,6 @@ void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
         Tool.NeedEngage = true;
         ToolEvents.ToolType(mtsIntuitiveResearchKitToolTypes::TypeToString(mToolType));
     } else {
-        m_cartesian_ready = false;
         ToolEvents.ToolType(std::string());
     }
 }

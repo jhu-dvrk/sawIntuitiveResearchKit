@@ -75,13 +75,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     bool IsHomed(void) const override;
     void UnHome(void) override;
+    bool IsJointReady(void) const override;
+    bool IsCartesianReady(void) const override;
 
     // state related methods
     void SetGoalHomingArm(void) override;
-    void EnterHomed(void);
-    void RunHomed(void); // mostly to allow joint control without tool nor adapter
-    void LeaveHomed(void);
-    void TransitionHomed(void);
+    void TransitionHomed(void); // for adapter/tool detection
 
     // methods used in change coupling/engaging
     void RunChangingCoupling(void);
