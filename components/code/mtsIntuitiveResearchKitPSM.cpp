@@ -1240,11 +1240,10 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
 
 void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
-    if (mArmState.CurrentState() != "ENABLED") {
+    if (m_operating_state.State() != prmOperatingState::ENABLED) {
         mtsIntuitiveResearchKitArm::SetPositionJointLocal(newPosition);
         return;
     }
-
     CMN_ASSERT(JointSetParam.Goal().size() == 7);
     JointSetParam.Goal().Zeros();
     ToJointsPID(newPosition, JointSetParam.Goal());

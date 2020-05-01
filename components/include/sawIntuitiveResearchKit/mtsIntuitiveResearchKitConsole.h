@@ -387,6 +387,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     void WarningEventHandler(const mtsMessage & message);
     void StatusEventHandler(const mtsMessage & message);
 
+    std::map<std::string, prmOperatingState> ArmStates;
     void SetArmCurrentState(const std::string & armName,
                             const prmOperatingState & currentState);
 };

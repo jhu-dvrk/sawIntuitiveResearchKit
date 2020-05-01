@@ -578,7 +578,7 @@ void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & ef
     }
 
     // apply a linear force on joint 3 to move toward the goal position
-    effortPreload[3] = -0.4 * (m_measured_js_kin.Position()[3] - q3Goal)
+    effortPreload[3] = -0.5 * (m_measured_js_kin.Position()[3] - q3Goal)
         - 0.05 * m_measured_js_kin.Velocity()[3];
 
     // cap effort to be totally safe - this has to be the most non-linear behavior around

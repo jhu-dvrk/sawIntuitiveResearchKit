@@ -2540,8 +2540,15 @@ void mtsIntuitiveResearchKitConsole::StatusEventHandler(const mtsMessage & messa
 void mtsIntuitiveResearchKitConsole::SetArmCurrentState(const std::string & armName,
                                                         const prmOperatingState & currentState)
 {
-    // update teleop state in case this arm is used for one of the selected teleops
-    if (currentState.IsEnabledHomedAndNotBusy()) {
+    auto armState = ArmStates.find(armName);
+    if (// first time we receive state from this arm
+        (armState == ArmStates.end())
+        ||
+        // only update the state if it was not enabled and the new
+        // state is enabled, home and not busy
+        ((armState->second.State() != prmOperatingState::ENABLED)
+         && currentState.IsEnabledHomedAndNotBusy())) {
+        ArmStates[armName] = currentState;
         UpdateTeleopState();
     }
 
