@@ -718,7 +718,7 @@ void mtsIntuitiveResearchKitArm::SetSimulated(void)
 void mtsIntuitiveResearchKitArm::GetRobotData(void)
 {
     // check that the robot still has power
-    if (m_powered) {
+    if (m_powered && !m_simulated) {
         vctBoolVec actuatorAmplifiersStatus(NumberOfJoints());
         IO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         vctBoolVec brakeAmplifiersStatus(NumberOfBrakes());
@@ -979,7 +979,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         vctDoubleVec goal(NumberOfJoints());
         goal.SetAll(0.0);
-        mtsIntuitiveResearchKitArm::SetPositionJointLocal(goal);
+        SetPositionJointLocal(goal);
         return;
     }
 
@@ -1032,6 +1032,7 @@ void mtsIntuitiveResearchKitArm::EnterEnabled(void)
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
 
     if (m_simulated) {
+        m_powered = true;
         return;
     }
 
@@ -1090,6 +1091,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
 {
     if (m_simulated || m_encoders_biased_from_pots) {
+        m_encoders_biased_from_pots = true;
         mArmState.SetCurrentState("ENCODERS_BIASED");
         return;
     }
@@ -1148,7 +1150,7 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
 
     // enable PID on all joints
-    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
+    SetPositionJointLocal(JointSet);
     PID.Enable(true);
     PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
 }
@@ -1162,7 +1164,7 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
                                         JointVelocitySet,
                                         mJointTrajectory.Goal,
                                         mJointTrajectory.GoalVelocity);
-    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
+    SetPositionJointLocal(JointSet);
 
     const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
     bool isHomed;
@@ -1217,7 +1219,7 @@ void mtsIntuitiveResearchKitArm::EnterHomed(void)
     }
 
     // enable PID and start from current position
-    mtsIntuitiveResearchKitArm::SetPositionJointLocal(m_setpoint_js_pid.Position());
+    SetPositionJointLocal(m_setpoint_js_pid.Position());
     PID.EnableTrackingError(UsePIDTrackingError());
     PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
     PID.SetCheckPositionLimit(true);
@@ -1259,7 +1261,7 @@ void mtsIntuitiveResearchKitArm::ControlPositionGoalJoint(void)
                                         JointVelocitySet,
                                         mJointTrajectory.Goal,
                                         mJointTrajectory.GoalVelocity);
-    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
+    SetPositionJointLocal(JointSet);
 
     const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
     const double currentTime = this->StateTable.GetTic();

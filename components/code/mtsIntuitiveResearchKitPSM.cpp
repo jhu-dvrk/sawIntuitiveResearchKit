@@ -682,18 +682,22 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
 
 void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
 {
-    Adapter.GetButton(Adapter.IsPresent);
-    if (!Adapter.IsPresent) {
-        Adapter.IsEngaged = false;
+    if (!m_simulated) {
+        Adapter.GetButton(Adapter.IsPresent);
+        if (!Adapter.IsPresent) {
+            Adapter.IsEngaged = false;
+        }
     }
     if (!Adapter.IsEngaged &&
         (Adapter.IsPresent || m_simulated || Adapter.NeedEngage)) {
         mArmState.SetCurrentState("CHANGING_COUPLING_ADAPTER");
     }
 
-    Tool.GetButton(Tool.IsPresent);
-    if (!Tool.IsPresent) {
-        Tool.IsEngaged = false;
+    if (!m_simulated) {
+        Tool.GetButton(Tool.IsPresent);
+        if (!Tool.IsPresent) {
+            Tool.IsEngaged = false;
+        }
     }
     if (Adapter.IsEngaged && !Tool.IsEngaged) {
         if (!m_simulated) {
@@ -1141,7 +1145,7 @@ void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
 {
     Tool.NeedEngage = false;
     if (mArmState.DesiredStateIsNotCurrent()) {
-        mArmState.SetCurrentState("ENABLED");
+        mArmState.SetCurrentState("HOMED");
     }
 }
 
@@ -1240,7 +1244,7 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
 
 void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
 {
-    if (m_operating_state.State() != prmOperatingState::ENABLED) {
+    if (!IsCartesianReady()) {
         mtsIntuitiveResearchKitArm::SetPositionJointLocal(newPosition);
         return;
     }

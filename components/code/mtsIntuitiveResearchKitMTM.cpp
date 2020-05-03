@@ -515,7 +515,7 @@ void mtsIntuitiveResearchKitMTM::ControlEffortOrientationLocked(void)
                                             JointVelocitySet,
                                             mJointTrajectory.Goal,
                                             mJointTrajectory.GoalVelocity);
-        mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
+        SetPositionJointLocal(JointSet);
     } else {
         RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortOrientationLocked");
     }
