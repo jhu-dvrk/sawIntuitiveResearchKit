@@ -864,25 +864,8 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
 
 void mtsIntuitiveResearchKitArm::UpdateStateJointKinematics(void)
 {
-    // for most cases, joints used for the kinematics are the first n joints
-    // from PID
-    if (m_measured_js_kin.Name().size() != NumberOfJointsKinematics()) {
-        m_measured_js_kin.Name().ForceAssign(m_measured_js_pid.Name().Ref(NumberOfJointsKinematics()));
-    }
-    m_measured_js_kin.Position().ForceAssign(m_measured_js_pid.Position().Ref(NumberOfJointsKinematics()));
-    m_measured_js_kin.Velocity().ForceAssign(m_measured_js_pid.Velocity().Ref(NumberOfJointsKinematics()));
-    m_measured_js_kin.Effort().ForceAssign(m_measured_js_pid.Effort().Ref(NumberOfJointsKinematics()));
-    m_measured_js_kin.SetTimestamp(m_measured_js_pid.Timestamp());
-    m_measured_js_kin.SetValid(m_measured_js_pid.Valid());
-    // commanded
-    if (m_setpoint_js_kin.Name().size() != NumberOfJointsKinematics()) {
-        m_setpoint_js_kin.Name().ForceAssign(m_setpoint_js_pid.Name().Ref(NumberOfJointsKinematics()));
-    }
-    m_setpoint_js_kin.Position().ForceAssign(m_setpoint_js_pid.Position().Ref(NumberOfJointsKinematics()));
-    // m_setpoint_js_kin.Velocity().ForceAssign(m_setpoint_js_pid.Velocity().Ref(NumberOfJointsKinematics()));
-    m_setpoint_js_kin.Effort().ForceAssign(m_setpoint_js_pid.Effort().Ref(NumberOfJointsKinematics()));
-    m_setpoint_js_kin.SetTimestamp(m_setpoint_js_pid.Timestamp());
-    m_setpoint_js_kin.SetValid(m_setpoint_js_pid.Valid());
+    m_measured_js_kin = m_measured_js_pid;
+    m_setpoint_js_kin = m_setpoint_js_pid;
 }
 
 void mtsIntuitiveResearchKitArm::ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID)
@@ -979,7 +962,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         vctDoubleVec goal(NumberOfJoints());
         goal.SetAll(0.0);
-        SetPositionJointLocal(goal);
+        mtsIntuitiveResearchKitArm::SetPositionJointLocal(goal);
         return;
     }
 
@@ -1150,7 +1133,7 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
 
     // enable PID on all joints
-    SetPositionJointLocal(JointSet);
+    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
     PID.Enable(true);
     PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
 }
@@ -1164,7 +1147,7 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
                                         JointVelocitySet,
                                         mJointTrajectory.Goal,
                                         mJointTrajectory.GoalVelocity);
-    SetPositionJointLocal(JointSet);
+    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
 
     const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
     bool isHomed;
@@ -1219,7 +1202,7 @@ void mtsIntuitiveResearchKitArm::EnterHomed(void)
     }
 
     // enable PID and start from current position
-    SetPositionJointLocal(m_setpoint_js_pid.Position());
+    mtsIntuitiveResearchKitArm::SetPositionJointLocal(m_setpoint_js_pid.Position());
     PID.EnableTrackingError(UsePIDTrackingError());
     PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
     PID.SetCheckPositionLimit(true);
