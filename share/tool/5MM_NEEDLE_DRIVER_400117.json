@@ -2,8 +2,8 @@
 {
     // see dVRK user guide
     "snake-like" : true,
-    "convention": "modified",
     "DH": {
+        "convention": "modified",
         "joints": [
             {
                 "name": "outer_roll",
