@@ -215,7 +215,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mJointTrajectory.GoalVelocity.SetSize(NumberOfJoints());
     mJointTrajectory.GoalError.SetSize(NumberOfJoints());
     mJointTrajectory.GoalTolerance.SetSize(NumberOfJoints());
-    mJointTrajectory.IsWorking = false;
+    mJointTrajectory.IsActive = false;
 
     // initialize velocity
     m_measured_cv.SetVelocityLinear(vct3(0.0));
@@ -1236,7 +1236,7 @@ void mtsIntuitiveResearchKitArm::ControlPositionJoint(void)
 void mtsIntuitiveResearchKitArm::ControlPositionGoalJoint(void)
 {
     // check if there's anything to do
-    if (!mJointTrajectory.IsWorking) {
+    if (!mJointTrajectory.IsActive) {
         return;
     }
 
@@ -1258,14 +1258,14 @@ void mtsIntuitiveResearchKitArm::ControlPositionGoalJoint(void)
         break;
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         mJointTrajectory.GoalReachedEvent(true);
-        mJointTrajectory.IsWorking = false;
+        mJointTrajectory.IsActive = false;
         m_operating_state.IsBusy() = false;
         MessageEvents.OperatingState(m_operating_state);
         break;
     default:
         RobotInterface->SendError(this->GetName() + ": error while evaluating trajectory");
         mJointTrajectory.GoalReachedEvent(false);
-        mJointTrajectory.IsWorking = false;
+        mJointTrajectory.IsActive = false;
         m_operating_state.IsBusy() = false;
         MessageEvents.OperatingState(m_operating_state);
         break;
@@ -1394,6 +1394,13 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
     }
 
     if (mode != m_control_mode) {
+
+        if ((m_control_mode == mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE)
+            &&  mJointTrajectory.IsActive) {
+            mJointTrajectory.IsActive = false;
+            m_operating_state.IsBusy() = false;
+            MessageEvents.OperatingState(m_operating_state);
+        }
 
         switch (mode) {
         case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
@@ -1671,11 +1678,11 @@ void mtsIntuitiveResearchKitArm::move_jp(const prmPositionJointSet & newPosition
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
     // make sure trajectory is reset
-    if (!mJointTrajectory.IsWorking) {
+    if (!mJointTrajectory.IsActive) {
         m_operating_state.IsBusy() = true;
         MessageEvents.OperatingState(m_operating_state);
     }
-    mJointTrajectory.IsWorking = true;
+    mJointTrajectory.IsActive = true;
     mJointTrajectory.EndTime = 0.0;
     // new goal
     ToJointsPID(newPosition.Goal(), mJointTrajectory.Goal);
@@ -1728,11 +1735,11 @@ void mtsIntuitiveResearchKitArm::move_cp(const prmPositionCartesianSet & newPosi
 
     if (this->InverseKinematics(jointSet, m_base_frame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // make sure trajectory is reset
-        if (!mJointTrajectory.IsWorking) {
+        if (!mJointTrajectory.IsActive) {
             m_operating_state.IsBusy() = true;
             MessageEvents.OperatingState(m_operating_state);
         }
-        mJointTrajectory.IsWorking = true;
+        mJointTrajectory.IsActive = true;
         mJointTrajectory.EndTime = 0.0;
         // new goal
         ToJointsPID(jointSet, mJointTrajectory.Goal);

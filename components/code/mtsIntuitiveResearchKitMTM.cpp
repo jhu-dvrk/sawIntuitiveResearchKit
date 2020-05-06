@@ -411,12 +411,12 @@ void mtsIntuitiveResearchKitMTM::TransitionRollCalibrated(void)
 
 void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
 {
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
+
     if (m_simulated || IsHomed()) {
         mArmState.SetCurrentState("HOMING");
         return;
     }
-
-    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
     // reset encoder on last joint as well as PID target position to reflect new roll position = 0
     prmMaskedDoubleVec values(NumberOfJoints());

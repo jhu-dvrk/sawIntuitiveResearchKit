@@ -435,7 +435,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         vctDoubleVec GoalError;
         vctDoubleVec GoalTolerance;
         vctDoubleVec MaxJerk;
-        bool IsWorking;
+        bool IsActive;
         double EndTime;
         mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
     } mJointTrajectory;
