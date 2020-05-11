@@ -781,7 +781,8 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 return;
             } else {
                 RobotInterface->SendError(this->GetName() + ": can't disable last four axis to change coupling.");
-                mArmState.SetDesiredState(mFallbackState);
+                std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
+                SetDesiredState("FAULT");
             }
         } else {
             return;
@@ -799,7 +800,8 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 mArmState.SetCurrentState(CouplingChange.NextState);
             } else {
                 RobotInterface->SendError(this->GetName() + ": can't set coupling.");
-                mArmState.SetDesiredState(mFallbackState);
+                std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
+                SetDesiredState("FAULT");
             }
         } else {
             return;
@@ -1020,7 +1022,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
     default:
         RobotInterface->SendError(this->GetName() + ": error while evaluating trajectory");
-        this->SetDesiredState(mFallbackState);
+        std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
+        SetDesiredState("FAULT");
         break;
     }
 }
@@ -1152,7 +1155,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 
     default:
         RobotInterface->SendError(this->GetName() + " error while evaluating trajectory.");
-        this->SetDesiredState(mFallbackState);
+        std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
+        SetDesiredState("FAULT");
         break;
     }
 }

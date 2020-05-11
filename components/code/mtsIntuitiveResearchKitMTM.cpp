@@ -384,7 +384,8 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
             // time out
             if (currentTime > mHomingTimer + extraTime) {
                 RobotInterface->SendError(this->GetName() + ": unable to hit roll lower limit in time");
-                this->SetDesiredState(mFallbackState);
+                std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
+                SetDesiredState("FAULT");
             }
         }
         break;
@@ -392,11 +393,13 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         // we shouldn't be able to reach this goal
         RobotInterface->SendError(this->GetName() + ": went past roll lower limit");
-        this->SetDesiredState(mFallbackState);
+        SetDesiredState("FAULT");
         break;
 
     default:
         RobotInterface->SendError(this->GetName() + ": error while evaluating trajectory");
+        std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
+        SetDesiredState("FAULT");
         break;
     }
     return;
@@ -444,7 +447,8 @@ void mtsIntuitiveResearchKitMTM::RunResettingRollEncoder(void)
     double positionError = std::abs(m_measured_js_pid.Position().at(JNT_WRIST_ROLL) - -480.0 * cmnPI_180);
     if (positionError > 5.0 * cmn180_PI) {
         RobotInterface->SendError(this->GetName() + ": roll encoder not properly reset to -480 degrees");
-        this->SetDesiredState(mFallbackState);
+        std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
+        SetDesiredState("FAULT");
     } else {
         RobotInterface->SendStatus(this->GetName() + ": roll encoder properly reset to -480 degrees");
     }

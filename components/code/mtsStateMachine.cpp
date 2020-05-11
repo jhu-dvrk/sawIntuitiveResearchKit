@@ -94,6 +94,7 @@ void mtsStateMachine::SetDesiredState(const StateType & desiredState)
         = mStates.find(desiredState);
     if ((state != mStates.end()) // state exists
         && (state->second)) {  // can be set as desired
+        mPreviousDesiredState = mDesiredState;
         mDesiredState = desiredState;
         mDesiredStateIsNotCurrent = (mDesiredState != mCurrentState);
         return;
@@ -120,6 +121,7 @@ void mtsStateMachine::SetCurrentState(const StateType & newState)
         callback->second->Execute();
     }
     // set the new state and update current callbacks
+    mPreviousState = mCurrentState;
     mCurrentState = newState;
     mDesiredStateIsNotCurrent = (mDesiredState != mCurrentState);
 

@@ -83,7 +83,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.AddState("ENCODERS_BIASED");
     mArmState.AddState("HOMING");
     mArmState.AddState("HOMED");
-    mArmState.AddState("PAUSE");
+    mArmState.AddState("PAUSED");
     mArmState.AddState("FAULT");
 
     // possible desired states
@@ -91,9 +91,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mArmState.AddAllowedDesiredState("ENABLED");
     mArmState.AddAllowedDesiredState("ENCODERS_BIASED");
     mArmState.AddAllowedDesiredState("HOMED");
-    mArmState.AddAllowedDesiredState("PAUSE");
-
-    mFallbackState = "DISABLED";
+    mArmState.AddAllowedDesiredState("PAUSED");
 
     // state change, to convert to string events for users (Qt, ROS)
     mArmState.SetStateChangedCallback(&mtsIntuitiveResearchKitArm::StateChanged,
@@ -167,6 +165,16 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     mArmState.SetLeaveCallback("HOMED",
                                &mtsIntuitiveResearchKitArm::LeaveHomed,
+                               this);
+
+    // paused
+    mArmState.SetEnterCallback("PAUSED",
+                               &mtsIntuitiveResearchKitArm::EnterPaused,
+                               this);
+
+    // fault
+    mArmState.SetEnterCallback("FAULT",
+                               &mtsIntuitiveResearchKitArm::EnterFault,
                                this);
 
     // state table to maintain state :-)
@@ -376,9 +384,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
         RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::state_command,
                                         this, "state_command", std::string(""));
         // Human readable messages
-        RobotInterface->AddEventWrite(MessageEvents.DesiredState, "DesiredState", std::string(""));
-        RobotInterface->AddEventWrite(MessageEvents.CurrentState, "CurrentState", std::string(""));
-        RobotInterface->AddEventWrite(MessageEvents.OperatingState, "operating_state", prmOperatingState());
+        RobotInterface->AddEventWrite(state_events.desired_state, "DesiredState", std::string(""));
+        RobotInterface->AddEventWrite(state_events.current_state, "CurrentState", std::string(""));
+        RobotInterface->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
 
         // Stats
         RobotInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
@@ -392,21 +400,17 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
 void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
 {
+    // setting desired state triggers a new event so user nows which state is current
+    StateEvents();
     // try to find the state in state machine
     if (!mArmState.StateExists(state)) {
-        MessageEvents.DesiredState(state);
-        MessageEvents.OperatingState(m_operating_state);
         RobotInterface->SendError(this->GetName() + ": unsupported state " + state);
         return;
     }
-    // setting desired state triggers a new event so user nows which state is current
-    MessageEvents.CurrentState(mArmState.CurrentState());
     // try to set the desired state
     try {
         mArmState.SetDesiredState(state);
     } catch (...) {
-        MessageEvents.DesiredState(state);
-        MessageEvents.OperatingState(m_operating_state);
         RobotInterface->SendError(this->GetName() + ": " + state + " is not an allowed desired state");
         return;
     }
@@ -415,9 +419,15 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
     mStateTableStateDesired = state;
     mStateTableState.Advance();
 
-    MessageEvents.DesiredState(state);
-    MessageEvents.OperatingState(m_operating_state);
+    StateEvents();
     RobotInterface->SendStatus(this->GetName() + ": desired state " + state);
+
+    // state transitions with direct transitions
+    if ((state == "DISABLED")
+        || (state == "PAUSED")
+        || (state == "FAULT")) {
+        mArmState.SetCurrentState(state);
+    }
 }
 
 void mtsIntuitiveResearchKitArm::state_command(const std::string & command)
@@ -442,6 +452,16 @@ void mtsIntuitiveResearchKitArm::state_command(const std::string & command)
             if (command == "unhome") {
                 UnHome();
                 UpdateHomed(false);
+                return;
+            }
+            if (command == "pause") {
+                SetDesiredState("PAUSED");
+                return;
+            }
+            if (command == "resume") {
+                mArmState.SetDesiredState(m_resume_desired_state);
+                mArmState.SetCurrentState(m_resume_current_state);
+                return;
             }
         } else {
             RobotInterface->SendWarning(this->GetName() + ": " + humanReadableMessage);
@@ -678,8 +698,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)
 
 void mtsIntuitiveResearchKitArm::Startup(void)
 {
-    this->SetDesiredState("DISABLED");
-    MessageEvents.DesiredState(std::string("DISABLED"));
+    SetDesiredState("DISABLED");
 }
 
 void mtsIntuitiveResearchKitArm::Run(void)
@@ -691,7 +710,7 @@ void mtsIntuitiveResearchKitArm::Run(void)
     } catch (std::exception & e) {
         RobotInterface->SendError(this->GetName() + ": in state " + mArmState.CurrentState()
                                   + ", caught exception \"" + e.what() + "\"");
-        this->SetDesiredState("DISABLED");
+        SetDesiredState("DISABLED");
     }
     // trigger ExecOut event
     RunEvent();
@@ -882,7 +901,8 @@ void mtsIntuitiveResearchKitArm::UpdateOperatingStateAndBusy(const prmOperatingS
     m_operating_state.IsBusy() = isBusy;
     m_operating_state.SubState() = mArmState.CurrentState();
     mStateTableState.Advance();
-    MessageEvents.OperatingState(m_operating_state);
+    // push only operating_state since it's the only one changing
+    state_events.operating_state(m_operating_state);
 }
 
 void mtsIntuitiveResearchKitArm::UpdateHomed(const bool isHomed)
@@ -891,7 +911,26 @@ void mtsIntuitiveResearchKitArm::UpdateHomed(const bool isHomed)
     m_operating_state.IsHomed() = isHomed;
     m_operating_state.SubState() = mArmState.CurrentState();
     mStateTableState.Advance();
-    MessageEvents.OperatingState(m_operating_state);
+    // push only operating_state since it's the only one changing
+    state_events.operating_state(m_operating_state);
+}
+
+void mtsIntuitiveResearchKitArm::UpdateIsBusy(const bool isBusy)
+{
+    mStateTableState.Start();
+    m_operating_state.IsBusy() = isBusy;
+    m_operating_state.SubState() = mArmState.CurrentState();
+    mStateTableState.Advance();
+    // push only operating_state since it's the only one changing
+    state_events.operating_state(m_operating_state);
+}
+
+void mtsIntuitiveResearchKitArm::StateEvents(void)
+{
+    // push all state related events
+    state_events.current_state(mArmState.CurrentState());
+    state_events.desired_state(mArmState.DesiredState());
+    state_events.operating_state(m_operating_state);
 }
 
 void mtsIntuitiveResearchKitArm::StateChanged(void)
@@ -901,34 +940,20 @@ void mtsIntuitiveResearchKitArm::StateChanged(void)
     mStateTableState.Start();
     mStateTableStateCurrent = state;
     mStateTableState.Advance();
-    // event
-    MessageEvents.CurrentState(state);
-    MessageEvents.OperatingState(m_operating_state);
+    // push all state events
+    StateEvents();
     RobotInterface->SendStatus(this->GetName() + ": current state " + state);
 }
 
 void mtsIntuitiveResearchKitArm::RunAllStates(void)
 {
     GetRobotData();
-
-    // always allow to go to disabled
-    if (mArmState.DesiredStateIsNotCurrent()) {
-        if (mArmState.DesiredState() == "DISABLED") {
-            mArmState.SetCurrentState("DISABLED");
-        } else {
-            // error handling will require to swith to fallback state
-            if (mArmState.DesiredState() == mFallbackState) {
-                mArmState.SetCurrentState(mFallbackState);
-            }
-        }
-    }
 }
 
 void mtsIntuitiveResearchKitArm::EnterDisabled(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::DISABLED, false);
 
-    mFallbackState = "DISABLED";
     if (NumberOfBrakes() > 0) {
         IO.BrakeEngage();
     }
@@ -1005,7 +1030,8 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
     } else {
         if ((currentTime - mHomingTimer) > mtsIntuitiveResearchKit::TimeToPower) {
             RobotInterface->SendError(this->GetName() + ": failed to enable power");
-            this->SetDesiredState(mFallbackState);
+            std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
+            SetDesiredState("FAULT");
         }
     }
 }
@@ -1020,7 +1046,6 @@ void mtsIntuitiveResearchKitArm::EnterEnabled(void)
     }
 
     m_powered = true;
-    mFallbackState = "ENABLED";
 
     // disable PID for fallback
     IO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints(), 0.0));
@@ -1084,7 +1109,8 @@ void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
     if ((currentTime - mHomingTimer) > timeToBias) {
         mHomingBiasEncoderRequested = false;
         RobotInterface->SendError(this->GetName() + ": failed to bias encoders (timeout)");
-        this->SetDesiredState(mFallbackState);
+        std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
+        SetDesiredState("FAULT");
     }
 }
 
@@ -1177,14 +1203,16 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHoming: unable to reach home position, error in degrees is "
                                            << mJointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
                 RobotInterface->SendError(this->GetName() + ": unable to reach home position during calibration on pots");
-                this->SetDesiredState(mFallbackState);
+                std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
+                SetDesiredState("FAULT");
             }
         }
         break;
 
     default:
         RobotInterface->SendError(this->GetName() + ": error while evaluating trajectory");
-        this->SetDesiredState(mFallbackState);
+        std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
+        SetDesiredState("FAULT");
         break;
     }
 }
@@ -1224,6 +1252,18 @@ void mtsIntuitiveResearchKitArm::RunHomed(void)
     }
 }
 
+void mtsIntuitiveResearchKitArm::EnterPaused(void)
+{
+    UpdateOperatingStateAndBusy(prmOperatingState::PAUSED, false);
+    m_resume_current_state = mArmState.PreviousState();
+    m_resume_desired_state = mArmState.PreviousDesiredState();
+}
+
+void mtsIntuitiveResearchKitArm::EnterFault(void)
+{
+    UpdateOperatingStateAndBusy(prmOperatingState::FAULT, false);
+}
+
 void mtsIntuitiveResearchKitArm::ControlPositionJoint(void)
 {
     if (m_new_pid_goal) {
@@ -1259,15 +1299,13 @@ void mtsIntuitiveResearchKitArm::ControlPositionGoalJoint(void)
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         mJointTrajectory.GoalReachedEvent(true);
         mJointTrajectory.IsActive = false;
-        m_operating_state.IsBusy() = false;
-        MessageEvents.OperatingState(m_operating_state);
+        UpdateIsBusy(false);
         break;
     default:
         RobotInterface->SendError(this->GetName() + ": error while evaluating trajectory");
         mJointTrajectory.GoalReachedEvent(false);
         mJointTrajectory.IsActive = false;
-        m_operating_state.IsBusy() = false;
-        MessageEvents.OperatingState(m_operating_state);
+        UpdateIsBusy(false);
         break;
     }
 }
@@ -1398,8 +1436,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
         if ((m_control_mode == mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE)
             &&  mJointTrajectory.IsActive) {
             mJointTrajectory.IsActive = false;
-            m_operating_state.IsBusy() = false;
-            MessageEvents.OperatingState(m_operating_state);
+            UpdateIsBusy(false);
         }
 
         switch (mode) {
@@ -1678,10 +1715,7 @@ void mtsIntuitiveResearchKitArm::move_jp(const prmPositionJointSet & newPosition
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
     // make sure trajectory is reset
-    if (!mJointTrajectory.IsActive) {
-        m_operating_state.IsBusy() = true;
-        MessageEvents.OperatingState(m_operating_state);
-    }
+    UpdateIsBusy(true);
     mJointTrajectory.IsActive = true;
     mJointTrajectory.EndTime = 0.0;
     // new goal
@@ -1735,10 +1769,7 @@ void mtsIntuitiveResearchKitArm::move_cp(const prmPositionCartesianSet & newPosi
 
     if (this->InverseKinematics(jointSet, m_base_frame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // make sure trajectory is reset
-        if (!mJointTrajectory.IsActive) {
-            m_operating_state.IsBusy() = true;
-            MessageEvents.OperatingState(m_operating_state);
-        }
+        UpdateIsBusy(true);
         mJointTrajectory.IsActive = true;
         mJointTrajectory.EndTime = 0.0;
         // new goal
@@ -1772,7 +1803,8 @@ void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianSet & ne
 void mtsIntuitiveResearchKitArm::ErrorEventHandler(const mtsMessage & message)
 {
     RobotInterface->SendError(this->GetName() + ": received [" + message.Message + "]");
-    this->SetDesiredState(mFallbackState);
+    std::cerr << CMN_LOG_DETAILS << " should something be done here?  YEP!   If PID tracking error do something different" << std::endl;
+    SetDesiredState("FAULT");
 }
 
 void mtsIntuitiveResearchKitArm::PositionLimitEventHandler(const vctBoolVec & CMN_UNUSED(flags))

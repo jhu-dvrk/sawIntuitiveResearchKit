@@ -115,11 +115,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID);
 
     // state machine
-    std::string mFallbackState;
+    std::string m_resume_current_state, m_resume_desired_state;
 
     void UpdateOperatingStateAndBusy(const prmOperatingState::StateType & state,
                                      const bool isBusy);
     void UpdateHomed(const bool isHomed);
+    void UpdateIsBusy(const bool isBusy);
+    void StateEvents(void);
 
     void StateChanged(void);
     void RunAllStates(void); // this should happen for all states
@@ -147,6 +149,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void EnterHomed(void);
     virtual void LeaveHomed(void);
     virtual void RunHomed(void);
+
+    virtual void EnterPaused(void);
+    virtual void EnterFault(void);
 
     // Arm state machine
     mtsStateMachine mArmState;
@@ -267,10 +272,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     // Functions for events
     struct {
-        mtsFunctionWrite DesiredState;
-        mtsFunctionWrite CurrentState;
-        mtsFunctionWrite OperatingState;
-    } MessageEvents;
+        mtsFunctionWrite desired_state;
+        mtsFunctionWrite current_state;
+        mtsFunctionWrite operating_state;
+    } state_events;
 
     robManipulator * Manipulator;
     std::string mConfigurationFile;

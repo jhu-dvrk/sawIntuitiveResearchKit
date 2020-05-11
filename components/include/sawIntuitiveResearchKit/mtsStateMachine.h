@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-05
 
-  (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -27,8 +27,6 @@ http://www.cisst.org/cisst/license.txt.
   - Add ErrorCallback(std::string)
 
   General architecture:
-  - callbacks for enter/leave should take current state as value
-  - add AddAllowedState method
   - add GetAllStates method so users can add their own
  */
 
@@ -45,7 +43,9 @@ public:
         mRunCallback(0),
         mStateChangeCallback(0),
         mCurrentState(initialState),
-        mDesiredState(initialState)
+        mDesiredState(initialState),
+        mPreviousState(initialState),
+        mPreviousDesiredState(initialState)
     {
         AddState(initialState);
     }
@@ -167,6 +167,14 @@ public:
         return mDesiredState;
     }
 
+    inline const StateType & PreviousState(void) const {
+        return mPreviousState;
+    }
+
+    inline const StateType & PreviousDesiredState(void) const {
+        return mPreviousDesiredState;
+    }
+
     /*! Set the desired state.  This will check if the state is a
       possible desired state. */
     void SetDesiredState(const StateType & desiredState);
@@ -205,8 +213,11 @@ protected:
                         * mCurrentTransitionCallback,
                         * mStateChangeCallback;
 
-    StateType mCurrentState;
-    StateType mDesiredState;
+    StateType mCurrentState,
+        mDesiredState,
+        mPreviousState,
+        mPreviousDesiredState;
+    
     // if true, can be used set desired state
     typedef std::map<StateType, bool> StateMap;
     StateMap mStates;
