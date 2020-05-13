@@ -178,8 +178,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void servo_cr(const prmPositionCartesianSet & difference);
     virtual void move_cp(const prmPositionCartesianSet & newPosition);
     virtual void servo_jf(const prmForceTorqueJointSet & newEffort);
-    virtual void servo_cf_spatial(const prmForceCartesianSet & newForce);
-    virtual void servo_cf_body(const prmForceCartesianSet & newForce);
+    virtual void spatial_servo_cf(const prmForceCartesianSet & newForce);
+    virtual void body_servo_cf(const prmForceCartesianSet & newForce);
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
     virtual void SetWrenchBodyOrientationAbsolute(const bool & absolute);
     virtual void SetGravityCompensation(const bool & gravityCompensation);
@@ -201,6 +201,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual size_t NumberOfJoints(void) const = 0;         // used PID: ECM 4, PSM 7, MTM 7
     virtual size_t NumberOfJointsKinematics(void) const = 0; // ECM 4, MTM 7, PSM 6 or 8 (snake like tools)
     virtual size_t NumberOfBrakes(void) const = 0;         // ECM 3, PSM 0, MTM 0
+    inline bool HasBrakes(void) const {
+        return (NumberOfBrakes() > 0);
+    }
 
     inline virtual bool UsePIDTrackingError(void) const {
         return true;
@@ -286,10 +289,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctFrm3 mCartesianRelative;
 
     // internal kinematics
-    prmPositionCartesianGet m_measured_cp_local;
-    vctFrm4x4 m_measured_cp_local_frame;
-    prmPositionCartesianGet m_setpoint_cp_local;
-    vctFrm4x4 m_setpoint_cp_local_frame;
+    prmPositionCartesianGet m_local_measured_cp;
+    vctFrm4x4 m_local_measured_cp_frame;
+    prmPositionCartesianGet m_local_setpoint_cp;
+    vctFrm4x4 m_local_setpoint_cp_frame;
 
     // with base frame included
     prmPositionCartesianGet m_measured_cp, CartesianGetPreviousParam;
@@ -302,11 +305,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctDoubleVec JointSet;
     vctDoubleVec JointVelocitySet;
     prmForceTorqueJointSet FeedForwardParam;
-    prmStateJoint m_measured_js_pid, m_setpoint_js_pid, m_measured_js_kin, m_setpoint_js_kin;
-    prmConfigurationJoint m_configuration_js_pid, m_configuration_js_kin;
+    prmStateJoint m_pid_measured_js, m_pid_setpoint_js, m_kin_measured_js, m_kin_setpoint_js;
+    prmConfigurationJoint m_pid_configuration_js, m_kin_configuration_js;
 
     // efforts
-    vctDoubleMat m_jacobian_body, mJacobianBodyTranspose, m_jacobian_spatial;
+    vctDoubleMat m_body_jacobian, m_body_jacobian_transpose, m_spatial_jacobian;
     WrenchType mWrenchType;
     prmForceCartesianSet mWrenchSet;
     bool mWrenchBodyOrientationAbsolute;
@@ -316,7 +319,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctDoubleVec mEffortJoint; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData mJacobianPInverseData;
-    prmForceCartesianGet m_measured_cf_body;
+    prmForceCartesianGet m_body_measured_cf;
 
     // cartesian impendance controller
     osaCartesianImpedanceController * mCartesianImpedanceController;
@@ -341,7 +344,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctFrm4x4 m_base_frame;
     bool BaseFrameValid;
 
-    bool m_powered = false;;
+    bool m_powered = false;
 
     mtsIntuitiveResearchKitArmTypes::ControlSpace m_control_space;
     mtsIntuitiveResearchKitArmTypes::ControlMode m_control_mode;

@@ -37,7 +37,7 @@ mtsIntuitiveResearchKitPSMQtWidget::mtsIntuitiveResearchKitPSMQtWidget(const std
     mtsIntuitiveResearchKitArmQtWidget(componentName, periodInSeconds)
 {
     CMN_ASSERT(InterfaceRequired);
-    InterfaceRequired->AddFunction("jaw_measured_js", jaw_measured_js);
+    InterfaceRequired->AddFunction("jaw/measured_js", jaw_measured_js);
     InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSMQtWidget::ToolTypeEventHandler,
                                             this, "ToolType");
     InterfaceRequired->AddEventHandlerVoid(&mtsIntuitiveResearchKitPSMQtWidget::ToolTypeRequestEventHandler,

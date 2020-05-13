@@ -32,7 +32,7 @@ mtsIntuitiveResearchKitMTMQtWidget::mtsIntuitiveResearchKitMTMQtWidget(const std
     mtsIntuitiveResearchKitArmQtWidget(componentName, periodInSeconds)
 {
     CMN_ASSERT(InterfaceRequired);
-    InterfaceRequired->AddFunction("gripper_measured_js", gripper_measured_js);
+    InterfaceRequired->AddFunction("gripper/measured_js", gripper_measured_js);
 }
 
 void mtsIntuitiveResearchKitMTMQtWidget::setupUiDerived(void)

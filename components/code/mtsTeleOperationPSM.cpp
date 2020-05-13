@@ -123,10 +123,10 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("measured_cp", mMTM.measured_cp);
         interfaceRequired->AddFunction("setpoint_cp", mMTM.setpoint_cp);
         interfaceRequired->AddFunction("move_cp", mMTM.move_cp);
-        interfaceRequired->AddFunction("gripper_measured_js", mMTM.gripper_measured_js);
+        interfaceRequired->AddFunction("gripper/measured_js", mMTM.gripper_measured_js);
         interfaceRequired->AddFunction("LockOrientation", mMTM.LockOrientation);
         interfaceRequired->AddFunction("UnlockOrientation", mMTM.UnlockOrientation);
-        interfaceRequired->AddFunction("servo_cf_body", mMTM.servo_cf_body);
+        interfaceRequired->AddFunction("body/servo_cf", mMTM.servo_cf_body);
         interfaceRequired->AddFunction("SetGravityCompensation", mMTM.SetGravityCompensation);
         interfaceRequired->AddFunction("operating_state", mMTM.operating_state);
         interfaceRequired->AddFunction("state_command", mMTM.state_command);
@@ -139,9 +139,9 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("measured_cp", mPSM.measured_cp);
         interfaceRequired->AddFunction("servo_cp", mPSM.servo_cp);
         interfaceRequired->AddFunction("Freeze", mPSM.Freeze);
-        interfaceRequired->AddFunction("jaw_measured_js", mPSM.jaw_measured_js, MTS_OPTIONAL);
-        interfaceRequired->AddFunction("jaw_configuration_js", mPSM.jaw_configuration_js, MTS_OPTIONAL);
-        interfaceRequired->AddFunction("jaw_servo_jp", mPSM.jaw_servo_jp, MTS_OPTIONAL);
+        interfaceRequired->AddFunction("jaw/measured_js", mPSM.jaw_measured_js, MTS_OPTIONAL);
+        interfaceRequired->AddFunction("jaw/configuration_js", mPSM.jaw_configuration_js, MTS_OPTIONAL);
+        interfaceRequired->AddFunction("jaw/servo_jp", mPSM.jaw_servo_jp, MTS_OPTIONAL);
         interfaceRequired->AddFunction("operating_state", mPSM.operating_state);
         interfaceRequired->AddFunction("state_command", mPSM.state_command);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::PSMErrorEventHandler,

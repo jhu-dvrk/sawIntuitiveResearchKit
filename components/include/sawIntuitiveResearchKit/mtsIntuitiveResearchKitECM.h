@@ -65,7 +65,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
 
     // see base class
     inline bool IsSafeForCartesianControl(void) const override {
-        return (m_measured_js_kin.Position().at(2) > 50.0 * cmn_mm);
+        return (m_kin_measured_js.Position().at(2) > 50.0 * cmn_mm);
     }
 
     void CreateManipulator(void) override;
