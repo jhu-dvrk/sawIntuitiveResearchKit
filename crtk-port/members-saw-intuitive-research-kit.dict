@@ -1,24 +1,24 @@
-ConfigurationJointKinematics = m_configuration_js_kin
-ConfigurationJointPID = m_configuration_js_pid
-StateJointKinematics = m_measured_js_kin
-StateJointDesiredKinematics = m_setpoint_js_kin
-StateJointPID = m_measured_js_pid
-StateJointDesiredPID = m_setpoint_js_pid
+ConfigurationJointKinematics = m_kin_configuration_js
+ConfigurationJointPID = m_pid_configuration_js
+StateJointKinematics = m_kin_measured_js
+StateJointDesiredKinematics = m_kin_setpoint_js
+StateJointPID = m_pid_measured_js
+StateJointDesiredPID = m_pid_setpoint_js
 
 BaseFrame = m_base_frame
 
 CartesianGet = m_measured_cp_frame
 CartesianGetDesired = m_setpoint_cp_frame
-CartesianGetLocal = m_measured_cp_local_frame
-CartesianGetLocalDesired = m_setpoint_cp_local_frame
+CartesianGetLocal = m_local_measured_cp_frame
+CartesianGetLocalDesired = m_local_setpoint_cp_frame
 
 CartesianGetParam = m_measured_cp
 CartesianGetDesiredParam = m_setpoint_cp
-CartesianGetLocalParam = m_measured_cp_local
-CartesianGetLocalDesiredParam = m_setpoint_cp_local
+CartesianGetLocalParam = m_local_measured_cp
+CartesianGetLocalDesiredParam = m_local_setpoint_cp
 
 CartesianVelocityGetParam = m_measured_cv
-mWrenchGet = m_measured_cf_body
+mWrenchGet = m_body_measured_cf
 
 mIsSimulated = m_simulated
 mEncoderBiased = m_encoders_biased
@@ -36,10 +36,10 @@ mEffortOrientationLocked = m_effort_orientation_locked
 
 OperatingStateCommand = state_command
 
-GetJacobianBody = jacobian_body
-mJacobianBody = m_jacobian_body
-GetJacobianSpatial = jacobian_spatial
-mJacobianSpatial = m_jacobian_spatial
+GetJacobianBody = body_jacobian
+mJacobianBody = m_body_jacobian
+GetJacobianSpatial = spatial_jacobian
+mJacobianSpatial = m_spatial_jacobian
 
 ConfigurationJaw = jaw_configuration_js
 JawConfiguration = jaw_configuration_js
