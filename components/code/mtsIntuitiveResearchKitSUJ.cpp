@@ -475,7 +475,7 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     mVoltageSamples.SetSize(mVoltageSamplesNumber);
     mVoltageSamplesCounter = 0;
 
-    // Robot IO
+    // Arm IO
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("RobotIO");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("EnablePower", RobotIO.EnablePower);
@@ -513,9 +513,9 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::MotorDownEventHandler, this, "Button");
     }
 
-    mInterface = AddInterfaceProvided("Robot");
+    mInterface = AddInterfaceProvided("Arm");
     if (mInterface) {
-        // Robot State
+        // Arm State
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetDesiredState,
                                     this, "SetDesiredState", std::string(""));
         mInterface->AddCommandReadState(mStateTableState,
@@ -613,7 +613,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
             ECMIndex = armIndex;
         }
 
-        // Robot State so GUI widget for each arm can set/get state
+        // Arm State so GUI widget for each arm can set/get state
         interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetDesiredState,
                                            this, "SetDesiredState", std::string(""));
 

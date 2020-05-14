@@ -29,7 +29,7 @@ mtsSocketClientPSM::mtsSocketClientPSM(const std::string & componentName, const 
     m_jaw_measured_js.Position().resize(1);
     this->StateTable.AddData(m_jaw_measured_js, "m_jaw_measured_js");
 
-    mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Robot");
+    mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Arm");
     if (interfaceProvided) {
         interfaceProvided->AddMessageEvents();
         interfaceProvided->AddCommandReadState(this->StateTable, PositionCartesianCurrent, "measured_cp");

@@ -131,14 +131,14 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     }
 
     // Main interface should have been created by base class init
-    CMN_ASSERT(RobotInterface);
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::LockOrientation, this, "LockOrientation");
-    RobotInterface->AddCommandVoid(&mtsIntuitiveResearchKitMTM::UnlockOrientation, this, "UnlockOrientation");
+    CMN_ASSERT(m_arm_interface);
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::LockOrientation, this, "LockOrientation");
+    m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitMTM::UnlockOrientation, this, "UnlockOrientation");
 
     // Gripper
-    RobotInterface->AddCommandReadState(this->StateTable, m_gripper_measured_js, "gripper/measured_js");
-    RobotInterface->AddEventVoid(GripperEvents.GripperPinch, "GripperPinchEvent");
-    RobotInterface->AddEventWrite(GripperEvents.m_gripper_closed, "GripperClosedEvent", true);
+    m_arm_interface->AddCommandReadState(this->StateTable, m_gripper_measured_js, "gripper/measured_js");
+    m_arm_interface->AddEventVoid(GripperEvents.GripperPinch, "GripperPinchEvent");
+    m_arm_interface->AddEventWrite(GripperEvents.m_gripper_closed, "GripperClosedEvent", true);
 }
 
 void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
@@ -340,7 +340,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     PID.EnableJoints(enableJoints);
     PID.Enable(true);
 
-    RobotInterface->SendStatus(this->GetName() + ": looking for roll lower limit");
+    m_arm_interface->SendStatus(this->GetName() + ": looking for roll lower limit");
 }
 
 void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
@@ -378,12 +378,12 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
         if (trackingError > maxTrackingError) {
             // disable PID
             PID.Enable(false);
-            RobotInterface->SendStatus(this->GetName() + ": found roll lower limit");
+            m_arm_interface->SendStatus(this->GetName() + ": found roll lower limit");
             mArmState.SetCurrentState("ROLL_CALIBRATED");
         } else {
             // time out
             if (currentTime > mHomingTimer + extraTime) {
-                RobotInterface->SendError(this->GetName() + ": unable to hit roll lower limit in time");
+                m_arm_interface->SendError(this->GetName() + ": unable to hit roll lower limit in time");
                 std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
                 SetDesiredState("FAULT");
             }
@@ -392,12 +392,12 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         // we shouldn't be able to reach this goal
-        RobotInterface->SendError(this->GetName() + ": went past roll lower limit");
+        m_arm_interface->SendError(this->GetName() + ": went past roll lower limit");
         SetDesiredState("FAULT");
         break;
 
     default:
-        RobotInterface->SendError(this->GetName() + ": error while evaluating trajectory");
+        m_arm_interface->SendError(this->GetName() + ": error while evaluating trajectory");
         std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
         SetDesiredState("FAULT");
         break;
@@ -446,11 +446,11 @@ void mtsIntuitiveResearchKitMTM::RunResettingRollEncoder(void)
     // check current roll position, it should be -480 degrees
     double positionError = std::abs(m_pid_measured_js.Position().at(JNT_WRIST_ROLL) - -480.0 * cmnPI_180);
     if (positionError > 5.0 * cmn180_PI) {
-        RobotInterface->SendError(this->GetName() + ": roll encoder not properly reset to -480 degrees");
+        m_arm_interface->SendError(this->GetName() + ": roll encoder not properly reset to -480 degrees");
         std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
         SetDesiredState("FAULT");
     } else {
-        RobotInterface->SendStatus(this->GetName() + ": roll encoder properly reset to -480 degrees");
+        m_arm_interface->SendStatus(this->GetName() + ": roll encoder properly reset to -480 degrees");
     }
 
     // now all encoders are biased (IsHomed) for MTM
@@ -521,7 +521,7 @@ void mtsIntuitiveResearchKitMTM::ControlEffortOrientationLocked(void)
                                             mJointTrajectory.GoalVelocity);
         SetPositionJointLocal(JointSet);
     } else {
-        RobotInterface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortOrientationLocked");
+        m_arm_interface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortOrientationLocked");
     }
 }
 

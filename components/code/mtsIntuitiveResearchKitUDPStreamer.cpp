@@ -37,7 +37,7 @@ mtsIntuitiveResearchKitUDPStreamer::mtsIntuitiveResearchKitUDPStreamer(const std
     if (provided) {
         provided->AddCommandWrite(&mtsIntuitiveResearchKitUDPStreamer::SetDestination, this, "SetDestination");
     }
-    mtsInterfaceRequired * required = AddInterfaceRequired("Robot");
+    mtsInterfaceRequired * required = AddInterfaceRequired("Arm");
     if (required) {
         required->AddFunction("measured_cp", measured_cp);
         required->AddFunction("GetGripperPosition", GetGripperPosition);

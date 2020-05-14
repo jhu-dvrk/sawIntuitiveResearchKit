@@ -172,12 +172,12 @@ void mtsIntuitiveResearchKitECM::Init(void)
     mtsInterfaceRequired * interfaceRequired;
 
     // Main interface should have been created by base class init
-    CMN_ASSERT(RobotInterface);
-    RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
+    CMN_ASSERT(m_arm_interface);
+    m_arm_interface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
 
     // endoscope commands and events
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitECM::SetEndoscopeType, this, "SetEndoscopeType");
-    RobotInterface->AddEventWrite(EndoscopeEvents.EndoscopeType, "EndoscopeType", std::string());
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitECM::SetEndoscopeType, this, "SetEndoscopeType");
+    m_arm_interface->AddEventWrite(EndoscopeEvents.EndoscopeType, "EndoscopeType", std::string());
 
     // ManipClutch: digital input button event from ECM
     interfaceRequired = AddInterfaceRequired("ManipClutch");
@@ -266,7 +266,7 @@ void mtsIntuitiveResearchKitECM::LeaveManual(void)
 
 void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)
 {
-    RobotInterface->SendError(this->GetName() + ": PID tracking error");
+    m_arm_interface->SendError(this->GetName() + ": PID tracking error");
     this->SetDesiredState("DISABLED");
 }
 
@@ -282,7 +282,7 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
             ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
             mArmState.SetCurrentState("MANUAL");
         } else {
-            RobotInterface->SendWarning(this->GetName() + ": arm not ready yet, manipulator clutch ignored");
+            m_arm_interface->SendWarning(this->GetName() + ": arm not ready yet, manipulator clutch ignored");
         }
         break;
     case prmEventButton::RELEASED:
@@ -313,14 +313,14 @@ void mtsIntuitiveResearchKitECM::SetEndoscopeType(const std::string & endoscopeT
     // initialize configured flag
     mEndoscopeConfigured = false;
 
-    RobotInterface->SendStatus(this->GetName() + ": setting up for endoscope type \"" + endoscopeType + "\"");
+    m_arm_interface->SendStatus(this->GetName() + ": setting up for endoscope type \"" + endoscopeType + "\"");
     // check if the endoscope is in the supported list
     auto found =
         std::find(mtsIntuitiveResearchKitEndoscopeTypes::TypeVectorString().begin(),
                   mtsIntuitiveResearchKitEndoscopeTypes::TypeVectorString().end(),
                   endoscopeType);
     if (found == mtsIntuitiveResearchKitEndoscopeTypes::TypeVectorString().end()) {
-        RobotInterface->SendError(this->GetName() + ": endoscope type \"" + endoscopeType + "\" is not supported");
+        m_arm_interface->SendError(this->GetName() + ": endoscope type \"" + endoscopeType + "\" is not supported");
         EndoscopeEvents.EndoscopeType(std::string("ERROR"));
         return;
     }

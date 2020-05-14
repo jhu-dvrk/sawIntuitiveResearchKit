@@ -325,7 +325,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
                                   PIDComponentName(), "Controller");
         if ((mBaseFrameComponentName != "") && (mBaseFrameInterfaceName != "")) {
             componentManager->Connect(mBaseFrameComponentName, mBaseFrameInterfaceName,
-                                      Name(), "Robot");
+                                      Name(), "Arm");
         }
     }
     return true;
@@ -1123,8 +1123,8 @@ bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name,
         return false;
     }
     TeleopPSM * teleop = new TeleopPSM(name,
-                                       masterName, masterName, "Robot",
-                                       slaveName, slaveName, "Robot",
+                                       masterName, masterName, "Arm",
+                                       slaveName, slaveName, "Arm",
                                        this->GetName(), "", "");
     mTeleopsPSM[name] = teleop;
     if (AddTeleopPSMInterfaces(teleop)) {
@@ -1325,7 +1325,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
 
     // component and interface, defaults
     armPointer->mComponentName = armName;
-    armPointer->mInterfaceName = "Robot";
+    armPointer->mInterfaceName = "Arm";
     jsonValue = jsonArm["component"];
     if (!jsonValue.empty()) {
         armPointer->mComponentName = jsonValue.asString();

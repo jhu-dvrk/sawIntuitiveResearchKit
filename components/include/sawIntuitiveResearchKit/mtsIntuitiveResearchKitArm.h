@@ -271,7 +271,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     } IO;
 
     // Main provided interface
-    mtsInterfaceProvided * RobotInterface;
+    mtsInterfaceProvided * m_arm_interface;
 
     // Functions for events
     struct {

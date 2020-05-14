@@ -70,7 +70,9 @@ TransitionPowered = TransitionEnabled
 
 ARM_HOMED = HOMED
 
-
 HOMING_ARM = HOMING
 EnterHomingArm = EnterHoming
 RunHomingArm = RunHoming
+
+Robot = Arm
+RobotInterface = m_arm_interface

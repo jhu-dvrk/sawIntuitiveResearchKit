@@ -306,7 +306,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler, this, "error");
     }
 
-    // Robot IO
+    // Arm IO
     IOInterface = AddInterfaceRequired("RobotIO");
     if (IOInterface) {
         IOInterface->AddFunction("GetSerialNumber", IO.GetSerialNumber);
@@ -324,73 +324,73 @@ void mtsIntuitiveResearchKitArm::Init(void)
     }
 
     // Arm
-    RobotInterface = AddInterfaceProvided("Robot");
-    if (RobotInterface) {
-        RobotInterface->AddMessageEvents();
+    m_arm_interface = AddInterfaceProvided("Arm");
+    if (m_arm_interface) {
+        m_arm_interface->AddMessageEvents();
 
         // Get
-        RobotInterface->AddCommandReadState(this->mStateTableConfiguration, m_kin_configuration_js, "configuration_js");
-        RobotInterface->AddCommandReadState(this->StateTable, m_kin_measured_js, "measured_js");
-        RobotInterface->AddCommandReadState(this->StateTable, m_kin_setpoint_js, "setpoint_js");
-        RobotInterface->AddCommandReadState(this->StateTable, m_local_measured_cp, "local/measured_cp");
-        RobotInterface->AddCommandReadState(this->StateTable, m_local_setpoint_cp, "local/setpoint_cp");
-        RobotInterface->AddCommandReadState(this->StateTable, m_measured_cp, "measured_cp");
-        RobotInterface->AddCommandReadState(this->StateTable, m_setpoint_cp, "setpoint_cp");
-        RobotInterface->AddCommandReadState(this->StateTable, m_base_frame, "GetBaseFrame");
-        RobotInterface->AddCommandReadState(this->StateTable, m_measured_cv, "measured_cv");
-        RobotInterface->AddCommandReadState(this->StateTable, m_body_measured_cf, "body/measured_cf");
-        RobotInterface->AddCommandReadState(this->StateTable, m_body_jacobian, "body/jacobian");
-        RobotInterface->AddCommandReadState(this->StateTable, m_spatial_jacobian, "spatial/jacobian");
-        RobotInterface->AddCommandReadState(this->mStateTableState,
+        m_arm_interface->AddCommandReadState(this->mStateTableConfiguration, m_kin_configuration_js, "configuration_js");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_kin_measured_js, "measured_js");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_kin_setpoint_js, "setpoint_js");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_local_measured_cp, "local/measured_cp");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_local_setpoint_cp, "local/setpoint_cp");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_measured_cp, "measured_cp");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_setpoint_cp, "setpoint_cp");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_base_frame, "GetBaseFrame");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_measured_cv, "measured_cv");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_body_measured_cf, "body/measured_cf");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_body_jacobian, "body/jacobian");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_spatial_jacobian, "spatial/jacobian");
+        m_arm_interface->AddCommandReadState(this->mStateTableState,
                                             m_operating_state, "operating_state");
         // Set
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame,
                                         this, "SetBaseFrame");
-        RobotInterface->AddCommandVoid(&mtsIntuitiveResearchKitArm::Freeze,
+        m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitArm::Freeze,
                                        this, "Freeze");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jp,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jp,
                                         this, "servo_jp");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jr,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jr,
                                         this, "servo_jr");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::move_jp,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::move_jp,
                                         this, "move_jp");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_cp,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_cp,
                                         this, "servo_cp");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_cr,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_cr,
                                         this, "servo_cr");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::move_cp,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::move_cp,
                                         this, "move_cp");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jf,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jf,
                                         this, "servo_jf");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::body_servo_cf,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::body_servo_cf,
                                         this, "body/servo_cf");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetWrenchBodyOrientationAbsolute,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetWrenchBodyOrientationAbsolute,
                                         this, "SetWrenchBodyOrientationAbsolute");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::spatial_servo_cf,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::spatial_servo_cf,
                                         this, "spatial/servo_cf");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetGravityCompensation,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetGravityCompensation,
                                         this, "SetGravityCompensation");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetCartesianImpedanceGains,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetCartesianImpedanceGains,
                                         this, "SetCartesianImpedanceGains");
 
         // Trajectory events
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetJointVelocityRatio,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetJointVelocityRatio,
                                         this, "SetJointVelocityRatio");
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetJointAccelerationRatio,
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetJointAccelerationRatio,
                                         this, "SetJointAccelerationRatio");
-        RobotInterface->AddEventWrite(mJointTrajectory.VelocityRatioEvent, "JointVelocityRatio", double());
-        RobotInterface->AddEventWrite(mJointTrajectory.AccelerationRatioEvent, "JointAccelerationRatio", double());
-        RobotInterface->AddEventWrite(mJointTrajectory.GoalReachedEvent, "GoalReached", bool());
-        // Robot State
-        RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitArm::state_command,
+        m_arm_interface->AddEventWrite(mJointTrajectory.VelocityRatioEvent, "JointVelocityRatio", double());
+        m_arm_interface->AddEventWrite(mJointTrajectory.AccelerationRatioEvent, "JointAccelerationRatio", double());
+        m_arm_interface->AddEventWrite(mJointTrajectory.GoalReachedEvent, "GoalReached", bool());
+        // Arm State
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::state_command,
                                         this, "state_command", std::string(""));
         // Human readable messages
-        RobotInterface->AddEventWrite(state_events.desired_state, "DesiredState", std::string(""));
-        RobotInterface->AddEventWrite(state_events.current_state, "CurrentState", std::string(""));
-        RobotInterface->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
+        m_arm_interface->AddEventWrite(state_events.desired_state, "DesiredState", std::string(""));
+        m_arm_interface->AddEventWrite(state_events.current_state, "CurrentState", std::string(""));
+        m_arm_interface->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
 
         // Stats
-        RobotInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
+        m_arm_interface->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                             "period_statistics");
     }
 
@@ -405,14 +405,14 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
     StateEvents();
     // try to find the state in state machine
     if (!mArmState.StateExists(state)) {
-        RobotInterface->SendError(this->GetName() + ": unsupported state " + state);
+        m_arm_interface->SendError(this->GetName() + ": unsupported state " + state);
         return;
     }
     // try to set the desired state
     try {
         mArmState.SetDesiredState(state);
     } catch (...) {
-        RobotInterface->SendError(this->GetName() + ": " + state + " is not an allowed desired state");
+        m_arm_interface->SendError(this->GetName() + ": " + state + " is not an allowed desired state");
         return;
     }
     // update state table
@@ -421,7 +421,7 @@ void mtsIntuitiveResearchKitArm::SetDesiredState(const std::string & state)
     mStateTableState.Advance();
 
     StateEvents();
-    RobotInterface->SendStatus(this->GetName() + ": desired state " + state);
+    m_arm_interface->SendStatus(this->GetName() + ": desired state " + state);
 
     // state transitions with direct transitions
     if ((state == "DISABLED")
@@ -465,10 +465,10 @@ void mtsIntuitiveResearchKitArm::state_command(const std::string & command)
                 return;
             }
         } else {
-            RobotInterface->SendWarning(this->GetName() + ": " + humanReadableMessage);
+            m_arm_interface->SendWarning(this->GetName() + ": " + humanReadableMessage);
         }
     } catch (std::runtime_error & e) {
-        RobotInterface->SendWarning(this->GetName() + ": " + command + " doesn't seem to be a valid state_command (" + e.what() + ")");
+        m_arm_interface->SendWarning(this->GetName() + ": " + command + " doesn't seem to be a valid state_command (" + e.what() + ")");
     }
 }
 
@@ -709,7 +709,7 @@ void mtsIntuitiveResearchKitArm::Run(void)
     try {
         mArmState.Run();
     } catch (std::exception & e) {
-        RobotInterface->SendError(this->GetName() + ": in state " + mArmState.CurrentState()
+        m_arm_interface->SendError(this->GetName() + ": in state " + mArmState.CurrentState()
                                   + ", caught exception \"" + e.what() + "\"");
         SetDesiredState("DISABLED");
     }
@@ -747,7 +747,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         }
         if (!(actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All())) {
             m_powered = false;
-            RobotInterface->SendError(this->GetName() + ": detected power loss");
+            m_arm_interface->SendError(this->GetName() + ": detected power loss");
             mArmState.SetDesiredState("DISABLED");
             return;
         }
@@ -943,7 +943,7 @@ void mtsIntuitiveResearchKitArm::StateChanged(void)
     mStateTableState.Advance();
     // push all state events
     StateEvents();
-    RobotInterface->SendStatus(this->GetName() + ": current state " + state);
+    m_arm_interface->SendStatus(this->GetName() + ": current state " + state);
 }
 
 void mtsIntuitiveResearchKitArm::RunAllStates(void)
@@ -1006,7 +1006,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
     IO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints(), 0.0));
     // enable power
     IO.EnablePower();
-    RobotInterface->SendStatus(this->GetName() + ": power requested");
+    m_arm_interface->SendStatus(this->GetName() + ": power requested");
 }
 
 void mtsIntuitiveResearchKitArm::TransitionPowering(void)
@@ -1026,11 +1026,11 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
         IO.GetBrakeAmpStatus(brakeAmplifiersStatus);
     }
     if (actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All()) {
-        RobotInterface->SendStatus(this->GetName() + ": power on");
+        m_arm_interface->SendStatus(this->GetName() + ": power on");
         mArmState.SetCurrentState("ENABLED");
     } else {
         if ((currentTime - mHomingTimer) > mtsIntuitiveResearchKit::TimeToPower) {
-            RobotInterface->SendError(this->GetName() + ": failed to enable power");
+            m_arm_interface->SendError(this->GetName() + ": failed to enable power");
             std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
             SetDesiredState("FAULT");
         }
@@ -1075,11 +1075,11 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
 
     // if simulated, no need to bias encoders
     if (m_simulated) {
-        RobotInterface->SendStatus(this->GetName() + ": simulated mode, no need to calibrate encoders");
+        m_arm_interface->SendStatus(this->GetName() + ": simulated mode, no need to calibrate encoders");
         return;
     }
     if (m_encoders_biased_from_pots) {
-        RobotInterface->SendStatus(this->GetName() + ": encoders have already been calibrated, skipping");
+        m_arm_interface->SendStatus(this->GetName() + ": encoders have already been calibrated, skipping");
         return;
     }
 
@@ -1109,7 +1109,7 @@ void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
     const double timeToBias = 30.0 * cmn_s; // large timeout
     if ((currentTime - mHomingTimer) > timeToBias) {
         mHomingBiasEncoderRequested = false;
-        RobotInterface->SendError(this->GetName() + ": failed to bias encoders (timeout)");
+        m_arm_interface->SendError(this->GetName() + ": failed to bias encoders (timeout)");
         std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
         SetDesiredState("FAULT");
     }
@@ -1203,7 +1203,7 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
             if (currentTime > mHomingTimer + extraTime) {
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHoming: unable to reach home position, error in degrees is "
                                            << mJointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
-                RobotInterface->SendError(this->GetName() + ": unable to reach home position during calibration on pots");
+                m_arm_interface->SendError(this->GetName() + ": unable to reach home position during calibration on pots");
                 std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
                 SetDesiredState("FAULT");
             }
@@ -1211,7 +1211,7 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
         break;
 
     default:
-        RobotInterface->SendError(this->GetName() + ": error while evaluating trajectory");
+        m_arm_interface->SendError(this->GetName() + ": error while evaluating trajectory");
         std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
         SetDesiredState("FAULT");
         break;
@@ -1303,7 +1303,7 @@ void mtsIntuitiveResearchKitArm::ControlPositionGoalJoint(void)
         UpdateIsBusy(false);
         break;
     default:
-        RobotInterface->SendError(this->GetName() + ": error while evaluating trajectory");
+        m_arm_interface->SendError(this->GetName() + ": error while evaluating trajectory");
         mJointTrajectory.GoalReachedEvent(false);
         mJointTrajectory.IsActive = false;
         UpdateIsBusy(false);
@@ -1325,11 +1325,11 @@ void mtsIntuitiveResearchKitArm::ControlPositionCartesian(void)
         } else {
             // shows robManipulator error if used
             if (this->Manipulator) {
-                RobotInterface->SendError(this->GetName()
+                m_arm_interface->SendError(this->GetName()
                                           + ": unable to solve inverse kinematics ("
                                           + this->Manipulator->LastError() + ")");
             } else {
-                RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
+                m_arm_interface->SendError(this->GetName() + ": unable to solve inverse kinematics");
             }
         }
         // reset flag
@@ -1364,7 +1364,7 @@ bool mtsIntuitiveResearchKitArm::ArmIsReady(const std::string & methodName,
         if (mArmNotReadyCounter > 1) {
             message << " (" << mArmNotReadyCounter << " errors)";
         }
-        RobotInterface->SendWarning(message.str());
+        m_arm_interface->SendWarning(message.str());
         mArmNotReadyTimeLastMessage = StateTable.GetTic();
     }
     mArmNotReadyCounter++;
@@ -1380,7 +1380,7 @@ void mtsIntuitiveResearchKitArm::SetJointVelocityRatio(const double & ratio)
     } else {
         std::stringstream message;
         message << this->GetName() << ": SetJointVelocityRatio, ratio must be within ]0;1], received " << ratio;
-        RobotInterface->SendWarning(message.str());
+        m_arm_interface->SendWarning(message.str());
     }
 }
 
@@ -1393,7 +1393,7 @@ void mtsIntuitiveResearchKitArm::SetJointAccelerationRatio(const double & ratio)
     } else {
         std::stringstream message;
         message << this->GetName() << ": SetJointAccelerationRatio, ratio must be within ]0;1], received " << ratio;
-        RobotInterface->SendWarning(message.str());
+        m_arm_interface->SendWarning(message.str());
     }
 }
 
@@ -1420,7 +1420,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             } else {
                 if (mSafeForCartesianControlCounter == 0) {
                     // message if needed
-                    RobotInterface->SendWarning(this->GetName() + ": tool/endoscope needs to be inserted past the cannula to switch to cartesian space");
+                    m_arm_interface->SendWarning(this->GetName() + ": tool/endoscope needs to be inserted past the cannula to switch to cartesian space");
                 }
                 mSafeForCartesianControlCounter = (mSafeForCartesianControlCounter + 1) % 1000;
                 return;
@@ -1536,7 +1536,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
     }
 
     // messages
-    RobotInterface->SendStatus(this->GetName() + ": control "
+    m_arm_interface->SendStatus(this->GetName() + ": control "
                                + cmnData<mtsIntuitiveResearchKitArmTypes::ControlSpace>::HumanReadable(m_control_space)
                                + '/'
                                + cmnData<mtsIntuitiveResearchKitArmTypes::ControlMode>::HumanReadable(m_control_mode));
@@ -1779,11 +1779,11 @@ void mtsIntuitiveResearchKitArm::move_cp(const prmPositionCartesianSet & newPosi
     } else {
         // shows robManipulator error if used
         if (this->Manipulator) {
-            RobotInterface->SendError(this->GetName()
+            m_arm_interface->SendError(this->GetName()
                                       + ": unable to solve inverse kinematics ("
                                       + this->Manipulator->LastError() + ")");
         } else {
-            RobotInterface->SendError(this->GetName() + ": unable to solve inverse kinematics");
+            m_arm_interface->SendError(this->GetName() + ": unable to solve inverse kinematics");
         }
         mJointTrajectory.GoalReachedEvent(false);
     }
@@ -1803,14 +1803,14 @@ void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianSet & ne
 
 void mtsIntuitiveResearchKitArm::ErrorEventHandler(const mtsMessage & message)
 {
-    RobotInterface->SendError(this->GetName() + ": received [" + message.Message + "]");
+    m_arm_interface->SendError(this->GetName() + ": received [" + message.Message + "]");
     std::cerr << CMN_LOG_DETAILS << " should something be done here?  YEP!   If PID tracking error do something different" << std::endl;
     SetDesiredState("FAULT");
 }
 
 void mtsIntuitiveResearchKitArm::PositionLimitEventHandler(const vctBoolVec & CMN_UNUSED(flags))
 {
-    RobotInterface->SendWarning(this->GetName() + ": PID position limit");
+    m_arm_interface->SendWarning(this->GetName() + ": PID position limit");
 }
 
 void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
@@ -1823,21 +1823,21 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
         m_encoders_biased = false;
         std::stringstream nbSamplesString;
         nbSamplesString << nbSamples;
-        RobotInterface->SendStatus(this->GetName() + ": encoders biased using " + nbSamplesString.str() + " potentiometer values");
+        m_arm_interface->SendStatus(this->GetName() + ": encoders biased using " + nbSamplesString.str() + " potentiometer values");
     } else {
         // we assume that all encoders were properly biased.  This is
         // mostly for MTM homing to skip roll homing.  This could fail
         // if the homing process was interrupted between bias from
         // pots and MTM search for roll limits.
         m_encoders_biased = true;
-        RobotInterface->SendStatus(this->GetName() + ": encoders seem to be already biased");
+        m_arm_interface->SendStatus(this->GetName() + ": encoders seem to be already biased");
     }
 
     if (mHomingBiasEncoderRequested) {
         mHomingBiasEncoderRequested = false;
         mArmState.SetCurrentState("ENCODERS_BIASED");
     } else {
-        RobotInterface->SendWarning(this->GetName() + ": encoders have been biased by another process");
+        m_arm_interface->SendWarning(this->GetName() + ": encoders have been biased by another process");
     }
 }
 
@@ -1870,7 +1870,7 @@ void mtsIntuitiveResearchKitArm::body_servo_cf(const prmForceCartesianSet & wren
     mWrenchSet = wrench;
     if (mWrenchType != WRENCH_BODY) {
         mWrenchType = WRENCH_BODY;
-        RobotInterface->SendStatus(this->GetName() + ": effort cartesian WRENCH_BODY");
+        m_arm_interface->SendStatus(this->GetName() + ": effort cartesian WRENCH_BODY");
     }
 }
 
@@ -1889,7 +1889,7 @@ void mtsIntuitiveResearchKitArm::spatial_servo_cf(const prmForceCartesianSet & w
     mWrenchSet = wrench;
     if (mWrenchType != WRENCH_SPATIAL) {
         mWrenchType = WRENCH_SPATIAL;
-        RobotInterface->SendStatus(this->GetName() + ": effort cartesian WRENCH_SPATIAL");
+        m_arm_interface->SendStatus(this->GetName() + ": effort cartesian WRENCH_SPATIAL");
     }
 }
 
@@ -1927,6 +1927,6 @@ void mtsIntuitiveResearchKitArm::SetCartesianImpedanceGains(const prmCartesianIm
     mCartesianImpedanceController->SetGains(gains);
     if (mWrenchType != WRENCH_BODY) {
         mWrenchType = WRENCH_BODY;
-        RobotInterface->SendStatus(this->GetName() + ": effort cartesian WRENCH_BODY");
+        m_arm_interface->SendStatus(this->GetName() + ": effort cartesian WRENCH_BODY");
     }
 }

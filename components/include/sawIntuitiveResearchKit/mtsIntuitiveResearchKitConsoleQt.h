@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitConsoleQt_h
 
 #include <cisstCommon/cmnGenericObject.h>
+#include <cisstMultiTask/mtsDelayedConnections.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
@@ -37,32 +38,14 @@ public:
 
     void Configure(mtsIntuitiveResearchKitConsole * console);
 
-    void Connect(void);
+    inline void Connect(void) {
+        Connections.Connect();
+    }
 
     void addTab(QWidget * widget, const std::string & name);
 
 protected:
-    class ConnectionType {
-    public:
-        inline ConnectionType(const std::string & clientComponentName,
-                       const std::string & clientInterfaceName,
-                       const std::string & serverComponentName,
-                       const std::string & serverInterfaceName):
-            ClientComponentName(clientComponentName),
-            ClientInterfaceName(clientInterfaceName),
-            ServerComponentName(serverComponentName),
-            ServerInterfaceName(serverInterfaceName)
-        {}
-
-        std::string ClientComponentName;
-        std::string ClientInterfaceName;
-        std::string ServerComponentName;
-        std::string ServerInterfaceName;
-    };
-
-    typedef std::list<ConnectionType *> ConnectionsType;
-    ConnectionsType Connections;
-
+    mtsDelayedConnections Connections;
     QTabWidget * TabWidget;
 };
 

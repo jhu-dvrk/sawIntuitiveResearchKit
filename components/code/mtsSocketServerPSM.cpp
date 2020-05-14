@@ -150,7 +150,7 @@ void mtsSocketServerPSM::UpdatePSMState(void)
     executionResult = measured_cp(PositionCartesianCurrent);
     State.Data.CurrentPose.Assign(PositionCartesianCurrent.Position());
 
-    // Get Robot State
+    // Get Arm State
     mtsStdString psmState;
     GetCurrentState(psmState);
 

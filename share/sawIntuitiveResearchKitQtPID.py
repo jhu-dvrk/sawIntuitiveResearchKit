@@ -34,12 +34,12 @@ print 'Creating Qt application'
 Manager.ComponentCreate('mtsQtApplication', 'QtApp QtApp')
 
 #Create Qt widget
-print 'Creating Robot I/O Qt widget'
+print 'Creating Arm I/O Qt widget'
 Manager.ComponentCreate('mtsRobotIO1394QtWidget', mtsComponentConstructorNameAndUInt('ioGUI', 8))
 Manager.ComponentConfigure('ioGUI', ' ')
 
 # Create task with 0.001 sec (1 ms) period, using firewire port 0 (hard-coded)
-print 'Creating Robot I/O periodic task'
+print 'Creating Arm I/O periodic task'
 Manager.ComponentCreate('mtsRobotIO1394', mtsTaskPeriodicConstructorArg('io', 0.001))
 Manager.ComponentConfigure('io', 'sawRobotIO1394-MTML.xml')
 
@@ -52,7 +52,7 @@ Manager.ComponentCreate('mtsPID', mtsTaskPeriodicConstructorArg('pid', 0.001))
 Manager.ComponentConfigure('pid', 'sawControllersPID-MTML.xml')
 
 print 'Connecting components'
-Manager.Connect('ioGUI', 'Robot', 'io', 'MTML')
+Manager.Connect('ioGUI', 'Arm', 'io', 'MTML')
 Manager.Connect('ioGUI', 'RobotActuators',  'io', 'MTMLActuators')
 Manager.Connect('pidGUI', 'Controller', 'pid', 'Controller')
 Manager.Connect('pid', 'ExecIn', 'io', 'ExecOut')

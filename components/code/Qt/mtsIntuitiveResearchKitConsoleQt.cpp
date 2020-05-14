@@ -54,15 +54,15 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     mtsIntuitiveResearchKitConsoleQtWidget * consoleGUI = new mtsIntuitiveResearchKitConsoleQtWidget("consoleGUI");
     componentManager->AddComponent(consoleGUI);
     // connect consoleGUI to console
-    Connections.push_back(new ConnectionType("consoleGUI", "Main", "console", "Main"));
+    Connections.Add("consoleGUI", "Main", "console", "Main");
     if (console->GetInterfaceRequired("Clutch")) {
-        Connections.push_back(new ConnectionType("consoleGUI", "Clutch", "console", "Clutch"));
+        Connections.Add("consoleGUI", "Clutch", "console", "Clutch");
     }
     if (console->GetInterfaceRequired("OperatorPresent")) {
-        Connections.push_back(new ConnectionType("consoleGUI", "OperatorPresent", "console", "OperatorPresent"));
+        Connections.Add("consoleGUI", "OperatorPresent", "console", "OperatorPresent");
     }
     if (console->GetInterfaceRequired("Camera")) {
-        Connections.push_back(new ConnectionType("consoleGUI", "Camera", "console", "Camera"));
+        Connections.Add("consoleGUI", "Camera", "console", "Camera");
     }
 
     TabWidget = consoleGUI->GetTabWidget();
@@ -144,7 +144,8 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             pidGUI = new mtsPIDQtWidget(name + "-PID-GUI", numberOfJoints);
             pidGUI->Configure();
             componentManager->AddComponent(pidGUI);
-            Connections.push_back(new ConnectionType(pidGUI->GetName(), "Controller", armIter->second->PIDComponentName(), "Controller"));
+            Connections.Add(pidGUI->GetName(), "Controller",
+                            armIter->second->PIDComponentName(), "Controller");
             pidTabWidget->addTab(pidGUI, (name + " PID").c_str());
 
             // Arm widget
@@ -162,9 +163,9 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             }
             armGUI->Configure();
             componentManager->AddComponent(armGUI);
-            Connections.push_back(new ConnectionType(armGUI->GetName(), "Manipulator",
-                                                     armIter->second->ComponentName(),
-                                                     armIter->second->InterfaceName()));
+            Connections.Add(armGUI->GetName(), "Manipulator",
+                            armIter->second->ComponentName(),
+                            armIter->second->InterfaceName());
             armGUI->setObjectName(name.c_str());
             armTabWidget->addTab(armGUI, name.c_str());
 
@@ -173,7 +174,8 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
                 socketGUI = new mtsSocketBaseQtWidget(name + "-Server-GUI");
                 socketGUI->Configure();
                 componentManager->AddComponent(socketGUI);
-                Connections.push_back(new ConnectionType(socketGUI->GetName(), "SocketBase", armIter->second->mSocketComponentName, "System"));
+                Connections.Add(socketGUI->GetName(), "SocketBase",
+                                armIter->second->mSocketComponentName, "System");
                 armTabWidget->addTab(socketGUI, (name + "-Server").c_str());
                 break;
             }
@@ -184,22 +186,22 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1-SUJ");
             componentManager->AddComponent(sujGUI);
-            Connections.push_back(new ConnectionType(sujGUI->GetName(), "Manipulator", "SUJ", "PSM1"));
+            Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM1");
             armTabWidget->addTab(sujGUI, "PSM1 SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("ECM-SUJ");
             componentManager->AddComponent(sujGUI);
-            Connections.push_back(new ConnectionType(sujGUI->GetName(), "Manipulator", "SUJ", "ECM"));
+            Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "ECM");
             armTabWidget->addTab(sujGUI, "ECM SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM2-SUJ");
             componentManager->AddComponent(sujGUI);
-            Connections.push_back(new ConnectionType(sujGUI->GetName(), "Manipulator", "SUJ", "PSM2"));
+            Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM2");
             armTabWidget->addTab(sujGUI, "PSM2 SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM3-SUJ");
             componentManager->AddComponent(sujGUI);
-            Connections.push_back(new ConnectionType(sujGUI->GetName(), "Manipulator", "SUJ", "PSM3"));
+            Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM3");
             armTabWidget->addTab(sujGUI, "PSM3 SUJ");
 
             break;
@@ -209,8 +211,8 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             socketGUI = new mtsSocketBaseQtWidget(name + "-GUI");
             socketGUI->Configure();
             componentManager->AddComponent(socketGUI);
-            Connections.push_back(new ConnectionType(socketGUI->GetName(), "SocketBase",
-                                                     armIter->second->mName, "System"));
+            Connections.Add(socketGUI->GetName(), "SocketBase",
+                            armIter->second->mName, "System");
             armTabWidget->addTab(socketGUI, name.c_str());
             break;
 
@@ -226,16 +228,16 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
                     = new mtsMessageQtWidgetComponent(name + "-Message-GUI");
                 componentManager->AddComponent(messageGUI);
                 genericComponentLayout->addWidget(messageGUI);
-                Connections.push_back(new ConnectionType(messageGUI->GetName(), "Component",
-                                                         armIter->second->ComponentName(),
-                                                         armIter->second->InterfaceName()));
+                Connections.Add(messageGUI->GetName(), "Component",
+                                armIter->second->ComponentName(),
+                                armIter->second->InterfaceName());
                 mtsIntervalStatisticsQtWidgetComponent * timingGUI
                     = new mtsIntervalStatisticsQtWidgetComponent(name + "-Timing-GUI");
                 componentManager->AddComponent(timingGUI);
                 genericComponentLayout->addWidget(timingGUI);
-                Connections.push_back(new ConnectionType(timingGUI->GetName(), "Component",
-                                                         armIter->second->ComponentName(),
-                                                         armIter->second->InterfaceName()));
+                Connections.Add(timingGUI->GetName(), "Component",
+                                armIter->second->ComponentName(),
+                                armIter->second->InterfaceName());
                 armTabWidget->addTab(genericComponentGUI, name.c_str());
             }
             break;
@@ -258,7 +260,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         mtsTeleOperationPSMQtWidget * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "-GUI");
         teleopGUI->Configure();
         componentManager->AddComponent(teleopGUI);
-        Connections.push_back(new ConnectionType(teleopGUI->GetName(), "TeleOperation", name, "Setting"));
+        Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
         TabWidget->addTab(teleopGUI, name.c_str());
     }
 
@@ -269,7 +271,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "-GUI");
         teleopGUI->Configure();
         componentManager->AddComponent(teleopGUI);
-        Connections.push_back(new ConnectionType(teleopGUI->GetName(), "TeleOperation", name, "Setting"));
+        Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
         TabWidget->addTab(teleopGUI, name.c_str());
     }
 
@@ -279,7 +281,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         mtsDaVinciEndoscopeFocusQtWidget * endoscopeGUI = new mtsDaVinciEndoscopeFocusQtWidget(name + "-GUI");
         endoscopeGUI->Configure();
         componentManager->AddComponent(endoscopeGUI);
-        Connections.push_back(new ConnectionType(endoscopeGUI->GetName(), "Endoscope", name, "Control"));
+        Connections.Add(endoscopeGUI->GetName(), "Endoscope", name, "Control");
         TabWidget->addTab(endoscopeGUI, "Focus");
     }
 
@@ -287,23 +289,6 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
 
     // show all widgets
     TabWidget->show();
-}
-
-void mtsIntuitiveResearchKitConsoleQt::Connect(void)
-{
-    mtsComponentManager * componentManager = mtsComponentManager::GetInstance();
-
-    const ConnectionsType::const_iterator end = Connections.end();
-    ConnectionsType::const_iterator connectIter;
-    for (connectIter = Connections.begin();
-         connectIter != end;
-         ++connectIter) {
-        ConnectionType * connection = *connectIter;
-        componentManager->Connect(connection->ClientComponentName,
-                                  connection->ClientInterfaceName,
-                                  connection->ServerComponentName,
-                                  connection->ServerInterfaceName);
-    }
 }
 
 void mtsIntuitiveResearchKitConsoleQt::addTab(QWidget * widget, const std::string & name)

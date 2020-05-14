@@ -440,7 +440,7 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
         // Check for equality Snake joints (4,7) and (5,6)
         if (fabs(jointSet.at(4) - jointSet.at(7)) > 0.00001 ||
             fabs(jointSet.at(5) - jointSet.at(6)) > 0.00001) {
-            RobotInterface->SendWarning(GetName() + ": InverseKinematics, equality constraint violated");
+            m_arm_interface->SendWarning(GetName() + ": InverseKinematics, equality constraint violated");
         }
     } else {
         Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);
@@ -574,7 +574,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mtsInterfaceRequired * interfaceRequired;
 
     // Main interface should have been created by base class init
-    CMN_ASSERT(RobotInterface);
+    CMN_ASSERT(m_arm_interface);
     m_jaw_measured_js.SetAutomaticTimestamp(false);
     StateTable.AddData(m_jaw_measured_js, "m_jaw_measured_js");
 
@@ -585,22 +585,22 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mStateTableConfiguration.AddData(CouplingChange.jaw_configuration_js, "jaw/configuration_js");
 
     // jaw interface
-    RobotInterface->AddCommandReadState(this->StateTable, m_jaw_measured_js, "jaw/measured_js");
-    RobotInterface->AddCommandReadState(this->StateTable, m_jaw_setpoint_js, "jaw/setpoint_js");
-    RobotInterface->AddCommandReadState(this->mStateTableConfiguration,
+    m_arm_interface->AddCommandReadState(this->StateTable, m_jaw_measured_js, "jaw/measured_js");
+    m_arm_interface->AddCommandReadState(this->StateTable, m_jaw_setpoint_js, "jaw/setpoint_js");
+    m_arm_interface->AddCommandReadState(this->mStateTableConfiguration,
                                         CouplingChange.jaw_configuration_js, "jaw/configuration_js");
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_servo_jp, this, "jaw/servo_jp");
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_move_jp, this, "jaw/move_jp");
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_servo_jf, this, "jaw/servo_jf");
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_servo_jp, this, "jaw/servo_jp");
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_move_jp, this, "jaw/move_jp");
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_servo_jf, this, "jaw/servo_jf");
 
     // tool specific interface
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetAdapterPresent, this, "SetAdapterPresent");
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolPresent, this, "SetToolPresent");
-    RobotInterface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolType, this, "SetToolType");
-    RobotInterface->AddEventWrite(ToolEvents.ToolType, "ToolType", std::string());
-    RobotInterface->AddEventVoid(ToolEvents.ToolTypeRequest, "ToolTypeRequest");
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetAdapterPresent, this, "SetAdapterPresent");
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolPresent, this, "SetToolPresent");
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolType, this, "SetToolType");
+    m_arm_interface->AddEventWrite(ToolEvents.ToolType, "ToolType", std::string());
+    m_arm_interface->AddEventVoid(ToolEvents.ToolTypeRequest, "ToolTypeRequest");
 
-    RobotInterface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
+    m_arm_interface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
 
     CMN_ASSERT(PIDInterface);
     PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::CouplingEventHandler, this, "Coupling");
@@ -731,7 +731,7 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
                 if (!mToolTypeRequested) {
                     mToolTypeRequested = true;
                     ToolEvents.ToolTypeRequest();
-                    RobotInterface->SendWarning(this->GetName() + ": tool type requested from user");
+                    m_arm_interface->SendWarning(this->GetName() + ": tool type requested from user");
                 }
             }
         }
@@ -778,7 +778,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 CouplingChange.ReceivedCoupling = false;
                 return;
             } else {
-                RobotInterface->SendError(this->GetName() + ": can't disable last four axis to change coupling.");
+                m_arm_interface->SendError(this->GetName() + ": can't disable last four axis to change coupling.");
                 std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
                 SetDesiredState("FAULT");
             }
@@ -797,7 +797,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 // finally move to next state
                 mArmState.SetCurrentState(CouplingChange.NextState);
             } else {
-                RobotInterface->SendError(this->GetName() + ": can't set coupling.");
+                m_arm_interface->SendError(this->GetName() + ": can't set coupling.");
                 std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
                 SetDesiredState("FAULT");
             }
@@ -1012,14 +1012,14 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
                 mJointTrajectory.EndTime = 0.0;
                 std::stringstream message;
                 message << this->GetName() << ": engaging adapter " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
-                RobotInterface->SendStatus(message.str());
+                m_arm_interface->SendStatus(message.str());
                 EngagingStage++;
             }
         }
         break;
 
     default:
-        RobotInterface->SendError(this->GetName() + ": error while evaluating trajectory");
+        m_arm_interface->SendError(this->GetName() + ": error while evaluating trajectory");
         std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
         SetDesiredState("FAULT");
         break;
@@ -1090,7 +1090,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
             std::string message = this->GetName();
             message.append(": tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
             message.append("  If the tool is not engaged properly, move the sterile adapter all the way up and re-insert the tool.");
-            RobotInterface->SendStatus(message);
+            m_arm_interface->SendStatus(message);
             mArmState.SetCurrentState("TOOL_ENGAGED");
         }
 
@@ -1145,14 +1145,14 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
                 mJointTrajectory.EndTime = 0.0;
                 std::stringstream message;
                 message << this->GetName() << ": engaging tool " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
-                RobotInterface->SendStatus(message.str());
+                m_arm_interface->SendStatus(message.str());
                 EngagingStage++;
             }
         }
         break;
 
     default:
-        RobotInterface->SendError(this->GetName() + " error while evaluating trajectory.");
+        m_arm_interface->SendError(this->GetName() + " error while evaluating trajectory.");
         std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
         SetDesiredState("FAULT");
         break;
@@ -1415,7 +1415,7 @@ void mtsIntuitiveResearchKitPSM::SetToolType(const std::string & toolType)
             mToolTypeRequested = false;
         }
     } else {
-        RobotInterface->SendWarning(this->GetName() + ": received request to set tool type but not expecting it now.  Request ignored.");
+        m_arm_interface->SendWarning(this->GetName() + ": received request to set tool type but not expecting it now.  Request ignored.");
     }
 }
 
@@ -1430,7 +1430,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         case mtsIntuitiveResearchKitToolTypes::MANUAL:
             mToolTypeRequested = true;
             ToolEvents.ToolTypeRequest();
-            RobotInterface->SendWarning(this->GetName() + ": tool type requested from user");
+            m_arm_interface->SendWarning(this->GetName() + ": tool type requested from user");
             break;
         case mtsIntuitiveResearchKitToolTypes::FIXED:
             SetToolPresent(true);
@@ -1484,14 +1484,14 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
 
 void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolType)
 {
-    RobotInterface->SendStatus(this->GetName() + ": setting up for tool type \"" + toolType + "\"");
+    m_arm_interface->SendStatus(this->GetName() + ": setting up for tool type \"" + toolType + "\"");
     // check if the tool is in the supported list
     auto found =
         std::find(mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin(),
                   mtsIntuitiveResearchKitToolTypes::TypeVectorString().end(),
                   toolType);
     if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
-        RobotInterface->SendError(this->GetName() + ": tool type \"" + toolType + "\" is not supported");
+        m_arm_interface->SendError(this->GetName() + ": tool type \"" + toolType + "\" is not supported");
         ToolEvents.ToolType(std::string("ERROR"));
         return;
     } else {
@@ -1502,7 +1502,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
     if (mToolConfigured) {
         SetToolPresent(true);
     } else {
-        RobotInterface->SendError(this->GetName() + ": failed to configure tool \"" + toolType + "\", check terminal output and cisstLog file");
+        m_arm_interface->SendError(this->GetName() + ": failed to configure tool \"" + toolType + "\", check terminal output and cisstLog file");
         ToolEvents.ToolType(std::string("ERROR"));
     }
 }

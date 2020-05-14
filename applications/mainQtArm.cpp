@@ -181,7 +181,7 @@ int main(int argc, char ** argv)
     mtsIntuitiveResearchKitArmQtWidget * armGUI = new mtsIntuitiveResearchKitArmQtWidget("Arm");
     armGUI->Configure();
     componentManager->AddComponent(armGUI);
-    componentManager->Connect(armGUI->GetName(), "Manipulator", arm->Name(), "Robot");
+    componentManager->Connect(armGUI->GetName(), "Manipulator", arm->Name(), "Arm");
 
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
