@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,9 +20,10 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitSUJ_h
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
+#include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmOperatingState.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
-#include <cisstParameterTypes/prmPositionCartesianGet.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
@@ -59,6 +60,8 @@ protected:
       appropriate joint values based on the mux state. */
     void GetAndConvertPotentiometerValues(void);
 
+    void UpdateOperatingStateAndBusy(const prmOperatingState::StateType & state,
+                                     const bool isBusy);
     void StateChanged(void);
     void RunAllStates(void); // this should happen for all states
 
@@ -68,12 +71,33 @@ protected:
     virtual void EnterPowering(void);
     virtual void TransitionPowering(void);
 
+    virtual void EnterEnabled(void);
+    virtual void RunEnabled(void);
     virtual void TransitionEnabled(void);
 
-    virtual void EnterReady(void);
-    virtual void RunReady(void);
-
+    /*! Verify that the state transition is possible, initialize
+      global variables for the desired state and finally set the
+      state. */
     void SetDesiredState(const std::string & state);
+
+    /*! crtk operating state command.  Currently supports "enable" and
+      "disable". */
+    virtual void state_command(const std::string & command);
+
+    // Arm state machine
+    mtsStateMachine mArmState;
+    bool m_powered = false;
+
+    // Just to have read commands to retrieve states
+    mtsStateTable mStateTableState;
+    mtsStdString mStateTableStateCurrent;
+    mtsStdString mStateTableStateDesired;
+    prmOperatingState m_operating_state; // crtk operating state
+
+    inline void SetHomed(const bool homed) {
+        m_operating_state.IsHomed() = homed;
+        DispatchOperatingState();
+    }
 
     /*! Set velocity for motorized PSM lift. normalized between -1.0 and 1.0. */
     void SetLiftVelocity(const double & velocity);
@@ -86,15 +110,6 @@ protected:
 
     /*! Motor up button. */
     void MotorUpEventHandler(const prmEventButton & button);
-
-    // Arm state machine
-    mtsStateMachine mArmState;
-    std::string mFallbackState;
-    bool mPowered;
-    // Just to have read commands to retrieve states
-    mtsStateTable mStateTableState;
-    mtsStdString mStateTableStateCurrent;
-    mtsStdString mStateTableStateDesired;
 
     // Required interface
     struct {
@@ -109,9 +124,10 @@ protected:
 
     // Functions for events
     struct {
-        mtsFunctionWrite DesiredState;
-        mtsFunctionWrite CurrentState;
-    } MessageEvents;
+        mtsFunctionWrite desired_state;
+        mtsFunctionWrite current_state;
+        mtsFunctionWrite operating_state;
+    } state_events;
     mtsInterfaceProvided * mInterface;
 
     // Functions to control MUX
@@ -160,8 +176,8 @@ protected:
     void DispatchError(const std::string & message);
     void DispatchWarning(const std::string & message);
     void DispatchStatus(const std::string & message);
-    void DispatchCurrentState(const std::string & state);
-    void DispatchDesiredState(const std::string & state);
+    void DispatchState(void);
+    void DispatchOperatingState(void);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJ);
