@@ -299,7 +299,9 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
 void mtsIntuitiveResearchKitECM::UpdateFeedForward(vctDoubleVec & feedForward)
 {
     feedForward.SetAll(0.0);
-    AddGravityCompensationEfforts(feedForward);
+    if (!m_simulated) {
+        AddGravityCompensationEfforts(feedForward);
+    }
 }
 
 void mtsIntuitiveResearchKitECM::AddGravityCompensationEfforts(vctDoubleVec & efforts)
