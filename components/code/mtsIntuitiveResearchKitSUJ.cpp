@@ -790,6 +790,7 @@ void mtsIntuitiveResearchKitSUJ::EnterEnabled(void)
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
 
     if (m_simulated) {
+        SetHomed(true);
         return;
     }
 
@@ -975,8 +976,11 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
         DispatchWarning(this->GetName() + ": unexpected multiplexer value.");
         CMN_LOG_CLASS_RUN_ERROR << "GetAndConvertPotentiometerValues: mux from IO board, actual: " << mMuxIndex << ", expected: " << mMuxIndexExpected << std::endl;
         ResetMux();
+        SetHomed(false);
         return;
     }
+    SetHomed(true);
+
     // array index, 0 or 1, primary or secondary pots
     const size_t arrayIndex = mMuxIndex / MUX_ARRAY_SIZE; // 0 or 1: mux index 0 to 5 goes to first array of data, 6 to 11 goes to second array
                                                           // 12 to 15 goes to third array (misc. voltages)
