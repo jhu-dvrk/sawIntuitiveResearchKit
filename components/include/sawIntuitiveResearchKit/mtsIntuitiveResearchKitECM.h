@@ -78,7 +78,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
 
     // state related methods
     void SetGoalHomingArm(void) override;
-    void TransitionArmHomed(void);
+    void EnterHomed(void);
     void EnterManual(void);
     void RunManual(void);
     void LeaveManual(void);

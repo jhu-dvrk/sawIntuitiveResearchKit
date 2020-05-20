@@ -135,9 +135,9 @@ void mtsIntuitiveResearchKitECM::Init(void)
     mArmState.AddState("MANUAL");
 
     // after arm homed
-    mArmState.SetTransitionCallback("HOMED",
-                                    &mtsIntuitiveResearchKitECM::TransitionArmHomed,
-                                    this);
+    mArmState.SetEnterCallback("HOMED",
+                               &mtsIntuitiveResearchKitECM::EnterHomed,
+                               this);
 
     mArmState.SetEnterCallback("MANUAL",
                                &mtsIntuitiveResearchKitECM::EnterManual,
@@ -230,15 +230,12 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
     }
 }
 
-void mtsIntuitiveResearchKitECM::TransitionArmHomed(void)
+void mtsIntuitiveResearchKitECM::EnterHomed(void)
 {
+    mtsIntuitiveResearchKitArm::EnterHomed();
+
     // event to propagate endoscope type based on configuration file
     EndoscopeEvents.EndoscopeType(mtsIntuitiveResearchKitEndoscopeTypes::TypeToString(mEndoscopeType));
-
-    // on ECM, arm homed means arm ready
-    if (mArmState.DesiredStateIsNotCurrent()) {
-        mArmState.SetCurrentState("READY");
-    }
 }
 
 void mtsIntuitiveResearchKitECM::EnterManual(void)
