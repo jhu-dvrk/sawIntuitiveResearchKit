@@ -73,7 +73,8 @@ protected:
         mtsFunctionWrite Scale;
     } ConfigurationEvents;
 
-    void state_command(const std::string & state);
+    void SetDesiredState(const std::string & state);
+    void state_command(const std::string & command);
 
     void StateChanged(void);
     void RunAllStates(void);
@@ -89,12 +90,11 @@ protected:
         mtsFunctionRead  measured_cp;
         mtsFunctionRead  measured_cv;
         mtsFunctionWrite LockOrientation;
-        mtsFunctionWrite servo_cf_body;
+        mtsFunctionWrite body_servo_cf;
         mtsFunctionWrite SetWrenchBodyOrientationAbsolute;
         mtsFunctionWrite SetGravityCompensation;
 
-        mtsFunctionRead  GetCurrentState;
-        mtsFunctionRead  GetDesiredState;
+        mtsFunctionRead  operating_state;
         mtsFunctionWrite state_command;
 
         prmPositionCartesianGet PositionCartesianCurrent;
@@ -106,8 +106,7 @@ protected:
         mtsFunctionRead  setpoint_js;
         mtsFunctionWrite servo_jp;
 
-        mtsFunctionRead  GetCurrentState;
-        mtsFunctionRead  GetDesiredState;
+        mtsFunctionRead  operating_state;
         mtsFunctionWrite state_command;
 
         prmPositionCartesianGet PositionCartesianCurrent;

@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnUnits.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstParameterTypes/prmOperatingState.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationECM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
@@ -107,16 +108,14 @@ void mtsTeleOperationECM::Init(void)
                                        mMTML.measured_cv);
         interfaceRequired->AddFunction("LockOrientation",
                                        mMTML.LockOrientation);
-        interfaceRequired->AddFunction("servo_cf_body",
-                                       mMTML.servo_cf_body);
+        interfaceRequired->AddFunction("body/servo_cf",
+                                       mMTML.body_servo_cf);
         interfaceRequired->AddFunction("SetWrenchBodyOrientationAbsolute",
                                        mMTML.SetWrenchBodyOrientationAbsolute);
         interfaceRequired->AddFunction("SetGravityCompensation",
                                        mMTML.SetGravityCompensation);
-        interfaceRequired->AddFunction("GetCurrentState",
-                                       mMTML.GetCurrentState);
-        interfaceRequired->AddFunction("GetDesiredState",
-                                       mMTML.GetDesiredState);
+        interfaceRequired->AddFunction("operating_state",
+                                       mMTML.operating_state);
         interfaceRequired->AddFunction("state_command",
                                        mMTML.state_command);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::MTMLErrorEventHandler,
@@ -131,18 +130,16 @@ void mtsTeleOperationECM::Init(void)
                                        mMTMR.measured_cv);
         interfaceRequired->AddFunction("LockOrientation",
                                        mMTMR.LockOrientation);
-        interfaceRequired->AddFunction("servo_cf_body",
-                                       mMTMR.servo_cf_body);
+        interfaceRequired->AddFunction("body/servo_cf",
+                                       mMTMR.body_servo_cf);
         interfaceRequired->AddFunction("SetWrenchBodyOrientationAbsolute",
                                        mMTMR.SetWrenchBodyOrientationAbsolute);
         interfaceRequired->AddFunction("SetGravityCompensation",
                                        mMTMR.SetGravityCompensation);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::MTMRErrorEventHandler,
                                                 this, "error");
-        interfaceRequired->AddFunction("GetCurrentState",
-                                       mMTMR.GetCurrentState);
-        interfaceRequired->AddFunction("GetDesiredState",
-                                       mMTMR.GetDesiredState);
+        interfaceRequired->AddFunction("operating_state",
+                                       mMTMR.operating_state);
         interfaceRequired->AddFunction("state_command",
                                        mMTMR.state_command);
     }
@@ -156,10 +153,8 @@ void mtsTeleOperationECM::Init(void)
                                        mECM.setpoint_js);
         interfaceRequired->AddFunction("servo_jp",
                                        mECM.servo_jp);
-        interfaceRequired->AddFunction("GetCurrentState",
-                                       mECM.GetCurrentState);
-        interfaceRequired->AddFunction("GetDesiredState",
-                                       mECM.GetDesiredState);
+        interfaceRequired->AddFunction("operating_state",
+                                       mECM.operating_state);
         interfaceRequired->AddFunction("state_command",
                                        mECM.state_command);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::ECMErrorEventHandler,
@@ -315,19 +310,22 @@ void mtsTeleOperationECM::RunAllStates(void)
     // monitor state of arms if needed
     if ((mTeleopState.CurrentState() != "DISABLED")
         && (mTeleopState.CurrentState() != "SETTING_ARMS_STATE")) {
-        std::string armState;
-        mECM.GetDesiredState(armState);
-        if (armState != "READY") {
+        prmOperatingState state;
+        mECM.operating_state(state);
+        if ((state.State() != prmOperatingState::ENABLED)
+            || !state.IsHomed()) {
             mTeleopState.SetDesiredState("DISABLED");
             mInterface->SendError(this->GetName() + ": ECM is not in state \"READY\" anymore");
         }
-        mMTML.GetDesiredState(armState);
-        if (armState != "READY") {
+        mMTML.operating_state(state);
+        if ((state.State() != prmOperatingState::ENABLED)
+            || !state.IsHomed()) {
             mTeleopState.SetDesiredState("DISABLED");
             mInterface->SendError(this->GetName() + ": MTML is not in state \"READY\" anymore");
         }
-        mMTMR.GetDesiredState(armState);
-        if (armState != "READY") {
+        mMTMR.operating_state(state);
+        if ((state.State() != prmOperatingState::ENABLED)
+            || !state.IsHomed()) {
             mTeleopState.SetDesiredState("DISABLED");
             mInterface->SendError(this->GetName() + ": MTMR is not in state \"READY\" anymore");
         }
@@ -347,36 +345,39 @@ void mtsTeleOperationECM::EnterSettingArmsState(void)
     mInStateTimer = StateTable.GetTic();
 
     // request state if needed
-    std::string armState;
-    mECM.GetDesiredState(armState);
-    if (armState != "READY") {
-        mECM.state_command(std::string("READY"));
+    prmOperatingState state;
+    mECM.operating_state(state);
+    if (state.State() != prmOperatingState::ENABLED) {
+        mECM.state_command(std::string("enable"));
+    } else if (!state.IsHomed()) {
+        mECM.state_command(std::string("home"));
     }
-    mMTML.GetDesiredState(armState);
-    if (armState != "READY") {
-        mMTML.state_command(std::string("READY"));
+
+    mMTML.operating_state(state);
+    if (state.State() != prmOperatingState::ENABLED) {
+        mMTML.state_command(std::string("enable"));
+    } else if (!state.IsHomed()) {
+        mMTML.state_command(std::string("home"));
     }
-    mMTMR.GetDesiredState(armState);
-    if (armState != "READY") {
-        mMTMR.state_command(std::string("READY"));
+
+    mMTMR.operating_state(state);
+    if (state.State() != prmOperatingState::ENABLED) {
+        mMTMR.state_command(std::string("enable"));
+    } else if (!state.IsHomed()) {
+        mMTMR.state_command(std::string("home"));
     }
 }
 
 void mtsTeleOperationECM::TransitionSettingArmsState(void)
 {
-    // check if anyone wanted to disable anyway
-    if (mTeleopState.DesiredState() == "DISABLED") {
-        mTeleopState.SetCurrentState("DISABLED");
-        return;
-    }
     // check state
-    std::string ecmState, leftArmState, rightArmState;
-    mECM.GetCurrentState(ecmState);
-    mMTML.GetCurrentState(leftArmState);
-    mMTMR.GetCurrentState(rightArmState);
-    if ((ecmState == "READY") &&
-        (leftArmState == "READY") &&
-        (rightArmState == "READY")) {
+    prmOperatingState ecmState, mtmlState, mtmrState;
+    mECM.operating_state(ecmState);
+    mMTML.operating_state(mtmlState);
+    mMTMR.operating_state(mtmrState);
+    if ((ecmState.State() == prmOperatingState::ENABLED) && ecmState.IsHomed()
+        && (mtmlState.State() == prmOperatingState::ENABLED) && mtmlState.IsHomed()
+        && (mtmrState.State() == prmOperatingState::ENABLED) && mtmrState.IsHomed()) {
         mTeleopState.SetCurrentState("ENABLED");
         return;
     }
@@ -506,7 +507,7 @@ void mtsTeleOperationECM::RunEnabled(void)
                                        mMTMR.VelocityCartesianCurrent.VelocityLinear());
     wrenchR.Force().Ref<3>(0).Add(forceFriction);
     // apply
-    mMTMR.servo_cf_body(wrenchR);
+    mMTMR.body_servo_cf(wrenchR);
 
     // MTML
     // apply force
@@ -519,7 +520,7 @@ void mtsTeleOperationECM::RunEnabled(void)
                                        mMTML.VelocityCartesianCurrent.VelocityLinear());
     wrenchL.Force().Ref<3>(0).Add(forceFriction);
     // apply
-    mMTML.servo_cf_body(wrenchL);
+    mMTML.body_servo_cf(wrenchL);
 
     /* --- Joint Control --- */
     static const vct3 normXZ(0.0, 1.0, 0.0);
@@ -612,29 +613,6 @@ void mtsTeleOperationECM::RunEnabled(void)
 
 void mtsTeleOperationECM::TransitionEnabled(void)
 {
-    std::string armState;
-
-    // check ECM state
-    mECM.GetCurrentState(armState);
-    if (armState != "READY") {
-        mInterface->SendWarning(this->GetName() + ": ECM state has changed to [" + armState + "]");
-        mTeleopState.SetDesiredState("DISABLED");
-    }
-
-    // check mtml state
-    mMTML.GetCurrentState(armState);
-    if (armState != "READY") {
-        mInterface->SendWarning(this->GetName() + ": MTML state has changed to [" + armState + "]");
-        mTeleopState.SetDesiredState("DISABLED");
-    }
-
-    // check mtmr state
-    mMTMR.GetCurrentState(armState);
-    if (armState != "READY") {
-        mInterface->SendWarning(this->GetName() + ": MTMR state has changed to [" + armState + "]");
-        mTeleopState.SetDesiredState("DISABLED");
-    }
-
     if (mTeleopState.DesiredStateIsNotCurrent()) {
         SetFollowing(false);
         mTeleopState.SetCurrentState(mTeleopState.DesiredState());
@@ -693,10 +671,10 @@ void mtsTeleOperationECM::Clutch(const bool & clutch)
 
         // set MTMs in effort mode, no force applied but gravity and locked orientation
         prmForceCartesianSet wrench;
-        mMTML.servo_cf_body(wrench);
+        mMTML.body_servo_cf(wrench);
         mMTML.SetGravityCompensation(true);
         mMTML.LockOrientation(mMTML.PositionCartesianCurrent.Position().Rotation());
-        mMTMR.servo_cf_body(wrench);
+        mMTMR.body_servo_cf(wrench);
         mMTMR.SetGravityCompensation(true);
         mMTMR.LockOrientation(mMTMR.PositionCartesianCurrent.Position().Rotation());
     } else {
@@ -706,7 +684,20 @@ void mtsTeleOperationECM::Clutch(const bool & clutch)
     }
 }
 
-void mtsTeleOperationECM::state_command(const std::string & state)
+void mtsTeleOperationECM::state_command(const std::string & command)
+{
+    if (command == "enable") {
+        SetDesiredState("ENABLED");
+        return;
+    }
+    if (command == "disable") {
+        SetDesiredState("DISABLED");
+        return;
+    }
+    mInterface->SendWarning(this->GetName() + ": " + command + " doesn't seem to be a valid state_command");
+}
+
+void mtsTeleOperationECM::SetDesiredState(const std::string & state)
 {
     // try to find the state in state machine
     if (!mTeleopState.StateExists(state)) {
@@ -720,6 +711,7 @@ void mtsTeleOperationECM::state_command(const std::string & state)
         mInterface->SendError(this->GetName() + ": " + state + " is not an allowed desired state");
         return;
     }
+    // messages and events
     MessageEvents.DesiredState(state);
     mInterface->SendStatus(this->GetName() + ": set desired state to " + state);
 }
