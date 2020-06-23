@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <Config Version="4">
-   <Robot Name="MTMR" NumOfActuator="8" NumOfJoint="8" SN="32336">
+   <Robot Name="MTMR" NumOfActuator="7" NumOfJoint="7" SN="32336">
       <Actuator ActuatorID="0" AxisID="0" BoardID="2" Type="Revolute">
          <Drive>
             <AmpsToBits Offset="33027" Scale="-5242.88"/>
@@ -106,21 +106,6 @@
             <VoltsToPosSI Offset="-71.321786" Scale="40.8558699003"/>
          </AnalogIn>
       </Actuator>
-      <Actuator ActuatorID="7" AxisID="3" BoardID="3" Type="Revolute">
-         <Drive>
-            <AmpsToBits Offset="32800" Scale="5242.88"/>
-            <BitsToFeedbackAmps Offset="-6.266370" Scale="0.000190738"/>
-            <NmToAmps Scale="1.000000"/>
-            <MaxCurrent Unit="A" Value="0.000"/>
-         </Drive>
-         <Encoder>
-            <BitsToPosSI Scale="360.00000000"/>
-         </Encoder>
-         <AnalogIn>
-            <BitsToVolts Offset="0" Scale="6.86646e-05"/>
-            <VoltsToPosSI Offset="541.063608" Scale="-182.234141"/>
-         </AnalogIn>
-      </Actuator>
       <Potentiometers Position="Joints">
          <Tolerance Axis="0" Distance="5.00" Latency="0.01" Unit="deg"/>
          <Tolerance Axis="1" Distance="5.00" Latency="0.01" Unit="deg"/>
@@ -129,18 +114,16 @@
          <Tolerance Axis="4" Distance="5.00" Latency="0.01" Unit="deg"/>
          <Tolerance Axis="5" Distance="5.00" Latency="0.01" Unit="deg"/>
          <Tolerance Axis="6" Distance="0.00" Latency="0.00" Unit="deg"/>
-         <Tolerance Axis="7" Distance="0.00" Latency="0.00" Unit="deg"/>
       </Potentiometers>
       <Coupling Value="1">
          <ActuatorToJointPosition>
-            <Row Val="1.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 1.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 -1.0000 1.0000 0.0000 0.0000 0.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 0.6697 -0.6697 1.0000 0.0000 0.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 0.0000 0.0000 0.0000 1.0000 0.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 0.0000 0.0000 0.0000 0.0000 1.0000 0.0000 0.0000"/>
-            <Row Val="0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 1.0000 0.0000"/>
-            <Row Val="0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 1.0000"/>
+            <Row Val="1.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000"/>
+            <Row Val="0.0000 1.0000 0.0000 0.0000 0.0000 0.0000 0.0000"/>
+            <Row Val="0.0000 -1.0000 1.0000 0.0000 0.0000 0.0000 0.0000"/>
+            <Row Val="0.0000 0.6697 -0.6697 1.0000 0.0000 0.0000 0.0000"/>
+            <Row Val="0.0000 0.0000 0.0000 0.0000 1.0000 0.0000 0.0000"/>
+            <Row Val="0.0000 0.0000 0.0000 0.0000 0.0000 1.0000 0.0000"/>
+            <Row Val="0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 1.0000"/>
          </ActuatorToJointPosition>
       </Coupling>
    </Robot>
