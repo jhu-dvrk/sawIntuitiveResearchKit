@@ -418,16 +418,23 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
 
 void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID)
 {
-    if (mSnakeLike) {
-        CMN_ASSERT(jointsKinematics.size() == 8);
-        jointsPID.Assign(jointsKinematics, 4);
-        // Test if position 4 and 7 are very much apart; throw error maybe ?
-        jointsPID.at(4) = jointsKinematics.at(4) + jointsKinematics.at(7);
-        // Same goes for 5 and 6
-        jointsPID.at(5) = jointsKinematics.at(5) + jointsKinematics.at(6);
+    if (IsCartesianReady()) {
+        // tool is present
+        if (mSnakeLike) {
+            CMN_ASSERT(jointsKinematics.size() == 8);
+            jointsPID.Assign(jointsKinematics, 4);
+            // Test if position 4 and 7 are very much apart; throw error maybe ?
+            jointsPID.at(4) = jointsKinematics.at(4) + jointsKinematics.at(7);
+            // Same goes for 5 and 6
+            jointsPID.at(5) = jointsKinematics.at(5) + jointsKinematics.at(6);
+        } else {
+            CMN_ASSERT(jointsKinematics.size() >= 6);
+            jointsPID.Assign(jointsKinematics, 6);
+        }
     } else {
-        CMN_ASSERT(jointsKinematics.size() >= 6);
-        jointsPID.Assign(jointsKinematics, 6);
+        // joint space, no tool yet so we can control all 7 actuators
+        CMN_ASSERT(jointsKinematics.size() == 7);
+        jointsPID.Assign(jointsKinematics);
     }
 }
 
@@ -1194,8 +1201,8 @@ void mtsIntuitiveResearchKitPSM::EnterManual(void)
 
 void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPosition)
 {
-    // we need to need to at least ready to control in joint space
-    if (!ArmIsReady("jaw_servo_jp", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    // we need to need to at least ready to control in cartesian space
+    if (!ArmIsReady("jaw_servo_jp", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
         return;
     }
 
@@ -1211,19 +1218,9 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
             CartesianSetParam.Goal().Assign(m_setpoint_cp.Position());
         }
         break;
-    case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
-        if (m_control_mode != mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
-            // we are initiating the control mode switch so we need to
-            // set a reasonable JointSet
-            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                                   mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
-            // make sure all other joints have a reasonable goal
-            JointSet.Assign(m_pid_setpoint_js.Position(), NumberOfJoints());
-        }
-        break;
     default:
         // we are initiating the control mode switch
-        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
         // make sure all other joints have a reasonable goal
         JointSet.Assign(m_pid_setpoint_js.Position(), NumberOfJoints());
@@ -1236,8 +1233,8 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
 
 void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosition)
 {
-    // we need to need to at least ready to control in joint space
-    if (!ArmIsReady("jaw_move_jp", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    // we need to need to at least ready to control in cartesian space
+    if (!ArmIsReady("jaw_move_jp", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
         return;
     }
 
@@ -1252,18 +1249,9 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
             mJointTrajectory.Goal.Assign(m_pid_setpoint_js.Position(), NumberOfJointsKinematics());
         }
         break;
-    case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
-        if (m_control_mode != mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE) {
-            // we are initiating the control mode switch
-            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                                   mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
-            // make sure all other joints have a reasonable goal
-            mJointTrajectory.Goal.Assign(m_pid_setpoint_js.Position(), NumberOfJointsKinematics());
-        }
-        break;
     default:
         // we are initiating the control mode switch
-        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
         // make sure all other joints have a reasonable goal
         mJointTrajectory.Goal.Assign(m_pid_setpoint_js.Position());
@@ -1295,7 +1283,7 @@ void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newP
 
 void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & effort)
 {
-    if (!ArmIsReady("servo_jf", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    if (!ArmIsReady("servo_jf", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
         return;
     }
 
@@ -1310,19 +1298,9 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
             mWrenchSet.Force().SetAll(0.0);
         }
         break;
-    case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
-        if (m_control_mode != mtsIntuitiveResearchKitArmTypes::EFFORT_MODE) {
-            // we are initiating the control mode switch so we need to
-            // set a reasonable JointSet
-            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                                   mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
-            // make sure all other joints have a reasonable goal
-            mEffortJointSet.ForceTorque().SetAll(0.0);
-        }
-        break;
     default:
         // we are initiating the control mode switch
-        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
         // make sure all other joints have a reasonable goal
         mEffortJointSet.ForceTorque().SetAll(0.0);
