@@ -121,7 +121,7 @@ function calButton_Callback(hObject, eventdata, handles)
 % hObject    handle to calButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-[filename, pathname] = uigetfile('*.cal', 'Select a da vinci calibration file');
+[filename, pathname] = uigetfile('*.cal', 'Select a da Vinci calibration file');
 if isequal(filename,0)
    disp('User selected Cancel')
 else

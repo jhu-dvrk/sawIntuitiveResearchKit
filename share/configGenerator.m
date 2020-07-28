@@ -1,9 +1,6 @@
 function [ isOK ] = configGenerator( aCalName, aOutName, aRobotName, aBoardID, aDigital, aDirection)
-%UNTITLED6 Summary of this function goes here
-%   Detailed explanation goes here
-
-% TODOs
-%  1. verify all settings
+% Summary of this function goes here
+% Detailed explanation goes here
 
 % Set isOK to false by default
 % if configuration file generation is good then isOK = true
@@ -28,18 +25,19 @@ boardID = aBoardID; % save to local variable
 copyfile(aCalName, 'calibration_file_temp.m');
 
 % define some constants for mXXX.cal/pXXX.cal/eXXX.cal file
-UPPER_LIMIT = 1; LOWER_LIMIT = 2;
+UPPER_LIMIT = 1;
+LOWER_LIMIT = 2;
 
-% constants for master configuration file
+% constants for MTM configuration file (.cal)
 MST_JNT_POS_GR_DOFS = 8;
 MST_MOT_DOFS = 8;
 MST_JNT_POS_DOFS = 7;
 
-% constants for slave configuration file
+% constants for PSM configuration file (.cal)
 SLV_JNT_POS_GR_DOFS = 7;
 SLV_MOT_DOFS = 7;
 
-% constants for ECM configuration file
+% constants for ECM configuration file (.cal)
 ECM_JNT_POS_GR_DOFS = 4;
 ECM_MOT_DOFS = 4;
 
@@ -55,8 +53,8 @@ end % try/catch error loading cal file
 
 % sanity check for RobotName/Type
 % rType = robot type
-CONST_MST = 1;
-CONST_SLV = 2;
+CONST_MTM = 1;
+CONST_PSM = 2;
 CONST_ECM = 3;
 if (strcmp(aRobotName(1:3), FileType(1:3)) == 0)
     disp(' ERROR: robot type and calibration file mismatch');
@@ -64,66 +62,54 @@ if (strcmp(aRobotName(1:3), FileType(1:3)) == 0)
     return;
 else
     if (strcmp(aRobotName(1:3), 'MTM'))
-        rType = CONST_MST;
+        rType = CONST_MTM;
     elseif (strcmp(aRobotName(1:3), 'PSM'))
-        rType = CONST_SLV;
+        rType = CONST_PSM;
     elseif (strcmp(aRobotName(1:3), 'ECM'))
         rType = CONST_ECM;
     end
 end
 
 % assign numOfActuator & numOfJoint based on robot type
-if (rType == CONST_MST)
-    numOfActuator = MST_MOT_DOFS;
-    numOfJoint = MST_JNT_POS_GR_DOFS;
-elseif (rType == CONST_SLV)
-    numOfActuator = SLV_MOT_DOFS;
-    numOfJoint = SLV_JNT_POS_GR_DOFS;
+if (rType == CONST_MTM)
+    numOfJoints = 7;
+elseif (rType == CONST_PSM)
+    numOfJoints = 7;
 elseif (rType == CONST_ECM)
-    numOfActuator = ECM_MOT_DOFS;
-    numOfJoint = ECM_JNT_POS_GR_DOFS;
+    numOfJoints = 4;
 end
 
 
-% master
-
-% motor constants Unit: V
-motorVol(CONST_MST,:) = [24 24 24 24  9  9  6 0]; % motor const for master
-motorVol(CONST_SLV,:) = [24 24 24 24 24 24 24 0]; % motor const for slave
-motorVol(CONST_ECM,:) = [48 48 24 9   0  0  0 0]; % motor const for camera arm
+% Arms, all arrays use size 8 internally to simplify code until XML
+% generation
 
 % motor default current Unit: A
-motorDefCur(CONST_MST,:) = [0.67 0.67 0.67 0.67 0.59 0.59 0.407 0.0];
-motorDefCur(CONST_SLV,:) = [1.34 1.34 0.67 0.67 0.67 0.67 0.670 0.0];
+motorDefCur(CONST_MTM,:) = [0.67 0.67 0.67 0.67 0.59 0.59 0.407 0.0];
+motorDefCur(CONST_PSM,:) = [1.34 1.34 0.67 0.67 0.67 0.67 0.670 0.0];
 motorDefCur(CONST_ECM,:) = [0.943 0.943 0.67 0.59 0.0 0.0 0.0 0.0];
-
-% motor max current Unit: A
-motorMaxCur(CONST_MST,:) = [0.67 0.67 0.67 0.92 0.75 0.59 0.407 0.0];
-motorMaxCur(CONST_SLV,:) = [2.01 2.01 1.005 1.005 1.005 1.005 1.005 0.0];
-motorMaxCur(CONST_ECM,:) = [1.4145 1.4145 1.005 0.885 0.0 0.0 0.0 0.0];
 
 % motor torque const  Unit: Nm/A
 % NOTE: no motor on axis 8, set value to 1
-motorTor(CONST_MST,:) = [0.0438 0.0438 0.0438 0.0438 0.00495 0.00495 0.00339 1.0];
-motorTor(CONST_SLV,:) = [0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 1.0];
+motorTor(CONST_MTM,:) = [0.0438 0.0438 0.0438 0.0438 0.00495 0.00495 0.00339 1.0];
+motorTor(CONST_PSM,:) = [0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 1.0];
 motorTor(CONST_ECM,:) = [0.1190 0.1190 0.0438 0.00495 1.0 1.0 1.0 1.0];
 
 % Gear ratio
 % NOTE: gear ratio for axis 8 is set to 1
-gearRatio(CONST_MST,:) = [63.41 49.88 59.73 10.53 33.16 33.16 16.58 1.0];
-gearRatio(CONST_SLV,:) = [56.50 56.50 336.6 11.71 11.71 11.71 11.71 1.0];
+gearRatio(CONST_MTM,:) = [63.41 49.88 59.73 10.53 33.16 33.16 16.58 1.0];
+gearRatio(CONST_PSM,:) = [56.50 56.50 336.6 11.71 11.71 11.71 11.71 1.0];
 gearRatio(CONST_ECM,:) = [240 240 2748.55 300.15    1.0   1.0   1.0 1.0];
 
 % Encoder counts per turn (quadrature encoder)
 % NOTE: no encoder for last axis
-encCPT(CONST_MST,:) = [ 4000  4000  4000 4000   64   64   64 1];
-encCPT(CONST_SLV,:) = [14400 14400 14400 4000 4000 4000 4000 1];
+encCPT(CONST_MTM,:) = [ 4000  4000  4000 4000   64   64   64 1];
+encCPT(CONST_PSM,:) = [14400 14400 14400 4000 4000 4000 4000 1];
 encCPT(CONST_ECM,:) = [ 4000  4000   640   64    1    1    1 1];
 
 % Pitch
 % 1 for revolute, mm/deg for prismatic
-pitch(CONST_MST,:) = [1 1 1 1 1 1 1 1];
-pitch(CONST_SLV,:) = [1 1 17.4533 1 1 1 1 1];
+pitch(CONST_MTM,:) = [1 1 1 1 1 1 1 1];
+pitch(CONST_PSM,:) = [1 1 17.4533 1 1 1 1 1];
 pitch(CONST_ECM,:) = [1 1 17.4533 1 1 1 1 1];
 
 % Brake constants for ECM
@@ -135,36 +121,31 @@ brakeReleasedCurrent = [0.08 0.07 0.20];
 brakeEngagedCurrent =  [0.0 0.0 0.0];
 
 % Actuator Type (Prismatic/Revolute)
-
-if (rType == CONST_MST)
+if (rType == CONST_MTM)
     actuatorType = {'Revolute', 'Revolute', 'Revolute', 'Revolute', ...
                     'Revolute', 'Revolute', 'Revolute', 'Revolute'};
-elseif (rType == CONST_SLV)
+elseif (rType == CONST_PSM)
     actuatorType = {'Revolute', 'Revolute', 'Prismatic', 'Revolute', ...
-                    'Revolute', 'Revolute', 'Revolute', 'Revolute'};
+                    'Revolute', 'Revolute', 'Revolute', 'Null'};
 elseif (rType == CONST_ECM)
     actuatorType = {'Revolute', 'Revolute', 'Prismatic', 'Revolute', ...
                     'Null',     'Null',     'Null',      'Null'};
-
 end
 
 
 
 % ==== POT =======
 % raw value from Intuitive Surgical Inc mXXXX.cal file
-% NOTE:
-jointUpper = joint.signal_range(UPPER_LIMIT,:);
-jointLower = joint.signal_range(LOWER_LIMIT,:);
 potGain = motor.pot_input_gain;
 potOffset = motor.pot_input_offset;
 
 % pot to encoder consistency check, for MTMs, last two joints are not used
-if (rType == CONST_MST)
+if (rType == CONST_MTM)
     potToleranceLatency = [0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.00];
     potToleranceDistance = [5.0 5.0 5.0 5.0 5.0 5.0 0.0 0.0];
     potToleranceUnit = {'deg', 'deg', 'deg', 'deg', ...
                 		'deg', 'deg', 'deg', 'deg'};
-elseif (rType == CONST_SLV)
+elseif (rType == CONST_PSM)
     potToleranceLatency = [0.01 0.01 0.01 0.01 0.01 0.01 0.01];
     potToleranceDistance = [5.0 5.0 5.0 5.0 5.0 5.0 5.0];
     potToleranceUnit = {'deg', 'deg', 'mm', 'deg', ...
@@ -184,24 +165,24 @@ end
 % The linear amp drives +/- 6.25 Amps current, which is controlled by a DAC with 16 bits resolution.
 % So the conversion from amp to bits is 2^16/(6.25 * 2) = 5242.88
 driveDirection = aDirection;
-AmpsToBitsScale = driveDirection(1:numOfActuator) .* 5242.8800;
-AmpsToBitsOffset = ones(1, numOfActuator) .* (2^15);
+AmpsToBitsScale = driveDirection(1:8) .* 5242.8800;
+AmpsToBitsOffset = ones(1, 8) .* (2^15);
 
 BrakeAmpsToBitsScale = 5242.8800;
 BrakeAmpsToBitsOffset = 2^15;
 
-BitsToFbAmpsScale = driveDirection(1:numOfActuator) .* 0.000190738;
-BitsToFbAmpsOffset = driveDirection(1:numOfActuator) .* (-6.25);
+BitsToFbAmpsScale = driveDirection(1:8) .* 0.000190738;
+BitsToFbAmpsOffset = driveDirection(1:8) .* (-6.25);
 
 BrakeBitsToFbAmpsScale = 0.000190738;
 BrakeBitsToFbAmpsOffset = -6.25;
 
-NmToAmps = ones(1,numOfActuator) ./ gearRatio(rType,1:numOfActuator) ./ motorTor(rType,1:numOfActuator);
-MaxCurrent = motorDefCur(rType,1:numOfActuator);
+NmToAmps = ones(1, 8) ./ gearRatio(rType, 1:8) ./ motorTor(rType, 1:8);
+MaxCurrent = motorDefCur(rType, 1:8);
 
 % === Encoder ======
 % EncPos = (360.0 * EncCounts / encCPT) / gearRatio * pitch
-BitsToPosSIScale = driveDirection(1:numOfActuator) .* 360 ./ encCPT(rType,1:numOfActuator) .* pitch(rType,1:numOfActuator) ./ gearRatio(rType,1:numOfActuator);
+BitsToPosSIScale = driveDirection(1:8) .* 360 ./ encCPT(rType, 1:8) .* pitch(rType, 1:8) ./ gearRatio(rType, 1:8);
 
 % AmpIO buff = buff + MIDRANGE_VEL
 % Velocity = deltaPos / deltaTime
@@ -211,9 +192,9 @@ BitsToPosSIScale = driveDirection(1:numOfActuator) .* 360 ./ encCPT(rType,1:numO
 % Velocity = 360 * 768000 / (encCPT / 4.0) / gearRatio * pitch / timeCounter
 %          = BitsToDeltaPosSIScale / timeCounter
 
-BitsToDeltaPosSI = driveDirection(1:numOfActuator) .* 360.0 .* 768000 ./ (encCPT(rType,1:numOfActuator) ./ 4.0) ./ gearRatio(rType,1:numOfActuator) .* pitch(rType,1:numOfActuator);
-BitsToDeltaT = ones(1,numOfActuator) * -1;
-CountsPerTurn = encCPT(rType,1:numOfActuator);
+% BitsToDeltaPosSI = driveDirection(1:8) .* 360.0 .* 768000 ./ (encCPT(rType, 1:8) ./ 4.0) ./ gearRatio(rType, 1:8) .* pitch(rType, 1:8);
+% BitsToDeltaT = ones(1, 8) * -1;
+% CountsPerTurn = encCPT(rType, 1:8);
 
 % === AnalogIn =====
 %  Intuitive system
@@ -225,32 +206,31 @@ CountsPerTurn = encCPT(rType,1:numOfActuator);
 %    1. 16 bit ADC
 %    2. 0-4.5 V
 %    3. Unit: Radian
-BitsToVolts = ones(1,numOfActuator) * (4.5 / 2^16);  % 16 bits ADC with 4.5 V ref
-VoltsToPosSIScale = potGain * (2^12 / 4.5) * 180.0 / pi .* pitch(rType,1:numOfActuator);
-VoltsToPosSIOffset = potOffset * 180.0 / pi .* pitch(rType,1:numOfActuator);
+BitsToVolts = ones(1, 8) * (4.5 / 2^16);  % 16 bits ADC with 4.5 V ref
+VoltsToPosSIScale = potGain * (2^12 / 4.5) * 180.0 / pi .* pitch(rType, 1:8);
+VoltsToPosSIOffset = potOffset * 180.0 / pi .* pitch(rType, 1:8);
 
-% special case for master last joint (Hall effect sensor)
-if (rType == CONST_MST)
+% special case for MTM last joint (Hall effect sensor)
+if (rType == CONST_MTM)
     VoltsToPosSIScale(8) = -23.1788;
     VoltsToPosSIOffset(8) = 91.4238;
 end
 
 
 % === Coupling ====
-if (rType == CONST_MST)
+if (rType == CONST_MTM)
     ActuatorToJointPosition = [ ...
-        1.00  0.00   0.00 0.00 0.00 0.00 0.00 0.00; ...
-        0.00  1.00   0.00 0.00 0.00 0.00 0.00 0.00; ...
-        0.00 -1.00   1.00 0.00 0.00 0.00 0.00 0.00; ...
-        0.00  0.6697 -0.6697 1.00 0.00 0.00 0.00 0.00; ...
-        0.00  0.00   0.00 0.00 1.00 0.00 0.00 0.00; ...
-        0.00  0.00   0.00 0.00 0.00 1.00 0.00 0.00; ...
-        0.00  0.00   0.00 0.00 0.00 0.00 1.00 0.00; ...
-        0.00  0.00   0.00 0.00 0.00 0.00 0.00 1.00  ...
+        1.00  0.00   0.00 0.00 0.00 0.00 0.00; ...
+        0.00  1.00   0.00 0.00 0.00 0.00 0.00; ...
+        0.00 -1.00   1.00 0.00 0.00 0.00 0.00; ...
+        0.00  0.6697 -0.6697 1.00 0.00 0.00 0.00; ...
+        0.00  0.00   0.00 0.00 1.00 0.00 0.00; ...
+        0.00  0.00   0.00 0.00 0.00 1.00 0.00; ...
+        0.00  0.00   0.00 0.00 0.00 0.00 1.00  ...
         ];
 end
 
-%% Create XML file
+%% Create XML file(s)
 
 % ==============================
 % Generate XML file
@@ -263,26 +243,24 @@ fileName = aOutName;
 
 docNode = com.mathworks.xml.XMLUtils.createDocument('Config');
 Config = docNode.getDocumentElement;
-Config.setAttribute('Version','3');
+Config.setAttribute('Version','4');
 
 % ------------- Robot ----------------
 Robot = docNode.createElement('Robot');
 Robot.setAttribute('Name', aRobotName);
-Robot.setAttribute('NumOfActuator', num2str(numOfActuator));
-Robot.setAttribute('NumOfJoint', num2str(numOfJoint));
+Robot.setAttribute('NumOfActuator', num2str(numOfJoints));
+Robot.setAttribute('NumOfJoint', num2str(numOfJoints));
 Robot.setAttribute('SN', num2str(serial_number));
 Config.appendChild(Robot);
 
 % Acutator array
-for i = 1:numOfActuator
+for i = 1:numOfJoints
     Actuator = docNode.createElement('Actuator');
     Actuator.setAttribute('ActuatorID', num2str(i-1));
     % set to boardID1 & boardID2
     Actuator.setAttribute('BoardID', num2str(boardID( idivide(i-1, int32(4))+1 )));
     Actuator.setAttribute('AxisID', num2str(mod(i-1,4)));
     Actuator.setAttribute('Type', actuatorType{i});
-    % Actuator.setAttribute('Pos1', 'ENC');
-    % Actuator.setAttribute('Pos2', 'POT');
     Robot.appendChild(Actuator);
 
     % Drive
@@ -331,7 +309,8 @@ for i = 1:numOfActuator
         X_BrakeReleaseTime.setAttribute('Value', num2str(brakeReleaseTime(i), '%5.3f'));
         Brake.appendChild(X_BrakeReleaseTime);
         X_BrakeReleasedCurrent = docNode.createElement('ReleasedCurrent');
-        X_BrakeReleasedCurrent.setAttribute('Unit', 'A');
+        X_BrakeReleasedCurrent.setAttribut    % Actuator.setAttribute('Pos1', 'ENC');
+    % Actuator.setAttribute('Pos2', 'POT');e('Unit', 'A');
         X_BrakeReleasedCurrent.setAttribute('Value', num2str(brakeReleasedCurrent(i), '%5.3f'));
         Brake.appendChild(X_BrakeReleasedCurrent);
         X_BrakeEngagedCurrent = docNode.createElement('EngagedCurrent');
@@ -349,31 +328,31 @@ for i = 1:numOfActuator
     Enc.appendChild(X_BitsToPosSI);
 
     % AnalogIn
-    AnaglogIn = docNode.createElement('AnalogIn');
-    Actuator.appendChild(AnaglogIn);
+    AnalogIn = docNode.createElement('AnalogIn');
+    Actuator.appendChild(AnalogIn);
 
     X_BitsToVolts = docNode.createElement('BitsToVolts');
     % BitsToVolts
     X_BitsToVolts.setAttribute('Scale', num2str(BitsToVolts(i), 6));
     X_BitsToVolts.setAttribute('Offset', '0');
-    AnaglogIn.appendChild(X_BitsToVolts);
+    AnalogIn.appendChild(X_BitsToVolts);
     X_VoltsToPosSI = docNode.createElement('VoltsToPosSI');
     X_VoltsToPosSI.setAttribute('Scale', num2str(VoltsToPosSIScale(i), '%5.6f'));
     X_VoltsToPosSI.setAttribute('Offset', num2str(VoltsToPosSIOffset(i), '%5.6f'));
-    AnaglogIn.appendChild(X_VoltsToPosSI);
+    AnalogIn.appendChild(X_VoltsToPosSI);
 end
 
 % ---------- Potentiometers ---------
 Potentiometers = docNode.createElement('Potentiometers');
-if (rType == CONST_MST)
+if (rType == CONST_MTM)
     Potentiometers.setAttribute('Position', 'Joints');
-elseif (rType == CONST_SLV)
+elseif (rType == CONST_PSM)
     Potentiometers.setAttribute('Position', 'Actuators');
 elseif (rType == CONST_ECM)
     Potentiometers.setAttribute('Position', 'Actuators');
 end
 
-for i = 1:numOfActuator
+for i = 1:numOfJoints
     Tolerance = docNode.createElement('Tolerance');
     Tolerance.setAttribute('Axis', num2str(i-1));
     Tolerance.setAttribute('Distance', num2str(potToleranceDistance(i), '%5.2f'));
@@ -385,7 +364,7 @@ end
 Robot.appendChild(Potentiometers);
 
 % ----------- Coupling ---------------
-if (rType == CONST_MST)
+if (rType == CONST_MTM)
     X_Coupling = docNode.createElement('Coupling');
     X_Coupling.setAttribute('Value', num2str(1));
     Robot.appendChild(X_Coupling);
@@ -402,7 +381,6 @@ if (rType == CONST_MST)
 end
 
 % ---------- DigitalIn ---------------
-Config.appendChild(docNode.createComment('Digital Input Configuration'));
 % 2 boards
 % read from GUI
 for b = 1:2
@@ -421,7 +399,7 @@ for b = 1:2
 end
 
 % ---------- DallasChip ---------------
-if (rType == CONST_SLV)
+if (rType == CONST_PSM)
     DallasChip = docNode.createElement('DallasChip');
     DallasChip.setAttribute('BoardID', num2str(boardID(2)));
     DallasChip.setAttribute('Name', strcat(aRobotName, '-Dallas'));
@@ -429,8 +407,78 @@ if (rType == CONST_SLV)
 end
 
 % generate xml file
-fileName = [fileName '-' num2str(serial_number) '.xml'];
-xmlwrite(fileName,docNode);
+mainFileName = [fileName '-' num2str(serial_number) '.xml'];
+xmlwrite(mainFileName, docNode);
+
+% generate xml file for gripper
+if (rType == CONST_MTM)
+    % this code is pretty much a copy/paste of loop above
+    gripperDocNode = com.mathworks.xml.XMLUtils.createDocument('Config');
+    Config = gripperDocNode.getDocumentElement;
+    Config.setAttribute('Version','4');
+
+    % ------------- Robot ----------------
+    Robot = gripperDocNode.createElement('Robot');
+    Robot.setAttribute('Name', strcat(aRobotName, '-Gripper'));
+    Robot.setAttribute('NumOfActuator', '1');
+    Robot.setAttribute('NumOfJoint', '1');
+    Robot.setAttribute('SN', num2str(serial_number));
+    Config.appendChild(Robot);
+
+    % Single pseudo-actuator
+    i = 8; % 8th "actuator"
+    Actuator = gripperDocNode.createElement('Actuator');
+    Actuator.setAttribute('ActuatorID', '0');
+    % set to boardID1 & boardID2
+    Actuator.setAttribute('BoardID', num2str(boardID( idivide(i-1, int32(4))+1 )));
+    Actuator.setAttribute('AxisID', num2str(mod(i-1,4)));
+    Actuator.setAttribute('Type', actuatorType{i});
+    Robot.appendChild(Actuator);
+
+    % Drive
+    Drive = gripperDocNode.createElement('Drive');
+    Actuator.appendChild(Drive);
+
+    X_Amps2Bits = gripperDocNode.createElement('AmpsToBits');
+    X_Amps2Bits.setAttribute('Scale', num2str(AmpsToBitsScale(i), '%5.2f'));
+    X_Amps2Bits.setAttribute('Offset', num2str(AmpsToBitsOffset(i), '%5.0f'));
+    Drive.appendChild(X_Amps2Bits);
+    X_BitsToFeedbackAmps = gripperDocNode.createElement('BitsToFeedbackAmps');
+    X_BitsToFeedbackAmps.setAttribute('Scale', num2str(BitsToFbAmpsScale(i), '%5.9f'));
+    X_BitsToFeedbackAmps.setAttribute('Offset', num2str(BitsToFbAmpsOffset(i), '%5.2f'));
+    Drive.appendChild(X_BitsToFeedbackAmps);
+    X_NmToAmps = gripperDocNode.createElement('NmToAmps');
+    X_NmToAmps.setAttribute('Scale', num2str(NmToAmps(i), '%5.6f'));
+    Drive.appendChild(X_NmToAmps);
+    X_MaxCurrent = gripperDocNode.createElement('MaxCurrent');
+    X_MaxCurrent.setAttribute('Value', num2str(MaxCurrent(i), '%5.3f'));
+    X_MaxCurrent.setAttribute('Unit', 'A');
+    Drive.appendChild(X_MaxCurrent);
+
+    % Encoder
+    Enc = gripperDocNode.createElement('Encoder');
+    Actuator.appendChild(Enc);
+    X_BitsToPosSI = gripperDocNode.createElement('BitsToPosSI');
+    X_BitsToPosSI.setAttribute('Scale', num2str(BitsToPosSIScale(i), '%5.8f'));
+    Enc.appendChild(X_BitsToPosSI);
+
+    % AnalogIn
+    AnalogIn = gripperDocNode.createElement('AnalogIn');
+    Actuator.appendChild(AnalogIn);
+    X_BitsToVolts = gripperDocNode.createElement('BitsToVolts');
+    % BitsToVolts
+    X_BitsToVolts.setAttribute('Scale', num2str(BitsToVolts(i), 6));
+    X_BitsToVolts.setAttribute('Offset', '0');
+    AnalogIn.appendChild(X_BitsToVolts);
+    X_VoltsToPosSI = gripperDocNode.createElement('VoltsToPosSI');
+    X_VoltsToPosSI.setAttribute('Scale', num2str(VoltsToPosSIScale(i), '%5.6f'));
+    X_VoltsToPosSI.setAttribute('Offset', num2str(VoltsToPosSIOffset(i), '%5.6f'));
+    AnalogIn.appendChild(X_VoltsToPosSI);
+
+    % generate xml file
+    gripperFileName = [fileName '-gripper-' num2str(serial_number) '.xml'];
+    xmlwrite(gripperFileName, gripperDocNode);
+end
 
 isOK = true;
 
