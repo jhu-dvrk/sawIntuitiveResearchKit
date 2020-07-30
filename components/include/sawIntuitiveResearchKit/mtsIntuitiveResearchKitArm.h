@@ -259,7 +259,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     struct {
         mtsFunctionRead  GetSerialNumber;
         mtsFunctionVoid  EnablePower;
-        mtsFunctionVoid  DisablePower;
+        mtsFunctionWrite DisablePower;
         mtsFunctionRead  GetActuatorAmpStatus;
         mtsFunctionRead  GetBrakeAmpStatus;
         mtsFunctionWrite BiasEncoder;

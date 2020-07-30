@@ -725,6 +725,7 @@ void mtsIntuitiveResearchKitArm::Cleanup(void)
     if (HasBrakes()) {
         IO.BrakeEngage();
     }
+    IO.DisablePower(true);
     CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
 }
 
@@ -961,7 +962,7 @@ void mtsIntuitiveResearchKitArm::EnterDisabled(void)
 
     IO.UsePotsForSafetyCheck(false);
     IO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints(), 0.0));
-    IO.DisablePower();
+    IO.DisablePower(false); // do not open safety relays
     PID.Enable(false);
     PID.SetCheckPositionLimit(true);
     m_powered = false;
