@@ -178,10 +178,13 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(Arm
         button = iter->second;
     }
     // color code state
-    if (armState.second.toStdString() == "ENABLED") {
+    std::string state = armState.second.toStdString();
+    if (state == "ENABLED") {
         button->setStyleSheet("QPushButton { background-color: rgb(50, 255, 50); border: none }");
-    } else {
+    } else if (state == "FAULT") {
         button->setStyleSheet("QPushButton { background-color: rgb(255, 100, 100); border: none }");
+    } else {
+        button->setStyleSheet("QPushButton { background-color: none; border: none }");
     }
 }
 

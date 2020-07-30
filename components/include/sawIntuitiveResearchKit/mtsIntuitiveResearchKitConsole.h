@@ -156,6 +156,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         }
 
         void CurrentStateEventHandler(const prmOperatingState & currentState);
+        prmOperatingState mOperatingState;
     };
 
     class CISST_EXPORT TeleopECM {
@@ -338,6 +339,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     void PowerOff(void);
     void PowerOn(void);
     void Home(void);
+    void DisableFaultyArms(void);
     void TeleopEnable(const bool & enable);
     void CycleTeleopPSMByMTM(const std::string & mtmName);
     void SelectTeleopPSM(const prmKeyValue & mtmPsm);

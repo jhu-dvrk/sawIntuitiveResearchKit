@@ -2048,32 +2048,38 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
 void mtsIntuitiveResearchKitConsole::PowerOff(void)
 {
     TeleopEnable(false);
-    const ArmList::iterator end = mArms.end();
-    for (ArmList::iterator arm = mArms.begin();
-         arm != end;
-         ++arm) {
-        arm->second->state_command(std::string("disable"));
+    for (auto & arm : mArms) {
+        arm.second->state_command(std::string("disable"));
     }
 }
 
 void mtsIntuitiveResearchKitConsole::PowerOn(void)
 {
-    const ArmList::iterator end = mArms.end();
-    for (ArmList::iterator arm = mArms.begin();
-         arm != end;
-         ++arm) {
-        arm->second->state_command(std::string("enable"));
+    DisableFaultyArms();
+    for (auto & arm : mArms) {
+        arm.second->state_command(std::string("enable"));
     }
 }
 
 void mtsIntuitiveResearchKitConsole::Home(void)
 {
+    DisableFaultyArms();
     TeleopEnable(false);
-    const ArmList::iterator end = mArms.end();
-    for (ArmList::iterator arm = mArms.begin();
-         arm != end;
-         ++arm) {
-        arm->second->state_command(std::string("home"));
+    for (auto & arm : mArms) {
+        arm.second->state_command(std::string("home"));
+    }
+}
+
+void mtsIntuitiveResearchKitConsole::DisableFaultyArms(void)
+{
+    for (auto & arm : mArms) {
+        auto armState = ArmStates.find(arm.first);
+        if (// search if we already have a state
+            (armState != ArmStates.end())
+            // and the arm is faulty
+            && (armState->second.State() == prmOperatingState::FAULT) ) {
+            arm.second->state_command(std::string("disable"));
+        }
     }
 }
 
@@ -2548,14 +2554,18 @@ void mtsIntuitiveResearchKitConsole::SetArmCurrentState(const std::string & armN
         // state is enabled, home and not busy
         ((armState->second.State() != prmOperatingState::ENABLED)
          && currentState.IsEnabledHomedAndNotBusy())) {
-        ArmStates[armName] = currentState;
         UpdateTeleopState();
     }
 
-    // emit event
+    // save state
+    ArmStates[armName] = currentState;
+
+    // emit event (for Qt GUI)
+    std::string payload = "";
     if (currentState.IsEnabledAndHomed()) {
-        ConfigurationEvents.ArmCurrentState(prmKeyValue(armName, "ENABLED"));
-    } else {
-        ConfigurationEvents.ArmCurrentState(prmKeyValue(armName, ""));
+        payload = "ENABLED";
+    } else if (currentState.State() == prmOperatingState::FAULT) {
+        payload = "FAULT";
     }
+    ConfigurationEvents.ArmCurrentState(prmKeyValue(armName, payload));
 }
