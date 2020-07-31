@@ -320,9 +320,10 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
             componentManager->Connect(Name(), "GripperIO",
                                       IOComponentName(), Name() + "-Gripper");
         }
-        // Connect PID and m_base_frame if needed
+        // connect PID
         componentManager->Connect(Name(), "PID",
                                   PIDComponentName(), "Controller");
+        // connect m_base_frame if needed
         if ((mBaseFrameComponentName != "") && (mBaseFrameInterfaceName != "")) {
             componentManager->Connect(mBaseFrameComponentName, mBaseFrameInterfaceName,
                                       Name(), "Arm");
@@ -360,22 +361,8 @@ void mtsIntuitiveResearchKitConsole::Arm::CurrentStateEventHandler(const prmOper
     mConsole->SetArmCurrentState(mName, currentState);
 }
 
-mtsIntuitiveResearchKitConsole::TeleopECM::TeleopECM(const std::string & name,
-                                                     const std::string & masterLeftComponentName,
-                                                     const std::string & masterLeftInterfaceName,
-                                                     const std::string & masterRightComponentName,
-                                                     const std::string & masterRightInterfaceName,
-                                                     const std::string & slaveComponentName,
-                                                     const std::string & slaveInterfaceName,
-                                                     const std::string & consoleName):
-    mName(name),
-    mMTMLComponentName(masterLeftComponentName),
-    mMTMLInterfaceName(masterLeftInterfaceName),
-    mMTMRComponentName(masterRightComponentName),
-    mMTMRInterfaceName(masterRightInterfaceName),
-    mECMComponentName(slaveComponentName),
-    mECMInterfaceName(slaveInterfaceName),
-    mConsoleName(consoleName)
+mtsIntuitiveResearchKitConsole::TeleopECM::TeleopECM(const std::string & name):
+    mName(name)
 {
 }
 
@@ -419,17 +406,6 @@ void mtsIntuitiveResearchKitConsole::TeleopECM::ConfigureTeleop(const TeleopECMT
     }
 }
 
-bool mtsIntuitiveResearchKitConsole::TeleopECM::Connect(void)
-{
-    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    componentManager->Connect(mName, "MTML", mMTMLComponentName, mMTMLInterfaceName);
-    componentManager->Connect(mName, "MTMR", mMTMRComponentName, mMTMRInterfaceName);
-    componentManager->Connect(mName, "ECM", mECMComponentName, mECMInterfaceName);
-    componentManager->Connect(mName, "Clutch", mConsoleName, "Clutch");
-    componentManager->Connect(mConsoleName, mName, mName, "Setting");
-    return true;
-}
-
 const std::string & mtsIntuitiveResearchKitConsole::TeleopECM::Name(void) const {
     return mName;
 }
@@ -437,25 +413,11 @@ const std::string & mtsIntuitiveResearchKitConsole::TeleopECM::Name(void) const 
 
 mtsIntuitiveResearchKitConsole::TeleopPSM::TeleopPSM(const std::string & name,
                                                      const std::string & nameMTM,
-                                                     const std::string & masterComponentName,
-                                                     const std::string & masterInterfaceName,
-                                                     const std::string & namePSM,
-                                                     const std::string & slaveComponentName,
-                                                     const std::string & slaveInterfaceName,
-                                                     const std::string & consoleName,
-                                                     const std::string & baseFrameComponentName,
-                                                     const std::string & baseFrameInterfaceName):
+                                                     const std::string & namePSM):
     mSelected(false),
     mName(name),
     mMTMName(nameMTM),
-    mMTMComponentName(masterComponentName),
-    mMTMInterfaceName(masterInterfaceName),
-    mPSMName(namePSM),
-    mPSMComponentName(slaveComponentName),
-    mPSMInterfaceName(slaveInterfaceName),
-    mConsoleName(consoleName),
-    mBaseFrameComponentName(baseFrameComponentName),
-    mBaseFrameInterfaceName(baseFrameInterfaceName)
+    mPSMName(namePSM)
 {
 }
 
@@ -497,21 +459,6 @@ void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMT
     default:
         break;
     }
-}
-
-bool mtsIntuitiveResearchKitConsole::TeleopPSM::Connect(void)
-{
-    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    componentManager->Connect(mName, "MTM", mMTMComponentName, mMTMInterfaceName);
-    componentManager->Connect(mName, "PSM", mPSMComponentName, mPSMInterfaceName);
-    componentManager->Connect(mName, "Clutch", mConsoleName, "Clutch");
-    componentManager->Connect(mConsoleName, mName, mName, "Setting");
-    if ((mBaseFrameComponentName != "")
-        && (mBaseFrameInterfaceName != "")) {
-        componentManager->Connect(mName, "PSM-base-frame",
-                                  mBaseFrameComponentName, mBaseFrameInterfaceName);
-    }
-    return true;
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::TeleopPSM::Name(void) const {
@@ -919,6 +866,18 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         mDInputSources["HeadSensor2"] = InterfaceComponentType(mIOComponentName, "HeadSensor2");
         mDInputSources["HeadSensor3"] = InterfaceComponentType(mIOComponentName, "HeadSensor3");
         mDInputSources["HeadSensor4"] = InterfaceComponentType(mIOComponentName, "HeadSensor4");
+        // schedule connections
+        mConnections.Add(headSensorName, "HeadSensorTurnOff",
+                         mIOComponentName, "HeadSensorTurnOff");
+        mConnections.Add(headSensorName, "HeadSensor1",
+                         mIOComponentName, "HeadSensor1");
+        mConnections.Add(headSensorName, "HeadSensor2",
+                         mIOComponentName, "HeadSensor2");
+        mConnections.Add(headSensorName, "HeadSensor3",
+                         mIOComponentName, "HeadSensor3");
+        mConnections.Add(headSensorName, "HeadSensor4",
+                         mIOComponentName, "HeadSensor4");
+
     }
 
     // load endoscope-focus settings
@@ -939,6 +898,15 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             CMN_LOG_CLASS_INIT_ERROR << "Configure: input for footpedal \"Cam+\" is required for \"endoscope-focus\".  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
             exit(EXIT_FAILURE);
         }
+        // schedule connections
+        mConnections.Add(endoscopeFocusName, "EndoscopeFocusIn",
+                         mIOComponentName, "EndoscopeFocusIn");
+        mConnections.Add(endoscopeFocusName, "EndoscopeFocusOut",
+                         mIOComponentName, "EndoscopeFocusOut");
+        mConnections.Add(endoscopeFocusName, "FocusIn",
+                         mIOComponentName, "Cam+");
+        mConnections.Add(endoscopeFocusName, "FocusOut",
+                         mIOComponentName, "Cam-");
     }
 
     // if we have any teleoperation component, we need to have the interfaces for the foot pedals
@@ -1111,28 +1079,6 @@ std::string mtsIntuitiveResearchKitConsole::GetArmIOComponentName(const std::str
     return "";
 }
 
-// to be deprecated
-bool mtsIntuitiveResearchKitConsole::AddTeleOperation(const std::string & name,
-                                                      const std::string & masterName,
-                                                      const std::string & slaveName)
-{
-    const TeleopPSMList::const_iterator teleopIterator = mTeleopsPSM.find(name);
-    if (teleopIterator != mTeleopsPSM.end()) {
-        CMN_LOG_CLASS_INIT_ERROR << "AddTeleOperation: there is already a teleop named \""
-                                 << name << "\"" << std::endl;
-        return false;
-    }
-    TeleopPSM * teleop = new TeleopPSM(name,
-                                       masterName, masterName, "Arm",
-                                       slaveName, slaveName, "Arm",
-                                       this->GetName(), "", "");
-    mTeleopsPSM[name] = teleop;
-    if (AddTeleopPSMInterfaces(teleop)) {
-        return true;
-    }
-    return false;
-}
-
 bool mtsIntuitiveResearchKitConsole::AddTeleopECMInterfaces(TeleopECM * teleop)
 {
     teleop->InterfaceRequired = this->AddInterfaceRequired(teleop->Name());
@@ -1168,64 +1114,48 @@ bool mtsIntuitiveResearchKitConsole::AddTeleopPSMInterfaces(TeleopPSM * teleop)
 
 void mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
 {
-    const DInputSourceType::const_iterator endDInputs = mDInputSources.end();
-    const bool foundClutch = (mDInputSources.find("Clutch") != endDInputs);
-    const bool foundOperatorPresent = (mDInputSources.find("OperatorPresent") != endDInputs);
-    const bool foundCamera = (mDInputSources.find("Camera") != endDInputs);
+    const auto endDInputs = mDInputSources.end();
 
-    if (foundClutch) {
+    auto iter = mDInputSources.find("Clutch");
+    if (iter != endDInputs) {
         mtsInterfaceRequired * clutchRequired = AddInterfaceRequired("Clutch");
         if (clutchRequired) {
             clutchRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ClutchEventHandler, this, "Button");
         }
+        mConnections.Add(this->GetName(), "Clutch",
+                         iter->second.first, iter->second.second);
         mtsInterfaceProvided * clutchProvided = AddInterfaceProvided("Clutch");
         if (clutchProvided) {
             clutchProvided->AddEventWrite(ConsoleEvents.Clutch, "Button", prmEventButton());
         }
     }
 
-    if (foundCamera) {
+    iter = mDInputSources.find("Camera");
+    if (iter != endDInputs) {
         mtsInterfaceRequired * cameraRequired = AddInterfaceRequired("Camera");
         if (cameraRequired) {
             cameraRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::CameraEventHandler, this, "Button");
         }
+        mConnections.Add(this->GetName(), "Camera",
+                         iter->second.first, iter->second.second);
         mtsInterfaceProvided * cameraProvided = AddInterfaceProvided("Camera");
         if (cameraProvided) {
             cameraProvided->AddEventWrite(ConsoleEvents.Camera, "Button", prmEventButton());
         }
     }
 
-    if (foundOperatorPresent) {
+    iter = mDInputSources.find("OperatorPresent");
+    if (iter != endDInputs) {
         mtsInterfaceRequired * operatorRequired = AddInterfaceRequired("OperatorPresent");
         if (operatorRequired) {
             operatorRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler, this, "Button");
         }
+        mConnections.Add(this->GetName(), "OperatorPresent",
+                         iter->second.first, iter->second.second);
         mtsInterfaceProvided * operatorProvided = AddInterfaceProvided("OperatorPresent");
         if (operatorProvided) {
             operatorProvided->AddEventWrite(ConsoleEvents.OperatorPresent, "Button", prmEventButton());
         }
-    }
-}
-
-void mtsIntuitiveResearchKitConsole::ConnectFootpedalInterfaces(void)
-{
-    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    const DInputSourceType::const_iterator end = mDInputSources.end();
-    DInputSourceType::const_iterator iter;
-    iter = mDInputSources.find("Clutch");
-    if (iter != end) {
-        componentManager->Connect(this->GetName(), "Clutch",
-                                  iter->second.first, iter->second.second);
-    }
-    iter = mDInputSources.find("Camera");
-    if (iter != end) {
-        componentManager->Connect(this->GetName(), "Camera",
-                                  iter->second.first, iter->second.second);
-    }
-    iter = mDInputSources.find("OperatorPresent");
-    if (iter != end) {
-        componentManager->Connect(this->GetName(), "OperatorPresent",
-                                  iter->second.first, iter->second.second);
     }
 }
 
@@ -1659,11 +1589,13 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
     const std::string name = mtmLeftName + "-" + mtmRightName + "-" + ecmName;
     if (mTeleopECM == 0) {
         // create a new teleop if needed
-        mTeleopECM = new TeleopECM(name,
-                                   mtmLeftComponent, mtmLeftInterface,
-                                   mtmRightComponent, mtmRightInterface,
-                                   ecmComponent, ecmInterface,
-                                   this->GetName());
+        mTeleopECM = new TeleopECM(name);
+        // schedule connections
+        mConnections.Add(name, "MTML", mtmLeftComponent, mtmLeftInterface);
+        mConnections.Add(name, "MTMR", mtmRightComponent, mtmRightInterface);
+        mConnections.Add(name, "ECM", ecmComponent, ecmInterface);
+        mConnections.Add(name, "Clutch", this->GetName(), "Clutch"); // console clutch
+        mConnections.Add(this->GetName(), name, name, "Setting");
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: there is already an ECM teleop" << std::endl;
         return false;
@@ -1785,11 +1717,18 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
     TeleopPSM * teleopPointer = 0;
     if (teleopIterator == mTeleopsPSM.end()) {
         // create a new teleop if needed
-        teleopPointer = new TeleopPSM(name,
-                                      mtmName, mtmComponent, mtmInterface,
-                                      psmName, psmComponent, psmInterface,
-                                      this->GetName(),
-                                      baseFrameComponent, baseFrameInterface);
+        teleopPointer = new TeleopPSM(name, mtmName, psmName);
+        // schedule connections
+        mConnections.Add(name, "MTM", mtmComponent, mtmInterface);
+        mConnections.Add(name, "PSM", psmComponent, psmInterface);
+        mConnections.Add(name, "Clutch", this->GetName(), "Clutch"); // clutch from console
+        mConnections.Add(this->GetName(), name, name, "Setting");
+        if ((baseFrameComponent != "")
+            && (baseFrameInterface != "")) {
+            mConnections.Add(name, "PSM-base-frame",
+                             baseFrameComponent, baseFrameInterface);
+        }
+
         mTeleopsPSMByMTM.insert(std::make_pair(mtmName, teleopPointer));
         // first MTM with multiple PSMs is selected for single tap
         if ((mTeleopsPSMByMTM.count(mtmName) > 1)
@@ -1880,6 +1819,8 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
                                                            this, "warning");
             arm->IOInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
                                                            this, "status");
+            mConnections.Add(this->GetName(), interfaceNameIO,
+                             arm->IOComponentName(), arm->Name());
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO interface for arm \""
                                      << arm->Name() << "\"" << std::endl;
@@ -1898,6 +1839,8 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
                                                                      this, "warning");
                 arm->IODallasInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
                                                                      this, "status");
+                mConnections.Add(this->GetName(), interfaceNameIODallas,
+                                 arm->IOComponentName(), arm->Name() + "-Dallas");
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO Dallase interface for arm \""
                                          << arm->Name() << "\"" << std::endl;
@@ -1917,6 +1860,8 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
                                                             this, "warning");
             arm->PIDInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
                                                             this, "status");
+            mConnections.Add(this->GetName(), interfaceNamePID,
+                             arm->Name() + "-PID", "Controller");
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add PID interface for arm \""
                                      << arm->Name() << "\"" << std::endl;
@@ -1940,6 +1885,8 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
                                                         this, "status");
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::Arm::CurrentStateEventHandler,
                                                         arm, "operating_state");
+        mConnections.Add(this->GetName(), interfaceNameArm,
+                         arm->ComponentName(), arm->InterfaceName());
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add Main interface for arm \""
                                  << arm->Name() << "\"" << std::endl;
@@ -1950,40 +1897,16 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
 
 bool mtsIntuitiveResearchKitConsole::Connect(void)
 {
+    mConnections.Connect();
+
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
     // connect console for audio feedback
     componentManager->Connect(this->GetName(), "TextToSpeech",
                               mTextToSpeech->GetName(), "Commands");
 
-    const ArmList::iterator armsEnd = mArms.end();
-    for (ArmList::iterator armIter = mArms.begin();
-         armIter != armsEnd;
-         ++armIter) {
-        Arm * arm = armIter->second;
-
-        // IO
-        if (arm->IOInterfaceRequired) {
-            componentManager->Connect(this->GetName(), "IO-" + arm->Name(),
-                                      arm->IOComponentName(), arm->Name());
-        }
-        // IO Dallas
-        if (arm->IODallasInterfaceRequired) {
-            componentManager->Connect(this->GetName(), "IO-Dallas-" + arm->Name(),
-                                      arm->IOComponentName(), arm->Name() + "-Dallas");
-        }
-        // PID
-        if (arm->mType != Arm::ARM_SUJ) {
-            if (arm->PIDInterfaceRequired) {
-                componentManager->Connect(this->GetName(), "PID-" + arm->Name(),
-                                          arm->PIDComponentName(), "Controller");
-            }
-        }
-        // arm interface
-        if (arm->ArmInterfaceRequired) {
-            componentManager->Connect(this->GetName(), arm->Name(),
-                                      arm->mComponentName, arm->mInterfaceName);
-        }
+    for (auto & armIter : mArms) {
+        Arm * arm = armIter.second;
         // arm specific interfaces
         arm->Connect();
         // connect to SUJ if needed
@@ -1993,53 +1916,6 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
             componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredFromIO->GetName(),
                                       arm->IOComponentName(), arm->Name() + "-SUJClutch");
         }
-    }
-
-    // ECM teleop
-    if (mTeleopECM) {
-        mTeleopECM->Connect();
-    }
-
-    // PSM teleops
-    const TeleopPSMList::iterator teleopPSMEnd = mTeleopsPSM.end();
-    for (TeleopPSMList::iterator teleopPSMIter = mTeleopsPSM.begin();
-         teleopPSMIter != teleopPSMEnd;
-         ++teleopPSMIter) {
-        TeleopPSM * teleop = teleopPSMIter->second;
-        teleop->Connect();
-    }
-
-    // connect the foot pedals
-    this->ConnectFootpedalInterfaces();
-
-    // connect daVinci head sensor if any
-    if (mDaVinciHeadSensor) {
-        const std::string headSensorName = mDaVinciHeadSensor->GetName();
-        // see sawRobotIO1394 XML file for interface names
-        componentManager->Connect(headSensorName, "HeadSensorTurnOff",
-                                  mIOComponentName, "HeadSensorTurnOff");
-        componentManager->Connect(headSensorName, "HeadSensor1",
-                                  mIOComponentName, "HeadSensor1");
-        componentManager->Connect(headSensorName, "HeadSensor2",
-                                  mIOComponentName, "HeadSensor2");
-        componentManager->Connect(headSensorName, "HeadSensor3",
-                                  mIOComponentName, "HeadSensor3");
-        componentManager->Connect(headSensorName, "HeadSensor4",
-                                  mIOComponentName, "HeadSensor4");
-    }
-
-    // connect daVinci endoscope focus if any
-    if (mDaVinciEndoscopeFocus) {
-        const std::string endoscopeFocusName = mDaVinciEndoscopeFocus->GetName();
-        // see sawRobotIO1394 XML file for interface names
-        componentManager->Connect(endoscopeFocusName, "EndoscopeFocusIn",
-                                  mIOComponentName, "EndoscopeFocusIn");
-        componentManager->Connect(endoscopeFocusName, "EndoscopeFocusOut",
-                                  mIOComponentName, "EndoscopeFocusOut");
-        componentManager->Connect(endoscopeFocusName, "FocusIn",
-                                  mIOComponentName, "Cam+");
-        componentManager->Connect(endoscopeFocusName, "FocusOut",
-                                  mIOComponentName, "Cam-");
     }
 
     return true;
@@ -2273,14 +2149,11 @@ bool mtsIntuitiveResearchKitConsole::GetMTMSelectedForPSM(const std::string & ps
 {
     bool psmFound = false;
     mtmName = "";
-    const TeleopPSMList::const_iterator end = mTeleopsPSM.end();
-    for (TeleopPSMList::const_iterator iter = mTeleopsPSM.begin();
-         iter != end;
-         ++iter) {
-        if (iter->second->mPSMName == psmName) {
+    for (auto & iter : mTeleopsPSM) {
+        if (iter.second->mPSMName == psmName) {
             psmFound = true;
-            if (iter->second->Selected()) {
-                mtmName = iter->second->mMTMName;
+            if (iter.second->Selected()) {
+                mtmName = iter.second->mMTMName;
             }
         }
     }
@@ -2289,33 +2162,24 @@ bool mtsIntuitiveResearchKitConsole::GetMTMSelectedForPSM(const std::string & ps
 
 void mtsIntuitiveResearchKitConsole::EventSelectedTeleopPSMs(void) const
 {
-    const TeleopPSMList::const_iterator end = mTeleopsPSM.end();
-    for (TeleopPSMList::const_iterator iter = mTeleopsPSM.begin();
-         iter != end;
-         ++iter) {
-        if (iter->second->Selected()) {
-            ConfigurationEvents.TeleopPSMSelected(prmKeyValue(iter->second->mMTMName,
-                                                              iter->second->mPSMName));
+    for (auto & iter : mTeleopsPSM) {
+        if (iter.second->Selected()) {
+            ConfigurationEvents.TeleopPSMSelected(prmKeyValue(iter.second->mMTMName,
+                                                              iter.second->mPSMName));
         } else {
-            ConfigurationEvents.TeleopPSMUnselected(prmKeyValue(iter->second->mMTMName,
-                                                                iter->second->mPSMName));
+            ConfigurationEvents.TeleopPSMUnselected(prmKeyValue(iter.second->mMTMName,
+                                                                iter.second->mPSMName));
         }
     }
 }
 
 void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
 {
-    const ArmList::iterator endArms = mArms.end();
-    ArmList::iterator iterArms;
-
     // Check if teleop is enabled
     if (!mTeleopEnabled) {
         bool freezeNeeded = false;
-        const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
-        for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
-             iterTeleopPSM != endTeleopPSM;
-             ++iterTeleopPSM) {
-            iterTeleopPSM->second->state_command(std::string("disable"));
+        for (auto & iterTeleopPSM : mTeleopsPSM) {
+            iterTeleopPSM.second->state_command(std::string("disable"));
             if (mTeleopPSMRunning) {
                 freezeNeeded = true;
             }
@@ -2332,11 +2196,11 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
 
         // freeze arms if we stopped any teleop
         if (freezeNeeded) {
-            for (iterArms = mArms.begin(); iterArms != endArms; ++iterArms) {
-                if ((iterArms->second->mType == Arm::ARM_MTM) ||
-                    (iterArms->second->mType == Arm::ARM_MTM_DERIVED) ||
-                    (iterArms->second->mType == Arm::ARM_MTM_GENERIC)) {
-                    iterArms->second->Freeze();
+            for (auto & iterArms : mArms) {
+                if ((iterArms.second->mType == Arm::ARM_MTM) ||
+                    (iterArms.second->mType == Arm::ARM_MTM_DERIVED) ||
+                    (iterArms.second->mType == Arm::ARM_MTM_GENERIC)) {
+                    iterArms.second->Freeze();
                 }
             }
         }
@@ -2345,11 +2209,11 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
 
     // if none are running, freeze
     if (!mTeleopECMRunning && !mTeleopPSMRunning) {
-        for (iterArms = mArms.begin(); iterArms != endArms; ++iterArms) {
-            if ((iterArms->second->mType == Arm::ARM_MTM) ||
-                (iterArms->second->mType == Arm::ARM_MTM_DERIVED) ||
-                (iterArms->second->mType == Arm::ARM_MTM_GENERIC)) {
-                iterArms->second->Freeze();
+        for (auto & iterArms : mArms) {
+            if ((iterArms.second->mType == Arm::ARM_MTM) ||
+                (iterArms.second->mType == Arm::ARM_MTM_DERIVED) ||
+                (iterArms.second->mType == Arm::ARM_MTM_GENERIC)) {
+                iterArms.second->Freeze();
             }
         }
     }
@@ -2357,8 +2221,8 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
     // all fine
     bool readyForTeleop = mOperatorPresent;
 
-    for (iterArms = mArms.begin(); iterArms != endArms; ++iterArms) {
-        if (iterArms->second->mSUJClutched) {
+    for (auto & iterArms : mArms) {
+        if (iterArms.second->mSUJClutched) {
             readyForTeleop = false;
         }
     }
@@ -2366,14 +2230,11 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
     // Check if operator is present
     if (!readyForTeleop) {
         // keep MTMs aligned
-        const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
-        for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
-             iterTeleopPSM != endTeleopPSM;
-             ++iterTeleopPSM) {
-            if (iterTeleopPSM->second->Selected()) {
-                iterTeleopPSM->second->state_command(std::string("align_mtm"));
+        for (auto & iterTeleopPSM : mTeleopsPSM) {
+            if (iterTeleopPSM.second->Selected()) {
+                iterTeleopPSM.second->state_command(std::string("align_mtm"));
             } else {
-                iterTeleopPSM->second->state_command(std::string("disable"));
+                iterTeleopPSM.second->state_command(std::string("disable"));
             }
         }
         mTeleopPSMRunning = false;
@@ -2391,11 +2252,8 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         if (!mTeleopECMRunning) {
             // if PSM was running so we need to stop it
             if (mTeleopPSMRunning) {
-                const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
-                for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
-                     iterTeleopPSM != endTeleopPSM;
-                     ++iterTeleopPSM) {
-                    iterTeleopPSM->second->state_command(std::string("disable"));
+                for (auto & iterTeleopPSM : mTeleopsPSM) {
+                    iterTeleopPSM.second->state_command(std::string("disable"));
                 }
                 mTeleopPSMRunning = false;
             }
@@ -2414,14 +2272,11 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
                 mTeleopECMRunning = false;
             }
             // PSM wasn't running, let's start it
-            const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
-            for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
-                 iterTeleopPSM != endTeleopPSM;
-                 ++iterTeleopPSM) {
-                if (iterTeleopPSM->second->Selected()) {
-                    iterTeleopPSM->second->state_command(std::string("enable"));
+            for (auto & iterTeleopPSM : mTeleopsPSM) {
+                if (iterTeleopPSM.second->Selected()) {
+                    iterTeleopPSM.second->state_command(std::string("enable"));
                 } else {
-                    iterTeleopPSM->second->state_command(std::string("disable"));
+                    iterTeleopPSM.second->state_command(std::string("disable"));
                 }
                 mTeleopPSMRunning = true;
             }
@@ -2431,11 +2286,8 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
 
 void mtsIntuitiveResearchKitConsole::SetScale(const double & scale)
 {
-    const TeleopPSMList::iterator endTeleopPSM = mTeleopsPSM.end();
-    for (TeleopPSMList::iterator iterTeleopPSM = mTeleopsPSM.begin();
-         iterTeleopPSM != endTeleopPSM;
-         ++iterTeleopPSM) {
-        iterTeleopPSM->second->SetScale(scale);
+    for (auto & iterTeleopPSM : mTeleopsPSM) {
+        iterTeleopPSM.second->SetScale(scale);
     }
     ConfigurationEvents.Scale(scale);
 }

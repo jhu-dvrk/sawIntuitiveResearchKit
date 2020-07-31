@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitConsole_h
 
 #include <cisstMultiTask/mtsTaskFromSignal.h>
+#include <cisstMultiTask/mtsDelayedConnections.h>
 #include <cisstParameterTypes/prmOperatingState.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmKeyValue.h>
@@ -166,22 +167,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         friend class mtsIntuitiveResearchKitConsoleQt;
         friend class dvrk::console;
 
-        TeleopECM(const std::string & name,
-                  const std::string & masterLeftComponentName,
-                  const std::string & masterLeftInterfaceName,
-                  const std::string & masterRightComponentName,
-                  const std::string & masterRightInterfaceName,
-                  const std::string & slaveComponentName,
-                  const std::string & slaveInterfaceName,
-                  const std::string & consoleName);
+        TeleopECM(const std::string & name);
 
         /*! Create and configure the robot arm. */
         void ConfigureTeleop(const TeleopECMType type,
                              const double & periodInSeconds,
                              const Json::Value & jsonConfig);
-
-        /*! Connect all interfaces specific to this teleop. */
-        bool Connect(void);
 
         /*! Accessors */
         const std::string & Name(void) const;
@@ -189,13 +180,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     protected:
         std::string mName;
         TeleopECMType mType;
-        std::string mMTMLComponentName;
-        std::string mMTMLInterfaceName;
-        std::string mMTMRComponentName;
-        std::string mMTMRInterfaceName;
-        std::string mECMComponentName;
-        std::string mECMInterfaceName;
-        std::string mConsoleName;
         mtsFunctionWrite state_command;
         mtsInterfaceRequired * InterfaceRequired;
     };
@@ -209,22 +193,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
         TeleopPSM(const std::string & name,
                   const std::string & nameMTM,
-                  const std::string & masterComponentName,
-                  const std::string & masterInterfaceName,
-                  const std::string & namePSM,
-                  const std::string & slaveComponentName,
-                  const std::string & slaveInterfaceName,
-                  const std::string & consoleName,
-                  const std::string & baseFrameComponentName,
-                  const std::string & baseFrameInterfaceName);
+                  const std::string & namePSM);
 
         /*! Create and configure the robot arm. */
         void ConfigureTeleop(const TeleopPSMType type,
                              const double & periodInSeconds,
                              const Json::Value & jsonConfig);
-
-        /*! Connect all interfaces specific to this teleop. */
-        bool Connect(void);
 
         /*! Accessors */
         const std::string & Name(void) const;
@@ -242,14 +216,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         std::string mName;
         TeleopPSMType mType;
         std::string mMTMName;
-        std::string mMTMComponentName;
-        std::string mMTMInterfaceName;
         std::string mPSMName;
-        std::string mPSMComponentName;
-        std::string mPSMInterfaceName;
-        std::string mConsoleName;
-        std::string mBaseFrameComponentName;
-        std::string mBaseFrameInterfaceName;
         mtsFunctionWrite state_command;
         mtsFunctionWrite SetScale;
         mtsInterfaceRequired * InterfaceRequired;
@@ -276,18 +243,14 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     bool AddArm(mtsComponent * genericArm, const Arm::ArmType armType);
     std::string GetArmIOComponentName(const std::string & armName);
 
-    // to be deprecated
-    bool AddTeleOperation(const std::string & name,
-                          const std::string & masterName,
-                          const std::string & slaveName);
-
     void AddFootpedalInterfaces(void);
-    void ConnectFootpedalInterfaces(void);
 
     bool Connect(void);
 
  protected:
     bool mConfigured;
+    mtsDelayedConnections mConnections;
+
     double mTimeOfLastErrorBeep;
     bool mTeleopEnabled;
     bool mTeleopPSMRunning;
