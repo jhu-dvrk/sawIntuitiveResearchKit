@@ -1032,7 +1032,6 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
     } else {
         if ((currentTime - mHomingTimer) > mtsIntuitiveResearchKit::TimeToPower) {
             m_arm_interface->SendError(this->GetName() + ": failed to enable power");
-            std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
             SetDesiredState("FAULT");
         }
     }
@@ -1111,7 +1110,6 @@ void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
     if ((currentTime - mHomingTimer) > timeToBias) {
         mHomingBiasEncoderRequested = false;
         m_arm_interface->SendError(this->GetName() + ": failed to bias encoders (timeout)");
-        std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
         SetDesiredState("FAULT");
     }
 }
@@ -1205,7 +1203,6 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHoming: unable to reach home position, error in degrees is "
                                            << mJointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
                 m_arm_interface->SendError(this->GetName() + ": unable to reach home position during calibration on pots");
-                std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
                 SetDesiredState("FAULT");
             }
         }
@@ -1213,7 +1210,6 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
 
     default:
         m_arm_interface->SendError(this->GetName() + ": error while evaluating trajectory");
-        std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
         SetDesiredState("FAULT");
         break;
     }
@@ -1805,7 +1801,6 @@ void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianSet & ne
 void mtsIntuitiveResearchKitArm::ErrorEventHandler(const mtsMessage & message)
 {
     m_arm_interface->SendError(this->GetName() + ": received [" + message.Message + "]");
-    std::cerr << CMN_LOG_DETAILS << " should something be done here?  YEP!   If PID tracking error do something different" << std::endl;
     SetDesiredState("FAULT");
 }
 

@@ -786,7 +786,6 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 return;
             } else {
                 m_arm_interface->SendError(this->GetName() + ": can't disable last four axis to change coupling.");
-                std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
                 SetDesiredState("FAULT");
             }
         } else {
@@ -805,7 +804,6 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 mArmState.SetCurrentState(CouplingChange.NextState);
             } else {
                 m_arm_interface->SendError(this->GetName() + ": can't set coupling.");
-                std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
                 SetDesiredState("FAULT");
             }
         } else {
@@ -1027,7 +1025,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
     default:
         m_arm_interface->SendError(this->GetName() + ": error while evaluating trajectory");
-        std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
         SetDesiredState("FAULT");
         break;
     }
@@ -1160,7 +1157,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 
     default:
         m_arm_interface->SendError(this->GetName() + " error while evaluating trajectory.");
-        std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
         SetDesiredState("FAULT");
         break;
     }
@@ -1342,8 +1338,10 @@ void mtsIntuitiveResearchKitPSM::CouplingEventHandler(const prmActuatorJointCoup
 
 void mtsIntuitiveResearchKitPSM::EnableJointsEventHandler(const vctBoolVec & enable)
 {
-    CouplingChange.ReceivedEnabledJoints = true;
-    CouplingChange.LastEnabledJoints.Assign(enable);
+    if (CouplingChange.WaitingForEnabledJoints) {
+        CouplingChange.ReceivedEnabledJoints = true;
+        CouplingChange.LastEnabledJoints.Assign(enable);
+    }
 }
 
 void mtsIntuitiveResearchKitPSM::SetAdapterPresent(const bool & present)
