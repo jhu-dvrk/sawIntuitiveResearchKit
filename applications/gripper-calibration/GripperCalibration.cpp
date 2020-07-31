@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-12-20
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -14,7 +14,6 @@ no warranty.  The complete license can be found in license.txt and
 http://www.cisst.org/cisst/license.txt.
 
 --- end cisst license ---
-
 */
 
 // system
@@ -40,7 +39,7 @@ int main(int argc, char * argv[])
     int portNumber = 0;
     std::string configFile;
     options.AddOptionOneValue("c", "config",
-                              "configuration file",
+                              "MTM gripper sawRobotIO1394 XML configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &configFile);
     options.AddOptionOneValue("p", "port",
                               "firewire port number(s)",
@@ -86,6 +85,10 @@ int main(int argc, char * argv[])
     }
     mtsRobot1394 * robot = port->Robot(0);
     size_t numberOfActuators = robot->NumberOfActuators();
+    if (numberOfActuators != 1) {
+        std::cerr << "Error: the config file defines a robot with more than 1 actuator, make sure you use the \"gripper\" configuration file!" << std::endl;
+        return -1;
+    }
 
     // make sure we have at least one set of pots values
     try {
@@ -93,34 +96,44 @@ int main(int argc, char * argv[])
     } catch (const std::runtime_error & e) {
         std::cerr << "Caught exception: " << e.what() << std::endl;
     }
-    // preload encoders
-    robot->CalibrateEncoderOffsetsFromPots();
 
     std::cout << std::endl
               << "Press any key to start collecting data." << std::endl;
     cmnGetChar();
     std::cout << "Fully open and close the gripper up to the second spring on the MTM multiple times." << std::endl
               << "NOTE: It is very important to not close the gripper all the way, stop when you feel some resitance from the second spring." << std::endl
-              << "+ indicates a new maximum, - indicates a new minimum." << std::endl
-              << "Press any key to stop collecting data." << std::endl;
+              << "Keep closing and opening until the counter and range stop increasing." << std::endl
+              << "Press any key to stop collecting data." << std::endl << std::endl;
 
     double minRad = std::numeric_limits<double>::max();
     double maxRad = std::numeric_limits<double>::min();
     size_t counter = 0;
     while (1) {
         if (cmnKbHit()) {
+            std::cout << std::endl;
             break;
         }
         port->Read();
-        counter++;
         // read values in radians to test existing coeffcients
-        double value = robot->PotPosition().at(numberOfActuators - 1);
+        double value = robot->PotPosition().at(0);
+        bool newValue = false;
         if (value > maxRad) {
+            counter++;
             maxRad = value;
-            std::cout << "+" << std::flush;
+            newValue = true;
         } else if (value < minRad) {
             minRad = value;
-            std::cout << "-" << std::flush;
+            counter++;
+            newValue = true;
+        }
+        if (newValue) {
+            std::cout << '\r' << " Counter: "
+                      << std::setfill(' ') << std::setw(5) << counter
+                      << ", range: [ "
+                      <<  std::fixed << std::setprecision(3) << std::setfill(' ') << std::setw(8)
+                      << minRad * cmn180_PI << " - "
+                      <<  std::fixed << std::setprecision(3) << std::setfill(' ') << std::setw(8)
+                      << maxRad * cmn180_PI << " ]" << std::flush;
         }
         osaSleep(1.0 * cmn_ms);
     }
@@ -141,8 +154,8 @@ int main(int argc, char * argv[])
         double previousOffset;
         double previousScale;
         const char * context = "Config";
-        xmlConfig.GetXMLValue(context, "Robot[1]/Actuator[8]/AnalogIn/VoltsToPosSI/@Offset", previousOffset);
-        xmlConfig.GetXMLValue(context, "Robot[1]/Actuator[8]/AnalogIn/VoltsToPosSI/@Scale", previousScale);
+        xmlConfig.GetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Offset", previousOffset);
+        xmlConfig.GetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Scale", previousScale);
 
         // compute new offsets assuming a range [0, user-max]
         double userMaxDeg;
@@ -165,11 +178,13 @@ int main(int argc, char * argv[])
         key = cmnGetChar();
         if ((key == 's') || (key == 'S')) {
             const char * context = "Config";
-            xmlConfig.SetXMLValue(context, "Robot[1]/Actuator[8]/AnalogIn/VoltsToPosSI/@Offset", newOffset);
-            xmlConfig.SetXMLValue(context, "Robot[1]/Actuator[8]/AnalogIn/VoltsToPosSI/@Scale", newScale);
+            xmlConfig.SetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Offset", newOffset);
+            xmlConfig.SetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Scale", newScale);
             std::string newConfigFile = configFile + "-new";
             xmlConfig.SaveAs(newConfigFile);
-            std::cout << "Status: new config file is \"" << newConfigFile << "\"" << std::endl;
+            std::cout << "Status: new config file is \"" << newConfigFile << "\"" << std::endl
+                      << "You can copy the new file over the old one using:\n  cp -i "
+                      << newConfigFile << " " << configFile << std::endl;
         } else {
             std::cout << "Status: user didn't want to save new offsets." << std::endl;
         }
