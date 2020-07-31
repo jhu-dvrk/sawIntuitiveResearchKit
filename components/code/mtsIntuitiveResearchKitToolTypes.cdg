@@ -67,6 +67,10 @@ class {
             description Monopolar Curved Scissors 400179 (Classic);
         }
         enum-value {
+            name NEEDLE_DRIVER_400117;
+            description 5mm Needle Driver 400117 (Classic);
+        }
+        enum-value {
             name PERMANENT_CAUTERY_SPATULA_400184;
             description Permanent Cautery Spatula 400184 (Classic);
         }
