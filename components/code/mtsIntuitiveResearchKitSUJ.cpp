@@ -721,7 +721,7 @@ void mtsIntuitiveResearchKitSUJ::EnterDisabled(void)
 
     // power off brakes
     RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
-    RobotIO.DisablePower();
+    RobotIO.DisablePower(false);
 
     // disable power on PWM
     PWM.DisablePWM(true);
@@ -896,7 +896,7 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
     // make sure requested current is back to 0
     RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
     // turn off amplifiers
-    RobotIO.DisablePower();
+    RobotIO.DisablePower(true); // also opens safety relays
 }
 
 void mtsIntuitiveResearchKitSUJ::SetSimulated(void)
@@ -1288,7 +1288,7 @@ void mtsIntuitiveResearchKitSUJ::MotorUpEventHandler(const prmEventButton & butt
 
 void mtsIntuitiveResearchKitSUJ::ErrorEventHandler(const mtsMessage & message)
 {
-    RobotIO.DisablePower();
+    RobotIO.DisablePower(false);
     DispatchError(this->GetName() + ": received [" + message.Message + "]");
     SetDesiredState("DISABLED");
 }

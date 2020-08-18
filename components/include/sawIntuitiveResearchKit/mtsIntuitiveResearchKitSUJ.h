@@ -115,7 +115,7 @@ protected:
     struct {
         //! Enable Robot Power
         mtsFunctionVoid EnablePower;
-        mtsFunctionVoid DisablePower;
+        mtsFunctionWrite DisablePower;
         mtsFunctionRead GetEncoderChannelA;
         mtsFunctionRead GetActuatorAmpStatus;
         mtsFunctionWrite SetActuatorCurrent;
