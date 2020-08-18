@@ -455,6 +455,11 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
         mInterface->SendError(this->GetName() + ": unsupported state " + state);
         return;
     }
+    // return is already the desired state
+    if (mTeleopState.DesiredState() == state) {
+        MessageEvents.DesiredState(state);
+        return;
+    }
     // try to set the desired state
     try {
         mTeleopState.SetDesiredState(state);
