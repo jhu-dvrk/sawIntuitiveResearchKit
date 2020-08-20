@@ -35,6 +35,7 @@ public:
     mtsIntuitiveResearchKitMTM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsIntuitiveResearchKitMTM() override;
+    void SetSimulated(void) override;
 
 protected:
     enum JointName {
