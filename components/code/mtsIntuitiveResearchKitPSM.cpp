@@ -77,7 +77,7 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
                               fixedTool);
                 if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
                     CMN_LOG_CLASS_INIT_ERROR << "PostConfigure: " << this->GetName()
-                                             << "\"" << fixedTool << "\" found in file \""
+                                             << ", \"" << fixedTool << "\" found in file \""
                                              << filename << "\" is not a supported type" << std::endl;
                     exit(EXIT_FAILURE);
                 } else {

@@ -303,8 +303,9 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
                                       IOComponentName(), Name());
         }
         // connect MTM gripper to IO
-        if ((mType == ARM_MTM)
-            || (mType == ARM_MTM_DERIVED)) {
+        if (((mType == ARM_MTM)
+             || (mType == ARM_MTM_DERIVED))
+            && (mSimulation == SIMULATION_NONE)) {
             componentManager->Connect(Name(), "GripperIO",
                                       IOComponentName(), Name() + "-Gripper");
         }
@@ -988,6 +989,11 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
         prompts.push_back("Feel free to fix it");
         prompts.push_back("What's the weather like outside?");
         prompts.push_back("Call your parents");
+        prompts.push_back("Maybe we should use ROS control");
+        prompts.push_back("Use with caution");
+        prompts.push_back("It's about time");
+        prompts.push_back("When did you last commit your changes?");
+        prompts.push_back("Some documentation would be nice");
         int index;
         cmnRandomSequence & randomSequence = cmnRandomSequence::GetInstance();
         cmnRandomSequence::SeedType seed

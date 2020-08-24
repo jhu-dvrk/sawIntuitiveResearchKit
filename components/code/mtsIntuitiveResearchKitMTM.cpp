@@ -52,6 +52,12 @@ mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM()
     delete GravityCompensationMTM;
 }
 
+void mtsIntuitiveResearchKitMTM::SetSimulated(void)
+{
+    mtsIntuitiveResearchKitArm::SetSimulated();
+    // in simulation mode, we don't need IO Gripper
+    RemoveInterfaceRequired("GripperIO");
+}
 
 void mtsIntuitiveResearchKitMTM::Init(void)
 {
@@ -314,6 +320,10 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
     if (m_simulated || IsHomed()) {
+        if (m_simulated) {
+            // all encoders are biased, including roll
+            m_encoders_biased = true;
+        }
         return;
     }
 
