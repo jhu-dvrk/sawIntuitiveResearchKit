@@ -98,6 +98,9 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                                        const double & periodInSeconds)
 {
     mType = armType;
+    bool armPSMOrDerived = false;
+    bool armECMOrDerived = false;
+
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     mArmConfigurationFile = kinematicsConfigFile;
     // for research kit arms, create, add to manager and connect to
@@ -115,6 +118,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         }
         break;
     case ARM_PSM:
+        armPSMOrDerived = true;
         {
             mtsIntuitiveResearchKitPSM * psm = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
             if (mSimulation == SIMULATION_KINEMATIC) {
@@ -128,6 +132,8 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                 mtsSocketServerPSM *serverPSM = new mtsSocketServerPSM(SocketComponentName(), periodInSeconds, mIp, mPort);
                 serverPSM->Configure();
                 componentManager->AddComponent(serverPSM);
+                mConsole->mConnections.Add(SocketComponentName(), "PSM",
+                                           ComponentName(), InterfaceName());
             }
         }
         break;
@@ -139,6 +145,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         }
         break;
     case ARM_ECM:
+        armECMOrDerived = true;
         {
             mtsIntuitiveResearchKitECM * ecm = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
             if (mSimulation == SIMULATION_KINEMATIC) {
@@ -154,6 +161,29 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             mtsIntuitiveResearchKitSUJ * suj = new mtsIntuitiveResearchKitSUJ(Name(), periodInSeconds);
             if (mSimulation == SIMULATION_KINEMATIC) {
                 suj->SetSimulated();
+            } else if (mSimulation == SIMULATION_NONE) {
+                mConsole->mConnections.Add(Name(), "RobotIO",
+                                           IOComponentName(), Name());
+                mConsole->mConnections.Add(Name(), "NoMuxReset",
+                                           IOComponentName(), "NoMuxReset");
+                mConsole->mConnections.Add(Name(), "MuxIncrement",
+                                           IOComponentName(), "MuxIncrement");
+                mConsole->mConnections.Add(Name(), "ControlPWM",
+                                           IOComponentName(), "ControlPWM");
+                mConsole->mConnections.Add(Name(), "DisablePWM",
+                                           IOComponentName(), "DisablePWM");
+                mConsole->mConnections.Add(Name(), "MotorUp",
+                                           IOComponentName(), "MotorUp");
+                mConsole->mConnections.Add(Name(), "MotorDown",
+                                           IOComponentName(), "MotorDown");
+                mConsole->mConnections.Add(Name(), "SUJ-Clutch-1",
+                                           IOComponentName(), "SUJ-Clutch-1");
+                mConsole->mConnections.Add(Name(), "SUJ-Clutch-2",
+                                           IOComponentName(), "SUJ-Clutch-2");
+                mConsole->mConnections.Add(Name(), "SUJ-Clutch-3",
+                                           IOComponentName(), "SUJ-Clutch-3");
+                mConsole->mConnections.Add(Name(), "SUJ-Clutch-4",
+                                           IOComponentName(), "SUJ-Clutch-4");
             }
             suj->Configure(mArmConfigurationFile);
             componentManager->AddComponent(suj);
@@ -184,6 +214,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         }
         break;
     case ARM_PSM_DERIVED:
+        armPSMOrDerived = true;
         {
             mtsComponent * component;
             component = componentManager->GetComponent(Name());
@@ -208,6 +239,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         }
         break;
     case ARM_ECM_DERIVED:
+        armECMOrDerived = true;
         {
             mtsComponent * component;
             component = componentManager->GetComponent(Name());
@@ -235,6 +267,22 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     default:
         break;
     }
+
+    if (armPSMOrDerived && (mSimulation == SIMULATION_NONE)) {
+        mConsole->mConnections.Add(Name(), "Adapter",
+                                   IOComponentName(), Name() + "-Adapter");
+        mConsole->mConnections.Add(Name(), "Tool",
+                                   IOComponentName(), Name() + "-Tool");
+        mConsole->mConnections.Add(Name(), "ManipClutch",
+                                   IOComponentName(), Name() + "-ManipClutch");
+        mConsole->mConnections.Add(Name(), "Dallas",
+                                   IOComponentName(), Name() + "-Dallas");
+    }
+
+    if (armECMOrDerived && (mSimulation == SIMULATION_NONE)) {
+        mConsole->mConnections.Add(Name(), "ManipClutch",
+                                   IOComponentName(), Name() + "-ManipClutch");
+    }
 }
 
 void mtsIntuitiveResearchKitConsole::Arm::SetBaseFrameIfNeeded(mtsIntuitiveResearchKitArm * armPointer)
@@ -247,66 +295,6 @@ void mtsIntuitiveResearchKitConsole::Arm::SetBaseFrameIfNeeded(mtsIntuitiveResea
 bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    // for research kit arms, create, add to manager and connect to
-    // extra IO, PID, etc.  For generic arms, do nothing.
-    switch (mType) {
-    case ARM_MTM:
-    case ARM_MTM_DERIVED:
-        break;
-    case ARM_PSM:
-    case ARM_PSM_DERIVED:
-        if (mSimulation == SIMULATION_NONE) {
-            componentManager->Connect(Name(), "Adapter",
-                                      IOComponentName(), Name() + "-Adapter");
-            componentManager->Connect(Name(), "Tool",
-                                      IOComponentName(), Name() + "-Tool");
-            componentManager->Connect(Name(), "ManipClutch",
-                                      IOComponentName(), Name() + "-ManipClutch");
-            componentManager->Connect(Name(), "Dallas",
-                                      IOComponentName(), Name() + "-Dallas");
-        }
-        if (mSocketServer) {
-            componentManager->Connect(SocketComponentName(), "PSM",
-                                      ComponentName(), InterfaceName());
-        }
-        break;
-    case ARM_ECM:
-    case ARM_ECM_DERIVED:
-        if (mSimulation == SIMULATION_NONE) {
-            componentManager->Connect(Name(), "ManipClutch",
-                                      IOComponentName(), Name() + "-ManipClutch");
-        }
-        break;
-    case ARM_SUJ:
-        if (mSimulation == SIMULATION_NONE) {
-            componentManager->Connect(Name(), "RobotIO",
-                                      IOComponentName(), Name());
-            componentManager->Connect(Name(), "NoMuxReset",
-                                      IOComponentName(), "NoMuxReset");
-            componentManager->Connect(Name(), "MuxIncrement",
-                                      IOComponentName(), "MuxIncrement");
-            componentManager->Connect(Name(), "ControlPWM",
-                                      IOComponentName(), "ControlPWM");
-            componentManager->Connect(Name(), "DisablePWM",
-                                      IOComponentName(), "DisablePWM");
-            componentManager->Connect(Name(), "MotorUp",
-                                      IOComponentName(), "MotorUp");
-            componentManager->Connect(Name(), "MotorDown",
-                                      IOComponentName(), "MotorDown");
-            componentManager->Connect(Name(), "SUJ-Clutch-1",
-                                      IOComponentName(), "SUJ-Clutch-1");
-            componentManager->Connect(Name(), "SUJ-Clutch-2",
-                                      IOComponentName(), "SUJ-Clutch-2");
-            componentManager->Connect(Name(), "SUJ-Clutch-3",
-                                      IOComponentName(), "SUJ-Clutch-3");
-            componentManager->Connect(Name(), "SUJ-Clutch-4",
-                                      IOComponentName(), "SUJ-Clutch-4");
-        }
-        break;
-    default:
-        break;
-    }
-
     // if the arm is a research kit arm
     if (mIsNativeOrDerived) {
         // Connect arm to IO if not simulated
