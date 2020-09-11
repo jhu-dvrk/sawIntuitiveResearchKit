@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsIntuitiveResearchKitSUJ_h
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
+#include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmOperatingState.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
