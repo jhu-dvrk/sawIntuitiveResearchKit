@@ -58,7 +58,7 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
         QPOState->SetInterfaceRequired(InterfaceRequired);
         InterfaceRequired->AddFunction("measured_js", Arm.measured_js);
         InterfaceRequired->AddFunction("measured_cp", Arm.measured_cp);
-        InterfaceRequired->AddFunction("measured_cf_body", Arm.measured_cf_body, MTS_OPTIONAL);
+        InterfaceRequired->AddFunction("body/measured_cf", Arm.measured_cf_body, MTS_OPTIONAL);
         InterfaceRequired->AddFunction("move_jp", Arm.move_jp, MTS_OPTIONAL);
         InterfaceRequired->AddFunction("period_statistics", Arm.period_statistics);
     }
