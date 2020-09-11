@@ -345,7 +345,7 @@ void mtsTeleOperationPSM::Startup(void)
     if (!mIgnoreJaw) {
         if (!mPSM.jaw_measured_js.IsValid()
             || !mPSM.jaw_servo_jp.IsValid()) {
-            mInterface->SendError(this->GetName() + ": optional functions \"jaw_servo_jp\" and \"jaw_measured_js\" are not connected, setting \"ignore-jaw\" to true");
+            mInterface->SendError(this->GetName() + ": optional functions \"jaw/servo_jp\" and \"jaw/measured_js\" are not connected, setting \"ignore-jaw\" to true");
             mIgnoreJaw = true;
         }
     }

@@ -6,7 +6,7 @@
             // this is to use the dvrk_arm_from_ros class
             {
                 "shared-library": "dvrk_arm_from_ros",
-                "class-name": "dvrk_arm_from_ros",
+                "class-name": "dvrk_psm_from_ros",
                 "constructor-arg": {
                     "Name": "PSM1",
                     "Period": 0.01
