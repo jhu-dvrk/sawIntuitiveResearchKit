@@ -485,6 +485,7 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
                                   "ArmCurrentState", prmKeyValue());
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::TeleopEnable, this,
                                     "TeleopEnable", false);
+        // manage tele-op
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::CycleTeleopPSMByMTM, this,
                                     "CycleTeleopPSMByMTM", std::string(""));
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SelectTeleopPSM, this,
@@ -497,10 +498,18 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
                                   "TeleopPSMSelected", prmKeyValue("MTM", "PSM"));
         mInterface->AddEventWrite(ConfigurationEvents.TeleopPSMUnselected,
                                   "TeleopPSMUnselected", prmKeyValue("MTM", "PSM"));
+        // audio
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetVolume, this,
                                     "SetVolume", 0.5);
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::StringToSpeech, this,
                                     "StringToSpeech", std::string());
+        // emulate foot pedal events
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler, this,
+                                    "EmulateOperatorPresent", prmEventButton());
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::ClutchEventHandler, this,
+                                    "EmulateClutch", prmEventButton());
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::CameraEventHandler, this,
+                                    "EmulateCamera", prmEventButton());
     }
 }
 
