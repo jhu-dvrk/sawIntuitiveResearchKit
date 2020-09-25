@@ -20,10 +20,11 @@ CartesianGetLocalDesiredParam = m_local_setpoint_cp
 CartesianVelocityGetParam = m_measured_cv
 mWrenchGet = m_body_measured_cf
 
+mPowered = m_powered
 mIsSimulated = m_simulated
 mEncoderBiased = m_encoders_biased
-mCartesianReady = m_cartesian_ready
-mJointReady = m_joint_ready
+mCartesianReady = IsCartesianReady
+mJointReady = IsJointReady
 mOperatingState = m_operating_state
 
 mControlSpace = m_control_space
