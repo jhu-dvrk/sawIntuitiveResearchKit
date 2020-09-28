@@ -216,6 +216,18 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     /*! Inverse kinematics must be redefined for each arm type. */
     virtual robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                                     const vctFrm4x4 & cartesianGoal) = 0;
+    
+    /*! Forward kinematic queries using joint values provided by user.
+      The number of joints (size of the vector) determines up to which
+      ling the forward kinematic is computed.  If the number of joint
+      is invalid, i.e. greater than the number of links, the result is
+      identity. */
+    //@{{
+    virtual void query_cp(const vctDoubleVec & jointValues,
+                          vctFrm4x4 & pose) const;
+    virtual void local_query_cp(const vctDoubleVec & jointValues,
+                                vctFrm4x4 & pose) const;
+    //@}
 
     /*! Each arm has a different homing procedure. */
     virtual bool IsHomed(void) const = 0;

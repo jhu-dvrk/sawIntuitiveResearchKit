@@ -372,8 +372,12 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                         this, "SetGravityCompensation");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetCartesianImpedanceGains,
                                         this, "SetCartesianImpedanceGains");
-
-        // Trajectory events
+        // Kinematic queries
+        m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::query_cp,
+                                                 this, "query_cp");
+        m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::local_query_cp,
+                                                 this, "local/query_cp");
+        // Trajectory
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetJointVelocityRatio,
                                         this, "SetJointVelocityRatio");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetJointAccelerationRatio,
@@ -1835,6 +1839,26 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
     } else {
         m_arm_interface->SendWarning(this->GetName() + ": encoders have been biased by another process");
     }
+}
+
+void mtsIntuitiveResearchKitArm::query_cp(const vctDoubleVec & jointValues,
+                                          vctFrm4x4 & pose) const
+{
+    size_t nbJoints = jointValues.size();
+    if (nbJoints > this->NumberOfJointsKinematics()) {
+        nbJoints = this->NumberOfJointsKinematics();
+    }
+    pose = m_base_frame * Manipulator->ForwardKinematics(jointValues, nbJoints);
+}
+
+void mtsIntuitiveResearchKitArm::local_query_cp(const vctDoubleVec & jointValues,
+                                                vctFrm4x4 & pose) const
+{
+    size_t nbJoints = jointValues.size();
+    if (nbJoints > this->NumberOfJointsKinematics()) {
+        nbJoints = this->NumberOfJointsKinematics();
+    }
+    pose = Manipulator->ForwardKinematics(jointValues, nbJoints);
 }
 
 void mtsIntuitiveResearchKitArm::servo_jf(const prmForceTorqueJointSet & effort)
