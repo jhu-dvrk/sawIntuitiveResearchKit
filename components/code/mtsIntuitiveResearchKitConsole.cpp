@@ -679,6 +679,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             mHasIO = true;
         }
     }
+    bool physicalFootpedalsRequired = true;
     jsonValue = jsonConfig["io"];
     if (!jsonValue.empty()) {
         // generic files
@@ -690,6 +691,11 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         configFiles = jsonValue["footpedals"];
         if (!configFiles.empty()) {
             mHasIO = true;
+        }
+        // see if user wants to force no foot pedals
+        Json::Value footpedalsRequired = jsonValue["physical-footpedals-required"];
+        if (!footpedalsRequired.empty()) {
+            physicalFootpedalsRequired = footpedalsRequired.asBool();
         }
     }
     jsonValue = jsonConfig["operator-present"];
@@ -908,21 +914,24 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     }
 
     // if we have any teleoperation component, we need to have the interfaces for the foot pedals
-    const DInputSourceType::const_iterator endDInputs = mDInputSources.end();
-    const bool foundClutch = (mDInputSources.find("Clutch") != endDInputs);
-    const bool foundOperatorPresent = (mDInputSources.find("OperatorPresent") != endDInputs);
-    const bool foundCamera = (mDInputSources.find("Camera") != endDInputs);
+    // unless user explicitly says we can skip
+    if (physicalFootpedalsRequired) {
+        const DInputSourceType::const_iterator endDInputs = mDInputSources.end();
+        const bool foundClutch = (mDInputSources.find("Clutch") != endDInputs);
+        const bool foundOperatorPresent = (mDInputSources.find("OperatorPresent") != endDInputs);
+        const bool foundCamera = (mDInputSources.find("Camera") != endDInputs);
 
-    if (mTeleopsPSM.size() > 0) {
-        if (!foundClutch || !foundOperatorPresent) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Clutch\" and \"OperatorPresent\" need to be defined since there's at least one PSM tele-operation component.  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
-            exit(EXIT_FAILURE);
+        if (mTeleopsPSM.size() > 0) {
+            if (!foundClutch || !foundOperatorPresent) {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Clutch\" and \"OperatorPresent\" need to be defined since there's at least one PSM tele-operation component.  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
-    }
-    if (mTeleopECM) {
-        if (!foundCamera || !foundOperatorPresent) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Camera\" and \"OperatorPresent\" need to be defined since there's an ECM tele-operation component.  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
-            exit(EXIT_FAILURE);
+        if (mTeleopECM) {
+            if (!foundCamera || !foundOperatorPresent) {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Camera\" and \"OperatorPresent\" need to be defined since there's an ECM tele-operation component.  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
     }
     this->AddFootpedalInterfaces();
@@ -1011,6 +1020,9 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
         randomSequence.ExtractRandomValue<int>(0, prompts.size() - 1, index);
         mAudio.StringToSpeech(prompts.at(index));
     }
+
+    // emit events for active PSM teleop pairs
+    EventSelectedTeleopPSMs();
 }
 
 void mtsIntuitiveResearchKitConsole::Run(void)
@@ -1127,10 +1139,10 @@ void mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
         }
         mConnections.Add(this->GetName(), "Clutch",
                          iter->second.first, iter->second.second);
-        mtsInterfaceProvided * clutchProvided = AddInterfaceProvided("Clutch");
-        if (clutchProvided) {
-            clutchProvided->AddEventWrite(ConsoleEvents.Clutch, "Button", prmEventButton());
-        }
+    }
+    mtsInterfaceProvided * clutchProvided = AddInterfaceProvided("Clutch");
+    if (clutchProvided) {
+        clutchProvided->AddEventWrite(ConsoleEvents.Clutch, "Button", prmEventButton());
     }
 
     iter = mDInputSources.find("Camera");
@@ -1141,10 +1153,10 @@ void mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
         }
         mConnections.Add(this->GetName(), "Camera",
                          iter->second.first, iter->second.second);
-        mtsInterfaceProvided * cameraProvided = AddInterfaceProvided("Camera");
-        if (cameraProvided) {
-            cameraProvided->AddEventWrite(ConsoleEvents.Camera, "Button", prmEventButton());
-        }
+    }
+    mtsInterfaceProvided * cameraProvided = AddInterfaceProvided("Camera");
+    if (cameraProvided) {
+        cameraProvided->AddEventWrite(ConsoleEvents.Camera, "Button", prmEventButton());
     }
 
     iter = mDInputSources.find("OperatorPresent");
@@ -1155,10 +1167,10 @@ void mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
         }
         mConnections.Add(this->GetName(), "OperatorPresent",
                          iter->second.first, iter->second.second);
-        mtsInterfaceProvided * operatorProvided = AddInterfaceProvided("OperatorPresent");
-        if (operatorProvided) {
-            operatorProvided->AddEventWrite(ConsoleEvents.OperatorPresent, "Button", prmEventButton());
-        }
+    }
+    mtsInterfaceProvided * operatorProvided = AddInterfaceProvided("OperatorPresent");
+    if (operatorProvided) {
+        operatorProvided->AddEventWrite(ConsoleEvents.OperatorPresent, "Button", prmEventButton());
     }
 }
 

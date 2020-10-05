@@ -64,6 +64,10 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler,
                                                 this, "ArmCurrentState");
         interfaceRequired->AddFunction("TeleopEnable", Console.TeleopEnable);
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMSelectedEventHandler,
+                                                this, "TeleopPSMSelected");
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMUnselectedEventHandler,
+                                                this, "TeleopPSMUnselected");
         interfaceRequired->AddFunction("SetScale", Console.SetScale);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
                                                 this, "Scale");
@@ -166,14 +170,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotHome(void)
     Console.Home();
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(ArmCurrentStateType armState)
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(PairStringType armState)
 {
-    const std::string arm = armState.first.toStdString();
+    const QString arm = armState.first;
     auto iter = ArmButtons.find(arm);
     QPushButton * button;
     // insert new arm if needed
     if (iter == ArmButtons.end()) {
-        button = new QPushButton(arm.c_str());
+        button = new QPushButton(arm);
         QVBArms->addWidget(button);
         ArmButtons[arm] = button;
         connect(button, &QPushButton::clicked,
@@ -182,7 +186,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(Arm
         button = iter->second;
     }
     // color code state
-    std::string state = armState.second.toStdString();
+    QString state = armState.second;
     if (state == "ENABLED") {
         button->setStyleSheet("QPushButton { background-color: rgb(50, 255, 50); border: none }");
     } else if (state == "FAULT") {
@@ -200,6 +204,36 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStart(void)
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStop(void)
 {
     Console.TeleopEnable(false);
+}
+
+QPushButton * mtsIntuitiveResearchKitConsoleQtWidget::GetTeleopButton(const PairStringType & pair)
+{
+    const QString teleop = pair.first + "-" + pair.second;
+    auto iter = TeleopButtons.find(teleop);
+    QPushButton * button;
+    // insert new teleop if needed
+    if (iter == TeleopButtons.end()) {
+        button = new QPushButton(teleop);
+        QVBTeleops->addWidget(button);
+        TeleopButtons[teleop] = button;
+        connect(button, &QPushButton::clicked,
+                [ = ] { emit SlotTeleopButton(teleop); });
+    } else {
+        button = iter->second;
+    }
+    return button;
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopPSMSelectedEventHandler(PairStringType selected)
+{
+    QPushButton * button = GetTeleopButton(selected);
+    button->setStyleSheet("QPushButton { border: none }");
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopPSMUnselectedEventHandler(PairStringType unselected)
+{
+    QPushButton * button = GetTeleopButton(unselected);
+    button->setStyleSheet("QPushButton { border: none; color: palette(mid) }");
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetScale(double scale)
@@ -262,6 +296,8 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QSBScale->setPrefix("scale ");
     QSBScale->setValue(mtsIntuitiveResearchKit::TeleOperationPSM::Scale);
     teleopLayout->addWidget(QSBScale);
+    QVBTeleops = new QVBoxLayout();
+    teleopLayout->addLayout(QVBTeleops);
 
     QGroupBox * inputsBox = new QGroupBox("Inputs");
     boxLayout->addWidget(inputsBox);
@@ -336,13 +372,17 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotPowerOn()));
     connect(QPBHome, SIGNAL(clicked()),
             this, SLOT(SlotHome()));
-    qRegisterMetaType<ArmCurrentStateType>("ArmCurrentStateType");
-    connect(this, SIGNAL(SignalArmCurrentState(ArmCurrentStateType)),
-            this, SLOT(SlotArmCurrentStateEventHandler(ArmCurrentStateType)));
+    qRegisterMetaType<PairStringType>("PairStringType");
+    connect(this, SIGNAL(SignalArmCurrentState(PairStringType)),
+            this, SLOT(SlotArmCurrentStateEventHandler(PairStringType)));
     connect(QPBTeleopStart, SIGNAL(clicked()),
             this, SLOT(SlotTeleopStart()));
     connect(QPBTeleopStop, SIGNAL(clicked()),
             this, SLOT(SlotTeleopStop()));
+    connect(this, SIGNAL(SignalTeleopPSMSelected(PairStringType)),
+            this, SLOT(SlotTeleopPSMSelectedEventHandler(PairStringType)));
+    connect(this, SIGNAL(SignalTeleopPSMUnselected(PairStringType)),
+            this, SLOT(SlotTeleopPSMUnselectedEventHandler(PairStringType)));
     connect(QSBScale, SIGNAL(valueChanged(double)),
             this, SLOT(SlotSetScale(double)));
     connect(this, SIGNAL(SignalScale(double)),
@@ -371,10 +411,26 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 
 void mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler(const prmKeyValue & armState)
 {
-    ArmCurrentStateType currentState;
+    PairStringType currentState;
     currentState.first = armState.Key.c_str();
     currentState.second = armState.Value.c_str();
     emit SignalArmCurrentState(currentState);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMSelectedEventHandler(const prmKeyValue & selected)
+{
+    PairStringType currentSelected;
+    currentSelected.first = selected.Key.c_str();
+    currentSelected.second = selected.Value.c_str();
+    emit SignalTeleopPSMSelected(currentSelected);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMUnselectedEventHandler(const prmKeyValue & unselected)
+{
+    PairStringType currentUnselected;
+    currentUnselected.first = unselected.Key.c_str();
+    currentUnselected.second = unselected.Value.c_str();
+    emit SignalTeleopPSMUnselected(currentUnselected);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotScaleEventHandler(double scale)
@@ -479,8 +535,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotComponentViewer(void)
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmButton(const QString & armName)
 {
     // determine which tab to search
-    QTabWidget * subTab;
-    subTab = QTWidgets->findChild<QTabWidget *>(QString("Arms"));
+    QTabWidget * subTab = QTWidgets->findChild<QTabWidget *>(QString("Arms"));
     if (subTab) {
         QTWidgets->setCurrentWidget(subTab);
     } else {
@@ -488,12 +543,32 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmButton(const QString & armNa
     }
 
     // now find the arm widget
-    QWidget * child;
-    child = subTab->findChild<QWidget *>(armName);
+    QWidget * child = subTab->findChild<QWidget *>(armName);
     if (child) {
         subTab->setCurrentWidget(child);
     } else {
-        std::cerr << CMN_LOG_DETAILS << " can't find arm nor Arms tab widget, this should not happen" << std::endl;
+        std::cerr << CMN_LOG_DETAILS << " can't find arm nor Arms tab widget for \""
+                  << armName.toStdString() << "\", did you set the widget name with setObjectName?" << std::endl;
+    }
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopButton(const QString & teleop)
+{
+    // determine which tab to search
+    QTabWidget * subTab = QTWidgets->findChild<QTabWidget *>(QString("Teleops"));
+    if (subTab) {
+        QTWidgets->setCurrentWidget(subTab);
+    } else {
+        subTab = QTWidgets;
+    }
+
+    // now find the arm widget
+    QWidget * child = subTab->findChild<QWidget *>(teleop);
+    if (child) {
+        subTab->setCurrentWidget(child);
+    } else {
+        std::cerr << CMN_LOG_DETAILS << " can't find teleop widget for \""
+                  << teleop.toStdString() << "\", did you set the widget name with setObjectName?" << std::endl;
     }
 }
 

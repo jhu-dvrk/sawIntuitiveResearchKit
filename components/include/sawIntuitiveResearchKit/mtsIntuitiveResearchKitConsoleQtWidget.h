@@ -42,7 +42,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsoleQtWidget: public QWidget, publi
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
-    typedef QPair<QString, QString> ArmCurrentStateType;
+    typedef QPair<QString, QString> PairStringType;
 public:
     mtsIntuitiveResearchKitConsoleQtWidget(const std::string & componentName);
     inline virtual ~mtsIntuitiveResearchKitConsoleQtWidget() {}
@@ -56,19 +56,26 @@ public:
     void HasTeleOp(const bool & hasTeleOp);
 
 signals:
-    void SignalArmCurrentState(ArmCurrentStateType armState);
+    void SignalArmCurrentState(PairStringType armState);
+    void SignalTeleopPSMSelected(PairStringType selected);
+    void SignalTeleopPSMUnselected(PairStringType unselected);
     void SignalScale(double scale);
     void SignalOperatorPresent(bool operatorPresent);
     void SignalClutch(bool clutch);
     void SignalCamera(bool camera);
 
+protected:
+    QPushButton * GetTeleopButton(const PairStringType & pair);
+
 private slots:
     void SlotPowerOff(void);
     void SlotPowerOn(void);
     void SlotHome(void);
-    void SlotArmCurrentStateEventHandler(ArmCurrentStateType armState);
+    void SlotArmCurrentStateEventHandler(PairStringType armState);
     void SlotTeleopStart(void);
     void SlotTeleopStop(void);
+    void SlotTeleopPSMSelectedEventHandler(PairStringType selected);
+    void SlotTeleopPSMUnselectedEventHandler(PairStringType unselected);
     void SlotSetScale(double scale);
     void SlotScaleEventHandler(double scale);
     void SlotOperatorPresentEventHandler(bool operatorPresent);
@@ -81,6 +88,7 @@ private slots:
     void SlotEmulateCamera(bool toggle);
     void SlotComponentViewer(void);
     void SlotArmButton(const QString & armName);
+    void SlotTeleopButton(const QString & teleop);
 
 protected:
     void closeEvent(QCloseEvent * event);
@@ -100,13 +108,18 @@ protected:
     } Console;
 
     void ArmCurrentStateEventHandler(const prmKeyValue & armState);
+    void TeleopPSMSelectedEventHandler(const prmKeyValue & selected);
+    void TeleopPSMUnselectedEventHandler(const prmKeyValue & unselected);
     void ScaleEventHandler(const double & scale);
     void OperatorPresentEventHandler(const prmEventButton & button);
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
 
     QVBoxLayout * QVBArms;
-    std::map<std::string, QPushButton *> ArmButtons;
+    std::map<QString, QPushButton *> ArmButtons;
+
+    QVBoxLayout * QVBTeleops;
+    std::map<QString, QPushButton *> TeleopButtons;
 
     QPushButton * QPBPowerOff;
     QPushButton * QPBPowerOn;
