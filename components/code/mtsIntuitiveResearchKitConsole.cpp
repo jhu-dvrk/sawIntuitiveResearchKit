@@ -2326,10 +2326,10 @@ void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & b
         mAudio.Beep(vct3(0.1, 700.0, mAudioVolume));
         break;
     case prmEventButton::CLICKED:
+        mInterface->SendStatus(this->GetName() + ": clutch quick tap");
+        mAudio.Beep(vct3(0.05, 2000.0, mAudioVolume));
+        mAudio.Beep(vct3(0.05, 2000.0, mAudioVolume));
         if (mTeleopMTMToCycle != "") {
-            mInterface->SendStatus(this->GetName() + ": clutch quick tap");
-            mAudio.Beep(vct3(0.05, 2000.0, mAudioVolume));
-            mAudio.Beep(vct3(0.05, 2000.0, mAudioVolume));
             CycleTeleopPSMByMTM(mTeleopMTMToCycle);
         }
         break;
@@ -2351,6 +2351,11 @@ void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & b
         mCameraPressed = false;
         mInterface->SendStatus(this->GetName() + ": camera released");
         mAudio.Beep(vct3(0.1, 1000.0, mAudioVolume));
+        break;
+    case prmEventButton::CLICKED:
+        mInterface->SendStatus(this->GetName() + ": camera quick tap");
+        mAudio.Beep(vct3(0.05, 2500.0, mAudioVolume));
+        mAudio.Beep(vct3(0.05, 2500.0, mAudioVolume));
         break;
     default:
         break;

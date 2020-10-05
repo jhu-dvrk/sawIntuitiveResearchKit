@@ -31,6 +31,7 @@ class QTabWidget;
 class QDoubleSpinBox;
 class QSlider;
 class QVBoxLayout;
+class QCheckBox;
 
 #include <QWidget>
 
@@ -57,8 +58,8 @@ public:
 signals:
     void SignalArmCurrentState(ArmCurrentStateType armState);
     void SignalScale(double scale);
-    void SignalClutch(bool clutch);
     void SignalOperatorPresent(bool operatorPresent);
+    void SignalClutch(bool clutch);
     void SignalCamera(bool camera);
 
 private slots:
@@ -70,10 +71,14 @@ private slots:
     void SlotTeleopStop(void);
     void SlotSetScale(double scale);
     void SlotScaleEventHandler(double scale);
-    void SlotClutchEventHandler(bool clutch);
     void SlotOperatorPresentEventHandler(bool operatorPresent);
+    void SlotClutchEventHandler(bool clutch);
     void SlotCameraEventHandler(bool camera);
     void SlotSetVolume(void);
+    void SlotEnableDirectControl(bool toggle);
+    void SlotEmulateOperatorPresent(bool toggle);
+    void SlotEmulateClutch(bool toggle);
+    void SlotEmulateCamera(bool toggle);
     void SlotComponentViewer(void);
     void SlotArmButton(const QString & armName);
 
@@ -89,12 +94,15 @@ protected:
         mtsFunctionWrite TeleopEnable;
         mtsFunctionWrite SetScale;
         mtsFunctionWrite SetVolume;
+        mtsFunctionWrite EmulateOperatorPresent;
+        mtsFunctionWrite EmulateClutch;
+        mtsFunctionWrite EmulateCamera;
     } Console;
 
     void ArmCurrentStateEventHandler(const prmKeyValue & armState);
     void ScaleEventHandler(const double & scale);
-    void ClutchEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
+    void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
 
     QVBoxLayout * QVBArms;
@@ -106,11 +114,12 @@ protected:
     QPushButton * QPBTeleopStart;
     QPushButton * QPBTeleopStop;
     QDoubleSpinBox * QSBScale;
-    QRadioButton * QRBClutch;
     QRadioButton * QRBOperatorPresent;
+    QRadioButton * QRBClutch;
     QRadioButton * QRBCamera;
     QSlider * QSVolume;
 
+    QCheckBox * QCBEnableDirectControl;
     QPushButton * QPBComponentViewer;
     QTabWidget * QTWidgets;
     mtsMessageQtWidget * QMMessage;

@@ -45,6 +45,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <QDoubleSpinBox>
 #include <QSlider>
 #include <QRadioButton>
+#include <QCheckBox>
 #include <QApplication>
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
@@ -67,15 +68,18 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
                                                 this, "Scale");
         interfaceRequired->AddFunction("SetVolume", Console.SetVolume);
-    }
-    interfaceRequired = AddInterfaceRequired("Clutch");
-    if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler,
-                                                this, "Button");
+        interfaceRequired->AddFunction("EmulateOperatorPresent", Console.EmulateOperatorPresent);
+        interfaceRequired->AddFunction("EmulateClutch", Console.EmulateClutch);
+        interfaceRequired->AddFunction("EmulateCamera", Console.EmulateCamera);
     }
     interfaceRequired = AddInterfaceRequired("OperatorPresent");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler,
+                                                this, "Button");
+    }
+    interfaceRequired = AddInterfaceRequired("Clutch");
+    if (interfaceRequired) {
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler,
                                                 this, "Button");
     }
     interfaceRequired = AddInterfaceRequired("Camera");
@@ -264,16 +268,16 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QVBoxLayout * inputsLayout = new QVBoxLayout();
     inputsLayout->setContentsMargins(2, 2, 2, 2);
     inputsBox->setLayout(inputsLayout);
-    QRBClutch = new QRadioButton("Clutch");
-    QRBClutch->setAutoExclusive(false);
-    QRBClutch->setChecked(false);
-    QRBClutch->setEnabled(false);
-    inputsLayout->addWidget(QRBClutch);
     QRBOperatorPresent = new QRadioButton("Operator");
     QRBOperatorPresent->setAutoExclusive(false);
     QRBOperatorPresent->setChecked(false);
     QRBOperatorPresent->setEnabled(false);
     inputsLayout->addWidget(QRBOperatorPresent);
+    QRBClutch = new QRadioButton("Clutch");
+    QRBClutch->setAutoExclusive(false);
+    QRBClutch->setChecked(false);
+    QRBClutch->setEnabled(false);
+    inputsLayout->addWidget(QRBClutch);
     QRBCamera = new QRadioButton("Camera");
     QRBCamera->setAutoExclusive(false);
     QRBCamera->setChecked(false);
@@ -293,6 +297,10 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     boxLayout->addStretch(100);
     buttonsWidget->setFixedWidth(buttonsWidget->sizeHint().width());
     mainLayout->addWidget(buttonsWidget);
+
+    QCBEnableDirectControl = new QCheckBox("Direct control");
+    QCBEnableDirectControl->setToolTip("Allows to emulate console events with buttons");
+    boxLayout->addWidget(QCBEnableDirectControl);
 
     QPBComponentViewer = new QPushButton("Component\nViewer");
     QPBComponentViewer->setToolTip("Starts uDrawGraph (must be in system path)");
@@ -339,14 +347,22 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotSetScale(double)));
     connect(this, SIGNAL(SignalScale(double)),
             this, SLOT(SlotScaleEventHandler(double)));
-    connect(this, SIGNAL(SignalClutch(bool)),
-            this, SLOT(SlotClutchEventHandler(bool)));
     connect(this, SIGNAL(SignalOperatorPresent(bool)),
             this, SLOT(SlotOperatorPresentEventHandler(bool)));
+    connect(this, SIGNAL(SignalClutch(bool)),
+            this, SLOT(SlotClutchEventHandler(bool)));
     connect(this, SIGNAL(SignalCamera(bool)),
             this, SLOT(SlotCameraEventHandler(bool)));
     connect(QSVolume, SIGNAL(sliderReleased()),
             this, SLOT(SlotSetVolume()));
+    connect(QCBEnableDirectControl, SIGNAL(toggled(bool)),
+            this, SLOT(SlotEnableDirectControl(bool)));
+    connect(QRBOperatorPresent, SIGNAL(clicked(bool)),
+            this, SLOT(SlotEmulateOperatorPresent(bool)));
+    connect(QRBClutch, SIGNAL(clicked(bool)),
+            this, SLOT(SlotEmulateClutch(bool)));
+    connect(QRBCamera, SIGNAL(clicked(bool)),
+            this, SLOT(SlotEmulateCamera(bool)));
     connect(QPBComponentViewer, SIGNAL(clicked()),
             this, SLOT(SlotComponentViewer()));
 
@@ -371,20 +387,6 @@ void mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler(const double & sc
     emit SignalScale(scale);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotClutchEventHandler(bool clutch)
-{
-    QRBClutch->setChecked(clutch);
-}
-
-void mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler(const prmEventButton & button)
-{
-    if (button.Type() == prmEventButton::PRESSED) {
-        emit SignalClutch(true);
-    } else {
-        emit SignalClutch(false);
-    }
-}
-
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotOperatorPresentEventHandler(bool operatorPresent)
 {
     QRBOperatorPresent->setChecked(operatorPresent);
@@ -400,9 +402,63 @@ void mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler(const p
     }
 }
 
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotClutchEventHandler(bool clutch)
+{
+    QRBClutch->setChecked(clutch);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler(const prmEventButton & button)
+{
+    if (button.Type() == prmEventButton::PRESSED) {
+        emit SignalClutch(true);
+    } else {
+        emit SignalClutch(false);
+    }
+}
+
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotCameraEventHandler(bool camera)
 {
     QRBCamera->setChecked(camera);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotEnableDirectControl(bool toggle)
+{
+    QRBOperatorPresent->setEnabled(toggle);
+    QRBClutch->setEnabled(toggle);
+    QRBCamera->setEnabled(toggle);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateOperatorPresent(bool toggle)
+{
+    prmEventButton event;
+    if (toggle) {
+        event.SetType(prmEventButton::PRESSED);
+    } else {
+        event.SetType(prmEventButton::RELEASED);
+    }
+    Console.EmulateOperatorPresent(event);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateClutch(bool toggle)
+{
+    prmEventButton event;
+    if (toggle) {
+        event.SetType(prmEventButton::PRESSED);
+    } else {
+        event.SetType(prmEventButton::RELEASED);
+    }
+    Console.EmulateClutch(event);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateCamera(bool toggle)
+{
+    prmEventButton event;
+    if (toggle) {
+        event.SetType(prmEventButton::PRESSED);
+    } else {
+        event.SetType(prmEventButton::RELEASED);
+    }
+    Console.EmulateCamera(event);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotComponentViewer(void)
