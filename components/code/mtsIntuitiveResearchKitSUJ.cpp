@@ -747,6 +747,7 @@ void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
     m_powered = false;
 
     if (m_simulated) {
+        m_powered = true;
         return;
     }
 
@@ -790,6 +791,14 @@ void mtsIntuitiveResearchKitSUJ::EnterEnabled(void)
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
 
     if (m_simulated) {
+        // set all data to be valid
+        for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
+            if (Arms[armIndex]) {
+                Arms[armIndex]->m_measured_js.Valid() = true;
+                Arms[armIndex]->m_measured_cp.Valid() = true;
+                Arms[armIndex]->m_local_measured_cp.Valid() = true;
+            }
+        }
         SetHomed(true);
         return;
     }
@@ -1157,6 +1166,7 @@ void mtsIntuitiveResearchKitSUJ::state_command(const std::string & command)
                 return;
             }
             if (command == "home") {
+                SetDesiredState("ENABLED");
                 SetHomed(true);
                 return;
             }
