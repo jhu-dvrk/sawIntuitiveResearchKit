@@ -64,6 +64,7 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler,
                                                 this, "ArmCurrentState");
         interfaceRequired->AddFunction("TeleopEnable", Console.TeleopEnable);
+        interfaceRequired->AddFunction("SelectTeleopPSM", Console.SelectTeleopPSM);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMSelectedEventHandler,
                                                 this, "TeleopPSMSelected");
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMUnselectedEventHandler,
@@ -181,7 +182,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(Pai
         QVBArms->addWidget(button);
         ArmButtons[arm] = button;
         connect(button, &QPushButton::clicked,
-                [ = ] { emit SlotArmButton(armState.first); });
+                [ = ] { FocusArmButton(armState.first); });
     } else {
         button = iter->second;
     }
@@ -206,34 +207,58 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStop(void)
     Console.TeleopEnable(false);
 }
 
-QPushButton * mtsIntuitiveResearchKitConsoleQtWidget::GetTeleopButton(const PairStringType & pair)
+void mtsIntuitiveResearchKitConsoleQtWidget::GetTeleopButtonCheck(const PairStringType & pair,
+                                                                  QPushButton * & button,
+                                                                  QCheckBox * & check)
 {
     const QString teleop = pair.first + "-" + pair.second;
     auto iter = TeleopButtons.find(teleop);
-    QPushButton * button;
     // insert new teleop if needed
     if (iter == TeleopButtons.end()) {
+        QHBoxLayout * buttonsLayout = new QHBoxLayout;
         button = new QPushButton(teleop);
-        QVBTeleops->addWidget(button);
-        TeleopButtons[teleop] = button;
+        buttonsLayout->addWidget(button);
+        buttonsLayout->addStretch();
+        check = new QCheckBox("");
+        buttonsLayout->addWidget(check);
+        QVBTeleops->addLayout(buttonsLayout);
+        TeleopButtons[teleop] = std::pair<QPushButton *, QCheckBox *>(button, check);
         connect(button, &QPushButton::clicked,
-                [ = ] { emit SlotTeleopButton(teleop); });
+                [ = ] { FocusTeleopButton(teleop); });
+        connect(check, &QCheckBox::toggled,
+                [ = ](bool checked) {
+                    if (checked) {
+                        SelectTeleopCheck(pair);
+                    } else {
+                        UnselectTeleopCheck(pair);
+                    }
+                });
     } else {
-        button = iter->second;
+        button = iter->second.first;
+        check = iter->second.second;
     }
-    return button;
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopPSMSelectedEventHandler(PairStringType selected)
 {
-    QPushButton * button = GetTeleopButton(selected);
+    QPushButton * button;
+    QCheckBox * check;
+    GetTeleopButtonCheck(selected, button, check);
     button->setStyleSheet("QPushButton { border: none }");
+    check->blockSignals(true);
+    check->setChecked(true);
+    check->blockSignals(false);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopPSMUnselectedEventHandler(PairStringType unselected)
 {
-    QPushButton * button = GetTeleopButton(unselected);
+    QPushButton * button;
+    QCheckBox * check;
+    GetTeleopButtonCheck(unselected, button, check);
     button->setStyleSheet("QPushButton { border: none; color: palette(mid) }");
+    check->blockSignals(true);
+    check->setChecked(false);
+    check->blockSignals(false);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetScale(double scale)
@@ -532,7 +557,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotComponentViewer(void)
     componentViewer->Start();
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmButton(const QString & armName)
+void mtsIntuitiveResearchKitConsoleQtWidget::FocusArmButton(const QString & armName)
 {
     // determine which tab to search
     QTabWidget * subTab = QTWidgets->findChild<QTabWidget *>(QString("Arms"));
@@ -552,7 +577,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmButton(const QString & armNa
     }
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopButton(const QString & teleop)
+void mtsIntuitiveResearchKitConsoleQtWidget::FocusTeleopButton(const QString & teleop)
 {
     // determine which tab to search
     QTabWidget * subTab = QTWidgets->findChild<QTabWidget *>(QString("Teleops"));
@@ -570,6 +595,18 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopButton(const QString & te
         std::cerr << CMN_LOG_DETAILS << " can't find teleop widget for \""
                   << teleop.toStdString() << "\", did you set the widget name with setObjectName?" << std::endl;
     }
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SelectTeleopCheck(const PairStringType & pair)
+{
+    Console.SelectTeleopPSM(prmKeyValue(pair.first.toStdString(),
+                                        pair.second.toStdString()));
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::UnselectTeleopCheck(const PairStringType & pair)
+{
+    Console.SelectTeleopPSM(prmKeyValue(pair.first.toStdString(),
+                                        std::string()));
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler(const prmEventButton & button)

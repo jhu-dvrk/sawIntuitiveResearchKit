@@ -65,7 +65,11 @@ signals:
     void SignalCamera(bool camera);
 
 protected:
-    QPushButton * GetTeleopButton(const PairStringType & pair);
+    void FocusArmButton(const QString & armName);
+    void GetTeleopButtonCheck(const PairStringType & pair, QPushButton * & button, QCheckBox * & check);
+    void FocusTeleopButton(const QString & teleop);
+    void SelectTeleopCheck(const PairStringType & pair);
+    void UnselectTeleopCheck(const PairStringType & pair);
 
 private slots:
     void SlotPowerOff(void);
@@ -87,8 +91,6 @@ private slots:
     void SlotEmulateClutch(bool toggle);
     void SlotEmulateCamera(bool toggle);
     void SlotComponentViewer(void);
-    void SlotArmButton(const QString & armName);
-    void SlotTeleopButton(const QString & teleop);
 
 protected:
     void closeEvent(QCloseEvent * event);
@@ -100,6 +102,7 @@ protected:
         mtsFunctionVoid PowerOn;
         mtsFunctionVoid Home;
         mtsFunctionWrite TeleopEnable;
+        mtsFunctionWrite SelectTeleopPSM;
         mtsFunctionWrite SetScale;
         mtsFunctionWrite SetVolume;
         mtsFunctionWrite EmulateOperatorPresent;
@@ -119,7 +122,7 @@ protected:
     std::map<QString, QPushButton *> ArmButtons;
 
     QVBoxLayout * QVBTeleops;
-    std::map<QString, QPushButton *> TeleopButtons;
+    std::map<QString, std::pair<QPushButton *, QCheckBox *> > TeleopButtons;
 
     QPushButton * QPBPowerOff;
     QPushButton * QPBPowerOn;
