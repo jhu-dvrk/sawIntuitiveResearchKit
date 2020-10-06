@@ -2,8 +2,8 @@
 {
     "io":
     {
-        "physical-footpedals-required": false
-        // "footpedals": "io/sawRobotIO1394-MTML-foot-pedals.xml"
+        // "physical-footpedals-required": false
+        "footpedals": "io/sawRobotIO1394-MTML-foot-pedals.xml"
     }
     ,
     "arms":

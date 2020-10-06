@@ -96,7 +96,7 @@
             "mtm": "MTMR",
             "psm": "PSM1",
             "configure-parameter": {
-                "start-roll-threshold": 0.0 // to start automatically when operator is present
+                "start-gripper-threshold": 0.0 // to start automatically when operator is present
             }
         }
         ,
@@ -104,7 +104,7 @@
             "mtm": "MTML",
             "psm": "PSM2",
             "configure-parameter": {
-                "start-roll-threshold": 0.0 // to start automatically when operator is present
+                "start-gripper-threshold": 0.0 // to start automatically when operator is present
             }
         }
         ,
@@ -112,7 +112,7 @@
             "mtm": "MTML",
             "psm": "PSM3",
             "configure-parameter": {
-                "start-roll-threshold": 0.0 // to start automatically when operator is present
+                "start-gripper-threshold": 0.0 // to start automatically when operator is present
             }
         }
     ]

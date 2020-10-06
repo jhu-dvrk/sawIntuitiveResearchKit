@@ -504,6 +504,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotCameraEventHandler(bool camera)
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotEnableDirectControl(bool toggle)
 {
+    if (toggle) {
+        int answer = QMessageBox::warning(this, tr("mtsIntuitiveResearchKitConsoleQtWidget"),
+                                          tr("Mixing real and emulated console events can lead to inconsistent states.\nAre you sure you want to continue?"),
+                                          QMessageBox::No | QMessageBox::Yes);
+        if (answer == QMessageBox::No) {
+            return;
+        }
+    }
     QRBOperatorPresent->setEnabled(toggle);
     QRBClutch->setEnabled(toggle);
     QRBCamera->setEnabled(toggle);
