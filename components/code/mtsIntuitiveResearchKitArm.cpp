@@ -1286,7 +1286,7 @@ void mtsIntuitiveResearchKitArm::ControlPositionGoalJoint(void)
                                         JointVelocitySet,
                                         mJointTrajectory.Goal,
                                         mJointTrajectory.GoalVelocity);
-    SetPositionJointLocal(JointSet);
+    mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
 
     const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
     const double currentTime = this->StateTable.GetTic();
