@@ -154,11 +154,16 @@ void mtsIntuitiveResearchKitArmQtWidget::SlotLogEnabled(void)
 
 void mtsIntuitiveResearchKitArmQtWidget::SlotEnableDirectControl(bool toggle)
 {
-    DirectControl = toggle;
-    QPOState->setEnabled(toggle);
-    if (toggle) {
+    SetDirectControl(toggle); // this is virtual and might be redefined in derived classes
+}
+
+void mtsIntuitiveResearchKitArmQtWidget::SetDirectControl(const bool direct)
+{
+    DirectControl = direct;
+    QPOState->setEnabled(direct);
+    if (direct) {
         QPJSWidget->show();
-        QPJSWidget->setEnabled(toggle);
+        QPJSWidget->setEnabled(direct);
         QPJSWidget->Reset();
     } else {
         QPJSWidget->hide();

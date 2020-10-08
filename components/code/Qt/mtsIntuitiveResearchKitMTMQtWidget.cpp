@@ -37,10 +37,21 @@ mtsIntuitiveResearchKitMTMQtWidget::mtsIntuitiveResearchKitMTMQtWidget(const std
 
 void mtsIntuitiveResearchKitMTMQtWidget::setupUiDerived(void)
 {
-    QHBoxLayout * gripperLayout = new QHBoxLayout;
-    MainLayout->addLayout(gripperLayout);
+    QFont font;
+    font.setBold(true);
 
-    gripperLayout->addWidget(new QLabel("Gripper"));
+    QFrame * gripperFrame = new QFrame();
+    gripperFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+    MainLayout->addWidget(gripperFrame);
+
+    QHBoxLayout * gripperLayout = new QHBoxLayout;
+    gripperLayout->setContentsMargins(1, 1, 1, 1);
+    gripperFrame->setLayout(gripperLayout);
+
+    QLabel * titleGripper = new QLabel("Gripper");
+    titleGripper->setFont(font);
+    gripperLayout->addWidget(titleGripper);
+
     QLEGripperPosition = new QLineEdit();
     gripperLayout->addWidget(QLEGripperPosition);
 }

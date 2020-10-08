@@ -86,10 +86,9 @@ protected:
     mtsInterfaceRequired * InterfaceRequired;
     inline virtual void setupUiDerived(void) {};
     inline virtual void timerEventDerived(void) {};
+    virtual void SetDirectControl(const bool direct);
 
-private:
     bool DirectControl;
-
     prmConfigurationJoint ConfigurationJoint;
     prmStateJoint StateJoint;
     prmStateJointQtWidget * QSJWidget;

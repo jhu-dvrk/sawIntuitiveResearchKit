@@ -35,6 +35,7 @@ public:
 protected:
     void setupUiDerived(void);
     void timerEventDerived(void);
+    void SetDirectControl(const bool direct) override;
 
 signals:
     void SignalToolType(QString toolType);
@@ -53,10 +54,18 @@ private:
     QComboBox * QCBToolOptions;
     mtsFunctionWrite SetToolType;
 
-    mtsFunctionRead jaw_measured_js;
     QLineEdit * QLEJawPosition;
     QLineEdit * QLEJawVelocity;
     QLineEdit * QLEJawEffort;
+
+    prmPositionJointSetQtWidget * QPJSJaw;
+
+    struct {
+        mtsFunctionRead measured_js;
+        mtsFunctionRead configuration_js;
+        mtsFunctionWrite move_jp;
+    } Jaw;
+
     prmStateJoint m_jaw_measured_js;
 
 };

@@ -37,7 +37,9 @@ mtsIntuitiveResearchKitPSMQtWidget::mtsIntuitiveResearchKitPSMQtWidget(const std
     mtsIntuitiveResearchKitArmQtWidget(componentName, periodInSeconds)
 {
     CMN_ASSERT(InterfaceRequired);
-    InterfaceRequired->AddFunction("jaw/measured_js", jaw_measured_js);
+    InterfaceRequired->AddFunction("jaw/measured_js", Jaw.measured_js);
+    InterfaceRequired->AddFunction("jaw/configuration_js", Jaw.configuration_js);
+    InterfaceRequired->AddFunction("jaw/move_jp", Jaw.move_jp);
     InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSMQtWidget::ToolTypeEventHandler,
                                             this, "ToolType");
     InterfaceRequired->AddEventHandlerVoid(&mtsIntuitiveResearchKitPSMQtWidget::ToolTypeRequestEventHandler,
@@ -47,10 +49,20 @@ mtsIntuitiveResearchKitPSMQtWidget::mtsIntuitiveResearchKitPSMQtWidget(const std
 
 void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
 {
-    QHBoxLayout * jawLayout = new QHBoxLayout;
-    MainLayout->addLayout(jawLayout);
+    QFont font;
+    font.setBold(true);
 
-    jawLayout->addWidget(new QLabel("Jaw"));
+    QFrame * jawFrame = new QFrame();
+    jawFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+    MainLayout->addWidget(jawFrame);
+
+    QHBoxLayout * jawLayout = new QHBoxLayout;
+    jawLayout->setContentsMargins(1, 1, 1, 1);
+    jawFrame->setLayout(jawLayout);
+
+    QLabel * jawTitle = new QLabel("Jaw");
+    jawTitle->setFont(font);
+    jawLayout->addWidget(jawTitle);
     QLEJawPosition = new QLineEdit();
     jawLayout->addWidget(QLEJawPosition);
     QLEJawVelocity = new QLineEdit();
@@ -58,19 +70,35 @@ void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
     QLEJawEffort = new QLineEdit();
     jawLayout->addWidget(QLEJawEffort);
 
+    jawLayout->addStretch();
+
+    QPJSJaw = new prmPositionJointSetQtWidget();
+    QPJSJaw->setupUi();
+    QPJSJaw->measured_js = &(Jaw.measured_js);
+    QPJSJaw->configuration_js = &(Jaw.configuration_js);
+    QPJSJaw->move_jp = &(Jaw.move_jp);
+    QPJSJaw->SetPrismaticRevoluteFactors(1.0 / cmn_mm, cmn180_PI);
+    jawLayout->addWidget(QPJSJaw);
+    QPJSJaw->hide();
+
+    QFrame * toolFrame = new QFrame();
+    toolFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+    MainLayout->addWidget(toolFrame);
+
     QHBoxLayout * toolLayout = new QHBoxLayout;
-    MainLayout->addLayout(toolLayout);
+    toolLayout->setContentsMargins(1, 1, 1, 1);
+    toolFrame->setLayout(toolLayout);
 
     // status
-    QLabel * label = new QLabel("Tool type");
-    toolLayout->addWidget(label);
+    QLabel * titleTool = new QLabel("Tool");
+    titleTool->setFont(font);
+    toolLayout->addWidget(titleTool);
     QLEToolType = new QLineEdit("");
     QLEToolType->setReadOnly(true);
     toolLayout->addWidget(QLEToolType);
 
     // set tool type
-    label = new QLabel("Set tool type");
-    toolLayout->addWidget(label);
+    toolLayout->addWidget(new QLabel("Set tool type"));
     QCBToolOptions = new QComboBox();
     auto iter = mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin();
     auto end = mtsIntuitiveResearchKitToolTypes::TypeVectorString().end();
@@ -95,7 +123,7 @@ void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
 
 void mtsIntuitiveResearchKitPSMQtWidget::timerEventDerived(void)
 {
-    jaw_measured_js(m_jaw_measured_js);
+    Jaw.measured_js(m_jaw_measured_js);
     QString text;
     if (m_jaw_measured_js.Position().size() > 0) {
         text.setNum(m_jaw_measured_js.Position().at(0) * cmn180_PI, 'f', 3);
@@ -114,6 +142,19 @@ void mtsIntuitiveResearchKitPSMQtWidget::timerEventDerived(void)
         QLEJawEffort->setText(text);
     } else {
         QLEJawEffort->setText("");
+    }
+}
+
+void mtsIntuitiveResearchKitPSMQtWidget::SetDirectControl(const bool direct)
+{
+    mtsIntuitiveResearchKitArmQtWidget::SetDirectControl(direct);
+    if (direct) {
+        QPJSJaw->show();
+        QPJSJaw->setEnabled(direct);
+        QPJSJaw->Reset();
+
+    } else {
+        QPJSJaw->hide();
     }
 }
 
