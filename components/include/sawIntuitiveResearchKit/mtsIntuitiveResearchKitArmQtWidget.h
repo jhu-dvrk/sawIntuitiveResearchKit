@@ -99,6 +99,7 @@ protected:
     prmForceCartesianGet Wrench;
     vctForceTorqueQtWidget * QFTWidget;
 
+    QFrame * QFJoints;
     prmPositionJointSetQtWidget * QPJSWidget;
 
     // timing

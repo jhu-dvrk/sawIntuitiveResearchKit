@@ -162,11 +162,10 @@ void mtsIntuitiveResearchKitArmQtWidget::SetDirectControl(const bool direct)
     DirectControl = direct;
     QPOState->setEnabled(direct);
     if (direct) {
-        QPJSWidget->show();
-        QPJSWidget->setEnabled(direct);
+        QFJoints->show();
         QPJSWidget->Reset();
     } else {
-        QPJSWidget->hide();
+        QFJoints->hide();
     }
 }
 
@@ -228,13 +227,27 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     stateLayout->addWidget(QPOState);
 
     // set joint goal
+    QFJoints = new QFrame();
+    QFJoints->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+    QHBoxLayout * jointsLayout = new QHBoxLayout;
+    jointsLayout->setContentsMargins(1, 1, 1, 1);
+    QFJoints->setLayout(jointsLayout);
+
+    QFont font;
+    font.setBold(true);
+    QLabel * jointsTitle = new QLabel("Joints");
+    jointsTitle->setFont(font);
+    jointsLayout->addWidget(jointsTitle);
+
     QPJSWidget = new prmPositionJointSetQtWidget();
     QPJSWidget->setupUi();
     QPJSWidget->measured_js = &(Arm.measured_js);
     QPJSWidget->configuration_js = &(Arm.configuration_js);
     QPJSWidget->move_jp = &(Arm.move_jp);
     QPJSWidget->SetPrismaticRevoluteFactors(1.0 / cmn_mm, cmn180_PI);
-    MainLayout->addWidget(QPJSWidget);
+    jointsLayout->addWidget(QPJSWidget);
+
+    MainLayout->addWidget(QFJoints);
 
     // for derived classes
     this->setupUiDerived();
