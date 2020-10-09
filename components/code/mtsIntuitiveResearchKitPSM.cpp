@@ -1254,6 +1254,7 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
     }
 
     // force trajectory re-evaluation with new goal for last joint
+    UpdateIsBusy(true);
     mJointTrajectory.IsActive = true;
     mJointTrajectory.Goal[6] = jawPosition.Goal().at(0);
     mJointTrajectory.EndTime = 0.0;
