@@ -1,11 +1,11 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-
 {
     "arms":
     [
         {
             "name": "ECM",
             "type": "ECM",
+            "simulated-position": [0.6647, 0.5782, -1.2662, 3.7818, 0.0, 0.0],
             "plug-number": 1,
             "DH": {
                 "links": [
@@ -70,6 +70,7 @@
         {
             "name": "PSM1",
             "type": "PSM",
+            "simulated-position": [0.0007, -0.5892, -0.8590, -0.6241, -0.2479, -0.4422],
             "plug-number": 2,
             "DH": {
                 "links": [
@@ -134,6 +135,7 @@
         {
             "name": "PSM2",
             "type": "PSM",
+            "simulated-position": [0.0628, 0.0913, 1.9073, -0.1297, 0.4351, 0.0353],
             "plug-number": 3,
             "DH": {
                 "links": [
@@ -198,6 +200,7 @@
         {
             "name": "PSM3",
             "type": "Motorized PSM",
+            "simulated-position": [-0.0261, -1.5892, 1.3076, 0.6994, 0.1361, 0.3359],
             "plug-number": 4,
             "DH": {
                 "links": [

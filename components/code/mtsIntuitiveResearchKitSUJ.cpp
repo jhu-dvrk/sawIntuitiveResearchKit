@@ -634,6 +634,23 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
                                          << std::endl;
                 exit(EXIT_FAILURE);
             }
+        } else {
+            // look for hard coded position if available - users can always push new joint values using ROS
+            Json::Value jsonPosition = jsonArm["simulated-position"];
+            if (!jsonPosition.empty()) {
+                vctDoubleVec position;
+                cmnDataJSON<vctDoubleVec>::DeSerializeText(position, jsonPosition);
+                if (position.size() == arm->m_measured_js.Position().size()) {
+                    arm->m_measured_js.Position().Assign(position);
+                } else {
+                    CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to load \"position-simulated\" for \""
+                                             << name << "\", expected vector size is "
+                                             << arm->m_measured_js.Position().size() << " but vector in configuration file has "
+                                             << position.size() << " element(s)"
+                                             << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
         }
 
         // find serial number
