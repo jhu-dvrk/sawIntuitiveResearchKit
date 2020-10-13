@@ -5,7 +5,7 @@
   Author(s):  Pretham Chalasani, Anton Deguet
   Created on: 2016-11-04
 
-  (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -25,14 +25,14 @@ mtsSocketClientPSM::mtsSocketClientPSM(const std::string & componentName, const 
                                        const std::string & ip, const unsigned int port) :
     mtsSocketBasePSM(componentName, periodInSeconds, ip, port, false)
 {
-    this->StateTable.AddData(PositionCartesianCurrent, "PositionCartesianCurrent");
+    this->StateTable.AddData(m_measured_cp, "m_measured_cp");
     m_jaw_measured_js.Position().resize(1);
     this->StateTable.AddData(m_jaw_measured_js, "m_jaw_measured_js");
 
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Arm");
     if (interfaceProvided) {
         interfaceProvided->AddMessageEvents();
-        interfaceProvided->AddCommandReadState(this->StateTable, PositionCartesianCurrent, "measured_cp");
+        interfaceProvided->AddCommandReadState(this->StateTable, m_measured_cp, "measured_cp");
         interfaceProvided->AddCommandReadState(this->StateTable, m_jaw_measured_js, "jaw_measured_js");
 
         interfaceProvided->AddCommandVoid(&mtsSocketClientPSM::Freeze,
@@ -40,13 +40,11 @@ mtsSocketClientPSM::mtsSocketClientPSM(const std::string & componentName, const 
         interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::servo_cp,
                                            this , "servo_cp");
         interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::jaw_servo_jp,
-                                           this , "jaw_servo_jp");
-        interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::SetDesiredState,
-                                           this , "SetDesiredState");
-        interfaceProvided->AddCommandRead(&mtsSocketClientPSM::GetDesiredState,
-                                           this , "GetDesiredState");
-        interfaceProvided->AddCommandRead(&mtsSocketClientPSM::GetCurrentState,
-                                           this , "GetCurrentState");
+                                           this , "jaw/servo_jp");
+        interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::state_command,
+                                           this , "state_command");
+        interfaceProvided->AddCommandRead(&mtsSocketClientPSM::operating_state,
+                                           this , "operating_state");
     }
 }
 
@@ -72,8 +70,8 @@ void mtsSocketClientPSM::Run(void)
 void mtsSocketClientPSM::UpdateApplication(void)
 {
     CurrentState = State.Data.RobotControlState;
-    PositionCartesianCurrent.Valid() = (CurrentState >= socketMessages::SCK_HOMED);
-    PositionCartesianCurrent.Position().FromNormalized(State.Data.CurrentPose);
+    m_measured_cp.Valid() = (CurrentState >= socketMessages::SCK_HOMED);
+    m_measured_cp.Position().FromNormalized(State.Data.CurrentPose);
     m_jaw_measured_js.Position().at(0) = State.Data.CurrentJaw;
 }
 
@@ -84,14 +82,14 @@ void mtsSocketClientPSM::Freeze(void)
     Command.Data.GoalJaw = State.Data.CurrentJaw;
 }
 
-void mtsSocketClientPSM::SetDesiredState(const std::string & state)
+void mtsSocketClientPSM::state_command(const std::string & state)
 {
-    if (state == "DISABLED") {
+    if (state == "disable") {
         DesiredState = socketMessages::SCK_UNINITIALIZED;
-    } else if (state == "READY") {
+    } else if (state == "enable") {
         DesiredState = socketMessages::SCK_HOMED;
     } else {
-        std::cerr << CMN_LOG_DETAILS << state << " state not supported." << std::endl;
+        std::cerr << CMN_LOG_DETAILS << state << " state command not supported." << std::endl;
     }
 
     Command.Data.RobotControlState = DesiredState;
@@ -111,36 +109,20 @@ void mtsSocketClientPSM::jaw_servo_jp(const prmPositionJointSet & position)
     Command.Data.GoalJaw = position.Goal().at(0);
 }
 
-void mtsSocketClientPSM::GetDesiredState(std::string & state) const
-{
-    switch (DesiredState) {
-    case socketMessages::SCK_UNINITIALIZED:
-        state = "DISABLED";
-        break;
-    case socketMessages::SCK_HOMING:
-    case socketMessages::SCK_HOMED:
-    case socketMessages::SCK_CART_POS:
-        state = "READY";
-        break;
-    default:
-        std::cerr << CMN_LOG_DETAILS << state << " state not supported." << std::endl;
-        break;
-    }
-}
-
-void mtsSocketClientPSM::GetCurrentState(std::string & state) const
+void mtsSocketClientPSM::operating_state(prmOperatingState & state) const
 {
     switch (CurrentState) {
     case socketMessages::SCK_UNINITIALIZED:
-        state = "DISABLED";
+        state.State() = prmOperatingState::DISABLED;
         break;
     case socketMessages::SCK_HOMING:
+        state.State() = prmOperatingState::ENABLED;
     case socketMessages::SCK_HOMED:
     case socketMessages::SCK_CART_POS:
-        state = "READY";
+        state.IsHomed() = true;
         break;
     default:
-        std::cerr << CMN_LOG_DETAILS << state << " state not supported." << std::endl;
+        std::cerr << CMN_LOG_DETAILS << << "\"" << state << "\" state not supported." << std::endl;
         break;
     }
 }

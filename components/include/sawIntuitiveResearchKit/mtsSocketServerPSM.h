@@ -5,7 +5,7 @@
   Author(s):  Pretham Chalasani, Anton Deguet
   Created on: 2016-11-04
 
-  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,6 +20,9 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsSocketServerPSM_h
 
 #include <sawIntuitiveResearchKit/mtsSocketBasePSM.h>
+#include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmPositionJointSet.h>
 
 class mtsSocketServerPSM: public mtsSocketBasePSM
 {
@@ -45,14 +48,12 @@ private:
     mtsFunctionWrite jaw_servo_jp;
     mtsFunctionRead measured_cp;
 
-    mtsFunctionWrite SetDesiredState;
-    mtsFunctionRead GetCurrentState;
+    mtsFunctionWrite state_command;
+    mtsFunctionRead operating_state;
 
-    prmPositionCartesianGet PositionCartesianCurrent;
-    prmPositionCartesianSet PositionCartesianSet;
-    prmPositionJointSet PositionJointSet;
-    bool mIsHoming;
-    bool mIsHomed;
+    prmPositionCartesianGet m_measured_cp;
+    prmPositionCartesianSet m_setpoint_cp;
+    prmPositionJointSet m_jaw_setpoint_jp;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsSocketServerPSM);

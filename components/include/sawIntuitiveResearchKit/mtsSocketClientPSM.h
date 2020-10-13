@@ -5,7 +5,7 @@
   Author(s):  Pretham Chalasani, Anton Deguet
   Created on: 2016-11-04
 
-  (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,6 +20,11 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsSocketClientPSM_h
 
 #include <sawIntuitiveResearchKit/mtsSocketBasePSM.h>
+#include <cisstParameterTypes/prmOperatingState.h>
+#include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmPositionJointSet.h>
+#include <cisstParameterTypes/prmStateJoint.h>
 
 class mtsSocketClientPSM: public mtsSocketBasePSM
 {
@@ -34,9 +39,8 @@ public :
     void Run(void);
 
 protected:
-    void SetDesiredState(const std::string & state);
-    void GetDesiredState(std::string & state) const;
-    void GetCurrentState(std::string & state) const;
+    void state_command(const std::string & state);
+    void operating_state(prmOperatingState & state) const;
 
     void Freeze(void);
     void servo_cp(const prmPositionCartesianSet & position);
@@ -46,7 +50,7 @@ protected:
     void SendPSMCommandData(void);
 
 private:
-    prmPositionCartesianGet PositionCartesianCurrent;
+    prmPositionCartesianGet m_measured_cp;
     prmStateJoint m_jaw_measured_js;
     mtsInterfaceProvided * mInterface;
 };

@@ -16,7 +16,6 @@
   --- end cisst license ---
 */
 
-
 // system include
 #include <iostream>
 
@@ -669,7 +668,12 @@ void mtsTeleOperationPSM::TransitionSettingArmsState(void)
     }
     // check timer
     if ((StateTable.GetTic() - mInStateTimer) > 60.0 * cmn_s) {
-        mInterface->SendError(this->GetName() + ": timed out while setting up MTM state");
+        if (!((psmState.State() == prmOperatingState::ENABLED) && psmState.IsHomed())) {
+            mInterface->SendError(this->GetName() + ": timed out while setting up PSM state");
+        }
+        if (!((mtmState.State() == prmOperatingState::ENABLED) && mtmState.IsHomed())) {
+            mInterface->SendError(this->GetName() + ": timed out while setting up MTM state");
+        }
         mTeleopState.SetDesiredState("DISABLED");
     }
 }

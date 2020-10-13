@@ -5,7 +5,7 @@
   Author(s):  Pretham Chalasani, Anton Deguet
   Created on: 2016-11-04
 
-  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -18,22 +18,21 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsSocketServerPSM.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstParameterTypes/prmOperatingState.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED(mtsSocketServerPSM, mtsTaskPeriodic);
 
 mtsSocketServerPSM::mtsSocketServerPSM(const std::string & componentName, const double periodInSeconds,
                                        const std::string & ip, const unsigned int port) :
-    mtsSocketBasePSM(componentName, periodInSeconds, ip, port, true),
-    mIsHoming(false),
-    mIsHomed(false)
+    mtsSocketBasePSM(componentName, periodInSeconds, ip, port, true)
 {
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("PSM");
     if(interfaceRequired) {
         interfaceRequired->AddFunction("measured_cp", measured_cp);
         interfaceRequired->AddFunction("servo_cp", servo_cp);
-        interfaceRequired->AddFunction("jaw_servo_jp", jaw_servo_jp);
-        interfaceRequired->AddFunction("GetCurrentState", GetCurrentState);
-        interfaceRequired->AddFunction("SetDesiredState", SetDesiredState);
+        interfaceRequired->AddFunction("jaw/servo_jp", jaw_servo_jp);
+        interfaceRequired->AddFunction("operating_state", operating_state);
+        interfaceRequired->AddFunction("state_command", state_command);
         interfaceRequired->AddEventHandlerWrite(&mtsSocketServerPSM::ErrorEventHandler,
                                                 this, "error");
     }
@@ -61,20 +60,21 @@ void mtsSocketServerPSM::Run(void)
 void mtsSocketServerPSM::ExecutePSMCommands(void)
 {
     if (DesiredState != Command.Data.RobotControlState) {
-        std::string state;
         DesiredState = Command.Data.RobotControlState;
         switch (DesiredState) {
         case socketMessages::SCK_UNINITIALIZED:
-            state = "DISABLED";
+            state_command(std::string("disable"));
             break;
         case socketMessages::SCK_HOMED:
             if (CurrentState != socketMessages::SCK_HOMING) {
-                state = "READY";
+                state_command(std::string("enable"));
+                state_command(std::string("home"));
             }
             break;
         case socketMessages::SCK_CART_POS:
             if (CurrentState != socketMessages::SCK_HOMING) {
-                state = "READY";
+                state_command(std::string("enable"));
+                state_command(std::string("home"));
             }
             CurrentState = socketMessages::SCK_CART_POS;
             break;
@@ -82,19 +82,18 @@ void mtsSocketServerPSM::ExecutePSMCommands(void)
             std::cerr << CMN_LOG_DETAILS << Command.Data.RobotControlState << " state not supported. " << std::endl;
             break;
         }
-        SetDesiredState(state);
     }
 
     // Only send when in cartesian mode
     switch (CurrentState) {
     case socketMessages::SCK_CART_POS:
         // send cartesian goal
-        PositionCartesianSet.Goal().From(Command.Data.GoalPose);
-        servo_cp(PositionCartesianSet);
+        m_setpoint_cp.Goal().From(Command.Data.GoalPose);
+        servo_cp(m_setpoint_cp);
         // send jaw goal
-        PositionJointSet.Goal().SetSize(1);
-        PositionJointSet.Goal().Element(0) = Command.Data.GoalJaw;
-        jaw_servo_jp(PositionJointSet);
+        m_jaw_setpoint_jp.Goal().SetSize(1);
+        m_jaw_setpoint_jp.Goal().Element(0) = Command.Data.GoalJaw;
+        jaw_servo_jp(m_jaw_setpoint_jp);
         break;
     default:
         break;
@@ -147,17 +146,17 @@ void mtsSocketServerPSM::UpdatePSMState(void)
     mtsExecutionResult executionResult;
 
     // Get Cartesian position
-    executionResult = measured_cp(PositionCartesianCurrent);
-    State.Data.CurrentPose.Assign(PositionCartesianCurrent.Position());
+    executionResult = measured_cp(m_measured_cp);
+    State.Data.CurrentPose.Assign(m_measured_cp.Position());
 
     // Get Arm State
-    mtsStdString psmState;
-    GetCurrentState(psmState);
+    prmOperatingState psmState;
+    operating_state(psmState);
 
     // Switch to socket states
-    if (psmState.Data == "DISABLED") {
+    if (psmState.State() != prmOperatingState::ENABLED) {
         CurrentState = socketMessages::SCK_UNINITIALIZED;
-    } else if ((psmState.Data == "READY")) {
+    } else if (psmState.IsHomed()) {
         if ((CurrentState != socketMessages::SCK_HOMED)
             && (CurrentState != socketMessages::SCK_CART_POS)) {
             CurrentState = socketMessages::SCK_HOMED;

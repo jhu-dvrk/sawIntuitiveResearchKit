@@ -1,0 +1,36 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "io":
+    {
+        "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "PSM1",
+            "type": "PSM_SOCKET",
+            "remote-ip": "localhost",
+            "port": 10001
+        }
+        ,
+        {
+            "name": "MTMR",
+            "type": "MTM",
+            "serial": "32336"
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            "mtm": "MTMR",
+            "psm": "PSM1",
+            "configure-parameter": {
+                "rotation" : [[-1.0000,  0.0000,  0.0000],
+                              [ 0.0000, -1.0000,  0.0000],
+                              [ 0.0000,  0.0000,  1.0000]]
+            }
+        }
+    ]
+}

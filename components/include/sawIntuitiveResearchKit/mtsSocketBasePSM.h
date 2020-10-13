@@ -5,7 +5,7 @@
   Author(s):  Pretham Chalasani, Anton Deguet
   Created on: 2016-11-04
 
-  (C) Copyright 2016-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -22,11 +22,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnUnits.h>
 #include <cisstOSAbstraction/osaSocket.h>
 #include <cisstMultiTask/mtsTaskPeriodic.h>
-#include <cisstParameterTypes/prmPositionCartesianSet.h>
-#include <cisstParameterTypes/prmPositionJointSet.h>
-#include <cisstParameterTypes/prmPositionCartesianGet.h>
-#include <cisstParameterTypes/prmStateJoint.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 #include <sawIntuitiveResearchKit/socketMessages.h>
 
 #define VERSION 10000
