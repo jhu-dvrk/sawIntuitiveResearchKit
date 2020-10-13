@@ -209,6 +209,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_SOCKET:
 
             socketGUI = new mtsSocketBaseQtWidget(name + "-GUI");
+            socketGUI->setObjectName(name.c_str());
             socketGUI->Configure();
             componentManager->AddComponent(socketGUI);
             Connections.Add(socketGUI->GetName(), "SocketBase",

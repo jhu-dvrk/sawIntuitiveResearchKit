@@ -40,7 +40,6 @@ public :
 
 protected:
     void state_command(const std::string & state);
-    void operating_state(prmOperatingState & state) const;
 
     void Freeze(void);
     void servo_cp(const prmPositionCartesianSet & position);
@@ -53,6 +52,10 @@ private:
     prmPositionCartesianGet m_measured_cp;
     prmStateJoint m_jaw_measured_js;
     mtsInterfaceProvided * mInterface;
+
+    socketMessages::StateType PreviousState;
+    prmOperatingState m_operating_state;
+    mtsFunctionWrite operating_state_event;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsSocketClientPSM);
