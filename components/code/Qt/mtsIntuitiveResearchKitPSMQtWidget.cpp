@@ -151,7 +151,7 @@ void mtsIntuitiveResearchKitPSMQtWidget::SetDirectControl(const bool direct)
     if (direct) {
         QPJSJaw->show();
         QPJSJaw->setEnabled(direct);
-        QPJSJaw->Reset();
+        QPJSJaw->Read();
 
     } else {
         QPJSJaw->hide();

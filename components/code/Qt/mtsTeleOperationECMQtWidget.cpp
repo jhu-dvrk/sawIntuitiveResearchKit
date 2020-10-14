@@ -151,7 +151,7 @@ void mtsTeleOperationECMQtWidget::SlotFollowingEventHandler(bool following)
     if (following) {
         QLEFollowing->setText("FOLLOWING");
     } else {
-        QLEFollowing->setText("INDEPENDANT");
+        QLEFollowing->setText("INDEPENDENT");
     }
 }
 

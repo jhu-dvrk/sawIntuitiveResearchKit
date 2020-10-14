@@ -163,7 +163,7 @@ void mtsIntuitiveResearchKitArmQtWidget::SetDirectControl(const bool direct)
     QPOState->setEnabled(direct);
     if (direct) {
         QFJoints->show();
-        QPJSWidget->Reset();
+        QPJSWidget->Read();
     } else {
         QFJoints->hide();
     }
