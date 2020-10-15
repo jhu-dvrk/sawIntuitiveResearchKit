@@ -4,12 +4,12 @@
     "port": "48052",
     "data": [
         {
-            "name": "GetStateJoint",
+            "name": "measured_js",
             "type": "prmStateJoint"
         }
         ,
         {
-            "name": "GetStateJaw",
+            "name": "jaw/measured_js",
             "type": "prmStateJoint"
         }
     ]

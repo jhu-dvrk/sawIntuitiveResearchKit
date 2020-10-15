@@ -11,16 +11,6 @@
             },
             "configure-parameter": "streamerMTML.json"
         }
-        ,
-        {
-            "shared-library": "sawSocketStreamer",
-            "class-name": "mtsSocketStreamer",
-            "constructor-arg": {
-                "Name": "streamerMTMR",
-                "Period": 0.01
-            },
-            "configure-parameter": "streamerMTMR.json"
-        }
     ]
     ,
     "connections":
@@ -33,18 +23,6 @@
             ,
             "provided": {
                 "component": "MTML",
-                "interface": "Arm"
-            }
-        }
-        ,
-        {
-            "required": {
-                "component": "streamerMTMR",
-                "interface": "Required"
-            }
-            ,
-            "provided": {
-                "component": "MTMR",
                 "interface": "Arm"
             }
         }

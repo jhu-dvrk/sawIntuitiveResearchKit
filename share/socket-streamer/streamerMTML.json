@@ -4,7 +4,17 @@
     "port": "48054",
     "data": [
         {
-            "name": "GetStateJoint",
+            "name": "measured_js",
+            "type": "prmStateJoint"
+        }
+        ,
+        {
+            "name": "measured_cp",
+            "type": "prmPositionCartesianGet"
+        }
+        ,
+        {
+            "name": "gripper/measured_js",
             "type": "prmStateJoint"
         }
     ]

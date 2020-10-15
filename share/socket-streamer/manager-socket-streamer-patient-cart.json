@@ -43,7 +43,7 @@
             ,
             "provided": {
                 "component": "PSM1",
-                "interface": "Robot"
+                "interface": "Arm"
             }
         }
         ,
@@ -55,7 +55,7 @@
             ,
             "provided": {
                 "component": "PSM2",
-                "interface": "Robot"
+                "interface": "Arm"
             }
         }
         ,
@@ -67,7 +67,7 @@
             ,
             "provided": {
                 "component": "ECM",
-                "interface": "Robot"
+                "interface": "Arm"
             }
         }
     ]

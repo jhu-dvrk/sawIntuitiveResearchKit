@@ -4,7 +4,7 @@
     "port": "48055",
     "data": [
         {
-            "name": "GetStateJoint",
+            "name": "measured_js",
             "type": "prmStateJoint"
         }
     ]
