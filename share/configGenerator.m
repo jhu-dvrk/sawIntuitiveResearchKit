@@ -165,24 +165,24 @@ end
 % The linear amp drives +/- 6.25 Amps current, which is controlled by a DAC with 16 bits resolution.
 % So the conversion from amp to bits is 2^16/(6.25 * 2) = 5242.88
 driveDirection = aDirection;
-AmpsToBitsScale = driveDirection(1:8) .* 5242.8800;
-AmpsToBitsOffset = ones(1, 8) .* (2^15);
+AmpsToBitsScale = driveDirection(1:numOfJoints) .* 5242.8800;
+AmpsToBitsOffset = ones(1, numOfJoints) .* (2^15);
 
 BrakeAmpsToBitsScale = 5242.8800;
 BrakeAmpsToBitsOffset = 2^15;
 
-BitsToFbAmpsScale = driveDirection(1:8) .* 0.000190738;
-BitsToFbAmpsOffset = driveDirection(1:8) .* (-6.25);
+BitsToFbAmpsScale = driveDirection(1:numOfJoints) .* 0.000190738;
+BitsToFbAmpsOffset = driveDirection(1:numOfJoints) .* (-6.25);
 
 BrakeBitsToFbAmpsScale = 0.000190738;
 BrakeBitsToFbAmpsOffset = -6.25;
 
-NmToAmps = ones(1, 8) ./ gearRatio(rType, 1:8) ./ motorTor(rType, 1:8);
-MaxCurrent = motorDefCur(rType, 1:8);
+NmToAmps = ones(1, numOfJoints) ./ gearRatio(rType, 1:numOfJoints) ./ motorTor(rType, 1:numOfJoints);
+MaxCurrent = motorDefCur(rType, 1:numOfJoints);
 
 % === Encoder ======
 % EncPos = (360.0 * EncCounts / encCPT) / gearRatio * pitch
-BitsToPosSIScale = driveDirection(1:8) .* 360 ./ encCPT(rType, 1:8) .* pitch(rType, 1:8) ./ gearRatio(rType, 1:8);
+BitsToPosSIScale = driveDirection(1:numOfJoints) .* 360 ./ encCPT(rType, 1:numOfJoints) .* pitch(rType, 1:numOfJoints) ./ gearRatio(rType, 1:numOfJoints);
 
 % AmpIO buff = buff + MIDRANGE_VEL
 % Velocity = deltaPos / deltaTime
@@ -192,9 +192,9 @@ BitsToPosSIScale = driveDirection(1:8) .* 360 ./ encCPT(rType, 1:8) .* pitch(rTy
 % Velocity = 360 * 768000 / (encCPT / 4.0) / gearRatio * pitch / timeCounter
 %          = BitsToDeltaPosSIScale / timeCounter
 
-% BitsToDeltaPosSI = driveDirection(1:8) .* 360.0 .* 768000 ./ (encCPT(rType, 1:8) ./ 4.0) ./ gearRatio(rType, 1:8) .* pitch(rType, 1:8);
-% BitsToDeltaT = ones(1, 8) * -1;
-% CountsPerTurn = encCPT(rType, 1:8);
+% BitsToDeltaPosSI = driveDirection(1:numOfJoints) .* 360.0 .* 768000 ./ (encCPT(rType, 1:numOfJoints) ./ 4.0) ./ gearRatio(rType, 1:numOfJoints) .* pitch(rType, 1:numOfJoints);
+% BitsToDeltaT = ones(1, numOfJoints) * -1;
+% CountsPerTurn = encCPT(rType, 1:numOfJoints);
 
 % === AnalogIn =====
 %  Intuitive system
@@ -206,9 +206,9 @@ BitsToPosSIScale = driveDirection(1:8) .* 360 ./ encCPT(rType, 1:8) .* pitch(rTy
 %    1. 16 bit ADC
 %    2. 0-4.5 V
 %    3. Unit: Radian
-BitsToVolts = ones(1, 8) * (4.5 / 2^16);  % 16 bits ADC with 4.5 V ref
-VoltsToPosSIScale = potGain * (2^12 / 4.5) * 180.0 / pi .* pitch(rType, 1:8);
-VoltsToPosSIOffset = potOffset * 180.0 / pi .* pitch(rType, 1:8);
+BitsToVolts = ones(1, numOfJoints) * (4.5 / 2^16);  % 16 bits ADC with 4.5 V ref
+VoltsToPosSIScale = potGain * (2^12 / 4.5) * 180.0 / pi .* pitch(rType, 1:numOfJoints);
+VoltsToPosSIOffset = potOffset * 180.0 / pi .* pitch(rType, 1:numOfJoints);
 
 % special case for MTM last joint (Hall effect sensor)
 if (rType == CONST_MTM)
