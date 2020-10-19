@@ -80,37 +80,37 @@ elseif (rType == CONST_ECM)
 end
 
 
-% Arms, all arrays use size 8 internally to simplify code until XML
+% Arms, all arrays use size 7 internally to simplify code until XML
 % generation
 
 % motor default current Unit: A
-motorDefCur(CONST_MTM,:) = [0.67 0.67 0.67 0.67 0.59 0.59 0.407 0.0];
-motorDefCur(CONST_PSM,:) = [1.34 1.34 0.67 0.67 0.67 0.67 0.670 0.0];
-motorDefCur(CONST_ECM,:) = [0.943 0.943 0.67 0.59 0.0 0.0 0.0 0.0];
+motorDefCur(CONST_MTM,:) = [0.67 0.67 0.67 0.67 0.59 0.59 0.407];
+motorDefCur(CONST_PSM,:) = [1.34 1.34 0.67 0.67 0.67 0.67 0.670];
+motorDefCur(CONST_ECM,:) = [0.943 0.943 0.67 0.59 0.0 0.0 0.0];
 
 % motor torque const  Unit: Nm/A
 % NOTE: no motor on axis 8, set value to 1
-motorTor(CONST_MTM,:) = [0.0438 0.0438 0.0438 0.0438 0.00495 0.00495 0.00339 1.0];
-motorTor(CONST_PSM,:) = [0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 1.0];
-motorTor(CONST_ECM,:) = [0.1190 0.1190 0.0438 0.00495 1.0 1.0 1.0 1.0];
+motorTor(CONST_MTM,:) = [0.0438 0.0438 0.0438 0.0438 0.00495 0.00495 0.00339];
+motorTor(CONST_PSM,:) = [0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 0.0438];
+motorTor(CONST_ECM,:) = [0.1190 0.1190 0.0438 0.00495 1.0 1.0 1.0];
 
 % Gear ratio
 % NOTE: gear ratio for axis 8 is set to 1
-gearRatio(CONST_MTM,:) = [63.41 49.88 59.73 10.53 33.16 33.16 16.58 1.0];
-gearRatio(CONST_PSM,:) = [56.50 56.50 336.6 11.71 11.71 11.71 11.71 1.0];
-gearRatio(CONST_ECM,:) = [240 240 2748.55 300.15    1.0   1.0   1.0 1.0];
+gearRatio(CONST_MTM,:) = [63.41 49.88 59.73 10.53 33.16 33.16 16.58];
+gearRatio(CONST_PSM,:) = [56.50 56.50 336.6 11.71 11.71 11.71 11.71];
+gearRatio(CONST_ECM,:) = [240 240 2748.55 300.15    1.0   1.0   1.0];
 
 % Encoder counts per turn (quadrature encoder)
 % NOTE: no encoder for last axis
-encCPT(CONST_MTM,:) = [ 4000  4000  4000 4000   64   64   64 1];
-encCPT(CONST_PSM,:) = [14400 14400 14400 4000 4000 4000 4000 1];
-encCPT(CONST_ECM,:) = [ 4000  4000   640   64    1    1    1 1];
+encCPT(CONST_MTM,:) = [ 4000  4000  4000 4000   64   64   64];
+encCPT(CONST_PSM,:) = [14400 14400 14400 4000 4000 4000 4000];
+encCPT(CONST_ECM,:) = [ 4000  4000   640   64    1    1    1];
 
 % Pitch
 % 1 for revolute, mm/deg for prismatic
-pitch(CONST_MTM,:) = [1 1 1 1 1 1 1 1];
-pitch(CONST_PSM,:) = [1 1 17.4533 1 1 1 1 1];
-pitch(CONST_ECM,:) = [1 1 17.4533 1 1 1 1 1];
+pitch(CONST_MTM,:) = [1 1 1 1 1 1 1];
+pitch(CONST_PSM,:) = [1 1 17.4533 1 1 1 1];
+pitch(CONST_ECM,:) = [1 1 17.4533 1 1 1 1];
 
 % Brake constants for ECM
 hasBrake = [1 1 1 0];
@@ -123,13 +123,13 @@ brakeEngagedCurrent =  [0.0 0.0 0.0];
 % Actuator Type (Prismatic/Revolute)
 if (rType == CONST_MTM)
     actuatorType = {'Revolute', 'Revolute', 'Revolute', 'Revolute', ...
-                    'Revolute', 'Revolute', 'Revolute', 'Revolute'};
+                    'Revolute', 'Revolute', 'Revolute'};
 elseif (rType == CONST_PSM)
     actuatorType = {'Revolute', 'Revolute', 'Prismatic', 'Revolute', ...
-                    'Revolute', 'Revolute', 'Revolute', 'Null'};
+                    'Revolute', 'Revolute', 'Revolute'};
 elseif (rType == CONST_ECM)
     actuatorType = {'Revolute', 'Revolute', 'Prismatic', 'Revolute', ...
-                    'Null',     'Null',     'Null',      'Null'};
+                    'Null',     'Null',     'Null'};
 end
 
 
@@ -141,15 +141,15 @@ potOffset = motor.pot_input_offset;
 
 % pot to encoder consistency check, for MTMs, last two joints are not used
 if (rType == CONST_MTM)
-    potToleranceLatency = [0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.00];
-    potToleranceDistance = [5.0 5.0 5.0 5.0 5.0 5.0 0.0 0.0];
+    potToleranceLatency = [0.01 0.01 0.01 0.01 0.01 0.01 0.00];
+    potToleranceDistance = [5.0 5.0 5.0 5.0 5.0 5.0 0.0];
     potToleranceUnit = {'deg', 'deg', 'deg', 'deg', ...
-                		'deg', 'deg', 'deg', 'deg'};
+                        'deg', 'deg', 'deg'};
 elseif (rType == CONST_PSM)
     potToleranceLatency = [0.01 0.01 0.01 0.01 0.01 0.01 0.01];
     potToleranceDistance = [5.0 5.0 5.0 5.0 5.0 5.0 5.0];
     potToleranceUnit = {'deg', 'deg', 'mm', 'deg', ...
-                		'deg', 'deg', 'deg'};
+                        'deg', 'deg', 'deg'};
 elseif (rType == CONST_ECM)
     potToleranceLatency = [0.01 0.01 0.01 0.01];
     potToleranceDistance = [5.0 5.0 5.0 5.0];
@@ -207,8 +207,8 @@ BitsToPosSIScale = driveDirection(1:numOfJoints) .* 360 ./ encCPT(rType, 1:numOf
 %    2. 0-4.5 V
 %    3. Unit: Radian
 BitsToVolts = ones(1, numOfJoints) * (4.5 / 2^16);  % 16 bits ADC with 4.5 V ref
-VoltsToPosSIScale = potGain * (2^12 / 4.5) * 180.0 / pi .* pitch(rType, 1:numOfJoints);
-VoltsToPosSIOffset = potOffset * 180.0 / pi .* pitch(rType, 1:numOfJoints);
+VoltsToPosSIScale = potGain(1:numOfJoints) * (2^12 / 4.5) * 180.0 / pi .* pitch(rType, 1:numOfJoints);
+VoltsToPosSIOffset = potOffset(1:numOfJoints) * 180.0 / pi .* pitch(rType, 1:numOfJoints);
 
 % special case for MTM last joint (Hall effect sensor)
 if (rType == CONST_MTM)
@@ -310,7 +310,6 @@ for i = 1:numOfJoints
         Brake.appendChild(X_BrakeReleaseTime);
         X_BrakeReleasedCurrent = docNode.createElement('ReleasedCurrent');
         X_BrakeReleasedCurrent.setAttribut    % Actuator.setAttribute('Pos1', 'ENC');
-    % Actuator.setAttribute('Pos2', 'POT');e('Unit', 'A');
         X_BrakeReleasedCurrent.setAttribute('Value', num2str(brakeReleasedCurrent(i), '%5.3f'));
         Brake.appendChild(X_BrakeReleasedCurrent);
         X_BrakeEngagedCurrent = docNode.createElement('EngagedCurrent');
@@ -432,7 +431,7 @@ if (rType == CONST_MTM)
     % set to boardID1 & boardID2
     Actuator.setAttribute('BoardID', num2str(boardID( idivide(i-1, int32(4))+1 )));
     Actuator.setAttribute('AxisID', num2str(mod(i-1,4)));
-    Actuator.setAttribute('Type', actuatorType{i});
+    Actuator.setAttribute('Type', 'Revolute');
     Robot.appendChild(Actuator);
 
     % Drive
@@ -440,26 +439,26 @@ if (rType == CONST_MTM)
     Actuator.appendChild(Drive);
 
     X_Amps2Bits = gripperDocNode.createElement('AmpsToBits');
-    X_Amps2Bits.setAttribute('Scale', num2str(AmpsToBitsScale(i), '%5.2f'));
-    X_Amps2Bits.setAttribute('Offset', num2str(AmpsToBitsOffset(i), '%5.0f'));
+    X_Amps2Bits.setAttribute('Scale', num2str(AmpsToBitsScale(1), '%5.2f'));
+    X_Amps2Bits.setAttribute('Offset', num2str(AmpsToBitsOffset(1), '%5.0f'));
     Drive.appendChild(X_Amps2Bits);
     X_BitsToFeedbackAmps = gripperDocNode.createElement('BitsToFeedbackAmps');
-    X_BitsToFeedbackAmps.setAttribute('Scale', num2str(BitsToFbAmpsScale(i), '%5.9f'));
-    X_BitsToFeedbackAmps.setAttribute('Offset', num2str(BitsToFbAmpsOffset(i), '%5.2f'));
+    X_BitsToFeedbackAmps.setAttribute('Scale', num2str(BitsToFbAmpsScale(1), '%5.9f'));
+    X_BitsToFeedbackAmps.setAttribute('Offset', num2str(BitsToFbAmpsOffset(1), '%5.2f'));
     Drive.appendChild(X_BitsToFeedbackAmps);
     X_NmToAmps = gripperDocNode.createElement('NmToAmps');
-    X_NmToAmps.setAttribute('Scale', num2str(NmToAmps(i), '%5.6f'));
+    X_NmToAmps.setAttribute('Scale', num2str(NmToAmps(1), '%5.6f'));
     Drive.appendChild(X_NmToAmps);
     X_MaxCurrent = gripperDocNode.createElement('MaxCurrent');
-    X_MaxCurrent.setAttribute('Value', num2str(MaxCurrent(i), '%5.3f'));
+    X_MaxCurrent.setAttribute('Value', '0.0');
     X_MaxCurrent.setAttribute('Unit', 'A');
     Drive.appendChild(X_MaxCurrent);
-
+    
     % Encoder
     Enc = gripperDocNode.createElement('Encoder');
     Actuator.appendChild(Enc);
     X_BitsToPosSI = gripperDocNode.createElement('BitsToPosSI');
-    X_BitsToPosSI.setAttribute('Scale', num2str(BitsToPosSIScale(i), '%5.8f'));
+    X_BitsToPosSI.setAttribute('Scale', '1.0');
     Enc.appendChild(X_BitsToPosSI);
 
     % AnalogIn
@@ -467,7 +466,7 @@ if (rType == CONST_MTM)
     Actuator.appendChild(AnalogIn);
     X_BitsToVolts = gripperDocNode.createElement('BitsToVolts');
     % BitsToVolts
-    X_BitsToVolts.setAttribute('Scale', num2str(BitsToVolts(i), 6));
+    X_BitsToVolts.setAttribute('Scale', num2str(BitsToVolts(1), 6));
     X_BitsToVolts.setAttribute('Offset', '0');
     AnalogIn.appendChild(X_BitsToVolts);
     X_VoltsToPosSI = gripperDocNode.createElement('VoltsToPosSI');
