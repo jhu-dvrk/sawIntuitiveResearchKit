@@ -40,17 +40,17 @@
             "name": "PSM1",
             "type": "PSM",
             "simulation": "KINEMATIC",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json"
+            "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json"
         }
     ]
     ,
     "psm-teleops":
     [
         {
-            "master": "MTMR",
-            "slave": "PSM1",
+            "mtm": "MTMR",
+            "psm": "PSM1",
             "configure-parameter": {
+                "start-gripper-threshold": 0.0,
                 "ignore-jaw": true,
                 "scale": 0.4,
                 "rotation": [[ 0.0000, -1.0000,  0.0000],
