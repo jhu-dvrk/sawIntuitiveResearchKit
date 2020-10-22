@@ -62,7 +62,7 @@ void mtsDerivedTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filena
     // That interface should exist, abort otherwise
     CMN_ASSERT(interfacePSM);
     // Add a required function
-    interfacePSM->AddFunction("measured_cf_body",
+    interfacePSM->AddFunction("body/measured_cf",
                               PSMGetWrenchBody);
     interfacePSM->AddFunction("SetWrenchBodyOrientationAbsolute",
                               PSMSetWrenchBodyOrientationAbsolute);
