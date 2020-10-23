@@ -1309,7 +1309,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
 
 void mtsIntuitiveResearchKitPSM::SetEffortJointLocal(const vctDoubleVec & newEffort)
 {
-    if (mArmState.CurrentState() != "ENABLED") {
+    if (!IsCartesianReady()) {
         mtsIntuitiveResearchKitArm::SetEffortJointLocal(newEffort);
         return;
     }
