@@ -982,6 +982,11 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
     message.append(CISST_VERSION);
     mInterface->SendStatus(message);
 
+    // emit events for active PSM teleop pairs
+    EventSelectedTeleopPSMs();
+    // emit scale event
+    ConfigurationEvents.Scale(mtsIntuitiveResearchKit::TeleOperationPSM::Scale);
+
     if (mChatty) {
         // someone is going to hate me for this :-)
         std::vector<std::string> prompts;
@@ -1020,9 +1025,6 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
         randomSequence.ExtractRandomValue<int>(0, prompts.size() - 1, index);
         mAudio.StringToSpeech(prompts.at(index));
     }
-
-    // emit events for active PSM teleop pairs
-    EventSelectedTeleopPSMs();
 }
 
 void mtsIntuitiveResearchKitConsole::Run(void)
