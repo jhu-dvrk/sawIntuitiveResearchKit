@@ -1136,6 +1136,31 @@ void mtsIntuitiveResearchKitArm::TransitionCalibratingEncodersFromPots(void)
 void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
+
+    // update joint limits if the arm is passed them
+    prmStateJoint _measured_js;
+    mtsExecutionResult _execution_result = PID.measured_js(_measured_js);
+    if (_execution_result.IsOK()) {
+        prmConfigurationJoint _configuration_js;
+        _execution_result = PID.configuration_js(_configuration_js);
+        if (_execution_result.IsOK()) {
+            const size_t _nb_joints = _measured_js.Position().size();
+            CMN_ASSERT(_nb_joints == _configuration_js.PositionMin.size());
+            CMN_ASSERT(_nb_joints == _configuration_js.PositionMax.size());
+            for (size_t index = 0; index < _nb_joints; ++index) {
+                double _position = _measured_js.Position().at(index);
+                if (_position < _configuration_js.PositionMin().at(index)) {
+                    _configuration_js.PositionMin().at(index) = _position;
+                    std::cerr << index << " + " << std::endl;
+                } else if (_position > _configuration_js.PositionMax().at(index)) {
+                    _configuration_js.PositionMax().at(index) = _position;
+                    std::cerr << index << " - " << std::endl;
+                }
+            }
+            PID.configure_js(_configuration_js);
+        }
+    }
+
     // use pots for redundancy
     IO.UsePotsForSafetyCheck(true);
 }
