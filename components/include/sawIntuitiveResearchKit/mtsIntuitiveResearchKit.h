@@ -39,6 +39,12 @@ namespace mtsIntuitiveResearchKit {
     // PSM constants
     const double PSMOutsideCannula = 50.0 * cmn_ms;
 
+    // MTM constants
+    const double MTMPlatformGain = 0.5; // overall gain applied
+    const double MTMPlatformPGain = 1.0;
+    const double MTMPlatformDGain = 0.1;
+    const double MTMPlatformEffortMax = 0.4;
+
     // teleoperation constants
     namespace TeleOperationPSM {
         const double Scale = 0.2;

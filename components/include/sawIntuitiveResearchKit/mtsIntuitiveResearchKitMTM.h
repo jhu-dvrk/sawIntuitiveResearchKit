@@ -138,6 +138,8 @@ protected:
     bool m_gripper_closed;
 
     robGravityCompensationMTM * GravityCompensationMTM = 0;
+
+    double m_platform_gain = mtsIntuitiveResearchKit::MTMPlatformGain;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);

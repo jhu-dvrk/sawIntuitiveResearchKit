@@ -1151,10 +1151,8 @@ void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
                 double _position = _measured_js.Position().at(index);
                 if (_position < _configuration_js.PositionMin().at(index)) {
                     _configuration_js.PositionMin().at(index) = _position;
-                    std::cerr << index << " + " << std::endl;
                 } else if (_position > _configuration_js.PositionMax().at(index)) {
                     _configuration_js.PositionMax().at(index) = _position;
-                    std::cerr << index << " - " << std::endl;
                 }
             }
             PID.configure_js(_configuration_js);

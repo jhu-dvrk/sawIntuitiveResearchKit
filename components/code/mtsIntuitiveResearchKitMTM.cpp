@@ -166,6 +166,20 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
         }
     }
 
+    // platform gain
+    const auto jsonPlatformGain = jsonConfig["platform-gain"];
+    if (!jsonPlatformGain.isNull()) {
+        const auto gain = jsonPlatformGain.asDouble();
+        if ((gain < 0.0) || (gain > 1.0)) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                     << " platform-gain must be between 0 and 1, found: "
+                                     << gain << std::endl;
+            exit(EXIT_FAILURE);
+        } else {
+            m_platform_gain = gain;
+        }
+    }
+
     // which IK to use
     const auto jsonKinematic = jsonConfig["kinematic-type"];
     if (!jsonKinematic.isNull()) {
@@ -592,12 +606,13 @@ void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & ef
     }
 
     // apply a linear force on joint 3 to move toward the goal position
-    effortPreload[3] = -0.5 * (m_kin_measured_js.Position()[3] - q3Goal)
-        - 0.05 * m_kin_measured_js.Velocity()[3];
+    effortPreload[3] = m_platform_gain *
+        (mtsIntuitiveResearchKit::MTMPlatformPGain * (q3Goal - m_kin_measured_js.Position()[3])
+         - mtsIntuitiveResearchKit::MTMPlatformDGain * m_kin_measured_js.Velocity()[3]);
 
     // cap effort to be totally safe - this has to be the most non-linear behavior around
-    effortPreload[3] = std::max(effortPreload[3], -0.1);
-    effortPreload[3] = std::min(effortPreload[3],  0.1);
+    effortPreload[3] = std::max(effortPreload[3], -mtsIntuitiveResearchKit::MTMPlatformEffortMax);
+    effortPreload[3] = std::min(effortPreload[3],  mtsIntuitiveResearchKit::MTMPlatformEffortMax);
 
     // find equivalent wrench but don't apply all (too much torque on roll)
     // wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
