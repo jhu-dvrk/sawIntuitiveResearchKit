@@ -174,6 +174,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void servo_jp(const prmPositionJointSet & newPosition);
     virtual void servo_jr(const prmPositionJointSet & difference);
     virtual void move_jp(const prmPositionJointSet & newPosition);
+    virtual void move_jr(const prmPositionJointSet & newPosition);
     virtual void servo_cp(const prmPositionCartesianSet & newPosition);
     virtual void servo_cr(const prmPositionCartesianSet & difference);
     virtual void move_cp(const prmPositionCartesianSet & newPosition);
@@ -216,7 +217,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     /*! Inverse kinematics must be redefined for each arm type. */
     virtual robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                                     const vctFrm4x4 & cartesianGoal) = 0;
-    
+
     /*! Forward kinematic queries using joint values provided by user.
       The number of joints (size of the vector) determines up to which
       ling the forward kinematic is computed.  If the number of joint

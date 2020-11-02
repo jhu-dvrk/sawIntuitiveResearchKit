@@ -359,10 +359,12 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                         this, "servo_jr");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::move_jp,
                                         this, "move_jp");
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::move_jr,
+                                        this, "move_jr");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_cp,
                                         this, "servo_cp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_cr,
-                                        this, "servo_cr");
+                                        this, "servo_cr_not_working_yet");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::move_cp,
                                         this, "move_cp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jf,
@@ -1481,7 +1483,6 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
 
         switch (mode) {
         case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
-        case mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE:
             // configure PID
             PID.EnableTrackingError(UsePIDTrackingError());
             PID.EnableTorqueMode(vctBoolVec(NumberOfJoints(), false));
@@ -1497,8 +1498,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             m_effort_orientation_locked = false;
             // initialize trajectory
             JointSet.Assign(m_pid_setpoint_js.Position(), NumberOfJoints());
-            if ((m_control_mode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)
-                || (m_control_mode == mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE)) {
+            if (m_control_mode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
                 JointVelocitySet.Assign(m_pid_measured_js.Velocity(), NumberOfJoints());
             } else {
                 // we're switching from effort or no mode
@@ -1527,7 +1527,6 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
     // set control callback for RunHomed
     switch (m_control_mode) {
     case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
-    case mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE:
         switch (m_control_space) {
         case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::ControlPositionJoint, this);
@@ -1733,15 +1732,18 @@ void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & newPositio
 
 void mtsIntuitiveResearchKitArm::servo_jr(const prmPositionJointSet & difference)
 {
-    if (!ArmIsReady("servo_cp", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    if (!ArmIsReady("servo_jr", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
         return;
     }
 
     // set control mode
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE);
-    // set goal
-    JointSet.Add(difference.Goal());
+                           mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    // if there's no current goal, reset it
+    if (!m_new_pid_goal) {
+        JointSet.Assign(m_pid_setpoint_js.Position());
+    }
+    JointSet.Ref(NumberOfJointsKinematics()).Add(difference.Goal());
     m_new_pid_goal = true;
 }
 
@@ -1763,6 +1765,32 @@ void mtsIntuitiveResearchKitArm::move_jp(const prmPositionJointSet & newPosition
     mJointTrajectory.GoalVelocity.SetAll(0.0);
 }
 
+void mtsIntuitiveResearchKitArm::move_jr(const prmPositionJointSet & newPosition)
+{
+    if (!ArmIsReady("move_jr", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+        return;
+    }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+    // make sure trajectory is reset
+    UpdateIsBusy(true);
+    // if trajectory is active, add to existing goal
+    if (mJointTrajectory.IsActive) {
+        vctDoubleVec relative(mJointTrajectory.Goal.size());
+        ToJointsPID(newPosition.Goal(), relative);
+        mJointTrajectory.Goal.Add(relative);
+    } else {
+        // new goal, goal + setpoint
+        ToJointsPID(newPosition.Goal(), mJointTrajectory.Goal);
+        mJointTrajectory.Goal.Add(m_pid_setpoint_js.Position());
+    }
+    mJointTrajectory.IsActive = true;
+    mJointTrajectory.EndTime = 0.0;
+    mJointTrajectory.GoalVelocity.SetAll(0.0);
+}
+
 void mtsIntuitiveResearchKitArm::servo_cp(const prmPositionCartesianSet & newPosition)
 {
     if (!ArmIsReady("servo_cp", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
@@ -1779,14 +1807,14 @@ void mtsIntuitiveResearchKitArm::servo_cp(const prmPositionCartesianSet & newPos
 
 void mtsIntuitiveResearchKitArm::servo_cr(const prmPositionCartesianSet & difference)
 {
-    if (!ArmIsReady("servo_cp", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+    if (!ArmIsReady("servo_cr", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
         return;
     }
 
     // set control mode
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE);
-    // set goal
+                           mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    // set goal --- not sure of this math, move relative to base or tool?
     mCartesianRelative = mCartesianRelative * difference.Goal();
     m_new_pid_goal = true;
 }
@@ -1825,6 +1853,7 @@ void mtsIntuitiveResearchKitArm::move_cp(const prmPositionCartesianSet & newPosi
             m_arm_interface->SendError(this->GetName() + ": unable to solve inverse kinematics");
         }
         mJointTrajectory.GoalReachedEvent(false);
+        UpdateIsBusy(false);
     }
 }
 

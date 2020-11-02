@@ -1205,8 +1205,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
     // keep cartesian space is already there, otherwise use joint_space
     switch (m_control_space) {
     case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-        if (! ((m_control_mode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)
-               || (m_control_mode != mtsIntuitiveResearchKitArmTypes::POSITION_INCREMENT_MODE))) {
+        if (! (m_control_mode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)) {
             SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                    mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
             // make sure all other joints have a reasonable cartesian
