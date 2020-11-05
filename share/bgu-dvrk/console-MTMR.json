@@ -9,7 +9,7 @@
         {
             "name": "MTMR",
             "type": "MTM",
-            "io": "sawRobotIO1394-MTMR-13879.xml",
+            "io": "sawRobotIO1394-MTMR-33569.xml",
             "pid": "sawControllersPID-MTMR.xml",
             "kinematic": "mtm.json"
         }
