@@ -1147,8 +1147,8 @@ void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
         _execution_result = PID.configuration_js(_configuration_js);
         if (_execution_result.IsOK()) {
             const size_t _nb_joints = _measured_js.Position().size();
-            CMN_ASSERT(_nb_joints == _configuration_js.PositionMin.size());
-            CMN_ASSERT(_nb_joints == _configuration_js.PositionMax.size());
+            CMN_ASSERT(_nb_joints == _configuration_js.PositionMin().size());
+            CMN_ASSERT(_nb_joints == _configuration_js.PositionMax().size());
             for (size_t index = 0; index < _nb_joints; ++index) {
                 double _position = _measured_js.Position().at(index);
                 if (_position < _configuration_js.PositionMin().at(index)) {
