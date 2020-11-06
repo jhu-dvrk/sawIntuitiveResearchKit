@@ -550,6 +550,9 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
                                << jsonConfig << std::endl
                                << "<----" << std::endl;
 
+    // base component configuration
+    mtsComponent::ConfigureJSON(jsonConfig);
+
     // find all arms, there should be 4 of them
     const Json::Value jsonArms = jsonConfig["arms"];
     if (jsonArms.size() != 4) {

@@ -536,6 +536,9 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                                << jsonConfig << std::endl
                                << "<----" << std::endl;
 
+    // base component configuration
+    mtsComponent::ConfigureJSON(jsonConfig);
+
     // extract path of main json config file to search other files relative to it
     cmnPath configPath(cmnPath::GetWorkingDirectory());
     std::string fullname = configPath.Find(filename);

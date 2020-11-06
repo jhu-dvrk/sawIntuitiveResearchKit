@@ -552,6 +552,9 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
                                    << jsonConfig << std::endl
                                    << "<----" << std::endl;
 
+        // base component configuration
+        mtsComponent::ConfigureJSON(jsonConfig);
+
         // detect if we're using 1.8 and up with two fields, kinematic and tool-detection
         const auto jsonKinematic = jsonConfig["kinematic"];
         if (!jsonKinematic.isNull()) {

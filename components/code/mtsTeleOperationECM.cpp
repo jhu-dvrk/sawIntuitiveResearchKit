@@ -211,6 +211,9 @@ void mtsTeleOperationECM::Configure(const Json::Value & jsonConfig)
 {
     Json::Value jsonValue;
 
+    // base component configuration
+    mtsComponent::ConfigureJSON(jsonConfig);
+
     // read scale if present
     jsonValue = jsonConfig["scale"];
     if (!jsonValue.empty()) {
