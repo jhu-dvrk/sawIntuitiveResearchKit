@@ -42,7 +42,7 @@
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="-17.013007" Scale="59.0431575317" />
+            <VoltsToPosSI Offset="-12.613007" Scale="59.0431575317" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="3" AxisID="3" BoardID="6" Type="Revolute">
