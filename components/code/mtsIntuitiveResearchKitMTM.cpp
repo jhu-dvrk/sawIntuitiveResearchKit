@@ -408,7 +408,6 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
             // time out
             if (currentTime > mHomingTimer + extraTime) {
                 m_arm_interface->SendError(this->GetName() + ": unable to hit roll lower limit in time");
-                std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
                 SetDesiredState("FAULT");
             }
         }
@@ -422,7 +421,6 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 
     default:
         m_arm_interface->SendError(this->GetName() + ": error while evaluating trajectory");
-        std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
         SetDesiredState("FAULT");
         break;
     }
@@ -471,7 +469,6 @@ void mtsIntuitiveResearchKitMTM::RunResettingRollEncoder(void)
     double positionError = std::abs(m_pid_measured_js.Position().at(JNT_WRIST_ROLL) - -480.0 * cmnPI_180);
     if (positionError > 5.0 * cmn180_PI) {
         m_arm_interface->SendError(this->GetName() + ": roll encoder not properly reset to -480 degrees");
-        std::cerr << CMN_LOG_DETAILS << " should something be done here?" << std::endl;
         SetDesiredState("FAULT");
     } else {
         m_arm_interface->SendStatus(this->GetName() + ": roll encoder properly reset to -480 degrees");

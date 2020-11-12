@@ -264,7 +264,7 @@ void mtsIntuitiveResearchKitECM::LeaveManual(void)
 void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)
 {
     m_arm_interface->SendError(this->GetName() + ": PID tracking error");
-    this->SetDesiredState("DISABLED");
+    SetDesiredState("FAULT");
 }
 
 void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & button)

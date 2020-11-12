@@ -764,7 +764,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         if (!(actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All())) {
             m_powered = false;
             m_arm_interface->SendError(this->GetName() + ": detected power loss");
-            mArmState.SetDesiredState("DISABLED");
+            SetDesiredState("FAULT");
             return;
         }
     }
