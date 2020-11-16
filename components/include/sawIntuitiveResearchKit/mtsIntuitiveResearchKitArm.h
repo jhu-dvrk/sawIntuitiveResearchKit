@@ -182,9 +182,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void spatial_servo_cf(const prmForceCartesianSet & newForce);
     virtual void body_servo_cf(const prmForceCartesianSet & newForce);
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
-    virtual void SetWrenchBodyOrientationAbsolute(const bool & absolute);
-    virtual void SetGravityCompensation(const bool & gravityCompensation);
-    virtual void SetCartesianImpedanceGains(const prmCartesianImpedanceGains & gains);
+    virtual void body_set_cf_orientation_absolute(const bool & absolute);
+    virtual void use_gravity_compensation(const bool & gravityCompensation);
+    virtual void set_cartesian_impedance_gains(const prmCartesianImpedanceGains & gains);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
     virtual void SetBaseFrame(const prmPositionCartesianSet & newBaseFrame);
@@ -323,9 +323,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     // efforts
     vctDoubleMat m_body_jacobian, m_body_jacobian_transpose, m_spatial_jacobian, m_spatial_jacobian_transpose;
-    WrenchType mWrenchType;
-    prmForceCartesianSet mWrenchSet;
-    bool mWrenchBodyOrientationAbsolute;
+    WrenchType m_cf_type;
+    prmForceCartesianSet m_cf_set;
+    bool m_body_cf_orientation_absolute;
     prmForceTorqueJointSet
         mTorqueSetParam, // number of joints PID, used in SetEffortJointLocal
         mEffortJointSet; // number of joints for kinematics
@@ -336,7 +336,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     // cartesian impendance controller
     osaCartesianImpedanceController * mCartesianImpedanceController;
-    bool m_cartesianImpedance;
+    bool m_cartesian_impedance;
 
     // used by MTM only
     bool m_effort_orientation_locked;
@@ -371,12 +371,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     /*! Set joint velocity ratio for trajectory generation.  Computes
       joint velocities based on maximum joint velocities.  Ratio must
       be greater than 0 and lesser or equal to 1. */
-    virtual void SetJointVelocityRatio(const double & ratio);
+    virtual void trajectory_j_set_ratio_v(const double & ratio);
 
     /*! Set joint acceleration ratio for trajectory generation.  Computes
       joint accelerations based on maximum joint accelerations.  Ratio must
       be greater than 0 and lesser or equal to 1. */
-    virtual void SetJointAccelerationRatio(const double & ratio);
+    virtual void trajectory_j_set_ratio_a(const double & ratio);
 
     /*! Sets control space and mode.  If none are user defined, the
       callbacks will be using the methods provided in this class.
@@ -443,23 +443,23 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     struct {
         robReflexxes Reflexxes;
-        vctDoubleVec VelocityMaximum;
-        vctDoubleVec Velocity; // max * ratio
-        double VelocityRatio;
-        mtsFunctionWrite VelocityRatioEvent;
-        vctDoubleVec AccelerationMaximum;
-        vctDoubleVec Acceleration; // max * ratio
-        double AccelerationRatio;
-        mtsFunctionWrite AccelerationRatioEvent;
-        vctDoubleVec Goal;
-        vctDoubleVec GoalVelocity;
-        vctDoubleVec GoalError;
-        vctDoubleVec GoalTolerance;
-        vctDoubleVec MaxJerk;
-        bool IsActive;
-        double EndTime;
-        mtsFunctionWrite GoalReachedEvent; // sends true if goal reached, false otherwise
-    } mJointTrajectory;
+        vctDoubleVec v_max;
+        vctDoubleVec v; // max * ratio
+        double ratio_v;
+        mtsFunctionWrite ratio_v_event;
+        vctDoubleVec a_max;
+        vctDoubleVec a; // max * ratio
+        double ratio_a;
+        mtsFunctionWrite ratio_a_event;
+        vctDoubleVec goal;
+        vctDoubleVec goal_v;
+        vctDoubleVec goal_error;
+        vctDoubleVec goal_tolerance;
+        vctDoubleVec jerk_max;
+        bool is_active;
+        double end_time;
+        mtsFunctionWrite goal_reached_event; // sends true if goal reached, false otherwise
+    } m_trajectory_j;
 
     // homing
     bool m_encoders_biased_from_pots = false; // encoders biased from pots

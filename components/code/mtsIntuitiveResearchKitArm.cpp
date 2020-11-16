@@ -16,7 +16,6 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-
 // system include
 #include <iostream>
 #include <time.h>
@@ -179,7 +178,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                this);
 
     // state table to maintain state :-)
-    mStateTableState.AddData(mStateTableStateDesired, "DesiredState");
+    mStateTableState.AddData(mStateTableStateDesired, "desired_state");
     m_operating_state.SetValid(true);
     mStateTableState.AddData(m_operating_state, "operating_state");
     AddStateTable(&mStateTableState);
@@ -199,9 +198,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mHomingGoesToZero = false; // MTM ignores this
     mHomingBiasEncoderRequested = false;
 
-    mWrenchBodyOrientationAbsolute = false;
+    m_body_cf_orientation_absolute = false;
     m_gravity_compensation = false;
-    m_cartesianImpedance = false;
+    m_cartesian_impedance = false;
 
     m_new_pid_goal = false;
 
@@ -216,15 +215,15 @@ void mtsIntuitiveResearchKitArm::Init(void)
     JointVelocitySet.SetSize(NumberOfJoints());
     JointSetParam.Goal().SetSize(NumberOfJoints());
     FeedForwardParam.ForceTorque().SetSize(NumberOfJoints());
-    mJointTrajectory.VelocityMaximum.SetSize(NumberOfJoints());
-    mJointTrajectory.Velocity.SetSize(NumberOfJoints());
-    mJointTrajectory.AccelerationMaximum.SetSize(NumberOfJoints());
-    mJointTrajectory.Acceleration.SetSize(NumberOfJoints());
-    mJointTrajectory.Goal.SetSize(NumberOfJoints());
-    mJointTrajectory.GoalVelocity.SetSize(NumberOfJoints());
-    mJointTrajectory.GoalError.SetSize(NumberOfJoints());
-    mJointTrajectory.GoalTolerance.SetSize(NumberOfJoints());
-    mJointTrajectory.IsActive = false;
+    m_trajectory_j.v_max.SetSize(NumberOfJoints());
+    m_trajectory_j.v.SetSize(NumberOfJoints());
+    m_trajectory_j.a_max.SetSize(NumberOfJoints());
+    m_trajectory_j.a.SetSize(NumberOfJoints());
+    m_trajectory_j.goal.SetSize(NumberOfJoints());
+    m_trajectory_j.goal_v.SetSize(NumberOfJoints());
+    m_trajectory_j.goal_error.SetSize(NumberOfJoints());
+    m_trajectory_j.goal_tolerance.SetSize(NumberOfJoints());
+    m_trajectory_j.is_active = false;
 
     // initialize velocity
     m_measured_cv.SetVelocityLinear(vct3(0.0));
@@ -347,62 +346,62 @@ void mtsIntuitiveResearchKitArm::Init(void)
         m_arm_interface->AddCommandReadState(this->StateTable, m_spatial_measured_cf, "spatial/measured_cf");
         m_arm_interface->AddCommandReadState(this->StateTable, m_spatial_jacobian, "spatial/jacobian");
         m_arm_interface->AddCommandReadState(this->mStateTableState,
-                                            m_operating_state, "operating_state");
+                                             m_operating_state, "operating_state");
         // Set
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame,
-                                        this, "SetBaseFrame");
+                                         this, "SetBaseFrame");
         m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitArm::Freeze,
-                                       this, "Freeze");
+                                        this, "Freeze");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jp,
-                                        this, "servo_jp");
+                                         this, "servo_jp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jr,
-                                        this, "servo_jr");
+                                         this, "servo_jr");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::move_jp,
-                                        this, "move_jp");
+                                         this, "move_jp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::move_jr,
-                                        this, "move_jr");
+                                         this, "move_jr");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_cp,
-                                        this, "servo_cp");
+                                         this, "servo_cp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_cr,
-                                        this, "servo_cr_not_working_yet");
+                                         this, "servo_cr_not_working_yet");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::move_cp,
-                                        this, "move_cp");
+                                         this, "move_cp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jf,
-                                        this, "servo_jf");
+                                         this, "servo_jf");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::body_servo_cf,
-                                        this, "body/servo_cf");
-        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetWrenchBodyOrientationAbsolute,
-                                        this, "SetWrenchBodyOrientationAbsolute");
+                                         this, "body/servo_cf");
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::body_set_cf_orientation_absolute,
+                                         this, "body/set_cf_orientation_absolute");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::spatial_servo_cf,
-                                        this, "spatial/servo_cf");
-        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetGravityCompensation,
-                                        this, "SetGravityCompensation");
-        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetCartesianImpedanceGains,
-                                        this, "SetCartesianImpedanceGains");
+                                         this, "spatial/servo_cf");
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::use_gravity_compensation,
+                                         this, "use_gravity_compensation");
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::set_cartesian_impedance_gains,
+                                         this, "set_cartesian_impedance_gains");
         // Kinematic queries
         m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::query_cp,
                                                  this, "query_cp");
         m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::local_query_cp,
                                                  this, "local/query_cp");
         // Trajectory
-        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetJointVelocityRatio,
-                                        this, "SetJointVelocityRatio");
-        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetJointAccelerationRatio,
-                                        this, "SetJointAccelerationRatio");
-        m_arm_interface->AddEventWrite(mJointTrajectory.VelocityRatioEvent, "JointVelocityRatio", double());
-        m_arm_interface->AddEventWrite(mJointTrajectory.AccelerationRatioEvent, "JointAccelerationRatio", double());
-        m_arm_interface->AddEventWrite(mJointTrajectory.GoalReachedEvent, "GoalReached", bool());
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::trajectory_j_set_ratio_v,
+                                         this, "trajectory_j/set_ratio_v");
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::trajectory_j_set_ratio_a,
+                                         this, "trajectory_j/set_ratio_a");
+        m_arm_interface->AddEventWrite(m_trajectory_j.ratio_v_event, "trajectory_j/ratio_v", double());
+        m_arm_interface->AddEventWrite(m_trajectory_j.ratio_a_event, "trajectory_j/ratio_a", double());
+        m_arm_interface->AddEventWrite(m_trajectory_j.goal_reached_event, "goal_reached", bool());
         // Arm State
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::state_command,
-                                        this, "state_command", std::string(""));
+                                         this, "state_command", std::string(""));
         // Human readable messages
-        m_arm_interface->AddEventWrite(state_events.desired_state, "DesiredState", std::string(""));
-        m_arm_interface->AddEventWrite(state_events.current_state, "CurrentState", std::string(""));
+        m_arm_interface->AddEventWrite(state_events.desired_state, "desired_state", std::string(""));
+        m_arm_interface->AddEventWrite(state_events.current_state, "current_state", std::string(""));
         m_arm_interface->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
 
         // Stats
         m_arm_interface->AddCommandReadState(StateTable, StateTable.PeriodStats,
-                                            "period_statistics");
+                                             "period_statistics");
     }
 
     // SetState will send log events, it needs to happen after the
@@ -715,6 +714,8 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)
 void mtsIntuitiveResearchKitArm::Startup(void)
 {
     SetDesiredState("DISABLED");
+    m_trajectory_j.ratio_v_event(m_trajectory_j.ratio_v);
+    m_trajectory_j.ratio_a_event(m_trajectory_j.ratio_a);
 }
 
 void mtsIntuitiveResearchKitArm::Run(void)
@@ -725,7 +726,7 @@ void mtsIntuitiveResearchKitArm::Run(void)
         mArmState.Run();
     } catch (std::exception & e) {
         m_arm_interface->SendError(this->GetName() + ": in state " + mArmState.CurrentState()
-                                  + ", caught exception \"" + e.what() + "\"");
+                                   + ", caught exception \"" + e.what() + "\"");
         SetDesiredState("DISABLED");
     }
     // trigger ExecOut event
@@ -851,7 +852,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         nmrPInverse(m_body_jacobian_transpose, mJacobianPInverseData);
         vctDoubleVec wrench(6);
         wrench.ProductOf(mJacobianPInverseData.PInverse(), m_kin_measured_js.Effort());
-        if (mWrenchBodyOrientationAbsolute) {
+        if (m_body_cf_orientation_absolute) {
             // forces
             relative.Assign(wrench.Ref(3, 0));
             m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
@@ -1200,8 +1201,8 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
     // initialize trajectory with current position and velocities
     JointSet.Assign(m_pid_setpoint_js.Position());
     JointVelocitySet.Assign(m_pid_measured_js.Velocity());
-    mJointTrajectory.GoalVelocity.SetAll(0.0);
-    mJointTrajectory.EndTime = 0.0;
+    m_trajectory_j.goal_v.SetAll(0.0);
+    m_trajectory_j.end_time = 0.0;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
 
@@ -1216,30 +1217,30 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
     static const double extraTime = 2.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
-    mJointTrajectory.Reflexxes.Evaluate(JointSet,
-                                        JointVelocitySet,
-                                        mJointTrajectory.Goal,
-                                        mJointTrajectory.GoalVelocity);
+    m_trajectory_j.Reflexxes.Evaluate(JointSet,
+                                      JointVelocitySet,
+                                      m_trajectory_j.goal,
+                                      m_trajectory_j.goal_v);
     mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
 
-    const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
+    const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
     bool isHomed;
 
     switch (trajectoryResult) {
 
     case robReflexxes::Reflexxes_WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (mJointTrajectory.EndTime == 0.0) {
-            mJointTrajectory.EndTime = currentTime + mJointTrajectory.Reflexxes.Duration();
-            mHomingTimer = mJointTrajectory.EndTime;
+        if (m_trajectory_j.end_time == 0.0) {
+            m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
+            mHomingTimer = m_trajectory_j.end_time;
         }
         break;
 
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
         // check position
-        mJointTrajectory.GoalError.DifferenceOf(mJointTrajectory.Goal, m_pid_measured_js.Position());
-        mJointTrajectory.GoalError.AbsSelf();
-        isHomed = !mJointTrajectory.GoalError.ElementwiseGreaterOrEqual(mJointTrajectory.GoalTolerance).Any();
+        m_trajectory_j.goal_error.DifferenceOf(m_trajectory_j.goal, m_pid_measured_js.Position());
+        m_trajectory_j.goal_error.AbsSelf();
+        isHomed = !m_trajectory_j.goal_error.ElementwiseGreaterOrEqual(m_trajectory_j.goal_tolerance).Any();
         if (isHomed) {
             m_operating_state.IsHomed() = true;
             PID.SetCheckPositionLimit(true);
@@ -1248,7 +1249,7 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
             // time out
             if (currentTime > mHomingTimer + extraTime) {
                 CMN_LOG_CLASS_INIT_WARNING << GetName() << ": RunHoming: unable to reach home position, error in degrees is "
-                                           << mJointTrajectory.GoalError * (180.0 / cmnPI) << std::endl;
+                                           << m_trajectory_j.goal_error * cmn180_PI << std::endl;
                 m_arm_interface->SendError(this->GetName() + ": unable to reach home position during calibration on pots");
                 SetDesiredState("FAULT");
             }
@@ -1321,35 +1322,35 @@ void mtsIntuitiveResearchKitArm::ControlPositionJoint(void)
 void mtsIntuitiveResearchKitArm::ControlPositionGoalJoint(void)
 {
     // check if there's anything to do
-    if (!mJointTrajectory.IsActive) {
+    if (!m_trajectory_j.is_active) {
         return;
     }
 
-    mJointTrajectory.Reflexxes.Evaluate(JointSet,
-                                        JointVelocitySet,
-                                        mJointTrajectory.Goal,
-                                        mJointTrajectory.GoalVelocity);
+    m_trajectory_j.Reflexxes.Evaluate(JointSet,
+                                      JointVelocitySet,
+                                      m_trajectory_j.goal,
+                                      m_trajectory_j.goal_v);
     mtsIntuitiveResearchKitArm::SetPositionJointLocal(JointSet);
 
-    const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
+    const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
     const double currentTime = this->StateTable.GetTic();
 
     switch (trajectoryResult) {
     case robReflexxes::Reflexxes_WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (mJointTrajectory.EndTime == 0.0) {
-            mJointTrajectory.EndTime = currentTime + mJointTrajectory.Reflexxes.Duration();
+        if (m_trajectory_j.end_time == 0.0) {
+            m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
         }
         break;
     case robReflexxes::Reflexxes_FINAL_STATE_REACHED:
-        mJointTrajectory.GoalReachedEvent(true);
-        mJointTrajectory.IsActive = false;
+        m_trajectory_j.goal_reached_event(true);
+        m_trajectory_j.is_active = false;
         UpdateIsBusy(false);
         break;
     default:
         m_arm_interface->SendError(this->GetName() + ": error while evaluating trajectory");
-        mJointTrajectory.GoalReachedEvent(false);
-        mJointTrajectory.IsActive = false;
+        m_trajectory_j.goal_reached_event(false);
+        m_trajectory_j.is_active = false;
         UpdateIsBusy(false);
         break;
     }
@@ -1370,8 +1371,8 @@ void mtsIntuitiveResearchKitArm::ControlPositionCartesian(void)
             // shows robManipulator error if used
             if (this->Manipulator) {
                 m_arm_interface->SendError(this->GetName()
-                                          + ": unable to solve inverse kinematics ("
-                                          + this->Manipulator->LastError() + ")");
+                                           + ": unable to solve inverse kinematics ("
+                                           + this->Manipulator->LastError() + ")");
             } else {
                 m_arm_interface->SendError(this->GetName() + ": unable to solve inverse kinematics");
             }
@@ -1415,28 +1416,28 @@ bool mtsIntuitiveResearchKitArm::ArmIsReady(const std::string & methodName,
     return false;
 }
 
-void mtsIntuitiveResearchKitArm::SetJointVelocityRatio(const double & ratio)
+void mtsIntuitiveResearchKitArm::trajectory_j_set_ratio_v(const double & ratio)
 {
     if (ratio > 0.0 && ratio <= 1.0) {
-        mJointTrajectory.Velocity.ProductOf(ratio, mJointTrajectory.VelocityMaximum);
-        mJointTrajectory.VelocityRatio = ratio;
-        mJointTrajectory.VelocityRatioEvent(ratio);
+        m_trajectory_j.v.ProductOf(ratio, m_trajectory_j.v_max);
+        m_trajectory_j.ratio_v = ratio;
+        m_trajectory_j.ratio_v_event(ratio);
     } else {
         std::stringstream message;
-        message << this->GetName() << ": SetJointVelocityRatio, ratio must be within ]0;1], received " << ratio;
+        message << this->GetName() << ": trajectory_j_set_ratio_v, ratio must be within ]0;1], received " << ratio;
         m_arm_interface->SendWarning(message.str());
     }
 }
 
-void mtsIntuitiveResearchKitArm::SetJointAccelerationRatio(const double & ratio)
+void mtsIntuitiveResearchKitArm::trajectory_j_set_ratio_a(const double & ratio)
 {
     if (ratio > 0.0 && ratio <= 1.0) {
-        mJointTrajectory.Acceleration.ProductOf(ratio, mJointTrajectory.AccelerationMaximum);
-        mJointTrajectory.AccelerationRatio = ratio;
-        mJointTrajectory.AccelerationRatioEvent(ratio);
+        m_trajectory_j.a.ProductOf(ratio, m_trajectory_j.a_max);
+        m_trajectory_j.ratio_a = ratio;
+        m_trajectory_j.ratio_a_event(ratio);
     } else {
         std::stringstream message;
-        message << this->GetName() << ": SetJointAccelerationRatio, ratio must be within ]0;1], received " << ratio;
+        message << this->GetName() << ": trajectory_j_set_ratio_a, ratio must be within ]0;1], received " << ratio;
         m_arm_interface->SendWarning(message.str());
     }
 }
@@ -1479,8 +1480,8 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
     if (mode != m_control_mode) {
 
         if ((m_control_mode == mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE)
-            &&  mJointTrajectory.IsActive) {
-            mJointTrajectory.IsActive = false;
+            &&  m_trajectory_j.is_active) {
+            m_trajectory_j.is_active = false;
             UpdateIsBusy(false);
         }
 
@@ -1508,10 +1509,10 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
                 JointVelocitySet.SetSize(NumberOfJoints());
                 JointVelocitySet.SetAll(0.0);
             }
-            mJointTrajectory.Reflexxes.Set(mJointTrajectory.Velocity,
-                                           mJointTrajectory.Acceleration,
-                                           StateTable.PeriodStats.PeriodAvg(),
-                                           robReflexxes::Reflexxes_TIME);
+            m_trajectory_j.Reflexxes.Set(m_trajectory_j.v,
+                                         m_trajectory_j.a,
+                                         StateTable.PeriodStats.PeriodAvg(),
+                                         robReflexxes::Reflexxes_TIME);
             break;
         case mtsIntuitiveResearchKitArmTypes::EFFORT_MODE:
             // configure PID
@@ -1578,9 +1579,9 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
 
     // messages
     m_arm_interface->SendStatus(this->GetName() + ": control "
-                               + cmnData<mtsIntuitiveResearchKitArmTypes::ControlSpace>::HumanReadable(m_control_space)
-                               + '/'
-                               + cmnData<mtsIntuitiveResearchKitArmTypes::ControlMode>::HumanReadable(m_control_mode));
+                                + cmnData<mtsIntuitiveResearchKitArmTypes::ControlSpace>::HumanReadable(m_control_space)
+                                + '/'
+                                + cmnData<mtsIntuitiveResearchKitArmTypes::ControlMode>::HumanReadable(m_control_mode));
 }
 
 void mtsIntuitiveResearchKitArm::SetControlEffortActiveJoints(void)
@@ -1624,37 +1625,37 @@ void mtsIntuitiveResearchKitArm::ControlEffortCartesian(void)
     ControlEffortCartesianPreload(effortPreload, wrenchPreload);
 
     // body wrench
-    if (mWrenchType == WRENCH_BODY) {
+    if (m_cf_type == WRENCH_BODY) {
         // either using wrench provided by user or cartesian impedance
-        if (m_cartesianImpedance) {
+        if (m_cartesian_impedance) {
             mCartesianImpedanceController->Update(m_measured_cp,
                                                   m_measured_cv,
-                                                  mWrenchSet,
-                                                  mWrenchBodyOrientationAbsolute);
-            wrench.Assign(mWrenchSet.Force());
+                                                  m_cf_set,
+                                                  m_body_cf_orientation_absolute);
+            wrench.Assign(m_cf_set.Force());
         } else {
             // user provided wrench
-            if (mWrenchBodyOrientationAbsolute) {
+            if (m_body_cf_orientation_absolute) {
                 // use forward kinematics orientation to have constant wrench orientation
                 vct3 relative, absolute;
                 // force
-                relative.Assign(mWrenchSet.Force().Ref<3>(0));
+                relative.Assign(m_cf_set.Force().Ref<3>(0));
                 m_measured_cp_frame.Rotation().ApplyInverseTo(relative, absolute);
                 wrench.Ref(3, 0).Assign(absolute);
                 // torque
-                relative.Assign(mWrenchSet.Force().Ref<3>(3));
+                relative.Assign(m_cf_set.Force().Ref<3>(3));
                 m_measured_cp_frame.Rotation().ApplyInverseTo(relative, absolute);
                 wrench.Ref(3, 3).Assign(absolute);
             } else {
-                wrench.Assign(mWrenchSet.Force());
+                wrench.Assign(m_cf_set.Force());
             }
         }
         mEffortJoint.ProductOf(m_body_jacobian.Transpose(), wrench + wrenchPreload);
         mEffortJoint.Add(effortPreload);
     }
     // spatial wrench
-    else if (mWrenchType == WRENCH_SPATIAL) {
-        wrench.Assign(mWrenchSet.Force());
+    else if (m_cf_type == WRENCH_SPATIAL) {
+        wrench.Assign(m_cf_set.Force());
         mEffortJoint.ProductOf(m_spatial_jacobian.Transpose(), wrench + wrenchPreload);
         mEffortJoint.Add(effortPreload);
     }
@@ -1761,11 +1762,11 @@ void mtsIntuitiveResearchKitArm::move_jp(const prmPositionJointSet & newPosition
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
     // make sure trajectory is reset
     UpdateIsBusy(true);
-    mJointTrajectory.IsActive = true;
-    mJointTrajectory.EndTime = 0.0;
+    m_trajectory_j.is_active = true;
+    m_trajectory_j.end_time = 0.0;
     // new goal
-    ToJointsPID(newPosition.Goal(), mJointTrajectory.Goal);
-    mJointTrajectory.GoalVelocity.SetAll(0.0);
+    ToJointsPID(newPosition.Goal(), m_trajectory_j.goal);
+    m_trajectory_j.goal_v.SetAll(0.0);
 }
 
 void mtsIntuitiveResearchKitArm::move_jr(const prmPositionJointSet & newPosition)
@@ -1780,18 +1781,18 @@ void mtsIntuitiveResearchKitArm::move_jr(const prmPositionJointSet & newPosition
     // make sure trajectory is reset
     UpdateIsBusy(true);
     // if trajectory is active, add to existing goal
-    if (mJointTrajectory.IsActive) {
-        vctDoubleVec relative(mJointTrajectory.Goal.size());
+    if (m_trajectory_j.is_active) {
+        vctDoubleVec relative(m_trajectory_j.goal.size());
         ToJointsPID(newPosition.Goal(), relative);
-        mJointTrajectory.Goal.Add(relative);
+        m_trajectory_j.goal.Add(relative);
     } else {
         // new goal, goal + setpoint
-        ToJointsPID(newPosition.Goal(), mJointTrajectory.Goal);
-        mJointTrajectory.Goal.Add(m_pid_setpoint_js.Position());
+        ToJointsPID(newPosition.Goal(), m_trajectory_j.goal);
+        m_trajectory_j.goal.Add(m_pid_setpoint_js.Position());
     }
-    mJointTrajectory.IsActive = true;
-    mJointTrajectory.EndTime = 0.0;
-    mJointTrajectory.GoalVelocity.SetAll(0.0);
+    m_trajectory_j.is_active = true;
+    m_trajectory_j.end_time = 0.0;
+    m_trajectory_j.goal_v.SetAll(0.0);
 }
 
 void mtsIntuitiveResearchKitArm::servo_cp(const prmPositionCartesianSet & newPosition)
@@ -1841,21 +1842,21 @@ void mtsIntuitiveResearchKitArm::move_cp(const prmPositionCartesianSet & newPosi
     if (this->InverseKinematics(jointSet, m_base_frame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
         // make sure trajectory is reset
         UpdateIsBusy(true);
-        mJointTrajectory.IsActive = true;
-        mJointTrajectory.EndTime = 0.0;
+        m_trajectory_j.is_active = true;
+        m_trajectory_j.end_time = 0.0;
         // new goal
-        ToJointsPID(jointSet, mJointTrajectory.Goal);
-        mJointTrajectory.GoalVelocity.SetAll(0.0);
+        ToJointsPID(jointSet, m_trajectory_j.goal);
+        m_trajectory_j.goal_v.SetAll(0.0);
     } else {
         // shows robManipulator error if used
         if (this->Manipulator) {
             m_arm_interface->SendError(this->GetName()
-                                      + ": unable to solve inverse kinematics ("
-                                      + this->Manipulator->LastError() + ")");
+                                       + ": unable to solve inverse kinematics ("
+                                       + this->Manipulator->LastError() + ")");
         } else {
             m_arm_interface->SendError(this->GetName() + ": unable to solve inverse kinematics");
         }
-        mJointTrajectory.GoalReachedEvent(false);
+        m_trajectory_j.goal_reached_event(false);
         UpdateIsBusy(false);
     }
 }
@@ -1956,10 +1957,10 @@ void mtsIntuitiveResearchKitArm::body_servo_cf(const prmForceCartesianSet & wren
                            mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
 
     // set new wrench
-    m_cartesianImpedance = false;
-    mWrenchSet = wrench;
-    if (mWrenchType != WRENCH_BODY) {
-        mWrenchType = WRENCH_BODY;
+    m_cartesian_impedance = false;
+    m_cf_set = wrench;
+    if (m_cf_type != WRENCH_BODY) {
+        m_cf_type = WRENCH_BODY;
         m_arm_interface->SendStatus(this->GetName() + ": effort cartesian WRENCH_BODY");
     }
 }
@@ -1975,20 +1976,20 @@ void mtsIntuitiveResearchKitArm::spatial_servo_cf(const prmForceCartesianSet & w
                            mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
 
     // set new wrench
-    m_cartesianImpedance = false;
-    mWrenchSet = wrench;
-    if (mWrenchType != WRENCH_SPATIAL) {
-        mWrenchType = WRENCH_SPATIAL;
+    m_cartesian_impedance = false;
+    m_cf_set = wrench;
+    if (m_cf_type != WRENCH_SPATIAL) {
+        m_cf_type = WRENCH_SPATIAL;
         m_arm_interface->SendStatus(this->GetName() + ": effort cartesian WRENCH_SPATIAL");
     }
 }
 
-void mtsIntuitiveResearchKitArm::SetWrenchBodyOrientationAbsolute(const bool & absolute)
+void mtsIntuitiveResearchKitArm::body_set_cf_orientation_absolute(const bool & absolute)
 {
-    mWrenchBodyOrientationAbsolute = absolute;
+    m_body_cf_orientation_absolute = absolute;
 }
 
-void mtsIntuitiveResearchKitArm::SetGravityCompensation(const bool & gravityCompensation)
+void mtsIntuitiveResearchKitArm::use_gravity_compensation(const bool & gravityCompensation)
 {
     m_gravity_compensation = gravityCompensation;
 }
@@ -2001,7 +2002,7 @@ void mtsIntuitiveResearchKitArm::AddGravityCompensationEfforts(vctDoubleVec & ef
     efforts.Add(gravityEfforts);
 }
 
-void mtsIntuitiveResearchKitArm::SetCartesianImpedanceGains(const prmCartesianImpedanceGains & gains)
+void mtsIntuitiveResearchKitArm::set_cartesian_impedance_gains(const prmCartesianImpedanceGains & gains)
 {
     if (!ArmIsReady("servo_cf_body", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
         return;
@@ -2012,11 +2013,11 @@ void mtsIntuitiveResearchKitArm::SetCartesianImpedanceGains(const prmCartesianIm
                            mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
 
     // set new wrench
-    m_cartesianImpedance = true;
-    mWrenchBodyOrientationAbsolute = true;
+    m_cartesian_impedance = true;
+    m_body_cf_orientation_absolute = true;
     mCartesianImpedanceController->SetGains(gains);
-    if (mWrenchType != WRENCH_BODY) {
-        mWrenchType = WRENCH_BODY;
+    if (m_cf_type != WRENCH_BODY) {
+        m_cf_type = WRENCH_BODY;
         m_arm_interface->SendStatus(this->GetName() + ": effort cartesian WRENCH_BODY");
     }
 }

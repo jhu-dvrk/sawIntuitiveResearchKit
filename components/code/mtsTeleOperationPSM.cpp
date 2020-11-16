@@ -123,10 +123,10 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("setpoint_cp", mMTM.setpoint_cp);
         interfaceRequired->AddFunction("move_cp", mMTM.move_cp);
         interfaceRequired->AddFunction("gripper/measured_js", mMTM.gripper_measured_js);
-        interfaceRequired->AddFunction("LockOrientation", mMTM.LockOrientation);
-        interfaceRequired->AddFunction("UnlockOrientation", mMTM.UnlockOrientation);
+        interfaceRequired->AddFunction("lock_orientation", mMTM.lock_orientation);
+        interfaceRequired->AddFunction("unlock_orientation", mMTM.unlock_orientation);
         interfaceRequired->AddFunction("body/servo_cf", mMTM.servo_cf_body);
-        interfaceRequired->AddFunction("SetGravityCompensation", mMTM.SetGravityCompensation);
+        interfaceRequired->AddFunction("use_gravity_compensation", mMTM.use_gravity_compensation);
         interfaceRequired->AddFunction("operating_state", mMTM.operating_state);
         interfaceRequired->AddFunction("state_command", mMTM.state_command);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::MTMErrorEventHandler,
@@ -199,10 +199,10 @@ void mtsTeleOperationPSM::Init(void)
                                         mAlignOffset,
                                         "GetAlignOffset");
         // events
-        mInterface->AddEventWrite(MessageEvents.DesiredState,
-                                  "DesiredState", std::string(""));
-        mInterface->AddEventWrite(MessageEvents.CurrentState,
-                                  "CurrentState", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.desired_state,
+                                  "desired_state", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.current_state,
+                                  "current_state", std::string(""));
         mInterface->AddEventWrite(MessageEvents.Following,
                                   "Following", false);
         // configuration
@@ -412,13 +412,13 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         // no force applied but gravity and locked orientation
         prmForceCartesianSet wrench;
         mMTM.servo_cf_body(wrench);
-        mMTM.SetGravityCompensation(true);
+        mMTM.use_gravity_compensation(true);
         if (mAlignMTM || mRotationLocked) {
             // lock in current position
-            mMTM.LockOrientation(mMTM.PositionCartesianCurrent.Position().Rotation());
+            mMTM.lock_orientation(mMTM.PositionCartesianCurrent.Position().Rotation());
         } else {
             // make sure it is freed
-            mMTM.UnlockOrientation();
+            mMTM.unlock_orientation();
         }
 
         // make sure PSM stops moving
@@ -459,7 +459,7 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
     }
     // return is already the desired state
     if (mTeleopState.DesiredState() == state) {
-        MessageEvents.DesiredState(state);
+        MessageEvents.desired_state(state);
         return;
     }
     // try to set the desired state
@@ -471,7 +471,7 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
     }
     // force operator to indicate they are present
     mOperator.IsActive = false;
-    MessageEvents.DesiredState(state);
+    MessageEvents.desired_state(state);
     mInterface->SendStatus(this->GetName() + ": set desired state to " + state);
 }
 
@@ -530,7 +530,7 @@ void mtsTeleOperationPSM::LockRotation(const bool & lock)
         UpdateInitialState();
         // lock orientation if the arm is running
         if (mTeleopState.CurrentState() == "ENABLED") {
-            mMTM.LockOrientation(mMTM.PositionCartesianCurrent.Position().Rotation());
+            mMTM.lock_orientation(mMTM.PositionCartesianCurrent.Position().Rotation());
         }
     }
 }
@@ -560,7 +560,7 @@ void mtsTeleOperationPSM::SetAlignMTM(const bool & alignMTM)
 void mtsTeleOperationPSM::StateChanged(void)
 {
     const std::string newState = mTeleopState.CurrentState();
-    MessageEvents.CurrentState(newState);
+    MessageEvents.current_state(newState);
     mInterface->SendStatus(this->GetName() + ": current state is " + newState);
 }
 
@@ -824,14 +824,14 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     }
 
     // set MTM/PSM to Teleop (Cartesian Position Mode)
-    mMTM.SetGravityCompensation(true);
+    mMTM.use_gravity_compensation(true);
     // set forces to zero and lock/unlock orientation as needed
     prmForceCartesianSet wrench;
     mMTM.servo_cf_body(wrench);
     if (mRotationLocked) {
-        mMTM.LockOrientation(mMTM.PositionCartesianCurrent.Position().Rotation());
+        mMTM.lock_orientation(mMTM.PositionCartesianCurrent.Position().Rotation());
     } else {
-        mMTM.UnlockOrientation();
+        mMTM.unlock_orientation();
     }
     // check if by any chance the clutch pedal is pressed
     if (mIsClutched) {

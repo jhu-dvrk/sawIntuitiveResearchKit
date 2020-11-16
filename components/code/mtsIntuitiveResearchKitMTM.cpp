@@ -113,14 +113,14 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     m_gripper_closed = false;
 
     // initialize trajectory data
-    mJointTrajectory.VelocityMaximum.SetAll(90.0 * cmnPI_180); // degrees per second
-    mJointTrajectory.VelocityMaximum.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180; // roll can go fast
-    SetJointVelocityRatio(1.0);
-    mJointTrajectory.AccelerationMaximum.SetAll(90.0 * cmnPI_180);
-    mJointTrajectory.AccelerationMaximum.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180;
-    SetJointAccelerationRatio(1.0);
-    mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
-    mJointTrajectory.GoalTolerance.at(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
+    m_trajectory_j.v_max.SetAll(90.0 * cmnPI_180); // degrees per second
+    m_trajectory_j.v_max.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180; // roll can go fast
+    trajectory_j_set_ratio_v(1.0);
+    m_trajectory_j.a_max.SetAll(90.0 * cmnPI_180);
+    m_trajectory_j.a_max.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180;
+    trajectory_j_set_ratio_a(1.0);
+    m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
+    m_trajectory_j.goal_tolerance.at(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
 
     // default PID tracking errors, defaults are used for homing
     PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
@@ -138,13 +138,13 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 
     // Main interface should have been created by base class init
     CMN_ASSERT(m_arm_interface);
-    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::LockOrientation, this, "LockOrientation");
-    m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitMTM::UnlockOrientation, this, "UnlockOrientation");
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::lock_orientation, this, "lock_orientation");
+    m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitMTM::unlock_orientation, this, "unlock_orientation");
 
     // Gripper
     m_arm_interface->AddCommandReadState(this->StateTable, m_gripper_measured_js, "gripper/measured_js");
-    m_arm_interface->AddEventVoid(GripperEvents.GripperPinch, "GripperPinchEvent");
-    m_arm_interface->AddEventWrite(GripperEvents.m_gripper_closed, "GripperClosedEvent", true);
+    m_arm_interface->AddEventVoid(gripper_events.pinch, "gripper/pinch");
+    m_arm_interface->AddEventWrite(gripper_events.closed, "gripper/closed", true);
 }
 
 void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
@@ -319,7 +319,7 @@ bool mtsIntuitiveResearchKitMTM::IsCartesianReady(void) const
 void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
 {
     // compute joint goal position
-    mJointTrajectory.Goal.SetAll(0.0);
+    m_trajectory_j.goal.SetAll(0.0);
 }
 
 void mtsIntuitiveResearchKitMTM::TransitionEncodersBiased(void)
@@ -346,11 +346,11 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 
     // compute joint goal position, we assume PID is on from previous state
     PID.setpoint_js(m_pid_setpoint_js);
-    mJointTrajectory.Goal.Assign(m_pid_setpoint_js.Position());
+    m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position());
     const double currentRoll = m_pid_setpoint_js.Position().at(JNT_WRIST_ROLL);
-    mJointTrajectory.Goal.at(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
-    mJointTrajectory.GoalVelocity.SetAll(0.0);
-    mJointTrajectory.EndTime = 0.0;
+    m_trajectory_j.goal.at(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
+    m_trajectory_j.goal_v.SetAll(0.0);
+    m_trajectory_j.end_time = 0.0;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
 
@@ -379,21 +379,21 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
     static const double extraTime = 2.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
-    mJointTrajectory.Reflexxes.Evaluate(JointSet,
-                                        JointVelocitySet,
-                                        mJointTrajectory.Goal,
-                                        mJointTrajectory.GoalVelocity);
+    m_trajectory_j.Reflexxes.Evaluate(JointSet,
+                                      JointVelocitySet,
+                                      m_trajectory_j.goal,
+                                      m_trajectory_j.goal_v);
     SetPositionJointLocal(JointSet);
 
-    const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
+    const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
 
     switch (trajectoryResult) {
 
     case robReflexxes::Reflexxes_WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (mJointTrajectory.EndTime == 0.0) {
-            mJointTrajectory.EndTime = currentTime + mJointTrajectory.Reflexxes.Duration();
-            mHomingTimer = mJointTrajectory.EndTime;
+        if (m_trajectory_j.end_time == 0.0) {
+            m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
+            mHomingTimer = m_trajectory_j.end_time;
         }
 
         // detect tracking error and set lower limit
@@ -509,13 +509,13 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
     if (m_gripper_closed) {
         if (m_gripper_measured_js.Position().at(0) > 0.0) {
             m_gripper_closed = false;
-            GripperEvents.m_gripper_closed(false);
+            gripper_events.closed(false);
         }
     } else {
         if (m_gripper_measured_js.Position().at(0) < 0.0) {
             m_gripper_closed = true;
-            GripperEvents.m_gripper_closed(true);
-            GripperEvents.GripperPinch.Execute();
+            gripper_events.closed(true);
+            gripper_events.pinch();
         }
     }
 }
@@ -535,11 +535,11 @@ void mtsIntuitiveResearchKitMTM::ControlEffortOrientationLocked(void)
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
         // initialize trajectory
-        mJointTrajectory.Goal.Ref(NumberOfJointsKinematics()).Assign(jointSet);
-        mJointTrajectory.Reflexxes.Evaluate(JointSet,
-                                            JointVelocitySet,
-                                            mJointTrajectory.Goal,
-                                            mJointTrajectory.GoalVelocity);
+        m_trajectory_j.goal.Ref(NumberOfJointsKinematics()).Assign(jointSet);
+        m_trajectory_j.Reflexxes.Evaluate(JointSet,
+                                          JointVelocitySet,
+                                          m_trajectory_j.goal,
+                                          m_trajectory_j.goal_v);
         SetPositionJointLocal(JointSet);
     } else {
         m_arm_interface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortOrientationLocked");
@@ -565,11 +565,13 @@ void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
 void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
                                                                vctDoubleVec & wrenchPreload)
 {
-    if (mWrenchType == WRENCH_SPATIAL) {
+    // not handling this yet
+    if (m_cf_type == WRENCH_SPATIAL) {
         effortPreload.SetAll(0.0);
         wrenchPreload.SetAll(0.0);
         return;
     }
+
     // most efforts will be 0
     effortPreload.Zeros();
 
@@ -617,7 +619,7 @@ void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & ef
     wrenchPreload.SetAll(0.0);
 }
 
-void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
+void mtsIntuitiveResearchKitMTM::lock_orientation(const vctMatRot3 & orientation)
 {
     // if we just started lock
     if (!m_effort_orientation_locked) {
@@ -626,10 +628,10 @@ void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
         // initialize trajectory
         JointSet.Assign(m_pid_measured_js.Position(), NumberOfJoints());
         JointVelocitySet.Assign(m_pid_measured_js.Velocity(), NumberOfJoints());
-        mJointTrajectory.Reflexxes.Set(mJointTrajectory.Velocity,
-                                       mJointTrajectory.Acceleration,
-                                       StateTable.PeriodStats.PeriodAvg(),
-                                       robReflexxes::Reflexxes_TIME);
+        m_trajectory_j.Reflexxes.Set(m_trajectory_j.v,
+                                     m_trajectory_j.a,
+                                     StateTable.PeriodStats.PeriodAvg(),
+                                     robReflexxes::Reflexxes_TIME);
     }
     // in any case, update desired orientation in local coordinate system
     // mEffortOrientation.Assign(m_base_frame.Rotation().Inverse() * orientation);
@@ -637,7 +639,7 @@ void mtsIntuitiveResearchKitMTM::LockOrientation(const vctMatRot3 & orientation)
     mEffortOrientationJoint.Assign(m_pid_measured_js.Position());
 }
 
-void mtsIntuitiveResearchKitMTM::UnlockOrientation(void)
+void mtsIntuitiveResearchKitMTM::unlock_orientation(void)
 {
     // only unlock if needed
     if (m_effort_orientation_locked) {

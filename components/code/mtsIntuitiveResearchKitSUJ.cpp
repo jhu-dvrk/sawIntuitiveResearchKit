@@ -194,8 +194,8 @@ public:
         mInterfaceProvided->AddEventWrite(EventPositionCartesianLocal, "PositionCartesianLocal", prmPositionCartesianGet());
 
         // Events
-        mInterfaceProvided->AddEventWrite(state_events.current_state, "CurrentState", std::string(""));
-        mInterfaceProvided->AddEventWrite(state_events.desired_state, "DesiredState", std::string(""));
+        mInterfaceProvided->AddEventWrite(state_events.current_state, "current_state", std::string(""));
+        mInterfaceProvided->AddEventWrite(state_events.desired_state, "desired_state", std::string(""));
         mInterfaceProvided->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
         mInterfaceProvided->AddMessageEvents();
         // Stats
@@ -457,7 +457,7 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
                                     this);
 
     // state table to maintain state :-)
-    mStateTableState.AddData(mStateTableStateDesired, "DesiredState");
+    mStateTableState.AddData(mStateTableStateDesired, "desired_state");
     m_operating_state.SetValid(true);
     mStateTableState.AddData(m_operating_state, "operating_state");
     AddStateTable(&mStateTableState);
@@ -519,8 +519,8 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
                                         m_operating_state, "operating_state");
         // Events
         mInterface->AddMessageEvents();
-        mInterface->AddEventWrite(state_events.desired_state, "DesiredState", std::string(""));
-        mInterface->AddEventWrite(state_events.current_state, "CurrentState", std::string(""));
+        mInterface->AddEventWrite(state_events.desired_state, "desired_state", std::string(""));
+        mInterface->AddEventWrite(state_events.current_state, "current_state", std::string(""));
         mInterface->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
         // Stats
         mInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,

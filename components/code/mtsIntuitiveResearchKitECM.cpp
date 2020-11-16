@@ -16,7 +16,6 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-
 // system include
 #include <iostream>
 #include <time.h>
@@ -152,17 +151,17 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                this);
 
     // initialize trajectory data
-    mJointTrajectory.VelocityMaximum.Assign(30.0 * cmnPI_180, // degrees per second
-                                            30.0 * cmnPI_180,
-                                            30.0 * cmn_mm,    // mm per second
-                                            30.0 * cmnPI_180);
-    SetJointVelocityRatio(1.0);
-    mJointTrajectory.AccelerationMaximum.Assign(90.0 * cmnPI_180,
-                                                90.0 * cmnPI_180,
-                                                15.0 * cmn_mm,
-                                                90.0 * cmnPI_180);
-    SetJointAccelerationRatio(1.0);
-    mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
+    m_trajectory_j.v_max.Assign(30.0 * cmnPI_180, // degrees per second
+                                30.0 * cmnPI_180,
+                                30.0 * cmn_mm,    // mm per second
+                                30.0 * cmnPI_180);
+    trajectory_j_set_ratio_v(1.0);
+    m_trajectory_j.a_max.Assign(90.0 * cmnPI_180,
+                                90.0 * cmnPI_180,
+                                15.0 * cmn_mm,
+                                90.0 * cmnPI_180);
+    trajectory_j_set_ratio_a(1.0);
+    m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
 
     // default PID tracking errors
     PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
@@ -210,8 +209,8 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
 {
     // if simulated, start at zero but insert endoscope so it can be used in cartesian mode
     if (m_simulated) {
-        mJointTrajectory.Goal.SetAll(0.0);
-        mJointTrajectory.Goal.at(2) = 12.0 * cmn_cm;
+        m_trajectory_j.goal.SetAll(0.0);
+        m_trajectory_j.goal.at(2) = 12.0 * cmn_cm;
         return;
     }
 
@@ -220,13 +219,13 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
     PID.EnableTrackingError(true);
 
     // compute joint goal position
-    mJointTrajectory.Goal.SetSize(NumberOfJoints());
+    m_trajectory_j.goal.SetSize(NumberOfJoints());
     if (mHomingGoesToZero) {
         // move to zero position
-        mJointTrajectory.Goal.SetAll(0.0);
+        m_trajectory_j.goal.SetAll(0.0);
     } else {
         // stay at current position by default
-        mJointTrajectory.Goal.Assign(m_pid_setpoint_js.Position(), NumberOfJoints());
+        m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position(), NumberOfJoints());
     }
 }
 

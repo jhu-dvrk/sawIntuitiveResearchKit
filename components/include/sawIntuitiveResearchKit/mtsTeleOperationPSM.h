@@ -67,8 +67,8 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 
     // Functions for events
     struct {
-        mtsFunctionWrite DesiredState;
-        mtsFunctionWrite CurrentState;
+        mtsFunctionWrite desired_state;
+        mtsFunctionWrite current_state;
         mtsFunctionWrite Following;
     } MessageEvents;
     mtsInterfaceProvided * mInterface;
@@ -103,10 +103,10 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         mtsFunctionRead  setpoint_cp;
         mtsFunctionWrite move_cp;
         mtsFunctionRead  gripper_measured_js;
-        mtsFunctionWrite LockOrientation;
-        mtsFunctionVoid  UnlockOrientation;
+        mtsFunctionWrite lock_orientation;
+        mtsFunctionVoid  unlock_orientation;
         mtsFunctionWrite servo_cf_body;
-        mtsFunctionWrite SetGravityCompensation;
+        mtsFunctionWrite use_gravity_compensation;
 
         mtsFunctionRead  operating_state;
         mtsFunctionWrite state_command;

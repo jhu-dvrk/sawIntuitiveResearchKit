@@ -107,13 +107,13 @@ void mtsTeleOperationECM::Init(void)
         interfaceRequired->AddFunction("measured_cv",
                                        mMTML.measured_cv);
         interfaceRequired->AddFunction("LockOrientation",
-                                       mMTML.LockOrientation);
+                                       mMTML.lock_orientation);
         interfaceRequired->AddFunction("body/servo_cf",
                                        mMTML.body_servo_cf);
-        interfaceRequired->AddFunction("SetWrenchBodyOrientationAbsolute",
-                                       mMTML.SetWrenchBodyOrientationAbsolute);
-        interfaceRequired->AddFunction("SetGravityCompensation",
-                                       mMTML.SetGravityCompensation);
+        interfaceRequired->AddFunction("body/set_cf_orientation_absolute",
+                                       mMTML.body_set_cf_orientation_absolute);
+        interfaceRequired->AddFunction("use_gravity_compensation",
+                                       mMTML.use_gravity_compensation);
         interfaceRequired->AddFunction("operating_state",
                                        mMTML.operating_state);
         interfaceRequired->AddFunction("state_command",
@@ -129,13 +129,13 @@ void mtsTeleOperationECM::Init(void)
         interfaceRequired->AddFunction("measured_cv",
                                        mMTMR.measured_cv);
         interfaceRequired->AddFunction("LockOrientation",
-                                       mMTMR.LockOrientation);
+                                       mMTMR.lock_orientation);
         interfaceRequired->AddFunction("body/servo_cf",
                                        mMTMR.body_servo_cf);
-        interfaceRequired->AddFunction("SetWrenchBodyOrientationAbsolute",
-                                       mMTMR.SetWrenchBodyOrientationAbsolute);
-        interfaceRequired->AddFunction("SetGravityCompensation",
-                                       mMTMR.SetGravityCompensation);
+        interfaceRequired->AddFunction("body/set_cf_orientation_absolute",
+                                       mMTMR.body_set_cf_orientation_absolute);
+        interfaceRequired->AddFunction("use_gravity_compensation",
+                                       mMTMR.use_gravity_compensation);
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::MTMRErrorEventHandler,
                                                 this, "error");
         interfaceRequired->AddFunction("operating_state",
@@ -191,11 +191,11 @@ void mtsTeleOperationECM::Init(void)
                                         mECM.PositionCartesianCurrent,
                                         "GetPositionCartesianECM");
         // events
-        mInterface->AddEventWrite(MessageEvents.DesiredState,
-                                  "DesiredState", std::string(""));
-        mInterface->AddEventWrite(MessageEvents.CurrentState,
-                                  "CurrentState", std::string(""));
-        mInterface->AddEventWrite(MessageEvents.Following,
+        mInterface->AddEventWrite(MessageEvents.desired_state,
+                                  "desired_state", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.current_state,
+                                  "current_state", std::string(""));
+        mInterface->AddEventWrite(MessageEvents.following,
                                   "Following", false);
         // configuration
         mInterface->AddEventWrite(ConfigurationEvents.Scale,
@@ -245,7 +245,7 @@ void mtsTeleOperationECM::Cleanup(void)
 void mtsTeleOperationECM::StateChanged(void)
 {
     const std::string newState = mTeleopState.CurrentState();
-    MessageEvents.CurrentState(newState);
+    MessageEvents.current_state(newState);
     mInterface->SendStatus(this->GetName() + ": current state is " + newState);
 }
 
@@ -394,12 +394,12 @@ void mtsTeleOperationECM::TransitionSettingArmsState(void)
 void mtsTeleOperationECM::EnterEnabled(void)
 {
     // set cartesian effort parameters
-    mMTML.SetGravityCompensation(true);
-    mMTML.SetWrenchBodyOrientationAbsolute(true);
-    mMTML.LockOrientation(mMTML.PositionCartesianCurrent.Position().Rotation());
-    mMTMR.SetGravityCompensation(true);
-    mMTMR.SetWrenchBodyOrientationAbsolute(true);
-    mMTMR.LockOrientation(mMTMR.PositionCartesianCurrent.Position().Rotation());
+    mMTML.use_gravity_compensation(true);
+    mMTML.body_set_cf_orientation_absolute(true);
+    mMTML.lock_orientation(mMTML.PositionCartesianCurrent.Position().Rotation());
+    mMTMR.use_gravity_compensation(true);
+    mMTMR.body_set_cf_orientation_absolute(true);
+    mMTMR.lock_orientation(mMTMR.PositionCartesianCurrent.Position().Rotation());
 
     // initial state for MTM force feedback
     // -1- initial distance between MTMs
@@ -608,10 +608,10 @@ void mtsTeleOperationECM::RunEnabled(void)
     currMTMRRot = currECMRot.Inverse() * mInitial.MTMRRot;
 
     // set cartesian effort parameters
-    mMTML.SetWrenchBodyOrientationAbsolute(true);
-    mMTML.LockOrientation(currMTMLRot);
-    mMTMR.SetWrenchBodyOrientationAbsolute(true);
-    mMTMR.LockOrientation(currMTMRRot);
+    mMTML.body_set_cf_orientation_absolute(true);
+    mMTML.lock_orientation(currMTMLRot);
+    mMTMR.body_set_cf_orientation_absolute(true);
+    mMTMR.lock_orientation(currMTMRRot);
 }
 
 void mtsTeleOperationECM::TransitionEnabled(void)
@@ -624,7 +624,7 @@ void mtsTeleOperationECM::TransitionEnabled(void)
 
 void mtsTeleOperationECM::SetFollowing(const bool following)
 {
-    MessageEvents.Following(following);
+    MessageEvents.following(following);
     mIsFollowing = following;
 }
 
@@ -675,11 +675,11 @@ void mtsTeleOperationECM::Clutch(const bool & clutch)
         // set MTMs in effort mode, no force applied but gravity and locked orientation
         prmForceCartesianSet wrench;
         mMTML.body_servo_cf(wrench);
-        mMTML.SetGravityCompensation(true);
-        mMTML.LockOrientation(mMTML.PositionCartesianCurrent.Position().Rotation());
+        mMTML.use_gravity_compensation(true);
+        mMTML.lock_orientation(mMTML.PositionCartesianCurrent.Position().Rotation());
         mMTMR.body_servo_cf(wrench);
-        mMTMR.SetGravityCompensation(true);
-        mMTMR.LockOrientation(mMTMR.PositionCartesianCurrent.Position().Rotation());
+        mMTMR.use_gravity_compensation(true);
+        mMTMR.lock_orientation(mMTMR.PositionCartesianCurrent.Position().Rotation());
     } else {
         mIsClutched = false;
         mInterface->SendStatus(this->GetName() + ": console clutch released");
@@ -709,7 +709,7 @@ void mtsTeleOperationECM::SetDesiredState(const std::string & state)
     }
     // return is already the desired state
     if (mTeleopState.DesiredState() == state) {
-        MessageEvents.DesiredState(state);
+        MessageEvents.desired_state(state);
         return;
     }
     // try to set the desired state
@@ -720,7 +720,7 @@ void mtsTeleOperationECM::SetDesiredState(const std::string & state)
         return;
     }
     // messages and events
-    MessageEvents.DesiredState(state);
+    MessageEvents.desired_state(state);
     mInterface->SendStatus(this->GetName() + ": set desired state to " + state);
 }
 

@@ -77,3 +77,26 @@ RunHomingArm = RunHoming
 
 Robot = Arm
 RobotInterface = m_arm_interface
+
+SetGravityCompensation = use_gravity_compensation
+SetWrenchBodyOrientationAbsolute = body_set_cf_orientation_absolute
+SetCartesianImpedanceGains = set_cartesian_impedance_gains
+
+SetJointVelocityRatio = trajectory_j_set_ratio_v
+SetJointAccelerationRatio = trajectory_j_set_ratio_a
+JointVelocityRatio = trajectory_j_ratio_v
+JointAccelerationRatio = trajectory_j_ratio_a
+VelocityRatioEvent = trajectory_j_ratio_v_event
+AccelerationRatioEvent = trajectory_j_ratio_a_event
+GoalReachedEvent = goal_reached_event
+GoalReached = goal_reached
+
+DesiredState = desired_state
+CurrentState = current_state
+
+LockOrientation = lock_orientation
+UnlockOrientation = unlock_orientation
+
+mWrenchType = m_cf_type
+mWrenchSet = m_cf_set
+mWrenchBodyOrientationAbsolute = m_body_cf_orientation_absolute

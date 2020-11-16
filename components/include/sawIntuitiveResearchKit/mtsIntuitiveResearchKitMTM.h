@@ -113,19 +113,16 @@ protected:
                                        vctDoubleVec & wrenchPreload) override;
 
     /*! Lock master orientation when in cartesian effort mode */
-    virtual void LockOrientation(const vctMatRot3 & orientation);
-    virtual void UnlockOrientation(void);
+    virtual void lock_orientation(const vctMatRot3 & orientation);
+    virtual void unlock_orientation(void);
 
     void AddGravityCompensationEfforts(vctDoubleVec & efforts) override;
 
     // Functions for events
     struct {
-        mtsFunctionVoid GripperPinch;
-        mtsFunctionWrite m_gripper_closed;
-    } GripperEvents;
-
-    //! robot cartesian position when cluthed
-    vctFrm4x4 CartesianClutched;
+        mtsFunctionVoid pinch;
+        mtsFunctionWrite closed;
+    } gripper_events;
 
     mtsInterfaceRequired * GripperIOInterface;
     struct {

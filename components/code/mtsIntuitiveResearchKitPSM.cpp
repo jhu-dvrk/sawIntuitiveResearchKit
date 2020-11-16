@@ -16,7 +16,6 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-
 // system include
 #include <iostream>
 #include <time.h>
@@ -520,15 +519,15 @@ void mtsIntuitiveResearchKitPSM::Init(void)
                                this);
 
     // initialize trajectory data
-    mJointTrajectory.VelocityMaximum.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
-    mJointTrajectory.VelocityMaximum.Element(2) = 0.2; // m per second
-    mJointTrajectory.VelocityMaximum.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
-    SetJointVelocityRatio(1.0);
-    mJointTrajectory.AccelerationMaximum.Ref(2, 0).SetAll(180.0 * cmnPI_180);
-    mJointTrajectory.AccelerationMaximum.Element(2) = 0.2; // m per second
-    mJointTrajectory.AccelerationMaximum.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
-    SetJointAccelerationRatio(1.0);
-    mJointTrajectory.GoalTolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
+    m_trajectory_j.v_max.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
+    m_trajectory_j.v_max.Element(2) = 0.2; // m per second
+    m_trajectory_j.v_max.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
+    trajectory_j_set_ratio_v(1.0);
+    m_trajectory_j.a_max.Ref(2, 0).SetAll(180.0 * cmnPI_180);
+    m_trajectory_j.a_max.Element(2) = 0.2; // m per second
+    m_trajectory_j.a_max.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
+    trajectory_j_set_ratio_a(1.0);
+    m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
 
     // default PID tracking errors
     PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
@@ -595,7 +594,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     m_arm_interface->AddCommandReadState(this->StateTable, m_jaw_measured_js, "jaw/measured_js");
     m_arm_interface->AddCommandReadState(this->StateTable, m_jaw_setpoint_js, "jaw/setpoint_js");
     m_arm_interface->AddCommandReadState(this->mStateTableConfiguration,
-                                        CouplingChange.jaw_configuration_js, "jaw/configuration_js");
+                                         CouplingChange.jaw_configuration_js, "jaw/configuration_js");
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_servo_jp, this, "jaw/servo_jp");
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_move_jp, this, "jaw/move_jp");
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_servo_jf, this, "jaw/servo_jf");
@@ -685,8 +684,8 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
 {
     // if simulated, start at zero but insert tool so it can be used in cartesian mode
     if (m_simulated) {
-        mJointTrajectory.Goal.SetAll(0.0);
-        mJointTrajectory.Goal.at(2) = 12.0 * cmn_cm;
+        m_trajectory_j.goal.SetAll(0.0);
+        m_trajectory_j.goal.at(2) = 12.0 * cmn_cm;
         return;
     }
 
@@ -695,10 +694,10 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
     if (mHomingGoesToZero
         && !Tool.IsPresent) {
         // move to zero position only there is no tool present
-        mJointTrajectory.Goal.SetAll(0.0);
+        m_trajectory_j.goal.SetAll(0.0);
     } else {
         // stay at current position by default
-        mJointTrajectory.Goal.Assign(m_pid_setpoint_js.Position());
+        m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position());
     }
 }
 
@@ -970,34 +969,34 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         JointVelocitySet.Assign(m_pid_measured_js.Velocity());
 
         // keep first two joint values as is
-        mJointTrajectory.Goal.Ref(2, 0).Assign(m_pid_setpoint_js.Position().Ref(2, 0));
+        m_trajectory_j.goal.Ref(2, 0).Assign(m_pid_setpoint_js.Position().Ref(2, 0));
         // sterile adapter should be raised up
-        mJointTrajectory.Goal[2] = 0.0;
+        m_trajectory_j.goal[2] = 0.0;
         // set last 4 to -170.0
-        mJointTrajectory.Goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
-        mJointTrajectory.GoalVelocity.SetAll(0.0);
-        mJointTrajectory.EndTime = 0.0;
+        m_trajectory_j.goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
+        m_trajectory_j.goal_v.SetAll(0.0);
+        m_trajectory_j.end_time = 0.0;
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
         EngagingStage = 2;
         return;
     }
 
-    mJointTrajectory.Reflexxes.Evaluate(JointSet,
-                                        JointVelocitySet,
-                                        mJointTrajectory.Goal,
-                                        mJointTrajectory.GoalVelocity);
+    m_trajectory_j.Reflexxes.Evaluate(JointSet,
+                                      JointVelocitySet,
+                                      m_trajectory_j.goal,
+                                      m_trajectory_j.goal_v);
     SetPositionJointLocal(JointSet);
 
-    const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
+    const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
 
     switch (trajectoryResult) {
 
     case robReflexxes::Reflexxes_WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (mJointTrajectory.EndTime == 0.0) {
-            mJointTrajectory.EndTime = currentTime + mJointTrajectory.Reflexxes.Duration();
-            mHomingTimer = mJointTrajectory.EndTime;
+        if (m_trajectory_j.end_time == 0.0) {
+            m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
+            mHomingTimer = m_trajectory_j.end_time;
         }
         break;
 
@@ -1010,11 +1009,11 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
                 mArmState.SetCurrentState("HOMED");
             } else {
                 if (EngagingStage != LastEngagingStage) {
-                    mJointTrajectory.Goal.Ref(4, 3) *= -1.0; // toggle back and forth
+                    m_trajectory_j.goal.Ref(4, 3) *= -1.0; // toggle back and forth
                 } else {
-                    mJointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
+                    m_trajectory_j.goal.Ref(4, 3).SetAll(0.0); // back to zero position
                 }
-                mJointTrajectory.EndTime = 0.0;
+                m_trajectory_j.end_time = 0.0;
                 std::stringstream message;
                 message << this->GetName() << ": engaging adapter " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
                 m_arm_interface->SendStatus(message.str());
@@ -1099,33 +1098,33 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         }
 
         // keep first three joint values as is
-        mJointTrajectory.Goal.Ref(3, 0).Assign(m_pid_setpoint_js.Position().Ref(3, 0));
+        m_trajectory_j.goal.Ref(3, 0).Assign(m_pid_setpoint_js.Position().Ref(3, 0));
         // set last 4 to user preferences
-        mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition);
-        mJointTrajectory.GoalVelocity.SetAll(0.0);
-        mJointTrajectory.EndTime = 0.0;
+        m_trajectory_j.goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition);
+        m_trajectory_j.goal_v.SetAll(0.0);
+        m_trajectory_j.end_time = 0.0;
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
         EngagingStage = 2;
         return;
     }
 
-    mJointTrajectory.Reflexxes.Evaluate(JointSet,
-                                        JointVelocitySet,
-                                        mJointTrajectory.Goal,
-                                        mJointTrajectory.GoalVelocity);
+    m_trajectory_j.Reflexxes.Evaluate(JointSet,
+                                      JointVelocitySet,
+                                      m_trajectory_j.goal,
+                                      m_trajectory_j.goal_v);
     SetPositionJointLocal(JointSet);
 
 
-    const robReflexxes::ResultType trajectoryResult = mJointTrajectory.Reflexxes.ResultValue();
+    const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
 
     switch (trajectoryResult) {
 
     case robReflexxes::Reflexxes_WORKING:
         // if this is the first evaluation, we can't calculate expected completion time
-        if (mJointTrajectory.EndTime == 0.0) {
-            mJointTrajectory.EndTime = currentTime + mJointTrajectory.Reflexxes.Duration();
-            mHomingTimer = mJointTrajectory.EndTime;
+        if (m_trajectory_j.end_time == 0.0) {
+            m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
+            mHomingTimer = m_trajectory_j.end_time;
         }
         break;
 
@@ -1139,14 +1138,14 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
                 if (EngagingStage != LastEngagingStage) {
                     // toggle between lower and upper
                     if (EngagingStage % 2 == 0) {
-                        mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageUpperPosition);
+                        m_trajectory_j.goal.Ref(4, 3).Assign(CouplingChange.ToolEngageUpperPosition);
                     } else {
-                        mJointTrajectory.Goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition);
+                        m_trajectory_j.goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition);
                     }
                 } else {
-                    mJointTrajectory.Goal.Ref(4, 3).SetAll(0.0); // back to zero position
+                    m_trajectory_j.goal.Ref(4, 3).SetAll(0.0); // back to zero position
                 }
-                mJointTrajectory.EndTime = 0.0;
+                m_trajectory_j.end_time = 0.0;
                 std::stringstream message;
                 message << this->GetName() << ": engaging tool " << EngagingStage - 1 << " of " << LastEngagingStage - 1;
                 m_arm_interface->SendStatus(message.str());
@@ -1241,7 +1240,7 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
             SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                    mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
             // make sure all other joints have a reasonable goal
-            mJointTrajectory.Goal.Assign(m_pid_setpoint_js.Position(), NumberOfJointsKinematics());
+            m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position(), NumberOfJointsKinematics());
         }
         break;
     default:
@@ -1249,14 +1248,14 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
         // make sure all other joints have a reasonable goal
-        mJointTrajectory.Goal.Assign(m_pid_setpoint_js.Position());
+        m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position());
     }
 
     // force trajectory re-evaluation with new goal for last joint
     UpdateIsBusy(true);
-    mJointTrajectory.IsActive = true;
-    mJointTrajectory.Goal[6] = jawPosition.Goal().at(0);
-    mJointTrajectory.EndTime = 0.0;
+    m_trajectory_j.is_active = true;
+    m_trajectory_j.goal[6] = jawPosition.Goal().at(0);
+    m_trajectory_j.end_time = 0.0;
 
     // save position jaw goal, this might lead to jump if the user
     // interupts the jaw trajectory
@@ -1291,7 +1290,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
                                    mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
             // make sure all other joints have a reasonable cartesian
             // goal
-            mWrenchSet.Force().SetAll(0.0);
+            m_cf_set.Force().SetAll(0.0);
         }
         break;
     default:

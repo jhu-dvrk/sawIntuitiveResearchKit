@@ -63,9 +63,9 @@ protected:
 
     // Functions for events
     struct {
-        mtsFunctionWrite DesiredState;
-        mtsFunctionWrite CurrentState;
-        mtsFunctionWrite Following;
+        mtsFunctionWrite desired_state;
+        mtsFunctionWrite current_state;
+        mtsFunctionWrite following;
     } MessageEvents;
     mtsInterfaceProvided * mInterface;
 
@@ -89,10 +89,10 @@ protected:
     struct {
         mtsFunctionRead  measured_cp;
         mtsFunctionRead  measured_cv;
-        mtsFunctionWrite LockOrientation;
+        mtsFunctionWrite lock_orientation;
         mtsFunctionWrite body_servo_cf;
-        mtsFunctionWrite SetWrenchBodyOrientationAbsolute;
-        mtsFunctionWrite SetGravityCompensation;
+        mtsFunctionWrite body_set_cf_orientation_absolute;
+        mtsFunctionWrite use_gravity_compensation;
 
         mtsFunctionRead  operating_state;
         mtsFunctionWrite state_command;

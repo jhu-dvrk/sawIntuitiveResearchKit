@@ -157,7 +157,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         }
 
         void CurrentStateEventHandler(const prmOperatingState & currentState);
-        prmOperatingState mOperatingState;
+        prmOperatingState m_operating_state;
     };
 
     class CISST_EXPORT TeleopECM {

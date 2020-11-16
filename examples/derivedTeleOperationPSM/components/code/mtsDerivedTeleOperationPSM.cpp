@@ -64,7 +64,7 @@ void mtsDerivedTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filena
     // Add a required function
     interfacePSM->AddFunction("body/measured_cf",
                               PSMGetWrenchBody);
-    interfacePSM->AddFunction("SetWrenchBodyOrientationAbsolute",
+    interfacePSM->AddFunction("body/set_cf_orientation_absolute",
                               PSMSetWrenchBodyOrientationAbsolute);
     interfacePSM->AddFunction("measured_cv",
                               PSMGetVelocityCartesian);
@@ -72,7 +72,7 @@ void mtsDerivedTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filena
     // Same for MTM
     mtsInterfaceRequired * interfaceMTM = GetInterfaceRequired("MTM");
     CMN_ASSERT(interfaceMTM);
-    interfaceMTM->AddFunction("SetWrenchBodyOrientationAbsolute",
+    interfaceMTM->AddFunction("body/set_cf_orientation_absolute",
                               MTMSetWrenchBodyOrientationAbsolute,
                               MTS_OPTIONAL);
 }
@@ -81,7 +81,7 @@ void mtsDerivedTeleOperationPSM::EnterEnabled(void)
 {
     BaseType::EnterEnabled();
     PSMSetWrenchBodyOrientationAbsolute(true);
-    // function SetWrenchBodyOrientationAbsolute is optional on MTM, only call if available
+    // function body/set_cf_orientation_absolute is optional on MTM, only call if available
     if (MTMSetWrenchBodyOrientationAbsolute.IsValid()) {
         MTMSetWrenchBodyOrientationAbsolute(true);
     }

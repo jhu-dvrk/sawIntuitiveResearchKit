@@ -67,9 +67,9 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
         interfaceRequired->AddFunction("period_statistics", TeleOperation.period_statistics);
         // events
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::DesiredStateEventHandler,
-                                                this, "DesiredState");
+                                                this, "desired_state");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::CurrentStateEventHandler,
-                                                this, "CurrentState");
+                                                this, "current_state");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::FollowingEventHandler,
                                                 this, "Following");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::ScaleEventHandler,

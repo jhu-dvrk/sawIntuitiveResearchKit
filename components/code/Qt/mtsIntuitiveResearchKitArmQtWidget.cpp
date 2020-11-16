@@ -52,7 +52,7 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
     InterfaceRequired = AddInterfaceRequired("Manipulator");
     if (InterfaceRequired) {
         InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::DesiredStateEventHandler,
-                                                this, "DesiredState");
+                                                this, "desired_state");
         QMMessage->SetInterfaceRequired(InterfaceRequired);
         InterfaceRequired->AddFunction("configuration_js", Arm.configuration_js);
         QPOState->SetInterfaceRequired(InterfaceRequired);
