@@ -762,9 +762,19 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         if (HasBrakes()) {
             IO.GetBrakeAmpStatus(brakeAmplifiersStatus);
         }
-        if (!(actuatorAmplifiersStatus.All() && brakeAmplifiersStatus.All())) {
+        if (!(actuatorAmplifiersStatus.All())) {
             m_powered = false;
-            m_arm_interface->SendError(this->GetName() + ": detected power loss");
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData:\n - Actuator amp status: "
+                                    << actuatorAmplifiersStatus << std::endl;
+            m_arm_interface->SendError(this->GetName() + ": detected power loss (actuators)");
+            SetDesiredState("FAULT");
+            return;
+        }
+        if (!(brakeAmplifiersStatus.All())) {
+            m_powered = false;
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData:\n - Brake amp status: "
+                                    << brakeAmplifiersStatus << std::endl;
+            m_arm_interface->SendError(this->GetName() + ": detected power loss (brakes)");
             SetDesiredState("FAULT");
             return;
         }
