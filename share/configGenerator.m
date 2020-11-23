@@ -422,6 +422,7 @@ if (rType == CONST_MTM)
     Robot.setAttribute('NumOfActuator', '1');
     Robot.setAttribute('NumOfJoint', '1');
     Robot.setAttribute('SN', num2str(serial_number));
+    Robot.setAttribute('Type', 'io-only');
     Config.appendChild(Robot);
 
     % Single pseudo-actuator
@@ -453,7 +454,7 @@ if (rType == CONST_MTM)
     X_MaxCurrent.setAttribute('Value', '0.0');
     X_MaxCurrent.setAttribute('Unit', 'A');
     Drive.appendChild(X_MaxCurrent);
-    
+
     % Encoder
     Enc = gripperDocNode.createElement('Encoder');
     Actuator.appendChild(Enc);
