@@ -106,7 +106,7 @@ void mtsTeleOperationECM::Init(void)
                                        mMTML.measured_cp);
         interfaceRequired->AddFunction("measured_cv",
                                        mMTML.measured_cv);
-        interfaceRequired->AddFunction("LockOrientation",
+        interfaceRequired->AddFunction("lock_orientation",
                                        mMTML.lock_orientation);
         interfaceRequired->AddFunction("body/servo_cf",
                                        mMTML.body_servo_cf);
@@ -128,7 +128,7 @@ void mtsTeleOperationECM::Init(void)
                                        mMTMR.measured_cp);
         interfaceRequired->AddFunction("measured_cv",
                                        mMTMR.measured_cv);
-        interfaceRequired->AddFunction("LockOrientation",
+        interfaceRequired->AddFunction("lock_orientation",
                                        mMTMR.lock_orientation);
         interfaceRequired->AddFunction("body/servo_cf",
                                        mMTMR.body_servo_cf);
