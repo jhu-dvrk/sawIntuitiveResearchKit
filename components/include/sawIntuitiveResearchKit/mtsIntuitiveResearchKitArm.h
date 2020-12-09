@@ -271,8 +271,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     mtsInterfaceRequired * IOInterface;
     struct {
         mtsFunctionRead  GetSerialNumber;
-        mtsFunctionVoid  EnablePower;
-        mtsFunctionWrite DisablePower;
+        mtsFunctionVoid  PowerOnSequence;
+        mtsFunctionWrite PowerOffSequence;
         mtsFunctionRead  GetActuatorAmpStatus;
         mtsFunctionRead  GetBrakeAmpStatus;
         mtsFunctionWrite BiasEncoder;
