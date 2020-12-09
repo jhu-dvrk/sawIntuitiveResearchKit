@@ -143,13 +143,15 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
 {
     int answer = QMessageBox::warning(this, tr("mtsIntuitiveResearchKitConsoleQtWidget"),
                                       tr("Do you really want to quit this application?"),
-                                      QMessageBox::No | QMessageBox::Yes);
+                                      QMessageBox::No | QMessageBox::Yes, // options
+                                      QMessageBox::Yes // default
+                                      );
     if (answer == QMessageBox::Yes) {
         event->accept();
         this->hide();
         // send clean power off message and wait a bit
         Console.PowerOff();
-        osaSleep(2.0 * cmn_s);
+        osaSleep(1.0 * cmn_s);
         QCoreApplication::exit();
     } else {
         event->ignore();
@@ -507,7 +509,9 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotEnableDirectControl(bool toggle
     if (toggle) {
         int answer = QMessageBox::warning(this, tr("mtsIntuitiveResearchKitConsoleQtWidget"),
                                           tr("Mixing real and emulated console events can lead to inconsistent states.\nAre you sure you want to continue?"),
-                                          QMessageBox::No | QMessageBox::Yes);
+                                          QMessageBox::No | QMessageBox::Yes, // options
+                                          QMessageBox::No // default
+                                          );
         if (answer == QMessageBox::No) {
             return;
         }
