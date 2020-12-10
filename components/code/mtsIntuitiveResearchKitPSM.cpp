@@ -785,6 +785,10 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 return;
             } else {
                 m_arm_interface->SendError(this->GetName() + ": can't disable last four axis to change coupling.");
+                CMN_LOG_CLASS_RUN_ERROR << "RunChangingCoupling: " << this->GetName()
+                                        << "\nexpecting enabled joints:" << CouplingChange.DesiredEnabledJoints
+                                        << "\nbut received: " << CouplingChange.LastEnabledJoints
+                                        << std::endl;
                 SetDesiredState("FAULT");
             }
         } else {

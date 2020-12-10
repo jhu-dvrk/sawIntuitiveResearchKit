@@ -887,6 +887,9 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
     }
 
+    // message re. footpedals are likely missing but user can override this requirement
+    const std::string footpedalMessage = "Maybe you're missing \"io\":\"footpedals\" in your configuration file.  If you don't need physical footpedals, set \"physical-footpedals-required\" to false.";
+
     // load endoscope-focus settings
     const Json::Value endoscopeFocus = jsonConfig["endoscope-focus"];
     if (!endoscopeFocus.empty()) {
@@ -897,12 +900,14 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         const DInputSourceType::const_iterator endDInputs = mDInputSources.end();
         const bool foundCamMinus = (mDInputSources.find("Cam-") != endDInputs);
         if (!foundCamMinus) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: input for footpedal \"Cam-\" is required for \"endoscope-focus\".  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: input for footpedal \"Cam-\" is required for \"endoscope-focus\".  "
+                                     << footpedalMessage << std::endl;
             exit(EXIT_FAILURE);
         }
         const bool foundCamPlus = (mDInputSources.find("Cam+") != endDInputs);
         if (!foundCamPlus) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: input for footpedal \"Cam+\" is required for \"endoscope-focus\".  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: input for footpedal \"Cam+\" is required for \"endoscope-focus\".  "
+                                     << footpedalMessage << std::endl;
             exit(EXIT_FAILURE);
         }
         // schedule connections
@@ -926,13 +931,15 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
         if (mTeleopsPSM.size() > 0) {
             if (!foundClutch || !foundOperatorPresent) {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Clutch\" and \"OperatorPresent\" need to be defined since there's at least one PSM tele-operation component.  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Clutch\" and \"OperatorPresent\" need to be defined since there's at least one PSM tele-operation component.  "
+                                         << footpedalMessage << std::endl;
                 exit(EXIT_FAILURE);
             }
         }
         if (mTeleopECM) {
             if (!foundCamera || !foundOperatorPresent) {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Camera\" and \"OperatorPresent\" need to be defined since there's an ECM tele-operation component.  Maybe you're missing \"io\":\"footpedals\" in your configuration file." << std::endl;
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Camera\" and \"OperatorPresent\" need to be defined since there's an ECM tele-operation component.  "
+                                         << footpedalMessage << std::endl;
                 exit(EXIT_FAILURE);
             }
         }

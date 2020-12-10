@@ -313,8 +313,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     IOInterface = AddInterfaceRequired("RobotIO");
     if (IOInterface) {
         IOInterface->AddFunction("GetSerialNumber", IO.GetSerialNumber);
-        IOInterface->AddFunction("EnablePower", IO.EnablePower);
-        IOInterface->AddFunction("DisablePower", IO.DisablePower);
+        IOInterface->AddFunction("PowerOnSequence", IO.PowerOnSequence);
+        IOInterface->AddFunction("PowerOffSequence", IO.PowerOffSequence);
         IOInterface->AddFunction("GetActuatorAmpStatus", IO.GetActuatorAmpStatus);
         IOInterface->AddFunction("GetBrakeAmpStatus", IO.GetBrakeAmpStatus);
         IOInterface->AddFunction("BiasEncoder", IO.BiasEncoder);
@@ -741,7 +741,7 @@ void mtsIntuitiveResearchKitArm::Cleanup(void)
     if (HasBrakes()) {
         IO.BrakeEngage();
     }
-    IO.DisablePower(true);
+    IO.PowerOffSequence(false);
     CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
 }
 
@@ -997,7 +997,7 @@ void mtsIntuitiveResearchKitArm::EnterDisabled(void)
 
     IO.UsePotsForSafetyCheck(false);
     IO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints(), 0.0));
-    IO.DisablePower(false); // do not open safety relays
+    IO.PowerOffSequence(false); // do not open safety relays
     PID.Enable(false);
     PID.SetCheckPositionLimit(true);
     m_powered = false;
@@ -1041,7 +1041,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
     // pre-load the boards with zero current
     IO.SetActuatorCurrent(vctDoubleVec(NumberOfJoints(), 0.0));
     // enable power
-    IO.EnablePower();
+    IO.PowerOnSequence();
     m_arm_interface->SendStatus(this->GetName() + ": power requested");
 }
 
