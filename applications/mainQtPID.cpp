@@ -47,7 +47,7 @@ int main(int argc, char ** argv)
 
     // parse options
     cmnCommandLineOptions options;
-    int firewirePort = 0;
+    std::string portName = mtsRobotIO1394::DefaultPort();
     std::string ioConfigFile, pidConfigFile;
     std::string armName;
 
@@ -57,9 +57,9 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("p", "pid",
                               "configuration file for PID controller (see sawControllers, mtsPID)",
                               cmnCommandLineOptions::REQUIRED_OPTION, &pidConfigFile);
-    options.AddOptionOneValue("f", "firewire",
-                              "firewire port number(s)",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &firewirePort);
+    options.AddOptionOneValue("P", "port",
+                              "controller port (X, fwX, udpXX.XX.XX.XX)",
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &portName);
     options.AddOptionOneValue("n", "arm-name",
                               "arm name (i.e. PSM1, PSM2, MTML or MTMR) as defined in the sawRobotIO1394 file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &armName);
@@ -96,7 +96,7 @@ int main(int argc, char ** argv)
               << "Configuration file for PID: " << pidConfigFile << std::endl
               << "Arm name: " << armName << std::endl
               << "Number of joints: " << numberOfJoints << std::endl
-              << "FirewirePort: " << firewirePort << std::endl;
+              << "FirewirePort: " << portName << std::endl;
 
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
@@ -108,7 +108,7 @@ int main(int argc, char ** argv)
     QTabWidget * tabWidget = new QTabWidget;
 
     // IO
-    mtsRobotIO1394 * io = new mtsRobotIO1394("io", periodIOPID, firewirePort);
+    mtsRobotIO1394 * io = new mtsRobotIO1394("io", periodIOPID, portName);
     io->Configure(ioConfigFile);
     componentManager->AddComponent(io);
 

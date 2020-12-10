@@ -60,7 +60,7 @@ int main(int argc, char ** argv)
 
     // parse options
     cmnCommandLineOptions options;
-    int firewirePort = 0;
+    std::string portName = mtsRobotIO1394::DefaultPort();
     std::string gcmip = "-1";
     typedef std::map<std::string, std::string> ConfigFilesType;
     ConfigFilesType configFiles;
@@ -78,9 +78,10 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("n", "arm-name",
                               "arm name, i.e. PSM1, ... as found in sawRobotIO configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &armName);
-    options.AddOptionOneValue("f", "firewire",
-                              "firewire port number(s)",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &firewirePort);
+    options.AddOptionOneValue("P", "port",
+                              "controller port (X, fwX, udpXX.XX.XX.XX)",
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &portName);
+
 #if CISST_HAS_ICE
     options.AddOptionOneValue("g", "gcmip",
                               "global component manager IP address",
@@ -106,7 +107,7 @@ int main(int argc, char ** argv)
                       << ": " << iter->second << std::endl;
         }
     }
-    std::cout << "FirewirePort: " << firewirePort << std::endl;
+    std::cout << "FirewirePort: " << portName << std::endl;
 
     std::string processname = "dv-arm";
     mtsManagerLocal * componentManager = 0;
@@ -136,7 +137,7 @@ int main(int argc, char ** argv)
     componentManager->Connect("console", "Main", "consoleGUI", "Main");
 
     // IO
-    mtsRobotIO1394 * io = new mtsRobotIO1394("io", periodIOPID, firewirePort);
+    mtsRobotIO1394 * io = new mtsRobotIO1394("io", periodIOPID, portName);
     io->Configure(configFiles["io"]);
     componentManager->AddComponent(io);
 

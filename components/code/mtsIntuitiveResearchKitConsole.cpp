@@ -571,7 +571,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
     // IO default settings
     double periodIO = mtsIntuitiveResearchKit::IOPeriod;
-    int firewirePort = 0;
+    std::string port = mtsRobotIO1394::DefaultPort();
     sawRobotIO1394::ProtocolType protocol = sawRobotIO1394::PROTOCOL_SEQ_R_BC_W;
     double watchdogTimeout = mtsIntuitiveResearchKit::WatchdogTimeout;
 
@@ -618,7 +618,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         }
         jsonValue = jsonConfig["io"]["port"];
         if (!jsonValue.empty()) {
-            firewirePort = jsonValue.asInt();
+            port = jsonValue.asString();
         }
 
         jsonValue = jsonConfig["io"]["watchdog-timeout"];
@@ -647,7 +647,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     }
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure:" << std::endl
                                << "     - Period IO is " << periodIO << std::endl
-                               << "     - FireWire port is " << firewirePort << std::endl
+                               << "     - Port is " << port << std::endl
                                << "     - Protocol is " << protocol << std::endl
                                << "     - Watchdog timeout is " << watchdogTimeout << std::endl;
 
@@ -711,7 +711,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     }
     // create IO if needed and configure IO
     if (mHasIO) {
-        mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, firewirePort);
+        mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, port);
         io->SetProtocol(protocol);
         io->SetWatchdogPeriod(watchdogTimeout);
         // configure for each arm

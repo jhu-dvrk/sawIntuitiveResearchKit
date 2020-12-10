@@ -36,14 +36,14 @@ using namespace sawRobotIO1394;
 int main(int argc, char * argv[])
 {
     cmnCommandLineOptions options;
-    int portNumber = 0;
+    std::string portName = mtsRobotIO1394::DefaultPort();
     std::string configFile;
     options.AddOptionOneValue("c", "config",
                               "MTM gripper sawRobotIO1394 XML configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &configFile);
     options.AddOptionOneValue("p", "port",
                               "firewire port number(s)",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &portNumber);
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &portName);
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
         std::cerr << "Error: " << errorMessage << std::endl;
@@ -56,7 +56,7 @@ int main(int argc, char * argv[])
         return -1;
     }
     std::cout << "Configuration file: " << configFile << std::endl
-              << "Port: " << portNumber << std::endl;
+              << "Port: " << portName << std::endl;
 
     std::cout << "Make sure:" << std::endl
               << " - your computer is connected to the firewire controller." << std::endl
@@ -69,7 +69,7 @@ int main(int argc, char * argv[])
     cmnGetChar();
 
     std::cout << "Loading config file ..." << std::endl;
-    mtsRobotIO1394 * port = new mtsRobotIO1394("io", 1.0 * cmn_ms, portNumber);
+    mtsRobotIO1394 * port = new mtsRobotIO1394("io", 1.0 * cmn_ms, portName);
     port->Configure(configFile);
 
     std::cout << "Creating robot ..." << std::endl;
