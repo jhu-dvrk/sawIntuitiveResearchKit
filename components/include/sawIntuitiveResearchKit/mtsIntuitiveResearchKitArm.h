@@ -378,6 +378,21 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
       be greater than 0 and lesser or equal to 1. */
     virtual void trajectory_j_set_ratio_a(const double & ratio);
 
+    /*! Set joint velocity and acceleration ratios for trajectory generation.  Computes
+      joint accelerations based on maximum joint accelerations.  Ratio must
+      be greater than 0 and lesser or equal to 1. */
+    virtual void trajectory_j_set_ratio(const double & ratio);
+
+    /*! When setting separate velocity and acceleration ratios for
+      trajectory generation, update main ratio.  If both velocity and
+      acceleration ratios are the same, sets the ratio to that value.
+      Otherwise, sets the ratio to 0, i.e. a meaningless value. */
+    virtual void trajectory_j_update_ratio(void);
+
+    /*! Sends new velocities and accelerations to Reflexxes.  This
+      needs to be called every time the ratios are changed. */
+    virtual void trajectory_j_update_reflexxes(void);
+
     /*! Sets control space and mode.  If none are user defined, the
       callbacks will be using the methods provided in this class.
       If either the space or mode is "USER", a callback must be
@@ -445,12 +460,15 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         robReflexxes Reflexxes;
         vctDoubleVec v_max;
         vctDoubleVec v; // max * ratio
-        double ratio_v;
+        double ratio_v = mtsIntuitiveResearchKit::JointTrajectory::ratio_v;
         mtsFunctionWrite ratio_v_event;
         vctDoubleVec a_max;
         vctDoubleVec a; // max * ratio
-        double ratio_a;
+        double ratio_a = mtsIntuitiveResearchKit::JointTrajectory::ratio_a;
         mtsFunctionWrite ratio_a_event;
+        // ratio to overwire ratio_v and ratio_a
+        double ratio = mtsIntuitiveResearchKit::JointTrajectory::ratio;
+        mtsFunctionWrite ratio_event;
         vctDoubleVec goal;
         vctDoubleVec goal_v;
         vctDoubleVec goal_error;

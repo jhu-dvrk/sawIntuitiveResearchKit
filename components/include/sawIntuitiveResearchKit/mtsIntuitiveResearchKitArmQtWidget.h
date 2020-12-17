@@ -59,10 +59,13 @@ protected:
 
 signals:
     void SignalDesiredState(QString state);
+    void SignalTrajectoryJointRatio(double ratio);
 
 private slots:
     void timerEvent(QTimerEvent * event);
     void SlotDesiredStateEventHandler(QString state);
+    void SlotTrajectoryJointRatio(double ratio);
+    void SlotTrajectoryJointRatioEventHandler(double ratio);
     void SlotLogEnabled(void);
     void SlotEnableDirectControl(bool toggle);
 
@@ -79,6 +82,7 @@ protected:
         mtsFunctionRead measured_cf_body;
         mtsFunctionWrite move_jp;
         mtsFunctionRead period_statistics;
+        mtsFunctionWrite trajectory_j_set_ratio;
     } Arm;
 
     // so derived class has access to custom parts of widget
@@ -92,6 +96,7 @@ protected:
     prmConfigurationJoint ConfigurationJoint;
     prmStateJoint StateJoint;
     prmStateJointQtWidget * QSJWidget;
+    QDoubleSpinBox * QSBTrajectoryRatio;
 
     prmPositionCartesianGet Position;
     prmPositionCartesianGetQtWidget * QCPGWidget;
@@ -101,6 +106,7 @@ protected:
 
     QFrame * QFJoints;
     prmPositionJointSetQtWidget * QPJSWidget;
+    void TrajectoryJointRatioEventHandler(const double & ratio);
 
     // timing
     mtsIntervalStatistics IntervalStatistics;

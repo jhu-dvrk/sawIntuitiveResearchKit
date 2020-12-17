@@ -388,8 +388,11 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                          this, "trajectory_j/set_ratio_v");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::trajectory_j_set_ratio_a,
                                          this, "trajectory_j/set_ratio_a");
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::trajectory_j_set_ratio,
+                                         this, "trajectory_j/set_ratio");
         m_arm_interface->AddEventWrite(m_trajectory_j.ratio_v_event, "trajectory_j/ratio_v", double());
         m_arm_interface->AddEventWrite(m_trajectory_j.ratio_a_event, "trajectory_j/ratio_a", double());
+        m_arm_interface->AddEventWrite(m_trajectory_j.ratio_event, "trajectory_j/ratio", double());
         m_arm_interface->AddEventWrite(m_trajectory_j.goal_reached_event, "goal_reached", bool());
         // Arm State
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::state_command,
@@ -714,8 +717,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)
 void mtsIntuitiveResearchKitArm::Startup(void)
 {
     SetDesiredState("DISABLED");
-    m_trajectory_j.ratio_v_event(m_trajectory_j.ratio_v);
-    m_trajectory_j.ratio_a_event(m_trajectory_j.ratio_a);
+    trajectory_j_set_ratio(mtsIntuitiveResearchKit::JointTrajectory::ratio);
 }
 
 void mtsIntuitiveResearchKitArm::Run(void)
@@ -1428,10 +1430,11 @@ bool mtsIntuitiveResearchKitArm::ArmIsReady(const std::string & methodName,
 
 void mtsIntuitiveResearchKitArm::trajectory_j_set_ratio_v(const double & ratio)
 {
-    if (ratio > 0.0 && ratio <= 1.0) {
-        m_trajectory_j.v.ProductOf(ratio, m_trajectory_j.v_max);
+    if ((ratio > 0.0) && (ratio <= 1.0)) {
         m_trajectory_j.ratio_v = ratio;
         m_trajectory_j.ratio_v_event(ratio);
+        trajectory_j_update_ratio();
+        trajectory_j_update_reflexxes();
     } else {
         std::stringstream message;
         message << this->GetName() << ": trajectory_j_set_ratio_v, ratio must be within ]0;1], received " << ratio;
@@ -1441,15 +1444,56 @@ void mtsIntuitiveResearchKitArm::trajectory_j_set_ratio_v(const double & ratio)
 
 void mtsIntuitiveResearchKitArm::trajectory_j_set_ratio_a(const double & ratio)
 {
-    if (ratio > 0.0 && ratio <= 1.0) {
-        m_trajectory_j.a.ProductOf(ratio, m_trajectory_j.a_max);
+    if ((ratio > 0.0) && (ratio <= 1.0)) {
         m_trajectory_j.ratio_a = ratio;
         m_trajectory_j.ratio_a_event(ratio);
+        trajectory_j_update_ratio();
+        trajectory_j_update_reflexxes();
     } else {
         std::stringstream message;
         message << this->GetName() << ": trajectory_j_set_ratio_a, ratio must be within ]0;1], received " << ratio;
         m_arm_interface->SendWarning(message.str());
     }
+}
+
+void mtsIntuitiveResearchKitArm::trajectory_j_set_ratio(const double & ratio)
+{
+    if ((ratio > 0.0) && (ratio <= 1.0)) {
+        m_trajectory_j.ratio = ratio;
+        m_trajectory_j.ratio_v = ratio;
+        m_trajectory_j.ratio_a = ratio;
+        m_trajectory_j.ratio_event(ratio);
+        m_trajectory_j.ratio_v_event(ratio);
+        m_trajectory_j.ratio_a_event(ratio);
+        trajectory_j_update_reflexxes();
+    } else {
+        std::stringstream message;
+        message << this->GetName() << ": trajectory_j_set_ratio, ratio must be within ]0;1], received " << ratio;
+        m_arm_interface->SendWarning(message.str());
+    }
+}
+
+void mtsIntuitiveResearchKitArm::trajectory_j_update_ratio(void)
+{
+    // same v and a ratios, main ratio makes sense
+    if (m_trajectory_j.ratio_v == m_trajectory_j.ratio_a) {
+        m_trajectory_j.ratio = m_trajectory_j.ratio_v;
+    } else {
+        m_trajectory_j.ratio = 0.0;
+    }
+    m_trajectory_j.ratio_event(m_trajectory_j.ratio);
+}
+
+void mtsIntuitiveResearchKitArm::trajectory_j_update_reflexxes(void)
+{
+    m_trajectory_j.v.ProductOf(m_trajectory_j.ratio_v,
+                               m_trajectory_j.v_max);
+    m_trajectory_j.a.ProductOf(m_trajectory_j.ratio_a,
+                               m_trajectory_j.a_max);
+    m_trajectory_j.Reflexxes.Set(m_trajectory_j.v,
+                                 m_trajectory_j.a,
+                                 StateTable.PeriodStats.PeriodAvg(),
+                                 robReflexxes::Reflexxes_TIME);
 }
 
 void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,

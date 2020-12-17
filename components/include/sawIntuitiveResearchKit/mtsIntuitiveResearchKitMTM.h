@@ -136,7 +136,7 @@ protected:
 
     robGravityCompensationMTM * GravityCompensationMTM = 0;
 
-    double m_platform_gain = mtsIntuitiveResearchKit::MTMPlatformGain;
+    double m_platform_gain = mtsIntuitiveResearchKit::MTMPlatform::Gain;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);

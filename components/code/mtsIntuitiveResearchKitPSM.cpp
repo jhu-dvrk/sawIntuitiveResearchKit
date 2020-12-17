@@ -522,11 +522,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     m_trajectory_j.v_max.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
     m_trajectory_j.v_max.Element(2) = 0.2; // m per second
     m_trajectory_j.v_max.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
-    trajectory_j_set_ratio_v(1.0);
     m_trajectory_j.a_max.Ref(2, 0).SetAll(180.0 * cmnPI_180);
     m_trajectory_j.a_max.Element(2) = 0.2; // m per second
     m_trajectory_j.a_max.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
-    trajectory_j_set_ratio_a(1.0);
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
 
     // default PID tracking errors

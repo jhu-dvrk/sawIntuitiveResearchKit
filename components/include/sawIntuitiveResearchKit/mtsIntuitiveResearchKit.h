@@ -36,14 +36,23 @@ namespace mtsIntuitiveResearchKit {
     // https://github.com/jhu-cisst/QLA/issues/1
     const double TimeToPower = 3.0 * cmn_s;
 
+    // joint trajectory ratios
+    namespace JointTrajectory {
+        const double ratio = 1.0;
+        const double ratio_v = 1.0;
+        const double ratio_a = 1.0;
+    }
+
     // PSM constants
     const double PSMOutsideCannula = 50.0 * cmn_ms;
 
     // MTM constants
-    const double MTMPlatformGain = 0.5; // overall gain applied
-    const double MTMPlatformPGain = 1.0;
-    const double MTMPlatformDGain = 0.1;
-    const double MTMPlatformEffortMax = 0.4;
+    namespace MTMPlatform {
+        const double Gain = 0.5; // overall gain applied
+        const double PGain = 1.0;
+        const double DGain = 0.1;
+        const double EffortMax = 0.4;
+    }
 
     // teleoperation constants
     namespace TeleOperationPSM {

@@ -155,12 +155,10 @@ void mtsIntuitiveResearchKitECM::Init(void)
                                 30.0 * cmnPI_180,
                                 30.0 * cmn_mm,    // mm per second
                                 30.0 * cmnPI_180);
-    trajectory_j_set_ratio_v(1.0);
     m_trajectory_j.a_max.Assign(90.0 * cmnPI_180,
                                 90.0 * cmnPI_180,
                                 15.0 * cmn_mm,
                                 90.0 * cmnPI_180);
-    trajectory_j_set_ratio_a(1.0);
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
 
     // default PID tracking errors

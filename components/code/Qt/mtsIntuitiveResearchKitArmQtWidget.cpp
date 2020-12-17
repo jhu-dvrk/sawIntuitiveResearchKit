@@ -34,6 +34,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
 
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
 
 
@@ -61,6 +62,9 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
         InterfaceRequired->AddFunction("body/measured_cf", Arm.measured_cf_body, MTS_OPTIONAL);
         InterfaceRequired->AddFunction("move_jp", Arm.move_jp, MTS_OPTIONAL);
         InterfaceRequired->AddFunction("period_statistics", Arm.period_statistics);
+        InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::TrajectoryJointRatioEventHandler,
+                                                this, "trajectory_j/ratio");
+        InterfaceRequired->AddFunction("trajectory_j/set_ratio", Arm.trajectory_j_set_ratio);
     }
 }
 
@@ -142,6 +146,11 @@ void mtsIntuitiveResearchKitArmQtWidget::DesiredStateEventHandler(const std::str
     emit SignalDesiredState(QString(state.c_str()));
 }
 
+void mtsIntuitiveResearchKitArmQtWidget::TrajectoryJointRatioEventHandler(const double & ratio)
+{
+    emit SignalTrajectoryJointRatio(ratio);
+}
+
 void mtsIntuitiveResearchKitArmQtWidget::SlotLogEnabled(void)
 {
     LogEnabled = QPBLog->isChecked();
@@ -172,6 +181,22 @@ void mtsIntuitiveResearchKitArmQtWidget::SetDirectControl(const bool direct)
 void mtsIntuitiveResearchKitArmQtWidget::SlotDesiredStateEventHandler(QString state)
 {
     QLEDesiredState->setText(state);
+}
+
+void mtsIntuitiveResearchKitArmQtWidget::SlotTrajectoryJointRatio(double ratio)
+{
+    // convert percentage to [0,1]
+    Arm.trajectory_j_set_ratio(ratio / 100.0);
+}
+
+void mtsIntuitiveResearchKitArmQtWidget::SlotTrajectoryJointRatioEventHandler(double ratio)
+{
+    QSBTrajectoryRatio->blockSignals(true); {
+        QFont f = QSBTrajectoryRatio->font();
+        f.setStrikeOut(ratio == 0.0);
+        QSBTrajectoryRatio->setFont(f);
+        QSBTrajectoryRatio->setValue(ratio * 100.0);
+    } QSBTrajectoryRatio->blockSignals(false);
 }
 
 void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
@@ -247,6 +272,14 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     QPJSWidget->SetPrismaticRevoluteFactors(1.0 / cmn_mm, cmn180_PI);
     jointsLayout->addWidget(QPJSWidget);
 
+    QSBTrajectoryRatio = new QDoubleSpinBox;
+    QSBTrajectoryRatio->setMaximum(100.0);
+    QSBTrajectoryRatio->setMinimum(1.0);
+    QSBTrajectoryRatio->setSingleStep(1.0);
+    QSBTrajectoryRatio->setValue(100.0 * mtsIntuitiveResearchKit::JointTrajectory::ratio);
+    QSBTrajectoryRatio->setSuffix("%");
+    jointsLayout->addWidget(QSBTrajectoryRatio);
+
     MainLayout->addWidget(QFJoints);
 
     // for derived classes
@@ -263,6 +296,10 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     // setup Qt Connection
     connect(this, SIGNAL(SignalDesiredState(QString)),
             this, SLOT(SlotDesiredStateEventHandler(QString)));
+    connect(this, SIGNAL(SignalTrajectoryJointRatio(double)),
+            this, SLOT(SlotTrajectoryJointRatioEventHandler(double)));
+    connect(QSBTrajectoryRatio, SIGNAL(valueChanged(double)),
+            this, SLOT(SlotTrajectoryJointRatio(double)));
     connect(QPBLog, SIGNAL(clicked()),
             this, SLOT(SlotLogEnabled()));
     connect(QCBEnableDirectControl, SIGNAL(toggled(bool)),

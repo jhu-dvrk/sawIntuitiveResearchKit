@@ -115,10 +115,8 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // initialize trajectory data
     m_trajectory_j.v_max.SetAll(90.0 * cmnPI_180); // degrees per second
     m_trajectory_j.v_max.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180; // roll can go fast
-    trajectory_j_set_ratio_v(1.0);
     m_trajectory_j.a_max.SetAll(90.0 * cmnPI_180);
     m_trajectory_j.a_max.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180;
-    trajectory_j_set_ratio_a(1.0);
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
     m_trajectory_j.goal_tolerance.at(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
 
@@ -606,12 +604,12 @@ void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & ef
 
     // apply a linear force on joint 3 to move toward the goal position
     effortPreload[3] = m_platform_gain *
-        (mtsIntuitiveResearchKit::MTMPlatformPGain * (q3Goal - m_kin_measured_js.Position()[3])
-         - mtsIntuitiveResearchKit::MTMPlatformDGain * m_kin_measured_js.Velocity()[3]);
+        (mtsIntuitiveResearchKit::MTMPlatform::PGain * (q3Goal - m_kin_measured_js.Position()[3])
+         - mtsIntuitiveResearchKit::MTMPlatform::DGain * m_kin_measured_js.Velocity()[3]);
 
     // cap effort to be totally safe - this has to be the most non-linear behavior around
-    effortPreload[3] = std::max(effortPreload[3], -mtsIntuitiveResearchKit::MTMPlatformEffortMax);
-    effortPreload[3] = std::min(effortPreload[3],  mtsIntuitiveResearchKit::MTMPlatformEffortMax);
+    effortPreload[3] = std::max(effortPreload[3], -mtsIntuitiveResearchKit::MTMPlatform::EffortMax);
+    effortPreload[3] = std::min(effortPreload[3],  mtsIntuitiveResearchKit::MTMPlatform::EffortMax);
 
     // find equivalent wrench but don't apply all (too much torque on roll)
     // wrenchPreload.ProductOf(mJacobianPInverseData.PInverse(), effortPreload);
