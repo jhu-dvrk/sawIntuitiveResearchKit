@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<Config Version="4">
+<Config Version="5">
    <Robot Name="MTML-Gripper" NumOfActuator="1" NumOfJoint="1" SN="22723" Type="io-only">
       <Actuator ActuatorID="0" AxisID="3" BoardID="1" Type="Revolute">
          <Drive>
@@ -9,11 +9,11 @@
             <MaxCurrent Unit="A" Value="0.000"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="360.00000000"/>
+            <BitsToPosSI Scale="360.00000000" Unit="deg"/>
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05"/>
-            <VoltsToPosSI Offset="443.941511" Scale="-141.967946"/>
+            <VoltsToPosSI Offset="443.941511" Scale="-141.967946" Unit="deg"/>
          </AnalogIn>
       </Actuator>
    </Robot>
