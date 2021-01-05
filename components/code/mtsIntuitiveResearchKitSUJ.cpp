@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -475,8 +475,8 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     // Arm IO
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("RobotIO");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("EnablePower", RobotIO.EnablePower);
-        interfaceRequired->AddFunction("DisablePower", RobotIO.DisablePower);
+        interfaceRequired->AddFunction("PowerOnSequence", RobotIO.PowerOnSequence);
+        interfaceRequired->AddFunction("PowerOffSequence", RobotIO.PowerOffSequence);
         interfaceRequired->AddFunction("GetEncoderChannelA", RobotIO.GetEncoderChannelA);
         interfaceRequired->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
         interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
@@ -741,7 +741,7 @@ void mtsIntuitiveResearchKitSUJ::EnterDisabled(void)
 
     // power off brakes
     RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
-    RobotIO.DisablePower(false);
+    RobotIO.PowerOffSequence(false);
 
     // disable power on PWM
     PWM.DisablePWM(true);
@@ -776,7 +776,7 @@ void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
     // pre-load the boards with zero current
     RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
     // enable power and set a flags to move to next step
-    RobotIO.EnablePower();
+    RobotIO.PowerOnSequence();
 
     DispatchStatus(this->GetName() + ": power requested");
 }
@@ -925,7 +925,7 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
     // make sure requested current is back to 0
     RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
     // turn off amplifiers
-    RobotIO.DisablePower(true); // also opens safety relays
+    RobotIO.PowerOffSequence(true); // also opens safety relays
 }
 
 void mtsIntuitiveResearchKitSUJ::SetSimulated(void)
@@ -1318,7 +1318,7 @@ void mtsIntuitiveResearchKitSUJ::MotorUpEventHandler(const prmEventButton & butt
 
 void mtsIntuitiveResearchKitSUJ::ErrorEventHandler(const mtsMessage & message)
 {
-    RobotIO.DisablePower(false);
+    RobotIO.PowerOffSequence(false);
     DispatchError(this->GetName() + ": received [" + message.Message + "]");
     SetDesiredState("DISABLED");
 }
