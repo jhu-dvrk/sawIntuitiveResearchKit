@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -62,9 +62,11 @@ mtsIntuitiveResearchKitArmQtWidget::mtsIntuitiveResearchKitArmQtWidget(const std
         InterfaceRequired->AddFunction("body/measured_cf", Arm.measured_cf_body, MTS_OPTIONAL);
         InterfaceRequired->AddFunction("move_jp", Arm.move_jp, MTS_OPTIONAL);
         InterfaceRequired->AddFunction("period_statistics", Arm.period_statistics);
-        InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitArmQtWidget::TrajectoryJointRatioEventHandler,
-                                                this, "trajectory_j/ratio");
-        InterfaceRequired->AddFunction("trajectory_j/set_ratio", Arm.trajectory_j_set_ratio);
+        InterfaceRequired->AddEventReceiver("trajectory_j/ratio", Arm.trajectory_j_ratio, MTS_OPTIONAL);
+        InterfaceRequired->AddFunction("trajectory_j/set_ratio", Arm.trajectory_j_set_ratio, MTS_OPTIONAL);
+
+        Arm.trajectory_j_ratio.SetHandler(&mtsIntuitiveResearchKitArmQtWidget::TrajectoryJointRatioEventHandler,
+                                          this);
     }
 }
 
@@ -173,6 +175,10 @@ void mtsIntuitiveResearchKitArmQtWidget::SetDirectControl(const bool direct)
     if (direct) {
         QFJoints->show();
         QPJSWidget->Read();
+        // SUJ don't have trajectory ratio
+        if (!Arm.trajectory_j_set_ratio.IsValid()) {
+            QSBTrajectoryRatio->hide();
+        }
     } else {
         QFJoints->hide();
     }
