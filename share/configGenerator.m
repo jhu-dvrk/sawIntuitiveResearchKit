@@ -324,6 +324,7 @@ for i = 1:numOfJoints
 
     X_BitsToPosSI = docNode.createElement('BitsToPosSI');
     X_BitsToPosSI.setAttribute('Scale', num2str(BitsToPosSIScale(i), '%5.8f'));
+    X_BitsToPosSI.setAttribute('Unit', potToleranceUnit(i));
     Enc.appendChild(X_BitsToPosSI);
 
     % AnalogIn
@@ -338,6 +339,7 @@ for i = 1:numOfJoints
     X_VoltsToPosSI = docNode.createElement('VoltsToPosSI');
     X_VoltsToPosSI.setAttribute('Scale', num2str(VoltsToPosSIScale(i), '%5.6f'));
     X_VoltsToPosSI.setAttribute('Offset', num2str(VoltsToPosSIOffset(i), '%5.6f'));
+    X_VoltsToPosSI.setAttribute('Unit', potToleranceUnit(i));
     AnalogIn.appendChild(X_VoltsToPosSI);
 end
 
@@ -460,6 +462,7 @@ if (rType == CONST_MTM)
     Actuator.appendChild(Enc);
     X_BitsToPosSI = gripperDocNode.createElement('BitsToPosSI');
     X_BitsToPosSI.setAttribute('Scale', '1.0');
+    X_BitsToPosSI.setAttribute('Unit', 'deg');
     Enc.appendChild(X_BitsToPosSI);
 
     % AnalogIn
@@ -473,6 +476,7 @@ if (rType == CONST_MTM)
     X_VoltsToPosSI = gripperDocNode.createElement('VoltsToPosSI');
     X_VoltsToPosSI.setAttribute('Scale', num2str(VoltsToPosSIScale(i), '%5.6f'));
     X_VoltsToPosSI.setAttribute('Offset', num2str(VoltsToPosSIOffset(i), '%5.6f'));
+    X_VoltsToPosSI.setAttribute('Unit', 'deg');
     AnalogIn.appendChild(X_VoltsToPosSI);
 
     % generate xml file
