@@ -8,11 +8,11 @@
             <MaxCurrent Unit="A" Value="1.340" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="-0.00044248" />
+            <BitsToPosSI Scale="-0.00044248" Unit="deg"/>
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="99.177447" Scale="-43.6378118377" />
+            <VoltsToPosSI Offset="99.177447" Scale="-43.6378118377" Unit="deg"/>
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="1" AxisID="1" BoardID="6" Type="Revolute">
@@ -23,11 +23,11 @@
             <MaxCurrent Unit="A" Value="1.340" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="-0.00044248" />
+            <BitsToPosSI Scale="-0.00044248" Unit="deg"/>
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="65.128284" Scale="-28.5877281683" />
+            <VoltsToPosSI Offset="65.128284" Scale="-28.5877281683" Unit="deg"/>
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="2" AxisID="2" BoardID="6" Type="Prismatic">
@@ -38,11 +38,11 @@
             <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="0.00129629" />
+            <BitsToPosSI Scale="0.00129629" Unit="mm" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="-12.613007" Scale="59.0431575317" />
+            <VoltsToPosSI Offset="-12.613007" Scale="59.0431575317" Unit="mm" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="3" AxisID="3" BoardID="6" Type="Revolute">
@@ -53,11 +53,11 @@
             <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="-0.00768574" />
+            <BitsToPosSI Scale="-0.00768574" Unit="deg"/>
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="178.890644344" Scale="-78.766164291" />
+            <VoltsToPosSI Offset="178.890644344" Scale="-78.766164291" Unit="deg"/>
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="4" AxisID="0" BoardID="7" Type="Revolute">
@@ -68,11 +68,11 @@
             <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="-0.00768574" />
+            <BitsToPosSI Scale="-0.00768574" Unit="deg"/>
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="178.290658934" Scale="-79.3912711434" />
+            <VoltsToPosSI Offset="178.290658934" Scale="-79.3912711434" Unit="deg"/>
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="5" AxisID="1" BoardID="7" Type="Revolute">
@@ -83,11 +83,11 @@
             <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="0.00768574" />
+            <BitsToPosSI Scale="0.00768574" Unit="deg"/>
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="175.176024418" Scale="-79.9150059108" />
+            <VoltsToPosSI Offset="175.176024418" Scale="-79.9150059108" Unit="deg"/>
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="6" AxisID="2" BoardID="7" Type="Revolute">
@@ -98,11 +98,11 @@
             <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="0.00768574" />
+            <BitsToPosSI Scale="0.00768574" Unit="deg"/>
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="177.010101289" Scale="-79.6008977512" />
+            <VoltsToPosSI Offset="177.010101289" Scale="-79.6008977512" Unit="deg"/>
          </AnalogIn>
       </Actuator>
       <Potentiometers Position="Actuators">

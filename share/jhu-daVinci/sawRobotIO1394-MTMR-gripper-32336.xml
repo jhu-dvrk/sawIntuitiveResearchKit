@@ -9,11 +9,11 @@
             <MaxCurrent Unit="A" Value="0.000"/>
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="360.00000000"/>
+            <BitsToPosSI Scale="360.00000000" Unit="deg"/>
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05"/>
-            <VoltsToPosSI Offset="541.063608" Scale="-182.234141"/>
+            <VoltsToPosSI Offset="541.063608" Scale="-182.234141" Unit="deg"/>
          </AnalogIn>
       </Actuator>
    </Robot>

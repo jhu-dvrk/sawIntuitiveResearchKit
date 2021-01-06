@@ -8,11 +8,11 @@
             <MaxCurrent Unit="A" Value="1.340" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="-0.00044248" />
+            <BitsToPosSI Scale="-0.00044248" Unit="deg" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="99.441352" Scale="-43.4924193012" />
+            <VoltsToPosSI Offset="99.441352" Scale="-43.4924193012" Unit="deg" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="1" AxisID="1" BoardID="8" Type="Revolute">
@@ -23,11 +23,11 @@
             <MaxCurrent Unit="A" Value="1.340" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="-0.00044248" />
+            <BitsToPosSI Scale="-0.00044248" Unit="deg" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="68.032665" Scale="-28.6993050863" />
+            <VoltsToPosSI Offset="68.032665" Scale="-28.6993050863" Unit="deg" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="2" AxisID="2" BoardID="8" Type="Prismatic">
@@ -38,11 +38,11 @@
             <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="0.00129629" />
+            <BitsToPosSI Scale="0.00129629" Unit="mm" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="-14.153006" Scale="59.4861164146" />
+            <VoltsToPosSI Offset="-14.153006" Scale="59.4861164146" Unit="mm" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="3" AxisID="3" BoardID="8" Type="Revolute">
@@ -53,11 +53,11 @@
             <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="-0.00768574" />
+            <BitsToPosSI Scale="-0.00768574" Unit="deg" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="177.309217804" Scale="-78.6271130108" />
+            <VoltsToPosSI Offset="177.309217804" Scale="-78.6271130108" Unit="deg" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="4" AxisID="0" BoardID="9" Type="Revolute">
@@ -68,11 +68,11 @@
             <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="-0.00768574" />
+            <BitsToPosSI Scale="-0.00768574" Unit="deg" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="176.818942353" Scale="-78.2551521199" />
+            <VoltsToPosSI Offset="176.818942353" Scale="-78.2551521199" Unit="deg" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="5" AxisID="1" BoardID="9" Type="Revolute">
@@ -83,11 +83,11 @@
             <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="0.00768574" />
+            <BitsToPosSI Scale="0.00768574" Unit="deg" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="175.548473428" Scale="-78.6887133955" />
+            <VoltsToPosSI Offset="175.548473428" Scale="-78.6887133955" Unit="deg" />
          </AnalogIn>
       </Actuator>
       <Actuator ActuatorID="6" AxisID="2" BoardID="9" Type="Revolute">
@@ -98,11 +98,11 @@
             <MaxCurrent Unit="A" Value="0.670" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="0.00768574" />
+            <BitsToPosSI Scale="0.00768574" Unit="deg" />
          </Encoder>
          <AnalogIn>
             <BitsToVolts Offset="0" Scale="6.86646e-05" />
-            <VoltsToPosSI Offset="180.33693656" Scale="-79.2829883053" />
+            <VoltsToPosSI Offset="180.33693656" Scale="-79.2829883053" Unit="deg" />
          </AnalogIn>
       </Actuator>
       <Potentiometers Position="Actuators">
