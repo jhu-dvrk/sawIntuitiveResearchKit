@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstVector/vctForceTorqueQtWidget.h>
 #include <cisstMultiTask/mtsComponent.h>
+#include <cisstMultiTask/mtsEventReceiver.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 
@@ -82,6 +83,7 @@ protected:
         mtsFunctionRead measured_cf_body;
         mtsFunctionWrite move_jp;
         mtsFunctionRead period_statistics;
+        mtsEventReceiverWrite trajectory_j_ratio;
         mtsFunctionWrite trajectory_j_set_ratio;
     } Arm;
 
