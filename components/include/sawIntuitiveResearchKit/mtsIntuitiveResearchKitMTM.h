@@ -94,7 +94,7 @@ protected:
 
     // state related methods
     void SetGoalHomingArm(void) override;
-    void TransitionEncodersBiased(void);
+    void TransitionEncodersBiased(void) override;
     void EnterCalibratingRoll(void);
     void RunCalibratingRoll(void);
     void TransitionRollCalibrated(void);

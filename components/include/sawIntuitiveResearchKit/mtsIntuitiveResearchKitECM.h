@@ -71,14 +71,14 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     void CreateManipulator(void) override;
     void Init(void) override;
 
-    bool IsHomed(void) const;
-    void UnHome(void);
+    bool IsHomed(void) const override;
+    void UnHome(void) override;
     bool IsJointReady(void) const override;
     bool IsCartesianReady(void) const override;
 
     // state related methods
     void SetGoalHomingArm(void) override;
-    void EnterHomed(void);
+    void EnterHomed(void) override;
     void EnterManual(void);
     void RunManual(void);
     void LeaveManual(void);

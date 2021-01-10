@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2019-08-07
 
-  (C) Copyright 2019-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2019-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -33,8 +33,8 @@ public:
     ~mtsIntuitiveResearchKitPSMQtWidget() {}
 
 protected:
-    void setupUiDerived(void);
-    void timerEventDerived(void);
+    void setupUiDerived(void) override;
+    void timerEventDerived(void) override;
     void SetDirectControl(const bool direct) override;
 
 signals:
