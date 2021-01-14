@@ -1319,6 +1319,7 @@ void mtsIntuitiveResearchKitArm::EnterPaused(void)
 
 void mtsIntuitiveResearchKitArm::EnterFault(void)
 {
+    IO.PowerOffSequence(false);
     UpdateOperatingStateAndBusy(prmOperatingState::FAULT, false);
 }
 
