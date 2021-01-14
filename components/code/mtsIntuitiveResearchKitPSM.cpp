@@ -751,6 +751,8 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
         return;
     }
 
+    const double currentTime = this->StateTable.GetTic();
+    
     // first phase, disable last 4 joints and wait
     if (!CouplingChange.Started) {
         // keep first 3 on
@@ -759,6 +761,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
         CouplingChange.DesiredEnabledJoints.Ref(4, 3).SetAll(false);
         PID.EnableJoints(CouplingChange.DesiredEnabledJoints);
         CouplingChange.WaitingForEnabledJoints = true;
+        mHomingTimer = currentTime;
         CouplingChange.ReceivedEnabledJoints = false;
         CouplingChange.Started = true;
         return;
@@ -782,12 +785,18 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 CouplingChange.ReceivedCoupling = false;
                 return;
             } else {
-                m_arm_interface->SendError(this->GetName() + ": can't disable last four axis to change coupling.");
-                CMN_LOG_CLASS_RUN_ERROR << "RunChangingCoupling: " << this->GetName()
-                                        << "\nexpecting enabled joints:" << CouplingChange.DesiredEnabledJoints
-                                        << "\nbut received: " << CouplingChange.LastEnabledJoints
-                                        << std::endl;
-                SetDesiredState("FAULT");
+                // check time
+                const double timeToEnableJoints = 30.0 * cmn_s; // large timeout
+                if ((currentTime - mHomingTimer) > timeToEnableJoints) {
+                    m_arm_interface->SendError(this->GetName() + ": can't disable last four axes to change coupling.");
+                    CMN_LOG_CLASS_RUN_ERROR << "RunChangingCoupling: " << this->GetName()
+                                            << "\nexpecting enabled joints:" << CouplingChange.DesiredEnabledJoints
+                                            << "\nbut received: " << CouplingChange.LastEnabledJoints
+                                            << std::endl;
+                    SetDesiredState("FAULT");
+                } else {
+                    m_arm_interface->SendStatus(this->GetName() + ": waiting to disable last four axes to change coupling.");
+                }
             }
         } else {
             return;
