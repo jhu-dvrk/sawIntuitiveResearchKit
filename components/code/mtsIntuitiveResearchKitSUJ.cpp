@@ -741,7 +741,7 @@ void mtsIntuitiveResearchKitSUJ::EnterDisabled(void)
 
     // power off brakes
     RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
-    RobotIO.PowerOffSequence(false);
+    RobotIO.PowerOffSequence(true); // for the SUJ controller, we need to close the safety relay
 
     // disable power on PWM
     PWM.DisablePWM(true);
