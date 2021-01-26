@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -153,11 +153,11 @@ void mtsIntuitiveResearchKitECM::Init(void)
     // initialize trajectory data
     m_trajectory_j.v_max.Assign(30.0 * cmnPI_180, // degrees per second
                                 30.0 * cmnPI_180,
-                                30.0 * cmn_mm,    // mm per second
+                                60.0 * cmn_mm,    // mm per second
                                 30.0 * cmnPI_180);
     m_trajectory_j.a_max.Assign(90.0 * cmnPI_180,
                                 90.0 * cmnPI_180,
-                                15.0 * cmn_mm,
+                                60.0 * cmn_mm,
                                 90.0 * cmnPI_180);
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
 
