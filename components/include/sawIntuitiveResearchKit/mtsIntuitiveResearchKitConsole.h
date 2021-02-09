@@ -311,7 +311,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     void EventSelectedTeleopPSMs(void) const;
     void UpdateTeleopState(void);
     void set_scale(const double & scale);
-    void SetVolume(const double & volume);
+    void set_volume(const double & volume);
+    void beep(const vctDoubleVec & values); // duration, frequency, volume
     void string_to_speech(const std::string & text);
     bool mHasIO;
     void ClutchEventHandler(const prmEventButton & button);
@@ -319,10 +320,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     void OperatorPresentEventHandler(const prmEventButton & button);
 
     struct {
-        mtsFunctionWrite Beep;
+        mtsFunctionWrite beep;
         mtsFunctionWrite string_to_speech;
+        mtsFunctionWrite volume; // event
     } mAudio;
-    double mAudioVolume;
+    double m_audio_volume;
     bool mChatty;
 
     struct {

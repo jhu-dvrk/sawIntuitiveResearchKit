@@ -63,6 +63,7 @@ signals:
     void SignalOperatorPresent(bool operatorPresent);
     void SignalClutch(bool clutch);
     void SignalCamera(bool camera);
+    void SignalVolume(double volume);
 
 protected:
     void FocusArmButton(const QString & armName);
@@ -86,6 +87,7 @@ private slots:
     void SlotClutchEventHandler(bool clutch);
     void SlotCameraEventHandler(bool camera);
     void SlotSetVolume(void);
+    void SlotVolumeEventHandler(double volume);
     void SlotEnableDirectControl(bool toggle);
     void SlotEmulateOperatorPresent(bool toggle);
     void SlotEmulateClutch(bool toggle);
@@ -104,7 +106,7 @@ protected:
         mtsFunctionWrite teleop_enable;
         mtsFunctionWrite select_teleop_psm;
         mtsFunctionWrite set_scale;
-        mtsFunctionWrite SetVolume;
+        mtsFunctionWrite set_volume;
         mtsFunctionWrite emulate_operator_present;
         mtsFunctionWrite emulate_clutch;
         mtsFunctionWrite emulate_camera;
@@ -117,7 +119,8 @@ protected:
     void OperatorPresentEventHandler(const prmEventButton & button);
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
-
+    void VolumeEventHandler(const double & volume);
+    
     QVBoxLayout * QVBArms;
     std::map<QString, QPushButton *> ArmButtons;
 

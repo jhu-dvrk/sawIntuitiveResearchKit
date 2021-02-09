@@ -72,7 +72,9 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequired->AddFunction("set_scale", Console.set_scale);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
                                                 this, "scale");
-        interfaceRequired->AddFunction("SetVolume", Console.SetVolume);
+        interfaceRequired->AddFunction("set_volume", Console.set_volume);
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::VolumeEventHandler,
+                                                this, "volume");
         interfaceRequired->AddFunction("emulate_operator_present", Console.emulate_operator_present);
         interfaceRequired->AddFunction("emulate_clutch", Console.emulate_clutch);
         interfaceRequired->AddFunction("emulate_camera", Console.emulate_camera);
@@ -271,7 +273,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetScale(double scale)
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetVolume(void)
 {
     double volume01 = static_cast<double>(QSVolume->value()) / 100.0;
-    Console.SetVolume(volume01);
+    Console.set_volume(volume01);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
@@ -422,6 +424,8 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
             this, SLOT(SlotCameraEventHandler(bool)));
     connect(QSVolume, SIGNAL(sliderReleased()),
             this, SLOT(SlotSetVolume()));
+    connect(this, SIGNAL(SignalVolume(double)),
+            this, SLOT(SlotVolumeEventHandler(double)));
     connect(QCBEnableDirectControl, SIGNAL(toggled(bool)),
             this, SLOT(SlotEnableDirectControl(bool)));
     connect(QRBOperatorPresent, SIGNAL(clicked(bool)),
@@ -502,6 +506,16 @@ void mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler(const prmEventBu
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotCameraEventHandler(bool camera)
 {
     QRBCamera->setChecked(camera);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotVolumeEventHandler(double volume)
+{
+    QSVolume->setValue(volume * 100.0);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::VolumeEventHandler(const double & volume)
+{
+    emit SignalVolume(volume);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotEnableDirectControl(bool toggle)

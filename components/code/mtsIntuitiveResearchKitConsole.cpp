@@ -499,10 +499,14 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
         mInterface->AddEventWrite(ConfigurationEvents.teleop_psm_unselected,
                                   "teleop_psm_unselected", prmKeyValue("MTM", "PSM"));
         // audio
-        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetVolume, this,
-                                    "SetVolume", 0.5);
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::set_volume, this,
+                                    "set_volume", m_audio_volume);
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::beep, this,
+                                    "beep", vctDoubleVec());
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::string_to_speech, this,
                                     "string_to_speech", std::string());
+        mInterface->AddEventWrite(mAudio.volume,
+                                  "volume", m_audio_volume);
         // emulate foot pedal events
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler, this,
                                     "emulate_operator_present", prmEventButton());
@@ -565,9 +569,9 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     mTextToSpeech = new mtsTextToSpeech();
     manager->AddComponent(mTextToSpeech);
     mtsInterfaceRequired * textToSpeechInterface = this->AddInterfaceRequired("TextToSpeech");
-    textToSpeechInterface->AddFunction("Beep", mAudio.Beep);
+    textToSpeechInterface->AddFunction("Beep", mAudio.beep);
     textToSpeechInterface->AddFunction("StringToSpeech", mAudio.string_to_speech);
-    mAudioVolume = 0.5;
+    m_audio_volume = 0.5;
 
     // IO default settings
     double periodIO = mtsIntuitiveResearchKit::IOPeriod;
@@ -996,6 +1000,8 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
     EventSelectedTeleopPSMs();
     // emit scale event
     ConfigurationEvents.scale(mtsIntuitiveResearchKit::TeleOperationPSM::Scale);
+    // emit volume event
+    mAudio.volume(m_audio_volume);
 
     if (mChatty) {
         // someone is going to hate me for this :-)
@@ -2319,18 +2325,57 @@ void mtsIntuitiveResearchKitConsole::set_scale(const double & scale)
     ConfigurationEvents.scale(scale);
 }
 
-void mtsIntuitiveResearchKitConsole::SetVolume(const double & volume)
+void mtsIntuitiveResearchKitConsole::set_volume(const double & volume)
 {
     if (volume > 1.0) {
-        mAudioVolume = 1.0;
+        m_audio_volume = 1.0;
     } else if (volume < 0.0) {
-        mAudioVolume = 0.0;
+        m_audio_volume = 0.0;
     } else {
-        mAudioVolume = volume;
+        m_audio_volume = volume;
     }
     std::stringstream message;
-    message << this->GetName() << ": volume set to " << static_cast<int>(volume * 100.0);
+    message << this->GetName() << ": volume set to " << static_cast<int>(volume * 100.0) << "%";
     mInterface->SendStatus(message.str());
+    mAudio.volume(m_audio_volume);
+}
+
+void mtsIntuitiveResearchKitConsole::beep(const vctDoubleVec & values)
+{
+    const size_t size = values.size();
+    if ((size == 0) || (size > 3)) {
+        mInterface->SendError(this->GetName() + ": beep expect up to 3 values (duration, frequency, volume)");
+        return;
+    }
+    vctDoubleVec result(3);
+    result.Assign(0.3, 3000.0, m_audio_volume);
+    result.Ref(size).Assign(values); // overwrite with data sent
+    // check duration
+    bool durationError = false;
+    if (result[0] < 0.1) {
+        result[0] = 0.1;
+        durationError = true;
+    } else if (result[0] > 60.0) {
+        result[0] = 60.0;
+        durationError = true;
+    }
+    if (durationError) {
+        mInterface->SendWarning(this->GetName() + ": beep, duration must be between 0.1 and 60s");
+    }
+    // check volume
+    bool volumeError = false;
+    if (result[2] < 0.0) {
+        result[2] = 0.0;
+        volumeError = true;
+    } else if (result[2] > 1.0) {
+        result[2] = 1.0;
+        volumeError = true;
+    }
+    if (volumeError) {
+        mInterface->SendWarning(this->GetName() + ": beep, volume must be between 0 and 1");
+    }
+    // convert to fixed size vector and send
+    mAudio.beep(vct3(result));
 }
 
 void mtsIntuitiveResearchKitConsole::string_to_speech(const std::string & text)
@@ -2343,16 +2388,16 @@ void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & b
     switch (button.Type()) {
     case prmEventButton::PRESSED:
         mInterface->SendStatus(this->GetName() + ": clutch pressed");
-        mAudio.Beep(vct3(0.1, 700.0, mAudioVolume));
+        mAudio.beep(vct3(0.1, 700.0, m_audio_volume));
         break;
     case prmEventButton::RELEASED:
         mInterface->SendStatus(this->GetName() + ": clutch released");
-        mAudio.Beep(vct3(0.1, 700.0, mAudioVolume));
+        mAudio.beep(vct3(0.1, 700.0, m_audio_volume));
         break;
     case prmEventButton::CLICKED:
         mInterface->SendStatus(this->GetName() + ": clutch quick tap");
-        mAudio.Beep(vct3(0.05, 2000.0, mAudioVolume));
-        mAudio.Beep(vct3(0.05, 2000.0, mAudioVolume));
+        mAudio.beep(vct3(0.05, 2000.0, m_audio_volume));
+        mAudio.beep(vct3(0.05, 2000.0, m_audio_volume));
         if (mTeleopMTMToCycle != "") {
             cycle_teleop_psm_by_mtm(mTeleopMTMToCycle);
         }
@@ -2369,17 +2414,17 @@ void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & b
     case prmEventButton::PRESSED:
         mCameraPressed = true;
         mInterface->SendStatus(this->GetName() + ": camera pressed");
-        mAudio.Beep(vct3(0.1, 1000.0, mAudioVolume));
+        mAudio.beep(vct3(0.1, 1000.0, m_audio_volume));
         break;
     case prmEventButton::RELEASED:
         mCameraPressed = false;
         mInterface->SendStatus(this->GetName() + ": camera released");
-        mAudio.Beep(vct3(0.1, 1000.0, mAudioVolume));
+        mAudio.beep(vct3(0.1, 1000.0, m_audio_volume));
         break;
     case prmEventButton::CLICKED:
         mInterface->SendStatus(this->GetName() + ": camera quick tap");
-        mAudio.Beep(vct3(0.05, 2500.0, mAudioVolume));
-        mAudio.Beep(vct3(0.05, 2500.0, mAudioVolume));
+        mAudio.beep(vct3(0.05, 2500.0, m_audio_volume));
+        mAudio.beep(vct3(0.05, 2500.0, m_audio_volume));
         break;
     default:
         break;
@@ -2394,12 +2439,12 @@ void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventB
     case prmEventButton::PRESSED:
         mOperatorPresent = true;
         mInterface->SendStatus(this->GetName() + ": operator present");
-        mAudio.Beep(vct3(0.3, 1500.0, mAudioVolume));
+        mAudio.beep(vct3(0.3, 1500.0, m_audio_volume));
         break;
     case prmEventButton::RELEASED:
         mOperatorPresent = false;
         mInterface->SendStatus(this->GetName() + ": operator not present");
-        mAudio.Beep(vct3(0.3, 1200.0, mAudioVolume));
+        mAudio.beep(vct3(0.3, 1200.0, m_audio_volume));
         break;
     default:
         break;
@@ -2414,7 +2459,7 @@ void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & messag
     // throttle error beeps
     double currentTime = mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime();
     if ((currentTime - mTimeOfLastErrorBeep) > 2.0 * cmn_s) {
-        mAudio.Beep(vct3(0.3, 3000.0, mAudioVolume));
+        mAudio.beep(vct3(0.3, 3000.0, m_audio_volume));
         mTimeOfLastErrorBeep = currentTime;
     }
 }
