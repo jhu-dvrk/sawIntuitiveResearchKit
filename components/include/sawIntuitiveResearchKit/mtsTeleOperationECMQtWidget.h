@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -78,10 +78,10 @@ private:
 
 protected:
     struct {
-        mtsFunctionWrite SetScale;
-        mtsFunctionRead GetPositionCartesianMTML;
-        mtsFunctionRead GetPositionCartesianMTMR;
-        mtsFunctionRead GetPositionCartesianECM;
+        mtsFunctionWrite set_scale;
+        mtsFunctionRead MTML_measured_cp;
+        mtsFunctionRead MTMR_measured_cp;
+        mtsFunctionRead ECM_measured_cp;
         mtsFunctionRead period_statistics;
     } TeleOperation;
 
@@ -90,15 +90,15 @@ private:
     QLineEdit * QLECurrentState;
     QLineEdit * QLEFollowing;
     QDoubleSpinBox * QSBScale;
-    prmPositionCartesianGet PositionMTML;
+    prmPositionCartesianGet m_MTML_measured_cp;
     prmPositionCartesianGetQtWidget * QCPGMTMLWidget;
-    prmPositionCartesianGet PositionMTMR;
+    prmPositionCartesianGet m_MTMR_measured_cp;
     prmPositionCartesianGetQtWidget * QCPGMTMRWidget;
-    prmPositionCartesianGet PositionECM;
+    prmPositionCartesianGet m_ECM_measured_cp;
     prmPositionCartesianGetQtWidget * QCPGECMWidget;
 
     // timing
-    mtsIntervalStatistics IntervalStatistics;
+    mtsIntervalStatistics m_interval_statistics;
     mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
 
     // messages

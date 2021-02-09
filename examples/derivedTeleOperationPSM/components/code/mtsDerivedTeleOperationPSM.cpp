@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2017-08-09
 
-  (C) Copyright 2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2017-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -93,7 +93,7 @@ void mtsDerivedTeleOperationPSM::RunEnabled(void)
     BaseType::RunEnabled();
 
     // Only if the PSM is following
-    if (mIsFollowing) {
+    if (m_following) {
         prmForceCartesianGet wrenchPSM;
         prmVelocityCartesianGet velocityPSM;
         prmForceCartesianSet wrenchMTM;
@@ -114,7 +114,7 @@ void mtsDerivedTeleOperationPSM::RunEnabled(void)
         }
 
         // Re-orient based on rotation between MTM and PSM
-        force = mRegistrationRotation.Inverse() * force;
+        force = m_registration_rotation.Inverse() * force;
         // Set wrench for MTM
         wrenchMTM.Force().Ref<3>(0) = force;
         mMTM.servo_cf_body(wrenchMTM);

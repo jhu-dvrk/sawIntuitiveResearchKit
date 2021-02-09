@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -58,24 +58,24 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Main");
     if (interfaceRequired) {
         QMMessage->SetInterfaceRequired(interfaceRequired);
-        interfaceRequired->AddFunction("PowerOff", Console.PowerOff);
-        interfaceRequired->AddFunction("PowerOn", Console.PowerOn);
-        interfaceRequired->AddFunction("Home", Console.Home);
+        interfaceRequired->AddFunction("power_off", Console.power_off);
+        interfaceRequired->AddFunction("power_on", Console.power_on);
+        interfaceRequired->AddFunction("home", Console.home);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler,
                                                 this, "ArmCurrentState");
-        interfaceRequired->AddFunction("TeleopEnable", Console.TeleopEnable);
-        interfaceRequired->AddFunction("SelectTeleopPSM", Console.SelectTeleopPSM);
+        interfaceRequired->AddFunction("teleop_enable", Console.teleop_enable);
+        interfaceRequired->AddFunction("select_teleop_psm", Console.select_teleop_psm);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMSelectedEventHandler,
-                                                this, "TeleopPSMSelected");
+                                                this, "teleop_psm_selected");
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMUnselectedEventHandler,
-                                                this, "TeleopPSMUnselected");
-        interfaceRequired->AddFunction("SetScale", Console.SetScale);
+                                                this, "teleop_psm_unselected");
+        interfaceRequired->AddFunction("set_scale", Console.set_scale);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
-                                                this, "Scale");
+                                                this, "scale");
         interfaceRequired->AddFunction("SetVolume", Console.SetVolume);
-        interfaceRequired->AddFunction("EmulateOperatorPresent", Console.EmulateOperatorPresent);
-        interfaceRequired->AddFunction("EmulateClutch", Console.EmulateClutch);
-        interfaceRequired->AddFunction("EmulateCamera", Console.EmulateCamera);
+        interfaceRequired->AddFunction("emulate_operator_present", Console.emulate_operator_present);
+        interfaceRequired->AddFunction("emulate_clutch", Console.emulate_clutch);
+        interfaceRequired->AddFunction("emulate_camera", Console.emulate_camera);
     }
     interfaceRequired = AddInterfaceRequired("OperatorPresent");
     if (interfaceRequired) {
@@ -150,7 +150,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
         event->accept();
         this->hide();
         // send clean power off message and wait a bit
-        Console.PowerOff();
+        Console.power_off();
         osaSleep(1.0 * cmn_s);
         QCoreApplication::exit();
     } else {
@@ -160,17 +160,17 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotPowerOff(void)
 {
-    Console.PowerOff();
+    Console.power_off();
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotPowerOn(void)
 {
-    Console.PowerOn();
+    Console.power_on();
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotHome(void)
 {
-    Console.Home();
+    Console.home();
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(PairStringType armState)
@@ -201,12 +201,12 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(Pai
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStart(void)
 {
-    Console.TeleopEnable(true);
+    Console.teleop_enable(true);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStop(void)
 {
-    Console.TeleopEnable(false);
+    Console.teleop_enable(false);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::GetTeleopButtonCheck(const PairStringType & pair,
@@ -265,7 +265,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopPSMUnselectedEventHandler
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetScale(double scale)
 {
-    Console.SetScale(scale);
+    Console.set_scale(scale);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetVolume(void)
@@ -529,7 +529,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateOperatorPresent(bool tog
     } else {
         event.SetType(prmEventButton::RELEASED);
     }
-    Console.EmulateOperatorPresent(event);
+    Console.emulate_operator_present(event);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateClutch(bool toggle)
@@ -540,7 +540,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateClutch(bool toggle)
     } else {
         event.SetType(prmEventButton::RELEASED);
     }
-    Console.EmulateClutch(event);
+    Console.emulate_clutch(event);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateCamera(bool toggle)
@@ -551,7 +551,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateCamera(bool toggle)
     } else {
         event.SetType(prmEventButton::RELEASED);
     }
-    Console.EmulateCamera(event);
+    Console.emulate_camera(event);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotComponentViewer(void)
@@ -611,13 +611,13 @@ void mtsIntuitiveResearchKitConsoleQtWidget::FocusTeleopButton(const QString & t
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SelectTeleopCheck(const PairStringType & pair)
 {
-    Console.SelectTeleopPSM(prmKeyValue(pair.first.toStdString(),
+    Console.select_teleop_psm(prmKeyValue(pair.first.toStdString(),
                                         pair.second.toStdString()));
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::UnselectTeleopCheck(const PairStringType & pair)
 {
-    Console.SelectTeleopPSM(prmKeyValue(pair.first.toStdString(),
+    Console.select_teleop_psm(prmKeyValue(pair.first.toStdString(),
                                         std::string()));
 }
 

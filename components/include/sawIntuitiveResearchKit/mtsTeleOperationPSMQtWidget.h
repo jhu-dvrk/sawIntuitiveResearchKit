@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -91,15 +91,15 @@ private:
 
 protected:
     struct {
-        mtsFunctionWrite SetScale;
-        mtsFunctionWrite LockRotation;
-        mtsFunctionWrite LockTranslation;
-        mtsFunctionWrite SetAlignMTM;
-        mtsFunctionRead GetPositionCartesianMTM;
-        mtsFunctionRead GetPositionCartesianPSM;
-        mtsFunctionRead GetAlignMTM;
-        mtsFunctionRead GetAlignOffset;
-        mtsFunctionRead GetRegistrationRotation;
+        mtsFunctionWrite set_scale;
+        mtsFunctionWrite lock_rotation;
+        mtsFunctionWrite lock_translation;
+        mtsFunctionWrite set_align_mtm;
+        mtsFunctionRead MTM_measured_cp;
+        mtsFunctionRead PSM_setpoint_cp;
+        mtsFunctionRead align_mtm;
+        mtsFunctionRead alignment_offset;
+        mtsFunctionRead registration_rotation;
         mtsFunctionRead period_statistics;
     } TeleOperation;
 
@@ -111,16 +111,16 @@ private:
     QCheckBox * QCBLockTranslation;
     QCheckBox * QCBAlignMTM;
     QDoubleSpinBox * QSBScale;
-    prmPositionCartesianGet PositionMTM;
+    prmPositionCartesianGet m_MTM_measured_cp;
     prmPositionCartesianGetQtWidget * QCPGMTMWidget;
-    prmPositionCartesianGet PositionPSM;
+    prmPositionCartesianGet m_PSM_setpoint_cp;
     prmPositionCartesianGetQtWidget * QCPGPSMWidget;
-    vctMatRot3 AlignOffset;
+    vctMatRot3 m_alignment_offset;
     vctQtWidgetRotationDoubleRead * QVRAlignOffset;
-    vctMatRot3 RegistrationRotation;
+    vctMatRot3 m_registration_rotation;
 
     // timing
-    mtsIntervalStatistics IntervalStatistics;
+    mtsIntervalStatistics m_interval_statistics;
     mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
 
     // messages

@@ -6,6 +6,7 @@ StateJointPID = m_pid_measured_js
 StateJointDesiredPID = m_pid_setpoint_js
 
 BaseFrame = m_base_frame
+SetBaseFrame = set_base_frame
 
 CartesianGet = m_measured_cp_frame
 CartesianGetDesired = m_setpoint_cp_frame
@@ -26,6 +27,10 @@ mEncoderBiased = m_encoders_biased
 mCartesianReady = IsCartesianReady
 mJointReady = IsJointReady
 mOperatingState = m_operating_state
+
+PowerOn = power_on
+PowerOff = power_off
+Home = home
 
 mControlSpace = m_control_space
 mControlMode = m_control_mode
@@ -100,3 +105,42 @@ UnlockOrientation = unlock_orientation
 mWrenchType = m_cf_type
 mWrenchSet = m_cf_set
 mWrenchBodyOrientationAbsolute = m_body_cf_orientation_absolute
+
+EmulateOperatorPresent = emulate_operator_present
+EmulateCamera = emulate_camera
+EmulateClutch = emulate_clutch
+
+SetAdapterPresent = set_adapter_present
+SetToolPresent = set_tool_present
+SetToolType = set_tool_type
+ToolTypeRequest = tool_type_request
+ToolType = tool_type
+
+SetEndoscopeType = set_endoscope_type
+EndoscopeType = endoscope_type
+
+TeleopEnable = teleop_enable
+CycleTeleopPSMByMTM = cycle_teleop_psm_by_mtm
+SelectTeleopPSM = select_teleop_psm
+TeleopPSMSelected = teleop_psm_selected
+TeleopPSMUnselected = teleop_psm_unselected
+
+SetScale = set_scale
+Scale = scale
+StringToSpeech = string_to_speech
+
+Lock = lock
+Locked = locked
+FocusIn = focus_in
+FocusOut = focus_out
+FocusingIn = focusing_in
+FocusingOut = focusing_out
+Following = following
+LockRotation = lock_rotation
+LockTranslation = lock_translation
+RotationLocked = rotation_locked
+TranslationLocked = translation_locked
+GetAlignOffset = alignment_offset
+align_offset = alignment_offset
+SetAlignMTM = set_align_mtm
+SetRegistrationRotation = set_registration_rotation

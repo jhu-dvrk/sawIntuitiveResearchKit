@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -98,16 +98,16 @@ protected:
     void setupUi(void);
 
     struct MainStruct {
-        mtsFunctionVoid PowerOff;
-        mtsFunctionVoid PowerOn;
-        mtsFunctionVoid Home;
-        mtsFunctionWrite TeleopEnable;
-        mtsFunctionWrite SelectTeleopPSM;
-        mtsFunctionWrite SetScale;
+        mtsFunctionVoid power_off;
+        mtsFunctionVoid power_on;
+        mtsFunctionVoid home;
+        mtsFunctionWrite teleop_enable;
+        mtsFunctionWrite select_teleop_psm;
+        mtsFunctionWrite set_scale;
         mtsFunctionWrite SetVolume;
-        mtsFunctionWrite EmulateOperatorPresent;
-        mtsFunctionWrite EmulateClutch;
-        mtsFunctionWrite EmulateCamera;
+        mtsFunctionWrite emulate_operator_present;
+        mtsFunctionWrite emulate_clutch;
+        mtsFunctionWrite emulate_camera;
     } Console;
 
     void ArmCurrentStateEventHandler(const prmKeyValue & armState);

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -348,8 +348,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         m_arm_interface->AddCommandReadState(this->mStateTableState,
                                              m_operating_state, "operating_state");
         // Set
-        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::SetBaseFrame,
-                                         this, "SetBaseFrame");
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::set_base_frame,
+                                         this, "set_base_frame");
         m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitArm::Freeze,
                                         this, "Freeze");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jp,
@@ -1916,7 +1916,7 @@ void mtsIntuitiveResearchKitArm::move_cp(const prmPositionCartesianSet & newPosi
     }
 }
 
-void mtsIntuitiveResearchKitArm::SetBaseFrame(const prmPositionCartesianSet & newBaseFrame)
+void mtsIntuitiveResearchKitArm::set_base_frame(const prmPositionCartesianSet & newBaseFrame)
 {
     if (newBaseFrame.Valid()) {
         this->m_base_frame.FromNormalized(newBaseFrame.Goal());

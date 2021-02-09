@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -288,7 +288,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
 void mtsIntuitiveResearchKitConsole::Arm::SetBaseFrameIfNeeded(mtsIntuitiveResearchKitArm * armPointer)
 {
     if (mBaseFrame.ReferenceFrame() != "") {
-        armPointer->SetBaseFrame(mBaseFrame);
+        armPointer->set_base_frame(mBaseFrame);
     }
 }
 
@@ -475,41 +475,41 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mInterface = AddInterfaceProvided("Main");
     if (mInterface) {
         mInterface->AddMessageEvents();
-        mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::PowerOff, this,
-                                   "PowerOff");
-        mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::PowerOn, this,
-                                   "PowerOn");
-        mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::Home, this,
-                                   "Home");
+        mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::power_off, this,
+                                   "power_off");
+        mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::power_on, this,
+                                   "power_on");
+        mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::home, this,
+                                   "home");
         mInterface->AddEventWrite(ConfigurationEvents.ArmCurrentState,
                                   "ArmCurrentState", prmKeyValue());
-        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::TeleopEnable, this,
-                                    "TeleopEnable", false);
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::teleop_enable, this,
+                                    "teleop_enable", false);
         // manage tele-op
-        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::CycleTeleopPSMByMTM, this,
-                                    "CycleTeleopPSMByMTM", std::string(""));
-        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SelectTeleopPSM, this,
-                                    "SelectTeleopPSM", prmKeyValue("mtm", "psm"));
-        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetScale, this,
-                                    "SetScale", 0.5);
-        mInterface->AddEventWrite(ConfigurationEvents.Scale,
-                                  "Scale", 0.5);
-        mInterface->AddEventWrite(ConfigurationEvents.TeleopPSMSelected,
-                                  "TeleopPSMSelected", prmKeyValue("MTM", "PSM"));
-        mInterface->AddEventWrite(ConfigurationEvents.TeleopPSMUnselected,
-                                  "TeleopPSMUnselected", prmKeyValue("MTM", "PSM"));
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::cycle_teleop_psm_by_mtm, this,
+                                    "cycle_teleop_psm_by_mtm", std::string(""));
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::select_teleop_psm, this,
+                                    "select_teleop_psm", prmKeyValue("mtm", "psm"));
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::set_scale, this,
+                                    "set_scale", 0.5);
+        mInterface->AddEventWrite(ConfigurationEvents.scale,
+                                  "scale", 0.5);
+        mInterface->AddEventWrite(ConfigurationEvents.teleop_psm_selected,
+                                  "teleop_psm_selected", prmKeyValue("MTM", "PSM"));
+        mInterface->AddEventWrite(ConfigurationEvents.teleop_psm_unselected,
+                                  "teleop_psm_unselected", prmKeyValue("MTM", "PSM"));
         // audio
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::SetVolume, this,
                                     "SetVolume", 0.5);
-        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::StringToSpeech, this,
-                                    "StringToSpeech", std::string());
+        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::string_to_speech, this,
+                                    "string_to_speech", std::string());
         // emulate foot pedal events
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler, this,
-                                    "EmulateOperatorPresent", prmEventButton());
+                                    "emulate_operator_present", prmEventButton());
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::ClutchEventHandler, this,
-                                    "EmulateClutch", prmEventButton());
+                                    "emulate_clutch", prmEventButton());
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::CameraEventHandler, this,
-                                    "EmulateCamera", prmEventButton());
+                                    "emulate_camera", prmEventButton());
     }
 }
 
@@ -566,7 +566,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     manager->AddComponent(mTextToSpeech);
     mtsInterfaceRequired * textToSpeechInterface = this->AddInterfaceRequired("TextToSpeech");
     textToSpeechInterface->AddFunction("Beep", mAudio.Beep);
-    textToSpeechInterface->AddFunction("StringToSpeech", mAudio.StringToSpeech);
+    textToSpeechInterface->AddFunction("StringToSpeech", mAudio.string_to_speech);
     mAudioVolume = 0.5;
 
     // IO default settings
@@ -915,9 +915,9 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                          mIOComponentName, "EndoscopeFocusIn");
         mConnections.Add(endoscopeFocusName, "EndoscopeFocusOut",
                          mIOComponentName, "EndoscopeFocusOut");
-        mConnections.Add(endoscopeFocusName, "FocusIn",
+        mConnections.Add(endoscopeFocusName, "focus_in",
                          mIOComponentName, "Cam+");
-        mConnections.Add(endoscopeFocusName, "FocusOut",
+        mConnections.Add(endoscopeFocusName, "focus_out",
                          mIOComponentName, "Cam-");
     }
 
@@ -995,7 +995,7 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
     // emit events for active PSM teleop pairs
     EventSelectedTeleopPSMs();
     // emit scale event
-    ConfigurationEvents.Scale(mtsIntuitiveResearchKit::TeleOperationPSM::Scale);
+    ConfigurationEvents.scale(mtsIntuitiveResearchKit::TeleOperationPSM::Scale);
 
     if (mChatty) {
         // someone is going to hate me for this :-)
@@ -1033,7 +1033,7 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
             = static_cast<cmnRandomSequence::SeedType>(mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime() * 100000.0);
         randomSequence.SetSeed(seed % 1000);
         randomSequence.ExtractRandomValue<int>(0, prompts.size() - 1, index);
-        mAudio.StringToSpeech(prompts.at(index));
+        mAudio.string_to_speech(prompts.at(index));
     }
 }
 
@@ -1127,7 +1127,7 @@ bool mtsIntuitiveResearchKitConsole::AddTeleopPSMInterfaces(TeleopPSM * teleop)
     teleop->InterfaceRequired = this->AddInterfaceRequired(teleop->Name());
     if (teleop->InterfaceRequired) {
         teleop->InterfaceRequired->AddFunction("state_command", teleop->state_command);
-        teleop->InterfaceRequired->AddFunction("SetScale", teleop->SetScale);
+        teleop->InterfaceRequired->AddFunction("set_scale", teleop->set_scale);
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "error");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "warning");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "status");
@@ -1948,15 +1948,15 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
     return true;
 }
 
-void mtsIntuitiveResearchKitConsole::PowerOff(void)
+void mtsIntuitiveResearchKitConsole::power_off(void)
 {
-    TeleopEnable(false);
+    teleop_enable(false);
     for (auto & arm : mArms) {
         arm.second->state_command(std::string("disable"));
     }
 }
 
-void mtsIntuitiveResearchKitConsole::PowerOn(void)
+void mtsIntuitiveResearchKitConsole::power_on(void)
 {
     DisableFaultyArms();
     for (auto & arm : mArms) {
@@ -1964,10 +1964,10 @@ void mtsIntuitiveResearchKitConsole::PowerOn(void)
     }
 }
 
-void mtsIntuitiveResearchKitConsole::Home(void)
+void mtsIntuitiveResearchKitConsole::home(void)
 {
     DisableFaultyArms();
-    TeleopEnable(false);
+    teleop_enable(false);
     for (auto & arm : mArms) {
         arm.second->state_command(std::string("home"));
     }
@@ -1986,18 +1986,18 @@ void mtsIntuitiveResearchKitConsole::DisableFaultyArms(void)
     }
 }
 
-void mtsIntuitiveResearchKitConsole::TeleopEnable(const bool & enable)
+void mtsIntuitiveResearchKitConsole::teleop_enable(const bool & enable)
 {
     // for convenience, if we start teleop we assume all arms should
     // be homed too
     if (enable) {
-        Home();
+        home();
     }
     mTeleopEnabled = enable;
     UpdateTeleopState();
 }
 
-void mtsIntuitiveResearchKitConsole::CycleTeleopPSMByMTM(const std::string & mtmName)
+void mtsIntuitiveResearchKitConsole::cycle_teleop_psm_by_mtm(const std::string & mtmName)
 {
     // try to cycle through all the teleopPSMs associated to the MTM
     if (mTeleopsPSMByMTM.count(mtmName) == 0) {
@@ -2072,7 +2072,7 @@ void mtsIntuitiveResearchKitConsole::CycleTeleopPSMByMTM(const std::string & mtm
     EventSelectedTeleopPSMs();
 }
 
-void mtsIntuitiveResearchKitConsole::SelectTeleopPSM(const prmKeyValue & mtmPsm)
+void mtsIntuitiveResearchKitConsole::select_teleop_psm(const prmKeyValue & mtmPsm)
 {
     // for readability
     const std::string mtmName = mtmPsm.Key;
@@ -2132,7 +2132,7 @@ void mtsIntuitiveResearchKitConsole::SelectTeleopPSM(const prmKeyValue & mtmPsm)
     }
 
     // make sure the teleop using that MTM is unselected
-    SelectTeleopPSM(prmKeyValue(mtmName, ""));
+    select_teleop_psm(prmKeyValue(mtmName, ""));
 
     // now turn on the teleop
     teleopIterator->second->SetSelected(true);
@@ -2191,10 +2191,10 @@ void mtsIntuitiveResearchKitConsole::EventSelectedTeleopPSMs(void) const
 {
     for (auto & iter : mTeleopsPSM) {
         if (iter.second->Selected()) {
-            ConfigurationEvents.TeleopPSMSelected(prmKeyValue(iter.second->mMTMName,
+            ConfigurationEvents.teleop_psm_selected(prmKeyValue(iter.second->mMTMName,
                                                               iter.second->mPSMName));
         } else {
-            ConfigurationEvents.TeleopPSMUnselected(prmKeyValue(iter.second->mMTMName,
+            ConfigurationEvents.teleop_psm_unselected(prmKeyValue(iter.second->mMTMName,
                                                                 iter.second->mPSMName));
         }
     }
@@ -2311,12 +2311,12 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
     }
 }
 
-void mtsIntuitiveResearchKitConsole::SetScale(const double & scale)
+void mtsIntuitiveResearchKitConsole::set_scale(const double & scale)
 {
     for (auto & iterTeleopPSM : mTeleopsPSM) {
-        iterTeleopPSM.second->SetScale(scale);
+        iterTeleopPSM.second->set_scale(scale);
     }
-    ConfigurationEvents.Scale(scale);
+    ConfigurationEvents.scale(scale);
 }
 
 void mtsIntuitiveResearchKitConsole::SetVolume(const double & volume)
@@ -2333,9 +2333,9 @@ void mtsIntuitiveResearchKitConsole::SetVolume(const double & volume)
     mInterface->SendStatus(message.str());
 }
 
-void mtsIntuitiveResearchKitConsole::StringToSpeech(const std::string & text)
+void mtsIntuitiveResearchKitConsole::string_to_speech(const std::string & text)
 {
-    mAudio.StringToSpeech(text);
+    mAudio.string_to_speech(text);
 }
 
 void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & button)
@@ -2354,7 +2354,7 @@ void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & b
         mAudio.Beep(vct3(0.05, 2000.0, mAudioVolume));
         mAudio.Beep(vct3(0.05, 2000.0, mAudioVolume));
         if (mTeleopMTMToCycle != "") {
-            CycleTeleopPSMByMTM(mTeleopMTMToCycle);
+            cycle_teleop_psm_by_mtm(mTeleopMTMToCycle);
         }
         break;
     default:
@@ -2409,7 +2409,7 @@ void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventB
 }
 
 void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & message) {
-    TeleopEnable(false);
+    teleop_enable(false);
     mInterface->SendError(message.Message);
     // throttle error beeps
     double currentTime = mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime();

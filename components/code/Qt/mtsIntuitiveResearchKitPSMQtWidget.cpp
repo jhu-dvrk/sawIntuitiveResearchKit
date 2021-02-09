@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2019-08-07
 
-  (C) Copyright 2019-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2019-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -41,10 +41,10 @@ mtsIntuitiveResearchKitPSMQtWidget::mtsIntuitiveResearchKitPSMQtWidget(const std
     InterfaceRequired->AddFunction("jaw/configuration_js", Jaw.configuration_js);
     InterfaceRequired->AddFunction("jaw/move_jp", Jaw.move_jp);
     InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSMQtWidget::ToolTypeEventHandler,
-                                            this, "ToolType");
+                                            this, "tool_type");
     InterfaceRequired->AddEventHandlerVoid(&mtsIntuitiveResearchKitPSMQtWidget::ToolTypeRequestEventHandler,
-                                           this, "ToolTypeRequest");
-    InterfaceRequired->AddFunction("SetToolType", SetToolType);
+                                           this, "tool_type_request");
+    InterfaceRequired->AddFunction("set_tool_type", set_tool_type);
 }
 
 void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
@@ -182,7 +182,7 @@ void mtsIntuitiveResearchKitPSMQtWidget::SlotToolTypeSelected(QString toolType)
                                       message.c_str(),
                                       QMessageBox::No | QMessageBox::Yes);
     if (answer == QMessageBox::Yes) {
-        SetToolType(toolType.toStdString());
+        set_tool_type(toolType.toStdString());
     }
 }
 

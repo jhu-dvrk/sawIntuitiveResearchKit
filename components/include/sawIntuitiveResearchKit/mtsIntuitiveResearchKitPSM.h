@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -109,8 +109,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     /*! Set tool present.  This should only be used by the tool event
       handler or for custom tools that can't be detected
       automatically. */
-    void SetAdapterPresent(const bool & present);
-    void SetToolPresent(const bool & present);
+    void set_adapter_present(const bool & present);
+    void set_tool_present(const bool & present);
 
     void EventHandlerTool(const prmEventButton & button);
     void EventHandlerManipClutch(const prmEventButton & button);
@@ -154,7 +154,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     /*! Set tool type.  Uses string as defined in
       mtsIntuitiveResearchKitToolTypes.cdg, upper case with separating
       underscores. */
-    void SetToolType(const std::string & toolType);
+    void set_tool_type(const std::string & toolType);
 
     /*! Event handler for tool types sent by the IO level based on
       info from Dallas Chip on tools */
@@ -174,8 +174,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     bool mToolConfigured = false;
     bool mToolTypeRequested = false;
     struct {
-        mtsFunctionWrite ToolType;
-        mtsFunctionVoid ToolTypeRequest;
+        mtsFunctionWrite tool_type;
+        mtsFunctionVoid tool_type_request;
     } ToolEvents;
 
     /*! 5mm tools with 8 joints */

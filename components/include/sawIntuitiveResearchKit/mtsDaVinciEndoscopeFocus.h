@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2018-03-14
 
-  (C) Copyright 2018-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2018-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -44,8 +44,8 @@ protected:
 
     // required interface
     struct {
-        mtsFunctionWrite FocusIn;
-        mtsFunctionWrite FocusOut;
+        mtsFunctionWrite focus_in;
+        mtsFunctionWrite focus_out;
     } RobotIO;
 
     mtsInterfaceProvided * mInterface;
@@ -55,20 +55,20 @@ protected:
     void FocusOutEventHandler(const prmEventButton & event);
 
     // locking focus
-    void Lock(const bool & lock);
+    void lock(const bool & lock);
     bool mLocked = false;
     bool mFocusingIn = false;
     bool mFocusingOut = false;
 
     // direct commands
-    void FocusIn(const bool & focus);
-    void FocusOut(const bool & focus);
+    void focus_in(const bool & focus);
+    void focus_out(const bool & focus);
 
     // events
     struct {
-        mtsFunctionWrite Locked;
-        mtsFunctionWrite FocusingIn;
-        mtsFunctionWrite FocusingOut;
+        mtsFunctionWrite locked;
+        mtsFunctionWrite focusing_in;
+        mtsFunctionWrite focusing_out;
     } mEvents;
 };
 

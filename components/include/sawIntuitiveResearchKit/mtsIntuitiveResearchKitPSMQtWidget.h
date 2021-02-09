@@ -52,7 +52,7 @@ private:
 
     QLineEdit * QLEToolType;
     QComboBox * QCBToolOptions;
-    mtsFunctionWrite SetToolType;
+    mtsFunctionWrite set_tool_type;
 
     QLineEdit * QLEJawPosition;
     QLineEdit * QLEJawVelocity;

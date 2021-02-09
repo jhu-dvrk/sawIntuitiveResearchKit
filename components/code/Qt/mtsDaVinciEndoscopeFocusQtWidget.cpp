@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2020-02-10
 
-  (C) Copyright 2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2020-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -39,16 +39,16 @@ mtsDaVinciEndoscopeFocusQtWidget::mtsDaVinciEndoscopeFocusQtWidget(const std::st
     // Setup cisst interface
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Endoscope");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("Lock", Endoscope.Lock);
-        interfaceRequired->AddFunction("FocusIn", Endoscope.FocusIn);
-        interfaceRequired->AddFunction("FocusOut", Endoscope.FocusOut);
+        interfaceRequired->AddFunction("lock", Endoscope.lock);
+        interfaceRequired->AddFunction("focus_in", Endoscope.focus_in);
+        interfaceRequired->AddFunction("focus_out", Endoscope.focus_out);
         // events
         interfaceRequired->AddEventHandlerWrite(&mtsDaVinciEndoscopeFocusQtWidget::LockedEventHandler,
-                                                this, "Locked");
+                                                this, "locked");
         interfaceRequired->AddEventHandlerWrite(&mtsDaVinciEndoscopeFocusQtWidget::FocusingInEventHandler,
-                                                this, "FocusingIn");
+                                                this, "focusing_in");
         interfaceRequired->AddEventHandlerWrite(&mtsDaVinciEndoscopeFocusQtWidget::FocusingOutEventHandler,
-                                                this, "FocusingOut");
+                                                this, "focusing_out");
     }
 }
 
@@ -74,7 +74,7 @@ void mtsDaVinciEndoscopeFocusQtWidget::Cleanup(void)
 void mtsDaVinciEndoscopeFocusQtWidget::SlotLock(void)
 {
     const bool isLocked = QPBLock->isChecked();
-    Endoscope.Lock(isLocked);
+    Endoscope.lock(isLocked);
     UpdateLock(isLocked);
 }
 
@@ -83,7 +83,7 @@ void mtsDaVinciEndoscopeFocusQtWidget::UpdateLock(const bool & locked)
     if (locked) {
         QPBLock->setText("Unlock");
     } else {
-        QPBLock->setText("Lock");
+        QPBLock->setText("lock");
     }
     QPBFocusIn->setEnabled(!locked);
     QPBFocusOut->setEnabled(!locked);
@@ -91,12 +91,12 @@ void mtsDaVinciEndoscopeFocusQtWidget::UpdateLock(const bool & locked)
 
 void mtsDaVinciEndoscopeFocusQtWidget::SlotFocusIn(bool focus)
 {
-    Endoscope.FocusIn(focus);
+    Endoscope.focus_in(focus);
 }
 
 void mtsDaVinciEndoscopeFocusQtWidget::SlotFocusOut(bool focus)
 {
-    Endoscope.FocusOut(focus);
+    Endoscope.focus_out(focus);
 }
 
 void mtsDaVinciEndoscopeFocusQtWidget::SlotLockedEventHandler(bool locked)

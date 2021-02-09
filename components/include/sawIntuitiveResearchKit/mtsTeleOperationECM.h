@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Nicole Ortega
   Created on: 2016-01-21
 
-  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -47,7 +47,7 @@ public:
     void Run(void);
     void Cleanup(void);
 
-    void SetScale(const double & scale);
+    void set_scale(const double & scale);
 
 protected:
 
@@ -70,7 +70,7 @@ protected:
     mtsInterfaceProvided * mInterface;
 
     struct {
-        mtsFunctionWrite Scale;
+        mtsFunctionWrite scale;
     } ConfigurationEvents;
 
     void SetDesiredState(const std::string & state);
@@ -97,8 +97,8 @@ protected:
         mtsFunctionRead  operating_state;
         mtsFunctionWrite state_command;
 
-        prmPositionCartesianGet PositionCartesianCurrent;
-        prmVelocityCartesianGet VelocityCartesianCurrent;
+        prmPositionCartesianGet m_measured_cp;
+        prmVelocityCartesianGet m_measured_cv;
     } mMTMR, mMTML;
 
     struct {
@@ -109,15 +109,15 @@ protected:
         mtsFunctionRead  operating_state;
         mtsFunctionWrite state_command;
 
-        prmPositionCartesianGet PositionCartesianCurrent;
-        prmStateJoint StateJointDesired;
-        prmPositionJointSet PositionJointSet;
+        prmPositionCartesianGet m_measured_cp;
+        prmStateJoint m_setpoint_js;
+        prmPositionJointSet m_servo_jp;
     } mECM;
 
-    double mScale;
+    double m_scale;
     mtsStateTable * mConfigurationStateTable;
 
-    bool mIsClutched;
+    bool m_clutched;
 
     mtsStateMachine mTeleopState;
     double mInStateTimer;
@@ -136,8 +136,8 @@ protected:
         vctVec ECMPositionJoint;
     } mInitial;
 
-    bool mIsFollowing;
-    void SetFollowing(const bool following);
+    bool m_following;
+    void set_following(const bool following);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationECM);

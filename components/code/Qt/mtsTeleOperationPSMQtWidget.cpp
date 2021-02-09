@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -55,15 +55,15 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("TeleOperation");
     if (interfaceRequired) {
         QMMessage->SetInterfaceRequired(interfaceRequired);
-        interfaceRequired->AddFunction("SetScale", TeleOperation.SetScale);
-        interfaceRequired->AddFunction("LockRotation", TeleOperation.LockRotation);
-        interfaceRequired->AddFunction("LockTranslation", TeleOperation.LockTranslation);
-        interfaceRequired->AddFunction("SetAlignMTM", TeleOperation.SetAlignMTM);
-        interfaceRequired->AddFunction("GetPositionCartesianMTM", TeleOperation.GetPositionCartesianMTM);
-        interfaceRequired->AddFunction("GetPositionCartesianPSM", TeleOperation.GetPositionCartesianPSM);
-        interfaceRequired->AddFunction("GetAlignMTM", TeleOperation.GetAlignMTM);
-        interfaceRequired->AddFunction("GetAlignOffset", TeleOperation.GetAlignOffset);
-        interfaceRequired->AddFunction("GetRegistrationRotation", TeleOperation.GetRegistrationRotation);
+        interfaceRequired->AddFunction("set_scale", TeleOperation.set_scale);
+        interfaceRequired->AddFunction("lock_rotation", TeleOperation.lock_rotation);
+        interfaceRequired->AddFunction("lock_translation", TeleOperation.lock_translation);
+        interfaceRequired->AddFunction("set_align_mtm", TeleOperation.set_align_mtm);
+        interfaceRequired->AddFunction("MTM/measured_cp", TeleOperation.MTM_measured_cp);
+        interfaceRequired->AddFunction("PSM/setpoint_cp", TeleOperation.PSM_setpoint_cp);
+        interfaceRequired->AddFunction("align_mtm", TeleOperation.align_mtm);
+        interfaceRequired->AddFunction("alignment_offset", TeleOperation.alignment_offset);
+        interfaceRequired->AddFunction("registration_rotation", TeleOperation.registration_rotation);
         interfaceRequired->AddFunction("period_statistics", TeleOperation.period_statistics);
         // events
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::DesiredStateEventHandler,
@@ -71,15 +71,15 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::CurrentStateEventHandler,
                                                 this, "current_state");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::FollowingEventHandler,
-                                                this, "Following");
+                                                this, "following");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::ScaleEventHandler,
-                                                this, "Scale");
+                                                this, "scale");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::RotationLockedEventHandler,
-                                                this, "RotationLocked");
+                                                this, "rotation_locked");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::TranslationLockedEventHandler,
-                                                this, "TranslationLocked");
+                                                this, "translation_locked");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::AlignMTMEventHandler,
-                                                this, "AlignMTM");
+                                                this, "align_mtm");
     }
 }
 
@@ -100,7 +100,7 @@ void mtsTeleOperationPSMQtWidget::Startup(void)
     }
 
     bool align;
-    if (TeleOperation.GetAlignMTM(align)) {
+    if (TeleOperation.align_mtm(align)) {
         emit SignalAlignMTM(align);
     }
 }
@@ -132,53 +132,53 @@ void mtsTeleOperationPSMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     }
 
     // retrieve transformations
-    TeleOperation.GetPositionCartesianMTM(PositionMTM);
-    QCPGMTMWidget->SetValue(PositionMTM);
+    TeleOperation.MTM_measured_cp(m_MTM_measured_cp);
+    QCPGMTMWidget->SetValue(m_MTM_measured_cp);
 
     // for PSM, check if the registration rotation is needed
-    TeleOperation.GetPositionCartesianPSM(PositionPSM);
-    TeleOperation.GetRegistrationRotation(RegistrationRotation);
-    if (RegistrationRotation.Equal(vctMatRot3::Identity())) {
-        QCPGPSMWidget->SetValue(PositionPSM);
+    TeleOperation.PSM_setpoint_cp(m_PSM_setpoint_cp);
+    TeleOperation.registration_rotation(m_registration_rotation);
+    if (m_registration_rotation.Equal(vctMatRot3::Identity())) {
+        QCPGPSMWidget->SetValue(m_PSM_setpoint_cp);
     } else {
         prmPositionCartesianGet registeredPSM;
-        registeredPSM.Valid() = PositionPSM.Valid();
-        registeredPSM.Timestamp() = PositionPSM.Timestamp();
-        registeredPSM.MovingFrame() = PositionPSM.MovingFrame();
-        registeredPSM.ReferenceFrame() = "rot * " + PositionPSM.ReferenceFrame();
-        RegistrationRotation.ApplyInverseTo(PositionPSM.Position().Rotation(),
-                                            registeredPSM.Position().Rotation());
-        RegistrationRotation.ApplyInverseTo(PositionPSM.Position().Translation(),
-                                            registeredPSM.Position().Translation());
+        registeredPSM.Valid() = m_PSM_setpoint_cp.Valid();
+        registeredPSM.Timestamp() = m_PSM_setpoint_cp.Timestamp();
+        registeredPSM.MovingFrame() = m_PSM_setpoint_cp.MovingFrame();
+        registeredPSM.ReferenceFrame() = "rot * " + m_PSM_setpoint_cp.ReferenceFrame();
+        m_registration_rotation.ApplyInverseTo(m_PSM_setpoint_cp.Position().Rotation(),
+                                               registeredPSM.Position().Rotation());
+        m_registration_rotation.ApplyInverseTo(m_PSM_setpoint_cp.Position().Translation(),
+                                               registeredPSM.Position().Translation());
         QCPGPSMWidget->SetValue(registeredPSM);
     }
 
     // alignment offset
-    TeleOperation.GetAlignOffset(AlignOffset);
-    QVRAlignOffset->SetValue(AlignOffset);
+    TeleOperation.alignment_offset(m_alignment_offset);
+    QVRAlignOffset->SetValue(m_alignment_offset);
 
-    TeleOperation.period_statistics(IntervalStatistics);
-    QMIntervalStatistics->SetValue(IntervalStatistics);
+    TeleOperation.period_statistics(m_interval_statistics);
+    QMIntervalStatistics->SetValue(m_interval_statistics);
 }
 
 void mtsTeleOperationPSMQtWidget::SlotSetScale(double scale)
 {
-    TeleOperation.SetScale(scale);
+    TeleOperation.set_scale(scale);
 }
 
 void mtsTeleOperationPSMQtWidget::SlotLockRotation(bool lock)
 {
-    TeleOperation.LockRotation(lock);
+    TeleOperation.lock_rotation(lock);
 }
 
 void mtsTeleOperationPSMQtWidget::SlotLockTranslation(bool lock)
 {
-    TeleOperation.LockTranslation(lock);
+    TeleOperation.lock_translation(lock);
 }
 
 void mtsTeleOperationPSMQtWidget::SlotSetAlignMTM(bool align)
 {
-    TeleOperation.SetAlignMTM(align);
+    TeleOperation.set_align_mtm(align);
 }
 
 void mtsTeleOperationPSMQtWidget::SlotDesiredStateEventHandler(QString state)

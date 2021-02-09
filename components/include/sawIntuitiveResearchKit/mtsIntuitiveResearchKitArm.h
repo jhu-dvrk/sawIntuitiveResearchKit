@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -187,7 +187,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void set_cartesian_impedance_gains(const prmCartesianImpedanceGains & gains);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
-    virtual void SetBaseFrame(const prmPositionCartesianSet & newBaseFrame);
+    virtual void set_base_frame(const prmPositionCartesianSet & newBaseFrame);
 
     /*! Event handler for PID position limit. */
     virtual void PositionLimitEventHandler(const vctBoolVec & flags);

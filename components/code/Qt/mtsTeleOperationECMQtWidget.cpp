@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -54,13 +54,13 @@ mtsTeleOperationECMQtWidget::mtsTeleOperationECMQtWidget(const std::string & com
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("TeleOperation");
     if (interfaceRequired) {
         QMMessage->SetInterfaceRequired(interfaceRequired);
-        interfaceRequired->AddFunction("SetScale", TeleOperation.SetScale);
-        interfaceRequired->AddFunction("GetPositionCartesianMTML",
-                                       TeleOperation.GetPositionCartesianMTML);
-        interfaceRequired->AddFunction("GetPositionCartesianMTMR",
-                                       TeleOperation.GetPositionCartesianMTMR);
-        interfaceRequired->AddFunction("GetPositionCartesianECM",
-                                       TeleOperation.GetPositionCartesianECM);
+        interfaceRequired->AddFunction("set_scale", TeleOperation.set_scale);
+        interfaceRequired->AddFunction("MTML/measured_cp",
+                                       TeleOperation.MTML_measured_cp);
+        interfaceRequired->AddFunction("MTMR/measured_cp",
+                                       TeleOperation.MTMR_measured_cp);
+        interfaceRequired->AddFunction("ECM/measured_cp",
+                                       TeleOperation.ECM_measured_cp);
         interfaceRequired->AddFunction("period_statistics", TeleOperation.period_statistics);
         // events
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::DesiredStateEventHandler,
@@ -68,9 +68,9 @@ mtsTeleOperationECMQtWidget::mtsTeleOperationECMQtWidget(const std::string & com
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::CurrentStateEventHandler,
                                                 this, "current_state");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::FollowingEventHandler,
-                                                this, "Following");
+                                                this, "following");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECMQtWidget::ScaleEventHandler,
-                                                this, "Scale");
+                                                this, "scale");
     }
 }
 
@@ -118,22 +118,22 @@ void mtsTeleOperationECMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     }
 
     // retrieve transformations
-    TeleOperation.GetPositionCartesianMTML(PositionMTML);
-    QCPGMTMLWidget->SetValue(PositionMTML);
+    TeleOperation.MTML_measured_cp(m_MTML_measured_cp);
+    QCPGMTMLWidget->SetValue(m_MTML_measured_cp);
 
-    TeleOperation.GetPositionCartesianMTMR(PositionMTMR);
-    QCPGMTMRWidget->SetValue(PositionMTMR);
+    TeleOperation.MTMR_measured_cp(m_MTMR_measured_cp);
+    QCPGMTMRWidget->SetValue(m_MTMR_measured_cp);
 
-    TeleOperation.GetPositionCartesianECM(PositionECM);
-    QCPGECMWidget->SetValue(PositionECM);
+    TeleOperation.ECM_measured_cp(m_ECM_measured_cp);
+    QCPGECMWidget->SetValue(m_ECM_measured_cp);
 
-    TeleOperation.period_statistics(IntervalStatistics);
-    QMIntervalStatistics->SetValue(IntervalStatistics);
+    TeleOperation.period_statistics(m_interval_statistics);
+    QMIntervalStatistics->SetValue(m_interval_statistics);
 }
 
 void mtsTeleOperationECMQtWidget::SlotSetScale(double scale)
 {
-    TeleOperation.SetScale(scale);
+    TeleOperation.set_scale(scale);
 }
 
 void mtsTeleOperationECMQtWidget::SlotDesiredStateEventHandler(QString state)

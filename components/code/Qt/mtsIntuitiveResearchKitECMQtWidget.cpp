@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2019-10-10
 
-  (C) Copyright 2019-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2019-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -37,8 +37,8 @@ mtsIntuitiveResearchKitECMQtWidget::mtsIntuitiveResearchKitECMQtWidget(const std
 {
     CMN_ASSERT(InterfaceRequired);
     InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitECMQtWidget::EndoscopeTypeEventHandler,
-                                            this, "EndoscopeType");
-    InterfaceRequired->AddFunction("SetEndoscopeType", SetEndoscopeType);
+                                            this, "endoscope_type");
+    InterfaceRequired->AddFunction("set_endoscope_type", set_endoscope_type);
 }
 
 void mtsIntuitiveResearchKitECMQtWidget::setupUiDerived(void)
@@ -86,7 +86,7 @@ void mtsIntuitiveResearchKitECMQtWidget::SlotEndoscopeTypeSelected(QString endos
                                       message.c_str(),
                                       QMessageBox::No | QMessageBox::Yes);
     if (answer == QMessageBox::Yes) {
-        SetEndoscopeType(endoscopeType.toStdString());
+        set_endoscope_type(endoscopeType.toStdString());
     }
 }
 

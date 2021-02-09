@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2019-10-10
 
-  (C) Copyright 2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2019-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -47,7 +47,7 @@ private:
 
     QLineEdit * QLEEndoscopeType;
     QComboBox * QCBEndoscopeOptions;
-    mtsFunctionWrite SetEndoscopeType;
+    mtsFunctionWrite set_endoscope_type;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitECMQtWidget);

@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -48,11 +48,11 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void Run(void);
     void Cleanup(void);
 
-    void SetScale(const double & scale);
-    void SetRegistrationRotation(const vctMatRot3 & rotation);
-    void LockRotation(const bool & lock);
-    void LockTranslation(const bool & lock);
-    void SetAlignMTM(const bool & alignMTM);
+    void set_scale(const double & scale);
+    void set_registration_rotation(const vctMatRot3 & rotation);
+    void lock_rotation(const bool & lock);
+    void lock_translation(const bool & lock);
+    void set_align_mtm(const bool & alignMTM);
 
  protected:
 
@@ -69,15 +69,15 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     struct {
         mtsFunctionWrite desired_state;
         mtsFunctionWrite current_state;
-        mtsFunctionWrite Following;
+        mtsFunctionWrite following;
     } MessageEvents;
     mtsInterfaceProvided * mInterface;
 
     struct {
-        mtsFunctionWrite Scale;
-        mtsFunctionWrite RotationLocked;
-        mtsFunctionWrite TranslationLocked;
-        mtsFunctionWrite AlignMTM;
+        mtsFunctionWrite scale;
+        mtsFunctionWrite rotation_locked;
+        mtsFunctionWrite translation_locked;
+        mtsFunctionWrite align_mtm;
     } ConfigurationEvents;
 
     void SetDesiredState(const std::string & state);
@@ -112,40 +112,41 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         mtsFunctionWrite state_command;
 
         prmStateJoint m_gripper_measured_js;
-        prmPositionCartesianGet PositionCartesianCurrent;
-        prmPositionCartesianGet PositionCartesianDesired;
-        prmPositionCartesianSet PositionCartesianSet;
+        prmPositionCartesianGet m_measured_cp;
+        prmPositionCartesianGet m_setpoint_cp;
+        prmPositionCartesianSet m_move_cp;
         vctFrm4x4 CartesianInitial;
     } mMTM;
 
     struct {
-        mtsFunctionRead  measured_cp;
+        mtsFunctionRead  setpoint_cp;
         mtsFunctionWrite servo_cp;
         mtsFunctionVoid  Freeze;
-        mtsFunctionRead  jaw_measured_js;
+        mtsFunctionRead  jaw_setpoint_js;
         mtsFunctionRead  jaw_configuration_js;
         mtsFunctionWrite jaw_servo_jp;
 
         mtsFunctionRead  operating_state;
         mtsFunctionWrite state_command;
 
-        prmStateJoint m_jaw_measured_js;
+        prmStateJoint m_jaw_setpoint_js;
         prmConfigurationJoint m_jaw_configuration_js;
-        prmPositionCartesianGet PositionCartesianCurrent;
-        prmPositionCartesianSet PositionCartesianSet;
-        prmPositionJointSet     PositionJointSet;
+        prmPositionCartesianGet m_setpoint_cp;
+        prmPositionCartesianSet m_servo_cp;
+        prmPositionJointSet     m_jaw_servo_jp;
         vctFrm4x4 CartesianInitial;
     } mPSM;
 
     struct {
         mtsFunctionRead  measured_cp;
-        prmPositionCartesianGet PositionCartesianCurrent;
+        prmPositionCartesianGet m_measured_cp;
         vctFrm4x4 CartesianInitial;
     } mBaseFrame;
 
-    double mScale = mtsIntuitiveResearchKit::TeleOperationPSM::Scale;
-    vctMatRot3 mRegistrationRotation; // optional registration between PSM and MTM orientation
-    vctMatRot3 mAlignOffset, mAlignOffsetInitial; // rotation offset between MTM and PSM when tele-operation goes in follow mode
+    double m_scale = mtsIntuitiveResearchKit::TeleOperationPSM::Scale;
+    vctMatRot3 m_registration_rotation; // optional registration between PSM and MTM orientation
+    vctMatRot3 m_alignment_offset,
+        m_alignment_offset_initial; // rotation offset between MTM and PSM when tele-operation goes in follow mode
 
     // conversion from gripper (MTM) to jaw (PSM)
     // j = s * g + o
@@ -162,9 +163,9 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     double virtual JawToGripper(const double & jawAngle) const;
     void virtual UpdateGripperToJawConfiguration(void);
 
-    bool mIgnoreJaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
-    double mJawRate = mtsIntuitiveResearchKit::TeleOperationPSM::JawRate;
-    double mJawRateBackFromClutch = mtsIntuitiveResearchKit::TeleOperationPSM::JawRateBackFromClutch;
+    bool m_ignore_jaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
+    double m_jaw_rate = mtsIntuitiveResearchKit::TeleOperationPSM::JawRate;
+    double m_jaw_rate_back_from_clutch = mtsIntuitiveResearchKit::TeleOperationPSM::JawRateBackFromClutch;
     struct {
         double OrientationTolerance = mtsIntuitiveResearchKit::TeleOperationPSM::OrientationTolerance;
         double RollMin;
@@ -176,12 +177,12 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         bool IsActive = false;
         bool WasActiveBeforeClutch = false;
     } mOperator;
-    bool mIsClutched = false;
-    bool mBackFromClutch = false;
-    bool mJawCaughtUpAfterClutch = false;
-    bool mRotationLocked = false;
-    bool mTranslationLocked = false;
-    bool mAlignMTM = true; // default on da Vinci
+    bool m_clutched = false;
+    bool m_back_from_clutch = false;
+    bool m_jaw_caught_up_after_clutch = false;
+    bool m_rotation_locked = false;
+    bool m_translation_locked = false;
+    bool m_align_mtm = true; // default on da Vinci
 
     vctMatRot3 mMTMClutchedOrientation;
     mtsStateTable * mConfigurationStateTable;
@@ -190,8 +191,8 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     double mInStateTimer;
     double mTimeSinceLastAlign;
 
-    bool mIsFollowing;
-    void SetFollowing(const bool following);
+    bool m_following;
+    void set_following(const bool following);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsTeleOperationPSM);

@@ -58,7 +58,7 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
     const Json::Value jsonEndoscope = jsonConfig["endoscope"];
     if (!jsonEndoscope.isNull()) {
         std::string endoscope = jsonEndoscope.asString();
-        SetEndoscopeType(endoscope);
+        set_endoscope_type(endoscope);
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                  << ": \"endoscope\" must be defined (from file \""
@@ -173,8 +173,8 @@ void mtsIntuitiveResearchKitECM::Init(void)
     m_arm_interface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
 
     // endoscope commands and events
-    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitECM::SetEndoscopeType, this, "SetEndoscopeType");
-    m_arm_interface->AddEventWrite(EndoscopeEvents.EndoscopeType, "EndoscopeType", std::string());
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitECM::set_endoscope_type, this, "set_endoscope_type");
+    m_arm_interface->AddEventWrite(EndoscopeEvents.endoscope_type, "endoscope_type", std::string());
 
     // ManipClutch: digital input button event from ECM
     interfaceRequired = AddInterfaceRequired("ManipClutch");
@@ -232,7 +232,7 @@ void mtsIntuitiveResearchKitECM::EnterHomed(void)
     mtsIntuitiveResearchKitArm::EnterHomed();
 
     // event to propagate endoscope type based on configuration file
-    EndoscopeEvents.EndoscopeType(mtsIntuitiveResearchKitEndoscopeTypes::TypeToString(mEndoscopeType));
+    EndoscopeEvents.endoscope_type(mtsIntuitiveResearchKitEndoscopeTypes::TypeToString(mEndoscopeType));
 }
 
 void mtsIntuitiveResearchKitECM::EnterManual(void)
@@ -304,7 +304,7 @@ void mtsIntuitiveResearchKitECM::AddGravityCompensationEfforts(vctDoubleVec & ef
     efforts.Add(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, 9.81));
 }
 
-void mtsIntuitiveResearchKitECM::SetEndoscopeType(const std::string & endoscopeType)
+void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscopeType)
 {
     // initialize configured flag
     mEndoscopeConfigured = false;
@@ -317,7 +317,7 @@ void mtsIntuitiveResearchKitECM::SetEndoscopeType(const std::string & endoscopeT
                   endoscopeType);
     if (found == mtsIntuitiveResearchKitEndoscopeTypes::TypeVectorString().end()) {
         m_arm_interface->SendError(this->GetName() + ": endoscope type \"" + endoscopeType + "\" is not supported");
-        EndoscopeEvents.EndoscopeType(std::string("ERROR"));
+        EndoscopeEvents.endoscope_type(std::string("ERROR"));
         return;
     }
     // supported endoscopes
@@ -377,5 +377,5 @@ void mtsIntuitiveResearchKitECM::SetEndoscopeType(const std::string & endoscopeT
     mEndoscopeConfigured = true;
 
     // event to inform other components (GUI/ROS)
-    EndoscopeEvents.EndoscopeType(endoscopeType);
+    EndoscopeEvents.endoscope_type(endoscopeType);
 }

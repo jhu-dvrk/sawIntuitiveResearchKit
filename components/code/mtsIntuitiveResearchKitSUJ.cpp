@@ -204,7 +204,7 @@ public:
 
         CMN_ASSERT(interfaceRequired);
         mInterfaceRequired = interfaceRequired;
-        mInterfaceRequired->AddFunction("SetBaseFrame", mSetArmBaseFrame);
+        mInterfaceRequired->AddFunction("set_base_frame", mSetArmBaseFrame);
         mInterfaceRequired->AddFunction("local/measured_cp", mGetArmPositionCartesianLocal);
     }
 

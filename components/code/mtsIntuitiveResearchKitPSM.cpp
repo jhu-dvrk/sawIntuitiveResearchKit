@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -598,11 +598,11 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_servo_jf, this, "jaw/servo_jf");
 
     // tool specific interface
-    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetAdapterPresent, this, "SetAdapterPresent");
-    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolPresent, this, "SetToolPresent");
-    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::SetToolType, this, "SetToolType");
-    m_arm_interface->AddEventWrite(ToolEvents.ToolType, "ToolType", std::string());
-    m_arm_interface->AddEventVoid(ToolEvents.ToolTypeRequest, "ToolTypeRequest");
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::set_adapter_present, this, "set_adapter_present");
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::set_tool_present, this, "set_tool_present");
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::set_tool_type, this, "set_tool_type");
+    m_arm_interface->AddEventWrite(ToolEvents.tool_type, "tool_type", std::string());
+    m_arm_interface->AddEventVoid(ToolEvents.tool_type_request, "tool_type_request");
 
     m_arm_interface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
 
@@ -721,12 +721,12 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
     if (Adapter.IsEngaged && !Tool.IsEngaged) {
         if (!m_simulated) {
             if (Tool.IsPresent && mToolConfigured) {
-                SetToolPresent(true);
+                set_tool_present(true);
                 mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
             }
         } else {
             // simulated case
-            SetToolPresent(true);
+            set_tool_present(true);
             // check if tool is configured, i.e. fixed or manual
             if (mToolConfigured) {
                 mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
@@ -734,7 +734,7 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
                 // request tool type if needed
                 if (!mToolTypeRequested) {
                     mToolTypeRequested = true;
-                    ToolEvents.ToolTypeRequest();
+                    ToolEvents.tool_type_request();
                     m_arm_interface->SendWarning(this->GetName() + ": tool type requested from user");
                 }
             }
@@ -1354,7 +1354,7 @@ void mtsIntuitiveResearchKitPSM::EnableJointsEventHandler(const vctBoolVec & ena
     }
 }
 
-void mtsIntuitiveResearchKitPSM::SetAdapterPresent(const bool & present)
+void mtsIntuitiveResearchKitPSM::set_adapter_present(const bool & present)
 {
     Adapter.IsEngaged = false;
     Adapter.IsPresent = present;
@@ -1371,29 +1371,29 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & butt
 {
     switch (button.Type()) {
     case prmEventButton::PRESSED:
-        SetAdapterPresent(true);
+        set_adapter_present(true);
         break;
     case prmEventButton::RELEASED:
-        SetAdapterPresent(false);
+        set_adapter_present(false);
         break;
     default:
         break;
     }
 }
 
-void mtsIntuitiveResearchKitPSM::SetToolPresent(const bool & present)
+void mtsIntuitiveResearchKitPSM::set_tool_present(const bool & present)
 {
     Tool.IsPresent = present;
     if (present) {
         // we will need to engage this tool
         Tool.NeedEngage = true;
-        ToolEvents.ToolType(mtsIntuitiveResearchKitToolTypes::TypeToString(mToolType));
+        ToolEvents.tool_type(mtsIntuitiveResearchKitToolTypes::TypeToString(mToolType));
     } else {
-        ToolEvents.ToolType(std::string());
+        ToolEvents.tool_type(std::string());
     }
 }
 
-void mtsIntuitiveResearchKitPSM::SetToolType(const std::string & toolType)
+void mtsIntuitiveResearchKitPSM::set_tool_type(const std::string & toolType)
 {
     if (mToolTypeRequested || m_simulated) {
         EventHandlerToolType(toolType);
@@ -1415,11 +1415,11 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
             break;
         case mtsIntuitiveResearchKitToolTypes::MANUAL:
             mToolTypeRequested = true;
-            ToolEvents.ToolTypeRequest();
+            ToolEvents.tool_type_request();
             m_arm_interface->SendWarning(this->GetName() + ": tool type requested from user");
             break;
         case mtsIntuitiveResearchKitToolTypes::FIXED:
-            SetToolPresent(true);
+            set_tool_present(true);
             break;
         default:
             break;
@@ -1430,10 +1430,10 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
         case mtsIntuitiveResearchKitToolTypes::MANUAL:
             mToolConfigured = false;
-            SetToolPresent(false);
+            set_tool_present(false);
             break;
         case mtsIntuitiveResearchKitToolTypes::FIXED:
-            SetToolPresent(false);
+            set_tool_present(false);
             break;
         default:
             break;
@@ -1478,7 +1478,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
                   toolType);
     if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
         m_arm_interface->SendError(this->GetName() + ": tool type \"" + toolType + "\" is not supported");
-        ToolEvents.ToolType(std::string("ERROR"));
+        ToolEvents.tool_type(std::string("ERROR"));
         return;
     } else {
         mToolType = mtsIntuitiveResearchKitToolTypes::TypeFromString(toolType);
@@ -1486,9 +1486,9 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
     // supported tools
     ConfigureTool(toolType + ".json");
     if (mToolConfigured) {
-        SetToolPresent(true);
+        set_tool_present(true);
     } else {
         m_arm_interface->SendError(this->GetName() + ": failed to configure tool \"" + toolType + "\", check terminal output and cisstLog file");
-        ToolEvents.ToolType(std::string("ERROR"));
+        ToolEvents.tool_type(std::string("ERROR"));
     }
 }

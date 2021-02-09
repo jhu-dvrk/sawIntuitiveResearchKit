@@ -81,7 +81,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
                           const double & periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
 
         /*! Check if mBaseFrame has a valid name and if it does
-          SetBaseFrame on the arm. */
+          set_base_frame on the arm. */
         void SetBaseFrameIfNeeded(mtsIntuitiveResearchKitArm * armPointer);
 
         /*! Connect all interfaces specific to this arm. */
@@ -218,7 +218,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         std::string mMTMName;
         std::string mPSMName;
         mtsFunctionWrite state_command;
-        mtsFunctionWrite SetScale;
+        mtsFunctionWrite set_scale;
         mtsInterfaceRequired * InterfaceRequired;
     };
 
@@ -299,20 +299,20 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     bool ConfigureECMTeleopJSON(const Json::Value & jsonTeleop);
     bool ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop);
 
-    void PowerOff(void);
-    void PowerOn(void);
-    void Home(void);
+    void power_off(void);
+    void power_on(void);
+    void home(void);
     void DisableFaultyArms(void);
-    void TeleopEnable(const bool & enable);
-    void CycleTeleopPSMByMTM(const std::string & mtmName);
-    void SelectTeleopPSM(const prmKeyValue & mtmPsm);
+    void teleop_enable(const bool & enable);
+    void cycle_teleop_psm_by_mtm(const std::string & mtmName);
+    void select_teleop_psm(const prmKeyValue & mtmPsm);
     bool GetPSMSelectedForMTM(const std::string & mtmName, std::string & psmName) const;
     bool GetMTMSelectedForPSM(const std::string & psmName, std::string & mtmName) const;
     void EventSelectedTeleopPSMs(void) const;
     void UpdateTeleopState(void);
-    void SetScale(const double & scale);
+    void set_scale(const double & scale);
     void SetVolume(const double & volume);
-    void StringToSpeech(const std::string & text);
+    void string_to_speech(const std::string & text);
     bool mHasIO;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
@@ -320,7 +320,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     struct {
         mtsFunctionWrite Beep;
-        mtsFunctionWrite StringToSpeech;
+        mtsFunctionWrite string_to_speech;
     } mAudio;
     double mAudioVolume;
     bool mChatty;
@@ -343,9 +343,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     mtsInterfaceProvided * mInterface;
     struct {
         mtsFunctionWrite ArmCurrentState;
-        mtsFunctionWrite Scale;
-        mtsFunctionWrite TeleopPSMSelected;
-        mtsFunctionWrite TeleopPSMUnselected;
+        mtsFunctionWrite scale;
+        mtsFunctionWrite teleop_psm_selected;
+        mtsFunctionWrite teleop_psm_unselected;
     } ConfigurationEvents;
 
     void ErrorEventHandler(const mtsMessage & message);

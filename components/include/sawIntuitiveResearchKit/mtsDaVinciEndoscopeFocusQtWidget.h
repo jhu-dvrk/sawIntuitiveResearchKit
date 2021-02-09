@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2020-0210
 
-  (C) Copyright 2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2020-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -69,9 +69,9 @@ private:
 
 protected:
     struct {
-        mtsFunctionWrite Lock;
-        mtsFunctionWrite FocusIn;
-        mtsFunctionWrite FocusOut;
+        mtsFunctionWrite lock;
+        mtsFunctionWrite focus_in;
+        mtsFunctionWrite focus_out;
     } Endoscope;
 
 private:
