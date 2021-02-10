@@ -59,6 +59,7 @@ signals:
     void SignalArmCurrentState(PairStringType armState);
     void SignalTeleopPSMSelected(PairStringType selected);
     void SignalTeleopPSMUnselected(PairStringType unselected);
+    void SignalTeleopEnabled(bool toggle);
     void SignalScale(double scale);
     void SignalOperatorPresent(bool operatorPresent);
     void SignalClutch(bool clutch);
@@ -77,8 +78,11 @@ private slots:
     void SlotPowerOn(void);
     void SlotHome(void);
     void SlotArmCurrentStateEventHandler(PairStringType armState);
+    void SlotTeleopEnable(bool toggle);
+    void SlotTeleopToggle(void);
     void SlotTeleopStart(void);
     void SlotTeleopStop(void);
+    void SlotTeleopEnabledEventHandler(bool enabled);
     void SlotTeleopPSMSelectedEventHandler(PairStringType selected);
     void SlotTeleopPSMUnselectedEventHandler(PairStringType unselected);
     void SlotSetScale(double scale);
@@ -113,6 +117,7 @@ protected:
     } Console;
 
     void ArmCurrentStateEventHandler(const prmKeyValue & armState);
+    void TeleopEnabledEventHandler(const bool & enabled);
     void TeleopPSMSelectedEventHandler(const prmKeyValue & selected);
     void TeleopPSMUnselectedEventHandler(const prmKeyValue & unselected);
     void ScaleEventHandler(const double & scale);
@@ -130,8 +135,8 @@ protected:
     QPushButton * QPBPowerOff;
     QPushButton * QPBPowerOn;
     QPushButton * QPBHome;
-    QPushButton * QPBTeleopStart;
-    QPushButton * QPBTeleopStop;
+    QPushButton * QPBTeleopEnable;
+    QCheckBox * QCBTeleopEnable;
     QDoubleSpinBox * QSBScale;
     QRadioButton * QRBOperatorPresent;
     QRadioButton * QRBClutch;

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -323,15 +323,16 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         mtsFunctionWrite beep;
         mtsFunctionWrite string_to_speech;
         mtsFunctionWrite volume; // event
-    } mAudio;
+    } audio;
     double m_audio_volume;
     bool mChatty;
 
     struct {
-        mtsFunctionWrite Clutch;
-        mtsFunctionWrite Camera;
-        mtsFunctionWrite OperatorPresent;
-    } ConsoleEvents;
+        mtsFunctionWrite clutch;
+        mtsFunctionWrite camera;
+        mtsFunctionWrite operator_present;
+        mtsFunctionWrite teleop_enabled;
+    } console_events;
     bool mOperatorPresent;
     bool mCameraPressed;
 

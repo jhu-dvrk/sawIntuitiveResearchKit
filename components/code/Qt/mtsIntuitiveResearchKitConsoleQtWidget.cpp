@@ -64,6 +64,8 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler,
                                                 this, "ArmCurrentState");
         interfaceRequired->AddFunction("teleop_enable", Console.teleop_enable);
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopEnabledEventHandler,
+                                                this, "teleop_enabled");
         interfaceRequired->AddFunction("select_teleop_psm", Console.select_teleop_psm);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMSelectedEventHandler,
                                                 this, "teleop_psm_selected");
@@ -136,8 +138,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::Cleanup(void)
 
 void mtsIntuitiveResearchKitConsoleQtWidget::HasTeleOp(const bool & hasTeleOp)
 {
-    QPBTeleopStart->setEnabled(hasTeleOp);
-    QPBTeleopStop->setEnabled(hasTeleOp);
+    QCBTeleopEnable->setEnabled(hasTeleOp);
     QSBScale->setEnabled(hasTeleOp);
 }
 
@@ -201,6 +202,16 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(Pai
     }
 }
 
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopEnable(bool toggle)
+{
+    Console.teleop_enable(toggle);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopToggle(void)
+{
+    Console.teleop_enable(!(QCBTeleopEnable->isChecked()));
+}
+
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStart(void)
 {
     Console.teleop_enable(true);
@@ -209,6 +220,18 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStart(void)
 void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStop(void)
 {
     Console.teleop_enable(false);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopEnabledEventHandler(bool enabled)
+{
+    if (enabled) {
+        QPBTeleopEnable->setText("Enabled");
+        QPBTeleopEnable->setStyleSheet("QPushButton { background-color: rgb(50, 255, 50); border: none }");
+    } else {
+        QPBTeleopEnable->setText("Disabled");
+        QPBTeleopEnable->setStyleSheet("QPushButton { background-color: rgb(255, 100, 100); border: none }");
+    }
+    QCBTeleopEnable->setChecked(enabled);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::GetTeleopButtonCheck(const PairStringType & pair,
@@ -311,14 +334,21 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     QVBoxLayout * teleopLayout = new QVBoxLayout();
     teleopLayout->setContentsMargins(2, 2, 2, 2);
     teleopBox->setLayout(teleopLayout);
-    QPBTeleopStart = new QPushButton("Start");
-    QPBTeleopStart->setToolTip("ctrl + T");
+
+    QHBoxLayout * teleopEnableLayout = new QHBoxLayout;
+    QPBTeleopEnable = new QPushButton("");
+    teleopEnableLayout->addWidget(QPBTeleopEnable);
+    teleopEnableLayout->addStretch();
+    QCBTeleopEnable = new QCheckBox("");
+    QPBTeleopEnable->setToolTip("ctrl + T to start\nctrl + S to stop");
+    QCBTeleopEnable->setToolTip("ctrl + T to start\nctrl + S to stop");
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_T), this, SLOT(SlotTeleopStart()));
-    teleopLayout->addWidget(QPBTeleopStart);
-    QPBTeleopStop = new QPushButton("Stop");
-    QPBTeleopStop->setToolTip("ctrl + S");
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this, SLOT(SlotTeleopStop()));
-    teleopLayout->addWidget(QPBTeleopStop);
+    // set default to false
+    SlotTeleopEnabledEventHandler(false);
+    teleopEnableLayout->addWidget(QCBTeleopEnable);
+    teleopLayout->addLayout(teleopEnableLayout);
+
     QSBScale = new QDoubleSpinBox();
     QSBScale->setRange(0.1, 1.0);
     QSBScale->setSingleStep(0.1);
@@ -404,10 +434,12 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     qRegisterMetaType<PairStringType>("PairStringType");
     connect(this, SIGNAL(SignalArmCurrentState(PairStringType)),
             this, SLOT(SlotArmCurrentStateEventHandler(PairStringType)));
-    connect(QPBTeleopStart, SIGNAL(clicked()),
-            this, SLOT(SlotTeleopStart()));
-    connect(QPBTeleopStop, SIGNAL(clicked()),
-            this, SLOT(SlotTeleopStop()));
+    connect(QPBTeleopEnable, SIGNAL(clicked()),
+            this, SLOT(SlotTeleopToggle()));
+    connect(QCBTeleopEnable, SIGNAL(toggled(bool)),
+            this, SLOT(SlotTeleopEnable(bool)));
+    connect(this, SIGNAL(SignalTeleopEnabled(bool)),
+            this, SLOT(SlotTeleopEnabledEventHandler(bool)));
     connect(this, SIGNAL(SignalTeleopPSMSelected(PairStringType)),
             this, SLOT(SlotTeleopPSMSelectedEventHandler(PairStringType)));
     connect(this, SIGNAL(SignalTeleopPSMUnselected(PairStringType)),
@@ -446,6 +478,11 @@ void mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler(const p
     currentState.first = armState.Key.c_str();
     currentState.second = armState.Value.c_str();
     emit SignalArmCurrentState(currentState);
+}
+
+void mtsIntuitiveResearchKitConsoleQtWidget::TeleopEnabledEventHandler(const bool & enabled)
+{
+    emit SignalTeleopEnabled(enabled);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMSelectedEventHandler(const prmKeyValue & selected)
