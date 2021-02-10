@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Rishibrata Biswas, Adnan Munawar
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -138,6 +138,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     CMN_ASSERT(m_arm_interface);
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::lock_orientation, this, "lock_orientation");
     m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitMTM::unlock_orientation, this, "unlock_orientation");
+    m_arm_interface->AddEventWrite(mtm_events.orientation_locked, "orientation_locked", false);
 
     // Gripper
     m_arm_interface->AddCommandReadState(this->StateTable, m_gripper_measured_js, "gripper/measured_js");
@@ -635,6 +636,8 @@ void mtsIntuitiveResearchKitMTM::lock_orientation(const vctMatRot3 & orientation
     // mEffortOrientation.Assign(m_base_frame.Rotation().Inverse() * orientation);
     m_base_frame.Rotation().ApplyInverseTo(orientation, mEffortOrientation);
     mEffortOrientationJoint.Assign(m_pid_measured_js.Position());
+    // emit event
+    mtm_events.orientation_locked(m_effort_orientation_locked);
 }
 
 void mtsIntuitiveResearchKitMTM::unlock_orientation(void)
@@ -644,6 +647,8 @@ void mtsIntuitiveResearchKitMTM::unlock_orientation(void)
         m_effort_orientation_locked = false;
         SetControlEffortActiveJoints();
     }
+    // emit event
+    mtm_events.orientation_locked(m_effort_orientation_locked);
 }
 
 

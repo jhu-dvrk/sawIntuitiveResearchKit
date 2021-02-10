@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -119,6 +119,10 @@ protected:
     void AddGravityCompensationEfforts(vctDoubleVec & efforts) override;
 
     // Functions for events
+    struct {
+        mtsFunctionWrite orientation_locked;
+    } mtm_events;
+
     struct {
         mtsFunctionVoid pinch;
         mtsFunctionWrite closed;
