@@ -27,6 +27,8 @@ Change log
     * Widget:
       * In `Direct mode`, added widget to move arm using `move_jp` command (joint space) and jaws (for PSM)
       * For PSM and MTM, display jaws and gripper joint state
+  * MTM:
+    * sawRobotIO1394 configuration file now assumes 7 joints, not 8.  Gripper requires a separate configuration file just for the analog input (Hall effect sensor)tem
   * SUJ:
   * Teleoperation ECM:
   * Teleoperation PSM:
@@ -40,6 +42,8 @@ Change log
   * Utilities:
     * Added `qlacommand` to superseed `qlacloserelays`.  Examples: `qlacommand -c open-relays`, `qlacommand -pudp -c reboot`
     * Added script to reset FireWire kernel modules on PC.  It requires `sudo` privileges: ``sudo `which qlareloadfw.bash` ``
+    * Kernel log messages (`dmesg -w`) now display the board id, board type (f for FireWire, e for ethernet) and firmware version
+
 * Bug fixes:
   
 1.7.1 (2019-07-04)
