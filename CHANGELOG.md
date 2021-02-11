@@ -1,6 +1,47 @@
 Change log
 ==========
 
+2.0.0 (2021-02-xx)
+==================
+
+* API changes:
+  * Internal *cisst* commands and ROS topics use CRTK naming convention as much as possible
+  * Commands without CRTK equivalents have been renamed using `snake_case` (vs previous convention using `CamelCase`) to match ROS/CRTK conventions
+  * A conversion script is provided to help porting code to new naming.  The process is not fully automated, porting code to dVRK 2.0 will require some manual updates.  Script can be found on the [cisst](https://github.com/jhu-cisst/cisst/) repository, in `utils/crtk-port`.  The porting script uses translations files (`.dic`).  We provide a few different translation files:
+    * `crtk-commands.dict`: *cisst* command names, mostly for C++ code without ROS dependencies
+    * `crtk-ros-commands.dict`: ROS topics translation, mostly to port applications using the ROS topics directly
+    * `members-saw-intuitive-research-kit.dict`: data members and methods for dVRK C++ code.  This can be used to port C++ code based on dVRK code C++ code 
+* Deprecated features:
+* New features:
+  * General:
+    * Supported Linux platforms Ubuntu/ROS are 16.04/kinetic, 18.04/melodic, 20.04/noetic
+    * On Ubuntu, added `rosinstall` files to use with `wstool`.  This is now the preferred way to retrieve the cisst/SAW/dVRK code 
+    * Added github workflow (https://github.com/jhu-dvrk/dvrk-github-workflow/actions)
+    * Preliminary support for ethernet/UDP. FireWire remains the preferred interface
+    * Preliminary support for MacOS and Windows, no ROS and with ethernet interface only (no FireWire support)
+  * Console:
+    * Added event + ROS to report if teleop is enabled
+    * Exposed audio features: set volume, beep and text to speech to ROS
+  * Arm:
+    * Added single ratio applied to both velocity and acceleration for `move` commands
+    * Widget:
+      * In `Direct mode`, added widget to move arm using `move_jp` command (joint space) and jaws (for PSM)
+      * For PSM and MTM, display jaws and gripper joint state
+  * SUJ:
+  * Teleoperation ECM:
+  * Teleoperation PSM:
+  * ROS:
+    * Matlab and Python client libraries are now based on CRTK client libraries, see dvrk-ros CHANGELOG.md
+  * sawRobotIO1394:
+    * Widget: more closely match sawRobotIO names, shows safety relay status
+    * Software will only allow firmware 6 and 7.  7 is recommended
+    * Code refactor to reduce number of classes and ease maintenance
+    * Moved to format 4 to enforce new features
+  * Utilities:
+    * Added `qlacommand` to superseed `qlacloserelays`.  Examples: `qlacommand -c open-relays`, `qlacommand -pudp -c reboot`
+    * Added script to reset FireWire kernel modules on PC.  It requires `sudo` privileges: ``sudo `which qlareloadfw.bash` ``
+* Bug fixes:
+  
 1.7.1 (2019-07-04)
 ==================
 
