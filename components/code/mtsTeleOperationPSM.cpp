@@ -123,8 +123,8 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("setpoint_cp", mMTM.setpoint_cp);
         interfaceRequired->AddFunction("move_cp", mMTM.move_cp);
         interfaceRequired->AddFunction("gripper/measured_js", mMTM.gripper_measured_js);
-        interfaceRequired->AddFunction("lock_orientation", mMTM.lock_orientation);
-        interfaceRequired->AddFunction("unlock_orientation", mMTM.unlock_orientation);
+        interfaceRequired->AddFunction("lock_orientation", mMTM.lock_orientation, MTS_OPTIONAL);
+        interfaceRequired->AddFunction("unlock_orientation", mMTM.unlock_orientation, MTS_OPTIONAL);
         interfaceRequired->AddFunction("body/servo_cf", mMTM.servo_cf_body);
         interfaceRequired->AddFunction("use_gravity_compensation", mMTM.use_gravity_compensation);
         interfaceRequired->AddFunction("operating_state", mMTM.operating_state);
@@ -548,7 +548,16 @@ void mtsTeleOperationPSM::lock_translation(const bool & lock)
 void mtsTeleOperationPSM::set_align_mtm(const bool & alignMTM)
 {
     mConfigurationStateTable->Start();
-    m_align_mtm = alignMTM;
+    // make sure we have access to lock/unlock
+    if ((mMTM.lock_orientation.IsValid()
+         && mMTM.unlock_orientation.IsValid())) { 
+        m_align_mtm = alignMTM;
+    } else {
+        if (alignMTM) {
+            mInterface->SendWarning(this->GetName() + ": unable to force MTM alignment, the device doesn't provide commands to lock/unlock orientation");
+        }
+        m_align_mtm = false;
+    }
     mConfigurationStateTable->Advance();
     ConfigurationEvents.align_mtm(m_align_mtm);
     // force re-align if the teleop is already enabled
