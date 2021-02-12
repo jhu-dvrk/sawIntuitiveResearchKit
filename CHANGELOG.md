@@ -4,47 +4,85 @@ Change log
 2.0.0 (2021-02-xx)
 ==================
 
+Added CODE_OF_CONDUCT
+
 * API changes:
   * Internal *cisst* commands and ROS topics use CRTK naming convention as much as possible
   * Commands without CRTK equivalents have been renamed using `snake_case` (vs previous convention using `CamelCase`) to match ROS/CRTK conventions
   * A conversion script is provided to help porting code to new naming.  The process is not fully automated, porting code to dVRK 2.0 will require some manual updates.  Script can be found on the [cisst](https://github.com/jhu-cisst/cisst/) repository, in `utils/crtk-port`.  The porting script uses translations files (`.dic`).  We provide a few different translation files:
     * `crtk-commands.dict`: *cisst* command names, mostly for C++ code without ROS dependencies
     * `crtk-ros-commands.dict`: ROS topics translation, mostly to port applications using the ROS topics directly
-    * `members-saw-intuitive-research-kit.dict`: data members and methods for dVRK C++ code.  This can be used to port C++ code based on dVRK code C++ code 
+    * `members-saw-intuitive-research-kit.dict`: data members and methods for dVRK C++ code.  This can be used to port C++ code based on dVRK code C++ code
+  * Console configuration files shouldn't use `io`, `pid` and `kinematic` for `arms`.  Instead, use `serial`.  The application will then look for the arm JSON configuration file (e.g. `PSM1-12345.json`)
 * Deprecated features:
+ * Reduced search path for configuration files, now need to add directory prefix.  For example, to load `"sawRobotIO1394-MTMR-foot-pedals.xml"`, you need to use `"io/sawRobotIO1394-MTMR-foot-pedals.xml"`.  Same applies to `arm`, `kinematic`, `console`.
 * New features:
   * General:
-    * Supported Linux platforms Ubuntu/ROS are 16.04/kinetic, 18.04/melodic, 20.04/noetic
+    * Supported Linux platforms are Ubuntu/ROS are 16.04/kinetic, 18.04/melodic, 20.04/noetic
     * On Ubuntu, added `rosinstall` files to use with `wstool`.  This is now the preferred way to retrieve the cisst/SAW/dVRK code 
     * Added github workflow (https://github.com/jhu-dvrk/dvrk-github-workflow/actions)
     * Preliminary support for ethernet/UDP. FireWire remains the preferred interface
     * Preliminary support for MacOS and Windows, no ROS and with ethernet interface only (no FireWire support)
+    * sawSocketStreamer and sawOpenIGTLink support using configuration files
+    * Dark mode (option `-D`)
   * Console:
     * Added event + ROS to report if teleop is enabled
     * Exposed audio features: set volume, beep and text to speech to ROS
-  * Arm:
-    * Added single ratio applied to both velocity and acceleration for `move` commands
+    * Emulate foot pedal events (operator, clutch, camera) using ROS topics
     * Widget:
-      * In `Direct mode`, added widget to move arm using `move_jp` command (joint space) and jaws (for PSM)
+      * Display list of arms and current state (using color).  Clicking on arm name brings arm widget in focus
+      * Display list of tele-op PSM pairs, selectable in GUI.  Clicking on pair name brings pair widget in focus
+      * In *Direct mode*, emulate console events (clutch, camera...) using check boxes
+      * Added widget for endoscope focus (+/-)
+  * Arm:
+    * Use CRTK convention for most motion and operating state commands
+    * Faster homing by loading preloaded encoders from controllers
+    * Added command to get joint configuration (name, type, limits for position, velocity and effort)
+    * Added single ratio applied to both velocity and acceleration for `move` commands
+    * Added ROS service to query frames along kinematic chain for a given set oof joint values
+    * Widget:
+      * In *Direct mode*, added widget to move arm using `move_jp` command (joint space) and jaws (for PSM)
+      * Added operating state widget with ability to send state commands in *Direct mode*
       * For PSM and MTM, display jaws and gripper joint state
+  * ECM:
+    * Added gravity compensation
+    * Use PID feed forward, better PID tracking, higher maximum velocity for trajectory generation
+    * Support multiple endoscope types (SD/HD, straight/up/down)
+    * Use closed form IK
+    * Widget: added drop down menu to select endoscope type (in manual mode)
   * MTM:
-    * sawRobotIO1394 configuration file now assumes 7 joints, not 8.  Gripper requires a separate configuration file just for the analog input (Hall effect sensor)tem
+    * In effort mode, apply torque to wrist platform to move away from user's hand.  Force can be scaled using configuration setting `platform-gain`
+  * PSM:
+    * Added support to change tool type at runtime.  With proper hardware/firmware, get tool type automatically from Dallas Chip
+    * Kinematic is now defined using the arm part (first 3 dofs) and tool part (last 3 or 5 dofs) and optional gripper
+    * Tool definition files added in `share/tool`
+    * Widget: added drop down menu to select tool type (in manual mode)
   * SUJ:
-  * Teleoperation ECM:
+    * Added simulated mode
+    * In simulated mode, added command/configuration setting to set joint positions
   * Teleoperation PSM:
+    * Better *engage* check to start tele-operation when starting and after clutch
+    * Added rate control on PSM jaws, slower when engaging
+    * Scale angle to match jaw and gripper ranges 
+    * Support tele-operation while ECM is moving
+    * Widget: display orientation offset between MTM and PSM
   * ROS:
     * Matlab and Python client libraries are now based on CRTK client libraries, see dvrk-ros CHANGELOG.md
+    * *cisstMultiTask* dVRK arm using ROS topics, can be used to tele-operate between two computers with ROS as middle-ware
   * sawRobotIO1394:
     * Widget: more closely match sawRobotIO names, shows safety relay status
     * Software will only allow firmware 6 and 7.  7 is recommended
     * Code refactor to reduce number of classes and ease maintenance
     * Moved to format 4 to enforce new features
+    * MTMs use two files, one for 7 active joints, one for gripper analog input
   * Utilities:
     * Added `qlacommand` to superseed `qlacloserelays`.  Examples: `qlacommand -c open-relays`, `qlacommand -pudp -c reboot`
     * Added script to reset FireWire kernel modules on PC.  It requires `sudo` privileges: ``sudo `which qlareloadfw.bash` ``
     * Kernel log messages (`dmesg -w`) now display the board id, board type (f for FireWire, e for ethernet) and firmware version
 
 * Bug fixes:
+  * Fixed bug re. setting trajectory ratios not always applied
+  * Tele-operation for PSM, use alignment mismatch to avoid small jump when engaging 
   
 1.7.1 (2019-07-04)
 ==================
