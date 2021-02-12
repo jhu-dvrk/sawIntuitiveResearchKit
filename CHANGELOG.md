@@ -14,8 +14,9 @@ Added CODE_OF_CONDUCT
     * `crtk-ros-commands.dict`: ROS topics translation, mostly to port applications using the ROS topics directly
     * `members-saw-intuitive-research-kit.dict`: data members and methods for dVRK C++ code.  This can be used to port C++ code based on dVRK code C++ code
   * Console configuration files shouldn't use `io`, `pid` and `kinematic` for `arms`.  Instead, use `serial`.  The application will then look for the arm JSON configuration file (e.g. `PSM1-12345.json`)
+  * Kinematic config files updated so limits are part of DH parameters, now use SI units!
 * Deprecated features:
- * Reduced search path for configuration files, now need to add directory prefix.  For example, to load `"sawRobotIO1394-MTMR-foot-pedals.xml"`, you need to use `"io/sawRobotIO1394-MTMR-foot-pedals.xml"`.  Same applies to `arm`, `kinematic`, `console`.
+  * Reduced search path for configuration files, now need to add directory prefix.  For example, to load `"sawRobotIO1394-MTMR-foot-pedals.xml"`, you need to use `"io/sawRobotIO1394-MTMR-foot-pedals.xml"`.  Same applies to `arm`, `kinematic`, `console`.
 * New features:
   * General:
     * Supported Linux platforms are Ubuntu/ROS are 16.04/kinetic, 18.04/melodic, 20.04/noetic
