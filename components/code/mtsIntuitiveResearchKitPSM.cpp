@@ -1339,6 +1339,15 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffor
     PID.servo_jf(mTorqueSetParam);
 }
 
+void mtsIntuitiveResearchKitPSM::control_move_jp_on_stop(const bool goal_reached)
+{
+    if (IsCartesianReady()) {
+        // save end position as starting servo for jaws
+        m_jaw_servo_jp = m_servo_jp_param.Goal().at(6);
+    }
+    mtsIntuitiveResearchKitArm::control_move_jp_on_stop(goal_reached);
+}
+
 void mtsIntuitiveResearchKitPSM::CouplingEventHandler(const prmActuatorJointCoupling & coupling)
 {
     CouplingChange.ReceivedCoupling = true;
