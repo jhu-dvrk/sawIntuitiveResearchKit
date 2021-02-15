@@ -119,8 +119,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void jaw_move_jp(const prmPositionJointSet & jawPosition);
     void jaw_servo_jf(const prmForceTorqueJointSet & effort);
 
-    void SetPositionJointLocal(const vctDoubleVec & newPosition) override;
-    void SetEffortJointLocal(const vctDoubleVec & newEffort) override;
+    void servo_jp_internal(const vctDoubleVec & newPosition) override;
+    void servo_jf_internal(const vctDoubleVec & newEffort) override;
 
     void EnableJointsEventHandler(const vctBoolVec & enable);
     void CouplingEventHandler(const prmActuatorJointCoupling & coupling);
@@ -185,8 +185,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     vctFrm4x4 ToolOffsetTransformation;
 
     prmStateJoint m_jaw_measured_js, m_jaw_setpoint_js;
-    double JawGoal;
-    double EffortJawSet;
+    double m_jaw_servo_jp;
+    double m_jaw_servo_jf;
 
     // Home Action
     unsigned int EngagingStage; // 0 requested

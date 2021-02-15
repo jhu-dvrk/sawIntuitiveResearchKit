@@ -144,3 +144,26 @@ GetAlignOffset = alignment_offset
 align_offset = alignment_offset
 SetAlignMTM = set_align_mtm
 SetRegistrationRotation = set_registration_rotation
+
+BaseFrameValid = m_base_frame_valid
+JointSet = m_servo_jp
+JointSetParam = m_servo_jp_param
+JointVelocitySet = m_servo_jv
+FeedForwardParam = m_feed_forward_jf
+SetFeedForwardJoint = feed_forward_jf
+SetPositionJointLocal = servo_jp_internal
+SetEffortJointLocal = servo_jf_internal
+UseFeedForward = use_feed_forward
+UpdateFeedForward = update_feed_forward
+
+ControlPositionJoint = control_servo_jp
+ControlPositionGoalJoint = control_move_jp
+ControlPositionCartesian = control_servo_cp
+ControlPositionGoalCartesian = control_move_cp
+ControlEffortJoint = control_servo_jf
+ControlEffortCartesian = control_servo_cf
+
+ControlEffortCartesianPreload = control_servo_cf_preload
+AddGravityCompensationEfforts = control_add_gravity_compensation
+AddCustomEfforts = control_add_jf
+ControlEffortOrientationLocked = control_servo_cf_orientation_locked

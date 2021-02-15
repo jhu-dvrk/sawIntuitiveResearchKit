@@ -66,7 +66,7 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
         exit(EXIT_FAILURE);
     }
 
-    if (!mEndoscopeConfigured) {
+    if (!m_endoscope_configured) {
         exit(EXIT_FAILURE);
     }
 
@@ -232,7 +232,7 @@ void mtsIntuitiveResearchKitECM::EnterHomed(void)
     mtsIntuitiveResearchKitArm::EnterHomed();
 
     // event to propagate endoscope type based on configuration file
-    EndoscopeEvents.endoscope_type(mtsIntuitiveResearchKitEndoscopeTypes::TypeToString(mEndoscopeType));
+    EndoscopeEvents.endoscope_type(mtsIntuitiveResearchKitEndoscopeTypes::TypeToString(m_endoscope_type));
 }
 
 void mtsIntuitiveResearchKitECM::EnterManual(void)
@@ -247,9 +247,9 @@ void mtsIntuitiveResearchKitECM::RunManual(void)
     // zero efforts
     mEffortJoint.SetAll(0.0);
     if (m_gravity_compensation) {
-        AddGravityCompensationEfforts(mEffortJoint);
+        control_add_gravity_compensation(mEffortJoint);
     }
-    SetEffortJointLocal(mEffortJoint);
+    servo_jf_internal(mEffortJoint);
 }
 
 void mtsIntuitiveResearchKitECM::LeaveManual(void)
@@ -290,15 +290,15 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
     }
 }
 
-void mtsIntuitiveResearchKitECM::UpdateFeedForward(vctDoubleVec & feedForward)
+void mtsIntuitiveResearchKitECM::update_feed_forward(vctDoubleVec & feedForward)
 {
     feedForward.SetAll(0.0);
     if (!m_simulated) {
-        AddGravityCompensationEfforts(feedForward);
+        control_add_gravity_compensation(feedForward);
     }
 }
 
-void mtsIntuitiveResearchKitECM::AddGravityCompensationEfforts(vctDoubleVec & efforts)
+void mtsIntuitiveResearchKitECM::control_add_gravity_compensation(vctDoubleVec & efforts)
 {
     vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
     efforts.Add(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, 9.81));
@@ -307,7 +307,7 @@ void mtsIntuitiveResearchKitECM::AddGravityCompensationEfforts(vctDoubleVec & ef
 void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscopeType)
 {
     // initialize configured flag
-    mEndoscopeConfigured = false;
+    m_endoscope_configured = false;
 
     m_arm_interface->SendStatus(this->GetName() + ": setting up for endoscope type \"" + endoscopeType + "\"");
     // check if the endoscope is in the supported list
@@ -321,7 +321,7 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
         return;
     }
     // supported endoscopes
-    mEndoscopeType = mtsIntuitiveResearchKitEndoscopeTypes::TypeFromString(endoscopeType);
+    m_endoscope_type = mtsIntuitiveResearchKitEndoscopeTypes::TypeFromString(endoscopeType);
 
     // update tool tip offset
     ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
@@ -330,7 +330,7 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
                                      0.0,  0.0,  0.0,  1.0);
     vctFrm4x4 tip;
     tip.Translation().Assign(vct3(0.0, 0.0, 0.0));
-    switch (mEndoscopeType) {
+    switch (m_endoscope_type) {
     case mtsIntuitiveResearchKitEndoscopeTypes::SD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::HD_UP:
         // -30 degree rotation along X axis
@@ -353,7 +353,7 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
 
     // update estimated mass for gravity compensation
     double mass;
-    switch (mEndoscopeType) {
+    switch (m_endoscope_type) {
     case mtsIntuitiveResearchKitEndoscopeTypes::SD_STRAIGHT:
     case mtsIntuitiveResearchKitEndoscopeTypes::SD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::SD_DOWN:
@@ -374,7 +374,7 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     Manipulator->links.at(3).MassData().Mass() = mass;
 
     // set configured flag
-    mEndoscopeConfigured = true;
+    m_endoscope_configured = true;
 
     // event to inform other components (GUI/ROS)
     EndoscopeEvents.endoscope_type(endoscopeType);

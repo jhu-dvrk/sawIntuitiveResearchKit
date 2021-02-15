@@ -107,16 +107,16 @@ protected:
     void GetRobotData(void) override;
 
     // see base class
-    void ControlEffortOrientationLocked(void) override;
+    void control_servo_cf_orientation_locked(void) override;
     void SetControlEffortActiveJoints(void) override;
-    void ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
-                                       vctDoubleVec & wrenchPreload) override;
+    void control_servo_cf_preload(vctDoubleVec & effortPreload,
+                                  vctDoubleVec & wrenchPreload) override;
 
     /*! Lock master orientation when in cartesian effort mode */
     virtual void lock_orientation(const vctMatRot3 & orientation);
     virtual void unlock_orientation(void);
 
-    void AddGravityCompensationEfforts(vctDoubleVec & efforts) override;
+    void control_add_gravity_compensation(vctDoubleVec & efforts) override;
 
     // Functions for events
     struct {

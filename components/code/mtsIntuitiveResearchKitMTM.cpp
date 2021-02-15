@@ -378,11 +378,11 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
     static const double extraTime = 2.0 * cmn_s;
     const double currentTime = this->StateTable.GetTic();
 
-    m_trajectory_j.Reflexxes.Evaluate(JointSet,
-                                      JointVelocitySet,
+    m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
+                                      m_servo_jv,
                                       m_trajectory_j.goal,
                                       m_trajectory_j.goal_v);
-    SetPositionJointLocal(JointSet);
+    servo_jp_internal(m_servo_jp);
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
 
@@ -397,7 +397,7 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 
         // detect tracking error and set lower limit
         PID.measured_js(m_pid_measured_js);
-        trackingError = std::abs(m_pid_measured_js.Position().at(JNT_WRIST_ROLL) - JointSet.at(JNT_WRIST_ROLL));
+        trackingError = std::abs(m_pid_measured_js.Position().at(JNT_WRIST_ROLL) - m_servo_jp.at(JNT_WRIST_ROLL));
         if (trackingError > maxTrackingError) {
             // disable PID
             PID.Enable(false);
@@ -519,7 +519,7 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
     }
 }
 
-void mtsIntuitiveResearchKitMTM::ControlEffortOrientationLocked(void)
+void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
 {
     // don't get current joint values!
     // always initialize IK from position when locked
@@ -535,13 +535,13 @@ void mtsIntuitiveResearchKitMTM::ControlEffortOrientationLocked(void)
         jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
         // initialize trajectory
         m_trajectory_j.goal.Ref(NumberOfJointsKinematics()).Assign(jointSet);
-        m_trajectory_j.Reflexxes.Evaluate(JointSet,
-                                          JointVelocitySet,
+        m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
+                                          m_servo_jv,
                                           m_trajectory_j.goal,
                                           m_trajectory_j.goal_v);
-        SetPositionJointLocal(JointSet);
+        servo_jp_internal(m_servo_jp);
     } else {
-        m_arm_interface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in ControlEffortOrientationLocked");
+        m_arm_interface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in control_servo_cf_orientation_locked");
     }
 }
 
@@ -561,8 +561,8 @@ void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
     PID.EnableTorqueMode(torqueMode);
 }
 
-void mtsIntuitiveResearchKitMTM::ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
-                                                               vctDoubleVec & wrenchPreload)
+void mtsIntuitiveResearchKitMTM::control_servo_cf_preload(vctDoubleVec & effortPreload,
+                                                          vctDoubleVec & wrenchPreload)
 {
     // not handling this yet
     if (m_cf_type == WRENCH_SPATIAL) {
@@ -625,8 +625,8 @@ void mtsIntuitiveResearchKitMTM::lock_orientation(const vctMatRot3 & orientation
         m_effort_orientation_locked = true;
         SetControlEffortActiveJoints();
         // initialize trajectory
-        JointSet.Assign(m_pid_measured_js.Position(), NumberOfJoints());
-        JointVelocitySet.Assign(m_pid_measured_js.Velocity(), NumberOfJoints());
+        m_servo_jp.Assign(m_pid_measured_js.Position(), NumberOfJoints());
+        m_servo_jv.Assign(m_pid_measured_js.Velocity(), NumberOfJoints());
         m_trajectory_j.Reflexxes.Set(m_trajectory_j.v,
                                      m_trajectory_j.a,
                                      StateTable.PeriodStats.PeriodAvg(),
@@ -652,7 +652,7 @@ void mtsIntuitiveResearchKitMTM::unlock_orientation(void)
 }
 
 
-void mtsIntuitiveResearchKitMTM::AddGravityCompensationEfforts(vctDoubleVec & efforts)
+void mtsIntuitiveResearchKitMTM::control_add_gravity_compensation(vctDoubleVec & efforts)
 {
     if (GravityCompensationMTM) {
         GravityCompensationMTM->AddGravityCompensationEfforts(m_kin_measured_js.Position(),

@@ -43,13 +43,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 
-// nearbyint is a C++11 feature; VS2008 does not have it
-// (perhaps others as well).
-#include <cisstCommon/cmnPortability.h>
-#if (CISST_COMPILER == CISST_DOTNET2008)
-inline double nearbyint(double x) { return floor(x+0.5); }
-#endif
-
 // forward declarations
 class osaCartesianImpedanceController;
 
@@ -165,9 +158,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     mtsStateTable mStateTableConfiguration;
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
-    virtual void SetPositionJointLocal(const vctDoubleVec & newPosition);
-    virtual void SetEffortJointLocal(const vctDoubleVec & newEffort);
-    inline virtual void UpdateFeedForward(vctDoubleVec & CMN_UNUSED(feedForward)) {};
+    virtual void servo_jp_internal(const vctDoubleVec & newPosition);
+    virtual void servo_jf_internal(const vctDoubleVec & newEffort);
+    inline virtual void update_feed_forward(vctDoubleVec & CMN_UNUSED(feedForward)) {};
 
     /*! Methods used for commands */
     virtual void Freeze(void);
@@ -210,7 +203,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         return true;
     }
 
-    inline virtual bool UseFeedForward(void) const {
+    inline virtual bool use_feed_forward(void) const {
         return false;
     }
 
@@ -256,7 +249,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionRead  measured_js;
         mtsFunctionRead  setpoint_js;
         mtsFunctionWrite servo_jp;
-        mtsFunctionWrite SetFeedForwardJoint;
+        mtsFunctionWrite feed_forward_jf;
         mtsFunctionWrite SetCheckPositionLimit;
         mtsFunctionRead  configuration_js;
         mtsFunctionWrite configure_js;
@@ -308,16 +301,16 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctFrm4x4 m_local_setpoint_cp_frame;
 
     // with base frame included
-    prmPositionCartesianGet m_measured_cp, CartesianGetPreviousParam;
+    prmPositionCartesianGet m_measured_cp;
     vctFrm4x4 m_measured_cp_frame;
     prmPositionCartesianGet m_setpoint_cp;
     vctFrm4x4 m_setpoint_cp_frame;
 
     // joints
-    prmPositionJointSet JointSetParam;
-    vctDoubleVec JointSet;
-    vctDoubleVec JointVelocitySet;
-    prmForceTorqueJointSet FeedForwardParam;
+    prmPositionJointSet m_servo_jp_param;
+    vctDoubleVec m_servo_jp;
+    vctDoubleVec m_servo_jv;
+    prmForceTorqueJointSet m_feed_forward_jf;
     prmStateJoint m_pid_measured_js, m_pid_setpoint_js, m_kin_measured_js, m_kin_setpoint_js;
     prmConfigurationJoint m_pid_configuration_js, m_kin_configuration_js;
 
@@ -327,7 +320,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmForceCartesianSet m_cf_set;
     bool m_body_cf_orientation_absolute;
     prmForceTorqueJointSet
-        mTorqueSetParam, // number of joints PID, used in SetEffortJointLocal
+        mTorqueSetParam, // number of joints PID, used in servo_jf_internal
         mEffortJointSet; // number of joints for kinematics
     vctDoubleVec mEffortJoint; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
@@ -344,18 +337,17 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctMatRot3 mEffortOrientation;
     // gravity compensation
     bool m_gravity_compensation;
-    virtual void AddGravityCompensationEfforts(vctDoubleVec & efforts);
+    virtual void control_add_gravity_compensation(vctDoubleVec & efforts);
     // add custom efforts for derived classes
-    inline virtual void AddCustomEfforts(vctDoubleVec & CMN_UNUSED(efforts)) {};
+    inline virtual void control_add_jf(vctDoubleVec & CMN_UNUSED(efforts)) {};
 
     // Velocities
-    vctFrm4x4 CartesianGetPrevious;
     prmVelocityCartesianGet m_measured_cv;
     vctFrm4x4 CartesianPositionFrm;
 
     // Base frame
     vctFrm4x4 m_base_frame;
-    bool BaseFrameValid;
+    bool m_base_frame_valid;
 
     bool m_powered = false;
 
@@ -434,16 +426,21 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     mtsCallableVoidBase * mControlCallback;
 
-    virtual void ControlPositionJoint(void);
-    virtual void ControlPositionGoalJoint(void);
-    virtual void ControlPositionCartesian(void);
-    virtual void ControlPositionGoalCartesian(void);
-    virtual void ControlEffortJoint(void);
-    virtual void ControlEffortCartesian(void);
+    virtual void control_servo_jp(void);
+    virtual void control_move_jp(void);
+    virtual void control_servo_cp(void);
+    virtual void control_move_cp(void);
+    virtual void control_servo_jf(void);
+    virtual void control_servo_cf(void);
+
+    /* Action on start/stop move commands, can be derived but make
+       sure base class method is called in derived methods. */
+    virtual void control_move_jp_on_start(void);
+    virtual void control_move_jp_on_stop(const bool goal_reached);
 
     /*! Compute forces/position for PID when orientation is locked in
       effort cartesian mode or gravity compensation. */
-    virtual void ControlEffortOrientationLocked(void);
+    virtual void control_servo_cf_orientation_locked(void);
 
     /*! Determine which joints should be in effort mode.  MTM will
       redefine this so one can lock orientation using position PID. */
@@ -453,8 +450,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
       space).  E.g. MTM to control platform orientation.  Derived
       methods must ensure that all elements are set properly, i.e. the
       input vector is not set to zero by default. */
-    virtual void ControlEffortCartesianPreload(vctDoubleVec & effortPreload,
-                                               vctDoubleVec & wrenchPreload);
+    virtual void control_servo_cf_preload(vctDoubleVec & effortPreload,
+                                          vctDoubleVec & wrenchPreload);
 
     struct {
         robReflexxes Reflexxes;

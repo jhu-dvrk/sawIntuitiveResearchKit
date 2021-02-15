@@ -56,7 +56,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
         return 3;
     }
 
-    inline bool UseFeedForward(void) const override {
+    inline bool use_feed_forward(void) const override {
         return true;
     }
 
@@ -86,8 +86,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     void EventHandlerTrackingError(void);
     void EventHandlerManipClutch(const prmEventButton & button);
 
-    void UpdateFeedForward(vctDoubleVec & feedForward) override;
-    void AddGravityCompensationEfforts(vctDoubleVec & efforts) override;
+    void update_feed_forward(vctDoubleVec & feedForward) override;
+    void control_add_gravity_compensation(vctDoubleVec & efforts) override;
 
     struct {
         mtsFunctionRead GetButton;
@@ -105,8 +105,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
       underscores. */
     void set_endoscope_type(const std::string & endoscopeType);
 
-    mtsIntuitiveResearchKitEndoscopeTypes::Type mEndoscopeType;
-    bool mEndoscopeConfigured = false;
+    mtsIntuitiveResearchKitEndoscopeTypes::Type m_endoscope_type;
+    bool m_endoscope_configured = false;
     struct {
         mtsFunctionWrite endoscope_type;
     } EndoscopeEvents;

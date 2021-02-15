@@ -970,14 +970,14 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         // tool/adapter gears should have little resistance?
         tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
         PID.SetTrackingErrorTolerance(tolerances);
-        SetPositionJointLocal(m_pid_setpoint_js.Position());
+        servo_jp_internal(m_pid_setpoint_js.Position());
         // turn on PID
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
 
         // make sure we start from current state
-        JointSet.Assign(m_pid_setpoint_js.Position());
-        JointVelocitySet.Assign(m_pid_measured_js.Velocity());
+        m_servo_jp.Assign(m_pid_setpoint_js.Position());
+        m_servo_jv.Assign(m_pid_measured_js.Velocity());
 
         // keep first two joint values as is
         m_trajectory_j.goal.Ref(2, 0).Assign(m_pid_setpoint_js.Position().Ref(2, 0));
@@ -986,18 +986,18 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         // set last 4 to -170.0
         m_trajectory_j.goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
         m_trajectory_j.goal_v.SetAll(0.0);
-        m_trajectory_j.end_time = 0.0;
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+        control_move_jp_on_start();
         EngagingStage = 2;
         return;
     }
 
-    m_trajectory_j.Reflexxes.Evaluate(JointSet,
-                                      JointVelocitySet,
+    m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
+                                      m_servo_jv,
                                       m_trajectory_j.goal,
                                       m_trajectory_j.goal_v);
-    SetPositionJointLocal(JointSet);
+    servo_jp_internal(m_servo_jp);
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
 
@@ -1017,6 +1017,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
             if (EngagingStage > LastEngagingStage) {
                 Adapter.NeedEngage = false;
                 Adapter.IsEngaged = true;
+                control_move_jp_on_stop(true); // goal reached
                 mArmState.SetCurrentState("HOMED");
             } else {
                 if (EngagingStage != LastEngagingStage) {
@@ -1090,14 +1091,14 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         // tool/adapter gears should have little resistance?
         tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
         PID.SetTrackingErrorTolerance(tolerances);
-        SetPositionJointLocal(m_pid_setpoint_js.Position());
+        servo_jp_internal(m_pid_setpoint_js.Position());
         // turn on PID
         PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
         PID.EnableTrackingError(true);
 
         // make sure we start from current state
-        JointSet.Assign(m_pid_setpoint_js.Position());
-        JointVelocitySet.Assign(m_pid_measured_js.Velocity());
+        m_servo_jp.Assign(m_pid_setpoint_js.Position());
+        m_servo_jv.Assign(m_pid_measured_js.Velocity());
 
         // check if the tool in outside the cannula
         if (m_pid_measured_js.Position().Element(2) >= mtsIntuitiveResearchKit::PSMOutsideCannula) {
@@ -1113,18 +1114,18 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         // set last 4 to user preferences
         m_trajectory_j.goal.Ref(4, 3).Assign(CouplingChange.ToolEngageLowerPosition);
         m_trajectory_j.goal_v.SetAll(0.0);
-        m_trajectory_j.end_time = 0.0;
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+        control_move_jp_on_start();
         EngagingStage = 2;
         return;
     }
 
-    m_trajectory_j.Reflexxes.Evaluate(JointSet,
-                                      JointVelocitySet,
+    m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
+                                      m_servo_jv,
                                       m_trajectory_j.goal,
                                       m_trajectory_j.goal_v);
-    SetPositionJointLocal(JointSet);
+    servo_jp_internal(m_servo_jp);
 
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
@@ -1144,6 +1145,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
             // check if we were in last phase
             if (EngagingStage > LastEngagingStage) {
                 Tool.NeedEngage = false;
+                control_move_jp_on_stop(true); // goal reached
                 mArmState.SetCurrentState("TOOL_ENGAGED");
             } else {
                 if (EngagingStage != LastEngagingStage) {
@@ -1228,11 +1230,11 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
         // make sure all other joints have a reasonable goal
-        JointSet.Assign(m_pid_setpoint_js.Position(), NumberOfJoints());
+        m_servo_jp.Assign(m_pid_setpoint_js.Position(), NumberOfJoints());
     }
 
     // save goal
-    JawGoal = jawPosition.Goal().at(0);
+    m_jaw_servo_jp = jawPosition.Goal().at(0);
     m_new_pid_goal = true;
 }
 
@@ -1263,28 +1265,26 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
     }
 
     // force trajectory re-evaluation with new goal for last joint
-    UpdateIsBusy(true);
-    m_trajectory_j.is_active = true;
+    control_move_jp_on_start();
     m_trajectory_j.goal[6] = jawPosition.Goal().at(0);
-    m_trajectory_j.end_time = 0.0;
 
     // save position jaw goal, this might lead to jump if the user
     // interupts the jaw trajectory
-    JawGoal = jawPosition.Goal().at(0);
+    m_jaw_servo_jp = jawPosition.Goal().at(0);
 }
 
-void mtsIntuitiveResearchKitPSM::SetPositionJointLocal(const vctDoubleVec & newPosition)
+void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & newPosition)
 {
     if (!IsCartesianReady()) {
-        mtsIntuitiveResearchKitArm::SetPositionJointLocal(newPosition);
+        mtsIntuitiveResearchKitArm::servo_jp_internal(newPosition);
         return;
     }
-    CMN_ASSERT(JointSetParam.Goal().size() == 7);
-    JointSetParam.Goal().Zeros();
-    ToJointsPID(newPosition, JointSetParam.Goal());
-    JointSetParam.Goal().at(6) = JawGoal;
-    JointSetParam.SetTimestamp(StateTable.GetTic());
-    PID.servo_jp(JointSetParam);
+    CMN_ASSERT(m_servo_jp_param.Goal().size() == 7);
+    m_servo_jp_param.Goal().Zeros();
+    ToJointsPID(newPosition, m_servo_jp_param.Goal());
+    m_servo_jp_param.Goal().at(6) = m_jaw_servo_jp;
+    m_servo_jp_param.SetTimestamp(StateTable.GetTic());
+    PID.servo_jp(m_servo_jp_param);
 }
 
 void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & effort)
@@ -1313,24 +1313,25 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
     }
 
     // save the desired effort
-    EffortJawSet = effort.ForceTorque().at(0);
+    m_jaw_servo_jf = effort.ForceTorque().at(0);
 }
 
-void mtsIntuitiveResearchKitPSM::SetEffortJointLocal(const vctDoubleVec & newEffort)
+void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffort)
 {
     if (!IsCartesianReady()) {
-        mtsIntuitiveResearchKitArm::SetEffortJointLocal(newEffort);
+        mtsIntuitiveResearchKitArm::servo_jf_internal(newEffort);
         return;
     }
 
     // pad array for PID
     vctDoubleVec torqueDesired(NumberOfJoints(), 0.0); // for PID
     if (mSnakeLike) {
-        std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for PID control" << std::endl;
+        std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for force control" << std::endl;
     } else {
         torqueDesired.Assign(mEffortJoint, NumberOfJointsKinematics());
     }
-    torqueDesired.at(6) = EffortJawSet;
+    // add torque for jaws
+    torqueDesired.at(6) = m_jaw_servo_jf;
 
     // convert to cisstParameterTypes
     mTorqueSetParam.SetForceTorque(torqueDesired);
