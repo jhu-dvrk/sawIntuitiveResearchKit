@@ -1005,6 +1005,11 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
     // emit volume event
     audio.volume(m_audio_volume);
 
+    // short beeps to indicate application is running + preload beep executable
+    for (size_t tone = 0; tone < 10; ++tone) { 
+        audio.beep(vct3(0.05, 400.0 + tone * 200, 0.5 * m_audio_volume));
+    }
+
     if (mChatty) {
         // someone is going to hate me for this :-)
         std::vector<std::string> prompts;
@@ -1053,6 +1058,10 @@ void mtsIntuitiveResearchKitConsole::Run(void)
 
 void mtsIntuitiveResearchKitConsole::Cleanup(void)
 {
+    // short beeps to indicate application is ending
+    for (size_t tone = 0; tone < 10; ++tone) { 
+        audio.beep(vct3(0.05, 2400 - tone * 200, 0.5 * m_audio_volume));
+    }
     CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
 }
 
