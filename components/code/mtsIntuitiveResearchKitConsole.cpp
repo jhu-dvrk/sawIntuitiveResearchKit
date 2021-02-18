@@ -1975,7 +1975,6 @@ void mtsIntuitiveResearchKitConsole::power_on(void)
 void mtsIntuitiveResearchKitConsole::home(void)
 {
     DisableFaultyArms();
-    teleop_enable(false);
     for (auto & arm : mArms) {
         arm.second->state_command(std::string("home"));
     }
@@ -1996,16 +1995,6 @@ void mtsIntuitiveResearchKitConsole::DisableFaultyArms(void)
 
 void mtsIntuitiveResearchKitConsole::teleop_enable(const bool & enable)
 {
-    // for convenience, if we start teleop we assume all arms should
-    // be homed too
-    if (enable) {
-        // do not call, "home" since "home" calls "teleop_enable"
-        DisableFaultyArms();
-        for (auto & arm : mArms) {
-            arm.second->state_command(std::string("enable"));
-            arm.second->state_command(std::string("home"));
-        }
-    }
     mTeleopEnabled = enable;
     // event
     console_events.teleop_enabled(mTeleopEnabled);

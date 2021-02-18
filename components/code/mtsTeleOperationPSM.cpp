@@ -655,14 +655,16 @@ void mtsTeleOperationPSM::EnterSettingArmsState(void)
     mPSM.operating_state(state);
     if (state.State() != prmOperatingState::ENABLED) {
         mPSM.state_command(std::string("enable"));
-    } else if (!state.IsHomed()) {
+    }
+    if (!state.IsHomed()) {
         mPSM.state_command(std::string("home"));
     }
 
     mMTM.operating_state(state);
     if (state.State() != prmOperatingState::ENABLED) {
         mMTM.state_command(std::string("enable"));
-    } else if (!state.IsHomed()) {
+    }
+    if (!state.IsHomed()) {
         mMTM.state_command(std::string("home"));
     }
 }

@@ -352,21 +352,24 @@ void mtsTeleOperationECM::EnterSettingArmsState(void)
     mECM.operating_state(state);
     if (state.State() != prmOperatingState::ENABLED) {
         mECM.state_command(std::string("enable"));
-    } else if (!state.IsHomed()) {
+    }
+    if (!state.IsHomed()) {
         mECM.state_command(std::string("home"));
     }
 
     mMTML.operating_state(state);
     if (state.State() != prmOperatingState::ENABLED) {
         mMTML.state_command(std::string("enable"));
-    } else if (!state.IsHomed()) {
+    }
+    if (!state.IsHomed()) {
         mMTML.state_command(std::string("home"));
     }
 
     mMTMR.operating_state(state);
     if (state.State() != prmOperatingState::ENABLED) {
         mMTMR.state_command(std::string("enable"));
-    } else if (!state.IsHomed()) {
+    }
+    if (!state.IsHomed()) {
         mMTMR.state_command(std::string("home"));
     }
 }

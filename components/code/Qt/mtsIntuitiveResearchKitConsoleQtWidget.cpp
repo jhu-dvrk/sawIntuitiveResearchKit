@@ -231,7 +231,9 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopEnabledEventHandler(bool 
         QPBTeleopEnable->setText("Disabled");
         QPBTeleopEnable->setStyleSheet("QPushButton { background-color: rgb(255, 100, 100); border: none }");
     }
+    QCBTeleopEnable->blockSignals(true);
     QCBTeleopEnable->setChecked(enabled);
+    QCBTeleopEnable->blockSignals(false);
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::GetTeleopButtonCheck(const PairStringType & pair,
