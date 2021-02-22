@@ -152,31 +152,42 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     // j = s * g + o
     // g = (j - o) / s
     struct {
-        double Scale;
-        double Offset;
-        double PositionMin;
-    } mGripperToJaw;
+        double scale;
+        double offset;
+        double position_min;
+    } m_gripper_to_jaw;
 
-    double mGripperGhost;
+    double m_gripper_ghost;
 
     double virtual GripperToJaw(const double & gripperAngle) const;
     double virtual JawToGripper(const double & jawAngle) const;
     void virtual UpdateGripperToJawConfiguration(void);
 
-    bool m_ignore_jaw = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
-    double m_jaw_rate = mtsIntuitiveResearchKit::TeleOperationPSM::JawRate;
-    double m_jaw_rate_back_from_clutch = mtsIntuitiveResearchKit::TeleOperationPSM::JawRateBackFromClutch;
     struct {
-        double OrientationTolerance = mtsIntuitiveResearchKit::TeleOperationPSM::OrientationTolerance;
-        double RollMin;
-        double RollMax;
-        double RollThreshold = mtsIntuitiveResearchKit::TeleOperationPSM::RollThreshold;
-        double GripperMin;
-        double GripperMax;
-        double GripperThreshold = mtsIntuitiveResearchKit::TeleOperationPSM::GripperThreshold;
-        bool IsActive = false;
-        bool WasActiveBeforeClutch = false;
-    } mOperator;
+        bool ignore = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
+        double rate = mtsIntuitiveResearchKit::TeleOperationPSM::JawRate;
+        double rate_back_from_clutch = mtsIntuitiveResearchKit::TeleOperationPSM::JawRateBackFromClutch;
+    } m_jaw;
+
+    struct {
+        double max = 60.0 * cmnPI_180; // from 2012, we assumed MTM gripper is 0 to 60 degrees
+        double zero = 0.0; // value corresponding to closed SPM jaws,
+                           // MTM gripper might go lower to force negative
+                           // PSM jaw PID goal and stronger forces
+    } m_gripper;
+
+    struct {
+        double orientation_tolerance = mtsIntuitiveResearchKit::TeleOperationPSM::OrientationTolerance;
+        double roll_min;
+        double roll_max;
+        double roll_threshold = mtsIntuitiveResearchKit::TeleOperationPSM::RollThreshold;
+        double gripper_min;
+        double gripper_max;
+        double gripper_threshold = mtsIntuitiveResearchKit::TeleOperationPSM::GripperThreshold;
+        bool is_active = false;
+        bool was_active_before_clutch = false;
+    } m_operator;
+
     bool m_clutched = false;
     bool m_back_from_clutch = false;
     bool m_jaw_caught_up_after_clutch = false;

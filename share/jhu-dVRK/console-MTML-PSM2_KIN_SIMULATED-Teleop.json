@@ -2,13 +2,13 @@
 {
     "io":
     {
-        "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
+        "footpedals": "io/sawRobotIO1394-MTML-foot-pedals.xml"
     }
     ,
     "arms":
     [
         {
-	        "name": "PSM2",
+            "name": "PSM2",
             "type": "PSM",
             "simulation": "KINEMATIC",
             "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
@@ -32,7 +32,14 @@
     [
         {
             "mtm": "MTML",
-            "psm": "PSM2"
+            "psm": "PSM2",
+            "configure-parameter": {
+                "scale": 0.4,
+                "gripper-scaling": {
+                    "max": 1.0472, // 60 degrees
+                    "zero": -0.52  // set value below zero, MTM can go much lower - zero will correspond to PSM jaws at 0 position
+                }
+            }
         }
     ]
 }

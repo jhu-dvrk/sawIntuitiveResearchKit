@@ -203,8 +203,32 @@ void mtsTeleOperationECM::Init(void)
     }
 }
 
-void mtsTeleOperationECM::Configure(const std::string & CMN_UNUSED(filename))
+void mtsTeleOperationECM::Configure(const std::string & filename)
 {
+    std::ifstream jsonStream;
+    Json::Value jsonConfig;
+    Json::Reader jsonReader;
+
+    jsonStream.open(filename.c_str());
+    if (!jsonReader.parse(jsonStream, jsonConfig)) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": failed to parse configuration file \""
+                                 << filename << "\"\n"
+                                 << jsonReader.getFormattedErrorMessages();
+        exit(EXIT_FAILURE);
+    }
+
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
+                               << " using file \"" << filename << "\"" << std::endl
+                               << "----> content of configuration file: " << std::endl
+                               << jsonConfig << std::endl
+                               << "<----" << std::endl;
+
+    // base component configuration
+    mtsComponent::ConfigureJSON(jsonConfig);
+
+    // JSON part
+    mtsTeleOperationECM::Configure(jsonConfig);
 }
 
 void mtsTeleOperationECM::Configure(const Json::Value & jsonConfig)
