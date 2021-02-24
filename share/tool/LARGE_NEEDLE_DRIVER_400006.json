@@ -38,9 +38,9 @@
     }
     ,
     "jaw" : {
-        // for last joint, manual says [0, 30] but we need -20 to allow stronger torque, 80 to open wide
-        "qmin": -0.349066, // -20 degrees
-        "qmax":  1.39626,  //  80 degrees
+        // for last joint, manual says [0, 30] but we need -40 to allow stronger torque, 80 to open wide
+        "qmin": -0.698132, // -40 degrees - overriding ISI values
+        "qmax":  1.39626,  //  80 degrees - overriding ISI values
         "ftmax": 0.16
     }
     ,
