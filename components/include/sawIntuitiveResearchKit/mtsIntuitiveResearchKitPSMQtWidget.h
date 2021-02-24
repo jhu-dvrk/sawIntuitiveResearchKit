@@ -50,6 +50,7 @@ private:
     void ToolTypeEventHandler(const std::string & toolType);
     void ToolTypeRequestEventHandler(void);
 
+    vctPlot2DOpenGLQtWidget * QVP2DJaw;
     QLineEdit * QLEToolType;
     QComboBox * QCBToolOptions;
     mtsFunctionWrite set_tool_type;
@@ -59,6 +60,10 @@ private:
     QLineEdit * QLEJawEffort;
 
     prmPositionJointSetQtWidget * QPJSJaw;
+
+    vctPlot2DBase::Scale * m_scale_jaw;
+    vctPlot2DBase::Signal * m_signal_jaw;
+    vctPlot2DBase::Signal * m_signal_jaw_zero;
 
     struct {
         mtsFunctionRead measured_js;

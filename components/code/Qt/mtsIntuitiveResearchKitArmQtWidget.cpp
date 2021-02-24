@@ -208,10 +208,10 @@ void mtsIntuitiveResearchKitArmQtWidget::SlotTrajectoryJointRatioEventHandler(do
 void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
 {
     MainLayout = new QVBoxLayout;
-    MainLayout->setContentsMargins(2, 2, 2, 2);
+    MainLayout->setContentsMargins(1, 1, 1, 1);
 
     QGridLayout * topLayout = new QGridLayout;
-    topLayout->setContentsMargins(2, 2, 2, 2);
+    topLayout->setContentsMargins(1, 1, 1, 1);
     topLayout->setColumnStretch(1, 1);
 
     MainLayout->addLayout(topLayout);
@@ -232,12 +232,16 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     topLayout->addWidget(QCPGWidget, 1, 0);
 
     // wrench
+    EffortLayout = new QHBoxLayout();
+    EffortLayout->setSpacing(2);
+    EffortLayout->setContentsMargins(0, 0, 0, 0);
     QFTWidget = new vctForceTorqueQtWidget();
-    topLayout->addWidget(QFTWidget, 1, 1);
+    EffortLayout->addWidget(QFTWidget);
+    topLayout->addLayout(EffortLayout, 1, 1);
 
     // state
     QHBoxLayout * stateLayout = new QHBoxLayout;
-    stateLayout->setContentsMargins(2, 2, 2, 2);
+    stateLayout->setContentsMargins(1, 1, 1, 1);
     MainLayout->addLayout(stateLayout);
 
     // messages on/off

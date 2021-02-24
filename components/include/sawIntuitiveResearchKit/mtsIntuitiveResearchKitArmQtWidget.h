@@ -89,6 +89,8 @@ protected:
 
     // so derived class has access to custom parts of widget
     QVBoxLayout * MainLayout;
+    QHBoxLayout * EffortLayout;
+
     mtsInterfaceRequired * InterfaceRequired;
     inline virtual void setupUiDerived(void) {};
     inline virtual void timerEventDerived(void) {};
