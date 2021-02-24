@@ -534,7 +534,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // translation
     PID.DefaultTrackingErrorTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm -> 2
     // shaft rotation and tool orientation
-    PID.DefaultTrackingErrorTolerance.Ref(4, 3).SetAll(35.0 * cmnPI_180); // 3 elements starting at 3 -> 3, 4, 5, 6
+    PID.DefaultTrackingErrorTolerance.Ref(3, 3).SetAll(35.0 * cmnPI_180); // 3 elements starting at 3 -> 3, 4, 5
+    // jaws, allow more since we use PID large errors to apply large torques
+    PID.DefaultTrackingErrorTolerance.Element(6) = 90.0 * cmnPI_180;
 
     // joint limits when tool is not present
     CouplingChange.NoToolConfiguration.Name().SetSize(7);
