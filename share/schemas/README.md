@@ -31,10 +31,10 @@ The output is the Python stack if any error is found.  You will need to read it 
 
 * Installation: This is for the dVRK maintainers only.  The tool `jsonschema2md` is available with Python3 only and with pip3 (no Ubuntu package on 18.04):
     ```sh
-pip3 install jsonschema2md
-```
+  pip3 install jsonschema2md
+  ```
 
 * Usage:
     ```sh
-jsonschema2md console.schema.json console.schema.json.md
-```
+  jsonschema2md console.schema.json console.schema.json.md
+  ```
