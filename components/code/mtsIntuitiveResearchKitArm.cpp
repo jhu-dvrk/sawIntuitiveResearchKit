@@ -1065,7 +1065,7 @@ void mtsIntuitiveResearchKitArm::TransitionPowering(void)
         m_arm_interface->SendStatus(this->GetName() + ": power on");
         mArmState.SetCurrentState("ENABLED");
     } else {
-        if ((currentTime - mHomingTimer) > mtsIntuitiveResearchKit::TimeToPower) {
+        if ((currentTime - mHomingTimer) > 2.0 * mtsIntuitiveResearchKit::TimeToPower) {
             m_arm_interface->SendError(this->GetName() + ": failed to enable power");
             SetDesiredState("FAULT");
         }
