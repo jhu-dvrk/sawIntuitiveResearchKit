@@ -29,6 +29,8 @@ The output is the Python stack if any error is found.  You will need to read it 
 
 # Generate markdown documentation from schemas
 
+## Python
+
 * Installation: This is for the dVRK maintainers only.  The tool `jsonschema2md` is available with Python3 only and with pip3 (no Ubuntu package on 18.04):
     ```sh
   pip3 install jsonschema2md
@@ -37,4 +39,13 @@ The output is the Python stack if any error is found.  You will need to read it 
 * Usage:
     ```sh
   jsonschema2md console.schema.json console.schema.json.md
+  ```
+## JavaScript
+
+* Installation: for some reason, Ubuntu packages for npm are not compatible with most ROS packages (Ubuntu 18.04/ROS Melodic) so you can install using:
+    ```sh
+  sudo apt-get install curl python-software-properties
+  curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+  sudo apt-get install nodejs
+  sudo npm install -g @adobe/jsonschema2md
   ```
