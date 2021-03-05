@@ -339,7 +339,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         m_arm_interface->AddCommandReadState(this->StateTable, m_local_setpoint_cp, "local/setpoint_cp");
         m_arm_interface->AddCommandReadState(this->StateTable, m_measured_cp, "measured_cp");
         m_arm_interface->AddCommandReadState(this->StateTable, m_setpoint_cp, "setpoint_cp");
-        m_arm_interface->AddCommandReadState(this->StateTable, m_base_frame, "GetBaseFrame");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_base_frame, "base_frame");
         m_arm_interface->AddCommandReadState(this->StateTable, m_measured_cv, "measured_cv");
         m_arm_interface->AddCommandReadState(this->StateTable, m_body_measured_cf, "body/measured_cf");
         m_arm_interface->AddCommandReadState(this->StateTable, m_body_jacobian, "body/jacobian");

@@ -173,7 +173,7 @@ public:
                                                 "measured_cp");
         mInterfaceProvided->AddCommandReadState(mStateTable, m_local_measured_cp,
                                                 "local/measured_cp");
-        mInterfaceProvided->AddCommandReadState(mStateTable, mBaseFrame, "GetBaseFrame");
+        mInterfaceProvided->AddCommandReadState(mStateTable, mBaseFrame, "base_frame");
         mInterfaceProvided->AddCommandReadState(mStateTable, mVoltages[0], "GetVoltagesPrimary");
         mInterfaceProvided->AddCommandReadState(mStateTable, mVoltages[1], "GetVoltagesSecondary");
         mInterfaceProvided->AddCommandReadState(mStateTable, mVoltagesExtra, "GetVoltagesExtra");
