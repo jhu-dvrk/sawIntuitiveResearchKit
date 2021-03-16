@@ -1,0 +1,18 @@
+{
+    "converters":
+    [
+        {
+            "type": "interface-provided-button",
+	    "index-input": 1,
+            "interface-name": "OperatorPresent"
+        }
+	,
+        {
+            "type": "interface-provided-button",
+	    "index-input": 0,
+            "interface-name": "Clutch"
+        }
+    ]
+    ,
+    "device": "/dev/input/js0"
+}
