@@ -1,7 +1,7 @@
 # Introduction
 
 JSON schemas for dVRK configuration files.  We also provide a small python script to check configuration files against schemas.  The custom script adds a couple of features compared to the default `jsonschema` command:
-  * Allow comments in the configuration file.  Internally comments are stripped using `jsmin`.
+  * Allow comments in the configuration file.  Internally comments are stripped using `jsmin`.  The C++ dVRK code uses JsonCpp which supports comments.
   * Check the syntax of both JSON files (configuration file and schema) using `json.load`.  Without this, incorrect JSON files are rejected without any useful error message.
 
 Ideally, the C++ code should use the schemas to check the configuration files.  Unfortunately, the C++ library we use to parse JSON files doesn't support JSON schemas (yet).  So for now, the best approach is to test your configuration files as a separate step.
@@ -25,9 +25,27 @@ Assuming your working directory is the *dVRK* `share/schemas`:
 ./json-schema.py -f ../jhu-dVRK/console-MTML-PSM1-Teleop.json -s console.schema.json
 ```
 
-The output is the Python stack if any error is found.  You will need to read it all to figure out the issue.  If there are not issues found, the scripts outputs **All good**.
+The output is the Python stack if any error is found.  You will need to read it all to figure out the issue.  If there are no issue found, the scripts outputs **All good**.
+
+
+# Generate html documentation from schemas
+
+## Python
+
+* Installation:
+    ```sh
+  pip install json-schema-for-humans
+  ```
+
+* Usage:
+    ```sh
+  generate-schema-doc console.schema.json v2.0/console.html
+  ```
+
 
 # Generate markdown documentation from schemas
+
+This was an early experiment but we found html is more convenient.
 
 ## Python
 
@@ -49,3 +67,9 @@ The output is the Python stack if any error is found.  You will need to read it 
   sudo apt-get install nodejs
   sudo npm install -g @adobe/jsonschema2md
   ```
+
+* Usage:
+    ```sh
+  jsonschema2md -d . -o v2.0
+  ```
+
