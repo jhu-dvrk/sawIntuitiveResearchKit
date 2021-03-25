@@ -567,7 +567,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         }
     }
 
-    // add text to speech compoment for the whole system
+    // add text to speech component for the whole system
     mTextToSpeech = new mtsTextToSpeech();
     manager->AddComponent(mTextToSpeech);
     mtsInterfaceRequired * textToSpeechInterface = this->AddInterfaceRequired("TextToSpeech");
