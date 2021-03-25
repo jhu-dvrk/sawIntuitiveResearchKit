@@ -1,7 +1,7 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
     "kinematic": "kinematic/mtml.json",
-    "gravity-compensation": "gc-MTML-22723.json"
-    , "platform-gain": 1.0
-    // , "re-home": true
+    "gravity-compensation": "gc-MTML-22723.json",
+    "re-home": false
+    // , "platform-gain": 1.0
 }
