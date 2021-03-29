@@ -1208,8 +1208,18 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         armPointer = armIterator->second;
     }
 
-    // read from JSON and check if configuration files exist
     Json::Value jsonValue;
+
+    // create search path based on optional system
+    cmnPath armConfigPath = configPath;
+    jsonValue = jsonArm["system"];
+    if (!jsonValue.empty()) {
+        armConfigPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR)
+                          + "/../share/"
+                          + jsonValue.asString() + "/",
+                          cmnPath::TAIL);
+    }
+    // read from JSON and check if configuration files exist
     jsonValue = jsonArm["type"];
     armPointer->mIsGeneric = false; // default value
     armPointer->mIsNativeOrDerived = false;
@@ -1361,7 +1371,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         if (armPointer->mSimulation == Arm::SIMULATION_NONE) {
             jsonValue = jsonArm["io"];
             if (!jsonValue.empty()) {
-                armPointer->mIOConfigurationFile = configPath.Find(jsonValue.asString());
+                armPointer->mIOConfigurationFile = armConfigPath.Find(jsonValue.asString());
                 if (armPointer->mIOConfigurationFile == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO file " << jsonValue.asString() << std::endl;
                     return false;
@@ -1370,7 +1380,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                 // try to find default if serial number has been provided
                 if (armPointer->mSerial != "") {
                     std::string defaultFile = "sawRobotIO1394-" + armName + "-" + armPointer->mSerial + ".xml";
-                    armPointer->mIOConfigurationFile = configPath.Find(defaultFile);
+                    armPointer->mIOConfigurationFile = armConfigPath.Find(defaultFile);
                     if (armPointer->mIOConfigurationFile == "") {
                         CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO file " << defaultFile << std::endl;
                         return false;
@@ -1387,7 +1397,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                 || (armPointer->mType == Arm::ARM_MTM_DERIVED)) {
                 jsonValue = jsonArm["io-gripper"];
                 if (!jsonValue.empty()) {
-                    armPointer->mIOGripperConfigurationFile = configPath.Find(jsonValue.asString());
+                    armPointer->mIOGripperConfigurationFile = armConfigPath.Find(jsonValue.asString());
                     if (armPointer->mIOGripperConfigurationFile == "") {
                         CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO gripper file "
                                                  << jsonValue.asString() << std::endl;
@@ -1397,7 +1407,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                     // try to find default if serial number has been provided
                     if (armPointer->mSerial != "") {
                         std::string defaultFile = "sawRobotIO1394-" + armName + "-gripper-" + armPointer->mSerial + ".xml";
-                        armPointer->mIOGripperConfigurationFile = configPath.Find(defaultFile);
+                        armPointer->mIOGripperConfigurationFile = armConfigPath.Find(defaultFile);
                         if (armPointer->mIOGripperConfigurationFile == "") {
                             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO gripper file " << defaultFile << std::endl;
                             return false;
@@ -1417,7 +1427,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     if (armPointer->mIsNativeOrDerived) {
         jsonValue = jsonArm["pid"];
         if (!jsonValue.empty()) {
-            armPointer->mPIDConfigurationFile = configPath.Find(jsonValue.asString());
+            armPointer->mPIDConfigurationFile = armConfigPath.Find(jsonValue.asString());
             if (armPointer->mPIDConfigurationFile == "") {
                 CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find PID file " << jsonValue.asString() << std::endl;
                 return false;
@@ -1435,7 +1445,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureArmJSON: can't find \"pid\" setting for arm \""
                                        << armName << "\", using default: \""
                                        << defaultFile << "\"" << std::endl;
-            armPointer->mPIDConfigurationFile = configPath.Find(defaultFile);
+            armPointer->mPIDConfigurationFile = armConfigPath.Find(defaultFile);
             if (armPointer->mPIDConfigurationFile == "") {
                 CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find PID file " << defaultFile << std::endl;
                 return false;
@@ -1450,7 +1460,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         if (armPointer->mIsNativeOrDerived) {
             jsonValue = jsonArm["arm"];
             if (!jsonValue.empty()) {
-                armPointer->mArmConfigurationFile = configPath.Find(jsonValue.asString());
+                armPointer->mArmConfigurationFile = armConfigPath.Find(jsonValue.asString());
                 if (armPointer->mArmConfigurationFile == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find configuration file " << jsonValue.asString() << std::endl;
                     return false;
@@ -1464,7 +1474,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                                          << jsonValue.asString() << std::endl;
                 return false;
             } else {
-                armPointer->mArmConfigurationFile = configPath.Find(jsonValue.asString());
+                armPointer->mArmConfigurationFile = armConfigPath.Find(jsonValue.asString());
                 if (armPointer->mArmConfigurationFile == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find Kinematic file " << jsonValue.asString() << std::endl;
                     return false;
@@ -1477,7 +1487,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             if (armPointer->mIsNativeOrDerived) {
                 // try to find the arm file using default
                 std::string defaultFile = armName + "-" + armPointer->mSerial + ".json";
-                armPointer->mArmConfigurationFile = configPath.Find(defaultFile);
+                armPointer->mArmConfigurationFile = armConfigPath.Find(defaultFile);
                 if (armPointer->mArmConfigurationFile == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"arm\" setting for arm \""
                                              << armName << "\".  \"arm\" is not set and the default file \""
