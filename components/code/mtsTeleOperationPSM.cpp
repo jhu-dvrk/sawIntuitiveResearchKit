@@ -227,6 +227,10 @@ void mtsTeleOperationPSM::Configure(const std::string & filename)
     Json::Value jsonConfig;
     Json::Reader jsonReader;
 
+    if (filename == "") {
+        return;
+    }
+
     jsonStream.open(filename.c_str());
     if (!jsonReader.parse(jsonStream, jsonConfig)) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
