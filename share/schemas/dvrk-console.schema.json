@@ -54,8 +54,7 @@
                 "period": {
                     "type": "number",
                     "description": "Periodicity for the IO and PID loop.  Defined in seconds, i.e. interval between two iterations.  The default is defined in `mtsIntuitiveResearchKit.h` and is set so the loop frequency is 1500Hz, ~0.66ms so 0.00066s.  This is an advanced setting and most users should avoid defining it.",
-                    "minimum": 0.0,
-                    "exclusiveMinimum": true,
+                    "exclusiveMinimum": 0.0,
                     "examples": [
                         {
                             "period": 0.001
@@ -244,8 +243,15 @@
                     "kinematic": {
                         "type": "string",
                         "description": "[Deprecated] Name of the JSON configuration file for the arm's kinematic (from *cisstRobot*, `robManipulator`).  The kinematic file should now be provided in the arm configuration file.  The name of the arm configuration file can be inferred from the arm name and serial number (e.g. `PSM1-28007.json`) or provided using the `arm` attribute."
-                    }
+                    },
 
+                    "component": {
+                        "type": "string"
+                    },
+
+                    "interface": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -308,7 +314,6 @@
                     },
 
                     "configure-parameter": {
-                        "description": "--------------------------------------------",
                         "type": "object"
                     },
 

@@ -6,70 +6,33 @@ JSON schemas for dVRK configuration files.  We also provide a small python scrip
 
 Ideally, the C++ code should use the schemas to check the configuration files.  Unfortunately, the C++ library we use to parse JSON files doesn't support JSON schemas (yet).  So for now, the best approach is to test your configuration files as a separate step.
 
-# Requirements
+To allow testing offline, we provide two python scripts that will load all the schemas in this directory and maintain a dictionary of `$ref` and schemas used to check a configuration file or generate the html documentation.
 
-For Python 3:
-```sh
-sudo apt install python3-jsonschema python3-jsmin
-```
+# Check JSON dVRK configuration files
 
-For Python 2:
-```sh
-sudo apt install python-jsonschema python-jsmin
-```
+* Installation:
+    ```sh
+  pip3 jsonschema jsmin
+  ```
 
-# Using the script
-
-Assuming your working directory is the *dVRK* `share/schemas`:
-```sh
-./json-schema.py -f ../jhu-dVRK/console-MTML-PSM1-Teleop.json -s console.schema.json
-```
-
-The output is the Python stack if any error is found.  You will need to read it all to figure out the issue.  If there are no issue found, the scripts outputs **All good**.
+* Usage:
+  Assuming your working directory is the *dVRK* `share/schemas`:
+    ```sh
+  ./json-schema.py -s console.schema.json <files-to-test>
+  ```
+  The output is the Python stack if any error is found.  You will need to read it all to figure out the issue.  If there are no issue found, the scripts outputs **All good**.
 
 
 # Generate html documentation from schemas
 
-## Python
-
 * Installation:
     ```sh
-  pip install json-schema-for-humans
+  pip3 install json-schema-for-humans
   ```
 
 * Usage:
     ```sh
-  generate-schema-doc console.schema.json v2.0/console.html
+  ./generate-html.py -d . -v v2.0
   ```
 
-
-# Generate markdown documentation from schemas
-
-This was an early experiment but we found html is more convenient.
-
-## Python
-
-* Installation: This is for the dVRK maintainers only.  The tool `jsonschema2md` is available with Python3 only and with pip3 (no Ubuntu package on 18.04):
-    ```sh
-  pip3 install jsonschema2md
-  ```
-
-* Usage:
-    ```sh
-  jsonschema2md console.schema.json console.schema.json.md
-  ```
-## JavaScript
-
-* Installation: for some reason, Ubuntu packages for npm are not compatible with most ROS packages (Ubuntu 18.04/ROS Melodic) so you can install using:
-    ```sh
-  sudo apt-get install curl python-software-properties
-  curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-  sudo apt-get install nodejs
-  sudo npm install -g @adobe/jsonschema2md
-  ```
-
-* Usage:
-    ```sh
-  jsonschema2md -d . -o v2.0
-  ```
-
+`-d` is for the directory containing all the `.schema.json` files.   `-v` is for a subdirectory for all the generated files.
