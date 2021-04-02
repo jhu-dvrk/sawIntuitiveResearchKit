@@ -175,15 +175,45 @@
                                  "MTM_DERIVED", "PSM_DERIVED", "ECM_DERIVED",
                                  "MTM_GENERIC", "PSM_GENERIC", "ECM_GENERIC",
                                  "PSM_SOCKET", "SUJ"],
-                        "description": "Type of arm.  This determines which class should be used to instantiate the arm.<ul><li>`MTM`, `PSM` and `ECM` correspond to the default classes provided for the dVRK arms.  These are the most common ones.<li>`xxx_DERIVED` corresponds to classes derived from the base classes provided in the dVRK stack.  Users can derive the base arm classes to alter their behavior.  In this case, the console knows that the derived class has all the features from the base class so the connections to the PID, IO, Qt widget and ROS bridge are the same as those for the base class.<li>`xxx_GENERIC` corresponds to classes not derived from the dVRK base classes.  The console will not create any IO, PID components for this arm.  The console will use a generic Qt Widget and add ROS topics if and only if the provided interface has CRTK compatible commands and events.  Examples include Force Dimension devices ([sawForceDimensionSDK](https://github.com/jhu-saw/sawForceDimensionSDK)) and the Sensable Omni ([sawSensablePhantom](https://github.com/jhu-saw/sawSensablePhantom)).<li>`PSM_SOCKET` is a special case used for simple tele-operation between two processes (likely between two computers).  One dVRK console will have to instantiate a PSM server and the other a PSM client.<li>`SUJ` is for the [Setup Joints](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/SUJ)</ul>For `xxx_DERIVED` and `xxx_GENERIC`, the console has no way to automatically create the component, so the user has to provide the proper `component-manager` configuration to first create the component for the arm."
+                        "description": "Type of arm.  This determines which class should be used to instantiate the arm.<ul><li>`MTM`, `PSM` and `ECM` correspond to the default classes provided for the dVRK arms.  These are the most common ones.<li>`xxx_DERIVED` corresponds to classes derived from the base classes provided in the dVRK stack.  Users can derive the base arm classes to alter their behavior.  In this case, the console knows that the derived class has all the features from the base class so the connections to the PID, IO, Qt widget and ROS bridge are the same as those for the base class.<li>`xxx_GENERIC` corresponds to classes not derived from the dVRK base classes.  The console will not create any IO, PID components for this arm.  The console will use a generic Qt Widget and add ROS topics if and only if the provided interface has CRTK compatible commands and events.  Examples include Force Dimension devices ([sawForceDimensionSDK](https://github.com/jhu-saw/sawForceDimensionSDK)) and the Sensable Omni ([sawSensablePhantom](https://github.com/jhu-saw/sawSensablePhantom)).<li>`PSM_SOCKET` is a special case used for simple tele-operation between two processes (likely between two computers).  One dVRK console will have to instantiate a PSM server and the other a PSM client.<li>`SUJ` is for the [Setup Joints](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/SUJ)</ul>For `xxx_DERIVED` and `xxx_GENERIC`, the console has no way to automatically create the component, so the user has to provide the proper `component-manager` configuration to first create the component for the arm.",
+                        "examples": [
+                            {
+                                "arms":
+                                [
+                                    {
+                                        "name": "MTML",
+                                        "type": "MTM",
+                                        "serial": "22723",
+                                        "system": "jhu-dVRK"
+                                    }
+                                    ,
+                                    {
+                                        "name": "MTMR",
+                                        "type": "MTM_GENERIC",
+                                        "component": "ForceDimensionSDK",
+                                        "interface": "MTMR"
+                                    }
+                                ]
+                            }
+                        ]
                     },
 
                     "serial": {
                         "type": "string",
-                        "description": "Arm's serial number.  To verify the serial number, locate the label on the arm itself (see [dVRK wiki](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/XMLConfig))",
+                        "description": "Arm's serial number.  To verify the serial number, locate the label on the arm itself (see [dVRK wiki](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/XMLConfig)).  The serial number and the arm's name are used to locate the arm configuration file assuming the arm configuration file name is `<arm_name>-<arm_serial>.json` (e.g. `MTML-22723.json`).",
                         "examples": [
                             {
                                 "serial": "22723"
+                            }
+                        ]
+                    },
+
+                    "system": {
+                        "type": "string",
+                        "description": "name of your system, i.e. subdirectory under `sawIntuitiveResearchKit/share` where to locate the arm configuration files (`sawRobotIO1394*.xml`, `<arm_name>-<arm_serial>.json`, gravity compensation parameters (for MTMs)...`).   For example, setting the `system` to `jhu-dVRK` will add `sawIntuitiveResearchKit/share/jhu-dVRK` to the search path to locate the arm's configuration files.",
+                        "examples": [
+                            {
+                                "system": "jhu-daVinci"
                             }
                         ]
                     },
@@ -227,18 +257,7 @@
                         "properties": {
 
                             "transform": {
-                                "description": "4 by 4 matrix, i.e. homogeneous transformation",
-                                "type": "array",
-                                "minItems": 4,
-                                "maxItems": 4,
-                                "items": {
-                                    "type": "array",
-                                    "minItems": 4,
-                                    "maxItems": 4,
-                                    "items": {
-                                        "type": "number"
-                                    }
-                                }
+                                "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/cisst-matrices.schema.json#/properties/matrix4x4"
                             },
 
                             "reference-frame": {
@@ -296,17 +315,19 @@
                         "default": false
                     },
 
-		    "socket-server": {
-			"description": "Only works for PSMs",
-			"type": "boolean",
-			"default": false
-		    },
+                    "socket-server": {
+                        "description": "Only works for PSMs.  Indicates that a PSM socket server should be created.  This can be used to communicate with another dVRK console process with a PSM of type `PSM_SOCKET` and create a tele-operation between two sites.",
+                        "type": "boolean",
+                        "default": false
+                    },
 
                     "remote-ip": {
+                        "description": "Only works with PSM of type `PSM_SOCKET` or if \"socket-server\" is set to `true`.  Used to create a UDP socket to remotely access a PSM",
                         "type": "string"
                     },
 
                     "port": {
+                        "description": "Only works with PSM of type `PSM_SOCKET` or if \"socket-server\" is set to `true`.  Used to create a UDP socket to remotely access a PSM",
                         "type": "number"
                     }
 

@@ -7,7 +7,7 @@
     "additionalProperties": false,
     "properties": {
 
-	"matrix3x3": {
+        "matrix3x3": {
             "description": "3 by 3 matrix, i.e. rotation",
             "type": "array",
             "minItems": 3,
@@ -22,7 +22,7 @@
             }
         },
 
-    	"matrix4x4": {
+        "matrix4x4": {
             "description": "4 by 4 matrix, i.e. homogeneous transform",
             "type": "array",
             "minItems": 4,

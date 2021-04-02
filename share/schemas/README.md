@@ -20,6 +20,10 @@ To allow testing offline, we provide two python scripts that will load all the s
     ```sh
   ./json-schema.py -s console.schema.json <files-to-test>
   ```
+  To test all files in multiple directories:
+    ```sh
+  ./json-schema.py -s dvrk-console.schema.json ../console/console-* ../jhu-daVinci/console-* ../jhu-dVRK/console-*
+  ```
   The output is the Python stack if any error is found.  You will need to read it all to figure out the issue.  If there are no issue found, the scripts outputs **All good**.
 
 

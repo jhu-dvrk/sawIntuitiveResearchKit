@@ -107,7 +107,53 @@
                     }
                 }
 
-            }
+            },
+
+            "examples": [
+                {
+                    "components":
+                    [
+                        {
+                            "shared-library": "sawForceDimensionSDK",
+                            "class-name": "mtsForceDimension",
+                            "constructor-arg": {
+                                "Name": "ForceDimensionSDK"
+                            },
+                            "configure-parameter": "sawForceDimensionSDK-MTMR.json"
+                        }
+                    ]
+                }
+                ,
+                {
+                    "components":
+                    [
+                        {
+                            "shared-library": "sawSocketStreamer",
+                            "class-name": "mtsSocketStreamer",
+                            "constructor-arg": {
+                                "Name": "streamerMTML",
+                                "Period": 0.01
+                            },
+                            "configure-parameter": "streamerMTML.json"
+                        }
+                    ]
+                    ,
+                    "connections":
+                    [
+                        {
+                            "required": {
+                                "component": "streamerMTML",
+                                "interface": "Required"
+                            }
+                            ,
+                            "provided": {
+                                "component": "MTML",
+                                "interface": "Arm"
+                            }
+                        }
+                    ]
+                }
+            ]
         }
     }
 }

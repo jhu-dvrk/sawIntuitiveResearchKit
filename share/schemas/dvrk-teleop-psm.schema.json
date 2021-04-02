@@ -3,92 +3,92 @@
     "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-teleop-psm.schema.json",
     "title": "dVRK teleop psm 2.0",
     "type": "object",
-    "description": "Configuration file format for the dVRK .  See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).  This format is used by the application `sawIntuitiveResearchKitQtConsoleJSON` and the ROS application `dvrk_robot dvrk_console_json`",
+    "description": "Configuration file format for the dVRK PSM tele-operation component.  See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).  This schema is used for the [dVRK console configuration](dvrk-console.html).  For details of implementation, see code under `sawIntuitiveResearchKit/components/code/mtsTeleOperationPSM.cpp`",
     "additionalProperties": false,
     "properties": {
 
-	"scale": {
-	    "description": "Scale factor applied to translations from the MTM to the PSM",
-	    "type": "number",
-	    "exclusiveMinimum": 0.0,
-	    "maximum": 1.0
-	},
+        "scale": {
+            "description": "Scale factor applied to translations from the MTM to the PSM",
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "maximum": 1.0
+        },
 
-	"ignore-jaw": {
-	    "description": "Ignore PSM jaws and incidentally the MTM gripper.  This can be used for PSM tools (or generic PSM arms) without jaws and/or MTM arms without a gripper.",
-	    "type": "boolean",
-	    "default": false
-	},
+        "ignore-jaw": {
+            "description": "Ignore PSM jaws and incidentally the MTM gripper.  This can be used for PSM tools (or generic PSM arms) without jaws and/or MTM arms without a gripper.",
+            "type": "boolean",
+            "default": false
+        },
 
-	"rotation-locked": {
-	    "description": "Start the tele-operation component with the rotation locked, i.e. the PSM orientation will not change and the MTM wrist will be locked (for MTMs with motorized wrist such as the da Vinci MTM).  This can be overwritten at runtime using the GUI or ROS topics.",
-	    "type": "boolean",
-	    "default": false
-	},
+        "rotation-locked": {
+            "description": "Start the tele-operation component with the rotation locked, i.e. the PSM orientation will not change and the MTM wrist will be locked (for MTMs with motorized wrist such as the da Vinci MTM).  This can be overwritten at runtime using the GUI or ROS topics.",
+            "type": "boolean",
+            "default": false
+        },
 
-    	"translation-locked": {
-	    "description": "Start the tele-operation component with the translation locked, i.e. the PSM position will not change.  This can be overwritten at runtime using the GUI or ROS topics.",
-	    "type": "boolean",
-	    "default": false
-	},
+            "translation-locked": {
+            "description": "Start the tele-operation component with the translation locked, i.e. the PSM position will not change.  This can be overwritten at runtime using the GUI or ROS topics.",
+            "type": "boolean",
+            "default": false
+        },
 
-	"start-orientation-tolerance": {
-	    "description": "Maximum orientation difference between the MTM and PSM allowed before starting the tele-operation.  The error is computed by converting the difference of orientation to an axis-angle.  This threshold is ingnored if \"align-mtm\" is set to false.  Most users should steer away from this setting.  The default is defined in `components/include/sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h`: `mtsIntuitiveResearchKit::TeleOperationPSM::OrientationTolerance",
-	    "type": "number",
-	    "minimum": 0.0
-	},
+        "start-orientation-tolerance": {
+            "description": "Maximum orientation difference between the MTM and PSM allowed before starting the tele-operation.  The error is computed by converting the difference of orientation to an axis-angle.  This threshold is ingnored if \"align-mtm\" is set to false.  Most users should steer away from this setting.  The default is defined in `components/include/sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h`: `mtsIntuitiveResearchKit::TeleOperationPSM::OrientationTolerance",
+            "type": "number",
+            "minimum": 0.0
+        },
 
-	"start-gripper-threshold": {
-	    "description": "This is one of two parameters used to detect hand motion from the operator to determine if their hand is on the MTM (see also \"start-roll-thresold\").  To prevent accidentally getting in follow mode, the tele-operation component tries to detect some motion on the MTM, using a combination of thresholds on the gripper and roll motion.  In any of these motions exceed the corresponding thresholds, the tele-operation component assumes the operator have their hand on the MTM and tele-operation can start.  If any of these threshold is set to zero, the tele-operation will start without any motion the on the MTM.  This can be used for testing with a simulated MTM where emulating gripper and roll motion would be complicated (see \"arm\": \"simulation\").  Most users should steer away from this setting.  The default is defined in `components/include/sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h`: `mtsIntuitiveResearchKit::TeleOperationPSM::GripperThreshold",
-	    "type": "number",
-	    "minimum": 0.0
-	},
+        "start-gripper-threshold": {
+            "description": "This is one of two parameters used to detect hand motion from the operator to determine if their hand is on the MTM (see also \"start-roll-thresold\").  To prevent accidentally getting in follow mode, the tele-operation component tries to detect some motion on the MTM, using a combination of thresholds on the gripper and roll motion.  In any of these motions exceed the corresponding thresholds, the tele-operation component assumes the operator have their hand on the MTM and tele-operation can start.  If any of these threshold is set to zero, the tele-operation will start without any motion the on the MTM.  This can be used for testing with a simulated MTM where emulating gripper and roll motion would be complicated (see \"arm\": \"simulation\").  Most users should steer away from this setting.  The default is defined in `components/include/sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h`: `mtsIntuitiveResearchKit::TeleOperationPSM::GripperThreshold",
+            "type": "number",
+            "minimum": 0.0
+        },
 
-	"start-roll-threshold": {
-	    "description": "See \"start-gripper-threshold\" for description.  Most users should steer away from this setting.  The default is defined in `components/include/sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h`: `mtsIntuitiveResearchKit::TeleOperationPSM::RollThreshold",
-	    "type": "number",
-	    "minimum": 0.0
-	},
+        "start-roll-threshold": {
+            "description": "See \"start-gripper-threshold\" for description.  Most users should steer away from this setting.  The default is defined in `components/include/sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h`: `mtsIntuitiveResearchKit::TeleOperationPSM::RollThreshold",
+            "type": "number",
+            "minimum": 0.0
+        },
 
-	"align-mtm": {
-	    "description": "Enforce absolute orientation between the MTM and PSM.  On clinical da Vinci systems this is always true, i.e. the orientation of the operator's hands with respect to the display always matches the orientation of the tooltip with respect to the endoscopic camera.  For research purposes, it can be interesting to allow relative orientation between the MTM and PSM.  This can also be useful for alternate MTMs (e.g. ForceDimension devices) with a smaller SO3 space which might require orientation \"clutching\".  To note, the application publishes the error in orientation between the MTM and PSM when the tele-operation is in Following mode.  This can be overwritten at runtime using the GUI or ROS topics.",
-	    "type": "boolean",
-	    "default": true
-	},
+        "align-mtm": {
+            "description": "Enforce absolute orientation between the MTM and PSM.  On clinical da Vinci systems this is always true, i.e. the orientation of the operator's hands with respect to the display always matches the orientation of the tooltip with respect to the endoscopic camera.  For research purposes, it can be interesting to allow relative orientation between the MTM and PSM.  This can also be useful for alternate MTMs (e.g. ForceDimension devices) with a smaller SO3 space which might require orientation \"clutching\".  To note, the application publishes the error in orientation between the MTM and PSM when the tele-operation is in Following mode.  This can be overwritten at runtime using the GUI or ROS topics.",
+            "type": "boolean",
+            "default": true
+        },
 
-	"jaw-rate": {
-	    "description": "Maximum rate (velocity) for the PSM jaw angle in radians per seconds.  Most users should steer away from this setting.  The default is defined in `components/include/sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h`: `mtsIntuitiveResearchKit::TeleOperationPSM::JawRate",
-	    "type": "number",
-	    "exclusiveMinimum": 0.0
-	},
+        "jaw-rate": {
+            "description": "Maximum rate (velocity) for the PSM jaw angle in radians per seconds.  Most users should steer away from this setting.  The default is defined in `components/include/sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h`: `mtsIntuitiveResearchKit::TeleOperationPSM::JawRate",
+            "type": "number",
+            "exclusiveMinimum": 0.0
+        },
 
-	"jaw-rate-back-from-clutch": {
-	    "description": "Maximum rate (velocity) for the PSM jaw angle in radians per seconds when returning from clutch.  When the user returns from clutch mode and back in follow mode, the PSM jaw angle might not match the MTM gripper angle.   To prevent sudden changes in jaw angle, the PSM jaws moves at a slower rate until it \"recovers\" and matches the MTM gripper angle.  Most users should steer away from this setting.  The default is defined in `components/include/sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h`: `mtsIntuitiveResearchKit::TeleOperationPSM::JawRateBackFromClutch",
-	    "type": "number",
-	    "exclusiveMinimum": 0.0
-	},
+        "jaw-rate-back-from-clutch": {
+            "description": "Maximum rate (velocity) for the PSM jaw angle in radians per seconds when returning from clutch.  When the user returns from clutch mode and back in follow mode, the PSM jaw angle might not match the MTM gripper angle.   To prevent sudden changes in jaw angle, the PSM jaws moves at a slower rate until it \"recovers\" and matches the MTM gripper angle.  Most users should steer away from this setting.  The default is defined in `components/include/sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h`: `mtsIntuitiveResearchKit::TeleOperationPSM::JawRateBackFromClutch",
+            "type": "number",
+            "exclusiveMinimum": 0.0
+        },
 
-	"gripper-scaling": {
-	    "description": "",
-	    "type": "object",
-	    "additionalProperties": false,
-	    "properties": {
-		"zero": {
-		    "description": "",
-		    "type": "number",
-		    "default": 0.0
-		},
-		"max": {
-		    "description": "60 degrees",
-		    "type": "number",
-		    "default": 1.0472
-		}
-	    }
-	},
+        "gripper-scaling": {
+            "description": "Scaling applied to the MTM gripper angle.  This angle is then used to control the PSM jaw angle.  By default, the tele-operation component assumes that the MTM gripper maximum angle is 60 degrees (as defined in the [gripper calibration](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Calibration)) and the angle 0 corresponds to the PSM jaws being closed.  When closed (angle set to 0), the PSM jaws don't apply any significant torque (just enough for the PID control to maintain a zero angle) so to apply a stonger grip, the tele-operation component sends a negative jaw angle to the PSM.  Since the jaws can't have a negative angle, this will lead to a higher tracking error and by direct consequence, the PID will apply a strong torque.  The \"gripper-scaling\" parameters are used to linearly interpolate the MTM gripper angles to the default convention, i.e. [0, 60] for positive range and some room for negative angles.<br>For example, if your MTM has an effective range of [0, 30], set the \"max\" to 30 and the \"zero\" to 5.  This way the values between 5 and 30 will be mapped to [0, 60] and values below 5 will generate negative angles for the PSM jaws (i.e. applying extra torque)",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "zero": {
+                    "description": "Angle in radians on the MTM corresponding to just closed jaws on the PSM",
+                    "type": "number",
+                    "default": 0.0
+                },
+                "max": {
+                    "description": "Maximum angle in radians the MTM can send.  By default, 60 degrees (by convention for dVRK MTMs)",
+                    "type": "number",
+                    "default": 1.0472
+                }
+            }
+        },
 
-	"rotation": {
-	    "description": "[Deprecated] Make sure your arms are properly aligned using their \"base-frame\".  Only use this attribute if your arms don't support \"base-frame\", i.e. non-dVRK arms.",
-	    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/cisst-matrices.schema.json#/properties/matrix3x3"
-	}
+        "rotation": {
+            "description": "[Deprecated] Make sure your arms are properly aligned using their \"base-frame\".  Only use this attribute if your arms don't support \"base-frame\", i.e. non-dVRK arms.",
+            "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/cisst-matrices.schema.json#/properties/matrix3x3"
+        }
     }
 }
