@@ -3,6 +3,7 @@
     "io": {
         "firewire-protocol": "broadcast-read-write"
     }
+    ,
     "arms":
     [
         {
@@ -39,7 +40,7 @@
         {
             "name": "ECM",
             "type": "ECM",
-            "serial": "29738"
+            "serial": "29738",
             "base-frame": {
                 "component": "SUJ",
                 "interface": "ECM"

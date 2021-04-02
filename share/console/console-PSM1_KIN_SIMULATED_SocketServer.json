@@ -7,7 +7,7 @@
             "type": "PSM",
             "simulation": "KINEMATIC",
             "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
-            "socket-server": 1,
+            "socket-server": true,
             "remote-ip": "localhost",
             "port": 10001
         }
