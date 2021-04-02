@@ -4,6 +4,7 @@
     "title": "dVRK console 2.0",
     "type": "object",
     "description": "Configuration file format for the dVRK console.  See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).  This format is used by the application `sawIntuitiveResearchKitQtConsoleJSON` and the ROS application `dvrk_robot dvrk_console_json`",
+    "additionalProperties": false,
     "properties": {
         "io": {
             "type": "object",
@@ -85,28 +86,62 @@
 
         },
 
-        "operator-present": {
-            "type": "string",
-            "description": "IO configuration file used to define inputs for the da Vinci head sensor.  This requires a custom cable and will only work with a full da Vinci system.  The head sensor component was introduced in version 1.6.  See [dVRK wiki](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/HeadSensor).",
-            "examples": [
-                {
-                    "operator-present": {
-                        "io": "io/sawRobotIO1394-MTMR-dv-head-sensor.xml"
-                    }
+        "console-inputs": {
+            "type": "object",
+            "description": "Alternative sources for the main console inputs, \"operator-present\", \"clutch\" and \"camera\".  Each input event normally comes from the da Vinci foot pedals connected to the dVRK controller using the attribute \"io\": \"footpedals\" but they can be replaced by other sources.  To define another source, you need another component with a provided interface that has one write event named \"Button\".",
+            "additionalProperties": false,
+            "properties": {
+                "operator-present": {
+                    "description": "Alternate source for the \"operator-present\" sensor event",
+                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-interface-button.schema.json#/properties"
+                },
+                "clutch": {
+                    "description": "Alternate source for the \"clutch\" pedal event",
+                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-interface-button.schema.json#/properties"
+                },
+                "camera": {
+                    "description": "Alternate source for the \"camera\" pedal event",
+                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-interface-button.schema.json#/properties"
                 }
-            ]
+            }
+        },
+
+        "operator-present": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["io"],
+            "properties": {
+                "io": {
+                    "description": "IO configuration file used to define inputs for the da Vinci head sensor.  This requires a custom cable and will only work with a full da Vinci system.  The head sensor component was introduced in version 1.6.  See [dVRK wiki](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/HeadSensor).",
+                    "type": "string",
+                    "examples": [
+                        {
+                            "operator-present": {
+                                "io": "io/sawRobotIO1394-MTMR-dv-head-sensor.xml"
+                            }
+                        }
+                    ]
+                }
+            }
         },
 
         "endoscope-focus": {
-            "type": "string",
-            "description": "IO configuration file used to define inputs for the da Vinci endoscope focus controllers.  This requires a custom cable and will only work with da Vinci focus controller.  The endoscope focus component was introduced in version 1.6.  See [dVRK wiki](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Endoscope-Focus-Controller).",
-            "examples": [
-                {
-                    "operator-present": {
-                        "io": "io/sawRobotIO1394-MTMR-dv-head-sensor.xml"
-                    }
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["io"],
+            "properties": {
+                "io": {
+                    "description": "IO configuration file used to define inputs for the da Vinci endoscope focus controllers.  This requires a custom cable and will only work with da Vinci focus controller.  The endoscope focus component was introduced in version 1.6.  See [dVRK wiki](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Endoscope-Focus-Controller).",
+                    "type": "string",
+                    "examples": [
+                        {
+                            "endoscope-focus": {
+                                "io": "io/sawRobotIO1394-MTML-dv-endoscope-focus.xml"
+                            }
+                        }
+                    ]
                 }
-            ]
+            }
         },
 
         "component-manager": {
@@ -246,16 +281,74 @@
                     },
 
                     "component": {
+                        "description": "For arm of type xxx_GENERIC only.  Name of the component for the generic arm.  For the dVRK arms, the component is named after the arm (e.g. \"MTML\").  For other devices (e.g. `sawSensablePhantom`) the component might be able to provide multiple arms so the arm name is used for the \"interface\".",
                         "type": "string"
                     },
 
                     "interface": {
+                        "description": "For arm of type xxx_GENERIC only.  Name of the provided interface for the generic arm.  For the dVRK arms, the component is named after the arm (e.g. \"MTML\") and the interface is always \"Arm\".  For other devices (e.g. `sawSensablePhantom`) the component might be able to provide multiple arms so the arm name is used for the \"interface\".",
                         "type": "string"
+                    },
+
+                    "skip-ros-bridge": {
+                        "description": "Tell the component manager to not expose the arm commands to ROS.  By default, the component manager will expose the arm to ROS using the cisst ROS CRTK bridge",
+                        "type": "boolean",
+                        "default": false
+                    },
+
+		    "socket-server": {
+			"description": "Only works for PSMs",
+			"type": "boolean",
+			"default": false
+		    },
+
+                    "remote-ip": {
+                        "type": "string"
+                    },
+
+                    "port": {
+                        "type": "number"
                     }
+
                 }
             }
         },
 
+
+        "ecm-teleop": {
+            "type": "object",
+            "description": "Configuration for the ECM tele-operation component",
+            "required": ["mtm-left", "mtm-right", "ecm"],
+            "additionalProperties": false,
+            "properties": {
+
+                "mtm-left": {
+                    "type": "string",
+                    "description": "Name of the MTML.  The arm must have been declared in the list of arms"
+                },
+
+                "mtm-right": {
+                    "type": "string",
+                    "description": "Name of the MTMR.  The arm must have been declared in the list of arms"
+                },
+
+                "ecm": {
+                    "type": "string",
+                    "description": "Name of the ECM.  The arm must have been declared in the list of arms"
+                },
+
+                "configure-parameter": {
+                    "description": "See *cisstMultiTask* [component manager](cisst-component-manager.html)",
+                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-teleop-ecm.schema.json#/properties"
+                },
+
+                "period": {
+                    "description": "Override the default periodicity of the ECM tele-operation class.  Most user should steer away from changing the default arm periodicity.  This works only for the dVRK base class, i.e. `\"type\": \"TELEOP_ECM\"`",
+                    "type": "number",
+                    "exclusiveMinimum": 0.0
+                }
+            }
+        },
 
         "psm-teleops": {
             "type": "array",
@@ -314,7 +407,8 @@
                     },
 
                     "configure-parameter": {
-                        "type": "object"
+                        "description": "See *cisstMultiTask* [component manager](dvrk-teleop-psm.html)",
+                        "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-teleop-psm.schema.json#/"
                     },
 
                     "period": {

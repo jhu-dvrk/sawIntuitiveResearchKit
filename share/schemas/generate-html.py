@@ -5,7 +5,7 @@ import shutil
 import sys
 import argparse
 import json
-from json_schema_for_humans.generate import generate_from_schema, GenerationConfiguration
+from json_schema_for_humans.generate import generate_from_schema, GenerationConfiguration, copy_css_and_js_to_target
 
 # parse arguments
 parser = argparse.ArgumentParser(description = 'generate-html')
@@ -44,7 +44,11 @@ if not os.path.exists(args.version):
   os.mkdir(args.version)
 
 # now iterate through the same files to generate the html documentation
-config = GenerationConfiguration(copy_css = True, expand_buttons = True)
+config = GenerationConfiguration(copy_css = True,
+                                 copy_js = True,
+                                 expand_buttons = True,
+                                 collapse_long_descriptions = False)
+
 for schema_file in schema_files:
   html = generate_from_schema(schema_file = schema_file, loaded_schemas = schema_store, config = config)
   # file name with version and without .schema.json
@@ -54,3 +58,8 @@ for schema_file in schema_files:
     file_descriptor.write(html)
   # also copy the original schema file
   shutil.copy(schema_file, args.version)
+
+# copy css and js files to directory with all files
+copy_css_and_js_to_target(config = config, result_file_path = args.version)
+shutil.copy('schema_doc.css', args.version)
+shutil.copy('schema_doc.min.js', args.version)
