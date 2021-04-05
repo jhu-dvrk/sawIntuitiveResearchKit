@@ -93,6 +93,9 @@ void mtsIntuitiveResearchKitMTM::Init(void)
                                     &mtsIntuitiveResearchKitMTM::TransitionRollEncoderReset,
                                     this);
 
+    // other arms have this set to false from base type
+    m_homing_goes_to_zero = true;
+
     // joint values when orientation is locked
     mEffortOrientationJoint.SetSize(NumberOfJoints());
 
@@ -317,8 +320,15 @@ bool mtsIntuitiveResearchKitMTM::IsCartesianReady(void) const
 
 void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
 {
-    // compute joint goal position
-    m_trajectory_j.goal.SetAll(0.0);
+    // if simulated, start at zero but insert tool so it can be used in cartesian mode
+    if (m_simulated || m_homing_goes_to_zero) {
+        std::cerr << " 000000 " << std::endl;
+        m_trajectory_j.goal.SetAll(0.0);
+    } else {
+        // stay at current position by default
+        std::cerr << " ------ " << std::endl;
+        m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position());
+    }
 }
 
 void mtsIntuitiveResearchKitMTM::TransitionEncodersBiased(void)

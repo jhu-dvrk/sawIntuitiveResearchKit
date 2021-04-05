@@ -480,7 +480,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     bool m_encoders_biased_from_pots = false; // encoders biased from pots
     bool m_encoders_biased = false; // encoder might have to be biased on joint limits (MTM roll)
     bool m_re_home = false; // force re-biasing encoder even if values are found on FPGA
-    bool mHomingGoesToZero;
+    bool m_homing_goes_to_zero;
     bool mHomingBiasEncoderRequested;
     double mHomingTimer;
 

@@ -218,7 +218,7 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
 
     // compute joint goal position
     m_trajectory_j.goal.SetSize(NumberOfJoints());
-    if (mHomingGoesToZero) {
+    if (m_homing_goes_to_zero) {
         // move to zero position
         m_trajectory_j.goal.SetAll(0.0);
     } else {

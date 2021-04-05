@@ -195,7 +195,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     m_simulated = false;
     m_encoders_biased_from_pots = false;
-    mHomingGoesToZero = false; // MTM ignores this
+    m_homing_goes_to_zero = false;
     mHomingBiasEncoderRequested = false;
 
     m_body_cf_orientation_absolute = false;
@@ -605,7 +605,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         // should arm go to zero position when homing, default set in Init method
         const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
         if (!jsonHomingGoesToZero.isNull()) {
-            mHomingGoesToZero = jsonHomingGoesToZero.asBool();
+            m_homing_goes_to_zero = jsonHomingGoesToZero.asBool();
         }
 
         // should ignore preloaded encoders and force homing

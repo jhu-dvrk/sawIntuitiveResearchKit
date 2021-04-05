@@ -691,7 +691,7 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
 
     // check if tool is present and if user wants to go to zero position
     Tool.GetButton(Tool.IsPresent);
-    if (mHomingGoesToZero
+    if (m_homing_goes_to_zero
         && !Tool.IsPresent) {
         // move to zero position only there is no tool present
         m_trajectory_j.goal.SetAll(0.0);

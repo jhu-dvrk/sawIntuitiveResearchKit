@@ -18,8 +18,8 @@
         },
 
         "homing-zero-position": {
-            "description": "Indicates if the arm should go to zero position during homing procedure.  This is true by default for MTMs and false for other arms (PSM and ECM).  For MTMs, it makes sense to go the zero position when homing so the arms are conveniently placed for the operator to get started.  For all arms on the patient side, it is safe to assume that the arms shouldn't move on their own.  This is obvious for the real da Vinci system with actual patients.  For research applications, moving automatically to zero can also damage equipement around the arms or mounted on the tools (e.g. strain gages).  Most users should steer away from this setting.",
-            "type": "bool"
+            "description": "Indicates if the arm should go to zero position in joint space during homing procedure.  This is true by default for MTMs and false for other arms (PSM and ECM).  For MTMs, it makes sense to go the zero position when homing so the arms are conveniently placed for the operator to get started.  Furthermore, going to zero during homing will position each joint away from the joint limit.  This is particularly useful for the MTM roll.  For all arms on the patient side, it is safe to assume that the arms shouldn't move on their own.  This is obvious for the real da Vinci system with actual patients.  For research applications, moving automatically to zero can also damage equipement around the arms or mounted on the tools (e.g. strain gages).  Finally, the PSM will only move to zero position during the homing procedure if there is no tool detected, i.e. the arm will never move if a tool is present.  Most users should steer away from this setting.",
+            "type": "boolean"
         }
     }
 }
