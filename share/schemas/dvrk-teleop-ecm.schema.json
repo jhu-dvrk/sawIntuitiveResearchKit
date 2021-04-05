@@ -3,7 +3,7 @@
     "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-teleop-ecm.schema.json",
     "title": "dVRK teleop ecm 2.0",
     "type": "object",
-    "description": "Configuration file format for the dVRK ECM tele-operation component.  See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).  This schema is used for the [dVRK console configuration](dvrk-console.html).  For details of implementation, see code under `sawIntuitiveResearchKit/components/code/mtsTeleOperationECM.cpp`",
+    "description": "Configuration file format for the dVRK ECM tele-operation component.  See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).  This schema is used for the [dVRK console configuration](dvrk-console.html).<ul><li>For details of implementation, see code under `sawIntuitiveResearchKit/components/code/mtsTeleOperationECM.cpp`<li>[Schema file](dvrk-teleop-ecm.schema.json)</ul>",
     "additionalProperties": false,
     "properties": {
         "scale": {

@@ -3,7 +3,7 @@
     "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-console.schema.json",
     "title": "dVRK console 2.0",
     "type": "object",
-    "description": "Configuration file format for the dVRK console.  See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).  This format is used by the application `sawIntuitiveResearchKitQtConsoleJSON` and the ROS application `dvrk_robot dvrk_console_json`",
+    "description": "Configuration file format for the dVRK console.  See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).<ul><li>This format is used by the application `sawIntuitiveResearchKitQtConsoleJSON` and the ROS application `dvrk_robot dvrk_console_json`<li>For details of implementation, see code under `sawIntuitiveResearchKit/components/code/mtsIntuitiveResearchKitConsole.cpp`<li>[Schema file](dvrk-console.schema.json)</ul>",
     "additionalProperties": false,
     "properties": {
         "io": {
@@ -107,6 +107,7 @@
         },
 
         "operator-present": {
+            "description": "Configuration required to use the built-in da Vinci surgeon's console head sensor",
             "type": "object",
             "additionalProperties": false,
             "required": ["io"],
@@ -126,12 +127,13 @@
         },
 
         "endoscope-focus": {
+            "description": "Configuration required to use the da Vinci endoscope focus controller",
             "type": "object",
             "additionalProperties": false,
             "required": ["io"],
             "properties": {
                 "io": {
-                    "description": "IO configuration file used to define inputs for the da Vinci endoscope focus controllers.  This requires a custom cable and will only work with da Vinci focus controller.  The endoscope focus component was introduced in version 1.6.  See [dVRK wiki](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Endoscope-Focus-Controller).",
+                    "description": "IO configuration file used to define outputs for the da Vinci endoscope focus controllers.  This requires a custom cable and will only work with da Vinci focus controller.  The endoscope focus component was introduced in version 1.6.  See [dVRK wiki](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Endoscope-Focus-Controller).",
                     "type": "string",
                     "examples": [
                         {

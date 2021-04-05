@@ -20,14 +20,26 @@ To allow testing offline, we provide two python scripts that will load all the s
     ```sh
   ./json-schema.py -s console.schema.json <files-to-test>
   ```
-  To test all files in multiple directories:
+  To test console files in multiple directories, for example all JHU console files:
     ```sh
   ./json-schema.py -s dvrk-console.schema.json ../console/console-* ../jhu-daVinci/console-* ../jhu-dVRK/console-*
   ```
   The output is the Python stack if any error is found.  You will need to read it all to figure out the issue.  If there are no issue found, the scripts outputs **All good**.
 
+  To test arm files, make sure you use the right schema.  Examples below are for arms at JHU:
+    ```sh
+  ./json-schema.py -s dvrk-mtm.schema.json ../jhu-daVinci/MTM*.json ../jhu-dVRK/MTM*.json
+  ./json-schema.py -s dvrk-psm.schema.json ../jhu-daVinci/PSM*.json ../jhu-dVRK/PSM*.json
+  ./json-schema.py -s dvrk-ecm.schema.json ../jhu-daVinci/ECM*.json
+  ```
 
 # Generate html documentation from schemas
+
+* Example of generated documentation:
+  * Main console file: [2.0](https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-console.html)
+  * ECM file: [2.0](https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-ecm.html)
+  * MTM file: [2.0](https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-mtm.html)
+  * PSM file: [2.0](https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-psm.html)
 
 * Installation:
     ```sh
@@ -39,4 +51,4 @@ To allow testing offline, we provide two python scripts that will load all the s
   ./generate-html.py -d . -v v2.0
   ```
 
-`-d` is for the directory containing all the `.schema.json` files.   `-v` is for a subdirectory for all the generated files.
+`-d` is for the directory containing all the `.schema.json` files.   `-v` is for a subdirectory for all the generated files.  If you are a dVRK maintainer, make sure you also upload the generated documentation to `https://dvrk.lcsr.jhu.edu/documentation/schemas/`.
