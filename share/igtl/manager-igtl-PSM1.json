@@ -1,0 +1,15 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "components":
+    [
+        {
+            "shared-library": "sawOpenIGTLink",
+            "class-name": "mtsIGTLCRTKBridge",
+            "constructor-arg": {
+                "Name": "igtlBridge",
+                "Period": 0.01
+            },
+            "configure-parameter": "igtl-PSM1.json"
+        }
+    ]
+}

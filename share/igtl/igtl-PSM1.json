@@ -1,0 +1,19 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "log":
+    {
+        "allow": "errors-and-warnings" // change to "errors" to avoid warnings (e.g. unknown receiver)
+    }
+    ,
+    "port": 18944,
+    "interfaces":
+    [
+        {
+            "component": "PSM1",
+            "interface-provided": "Arm"
+            // , "namespace": "psm1" // if the user prefers a different name
+            // , "bridge-only": ["measured_cp", "measured_cv"]
+            // , "bridge-only": ["status", "error", "warning"]
+        }
+    ]
+}
