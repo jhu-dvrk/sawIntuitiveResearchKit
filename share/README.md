@@ -57,6 +57,10 @@ The kinematic parameters (DH and dynamic model) are store in two different types
 
 All shared kinematic files are in the directory `kinematic`.
 
+## Tool
+
+PSM tool configuration files are in the `tool` directory.
+
 ## Arm configuration
 
 Each arm configuration is specific to your hardware, as identified by
@@ -77,6 +81,10 @@ are in `console`.
 ## ROS IO
 
 These files can be used to configure the `dvrk_robot`/`dvrk_console_json` ROS application to publish the IO data of one or more arms.  See the `dvrk-ros`/`dvrk_robot` package.
+
+## sawSocketStreamer and sawOpenIGTLink
+
+Some examples of configuration files and instructions for *sawSocketStreamer* (streaming out dVRK data over UDP in JSON format) and *sawOpenIGTLink* (*cisst/SAW* bridge for OpenIGTLink/igtl) can be find in the directory `socket-streamer` and `igtl`.  These can be used as middleware between the dVRK console and user applications.
 
 ## Obsolete files
 
