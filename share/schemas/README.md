@@ -35,6 +35,8 @@ To allow testing offline, we provide two python scripts that will load all the s
 
 # Generate html documentation from schemas
 
+This section is for the dVRK maintainers.  Most users should use the online documentation.
+
 * Example of generated documentation:
   * Main console file: [2.0](https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-console.html)
   * ECM file: [2.0](https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-ecm.html)
