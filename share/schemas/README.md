@@ -12,7 +12,7 @@ To allow testing offline, we provide two python scripts that will load all the s
 
 * Installation:
     ```sh
-  pip3 jsonschema jsmin
+  pip3 install jsonschema jsmin
   ```
 
 * Usage:
