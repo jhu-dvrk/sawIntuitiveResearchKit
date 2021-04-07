@@ -1,7 +1,7 @@
 Change log
 ==========
 
-2.0.0 (2021-02-xx)
+2.0.0 (2021-04-08)
 ==================
 
 Added CODE_OF_CONDUCT
@@ -13,7 +13,7 @@ Added CODE_OF_CONDUCT
     * `crtk-commands.dict`: *cisst* command names, mostly for C++ code without ROS dependencies
     * `crtk-ros-commands.dict`: ROS topics translation, mostly to port applications using the ROS topics directly
     * `members-saw-intuitive-research-kit.dict`: data members and methods for dVRK C++ code.  This can be used to port C++ code based on dVRK code C++ code
-  * Console configuration files shouldn't use `io`, `pid` and `kinematic` for `arms`.  Instead, use `serial`.  The application will then look for the arm JSON configuration file (e.g. `PSM1-12345.json`)
+  * Console configuration files shouldn't use `io`, `pid` and `kinematic` for `arms`.  Instead, use `serial` and optionally `system`.  The application will then look for the arm JSON configuration file (e.g. `PSM1-12345.json`)
   * Kinematic config files updated so limits are part of DH parameters, now use SI units!
 * Deprecated features:
   * Reduced search path for configuration files, now need to add directory prefix.  For example, to load `"sawRobotIO1394-MTMR-foot-pedals.xml"`, you need to use `"io/sawRobotIO1394-MTMR-foot-pedals.xml"`.  Same applies to `arm`, `kinematic`, `console`.
@@ -22,9 +22,10 @@ Added CODE_OF_CONDUCT
     * Supported Linux platforms are Ubuntu/ROS are 16.04/kinetic, 18.04/melodic, 20.04/noetic
     * On Ubuntu, added `rosinstall` files to use with `wstool`.  This is now the preferred way to retrieve the cisst/SAW/dVRK code 
     * Added github workflow (https://github.com/jhu-dvrk/dvrk-github-workflow/actions)
+    * JSON schemas are used to validate configuration files and generate documentation, see README in `share/schemas`
     * Preliminary support for ethernet/UDP. FireWire remains the preferred interface
     * Preliminary support for MacOS and Windows, no ROS and with ethernet interface only (no FireWire support)
-    * sawSocketStreamer and sawOpenIGTLink support using configuration files
+    * sawSocketStreamer and sawOpenIGTLink support using configuration files (README can be found in `share` directory)
     * Dark mode (option `-D`)
   * Console:
     * Added event + ROS to report if teleop is enabled
@@ -57,7 +58,9 @@ Added CODE_OF_CONDUCT
     * Added support to change tool type at runtime.  With proper hardware/firmware, get tool type automatically from Dallas Chip
     * Kinematic is now defined using the arm part (first 3 dofs) and tool part (last 3 or 5 dofs) and optional gripper
     * Tool definition files added in `share/tool`
-    * Widget: added drop down menu to select tool type (in manual mode)
+    * Widget:
+      * Added drop down menu to select tool type (in manual mode)
+      * Added plot to display jaw effort
   * SUJ:
     * Added simulated mode
     * In simulated mode, added command/configuration setting to set joint positions
