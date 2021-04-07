@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2019 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2021 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -27,7 +27,7 @@ set (REQUIRED_CISST_LIBRARIES
      cisstRobot
      cisstNumerical)
 
-find_package (cisst 1.0.11 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.1.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND)
 
@@ -43,9 +43,9 @@ if (cisst_FOUND)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
-  find_package (sawTextToSpeech         1.2.0 REQUIRED)
-  find_package (sawRobotIO1394          1.7.0 REQUIRED)
-  find_package (sawControllers          1.7.0 REQUIRED)
+  find_package (sawTextToSpeech         1.3.0 REQUIRED)
+  find_package (sawRobotIO1394          2.0.0 REQUIRED)
+  find_package (sawControllers          2.0.0 REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
@@ -76,9 +76,9 @@ if (cisst_FOUND)
     set (sawIntuitiveResearchKit_LIBRARIES sawIntuitiveResearchKit)
 
     # Set the version number
-    set (sawIntuitiveResearchKit_VERSION_MAJOR "1")
-    set (sawIntuitiveResearchKit_VERSION_MINOR "7")
-    set (sawIntuitiveResearchKit_VERSION_PATCH "1")
+    set (sawIntuitiveResearchKit_VERSION_MAJOR "2")
+    set (sawIntuitiveResearchKit_VERSION_MINOR "0")
+    set (sawIntuitiveResearchKit_VERSION_PATCH "0")
     set (sawIntuitiveResearchKit_VERSION "${sawIntuitiveResearchKit_VERSION_MAJOR}.${sawIntuitiveResearchKit_VERSION_MINOR}.${sawIntuitiveResearchKit_VERSION_PATCH}")
 
     # Generate sawIntuitiveResearchKitRevision.h

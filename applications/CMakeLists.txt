@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2009-2020 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2021 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -36,7 +36,7 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstQt)
 
 # find cisst and make sure the required libraries have been compiled
-find_package (cisst 1.0.11 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.1.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -50,10 +50,10 @@ if (cisst_FOUND_AS_REQUIRED)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
-  find_package (sawRobotIO1394          1.7.0 REQUIRED)
-  find_package (sawControllers          1.7.0 REQUIRED)
-  find_package (sawIntuitiveResearchKit 1.7.1 REQUIRED)
-  find_package (sawTextToSpeech         1.2.0 REQUIRED)
+  find_package (sawRobotIO1394          2.0.0 REQUIRED)
+  find_package (sawControllers          2.0.0 REQUIRED)
+  find_package (sawIntuitiveResearchKit 2.0.0 REQUIRED)
+  find_package (sawTextToSpeech         1.3.0 REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND
       AND sawIntuitiveResearchKit_FOUND AND sawTextToSpeech_FOUND)
