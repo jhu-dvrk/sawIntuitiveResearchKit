@@ -1,0 +1,15 @@
+This file is for WPI da Vinci surgical robot
+
+1. Tracker ID for different arms:
+
+Green PSM : 29130
+Yellow PSM : 31746 (Replaced once, old one ID: 27116)
+
+ECM : 25975
+
+MTML : 21768
+MTMR : 28687 
+
+2. Current situation:
+
+
