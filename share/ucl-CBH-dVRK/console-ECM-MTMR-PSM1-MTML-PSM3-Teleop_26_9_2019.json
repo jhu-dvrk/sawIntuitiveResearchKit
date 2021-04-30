@@ -1,0 +1,119 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "io":
+    {
+        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
+    }
+    ,    
+    "arms":
+    [
+        {
+            "name": "ECM",
+            "type": "ECM",
+            "io": "sawRobotIO1394-ECM-37059.xml",
+            "pid": "sawControllersPID-ECM.xml",
+            "kinematic": "ecm-straight.json"
+        }
+        ,        
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "io": "sawRobotIO1394-PSM1-26782.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-pro-grasp.json",
+            "base-frame": {
+             "reference-frame": "ECM",
+             "transform":    [[  0.8321946545,  0.4682528910, 0.2969701788, -0.20],
+                              [  0.5132741584,  -0.8531593863, -0.0931058529, 0.0 ],
+                              [  0.2097658107,  0.2299093117, -0.9503367893, 0.0 ],
+                              [  0.0,  0.0,          0.0,          1.0 ]]
+            }
+        }
+        ,
+        {
+            "name": "PSM3",
+            "type": "PSM",
+            "io": "sawRobotIO1394-PSM3-25389.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver.json",
+            "base-frame": {
+                "reference-frame": "ECM",
+                "transform": [[  1.0,  0.0,          0.0,          0.20],
+                              [  0.0, -0.866025404,  0.5,          0.0 ],
+                              [  0.0, -0.5,         -0.866025404,  0.0 ],
+                              [  0.0,  0.0,          0.0,          1.0 ]]
+            }
+        }
+        ,
+        {
+            "name": "MTMR",
+            "type": "MTM",
+            "io": "sawRobotIO1394-MTMR-81503.xml",
+            "pid": "sawControllersPID-MTMR.xml",
+            "arm": "MTMR-81503.json",
+            "base-frame": {
+                "reference-frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,         -0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
+            }
+        }
+        ,
+        {
+            "name": "MTML",
+            "type": "MTM",
+            "io": "sawRobotIO1394-MTML-76673.xml",
+            "pid": "sawControllersPID-MTML.xml",
+            "arm": "MTML-76673.json",
+             "base-frame": {
+                "reference-frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,          0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
+            }
+        }
+    ]
+    ,
+    "ecm-teleop":
+    {
+        "master-left": "MTML",
+        "master-right": "MTMR",
+        "slave": "ECM",
+        "configure-parameter": {
+        "ignore-jaw": true,
+        "scale": 0.4,
+        "rotation" : [[ 1.0000,  0.0000,  0.0000],
+                      [ 0.0000,  1.0000,  0.0000],
+                      [ 0.0000,  0.0000,  1.0000]]
+        }
+    }
+    ,
+    "psm-teleops":
+    [
+        {
+            "master": "MTMR",
+            "slave": "PSM1",
+            "configure-parameter": {
+            "ignore-jaw": false,
+            "scale": 0.4,
+            "rotation" : [[-1.0000,  0.0000,  0.0000],
+                          [ 0.0000, -1.0000,  0.0000],
+                          [ 0.0000,  0.0000,  1.0000]]
+            }
+        }
+        ,
+        {
+            "master": "MTML",
+            "slave": "PSM3",
+            "configure-parameter": {
+            "ignore-jaw": false,
+            "scale": 0.4,
+            "rotation" : [[-1.0000,  0.0000,  0.0000],
+                          [ 0.0000, -1.0000,  0.0000],
+                          [ 0.0000,  0.0000,  1.0000]]
+            }
+        }
+    ]
+}
