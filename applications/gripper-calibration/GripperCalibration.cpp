@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-12-20
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -101,7 +101,7 @@ int main(int argc, char * argv[])
               << "Press any key to start collecting data." << std::endl;
     cmnGetChar();
     std::cout << "Fully open and close the gripper up to the second spring on the MTM multiple times." << std::endl
-              << "NOTE: It is very important to not close the gripper all the way, stop when you feel some resitance from the second spring." << std::endl
+              << "NOTE: It is very important to not close the gripper all the way; stop when you feel some resistance from the second spring." << std::endl
               << "Keep closing and opening until the counter and range stop increasing." << std::endl
               << "Press any key to stop collecting data." << std::endl << std::endl;
 
