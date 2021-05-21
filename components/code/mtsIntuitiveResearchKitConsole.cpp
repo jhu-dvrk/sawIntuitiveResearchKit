@@ -1219,6 +1219,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                           + jsonValue.asString() + "/",
                           cmnPath::TAIL);
     }
+
     // read from JSON and check if configuration files exist
     jsonValue = jsonArm["type"];
     armPointer->mIsGeneric = false; // default value
@@ -1254,6 +1255,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             armPointer->mIsGeneric = true;
         } else if (typeString == "PSM_SOCKET") {
             armPointer->mType = Arm::ARM_PSM_SOCKET;
+        } else if (typeString == "FOCUS_CONTROLLER") {
+            armPointer->mType = Arm::FOCUS_CONTROLLER;
+            armPointer->mIsNativeOrDerived = true;
         } else if (typeString == "SUJ") {
             armPointer->mType = Arm::ARM_SUJ;
         } else {
@@ -1263,7 +1267,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         }
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName
-                                 << ": doesn't have a \"type\" specified, needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC}" << std::endl;
+                                 << ": doesn't have a \"type\" specified, needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC} or FOCUS_CONTROLLER" << std::endl;
         return false;
     }
 
@@ -1482,8 +1486,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             }
         }
 
-        // make sure we have an arm configuration file
-        if (armPointer->mArmConfigurationFile == "") {
+        // make sure we have an arm configuration file for all arms except FOCUS_CONTROLLER
+        if ((armPointer->mArmConfigurationFile == "")
+            && (armPointer->mType != Arm::FOCUS_CONTROLLER)) {
             if (armPointer->mIsNativeOrDerived) {
                 // try to find the arm file using default
                 std::string defaultFile = armName + "-" + armPointer->mSerial + ".json";

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<controller type="PID"
+            interface="JointTorqueInterface"
+            numofjoints="1">
+
+  <joints>
+
+    <joint index="0" name="focus" type="Prismatic">
+      <pid PGain="100.0" DGain="60.0" IGain="40.0" OffsetTorque="0.0" Forget="0.9" Nonlinear="0.0"/>
+      <limit MinILimit="-200" MaxILimit="200" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+      <pos LowerLimit="-5.0" UpperLimit="5.0" Units="mm"/>
+    </joint>
+
+  </joints>
+
+ </controller>

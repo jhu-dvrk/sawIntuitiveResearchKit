@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -49,7 +49,7 @@ int main(int argc, char ** argv)
     cmnCommandLineOptions options;
     std::string portName = mtsRobotIO1394::DefaultPort();
     std::string ioConfigFile, pidConfigFile;
-    std::string armName;
+    std::string robotName;
 
     options.AddOptionOneValue("i", "io",
                               "configuration file for robot IO (see sawRobotIO1394)",
@@ -58,11 +58,11 @@ int main(int argc, char ** argv)
                               "configuration file for PID controller (see sawControllers, mtsPID)",
                               cmnCommandLineOptions::REQUIRED_OPTION, &pidConfigFile);
     options.AddOptionOneValue("P", "port",
-                              "controller port (X, fwX, udpXX.XX.XX.XX)",
+                              "controller port (X, fw:X, udp, udp:XX.XX.XX.XX)",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &portName);
-    options.AddOptionOneValue("n", "arm-name",
-                              "arm name (i.e. PSM1, PSM2, MTML or MTMR) as defined in the sawRobotIO1394 file",
-                              cmnCommandLineOptions::REQUIRED_OPTION, &armName);
+    options.AddOptionOneValue("n", "robot-name",
+                              "robot name (i.e. PSM1, PSM2, MTML or MTMR) as defined in the sawRobotIO1394 file",
+                              cmnCommandLineOptions::REQUIRED_OPTION, &robotName);
 
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
@@ -81,20 +81,22 @@ int main(int argc, char ** argv)
     }
 
     unsigned int numberOfJoints;
-    if ((armName == "PSM1") || (armName == "PSM2") || (armName == "PSM3")) {
+    if ((robotName == "PSM1") || (robotName == "PSM2") || (robotName == "PSM3")) {
         numberOfJoints = 7;
-    } else if ((armName == "MTML") || (armName == "MTMR")) {
+    } else if ((robotName == "MTML") || (robotName == "MTMR")) {
         numberOfJoints = 7;
-    } else if (armName == "ECM") {
+    } else if (robotName == "ECM") {
         numberOfJoints = 4;
+    } else if (robotName == "Focus") {
+        numberOfJoints = 1;
     } else {
-        std::cerr << "Unknown arm name: " << armName << ", should be one one PSM1, PSM2, PSM3, MTML, MTMR or ECM" << std::endl;
+        std::cerr << "Unknown robot name: " << robotName << ", should be one one PSM1, PSM2, PSM3, MTML, MTMR, ECM or Focus" << std::endl;
         return -1;
     }
 
     std::cout << "Configuration file for IO: " << ioConfigFile << std::endl
               << "Configuration file for PID: " << pidConfigFile << std::endl
-              << "Arm name: " << armName << std::endl
+              << "Robot name: " << robotName << std::endl
               << "Number of joints: " << numberOfJoints << std::endl
               << "FirewirePort: " << portName << std::endl;
 
@@ -143,7 +145,7 @@ int main(int argc, char ** argv)
     // tie pid execution to io
     componentManager->Connect("pid", "ExecIn", "io", "ExecOut");
     // connect pid to io
-    componentManager->Connect("pid", "RobotJointTorqueInterface", "io", armName);  // see const std::string defined before main()
+    componentManager->Connect("pid", "RobotJointTorqueInterface", "io", robotName);  // see const std::string defined before main()
 
     //-------------- create the components ------------------
     componentManager->CreateAll();
