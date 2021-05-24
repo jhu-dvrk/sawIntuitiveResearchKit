@@ -69,7 +69,7 @@ int main(int argc, char ** argv)
                               "json configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
 
-    options.AddOptionOneValue("c", "collection-config",
+    options.AddOptionOneValue("C", "collection-config",
                               "json configuration file for data collection",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &jsonCollectionConfigFile);
 

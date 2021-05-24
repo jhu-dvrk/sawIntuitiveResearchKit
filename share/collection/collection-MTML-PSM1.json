@@ -8,13 +8,13 @@
                 {
                     "sampling": 20,
                     "table": "MTMLRead",
-                    "signals": ["PositionJointGet"]
+                    "signals": ["measured_js"]
                 }
                 ,
                 {
                     "sampling": 20,
-                    "table": "MTMRRead",
-                    "signals": ["PositionJointGet"]
+                    "table": "PSM1Read",
+                    "signals": ["measured_js"]
                 }
             ]
         }
@@ -26,19 +26,19 @@
                 {
                     "sampling": 5,
                     "table": "StateTable",
-                    "signals": ["CartesianPosition"]
+                    "signals": ["measured_cp", "gripper/measured_js"]
                 }
             ]
         }
         ,
         {
-            "component": "MTMR",
+            "component": "PSM1",
             "tables":
             [
                 {
                     "sampling": 5,
                     "table": "StateTable",
-                    "signals": ["CartesianPosition"]
+                    "signals": ["measured_cp", "jaw/measured_js"]
                 }
             ]
         }

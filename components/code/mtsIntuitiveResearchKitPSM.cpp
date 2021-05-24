@@ -582,10 +582,10 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // Main interface should have been created by base class init
     CMN_ASSERT(m_arm_interface);
     m_jaw_measured_js.SetAutomaticTimestamp(false);
-    StateTable.AddData(m_jaw_measured_js, "m_jaw_measured_js");
+    StateTable.AddData(m_jaw_measured_js, "jaw/measured_js");
 
     m_jaw_setpoint_js.SetAutomaticTimestamp(false);
-    StateTable.AddData(m_jaw_setpoint_js, "m_jaw_setpoint_js");
+    StateTable.AddData(m_jaw_setpoint_js, "jaw/setpoint_js");
 
     // state table for configuration
     mStateTableConfiguration.AddData(CouplingChange.jaw_configuration_js, "jaw/configuration_js");

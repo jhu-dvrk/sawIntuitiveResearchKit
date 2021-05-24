@@ -251,7 +251,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     m_measured_cp.SetAutomaticTimestamp(false); // based on PID timestamp
     m_measured_cp.SetReferenceFrame(GetName() + "_base");
     m_measured_cp.SetMovingFrame(GetName());
-    this->StateTable.AddData(m_measured_cp, "CartesianPosition");
+    this->StateTable.AddData(m_measured_cp, "measured_cp");
 
     m_setpoint_cp.SetAutomaticTimestamp(false); // based on PID timestamp
     m_setpoint_cp.SetReferenceFrame(GetName() + "_base");
