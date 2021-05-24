@@ -928,7 +928,7 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
     RobotIO.PowerOffSequence(true); // also opens safety relays
 }
 
-void mtsIntuitiveResearchKitSUJ::SetSimulated(void)
+void mtsIntuitiveResearchKitSUJ::set_simulated(void)
 {
     m_simulated = true;
     // set all arms simulated

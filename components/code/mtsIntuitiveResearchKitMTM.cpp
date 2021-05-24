@@ -52,9 +52,9 @@ mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM()
     delete GravityCompensationMTM;
 }
 
-void mtsIntuitiveResearchKitMTM::SetSimulated(void)
+void mtsIntuitiveResearchKitMTM::set_simulated(void)
 {
-    mtsIntuitiveResearchKitArm::SetSimulated();
+    mtsIntuitiveResearchKitArm::set_simulated();
     // in simulation mode, we don't need IO Gripper
     RemoveInterfaceRequired("GripperIO");
 }

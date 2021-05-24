@@ -46,9 +46,9 @@ mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicCons
     Init();
 }
 
-void mtsIntuitiveResearchKitPSM::SetSimulated(void)
+void mtsIntuitiveResearchKitPSM::set_simulated(void)
 {
-    mtsIntuitiveResearchKitArm::SetSimulated();
+    mtsIntuitiveResearchKitArm::set_simulated();
     // in simulation mode, we don't need clutch, adapter, tool IO nor Dallas
     RemoveInterfaceRequired("ManipClutch");
     RemoveInterfaceRequired("Adapter");

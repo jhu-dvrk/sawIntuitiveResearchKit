@@ -120,7 +120,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
 
         const std::string name = armIter->first;
 
-        switch (armIter->second->mType) {
+        switch (armIter->second->m_type) {
         case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM:
@@ -129,14 +129,14 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED:
             // PID widget
             size_t numberOfJoints;
-            if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM) ||
-                (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED)) {
+            if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM) ||
+                (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED)) {
                 numberOfJoints = 7;
-            } else if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM) ||
-                       (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED)) {
+            } else if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM) ||
+                       (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED)) {
                 numberOfJoints = 7;
-            } else if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM) ||
-                       (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED)) {
+            } else if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM) ||
+                       (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED)) {
                 numberOfJoints = 4;
             } else {
                 numberOfJoints = 0; // can't happen but prevents compiler warning
@@ -149,14 +149,14 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             pidTabWidget->addTab(pidGUI, (name + " PID").c_str());
 
             // Arm widget
-            if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM)
-                || (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED)) {
+            if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM)
+                || (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED)) {
                 armGUI = new mtsIntuitiveResearchKitPSMQtWidget(name + "-GUI");
-            } else if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM)
-                       || (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED)) {
+            } else if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM)
+                       || (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED)) {
                 armGUI = new mtsIntuitiveResearchKitMTMQtWidget(name + "-GUI");
-            } else if ((armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM)
-                       || (armIter->second->mType == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED)) {
+            } else if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM)
+                       || (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED)) {
                 armGUI = new mtsIntuitiveResearchKitECMQtWidget(name + "-GUI");
             } else {
                 armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");
@@ -170,12 +170,12 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             armTabWidget->addTab(armGUI, name.c_str());
 
             // PSM server
-            if (armIter->second->mSocketServer) {
+            if (armIter->second->m_socket_server) {
                 socketGUI = new mtsSocketBaseQtWidget(name + "-Server-GUI");
                 socketGUI->Configure();
                 componentManager->AddComponent(socketGUI);
                 Connections.Add(socketGUI->GetName(), "SocketBase",
-                                armIter->second->mSocketComponentName, "System");
+                                armIter->second->m_socket_component_name, "System");
                 armTabWidget->addTab(socketGUI, (name + "-Server").c_str());
                 break;
             }
@@ -213,7 +213,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             socketGUI->Configure();
             componentManager->AddComponent(socketGUI);
             Connections.Add(socketGUI->GetName(), "SocketBase",
-                            armIter->second->mName, "System");
+                            armIter->second->m_name, "System");
             armTabWidget->addTab(socketGUI, name.c_str());
             break;
 

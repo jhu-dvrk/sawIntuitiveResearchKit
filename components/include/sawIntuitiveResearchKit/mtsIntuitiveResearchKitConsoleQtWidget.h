@@ -114,6 +114,7 @@ protected:
         mtsFunctionWrite emulate_operator_present;
         mtsFunctionWrite emulate_clutch;
         mtsFunctionWrite emulate_camera;
+        mtsFunctionRead calibration_mode;
     } Console;
 
     void ArmCurrentStateEventHandler(const prmKeyValue & armState);

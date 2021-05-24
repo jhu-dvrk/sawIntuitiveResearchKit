@@ -56,10 +56,10 @@ CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsole);
 mtsIntuitiveResearchKitConsole::Arm::Arm(mtsIntuitiveResearchKitConsole * console,
                                          const std::string & name,
                                          const std::string & ioComponentName):
-    mConsole(console),
-    mName(name),
-    mIOComponentName(ioComponentName),
-    mArmPeriod(mtsIntuitiveResearchKit::ArmPeriod),
+    m_console(console),
+    m_name(name),
+    m_IO_component_name(ioComponentName),
+    m_arm_period(mtsIntuitiveResearchKit::ArmPeriod),
     IOInterfaceRequired(0),
     PIDInterfaceRequired(0),
     ArmInterfaceRequired(0),
@@ -71,15 +71,15 @@ mtsIntuitiveResearchKitConsole::Arm::Arm(mtsIntuitiveResearchKitConsole * consol
 void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & configFile,
                                                        const double & periodInSeconds)
 {
-    mPIDConfigurationFile = configFile;
-    mPIDComponentName = mName + "-PID";
+    m_PID_configuration_file = configFile;
+    m_PID_component_name = m_name + "-PID";
 
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    mtsPID * pid = new mtsPID(mPIDComponentName,
+    mtsPID * pid = new mtsPID(m_PID_component_name,
                               (periodInSeconds != 0.0) ? periodInSeconds : mtsIntuitiveResearchKit::IOPeriod);
     bool hasIO = true;
-    pid->Configure(mPIDConfigurationFile);
-    if (mSimulation == SIMULATION_KINEMATIC) {
+    pid->Configure(m_PID_configuration_file);
+    if (m_simulation == SIMULATION_KINEMATIC) {
         pid->SetSimulated();
         hasIO = false;
     }
@@ -97,22 +97,23 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                                        const std::string & kinematicsConfigFile,
                                                        const double & periodInSeconds)
 {
-    mType = armType;
+    m_type = armType;
     bool armPSMOrDerived = false;
     bool armECMOrDerived = false;
 
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
-    mArmConfigurationFile = kinematicsConfigFile;
+    m_arm_configuration_file = kinematicsConfigFile;
     // for research kit arms, create, add to manager and connect to
     // extra IO, PID, etc.  For generic arms, do nothing.
     switch (armType) {
     case ARM_MTM:
         {
             mtsIntuitiveResearchKitMTM * mtm = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
-            if (mSimulation == SIMULATION_KINEMATIC) {
-                mtm->SetSimulated();
+            if (m_simulation == SIMULATION_KINEMATIC) {
+                mtm->set_simulated();
             }
-            mtm->Configure(mArmConfigurationFile);
+            mtm->set_calibration_mode(m_calibration_mode);
+            mtm->Configure(m_arm_configuration_file);
             SetBaseFrameIfNeeded(mtm);
             componentManager->AddComponent(mtm);
         }
@@ -121,25 +122,26 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         armPSMOrDerived = true;
         {
             mtsIntuitiveResearchKitPSM * psm = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
-            if (mSimulation == SIMULATION_KINEMATIC) {
-                psm->SetSimulated();
+            if (m_simulation == SIMULATION_KINEMATIC) {
+                psm->set_simulated();
             }
-            psm->Configure(mArmConfigurationFile);
+            psm->set_calibration_mode(m_calibration_mode);
+            psm->Configure(m_arm_configuration_file);
             SetBaseFrameIfNeeded(psm);
             componentManager->AddComponent(psm);
 
-            if (mSocketServer) {
-                mtsSocketServerPSM *serverPSM = new mtsSocketServerPSM(SocketComponentName(), periodInSeconds, mIp, mPort);
+            if (m_socket_server) {
+                mtsSocketServerPSM *serverPSM = new mtsSocketServerPSM(SocketComponentName(), periodInSeconds, m_IP, m_port);
                 serverPSM->Configure();
                 componentManager->AddComponent(serverPSM);
-                mConsole->mConnections.Add(SocketComponentName(), "PSM",
-                                           ComponentName(), InterfaceName());
+                m_console->mConnections.Add(SocketComponentName(), "PSM",
+                                            ComponentName(), InterfaceName());
             }
         }
         break;
     case ARM_PSM_SOCKET:
         {
-            mtsSocketClientPSM * clientPSM = new mtsSocketClientPSM(Name(), periodInSeconds, mIp, mPort);
+            mtsSocketClientPSM * clientPSM = new mtsSocketClientPSM(Name(), periodInSeconds, m_IP, m_port);
             clientPSM->Configure();
             componentManager->AddComponent(clientPSM);
         }
@@ -148,10 +150,11 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         armECMOrDerived = true;
         {
             mtsIntuitiveResearchKitECM * ecm = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
-            if (mSimulation == SIMULATION_KINEMATIC) {
-                ecm->SetSimulated();
+            if (m_simulation == SIMULATION_KINEMATIC) {
+                ecm->set_simulated();
             }
-            ecm->Configure(mArmConfigurationFile);
+            ecm->set_calibration_mode(m_calibration_mode);
+            ecm->Configure(m_arm_configuration_file);
             SetBaseFrameIfNeeded(ecm);
             componentManager->AddComponent(ecm);
         }
@@ -159,33 +162,33 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     case ARM_SUJ:
         {
             mtsIntuitiveResearchKitSUJ * suj = new mtsIntuitiveResearchKitSUJ(Name(), periodInSeconds);
-            if (mSimulation == SIMULATION_KINEMATIC) {
-                suj->SetSimulated();
-            } else if (mSimulation == SIMULATION_NONE) {
-                mConsole->mConnections.Add(Name(), "RobotIO",
-                                           IOComponentName(), Name());
-                mConsole->mConnections.Add(Name(), "NoMuxReset",
-                                           IOComponentName(), "NoMuxReset");
-                mConsole->mConnections.Add(Name(), "MuxIncrement",
-                                           IOComponentName(), "MuxIncrement");
-                mConsole->mConnections.Add(Name(), "ControlPWM",
-                                           IOComponentName(), "ControlPWM");
-                mConsole->mConnections.Add(Name(), "DisablePWM",
-                                           IOComponentName(), "DisablePWM");
-                mConsole->mConnections.Add(Name(), "MotorUp",
-                                           IOComponentName(), "MotorUp");
-                mConsole->mConnections.Add(Name(), "MotorDown",
-                                           IOComponentName(), "MotorDown");
-                mConsole->mConnections.Add(Name(), "SUJ-Clutch-1",
-                                           IOComponentName(), "SUJ-Clutch-1");
-                mConsole->mConnections.Add(Name(), "SUJ-Clutch-2",
-                                           IOComponentName(), "SUJ-Clutch-2");
-                mConsole->mConnections.Add(Name(), "SUJ-Clutch-3",
-                                           IOComponentName(), "SUJ-Clutch-3");
-                mConsole->mConnections.Add(Name(), "SUJ-Clutch-4",
-                                           IOComponentName(), "SUJ-Clutch-4");
+            if (m_simulation == SIMULATION_KINEMATIC) {
+                suj->set_simulated();
+            } else if (m_simulation == SIMULATION_NONE) {
+                m_console->mConnections.Add(Name(), "RobotIO",
+                                            IOComponentName(), Name());
+                m_console->mConnections.Add(Name(), "NoMuxReset",
+                                            IOComponentName(), "NoMuxReset");
+                m_console->mConnections.Add(Name(), "MuxIncrement",
+                                            IOComponentName(), "MuxIncrement");
+                m_console->mConnections.Add(Name(), "ControlPWM",
+                                            IOComponentName(), "ControlPWM");
+                m_console->mConnections.Add(Name(), "DisablePWM",
+                                            IOComponentName(), "DisablePWM");
+                m_console->mConnections.Add(Name(), "MotorUp",
+                                            IOComponentName(), "MotorUp");
+                m_console->mConnections.Add(Name(), "MotorDown",
+                                            IOComponentName(), "MotorDown");
+                m_console->mConnections.Add(Name(), "SUJ-Clutch-1",
+                                            IOComponentName(), "SUJ-Clutch-1");
+                m_console->mConnections.Add(Name(), "SUJ-Clutch-2",
+                                            IOComponentName(), "SUJ-Clutch-2");
+                m_console->mConnections.Add(Name(), "SUJ-Clutch-3",
+                                            IOComponentName(), "SUJ-Clutch-3");
+                m_console->mConnections.Add(Name(), "SUJ-Clutch-4",
+                                            IOComponentName(), "SUJ-Clutch-4");
             }
-            suj->Configure(mArmConfigurationFile);
+            suj->Configure(m_arm_configuration_file);
             componentManager->AddComponent(suj);
         }
         break;
@@ -196,10 +199,11 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             if (component) {
                 mtsIntuitiveResearchKitMTM * mtm = dynamic_cast<mtsIntuitiveResearchKitMTM *>(component);
                 if (mtm) {
-                    if (mSimulation == SIMULATION_KINEMATIC) {
-                        mtm->SetSimulated();
+                    if (m_simulation == SIMULATION_KINEMATIC) {
+                        mtm->set_simulated();
                     }
-                    mtm->Configure(mArmConfigurationFile);
+                    mtm->set_calibration_mode(m_calibration_mode);
+                    mtm->Configure(m_arm_configuration_file);
                     SetBaseFrameIfNeeded(mtm);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
@@ -221,10 +225,11 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             if (component) {
                 mtsIntuitiveResearchKitPSM * psm = dynamic_cast<mtsIntuitiveResearchKitPSM *>(component);
                 if (psm) {
-                    if (mSimulation == SIMULATION_KINEMATIC) {
-                        psm->SetSimulated();
+                    if (m_simulation == SIMULATION_KINEMATIC) {
+                        psm->set_simulated();
                     }
-                    psm->Configure(mArmConfigurationFile);
+                    psm->set_calibration_mode(m_calibration_mode);
+                    psm->Configure(m_arm_configuration_file);
                     SetBaseFrameIfNeeded(psm);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
@@ -246,10 +251,11 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             if (component) {
                 mtsIntuitiveResearchKitECM * ecm = dynamic_cast<mtsIntuitiveResearchKitECM *>(component);
                 if (ecm) {
-                    if (mSimulation == SIMULATION_KINEMATIC) {
-                        ecm->SetSimulated();
+                    if (m_simulation == SIMULATION_KINEMATIC) {
+                        ecm->set_simulated();
                     }
-                    ecm->Configure(mArmConfigurationFile);
+                    ecm->set_calibration_mode(m_calibration_mode);
+                    ecm->Configure(m_arm_configuration_file);
                     SetBaseFrameIfNeeded(ecm);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
@@ -268,27 +274,27 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         break;
     }
 
-    if (armPSMOrDerived && (mSimulation == SIMULATION_NONE)) {
-        mConsole->mConnections.Add(Name(), "Adapter",
-                                   IOComponentName(), Name() + "-Adapter");
-        mConsole->mConnections.Add(Name(), "Tool",
-                                   IOComponentName(), Name() + "-Tool");
-        mConsole->mConnections.Add(Name(), "ManipClutch",
-                                   IOComponentName(), Name() + "-ManipClutch");
-        mConsole->mConnections.Add(Name(), "Dallas",
-                                   IOComponentName(), Name() + "-Dallas");
+    if (armPSMOrDerived && (m_simulation == SIMULATION_NONE)) {
+        m_console->mConnections.Add(Name(), "Adapter",
+                                    IOComponentName(), Name() + "-Adapter");
+        m_console->mConnections.Add(Name(), "Tool",
+                                    IOComponentName(), Name() + "-Tool");
+        m_console->mConnections.Add(Name(), "ManipClutch",
+                                    IOComponentName(), Name() + "-ManipClutch");
+        m_console->mConnections.Add(Name(), "Dallas",
+                                    IOComponentName(), Name() + "-Dallas");
     }
 
-    if (armECMOrDerived && (mSimulation == SIMULATION_NONE)) {
-        mConsole->mConnections.Add(Name(), "ManipClutch",
-                                   IOComponentName(), Name() + "-ManipClutch");
+    if (armECMOrDerived && (m_simulation == SIMULATION_NONE)) {
+        m_console->mConnections.Add(Name(), "ManipClutch",
+                                    IOComponentName(), Name() + "-ManipClutch");
     }
 }
 
 void mtsIntuitiveResearchKitConsole::Arm::SetBaseFrameIfNeeded(mtsIntuitiveResearchKitArm * armPointer)
 {
-    if (mBaseFrame.ReferenceFrame() != "") {
-        armPointer->set_base_frame(mBaseFrame);
+    if (m_base_frame.ReferenceFrame() != "") {
+        armPointer->set_base_frame(m_base_frame);
     }
 }
 
@@ -296,16 +302,16 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     // if the arm is a research kit arm
-    if (mIsNativeOrDerived) {
+    if (m_native_or_derived) {
         // Connect arm to IO if not simulated
-        if (mSimulation == SIMULATION_NONE) {
+        if (m_simulation == SIMULATION_NONE) {
             componentManager->Connect(Name(), "RobotIO",
                                       IOComponentName(), Name());
         }
         // connect MTM gripper to IO
-        if (((mType == ARM_MTM)
-             || (mType == ARM_MTM_DERIVED))
-            && (mSimulation == SIMULATION_NONE)) {
+        if (((m_type == ARM_MTM)
+             || (m_type == ARM_MTM_DERIVED))
+            && (m_simulation == SIMULATION_NONE)) {
             componentManager->Connect(Name(), "GripperIO",
                                       IOComponentName(), Name() + "-Gripper");
         }
@@ -313,8 +319,8 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
         componentManager->Connect(Name(), "PID",
                                   PIDComponentName(), "Controller");
         // connect m_base_frame if needed
-        if ((mBaseFrameComponentName != "") && (mBaseFrameInterfaceName != "")) {
-            componentManager->Connect(mBaseFrameComponentName, mBaseFrameInterfaceName,
+        if ((m_base_frame_component_name != "") && (m_base_frame_interface_name != "")) {
+            componentManager->Connect(m_base_frame_component_name, m_base_frame_interface_name,
                                       Name(), "Arm");
         }
     }
@@ -322,36 +328,36 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::Arm::Name(void) const {
-    return mName;
+    return m_name;
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::Arm::ComponentName(void) const {
-    return mComponentName;
+    return m_arm_component_name;
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::Arm::InterfaceName(void) const {
-    return mInterfaceName;
+    return m_arm_interface_name;
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::Arm::SocketComponentName(void) const {
-    return mSocketComponentName;
+    return m_socket_component_name;
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::Arm::IOComponentName(void) const {
-    return mIOComponentName;
+    return m_IO_component_name;
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::Arm::PIDComponentName(void) const {
-    return mPIDComponentName;
+    return m_PID_component_name;
 }
 
 void mtsIntuitiveResearchKitConsole::Arm::CurrentStateEventHandler(const prmOperatingState & currentState)
 {
-    mConsole->SetArmCurrentState(mName, currentState);
+    m_console->SetArmCurrentState(m_name, currentState);
 }
 
 mtsIntuitiveResearchKitConsole::TeleopECM::TeleopECM(const std::string & name):
-    mName(name)
+    m_name(name)
 {
 }
 
@@ -359,13 +365,13 @@ void mtsIntuitiveResearchKitConsole::TeleopECM::ConfigureTeleop(const TeleopECMT
                                                                 const double & periodInSeconds,
                                                                 const Json::Value & jsonConfig)
 {
-    mType = type;
+    m_type = type;
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
     switch (type) {
     case TELEOP_ECM:
         {
-            mtsTeleOperationECM * teleop = new mtsTeleOperationECM(mName, periodInSeconds);
+            mtsTeleOperationECM * teleop = new mtsTeleOperationECM(m_name, periodInSeconds);
             teleop->Configure(jsonConfig);
             componentManager->AddComponent(teleop);
         }
@@ -396,7 +402,7 @@ void mtsIntuitiveResearchKitConsole::TeleopECM::ConfigureTeleop(const TeleopECMT
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::TeleopECM::Name(void) const {
-    return mName;
+    return m_name;
 }
 
 
@@ -404,7 +410,7 @@ mtsIntuitiveResearchKitConsole::TeleopPSM::TeleopPSM(const std::string & name,
                                                      const std::string & nameMTM,
                                                      const std::string & namePSM):
     mSelected(false),
-    mName(name),
+    m_name(name),
     mMTMName(nameMTM),
     mPSMName(namePSM)
 {
@@ -414,13 +420,13 @@ void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMT
                                                                 const double & periodInSeconds,
                                                                 const Json::Value & jsonConfig)
 {
-    mType = type;
+    m_type = type;
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
     switch (type) {
     case TELEOP_PSM:
         {
-            mtsTeleOperationPSM * teleop = new mtsTeleOperationPSM(mName, periodInSeconds);
+            mtsTeleOperationPSM * teleop = new mtsTeleOperationPSM(m_name, periodInSeconds);
             teleop->Configure(jsonConfig);
             componentManager->AddComponent(teleop);
         }
@@ -451,7 +457,7 @@ void mtsIntuitiveResearchKitConsole::TeleopPSM::ConfigureTeleop(const TeleopPSMT
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::TeleopPSM::Name(void) const {
-    return mName;
+    return m_name;
 }
 
 
@@ -470,7 +476,7 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mDaVinciEndoscopeFocus(0),
     mOperatorPresent(false),
     mCameraPressed(false),
-    mIOComponentName("io")
+    m_IO_component_name("io")
 {
     mInterface = AddInterfaceProvided("Main");
     if (mInterface) {
@@ -516,7 +522,37 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
                                     "emulate_clutch", prmEventButton());
         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::CameraEventHandler, this,
                                     "emulate_camera", prmEventButton());
+        // misc.
+        mInterface->AddCommandRead(&mtsIntuitiveResearchKitConsole::calibration_mode, this,
+                                   "calibration_mode", false);
     }
+}
+
+void mtsIntuitiveResearchKitConsole::set_calibration_mode(const bool mode)
+{
+    m_calibration_mode = mode;
+    if (m_calibration_mode) {
+        std::stringstream message;
+        message << "set_calibration_mode:" << std::endl
+                << "----------------------------------------------------" << std::endl
+                << " Warning:" << std::endl
+                << " You're running the dVRK console in calibration mode." << std::endl
+                << " You should only do this if you are currently calibrating" << std::endl
+                << " potentiometers." << std::endl
+                << "----------------------------------------------------";
+        std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
+        CMN_LOG_CLASS_INIT_WARNING << message.str() << std::endl;
+    }
+}
+
+const bool & mtsIntuitiveResearchKitConsole::calibration_mode(void) const
+{
+    return m_calibration_mode;
+}
+
+void mtsIntuitiveResearchKitConsole::calibration_mode(bool & result) const
+{
+    result = m_calibration_mode;
 }
 
 void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
@@ -672,7 +708,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
     const Json::Value arms = jsonConfig["arms"];
     for (unsigned int index = 0; index < arms.size(); ++index) {
-        if (!ConfigureArmJSON(arms[index], mIOComponentName, configPath)) {
+        if (!ConfigureArmJSON(arms[index], m_IO_component_name, configPath)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure arms[" << index << "]" << std::endl;
             exit(EXIT_FAILURE);
         }
@@ -683,7 +719,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     const ArmList::iterator end = mArms.end();
     ArmList::iterator iter;
     for (iter = mArms.begin(); iter != end; ++iter) {
-        std::string ioConfig = iter->second->mIOConfigurationFile;
+        std::string ioConfig = iter->second->m_IO_configuration_file;
         if (!ioConfig.empty()) {
             mHasIO = true;
         }
@@ -717,17 +753,17 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     }
     // create IO if needed and configure IO
     if (mHasIO) {
-        mtsRobotIO1394 * io = new mtsRobotIO1394(mIOComponentName, periodIO, port);
+        mtsRobotIO1394 * io = new mtsRobotIO1394(m_IO_component_name, periodIO, port);
         io->SetProtocol(protocol);
         io->SetWatchdogPeriod(watchdogTimeout);
         // configure for each arm
         for (iter = mArms.begin(); iter != end; ++iter) {
-            std::string ioConfig = iter->second->mIOConfigurationFile;
+            std::string ioConfig = iter->second->m_IO_configuration_file;
             if (ioConfig != "") {
                 CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO using \"" << ioConfig << "\"" << std::endl;
                 io->Configure(ioConfig);
             }
-            std::string ioGripperConfig = iter->second->mIOGripperConfigurationFile;
+            std::string ioGripperConfig = iter->second->m_IO_gripper_configuration_file;
             if (ioGripperConfig != "") {
                 CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO gripper using \"" << ioGripperConfig << "\"" << std::endl;
                 io->Configure(ioGripperConfig);
@@ -761,14 +797,14 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 }
                 CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO foot pedals using \"" << configFile << "\"" << std::endl;
                 // these can be overwritten using console-inputs
-                mDInputSources["Clutch"] = InterfaceComponentType(mIOComponentName, "Clutch");
-                mDInputSources["OperatorPresent"] = InterfaceComponentType(mIOComponentName, "Coag");
-                mDInputSources["Coag"] = InterfaceComponentType(mIOComponentName, "Coag");
-                mDInputSources["BiCoag"] = InterfaceComponentType(mIOComponentName, "BiCoag");
-                mDInputSources["Camera"] = InterfaceComponentType(mIOComponentName, "Camera");
-                mDInputSources["Cam-"] = InterfaceComponentType(mIOComponentName, "Cam-");
-                mDInputSources["Cam+"] = InterfaceComponentType(mIOComponentName, "Cam+");
-                mDInputSources["Head"] = InterfaceComponentType(mIOComponentName, "Head");
+                mDInputSources["Clutch"] = InterfaceComponentType(m_IO_component_name, "Clutch");
+                mDInputSources["OperatorPresent"] = InterfaceComponentType(m_IO_component_name, "Coag");
+                mDInputSources["Coag"] = InterfaceComponentType(m_IO_component_name, "Coag");
+                mDInputSources["BiCoag"] = InterfaceComponentType(m_IO_component_name, "BiCoag");
+                mDInputSources["Camera"] = InterfaceComponentType(m_IO_component_name, "Camera");
+                mDInputSources["Cam-"] = InterfaceComponentType(m_IO_component_name, "Cam-");
+                mDInputSources["Cam+"] = InterfaceComponentType(m_IO_component_name, "Cam+");
+                mDInputSources["Head"] = InterfaceComponentType(m_IO_component_name, "Head");
                 io->Configure(configFile);
             }
         }
@@ -812,15 +848,15 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
     // now can configure PID and Arms
     for (iter = mArms.begin(); iter != end; ++iter) {
-        const std::string pidConfig = iter->second->mPIDConfigurationFile;
+        const std::string pidConfig = iter->second->m_PID_configuration_file;
         if (!pidConfig.empty()) {
             iter->second->ConfigurePID(pidConfig);
         }
         // for generic arms, nothing to do
-        if (!iter->second->mIsGeneric) {
-            const std::string armConfig = iter->second->mArmConfigurationFile;
-            iter->second->ConfigureArm(iter->second->mType, armConfig,
-                                       iter->second->mArmPeriod);
+        if (!iter->second->m_generic) {
+            const std::string armConfig = iter->second->m_arm_configuration_file;
+            iter->second->ConfigureArm(iter->second->m_type, armConfig,
+                                       iter->second->m_arm_period);
         }
     }
 
@@ -875,21 +911,21 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         // main DInput is OperatorPresent comming from the newly added component
         mDInputSources["OperatorPresent"] = InterfaceComponentType(headSensorName, "OperatorPresent");
         // also expose the digital inputs from RobotIO (e.g. ROS topics)
-        mDInputSources["HeadSensor1"] = InterfaceComponentType(mIOComponentName, "HeadSensor1");
-        mDInputSources["HeadSensor2"] = InterfaceComponentType(mIOComponentName, "HeadSensor2");
-        mDInputSources["HeadSensor3"] = InterfaceComponentType(mIOComponentName, "HeadSensor3");
-        mDInputSources["HeadSensor4"] = InterfaceComponentType(mIOComponentName, "HeadSensor4");
+        mDInputSources["HeadSensor1"] = InterfaceComponentType(m_IO_component_name, "HeadSensor1");
+        mDInputSources["HeadSensor2"] = InterfaceComponentType(m_IO_component_name, "HeadSensor2");
+        mDInputSources["HeadSensor3"] = InterfaceComponentType(m_IO_component_name, "HeadSensor3");
+        mDInputSources["HeadSensor4"] = InterfaceComponentType(m_IO_component_name, "HeadSensor4");
         // schedule connections
         mConnections.Add(headSensorName, "HeadSensorTurnOff",
-                         mIOComponentName, "HeadSensorTurnOff");
+                         m_IO_component_name, "HeadSensorTurnOff");
         mConnections.Add(headSensorName, "HeadSensor1",
-                         mIOComponentName, "HeadSensor1");
+                         m_IO_component_name, "HeadSensor1");
         mConnections.Add(headSensorName, "HeadSensor2",
-                         mIOComponentName, "HeadSensor2");
+                         m_IO_component_name, "HeadSensor2");
         mConnections.Add(headSensorName, "HeadSensor3",
-                         mIOComponentName, "HeadSensor3");
+                         m_IO_component_name, "HeadSensor3");
         mConnections.Add(headSensorName, "HeadSensor4",
-                         mIOComponentName, "HeadSensor4");
+                         m_IO_component_name, "HeadSensor4");
 
     }
 
@@ -918,13 +954,13 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         }
         // schedule connections
         mConnections.Add(endoscopeFocusName, "EndoscopeFocusIn",
-                         mIOComponentName, "EndoscopeFocusIn");
+                         m_IO_component_name, "EndoscopeFocusIn");
         mConnections.Add(endoscopeFocusName, "EndoscopeFocusOut",
-                         mIOComponentName, "EndoscopeFocusOut");
+                         m_IO_component_name, "EndoscopeFocusOut");
         mConnections.Add(endoscopeFocusName, "focus_in",
-                         mIOComponentName, "Cam+");
+                         m_IO_component_name, "Cam+");
         mConnections.Add(endoscopeFocusName, "focus_out",
-                         mIOComponentName, "Cam-");
+                         m_IO_component_name, "Cam-");
     }
 
     // if we have any teleoperation component, we need to have the interfaces for the foot pedals
@@ -955,7 +991,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // search for SUJs
     bool hasSUJ = false;
     for (iter = mArms.begin(); iter != end; ++iter) {
-        if (iter->second->mType == Arm::ARM_SUJ) {
+        if (iter->second->m_type == Arm::ARM_SUJ) {
             hasSUJ = true;
         }
     }
@@ -964,12 +1000,12 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         for (iter = mArms.begin(); iter != end; ++iter) {
             Arm * arm = iter->second;
             // only for PSM and ECM when not simulated
-            if (((arm->mType == Arm::ARM_ECM)
-                 || (arm->mType == Arm::ARM_ECM_DERIVED)
-                 || (arm->mType == Arm::ARM_PSM)
-                 || (arm->mType == Arm::ARM_PSM_DERIVED)
+            if (((arm->m_type == Arm::ARM_ECM)
+                 || (arm->m_type == Arm::ARM_ECM_DERIVED)
+                 || (arm->m_type == Arm::ARM_PSM)
+                 || (arm->m_type == Arm::ARM_PSM_DERIVED)
                  )
-                && (arm->mSimulation == Arm::SIMULATION_NONE)) {
+                && (arm->m_simulation == Arm::SIMULATION_NONE)) {
                 arm->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJ-" + arm->Name() + "-IO");
                 arm->SUJInterfaceRequiredFromIO->AddEventHandlerWrite(&Arm::SUJClutchEventHandlerFromIO, arm, "Button");
                 arm->SUJInterfaceRequiredToSUJ = this->AddInterfaceRequired("SUJ-" + arm->Name());
@@ -1058,25 +1094,25 @@ void mtsIntuitiveResearchKitConsole::Cleanup(void)
 
 bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
 {
-    if ((newArm->mType != Arm::ARM_PSM_SOCKET)
-        && (!newArm->mIsGeneric)) {
-        if (newArm->mType != Arm::ARM_SUJ) {
-            if (newArm->mPIDConfigurationFile.empty()) {
+    if ((newArm->m_type != Arm::ARM_PSM_SOCKET)
+        && (!newArm->m_generic)) {
+        if (newArm->m_type != Arm::ARM_SUJ) {
+            if (newArm->m_PID_configuration_file.empty()) {
                 CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
                                          << newArm->Name() << " must be configured first (PID)." << std::endl;
                 return false;
             }
         }
-        if (newArm->mArmConfigurationFile.empty()) {
+        if (newArm->m_arm_configuration_file.empty()) {
             CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
                                      << newArm->Name() << " must be configured first (Arm config)." << std::endl;
             return false;
         }
     }
     if (AddArmInterfaces(newArm)) {
-        ArmList::iterator armIterator = mArms.find(newArm->mName);
+        ArmList::iterator armIterator = mArms.find(newArm->m_name);
         if (armIterator == mArms.end()) {
-            mArms[newArm->mName] = newArm;
+            mArms[newArm->m_name] = newArm;
             return true;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
@@ -1093,9 +1129,9 @@ bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mts
     // create new required interfaces to communicate with the components we created
     Arm * newArm = new Arm(this, genericArm->GetName(), "");
     if (AddArmInterfaces(newArm)) {
-        ArmList::iterator armIterator = mArms.find(newArm->mName);
+        ArmList::iterator armIterator = mArms.find(newArm->m_name);
         if (armIterator != mArms.end()) {
-            mArms[newArm->mName] = newArm;
+            mArms[newArm->m_name] = newArm;
             return true;
         }
     }
@@ -1109,7 +1145,7 @@ std::string mtsIntuitiveResearchKitConsole::GetArmIOComponentName(const std::str
 {
     ArmList::iterator armIterator = mArms.find(armName);
     if (armIterator != mArms.end()) {
-        return armIterator->second->mIOComponentName;
+        return armIterator->second->m_IO_component_name;
     }
     return "";
 }
@@ -1222,44 +1258,44 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
 
     // read from JSON and check if configuration files exist
     jsonValue = jsonArm["type"];
-    armPointer->mIsGeneric = false; // default value
-    armPointer->mIsNativeOrDerived = false;
+    armPointer->m_generic = false; // default value
+    armPointer->m_native_or_derived = false;
     if (!jsonValue.empty()) {
         std::string typeString = jsonValue.asString();
         if (typeString == "MTM") {
-            armPointer->mType = Arm::ARM_MTM;
-            armPointer->mIsNativeOrDerived = true;
+            armPointer->m_type = Arm::ARM_MTM;
+            armPointer->m_native_or_derived = true;
         } else if (typeString == "PSM") {
-            armPointer->mType = Arm::ARM_PSM;
-            armPointer->mIsNativeOrDerived = true;
+            armPointer->m_type = Arm::ARM_PSM;
+            armPointer->m_native_or_derived = true;
         } else if (typeString == "ECM") {
-            armPointer->mType = Arm::ARM_ECM;
-            armPointer->mIsNativeOrDerived = true;
+            armPointer->m_type = Arm::ARM_ECM;
+            armPointer->m_native_or_derived = true;
         } else if (typeString == "MTM_DERIVED") {
-            armPointer->mType = Arm::ARM_MTM_DERIVED;
-            armPointer->mIsNativeOrDerived = true;
+            armPointer->m_type = Arm::ARM_MTM_DERIVED;
+            armPointer->m_native_or_derived = true;
         } else if (typeString == "PSM_DERIVED") {
-            armPointer->mType = Arm::ARM_PSM_DERIVED;
-            armPointer->mIsNativeOrDerived = true;
+            armPointer->m_type = Arm::ARM_PSM_DERIVED;
+            armPointer->m_native_or_derived = true;
         } else if (typeString == "ECM_DERIVED") {
-            armPointer->mType = Arm::ARM_ECM_DERIVED;
-            armPointer->mIsNativeOrDerived = true;
+            armPointer->m_type = Arm::ARM_ECM_DERIVED;
+            armPointer->m_native_or_derived = true;
         } else if (typeString == "MTM_GENERIC") {
-            armPointer->mType = Arm::ARM_MTM_GENERIC;
-            armPointer->mIsGeneric = true;
+            armPointer->m_type = Arm::ARM_MTM_GENERIC;
+            armPointer->m_generic = true;
         } else if (typeString == "PSM_GENERIC") {
-            armPointer->mType = Arm::ARM_PSM_GENERIC;
-            armPointer->mIsGeneric = true;
+            armPointer->m_type = Arm::ARM_PSM_GENERIC;
+            armPointer->m_generic = true;
         } else if (typeString == "ECM_GENERIC") {
-            armPointer->mType = Arm::ARM_ECM_GENERIC;
-            armPointer->mIsGeneric = true;
+            armPointer->m_type = Arm::ARM_ECM_GENERIC;
+            armPointer->m_generic = true;
         } else if (typeString == "PSM_SOCKET") {
-            armPointer->mType = Arm::ARM_PSM_SOCKET;
+            armPointer->m_type = Arm::ARM_PSM_SOCKET;
         } else if (typeString == "FOCUS_CONTROLLER") {
-            armPointer->mType = Arm::FOCUS_CONTROLLER;
-            armPointer->mIsNativeOrDerived = true;
+            armPointer->m_type = Arm::FOCUS_CONTROLLER;
+            armPointer->m_native_or_derived = true;
         } else if (typeString == "SUJ") {
-            armPointer->mType = Arm::ARM_SUJ;
+            armPointer->m_type = Arm::ARM_SUJ;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName << ": invalid type \""
                                      << typeString << "\", needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC}" << std::endl;
@@ -1273,7 +1309,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
 
     jsonValue = jsonArm["serial"];
     if (!jsonValue.empty()) {
-        armPointer->mSerial = jsonValue.asString();
+        armPointer->m_serial = jsonValue.asString();
     }
 
     // type of simulation, if any
@@ -1281,52 +1317,55 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     if (!jsonValue.empty()) {
         std::string typeString = jsonValue.asString();
         if (typeString == "KINEMATIC") {
-            armPointer->mSimulation = Arm::SIMULATION_KINEMATIC;
+            armPointer->m_simulation = Arm::SIMULATION_KINEMATIC;
         } else if (typeString == "DYNAMIC") {
-            armPointer->mSimulation = Arm::SIMULATION_DYNAMIC;
+            armPointer->m_simulation = Arm::SIMULATION_DYNAMIC;
         } else if (typeString == "NONE") {
-            armPointer->mSimulation = Arm::SIMULATION_NONE;
+            armPointer->m_simulation = Arm::SIMULATION_NONE;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName << ": invalid simulation \""
                                      << typeString << "\", needs to be NONE, KINEMATIC or DYNAMIC" << std::endl;
             return false;
         }
     } else {
-        armPointer->mSimulation = Arm::SIMULATION_NONE;
+        armPointer->m_simulation = Arm::SIMULATION_NONE;
     }
 
+    // set arm calibration mode based on console calibration mode
+    armPointer->m_calibration_mode = m_calibration_mode;
+
     // should we automatically create ROS bridge for this arm
-    armPointer->mSkipROSBridge = false;
+    armPointer->m_skip_ROS_bridge = false;
     jsonValue = jsonArm["skip-ros-bridge"];
     if (!jsonValue.empty()) {
-        armPointer->mSkipROSBridge = jsonValue.asBool();
+        armPointer->m_skip_ROS_bridge = jsonValue.asBool();
     }
 
     // component and interface, defaults
-    armPointer->mComponentName = armName;
-    armPointer->mInterfaceName = "Arm";
+    armPointer->m_arm_component_name = armName;
+    armPointer->m_arm_interface_name = "Arm";
     jsonValue = jsonArm["component"];
     if (!jsonValue.empty()) {
-        armPointer->mComponentName = jsonValue.asString();
+        armPointer->m_arm_component_name = jsonValue.asString();
     }
     jsonValue = jsonArm["interface"];
     if (!jsonValue.empty()) {
-        armPointer->mInterfaceName = jsonValue.asString();
+        armPointer->m_arm_interface_name = jsonValue.asString();
     }
 
     // check if we need to create a socket server attached to this arm
-    armPointer->mSocketServer = false;
+    armPointer->m_socket_server = false;
     jsonValue = jsonArm["socket-server"];
     if (!jsonValue.empty()) {
-        armPointer->mSocketServer = jsonValue.asBool();
+        armPointer->m_socket_server = jsonValue.asBool();
     }
 
     // for socket client or server, look for remote IP / port
-    if (armPointer->mType == Arm::ARM_PSM_SOCKET || armPointer->mSocketServer) {
-        armPointer->mSocketComponentName = armPointer->mName + "-SocketServer";
+    if (armPointer->m_type == Arm::ARM_PSM_SOCKET || armPointer->m_socket_server) {
+        armPointer->m_socket_component_name = armPointer->m_name + "-SocketServer";
         jsonValue = jsonArm["remote-ip"];
         if(!jsonValue.empty()){
-            armPointer->mIp = jsonValue.asString();
+            armPointer->m_IP = jsonValue.asString();
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"server-ip\" for arm \""
                                      << armName << "\"" << std::endl;
@@ -1334,7 +1373,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         }
         jsonValue = jsonArm["port"];
         if (!jsonValue.empty()) {
-            armPointer->mPort = jsonValue.asInt();
+            armPointer->m_port = jsonValue.asInt();
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"port\" for arm \""
                                      << armName << "\"" << std::endl;
@@ -1342,50 +1381,23 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         }
     }
 
-    // for generic arm, look for shared library and class name, if not
-    // provided we assume the object already exists and has been
-    // configured
-    if (armPointer->mIsGeneric) {
-        jsonValue = jsonArm["shared-library"];
-        if (!jsonValue.empty()){
-            armPointer->mSharedLibrary = jsonValue.asString();
-            jsonValue = jsonArm["class-name"];
-            if (!jsonValue.empty()) {
-                armPointer->mClassName = jsonValue.asString();
-            } else {
-                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"class-name\" for arm \""
-                                         << armName << "\"" << std::endl;
-                return false;
-            }
-            jsonValue = jsonArm["constructor-arg"];
-            if (!jsonValue.empty()) {
-                Json::FastWriter fastWriter;
-                armPointer->mConstructorArgJSON = fastWriter.write(jsonValue);
-            } else {
-                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"constructor-arg\" for arm \""
-                                         << armName << "\"" << std::endl;
-                return false;
-            }
-        }
-    }
-
     // IO for anything not simulated or socket client
-    if ((armPointer->mType != Arm::ARM_PSM_SOCKET)
-        && (!armPointer->mIsGeneric)) {
-        if (armPointer->mSimulation == Arm::SIMULATION_NONE) {
+    if ((armPointer->m_type != Arm::ARM_PSM_SOCKET)
+        && (!armPointer->m_generic)) {
+        if (armPointer->m_simulation == Arm::SIMULATION_NONE) {
             jsonValue = jsonArm["io"];
             if (!jsonValue.empty()) {
-                armPointer->mIOConfigurationFile = armConfigPath.Find(jsonValue.asString());
-                if (armPointer->mIOConfigurationFile == "") {
+                armPointer->m_IO_configuration_file = armConfigPath.Find(jsonValue.asString());
+                if (armPointer->m_IO_configuration_file == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO file " << jsonValue.asString() << std::endl;
                     return false;
                 }
             } else {
                 // try to find default if serial number has been provided
-                if (armPointer->mSerial != "") {
-                    std::string defaultFile = "sawRobotIO1394-" + armName + "-" + armPointer->mSerial + ".xml";
-                    armPointer->mIOConfigurationFile = armConfigPath.Find(defaultFile);
-                    if (armPointer->mIOConfigurationFile == "") {
+                if (armPointer->m_serial != "") {
+                    std::string defaultFile = "sawRobotIO1394-" + armName + "-" + armPointer->m_serial + ".xml";
+                    armPointer->m_IO_configuration_file = armConfigPath.Find(defaultFile);
+                    if (armPointer->m_IO_configuration_file == "") {
                         CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO file " << defaultFile << std::endl;
                         return false;
                     }
@@ -1397,22 +1409,22 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                 }
             }
             // IO for MTM gripper
-            if ((armPointer->mType == Arm::ARM_MTM)
-                || (armPointer->mType == Arm::ARM_MTM_DERIVED)) {
+            if ((armPointer->m_type == Arm::ARM_MTM)
+                || (armPointer->m_type == Arm::ARM_MTM_DERIVED)) {
                 jsonValue = jsonArm["io-gripper"];
                 if (!jsonValue.empty()) {
-                    armPointer->mIOGripperConfigurationFile = armConfigPath.Find(jsonValue.asString());
-                    if (armPointer->mIOGripperConfigurationFile == "") {
+                    armPointer->m_IO_gripper_configuration_file = armConfigPath.Find(jsonValue.asString());
+                    if (armPointer->m_IO_gripper_configuration_file == "") {
                         CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO gripper file "
                                                  << jsonValue.asString() << std::endl;
                         return false;
                     }
                 } else {
                     // try to find default if serial number has been provided
-                    if (armPointer->mSerial != "") {
-                        std::string defaultFile = "sawRobotIO1394-" + armName + "-gripper-" + armPointer->mSerial + ".xml";
-                        armPointer->mIOGripperConfigurationFile = armConfigPath.Find(defaultFile);
-                        if (armPointer->mIOGripperConfigurationFile == "") {
+                    if (armPointer->m_serial != "") {
+                        std::string defaultFile = "sawRobotIO1394-" + armName + "-gripper-" + armPointer->m_serial + ".xml";
+                        armPointer->m_IO_gripper_configuration_file = armConfigPath.Find(defaultFile);
+                        if (armPointer->m_IO_gripper_configuration_file == "") {
                             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO gripper file " << defaultFile << std::endl;
                             return false;
                         }
@@ -1428,20 +1440,20 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     }
 
     // PID only required for MTM, PSM and ECM (and derived)
-    if (armPointer->mIsNativeOrDerived) {
+    if (armPointer->m_native_or_derived) {
         jsonValue = jsonArm["pid"];
         if (!jsonValue.empty()) {
-            armPointer->mPIDConfigurationFile = armConfigPath.Find(jsonValue.asString());
-            if (armPointer->mPIDConfigurationFile == "") {
+            armPointer->m_PID_configuration_file = armConfigPath.Find(jsonValue.asString());
+            if (armPointer->m_PID_configuration_file == "") {
                 CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find PID file " << jsonValue.asString() << std::endl;
                 return false;
             }
         } else {
             // try to find default
             std::string defaultFile;
-            if ((armPointer->mType == Arm::ARM_PSM) || (armPointer->mType == Arm::ARM_PSM_DERIVED)) {
+            if ((armPointer->m_type == Arm::ARM_PSM) || (armPointer->m_type == Arm::ARM_PSM_DERIVED)) {
                 defaultFile = "pid/sawControllersPID-PSM.xml";
-            } else if ((armPointer->mType == Arm::ARM_ECM) || (armPointer->mType == Arm::ARM_ECM_DERIVED)) {
+            } else if ((armPointer->m_type == Arm::ARM_ECM) || (armPointer->m_type == Arm::ARM_ECM_DERIVED)) {
                 defaultFile = "pid/sawControllersPID-ECM.xml";
             } else {
                 defaultFile = "pid/sawControllersPID-" + armName + ".xml";
@@ -1449,8 +1461,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureArmJSON: can't find \"pid\" setting for arm \""
                                        << armName << "\", using default: \""
                                        << defaultFile << "\"" << std::endl;
-            armPointer->mPIDConfigurationFile = armConfigPath.Find(defaultFile);
-            if (armPointer->mPIDConfigurationFile == "") {
+            armPointer->m_PID_configuration_file = armConfigPath.Find(defaultFile);
+            if (armPointer->m_PID_configuration_file == "") {
                 CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find PID file " << defaultFile << std::endl;
                 return false;
             }
@@ -1458,14 +1470,14 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     }
 
     // only configure kinematics if not arm socket client
-    if ((armPointer->mType != Arm::ARM_PSM_SOCKET)
-        && (!armPointer->mIsGeneric)) {
+    if ((armPointer->m_type != Arm::ARM_PSM_SOCKET)
+        && (!armPointer->m_generic)) {
         // renamed "kinematic" to "arm" so we can have a more complex configuration file for the arm class
-        if (armPointer->mIsNativeOrDerived) {
+        if (armPointer->m_native_or_derived) {
             jsonValue = jsonArm["arm"];
             if (!jsonValue.empty()) {
-                armPointer->mArmConfigurationFile = armConfigPath.Find(jsonValue.asString());
-                if (armPointer->mArmConfigurationFile == "") {
+                armPointer->m_arm_configuration_file = armConfigPath.Find(jsonValue.asString());
+                if (armPointer->m_arm_configuration_file == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find configuration file " << jsonValue.asString() << std::endl;
                     return false;
                 }
@@ -1473,13 +1485,13 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         }
         jsonValue = jsonArm["kinematic"];
         if (!jsonValue.empty()) {
-            if (armPointer->mArmConfigurationFile != "") {
+            if (armPointer->m_arm_configuration_file != "") {
                 CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm configuration file is already set using \"arm\", you should remove the deprecated \"kinetic\" field:"
                                          << jsonValue.asString() << std::endl;
                 return false;
             } else {
-                armPointer->mArmConfigurationFile = armConfigPath.Find(jsonValue.asString());
-                if (armPointer->mArmConfigurationFile == "") {
+                armPointer->m_arm_configuration_file = armConfigPath.Find(jsonValue.asString());
+                if (armPointer->m_arm_configuration_file == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find Kinematic file " << jsonValue.asString() << std::endl;
                     return false;
                 }
@@ -1487,13 +1499,13 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         }
 
         // make sure we have an arm configuration file for all arms except FOCUS_CONTROLLER
-        if ((armPointer->mArmConfigurationFile == "")
-            && (armPointer->mType != Arm::FOCUS_CONTROLLER)) {
-            if (armPointer->mIsNativeOrDerived) {
+        if ((armPointer->m_arm_configuration_file == "")
+            && (armPointer->m_type != Arm::FOCUS_CONTROLLER)) {
+            if (armPointer->m_native_or_derived) {
                 // try to find the arm file using default
-                std::string defaultFile = armName + "-" + armPointer->mSerial + ".json";
-                armPointer->mArmConfigurationFile = armConfigPath.Find(defaultFile);
-                if (armPointer->mArmConfigurationFile == "") {
+                std::string defaultFile = armName + "-" + armPointer->m_serial + ".json";
+                armPointer->m_arm_configuration_file = armConfigPath.Find(defaultFile);
+                if (armPointer->m_arm_configuration_file == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"arm\" setting for arm \""
                                              << armName << "\".  \"arm\" is not set and the default file \""
                                              << defaultFile << "\" doesn't seem to exist either." << std::endl;
@@ -1518,14 +1530,14 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                 }
                 vctFrm4x4 frame;
                 cmnDataJSON<vctFrm4x4>::DeSerializeText(frame, fixedJson);
-                armPointer->mBaseFrame.Goal().From(frame);
-                armPointer->mBaseFrame.ReferenceFrame() = reference;
-                armPointer->mBaseFrame.Valid() = true;
+                armPointer->m_base_frame.Goal().From(frame);
+                armPointer->m_base_frame.ReferenceFrame() = reference;
+                armPointer->m_base_frame.Valid() = true;
             } else {
-                armPointer->mBaseFrameComponentName = jsonValue.get("component", "").asString();
-                armPointer->mBaseFrameInterfaceName = jsonValue.get("interface", "").asString();
-                if ((armPointer->mBaseFrameComponentName == "")
-                    || (armPointer->mBaseFrameInterfaceName == "")) {
+                armPointer->m_base_frame_component_name = jsonValue.get("component", "").asString();
+                armPointer->m_base_frame_interface_name = jsonValue.get("interface", "").asString();
+                if ((armPointer->m_base_frame_component_name == "")
+                    || (armPointer->m_base_frame_interface_name == "")) {
                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: both \"component\" and \"interface\" OR \"transform\" (4x4) and \"reference-frame\" (name) must be provided with \"base-frame\" for arm \""
                                              << armName << "\"" << std::endl;
                     return false;
@@ -1537,7 +1549,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     // read period if present
     jsonValue = jsonArm["period"];
     if (!jsonValue.empty()) {
-        armPointer->mArmPeriod = jsonValue.asFloat();
+        armPointer->m_arm_period = jsonValue.asFloat();
     }
 
     // add the arm if it's a new one
@@ -1590,9 +1602,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->mType == Arm::ARM_MTM_GENERIC) ||
-              (armPointer->mType == Arm::ARM_MTM_DERIVED) ||
-              (armPointer->mType == Arm::ARM_MTM))) {
+        if (!((armPointer->m_type == Arm::ARM_MTM_GENERIC) ||
+              (armPointer->m_type == Arm::ARM_MTM_DERIVED) ||
+              (armPointer->m_type == Arm::ARM_MTM))) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm left\""
                                      << mtmLeftName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
             return false;
@@ -1607,9 +1619,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->mType == Arm::ARM_MTM_GENERIC) ||
-              (armPointer->mType == Arm::ARM_MTM_DERIVED) ||
-              (armPointer->mType == Arm::ARM_MTM))) {
+        if (!((armPointer->m_type == Arm::ARM_MTM_GENERIC) ||
+              (armPointer->m_type == Arm::ARM_MTM_DERIVED) ||
+              (armPointer->m_type == Arm::ARM_MTM))) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm right\""
                                      << mtmRightName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
             return false;
@@ -1624,9 +1636,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->mType == Arm::ARM_ECM_GENERIC) ||
-              (armPointer->mType == Arm::ARM_ECM_DERIVED) ||
-              (armPointer->mType == Arm::ARM_ECM))) {
+        if (!((armPointer->m_type == Arm::ARM_ECM_GENERIC) ||
+              (armPointer->m_type == Arm::ARM_ECM_DERIVED) ||
+              (armPointer->m_type == Arm::ARM_ECM))) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: ecm \""
                                      << ecmName << "\" type must be \"ECM\" or \"GENERIC_ECM\"" << std::endl;
             return false;
@@ -1656,11 +1668,11 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
     if (!jsonValue.empty()) {
         std::string typeString = jsonValue.asString();
         if (typeString == "TELEOP_ECM") {
-            mTeleopECM->mType = TeleopECM::TELEOP_ECM;
+            mTeleopECM->m_type = TeleopECM::TELEOP_ECM;
         } else if (typeString == "TELEOP_ECM_DERIVED") {
-            mTeleopECM->mType = TeleopECM::TELEOP_ECM_DERIVED;
+            mTeleopECM->m_type = TeleopECM::TELEOP_ECM_DERIVED;
         } else if (typeString == "TELEOP_ECM_GENERIC") {
-            mTeleopECM->mType = TeleopECM::TELEOP_ECM_GENERIC;
+            mTeleopECM->m_type = TeleopECM::TELEOP_ECM_GENERIC;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: teleop " << name << ": invalid type \""
                                      << typeString << "\", needs to be TELEOP_ECM, TELEOP_ECM_DERIVED or TELEOP_ECM_GENERIC" << std::endl;
@@ -1668,7 +1680,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         }
     } else {
         // default value
-        mTeleopECM->mType = TeleopECM::TELEOP_ECM;
+        mTeleopECM->m_type = TeleopECM::TELEOP_ECM;
     }
 
     // read period if present
@@ -1684,7 +1696,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         return false;
     }
     const Json::Value jsonTeleopConfig = jsonTeleop["configure-parameter"];
-    mTeleopECM->ConfigureTeleop(mTeleopECM->mType, period, jsonTeleopConfig);
+    mTeleopECM->ConfigureTeleop(mTeleopECM->m_type, period, jsonTeleopConfig);
     AddTeleopECMInterfaces(mTeleopECM);
     return true;
 }
@@ -1719,9 +1731,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->mType == Arm::ARM_MTM_GENERIC) ||
-              (armPointer->mType == Arm::ARM_MTM_DERIVED) ||
-              (armPointer->mType == Arm::ARM_MTM))) {
+        if (!((armPointer->m_type == Arm::ARM_MTM_GENERIC) ||
+              (armPointer->m_type == Arm::ARM_MTM_DERIVED) ||
+              (armPointer->m_type == Arm::ARM_MTM))) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: mtm \""
                                      << mtmName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
             return false;
@@ -1736,10 +1748,10 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->mType == Arm::ARM_PSM_GENERIC) ||
-              (armPointer->mType == Arm::ARM_PSM_DERIVED) ||
-              (armPointer->mType == Arm::ARM_PSM_SOCKET)  ||
-              (armPointer->mType == Arm::ARM_PSM))) {
+        if (!((armPointer->m_type == Arm::ARM_PSM_GENERIC) ||
+              (armPointer->m_type == Arm::ARM_PSM_DERIVED) ||
+              (armPointer->m_type == Arm::ARM_PSM_SOCKET)  ||
+              (armPointer->m_type == Arm::ARM_PSM))) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: psm \""
                                      << psmName << "\" type must be \"PSM\", \"PSM_DERIVED\" or \"PSM_GENERIC\"" << std::endl;
             return false;
@@ -1823,11 +1835,11 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
     if (!jsonValue.empty()) {
         std::string typeString = jsonValue.asString();
         if (typeString == "TELEOP_PSM") {
-            teleopPointer->mType = TeleopPSM::TELEOP_PSM;
+            teleopPointer->m_type = TeleopPSM::TELEOP_PSM;
         } else if (typeString == "TELEOP_PSM_DERIVED") {
-            teleopPointer->mType = TeleopPSM::TELEOP_PSM_DERIVED;
+            teleopPointer->m_type = TeleopPSM::TELEOP_PSM_DERIVED;
         } else if (typeString == "TELEOP_PSM_GENERIC") {
-            teleopPointer->mType = TeleopPSM::TELEOP_PSM_GENERIC;
+            teleopPointer->m_type = TeleopPSM::TELEOP_PSM_GENERIC;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: teleop " << name << ": invalid type \""
                                      << typeString << "\", needs to be TELEOP_PSM, TELEOP_PSM_DERIVED or TELEOP_PSM_GENERIC" << std::endl;
@@ -1835,7 +1847,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         }
     } else {
         // default value
-        teleopPointer->mType = TeleopPSM::TELEOP_PSM;
+        teleopPointer->m_type = TeleopPSM::TELEOP_PSM;
     }
 
     // read period if present
@@ -1851,7 +1863,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         return false;
     }
     const Json::Value jsonTeleopConfig = jsonTeleop["configure-parameter"];
-    teleopPointer->ConfigureTeleop(teleopPointer->mType, period, jsonTeleopConfig);
+    teleopPointer->ConfigureTeleop(teleopPointer->m_type, period, jsonTeleopConfig);
     AddTeleopPSMInterfaces(teleopPointer);
     return true;
 }
@@ -1859,7 +1871,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
 bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
 {
     // IO
-    if (!arm->mIOConfigurationFile.empty()) {
+    if (!arm->m_IO_configuration_file.empty()) {
         const std::string interfaceNameIO = "IO-" + arm->Name();
         arm->IOInterfaceRequired = AddInterfaceRequired(interfaceNameIO);
         if (arm->IOInterfaceRequired) {
@@ -1878,8 +1890,8 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
         }
         // is the arm is a PSM, since it has an IO, it also has a
         // Dallas chip interface and we want to see the messages
-        if ((arm->mType == Arm::ARM_PSM)
-            || (arm->mType == Arm::ARM_PSM_DERIVED)) {
+        if ((arm->m_type == Arm::ARM_PSM)
+            || (arm->m_type == Arm::ARM_PSM_DERIVED)) {
             const std::string interfaceNameIODallas = "IO-Dallas-" + arm->Name();
             arm->IODallasInterfaceRequired = AddInterfaceRequired(interfaceNameIODallas);
             if (arm->IODallasInterfaceRequired) {
@@ -1900,7 +1912,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     }
 
     // PID
-    if (!arm->mPIDConfigurationFile.empty()) {
+    if (!arm->m_PID_configuration_file.empty()) {
         const std::string interfaceNamePID = "PID-" + arm->Name();
         arm->PIDInterfaceRequired = AddInterfaceRequired(interfaceNamePID);
         if (arm->PIDInterfaceRequired) {
@@ -1924,7 +1936,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     arm->ArmInterfaceRequired = AddInterfaceRequired(interfaceNameArm);
     if (arm->ArmInterfaceRequired) {
         arm->ArmInterfaceRequired->AddFunction("state_command", arm->state_command);
-        if (arm->mType != Arm::ARM_SUJ) {
+        if (arm->m_type != Arm::ARM_SUJ) {
             arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze);
         }
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
@@ -2055,9 +2067,9 @@ void mtsIntuitiveResearchKitConsole::cycle_teleop_psm_by_mtm(const std::string &
                     // message
                     mInterface->SendWarning(this->GetName()
                                             + ": cycling from \""
-                                            + iter->second->mName
+                                            + iter->second->m_name
                                             + "\" to \""
-                                            + nextTeleop->second->mName
+                                            + nextTeleop->second->m_name
                                             + "\" failed, PSM is already controlled by \""
                                             + mtmUsingThatPSM
                                             + "\"");
@@ -2077,9 +2089,9 @@ void mtsIntuitiveResearchKitConsole::cycle_teleop_psm_by_mtm(const std::string &
                     // message
                     mInterface->SendStatus(this->GetName()
                                            + ": cycling from \""
-                                           + iter->second->mName
+                                           + iter->second->m_name
                                            + "\" to \""
-                                           + nextTeleop->second->mName
+                                           + nextTeleop->second->m_name
                                            + "\"");
                 }
                 // stop for loop
@@ -2166,7 +2178,7 @@ void mtsIntuitiveResearchKitConsole::select_teleop_psm(const prmKeyValue & mtmPs
     // message
     mInterface->SendStatus(this->GetName()
                            + ": \""
-                           + teleopIterator->second->mName
+                           + teleopIterator->second->m_name
                            + "\" has been selected");
 
     // always send a message to let user know the current status
@@ -2211,10 +2223,10 @@ void mtsIntuitiveResearchKitConsole::EventSelectedTeleopPSMs(void) const
     for (auto & iter : mTeleopsPSM) {
         if (iter.second->Selected()) {
             ConfigurationEvents.teleop_psm_selected(prmKeyValue(iter.second->mMTMName,
-                                                              iter.second->mPSMName));
+                                                                iter.second->mPSMName));
         } else {
             ConfigurationEvents.teleop_psm_unselected(prmKeyValue(iter.second->mMTMName,
-                                                                iter.second->mPSMName));
+                                                                  iter.second->mPSMName));
         }
     }
 }
@@ -2243,9 +2255,9 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         // freeze arms if we stopped any teleop
         if (freezeNeeded) {
             for (auto & iterArms : mArms) {
-                if ((iterArms.second->mType == Arm::ARM_MTM) ||
-                    (iterArms.second->mType == Arm::ARM_MTM_DERIVED) ||
-                    (iterArms.second->mType == Arm::ARM_MTM_GENERIC)) {
+                if ((iterArms.second->m_type == Arm::ARM_MTM) ||
+                    (iterArms.second->m_type == Arm::ARM_MTM_DERIVED) ||
+                    (iterArms.second->m_type == Arm::ARM_MTM_GENERIC)) {
                     iterArms.second->Freeze();
                 }
             }
@@ -2256,9 +2268,9 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
     // if none are running, freeze
     if (!mTeleopECMRunning && !mTeleopPSMRunning) {
         for (auto & iterArms : mArms) {
-            if ((iterArms.second->mType == Arm::ARM_MTM) ||
-                (iterArms.second->mType == Arm::ARM_MTM_DERIVED) ||
-                (iterArms.second->mType == Arm::ARM_MTM_GENERIC)) {
+            if ((iterArms.second->m_type == Arm::ARM_MTM) ||
+                (iterArms.second->m_type == Arm::ARM_MTM_DERIVED) ||
+                (iterArms.second->m_type == Arm::ARM_MTM_GENERIC)) {
                 iterArms.second->Freeze();
             }
         }

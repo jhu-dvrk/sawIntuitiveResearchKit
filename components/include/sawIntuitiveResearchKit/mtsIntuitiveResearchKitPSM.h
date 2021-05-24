@@ -36,7 +36,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitPSM() override {};
-    void SetSimulated(void) override;
+    void set_simulated(void) override;
 
  protected:
 

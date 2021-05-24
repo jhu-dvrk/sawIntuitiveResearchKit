@@ -97,42 +97,40 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         const std::string & PIDComponentName(void) const;
 
     protected:
-        mtsIntuitiveResearchKitConsole * mConsole = nullptr;
-        std::string mName;
-        ArmType mType;
-        bool mIsNativeOrDerived;
-        std::string mSerial;
-        SimulationType mSimulation;
+        mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        std::string m_name;
+        ArmType m_type;
+        bool m_native_or_derived;
+        std::string m_serial;
+        SimulationType m_simulation;
+        bool m_calibration_mode;
 
         // low level
-        std::string mIOComponentName;
-        std::string mIOConfigurationFile;
-        std::string mIOGripperConfigurationFile; // for MTMs only
+        std::string m_IO_component_name;
+        std::string m_IO_configuration_file;
+        std::string m_IO_gripper_configuration_file; // for MTMs only
         // PID
-        std::string mPIDComponentName;
-        std::string mPIDConfigurationFile;
+        std::string m_PID_component_name;
+        std::string m_PID_configuration_file;
         // arm
-        std::string mComponentName;
-        std::string mInterfaceName;
-        std::string mArmConfigurationFile;
-        double mArmPeriod;
+        std::string m_arm_component_name;
+        std::string m_arm_interface_name;
+        std::string m_arm_configuration_file;
+        double m_arm_period;
         // socket
-        std::string mIp;
-        int mPort;
-        bool mSocketServer;
-        std::string mSocketComponentName;
+        std::string m_IP;
+        int m_port;
+        bool m_socket_server;
+        std::string m_socket_component_name;
         // generic arm
-        bool mIsGeneric;
-        std::string mSharedLibrary;
-        std::string mClassName;
-        std::string mConstructorArgJSON;
-        bool mSkipROSBridge;
+        bool m_generic;
+        bool m_skip_ROS_bridge;
 
         // base frame
         // (name and frame) OR (component and interface)
-        prmPositionCartesianSet mBaseFrame;
-        std::string mBaseFrameComponentName;
-        std::string mBaseFrameInterfaceName;
+        prmPositionCartesianSet m_base_frame;
+        std::string m_base_frame_component_name;
+        std::string m_base_frame_interface_name;
 
         mtsFunctionWrite state_command;
         mtsFunctionVoid Freeze;
@@ -179,8 +177,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         const std::string & Name(void) const;
 
     protected:
-        std::string mName;
-        TeleopECMType mType;
+        std::string m_name;
+        TeleopECMType m_type;
         mtsFunctionWrite state_command;
         mtsInterfaceRequired * InterfaceRequired;
     };
@@ -214,8 +212,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     protected:
         bool mSelected;
-        std::string mName;
-        TeleopPSMType mType;
+        std::string m_name;
+        TeleopPSMType m_type;
         std::string mMTMName;
         std::string mPSMName;
         mtsFunctionWrite state_command;
@@ -225,6 +223,14 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     mtsIntuitiveResearchKitConsole(const std::string & componentName);
     inline virtual ~mtsIntuitiveResearchKitConsole() {}
+
+    /*! Tells the application to run in calibration mode, i.e. turn
+      off all checks using potentiometers and force encoder re-bias
+      from potentiometers when the application starts.  This method
+      must be called before Configure. */
+    void set_calibration_mode(const bool mode);
+    const bool & calibration_mode(void) const;
+    void calibration_mode(bool & result) const;
 
     /*! Configure console using JSON file. To test is the configuration
       succeeded, used method Configured().
@@ -320,6 +326,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     void CameraEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
 
+    bool m_calibration_mode = false;
+
     struct {
         mtsFunctionWrite beep;
         mtsFunctionWrite string_to_speech;
@@ -337,7 +345,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     bool mOperatorPresent;
     bool mCameraPressed;
 
-    std::string mIOComponentName; // for actuator IOs
+    std::string m_IO_component_name; // for actuator IOs
 
     // components used for events (digital inputs)
     typedef std::pair<std::string, std::string> InterfaceComponentType;

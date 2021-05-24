@@ -80,6 +80,7 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequired->AddFunction("emulate_operator_present", Console.emulate_operator_present);
         interfaceRequired->AddFunction("emulate_clutch", Console.emulate_clutch);
         interfaceRequired->AddFunction("emulate_camera", Console.emulate_camera);
+        interfaceRequired->AddFunction("calibration_mode", Console.calibration_mode);
     }
     interfaceRequired = AddInterfaceRequired("OperatorPresent");
     if (interfaceRequired) {
@@ -111,7 +112,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::Startup(void)
         show();
     }
 
-    // write warning to cerr if not compiled in Release mode
+    // warning if not compiled in Release mode
     if (std::string(CISST_BUILD_TYPE) != "Release") {
         std::string message;
         message.append("Warning:\n");
@@ -119,6 +120,25 @@ void mtsIntuitiveResearchKitConsoleQtWidget::Startup(void)
         message.append(" Release mode.  Make sure your CMake configuration\n");
         message.append(" or catkin profile is configured to compile in\n");
         message.append(" Release mode for better performance and stability");
+
+        QMessageBox * msgBox = new QMessageBox(this);
+        msgBox->setAttribute(Qt::WA_DeleteOnClose);
+        msgBox->setStandardButtons(QMessageBox::Ok);
+        msgBox->setWindowTitle("Warning");
+        msgBox->setText(message.c_str());
+        msgBox->setModal(true);
+        msgBox->show();
+    }
+
+    // warning if running in calibration mode
+    bool calibration_mode;
+    Console.calibration_mode(calibration_mode);
+    if (calibration_mode) {
+        std::string message;
+        message.append("Warning:\n");
+        message.append(" You're running the dVRK console in calibration mode.\n");
+        message.append(" You should only do this if you are currently calibrating\n");
+        message.append(" potentiometers.");
 
         QMessageBox * msgBox = new QMessageBox(this);
         msgBox->setAttribute(Qt::WA_DeleteOnClose);

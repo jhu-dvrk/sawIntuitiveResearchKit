@@ -35,7 +35,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     mtsIntuitiveResearchKitECM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitECM() {}
 
-    void SetSimulated(void) override;
+    void set_simulated(void) override;
 
  protected:
 
