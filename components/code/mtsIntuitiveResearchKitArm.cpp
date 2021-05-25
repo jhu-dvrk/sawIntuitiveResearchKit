@@ -185,8 +185,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mStateTableState.SetAutomaticAdvance(false);
 
     // state table for configuration
-    mStateTableConfiguration.AddData(m_kin_configuration_js, "m_kin_configuration_js");
-    mStateTableConfiguration.AddData(m_pid_configuration_js, "m_pid_configuration_js");
+    mStateTableConfiguration.AddData(m_kin_configuration_js, "kin/configuration_js");
+    mStateTableConfiguration.AddData(m_pid_configuration_js, "pid/configuration_js");
     AddStateTable(&mStateTableConfiguration);
     mStateTableConfiguration.SetAutomaticAdvance(false);
 
@@ -261,31 +261,31 @@ void mtsIntuitiveResearchKitArm::Init(void)
     m_local_measured_cp.SetAutomaticTimestamp(false); // based on PID timestamp
     m_local_measured_cp.SetReferenceFrame(GetName() + "_base");
     m_local_measured_cp.SetMovingFrame(GetName());
-    this->StateTable.AddData(m_local_measured_cp, "local_measured_cp");
+    this->StateTable.AddData(m_local_measured_cp, "local/measured_cp");
 
     m_local_setpoint_cp.SetAutomaticTimestamp(false); // based on PID timestamp
     m_local_setpoint_cp.SetReferenceFrame(GetName() + "_base");
     m_local_setpoint_cp.SetMovingFrame(GetName() + "_setpoint");
-    this->StateTable.AddData(m_local_setpoint_cp, "local_setpoint_cp");
+    this->StateTable.AddData(m_local_setpoint_cp, "local/setpoint_cp");
 
-    this->StateTable.AddData(m_base_frame, "m_base_frame");
+    this->StateTable.AddData(m_base_frame, "base_frame");
 
     m_measured_cv.SetAutomaticTimestamp(false); // keep PID timestamp
     m_measured_cv.SetMovingFrame(GetName());
     m_measured_cv.SetReferenceFrame(GetName() + "_base");
-    this->StateTable.AddData(m_measured_cv, "m_measured_cv");
+    this->StateTable.AddData(m_measured_cv, "measured_cv");
 
     m_body_measured_cf.SetAutomaticTimestamp(false); // keep PID timestamp
-    this->StateTable.AddData(m_body_measured_cf, "body_measured_cf");
+    this->StateTable.AddData(m_body_measured_cf, "body/measured_cf");
 
     m_spatial_measured_cf.SetAutomaticTimestamp(false); // keep PID timestamp
-    this->StateTable.AddData(m_spatial_measured_cf, "spatial_measured_cf");
+    this->StateTable.AddData(m_spatial_measured_cf, "spatial/measured_cf");
 
     m_kin_measured_js.SetAutomaticTimestamp(false); // keep PID timestamp
-    this->StateTable.AddData(m_kin_measured_js, "m_kin_measured_js");
+    this->StateTable.AddData(m_kin_measured_js, "kin/measured_js");
 
     m_kin_setpoint_js.SetAutomaticTimestamp(false); // keep PID timestamp
-    this->StateTable.AddData(m_kin_setpoint_js, "m_kin_setpoint_js");
+    this->StateTable.AddData(m_kin_setpoint_js, "kin/setpoint_js");
 
     // PID
     PIDInterface = AddInterfaceRequired("PID");
