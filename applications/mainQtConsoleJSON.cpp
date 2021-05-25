@@ -69,11 +69,11 @@ int main(int argc, char ** argv)
                               "json configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
 
-    options.AddOptionOneValue("C", "collection-config",
-                              "json configuration file for data collection",
+    options.AddOptionOneValue("c", "collection-config",
+                              "json configuration file for data collection using cisstMultiTask state table collector",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &jsonCollectionConfigFile);
 
-    options.AddOptionNoValue("c", "calibration-mode",
+    options.AddOptionNoValue("C", "calibration-mode",
                              "run in calibration mode, doesn't use potentiometers to monitor encoder values and always force re-homing.  This mode should only be used when calibrating your potentiometers.");
 
     options.AddOptionMultipleValues("m", "component-manager",
