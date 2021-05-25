@@ -78,7 +78,7 @@ if (cisst_FOUND)
     # Set the version number
     set (sawIntuitiveResearchKit_VERSION_MAJOR "2")
     set (sawIntuitiveResearchKit_VERSION_MINOR "0")
-    set (sawIntuitiveResearchKit_VERSION_PATCH "0")
+    set (sawIntuitiveResearchKit_VERSION_PATCH "1")
     set (sawIntuitiveResearchKit_VERSION "${sawIntuitiveResearchKit_VERSION_MAJOR}.${sawIntuitiveResearchKit_VERSION_MINOR}.${sawIntuitiveResearchKit_VERSION_PATCH}")
 
     # Generate sawIntuitiveResearchKitRevision.h
