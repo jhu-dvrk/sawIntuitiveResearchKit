@@ -44,7 +44,10 @@ namespace mtsIntuitiveResearchKit {
     }
 
     // PSM constants
-    const double PSMOutsideCannula = 50.0 * cmn_ms;
+    namespace PSM {
+        const double OutsideCannula = 50.0 * cmn_ms;
+        const double AdapterEngageRange = 171.0 * cmnPI_180;
+    }
 
     // MTM constants
     namespace MTMPlatform {

@@ -459,8 +459,8 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
         jointSet.at(3) = jointSet.at(3) + differenceInTurns * 2.0 * cmnPI;
         // make sure we are away from RCM point, this test is
         // simplistic and might not work with all tools
-        if (jointSet.at(2) < mtsIntuitiveResearchKit::PSMOutsideCannula) {
-            jointSet.at(2) = mtsIntuitiveResearchKit::PSMOutsideCannula;
+        if (jointSet.at(2) < mtsIntuitiveResearchKit::PSM::OutsideCannula) {
+            jointSet.at(2) = mtsIntuitiveResearchKit::PSM::OutsideCannula;
         }
         return robManipulator::ESUCCESS;
     }
@@ -554,17 +554,17 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     CouplingChange.NoToolConfiguration.PositionMin().Assign(-91.0 * cmnPI_180,
                                                             -53.0 * cmnPI_180,
                                                             0.0 * cmn_mm,
-                                                            -175.0 * cmnPI_180,
-                                                            -175.0 * cmnPI_180,
-                                                            -175.0 * cmnPI_180,
-                                                            -175.0 * cmnPI_180);
+                                                            -mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
+                                                            -mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
+                                                            -mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
+                                                            -mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
     CouplingChange.NoToolConfiguration.PositionMax().Assign(91.0 * cmnPI_180,
                                                             53.0 * cmnPI_180,
                                                             240.0 * cmn_mm,
-                                                            175.0 * cmnPI_180,
-                                                            175.0 * cmnPI_180,
-                                                            175.0 * cmnPI_180,
-                                                            175.0 * cmnPI_180);
+                                                            mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
+                                                            mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
+                                                            mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
+                                                            mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
     // using values from sawControllersPID.xml: max_amp / nm_to_amp
     CouplingChange.NoToolConfiguration.EffortMin().SetSize(NumberOfJoints());
     CouplingChange.NoToolConfiguration.EffortMax().SetSize(NumberOfJoints());
@@ -986,7 +986,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         // sterile adapter should be raised up
         m_trajectory_j.goal[2] = 0.0;
         // set last 4 to -170.0
-        m_trajectory_j.goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
+        m_trajectory_j.goal.Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
         m_trajectory_j.goal_v.SetAll(0.0);
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
@@ -1103,7 +1103,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         m_servo_jv.Assign(m_pid_measured_js.Velocity());
 
         // check if the tool in outside the cannula
-        if (m_pid_measured_js.Position().Element(2) >= mtsIntuitiveResearchKit::PSMOutsideCannula) {
+        if (m_pid_measured_js.Position().Element(2) >= mtsIntuitiveResearchKit::PSM::OutsideCannula) {
             std::string message = this->GetName();
             message.append(": tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
             message.append("  If the tool is not engaged properly, move the sterile adapter all the way up and re-insert the tool.");
