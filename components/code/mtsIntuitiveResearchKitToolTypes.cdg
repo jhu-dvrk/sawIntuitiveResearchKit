@@ -47,6 +47,10 @@ class {
             description Large Needle Driver 420006 (S);
         }
         enum-value {
+            name LRG_SUTURECUT_NEEDLE_DRIVER_400296;
+            description Large Suture Cut Needle Driver 400296 (Classic);
+        }
+        enum-value {
             name LONG_TIP_FORCEPS_400048;
             description Long Tip Forceps 400048 (Classic);
         }
@@ -64,6 +68,10 @@ class {
         }
         enum-value {
             name MONOPOLAR_CURVED_SCISSOR_400179;
+            description Monopolar Curved Scissors 400179 (Classic);
+        }
+        enum-value {
+            name MONOPOLAR_CURVED_SCISSORS_400179;
             description Monopolar Curved Scissors 400179 (Classic);
         }
         enum-value {
