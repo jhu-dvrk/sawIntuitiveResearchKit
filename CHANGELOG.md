@@ -1,6 +1,17 @@
 Change log
 ==========
 
+2.0.1 (2021-05-26)
+==================
+
+* API changes:
+  * More snake case renaming for C++ code (internal code)
+* New features:
+  * Console:
+    * Added calibration mode (command line option -C) to disable potentiometer checks and saving encoder offsets when calibrating potentiometers
+* Bug fixes:
+  * Fixed examples of configuration files for data collection using cisstMultiTask state table collectors
+
 2.0.0 (2021-04-08)
 ==================
 
@@ -20,7 +31,7 @@ Added CODE_OF_CONDUCT
 * New features:
   * General:
     * Supported Linux platforms are Ubuntu/ROS are 16.04/kinetic, 18.04/melodic, 20.04/noetic
-    * On Ubuntu, added `rosinstall` files to use with `wstool`.  This is now the preferred way to retrieve the cisst/SAW/dVRK code 
+    * On Ubuntu, added `rosinstall` files to use with `wstool`.  This is now the preferred way to retrieve the cisst/SAW/dVRK code
     * Added github workflow (https://github.com/jhu-dvrk/dvrk-github-workflow/actions)
     * JSON schemas are used to validate configuration files and generate documentation, see README in `share/schemas`
     * Preliminary support for ethernet/UDP. FireWire remains the preferred interface
@@ -67,7 +78,7 @@ Added CODE_OF_CONDUCT
   * Teleoperation PSM:
     * Better *engage* check to start tele-operation when starting and after clutch
     * Added rate control on PSM jaws, slower when engaging
-    * Scale angle to match jaw and gripper ranges 
+    * Scale angle to match jaw and gripper ranges
     * Support tele-operation while ECM is moving
     * Widget: display orientation offset between MTM and PSM
   * ROS:
@@ -83,11 +94,10 @@ Added CODE_OF_CONDUCT
     * Added `qlacommand` to superseed `qlacloserelays`.  Examples: `qlacommand -c open-relays`, `qlacommand -pudp -c reboot`
     * Added script to reset FireWire kernel modules on PC.  It requires `sudo` privileges: ``sudo `which qlareloadfw.bash` ``
     * Kernel log messages (`dmesg -w`) now display the board id, board type (f for FireWire, e for ethernet) and firmware version
-
 * Bug fixes:
   * Fixed bug re. setting trajectory ratios not always applied
-  * Tele-operation for PSM, use alignment mismatch to avoid small jump when engaging 
-  
+  * Tele-operation for PSM, use alignment mismatch to avoid small jump when engaging
+
 1.7.1 (2019-07-04)
 ==================
 

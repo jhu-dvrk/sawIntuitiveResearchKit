@@ -102,9 +102,9 @@ void mtsTeleOperationPSM::Init(void)
 
     mPSM.m_jaw_servo_jp.Goal().SetSize(1);
 
-    this->StateTable.AddData(mMTM.m_measured_cp, "MTM_measured_cp");
-    this->StateTable.AddData(mMTM.m_setpoint_cp, "MTM_setpoint_cp");
-    this->StateTable.AddData(mPSM.m_setpoint_cp, "PSM_setpoint_cp");
+    this->StateTable.AddData(mMTM.m_measured_cp, "MTM/measured_cp");
+    this->StateTable.AddData(mMTM.m_setpoint_cp, "MTM/setpoint_cp");
+    this->StateTable.AddData(mPSM.m_setpoint_cp, "PSM/setpoint_cp");
     this->StateTable.AddData(m_alignment_offset, "alignment_offset");
 
     mConfigurationStateTable = new mtsStateTable(100, "Configuration");

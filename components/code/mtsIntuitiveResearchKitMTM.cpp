@@ -52,9 +52,9 @@ mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM()
     delete GravityCompensationMTM;
 }
 
-void mtsIntuitiveResearchKitMTM::SetSimulated(void)
+void mtsIntuitiveResearchKitMTM::set_simulated(void)
 {
-    mtsIntuitiveResearchKitArm::SetSimulated();
+    mtsIntuitiveResearchKitArm::set_simulated();
     // in simulation mode, we don't need IO Gripper
     RemoveInterfaceRequired("GripperIO");
 }
@@ -129,7 +129,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // last 3 joints tend to be weaker
     PID.DefaultTrackingErrorTolerance.Ref(3, 4) = 30.0 * cmnPI_180;
 
-    this->StateTable.AddData(m_gripper_measured_js, "m_gripper_measured_js");
+    this->StateTable.AddData(m_gripper_measured_js, "gripper/measured_js");
 
     // Gripper IO
     GripperIOInterface = AddInterfaceRequired("GripperIO");

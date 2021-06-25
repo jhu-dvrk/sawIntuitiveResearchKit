@@ -52,7 +52,7 @@ if (cisst_FOUND_AS_REQUIRED)
   # saw components have been compiled within cisst, we should find them automatically
   find_package (sawRobotIO1394          2.0.0 REQUIRED)
   find_package (sawControllers          2.0.0 REQUIRED)
-  find_package (sawIntuitiveResearchKit 2.0.0 REQUIRED)
+  find_package (sawIntuitiveResearchKit 2.0.1 REQUIRED)
   find_package (sawTextToSpeech         1.3.0 REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND

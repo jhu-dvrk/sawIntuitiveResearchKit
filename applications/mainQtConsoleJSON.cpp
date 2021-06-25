@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -70,8 +70,11 @@ int main(int argc, char ** argv)
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
 
     options.AddOptionOneValue("c", "collection-config",
-                              "json configuration file for data collection",
+                              "json configuration file for data collection using cisstMultiTask state table collector",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &jsonCollectionConfigFile);
+
+    options.AddOptionNoValue("C", "calibration-mode",
+                             "run in calibration mode, doesn't use potentiometers to monitor encoder values and always force re-homing.  This mode should only be used when calibrating your potentiometers.");
 
     options.AddOptionMultipleValues("m", "component-manager",
                                     "JSON files to configure component manager",
@@ -102,6 +105,7 @@ int main(int argc, char ** argv)
 
     // console
     mtsIntuitiveResearchKitConsole * console = new mtsIntuitiveResearchKitConsole("console");
+    console->set_calibration_mode(options.IsSet("calibration-mode"));
     console->Configure(jsonMainConfigFile);
     componentManager->AddComponent(console);
     console->Connect();

@@ -1,0 +1,11 @@
+This file is for WPI da Vinci clincial surgical robot
+
+
+1. Tracker ID for different arms:
+
+will update later
+
+2. Current situation:
+
+
+wait for .cal files

@@ -65,7 +65,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     void Run(void) override;
     void Cleanup(void) override;
 
-    virtual void SetSimulated(void);
+    virtual void set_simulated(void);
+    virtual inline void set_calibration_mode(const bool mode) {
+        m_calibration_mode = mode;
+    }
 
  protected:
 
@@ -269,6 +272,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionRead  GetActuatorAmpStatus;
         mtsFunctionRead  GetBrakeAmpStatus;
         mtsFunctionWrite BiasEncoder;
+        mtsFunctionWrite SetEncoderPosition;
         mtsFunctionWrite SetSomeEncoderPosition;
         mtsFunctionWrite SetActuatorCurrent;
         mtsFunctionWrite UsePotsForSafetyCheck;
@@ -486,6 +490,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     // flag to determine if this is connected to actual IO/hardware or simulated
     bool m_simulated;
+
+    // flag to determine if the arm is running in calibration mode, i.e. turn off checks using potentiometers
+    bool m_calibration_mode;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitArm);

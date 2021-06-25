@@ -185,8 +185,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mStateTableState.SetAutomaticAdvance(false);
 
     // state table for configuration
-    mStateTableConfiguration.AddData(m_kin_configuration_js, "m_kin_configuration_js");
-    mStateTableConfiguration.AddData(m_pid_configuration_js, "m_pid_configuration_js");
+    mStateTableConfiguration.AddData(m_kin_configuration_js, "kin/configuration_js");
+    mStateTableConfiguration.AddData(m_pid_configuration_js, "pid/configuration_js");
     AddStateTable(&mStateTableConfiguration);
     mStateTableConfiguration.SetAutomaticAdvance(false);
 
@@ -251,7 +251,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     m_measured_cp.SetAutomaticTimestamp(false); // based on PID timestamp
     m_measured_cp.SetReferenceFrame(GetName() + "_base");
     m_measured_cp.SetMovingFrame(GetName());
-    this->StateTable.AddData(m_measured_cp, "CartesianPosition");
+    this->StateTable.AddData(m_measured_cp, "measured_cp");
 
     m_setpoint_cp.SetAutomaticTimestamp(false); // based on PID timestamp
     m_setpoint_cp.SetReferenceFrame(GetName() + "_base");
@@ -261,31 +261,31 @@ void mtsIntuitiveResearchKitArm::Init(void)
     m_local_measured_cp.SetAutomaticTimestamp(false); // based on PID timestamp
     m_local_measured_cp.SetReferenceFrame(GetName() + "_base");
     m_local_measured_cp.SetMovingFrame(GetName());
-    this->StateTable.AddData(m_local_measured_cp, "local_measured_cp");
+    this->StateTable.AddData(m_local_measured_cp, "local/measured_cp");
 
     m_local_setpoint_cp.SetAutomaticTimestamp(false); // based on PID timestamp
     m_local_setpoint_cp.SetReferenceFrame(GetName() + "_base");
     m_local_setpoint_cp.SetMovingFrame(GetName() + "_setpoint");
-    this->StateTable.AddData(m_local_setpoint_cp, "local_setpoint_cp");
+    this->StateTable.AddData(m_local_setpoint_cp, "local/setpoint_cp");
 
-    this->StateTable.AddData(m_base_frame, "m_base_frame");
+    this->StateTable.AddData(m_base_frame, "base_frame");
 
     m_measured_cv.SetAutomaticTimestamp(false); // keep PID timestamp
     m_measured_cv.SetMovingFrame(GetName());
     m_measured_cv.SetReferenceFrame(GetName() + "_base");
-    this->StateTable.AddData(m_measured_cv, "m_measured_cv");
+    this->StateTable.AddData(m_measured_cv, "measured_cv");
 
     m_body_measured_cf.SetAutomaticTimestamp(false); // keep PID timestamp
-    this->StateTable.AddData(m_body_measured_cf, "body_measured_cf");
+    this->StateTable.AddData(m_body_measured_cf, "body/measured_cf");
 
     m_spatial_measured_cf.SetAutomaticTimestamp(false); // keep PID timestamp
-    this->StateTable.AddData(m_spatial_measured_cf, "spatial_measured_cf");
+    this->StateTable.AddData(m_spatial_measured_cf, "spatial/measured_cf");
 
     m_kin_measured_js.SetAutomaticTimestamp(false); // keep PID timestamp
-    this->StateTable.AddData(m_kin_measured_js, "m_kin_measured_js");
+    this->StateTable.AddData(m_kin_measured_js, "kin/measured_js");
 
     m_kin_setpoint_js.SetAutomaticTimestamp(false); // keep PID timestamp
-    this->StateTable.AddData(m_kin_setpoint_js, "m_kin_setpoint_js");
+    this->StateTable.AddData(m_kin_setpoint_js, "kin/setpoint_js");
 
     // PID
     PIDInterface = AddInterfaceRequired("PID");
@@ -318,6 +318,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         IOInterface->AddFunction("GetActuatorAmpStatus", IO.GetActuatorAmpStatus);
         IOInterface->AddFunction("GetBrakeAmpStatus", IO.GetBrakeAmpStatus);
         IOInterface->AddFunction("BiasEncoder", IO.BiasEncoder);
+        IOInterface->AddFunction("SetEncoderPosition", IO.SetEncoderPosition);
         IOInterface->AddFunction("SetSomeEncoderPosition", IO.SetSomeEncoderPosition);
         IOInterface->AddFunction("SetActuatorCurrent", IO.SetActuatorCurrent);
         IOInterface->AddFunction("UsePotsForSafetyCheck", IO.UsePotsForSafetyCheck);
@@ -738,14 +739,22 @@ void mtsIntuitiveResearchKitArm::Run(void)
 
 void mtsIntuitiveResearchKitArm::Cleanup(void)
 {
+    // engage brakes
     if (HasBrakes()) {
         IO.BrakeEngage();
     }
+    // turn off power
     IO.PowerOffSequence(false);
+    // if in calibration mode, reset encoders to 0
+    if (m_calibration_mode) {
+        vctDoubleVec values(NumberOfJoints());
+        values.SetAll(0.0);
+        IO.SetEncoderPosition(values);
+    }
     CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
 }
 
-void mtsIntuitiveResearchKitArm::SetSimulated(void)
+void mtsIntuitiveResearchKitArm::set_simulated(void)
 {
     m_simulated = true;
     // in simulation mode, we don't need IO
@@ -1113,7 +1122,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
         m_arm_interface->SendStatus(this->GetName() + ": simulated mode, no need to calibrate encoders");
         return;
     }
-    if (m_encoders_biased_from_pots) {
+    if (m_encoders_biased_from_pots && !m_calibration_mode) {
         m_arm_interface->SendStatus(this->GetName() + ": encoders have already been calibrated, skipping");
         return;
     }
@@ -1121,7 +1130,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
     // request bias encoder
     const double currentTime = this->StateTable.GetTic();
     const int nb_samples = 1970; // birth year, state table contains 1999 elements so anything under that would work
-    if (m_re_home) {
+    if (m_re_home || m_calibration_mode) {
         // positive number to ignore encoder preloads
         IO.BiasEncoder(nb_samples);
     } else {
@@ -1175,8 +1184,12 @@ void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
         }
     }
 
-    // use pots for redundancy
-    IO.UsePotsForSafetyCheck(true);
+    // use pots for redundancy when not in calibration mode
+    if (m_calibration_mode) {
+        IO.UsePotsForSafetyCheck(false);
+    } else {
+        IO.UsePotsForSafetyCheck(true);
+    }
 }
 
 void mtsIntuitiveResearchKitArm::TransitionEncodersBiased(void)

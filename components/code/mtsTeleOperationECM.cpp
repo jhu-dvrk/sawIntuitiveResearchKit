@@ -91,9 +91,9 @@ void mtsTeleOperationECM::Init(void)
     m_scale = 0.2;
     m_clutched = false;
 
-    StateTable.AddData(mMTML.m_measured_cp, "MTML_measured_cp");
-    StateTable.AddData(mMTMR.m_measured_cp, "MTMR_measured_cp");
-    StateTable.AddData(mECM.m_measured_cp, "ECM_measured_cp");
+    StateTable.AddData(mMTML.m_measured_cp, "MTML/measured_cp");
+    StateTable.AddData(mMTMR.m_measured_cp, "MTMR/measured_cp");
+    StateTable.AddData(mECM.m_measured_cp, "ECM/measured_cp");
 
     mConfigurationStateTable = new mtsStateTable(100, "Configuration");
     mConfigurationStateTable->SetAutomaticAdvance(false);

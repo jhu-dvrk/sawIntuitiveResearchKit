@@ -133,8 +133,8 @@ public:
         m_configuration_js.PositionMin().at(0) = -2.0 * cmn_m;
         m_configuration_js.PositionMax().at(0) =  2.0 * cmn_m;
 
-        mStateTable.AddData(mVoltages[0], "Voltages[0]");
-        mStateTable.AddData(mVoltages[1], "Voltages[1]");
+        mStateTable.AddData(mVoltages[0], "PrimaryVoltage");
+        mStateTable.AddData(mVoltages[1], "SecondaryVoltage");
         mStateTable.AddData(mVoltagesExtra, "VoltagesExtra");
         mStateTable.AddData(m_measured_js, "measured_js");
         mStateTable.AddData(m_configuration_js, "configuration_js");
@@ -145,12 +145,12 @@ public:
 
         m_local_measured_cp.SetReferenceFrame("Cart");
         m_local_measured_cp.SetMovingFrame(name + "_base");
-        mStateTable.AddData(m_local_measured_cp, "local_measured_cp");
+        mStateTable.AddData(m_local_measured_cp, "local/measured_cp");
 
-        mStateTable.AddData(mBaseFrame, "m_base_frame");
-        mStateTableConfiguration.AddData(mName, "Name");
-        mStateTableConfiguration.AddData(mSerialNumber, "SerialNumber");
-        mStateTableConfiguration.AddData(mPlugNumber, "PlugNumber");
+        mStateTable.AddData(mBaseFrame, "base_frame");
+        mStateTableConfiguration.AddData(mName, "name");
+        mStateTableConfiguration.AddData(mSerialNumber, "serial_number");
+        mStateTableConfiguration.AddData(mPlugNumber, "plug_number");
         mStateTableConfiguration.AddData(mVoltageToPositionOffsets[0], "PrimaryJointOffset");
         mStateTableConfiguration.AddData(mVoltageToPositionOffsets[1], "SecondaryJointOffset");
         mStateTableBrakeCurrent.AddData(mBrakeDesiredCurrent, "BrakeCurrent");
@@ -928,7 +928,7 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
     RobotIO.PowerOffSequence(true); // also opens safety relays
 }
 
-void mtsIntuitiveResearchKitSUJ::SetSimulated(void)
+void mtsIntuitiveResearchKitSUJ::set_simulated(void)
 {
     m_simulated = true;
     // set all arms simulated

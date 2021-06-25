@@ -41,9 +41,9 @@ mtsIntuitiveResearchKitECM::mtsIntuitiveResearchKitECM(const mtsTaskPeriodicCons
     Init();
 }
 
-void mtsIntuitiveResearchKitECM::SetSimulated(void)
+void mtsIntuitiveResearchKitECM::set_simulated(void)
 {
-    mtsIntuitiveResearchKitArm::SetSimulated();
+    mtsIntuitiveResearchKitArm::set_simulated();
     // in simulation mode, we don't need clutch IO
     RemoveInterfaceRequired("ManipClutch");
 }
