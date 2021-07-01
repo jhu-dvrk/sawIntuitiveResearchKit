@@ -14,7 +14,7 @@
 % Gravity calibrated 16-Jan-2008 by ld
 % Grip calibrated 16-Jan-2008 by ld
 
-FileType      = [ MTM_CAL ]
+FileType      = [ 'MTM_CAL' ]
 FileVersion   = [ 302 ]
 serial_number = [ 36370 ]
 part_number   = [ 380026 ]

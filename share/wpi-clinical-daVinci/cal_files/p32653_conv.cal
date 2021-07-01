@@ -12,7 +12,7 @@
 % Signal range calibrated 24-May-2011 by dl
 % Pots calibrated 24-May-2011 by dl
 
-FileType      = [ PSM_CAL ]
+FileType      = [ 'PSM_CAL' ]
 FileVersion   = [ 305 ]
 serial_number = [ 32653 ]
 part_number   = [ 380188 ]

@@ -13,7 +13,7 @@
 % Pots calibrated 03-Nov-2009 by gb
 % Gravity calibrated 03-Nov-2009 by gb
 
-FileType      = [ ECM_CAL ]
+FileType      = [ 'ECM_CAL' ]
 FileVersion   = [ 305 ]
 serial_number = [ 25975 ]
 part_number   = [ 380189 ]

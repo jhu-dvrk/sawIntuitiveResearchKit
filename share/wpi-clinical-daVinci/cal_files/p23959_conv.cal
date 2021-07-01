@@ -12,7 +12,7 @@
 % Signal range calibrated 23-Apr-2009 by gb
 % Pots calibrated 23-Apr-2009 by gb
 
-FileType      = [ PSM_CAL ]
+FileType      = [ 'PSM_CAL' ]
 FileVersion   = [ 305 ]
 serial_number = [ 23959 ]
 part_number   = [ 380008 ]
