@@ -112,10 +112,7 @@
         }
     ]
     ,
-    "ecm-teleop":
-    {
-        "mtm-left": "MTML",
-        "mtm-right": "MTMR",
-        "ecm": "ECM"
-    }
+    "ecm-teleop": {}
+    ,
+    "ecm-autonomous": {}
 }

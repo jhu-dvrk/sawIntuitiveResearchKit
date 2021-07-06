@@ -159,31 +159,59 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         prmOperatingState m_operating_state;
     };
 
-    class CISST_EXPORT TeleopECM {
+    class CISST_EXPORT Controller {
     public:
-        typedef enum {TELEOP_ECM, TELEOP_ECM_DERIVED, TELEOP_ECM_GENERIC} TeleopECMType;
+        typedef enum {DEFAULT, DERIVED, GENERIC} ControllerType;
         friend class mtsIntuitiveResearchKitConsole;
         friend class mtsIntuitiveResearchKitConsoleQt;
         friend class dvrk::console;
 
-        TeleopECM(const std::string & name);
+        Controller(const std::string & name, mtsIntuitiveResearchKitConsole * console);
 
-        /*! Create and configure the robot arm. */
-        void ConfigureTeleop(const TeleopECMType type,
-                             const double & periodInSeconds,
-                             const Json::Value & jsonConfig);
-
-        /*! Accessors */
         const std::string & Name(void) const;
+
+        /* Set some common data members using json */
+        virtual void ConfigureJSON(const Json::Value & jsonConfig);
+
+        /*! Create and configure the component */
+        virtual void CreateComponent(const Json::Value & jsonConfig) = 0;
 
     protected:
         std::string m_name;
-        TeleopECMType m_type;
+        mtsIntuitiveResearchKitConsole * m_console;
         mtsFunctionWrite state_command;
+        ControllerType m_type;
+        double m_period;
         mtsInterfaceRequired * InterfaceRequired;
     };
 
-    class TeleopPSM {
+    class CISST_EXPORT TeleopECM: public Controller {
+    public:
+        friend class mtsIntuitiveResearchKitConsole;
+        friend class mtsIntuitiveResearchKitConsoleQt;
+        friend class dvrk::console;
+
+        TeleopECM(const std::string & name,
+                  mtsIntuitiveResearchKitConsole * console);
+
+        /*! Create and configure the component */
+        void CreateComponent(const Json::Value & jsonConfig) override;
+    };
+
+    class CISST_EXPORT AutonomousECM: public Controller {
+    public:
+        friend class mtsIntuitiveResearchKitConsole;
+        friend class mtsIntuitiveResearchKitConsoleQt;
+        friend class dvrk::console;
+
+        AutonomousECM(const std::string & name,
+                      mtsIntuitiveResearchKitConsole * console);
+
+        /*! Create and configure the component */
+        void CreateComponent(const Json::Value & jsonConfig) override;
+    };
+
+    class CISST_EXPORT TeleopPSM: Controller {
     public:
         typedef enum {TELEOP_PSM, TELEOP_PSM_DERIVED, TELEOP_PSM_GENERIC} TeleopPSMType;
         friend class mtsIntuitiveResearchKitConsole;
@@ -191,16 +219,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         friend class dvrk::console;
 
         TeleopPSM(const std::string & name,
+                  mtsIntuitiveResearchKitConsole * console,
                   const std::string & nameMTM,
                   const std::string & namePSM);
 
-        /*! Create and configure the robot arm. */
-        void ConfigureTeleop(const TeleopPSMType type,
-                             const double & periodInSeconds,
-                             const Json::Value & jsonConfig);
-
-        /*! Accessors */
-        const std::string & Name(void) const;
+        /*! Create and configure the teleop component */
+        void CreateComponent(const Json::Value & jsonConfig) override;
 
         /*! Turn on/off selected */
         inline const bool & Selected(void) const {
@@ -212,13 +236,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     protected:
         bool mSelected;
-        std::string m_name;
-        TeleopPSMType m_type;
         std::string mMTMName;
         std::string mPSMName;
-        mtsFunctionWrite state_command;
         mtsFunctionWrite set_scale;
-        mtsInterfaceRequired * InterfaceRequired;
     };
 
     mtsIntuitiveResearchKitConsole(const std::string & componentName);
@@ -254,6 +274,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     bool Connect(void);
 
+    bool find_ecm(const std::string & arm_name, const std::string info,
+                  std::string & component, std::string & insterface);
+    bool find_psm(const std::string & arm_name, const std::string info,
+                  std::string & component, std::string & insterface);
+    bool find_mtm(const std::string & arm_name, const std::string info,
+                  std::string & component, std::string & insterface);
+
  protected:
     bool mConfigured;
     mtsDelayedConnections mConnections;
@@ -263,6 +290,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     bool mTeleopPSMRunning;
     bool mTeleopPSMAligning;
     bool mTeleopECMRunning;
+    bool mAutonomousECMRunning;
     bool mTeleopEnabledBeforeCamera;
 
     typedef std::map<std::string, Arm *> ArmList;
@@ -286,6 +314,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     /*! Single ECM bimanual teleoperation */
     TeleopECM * mTeleopECM;
 
+    /*! Single ECM autonomous controller */
+    AutonomousECM * mAutonomousECM;
+
     /*! daVinci Head Sensor */
     mtsDaVinciHeadSensor * mDaVinciHeadSensor;
 
@@ -298,13 +329,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
                           const cmnPath & configPath);
     bool AddArmInterfaces(Arm * arm);
 
-    // these two methods have exact same implementation.it would be
-    // nice to have a base class, or template this
-    bool AddTeleopECMInterfaces(TeleopECM * teleop);
-    bool AddTeleopPSMInterfaces(TeleopPSM * teleop);
-
-    bool ConfigureECMTeleopJSON(const Json::Value & jsonTeleop);
-    bool ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop);
+    bool ConfigureECMTeleopJSON(const Json::Value & jsonConfig);
+    bool ConfigureECMAutonomousJSON(const Json::Value & jsonConfig);
+    bool ConfigurePSMTeleopJSON(const Json::Value & jsonConfig);
 
     void power_off(void);
     void power_on(void);
