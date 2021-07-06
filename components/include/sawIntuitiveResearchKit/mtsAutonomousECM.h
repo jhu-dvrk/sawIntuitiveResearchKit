@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
+#include <cisstParameterTypes/prmOperatingState.h>
 
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 
@@ -52,9 +53,9 @@ protected:
     virtual void Init(void);
 
     // Event Handler
-    void MTMLErrorEventHandler(const mtsMessage & message);
-    void MTMRErrorEventHandler(const mtsMessage & message);
-    void ECMErrorEventHandler(const mtsMessage & message);
+    void ArmErrorEventHandler(const mtsMessage & message);
+
+    void state_command(const std::string & command);
 
 void RunAllStates(void);
 
@@ -96,6 +97,7 @@ void RunAllStates(void);
 
     double mInStateTimer;
 
+#if 0
     struct TeleopState {
         vct3 C;     // center
         vct3 Up;    // up direction
@@ -109,6 +111,10 @@ void RunAllStates(void);
         vctMatrixRotation3<double> ECMRotEuler; //initial rotation of ECM calc using Euler angles
         vctVec ECMPositionJoint;
     } mInitial;
+#endif
+
+    prmOperatingState m_operating_state;
+    prmOperatingState::StateType m_desired_state;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsAutonomousECM);

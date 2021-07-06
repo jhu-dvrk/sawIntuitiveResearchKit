@@ -57,7 +57,10 @@ void mtsAutonomousECM::Init(void)
     mConfigurationStateTable->SetAutomaticAdvance(false);
     AddStateTable(mConfigurationStateTable);
 
-    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MTML");
+    mtsInterfaceRequired * interfaceRequired;
+
+#if 0
+    interfaceRequired = AddInterfaceRequired("MTML");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("measured_cp",
                                        mMTML.measured_cp);
@@ -75,7 +78,7 @@ void mtsAutonomousECM::Init(void)
                                        mMTML.operating_state);
         interfaceRequired->AddFunction("state_command",
                                        mMTML.state_command);
-        interfaceRequired->AddEventHandlerWrite(&mtsAutonomousECM::MTMLErrorEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsAutonomousECM::ArmErrorEventHandler,
                                                 this, "error");
     }
 
@@ -93,14 +96,14 @@ void mtsAutonomousECM::Init(void)
                                        mMTMR.body_set_cf_orientation_absolute);
         interfaceRequired->AddFunction("use_gravity_compensation",
                                        mMTMR.use_gravity_compensation);
-        interfaceRequired->AddEventHandlerWrite(&mtsAutonomousECM::MTMRErrorEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsAutonomousECM::ArmErrorEventHandler,
                                                 this, "error");
         interfaceRequired->AddFunction("operating_state",
                                        mMTMR.operating_state);
         interfaceRequired->AddFunction("state_command",
                                        mMTMR.state_command);
     }
-
+#endif
     interfaceRequired = AddInterfaceRequired("ECM");
     if (interfaceRequired) {
         // ECM, use PID desired position to make sure there is no jump when engaging
@@ -114,7 +117,7 @@ void mtsAutonomousECM::Init(void)
                                        mECM.operating_state);
         interfaceRequired->AddFunction("state_command",
                                        mECM.state_command);
-        interfaceRequired->AddEventHandlerWrite(&mtsAutonomousECM::ECMErrorEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsAutonomousECM::ArmErrorEventHandler,
                                                 this, "error");
     }
 
@@ -125,6 +128,11 @@ void mtsAutonomousECM::Init(void)
         // commands
         mInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
                                         "period_statistics"); // mtsIntervalStatistics
+
+        mInterface->AddCommandWrite(&mtsAutonomousECM::state_command, this,
+                                    "state_command", std::string("DISABLED"));
+
+#if 0
         mInterface->AddCommandReadState(StateTable,
                                         mMTML.m_measured_cp,
                                         "MTML/measured_cp");
@@ -134,10 +142,16 @@ void mtsAutonomousECM::Init(void)
         mInterface->AddCommandReadState(StateTable,
                                         mECM.m_measured_cp,
                                         "ECM/measured_cp");
+#endif
         // events
         mInterface->AddEventWrite(MessageEvents.state,
                                   "state", std::string(""));
     }
+}
+
+void mtsAutonomousECM::ArmErrorEventHandler(const mtsMessage & message)
+{
+    std::cerr << "got error: " << message << std::endl;
 }
 
 void mtsAutonomousECM::Configure(const std::string & filename)
@@ -206,6 +220,7 @@ void mtsAutonomousECM::RunAllStates(void)
 {
     mtsExecutionResult executionResult;
 
+    #if 0
     // get MTML Cartesian position/velocity
     executionResult = mMTML.measured_cp(mMTML.m_measured_cp);
     if (!executionResult.IsOK()) {
@@ -237,7 +252,7 @@ void mtsAutonomousECM::RunAllStates(void)
         mInterface->SendError(this->GetName() + ": unable to get cartesian velocity from MTMR");
         // mTeleopState.SetDesiredState("DISABLED");
     }
-
+#endif
     // get ECM Cartesian position for GUI
     executionResult = mECM.measured_cp(mECM.m_measured_cp);
     if (!executionResult.IsOK()) {
@@ -580,3 +595,17 @@ void mtsAutonomousECM::RunAllStates(void)
 //     MessageEvents.desired_state(state);
 //     mInterface->SendStatus(this->GetName() + ": set desired state to " + state);
 // }
+
+
+void mtsAutonomousECM::state_command(const std::string & command)
+{
+    if (command == "enable") {
+        m_desired_state = prmOperatingState::ENABLED;
+        return;
+    }
+    if (command == "disable") {
+        m_desired_state = prmOperatingState::DISABLED; // we might have to end trajectory first...
+        return;
+    }
+    mInterface->SendWarning(this->GetName() + ": " + command + " doesn't seem to be a valid state_command");
+}
