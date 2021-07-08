@@ -121,13 +121,13 @@ void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
     // set tool type
     toolLayout->addWidget(new QLabel("Set tool type"));
     QCBToolOptions = new QComboBox();
-    auto iter = mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin();
-    auto end = mtsIntuitiveResearchKitToolTypes::TypeVectorString().end();
-    for (; iter != end; ++iter) {
-        if (*iter != "ERROR") {
-            QCBToolOptions->addItem((*iter).c_str());
-        }
-    }
+    // auto iter = mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin();
+    // auto end = mtsIntuitiveResearchKitToolTypes::TypeVectorString().end();
+    // for (; iter != end; ++iter) {
+    //     if (*iter != "ERROR") {
+    //         QCBToolOptions->addItem((*iter).c_str());
+    //     }
+    // }
     QCBToolOptions->setEnabled(false);
     toolLayout->addWidget(QCBToolOptions);
 

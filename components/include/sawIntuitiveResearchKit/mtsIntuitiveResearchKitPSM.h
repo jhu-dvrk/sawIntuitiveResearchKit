@@ -22,7 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitToolTypes.h>
+#include <sawIntuitiveResearchKit/mtsToolList.h>
 
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -40,10 +40,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
  protected:
 
+    void LoadToolList(const cmnPath & path,
+                      const std::string & indexFile = "tool/index.json");
     void PostConfigure(const Json::Value & jsonConfig,
                        const cmnPath & configPath,
                        const std::string & filename) override;
-    virtual void ConfigureTool(const std::string & filename);
+    virtual bool ConfigureTool(const std::string & filename);
 
     /*! Configuration methods */
     inline size_t NumberOfJoints(void) const override {
@@ -123,7 +125,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void servo_jf_internal(const vctDoubleVec & newEffort) override;
 
     void control_move_jp_on_stop(const bool reached) override;
-    
+
     void EnableJointsEventHandler(const vctBoolVec & enable);
     void CouplingEventHandler(const prmActuatorJointCoupling & coupling);
 
@@ -171,8 +173,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     /*! Configuration for tool detection, either using Dallas Chip,
       manual or fixed based on configuration file. */
+    mtsToolList mToolList;
+    size_t mToolIndex;
     mtsIntuitiveResearchKitToolTypes::Detection mToolDetection;
-    mtsIntuitiveResearchKitToolTypes::Type mToolType;
     bool mToolConfigured = false;
     bool mToolTypeRequested = false;
     struct {
