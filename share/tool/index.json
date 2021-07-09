@@ -164,10 +164,10 @@
         ,
         {
             "model": "420033",
-            "names": ["BLACK_DIAMOND_MICRO_FORCEPS"],
+            "names": ["MICRO_FORCEPS", "BLACK_DIAMOND_MICRO_FORCEPS"],
             "description": "Black Diamond Micro Forceps",
             "generation": "S",
-            "file": "BLACK_DIAMOND_MICRO_FORCEPS_420033.json"
+            "file": "MICRO_FORCEPS_420033.json"
         }
         ,
         {
