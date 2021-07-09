@@ -78,9 +78,7 @@ bool mtsToolList::Load(const cmnPath & path,
             // make sure names at all upper case
             for (auto & name : description->names) {
                 std::string upper_case_name = name;
-                for (auto & c: upper_case_name) {
-                    c = toupper(c);
-                }
+                std::transform(upper_case_name.begin(), upper_case_name.end(), upper_case_name.begin(), ::toupper);
                 if (name != upper_case_name) {
                     CMN_LOG_CLASS_INIT_WARNING << "ToolList::Load: issue found in file \""
                                                << fullFilename << "\": all names should be upper case, found \""
@@ -141,7 +139,7 @@ bool mtsToolList::Load(const cmnPath & path,
             mToolsByModel.insert(ModelValue(description->model, description->index));
             typedef decltype(mToolsByNameModel)::value_type ModelNameValue;
             for (const auto & name : description->names) {
-                mToolsByNameModel.insert(ModelNameValue(name + "_" + description->model, description->index));
+                mToolsByNameModel.insert(ModelNameValue(name + ":" + description->model, description->index));
             }
         }
     } catch (...) {
@@ -155,23 +153,59 @@ bool mtsToolList::Load(const cmnPath & path,
 
 bool mtsToolList::Find(const std::string & toolName, size_t & index) const
 {
-    // search using all possible names
+    // remove the version number to search name + model
+    bool hasVersion;
+    int version;
+    std::string nameModel;
+    std::string::size_type versionStart = toolName.find('[');
+    if (versionStart != std::string::npos) {
+        hasVersion = true;
+        nameModel = toolName.substr(0, versionStart);
+        versionStart++; // to skip the [
+        std::string::size_type versionEnd = toolName.find(']', versionStart);
+        if (versionEnd == std::string::npos) {
+            CMN_LOG_CLASS_INIT_ERROR << "ToolList::Find: tool name \""
+                                     << toolName << "\" is missing the matching ] after the version number" << std::endl;
+            return false;
+        }
+        version = std::stoi(toolName.substr(versionStart, versionEnd - versionStart));
+    } else {
+        hasVersion = false;
+        nameModel = toolName;
+    }
 
-    // then assumes it's only name + model (as in dVRK 2.0.0 to 2.0.1)
-    auto range = mToolsByNameModel.equal_range(toolName);
-    // found something
-    if (range.first != range.second) {
-        // make sure there's only one option
-        if ((range.first++) == range.second) {
+    // then look for the model and use version if and only if we have multiple options
+    auto nb_found =  mToolsByNameModel.count(nameModel);
+    // not found
+    if (nb_found == 0) {
+        return false;
+    }
+
+    // we have at least one definition
+    auto range = mToolsByNameModel.equal_range(nameModel);
+
+    // if there's only one, let's use it
+    if (nb_found == 1) {
+        index = (range.first)->second;
+        return true;
+    } else if (nb_found > 1) {
+        if (!hasVersion) {
             CMN_LOG_CLASS_INIT_ERROR << "ToolList::Find: found multiple tools matching the name \""
-                                     << toolName << "\", no way to determine which one to pick" << std::endl;
+                                     << toolName << "\", no way to determine which one to pick without a version" << std::endl;
             return false;
         } else {
-            range.first--;
-            index = (range.first)->second;
-            return true;
+            for (auto & it = range.first;
+                 it != range.second; ++it) {
+                if ((version >= mTools.at(it->second)->version_min)
+                    && (version <= mTools.at(it->second)->version_max)) {
+                    index = it->second;
+                    return true;
+                }
+            }
         }
     }
+
+    // other cases
     return false;
 }
 

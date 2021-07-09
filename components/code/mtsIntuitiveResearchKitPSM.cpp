@@ -1485,7 +1485,9 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
         return;
     }
     // supported tools
-    mToolConfigured = ConfigureTool(mToolList.File(mToolIndex));
+    const std::string toolFile = mToolList.File(mToolIndex);
+    m_arm_interface->SendStatus(this->GetName() + ": using tool file \"" + toolFile + "\"");
+    mToolConfigured = ConfigureTool(toolFile);
     if (mToolConfigured) {
         set_tool_present(true);
     } else {

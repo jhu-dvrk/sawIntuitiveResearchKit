@@ -57,6 +57,20 @@ class {
     }
 
     member {
+        name version_min;
+        type int;
+        visibility public;
+        default -1;
+    }
+    
+    member {
+        name version_max;
+        type int;
+        visibility public;
+        default -1;
+    }
+
+    member {
         name index;
         type int;
         visibility public;
