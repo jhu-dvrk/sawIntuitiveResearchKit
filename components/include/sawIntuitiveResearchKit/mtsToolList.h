@@ -54,6 +54,8 @@ class CISST_EXPORT mtsToolList
         return mTools.size();
     }
 
+    std::string PossibleNames(const std::string & divider) const;
+
  protected:
 
     // for logs

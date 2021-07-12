@@ -156,7 +156,6 @@
         // S/Si
         {
             "model": "420006",
-            "version_min": 0,
             "version_max": 11,
             "names": ["LARGE_NEEDLE_DRIVER"],
             "description": "Large Needle Driver",
@@ -167,7 +166,6 @@
         {
             "model": "420006",
             "version_min": 12,
-            "version_max": 12,
             "names": ["LARGE_NEEDLE_DRIVER"],
             "description": "Large Needle Driver (Geared)",
             "generation": "S",

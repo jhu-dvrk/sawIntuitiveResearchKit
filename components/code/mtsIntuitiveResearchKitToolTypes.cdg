@@ -28,6 +28,18 @@ class {
     name mtsIntuitiveResearchKitToolDescription;
     attribute CISST_EXPORT;
 
+    enum {
+        name Version;
+        enum-value {
+            name VERSION_MIN_DEFAULT;
+            value -1;
+        }
+        enum-value {
+            name VERSION_MAX_DEFAULT;
+            value 9999999;
+        }
+    }
+
     member {
         name model;
         type std::string;
@@ -60,14 +72,14 @@ class {
         name version_min;
         type int;
         visibility public;
-        default -1;
+        default VERSION_MIN_DEFAULT;
     }
-    
+
     member {
         name version_max;
         type int;
         visibility public;
-        default -1;
+        default VERSION_MAX_DEFAULT;
     }
 
     member {

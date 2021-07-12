@@ -40,8 +40,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
  protected:
 
-    void LoadToolList(const cmnPath & path,
-                      const std::string & indexFile = "tool/index.json");
+    void load_tool_list(const cmnPath & path,
+                        const std::string & indexFile = "tool/index.json");
+
+    void tool_list_size(size_t & size) const;
+    void tool_name(const size_t & index, std::string & name) const;
+    void tool_full_description(const size_t & index, std::string & description) const;
+
     void PostConfigure(const Json::Value & jsonConfig,
                        const cmnPath & configPath,
                        const std::string & filename) override;

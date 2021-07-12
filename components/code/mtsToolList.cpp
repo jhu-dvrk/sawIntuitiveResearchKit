@@ -216,8 +216,18 @@ std::string mtsToolList::File(const size_t & index) const
 
 std::string mtsToolList::Name(const size_t & index) const
 {
-    return mTools.at(index)->names.at(0)
-        + "_" + mTools.at(index)->model;
+    std::string result =
+        mTools.at(index)->names.at(0)
+        + ":" + mTools.at(index)->model + "[";
+    if (mTools.at(index)->version_min != mtsIntuitiveResearchKitToolDescription::VERSION_MIN_DEFAULT) {
+        result += std::to_string(mTools.at(index)->version_min);
+    }
+    result += "..";
+    if (mTools.at(index)->version_max != mtsIntuitiveResearchKitToolDescription::VERSION_MAX_DEFAULT) {
+        result += std::to_string(mTools.at(index)->version_max);
+    }
+    result += "]";
+    return result;
 }
 
 std::string mtsToolList::Description(const size_t & index) const
@@ -228,6 +238,20 @@ std::string mtsToolList::Description(const size_t & index) const
 std::string mtsToolList::FullDescription(const size_t & index) const
 {
     return mTools.at(index)->description
-        + " for " + mTools.at(index)->generation
-        + "[" + mTools.at(index)->model + "]";
+        + " for da Vinci " + mTools.at(index)->generation
+        + " [" + mTools.at(index)->model + "]";
+}
+
+std::string mtsToolList::PossibleNames(const std::string & divider) const
+{
+    std::string result;
+    for (size_t index = 0;
+         index < mTools.size();
+         ++index) {
+        if (index != 0) {
+            result.append(divider);
+        }
+        result.append(Name(index));
+    }
+    return result;
 }

@@ -58,10 +58,25 @@ void mtsIntuitiveResearchKitPSM::set_simulated(void)
     RemoveInterfaceRequired("Dallas");
 }
 
-void mtsIntuitiveResearchKitPSM::LoadToolList(const cmnPath & path,
-                                              const std::string & indexFile)
+void mtsIntuitiveResearchKitPSM::load_tool_list(const cmnPath & path,
+                                                const std::string & indexFile)
 {
     mToolList.Load(path, indexFile);
+}
+
+void mtsIntuitiveResearchKitPSM::tool_list_size(size_t & size) const
+{
+    size = mToolList.size();
+}
+
+void mtsIntuitiveResearchKitPSM::tool_name(const size_t & index, std::string & name) const
+{
+    name = mToolList.Name(index);
+}
+
+void mtsIntuitiveResearchKitPSM::tool_full_description(const size_t & index, std::string & description) const
+{
+    description = mToolList.FullDescription(index);
 }
 
 void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
@@ -69,7 +84,7 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
                                                const std::string & filename)
 {
     // load tool index
-    LoadToolList(configPath);
+    load_tool_list(configPath);
 
     // tool detection
     const auto jsonToolDetection = jsonConfig["tool-detection"];
@@ -85,7 +100,8 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
                 if (!found) {
                     CMN_LOG_CLASS_INIT_ERROR << "PostConfigure: " << this->GetName()
                                              << ", \"" << fixedTool << "\" found in file \""
-                                             << filename << "\" is not a supported type" << std::endl;
+                                             << filename << "\" is not a supported type." << std::endl
+                                             << "Supported tool types are:\n" << mToolList.PossibleNames("\n") << std::endl;
                     exit(EXIT_FAILURE);
                 }
                 // now look for the file to configure the tool
@@ -595,6 +611,10 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_servo_jf, this, "jaw/servo_jf");
 
     // tool specific interface
+    m_arm_interface->AddCommandRead(&mtsIntuitiveResearchKitPSM::tool_list_size, this, "tool_list_size");
+    m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitPSM::tool_name, this, "tool_name");
+    m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitPSM::tool_full_description, this, "tool_full_description");
+
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::set_adapter_present, this, "set_adapter_present");
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::set_tool_present, this, "set_tool_present");
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::set_tool_type, this, "set_tool_type");
@@ -1480,13 +1500,16 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
     m_arm_interface->SendStatus(this->GetName() + ": setting up for tool type \"" + toolType + "\"");
     // check if the tool is in the supported list
     if (!mToolList.Find(toolType, mToolIndex)) {
-        m_arm_interface->SendError(this->GetName() + ": tool type \"" + toolType + "\" is not supported");
+        CMN_LOG_CLASS_RUN_ERROR << "Supported tool types are:\n" << mToolList.PossibleNames("\n") << std::endl;
+        m_arm_interface->SendError(this->GetName() + ": tool type \""
+                                   + toolType + "\" is not supported, see cisstLog for details");
         ToolEvents.tool_type(std::string("ERROR"));
         return;
     }
     // supported tools
     const std::string toolFile = mToolList.File(mToolIndex);
-    m_arm_interface->SendStatus(this->GetName() + ": using tool file \"" + toolFile + "\"");
+    m_arm_interface->SendStatus(this->GetName() + ": using tool file \"" + toolFile
+                                + "\" for: " + mToolList.FullDescription(mToolIndex));
     mToolConfigured = ConfigureTool(toolFile);
     if (mToolConfigured) {
         set_tool_present(true);

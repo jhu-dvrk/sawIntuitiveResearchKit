@@ -41,6 +41,9 @@ mtsIntuitiveResearchKitPSMQtWidget::mtsIntuitiveResearchKitPSMQtWidget(const std
     InterfaceRequired->AddFunction("jaw/measured_js", Jaw.measured_js);
     InterfaceRequired->AddFunction("jaw/configuration_js", Jaw.configuration_js);
     InterfaceRequired->AddFunction("jaw/move_jp", Jaw.move_jp);
+    InterfaceRequired->AddFunction("tool_list_size", tool_list_size);
+    InterfaceRequired->AddFunction("tool_name", tool_name);
+    InterfaceRequired->AddFunction("tool_full_description", tool_full_description);
     InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSMQtWidget::ToolTypeEventHandler,
                                             this, "tool_type");
     InterfaceRequired->AddEventHandlerVoid(&mtsIntuitiveResearchKitPSMQtWidget::ToolTypeRequestEventHandler,
@@ -119,16 +122,9 @@ void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
     toolLayout->addWidget(QLEToolType);
 
     // set tool type
-    toolLayout->addWidget(new QLabel("Set tool type"));
     QCBToolOptions = new QComboBox();
-    // auto iter = mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin();
-    // auto end = mtsIntuitiveResearchKitToolTypes::TypeVectorString().end();
-    // for (; iter != end; ++iter) {
-    //     if (*iter != "ERROR") {
-    //         QCBToolOptions->addItem((*iter).c_str());
-    //     }
-    // }
     QCBToolOptions->setEnabled(false);
+    QCBToolOptions->addItem("Select tool type");
     toolLayout->addWidget(QCBToolOptions);
 
     toolLayout->addStretch();
@@ -144,6 +140,20 @@ void mtsIntuitiveResearchKitPSMQtWidget::setupUiDerived(void)
 
 void mtsIntuitiveResearchKitPSMQtWidget::timerEventDerived(void)
 {
+    // refresh list of tools if empty and connected
+    if ((QCBToolOptions->count() == 1) && tool_list_size.IsValid()) {
+        size_t nb_tools;
+        tool_list_size(nb_tools);
+        for (size_t index = 0;
+             index < nb_tools;
+             ++index) {
+            std::string name;
+            tool_name(index, name);
+            QCBToolOptions->addItem(name.c_str());
+        }
+    }
+
+    // get jaw data
     Jaw.measured_js(m_jaw_measured_js);
 
     QString text;
@@ -203,7 +213,16 @@ void mtsIntuitiveResearchKitPSMQtWidget::SlotToolTypeRequestEventHandler(void)
 
 void mtsIntuitiveResearchKitPSMQtWidget::SlotToolTypeSelected(QString toolType)
 {
-    std::string message = "Please confirm that the tool inserted matches: " + toolType.toStdString();
+    // first line is just a label
+    if (QCBToolOptions->currentIndex() == 0) {
+        return;
+    }
+    // otherwise, find as much info as possible
+    std::string fullDescription;
+    tool_full_description(static_cast<size_t>(QCBToolOptions->currentIndex() - 1), fullDescription);
+    std::string message = "Please confirm that the tool inserted matches:\n"
+        + toolType.toStdString() + "\n"
+        + fullDescription;
     int answer = QMessageBox::warning(this, "mtsIntuitiveResearchKitPSMQtWidget",
                                       message.c_str(),
                                       QMessageBox::No | QMessageBox::Yes);
