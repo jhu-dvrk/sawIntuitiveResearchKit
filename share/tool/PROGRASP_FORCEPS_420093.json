@@ -6,7 +6,7 @@
         "joints": [
             {
                 "name": "outer_roll",
-                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4162,
+                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4670,
                 "type": "revolute",
                 "mode": "active",
                 "offset":  0.0000,
@@ -26,7 +26,7 @@
             },
             {
                 "name": "outer_wrist_yaw",
-                "alpha": -1.5708, "A":  0.0091, "theta":  0.0000, "D":  0.0000,
+                "alpha": -1.5708, "A":  0.0107, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
                 "offset": -1.5708,
@@ -52,17 +52,17 @@
     ,
     // values from the dVRK user guide, see tool appendix C
     "coupling" : {
-        "ActuatorToJointPosition" : [[ -1.5632,  0.0000,  0.0000,  0.0000],
-                                     [  0.0000,  1.0186,  0.0000,  0.0000],
-                                     [  0.0000, -0.8306,  0.6089,  0.6089],
-                                     [  0.0000,  0.0000, -1.2177,  1.2177]]
+        "ActuatorToJointPosition" : [[ -1.5631,  0.0000,  0.0000,  0.0000],
+                                     [  0.0000,  1.0000,  0.0000,  0.0000],
+                                     [  0.0000, -0.5068, -0.5135, -0.5135],
+                                     [  0.0000,  0.0000, -0.5279,  0.5279]]
     }
     ,
     // angles used to engage the tool, in radians
     // make sure these are within the range of motion IN the cannula
-    // 263, 15, 15, 0 degrees
+    // 263, 10, 10, 0 degrees
     "tool-engage-position" : {
-        "lower" : [-4.59022, -0.261799, -0.261799, 0.0],
-        "upper" : [ 4.59022,  0.261799,  0.261799, 0.0]
+        "lower" : [-4.59022, -0.174533, -0.174533, 0.0],
+        "upper" : [ 4.59022,  0.174533,  0.174533, 0.0]
     }
 }

@@ -6,7 +6,7 @@
         "joints": [
             {
                 "name": "outer_roll",
-                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4162,
+                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4670,
                 "type": "revolute",
                 "mode": "active",
                 "offset":  0.0000,

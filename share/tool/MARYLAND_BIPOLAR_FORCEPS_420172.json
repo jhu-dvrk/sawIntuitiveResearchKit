@@ -6,12 +6,12 @@
         "joints": [
             {
                 "name": "outer_roll",
-                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4162,
+                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4670,
                 "type": "revolute",
                 "mode": "active",
                 "offset":  0.0000,
-                "qmin": -4.53786, // -260 degrees
-                "qmax":  4.53786, //  260 degrees
+                "qmin": -4.4506, // -255 degrees
+                "qmax":  4.4506, //  255 degrees
                 "ftmax": 0.33
             },
             {
@@ -20,18 +20,18 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset": -1.5708,
-                "qmin": -1.39626, // -80 degrees
-                "qmax":  1.39626, //  80 degrees
+                "qmin": -1.2217, // -70 degrees
+                "qmax":  1.2217, //  70 degrees
                 "ftmax": 0.25
             },
             {
                 "name": "outer_wrist_yaw",
-                "alpha": -1.5708, "A":  0.0091, "theta":  0.0000, "D":  0.0000,
+                "alpha": -1.5708, "A":  0.0107, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
                 "offset": -1.5708,
-                "qmin": -1.39626, // -80 degrees
-                "qmax":  1.39626, //  80 degrees
+                "qmin": -1.5708, // -90 degrees
+                "qmax":  1.5708, //  90 degrees
                 "ftmax": 0.20
             }
         ]
@@ -39,9 +39,9 @@
     ,
     "jaw" : {
         // for last joint, manual says [0, 30] but we need -20 to allow stronger torque, 80 to open wide
-        "qmin": -0.349066, // -20 degrees
-        "qmax":  1.39626,  //  80 degrees
-        "ftmax": 0.16
+        "qmin": -0.349066, // -20 degrees - overriding ISI values
+        "qmax":  1.39626,  //  80 degrees - overriding ISI values
+        "ftmax": 0.19
     }
     ,
     // rotation to match ISI convention (for read-only research API on commercial da Vinci)
@@ -50,19 +50,19 @@
                         [-1.0,  0.0,  0.0,  0.0],
                         [ 0.0,  0.0,  0.0,  1.0]]
     ,
-    // values from the dVRK user guide, see tool appendix C
+    // values from the dVRK user guide, see tool appendix C, ISI numbers rounded to 6 digits
     "coupling" : {
-        "ActuatorToJointPosition" : [[ -1.5632,  0.0000,  0.0000,  0.0000],
-                                     [  0.0000,  1.0186,  0.0000,  0.0000],
-                                     [  0.0000, -0.8306,  0.6089,  0.6089],
-                                     [  0.0000,  0.0000, -1.2177,  1.2177]]
+        "ActuatorToJointPosition" : [[ -1.563233,  0.000000,  0.000000,  0.000000],
+                                     [  0.000000,  1.000000,  0.000000,  0.000000],
+                                     [  0.000000, -0.630273,  0.457982,  0.457982],
+                                     [  0.000000,  0.000000, -0.915964,  0.915964]]
     }
     ,
     // angles used to engage the tool, in radians
     // make sure these are within the range of motion IN the cannula
-    // 263, 15, 15, 0 degrees
+    // 263, 10, 10, 0 degrees
     "tool-engage-position" : {
-        "lower" : [-4.59022, -0.261799, -0.261799, 0.0],
-        "upper" : [ 4.59022,  0.261799,  0.261799, 0.0]
+        "lower" : [-4.59022, -0.174533, -0.174533, 0.0],
+        "upper" : [ 4.59022,  0.174533,  0.174533, 0.0]
     }
 }

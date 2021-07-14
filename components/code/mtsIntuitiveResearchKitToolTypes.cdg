@@ -1,3 +1,11 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+inline-header {
+// Always include last
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+}
+
 class {
     name mtsIntuitiveResearchKitToolTypes;
 
@@ -13,119 +21,71 @@ class {
             name FIXED;
         }
     }
+}
+
+
+class {
+    name mtsIntuitiveResearchKitToolDescription;
+    attribute CISST_EXPORT;
 
     enum {
-        name Type;
-        prefix _;
+        name Version;
         enum-value {
-            name ERROR;
-            description Error;
-            value 0;
+            name VERSION_MIN_DEFAULT;
+            value -1;
         }
         enum-value {
-            name CADIERE_FORCEPS_400049;
-            description Cadiere Forceps 400049 (Classic);
-        }
-        enum-value {
-            name CURVED_SCISSORS_400178;
-            description Curved Scissors 400178 (Classic);
-        }
-        enum-value {
-            name DEBAKEY_FORCEPS_400036;
-            description DeBakey Forceps 400036 (Classic);
-        }
-        enum-value {
-            name FENESTRATED_BIPOLAR_FORCEPS_400205;
-            description Fenestrated Bipolar Forceps(Classic);
-        }
-        enum-value {
-            name LARGE_NEEDLE_DRIVER_400006;
-            description Large Needle Driver 400006 (Classic);
-        }
-        enum-value {
-            name LARGE_NEEDLE_DRIVER_420006;
-            description Large Needle Driver 420006 (S);
-        }
-        enum-value {
-            name LRG_SUTURECUT_NEEDLE_DRIVER_400296;
-            description Large Suture Cut Needle Driver 400296 (Classic);
-        }
-        enum-value {
-            name LONG_TIP_FORCEPS_400048;
-            description Long Tip Forceps 400048 (Classic);
-        }
-        enum-value {
-            name MARYLAND_BIPOLAR_FORCEPS_400172;
-            description Maryland Bipolar Forceps 400172 (Classic);
-        }
-        enum-value {
-            name MEGA_NEEDLE_DRIVER_400194;
-            description Mega Needle Driver 400194 (Classic);
-        }
-        enum-value {
-            name MICRO_FORCEPS_400033;
-            description Micro Forceps 400006 (Classic);
-        }
-        enum-value {
-            name MONOPOLAR_CURVED_SCISSOR_400179;
-            description Monopolar Curved Scissors 400179 (Classic);
-        }
-        enum-value {
-            name MONOPOLAR_CURVED_SCISSORS_400179;
-            description Monopolar Curved Scissors 400179 (Classic);
-        }
-        enum-value {
-            name NEEDLE_DRIVER_400117;
-            description 5mm Needle Driver 400117 (Classic);
-        }
-        enum-value {
-            name PERMANENT_CAUTERY_SPATULA_400184;
-            description Permanent Cautery Spatula 400184 (Classic);
-        }
-        enum-value {
-            name PROGRASP_FORCEPS_400093;
-            description Prograsp Forceps 400093 (Classic);
-        }
-        enum-value {
-            name RESANO_FORCEPS_400181;
-            description Resano Forceps 400181 (Classic);
-        }
-        enum-value {
-            name SMALL_CLIP_APPLIER_400003;
-            description Small Clip Applier 400181 (Classic);
-        }
-        enum-value {
-            name THORACIC_GRASPER_400208;
-            description Thoracic Grasper 400208 (Classic);
-        }
-        enum-value {
-            name 5MM_MARYLAND_DISSECTOR_400143;
-            description 5mm Maryland Dissector 400143 (Classic);
-        }
-        enum-value {
-            name 5MM_NEEDLE_DRIVER_400117;
-            description 5mm Needle Driver 400117 (Classic);
-        }
-        enum-value {
-            name CUSTOM_TOOL_000001;
-            description Custom Tool 000001;
-        }
-        enum-value {
-            name CUSTOM_TOOL_000002;
-            description Custom Tool 000002;
-        }
-        enum-value {
-            name CUSTOM_TOOL_000003;
-            description Custom Tool 000003;
-        }
-        enum-value {
-            name CUSTOM_TOOL_000004;
-            description Custom Tool 000004;
-        }
-        enum-value {
-            name CUSTOM_TOOL_000005;
-            description Custom Tool 000005;
+            name VERSION_MAX_DEFAULT;
+            value 9999999;
         }
     }
 
+    member {
+        name model;
+        type std::string;
+        visibility public;
+    }
+    member {
+        name names;
+        type std::vector<std::string>;
+        visibility public;
+    }
+    member {
+        name description;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name generation;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name file;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name version_min;
+        type int;
+        visibility public;
+        default VERSION_MIN_DEFAULT;
+    }
+
+    member {
+        name version_max;
+        type int;
+        visibility public;
+        default VERSION_MAX_DEFAULT;
+    }
+
+    member {
+        name index;
+        type int;
+        visibility public;
+        default -1;
+    }
 }

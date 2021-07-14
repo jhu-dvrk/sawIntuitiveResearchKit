@@ -1,12 +1,12 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    // see dVRK user guide
+    // see dVRK user guide - THIS IS A S/Si TOOL! Longer shaft! "D" = 0.4670
     "DH": {
         "convention": "modified",
         "joints": [
             {
                 "name": "outer_roll",
-                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4162,
+                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4670,
                 "type": "revolute",
                 "mode": "active",
                 "offset":  0.0000,
@@ -52,7 +52,7 @@
     ,
     // values from the dVRK user guide, see tool appendix C
     "coupling" : {
-        "ActuatorToJointPosition" : [[ -1.5632,  0.0000,  0.0000,  0.0000],
+        "ActuatorToJointPosition" : [[  1.5333,  0.0000,  0.0000,  0.0000],
                                      [  0.0000,  1.0186,  0.0000,  0.0000],
                                      [  0.0000, -0.8306,  0.6089,  0.6089],
                                      [  0.0000,  0.0000, -1.2177,  1.2177]]

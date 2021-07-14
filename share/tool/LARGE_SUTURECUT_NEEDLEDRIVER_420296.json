@@ -6,7 +6,7 @@
         "joints": [
             {
                 "name": "outer_roll",
-                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4162,
+                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4670,
                 "type": "revolute",
                 "mode": "active",
                 "offset":  0.0000,
@@ -40,7 +40,7 @@
     "jaw" : {
         // for last joint, manual says [0, 30] but we need -20 to allow stronger torque, 80 to open wide
         "qmin": -0.349066, // -20 degrees
-        "qmax":  1.39626,  //  80 degrees
+        "qmax":  0.7854,  //  45 degrees
         "ftmax": 0.16
     }
     ,
