@@ -148,7 +148,7 @@
         {
             "model": "400296",
             "names": ["LRG_SUTURECUT_NEEDLE_DRIVER"],
-            "description": "Lrg Suturecut Needle Driver",
+            "description": "Large Suturecut Needle Driver",
             "generation": "Classic",
             "file": "LRG_SUTURECUT_NEEDLE_DRIVER_400296.json"
         }
@@ -218,6 +218,14 @@
             "description": "Curved Scissors",
             "generation": "S",
             "file": "CURVED_SCISSORS_420178.json"
+        }
+        ,
+        {
+            "model": "420296",
+            "names": ["LARGE_SUTURECUT_NEEDLEDRIVER"],
+            "description": "Large Suturecut Needle Driver",
+            "generation": "S",
+            "file": "LARGE_SUTURECUT_NEEDLEDRIVER_420296.json"
         }
     ]
 }
