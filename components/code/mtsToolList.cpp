@@ -96,18 +96,18 @@ bool mtsToolList::Load(const cmnPath & path,
                 return false;
             }
             // make sure model number starts with 40 for Classic and 42 for S
-            if (description->generation == "Classic") {
-                if (description->model.substr(0, 2) != "40") {
+            if (description->model.substr(0, 2) == "40") {
+                if (description->generation != "Classic") {
                     CMN_LOG_CLASS_INIT_WARNING  << "ToolList::Load: issue found in file \""
                                                 << fullFilename << "\": tool model \"" << description->model
-                                                << "\" starts with 40 so it's generation should be \"Classic\""
+                                                << "\" starts with 40 so it's generation should be \"Classic\", not \""
                                                 << description->generation << "\"" << std::endl;
                 }
-            } else if (description->generation == "S") {
-                if (description->model.substr(0, 2) != "42") {
+            } else if (description->model.substr(0, 2) == "42") {
+                if (description->generation != "S") {
                     CMN_LOG_CLASS_INIT_WARNING  << "ToolList::Load: issue found in file \""
                                                 << fullFilename << "\": tool model \"" << description->model
-                                                << "\" starts with 42 so it's generation should be \"S\""
+                                                << "\" starts with 42 so it's generation should be \"S\", not \""
                                                 << description->generation << "\"" << std::endl;
                 }
             }
@@ -157,18 +157,44 @@ bool mtsToolList::Find(const std::string & toolName, size_t & index) const
     bool hasVersion;
     int version;
     std::string nameModel;
+    // search for [
     std::string::size_type versionStart = toolName.find('[');
     if (versionStart != std::string::npos) {
         hasVersion = true;
         nameModel = toolName.substr(0, versionStart);
         versionStart++; // to skip the [
         std::string::size_type versionEnd = toolName.find(']', versionStart);
+        // make sure ] is there
         if (versionEnd == std::string::npos) {
             CMN_LOG_CLASS_INIT_ERROR << "ToolList::Find: tool name \""
                                      << toolName << "\" is missing the matching ] after the version number" << std::endl;
             return false;
         }
-        version = std::stoi(toolName.substr(versionStart, versionEnd - versionStart));
+        // check for ".." in version, if just .., no version specified
+        if (toolName.substr(versionStart, versionEnd - versionStart) == "..") {
+            hasVersion = false;
+            nameModel = toolName.substr(0, versionStart - 1);
+        } else {
+            // search for ".." to see if a range is specified
+             std::string::size_type rangeStart = toolName.find("..", versionStart);
+             if (rangeStart != std::string::npos) {
+                 // now, 3 cases  m..M, m.. or ..M where m is minimum, M is maximum
+                 // if there is a m version, just use it
+                 if (versionStart != rangeStart) {
+                     const auto versionString = toolName.substr(versionStart, rangeStart - versionStart);
+                     version = std::stoi(versionString);
+                 } else {
+                     // use string from end or .. to ]
+                     const size_t rangeEnd = rangeStart + 2;
+                     const auto versionString = toolName.substr(rangeEnd, versionEnd - rangeEnd);
+                     version = std::stoi(versionString);
+                 }
+             } else {
+                 // last case, no ".." in version
+                 const auto versionString = toolName.substr(versionStart, versionEnd - versionStart);
+                 version = std::stoi(versionString);
+             }
+        }
     } else {
         hasVersion = false;
         nameModel = toolName;
@@ -216,9 +242,13 @@ std::string mtsToolList::File(const size_t & index) const
 
 std::string mtsToolList::Name(const size_t & index) const
 {
-    std::string result =
-        mTools.at(index)->names.at(0)
-        + ":" + mTools.at(index)->model + "[";
+    return mTools.at(index)->names.at(0)
+        + ":" + mTools.at(index)->model + VersionDescription(index);
+}
+
+std::string mtsToolList::VersionDescription(const size_t & index) const
+{
+    std::string result = "[";
     if (mTools.at(index)->version_min != mtsIntuitiveResearchKitToolDescription::VERSION_MIN_DEFAULT) {
         result += std::to_string(mTools.at(index)->version_min);
     }
@@ -239,7 +269,7 @@ std::string mtsToolList::FullDescription(const size_t & index) const
 {
     return mTools.at(index)->description
         + " for da Vinci " + mTools.at(index)->generation
-        + " [" + mTools.at(index)->model + "]";
+        + " (" + mTools.at(index)->model + VersionDescription(index) + ")";
 }
 
 std::string mtsToolList::PossibleNames(const std::string & divider) const

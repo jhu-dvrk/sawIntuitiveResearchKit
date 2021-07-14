@@ -46,6 +46,8 @@ class CISST_EXPORT mtsToolList
 
     std::string Name(const size_t & index) const;
 
+    std::string VersionDescription(const size_t & index) const;
+
     std::string Description(const size_t & index) const;
 
     std::string FullDescription(const size_t & index) const;

@@ -147,9 +147,9 @@ void mtsIntuitiveResearchKitPSMQtWidget::timerEventDerived(void)
         for (size_t index = 0;
              index < nb_tools;
              ++index) {
-            std::string name;
-            tool_name(index, name);
-            QCBToolOptions->addItem(name.c_str());
+            std::string description;
+            tool_full_description(index, description);
+            QCBToolOptions->addItem(description.c_str());
         }
     }
 
@@ -211,23 +211,23 @@ void mtsIntuitiveResearchKitPSMQtWidget::SlotToolTypeRequestEventHandler(void)
     QCBToolOptions->setEnabled(true);
 }
 
-void mtsIntuitiveResearchKitPSMQtWidget::SlotToolTypeSelected(QString toolType)
+void mtsIntuitiveResearchKitPSMQtWidget::SlotToolTypeSelected(QString toolDescription)
 {
     // first line is just a label
     if (QCBToolOptions->currentIndex() == 0) {
         return;
     }
     // otherwise, find as much info as possible
-    std::string fullDescription;
-    tool_full_description(static_cast<size_t>(QCBToolOptions->currentIndex() - 1), fullDescription);
+    std::string toolName;
+    tool_name(static_cast<size_t>(QCBToolOptions->currentIndex() - 1), toolName);
     std::string message = "Please confirm that the tool inserted matches:\n"
-        + toolType.toStdString() + "\n"
-        + fullDescription;
+        + toolName + "\n"
+        + toolDescription.toStdString();
     int answer = QMessageBox::warning(this, "mtsIntuitiveResearchKitPSMQtWidget",
                                       message.c_str(),
                                       QMessageBox::No | QMessageBox::Yes);
     if (answer == QMessageBox::Yes) {
-        set_tool_type(toolType.toStdString());
+        set_tool_type(toolName);
     }
 }
 
