@@ -272,6 +272,11 @@ std::string mtsToolList::FullDescription(const size_t & index) const
         + " (" + mTools.at(index)->model + VersionDescription(index) + ")";
 }
 
+std::string mtsToolList::Generation(const size_t & index) const
+{
+    return mTools.at(index)->generation;
+}
+
 std::string mtsToolList::PossibleNames(const std::string & divider) const
 {
     std::string result;

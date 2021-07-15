@@ -52,6 +52,8 @@ class CISST_EXPORT mtsToolList
 
     std::string FullDescription(const size_t & index) const;
 
+    std::string Generation(const size_t & index) const;
+
     inline size_t size(void) const {
         return mTools.size();
     }

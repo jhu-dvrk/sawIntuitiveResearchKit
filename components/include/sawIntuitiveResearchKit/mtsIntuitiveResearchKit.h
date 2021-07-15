@@ -45,7 +45,8 @@ namespace mtsIntuitiveResearchKit {
 
     // PSM constants
     namespace PSM {
-        const double OutsideCannula = 50.0 * cmn_ms;
+        const double OutsideCannulaClassic = 50.0 * cmn_mm;
+        const double OutsideCannulaS = 10.0 * cmn_mm; // instrument shaft is about 40mm longer
         const double AdapterEngageRange = 171.0 * cmnPI_180;
     }
 

@@ -73,7 +73,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
                                             const vctFrm4x4 & cartesianGoal) override;
 
     inline bool IsSafeForCartesianControl(void) const override {
-        return (m_kin_measured_js.Position().at(2) >= mtsIntuitiveResearchKit::PSM::OutsideCannula);
+        return (m_kin_measured_js.Position().at(2) >= mOutsideCannula);
     }
 
 
@@ -181,6 +181,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     mtsToolList mToolList;
     size_t mToolIndex;
     mtsIntuitiveResearchKitToolTypes::Detection mToolDetection;
+    double mOutsideCannula = mtsIntuitiveResearchKit::PSM::OutsideCannulaClassic; // use safer value by default
     bool mToolConfigured = false;
     bool mToolTypeRequested = false;
     struct {

@@ -470,8 +470,8 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
         jointSet.at(3) = jointSet.at(3) + differenceInTurns * 2.0 * cmnPI;
         // make sure we are away from RCM point, this test is
         // simplistic and might not work with all tools
-        if (jointSet.at(2) < mtsIntuitiveResearchKit::PSM::OutsideCannula) {
-            jointSet.at(2) = mtsIntuitiveResearchKit::PSM::OutsideCannula;
+        if (jointSet.at(2) < mOutsideCannula) {
+            jointSet.at(2) = mOutsideCannula;
         }
         return robManipulator::ESUCCESS;
     }
@@ -1118,7 +1118,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         m_servo_jv.Assign(m_pid_measured_js.Velocity());
 
         // check if the tool in outside the cannula
-        if (m_pid_measured_js.Position().Element(2) >= mtsIntuitiveResearchKit::PSM::OutsideCannula) {
+        if (m_pid_measured_js.Position().Element(2) >= mOutsideCannula) {
             std::string message = this->GetName();
             message.append(": tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
             message.append("  If the tool is not engaged properly, move the sterile adapter all the way up and re-insert the tool.");
@@ -1513,6 +1513,11 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
     mToolConfigured = ConfigureTool(toolFile);
     if (mToolConfigured) {
         set_tool_present(true);
+        if (mToolList.Generation(mToolIndex) == "S") {
+            mOutsideCannula = mtsIntuitiveResearchKit::PSM::OutsideCannulaS;
+        } else {
+            mOutsideCannula = mtsIntuitiveResearchKit::PSM::OutsideCannulaClassic;
+        }
     } else {
         m_arm_interface->SendError(this->GetName() + ": failed to configure tool \"" + toolType + "\", check terminal output and cisstLog file");
         ToolEvents.tool_type(std::string("ERROR"));
