@@ -3,9 +3,10 @@
     "arms":
     [
         {
-            "name": "PSM2",
+            "name": "PSM1",
             "type": "PSM",
-            "serial": "31717"
+            "serial": "27110",
+            "arm": "PSM1-27110-Bone-Cutter.json"
         }
     ]
 }
