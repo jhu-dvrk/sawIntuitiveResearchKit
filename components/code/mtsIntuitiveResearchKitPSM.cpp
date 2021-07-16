@@ -83,8 +83,23 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
                                                const cmnPath & configPath,
                                                const std::string & filename)
 {
-    // load tool index
+    // load default tool index
     load_tool_list(configPath);
+
+    // extra tool definitions
+    const auto jsonToolIndexFile = jsonConfig["custom-tool-index"];
+    if (!jsonToolIndexFile.isNull()) {
+        const auto toolIndexFile = jsonToolIndexFile.asString();
+        auto fullname = configPath.Find(toolIndexFile);
+        if (fullname == "") {
+            CMN_LOG_CLASS_INIT_ERROR << "PostConfigure: " << this->GetName()
+                                     << " using file \"" << filename << "\" can't find tool index file \""
+                                     << toolIndexFile << "\" in path: "
+                                     << configPath << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        load_tool_list(configPath, toolIndexFile);
+    }
 
     // tool detection
     const auto jsonToolDetection = jsonConfig["tool-detection"];
@@ -131,7 +146,10 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
     } else {
         // construct path using working directory and share/arm
         cmnPath path(cmnPath::GetWorkingDirectory());
+        // find the file in tool
         path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
+        // find file if specified as share/<system>/...
+        path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
         fullFilename = path.Find(filename);
         // still not found, try to add suffix to search again
         if (fullFilename == "") {
@@ -451,28 +469,37 @@ void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec & jointsKinemati
 robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
+    // make sure we are away from RCM point, create a new goal on sphere around RCM point (i.e. origin)
+    vctFrm4x4 goal = cartesianGoal;
+    double distanceToRCM = cartesianGoal.Translation().Norm();
+    // if too close to zero we're going to run into issue in any case
+    if (distanceToRCM < 1.0 * cmn_mm) {
+        m_arm_interface->SendWarning(GetName() + ": InverseKinematics, can't solve IK too close to RCM");
+        return robManipulator::EFAILURE;
+    }
+
+    // project away from RCM if not safe
+    if (distanceToRCM < mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM) {
+        goal.Translation().Multiply(mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM / distanceToRCM);
+    }
+
     robManipulator::Errno Err;
     if (mSnakeLike) {
-        Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);
+        Err = Manipulator->InverseKinematics(jointSet, goal);
         // Check for equality Snake joints (4,7) and (5,6)
         if (fabs(jointSet.at(4) - jointSet.at(7)) > 0.00001 ||
             fabs(jointSet.at(5) - jointSet.at(6)) > 0.00001) {
             m_arm_interface->SendWarning(GetName() + ": InverseKinematics, equality constraint violated");
         }
     } else {
-        Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);
+        Err = Manipulator->InverseKinematics(jointSet, goal);
     }
 
     if (Err == robManipulator::ESUCCESS) {
-        // find closest solution mgod 2 pi
+        // find closest solution mod 2 pi
         const double difference = m_kin_measured_js.Position().at(3) - jointSet.at(3);
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet.at(3) = jointSet.at(3) + differenceInTurns * 2.0 * cmnPI;
-        // make sure we are away from RCM point, this test is
-        // simplistic and might not work with all tools
-        if (jointSet.at(2) < mOutsideCannula) {
-            jointSet.at(2) = mOutsideCannula;
-        }
         return robManipulator::ESUCCESS;
     }
     return robManipulator::EFAILURE;
@@ -1118,7 +1145,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         m_servo_jv.Assign(m_pid_measured_js.Velocity());
 
         // check if the tool in outside the cannula
-        if (m_pid_measured_js.Position().Element(2) >= mOutsideCannula) {
+        if (m_pid_measured_js.Position().Element(2) >= mEngageDepth) {
             std::string message = this->GetName();
             message.append(": tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
             message.append("  If the tool is not engaged properly, move the sterile adapter all the way up and re-insert the tool.");
@@ -1514,9 +1541,9 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
     if (mToolConfigured) {
         set_tool_present(true);
         if (mToolList.Generation(mToolIndex) == "S") {
-            mOutsideCannula = mtsIntuitiveResearchKit::PSM::OutsideCannulaS;
+            mEngageDepth = mtsIntuitiveResearchKit::PSM::EngageDepthS;
         } else {
-            mOutsideCannula = mtsIntuitiveResearchKit::PSM::OutsideCannulaClassic;
+            mEngageDepth = mtsIntuitiveResearchKit::PSM::EngageDepthClassic;
         }
     } else {
         m_arm_interface->SendError(this->GetName() + ": failed to configure tool \"" + toolType + "\", check terminal output and cisstLog file");
