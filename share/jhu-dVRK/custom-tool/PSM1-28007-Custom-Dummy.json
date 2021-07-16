@@ -1,0 +1,24 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    // Tell the PSM class to load some new extra tool definitions, that file will define the CUSTOM_DUMMY tool
+    "custom-tool-index": "jhu-dVRK/custom-tool/custom-tool-index.json",
+
+    // Redefine kinematic for the base PSM too.  This is a special
+    // case and likely not needed for most custom tools.  This can be
+    // used to reduce the range of motion of the translation stage if
+    // the tool "base" is bigger than usual and mighe collide with the
+    // cannula
+    "kinematic": "jhu-dVRK/custom-tool/psm-Custom-Dummy.json",
+
+    //
+    // You CAN'T use automatic for custom tools, the Dallas chip will automatically set the tool type!
+    // ---> NO: "tool-detection": "AUTOMATIC"
+    //
+
+    // You need to use either MANUAL or FIXED
+    "tool-detection": "MANUAL"
+
+    // If fixed, make sure you use the name:model based on the fields you added to your "custom-tool-index"
+    // "tool-detection": "FIXED",
+    // "tool": "CUSTOM_DUMMY:420006"
+}
