@@ -72,10 +72,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal) override;
 
-    inline bool IsSafeForCartesianControl(void) const override {
-        return (m_local_measured_cp_frame.Translation().Norm()
-                >=  mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM);
-    }
+    bool IsSafeForCartesianControl(void) const override;
 
 
     void Init(void) override;
