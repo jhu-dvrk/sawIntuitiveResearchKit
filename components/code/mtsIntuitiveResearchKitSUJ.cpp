@@ -1288,6 +1288,14 @@ void mtsIntuitiveResearchKitSUJ::RunEnabled(void)
     mPreviousTic = currentTic;
 }
 
+void mtsIntuitiveResearchKitSUJ::SetHomed(const bool homed)
+{
+    if (homed != m_operating_state.IsHomed()) {
+        m_operating_state.IsHomed() = homed;
+        DispatchOperatingState();
+    }
+}
+
 void mtsIntuitiveResearchKitSUJ::SetLiftVelocity(const double & velocity)
 {
     if ((velocity >= -1.0) && (velocity <= 1.0)) {
