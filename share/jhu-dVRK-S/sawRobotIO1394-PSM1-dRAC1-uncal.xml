@@ -1,0 +1,144 @@
+<Config Version="4">
+   <Robot Name="PSMS" NumOfActuator="7" NumOfJoint="7" SN="12345">
+      <Actuator ActuatorID="0" AxisID="0" BoardID="0" Type="Revolute">
+         <Drive>
+            <AmpsToBits Offset="32767" Scale="4000.00" />
+            <BitsToFeedbackAmps Offset="-8.19175" Scale="0.00025" />
+            <NmToAmps Scale="1" />
+            <MaxCurrent Unit="A" Value="2.5" />
+         </Drive>
+         <AnalogBrake AxisID="7" BoardID="0">
+            <AmpsToBits Offset="32768" Scale="4000.00" />
+            <BitsToFeedbackAmps Offset="-8.19175" Scale="0.00025" />
+            <MaxCurrent Unit="A" Value="0.150" />
+            <ReleaseCurrent Unit="A" Value="0.150" />
+            <ReleaseTime Value="0.5" />
+            <ReleasedCurrent Unit="A" Value="0.080" />
+            <EngagedCurrent Unit="A" Value="0.000" />
+         </AnalogBrake>
+         <Encoder>
+            <BitsToPosSI Scale="0.00005309086" Unit="deg" />
+         </Encoder>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="1" />
+            <VoltsToPosSI Offset="0" Scale="1" Unit="deg" />
+         </AnalogIn>
+      </Actuator>
+      <Actuator ActuatorID="1" AxisID="1" BoardID="0" Type="Revolute">
+         <Drive>
+            <AmpsToBits Offset="32768" Scale="4000.00" />
+            <BitsToFeedbackAmps Offset="-8.19175" Scale="0.00025" />
+            <NmToAmps Scale="1" />
+            <MaxCurrent Unit="A" Value="2.5" />
+         </Drive>
+         <AnalogBrake AxisID="8" BoardID="0">
+            <AmpsToBits Offset="32768" Scale="4000.00" />
+            <BitsToFeedbackAmps Offset="-8.19175" Scale="0.00025" />
+            <MaxCurrent Unit="A" Value="0.150" />
+            <ReleaseCurrent Unit="A" Value="0.150" />
+            <ReleaseTime Value="0.5" />
+            <ReleasedCurrent Unit="A" Value="0.080" />
+            <EngagedCurrent Unit="A" Value="0.000" />
+         </AnalogBrake>
+         <Encoder>
+            <BitsToPosSI Scale="0.0000607750744" Unit="deg" />
+         </Encoder>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="1" />
+            <VoltsToPosSI Offset="0" Scale="1" Unit="deg" />
+         </AnalogIn>
+      </Actuator>
+      <Actuator ActuatorID="2" AxisID="2" BoardID="0" Type="Prismatic">
+         <Drive>
+            <AmpsToBits Offset="32768" Scale="4000.00" />
+            <BitsToFeedbackAmps Offset="-8.19175" Scale="0.00025" />
+            <NmToAmps Scale="0.008307" />
+            <MaxCurrent Unit="A" Value="0.670" />
+         </Drive>
+         <AnalogBrake AxisID="9" BoardID="0">
+            <AmpsToBits Offset="-32768" Scale="4000.00" />
+            <BitsToFeedbackAmps Offset="-8.19175" Scale="0.00025" />
+            <MaxCurrent Unit="A" Value="0.250" />
+            <ReleaseCurrent Unit="A" Value="-0.250" />
+            <ReleaseTime Value="0.5" />
+            <ReleasedCurrent Unit="A" Value="-0.250" />
+            <EngagedCurrent Unit="A" Value="0.000" />
+         </AnalogBrake>
+         <Encoder>
+            <BitsToPosSI Scale="0.0001299587068" Unit="mm" />
+         </Encoder>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="1" />
+            <VoltsToPosSI Offset="0" Scale="1" Unit="mm" />
+         </AnalogIn>
+      </Actuator>
+      <Actuator ActuatorID="3" AxisID="3" BoardID="0" Type="Revolute">
+         <Drive>
+            <AmpsToBits Offset="32768" Scale="4000.00" />
+            <BitsToFeedbackAmps Offset="-8.19175" Scale="0.00025" />
+            <NmToAmps Scale="0.673064" />
+            <MaxCurrent Unit="A" Value="0.670" />
+         </Drive>
+         <Encoder>
+            <BitsToPosSI Scale="-0.00658191" Unit="deg" />
+         </Encoder>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="1" />
+            <VoltsToPosSI Offset="0" Scale="1" Unit="deg" />
+         </AnalogIn>
+      </Actuator>
+            <Actuator ActuatorID="4" AxisID="4" BoardID="0" Type="Revolute">
+         <Drive>
+            <AmpsToBits Offset="32768" Scale="4000.00" />
+            <BitsToFeedbackAmps Offset="-8.19175" Scale="0.00025" />
+            <NmToAmps Scale="0.673064" />
+            <MaxCurrent Unit="A" Value="0.670" />
+         </Drive>
+         <Encoder>
+            <BitsToPosSI Scale="-0.00658191" Unit="deg" />
+         </Encoder>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="1" />
+            <VoltsToPosSI Offset="0" Scale="1" Unit="deg" />
+         </AnalogIn>
+      </Actuator>
+            <Actuator ActuatorID="5" AxisID="5" BoardID="0" Type="Revolute">
+         <Drive>
+            <AmpsToBits Offset="32768" Scale="4000.00" />
+            <BitsToFeedbackAmps Offset="-8.19175" Scale="0.00025" />
+            <NmToAmps Scale="0.673064" />
+            <MaxCurrent Unit="A" Value="0.670" />
+         </Drive>
+         <Encoder>
+            <BitsToPosSI Scale="-0.00658191" Unit="deg" />
+         </Encoder>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="1" />
+            <VoltsToPosSI Offset="0" Scale="1" Unit="deg" />
+         </AnalogIn>
+      </Actuator>
+            <Actuator ActuatorID="6" AxisID="6" BoardID="0" Type="Revolute">
+         <Drive>
+            <AmpsToBits Offset="32768" Scale="4000.00" />
+            <BitsToFeedbackAmps Offset="-8.19175" Scale="0.00025" />
+            <NmToAmps Scale="0.673064" />
+            <MaxCurrent Unit="A" Value="0.670" />
+         </Drive>
+         <Encoder>
+            <BitsToPosSI Scale="-0.00658191" Unit="deg" />
+         </Encoder>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="1" />
+            <VoltsToPosSI Offset="0" Scale="1" Unit="deg" />
+         </AnalogIn>
+      </Actuator>
+      <!-- <Potentiometers Position="Actuators">
+         <Tolerance Axis="0" Distance="5.00" Latency="0.01" Unit="deg" />
+         <Tolerance Axis="1" Distance="5.00" Latency="0.01" Unit="deg" />
+         <Tolerance Axis="2" Distance="5.00" Latency="0.05" Unit="mm" />
+         <Tolerance Axis="3" Distance="5.00" Latency="0.01" Unit="deg" />
+      </Potentiometers> -->
+   </Robot>
+   <!-- <DigitalIn BitID="0" BoardID="4" Debounce="0.2" Name="ECM-ManipClutch" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="2" BoardID="4" Debounce="0.2" Name="ECM-SUJClutch" Pressed="1" Trigger="all" /> -->
+</Config>
