@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -24,6 +24,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 namespace mtsIntuitiveResearchKit {
+
+    const std::string FireWireProtocol = "sequential-reasd-broadcast-query-write";
+
     const double PeriodDelay = 0.06 * cmn_ms; // fixed delay
     const double IOPeriod = cmnHzToPeriod(1500.0) - PeriodDelay;
     const double ArmPeriod = cmnHzToPeriod(1500.0) - PeriodDelay;

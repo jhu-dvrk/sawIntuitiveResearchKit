@@ -610,7 +610,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // IO default settings
     double periodIO = mtsIntuitiveResearchKit::IOPeriod;
     std::string port = mtsRobotIO1394::DefaultPort();
-    sawRobotIO1394::ProtocolType protocol = sawRobotIO1394::PROTOCOL_SEQ_R_BC_W;
+    std::string protocol = mtsIntuitiveResearchKit::FireWireProtocol;
     double watchdogTimeout = mtsIntuitiveResearchKit::WatchdogTimeout;
 
     jsonValue = jsonConfig["chatty"];
@@ -625,17 +625,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     if (!jsonValue.empty()) {
         jsonValue = jsonConfig["io"]["firewire-protocol"];
         if (!jsonValue.empty()) {
-            const std::string protocolString = jsonValue.asString();
-            if (protocolString == "sequential-read-write") {
-                protocol = sawRobotIO1394::PROTOCOL_SEQ_RW;
-            } else if (protocolString == "sequential-read-broadcast-write") {
-                protocol = sawRobotIO1394::PROTOCOL_SEQ_R_BC_W;
-            } else if (protocolString == "broadcast-read-write") {
-                protocol = sawRobotIO1394::PROTOCOL_BC_QRW;
-            } else {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure \"firewire-protocol\", values must be \"sequential-read-write\", \"sequential-read-broadcast-write\" or \"broadcast-read-write\".   Using default instead: \"sequential-read-broadcast-write\"" << std::endl;
-                exit(EXIT_FAILURE);
-            }
+            protocol = jsonValue.asString();
         }
 
         jsonValue = jsonConfig["io"]["period"];
@@ -688,19 +678,6 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                                << "     - Port is " << port << std::endl
                                << "     - Protocol is " << protocol << std::endl
                                << "     - Watchdog timeout is " << watchdogTimeout << std::endl;
-
-    if ((protocol != sawRobotIO1394::PROTOCOL_BC_QRW) && (protocol != sawRobotIO1394::PROTOCOL_SEQ_R_BC_W)) {
-        std::stringstream message;
-        message << "Configure:" << std::endl
-                << "----------------------------------------------------" << std::endl
-                << " Warning:" << std::endl
-                << "   The firewire-protocol is not using broadcast" << std::endl
-                << "   We recommend you set it to \"sequential-read-broadcast-write\"." << std::endl
-                << "   You'll need firmware rev. 4 or above for this." << std::endl
-                << "----------------------------------------------------";
-        std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
-        CMN_LOG_CLASS_INIT_WARNING << message.str() << std::endl;
-    }
 
     const Json::Value arms = jsonConfig["arms"];
     for (unsigned int index = 0; index < arms.size(); ++index) {
@@ -1789,7 +1766,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         // insert
         mTeleopsPSMByMTM.insert(std::make_pair(mtmName, teleopPointer));
         mTeleopsPSMByPSM.insert(std::make_pair(psmName, teleopPointer));
-     
+
         // first MTM with multiple PSMs is selected for single tap
         if ((mTeleopsPSMByMTM.count(mtmName) > 1)
             && (mTeleopMTMToCycle == "")) {
