@@ -25,7 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace mtsIntuitiveResearchKit {
 
-    const std::string FireWireProtocol = "sequential-reasd-broadcast-query-write";
+    const std::string FireWireProtocol = "sequential-read-broadcast-write";
 
     const double PeriodDelay = 0.06 * cmn_ms; // fixed delay
     const double IOPeriod = cmnHzToPeriod(1500.0) - PeriodDelay;
