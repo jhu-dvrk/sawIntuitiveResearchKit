@@ -44,7 +44,7 @@ if (cisst_FOUND)
 
   # saw components have been compiled within cisst, we should find them automatically
   find_package (sawTextToSpeech         1.3.0 REQUIRED)
-  find_package (sawRobotIO1394          2.0.0 REQUIRED)
+  find_package (sawRobotIO1394          2.1.0 REQUIRED)
   find_package (sawControllers          2.0.0 REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
@@ -77,8 +77,8 @@ if (cisst_FOUND)
 
     # Set the version number
     set (sawIntuitiveResearchKit_VERSION_MAJOR "2")
-    set (sawIntuitiveResearchKit_VERSION_MINOR "0")
-    set (sawIntuitiveResearchKit_VERSION_PATCH "1")
+    set (sawIntuitiveResearchKit_VERSION_MINOR "1")
+    set (sawIntuitiveResearchKit_VERSION_PATCH "0")
     set (sawIntuitiveResearchKit_VERSION "${sawIntuitiveResearchKit_VERSION_MAJOR}.${sawIntuitiveResearchKit_VERSION_MINOR}.${sawIntuitiveResearchKit_VERSION_PATCH}")
 
     # Generate sawIntuitiveResearchKitRevision.h
