@@ -9,9 +9,8 @@
 #
 # --- end cisst license ---
 
-project (sawIntuitiveResearchKit)
-
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.10)
+project (sawIntuitiveResearchKit VERSION 2.1.0)
 
 set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -74,12 +73,6 @@ if (cisst_FOUND)
          "${sawIntuitiveResearchKit_BINARY_DIR}/include")
     set (sawIntuitiveResearchKit_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
     set (sawIntuitiveResearchKit_LIBRARIES sawIntuitiveResearchKit)
-
-    # Set the version number
-    set (sawIntuitiveResearchKit_VERSION_MAJOR "2")
-    set (sawIntuitiveResearchKit_VERSION_MINOR "1")
-    set (sawIntuitiveResearchKit_VERSION_PATCH "0")
-    set (sawIntuitiveResearchKit_VERSION "${sawIntuitiveResearchKit_VERSION_MAJOR}.${sawIntuitiveResearchKit_VERSION_MINOR}.${sawIntuitiveResearchKit_VERSION_PATCH}")
 
     # Generate sawIntuitiveResearchKitRevision.h
     configure_file ("${sawIntuitiveResearchKit_SOURCE_DIR}/code/sawIntuitiveResearchKitRevision.h.in"
@@ -156,7 +149,9 @@ if (cisst_FOUND)
                  ${sawIntuitiveResearchKit_CISST_DG_SRCS}
                  ${sawIntuitiveResearchKit_CISST_DG_HDRS})
     cisst_target_link_libraries (sawIntuitiveResearchKit ${REQUIRED_CISST_LIBRARIES})
-    set_property (TARGET sawIntuitiveResearchKit PROPERTY FOLDER "sawIntuitiveResearchKit")
+    set_target_properties (sawIntuitiveResearchKit PROPERTIES
+                           VERSION ${sawIntuitiveResearchKit_VERSION}
+                           FOLDER "sawIntuitiveResearchKit")
 
     # link against non cisst libraries and cisst components
     target_link_libraries (sawIntuitiveResearchKit
@@ -177,7 +172,7 @@ if (cisst_FOUND)
 
     cisst_add_config_version ("${sawIntuitiveResearchKit_CONFIG_FILE_DIR}/sawIntuitiveResearchKitConfigVersion.cmake"
                               VERSION ${sawIntuitiveResearchKit_VERSION}
-                              DESTINATION ${CISST_CMAKE_INSTALL_SUFFIX}/saw
+                              DESTINATION "share/sawIntuitiveResearchKit"
                               COMPONENT sawIntuitiveResearchKit)
 
     # Install targets for headers and library
@@ -185,15 +180,17 @@ if (cisst_FOUND)
              ${sawIntuitiveResearchKit_SOURCE_DIR}/include/sawIntuitiveResearchKit
              ${sawIntuitiveResearchKit_BINARY_DIR}/include/sawIntuitiveResearchKit
              DESTINATION include
+             COMPONENT sawIntuitiveResearchKit-dev
              PATTERN .svn EXCLUDE)
 
-    install (TARGETS sawIntuitiveResearchKit
+    install (TARGETS sawIntuitiveResearchKit COMPONENT sawIntuitiveResearchKit
              RUNTIME DESTINATION bin
              LIBRARY DESTINATION lib
              ARCHIVE DESTINATION lib)
 
     install (FILES "${sawIntuitiveResearchKit_CMAKE_CONFIG_FILE}"
-             DESTINATION "share/sawIntuitiveResearchKit")
+             DESTINATION "share/sawIntuitiveResearchKit"
+             COMPONENT sawIntuitiveResearchKit)
 
   endif (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 

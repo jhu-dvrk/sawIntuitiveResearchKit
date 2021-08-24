@@ -9,7 +9,8 @@
 #
 # --- end cisst license ---
 
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.10)
+project (sawIntuitiveResearchKitApplications VERSION 2.1.0)
 
 set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -75,7 +76,9 @@ if (cisst_FOUND_AS_REQUIRED)
 
       # main program used to configure PID
       add_executable (sawIntuitiveResearchKitQtPID mainQtPID.cpp)
-      set_property (TARGET sawIntuitiveResearchKitQtPID PROPERTY FOLDER "sawIntuitiveResearchKit")
+      set_target_properties (sawIntuitiveResearchKitQtPID PROPERTIES
+                             COMPONENT sawIntuitiveResearchKit-Applications
+                             FOLDER "sawIntuitiveResearchKit")
       # link against non cisst libraries and cisst components
       target_link_libraries (sawIntuitiveResearchKitQtPID
                              ${sawIntuitiveResearchKit_LIBRARIES}
@@ -86,7 +89,9 @@ if (cisst_FOUND_AS_REQUIRED)
 
       # main program used to test a single arm
       add_executable (sawIntuitiveResearchKitQtArm mainQtArm.cpp)
-      set_property (TARGET sawIntuitiveResearchKitQtArm PROPERTY FOLDER "sawIntuitiveResearchKit")
+      set_target_properties (sawIntuitiveResearchKitQtArm PROPERTIES
+                             COMPONENT sawIntuitiveResearchKit-Applications
+                             FOLDER "sawIntuitiveResearchKit")
       # link against non cisst libraries and cisst components
       target_link_libraries (sawIntuitiveResearchKitQtArm
                              ${sawIntuitiveResearchKit_LIBRARIES}
@@ -96,12 +101,20 @@ if (cisst_FOUND_AS_REQUIRED)
       # link against cisst libraries (and dependencies)
       cisst_target_link_libraries (sawIntuitiveResearchKitQtArm ${REQUIRED_CISST_LIBRARIES})
 
+      install (TARGETS sawIntuitiveResearchKitQtPID sawIntuitiveResearchKitQtArm
+               COMPONENT sawIntuitiveResearchKit-Applications
+               RUNTIME DESTINATION bin
+               LIBRARY DESTINATION lib
+               ARCHIVE DESTINATION lib)
+
       # applications using JSON
       if (CISST_HAS_JSON)
 
         # main program used to configure Console
         add_executable (sawIntuitiveResearchKitQtConsoleJSON mainQtConsoleJSON.cpp)
-        set_property (TARGET sawIntuitiveResearchKitQtConsoleJSON PROPERTY FOLDER "sawIntuitiveResearchKit")
+        set_target_properties (sawIntuitiveResearchKitQtConsoleJSON PROPERTIES
+                               COMPONENT sawIntuitiveResearchKit-Applications
+                               FOLDER "sawIntuitiveResearchKit")
         # link against non cisst libraries and cisst components
         target_link_libraries (sawIntuitiveResearchKitQtConsoleJSON
                                ${sawIntuitiveResearchKit_LIBRARIES}
@@ -110,6 +123,12 @@ if (cisst_FOUND_AS_REQUIRED)
                                ${sawTextToSpeech_LIBRARIES})
         # link against cisst libraries (and dependencies)
         cisst_target_link_libraries (sawIntuitiveResearchKitQtConsoleJSON ${REQUIRED_CISST_LIBRARIES})
+
+        install (TARGETS sawIntuitiveResearchKitQtConsoleJSON
+                 COMPONENT sawIntuitiveResearchKit-Applications
+                 RUNTIME DESTINATION bin
+                 LIBRARY DESTINATION lib
+                 ARCHIVE DESTINATION lib)
 
       endif (CISST_HAS_JSON)
 
