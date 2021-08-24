@@ -246,7 +246,7 @@ void mtsTeleOperationECMQtWidget::setupUi(void)
     followingLayout->addStretch();
 
     // Timing
-    QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
+    QMIntervalStatistics = new mtsIntervalStatisticsQtWidget();
     stateAndTimingLayout->addWidget(QMIntervalStatistics);
 
     // messages

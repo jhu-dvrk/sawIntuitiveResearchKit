@@ -5,7 +5,7 @@
   Author(s):  Pretham Chalasani, Anton Deguet
   Created on: 2016-11-04
 
-  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,7 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsSocketBaseQtWidget_h
 
 #include <cisstMultiTask/mtsComponent.h>
-#include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
+#include <cisstMultiTask/mtsIntervalStatisticsQtWidget.h>
 
 class mtsSocketBaseQtWidget: public QWidget, public mtsComponent
 {
@@ -66,7 +66,7 @@ private:
 
     // timing
     mtsIntervalStatistics IntervalStatistics;
-    mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
+    mtsIntervalStatisticsQtWidget * QMIntervalStatistics;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsSocketBaseQtWidget);

@@ -217,7 +217,7 @@ void mtsIntuitiveResearchKitArmQtWidget::setupUi(void)
     MainLayout->addLayout(topLayout);
 
     // timing
-    QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
+    QMIntervalStatistics = new mtsIntervalStatisticsQtWidget();
     topLayout->addWidget(QMIntervalStatistics, 0, 0);
 
     // joint state
