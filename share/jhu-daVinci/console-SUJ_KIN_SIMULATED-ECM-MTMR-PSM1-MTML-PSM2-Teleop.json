@@ -20,11 +20,7 @@
             "name": "SUJ",
             "type": "SUJ",
             "simulation": "KINEMATIC",
-            "kinematic": "arm/suj-simulated.json",
-            "base-frame": {
-                "component": "ECM",
-                "interface": "Robot"
-            }
+            "kinematic": "arm/suj-simulated.json"
         }
         ,
         {
@@ -91,7 +87,7 @@
             "psm": "PSM1",
             "psm-base-frame": {
                 "component": "ECM",
-                "interface": "Robot"
+                "interface": "Arm"
             }
         }
         ,
@@ -100,7 +96,7 @@
             "psm": "PSM2",
             "psm-base-frame": {
                 "component": "ECM",
-                "interface": "Robot"
+                "interface": "Arm"
             }
         }
     ]
