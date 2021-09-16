@@ -54,6 +54,9 @@ private:
     QLineEdit * QLEToolType;
     QComboBox * QCBToolOptions;
     mtsFunctionWrite set_tool_type;
+    mtsFunctionRead tool_list_size;
+    mtsFunctionQualifiedRead tool_name;
+    mtsFunctionQualifiedRead tool_full_description;
 
     QLineEdit * QLEJawPosition;
     QLineEdit * QLEJawVelocity;

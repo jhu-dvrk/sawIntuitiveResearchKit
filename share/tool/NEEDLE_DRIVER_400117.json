@@ -1,1 +1,91 @@
-5MM_NEEDLE_DRIVER_400117.json
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    // see dVRK user guide
+    "snake-like" : true,
+    "DH": {
+        "convention": "modified",
+        "joints": [
+            {
+                "name": "outer_roll",
+                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4024,
+                "type": "revolute",
+                "mode": "active",
+                "offset":  0.0000,
+                "qmin": -4.53786, // -260 degrees
+                "qmax":  4.53786, //  260 degrees
+                "ftmax": 0.33
+            },
+            {
+                "name": "outer_wrist_pitch1",
+                "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset": -1.5708,
+                "qmin": -0.3926991, // -22.5 degrees
+                "qmax":  0.3926991, //  22.5 degrees
+                "ftmax": 0.1
+            },
+            {
+                "name": "outer_wrist_yaw1",
+                "alpha": -1.5708, "A":  0.0034, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset": 0.0,
+                "qmin": -0.3926991, // -22.5 degrees
+                "qmax":  0.3926991, //  22.5 degrees
+                "ftmax": 0.1
+            },
+            {
+                "name": "outer_wrist_yaw2",
+                "alpha": 0.0000, "A":  0.0034, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset": 0.0000,
+                "qmin": -0.3926991, // -22.5 degrees
+                "qmax":  0.3926991, //  22.5 degrees
+                "ftmax": 0.1
+            },
+            {
+                "name": "outer_wrist_pitch2",
+                "alpha": 1.5708, "A":  0.0034, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset": 1.5708,
+                "qmin": -0.3926991, // -22.5 degrees
+                "qmax":  0.3926991, //  22.5 degrees
+                "ftmax": 0.1
+            }
+        ]
+    }
+    ,
+    "jaw" : {
+        // for last joint, manual says [0, 30] but we need -20 to allow stronger torque, 50 to open wide
+        "qmin": -0.349066, // -20 degrees
+        "qmax":  0.872665,  //  50 degrees
+        "ftmax": 0.15
+    }
+    ,
+    // rotation to match ISI convention (for read-only research API on commercial da Vinci)
+    "tooltip-offset" : [[ 0.7071,  0.7071,  0.0000,  0.0000],
+                        [ 0.0000,  0.0000, -1.0000, -0.0171],
+                        [-0.7071,  0.7071,  0.0000,  0.0000],
+                        [ 0.0000,  0.0000,  0.0000,  1.0000]]
+     ,
+    // values from the dVRK user guide, see tool appendix C, this is
+    // coupling to "active joints", i.e. only 3+1 even though the
+    // kinematic chain has 5+1 (+1 is for the jaws)
+    "coupling" : {
+        "ActuatorToJointPosition" : [[ -1.5000,  0.0000,  0.0000,  0.0000],
+                                     [  0.0000,  0.0000, -0.1929, -0.1929],
+                                     [  0.0000,  0.0000, -0.1929,  0.1929],
+                                     [  0.0000, -1.2580,  0.0000,  0.0000]]
+    }
+    ,
+    // angles used to engage the tool, in radians
+    // make sure these are within the range of motion IN the cannula
+    // 263, 5, 5, 0 degrees
+    "tool-engage-position" : {
+        "lower" : [-4.59022, -0.0872665, -0.0872665, 0.0],
+        "upper" : [ 4.59022,  0.0872665,  0.0872665, 0.0]
+    }
+}

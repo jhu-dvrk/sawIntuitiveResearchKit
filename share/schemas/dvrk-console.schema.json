@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-console.schema.json",
-    "title": "dVRK console 2.0",
+    "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-console.schema.json",
+    "title": "dVRK console 2.1",
     "type": "object",
     "description": "Configuration file format for the dVRK console.  See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).<ul><li>This format is used by the application `sawIntuitiveResearchKitQtConsoleJSON` and the ROS application `dvrk_robot dvrk_console_json`<li>For details of implementation, see code under `sawIntuitiveResearchKit/components/code/mtsIntuitiveResearchKitConsole.cpp`<li>[Schema file](dvrk-console.schema.json)</ul>",
     "additionalProperties": false,
@@ -28,8 +28,11 @@
 
                 "firewire-protocol": {
                     "type": "string",
-                    "description": "Protocol used for all FireWire communications.  This applies wether the controllers are connected to the computer using FireWired or Ethernet (UDP with Link-Local).  This is an advanced setting and most users should avoid defining it.<ul><li>`sequential-read-write`: the PC reads data from each board (2 FPGA/QLA per controller), performs its computations (conversions, safety checks, PID, ...) and then writes sequentially to each board (N reads, N writes). This is the only protocol supported on older firmware (3 and below).<li>`sequential-read-broadcast-write`: the PC reads sequentially but performs a single write for all the boards. The write message is an array of values sent to the boards, each board access the data it needs by index (N reads, 1 write). This is the default protocol for the dVRK controllers with firmware 4 and above.<li>`broadcast-read-write`: the PC sends a single query/synchronization to all boards, read values are aggregated in single packet over the bus and there's a single write (1 query, 1 read, 1 write). This is the fastest protocol available but some FireWire cards seem to have trouble synchronizing the read packets. You will have to test it on your hardware to see if it supports this protocol or not.</ul>",
-                    "enum": ["sequential-read-write", "sequential-read-broadcast-write", "broadcast-read-write"],
+                    "description": "Protocol used for all FireWire communications.  This applies wether the controllers are connected to the computer using FireWired or Ethernet (UDP with Link-Local).  This is an advanced setting and most users should avoid defining it.<ul><li>`sequential-read-write`: the PC reads data from each board (2 FPGA/QLA per controller), performs its computations (conversions, safety checks, PID, ...) and then writes sequentially to each board (N reads, N writes). This is the only protocol supported on older firmware (3 and below).<li>`sequential-read-broadcast-write`: the PC reads sequentially but performs a single write for all the boards. The write message is an array of values sent to the boards, each board access the data it needs by index (N reads, 1 write). This is the default protocol for the dVRK controllers with firmware 4 and above.<li>`broadcast-query-read-write`: the PC sends a single query/synchronization to all boards, read values are aggregated in single packet over the bus and there's a single write (1 query, 1 read, 1 write). This is the fastest protocol available but some FireWire cards seem to have trouble synchronizing the read packets. You will have to test it on your hardware to see if it supports this protocol or not.  `broadcast-read-write` is the older name for this protocol and is provided for backward compatibility.</ul>",
+                    "enum": ["sequential-read-write", "srw",
+			     "sequential-read-broadcast-write", "srbw",
+			     "broadcast-query-read-write", "bqrw",
+			     "broadcast-read-write", "brw"],
                     "default": "sequential-read-broadcast-write"
                 },
 
@@ -93,15 +96,15 @@
             "properties": {
                 "operator-present": {
                     "description": "Alternate source for the \"operator-present\" sensor event",
-                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-interface-button.schema.json#/properties"
+                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-interface-button.schema.json#/properties"
                 },
                 "clutch": {
                     "description": "Alternate source for the \"clutch\" pedal event",
-                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-interface-button.schema.json#/properties"
+                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-interface-button.schema.json#/properties"
                 },
                 "camera": {
                     "description": "Alternate source for the \"camera\" pedal event",
-                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-interface-button.schema.json#/properties"
+                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-interface-button.schema.json#/properties"
                 }
             }
         },
@@ -148,7 +151,7 @@
 
         "component-manager": {
             "description": "See *cisstMultiTask* [component manager](cisst-component-manager.html)",
-            "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/cisst-component-manager.schema.json#/properties/component-manager"
+            "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/cisst-component-manager.schema.json#/properties/component-manager"
         },
 
         "arms": {
@@ -176,7 +179,7 @@
                         "enum": ["MTM", "PSM", "ECM",
                                  "MTM_DERIVED", "PSM_DERIVED", "ECM_DERIVED",
                                  "MTM_GENERIC", "PSM_GENERIC", "ECM_GENERIC",
-                                 "PSM_SOCKET", "SUJ"],
+                                 "PSM_SOCKET", "SUJ", "FOCUS_CONTROLLER"],
                         "description": "Type of arm.  This determines which class should be used to instantiate the arm.<ul><li>`MTM`, `PSM` and `ECM` correspond to the default classes provided for the dVRK arms.  These are the most common ones.<li>`xxx_DERIVED` corresponds to classes derived from the base classes provided in the dVRK stack.  Users can derive the base arm classes to alter their behavior.  In this case, the console knows that the derived class has all the features from the base class so the connections to the PID, IO, Qt widget and ROS bridge are the same as those for the base class.<li>`xxx_GENERIC` corresponds to classes not derived from the dVRK base classes.  The console will not create any IO, PID components for this arm.  The console will use a generic Qt Widget and add ROS topics if and only if the provided interface has CRTK compatible commands and events.  Examples include Force Dimension devices ([sawForceDimensionSDK](https://github.com/jhu-saw/sawForceDimensionSDK)) and the Sensable Omni ([sawSensablePhantom](https://github.com/jhu-saw/sawSensablePhantom)).<li>`PSM_SOCKET` is a special case used for simple tele-operation between two processes (likely between two computers).  One dVRK console will have to instantiate a PSM server and the other a PSM client.<li>`SUJ` is for the [Setup Joints](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/SUJ)</ul>For `xxx_DERIVED` and `xxx_GENERIC`, the console has no way to automatically create the component, so the user has to provide the proper `component-manager` configuration to first create the component for the arm.",
                         "examples": [
                             {
@@ -259,7 +262,7 @@
                         "properties": {
 
                             "transform": {
-                                "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/cisst-matrices.schema.json#/properties/matrix4x4"
+                                "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/cisst-matrices.schema.json#/properties/matrix4x4"
                             },
 
                             "reference-frame": {
@@ -362,7 +365,7 @@
 
                 "configure-parameter": {
                     "description": "See *cisstMultiTask* [component manager](cisst-component-manager.html)",
-                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-teleop-ecm.schema.json#/properties"
+                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-teleop-ecm.schema.json#/properties"
                 },
 
                 "period": {
@@ -431,7 +434,7 @@
 
                     "configure-parameter": {
                         "description": "See *cisstMultiTask* [component manager](dvrk-teleop-psm.html)",
-                        "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-teleop-psm.schema.json#/"
+                        "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-teleop-psm.schema.json#/"
                     },
 
                     "period": {

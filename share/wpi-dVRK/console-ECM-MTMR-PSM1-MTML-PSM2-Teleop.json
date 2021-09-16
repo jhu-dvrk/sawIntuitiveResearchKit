@@ -1,0 +1,65 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "io": {
+        "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
+        , "firewire-protocol": "broadcast-read-write"
+        // , "firewire-protocol": "sequential-read-write"
+    }
+    ,
+    "endoscope-focus": {
+        "io": "io/sawRobotIO1394-MTMR-dv-endoscope-focus.xml"
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "serial": "31746"
+        }
+        ,
+        {
+            "name": "PSM2",
+            "type": "PSM",
+            "serial": "29130"
+        }
+        ,
+        {
+            "name": "ECM",
+            "type": "ECM",
+            "serial": "25975"
+        }
+        ,
+        {
+            "name": "MTMR",
+            "type": "MTM",
+            "serial": "28687"
+        }
+        ,
+        {
+            "name": "MTML",
+            "type": "MTM",
+            "serial": "21768"
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            "mtm": "MTMR",
+            "psm": "PSM1"
+        }
+        ,
+        {
+            "mtm": "MTML",
+            "psm": "PSM2"
+        }
+    ]
+    ,
+    "ecm-teleop":
+    {
+        "mtm-left": "MTML",
+        "mtm-right": "MTMR",
+        "ecm": "ECM"
+    }
+}

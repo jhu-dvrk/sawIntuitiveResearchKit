@@ -259,10 +259,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     mtsDelayedConnections mConnections;
 
     double mTimeOfLastErrorBeep;
-    bool mTeleopEnabled;
-    bool mTeleopPSMRunning;
-    bool mTeleopPSMAligning;
-    bool mTeleopECMRunning;
+    bool mTeleopEnabled = false;
+    bool mTeleopDesired = false;
+    bool mTeleopPSMRunning = false;
+    bool mTeleopECMRunning = false;
     bool mTeleopEnabledBeforeCamera;
 
     typedef std::map<std::string, Arm *> ArmList;
@@ -275,11 +275,14 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     typedef std::map<std::string, TeleopPSM *> TeleopPSMList;
     TeleopPSMList mTeleopsPSM;
 
+    /*! List to manage the teleopPSM components for each PSM */
+    typedef std::multimap<std::string, TeleopPSM *> TeleopPSMByPSMList;
+    TeleopPSMByPSMList mTeleopsPSMByPSM;
+
     /*! List to manage the teleopPSM components for each MTM */
     typedef std::multimap<std::string, TeleopPSM *> TeleopPSMByMTMList;
-    typedef TeleopPSMByMTMList::iterator TeleopPSMByMTMIterator;
-    typedef TeleopPSMByMTMList::const_iterator TeleopPSMByMTMConstIterator;
     TeleopPSMByMTMList mTeleopsPSMByMTM;
+
     /*! Name of default MTM to cycle teleops if no name is provided */
     std::string mTeleopMTMToCycle;
 
