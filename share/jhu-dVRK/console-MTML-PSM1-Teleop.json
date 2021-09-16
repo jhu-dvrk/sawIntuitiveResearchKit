@@ -3,7 +3,7 @@
     "io":
     {
         "footpedals": "io/sawRobotIO1394-MTML-foot-pedals.xml"
-        // , "firewire-protocol": "broadcast-read-write"
+        , "firewire-protocol": "broadcast-read-write"
         // , "port": "udp"
     }
     ,

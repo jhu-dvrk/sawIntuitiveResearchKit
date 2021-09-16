@@ -22,7 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
-#include <sawIntuitiveResearchKit/mtsToolList.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitToolTypes.h>
 
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -40,17 +40,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
  protected:
 
-    void load_tool_list(const cmnPath & path,
-                        const std::string & indexFile = "tool/index.json");
-
-    void tool_list_size(size_t & size) const;
-    void tool_name(const size_t & index, std::string & name) const;
-    void tool_full_description(const size_t & index, std::string & description) const;
-
     void PostConfigure(const Json::Value & jsonConfig,
                        const cmnPath & configPath,
                        const std::string & filename) override;
-    virtual bool ConfigureTool(const std::string & filename);
+    virtual void ConfigureTool(const std::string & filename);
 
     /*! Configuration methods */
     inline size_t NumberOfJoints(void) const override {
@@ -72,7 +65,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal) override;
 
-    bool IsSafeForCartesianControl(void) const override;
+    inline bool IsSafeForCartesianControl(void) const override {
+        return (m_kin_measured_js.Position().at(2) >= mtsIntuitiveResearchKit::PSMOutsideCannula);
+    }
 
 
     void Init(void) override;
@@ -128,7 +123,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void servo_jf_internal(const vctDoubleVec & newEffort) override;
 
     void control_move_jp_on_stop(const bool reached) override;
-
+    
     void EnableJointsEventHandler(const vctBoolVec & enable);
     void CouplingEventHandler(const prmActuatorJointCoupling & coupling);
 
@@ -176,10 +171,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     /*! Configuration for tool detection, either using Dallas Chip,
       manual or fixed based on configuration file. */
-    mtsToolList mToolList;
-    size_t mToolIndex;
     mtsIntuitiveResearchKitToolTypes::Detection mToolDetection;
-    double mEngageDepth = mtsIntuitiveResearchKit::PSM::EngageDepthClassic; // use safer value by default
+    mtsIntuitiveResearchKitToolTypes::Type mToolType;
     bool mToolConfigured = false;
     bool mToolTypeRequested = false;
     struct {

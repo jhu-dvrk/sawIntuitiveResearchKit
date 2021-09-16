@@ -466,6 +466,10 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mtsTaskFromSignal(componentName, 100),
     mConfigured(false),
     mTimeOfLastErrorBeep(0.0),
+    mTeleopEnabled(false),
+    mTeleopPSMRunning(false),
+    mTeleopPSMAligning(false),
+    mTeleopECMRunning(false),
     mTeleopMTMToCycle(""),
     mTeleopECM(0),
     mDaVinciHeadSensor(0),
@@ -610,7 +614,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // IO default settings
     double periodIO = mtsIntuitiveResearchKit::IOPeriod;
     std::string port = mtsRobotIO1394::DefaultPort();
-    std::string protocol = mtsIntuitiveResearchKit::FireWireProtocol;
+    sawRobotIO1394::ProtocolType protocol = sawRobotIO1394::PROTOCOL_SEQ_R_BC_W;
     double watchdogTimeout = mtsIntuitiveResearchKit::WatchdogTimeout;
 
     jsonValue = jsonConfig["chatty"];
@@ -625,7 +629,17 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     if (!jsonValue.empty()) {
         jsonValue = jsonConfig["io"]["firewire-protocol"];
         if (!jsonValue.empty()) {
-            protocol = jsonValue.asString();
+            const std::string protocolString = jsonValue.asString();
+            if (protocolString == "sequential-read-write") {
+                protocol = sawRobotIO1394::PROTOCOL_SEQ_RW;
+            } else if (protocolString == "sequential-read-broadcast-write") {
+                protocol = sawRobotIO1394::PROTOCOL_SEQ_R_BC_W;
+            } else if (protocolString == "broadcast-read-write") {
+                protocol = sawRobotIO1394::PROTOCOL_BC_QRW;
+            } else {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure \"firewire-protocol\", values must be \"sequential-read-write\", \"sequential-read-broadcast-write\" or \"broadcast-read-write\".   Using default instead: \"sequential-read-broadcast-write\"" << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
 
         jsonValue = jsonConfig["io"]["period"];
@@ -679,6 +693,19 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                                << "     - Protocol is " << protocol << std::endl
                                << "     - Watchdog timeout is " << watchdogTimeout << std::endl;
 
+    if ((protocol != sawRobotIO1394::PROTOCOL_BC_QRW) && (protocol != sawRobotIO1394::PROTOCOL_SEQ_R_BC_W)) {
+        std::stringstream message;
+        message << "Configure:" << std::endl
+                << "----------------------------------------------------" << std::endl
+                << " Warning:" << std::endl
+                << "   The firewire-protocol is not using broadcast" << std::endl
+                << "   We recommend you set it to \"sequential-read-broadcast-write\"." << std::endl
+                << "   You'll need firmware rev. 4 or above for this." << std::endl
+                << "----------------------------------------------------";
+        std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
+        CMN_LOG_CLASS_INIT_WARNING << message.str() << std::endl;
+    }
+
     const Json::Value arms = jsonConfig["arms"];
     for (unsigned int index = 0; index < arms.size(); ++index) {
         if (!ConfigureArmJSON(arms[index], m_IO_component_name, configPath)) {
@@ -689,8 +716,9 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
     // loop over all arms to check if IO is needed, also check if some IO configuration files are listed in "io"
     mHasIO = false;
-    const auto end = mArms.end();
-    for (auto iter = mArms.begin(); iter != end; ++iter) {
+    const ArmList::iterator end = mArms.end();
+    ArmList::iterator iter;
+    for (iter = mArms.begin(); iter != end; ++iter) {
         std::string ioConfig = iter->second->m_IO_configuration_file;
         if (!ioConfig.empty()) {
             mHasIO = true;
@@ -729,7 +757,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         io->SetProtocol(protocol);
         io->SetWatchdogPeriod(watchdogTimeout);
         // configure for each arm
-        for (auto iter = mArms.begin(); iter != end; ++iter) {
+        for (iter = mArms.begin(); iter != end; ++iter) {
             std::string ioConfig = iter->second->m_IO_configuration_file;
             if (ioConfig != "") {
                 CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO using \"" << ioConfig << "\"" << std::endl;
@@ -819,7 +847,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     }
 
     // now can configure PID and Arms
-    for (auto iter = mArms.begin(); iter != end; ++iter) {
+    for (iter = mArms.begin(); iter != end; ++iter) {
         const std::string pidConfig = iter->second->m_PID_configuration_file;
         if (!pidConfig.empty()) {
             iter->second->ConfigurePID(pidConfig);
@@ -962,14 +990,14 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
     // search for SUJs
     bool hasSUJ = false;
-    for (auto iter = mArms.begin(); iter != end; ++iter) {
+    for (iter = mArms.begin(); iter != end; ++iter) {
         if (iter->second->m_type == Arm::ARM_SUJ) {
             hasSUJ = true;
         }
     }
 
     if (hasSUJ) {
-        for (auto iter = mArms.begin(); iter != end; ++iter) {
+        for (iter = mArms.begin(); iter != end; ++iter) {
             Arm * arm = iter->second;
             // only for PSM and ECM when not simulated
             if (((arm->m_type == Arm::ARM_ECM)
@@ -1082,7 +1110,7 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
         }
     }
     if (AddArmInterfaces(newArm)) {
-        auto armIterator = mArms.find(newArm->m_name);
+        ArmList::iterator armIterator = mArms.find(newArm->m_name);
         if (armIterator == mArms.end()) {
             mArms[newArm->m_name] = newArm;
             return true;
@@ -1101,7 +1129,7 @@ bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mts
     // create new required interfaces to communicate with the components we created
     Arm * newArm = new Arm(this, genericArm->GetName(), "");
     if (AddArmInterfaces(newArm)) {
-        auto armIterator = mArms.find(newArm->m_name);
+        ArmList::iterator armIterator = mArms.find(newArm->m_name);
         if (armIterator != mArms.end()) {
             mArms[newArm->m_name] = newArm;
             return true;
@@ -1115,7 +1143,7 @@ bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mts
 
 std::string mtsIntuitiveResearchKitConsole::GetArmIOComponentName(const std::string & armName)
 {
-    auto armIterator = mArms.find(armName);
+    ArmList::iterator armIterator = mArms.find(armName);
     if (armIterator != mArms.end()) {
         return armIterator->second->m_IO_component_name;
     }
@@ -1207,7 +1235,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
                                                       const cmnPath & configPath)
 {
     const std::string armName = jsonArm["name"].asString();
-    const auto armIterator = mArms.find(armName);
+    const ArmList::iterator armIterator = mArms.find(armName);
     Arm * armPointer = 0;
     if (armIterator == mArms.end()) {
         // create a new arm if needed
@@ -1567,7 +1595,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         ecmComponent, ecmInterface;
     // check that both arms have been defined and have correct type
     Arm * armPointer;
-    auto armIterator = mArms.find(mtmLeftName);
+    ArmList::iterator armIterator = mArms.find(mtmLeftName);
     if (armIterator == mArms.end()) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm left\""
                                  << mtmLeftName << "\" is not defined in \"arms\"" << std::endl;
@@ -1696,7 +1724,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
     std::string mtmComponent, mtmInterface, psmComponent, psmInterface;
     // check that both arms have been defined and have correct type
     Arm * armPointer;
-    auto armIterator = mArms.find(mtmName);
+    ArmList::iterator armIterator = mArms.find(mtmName);
     if (armIterator == mArms.end()) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: mtm \""
                                  << mtmName << "\" is not defined in \"arms\"" << std::endl;
@@ -1747,7 +1775,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
 
     // check if pair already exist and then add
     const std::string name = mtmName + "-" + psmName;
-    const auto teleopIterator = mTeleopsPSM.find(name);
+    const TeleopPSMList::iterator teleopIterator = mTeleopsPSM.find(name);
     TeleopPSM * teleopPointer = 0;
     if (teleopIterator == mTeleopsPSM.end()) {
         // create a new teleop if needed
@@ -1763,10 +1791,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
                              baseFrameComponent, baseFrameInterface);
         }
 
-        // insert
         mTeleopsPSMByMTM.insert(std::make_pair(mtmName, teleopPointer));
-        mTeleopsPSMByPSM.insert(std::make_pair(psmName, teleopPointer));
-
         // first MTM with multiple PSMs is selected for single tap
         if ((mTeleopsPSMByMTM.count(mtmName) > 1)
             && (mTeleopMTMToCycle == "")) {
@@ -1998,7 +2023,6 @@ void mtsIntuitiveResearchKitConsole::DisableFaultyArms(void)
 void mtsIntuitiveResearchKitConsole::teleop_enable(const bool & enable)
 {
     mTeleopEnabled = enable;
-    mTeleopDesired = enable;
     // event
     console_events.teleop_enabled(mTeleopEnabled);
     UpdateTeleopState();
@@ -2022,14 +2046,15 @@ void mtsIntuitiveResearchKitConsole::cycle_teleop_psm_by_mtm(const std::string &
                                + "\", cycling has no effect");
     } else {
         // find range of teleops
-        auto range = mTeleopsPSMByMTM.equal_range(mtmName);
-        for (auto iter = range.first;
+        std::pair<TeleopPSMByMTMIterator, TeleopPSMByMTMIterator> range;
+        range = mTeleopsPSMByMTM.equal_range(mtmName);
+        for (TeleopPSMByMTMIterator iter = range.first;
              iter != range.second;
              ++iter) {
             // find first teleop currently selected
             if (iter->second->Selected()) {
                 // toggle to next one
-                auto nextTeleop = iter;
+                TeleopPSMByMTMIterator nextTeleop = iter;
                 nextTeleop++;
                 // if next one is last one, go back to first
                 if (nextTeleop == range.second) {
@@ -2086,8 +2111,9 @@ void mtsIntuitiveResearchKitConsole::select_teleop_psm(const prmKeyValue & mtmPs
 
     // if the psm value is empty, disable any teleop for the mtm -- this can be used to free the mtm
     if (psmName == "") {
-        auto range = mTeleopsPSMByMTM.equal_range(mtmName);
-        for (auto iter = range.first;
+        std::pair<TeleopPSMByMTMIterator, TeleopPSMByMTMIterator> range;
+        range = mTeleopsPSMByMTM.equal_range(mtmName);
+        for (TeleopPSMByMTMIterator iter = range.first;
              iter != range.second;
              ++iter) {
             // look for the teleop that was selected if any
@@ -2110,7 +2136,7 @@ void mtsIntuitiveResearchKitConsole::select_teleop_psm(const prmKeyValue & mtmPs
 
     // actual teleop to select
     std::string name = mtmName + "-" + psmName;
-    const auto teleopIterator = mTeleopsPSM.find(name);
+    const TeleopPSMList::iterator teleopIterator = mTeleopsPSM.find(name);
     if (teleopIterator == mTeleopsPSM.end()) {
         mInterface->SendWarning(this->GetName()
                                 + ": unable to select \""
@@ -2164,8 +2190,9 @@ bool mtsIntuitiveResearchKitConsole::GetPSMSelectedForMTM(const std::string & mt
     bool mtmFound = false;
     psmName = "";
     // find range of teleops
-    auto range = mTeleopsPSMByMTM.equal_range(mtmName);
-    for (auto iter = range.first;
+    std::pair<TeleopPSMByMTMConstIterator, TeleopPSMByMTMConstIterator> range;
+    range = mTeleopsPSMByMTM.equal_range(mtmName);
+    for (TeleopPSMByMTMConstIterator iter = range.first;
          iter != range.second;
          ++iter) {
         mtmFound = true;
@@ -2451,13 +2478,8 @@ void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventB
     console_events.operator_present(button);
 }
 
-void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & message)
-{
-    // similar to teleop_enable(false) except we don't change mTeleopDesired
-    mTeleopEnabled = false;
-    console_events.teleop_enabled(mTeleopEnabled);
-    UpdateTeleopState();
-
+void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & message) {
+    teleop_enable(false);
     mInterface->SendError(message.Message);
     // throttle error beeps
     double currentTime = mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime();
@@ -2467,41 +2489,26 @@ void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & messag
     }
 }
 
-void mtsIntuitiveResearchKitConsole::WarningEventHandler(const mtsMessage & message)
-{
+void mtsIntuitiveResearchKitConsole::WarningEventHandler(const mtsMessage & message) {
     mInterface->SendWarning(message.Message);
 }
 
-void mtsIntuitiveResearchKitConsole::StatusEventHandler(const mtsMessage & message)
-{
+void mtsIntuitiveResearchKitConsole::StatusEventHandler(const mtsMessage & message) {
     mInterface->SendStatus(message.Message);
 }
 
 void mtsIntuitiveResearchKitConsole::SetArmCurrentState(const std::string & armName,
                                                         const prmOperatingState & currentState)
 {
-    if (mTeleopDesired) {
-        auto armState = ArmStates.find(armName);
-        bool newArm = (armState == ArmStates.end());
-        if (newArm) {
-            teleop_enable(true);
-        } else {
-            // for all arms update the state if it was not enabled and the new
-            // state is enabled, home and not busy
-            if (((armState->second.State() != prmOperatingState::ENABLED)
-                 && currentState.IsEnabledHomedAndNotBusy())) {
-                teleop_enable(true);
-            } else {
-                // special case for PSMs when coming back from busy state
-                // (e.g. engaging adapter or instrument)
-                const auto count = mTeleopsPSMByPSM.count(armName);
-                if (count != 0) {
-                    if (!armState->second.IsBusy() && currentState.IsEnabledHomedAndNotBusy()) {
-                        teleop_enable(true);
-                    }
-                }
-            }
-        }
+    auto armState = ArmStates.find(armName);
+    if (// first time we receive state from this arm
+        (armState == ArmStates.end())
+        ||
+        // only update the state if it was not enabled and the new
+        // state is enabled, home and not busy
+        ((armState->second.State() != prmOperatingState::ENABLED)
+         && currentState.IsEnabledHomedAndNotBusy())) {
+        UpdateTeleopState();
     }
 
     // save state

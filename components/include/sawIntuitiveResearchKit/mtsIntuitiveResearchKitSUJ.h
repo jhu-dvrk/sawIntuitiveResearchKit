@@ -95,7 +95,10 @@ protected:
     mtsStdString mStateTableStateDesired;
     prmOperatingState m_operating_state; // crtk operating state
 
-    void SetHomed(const bool homed);
+    inline void SetHomed(const bool homed) {
+        m_operating_state.IsHomed() = homed;
+        DispatchOperatingState();
+    }
 
     /*! Set velocity for motorized PSM lift. normalized between -1.0 and 1.0. */
     void SetLiftVelocity(const double & velocity);

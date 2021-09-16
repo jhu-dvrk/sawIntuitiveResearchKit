@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-teleop-psm.schema.json",
-    "title": "dVRK teleop psm 2.1",
+    "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-teleop-psm.schema.json",
+    "title": "dVRK teleop psm 2.0",
     "type": "object",
     "description": "Configuration file format for the dVRK PSM tele-operation component.  See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).  This schema is used for the [dVRK console configuration](dvrk-console.html).<ul><li>For details of implementation, see code under `sawIntuitiveResearchKit/components/code/mtsTeleOperationPSM.cpp`<li>[Schema file](dvrk-teleop-psm.schema.json)</ul>",
     "additionalProperties": false,
@@ -88,7 +88,7 @@
 
         "rotation": {
             "description": "[Deprecated] Make sure your arms are properly aligned using their \"base-frame\".  Only use this attribute if your arms don't support \"base-frame\", i.e. non-dVRK arms.",
-            "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/cisst-matrices.schema.json#/properties/matrix3x3"
+            "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/cisst-matrices.schema.json#/properties/matrix3x3"
         }
     }
 }

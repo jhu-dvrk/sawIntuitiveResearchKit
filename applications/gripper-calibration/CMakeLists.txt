@@ -34,7 +34,7 @@ if (cisst_FOUND_AS_REQUIRED)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
-  find_package (sawRobotIO1394 2.1.0 REQUIRED)
+  find_package (sawRobotIO1394 2.0.0 REQUIRED)
 
   if (sawRobotIO1394_FOUND)
 

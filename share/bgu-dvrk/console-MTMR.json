@@ -1,7 +1,7 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
     "io": {
-        "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
+        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
     }
     ,
     "arms":
@@ -9,7 +9,9 @@
         {
             "name": "MTMR",
             "type": "MTM",
-            "serial": "33569"
+            "io": "sawRobotIO1394-MTMR-33569.xml",
+            "pid": "sawControllersPID-MTMR.xml",
+            "kinematic": "mtm.json"
         }
     ]
 }

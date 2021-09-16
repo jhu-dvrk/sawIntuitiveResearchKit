@@ -2,7 +2,7 @@
 {
     "io":
     {
-        "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
+        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
     }
     ,
     "arms":
@@ -10,10 +10,12 @@
         {
             "name": "PSM2",
             "type": "PSM",
-            "serial": "31717",
+            "io": "sawRobotIO1394-PSM2-31717.xml",
+            "pid": "sawControllersPID-PSM.xml",
+            "kinematic": "psm-large-needle-driver-tip.json",
             "base-frame": {
                 "reference-frame": "ECM",
-                "transform": [[  1.0,  0.0,          0.0,         -0.20],
+                "transform": [[  1.0,  0.0,          0.0,          0.20],
                               [  0.0, -0.866025404,  0.5,          0.0 ],
                               [  0.0, -0.5,         -0.866025404,  0.0 ],
                               [  0.0,  0.0,          0.0,          1.0 ]]
@@ -23,7 +25,9 @@
         {
             "name": "MTML",
             "type": "MTM",
-            "serial": "55264",
+            "io": "sawRobotIO1394-MTML-55264.xml",
+            "pid": "sawControllersPID-MTML.xml",
+            "kinematic": "mtm.json",
             "base-frame": {
                 "reference-frame": "HRSV",
                 "transform": [[ -1.0,  0.0,          0.0,          0.180],
@@ -37,8 +41,8 @@
     "psm-teleops":
     [
         {
-            "mtm": "MTML",
-            "psm": "PSM2"
+            "master": "MTML",
+            "slave": "PSM2"
         }
     ]
 }

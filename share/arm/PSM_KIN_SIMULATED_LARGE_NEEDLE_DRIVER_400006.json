@@ -2,5 +2,5 @@
 {
     "kinematic": "kinematic/psm.json",
     "tool-detection": "FIXED",
-    "tool": "LARGE_NEEDLE_DRIVER:400006"
+    "tool": "LARGE_NEEDLE_DRIVER_400006"
 }

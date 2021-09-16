@@ -28,19 +28,20 @@ To allow testing offline, we provide two python scripts that will load all the s
 
   To test arm files, make sure you use the right schema.  Examples below are for arms at JHU:
     ```sh
-  ./json-schema.py -s dvrk-mtm.schema.json ../*/MTML-*.json ../*/MTMR-*.json
-  ./json-schema.py -s dvrk-psm.schema.json ../*/PSM1-*.json ../*/PSM2-*.json ../*/PSM3-*.json
-  ./json-schema.py -s dvrk-ecm.schema.json ../*/ECM-*.json
-  ```
-
-  To test the tool index files:
-    ```sh
-    ./json-schema.py -s dvrk-tool-list.schema.json ../tool/index.json ../jhu-dVRK/custom-tool/custom-tool-index.json
+  ./json-schema.py -s dvrk-mtm.schema.json ../jhu-daVinci/MTM*.json ../jhu-dVRK/MTM*.json
+  ./json-schema.py -s dvrk-psm.schema.json ../jhu-daVinci/PSM*.json ../jhu-dVRK/PSM*.json
+  ./json-schema.py -s dvrk-ecm.schema.json ../jhu-daVinci/ECM*.json
   ```
 
 # Generate html documentation from schemas
 
-This section is for the dVRK maintainers.  Most users should use the online documentation: https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Configuration-File-Formats
+This section is for the dVRK maintainers.  Most users should use the online documentation.
+
+* Example of generated documentation:
+  * Main console file: [2.0](https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-console.html)
+  * ECM file: [2.0](https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-ecm.html)
+  * MTM file: [2.0](https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-mtm.html)
+  * PSM file: [2.0](https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/dvrk-psm.html)
 
 * Installation:
     ```sh
@@ -49,7 +50,7 @@ This section is for the dVRK maintainers.  Most users should use the online docu
 
 * Usage:
     ```sh
-  ./generate-html.py -d . -v v2.1
+  ./generate-html.py -d . -v v2.0
   ```
 
 `-d` is for the directory containing all the `.schema.json` files.   `-v` is for a subdirectory for all the generated files.  If you are a dVRK maintainer, make sure you also upload the generated documentation to `https://dvrk.lcsr.jhu.edu/documentation/schemas/`.

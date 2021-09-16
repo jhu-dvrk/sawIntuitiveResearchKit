@@ -1,30 +1,6 @@
 Change log
 ==========
 
-2.1.0 (2021-08-11)
-==================
-
-* API changes:
-  * Changed instrument identifier from `enum` to `std::string`
-  * Instrument name is now following the convention `name:model[version]`.  It used to be `name_model`
-* New features:
-  * Added new configuration file to list all supported instruments with option to load site specific list: https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Custom-Instruments
-  * More instruments supported, including new Si Large Needle Driver with gears (version 12+)
-  * Instrument depth:
-    * Using Classic or S specific depth to determine if instrument should engage
-    * Using depth of joint 4 using forward kinematics to restrict motion towards/inside the cannula
-  * Updated wiki:
-    * Better calibration documentation: https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Calibration
-    * PSM joint 3 calibration: https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Potentiometer-calibration-for-PSM-insertion
-    * Classic vs S instruments: https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Tool-Generations
-    * Support for custom instruments: https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Custom-Instruments
-  * Updated JSON schemas: https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Configuration-File-Formats
-  * Added example for *cisstRobotPython*
-* Bug fixes:
-  * Fixed range of motion used to engage sterile adapter and instruments to avoid encoder/pot errors
-  * Fixed bug in Matlab config generator for ECM
-  * Teleop PSM restarts automatically after an instrument's swap
-
 2.0.1 (2021-05-26)
 ==================
 
