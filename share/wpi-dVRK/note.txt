@@ -1,9 +1,11 @@
 This file is for WPI da Vinci surgical robot
 
+This set is a two-arm research set.
+
 1. Tracker ID for different arms:
 
 Green PSM : 29130 (PSM2)
-Yellow PSM : 31746 (Replaced once, old one ID: 27116) (PSM1)
+Yellow PSM : 31746 (PSM1)
 
 ECM : 25975
 
@@ -12,10 +14,8 @@ MTMR : 28687
 
 2. Current situation:
 
-json files from jhu-dVRK
+the ECM teleoperation need to improve, the others are fine
 
-Calibration completed (use old file for PSM1)
 
-will update later
 
 

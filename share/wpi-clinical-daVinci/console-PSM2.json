@@ -1,7 +1,7 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
     "io": {
-        //"footpedals": "io/sawRobotIO1394-MTML-foot-pedals.xml"
+        //"footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
         //, "firewire-protocol": "sequential-read-write"
         //, "firewire-protocol": "broadcast-read-write"
         //"port": "udp"
