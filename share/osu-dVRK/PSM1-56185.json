@@ -4,5 +4,5 @@
     //"tool-detection": "AUTOMATIC"
     "tool-detection": "MANUAL"
     // "tool-detection": "FIXED",
-    // "tool": "LARGE_NEEDLE_DRIVER_400006"
+    // "tool": "LARGE_NEEDLE_DRIVER:400006"
 }

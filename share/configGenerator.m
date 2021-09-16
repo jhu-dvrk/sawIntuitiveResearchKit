@@ -309,7 +309,7 @@ for i = 1:numOfJoints
         X_BrakeReleaseTime.setAttribute('Value', num2str(brakeReleaseTime(i), '%5.3f'));
         Brake.appendChild(X_BrakeReleaseTime);
         X_BrakeReleasedCurrent = docNode.createElement('ReleasedCurrent');
-        X_BrakeReleasedCurrent.setAttribut    % Actuator.setAttribute('Pos1', 'ENC');
+        X_BrakeReleasedCurrent.setAttribute('Unit', 'A');
         X_BrakeReleasedCurrent.setAttribute('Value', num2str(brakeReleasedCurrent(i), '%5.3f'));
         Brake.appendChild(X_BrakeReleasedCurrent);
         X_BrakeEngagedCurrent = docNode.createElement('EngagedCurrent');

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -24,6 +24,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 namespace mtsIntuitiveResearchKit {
+
+    const std::string FireWireProtocol = "sequential-read-broadcast-write";
+
     const double PeriodDelay = 0.06 * cmn_ms; // fixed delay
     const double IOPeriod = cmnHzToPeriod(1500.0) - PeriodDelay;
     const double ArmPeriod = cmnHzToPeriod(1500.0) - PeriodDelay;
@@ -44,7 +47,19 @@ namespace mtsIntuitiveResearchKit {
     }
 
     // PSM constants
-    const double PSMOutsideCannula = 50.0 * cmn_ms;
+    namespace PSM {
+        // distance in joint space for insertion
+        const double EngageDepthClassic = 40.0 * cmn_mm;
+        const double EngageDepthS = 10.0 * cmn_mm; // instrument shaft is about 40mm longer, so technically the tip is always outside the cannula.
+
+        // distance for RCM in cartesian space for first joint at end of instrument's shaft
+        const double SafeDistanceFromRCM = 45.0 * cmn_mm;
+        // buffer to allow cartesian control to start
+        const double SafeDistanceFromRCMBuffer = 2.0 * cmn_mm;
+
+        // range of motion used for 4 last actuators to engage the sterile adapter
+        const double AdapterEngageRange = 171.0 * cmnPI_180;
+    }
 
     // MTM constants
     namespace MTMPlatform {

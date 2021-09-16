@@ -1,0 +1,8 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "kinematic": "kinematic/psm.json",
+    //"tool-detection": "MANUAL"
+    // "tool-detection": "MANUAL"
+    "tool-detection": "FIXED",
+    "tool": "HSC_ULTRASONIC_BONE_CUTTER:420900"
+}

@@ -504,7 +504,7 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
     }
 
     // get gripper based on analog inputs
-    mtsExecutionResult executionResult = GripperIO.GetAnalogInputPosSI(m_gripper_measured_js.Position());
+    mtsExecutionResult executionResult = GripperIO.GetAnalogInputPosSI(m_gripper_measured_js);
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetAnalogInputPosSI failed \""
                                 << executionResult << "\"" << std::endl;

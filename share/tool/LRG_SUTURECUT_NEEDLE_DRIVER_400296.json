@@ -40,7 +40,7 @@
     "jaw" : {
         // for last joint, manual says [0, 30] but we need -20 to allow stronger torque, 80 to open wide
         "qmin": -0.349066, // -20 degrees
-        "qmax":  1.39626,  //  80 degrees
+        "qmax":  0.7854,  //  45 degrees
         "ftmax": 0.16
     }
     ,
@@ -60,9 +60,9 @@
     ,
     // angles used to engage the tool, in radians
     // make sure these are within the range of motion IN the cannula
-    // 270, 15, 15, 0 degrees
+    // 263, 15, 15, 0 degrees
     "tool-engage-position" : {
-        "lower" : [-4.71239, -0.261799, -0.261799, 0.0],
-        "upper" : [ 4.71239,  0.261799,  0.261799, 0.0]
+        "lower" : [-4.59022, -0.261799, -0.261799, 0.0],
+        "upper" : [ 4.59022,  0.261799,  0.261799, 0.0]
     }
 }

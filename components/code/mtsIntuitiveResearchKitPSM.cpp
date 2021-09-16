@@ -35,13 +35,15 @@ http://www.cisst.org/cisst/license.txt.
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
 mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds):
-    mtsIntuitiveResearchKitArm(componentName, periodInSeconds)
+    mtsIntuitiveResearchKitArm(componentName, periodInSeconds),
+    mToolList(*this)
 {
     Init();
 }
 
 mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg):
-    mtsIntuitiveResearchKitArm(arg)
+    mtsIntuitiveResearchKitArm(arg),
+    mToolList(*this)
 {
     Init();
 }
@@ -56,10 +58,49 @@ void mtsIntuitiveResearchKitPSM::set_simulated(void)
     RemoveInterfaceRequired("Dallas");
 }
 
+void mtsIntuitiveResearchKitPSM::load_tool_list(const cmnPath & path,
+                                                const std::string & indexFile)
+{
+    mToolList.Load(path, indexFile);
+}
+
+void mtsIntuitiveResearchKitPSM::tool_list_size(size_t & size) const
+{
+    size = mToolList.size();
+}
+
+void mtsIntuitiveResearchKitPSM::tool_name(const size_t & index, std::string & name) const
+{
+    name = mToolList.Name(index);
+}
+
+void mtsIntuitiveResearchKitPSM::tool_full_description(const size_t & index, std::string & description) const
+{
+    description = mToolList.FullDescription(index);
+}
+
 void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
                                                const cmnPath & configPath,
                                                const std::string & filename)
 {
+    // load default tool index
+    load_tool_list(configPath);
+
+    // extra tool definitions
+    const auto jsonToolIndexFile = jsonConfig["custom-tool-index"];
+    if (!jsonToolIndexFile.isNull()) {
+        const auto toolIndexFile = jsonToolIndexFile.asString();
+        auto fullname = configPath.Find(toolIndexFile);
+        if (fullname == "") {
+            CMN_LOG_CLASS_INIT_ERROR << "PostConfigure: " << this->GetName()
+                                     << " using file \"" << filename << "\" can't find tool index file \""
+                                     << toolIndexFile << "\" in path: "
+                                     << configPath << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        load_tool_list(configPath, toolIndexFile);
+    }
+
     // tool detection
     const auto jsonToolDetection = jsonConfig["tool-detection"];
     if (!jsonToolDetection.isNull()) {
@@ -70,32 +111,18 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
             if (!jsonFixedTool.isNull()) {
                 std::string fixedTool = jsonFixedTool.asString();
                 // check if the tool is in the supported list (string name)
-                auto found =
-                    std::find(mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin(),
-                              mtsIntuitiveResearchKitToolTypes::TypeVectorString().end(),
-                              fixedTool);
-                if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
+                const bool found = mToolList.Find(fixedTool, mToolIndex);
+                if (!found) {
                     CMN_LOG_CLASS_INIT_ERROR << "PostConfigure: " << this->GetName()
                                              << ", \"" << fixedTool << "\" found in file \""
-                                             << filename << "\" is not a supported type" << std::endl;
+                                             << filename << "\" is not a supported type." << std::endl
+                                             << "Supported tool types are:\n" << mToolList.PossibleNames("\n") << std::endl;
                     exit(EXIT_FAILURE);
-                } else {
-                    mToolType = mtsIntuitiveResearchKitToolTypes::TypeFromString(fixedTool);
                 }
                 // now look for the file to configure the tool
-                std::string fixedToolFile = configPath.Find(fixedTool + ".json");
-                if (fixedToolFile == "") {
-                    CMN_LOG_CLASS_INIT_ERROR << "PostConfigure: " << this->GetName()
-                                             << " can't find tool file \""
-                                             << fixedTool << ".json\" for tool \""
-                                             << fixedTool << "\" defined in file \""
-                                             << filename << "\"" << std::endl;
+                mToolConfigured = ConfigureTool(mToolList.File(mToolIndex));
+                if (!mToolConfigured) {
                     exit(EXIT_FAILURE);
-                } else {
-                    ConfigureTool(fixedToolFile);
-                    if (!mToolConfigured) {
-                        exit(EXIT_FAILURE);
-                    }
                 }
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "PostConfigure: " << this->GetName()
@@ -109,10 +136,9 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
     }
 }
 
-void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
+bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
 {
     std::string fullFilename;
-    mToolConfigured = false;
 
     // try to locate the file based on tool type
     if (cmnPath::Exists(filename)) {
@@ -120,14 +146,17 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
     } else {
         // construct path using working directory and share/arm
         cmnPath path(cmnPath::GetWorkingDirectory());
+        // find the file in tool
         path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
+        // find file if specified as share/<system>/...
+        path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
         fullFilename = path.Find(filename);
         // still not found, try to add suffix to search again
         if (fullFilename == "") {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": failed to locate tool file for \""
                                      << filename << "\"" << std::endl;
-            return;
+            return false;
         }
     }
 
@@ -142,7 +171,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
                                      << ": failed to parse configuration file \""
                                      << fullFilename << "\"\n"
                                      << jsonReader.getFormattedErrorMessages();
-            return;
+            return false;
         }
 
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << this->GetName()
@@ -211,7 +240,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
                                      << ": incorrect number of joints (DH), found "
                                      << numberOfJointsLoaded << ", expected " << expectedNumberOfJoint
                                      << std::endl;
-            return;
+            return false;
         }
 
         // load tool tip transform if any (with warning)
@@ -242,7 +271,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         if (jsonCoupling.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": can find \"coupling\" data in \"" << fullFilename << "\"" << std::endl;
-            return;
+            return false;
         }
 
         // read 4x4 coupling for last 3 DOFs and jaws
@@ -261,13 +290,13 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         if (jsonJaw.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": can find \"jaw\" data in \"" << fullFilename << "\"" << std::endl;
-            return;
+            return false;
         }
         const Json::Value jsonJawQMin = jsonJaw["qmin"];
         if (jsonJawQMin.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": can find \"jaw::qmin\" data in \"" << fullFilename << "\"" << std::endl;
-            return;
+            return false;
         } else {
             CouplingChange.jaw_configuration_js.PositionMin().SetSize(1);
             CouplingChange.jaw_configuration_js.PositionMin().at(0) = jsonJawQMin.asDouble();
@@ -276,7 +305,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         if (jsonJawQMax.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": can find \"jaw::qmax\" data in \"" << fullFilename << "\"" << std::endl;
-            return;
+            return false;
         } else {
             CouplingChange.jaw_configuration_js.PositionMax().SetSize(1);
             CouplingChange.jaw_configuration_js.PositionMax().at(0) = jsonJawQMax.asDouble();
@@ -285,7 +314,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         if (jsonJawFTMax.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": can find \"jaw::ftmax\" data in \"" << fullFilename << "\"" << std::endl;
-            return;
+            return false;
         } else {
             CouplingChange.jaw_configuration_js.EffortMin().SetSize(1);
             CouplingChange.jaw_configuration_js.EffortMax().SetSize(1);
@@ -303,7 +332,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         if (jsonEngagePosition.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": can find \"tool-engage-position\" data in \"" << fullFilename << "\"" << std::endl;
-            return;
+            return false;
         }
         // lower
         cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolEngageLowerPosition,
@@ -312,7 +341,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": \"tool-engage-position\" : \"lower\" must contain 4 elements in \""
                                      << fullFilename << "\"" << std::endl;
-            return;
+            return false;
         }
         // upper
         cmnDataJSON<vctDoubleVec>::DeSerializeText(CouplingChange.ToolEngageUpperPosition,
@@ -321,16 +350,16 @@ void mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
                                      << ": \"tool-engage-position\" : \"upper\" must contain 4 elements in \""
                                      << fullFilename << "\"" << std::endl;
-            return;
+            return false;
         }
 
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName() << ": make sure the file \""
                                  << fullFilename << "\" is in JSON format" << std::endl;
+        return false;
     }
 
-    // update class data member for next steps/states
-    mToolConfigured = true;
+    return true;
 }
 
 void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
@@ -440,31 +469,73 @@ void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec & jointsKinemati
 robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec & jointSet,
                                                                     const vctFrm4x4 & cartesianGoal)
 {
-    robManipulator::Errno Err;
+    // make sure we are away from RCM point, create a new goal on sphere around RCM point (i.e. origin)
+    double distanceToRCM = cartesianGoal.Translation().Norm();
+    double currentDepth = jointSet.at(2);
+
+    // if too close to zero we're going to run into issue in any case
+    if (distanceToRCM < 1.0 * cmn_mm) {
+        m_arm_interface->SendWarning(GetName() + ": InverseKinematics, can't solve IK too close to RCM");
+        return robManipulator::EFAILURE;
+    }
+
+    // IK
+    robManipulator::Errno Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);;
+
+    // check equality constraint for snake like kinematic
     if (mSnakeLike) {
-        Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);
         // Check for equality Snake joints (4,7) and (5,6)
         if (fabs(jointSet.at(4) - jointSet.at(7)) > 0.00001 ||
             fabs(jointSet.at(5) - jointSet.at(6)) > 0.00001) {
             m_arm_interface->SendWarning(GetName() + ": InverseKinematics, equality constraint violated");
         }
-    } else {
-        Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);
     }
 
+    // Find closest solution mod 2 Pi for roll along shaft
     if (Err == robManipulator::ESUCCESS) {
-        // find closest solution mgod 2 pi
+        // find closest solution mod 2 pi
         const double difference = m_kin_measured_js.Position().at(3) - jointSet.at(3);
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet.at(3) = jointSet.at(3) + differenceInTurns * 2.0 * cmnPI;
-        // make sure we are away from RCM point, this test is
-        // simplistic and might not work with all tools
-        if (jointSet.at(2) < mtsIntuitiveResearchKit::PSMOutsideCannula) {
-            jointSet.at(2) = mtsIntuitiveResearchKit::PSMOutsideCannula;
+
+        // project away from RCM if not safe, using axis at end of shaft
+        vctFrm4x4 f4;
+        if (Manipulator->links.size() >= 4) {
+            f4 = Manipulator->ForwardKinematics(jointSet, 4);
+        } else {
+            f4 = Manipulator->ForwardKinematics(jointSet);
+        }
+        distanceToRCM = f4.Translation().Norm();
+
+        // if not far enough, distance for axis 4 is fully determine by insertion joint so add to it
+        if (distanceToRCM < mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM) {
+            // two cases based in current depth, were we past min depth or not - to do this we need to compute the minimum depth using j2.
+            const double minDepth = jointSet.at(2) + (mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM - distanceToRCM);
+            // if we are already too close to RCM, simply prevent to get closer
+            if (currentDepth <= minDepth) {
+                jointSet.at(2) = std::max(currentDepth, jointSet.at(2));
+            } else {
+                // else, make sure we don't go deeper
+                jointSet.at(2) = minDepth;
+            }
         }
         return robManipulator::ESUCCESS;
     }
+
     return robManipulator::EFAILURE;
+}
+
+bool mtsIntuitiveResearchKitPSM::IsSafeForCartesianControl(void) const
+{
+    vctFrm4x4 f4;
+    if (Manipulator->links.size() >= 4) {
+        f4 = Manipulator->ForwardKinematics(m_kin_measured_js.Position(), 4);
+    } else {
+        f4 = Manipulator->ForwardKinematics(m_kin_measured_js.Position());
+    }
+    const double distanceToRCM = f4.Translation().Norm();
+    return (distanceToRCM >=  (mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM
+                               - mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCMBuffer));
 }
 
 void mtsIntuitiveResearchKitPSM::Init(void)
@@ -554,17 +625,17 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     CouplingChange.NoToolConfiguration.PositionMin().Assign(-91.0 * cmnPI_180,
                                                             -53.0 * cmnPI_180,
                                                             0.0 * cmn_mm,
-                                                            -175.0 * cmnPI_180,
-                                                            -175.0 * cmnPI_180,
-                                                            -175.0 * cmnPI_180,
-                                                            -175.0 * cmnPI_180);
+                                                            -mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
+                                                            -mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
+                                                            -mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
+                                                            -mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
     CouplingChange.NoToolConfiguration.PositionMax().Assign(91.0 * cmnPI_180,
                                                             53.0 * cmnPI_180,
                                                             240.0 * cmn_mm,
-                                                            175.0 * cmnPI_180,
-                                                            175.0 * cmnPI_180,
-                                                            175.0 * cmnPI_180,
-                                                            175.0 * cmnPI_180);
+                                                            mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
+                                                            mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
+                                                            mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
+                                                            mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
     // using values from sawControllersPID.xml: max_amp / nm_to_amp
     CouplingChange.NoToolConfiguration.EffortMin().SetSize(NumberOfJoints());
     CouplingChange.NoToolConfiguration.EffortMax().SetSize(NumberOfJoints());
@@ -600,6 +671,10 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::jaw_servo_jf, this, "jaw/servo_jf");
 
     // tool specific interface
+    m_arm_interface->AddCommandRead(&mtsIntuitiveResearchKitPSM::tool_list_size, this, "tool_list_size");
+    m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitPSM::tool_name, this, "tool_name");
+    m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitPSM::tool_full_description, this, "tool_full_description");
+
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::set_adapter_present, this, "set_adapter_present");
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::set_tool_present, this, "set_tool_present");
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::set_tool_type, this, "set_tool_type");
@@ -754,7 +829,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
     }
 
     const double currentTime = this->StateTable.GetTic();
-    
+
     // first phase, disable last 4 joints and wait
     if (!CouplingChange.Started) {
         // keep first 3 on
@@ -986,7 +1061,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         // sterile adapter should be raised up
         m_trajectory_j.goal[2] = 0.0;
         // set last 4 to -170.0
-        m_trajectory_j.goal.Ref(4, 3).SetAll(-175.0 * cmnPI_180);
+        m_trajectory_j.goal.Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
         m_trajectory_j.goal_v.SetAll(0.0);
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                                mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
@@ -1103,7 +1178,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         m_servo_jv.Assign(m_pid_measured_js.Velocity());
 
         // check if the tool in outside the cannula
-        if (m_pid_measured_js.Position().Element(2) >= mtsIntuitiveResearchKit::PSMOutsideCannula) {
+        if (m_pid_measured_js.Position().Element(2) >= mEngageDepth) {
             std::string message = this->GetName();
             message.append(": tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
             message.append("  If the tool is not engaged properly, move the sterile adapter all the way up and re-insert the tool.");
@@ -1399,7 +1474,7 @@ void mtsIntuitiveResearchKitPSM::set_tool_present(const bool & present)
     if (present) {
         // we will need to engage this tool
         Tool.NeedEngage = true;
-        ToolEvents.tool_type(mtsIntuitiveResearchKitToolTypes::TypeToString(mToolType));
+        ToolEvents.tool_type(mToolList.Name(mToolIndex));
     } else {
         ToolEvents.tool_type(std::string());
     }
@@ -1484,21 +1559,25 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
 {
     m_arm_interface->SendStatus(this->GetName() + ": setting up for tool type \"" + toolType + "\"");
     // check if the tool is in the supported list
-    auto found =
-        std::find(mtsIntuitiveResearchKitToolTypes::TypeVectorString().begin(),
-                  mtsIntuitiveResearchKitToolTypes::TypeVectorString().end(),
-                  toolType);
-    if (found == mtsIntuitiveResearchKitToolTypes::TypeVectorString().end()) {
-        m_arm_interface->SendError(this->GetName() + ": tool type \"" + toolType + "\" is not supported");
+    if (!mToolList.Find(toolType, mToolIndex)) {
+        CMN_LOG_CLASS_RUN_ERROR << "Supported tool types are:\n" << mToolList.PossibleNames("\n") << std::endl;
+        m_arm_interface->SendError(this->GetName() + ": tool type \""
+                                   + toolType + "\" is not supported, see cisstLog for details");
         ToolEvents.tool_type(std::string("ERROR"));
         return;
-    } else {
-        mToolType = mtsIntuitiveResearchKitToolTypes::TypeFromString(toolType);
     }
     // supported tools
-    ConfigureTool(toolType + ".json");
+    const std::string toolFile = mToolList.File(mToolIndex);
+    m_arm_interface->SendStatus(this->GetName() + ": using tool file \"" + toolFile
+                                + "\" for: " + mToolList.FullDescription(mToolIndex));
+    mToolConfigured = ConfigureTool(toolFile);
     if (mToolConfigured) {
         set_tool_present(true);
+        if (mToolList.Generation(mToolIndex) == "S") {
+            mEngageDepth = mtsIntuitiveResearchKit::PSM::EngageDepthS;
+        } else {
+            mEngageDepth = mtsIntuitiveResearchKit::PSM::EngageDepthClassic;
+        }
     } else {
         m_arm_interface->SendError(this->GetName() + ": failed to configure tool \"" + toolType + "\", check terminal output and cisstLog file");
         ToolEvents.tool_type(std::string("ERROR"));

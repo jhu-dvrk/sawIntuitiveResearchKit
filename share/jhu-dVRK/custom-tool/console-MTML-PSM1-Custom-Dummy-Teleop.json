@@ -1,0 +1,53 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "io":
+    {
+        "footpedals": "io/sawRobotIO1394-MTML-foot-pedals.xml"
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "serial": "28007",
+
+            // Helps find most file for the arm (i.e. sawRobotIO1394.xml for this arm)
+            "system": "jhu-dVRK",
+
+            // This is the main difference for custom instruments, the
+            // application needs to know while arm file to use!
+            "arm": "PSM1-28007-Custom-Dummy.json",
+
+            "base-frame": {
+                "reference-frame": "ECM",
+                "transform": [[  1.0,  0.0,          0.0,         -0.20],
+                              [  0.0, -0.866025404,  0.5,          0.0 ],
+                              [  0.0, -0.5,         -0.866025404,  0.0 ],
+                              [  0.0,  0.0,          0.0,          1.0 ]]
+            }
+        }
+        ,
+        {
+            "name": "MTML",
+            "type": "MTM",
+            "serial": "22723",
+            "system": "jhu-dVRK",
+            "base-frame": {
+                "reference-frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,          0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
+            }
+        }
+    ]
+    ,
+    "psm-teleops":
+    [
+        {
+            "mtm": "MTML",
+            "psm": "PSM1"
+        }
+    ]
+}

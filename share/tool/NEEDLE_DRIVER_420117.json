@@ -7,7 +7,7 @@
         "joints": [
             {
                 "name": "outer_roll",
-                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4024,
+                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4532,
                 "type": "revolute",
                 "mode": "active",
                 "offset":  0.0000,
@@ -67,7 +67,7 @@
     ,
     // rotation to match ISI convention (for read-only research API on commercial da Vinci)
     "tooltip-offset" : [[ 0.7071,  0.7071,  0.0000,  0.0000],
-                        [ 0.0000,  0.0000, -1.0000, -0.0200],
+                        [ 0.0000,  0.0000, -1.0000, -0.0171],
                         [-0.7071,  0.7071,  0.0000,  0.0000],
                         [ 0.0000,  0.0000,  0.0000,  1.0000]]
      ,
@@ -83,9 +83,9 @@
     ,
     // angles used to engage the tool, in radians
     // make sure these are within the range of motion IN the cannula
-    // 270, 5, 5, 0 degrees
+    // 263, 5, 5, 0 degrees
     "tool-engage-position" : {
-        "lower" : [-4.71239, -0.0872665, -0.0872665, 0.0],
-        "upper" : [ 4.71239,  0.0872665,  0.0872665, 0.0]
+        "lower" : [-4.59022, -0.0872665, -0.0872665, 0.0],
+        "upper" : [ 4.59022,  0.0872665,  0.0872665, 0.0]
     }
 }
