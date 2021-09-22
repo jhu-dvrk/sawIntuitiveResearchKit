@@ -3,9 +3,16 @@ This file is for WPI da Vinci clincial surgical robot
 
 1. Tracker ID for different arms:
 
-will update later
+PSM1: 23959
+PSM2: 29996
+PSM3: 32653
 
 2. Current situation:
 
+Basic setup has been done.
 
-wait for .cal files
+We can use udp for connection.
+
+PSM1,2,3 and MTML,R works fine.
+
+ECM is broken (3rd joint), working on repair

@@ -1,0 +1,53 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "parameters":
+    [
+        {
+            "parameter": "compliance_first",
+            "value-a": -38.3402,
+            "value-b": 22.6000,
+            "value-c": -4.5406,
+            "value-d": 0.3458
+        }
+        ,
+        {
+            "parameter": "torque_offset_first",
+            "value-a": 0.199,
+            "value-b": 0.0,
+            "value-c": 0.0,
+            "value-d": 0.0
+        }
+        ,
+        {
+            "parameter": "backlash_first",
+            "value-a": 0.008478,
+            "value-b": 0.0,
+            "value-c": 0.0,
+            "value-d": 0.0
+        }
+        ,
+        {
+            "parameter": "compliance_second",
+            "value-a": -16.1879,
+            "value-b": 9.1018,
+            "value-c": -1.7220,
+            "value-d": 0.1343
+        }
+        ,
+        {
+            "parameter": "torque_offset_second",
+            "value-a": -0.2419,
+            "value-b": 0.03458,
+            "value-c": 0.0,
+            "value-d": 0.0
+        }
+        ,
+        {
+            "parameter": "backlash_second",
+            "value": 0.007176,
+            "value-b": 0.0,
+            "value-c": 0.0,
+            "value-d": 0.0
+        }
+    ]
+}
