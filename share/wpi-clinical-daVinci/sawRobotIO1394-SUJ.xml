@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Config Version="4">
+   <Robot Name="SUJ" NumOfActuator="4" NumOfJoint="4" Type="io-only">
+      <Actuator ActuatorID="0" AxisID="0" BoardID="12">
+         <Drive>
+            <AmpsToBits Offset="32811" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.221954" Scale="0.000190738"/>
+            <MaxCurrent Unit="A" Value="2.2"/>
+         </Drive>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+         </AnalogIn>
+      </Actuator>
+      <Actuator ActuatorID="1" AxisID="1" BoardID="12">
+         <Drive>
+            <AmpsToBits Offset="32971" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.261823" Scale="0.000190738"/>
+            <MaxCurrent Unit="A" Value="2.2"/>
+         </Drive>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+         </AnalogIn>
+      </Actuator>
+      <Actuator ActuatorID="2" AxisID="2" BoardID="12">
+         <Drive>
+            <AmpsToBits Offset="33019" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.278672" Scale="0.000190738"/>
+            <MaxCurrent Unit="A" Value="2.2"/>
+         </Drive>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+         </AnalogIn>
+      </Actuator>
+      <Actuator ActuatorID="3" AxisID="3" BoardID="12">
+         <Drive>
+            <AmpsToBits Offset="32792" Scale="5242.88"/>
+            <BitsToFeedbackAmps Offset="-6.253825" Scale="0.000190738"/>
+            <MaxCurrent Unit="A" Value="2.2"/>
+         </Drive>
+         <AnalogIn>
+            <BitsToVolts Offset="0" Scale="6.86656e-05"/>
+         </AnalogIn>
+      </Actuator>
+   </Robot>
+   <!-- Digital Input Configuration -->
+   <DigitalIn BitID="0" BoardID="12" Debounce="0.1" Name="SUJ-Clutch-1" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="1" BoardID="12" Debounce="0.1" Name="SUJ-Clutch-2" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="2" BoardID="12" Debounce="0.1" Name="SUJ-Clutch-3" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="3" BoardID="12" Debounce="0.1" Name="SUJ-Clutch-4" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="4" BoardID="12" Debounce="0.1" Name="MotorUp" Pressed="0" Trigger="all"/>
+   <DigitalIn BitID="5" BoardID="12" Debounce="0.1" Name="MotorDown" Pressed="0" Trigger="all"/>
+   <!-- Digital Output Configuration -->
+   <DigitalOut BitID="0" BoardID="12" Name="NoMuxReset" LowDuration="0.0001"/>
+   <DigitalOut BitID="1" BoardID="12" Name="MuxIncrement" HighDuration="0.0001"/>
+   <DigitalOut BitID="2" BoardID="12" Name="ControlPWM" Frequency="40000.0"/>
+   <DigitalOut BitID="3" BoardID="12" Name="DisablePWM"/>
+</Config>
