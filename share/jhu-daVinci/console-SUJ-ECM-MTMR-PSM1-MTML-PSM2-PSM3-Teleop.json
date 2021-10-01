@@ -20,11 +20,7 @@
             "name": "SUJ",
             "type": "SUJ",
             "io": "sawRobotIO1394-SUJ.xml",
-            "kinematic": "suj-ECM-1-2-3.json",
-            "base-frame": {
-                "component": "ECM",
-                "interface": "Robot"
-            }
+            "kinematic": "suj-ECM-1-2-3.json"
         }
         ,
         {
@@ -98,17 +94,29 @@
     [
         {
             "mtm": "MTMR",
-            "psm": "PSM1"
+            "psm": "PSM1",
+            "psm-base-frame": {
+                "component": "ECM",
+                "interface": "Arm"
+            }
         }
         ,
         {
             "mtm": "MTML",
-            "psm": "PSM2"
+            "psm": "PSM2",
+            "psm-base-frame": {
+                "component": "ECM",
+                "interface": "Arm"
+            }
         }
         ,
         {
             "mtm": "MTML",
-            "psm": "PSM3"
+            "psm": "PSM3",
+            "psm-base-frame": {
+                "component": "ECM",
+                "interface": "Arm"
+            }
         }
     ]
     ,
