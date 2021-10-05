@@ -62,7 +62,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     }
 
     inline size_t NumberOfBrakes(void) const override {
-        return 0;
+        return 3;
     }
 
     void UpdateStateJointKinematics(void) override;

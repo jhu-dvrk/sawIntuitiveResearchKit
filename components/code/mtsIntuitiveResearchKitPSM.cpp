@@ -608,7 +608,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     CouplingChange.NoToolConfiguration.EffortMax().SetSize(NumberOfJoints());
     CouplingChange.NoToolConfiguration.EffortMax().Assign(3.316101,
                                                           3.316101,
-                                                          9.877926,
+                                                          2000.877926,
                                                           0.343642,
                                                           0.343642,
                                                           0.343642,

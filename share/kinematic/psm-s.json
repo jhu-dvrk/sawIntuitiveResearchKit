@@ -1,0 +1,39 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    // see dVRK user guide
+    "DH": {
+        "convention": "modified",
+        "joints": [
+            {
+                "name": "outer_yaw",
+                "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset":  1.5708,
+                "qmin": -4.71239, // -270
+                "qmax": 4.71239,  //  270
+                "ftmax": 30.316101
+            },
+            {
+                "name": "outer_pitch",
+                "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset": -1.5708,
+                "qmin": -0.925025, // -53
+                "qmax":  0.925025, //  53
+                "ftmax": 30.316101
+            },
+            {
+                "name": "outer_insertion",
+                "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
+                "type": "prismatic",
+                "mode": "active",
+                "offset": -0.4318,
+                "qmin": 0.0,
+                "qmax": 0.29,  // 290 mm
+                "ftmax": 99999999999999.877926
+            }
+        ]
+    }
+}
