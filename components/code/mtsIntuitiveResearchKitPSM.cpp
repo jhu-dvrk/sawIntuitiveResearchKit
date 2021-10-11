@@ -150,6 +150,9 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
         // find file if specified as share/<system>/...
         path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
+        // finally, default installation directory
+        path.Add(mtsIntuitiveResearchKit::DefaultInstallationDirectory + "/tool", cmnPath::TAIL);
+
         fullFilename = path.Find(filename);
         // still not found, try to add suffix to search again
         if (fullFilename == "") {

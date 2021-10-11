@@ -588,6 +588,9 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // parent directory as the "shared" directory.
     configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
 
+    // default installation directory
+    configPath.Add(mtsIntuitiveResearchKit::DefaultInstallationDirectory, cmnPath::TAIL);
+
     mtsComponentManager * manager = mtsComponentManager::GetInstance();
 
     // first, create all custom components and connections, i.e. dynamic loading and creation

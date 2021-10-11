@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace mtsIntuitiveResearchKit {
 
+    const std::string DefaultInstallationDirectory = "/usr/share/sawIntuitiveResearchKit/share";
     const std::string FireWireProtocol = "sequential-read-broadcast-write";
 
     const double PeriodDelay = 0.06 * cmn_ms; // fixed delay

@@ -27,10 +27,15 @@ add_subdirectory (components)
 set (sawIntuitiveResearchKit_DIR "${sawIntuitiveResearchKitAll_BINARY_DIR}/components")
 add_subdirectory (applications)
 add_subdirectory (examples)
+add_subdirectory (share)
 
 include (CPack)
 cpack_add_component (sawIntuitiveResearchKit)
-cpack_add_component (sawIntuitiveResearchKit-Qt DEPENDS
-                     sawIntuitiveResearchKit)
-cpack_add_component (sawIntuitiveResearchKit-Applications DEPENDS
-                     sawIntuitiveResearchKit sawIntuitiveResearchKit-Qt)
+cpack_add_component (sawIntuitiveResearchKit-dev
+                     DEPENDS sawIntuitiveResearchKit)
+cpack_add_component (sawIntuitiveResearchKit-Share
+                     DEPENDS sawIntuitiveResearchKit)
+cpack_add_component (sawIntuitiveResearchKit-Qt
+                     DEPENDS sawIntuitiveResearchKit)
+cpack_add_component (sawIntuitiveResearchKit-Applications
+                     DEPENDS sawIntuitiveResearchKit sawIntuitiveResearchKit-Qt)

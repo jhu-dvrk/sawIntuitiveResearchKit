@@ -173,7 +173,7 @@ if (cisst_FOUND)
     cisst_add_config_version ("${sawIntuitiveResearchKit_CONFIG_FILE_DIR}/sawIntuitiveResearchKitConfigVersion.cmake"
                               VERSION ${sawIntuitiveResearchKit_VERSION}
                               DESTINATION "share/sawIntuitiveResearchKit"
-                              COMPONENT sawIntuitiveResearchKit)
+                              COMPONENT sawIntuitiveResearchKit-dev)
 
     # Install targets for headers and library
     install (DIRECTORY
@@ -190,7 +190,7 @@ if (cisst_FOUND)
 
     install (FILES "${sawIntuitiveResearchKit_CMAKE_CONFIG_FILE}"
              DESTINATION "share/sawIntuitiveResearchKit"
-             COMPONENT sawIntuitiveResearchKit)
+             COMPONENT sawIntuitiveResearchKit-dev)
 
   endif (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 
