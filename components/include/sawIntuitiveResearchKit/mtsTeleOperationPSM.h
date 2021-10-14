@@ -105,7 +105,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         mtsFunctionRead  gripper_measured_js;
         mtsFunctionWrite lock_orientation;
         mtsFunctionVoid  unlock_orientation;
-        mtsFunctionWrite servo_cf_body;
+        mtsFunctionWrite body_servo_cf;
         mtsFunctionWrite use_gravity_compensation;
 
         mtsFunctionRead  operating_state;
