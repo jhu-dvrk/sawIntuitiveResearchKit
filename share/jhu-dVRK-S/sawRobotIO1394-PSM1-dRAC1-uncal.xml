@@ -1,47 +1,47 @@
 <Config Version="4">
-   <Robot Name="PSM1" NumOfActuator="7" NumOfJoint="7" SN="12345">
+   <Robot Name="PSM1" NumOfActuator="7" NumOfJoint="7" SN="586288">
       <Actuator ActuatorID="0" AxisID="0" BoardID="0" Type="Revolute">
          <Drive>
             <AmpsToBits Offset="32767" Scale="4000.00" />
             <BitsToFeedbackAmps Offset="-8.192" Scale="0.00025" />
-            <NmToAmps Scale="1" />
-            <MaxCurrent Unit="A" Value="2.5" />
+            <NmToAmps Scale="0.19900505472640004" /> // 1 / (60.3e-3 * 83.3333)
+            <MaxCurrent Unit="A" Value="3.4" />
          </Drive>
          <AnalogBrake AxisID="7" BoardID="0">
             <AmpsToBits Offset="32768" Scale="16000.00" />
             <BitsToFeedbackAmps Offset="-2.048" Scale="0.0000625" />
-            <MaxCurrent Unit="A" Value="0.150" />
+            <MaxCurrent Unit="A" Value="0.200" />
             <ReleaseCurrent Unit="A" Value="0.150" />
             <ReleaseTime Value="0.5" />
             <ReleasedCurrent Unit="A" Value="0.080" />
             <EngagedCurrent Unit="A" Value="0.000" />
          </AnalogBrake>
          <Encoder>
-            <BitsToPosSI Scale="0.00005309086" Unit="deg" />
+            <BitsToPosSI Scale="5.273437242507947e-05" Unit="deg" />
          </Encoder>
          <DigitalPot>
            <Pot Min="2870" Resolution="4095"/>
-           <PotToPosSI Offset="-176.0" Scale="0.1025057" Unit="deg"/>
+           <PotToPosSI Offset="-176.0" Scale="0.1025057" Unit="deg"/> // why? should it be 360/4096 = 0.087890625 ?
 	 </DigitalPot>
       </Actuator>
       <Actuator ActuatorID="1" AxisID="1" BoardID="0" Type="Revolute">
          <Drive>
             <AmpsToBits Offset="32768" Scale="-4000.00" />
             <BitsToFeedbackAmps Offset="8.192" Scale="-0.00025" />
-            <NmToAmps Scale="1" />
-            <MaxCurrent Unit="A" Value="2.5" />
+            <NmToAmps Scale="0.195102916788606" />
+            <MaxCurrent Unit="A" Value="3.4" />
          </Drive>
          <AnalogBrake AxisID="8" BoardID="0">
             <AmpsToBits Offset="32768" Scale="16000.00" />
             <BitsToFeedbackAmps Offset="-2.048" Scale="0.0000625" />
-            <MaxCurrent Unit="A" Value="0.150" />
+            <MaxCurrent Unit="A" Value="0.200" />
             <ReleaseCurrent Unit="A" Value="0.150" />
             <ReleaseTime Value="0.5" />
             <ReleasedCurrent Unit="A" Value="0.080" />
             <EngagedCurrent Unit="A" Value="0.000" />
          </AnalogBrake>
          <Encoder>
-            <BitsToPosSI Scale="-0.0000607750744" Unit="deg" />
+            <BitsToPosSI Scale="-5.170036764705882e-05" Unit="deg" />
          </Encoder>
 	 <DigitalPot>
            <Pot Min="1950" Resolution="4095"/>
@@ -52,20 +52,20 @@
          <Drive>
             <AmpsToBits Offset="32768" Scale="-16000.00" />
             <BitsToFeedbackAmps Offset="2.048" Scale="-0.0000625" />
-            <NmToAmps Scale="0.008307" />
-            <MaxCurrent Unit="A" Value="0.670" />
+            <NmToAmps Scale="0.026890730993597723" /> // unit is N to A?
+            <MaxCurrent Unit="A" Value="1.1" />
          </Drive>
          <AnalogBrake AxisID="9" BoardID="0">
             <AmpsToBits Offset="-32768" Scale="16000.00" />
             <BitsToFeedbackAmps Offset="-2.048" Scale="0.0000625" />
-            <MaxCurrent Unit="A" Value="0.250" />
+            <MaxCurrent Unit="A" Value="0.300" />
             <ReleaseCurrent Unit="A" Value="-0.250" />
             <ReleaseTime Value="0.5" />
             <ReleasedCurrent Unit="A" Value="-0.250" />
             <EngagedCurrent Unit="A" Value="0.000" />
          </AnalogBrake>
          <Encoder>
-            <BitsToPosSI Scale="-0.0001299587068" Unit="mm" />
+            <BitsToPosSI Scale="-0.00013010281114445068" Unit="mm" />
          </Encoder>
 	 <DigitalPot>
            <Pot Min="550" Resolution="4095"/>
@@ -76,11 +76,11 @@
          <Drive>
             <AmpsToBits Offset="32768" Scale="-16000.00" />
             <BitsToFeedbackAmps Offset="2.048" Scale="-0.0000625" />
-            <NmToAmps Scale="0.673064" />
-            <MaxCurrent Unit="A" Value="0.670" />
+            <NmToAmps Scale="1.8804043997702145" />
+            <MaxCurrent Unit="A" Value="1.1" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="-0.00658191" Unit="deg" />
+            <BitsToPosSI Scale="-0.0065154833221725515" Unit="deg" />
          </Encoder>
 	 <DigitalPot>
            <Pot Min="1900" Resolution="4095"/>
@@ -91,11 +91,11 @@
          <Drive>
             <AmpsToBits Offset="32768" Scale="-16000.00" />
             <BitsToFeedbackAmps Offset="2.048" Scale="-0.0000625" />
-            <NmToAmps Scale="0.673064" />
-            <MaxCurrent Unit="A" Value="0.670" />
+            <NmToAmps Scale="1.8804043997702145" />
+            <MaxCurrent Unit="A" Value="1.1" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="-0.00658191" Unit="deg" />
+            <BitsToPosSI Scale="-0.0065154833221725515" Unit="deg" />
          </Encoder>
          <DigitalPot>
            <Pot Min="1600" Resolution="4095"/>
@@ -106,11 +106,11 @@
          <Drive>
             <AmpsToBits Offset="32768" Scale="16000.00" />
             <BitsToFeedbackAmps Offset="-2.048" Scale="0.0000625" />
-            <NmToAmps Scale="0.673064" />
-            <MaxCurrent Unit="A" Value="0.670" />
+            <NmToAmps Scale="1.8804043997702145" />
+            <MaxCurrent Unit="A" Value="1.1" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="0.00658191" Unit="deg" />
+            <BitsToPosSI Scale="0.0065154833221725515" Unit="deg" />
          </Encoder>
          <DigitalPot>
            <Pot Min="700" Resolution="4095"/>
@@ -121,11 +121,11 @@
          <Drive>
             <AmpsToBits Offset="32768" Scale="16000.00" />
             <BitsToFeedbackAmps Offset="-2.048" Scale="0.0000625" />
-            <NmToAmps Scale="0.673064" />
-            <MaxCurrent Unit="A" Value="0.670" />
+            <NmToAmps Scale="1.8804043997702145" />
+            <MaxCurrent Unit="A" Value="1.1" />
          </Drive>
          <Encoder>
-            <BitsToPosSI Scale="0.00658191" Unit="deg" />
+            <BitsToPosSI Scale="0.0065154833221725515" Unit="deg" />
          </Encoder>
 	 <DigitalPot>
            <Pot Min="3600" Resolution="4095"/>
