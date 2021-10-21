@@ -24,7 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsEventReceiver.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>
-#include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
+#include <cisstMultiTask/mtsIntervalStatisticsQtWidget.h>
 
 #include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmStateJointQtWidget.h>
@@ -114,7 +114,7 @@ protected:
 
     // timing
     mtsIntervalStatistics IntervalStatistics;
-    mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
+    mtsIntervalStatisticsQtWidget * QMIntervalStatistics;
 
     // state
     QCheckBox * QCBEnableDirectControl;

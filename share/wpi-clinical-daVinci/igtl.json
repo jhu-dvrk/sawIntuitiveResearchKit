@@ -1,0 +1,61 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "servers":
+    [
+        {
+            "name": "SUJ-PSM1",
+            "component": "SUJ",
+            "provided-interface": "PSM1",
+            "port-number": 18944
+        }
+        ,
+        {
+            "name": "SUJ-PSM2",
+            "component": "SUJ",
+            "provided-interface": "PSM2",
+            "port-number": 18945
+        }
+        ,
+        {
+            "name": "SUJ-PSM3",
+            "component": "SUJ",
+            "provided-interface": "PSM3",
+            "port-number": 18946
+        }
+        ,
+        {
+            "name": "SUJ-ECM",
+            "component": "SUJ",
+            "provided-interface": "ECM",
+            "port-number": 18947
+        }
+        ,
+        {
+            "name": "PSM1",
+            "component": "PSM1",
+            "provided-interface": "Robot",
+            "port-number": 18940
+        }
+        ,
+        {
+            "name": "PSM2",
+            "component": "PSM2",
+            "provided-interface": "Robot",
+            "port-number": 18941
+        }
+        //,
+        //{
+        //    "name": "PSM3",
+        //    "component": "PSM3",
+        //    "provided-interface": "Robot",
+        //    "port-number": 18950
+        //}
+        ,
+        {
+            "name": "ECM",
+            "component": "ECM",
+            "provided-interface": "Robot",
+            "port-number": 18942
+        }
+    ]
+}

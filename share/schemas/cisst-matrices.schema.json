@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.0/cisst-matrices.schema.json",
+    "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/cisst-matrices.schema.json",
     "title": "cisstMultiTask matrices 1.1.0",
     "type": "object",
     "description": "matrices",

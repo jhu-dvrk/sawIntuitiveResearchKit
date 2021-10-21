@@ -68,8 +68,7 @@
             "name": "PSM1",
             "type": "PSM",
             "simulation": "KINEMATIC",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json"
+            "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json"
         }
     ]
     ,
@@ -79,8 +78,9 @@
             // this is where we tell the console to use our manually
             // loaded teleop, using "type"
             "type": "TELEOP_PSM_DERIVED",
-            "master": "MTMR",
-            "slave": "PSM1",
+            "mtm": "MTMR",
+            "psm": "PSM1",
+            // this is one way to re-orient PSM to MTM but it is better to use the arm/base-frame option
             "rotation" : [[ 0.0000, -1.0000,  0.0000],
                           [ 1.0000,  0.0000,  0.0000],
                           [ 0.0000,  0.0000,  1.0000]]

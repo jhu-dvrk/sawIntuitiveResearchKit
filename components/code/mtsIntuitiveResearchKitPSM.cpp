@@ -150,6 +150,9 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
         // find file if specified as share/<system>/...
         path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
+        // finally, default installation directory
+        path.Add(mtsIntuitiveResearchKit::DefaultInstallationDirectory + "/tool", cmnPath::TAIL);
+
         fullFilename = path.Find(filename);
         // still not found, try to add suffix to search again
         if (fullFilename == "") {
@@ -470,39 +473,72 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
                                                                     const vctFrm4x4 & cartesianGoal)
 {
     // make sure we are away from RCM point, create a new goal on sphere around RCM point (i.e. origin)
-    vctFrm4x4 goal = cartesianGoal;
     double distanceToRCM = cartesianGoal.Translation().Norm();
+    double currentDepth = jointSet.at(2);
+
     // if too close to zero we're going to run into issue in any case
     if (distanceToRCM < 1.0 * cmn_mm) {
         m_arm_interface->SendWarning(GetName() + ": InverseKinematics, can't solve IK too close to RCM");
         return robManipulator::EFAILURE;
     }
 
-    // project away from RCM if not safe
-    if (distanceToRCM < mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM) {
-        goal.Translation().Multiply(mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM / distanceToRCM);
-    }
+    // IK
+    robManipulator::Errno Err = Manipulator->InverseKinematics(jointSet, cartesianGoal);;
 
-    robManipulator::Errno Err;
+    // check equality constraint for snake like kinematic
     if (mSnakeLike) {
-        Err = Manipulator->InverseKinematics(jointSet, goal);
         // Check for equality Snake joints (4,7) and (5,6)
         if (fabs(jointSet.at(4) - jointSet.at(7)) > 0.00001 ||
             fabs(jointSet.at(5) - jointSet.at(6)) > 0.00001) {
             m_arm_interface->SendWarning(GetName() + ": InverseKinematics, equality constraint violated");
         }
-    } else {
-        Err = Manipulator->InverseKinematics(jointSet, goal);
     }
 
+    // Find closest solution mod 2 Pi for roll along shaft
     if (Err == robManipulator::ESUCCESS) {
         // find closest solution mod 2 pi
         const double difference = m_kin_measured_js.Position().at(3) - jointSet.at(3);
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet.at(3) = jointSet.at(3) + differenceInTurns * 2.0 * cmnPI;
+
+        // project away from RCM if not safe, using axis at end of shaft
+        vctFrm4x4 f4;
+        if (Manipulator->links.size() >= 4) {
+            f4 = Manipulator->ForwardKinematics(jointSet, 4);
+        } else {
+            f4 = Manipulator->ForwardKinematics(jointSet);
+        }
+        distanceToRCM = f4.Translation().Norm();
+
+        // if not far enough, distance for axis 4 is fully determine by insertion joint so add to it
+        if (distanceToRCM < mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM) {
+            // two cases based in current depth, were we past min depth or not - to do this we need to compute the minimum depth using j2.
+            const double minDepth = jointSet.at(2) + (mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM - distanceToRCM);
+            // if we are already too close to RCM, simply prevent to get closer
+            if (currentDepth <= minDepth) {
+                jointSet.at(2) = std::max(currentDepth, jointSet.at(2));
+            } else {
+                // else, make sure we don't go deeper
+                jointSet.at(2) = minDepth;
+            }
+        }
         return robManipulator::ESUCCESS;
     }
+
     return robManipulator::EFAILURE;
+}
+
+bool mtsIntuitiveResearchKitPSM::IsSafeForCartesianControl(void) const
+{
+    vctFrm4x4 f4;
+    if (Manipulator->links.size() >= 4) {
+        f4 = Manipulator->ForwardKinematics(m_kin_measured_js.Position(), 4);
+    } else {
+        f4 = Manipulator->ForwardKinematics(m_kin_measured_js.Position());
+    }
+    const double distanceToRCM = f4.Translation().Norm();
+    return (distanceToRCM >=  (mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCM
+                               - mtsIntuitiveResearchKit::PSM::SafeDistanceFromRCMBuffer));
 }
 
 void mtsIntuitiveResearchKitPSM::Init(void)

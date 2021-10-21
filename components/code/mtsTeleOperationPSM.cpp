@@ -125,7 +125,7 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("gripper/measured_js", mMTM.gripper_measured_js);
         interfaceRequired->AddFunction("lock_orientation", mMTM.lock_orientation, MTS_OPTIONAL);
         interfaceRequired->AddFunction("unlock_orientation", mMTM.unlock_orientation, MTS_OPTIONAL);
-        interfaceRequired->AddFunction("body/servo_cf", mMTM.servo_cf_body);
+        interfaceRequired->AddFunction("body/servo_cf", mMTM.body_servo_cf);
         interfaceRequired->AddFunction("use_gravity_compensation", mMTM.use_gravity_compensation);
         interfaceRequired->AddFunction("operating_state", mMTM.operating_state);
         interfaceRequired->AddFunction("state_command", mMTM.state_command);
@@ -460,7 +460,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
 
         // no force applied but gravity and locked orientation
         prmForceCartesianSet wrench;
-        mMTM.servo_cf_body(wrench);
+        mMTM.body_servo_cf(wrench);
         mMTM.use_gravity_compensation(true);
         if (m_align_mtm || m_rotation_locked) {
             // lock in current position
@@ -887,7 +887,7 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     mMTM.use_gravity_compensation(true);
     // set forces to zero and lock/unlock orientation as needed
     prmForceCartesianSet wrench;
-    mMTM.servo_cf_body(wrench);
+    mMTM.body_servo_cf(wrench);
     if (m_rotation_locked) {
         mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
     } else {

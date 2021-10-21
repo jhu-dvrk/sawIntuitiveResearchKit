@@ -21,7 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>
-#include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
+#include <cisstMultiTask/mtsIntervalStatisticsQtWidget.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianGetQtWidget.h>
 
@@ -121,7 +121,7 @@ private:
 
     // timing
     mtsIntervalStatistics m_interval_statistics;
-    mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
+    mtsIntervalStatisticsQtWidget * QMIntervalStatistics;
 
     // messages
     bool LogEnabled;

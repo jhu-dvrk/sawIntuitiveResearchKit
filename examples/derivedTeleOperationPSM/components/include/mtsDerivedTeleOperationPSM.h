@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2017-08-09
 
-  (C) Copyright 2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2017-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,6 +21,10 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 
+#include <cisstParameterTypes/prmForceCartesianGet.h>
+#include <cisstParameterTypes/prmVelocityCartesianGet.h>
+#include <cisstParameterTypes/prmForceCartesianSet.h>
+
 class mtsDerivedTeleOperationPSM: public mtsTeleOperationPSM
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -28,20 +32,39 @@ class mtsDerivedTeleOperationPSM: public mtsTeleOperationPSM
 public:
     typedef mtsTeleOperationPSM BaseType;
 
+    // We need to redefine the constructors
     mtsDerivedTeleOperationPSM(const std::string & componentName, const double periodInSeconds);
+    // this constructor is required for dynamic creation
     mtsDerivedTeleOperationPSM(const mtsTaskPeriodicConstructorArg & arg);
     ~mtsDerivedTeleOperationPSM(){}
 
-    void Configure(const std::string & CMN_UNUSED(filename));
+    // We know configure it called after constructors but just before
+    // connecting so we can use this method to change the tele-op
+    // state machine callbacks and add some extra commands to the
+    // existing interfaces
+    void Configure(const std::string & filename) override;
 
 protected:
     void EnterEnabled(void);
     void RunEnabled(void);
-    
-    mtsFunctionRead  PSMGetWrenchBody;
-    mtsFunctionWrite PSMSetWrenchBodyOrientationAbsolute;
-    mtsFunctionRead  PSMGetVelocityCartesian;
-    mtsFunctionWrite MTMSetWrenchBodyOrientationAbsolute;
+
+    // Extra functions and data members we need for the behavior in
+    // derived tele-op.  We use structs just to organize the new data
+    // members.
+    struct {
+        mtsFunctionRead  body_measured_cf;
+        mtsFunctionRead  measured_cv;
+        mtsFunctionWrite body_set_cf_orientation_absolute;
+
+        prmForceCartesianGet m_measured_cf;
+        prmVelocityCartesianGet m_measured_cv;
+    } PSMExtra;
+
+    struct {
+        mtsFunctionWrite body_set_cf_orientation_absolute;
+
+        prmForceCartesianSet m_setpoint_cf;
+    } MTMExtra;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsDerivedTeleOperationPSM);
