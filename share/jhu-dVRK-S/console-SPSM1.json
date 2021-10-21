@@ -11,9 +11,9 @@
         {
             "name": "PSM1",
             "type": "PSM",
-            "arm": "jhu-dVRK-S/PSM1-12345.json",
-            "io": "jhu-dVRK-S/sawRobotIO1394-PSM1-dRAC1-uncal.xml",
-            "pid": "pid/sawControllersPID-PSM-S.xml"
+            "arm": "jhu-dVRK-S/SPSM1-586288.json",
+            "io": "jhu-dVRK-S/sawRobotIO1394-SPSM1-586288.xml",
+            "pid": "pid/sawControllersPID-SPSM.xml"
         }
     ]
 }

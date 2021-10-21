@@ -21,7 +21,7 @@
          </Encoder>
          <DigitalPot>
            <Pot Min="2870" Resolution="4095"/>
-           <PotToPosSI Offset="-176.0" Scale="0.1025057" Unit="deg"/> // why? should it be 360/4096 = 0.087890625 ?
+           <PotToPosSI Offset="-176.0" Scale="0.101721263" Unit="deg"/> // empirical values, still need ISI numbers
 	 </DigitalPot>
       </Actuator>
       <Actuator ActuatorID="1" AxisID="1" BoardID="0" Type="Revolute">
@@ -45,7 +45,7 @@
          </Encoder>
 	 <DigitalPot>
            <Pot Min="1950" Resolution="4095"/>
-           <PotToPosSI Offset="85.0" Scale="-0.050991501416" Unit="deg"/>
+           <PotToPosSI Offset="85.0" Scale="-0.043332329" Unit="deg"/> // empirical
          </DigitalPot>
       </Actuator>
       <Actuator ActuatorID="2" AxisID="2" BoardID="0" Type="Prismatic">
@@ -69,7 +69,7 @@
          </Encoder>
 	 <DigitalPot>
            <Pot Min="550" Resolution="4095"/>
-           <PotToPosSI Offset="-0.01" Scale="0.08398494063" Unit="mm"/>
+           <PotToPosSI Offset="-0.01" Scale="0.084089197799" Unit="mm"/> // empirical
          </DigitalPot>
       </Actuator>
       <Actuator ActuatorID="3" AxisID="3" BoardID="0" Type="Revolute">
@@ -84,7 +84,7 @@
          </Encoder>
 	 <DigitalPot>
            <Pot Min="1900" Resolution="4095"/>
-           <PotToPosSI Offset="173.0" Scale="-0.1"  Unit="deg"/>
+           <PotToPosSI Offset="178.7" Scale="-0.1028181548"  Unit="deg"/>
          </DigitalPot>
       </Actuator>
             <Actuator ActuatorID="4" AxisID="4" BoardID="0" Type="Revolute">
@@ -99,7 +99,7 @@
          </Encoder>
          <DigitalPot>
            <Pot Min="1600" Resolution="4095"/>
-           <PotToPosSI Offset="176.0" Scale="-0.1"  Unit="deg"/>
+           <PotToPosSI Offset="179.11" Scale="-0.1028181548"  Unit="deg"/> // empirical?
          </DigitalPot>
       </Actuator>
             <Actuator ActuatorID="5" AxisID="5" BoardID="0" Type="Revolute">
@@ -114,7 +114,7 @@
          </Encoder>
          <DigitalPot>
            <Pot Min="700" Resolution="4095"/>
-           <PotToPosSI Offset="-174.0" Scale="0.1"  Unit="deg"/>
+           <PotToPosSI Offset="-175.82" Scale="0.1028181548"  Unit="deg"/>
          </DigitalPot>
       </Actuator>
             <Actuator ActuatorID="6" AxisID="6" BoardID="0" Type="Revolute">
@@ -129,7 +129,7 @@
          </Encoder>
 	 <DigitalPot>
            <Pot Min="3600" Resolution="4095"/>
-           <PotToPosSI Offset="-170.0" Scale="0.1"  Unit="deg"/>
+           <PotToPosSI Offset="-179.42" Scale="0.1028181548"  Unit="deg"/>
          </DigitalPot>
       </Actuator>
       <Potentiometers Position="Actuators">
@@ -143,9 +143,9 @@
       </Potentiometers>
    </Robot>
    <DigitalIn BitID="0" BoardID="0" Debounce="0.2" Name="PSM1-SUJClutch2" Pressed="0" Trigger="all" />
-   <DigitalIn BitID="1" BoardID="0" Debounce="0.2" Name="PSM1-SUJClutch" Pressed="0" Trigger="all" />
-   <DigitalIn BitID="3" BoardID="0" Debounce="0.2" Name="PSM1-ManipClutch" Pressed="0" Trigger="all" />
-   <DigitalIn BitID="7" BoardID="0" Debounce="1.5" Name="PSM1-Tool" Pressed="0" Trigger="all" />
-   <DigitalIn BitID="8" BoardID="0" Debounce="1.5" Name="PSM1-Adapter" Pressed="0" Trigger="all" />
+   <DigitalIn BitID="4" BoardID="0" Debounce="0.2" Name="PSM1-SUJClutch" Pressed="0" Trigger="all" />
+   <DigitalIn BitID="13" BoardID="0" Debounce="0.2" Name="PSM1-ManipClutch" Pressed="0" Trigger="all" />
+   <DigitalIn BitID="11" BoardID="0" Debounce="1.5" Name="PSM1-Tool" Pressed="0" Trigger="all" />
+   <DigitalIn BitID="17" BoardID="0" Debounce="1.5" Name="PSM1-Adapter" Pressed="0" Trigger="all" />
    <DallasChip BoardID="0" Name="PSM1-Dallas" />
 </Config>
