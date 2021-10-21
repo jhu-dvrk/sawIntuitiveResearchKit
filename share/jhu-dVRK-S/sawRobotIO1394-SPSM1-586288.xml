@@ -135,7 +135,7 @@
       <Potentiometers Position="Actuators">
 	<Tolerance Axis="0" Distance="10.0" Latency="0.01" Unit="deg" />
 	<Tolerance Axis="1" Distance="10.0" Latency="0.01" Unit="deg" />
-	<Tolerance Axis="2" Distance="20.0" Latency="0.01" Unit="mm" />
+	<Tolerance Axis="2" Distance="10.0" Latency="0.01" Unit="mm" />
 	<Tolerance Axis="3" Distance="10.0" Latency="0.01" Unit="deg" />
 	<Tolerance Axis="4" Distance="10.0" Latency="0.01" Unit="deg" />
 	<Tolerance Axis="5" Distance="10.0" Latency="0.01" Unit="deg" />
@@ -144,7 +144,7 @@
    </Robot>
    <DigitalIn BitID="0" BoardID="0" Debounce="0.2" Name="PSM1-SUJClutch2" Pressed="0" Trigger="all" />
    <DigitalIn BitID="4" BoardID="0" Debounce="0.2" Name="PSM1-SUJClutch" Pressed="0" Trigger="all" />
-   <DigitalIn BitID="13" BoardID="0" Debounce="0.2" Name="PSM1-ManipClutch" Pressed="0" Trigger="all" />
+   <DigitalIn BitID="13" BoardID="0" Debounce="0.01" Name="PSM1-ManipClutch" Pressed="0" Trigger="all" />
    <DigitalIn BitID="11" BoardID="0" Debounce="1.5" Name="PSM1-Tool" Pressed="0" Trigger="all" />
    <DigitalIn BitID="17" BoardID="0" Debounce="1.5" Name="PSM1-Adapter" Pressed="0" Trigger="all" />
    <DallasChip BoardID="0" Name="PSM1-Dallas" />

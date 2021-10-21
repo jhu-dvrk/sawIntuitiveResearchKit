@@ -13,7 +13,10 @@
             "type": "PSM",
             "arm": "jhu-dVRK-S/SPSM1-586288.json",
             "io": "jhu-dVRK-S/sawRobotIO1394-SPSM1-586288.xml",
-            "pid": "pid/sawControllersPID-SPSM.xml"
+            "pid": "pid/sawControllersPID-SPSM.xml",
+            "socket-server": true,
+            "remote-ip": "10.162.34.80",
+            "port": 10001
         }
     ]
 }
