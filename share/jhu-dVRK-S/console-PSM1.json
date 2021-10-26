@@ -1,7 +1,7 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
     "io": {
-        "port": "udp"
+         "port": "udp"
         // "port": "fw"
         // , "firewire-protocol": "broadcast-read-write"
     }
@@ -10,10 +10,8 @@
     [
         {
             "name": "PSM1",
-            "type": "PSM",
-            "arm": "jhu-dVRK-S/SPSM1-586288.json",
-            "io": "jhu-dVRK-S/sawRobotIO1394-SPSM1-586288.xml",
-            "pid": "pid/sawControllersPID-SPSM.xml",
+            "type": "PSM_S",
+            "serial": "586288",
             "socket-server": true,
             "remote-ip": "10.162.34.80",
             "port": 10001

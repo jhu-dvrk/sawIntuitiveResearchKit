@@ -53,16 +53,26 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     virtual bool ConfigureTool(const std::string & filename);
 
     /*! Configuration methods */
-    inline size_t NumberOfJoints(void) const override {
+    inline size_t number_of_joints(void) const override {
         return 7;
     }
 
-    inline size_t NumberOfJointsKinematics(void) const override {
+    inline size_t number_of_joints_kinematics(void) const override {
         return mSnakeLike ? 8 : 6;
     }
 
-    inline size_t NumberOfBrakes(void) const override {
-        return 3;
+    inline size_t number_of_brakes(void) const override {
+        switch (m_generation) {
+        case mtsIntuitiveResearchKitArm::GENERATION_CLASSIC:
+            return 0;
+            break;
+        case mtsIntuitiveResearchKitArm::GENERATION_S:
+            return 3;
+            break;
+        default:
+            return 0;
+        }
+        return 0;
     }
 
     void UpdateStateJointKinematics(void) override;
