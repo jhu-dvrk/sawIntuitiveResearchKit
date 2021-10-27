@@ -333,7 +333,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     // cartesian impendance controller
     osaCartesianImpedanceController * mCartesianImpedanceController;
-    bool m_cartesian_impedance;
+    bool m_cartesian_impedance = false;
 
     // used by MTM only
     bool m_effort_orientation_locked;
