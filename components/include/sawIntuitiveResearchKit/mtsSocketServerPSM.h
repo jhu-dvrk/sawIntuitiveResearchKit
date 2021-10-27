@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsSocketBasePSM.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmPositionJointGet.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
 
 class mtsSocketServerPSM: public mtsSocketBasePSM
@@ -46,14 +47,16 @@ protected:
 private:
     mtsFunctionWrite servo_cp;
     mtsFunctionWrite jaw_servo_jp;
-    mtsFunctionRead measured_cp;
+    mtsFunctionRead setpoint_cp;
+    mtsFunctionRead jaw_setpoint_js;
 
     mtsFunctionWrite state_command;
     mtsFunctionRead operating_state;
 
-    prmPositionCartesianGet m_measured_cp;
-    prmPositionCartesianSet m_setpoint_cp;
-    prmPositionJointSet m_jaw_setpoint_jp;
+    prmPositionCartesianGet m_setpoint_cp;
+    prmPositionCartesianSet m_servo_cp;
+    prmPositionJointSet m_jaw_servo_jp;
+    prmPositionJointGet m_jaw_setpoint_js;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsSocketServerPSM);

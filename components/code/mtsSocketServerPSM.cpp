@@ -28,9 +28,10 @@ mtsSocketServerPSM::mtsSocketServerPSM(const std::string & componentName, const 
 {
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("PSM");
     if(interfaceRequired) {
-        interfaceRequired->AddFunction("measured_cp", measured_cp);
+        interfaceRequired->AddFunction("setpoint_cp", setpoint_cp);
         interfaceRequired->AddFunction("servo_cp", servo_cp);
         interfaceRequired->AddFunction("jaw/servo_jp", jaw_servo_jp);
+        interfaceRequired->AddFunction("jaw/setpoint_js", jaw_setpoint_js);
         interfaceRequired->AddFunction("operating_state", operating_state);
         interfaceRequired->AddFunction("state_command", state_command);
         interfaceRequired->AddEventHandlerWrite(&mtsSocketServerPSM::ErrorEventHandler,
@@ -88,12 +89,12 @@ void mtsSocketServerPSM::ExecutePSMCommands(void)
     switch (CurrentState) {
     case socketMessages::SCK_CART_POS:
         // send cartesian goal
-        m_setpoint_cp.Goal().From(Command.Data.GoalPose);
-        servo_cp(m_setpoint_cp);
+        m_servo_cp.Goal().From(Command.Data.GoalPose);
+        servo_cp(m_servo_cp);
         // send jaw goal
-        m_jaw_setpoint_jp.Goal().SetSize(1);
-        m_jaw_setpoint_jp.Goal().Element(0) = Command.Data.GoalJaw;
-        jaw_servo_jp(m_jaw_setpoint_jp);
+        m_jaw_servo_jp.Goal().SetSize(1);
+        m_jaw_servo_jp.Goal().Element(0) = Command.Data.GoalJaw;
+        jaw_servo_jp(m_jaw_servo_jp);
         break;
     default:
         break;
@@ -146,8 +147,8 @@ void mtsSocketServerPSM::UpdatePSMState(void)
     mtsExecutionResult executionResult;
 
     // Get Cartesian position
-    executionResult = measured_cp(m_measured_cp);
-    State.Data.CurrentPose.Assign(m_measured_cp.Position());
+    executionResult = setpoint_cp(m_setpoint_cp);
+    State.Data.CurrentPose.Assign(m_setpoint_cp.Position());
 
     // Get Arm State
     prmOperatingState psmState;
