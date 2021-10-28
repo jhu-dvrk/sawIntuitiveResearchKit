@@ -110,10 +110,12 @@ def parseCALValue(value):
         # string value, leave as exact contents
         if v[0] == "'" and v[-1] == "'":
             processed_values.append(v[1:-1])
-            continue
-
-        # otherwise, assume it is a numeric value
-        processed_values.append(float(v))
+        # float value
+        elif v.find('.') != -1:
+            processed_values.append(float(v))
+        # otherwise, assume it is an integer
+        else:
+            processed_values.append(int(v))
 
     # return as value rather than list if only one element
     if len(processed_values) == 1:
