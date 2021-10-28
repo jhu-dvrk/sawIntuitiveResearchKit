@@ -1,5 +1,6 @@
-import math
+import argparse
 import json
+import math
 import xml.etree.ElementTree as ET
 from enum import Enum
 
@@ -486,10 +487,7 @@ def generateConfig(calFileName, robotName, outputFormat):
     # sanity check robot type matches cal file
     assert (
         robotName[0:3] == calData["FileType"][0:3]
-    ), "Robot name doesn't match type from cal file"
-
-    validRobotTypes = ["MTML", "MTMR", "PSM1", "PSM2", "PSM3", "ECM"]
-    assert robotName in validRobotTypes, "Unknown hardware type"
+    ), "Robot hardware type doesn't match type from cal file"
 
     version = 4
     config = Config(calData, version, robotName)
@@ -506,5 +504,18 @@ def generateConfig(calFileName, robotName, outputFormat):
         tree = ET.ElementTree(root)
         tree.write(outputFileName + ".xml", xml_declaration=True)
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-a", "--arm", type=str, required=True,
+                        choices=["MTML", "MTMR", "PSM1", "PSM2", "PSM3", "ECM"],
+                        help = "robot arm hardware type")
+    parser.add_argument('-c', '--cal', type=str, required=True,
+                        help = "calibration file")
+    parser.add_argument('-f', '--format', type=str, default="XML",
+                        choices=["XML", "JSON"],
+                        help = "calibration file")
 
-generateConfig("jhu-dVRK/cal-files/jhu-mtml-m22723.cal", "MTML", OutputFormat.XML)
+    args = parser.parse_args() # argv[0] is executable name
+
+    outputFormat = OutputFormat.XML if args.format == "XML" else OutputFormat.JSON
+    generateConfig(args.cal, args.arm, outputFormat)
