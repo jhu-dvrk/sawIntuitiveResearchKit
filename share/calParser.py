@@ -111,7 +111,7 @@ def parseCALValue(value):
         if v[0] == "'" and v[-1] == "'":
             processed_values.append(v[1:-1])
         # float value
-        elif v.find('.') != -1:
+        elif v.find(".") != -1:
             processed_values.append(float(v))
         # otherwise, assume it is an integer
         else:
@@ -144,7 +144,12 @@ def parseCALFile(fileName, context):
             value = parseCALValue(line[assignmentIdx + 1 :])
 
             if isinstance(value, list):
-                assert (indices[2]-indices[1]+1) == len(value), "Incompatible shapes: " + str(indices[2]-indices[1]+1) + ", " + str(value)
+                assert (indices[2] - indices[1] + 1) == len(value), (
+                    "Incompatible shapes: "
+                    + str(indices[2] - indices[1] + 1)
+                    + ", "
+                    + str(value)
+                )
 
             if key in raw_values:
                 raw_values[key].append((indices, value))
@@ -160,12 +165,12 @@ def parseCALFile(fileName, context):
 
         max_row = max(values, key=lambda x: x[0][0])[0][0]
         max_column = max(values, key=lambda x: x[0][2])[0][2]
-        value = np.zeros((max_row+1, max_column+1))
+        value = np.zeros((max_row + 1, max_column + 1))
 
         for x in values:
             indices, raw_value = x
             row, start, end = indices
-            value[row, start:end+1] = raw_value
+            value[row, start : end + 1] = raw_value
 
         data[key] = value
 
