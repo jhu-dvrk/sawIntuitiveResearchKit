@@ -14,6 +14,16 @@ class RobotType(Enum):
     PSM = 1
     ECM = 2
 
+    def fromTypeName(robotTypeName):
+        if robotTypeName[0:3] == "MTM":
+            return RobotType.MTM
+        elif robotTypeName[0:3] == "PSM":
+            return RobotType.PSM
+        elif robotTypeName[0:3] == "ECM":
+            return RobotType.ECM
+        else:
+            return None
+
 
 class OutputFormat(Enum):
     JSON = 0
@@ -57,49 +67,83 @@ class UnitValue(Serializable):
         return dict
 
 
+# dVRK board ID conventions
+def getBoardIDs(robotTypeName):
+    boardIDs = None
+    if robotTypeName == "MTML":
+        boardIDs = [0, 1]
+    elif robotTypeName == "MTMR":
+        boardIDs = [2, 3]
+    elif robotTypeName == "ECM":
+        boardIDs = [4, 5]
+    elif robotTypeName == "PSM1":
+        boardIDs = [6, 7]
+    elif robotTypeName == "PSM2":
+        boardIDs = [8, 9]
+    elif robotTypeName == "PSM3":
+        boardIDs = [10, 11]
+
+    return boardIDs
+
+
+def generateDigitalInputs(robotTypeName):
+    robotType = RobotType.fromTypeName(robotTypeName)
+    boardIDs = getBoardIDs(robotTypeName)
+    digitalInputBitIDs = None
+    if robotType == RobotType.MTM:
+        digitalInputBitIDs = []
+    elif robotType == RobotType.PSM:
+        digitalInputBitIDs = [
+            (boardIDs[0], 0),
+            (boardIDs[0], 2),
+            (boardIDs[1], 7),
+            (boardIDs[1], 10),
+        ]
+    elif robotType == RobotType.ECM:
+        digitalInputBitIDs = [(boardIDs[0], 0), (boardIDs[0], 2)]
+
+    digitalInputs = []
+    for boardID, bitID in digitalInputBitIDs:
+        digitalInput = DigitalInput(robotTypeName, bitID, boardID)
+        digitalInputs.append(digitalInput)
+
+    return digitalInputs
+
+
 class Config(Serializable):
-    def __init__(self, calData, versionID, robotName):
+    def __init__(self, calData, versionID, robotTypeName):
         self.versionID = versionID
         serialNumber = calData["serial_number"]
-        self.robot = Robot(calData, robotName, serialNumber)
+        self.robot = Robot(calData, robotTypeName, serialNumber)
+        self.digitalInputs = generateDigitalInputs(robotTypeName)
+
+        robotType = RobotType.fromTypeName(robotTypeName)
+        self.dallasChip = (
+            DallasChip(robotTypeName) if robotType == RobotType.PSM else None
+        )
 
     def toDict(self):
-        return {
+        dict = {
             "Version": self.versionID,
             "Robot": self.robot,
         }
 
+        if self.dallasChip != None:
+            dict["DallasChip"] = self.dallasChip
+
+        if len(self.digitalInputs) > 0:
+            dict["DigitalIns"] = self.digitalInputs
+
+        return dict
+
 
 class Robot(Serializable):
     def __init__(self, calData, robotTypeName, serialNumber):
-        self.name = robotTypeName[0:3]
+        self.name = robotTypeName
         self.serialNumber = serialNumber
 
-        self.type = None
-        numberOfActuators = 0  # Number of joints/actuators depends on robot type
-        if robotTypeName[0:3] == "MTM":
-            self.type = RobotType.MTM
-            numberOfActuators = 7
-        elif robotTypeName[0:3] == "PSM":
-            self.type = RobotType.PSM
-            numberOfActuators = 7
-        elif robotTypeName[0:3] == "ECM":
-            self.type = RobotType.ECM
-            numberOfActuators = 4
-
-        boardIDs = None  # dVRK board ID conventions
-        if robotTypeName == "MTML":
-            boardIDs = [0, 1]
-        elif robotTypeName == "MTMR":
-            boardIDs = [2, 3]
-        elif robotTypeName == "ECM":
-            boardIDs = [4, 5]
-        elif robotTypeName == "PSM1":
-            boardIDs = [6, 7]
-        elif robotTypeName == "PSM2":
-            boardIDs = [8, 9]
-        elif robotTypeName == "PSM3":
-            boardIDs = [10, 11]
+        self.type = RobotType.fromTypeName(robotTypeName)
+        numberOfActuators = 4 if self.type == RobotType.ECM else 7
 
         driveDirections = None  # motor drive directions by actuator
         if robotTypeName == "MTML":
@@ -112,6 +156,7 @@ class Robot(Serializable):
             driveDirections = [1, 1, -1, 1]
 
         self.actuators = []
+        boardIDs = getBoardIDs(robotTypeName)
         for idx in range(numberOfActuators):
             driveDirection = driveDirections[idx]
             actuator = Actuator(calData, self.type, idx, driveDirection, boardIDs)
@@ -131,7 +176,7 @@ class Robot(Serializable):
             "Potentiometers": self.potentiometers,
         }
 
-        if self.coupling:
+        if self.coupling != None:
             dict["Coupling"] = self.coupling
 
         return dict
@@ -195,7 +240,7 @@ class Actuator(Serializable):
             "AnalogIn": self.analogIn,
         }
 
-        if self.brake:
+        if self.brake != None:
             dict["AnalogBrake"] = self.brake
 
         return dict
@@ -393,6 +438,50 @@ class Coupling(Serializable):
         }
 
 
+class DigitalInput(Serializable):
+    def __init__(self, robotTypeName, bitID, boardID):
+        self.bitID = bitID
+        self.boardID = boardID
+
+        debounceTimes = {0: 0.2, 2: 0.2, 7: 1.5, 10: 1.5}
+        self.debounceTime = debounceTimes[bitID]
+
+        robotType = RobotType.fromTypeName(robotTypeName)
+        if robotType == RobotType.PSM:
+            digitalInputTypes = {
+                0: "SUJCatch",
+                2: "ManipClutch",
+                7: "Tool",
+                10: "Adapter",
+            }
+            self.name = robotTypeName + "-" + digitalInputTypes[bitID]
+        elif robotType == RobotType.ECM:
+            digitalInputTypes = {0: "ManipClutch", 2: "SUJCatch"}
+            self.name = robotTypeName + "-" + digitalInputTypes[bitID]
+
+    def toDict(self):
+        return {
+            "BitID": self.bitID,
+            "Name": self.name,
+            "BoardID": self.boardID,
+            "Pressed": 1,
+            "Trigger": "all",
+            "Debounce": self.debounceTime,
+        }
+
+
+class DallasChip(Serializable):
+    def __init__(self, robotTypeName):
+        self.name = robotTypeName + "-Dallas"
+        self.boardID = getBoardIDs(robotTypeName)[1]
+
+    def toDict(self):
+        return {
+            "BoardID": self.boardID,
+            "Name": self.name,
+        }
+
+
 def canSerialize(obj):
     return (
         isinstance(obj, Serializable)
@@ -504,18 +593,28 @@ def generateConfig(calFileName, robotName, outputFormat):
         tree = ET.ElementTree(root)
         tree.write(outputFileName + ".xml", xml_declaration=True)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-a", "--arm", type=str, required=True,
-                        choices=["MTML", "MTMR", "PSM1", "PSM2", "PSM3", "ECM"],
-                        help = "robot arm hardware type")
-    parser.add_argument('-c', '--cal', type=str, required=True,
-                        help = "calibration file")
-    parser.add_argument('-f', '--format', type=str, default="XML",
-                        choices=["XML", "JSON"],
-                        help = "calibration file")
+    parser.add_argument(
+        "-a",
+        "--arm",
+        type=str,
+        required=True,
+        choices=["MTML", "MTMR", "PSM1", "PSM2", "PSM3", "ECM"],
+        help="robot arm hardware type",
+    )
+    parser.add_argument("-c", "--cal", type=str, required=True, help="calibration file")
+    parser.add_argument(
+        "-f",
+        "--format",
+        type=str,
+        default="XML",
+        choices=["XML", "JSON"],
+        help="calibration file",
+    )
 
-    args = parser.parse_args() # argv[0] is executable name
+    args = parser.parse_args()  # argv[0] is executable name
 
     outputFormat = OutputFormat.XML if args.format == "XML" else OutputFormat.JSON
     generateConfig(args.cal, args.arm, outputFormat)
