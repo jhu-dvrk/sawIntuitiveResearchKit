@@ -1453,7 +1453,6 @@ void mtsIntuitiveResearchKitPSM::set_adapter_present(const bool & present)
         Adapter.NeedEngage = true;
     } else {
         Adapter.NeedEngage = false;
-        mArmState.SetCurrentState("HOMED");
     }
 }
 
