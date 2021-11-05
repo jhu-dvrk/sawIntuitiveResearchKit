@@ -162,7 +162,7 @@ void mtsIntuitiveResearchKitECM::Init(void)
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
 
     // default PID tracking errors
-    PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
+    PID.DefaultTrackingErrorTolerance.SetSize(number_of_joints());
     PID.DefaultTrackingErrorTolerance.SetAll(7.0 * cmnPI_180); // 7 degrees on angles
     PID.DefaultTrackingErrorTolerance.Element(2) = 10.0 * cmn_mm; // 10 mm
 
@@ -217,13 +217,13 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
     PID.EnableTrackingError(true);
 
     // compute joint goal position
-    m_trajectory_j.goal.SetSize(NumberOfJoints());
+    m_trajectory_j.goal.SetSize(number_of_joints());
     if (m_homing_goes_to_zero) {
         // move to zero position
         m_trajectory_j.goal.SetAll(0.0);
     } else {
         // stay at current position by default
-        m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position(), NumberOfJoints());
+        m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position(), number_of_joints());
     }
 }
 
@@ -300,7 +300,7 @@ void mtsIntuitiveResearchKitECM::update_feed_forward(vctDoubleVec & feedForward)
 
 void mtsIntuitiveResearchKitECM::control_add_gravity_compensation(vctDoubleVec & efforts)
 {
-    vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
+    vctDoubleVec qd(this->number_of_joints_kinematics(), 0.0);
     efforts.Add(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, 9.81));
 }
 

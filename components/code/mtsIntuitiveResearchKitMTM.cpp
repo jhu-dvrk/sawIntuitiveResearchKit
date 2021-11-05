@@ -97,7 +97,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     m_homing_goes_to_zero = true;
 
     // joint values when orientation is locked
-    mEffortOrientationJoint.SetSize(NumberOfJoints());
+    mEffortOrientationJoint.SetSize(number_of_joints());
 
     // initialize gripper state
     m_gripper_measured_js.Name().SetSize(1);
@@ -124,7 +124,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     m_trajectory_j.goal_tolerance.at(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
 
     // default PID tracking errors, defaults are used for homing
-    PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
+    PID.DefaultTrackingErrorTolerance.SetSize(number_of_joints());
     PID.DefaultTrackingErrorTolerance.SetAll(10.0 * cmnPI_180);
     // last 3 joints tend to be weaker
     PID.DefaultTrackingErrorTolerance.Ref(3, 4) = 30.0 * cmnPI_180;
@@ -367,7 +367,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     PID.SetCheckPositionLimit(false);
     PID.EnableTrackingError(false);
     // enable PID for roll only
-    vctBoolVec enableJoints(NumberOfJoints());
+    vctBoolVec enableJoints(number_of_joints());
     enableJoints.SetAll(false);
     enableJoints.at(JNT_WRIST_ROLL) = true;
     PID.EnableJoints(enableJoints);
@@ -402,7 +402,7 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
         // if this is the first evaluation, we can't calculate expected completion time
         if (m_trajectory_j.end_time == 0.0) {
             m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
-            mHomingTimer = m_trajectory_j.end_time;
+            m_homing_timer = m_trajectory_j.end_time;
         }
 
         // detect tracking error and set lower limit
@@ -415,7 +415,7 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
             mArmState.SetCurrentState("ROLL_CALIBRATED");
         } else {
             // time out
-            if (currentTime > mHomingTimer + extraTime) {
+            if (currentTime > m_homing_timer + extraTime) {
                 m_arm_interface->SendError(this->GetName() + ": unable to hit roll lower limit in time");
                 SetDesiredState("FAULT");
             }
@@ -453,7 +453,7 @@ void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
     }
 
     // reset encoder on last joint as well as PID target position to reflect new roll position = 0
-    prmMaskedDoubleVec values(NumberOfJoints());
+    prmMaskedDoubleVec values(number_of_joints());
     values.Mask().SetAll(false);
     values.Data().SetAll(0.0); // this shouldn't be used but safe to zero
     values.Mask().at(JNT_WRIST_ROLL) = true;
@@ -462,7 +462,7 @@ void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
 
     // start timer
     const double currentTime = this->StateTable.GetTic();
-    mHomingTimer = currentTime;
+    m_homing_timer = currentTime;
 }
 
 void mtsIntuitiveResearchKitMTM::RunResettingRollEncoder(void)
@@ -470,7 +470,7 @@ void mtsIntuitiveResearchKitMTM::RunResettingRollEncoder(void)
     // wait for some time, no easy way to check if encoder has been reset
     const double timeToWait = 10.0 * cmn_ms;
     const double currentTime = this->StateTable.GetTic();
-    if ((currentTime - mHomingTimer) < timeToWait) {
+    if ((currentTime - m_homing_timer) < timeToWait) {
         return;
     }
 
@@ -544,7 +544,7 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
         // initialize trajectory
-        m_trajectory_j.goal.Ref(NumberOfJointsKinematics()).Assign(jointSet);
+        m_trajectory_j.goal.Ref(number_of_joints_kinematics()).Assign(jointSet);
         m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
                                           m_servo_jv,
                                           m_trajectory_j.goal,
@@ -557,7 +557,7 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
 
 void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
 {
-    vctBoolVec torqueMode(NumberOfJoints());
+    vctBoolVec torqueMode(number_of_joints());
     // if orientation is locked
     if (m_effort_orientation_locked) {
         // first 3 joints in torque mode
@@ -635,8 +635,8 @@ void mtsIntuitiveResearchKitMTM::lock_orientation(const vctMatRot3 & orientation
         m_effort_orientation_locked = true;
         SetControlEffortActiveJoints();
         // initialize trajectory
-        m_servo_jp.Assign(m_pid_measured_js.Position(), NumberOfJoints());
-        m_servo_jv.Assign(m_pid_measured_js.Velocity(), NumberOfJoints());
+        m_servo_jp.Assign(m_pid_measured_js.Position(), number_of_joints());
+        m_servo_jv.Assign(m_pid_measured_js.Velocity(), number_of_joints());
         m_trajectory_j.Reflexxes.Set(m_trajectory_j.v,
                                      m_trajectory_j.a,
                                      StateTable.PeriodStats.PeriodAvg(),

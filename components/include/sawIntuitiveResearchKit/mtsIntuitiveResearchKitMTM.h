@@ -54,19 +54,19 @@ protected:
                       const std::string & filename) override;
 
     /*! Configuration methods */
-    inline size_t NumberOfJoints(void) const override {
+    inline size_t number_of_joints(void) const override {
         return 7;
     }
 
-    inline size_t NumberOfJointsKinematics(void) const override {
+    inline size_t number_of_joints_kinematics(void) const override {
         return 7;
     }
 
-    inline size_t NumberOfBrakes(void) const override {
+    inline size_t number_of_brakes(void) const override {
         return 0;
     }
 
-    inline bool UsePIDTrackingError(void) const override {
+    inline bool use_PID_tracking_error(void) const override {
         return false;
     }
 

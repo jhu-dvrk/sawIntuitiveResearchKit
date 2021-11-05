@@ -283,7 +283,7 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
                                                                jsonCoupling);
         // build a coupling matrix for all 7 actuators/dofs
         CouplingChange.ToolCoupling
-            .ActuatorToJointPosition().ForceAssign(vctDynamicMatrix<double>::Eye(NumberOfJoints()));
+            .ActuatorToJointPosition().ForceAssign(vctDynamicMatrix<double>::Eye(number_of_joints()));
         // assign 4x4 matrix starting at position 3, 3
         CouplingChange.ToolCoupling
             .ActuatorToJointPosition().Ref(4, 4, 3, 3).Assign(toolCoupling4.ActuatorToJointPosition());
@@ -405,15 +405,15 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
 
         // most tool, copy first n joints (6) from PID for kinematics
         // measured p/v/e
-        m_kin_measured_js.Position().Assign(m_pid_measured_js.Position().Ref(NumberOfJointsKinematics()));
-        m_kin_measured_js.Velocity().Assign(m_pid_measured_js.Velocity().Ref(NumberOfJointsKinematics()));
-        m_kin_measured_js.Effort().Assign(m_pid_measured_js.Effort().Ref(NumberOfJointsKinematics()));
+        m_kin_measured_js.Position().Assign(m_pid_measured_js.Position().Ref(number_of_joints_kinematics()));
+        m_kin_measured_js.Velocity().Assign(m_pid_measured_js.Velocity().Ref(number_of_joints_kinematics()));
+        m_kin_measured_js.Effort().Assign(m_pid_measured_js.Effort().Ref(number_of_joints_kinematics()));
         m_kin_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
         m_kin_measured_js.Valid() = m_pid_measured_js.Valid();
 
         // setpoint p/e
-        m_kin_setpoint_js.Position().Assign(m_pid_setpoint_js.Position().Ref(NumberOfJointsKinematics()));
-        m_kin_setpoint_js.Effort().Assign(m_pid_setpoint_js.Effort().Ref(NumberOfJointsKinematics()));
+        m_kin_setpoint_js.Position().Assign(m_pid_setpoint_js.Position().Ref(number_of_joints_kinematics()));
+        m_kin_setpoint_js.Effort().Assign(m_pid_setpoint_js.Effort().Ref(number_of_joints_kinematics()));
         m_kin_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
         m_kin_setpoint_js.Valid() = m_pid_setpoint_js.Valid();
 
@@ -602,7 +602,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
 
     // default PID tracking errors
-    PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
+    PID.DefaultTrackingErrorTolerance.SetSize(number_of_joints());
     // first two rotations
     PID.DefaultTrackingErrorTolerance.Ref(2, 0).SetAll(20.0 * cmnPI_180); // 2 elements starting at 0 -> 0 1
     // translation
@@ -623,8 +623,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     CouplingChange.NoToolConfiguration.Name().at(6) = "disc_4";
     CouplingChange.NoToolConfiguration.Type().SetSize(7);
     CouplingChange.NoToolConfiguration.Type().SetAll(PRM_JOINT_REVOLUTE);
-    CouplingChange.NoToolConfiguration.PositionMin().SetSize(NumberOfJoints());
-    CouplingChange.NoToolConfiguration.PositionMax().SetSize(NumberOfJoints());
+    CouplingChange.NoToolConfiguration.PositionMin().SetSize(number_of_joints());
+    CouplingChange.NoToolConfiguration.PositionMax().SetSize(number_of_joints());
     CouplingChange.NoToolConfiguration.PositionMin().Assign(-91.0 * cmnPI_180,
                                                             -53.0 * cmnPI_180,
                                                             0.0 * cmn_mm,
@@ -640,11 +640,11 @@ void mtsIntuitiveResearchKitPSM::Init(void)
                                                             mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
                                                             mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
     // using values from sawControllersPID.xml: max_amp / nm_to_amp
-    CouplingChange.NoToolConfiguration.EffortMin().SetSize(NumberOfJoints());
-    CouplingChange.NoToolConfiguration.EffortMax().SetSize(NumberOfJoints());
+    CouplingChange.NoToolConfiguration.EffortMin().SetSize(number_of_joints());
+    CouplingChange.NoToolConfiguration.EffortMax().SetSize(number_of_joints());
     CouplingChange.NoToolConfiguration.EffortMax().Assign(3.316101,
                                                           3.316101,
-                                                          9.877926,
+                                                          2000.877926,
                                                           0.343642,
                                                           0.343642,
                                                           0.343642,
@@ -689,8 +689,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     CMN_ASSERT(PIDInterface);
     PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::CouplingEventHandler, this, "Coupling");
     PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EnableJointsEventHandler, this, "EnabledJoints");
-    CouplingChange.LastEnabledJoints.SetSize(NumberOfJoints());
-    CouplingChange.DesiredEnabledJoints.SetSize(NumberOfJoints());
+    CouplingChange.LastEnabledJoints.SetSize(number_of_joints());
+    CouplingChange.DesiredEnabledJoints.SetSize(number_of_joints());
 
     // Event Adapter engage: digital input button event from PSM
     interfaceRequired = AddInterfaceRequired("Adapter");
@@ -841,7 +841,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
         CouplingChange.DesiredEnabledJoints.Ref(4, 3).SetAll(false);
         PID.EnableJoints(CouplingChange.DesiredEnabledJoints);
         CouplingChange.WaitingForEnabledJoints = true;
-        mHomingTimer = currentTime;
+        m_homing_timer = currentTime;
         CouplingChange.ReceivedEnabledJoints = false;
         CouplingChange.Started = true;
         return;
@@ -855,7 +855,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                 if (CouplingChange.CouplingForTool) {
                     CouplingChange.DesiredCoupling.Assign(CouplingChange.ToolCoupling);
                 } else {
-                    const vctDoubleMat identity(vctDoubleMat::Eye(NumberOfJoints()));
+                    const vctDoubleMat identity(vctDoubleMat::Eye(number_of_joints()));
                     // set desired
                     CouplingChange.DesiredCoupling.Assign(identity);
                 }
@@ -867,7 +867,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
             } else {
                 // check time
                 const double timeToEnableJoints = 30.0 * cmn_s; // large timeout
-                if ((currentTime - mHomingTimer) > timeToEnableJoints) {
+                if ((currentTime - m_homing_timer) > timeToEnableJoints) {
                     m_arm_interface->SendError(this->GetName() + ": can't disable last four axes to change coupling.");
                     CMN_LOG_CLASS_RUN_ERROR << "RunChangingCoupling: " << this->GetName()
                                             << "\nexpecting enabled joints:" << CouplingChange.DesiredEnabledJoints
@@ -908,23 +908,23 @@ void mtsIntuitiveResearchKitPSM::UpdateConfigurationJointPID(const bool toolPres
     if (toolPresent && mToolConfigured) {
 
         // just to be absolutely totally sure
-        CMN_ASSERT(NumberOfJoints() == 7);
+        CMN_ASSERT(number_of_joints() == 7);
 
         // at most we use 6 joints from kinematics, 7th is always the
         // jaws.  PID is always 6+1, kinematics is usually 6 (most ISI
         // tools) except 8 for 5mm tools (snake like).  User defined
         // kinematics might be less than 6.
         const size_t jawIndex = 6;
-        const size_t nbJointsFromKinematics = std::min(NumberOfJointsKinematics(),
+        const size_t nbJointsFromKinematics = std::min(number_of_joints_kinematics(),
                                                        static_cast<size_t>(6));
 
         // get names, types and joint limits for kinematics config from the manipulator
         // name and types need conversion
         mStateTableConfiguration.Start();
-        m_pid_configuration_js.Name().SetSize(NumberOfJoints());
-        m_pid_configuration_js.Type().SetSize(NumberOfJoints());
-        std::vector<std::string> names(NumberOfJointsKinematics());
-        std::vector<robJoint::Type> types(NumberOfJointsKinematics());
+        m_pid_configuration_js.Name().SetSize(number_of_joints());
+        m_pid_configuration_js.Type().SetSize(number_of_joints());
+        std::vector<std::string> names(number_of_joints_kinematics());
+        std::vector<robJoint::Type> types(number_of_joints_kinematics());
         this->Manipulator->GetJointNames(names);
         this->Manipulator->GetJointTypes(types);
         for (size_t index = 0; index < nbJointsFromKinematics; ++index) {
@@ -943,13 +943,13 @@ void mtsIntuitiveResearchKitPSM::UpdateConfigurationJointPID(const bool toolPres
         }
 
         // limits need to take into account snake case
-        vctDoubleVec lowerFromKinematics(NumberOfJointsKinematics());
-        vctDoubleVec upperFromKinematics(NumberOfJointsKinematics());
+        vctDoubleVec lowerFromKinematics(number_of_joints_kinematics());
+        vctDoubleVec upperFromKinematics(number_of_joints_kinematics());
 
-        m_pid_configuration_js.PositionMin().SetSize(NumberOfJoints());
-        m_pid_configuration_js.PositionMax().SetSize(NumberOfJoints());
-        m_pid_configuration_js.EffortMin().SetSize(NumberOfJoints());
-        m_pid_configuration_js.EffortMax().SetSize(NumberOfJoints());
+        m_pid_configuration_js.PositionMin().SetSize(number_of_joints());
+        m_pid_configuration_js.PositionMax().SetSize(number_of_joints());
+        m_pid_configuration_js.EffortMin().SetSize(number_of_joints());
+        m_pid_configuration_js.EffortMax().SetSize(number_of_joints());
 
         // position limits
         Manipulator->GetJointLimits(lowerFromKinematics,
@@ -1043,7 +1043,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
     if (EngagingStage == 1) {
         // configure PID to fail in case of tracking error
         PID.SetCheckPositionLimit(false);
-        vctDoubleVec tolerances(NumberOfJoints());
+        vctDoubleVec tolerances(number_of_joints());
         // first two rotations and translation, in case someone is pushing/holding arm
         tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
         tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
@@ -1052,7 +1052,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         PID.SetTrackingErrorTolerance(tolerances);
         servo_jp_internal(m_pid_setpoint_js.Position());
         // turn on PID
-        PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
+        PID.EnableJoints(vctBoolVec(number_of_joints(), true));
         PID.EnableTrackingError(true);
 
         // make sure we start from current state
@@ -1087,7 +1087,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         // if this is the first evaluation, we can't calculate expected completion time
         if (m_trajectory_j.end_time == 0.0) {
             m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
-            mHomingTimer = m_trajectory_j.end_time;
+            m_homing_timer = m_trajectory_j.end_time;
         }
         break;
 
@@ -1164,7 +1164,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
     if (EngagingStage == 1) {
         // configure PID to fail in case of tracking error
         PID.SetCheckPositionLimit(false);
-        vctDoubleVec tolerances(NumberOfJoints());
+        vctDoubleVec tolerances(number_of_joints());
         // first two rotations and translation, in case someone is pushing/holding arm
         tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
         tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
@@ -1173,7 +1173,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         PID.SetTrackingErrorTolerance(tolerances);
         servo_jp_internal(m_pid_setpoint_js.Position());
         // turn on PID
-        PID.EnableJoints(vctBoolVec(NumberOfJoints(), true));
+        PID.EnableJoints(vctBoolVec(number_of_joints(), true));
         PID.EnableTrackingError(true);
 
         // make sure we start from current state
@@ -1216,7 +1216,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         // if this is the first evaluation, we can't calculate expected completion time
         if (m_trajectory_j.end_time == 0.0) {
             m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
-            mHomingTimer = m_trajectory_j.end_time;
+            m_homing_timer = m_trajectory_j.end_time;
         }
         break;
 
@@ -1310,7 +1310,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
         // make sure all other joints have a reasonable goal
-        m_servo_jp.Assign(m_pid_setpoint_js.Position(), NumberOfJoints());
+        m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
     }
 
     // save goal
@@ -1333,7 +1333,7 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
             SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                    mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
             // make sure all other joints have a reasonable goal
-            m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position(), NumberOfJointsKinematics());
+            m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position(), number_of_joints_kinematics());
         }
         break;
     default:
@@ -1404,11 +1404,11 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffor
     }
 
     // pad array for PID
-    vctDoubleVec torqueDesired(NumberOfJoints(), 0.0); // for PID
+    vctDoubleVec torqueDesired(number_of_joints(), 0.0); // for PID
     if (mSnakeLike) {
         std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for force control" << std::endl;
     } else {
-        torqueDesired.Assign(mEffortJoint, NumberOfJointsKinematics());
+        torqueDesired.Assign(mEffortJoint, number_of_joints_kinematics());
     }
     // add torque for jaws
     torqueDesired.at(6) = m_jaw_servo_jf;
