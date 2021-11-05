@@ -69,11 +69,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         friend class mtsIntuitiveResearchKitConsoleQt;
         friend class dvrk::console;
 
-        static bool native_or_derived(const ArmType _arm_type);
-        static bool native_or_derived_mtm(const ArmType _arm_type);
-        static bool native_or_derived_psm(const ArmType _arm_type);
-        static bool native_or_derived_ecm(const ArmType _arm_type);
-        static mtsIntuitiveResearchKitArm::GenerationType generation(const ArmType _arm_type);
+        bool native_or_derived(void) const;
+        bool native_or_derived_mtm(void) const;
+        bool native_or_derived_psm(void) const;
+        bool native_or_derived_ecm(void) const;
+        mtsIntuitiveResearchKitArm::GenerationType generation(void) const;
+        bool expects_PID(void) const;
 
         Arm(mtsIntuitiveResearchKitConsole * console,
             const std::string & name,
