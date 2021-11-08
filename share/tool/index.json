@@ -83,7 +83,7 @@
         ,
         {
             "model": "400172",
-            "names": ["MARYLAND_BIPOLAR_FORCEPS"],
+            "names": ["MARYLAND_BIPOLAR_FORCEPS", "BIPOLAR_MARYLAND_FORCEPS"],
             "description": "Maryland Bipolar Forceps",
             "generation": "Classic",
             "file": "MARYLAND_BIPOLAR_FORCEPS_400172.json"
@@ -189,22 +189,6 @@
         }
         ,
         {
-            "model": "420048",
-            "names": ["LONG_TIP_FORCEPS"],
-            "description": "Long Tip Forceps",
-            "generation": "S",
-            "file": "LONG_TIP_FORCEPS_420048.json"
-        }
-        ,
-        {
-            "model": "420049",
-            "names": ["CADIERE_FORCEPS"],
-            "description": "Cadiere Forceps",
-            "generation": "S",
-            "file": "CADIERE_FORCEPS_420049.json"
-        }
-        ,
-        {
             "model": "420093",
             "names": ["PROGRASP_FORCEPS"],
             "description": "Prograsp Forceps",
@@ -234,46 +218,6 @@
             "description": "Curved Scissors",
             "generation": "S",
             "file": "CURVED_SCISSORS_420178.json"
-        }
-        ,
-        {
-            "model": "420179",
-            "names": ["MONOPOLAR_CURVED_SCISSORS"],
-            "description": "Monopolar Curved Scissors",
-            "generation": "S",
-            "file": "MONOPOLAR_CURVED_SCISSORS_420179.json"
-        }
-        ,
-        {
-            "model": "420183",
-            "names": ["PERMANENT_CAUTERY_HOOK"],
-            "description": "Permanent Cautery Hook",
-            "generation": "S",
-            "file": "PERMANENT_CAUTERY_HOOK_420183.json"
-        }
-        ,
-        {
-            "model": "420184",
-            "names": ["PERMANENT_CAUTERY_SPATULA"],
-            "description": "Permanent Cautery Spatula",
-            "generation": "S",
-            "file": "PERMANENT_CAUTERY_SPATULA_420184.json"
-        }
-        ,
-        {
-            "model": "420194",
-            "names": ["MEGA_NEEDLE_DRIVER"],
-            "description": "Mega Needle Driver",
-            "generation": "S",
-            "file": "MEGA_NEEDLE_DRIVER_420194.json"
-        }
-        ,
-        {
-            "model": "420205",
-            "names": ["FENESTRATED_BIPOLAR_FORCEPS"],
-            "description": "Fenestrated Bipolar Forceps",
-            "generation": "S",
-            "file": "FENESTRATED_BIPOLAR_FORCEPS_420205.json"
         }
         ,
         {

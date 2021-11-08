@@ -52,9 +52,9 @@ http://www.cisst.org/cisst/license.txt.
 
 CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsole);
 
-bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived(const mtsIntuitiveResearchKitConsole::Arm::ArmType _arm_type)
+bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived(void) const
 {
-    switch (_arm_type) {
+    switch (m_type) {
     case ARM_MTM:
     case ARM_PSM:
     case ARM_PSM_S:
@@ -63,6 +63,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived(const mtsIntuitiveRe
     case ARM_PSM_DERIVED:
     case ARM_PSM_S_DERIVED:
     case ARM_ECM_DERIVED:
+    case ARM_SUJ:
     case FOCUS_CONTROLLER:
         return true;
         break;
@@ -73,9 +74,9 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived(const mtsIntuitiveRe
     return false;
 }
 
-bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_mtm(const mtsIntuitiveResearchKitConsole::Arm::ArmType _arm_type)
+bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_mtm(void) const
 {
-    switch (_arm_type) {
+    switch (m_type) {
     case ARM_MTM:
     case ARM_MTM_DERIVED:
         return true;
@@ -87,9 +88,9 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_mtm(const mtsIntuiti
     return false;
 }
 
-bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_psm(const mtsIntuitiveResearchKitConsole::Arm::ArmType _arm_type)
+bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_psm(void) const
 {
-    switch (_arm_type) {
+    switch (m_type) {
     case ARM_PSM:
     case ARM_PSM_DERIVED:
     case ARM_PSM_S:
@@ -103,9 +104,9 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_psm(const mtsIntuiti
     return false;
 }
 
-bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_ecm(const mtsIntuitiveResearchKitConsole::Arm::ArmType _arm_type)
+bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_ecm(void) const
 {
-    switch (_arm_type) {
+    switch (m_type) {
     case ARM_ECM:
     case ARM_ECM_DERIVED:
         return true;
@@ -117,12 +118,12 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_ecm(const mtsIntuiti
     return false;
 }
 
-mtsIntuitiveResearchKitArm::GenerationType mtsIntuitiveResearchKitConsole::Arm::generation(const mtsIntuitiveResearchKitConsole::Arm::ArmType _arm_type)
+mtsIntuitiveResearchKitArm::GenerationType mtsIntuitiveResearchKitConsole::Arm::generation(void) const
 {
-    if (!native_or_derived(_arm_type)) {
+    if (!native_or_derived()) {
         return mtsIntuitiveResearchKitArm::GENERATION_UNDEFINED;
     }
-    switch (_arm_type) {
+    switch (m_type) {
     case ARM_PSM_S:
     case ARM_PSM_S_DERIVED:
         return mtsIntuitiveResearchKitArm::GENERATION_S;
@@ -132,6 +133,11 @@ mtsIntuitiveResearchKitArm::GenerationType mtsIntuitiveResearchKitConsole::Arm::
         break;
     }
     return mtsIntuitiveResearchKitArm::GENERATION_UNDEFINED;
+}
+
+bool mtsIntuitiveResearchKitConsole::Arm::expects_PID(void) const
+{
+    return (native_or_derived() && (m_type != ARM_SUJ));
 }
 
 mtsIntuitiveResearchKitConsole::Arm::Arm(mtsIntuitiveResearchKitConsole * console,
@@ -193,7 +199,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             if (m_simulation == SIMULATION_KINEMATIC) {
                 mtm->set_simulated();
             }
-            mtm->set_generation(generation(m_type));
+            mtm->set_generation(generation());
             mtm->set_calibration_mode(m_calibration_mode);
             mtm->Configure(m_arm_configuration_file);
             SetBaseFrameIfNeeded(mtm);
@@ -208,7 +214,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             if (m_simulation == SIMULATION_KINEMATIC) {
                 psm->set_simulated();
             }
-            psm->set_generation(generation(m_type));
+            psm->set_generation(generation());
             psm->set_calibration_mode(m_calibration_mode);
             psm->Configure(m_arm_configuration_file);
             SetBaseFrameIfNeeded(psm);
@@ -237,7 +243,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             if (m_simulation == SIMULATION_KINEMATIC) {
                 ecm->set_simulated();
             }
-            ecm->set_generation(generation(m_type));
+            ecm->set_generation(generation());
             ecm->set_calibration_mode(m_calibration_mode);
             ecm->Configure(m_arm_configuration_file);
             SetBaseFrameIfNeeded(ecm);
@@ -287,7 +293,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                     if (m_simulation == SIMULATION_KINEMATIC) {
                         mtm->set_simulated();
                     }
-                    mtm->set_generation(generation(m_type));
+                    mtm->set_generation(generation());
                     mtm->set_calibration_mode(m_calibration_mode);
                     mtm->Configure(m_arm_configuration_file);
                     SetBaseFrameIfNeeded(mtm);
@@ -315,7 +321,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                     if (m_simulation == SIMULATION_KINEMATIC) {
                         psm->set_simulated();
                     }
-                    psm->set_generation(generation(m_type));
+                    psm->set_generation(generation());
                     psm->set_calibration_mode(m_calibration_mode);
                     psm->Configure(m_arm_configuration_file);
                     SetBaseFrameIfNeeded(psm);
@@ -342,7 +348,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                     if (m_simulation == SIMULATION_KINEMATIC) {
                         ecm->set_simulated();
                     }
-                    ecm->set_generation(generation(m_type));
+                    ecm->set_generation(generation());
                     ecm->set_calibration_mode(m_calibration_mode);
                     ecm->Configure(m_arm_configuration_file);
                     SetBaseFrameIfNeeded(ecm);
@@ -391,7 +397,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
 {
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     // if the arm is a research kit arm
-    if (native_or_derived(m_type)) {
+    if (native_or_derived()) {
         // Connect arm to IO if not simulated
         if (m_simulation == SIMULATION_NONE) {
             componentManager->Connect(Name(), "RobotIO",
@@ -405,8 +411,10 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
                                       IOComponentName(), Name() + "-Gripper");
         }
         // connect PID
-        componentManager->Connect(Name(), "PID",
-                                  PIDComponentName(), "Controller");
+        if (expects_PID()) {
+            componentManager->Connect(Name(), "PID",
+                                      PIDComponentName(), "Controller");
+        }
         // connect m_base_frame if needed
         if ((m_base_frame_component_name != "") && (m_base_frame_interface_name != "")) {
             componentManager->Connect(m_base_frame_component_name, m_base_frame_interface_name,
@@ -917,7 +925,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             iter->second->ConfigurePID(pidConfig);
         }
         // for generic arms, nothing to do
-        if (Arm::native_or_derived(iter->second->m_type)) {
+        if (iter->second->native_or_derived()) {
             const std::string armConfig = iter->second->m_arm_configuration_file;
             iter->second->ConfigureArm(iter->second->m_type, armConfig,
                                        iter->second->m_arm_period);
@@ -1159,7 +1167,7 @@ void mtsIntuitiveResearchKitConsole::Cleanup(void)
 bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
 {
     if ((newArm->m_type != Arm::ARM_PSM_SOCKET)
-        && (Arm::native_or_derived(newArm->m_type))) {
+        && (newArm->native_or_derived())) {
         if (newArm->m_type != Arm::ARM_SUJ) {
             if (newArm->m_PID_configuration_file.empty()) {
                 CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
@@ -1439,7 +1447,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
 
     // IO for anything not simulated or socket client
     if ((armPointer->m_type != Arm::ARM_PSM_SOCKET)
-        && (Arm::native_or_derived(armPointer->m_type))) {
+        && (armPointer->native_or_derived())) {
         if (armPointer->m_simulation == Arm::SIMULATION_NONE) {
             jsonValue = jsonArm["io"];
             if (!jsonValue.empty()) {
@@ -1496,7 +1504,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     }
 
     // PID only required for MTM, PSM and ECM (and derived)
-    if (Arm::native_or_derived(armPointer->m_type)) {
+    if (armPointer->expects_PID()) {
         jsonValue = jsonArm["pid"];
         if (!jsonValue.empty()) {
             armPointer->m_PID_configuration_file = armConfigPath.Find(jsonValue.asString());
@@ -1529,16 +1537,14 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
 
     // only configure kinematics if not arm socket client
     if ((armPointer->m_type != Arm::ARM_PSM_SOCKET)
-        && (Arm::native_or_derived(armPointer->m_type))) {
+        && (armPointer->native_or_derived())) {
         // renamed "kinematic" to "arm" so we can have a more complex configuration file for the arm class
-        if (Arm::native_or_derived(armPointer->m_type)) {
-            jsonValue = jsonArm["arm"];
-            if (!jsonValue.empty()) {
-                armPointer->m_arm_configuration_file = armConfigPath.Find(jsonValue.asString());
-                if (armPointer->m_arm_configuration_file == "") {
-                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find configuration file " << jsonValue.asString() << std::endl;
-                    return false;
-                }
+        jsonValue = jsonArm["arm"];
+        if (!jsonValue.empty()) {
+            armPointer->m_arm_configuration_file = armConfigPath.Find(jsonValue.asString());
+            if (armPointer->m_arm_configuration_file == "") {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find configuration file " << jsonValue.asString() << std::endl;
+                return false;
             }
         }
         jsonValue = jsonArm["kinematic"];
@@ -1559,7 +1565,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         // make sure we have an arm configuration file for all arms except FOCUS_CONTROLLER
         if ((armPointer->m_arm_configuration_file == "")
             && (armPointer->m_type != Arm::FOCUS_CONTROLLER)) {
-            if (Arm::native_or_derived(armPointer->m_type)) {
+            if (armPointer->native_or_derived()) {
                 // try to find the arm file using default
                 std::string defaultFile = armName + "-" + armPointer->m_serial + ".json";
                 armPointer->m_arm_configuration_file = armConfigPath.Find(defaultFile);

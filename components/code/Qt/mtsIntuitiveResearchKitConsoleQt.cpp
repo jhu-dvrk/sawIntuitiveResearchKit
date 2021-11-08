@@ -131,11 +131,11 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED:
             // PID widget
             size_t numberOfJoints;
-            if (mtsIntuitiveResearchKitConsole::Arm::native_or_derived_psm(armIter->second->m_type)) {
+            if (armIter->second->native_or_derived_psm()) {
                 numberOfJoints = 7;
-            } else if (mtsIntuitiveResearchKitConsole::Arm::native_or_derived_mtm(armIter->second->m_type)) {
+            } else if (armIter->second->native_or_derived_mtm()) {
                 numberOfJoints = 7;
-            } else if (mtsIntuitiveResearchKitConsole::Arm::native_or_derived_ecm(armIter->second->m_type)) {
+            } else if (armIter->second->native_or_derived_ecm()) {
                 numberOfJoints = 4;
             } else {
                 numberOfJoints = 0; // can't happen but prevents compiler warning
@@ -148,11 +148,11 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             pidTabWidget->addTab(pidGUI, (name + " PID").c_str());
 
             // Arm widget
-            if (mtsIntuitiveResearchKitConsole::Arm::native_or_derived_psm(armIter->second->m_type)) {
+            if (armIter->second->native_or_derived_psm()) {
                 armGUI = new mtsIntuitiveResearchKitPSMQtWidget(name + "-GUI");
-            } else if (mtsIntuitiveResearchKitConsole::Arm::native_or_derived_mtm(armIter->second->m_type)) {
+            } else if (armIter->second->native_or_derived_mtm()) {
                 armGUI = new mtsIntuitiveResearchKitMTMQtWidget(name + "-GUI");
-            } else if (mtsIntuitiveResearchKitConsole::Arm::native_or_derived_ecm(armIter->second->m_type)) {
+            } else if (armIter->second->native_or_derived_ecm()) {
                 armGUI = new mtsIntuitiveResearchKitECMQtWidget(name + "-GUI");
             } else {
                 armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");
