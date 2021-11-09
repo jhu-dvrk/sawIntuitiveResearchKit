@@ -34,7 +34,7 @@ A(2,1:S)     = [ 1 4 9 16 25 ]
 
 import numpy as np
 
-# If x is variable, replace with value from context
+# If x is Matlab variable name, replace with literal value from context
 def parseInContext(x, context):
     if x in context:
         return context[x]
@@ -42,9 +42,10 @@ def parseInContext(x, context):
     return int(x)
 
 
-# CAL keys can either just be variable name,
+# CAL keys can either just be variable names,
 # or include MATLAB-style array-subscripting.
 # e.g. DATA(1:MST_MOT_DOFS)
+# parseCALKey returns tuple of key name and (row, start column, end column) bounds
 def parseCALKey(key, context):
     key = key.strip()  # remove leading/trailing whitespace
 
@@ -128,7 +129,14 @@ def parseCALValue(value):
 # When possible, variables in CAL file are replaced with values from context
 # Returns data as dictionary whose keys are variable names
 def parseCALFile(fileName, context):
+    # matrix variable may be spread over multiple assignments/lines,
+    # so we first parsed each assignment, then gather into variables
+
+    # map from Matlab variable name to list of values assigned to it
+    # in the .cal file, as well as the associated array bounds/indices
     raw_values = {}
+
+    # first, read each assignment from CAL file and add to raw_values
     with open(fileName, "r") as cal:
         for line in cal:
             line = line.strip()  # remove leading and trailing whitespace
@@ -156,6 +164,7 @@ def parseCALFile(fileName, context):
             else:
                 raw_values[key] = [(indices, value)]
 
+    # second, assemble all assignments for each variable
     data = {}
     for key in raw_values:
         values = raw_values[key]
