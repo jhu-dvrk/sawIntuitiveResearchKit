@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import json
 import math
@@ -194,7 +196,7 @@ class Actuator(Serializable):
         CPT = None  # Encoder counts per turn (quadrature encoder), NOTE: no encoder for last axis
         gearRatio = None  # NOTE: gear ratio for axis 8 is set to 1
         pitch = None  # 1 for revolute, mm/deg for prismatic
-        motorDefCurrent = None  # Amps
+        motorMaxCurrent = None  # Sustained max current, amps
         motorTorque = None  # units are Nm/A
 
         # Lookup constants based on robot type and actuator ID
@@ -202,7 +204,7 @@ class Actuator(Serializable):
             CPT = [4000, 4000, 4000, 4000, 64, 64, 64][id]
             gearRatio = [63.41, 49.88, 59.73, 10.53, 33.16, 33.16, 16.58][id]
             pitch = 1
-            motorDefCurrent = [0.67, 0.67, 0.67, 0.67, 0.59, 0.59, 0.407][id]
+            motorMaxCurrent = [0.67, 0.67, 0.67, 0.67, 0.59, 0.59, 0.407][id]
             motorTorque = [0.0438, 0.0438, 0.0438, 0.0438, 0.00495, 0.00495, 0.00339][
                 id
             ]
@@ -210,16 +212,16 @@ class Actuator(Serializable):
             CPT = [14400, 14400, 14400, 4000, 4000, 4000, 4000][id]
             gearRatio = [56.50, 56.50, 336.6, 11.71, 11.71, 11.71, 11.71][id]
             pitch = [1, 1, 17.4533, 1, 1, 1, 1][id]
-            motorDefCurrent = [1.34, 1.34, 0.67, 0.67, 0.67, 0.67, 0.670][id]
+            motorMaxCurrent = [1.34, 1.34, 0.67, 0.67, 0.67, 0.67, 0.670][id]
             motorTorque = [0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438][id]
         elif robotType == RobotType.ECM:
             CPT = [4000, 4000, 640, 64, 1, 1, 1][id]
             gearRatio = [240, 240, 2748.55, 300.15, 1.0, 1.0, 1.0][id]
             pitch = [1, 1, 17.4533, 1, 1, 1, 1][id]
-            motorDefCurrent = [0.943, 0.943, 0.67, 0.59, 0.0, 0.0, 0.0][id]
+            motorMaxCurrent = [0.943, 0.943, 0.67, 0.59, 0.0, 0.0, 0.0][id]
             motorTorque = [0.1190, 0.1190, 0.0438, 0.00495, 1.0, 1.0, 1.0][id]
 
-        self.drive = Drive(driveDirection, gearRatio, motorTorque, motorDefCurrent)
+        self.drive = Drive(driveDirection, gearRatio, motorTorque, motorMaxCurrent)
         self.encoder = Encoder(
             self.id, robotType, driveDirection, CPT, pitch, gearRatio
         )
@@ -256,7 +258,7 @@ class Drive(Serializable):
         driveDirection,
         gearRatio,
         motorTorque,
-        motorDefCurrent,
+        motorMaxCurrent,
     ):
         self.ampsToBits = Conversion(
             "{:5.2f}".format(driveDirection * 5242.8800), "{:5.0f}".format(2 ** 15)
@@ -269,7 +271,7 @@ class Drive(Serializable):
         self.nmToAmps = Conversion(
             "{:5.6f}".format(1.0 / (gearRatio * motorTorque)), None
         )
-        self.maxCurrent = UnitValue("{:5.3f}".format(motorDefCurrent), "A")
+        self.maxCurrent = UnitValue("{:5.3f}".format(motorMaxCurrent), "A")
 
     def toDict(self):
         return {
