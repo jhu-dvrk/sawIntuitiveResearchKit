@@ -38,6 +38,7 @@ class Serializable:
         raise NotImplementedError("Please implement toDict()")
 
 
+# Represents the various unit conversions e.g. NmToAmps, AmpsToBits, etc.
 class Conversion(Serializable):
     def __init__(self, scale, offset, units=None):
         self.scale = scale
@@ -55,6 +56,7 @@ class Conversion(Serializable):
         return dict
 
 
+# Dimensioned value
 class UnitValue(Serializable):
     def __init__(self, value, units):
         self.value = value
@@ -88,6 +90,7 @@ def getBoardIDs(robotTypeName):
     return boardIDs
 
 
+# creates appropriate DigitalInput configs based on robot type
 def generateDigitalInputs(robotTypeName):
     robotType = RobotType.fromTypeName(robotTypeName)
     boardIDs = getBoardIDs(robotTypeName)
@@ -112,6 +115,7 @@ def generateDigitalInputs(robotTypeName):
     return digitalInputs
 
 
+# Root config object
 class Config(Serializable):
     def __init__(self, calData, versionID, robotTypeName):
         self.versionID = versionID
@@ -557,7 +561,7 @@ def configSerializeJSON(obj):
 
 
 def generateConfig(calFileName, robotName, outputFormat):
-    # Values needed to parse .cal file
+    # Array size constants that .cal file parser needs to know
     CALContext = {
         "UPPER_LIMIT": 1,
         "LOWER_LIMIT": 2,
