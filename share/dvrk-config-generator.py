@@ -15,9 +15,12 @@ class RobotType(Enum):
     MTM = 0
     PSM = 1
     ECM = 2
+    MTMGripper = 3,
 
     def fromTypeName(robotTypeName):
         if robotTypeName[0:3] == "MTM":
+            if robotTypeName.endswith("-Gripper"):
+                return RobotType.MTMGripper
             return RobotType.MTM
         elif robotTypeName[0:3] == "PSM":
             return RobotType.PSM
@@ -74,9 +77,10 @@ class UnitValue(Serializable):
 # dVRK board ID conventions
 def getBoardIDs(robotTypeName):
     boardIDs = None
-    if robotTypeName == "MTML":
+    # Need to allow for MTML-Gripper/MTMR-Gripper
+    if robotTypeName.startswith("MTML"):
         boardIDs = [0, 1]
-    elif robotTypeName == "MTMR":
+    elif robotTypeName.startswith("MTMR"):
         boardIDs = [2, 3]
     elif robotTypeName == "ECM":
         boardIDs = [4, 5]
@@ -106,6 +110,8 @@ def generateDigitalInputs(robotTypeName):
         ]
     elif robotType == RobotType.ECM:
         digitalInputBitIDs = [(boardIDs[0], 0), (boardIDs[0], 2)]
+    elif robotType == RobotType.MTMGripper:
+        digitalInputBitIDs = []
 
     digitalInputs = []
     for boardID, bitID in digitalInputBitIDs:
@@ -142,24 +148,26 @@ class Config(Serializable):
 
         return dict
 
-
 class Robot(Serializable):
     def __init__(self, calData, robotTypeName, serialNumber):
         self.name = robotTypeName
         self.serialNumber = serialNumber
 
         self.type = RobotType.fromTypeName(robotTypeName)
-        numberOfActuators = 4 if self.type == RobotType.ECM else 7
 
         driveDirections = None  # motor drive directions by actuator
-        if robotTypeName == "MTML":
-            driveDirections = [-1, 1, 1, 1, -1, 1, -1, 1]
-        elif robotTypeName == "MTMR":
-            driveDirections = [-1, 1, 1, 1, 1, 1, -1, 1]
-        elif robotTypeName[0:3] == "PSM":
-            driveDirections = [-1, -1, 1, -1, -1, 1, 1, 1]
-        elif robotTypeName == "ECM":
+        if self.type == RobotType.MTM and robotTypeName == "MTML":
+            driveDirections = [-1, 1, 1, 1, -1, 1, -1]
+        elif self.type == RobotType.MTM and robotTypeName == "MTMR":
+            driveDirections = [-1, 1, 1, 1, 1, 1, -1]
+        elif self.type == RobotType.PSM:
+            driveDirections = [-1, -1, 1, -1, -1, 1, 1]
+        elif self.type == RobotType.ECM:
             driveDirections = [1, 1, -1, 1]
+        elif self.type == RobotType.MTMGripper:
+            driveDirections = [-1]
+
+        numberOfActuators = len(driveDirections)
 
         self.actuators = []
         boardIDs = getBoardIDs(robotTypeName)
@@ -168,9 +176,10 @@ class Robot(Serializable):
             actuator = Actuator(calData, self.type, idx, driveDirection, boardIDs)
             self.actuators.append(actuator)
 
-        self.potentiometers = Potentiometers(self.type, numberOfActuators)
+        self.potentiometers = Potentiometers(self.type, numberOfActuators) if self.type != RobotType.MTMGripper else None
 
         self.coupling = Coupling() if self.type == RobotType.MTM else None
+        self.ioType = "io-only" if self.type == RobotType.MTMGripper else None
 
     def toDict(self):
         dict = {
@@ -179,11 +188,16 @@ class Robot(Serializable):
             "NumOfJoint": len(self.actuators),
             "SN": self.serialNumber,
             "Actuators": self.actuators,
-            "Potentiometers": self.potentiometers,
         }
+
+        if self.potentiometers != None:
+            dict["Potentiometers"] = self.potentiometers
 
         if self.coupling != None:
             dict["Coupling"] = self.coupling
+
+        if self.ioType != None:
+            dict["Type"] = self.ioType
 
         return dict
 
@@ -197,6 +211,11 @@ class Actuator(Serializable):
         self.boardID = boardIDs[0] if id < 4 else boardIDs[1]
         self.axisID = id % 4
 
+        # Although gripper id is 0, treat as if 8th actuator (id 7)
+        if robotType == RobotType.MTMGripper:
+            self.boardID = boardIDs[1]
+            self.axisID = 7 % 4
+
         CPT = None  # Encoder counts per turn (quadrature encoder), NOTE: no encoder for last axis
         gearRatio = None  # NOTE: gear ratio for axis 8 is set to 1
         pitch = None  # 1 for revolute, mm/deg for prismatic
@@ -204,7 +223,7 @@ class Actuator(Serializable):
         motorTorque = None  # units are Nm/A
 
         # Lookup constants based on robot type and actuator ID
-        if robotType == RobotType.MTM:
+        if robotType == RobotType.MTM or robotType == RobotType.MTMGripper:
             CPT = [4000, 4000, 4000, 4000, 64, 64, 64][id]
             gearRatio = [63.41, 49.88, 59.73, 10.53, 33.16, 33.16, 16.58][id]
             pitch = 1
@@ -224,11 +243,17 @@ class Actuator(Serializable):
             pitch = [1, 1, 17.4533, 1, 1, 1, 1][id]
             motorMaxCurrent = [0.943, 0.943, 0.67, 0.59, 0.0, 0.0, 0.0][id]
             motorTorque = [0.1190, 0.1190, 0.0438, 0.00495, 1.0, 1.0, 1.0][id]
+        
+        if robotType == RobotType.MTMGripper:
+            # Want driveDirection * (360 / CPT) * (pitch / gearRatio) = 1
+            CPT = -360/(gearRatio*pitch)
+            motorMaxCurrent = 0.0
 
         self.drive = Drive(driveDirection, gearRatio, motorTorque, motorMaxCurrent)
         self.encoder = Encoder(
             self.id, robotType, driveDirection, CPT, pitch, gearRatio
         )
+        
         self.analogIn = AnalogIn(calData, robotType, self.id, pitch)
 
         # Actuators 0, 1, 2 on ECM have a brake
@@ -358,9 +383,9 @@ class AnalogIn(Serializable):
         voltsToPosSIOffset = potOffset * (180.0 / math.pi) * pitch
 
         # special case for MTM last joint (Hall effect sensor)
-        if robotType == RobotType.MTM and actuatorID == 7:
+        if robotType == RobotType.MTMGripper:
             voltsToPosSIScale = -23.1788
-            voltsToPosSIScale = 91.4238
+            voltsToPosSIOffset = 91.4238
 
         voltsToPosSIScale = "{:5.6f}".format(voltsToPosSIScale)
         voltsToPosSIOffset = "{:5.6f}".format(voltsToPosSIOffset)
@@ -560,6 +585,18 @@ def configSerializeJSON(obj):
     raise TypeError
 
 
+def saveConfigFile(fileName, config, format):
+    if format == OutputFormat.JSON:
+        with open(fileName + ".json", "w") as f:
+            json.dump(config, f, indent=4, default=configSerializeJSON)
+    elif format == OutputFormat.XML:
+        root = toXML("Config", config)
+        pretty_print_xml(root)
+
+        tree = ET.ElementTree(root)
+        tree.write(fileName + ".xml", xml_declaration=True)
+
+
 def generateConfig(calFileName, robotName, outputFormat):
     # Array size constants that .cal file parser needs to know
     CALContext = {
@@ -588,16 +625,14 @@ def generateConfig(calFileName, robotName, outputFormat):
     config = Config(calData, version, robotName)
 
     outputFileName = "sawRobotIO1394-" + robotName + "-" + str(calData["serial_number"])
+    saveConfigFile(outputFileName, config, outputFormat)
 
-    if outputFormat == OutputFormat.JSON:
-        with open(outputFileName + ".json", "w") as f:
-            json.dump(config, f, indent=4, default=configSerializeJSON)
-    elif outputFormat == OutputFormat.XML:
-        root = toXML("Config", config)
-        pretty_print_xml(root)
-
-        tree = ET.ElementTree(root)
-        tree.write(outputFileName + ".xml", xml_declaration=True)
+    if robotName[0:3] == "MTM":
+        gripperConfigFileName = (
+            "sawRobotIO1394-" + robotName + "-gripper-" + str(calData["serial_number"])
+        )
+        gripperConfig = Config(calData, version, robotName + "-Gripper")
+        saveConfigFile(gripperConfigFileName, gripperConfig, outputFormat)
 
 
 if __name__ == "__main__":
