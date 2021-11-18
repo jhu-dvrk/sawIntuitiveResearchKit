@@ -256,8 +256,6 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             if (m_simulation == SIMULATION_KINEMATIC) {
                 suj->set_simulated();
             } else if (m_simulation == SIMULATION_NONE) {
-                m_console->mConnections.Add(Name(), "RobotIO",
-                                            IOComponentName(), Name());
                 m_console->mConnections.Add(Name(), "NoMuxReset",
                                             IOComponentName(), "NoMuxReset");
                 m_console->mConnections.Add(Name(), "MuxIncrement",
