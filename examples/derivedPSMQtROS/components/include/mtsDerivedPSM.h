@@ -49,6 +49,19 @@ protected:
 
     // Custom method to be called when the arm is homed
     void RunHomed(void);
+
+    bool m_activated = false;
+    double m_gain = 0.5;
+
+    struct {
+        mtsFunctionWrite activated;
+        mtsFunctionWrite gain;
+    } m_events;
+
+    void activate(const bool & _activate);
+
+    void set_gain(const double & _gain);
+
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsDerivedPSM);

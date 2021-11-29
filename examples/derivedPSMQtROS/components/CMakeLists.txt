@@ -24,7 +24,8 @@ set (REQUIRED_CISST_LIBRARIES
      cisstMultiTask
      cisstParameterTypes
      cisstRobot
-     cisstNumerical)
+     cisstNumerical
+     cisstQt)
 
 find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
@@ -45,11 +46,14 @@ if (cisst_FOUND)
   if (sawIntuitiveResearchKit_FOUND)
 
     include_directories (
-      ${CMAKE_BINARY_DIR}
+      ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
       ${sawIntuitiveResearchKit_INCLUDE_DIR})
 
     link_directories (
       ${sawIntuitiveResearchKit_LIBRARY_DIR})
+
+    # for Qt widgets
+    set (CMAKE_AUTOMOC ON)
 
     set (sawIntuitiveResearchKitDerivedPSM_INCLUDE_DIR
          "${sawIntuitiveResearchKitDerivedPSM_SOURCE_DIR}/include")
@@ -57,8 +61,10 @@ if (cisst_FOUND)
     include_directories (${sawIntuitiveResearchKitDerivedPSM_INCLUDE_DIR})
 
     add_library (sawIntuitiveResearchKitDerivedPSM
-                 "include/mtsDerivedPSM.h"
-                 "code/mtsDerivedPSM.cpp")
+      "include/mtsDerivedPSM.h"
+      "include/mtsDerivedPSMQtWidget.h"
+      "code/mtsDerivedPSM.cpp"
+      "code/mtsDerivedPSMQtWidget.cpp")
 
     cisst_target_link_libraries (sawIntuitiveResearchKitDerivedPSM
                                  ${REQUIRED_CISST_LIBRARIES})
