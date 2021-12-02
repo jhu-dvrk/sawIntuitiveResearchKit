@@ -1,0 +1,7 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "custom-tool-index": "hsc-dVRK2/custom-tool-index.json",
+    "kinematic": "kinematic/psm.json",
+    "tool-detection": "FIXED",
+    "tool": "BONE_CUTTER:420900"
+}
