@@ -9,7 +9,8 @@
 #
 # --- end cisst license ---
 
-project (sawIntuitiveResearchKitDerivedPSM)
+# catkin requires snake_case project name :-(
+project (saw_intuitive_research_kit_example_psm_derived)
 
 cmake_minimum_required(VERSION 2.8)
 
@@ -27,6 +28,13 @@ set (REQUIRED_CISST_LIBRARIES
      cisstNumerical
      cisstQt)
 
+find_package (catkin REQUIRED
+              COMPONENTS
+              cisst_ros_crtk
+              roscpp
+              roslib
+              )
+
 find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND)
@@ -34,8 +42,8 @@ if (cisst_FOUND)
   include (${CISST_USE_FILE})
 
   # catkin/ROS paths
-  cisst_is_catkin_build (sawIntuitiveResearchKitDerivedPSM_IS_CATKIN_BUILT)
-  if (sawIntuitiveResearchKitDerivedPSM_IS_CATKIN_BUILT)
+  cisst_is_catkin_build (saw_intuitive_research_kit_example_psm_derived_IS_CATKIN_BUILT)
+  if (saw_intuitive_research_kit_example_psm_derived_IS_CATKIN_BUILT)
     set (LIBRARY_OUTPUT_PATH "${CATKIN_DEVEL_PREFIX}/lib")
   endif ()
 
@@ -45,33 +53,42 @@ if (cisst_FOUND)
 
   if (sawIntuitiveResearchKit_FOUND)
 
+    # for Qt widgets
+    set (CMAKE_AUTOMOC ON)
+
+    file (MAKE_DIRECTORY "${CATKIN_DEVEL_PREFIX}/include")
+    catkin_package (INCLUDE_DIRS include "${CATKIN_DEVEL_PREFIX}/include"
+      LIBRARIES saw_intuitive_research_kit_example_psm_derived
+      CATKIN_DEPENDS cisst_ros_crtk roscpp roslib)
+
+    set (saw_intuitive_research_kit_example_psm_derived_INCLUDE_DIR
+      "${saw_intuitive_research_kit_example_psm_derived_SOURCE_DIR}/include")
+
     include_directories (
-      ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
-      ${sawIntuitiveResearchKit_INCLUDE_DIR})
+      ${saw_intuitive_research_kit_example_psm_derived_INCLUDE_DIR}
+      ${CMAKE_BINARY_DIR}
+      ${CMAKE_CURRENT_BINARY_DIR}
+      ${sawIntuitiveResearchKit_INCLUDE_DIR}
+      ${catkin_INCLUDE_DIRS})
 
     link_directories (
       ${sawIntuitiveResearchKit_LIBRARY_DIR})
 
-    # for Qt widgets
-    set (CMAKE_AUTOMOC ON)
-
-    set (sawIntuitiveResearchKitDerivedPSM_INCLUDE_DIR
-         "${sawIntuitiveResearchKitDerivedPSM_SOURCE_DIR}/include")
-
-    include_directories (${sawIntuitiveResearchKitDerivedPSM_INCLUDE_DIR})
-
     add_library (sawIntuitiveResearchKitDerivedPSM
       "include/mtsDerivedPSM.h"
       "include/mtsDerivedPSMQtWidget.h"
+      "include/mtsDerivedPSMROSBridge.h"
       "code/mtsDerivedPSM.cpp"
-      "code/mtsDerivedPSMQtWidget.cpp")
+      "code/mtsDerivedPSMQtWidget.cpp"
+      "code/mtsDerivedPSMROSBridge.cpp")
 
     cisst_target_link_libraries (sawIntuitiveResearchKitDerivedPSM
-                                 ${REQUIRED_CISST_LIBRARIES})
+      ${REQUIRED_CISST_LIBRARIES})
 
     # link against non cisst libraries and cisst components
     target_link_libraries (sawIntuitiveResearchKitDerivedPSM
-                           ${sawIntuitiveResearchKit_LIBRARIES})
+      ${sawIntuitiveResearchKit_LIBRARIES}
+      ${catkin_LIBRARIES})
 
   endif (sawIntuitiveResearchKit_FOUND)
 
