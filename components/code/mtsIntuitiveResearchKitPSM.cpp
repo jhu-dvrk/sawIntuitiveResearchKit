@@ -1412,7 +1412,7 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffor
     if (mSnakeLike) {
         std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for force control" << std::endl;
     } else {
-        torqueDesired.Assign(mEffortJoint, number_of_joints_kinematics());
+        torqueDesired.Assign(newEffort, number_of_joints_kinematics());
     }
     // add torque for jaws
     torqueDesired.at(6) = m_jaw_servo_jf;
