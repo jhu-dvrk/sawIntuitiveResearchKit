@@ -66,7 +66,22 @@ void mtsDerivedPSM::RunHomed(void)
 {
     if (m_activated) {
         if (IsCartesianReady()) {
-            std::cerr << " " << m_gain;
+            // steps performed once at each activation
+            if (m_recently_activated) {
+                m_recently_activated = false;
+                // set initial PID position goal using current setpoint
+                servo_jp_internal(m_pid_measured_js.Position());
+                // set default effort to 0.0
+                servo_jf_internal(vctDoubleVec(number_of_joints(), 0.0));
+                // set all joints in PID mode except 3rd one (translation)
+                vctBoolVec _torqueMode(number_of_joints(), false);
+                _torqueMode[2] = true;
+                PID.EnableTorqueMode(_torqueMode);
+            }
+            // apply viscosity on 3rd joint, replace this logic with whatever algorithm you want!
+            vctDoubleVec _servo_jf(number_of_joints(), 0.0);
+            _servo_jf[2] = m_gain * -100.0 * m_pid_measured_js.Velocity()[2];
+            servo_jf_internal(_servo_jf);
         }
     } else {
         BaseType::RunHomed();
@@ -75,6 +90,11 @@ void mtsDerivedPSM::RunHomed(void)
 
 void mtsDerivedPSM::activate(const bool & _activate)
 {
+    if (!m_activated && _activate) {
+        m_recently_activated = true;
+    } else {
+        m_recently_activated = false;
+    }
     m_activated = _activate;
     m_events.activated(m_activated);
 }

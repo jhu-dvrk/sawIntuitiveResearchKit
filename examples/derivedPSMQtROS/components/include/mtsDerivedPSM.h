@@ -51,6 +51,7 @@ protected:
     void RunHomed(void);
 
     bool m_activated = false;
+    bool m_recently_activated = false;
     double m_gain = 0.5;
 
     struct {
