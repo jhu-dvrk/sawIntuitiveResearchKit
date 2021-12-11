@@ -586,15 +586,19 @@ def configSerializeJSON(obj):
 
 
 def saveConfigFile(fileName, config, format):
+    fileName += ".json" if format == OutputFormat.JSON else ".xml"
+
     if format == OutputFormat.JSON:
-        with open(fileName + ".json", "w") as f:
+        with open(fileName, "w") as f:
             json.dump(config, f, indent=4, default=configSerializeJSON)
     elif format == OutputFormat.XML:
         root = toXML("Config", config)
         pretty_print_xml(root)
 
         tree = ET.ElementTree(root)
-        tree.write(fileName + ".xml", xml_declaration=True)
+        tree.write(fileName, xml_declaration=True)
+
+    print("Generated config file {}".format(fileName))
 
 
 def generateConfig(calFileName, robotName, outputFormat):
