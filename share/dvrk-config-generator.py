@@ -203,16 +203,17 @@ class Robot(Serializable):
 
 
 class Actuator(Serializable):
-    def __init__(self, calData, robotType, id, driveDirection, boardIDs):
-        self.id = id
+    def __init__(self, calData, robotType, index, driveDirection, boardIDs):
+        self.id = index
         self.actuatorType = (
-            "Prismatic" if (robotType != RobotType.MTM and id == 2) else "Revolute"
+            "Prismatic" if (robotType != RobotType.MTM and index == 2) else "Revolute"
         )
-        self.boardID = boardIDs[0] if id < 4 else boardIDs[1]
-        self.axisID = id % 4
+        self.boardID = boardIDs[0] if index < 4 else boardIDs[1]
+        self.axisID = index % 4
 
-        # Although gripper id is 0, treat as if 8th actuator (id 7)
+        # Although gripper index is 0, treat as if 8th actuator (id 7)
         if robotType == RobotType.MTMGripper:
+            self.id = boardIDs[1]
             self.boardID = boardIDs[1]
             self.axisID = 7 % 4
 
@@ -224,25 +225,25 @@ class Actuator(Serializable):
 
         # Lookup constants based on robot type and actuator ID
         if robotType == RobotType.MTM or robotType == RobotType.MTMGripper:
-            CPT = [4000, 4000, 4000, 4000, 64, 64, 64][id]
-            gearRatio = [63.41, 49.88, 59.73, 10.53, 33.16, 33.16, 16.58][id]
+            CPT = [4000, 4000, 4000, 4000, 64, 64, 64][index]
+            gearRatio = [63.41, 49.88, 59.73, 10.53, 33.16, 33.16, 16.58][index]
             pitch = 1
-            motorMaxCurrent = [0.67, 0.67, 0.67, 0.67, 0.59, 0.59, 0.407][id]
+            motorMaxCurrent = [0.67, 0.67, 0.67, 0.67, 0.59, 0.59, 0.407][index]
             motorTorque = [0.0438, 0.0438, 0.0438, 0.0438, 0.00495, 0.00495, 0.00339][
-                id
+                index
             ]
         elif robotType == RobotType.PSM:
-            CPT = [14400, 14400, 14400, 4000, 4000, 4000, 4000][id]
-            gearRatio = [56.50, 56.50, 336.6, 11.71, 11.71, 11.71, 11.71][id]
-            pitch = [1, 1, 17.4533, 1, 1, 1, 1][id]
-            motorMaxCurrent = [1.34, 1.34, 0.67, 0.67, 0.67, 0.67, 0.670][id]
-            motorTorque = [0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438][id]
+            CPT = [14400, 14400, 14400, 4000, 4000, 4000, 4000][index]
+            gearRatio = [56.50, 56.50, 336.6, 11.71, 11.71, 11.71, 11.71][index]
+            pitch = [1, 1, 17.4533, 1, 1, 1, 1][index]
+            motorMaxCurrent = [1.34, 1.34, 0.67, 0.67, 0.67, 0.67, 0.670][index]
+            motorTorque = [0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438][index]
         elif robotType == RobotType.ECM:
-            CPT = [4000, 4000, 640, 64, 1, 1, 1][id]
-            gearRatio = [240, 240, 2748.55, 300.15, 1.0, 1.0, 1.0][id]
-            pitch = [1, 1, 17.4533, 1, 1, 1, 1][id]
-            motorMaxCurrent = [0.943, 0.943, 0.67, 0.59, 0.0, 0.0, 0.0][id]
-            motorTorque = [0.1190, 0.1190, 0.0438, 0.00495, 1.0, 1.0, 1.0][id]
+            CPT = [4000, 4000, 640, 64, 1, 1, 1][index]
+            gearRatio = [240, 240, 2748.55, 300.15, 1.0, 1.0, 1.0][index]
+            pitch = [1, 1, 17.4533, 1, 1, 1, 1][index]
+            motorMaxCurrent = [0.943, 0.943, 0.67, 0.59, 0.0, 0.0, 0.0][index]
+            motorTorque = [0.1190, 0.1190, 0.0438, 0.00495, 1.0, 1.0, 1.0][index]
         
         if robotType == RobotType.MTMGripper:
             # Want driveDirection * (360 / CPT) * (pitch / gearRatio) = 360
@@ -252,14 +253,14 @@ class Actuator(Serializable):
 
         self.drive = Drive(driveDirection, gearRatio, motorTorque, motorMaxCurrent)
         self.encoder = Encoder(
-            self.id, robotType, driveDirection, CPT, pitch, gearRatio
+            index, robotType, driveDirection, CPT, pitch, gearRatio
         )
         
-        self.analogIn = AnalogIn(calData, robotType, self.id, pitch)
+        self.analogIn = AnalogIn(calData, robotType, index, pitch)
 
         # Actuators 0, 1, 2 on ECM have a brake
-        hasBrake = robotType == RobotType.ECM and id <= 2
-        self.brake = Brake(self.id, self.axisID, self.boardID) if hasBrake else None
+        hasBrake = robotType == RobotType.ECM and index <= 2
+        self.brake = Brake(index, self.axisID, boardIDs[1]) if hasBrake else None
 
     def toDict(self):
         dict = {
@@ -316,7 +317,7 @@ class Drive(Serializable):
 class Brake(Serializable):
     def __init__(
         self,
-        actuatorID,
+        actuatorIndex,
         axisID,
         boardID,
     ):
@@ -325,11 +326,11 @@ class Brake(Serializable):
         self.ampsToBits = Conversion("5242.8800", 2 ** 15)
         self.bitsToFeedbackAmps = Conversion("0.000190738", "-6.25")
 
-        maxCurrentValue = [0.25, 0.22, 0.90][actuatorID]
-        releaseCurrentValue = [0.25, 0.22, 0.90][actuatorID]
-        releaseTimeValue = [2.00, 2.00, 2.00][actuatorID]
-        releasedCurrentValue = [0.08, 0.07, 0.20][actuatorID]
-        engagedCurrentValue = [0.0, 0.0, 0.0][actuatorID]
+        maxCurrentValue = [0.25, 0.22, 0.90][actuatorIndex]
+        releaseCurrentValue = [0.25, 0.22, 0.90][actuatorIndex]
+        releaseTimeValue = [2.00, 2.00, 2.00][actuatorIndex]
+        releasedCurrentValue = [0.08, 0.07, 0.20][actuatorIndex]
+        engagedCurrentValue = [0.0, 0.0, 0.0][actuatorIndex]
 
         self.maxCurrent = UnitValue(maxCurrentValue, "A")
         self.releaseCurrent = UnitValue(releaseCurrentValue, "A")
@@ -352,10 +353,10 @@ class Brake(Serializable):
 
 
 class Encoder(Serializable):
-    def __init__(self, actuatorID, robotType, driveDirection, CPT, pitch, gearRatio):
+    def __init__(self, actuatorIndex, robotType, driveDirection, CPT, pitch, gearRatio):
         # degrees except for third actuator of PSM/ECM
         potToleranceUnit = (
-            "mm" if (robotType != RobotType.MTM and actuatorID == 2) else "deg"
+            "mm" if (robotType != RobotType.MTM and actuatorIndex == 2) else "deg"
         )
 
         encoderPos = driveDirection * (360 / CPT) * (pitch / gearRatio)
@@ -377,15 +378,15 @@ class Encoder(Serializable):
 #    2. 0-4.5 V
 #    3. Unit: Radian
 class AnalogIn(Serializable):
-    def __init__(self, calData, robotType, actuatorID, pitch):
+    def __init__(self, calData, robotType, actuatorIndex, pitch):
         # 16 bits ADC with 4.5 V ref
         self.bitsToVolts = Conversion(4.5 / (2 ** 16), "0")
         potToleranceUnits = (
-            "mm" if (robotType != RobotType.MTM and actuatorID == 2) else "deg"
+            "mm" if (robotType != RobotType.MTM and actuatorIndex == 2) else "deg"
         )
 
-        potGain = calData["motor.pot_input_gain"][actuatorID]
-        potOffset = calData["motor.pot_input_offset"][actuatorID]
+        potGain = calData["motor.pot_input_gain"][actuatorIndex]
+        potOffset = calData["motor.pot_input_offset"][actuatorIndex]
 
         voltsToPosSIScale = potGain * (2 ** 12 / 4.5) * (180.0 / math.pi) * pitch
         voltsToPosSIOffset = potOffset * (180.0 / math.pi) * pitch
