@@ -245,8 +245,9 @@ class Actuator(Serializable):
             motorTorque = [0.1190, 0.1190, 0.0438, 0.00495, 1.0, 1.0, 1.0][id]
         
         if robotType == RobotType.MTMGripper:
-            # Want driveDirection * (360 / CPT) * (pitch / gearRatio) = 1
-            CPT = -360/(gearRatio*pitch)
+            # Want driveDirection * (360 / CPT) * (pitch / gearRatio) = 360
+            desiredEncoderScale = 360.0
+            CPT = driveDirection * (360 / desiredEncoderScale) * (pitch / gearRatio)
             motorMaxCurrent = 0.0
 
         self.drive = Drive(driveDirection, gearRatio, motorTorque, motorMaxCurrent)
