@@ -50,11 +50,11 @@ class Conversion(Serializable):
 
     def toDict(self):
         dict = {}
-        if self.offset:
+        if self.offset != None:
             dict["Offset"] = self.offset
-        if self.scale:
+        if self.scale != None:
             dict["Scale"] = self.scale
-        if self.units:
+        if self.units != None:
             dict["Unit"] = self.units
         return dict
 
@@ -67,9 +67,9 @@ class UnitValue(Serializable):
 
     def toDict(self):
         dict = {}
-        if self.units:
+        if self.units != None:
             dict["Unit"] = self.units
-        if self.value:
+        if self.value != None:
             dict["Value"] = self.value
         return dict
 
@@ -323,11 +323,18 @@ class Brake(Serializable):
         self.boardID = boardID
         self.ampsToBits = Conversion("5242.8800", 2 ** 15)
         self.bitsToFeedbackAmps = Conversion("0.000190738", "-6.25")
-        self.maxCurrent = [0.25, 0.22, 0.90][actuatorID]
-        self.releaseCurrent = [0.25, 0.22, 0.90][actuatorID]
-        self.releaseTime = [2.00, 2.00, 2.00][actuatorID]
-        self.releasedCurrent = [0.08, 0.07, 0.20][actuatorID]
-        self.engagedCurrent = [0.0, 0.0, 0.0][actuatorID]
+
+        maxCurrentValue = [0.25, 0.22, 0.90][actuatorID]
+        releaseCurrentValue = [0.25, 0.22, 0.90][actuatorID]
+        releaseTimeValue = [2.00, 2.00, 2.00][actuatorID]
+        releasedCurrentValue = [0.08, 0.07, 0.20][actuatorID]
+        engagedCurrentValue = [0.0, 0.0, 0.0][actuatorID]
+
+        self.maxCurrent = UnitValue(maxCurrentValue, "A")
+        self.releaseCurrent = UnitValue(releaseCurrentValue, "A")
+        self.releaseTime = UnitValue(releaseTimeValue, "A")
+        self.releasedCurrent = UnitValue(releasedCurrentValue, "A")
+        self.engagedCurrent = UnitValue(engagedCurrentValue, "A")
 
     def toDict(self):
         return {
@@ -490,13 +497,16 @@ class DigitalInput(Serializable):
             digitalInputTypes = {0: "ManipClutch", 2: "SUJCatch"}
             self.name = robotTypeName + "-" + digitalInputTypes[bitID]
 
+        self.pressed = 1
+        self.trigger = "all"
+
     def toDict(self):
         return {
             "BitID": self.bitID,
             "Name": self.name,
             "BoardID": self.boardID,
-            "Pressed": 1,
-            "Trigger": "all",
+            "Pressed": self.pressed,
+            "Trigger": self.trigger,
             "Debounce": self.debounceTime,
         }
 
