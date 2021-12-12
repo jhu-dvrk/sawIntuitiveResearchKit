@@ -258,7 +258,7 @@ class Actuator(Serializable):
 
         # Actuators 0, 1, 2 on ECM have a brake
         hasBrake = robotType == RobotType.ECM and id <= 2
-        self.brake = Brake(self.id, self.axisID, self.boardId) if hasBrake else None
+        self.brake = Brake(self.id, self.axisID, self.boardID) if hasBrake else None
 
     def toDict(self):
         dict = {
@@ -339,7 +339,7 @@ class Brake(Serializable):
             "ReleaseCurrent": self.releaseCurrent,
             "ReleaseTime": self.releaseTime,
             "ReleasedCurrent": self.releasedCurrent,
-            "EngagedCurret": self.engagedCurrent,
+            "EngagedCurrent": self.engagedCurrent,
         }
 
 
