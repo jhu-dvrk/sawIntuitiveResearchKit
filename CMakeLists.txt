@@ -22,7 +22,7 @@ add_subdirectory (components)
 
 set (sawIntuitiveResearchKit_DIR "${sawIntuitiveResearchKitAll_BINARY_DIR}/components")
 add_subdirectory (applications)
-# add_subdirectory (examples)
+add_subdirectory (examples)
 add_subdirectory (share)
 
 include (CPack)
