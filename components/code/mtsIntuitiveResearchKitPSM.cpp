@@ -1512,6 +1512,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
             m_arm_interface->SendWarning(this->GetName() + ": tool type requested from user");
             break;
         case mtsIntuitiveResearchKitToolTypes::FIXED:
+            m_arm_interface->SendStatus(this->GetName() + ": using fixed tool type \"" + mToolList.Name(mToolIndex) + "\"");
             set_tool_present(true);
             break;
         default:
