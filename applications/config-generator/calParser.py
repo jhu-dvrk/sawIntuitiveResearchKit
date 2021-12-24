@@ -29,158 +29,361 @@ valuesB(1:3) = [ 603 204 122 ]
 valuesC(1:L) = [ 603 204 ]
 A(1,1:S)     = [ 1 2 3 4 5 ]
 A(2,1:S)     = [ 1 4 9 16 25 ]
+A(2,:)       = [ 1 4 9 16 25 ]
 
 """
 
 import numpy as np
-
-# If x is Matlab variable name, replace with literal value from context
-def parseInContext(x, context):
-    if x in context:
-        return context[x]
-
-    return int(x)
+from numpy.core.fromnumeric import var
+from numpy.lib.shape_base import column_stack
 
 
-# CAL keys can either just be variable names,
-# or include MATLAB-style array-subscripting.
-# e.g. DATA(1:MST_MOT_DOFS)
-# parseCALKey returns tuple of key name and (row, start column, end column) bounds
-def parseCALKey(key, context):
-    key = key.strip()  # remove leading/trailing whitespace
+class Context:
+    def __init__(self, variables: dict):
+        self.variables = variables
 
-    # No indices specified
-    if key.find("(") == -1:
-        return (key, (0, 0, 0))
-
-    keyName = key[0 : key.find("(")]
-    indices = key[key.find("(") + 1 : -1]
-
-    # Vector indices, but not matrix
-    if key.find(",") == -1:
-        indices = indices.split(":")
-        assert len(indices) == 2, "Malformed vector index range"
-        startIndex = parseInContext(indices[0], context)
-        endIndex = parseInContext(indices[1], context)
-        assert startIndex == 1, "Vector index range must start at 1"
-        assert endIndex >= startIndex, "Malformed vector index range end"
-        return (keyName, (0, startIndex - 1, endIndex - 1))
-
-    # Matrix indices
-    indices = indices.split(",")
-    assert len(indices) == 2, "Malformed matrix index in cal file"
-
-    row = parseInContext(indices[0], context)
-    assert row >= 1, "Invalid matrix row index"
-    colIndices = indices[1].split(":")
-    assert len(colIndices) == 2, "Malformed matrix column index in cal file"
-    startIndex = parseInContext(colIndices[0], context)
-    endIndex = parseInContext(colIndices[1], context)
-    assert startIndex == 1, "Matrix column index range must start at 1"
-    assert endIndex >= startIndex, "Malformed natrix column index range end"
-
-    return (
-        keyName,
-        (row - 1, startIndex - 1, endIndex - 1),
-    )
-
-
-# Parses a single value
-def parseCALValue(value):
-    value = value.strip()  # remove leading/trailing whitespace
-
-    # CAL values are formatted as lists, i.e. '[ value ]',
-    # so we check to make square it has square brackets
-    if value[0] != "[" or value[-1] != "]":
-        raise SyntaxError
-
-    # remove square brackets
-    value = value[1:-1].strip()
-
-    # list delimiter is space
-    raw_values = []
-    processed_values = []
-    # if list elements are strings, make sure we aren't splitting
-    # on spaces inside of strings
-    if value.find("'") != -1:
-        raw_values = value.split("' '")
-    else:
-        raw_values = value.split(" ")
-
-    for v in raw_values:
-        # string value, leave as exact contents
-        if v[0] == "'" and v[-1] == "'":
-            processed_values.append(v[1:-1])
-        # float value
-        elif v.find(".") != -1:
-            processed_values.append(float(v))
+    # If string is Matlab variable name, replace with literal value from context
+    # Otherwise, parse as string/float/int literal
+    def parse(self, string: str):
+        # known variable
+        if string in self.variables:
+            return self.variables[string]
+        # string literal
+        elif len(string) >= 2 and string[0] == "'" and string[-1] == "'":
+            return string[1:-1]
+        # float literal
+        elif string.find(".") != -1:
+            return float(string)
         # otherwise, assume it is an integer
         else:
-            processed_values.append(int(v))
-
-    # return as value rather than list if only one element
-    if len(processed_values) == 1:
-        return processed_values[0]
-    else:
-        return processed_values
+            return int(string)
 
 
-# Parses CAL file specified by fileName
-# When possible, variables in CAL file are replaced with values from context
-# Returns data as dictionary whose keys are variable names
-def parseCALFile(fileName, context):
-    # matrix variable may be spread over multiple assignments/lines,
-    # so we first parsed each assignment, then gather into variables
+class Indices:
+    # Start and end indices of range, inclusive
+    def __init__(self, start: int, end: int):
+        self.start = start
+        self.end = end
 
-    # map from Matlab variable name to list of values assigned to it
-    # in the .cal file, as well as the associated array bounds/indices
-    raw_values = {}
+    @staticmethod
+    def _parseIndex(index: int, context: Context):
+        if index == "":
+            return None
 
-    # first, read each assignment from CAL file and add to raw_values
-    with open(fileName, "r") as cal:
-        for line in cal:
-            line = line.strip()  # remove leading and trailing whitespace
-            if len(line) == 0 or line[0] == "%":
-                # skip comments and blank lines
-                continue
+        try:
+            index = context.parse(index)
+        except ValueError:
+            raise SyntaxError("Malformed index in cal file")
 
-            assignmentIdx = line.find("=")
-            if assignmentIdx < 1 or assignmentIdx >= len(line):
-                raise SyntaxError
+        if not isinstance(index, int):
+            raise SyntaxError("Indices must be integers")
 
-            key, indices = parseCALKey(line[0:assignmentIdx], context)
-            value = parseCALValue(line[assignmentIdx + 1 :])
+        return index
 
-            if isinstance(value, list):
-                assert (indices[2] - indices[1] + 1) == len(value), (
-                    "Incompatible shapes: "
-                    + str(indices[2] - indices[1] + 1)
-                    + ", "
-                    + str(value)
-                )
+    @staticmethod
+    def parse(string: str, context: Context):
+        if string.find(":") == -1:
+            index = Indices._parseIndex(string, context)
+            return Indices(index - 1, index - 1)
 
-            if key in raw_values:
-                raw_values[key].append((indices, value))
+        indices = string.split(":")
+        assert len(indices) == 2, "Malformed index range"
+
+        start = Indices._parseIndex(indices[0], context) or 1
+        end = Indices._parseIndex(indices[1], context)
+        assert start == 1, "Vector index range must start at 1"
+        assert end is None or start <= end, "Malformed vector index range end"
+
+        return Indices(start - 1, None if end is None else end - 1)
+        
+    def slice(self):
+        return slice(self.start, None if self.end is None else self.end + 1)
+
+    def valid(self):
+        return self.start >= 0 and self.end >= self.start
+
+    def size(self):
+        if self.end is None:
+            return None
+
+        return self.end + 1 - self.start
+
+
+class AssignmentNode:
+    def __init__(self, parent):
+        self.parent = parent
+
+    @staticmethod
+    def _parseIndices(segment: str, context: Context):
+        segment = segment[1:-1]
+        indices = segment.split(",")
+        indices = [Indices.parse(x, context) for x in indices]
+        
+        if len(indices) == 1:
+            return Indices(0, 0), indices[0]
+        
+        return indices
+
+    @staticmethod
+    def _createNode(parent, isKey: bool, pathSegment: str, context: Context):
+        if isKey:
+            return KeyAssignment(parent, pathSegment)
+        else:
+            rows, columns = AssignmentNode._parseIndices(pathSegment, context)
+            return IndexAssignment(parent, rows, columns)
+
+    @staticmethod
+    def parse(path: str, context: Context):
+        node = None
+
+        index = 0
+        isKeyAssignment = True
+        while index < len(path):
+            if path[index] == "." or path[index] == "(":
+                node = AssignmentNode._createNode(node, isKeyAssignment, path[:index], context)
+
+                if path[index] == ".":
+                    isKeyAssignment = True
+                    path = path[index+1:]
+                    index = 0
+                else:
+                    isKeyAssignment = False
+                    path = path[index:]
+                    index = 1
             else:
-                raw_values[key] = [(indices, value)]
+                index += 1
 
-    # second, assemble all assignments for each variable
-    data = {}
-    for key in raw_values:
-        values = raw_values[key]
-        if len(values) == 1:
-            data[key] = values[0][1]
-            continue
+        node = AssignmentNode._createNode(node, isKeyAssignment, path.strip(), context)
+        return node
 
-        max_row = max(values, key=lambda x: x[0][0])[0][0]
-        max_column = max(values, key=lambda x: x[0][2])[0][2]
-        value = np.zeros((max_row + 1, max_column + 1))
+    def getFrom(self, variables: dict):
+        raise NotImplementedError("Please implement getFrom(variables)")
 
-        for x in values:
-            indices, raw_value = x
-            row, start, end = indices
-            value[row, start : end + 1] = raw_value
+    def assignTo(self, variables: dict, value: any):
+        raise NotImplementedError("Please implement assignTo(variables, value)")
 
-        data[key] = value
 
-    return data
+class KeyAssignment(AssignmentNode):
+    def __init__(self, parent: AssignmentNode, key: str):
+        super().__init__(parent)
+        self.key = key
+
+    def getFrom(self, variables: dict):
+        data = self.parent.getFrom(variables) if self.parent is not None else variables
+        if data is None:
+            return None
+
+        try:
+            return data[self.key]
+        except KeyError:
+            return None
+
+    def assignTo(self, variables: dict, value: any):
+        if self.parent is None:
+            variables[self.key] = value
+        else:
+            data = self.parent.getFrom(variables) or {}
+            data[self.key] = value
+            self.parent.assignTo(variables, data)
+
+
+class IndexAssignment(AssignmentNode):
+    def __init__(self, parent: AssignmentNode, rows: Indices, columns: Indices):
+        assert parent is not None, "IndexAssignment cannot be root of an AssignmentPath"
+        assert isinstance(parent, KeyAssignment), "IndexAssignment must be a child of a KeyAssignment"
+    
+        super().__init__(parent)
+        self.rows = rows
+        self.columns = columns
+
+    def getFrom(self, variables: dict):
+        data = self.parent.getFrom(variables)
+        if data is None:
+            return None
+
+        try:
+            if self.rows.size() == 1 and self.columns.size() == 1:
+                return data[self.rows.start, self.columns.start]
+
+            return data[self.rows.slice(), self.columns.slice()]
+        except IndexError:
+            return None
+
+    def assignTo(self, variables: dict, value: np.array):
+        data = self.parent.getFrom(variables)
+        if data is None:
+            data = np.array([[]])
+
+        self._realizeIndices(value)
+        self._validateIndices(value)
+
+        data = self._padToFit(data, value)
+        data[self.rows.slice(), self.columns.slice()] = value
+        self.parent.assignTo(variables, data)
+
+    def _arrayDimensions(self, array: np.array):
+        size = np.shape(array)
+        if len(size) == 0:
+            return 1, 1
+        elif len(size) == 1:
+            return 1, size[0]
+        else:
+            return size
+
+    def _realizeIndices(self, value: np.array):
+        rows, columns = self._arrayDimensions(value)
+        
+        if self.rows.end is None:
+            self.rows = Indices(0, rows - 1)
+
+        if self.columns.end is None:
+            self.columns = Indices(0, columns - 1)
+
+    def _validateIndices(self, value: np.array):
+        rows, columns = self._arrayDimensions(value)
+
+        assert self.rows.valid(), "Range assignment invalid row indices"
+        assert self.columns.valid(), "Range assignment invalid column indices"
+        
+        assert self.rows.size() == rows, "Range assignment row size mismatch"
+        assert self.columns.size() == columns, "Range assignment column size mismatch"
+
+    # Zero-pad matrix if necessary to accommodate new assignment
+    def _padToFit(self, data: np.array, value: np.array):
+        rows, columns = np.shape(data)
+        padRows = max(0, self.rows.end + 1 - rows)
+        padColumns = max(0, self.columns.end + 1 - columns)
+        
+        # Zero-pad numeric arrays, None-pad object arrays
+        numeric_array = isinstance(value, np.ndarray) and value.dtype != np.dtype(object)
+        if numeric_array:
+            return np.pad(data, ((0, padRows), (0, padColumns)))
+        else:
+            data = data.astype(object)
+            return np.pad(data, ((0, padRows), (0, padColumns)), constant_values=None)
+
+
+class ArrayParser:
+    def __init__(self, line: str, context: Context):
+        self.line = line.strip()
+        self.context = context
+        self.position = 0
+
+    def parse(self):
+        self.position += 1
+        values = []
+
+        while self.position < len(self.line) and not self.line[self.position] == "]":
+            if self.line[self.position] == "[":
+                subarray = self.parse()
+                self.position += 1
+                values.append(subarray)
+            elif self._atStringDelimiter():
+                string = self._parseString()
+                values.append(string)
+            elif self._atNumberStart():
+                number = self._parseNumber()
+                values.append(number)
+            else:
+                self.position += 1
+
+        return values
+
+    def _atStringDelimiter(self):
+        char = self.line[self.position]
+        return char == "'" or char == '"'
+
+    def _atNumberStart(self):
+        char = self.line[self.position]
+        return char == "-" or char.isdigit()
+
+    def _atNumber(self):
+        char = self.line[self.position]
+        return char == "." or char.isdigit() or char == "e" or char == "-"
+
+    def _parseString(self):
+        stringStart = self.position
+        self.position += 1
+
+        while not self._atStringDelimiter():
+            self.position += 1
+
+        self.position += 1
+        return self.context.parse(self.line[stringStart:self.position])
+
+    def _parseNumber(self):
+        numberStart = self.position
+        self.position += 1
+
+        while self._atNumber():
+            self.position += 1
+
+        return self.context.parse(self.line[numberStart:self.position])
+
+
+class CalParser:
+    def __init__(self, variables):
+        self.context = Context(variables)
+
+    # All r-values in a .cal file are arrays
+    def _parseValue(self, value):
+        parser = ArrayParser(value, self.context)
+        values = parser.parse()
+        return np.array(values)
+
+    # Remove unnecessary matrix dimensions, and convert NumPy types
+    # into their standard Python equivalents
+    def _simplifyValues(self, variables):
+        processed = {}
+
+        # Recursively reduce along primary dimension so that 1x1 matrices
+        # become length 1 arrays and then scalars, and 1x5 matrices become
+        # length 5 arrays, etc.
+        def simplifyArray(value: np.ndarray):
+            shape = np.shape(value)
+            if len(shape) == 0:
+                return value
+            elif len(shape) == 1:
+                return value.item(0) if shape[0] == 1 else value.tolist()
+            elif len(shape) == 2:
+                return simplifyArray(value[0]) if shape[0] == 1 else value.tolist()
+
+        for variable_name in variables:
+            value = variables[variable_name]
+
+            if isinstance(value, dict):
+                processed[variable_name] = self._simplifyValues(value)
+            elif isinstance(value, np.ndarray):
+                processed[variable_name] = simplifyArray(value)
+            else:
+                raise ValueError("Raw variables can only be dicts or Numpy arrays")
+
+        return processed
+
+    # Parses CAL file specified by fileName
+    # When possible, variables in CAL file are replaced with values from context
+    # Returns data as dictionary whose keys are variable names
+    def parseFile(self, fileName):
+        # map from Matlab variable name to value
+        data = {}
+
+        # first, read each assignment from CAL file and add to data
+        with open(fileName, "r") as cal:
+            for line in cal:
+                line = line.strip()  # remove leading and trailing whitespace
+                if len(line) == 0 or line[0] == "%":
+                    # skip comments and blank lines
+                    continue
+
+                assignmentIdx = line.find("=")
+                if assignmentIdx < 1 or assignmentIdx >= len(line):
+                    raise SyntaxError(
+                        "Invalid syntax in CAL file: all statements must be variable assignments."
+                    )
+
+                assignmentPath = AssignmentNode.parse(line[0:assignmentIdx], self.context)
+                value = self._parseValue(line[assignmentIdx + 1:])
+                assignmentPath.assignTo(data, value)
+
+        data = self._simplifyValues(data)
+        return data

@@ -15,7 +15,7 @@ class RobotType(Enum):
     MTM = 0
     PSM = 1
     ECM = 2
-    MTMGripper = 3,
+    MTMGripper = 3
 
     def fromTypeName(robotTypeName):
         if robotTypeName[0:3] == "MTM":
@@ -148,6 +148,7 @@ class Config(Serializable):
 
         return dict
 
+
 class Robot(Serializable):
     def __init__(self, calData, robotTypeName, serialNumber):
         self.name = robotTypeName
@@ -176,7 +177,11 @@ class Robot(Serializable):
             actuator = Actuator(calData, self.type, idx, driveDirection, boardIDs)
             self.actuators.append(actuator)
 
-        self.potentiometers = Potentiometers(self.type, numberOfActuators) if self.type != RobotType.MTMGripper else None
+        self.potentiometers = (
+            Potentiometers(self.type, numberOfActuators)
+            if self.type != RobotType.MTMGripper
+            else None
+        )
 
         self.coupling = Coupling() if self.type == RobotType.MTM else None
         self.ioType = "io-only" if self.type == RobotType.MTMGripper else None
@@ -229,9 +234,7 @@ class Actuator(Serializable):
             gearRatio = [63.41, 49.88, 59.73, 10.53, 33.16, 33.16, 16.58][index]
             pitch = 1
             motorMaxCurrent = [0.67, 0.67, 0.67, 0.67, 0.59, 0.59, 0.407][index]
-            motorTorque = [0.0438, 0.0438, 0.0438, 0.0438, 0.00495, 0.00495, 0.00339][
-                index
-            ]
+            motorTorque = [0.0438, 0.0438, 0.0438, 0.0438, 0.00495, 0.00495, 0.00339][index]
         elif robotType == RobotType.PSM:
             CPT = [14400, 14400, 14400, 4000, 4000, 4000, 4000][index]
             gearRatio = [56.50, 56.50, 336.6, 11.71, 11.71, 11.71, 11.71][index]
@@ -244,7 +247,7 @@ class Actuator(Serializable):
             pitch = [1, 1, 17.4533, 1, 1, 1, 1][index]
             motorMaxCurrent = [0.943, 0.943, 0.67, 0.59, 0.0, 0.0, 0.0][index]
             motorTorque = [0.1190, 0.1190, 0.0438, 0.00495, 1.0, 1.0, 1.0][index]
-        
+
         if robotType == RobotType.MTMGripper:
             # Want driveDirection * (360 / CPT) * (pitch / gearRatio) = 360
             desiredEncoderScale = 360.0
@@ -252,10 +255,8 @@ class Actuator(Serializable):
             motorMaxCurrent = 0.0
 
         self.drive = Drive(driveDirection, gearRatio, motorTorque, motorMaxCurrent)
-        self.encoder = Encoder(
-            index, robotType, driveDirection, CPT, pitch, gearRatio
-        )
-        
+        self.encoder = Encoder(index, robotType, driveDirection, CPT, pitch, gearRatio)
+
         self.analogIn = AnalogIn(calData, robotType, index, pitch)
 
         # Actuators 0, 1, 2 on ECM have a brake
@@ -385,8 +386,8 @@ class AnalogIn(Serializable):
             "mm" if (robotType != RobotType.MTM and actuatorIndex == 2) else "deg"
         )
 
-        potGain = calData["motor.pot_input_gain"][actuatorIndex]
-        potOffset = calData["motor.pot_input_offset"][actuatorIndex]
+        potGain = calData["motor"]["pot_input_gain"][actuatorIndex]
+        potOffset = calData["motor"]["pot_input_offset"][actuatorIndex]
 
         voltsToPosSIScale = potGain * (2 ** 12 / 4.5) * (180.0 / math.pi) * pitch
         voltsToPosSIOffset = potOffset * (180.0 / math.pi) * pitch
@@ -459,17 +460,15 @@ class PotentiometerTolerance(Serializable):
 
 class Coupling(Serializable):
     def __init__(self):
-        self.actuatorToJointPositionMatrix = np.array(
-            [
-                [1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
-                [0.00, 1.00, 0.00, 0.00, 0.00, 0.00, 0.00],
-                [0.00, -1.00, 1.00, 0.00, 0.00, 0.00, 0.00],
-                [0.00, 0.6697, -0.6697, 1.00, 0.00, 0.00, 0.00],
-                [0.00, 0.00, 0.00, 0.00, 1.00, 0.00, 0.00],
-                [0.00, 0.00, 0.00, 0.00, 0.00, 1.00, 0.00],
-                [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1.00],
-            ]
-        )
+        self.actuatorToJointPositionMatrix = [
+            [1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
+            [0.00, 1.00, 0.00, 0.00, 0.00, 0.00, 0.00],
+            [0.00, -1.00, 1.00, 0.00, 0.00, 0.00, 0.00],
+            [0.00, 0.6697, -0.6697, 1.00, 0.00, 0.00, 0.00],
+            [0.00, 0.00, 0.00, 0.00, 1.00, 0.00, 0.00],
+            [0.00, 0.00, 0.00, 0.00, 0.00, 1.00, 0.00],
+            [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1.00],
+        ]
 
     def toDict(self):
         return {
@@ -525,24 +524,34 @@ class DallasChip(Serializable):
         }
 
 
+def array_like(obj):
+    return isinstance(obj, list) or isinstance(obj, np.ndarray)
+
+
 def canSerialize(obj):
-    return (
-        isinstance(obj, Serializable)
-        or isinstance(obj, list)
-        or isinstance(obj, np.ndarray)
-    )
+    return isinstance(obj, Serializable) or array_like(obj)
 
 
-# Recursively converts an object to XML
-def toXML(name, object, parent=None):
-    # Serialize 2D NumPy array into multiple <Row Val="x y z ..."/> nodes
-    if isinstance(object, np.ndarray) and object.ndim == 2:
+# Serialize 1D or 2D Numpy arrays/Python lists
+def arrayToXML(name, object, parent):
+    # Serialize 1D array into repeated child nodes
+    if len(np.shape(object)) == 1:
+        # remove plural 's' if present
+        name = name if name[-1] != "s" else name[0:-1]
+        for element in object:
+            toXML(name, element, parent)
+    # Serialize 2D array into multiple <Row Val="x y z ..."/> nodes
+    else:
         matrixNode = ET.SubElement(parent, name)
         for row in object:
-            serializedRow = " ".join(map(lambda x: "{:6.4f}".format(x), row.tolist()))
-            rowNode = ET.SubElement(matrixNode, "Row", Val=serializedRow)
+            row = row.tolist() if isinstance(row, np.ndarray) else row
+            serializedRow = " ".join(map(lambda x: "{:6.4f}".format(x), row))
+            ET.SubElement(matrixNode, "Row", Val=serializedRow)
         return matrixNode
 
+
+# Convert instance of 'Serializable' to XML
+def serializableToXML(name, object, parent):
     data = object.toDict()
 
     attributes = {
@@ -555,21 +564,24 @@ def toXML(name, object, parent=None):
         else ET.Element(name, attributes)
     )
 
-    children = {key: value for (key, value) in data.items() if canSerialize(value)}
-
-    for key, value in children.items():
-        # for XML, list values are represented as repeated nodes with
-        if isinstance(value, list):
-            # remove plural 's' if present
-            nodeName = key if key[-1] != "s" else key[0:-1]
-            for v in value:
-                toXML(nodeName, v, node)
-        else:
+    for key, value in data.items():
+        if canSerialize(value):
             toXML(key, value, node)
 
     return node
 
 
+# Recursively converts an object to XML
+def toXML(name, object, parent=None):
+    # Serialize NumPy arrays and Python lists
+    if array_like(object):
+        arrayToXML(name, object, parent)
+    elif isinstance(object, Serializable):
+        return serializableToXML(name, object, parent)
+    else:
+        raise ValueError("Can only serialize instances of Serializable and array-like types")
+
+    
 # Adds nice indentation to existing ElementTree XML object
 def pretty_print_xml(node, parent=None, index=-1, depth=0):
     indent = "    "
@@ -590,9 +602,6 @@ def pretty_print_xml(node, parent=None, index=-1, depth=0):
 def configSerializeJSON(obj):
     if isinstance(obj, Serializable):
         return obj.toDict()
-
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
 
     raise TypeError
 
@@ -615,7 +624,7 @@ def saveConfigFile(fileName, config, format):
 
 def generateConfig(calFileName, robotName, outputFormat):
     # Array size constants that .cal file parser needs to know
-    CALContext = {
+    constants = {
         "UPPER_LIMIT": 1,
         "LOWER_LIMIT": 2,
         # constants for MTM .cal configuration file
@@ -630,7 +639,8 @@ def generateConfig(calFileName, robotName, outputFormat):
         "ECM_MOT_DOFS": 4,
     }
 
-    calData = calParser.parseCALFile(calFileName, CALContext)
+    parser = calParser.CalParser(constants)
+    calData = parser.parseFile(calFileName)
 
     # sanity check robot type matches cal file
     assert (
