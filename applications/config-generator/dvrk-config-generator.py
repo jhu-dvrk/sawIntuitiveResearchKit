@@ -76,49 +76,21 @@ class UnitValue(Serializable):
 
 # dVRK board ID conventions
 def getBoardIDs(robotTypeName):
-    boardIDs = None
     # Need to allow for MTML-Gripper/MTMR-Gripper
     if robotTypeName.startswith("MTML"):
-        boardIDs = [0, 1]
+        return (0, 1)
     elif robotTypeName.startswith("MTMR"):
-        boardIDs = [2, 3]
+        return (2, 3)
     elif robotTypeName == "ECM":
-        boardIDs = [4, 5]
+        return (4, 5)
     elif robotTypeName == "PSM1":
-        boardIDs = [6, 7]
+        return (6, 7)
     elif robotTypeName == "PSM2":
-        boardIDs = [8, 9]
+        return (8, 9)
     elif robotTypeName == "PSM3":
-        boardIDs = [10, 11]
-
-    return boardIDs
-
-
-# creates appropriate DigitalInput configs based on robot type
-def generateDigitalInputs(robotTypeName):
-    robotType = RobotType.fromTypeName(robotTypeName)
-    boardIDs = getBoardIDs(robotTypeName)
-    digitalInputBitIDs = None
-    if robotType == RobotType.MTM:
-        digitalInputBitIDs = []
-    elif robotType == RobotType.PSM:
-        digitalInputBitIDs = [
-            (boardIDs[0], 0),
-            (boardIDs[0], 2),
-            (boardIDs[1], 7),
-            (boardIDs[1], 10),
-        ]
-    elif robotType == RobotType.ECM:
-        digitalInputBitIDs = [(boardIDs[0], 0), (boardIDs[0], 2)]
-    elif robotType == RobotType.MTMGripper:
-        digitalInputBitIDs = []
-
-    digitalInputs = []
-    for boardID, bitID in digitalInputBitIDs:
-        digitalInput = DigitalInput(robotTypeName, bitID, boardID)
-        digitalInputs.append(digitalInput)
-
-    return digitalInputs
+        return (10, 11)
+    else:
+        raise ValueError("Unrecognized robot type: {}".format(robotTypeName))
 
 
 # Root config object
@@ -126,10 +98,18 @@ class Config(Serializable):
     def __init__(self, calData, versionID, robotTypeName):
         self.versionID = versionID
         serialNumber = calData["serial_number"]
-        self.robot = Robot(calData, robotTypeName, serialNumber)
-        self.digitalInputs = generateDigitalInputs(robotTypeName)
 
         robotType = RobotType.fromTypeName(robotTypeName)
+        if robotType == RobotType.PSM:
+            self.robot = ClassicPSM(calData, robotTypeName, serialNumber)
+        elif robotType == RobotType.ECM:
+            self.robot = ClassicECM(calData, robotTypeName, serialNumber)
+        elif robotType == RobotType.MTM:
+            self.robot = MTM(calData, robotTypeName, serialNumber)
+        else:
+            self.robot = MTMGripper(calData, robotTypeName, serialNumber)
+
+        self.digitalInputs = list(self.robot.generateDigitalInputs())
         self.dallasChip = (
             DallasChip(robotTypeName) if robotType == RobotType.PSM else None
         )
@@ -150,132 +130,287 @@ class Config(Serializable):
 
 
 class Robot(Serializable):
-    def __init__(self, calData, robotTypeName, serialNumber):
+    def __init__(self, robotTypeName, serialNumber, calData, numberOfActuators):
         self.name = robotTypeName
-        self.serialNumber = serialNumber
-
         self.type = RobotType.fromTypeName(robotTypeName)
+        self.serialNumber = serialNumber
+        self.calData = calData
+        self.boardIDs = getBoardIDs(robotTypeName)
+        self.numberOfActuators = numberOfActuators
+        self.actuators = list(self.generateActuators())
 
-        driveDirections = None  # motor drive directions by actuator
-        if self.type == RobotType.MTM and robotTypeName == "MTML":
-            driveDirections = [-1, 1, 1, 1, -1, 1, -1]
-        elif self.type == RobotType.MTM and robotTypeName == "MTMR":
-            driveDirections = [-1, 1, 1, 1, 1, 1, -1]
-        elif self.type == RobotType.PSM:
-            driveDirections = [-1, -1, 1, -1, -1, 1, 1]
-        elif self.type == RobotType.ECM:
-            driveDirections = [1, 1, -1, 1]
-        elif self.type == RobotType.MTMGripper:
-            driveDirections = [-1]
+    def driveDirection(self, index: int) -> int:
+        raise NotImplementedError()
 
-        numberOfActuators = len(driveDirections)
+    def encoderCPT(self, index: int) -> int:
+        raise NotImplementedError()
 
-        self.actuators = []
-        boardIDs = getBoardIDs(robotTypeName)
-        for idx in range(numberOfActuators):
-            driveDirection = driveDirections[idx]
-            actuator = Actuator(calData, self.type, idx, driveDirection, boardIDs)
-            self.actuators.append(actuator)
+    def gearRatio(self, index: int) -> float:
+        raise NotImplementedError()
 
-        self.potentiometers = (
-            Potentiometers(self.type, numberOfActuators)
-            if self.type != RobotType.MTMGripper
-            else None
-        )
+    def pitch(self, index: int) -> float:
+        raise NotImplementedError()
 
-        self.coupling = Coupling() if self.type == RobotType.MTM else None
-        self.ioType = "io-only" if self.type == RobotType.MTMGripper else None
+    def motorMaxCurrent(self, index: int) -> float:
+        raise NotImplementedError()
+
+    def motorTorque(self, index: int) -> float:
+        raise NotImplementedError()
+
+    def actuatorType(self, index: int) -> str:
+        raise NotImplementedError()
+
+    def potentiometerToleranceUnits(self, index: int) -> str:
+        raise NotImplementedError()
+
+    def potentiometerLatency(self, index: int) -> float:
+        raise NotImplementedError()
+
+    def potentiometerDistance(self, index: int) -> float:
+        raise NotImplementedError()
+
+    def generateDrives(self):
+        for index in range(self.numberOfActuators):
+            direction = self.driveDirection(index)
+            gearRatio = self.gearRatio(index)
+            motorTorque = self.motorTorque(index)
+            maxCurrent = self.motorMaxCurrent(index)
+            yield Drive(direction, gearRatio, motorTorque, maxCurrent)
+
+    def generateEncoders(self):
+        for index in range(self.numberOfActuators):
+            units = self.potentiometerToleranceUnits(index)
+            direction = self.driveDirection(index)
+            encoderCPT = self.encoderCPT(index)
+            pitch = self.pitch(index)
+            gearRatio = self.gearRatio(index)
+            yield Encoder(units, direction, encoderCPT, pitch, gearRatio)
+
+    def generateAnalogIns(self):
+        for index in range(self.numberOfActuators):
+            units = self.potentiometerToleranceUnits(index)
+            pitch = self.pitch(index)
+            yield AnalogIn(self.calData, index, units, pitch)
+
+    def generateBrakes(self):
+        for index in range(self.numberOfActuators):
+            yield None
+
+    def generateActuators(self):
+        drives = self.generateDrives()
+        encoders = self.generateEncoders()
+        analogIns = self.generateAnalogIns()
+        brakes = self.generateBrakes()
+        data = zip(range(self.numberOfActuators), drives, encoders, analogIns, brakes)
+        for index, drive, encoder, analogIn, brake in data:
+            type = self.actuatorType(index)
+            yield Actuator(
+                index, index, type, self.boardIDs, drive, encoder, analogIn, brake
+            )
+
+    def generateDigitalInputs(self):
+        # Creates generator function that ends without yielding anything
+        yield from ()
 
     def toDict(self):
         dict = {
             "Name": self.name,
-            "NumOfActuator": len(self.actuators),
-            "NumOfJoint": len(self.actuators),
+            "NumOfActuator": self.numberOfActuators,
+            "NumOfJoint": self.numberOfActuators,
             "SN": self.serialNumber,
             "Actuators": self.actuators,
         }
 
-        if self.potentiometers != None:
-            dict["Potentiometers"] = self.potentiometers
-
-        if self.coupling != None:
-            dict["Coupling"] = self.coupling
-
-        if self.ioType != None:
-            dict["Type"] = self.ioType
-
         return dict
 
 
-class Actuator(Serializable):
-    def __init__(self, calData, robotType, index, driveDirection, boardIDs):
-        self.id = index
-        self.actuatorType = (
-            "Prismatic" if (robotType != RobotType.MTM and index == 2) else "Revolute"
-        )
-        self.boardID = boardIDs[0] if index < 4 else boardIDs[1]
-        self.axisID = index % 4
+class ClassicPSM(Robot):
+    def __init__(self, calData, robotTypeName, serialNumber):
+        self.driveDirection = lambda index: [-1, -1, 1, -1, -1, 1, 1][index]
+        self.encoderCPT = lambda index: [14400, 14400, 14400, 4000, 4000, 4000, 4000][index]
+        self.gearRatio = lambda index: [56.50, 56.50, 336.6, 11.71, 11.71, 11.71, 11.71][index]
+        self.pitch = lambda index: [1, 1, 17.4533, 1, 1, 1, 1][index]
+        self.motorMaxCurrent = lambda index: [1.34, 1.34, 0.67, 0.67, 0.67, 0.67, 0.670][index]
+        self.motorTorque = lambda index: [0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438][index]
+        self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
+        self.potentiometerToleranceUnits = lambda index: "deg" if index != 2 else "mm"
+        self.potentiometerLatency = lambda index: 0.01
+        self.potentiometerDistance = lambda index: 5.0
 
-        # Although gripper index is 0, treat as if 8th actuator (id 7)
-        if robotType == RobotType.MTMGripper:
-            self.id = boardIDs[1]
-            self.boardID = boardIDs[1]
-            self.axisID = 7 % 4
+        super().__init__(robotTypeName, serialNumber, calData, 7)
 
-        CPT = None  # Encoder counts per turn (quadrature encoder), NOTE: no encoder for last axis
-        gearRatio = None  # NOTE: gear ratio for axis 8 is set to 1
-        pitch = None  # 1 for revolute, mm/deg for prismatic
-        motorMaxCurrent = None  # Sustained max current, amps
-        motorTorque = None  # units are Nm/A
+        potentiometerTolerances = list(self.generatePotentiometerTolerances())
+        self.potentiometers = Potentiometers("Actuators", potentiometerTolerances)
 
-        # Lookup constants based on robot type and actuator ID
-        if robotType == RobotType.MTM or robotType == RobotType.MTMGripper:
-            CPT = [4000, 4000, 4000, 4000, 64, 64, 64][index]
-            gearRatio = [63.41, 49.88, 59.73, 10.53, 33.16, 33.16, 16.58][index]
-            pitch = 1
-            motorMaxCurrent = [0.67, 0.67, 0.67, 0.67, 0.59, 0.59, 0.407][index]
-            motorTorque = [0.0438, 0.0438, 0.0438, 0.0438, 0.00495, 0.00495, 0.00339][index]
-        elif robotType == RobotType.PSM:
-            CPT = [14400, 14400, 14400, 4000, 4000, 4000, 4000][index]
-            gearRatio = [56.50, 56.50, 336.6, 11.71, 11.71, 11.71, 11.71][index]
-            pitch = [1, 1, 17.4533, 1, 1, 1, 1][index]
-            motorMaxCurrent = [1.34, 1.34, 0.67, 0.67, 0.67, 0.67, 0.670][index]
-            motorTorque = [0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438][index]
-        elif robotType == RobotType.ECM:
-            CPT = [4000, 4000, 640, 64, 1, 1, 1][index]
-            gearRatio = [240, 240, 2748.55, 300.15, 1.0, 1.0, 1.0][index]
-            pitch = [1, 1, 17.4533, 1, 1, 1, 1][index]
-            motorMaxCurrent = [0.943, 0.943, 0.67, 0.59, 0.0, 0.0, 0.0][index]
-            motorTorque = [0.1190, 0.1190, 0.0438, 0.00495, 1.0, 1.0, 1.0][index]
+    def generatePotentiometerTolerances(self):
+        for index in range(self.numberOfActuators):
+            units = self.potentiometerToleranceUnits(index)
+            latency = self.potentiometerLatency(index)
+            distance = self.potentiometerDistance(index)
+            yield PotentiometerTolerance(index, units, latency, distance)
 
-        if robotType == RobotType.MTMGripper:
-            # Want driveDirection * (360 / CPT) * (pitch / gearRatio) = 360
-            desiredEncoderScale = 360.0
-            CPT = driveDirection * (360 / desiredEncoderScale) * (pitch / gearRatio)
-            motorMaxCurrent = 0.0
+    def generateDigitalInputs(self):
+        digitalInputBitIDs = [
+            (self.boardIDs[0], 0, "SUJCatch"),
+            (self.boardIDs[0], 2, "ManipClutch"),
+            (self.boardIDs[1], 7, "Tool"),
+            (self.boardIDs[1], 10, "Adapter"),
+        ]
 
-        self.drive = Drive(driveDirection, gearRatio, motorTorque, motorMaxCurrent)
-        self.encoder = Encoder(index, robotType, driveDirection, CPT, pitch, gearRatio)
-
-        self.analogIn = AnalogIn(calData, robotType, index, pitch)
-
-        # Actuators 0, 1, 2 on ECM have a brake
-        hasBrake = robotType == RobotType.ECM and index <= 2
-        self.brake = Brake(index, self.axisID, boardIDs[1]) if hasBrake else None
+        for boardID, bitID, inputType in digitalInputBitIDs:
+            yield DigitalInput(self.name, inputType, bitID, boardID)
 
     def toDict(self):
-        dict = {
-            "ActuatorID": self.id,
-            "AxisID": self.axisID,
-            "BoardID": self.boardID,
-            "Type": self.actuatorType,
-            "Drive": self.drive,
-            "Encoder": self.encoder,
-            "AnalogIn": self.analogIn,
-        }
+        dict = super().toDict()
+        dict["Potentiometers"] = self.potentiometers
+        return dict
 
-        if self.brake != None:
-            dict["AnalogBrake"] = self.brake
+
+class ClassicECM(Robot):
+    def __init__(self, calData, robotTypeName, serialNumber):
+        self.driveDirection = lambda index: [1, 1, -1, 1][index]
+        self.encoderCPT = lambda index: [4000, 4000, 640, 64][index]
+        self.gearRatio = lambda index: [240, 240, 2748.55, 300.15][index]
+        self.pitch = lambda index: [1, 1, 17.4533, 1][index]
+        self.motorMaxCurrent = lambda index: [0.943, 0.943, 0.67, 0.59][index]
+        self.motorTorque = lambda index: [0.1190, 0.1190, 0.0438, 0.00495][index]
+        self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
+        self.potentiometerToleranceUnits = lambda index: "deg" if index != 2 else "mm"
+        self.potentiometerLatency = lambda index: 0.01
+        self.potentiometerDistance = lambda index: 5.0
+
+        super().__init__(robotTypeName, serialNumber, calData, 4)
+
+        potentiometerTolerances = list(self.generatePotentiometerTolerances())
+        self.potentiometers = Potentiometers("Actuators", potentiometerTolerances)
+
+    def generatePotentiometerTolerances(self):
+        for index in range(self.numberOfActuators):
+            units = self.potentiometerToleranceUnits(index)
+            latency = self.potentiometerLatency(index)
+            distance = self.potentiometerDistance(index)
+            yield PotentiometerTolerance(index, units, latency, distance)
+
+    def generateBrakes(self):
+        for index in range(self.numberOfActuators):
+            if index <= 2:
+                yield Brake(index, index, self.boardIDs[1])
+            else:
+                yield None
+
+    def generateDigitalInputs(self):
+        digitalInputBitIDs = [
+            (self.boardIDs[0], 0, "ManipClutch"),
+            (self.boardIDs[0], 2, "SUJCatch"),
+        ]
+
+        for boardID, bitID, inputType in digitalInputBitIDs:
+            yield DigitalInput(self.name, inputType, bitID, boardID)
+
+    def toDict(self):
+        dict = super().toDict()
+        dict["Potentiometers"] = self.potentiometers
+        return dict
+
+
+class MTM(Robot):
+    def __init__(self, calData, robotTypeName, serialNumber):
+        if robotTypeName.startswith("MTML"):
+            driveDirections = [-1, 1, 1, 1, -1, 1, -1]
+        elif robotTypeName.startswith("MTMR"):
+            driveDirections = [-1, 1, 1, 1, 1, 1, -1]
+        else:
+            raise ValueError("Unsupport MTM type: {}".format(robotTypeName))
+
+        self.driveDirection = lambda index: driveDirections[index]
+        self.encoderCPT = lambda index: [4000, 4000, 4000, 4000, 64, 64, 64][index]
+        self.gearRatio = lambda index: [63.41, 49.88, 59.73, 10.53, 33.16, 33.16, 16.58][index]
+        self.pitch = lambda index: 1
+        self.motorMaxCurrent = lambda index: [0.67, 0.67, 0.67, 0.67, 0.59, 0.59, 0.407][index]
+        self.motorTorque = lambda index: [0.0438, 0.0438, 0.0438, 0.0438, 0.00495, 0.00495, 0.00339][index]
+        self.actuatorType = lambda index: "Revolute"
+        self.potentiometerToleranceUnits = lambda index: "deg"
+        self.potentiometerLatency = lambda index: 0.01 if index <= 5 else 0.0
+        self.potentiometerDistance = lambda index: 5.0 if index <= 5 else 0.0
+
+        super().__init__(robotTypeName, serialNumber, calData, 7)
+
+        potentiometerTolerances = list(self.generatePotentiometerTolerances())
+        self.potentiometers = Potentiometers("Joints", potentiometerTolerances)
+        self.coupling = Coupling()
+
+    def generatePotentiometerTolerances(self):
+        for index in range(self.numberOfActuators):
+            units = self.potentiometerToleranceUnits(index)
+            latency = self.potentiometerLatency(index)
+            distance = self.potentiometerDistance(index)
+            yield PotentiometerTolerance(index, units, latency, distance)
+
+    def toDict(self):
+        dict = super().toDict()
+        dict["Potentiometers"] = self.potentiometers
+        dict["Coupling"] = self.coupling
+        return dict
+
+
+class MTMGripper(Robot):
+    def __init__(self, calData, robotTypeName, serialNumber):
+        self.ioType = "io-only"
+        self.driveDirection = lambda index: -1
+        self.encoderCPT = lambda index: 4000
+        self.gearRatio = lambda index: 63.41
+        self.pitch = lambda index: 1
+        self.motorMaxCurrent = lambda index: 0.0
+        self.motorTorque = lambda index: 0.0438
+        self.actuatorType = lambda index: "Revolute"
+        self.potentiometerToleranceUnits = lambda index: "deg"
+        self.potentiometerLatency = lambda index: None
+        self.potentiometerDistance = lambda index: None
+
+        # Want driveDirection * (360 / CPT) * (pitch / gearRatio) = 360
+        desiredEncoderScale = 360.0
+        self.encoderCPT = (
+            lambda index: self.driveDirection(0)
+            * (360 / desiredEncoderScale)
+            * (self.pitch(0) / self.gearRatio(0))
+        )
+
+        self.voltsToPosSIScale = -23.1788
+        self.voltsToPosSIOffset = 91.4238
+
+        super().__init__(robotTypeName, serialNumber, calData, 1)
+
+    def generateAnalogIns(self):
+        for index in range(self.numberOfActuators):
+            units = self.potentiometerToleranceUnits(index)
+            pitch = self.pitch(index)
+            yield AnalogIn(
+                self.calData,
+                index,
+                units,
+                pitch,
+                self.voltsToPosSIScale,
+                self.voltsToPosSIOffset,
+            )
+
+    def generateActuators(self):
+        drives = self.generateDrives()
+        encoders = self.generateEncoders()
+        analogIns = self.generateAnalogIns()
+        brakes = self.generateBrakes()
+        data = zip(drives, encoders, analogIns, brakes)
+        index = 7  # MTM gripper is treated as if it was 8th actuator of MTM
+
+        for drive, encoder, analogIn, brake in data:
+            type = self.actuatorType(index)
+            id = self.boardIDs[1]
+            yield Actuator(
+                id, index, type, self.boardIDs, drive, encoder, analogIn, brake
+            )
+
+    def toDict(self):
+        dict = super().toDict()
+        dict["Type"] = self.ioType
 
         return dict
 
@@ -335,7 +470,7 @@ class Brake(Serializable):
 
         self.maxCurrent = UnitValue(maxCurrentValue, "A")
         self.releaseCurrent = UnitValue(releaseCurrentValue, "A")
-        self.releaseTime = UnitValue(releaseTimeValue, "A")
+        self.releaseTime = UnitValue(releaseTimeValue, "ms")
         self.releasedCurrent = UnitValue(releasedCurrentValue, "A")
         self.engagedCurrent = UnitValue(engagedCurrentValue, "A")
 
@@ -354,15 +489,12 @@ class Brake(Serializable):
 
 
 class Encoder(Serializable):
-    def __init__(self, actuatorIndex, robotType, driveDirection, CPT, pitch, gearRatio):
-        # degrees except for third actuator of PSM/ECM
-        potToleranceUnit = (
-            "mm" if (robotType != RobotType.MTM and actuatorIndex == 2) else "deg"
-        )
-
+    def __init__(
+        self, potentiometerToleranceUnits, driveDirection, CPT, pitch, gearRatio
+    ):
         encoderPos = driveDirection * (360 / CPT) * (pitch / gearRatio)
         encoderPos = "{:5.8f}".format(encoderPos)
-        self.bitsToPosSI = Conversion(encoderPos, None, potToleranceUnit)
+        self.bitsToPosSI = Conversion(encoderPos, None, potentiometerToleranceUnits)
 
     def toDict(self):
         return {"BitsToPosSI": self.bitsToPosSI}
@@ -379,29 +511,32 @@ class Encoder(Serializable):
 #    2. 0-4.5 V
 #    3. Unit: Radian
 class AnalogIn(Serializable):
-    def __init__(self, calData, robotType, actuatorIndex, pitch):
+    def __init__(
+        self,
+        calData,
+        actuatorIndex,
+        potentiometerToleranceUnits,
+        pitch,
+        voltsToPosSIScale=None,
+        voltsToPosSIOffset=None,
+    ):
         # 16 bits ADC with 4.5 V ref
         self.bitsToVolts = Conversion(4.5 / (2 ** 16), "0")
-        potToleranceUnits = (
-            "mm" if (robotType != RobotType.MTM and actuatorIndex == 2) else "deg"
-        )
 
         potGain = calData["motor"]["pot_input_gain"][actuatorIndex]
         potOffset = calData["motor"]["pot_input_offset"][actuatorIndex]
 
-        voltsToPosSIScale = potGain * (2 ** 12 / 4.5) * (180.0 / math.pi) * pitch
-        voltsToPosSIOffset = potOffset * (180.0 / math.pi) * pitch
+        if voltsToPosSIScale is None:
+            voltsToPosSIScale = potGain * (2 ** 12 / 4.5) * (180.0 / math.pi) * pitch
 
-        # special case for MTM last joint (Hall effect sensor)
-        if robotType == RobotType.MTMGripper:
-            voltsToPosSIScale = -23.1788
-            voltsToPosSIOffset = 91.4238
+        if voltsToPosSIOffset is None:
+            voltsToPosSIOffset = potOffset * (180.0 / math.pi) * pitch
 
         voltsToPosSIScale = "{:5.6f}".format(voltsToPosSIScale)
         voltsToPosSIOffset = "{:5.6f}".format(voltsToPosSIOffset)
 
         self.voltsToPosSI = Conversion(
-            voltsToPosSIScale, voltsToPosSIOffset, potToleranceUnits
+            voltsToPosSIScale, voltsToPosSIOffset, potentiometerToleranceUnits
         )
 
     def toDict(self):
@@ -412,16 +547,9 @@ class AnalogIn(Serializable):
 
 
 class Potentiometers(Serializable):
-    def __init__(self, robotType, axisCount):
-        if robotType == RobotType.MTM:
-            self.position = "Joints"
-        else:
-            self.position = "Actuators"
-
-        self.tolerances = []
-        for axis in range(axisCount):
-            tolerance = PotentiometerTolerance(axis, robotType)
-            self.tolerances.append(tolerance)
+    def __init__(self, position, tolerances):
+        self.position = position
+        self.tolerances = tolerances
 
     def toDict(self):
         return {
@@ -431,23 +559,11 @@ class Potentiometers(Serializable):
 
 
 class PotentiometerTolerance(Serializable):
-    def __init__(self, axisID, robotType):
+    def __init__(self, axisID, units, latency, distance):
         self.axisID = axisID
-
-        # pot to encoder consistency check, for MTMs, last two joints are not used
-        self.units = "mm" if (robotType != RobotType.MTM and axisID == 2) else "deg"
-        self.latency = None
-        self.distance = None
-
-        if robotType == RobotType.MTM:
-            self.latency = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.00][axisID]
-            self.distance = [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 0.0][axisID]
-        elif robotType == RobotType.PSM:
-            self.latency = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01][axisID]
-            self.distance = [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0][axisID]
-        elif robotType == RobotType.ECM:
-            self.latency = [0.01, 0.01, 0.01, 0.01][axisID]
-            self.distance = [5.0, 5.0, 5.0, 5.0][axisID]
+        self.units = units
+        self.latency = latency
+        self.distance = distance
 
     def toDict(self):
         return {
@@ -478,28 +594,15 @@ class Coupling(Serializable):
 
 
 class DigitalInput(Serializable):
-    def __init__(self, robotTypeName, bitID, boardID):
+    def __init__(self, robotTypeName: str, type: str, bitID: int, boardID: int):
         self.bitID = bitID
         self.boardID = boardID
+        self.name = "{}-{}".format(robotTypeName, type)
+        self.pressed = 1
+        self.trigger = "all"
 
         debounceTimes = {0: 0.2, 2: 0.2, 7: 1.5, 10: 1.5}
         self.debounceTime = debounceTimes[bitID]
-
-        robotType = RobotType.fromTypeName(robotTypeName)
-        if robotType == RobotType.PSM:
-            digitalInputTypes = {
-                0: "SUJCatch",
-                2: "ManipClutch",
-                7: "Tool",
-                10: "Adapter",
-            }
-            self.name = robotTypeName + "-" + digitalInputTypes[bitID]
-        elif robotType == RobotType.ECM:
-            digitalInputTypes = {0: "ManipClutch", 2: "SUJCatch"}
-            self.name = robotTypeName + "-" + digitalInputTypes[bitID]
-
-        self.pressed = 1
-        self.trigger = "all"
 
     def toDict(self):
         return {
@@ -514,7 +617,7 @@ class DigitalInput(Serializable):
 
 class DallasChip(Serializable):
     def __init__(self, robotTypeName):
-        self.name = robotTypeName + "-Dallas"
+        self.name = "{}-Dallas".format(robotTypeName)
         self.boardID = getBoardIDs(robotTypeName)[1]
 
     def toDict(self):
@@ -522,6 +625,53 @@ class DallasChip(Serializable):
             "BoardID": self.boardID,
             "Name": self.name,
         }
+
+
+class Actuator(Serializable):
+    """
+    type: "Prismatic" or "Revolute"
+    CPT: Encoder counts per turn (quadrature encoder), NOTE: no encoder for last axis
+    gearRatio: NOTE: gear ratio for axis 8 is set to 1
+    pitch: degrees for revolute, mm for prismatic
+    motorMaxCurrent: Sustained max current, units are amps
+    motorMaxTorque: units are Nm/A
+    """
+
+    def __init__(
+        self,
+        id: int,
+        index: int,
+        type: str,
+        boardIDs,
+        drive: Drive,
+        encoder: Encoder,
+        analogIn: AnalogIn,
+        brake=None,
+    ):
+        self.id = id
+        self.boardID = boardIDs[0] if index < 4 else boardIDs[1]
+        self.axisID = index % 4
+        self.type = type
+        self.drive = drive
+        self.encoder = encoder
+        self.analogIn = analogIn
+        self.brake = brake
+
+    def toDict(self):
+        dict = {
+            "ActuatorID": self.id,
+            "AxisID": self.axisID,
+            "BoardID": self.boardID,
+            "Type": self.type,
+            "Drive": self.drive,
+            "Encoder": self.encoder,
+            "AnalogIn": self.analogIn,
+        }
+
+        if self.brake != None:
+            dict["AnalogBrake"] = self.brake
+
+        return dict
 
 
 def array_like(obj):
@@ -579,9 +729,11 @@ def toXML(name, object, parent=None):
     elif isinstance(object, Serializable):
         return serializableToXML(name, object, parent)
     else:
-        raise ValueError("Can only serialize instances of Serializable and array-like types")
+        raise ValueError(
+            "Can only serialize instances of Serializable and array-like types"
+        )
 
-    
+
 # Adds nice indentation to existing ElementTree XML object
 def pretty_print_xml(node, parent=None, index=-1, depth=0):
     indent = "    "
