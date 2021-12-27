@@ -289,6 +289,14 @@ class SiPSM(Robot):
         self.potentiometerDistance = lambda index: 10.0
 
         self.driveLinearAmpCurrent = 8.192
+        self.digitalPotResolution = lambda index: 4095 # 2**12 - 1
+        self.digitalPotMinimum = lambda index: [2870, 1950, 550, 1900, 1600, 700, 3600][index]
+
+        self.brakeMaxCurrent = lambda index: [0.2, 0.2, 0.3][index]
+        self.brakeReleaseCurrent = lambda index: [0.15, 0.15, -0.25][index]
+        self.brakeReleaseTime = lambda index: 0.5
+        self.brakeReleasedCurrent = lambda index: [0.08, 0.08, -0.25][index]
+        self.brakeEngagedCurrent = lambda index: 0.0
         self.brakeLinearAmpCurrent = 2.048
 
         super().__init__(robotTypeName, serialNumber, calData, 7)
@@ -306,7 +314,21 @@ class SiPSM(Robot):
     def generateBrakes(self):
         for index in range(self.numberOfActuators):
             if index <= 2:
-                yield AnalogBrake(index, index, self.boardIDs[1], linearAmpCurrent=self.brakeLinearAmpCurrent)
+                maxCurrent = self.brakeMaxCurrent(index)
+                releaseCurrent = self.brakeReleaseCurrent(index)
+                releaseTime = self.brakeReleaseTime(index)
+                releasedCurrent = self.brakeReleasedCurrent(index)
+                engagedCurrent = self.brakeEngagedCurrent(index)
+                yield AnalogBrake(
+                    index,
+                    self.boardIDs[1],
+                    maxCurrent,
+                    releaseCurrent,
+                    releaseTime,
+                    releasedCurrent,
+                    engagedCurrent,
+                    linearAmpCurrent=self.brakeLinearAmpCurrent
+                )
             else:
                 yield None
 
@@ -323,6 +345,12 @@ class SiPSM(Robot):
                 maxCurrent,
                 linearAmpCurrent=self.driveLinearAmpCurrent,
             )
+
+    def generateDigitalPotentiometers(self):
+        for index in range(self.numberOfActuators):
+            min = self.digitalPotMinimum(index)
+            resolution = self.digitalPotResolution(index)
+            yield DigitalPotentiometer(min, resolution)
 
     def generateAnalogIns(self):
         for index in range(self.numberOfActuators):
@@ -358,6 +386,12 @@ class ClassicECM(Robot):
         self.potentiometerLatency = lambda index: 0.01
         self.potentiometerDistance = lambda index: 5.0
 
+        self.brakeMaxCurrent = lambda index: [0.25, 0.22, 0.90][index]
+        self.brakeReleaseCurrent = lambda index: [0.25, 0.22, 0.90][index]
+        self.brakeReleaseTime = lambda index: 2.0
+        self.brakeReleasedCurrent = lambda index: [0.08, 0.07, 0.20][index]
+        self.brakeEngagedCurrent = lambda index: 0.0
+
         super().__init__(robotTypeName, serialNumber, calData, 4)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
@@ -373,7 +407,20 @@ class ClassicECM(Robot):
     def generateBrakes(self):
         for index in range(self.numberOfActuators):
             if index <= 2:
-                yield AnalogBrake(index, index, self.boardIDs[1])
+                maxCurrent = self.brakeMaxCurrent(index)
+                releaseCurrent = self.brakeReleaseCurrent(index)
+                releaseTime = self.brakeReleaseTime(index)
+                releasedCurrent = self.brakeReleasedCurrent(index)
+                engagedCurrent = self.brakeEngagedCurrent(index)
+                yield AnalogBrake(
+                    index,
+                    self.boardIDs[1],
+                    maxCurrent,
+                    releaseCurrent,
+                    releaseTime,
+                    releasedCurrent,
+                    engagedCurrent
+                )
             else:
                 yield None
 
@@ -532,9 +579,13 @@ class Drive(Serializable):
 class AnalogBrake(Serializable):
     def __init__(
         self,
-        actuatorIndex,
         axisID,
         boardID,
+        maxCurrent,
+        releaseCurrent,
+        releaseTime,
+        releasedCurrent,
+        engagedCurrent,
         DACresolution=16,
         linearAmpCurrent=6.25,
     ):
@@ -546,17 +597,11 @@ class AnalogBrake(Serializable):
         self.ampsToBits = Conversion(ampsToBitsScale, 2 ** (DACresolution-1))
         self.bitsToFeedbackAmps = Conversion(bitsToAmpsScale, -linearAmpCurrent)
 
-        maxCurrentValue = [0.25, 0.22, 0.90][actuatorIndex]
-        releaseCurrentValue = [0.25, 0.22, 0.90][actuatorIndex]
-        releaseTimeValue = [2.00, 2.00, 2.00][actuatorIndex]
-        releasedCurrentValue = [0.08, 0.07, 0.20][actuatorIndex]
-        engagedCurrentValue = [0.0, 0.0, 0.0][actuatorIndex]
-
-        self.maxCurrent = UnitValue(maxCurrentValue, "A")
-        self.releaseCurrent = UnitValue(releaseCurrentValue, "A")
-        self.releaseTime = UnitValue(releaseTimeValue, "ms")
-        self.releasedCurrent = UnitValue(releasedCurrentValue, "A")
-        self.engagedCurrent = UnitValue(engagedCurrentValue, "A")
+        self.maxCurrent = UnitValue(maxCurrent, "A")
+        self.releaseCurrent = UnitValue(releaseCurrent, "A")
+        self.releaseTime = UnitValue(releaseTime, "ms")
+        self.releasedCurrent = UnitValue(releasedCurrent, "A")
+        self.engagedCurrent = UnitValue(engagedCurrent, "A")
 
     def toDict(self):
         return {
@@ -657,6 +702,28 @@ class PotentiometerTolerance(Serializable):
             "Unit": self.units,
         }
 
+class Potentiometer(Serializable):
+    def __init__(self, min, resolution):
+        self.min = min
+        self.resolution = resolution
+
+    def toDict(self):
+        return {
+            "Min": self.min,
+            "Resolution": self.resolution,
+        }
+
+class DigitalPotentiometer(Serializable):
+    def __init__(self, min, resolution):
+        self.pot = Potentiometer(min, resolution)
+        self.potentiometerToPositionSI = Conversion(0.0, 0.0)
+
+    def toDict(self):
+        return {
+            "Pot": self.pot,
+            "PotToPosSI": self.potentiometerToPositionSI,
+        }
+
 
 class MTMCoupling(Serializable):
     def __init__(self):
@@ -691,11 +758,11 @@ class DigitalInput(Serializable):
     def toDict(self):
         return {
             "BitID": self.bitID,
-            "Name": self.name,
             "BoardID": self.boardID,
+            "Debounce": self.debounceTime,
+            "Name": self.name,
             "Pressed": self.pressed,
             "Trigger": self.trigger,
-            "Debounce": self.debounceTime,
         }
 
 
