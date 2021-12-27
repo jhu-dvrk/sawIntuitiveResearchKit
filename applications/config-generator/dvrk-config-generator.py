@@ -107,7 +107,10 @@ class Config(Serializable):
             else:
                 self.robot = SiPSM(calData, robotTypeName, serialNumber)
         elif robotType == RobotType.ECM:
-            self.robot = ClassicECM(calData, robotTypeName, serialNumber)
+            if isClassic:
+                self.robot = ClassicECM(calData, robotTypeName, serialNumber)
+            else:
+                raise ValueError("Si ECM is currently unsupported.")
         elif robotType == RobotType.MTM:
             self.robot = MTM(calData, robotTypeName, serialNumber)
         else:
@@ -260,14 +263,14 @@ class ClassicPSM(Robot):
 
     def generateDigitalInputs(self):
         digitalInputBitIDs = [
-            (self.boardIDs[0], 0, "SUJCatch"),
-            (self.boardIDs[0], 2, "ManipClutch"),
-            (self.boardIDs[1], 7, "Tool"),
-            (self.boardIDs[1], 10, "Adapter"),
+            (self.boardIDs[0], 0, "SUJClutch", 0.2),
+            (self.boardIDs[0], 2, "ManipClutch", 0.2),
+            (self.boardIDs[1], 7, "Tool", 1.5),
+            (self.boardIDs[1], 10, "Adapter", 1.5),
         ]
 
-        for boardID, bitID, inputType in digitalInputBitIDs:
-            yield DigitalInput(self.name, inputType, bitID, boardID)
+        for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
+            yield DigitalInput(self.name, inputType, bitID, boardID, 1, debounceTime)
 
     def toDict(self):
         dict = super().toDict()
@@ -358,14 +361,15 @@ class SiPSM(Robot):
 
     def generateDigitalInputs(self):
         digitalInputBitIDs = [
-            (self.boardIDs[0], 0, "SUJCatch"),
-            (self.boardIDs[0], 2, "ManipClutch"),
-            (self.boardIDs[1], 7, "Tool"),
-            (self.boardIDs[1], 10, "Adapter"),
+            (self.boardIDs[0], 0, "SUJClutch2", 0.2),
+            (self.boardIDs[0], 4, "SUJClutch", 0.2),
+            (self.boardIDs[1], 11, "Tool", 1.5),
+            (self.boardIDs[1], 13, "ManipClutch", 0.01),
+            (self.boardIDs[1], 17, "Adapter", 1.5),
         ]
 
-        for boardID, bitID, inputType in digitalInputBitIDs:
-            yield DigitalInput(self.name, inputType, bitID, boardID)
+        for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
+            yield DigitalInput(self.name, inputType, bitID, boardID, 0, debounceTime)
 
     def toDict(self):
         dict = super().toDict()
@@ -426,12 +430,12 @@ class ClassicECM(Robot):
 
     def generateDigitalInputs(self):
         digitalInputBitIDs = [
-            (self.boardIDs[0], 0, "ManipClutch"),
-            (self.boardIDs[0], 2, "SUJCatch"),
+            (self.boardIDs[0], 0, "ManipClutch", 0.2),
+            (self.boardIDs[0], 2, "SUJClutch", 0.2),
         ]
 
-        for boardID, bitID, inputType in digitalInputBitIDs:
-            yield DigitalInput(self.name, inputType, bitID, boardID)
+        for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
+            yield DigitalInput(self.name, inputType, bitID, boardID, 1, debounceTime)
 
     def toDict(self):
         dict = super().toDict()
@@ -745,15 +749,13 @@ class MTMCoupling(Serializable):
 
 
 class DigitalInput(Serializable):
-    def __init__(self, robotTypeName: str, type: str, bitID: int, boardID: int):
+    def __init__(self, robotTypeName: str, type: str, bitID: int, boardID: int, pressed: int, debounceTime: float):
         self.bitID = bitID
         self.boardID = boardID
         self.name = "{}-{}".format(robotTypeName, type)
-        self.pressed = 1
+        self.pressed = pressed
         self.trigger = "all"
-
-        debounceTimes = {0: 0.2, 2: 0.2, 7: 1.5, 10: 1.5}
-        self.debounceTime = debounceTimes[bitID]
+        self.debounceTime = debounceTime
 
     def toDict(self):
         return {
