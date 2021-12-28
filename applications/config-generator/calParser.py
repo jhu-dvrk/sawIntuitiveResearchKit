@@ -385,5 +385,9 @@ class CalParser:
                 value = self._parseValue(line[assignmentIdx + 1:])
                 assignmentPath.assignTo(data, value)
 
+        for name, value in self.context.variables.items():
+            assignmentPath = AssignmentNode.parse(name, self.context)
+            assignmentPath.assignTo(data, np.array([value]))
+
         data = self._simplifyValues(data)
         return data
