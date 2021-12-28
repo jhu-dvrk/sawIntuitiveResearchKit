@@ -167,7 +167,7 @@ class Robot(Serializable):
     def actuatorType(self, index: int) -> str:
         raise NotImplementedError()
 
-    def potentiometerToleranceUnits(self, index: int) -> str:
+    def potentiometerUnits(self, index: int) -> str:
         raise NotImplementedError()
 
     def potentiometerLatency(self, index: int) -> float:
@@ -186,7 +186,7 @@ class Robot(Serializable):
 
     def generateEncoders(self):
         for index in range(self.numberOfActuators):
-            units = self.potentiometerToleranceUnits(index)
+            units = self.potentiometerUnits(index)
             direction = self.driveDirection(index)
             encoderCPT = self.encoderCPT(index)
             pitch = self.pitch(index)
@@ -195,7 +195,7 @@ class Robot(Serializable):
 
     def generateAnalogIns(self):
         for index in range(self.numberOfActuators):
-            units = self.potentiometerToleranceUnits(index)
+            units = self.potentiometerUnits(index)
             pitch = self.pitch(index)
             yield AnalogIn(self.calData, index, units, pitch)
 
@@ -245,7 +245,7 @@ class ClassicPSM(Robot):
         self.motorMaxCurrent = lambda index: [1.34, 1.34, 0.67, 0.67, 0.67, 0.67, 0.670][index]
         self.motorTorque = lambda index: [0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438][index]
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
-        self.potentiometerToleranceUnits = lambda index: "deg" if index != 2 else "mm"
+        self.potentiometerUnits = lambda index: "deg" if index != 2 else "mm"
         self.potentiometerLatency = lambda index: 0.01
         self.potentiometerDistance = lambda index: 5.0
 
@@ -256,7 +256,7 @@ class ClassicPSM(Robot):
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
-            units = self.potentiometerToleranceUnits(index)
+            units = self.potentiometerUnits(index)
             latency = self.potentiometerLatency(index)
             distance = self.potentiometerDistance(index)
             yield PotentiometerTolerance(index, units, latency, distance)
@@ -287,29 +287,37 @@ class SiPSM(Robot):
         self.motorMaxCurrent = lambda index: [3.4, 3.4, 1.1, 1.1, 1.1, 1.1, 1.1][index]
         self.motorTorque = lambda index: [0.0603, 0.0603, 0.0385, 0.0385, 0.0385, 0.0385, 0.0385][index]
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
-        self.potentiometerToleranceUnits = lambda index: "deg" if index != 2 else "mm"
+        self.potentiometerUnits = lambda index: "deg" if index != 2 else "mm"
         self.potentiometerLatency = lambda index: 0.01
         self.potentiometerDistance = lambda index: 10.0
 
         self.driveLinearAmpCurrent = 8.192
-        self.digitalPotResolution = lambda index: 4095 # 2**12 - 1
-        self.digitalPotMinimum = lambda index: [2870, 1950, 550, 1900, 1600, 700, 3600][index]
+        self.digitalPotResolution = lambda index: 4095 # 2^12 - 1
 
         self.brakeMaxCurrent = lambda index: [0.2, 0.2, 0.3][index]
         self.brakeReleaseCurrent = lambda index: [0.15, 0.15, -0.25][index]
         self.brakeReleaseTime = lambda index: 0.5
         self.brakeReleasedCurrent = lambda index: [0.08, 0.08, -0.25][index]
         self.brakeEngagedCurrent = lambda index: 0.0
-        self.brakeLinearAmpCurrent = 2.048
+        self.brakeLinearAmpCurrent = 2.048 # 2^11/10^3
 
         super().__init__(robotTypeName, serialNumber, calData, 7)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         self.potentiometers = Potentiometers("Actuators", potentiometerTolerances)
 
+    def digitalPotMinimum(self, index):
+        lower_limit_index = self.calData["LOWER_LIMIT"] - 1
+        raw_pot_minimum = self.calData["motor"]["pot_limit_checks"][lower_limit_index][index]
+
+        # Make minimum limit be positive
+        resolution = self.digitalPotResolution(index)
+        pot_minimum = (raw_pot_minimum + resolution) % resolution
+        return int(pot_minimum)
+
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
-            units = self.potentiometerToleranceUnits(index)
+            units = self.potentiometerUnits(index)
             latency = self.potentiometerLatency(index)
             distance = self.potentiometerDistance(index)
             yield PotentiometerTolerance(index, units, latency, distance)
@@ -351,9 +359,10 @@ class SiPSM(Robot):
 
     def generateDigitalPotentiometers(self):
         for index in range(self.numberOfActuators):
-            min = self.digitalPotMinimum(index)
+            min =  self.digitalPotMinimum(index)
             resolution = self.digitalPotResolution(index)
-            yield DigitalPotentiometer(min, resolution)
+            units = self.potentiometerUnits(index)
+            yield DigitalPotentiometer(min, resolution, units)
 
     def generateAnalogIns(self):
         for index in range(self.numberOfActuators):
@@ -386,7 +395,7 @@ class ClassicECM(Robot):
         self.motorMaxCurrent = lambda index: [0.943, 0.943, 0.67, 0.59][index]
         self.motorTorque = lambda index: [0.1190, 0.1190, 0.0438, 0.00495][index]
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
-        self.potentiometerToleranceUnits = lambda index: "deg" if index != 2 else "mm"
+        self.potentiometerUnits = lambda index: "deg" if index != 2 else "mm"
         self.potentiometerLatency = lambda index: 0.01
         self.potentiometerDistance = lambda index: 5.0
 
@@ -403,7 +412,7 @@ class ClassicECM(Robot):
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
-            units = self.potentiometerToleranceUnits(index)
+            units = self.potentiometerUnits(index)
             latency = self.potentiometerLatency(index)
             distance = self.potentiometerDistance(index)
             yield PotentiometerTolerance(index, units, latency, distance)
@@ -459,7 +468,7 @@ class MTM(Robot):
         self.motorMaxCurrent = lambda index: [0.67, 0.67, 0.67, 0.67, 0.59, 0.59, 0.407][index]
         self.motorTorque = lambda index: [0.0438, 0.0438, 0.0438, 0.0438, 0.00495, 0.00495, 0.00339][index]
         self.actuatorType = lambda index: "Revolute"
-        self.potentiometerToleranceUnits = lambda index: "deg"
+        self.potentiometerUnits = lambda index: "deg"
         self.potentiometerLatency = lambda index: 0.01 if index <= 5 else 0.0
         self.potentiometerDistance = lambda index: 5.0 if index <= 5 else 0.0
 
@@ -471,7 +480,7 @@ class MTM(Robot):
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
-            units = self.potentiometerToleranceUnits(index)
+            units = self.potentiometerUnits(index)
             latency = self.potentiometerLatency(index)
             distance = self.potentiometerDistance(index)
             yield PotentiometerTolerance(index, units, latency, distance)
@@ -493,7 +502,7 @@ class MTMGripper(Robot):
         self.motorMaxCurrent = lambda index: 0.0
         self.motorTorque = lambda index: 0.0438
         self.actuatorType = lambda index: "Revolute"
-        self.potentiometerToleranceUnits = lambda index: "deg"
+        self.potentiometerUnits = lambda index: "deg"
         self.potentiometerLatency = lambda index: None
         self.potentiometerDistance = lambda index: None
 
@@ -512,7 +521,7 @@ class MTMGripper(Robot):
 
     def generateAnalogIns(self):
         for index in range(self.numberOfActuators):
-            units = self.potentiometerToleranceUnits(index)
+            units = self.potentiometerUnits(index)
             pitch = self.pitch(index)
             yield AnalogIn(
                 self.calData,
@@ -623,11 +632,11 @@ class AnalogBrake(Serializable):
 
 class Encoder(Serializable):
     def __init__(
-        self, potentiometerToleranceUnits, driveDirection, CPT, pitch, gearRatio
+        self, potentiometerUnits, driveDirection, CPT, pitch, gearRatio
     ):
         encoderPos = driveDirection * (360 / CPT) * (pitch / gearRatio)
         encoderPos = "{:5.8f}".format(encoderPos)
-        self.bitsToPosSI = Conversion(encoderPos, None, potentiometerToleranceUnits)
+        self.bitsToPosSI = Conversion(encoderPos, None, potentiometerUnits)
 
     def toDict(self):
         return {"BitsToPosSI": self.bitsToPosSI}
@@ -648,7 +657,7 @@ class AnalogIn(Serializable):
         self,
         calData,
         actuatorIndex,
-        potentiometerToleranceUnits,
+        potentiometerUnits,
         pitch,
         voltsToPosSIScale=None,
         voltsToPosSIOffset=None,
@@ -669,7 +678,7 @@ class AnalogIn(Serializable):
         voltsToPosSIOffset = "{:5.6f}".format(voltsToPosSIOffset)
 
         self.voltsToPosSI = Conversion(
-            voltsToPosSIScale, voltsToPosSIOffset, potentiometerToleranceUnits
+            voltsToPosSIScale, voltsToPosSIOffset, potentiometerUnits
         )
 
     def toDict(self):
@@ -718,9 +727,9 @@ class Potentiometer(Serializable):
         }
 
 class DigitalPotentiometer(Serializable):
-    def __init__(self, min, resolution):
+    def __init__(self, min, resolution, units):
         self.pot = Potentiometer(min, resolution)
-        self.potentiometerToPositionSI = Conversion(0.0, 0.0)
+        self.potentiometerToPositionSI = Conversion(0.0, 0.0, units)
 
     def toDict(self):
         return {
