@@ -612,7 +612,7 @@ class AnalogBrake(Serializable):
 
         self.maxCurrent = UnitValue(maxCurrent, "A")
         self.releaseCurrent = UnitValue(releaseCurrent, "A")
-        self.releaseTime = UnitValue(releaseTime, "ms")
+        self.releaseTime = UnitValue(releaseTime, "s")
         self.releasedCurrent = UnitValue(releasedCurrent, "A")
         self.engagedCurrent = UnitValue(engagedCurrent, "A")
 
