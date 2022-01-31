@@ -216,8 +216,10 @@ class Robot(Serializable):
         data = zip(range(self.numberOfActuators), drives, encoders, analogIns, brakes, digitalPots)
         for index, drive, encoder, analogIn, brake, digitalPot in data:
             type = self.actuatorType(index)
+            boardID = self.boardIDs[0] if index < 4 else self.boardIDs[1]
+
             yield Actuator(
-                index, index, type, self.boardIDs, drive, encoder, analogIn, brake, digitalPot
+                index, index, type, boardID, drive, encoder, analogIn, brake, digitalPot
             )
 
     def generateDigitalInputs(self):
@@ -332,7 +334,7 @@ class SiPSM(Robot):
                 engagedCurrent = self.brakeEngagedCurrent(index)
                 yield AnalogBrake(
                     index,
-                    self.boardIDs[1],
+                    self.boardIDs[0],
                     maxCurrent,
                     releaseCurrent,
                     releaseTime,
@@ -368,13 +370,26 @@ class SiPSM(Robot):
         for index in range(self.numberOfActuators):
             yield None
 
+    def generateActuators(self):
+        drives = self.generateDrives()
+        encoders = self.generateEncoders()
+        analogIns = self.generateAnalogIns()
+        brakes = self.generateBrakes()
+        digitalPots = self.generateDigitalPotentiometers()
+        data = zip(range(self.numberOfActuators), drives, encoders, analogIns, brakes, digitalPots)
+        for index, drive, encoder, analogIn, brake, digitalPot in data:
+            type = self.actuatorType(index)
+            yield Actuator(
+                index, index, type, self.boardIDs[0], drive, encoder, analogIn, brake, digitalPot
+            )
+
     def generateDigitalInputs(self):
         digitalInputBitIDs = [
             (self.boardIDs[0], 0, "SUJClutch2", 0.2),
             (self.boardIDs[0], 4, "SUJClutch", 0.2),
-            (self.boardIDs[1], 11, "Tool", 1.5),
-            (self.boardIDs[1], 13, "ManipClutch", 0.01),
-            (self.boardIDs[1], 17, "Adapter", 1.5),
+            (self.boardIDs[0], 11, "Tool", 1.5),
+            (self.boardIDs[0], 13, "ManipClutch", 0.01),
+            (self.boardIDs[0], 17, "Adapter", 1.5),
         ]
 
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
@@ -571,12 +586,12 @@ class Drive(Serializable):
 
         bitsToAmpsScale = 1.0 / ampsToBitsScale
         self.bitsToFeedbackAmps = Conversion(
-            "{:5.9f}".format(bitsToAmpsScale),
+            "{:12.9f}".format(bitsToAmpsScale),
             "{:5.4f}".format(driveDirection * -linearAmpCurrent),
         )
 
         self.nmToAmps = Conversion(
-            "{:5.6f}".format(1.0 / (gearRatio * motorTorque)), None
+            "{:7.6f}".format(1.0 / (gearRatio * motorTorque)), None
         )
         self.maxCurrent = UnitValue("{:5.3f}".format(motorMaxCurrent), "A")
 
@@ -635,7 +650,7 @@ class Encoder(Serializable):
         self, potentiometerUnits, driveDirection, CPT, pitch, gearRatio
     ):
         encoderPos = driveDirection * (360 / CPT) * (pitch / gearRatio)
-        encoderPos = "{:5.8f}".format(encoderPos)
+        encoderPos = "{:10.8f}".format(encoderPos)
         self.bitsToPosSI = Conversion(encoderPos, None, potentiometerUnits)
 
     def toDict(self):
@@ -674,8 +689,8 @@ class AnalogIn(Serializable):
         if voltsToPosSIOffset is None:
             voltsToPosSIOffset = potOffset * (180.0 / math.pi) * pitch
 
-        voltsToPosSIScale = "{:5.6f}".format(voltsToPosSIScale)
-        voltsToPosSIOffset = "{:5.6f}".format(voltsToPosSIOffset)
+        voltsToPosSIScale = "{:10.8f}".format(voltsToPosSIScale)
+        voltsToPosSIOffset = "{:10.8f}".format(voltsToPosSIOffset)
 
         self.voltsToPosSI = Conversion(
             voltsToPosSIScale, voltsToPosSIOffset, potentiometerUnits
@@ -804,7 +819,7 @@ class Actuator(Serializable):
         id: int,
         index: int,
         type: str,
-        boardIDs,
+        boardID: int,
         drive: Drive,
         encoder: Encoder,
         analogIn: AnalogIn = None,
@@ -812,7 +827,7 @@ class Actuator(Serializable):
         digitalPotentiometer = None,
     ):
         self.id = id
-        self.boardID = boardIDs[0] if index < 4 else boardIDs[1]
+        self.boardID = boardID
         self.axisID = index % 4
         self.type = type
         self.drive = drive
