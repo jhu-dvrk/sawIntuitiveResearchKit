@@ -322,11 +322,9 @@ void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
 {
     // if simulated, start at zero but insert tool so it can be used in cartesian mode
     if (m_simulated || m_homing_goes_to_zero) {
-        std::cerr << " 000000 " << std::endl;
         m_trajectory_j.goal.SetAll(0.0);
     } else {
         // stay at current position by default
-        std::cerr << " ------ " << std::endl;
         m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position());
     }
 }
