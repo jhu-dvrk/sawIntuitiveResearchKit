@@ -678,8 +678,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitPSM::tool_name, this, "tool_name");
     m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitPSM::tool_full_description, this, "tool_full_description");
 
-    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::set_adapter_present, this, "set_adapter_present");
-    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::set_tool_present, this, "set_tool_present");
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::emulate_adapter_present, this, "emulate_adapter_present");
+    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::emulate_tool_present, this, "emulate_tool_present");
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitPSM::set_tool_type, this, "set_tool_type");
     m_arm_interface->AddEventWrite(ToolEvents.tool_type, "tool_type", std::string());
     m_arm_interface->AddEventVoid(ToolEvents.tool_type_request, "tool_type_request");
@@ -695,7 +695,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // Event Adapter engage: digital input button event from PSM
     interfaceRequired = AddInterfaceRequired("Adapter");
     if (interfaceRequired) {
-        Adapter.IsPresent = false;
         interfaceRequired->AddFunction("GetButton", Adapter.GetButton);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerAdapter, this, "Button");
     }
@@ -703,7 +702,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // Event Tool engage: digital input button event from PSM
     interfaceRequired = AddInterfaceRequired("Tool");
     if (interfaceRequired) {
-        Tool.IsPresent = false;
         interfaceRequired->AddFunction("GetButton", Tool.GetButton);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerTool, this, "Button");
     }
@@ -724,10 +722,10 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 
 bool mtsIntuitiveResearchKitPSM::IsHomed(void) const
 {
-    if (Tool.IsPresent) {
+    if (Tool.IsPresent || Tool.IsEmulated) {
         return m_powered && m_encoders_biased_from_pots && Adapter.IsEngaged && Tool.IsEngaged;
     }
-    if (Adapter.IsPresent) {
+    if (Adapter.IsPresent || Adapter.IsPresent) {
         return m_powered && m_encoders_biased_from_pots && Adapter.IsEngaged;
     }
     return m_powered && m_encoders_biased_from_pots;
@@ -735,11 +733,11 @@ bool mtsIntuitiveResearchKitPSM::IsHomed(void) const
 
 void mtsIntuitiveResearchKitPSM::UnHome(void)
 {
-    if (Tool.IsPresent) {
+    if (Tool.IsPresent || Tool.IsEmulated) {
         Tool.IsEngaged = false;
         return;
     }
-    if (Adapter.IsPresent) {
+    if (Adapter.IsPresent || Adapter.IsEmulated) {
         Adapter.IsEngaged = false;
         return;
     }
@@ -770,7 +768,7 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
     // check if tool is present and if user wants to go to zero position
     Tool.GetButton(Tool.IsPresent);
     if (m_homing_goes_to_zero
-        && !Tool.IsPresent) {
+        && !(Tool.IsPresent || Tool.IsEmulated)) {
         // move to zero position only there is no tool present
         m_trajectory_j.goal.SetAll(0.0);
     } else {
@@ -783,24 +781,24 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
 {
     if (!m_simulated) {
         Adapter.GetButton(Adapter.IsPresent);
-        if (!Adapter.IsPresent) {
+        if (!(Adapter.IsPresent || Adapter.IsEmulated)) {
             Adapter.IsEngaged = false;
         }
     }
     if (!Adapter.IsEngaged &&
-        (Adapter.IsPresent || m_simulated || Adapter.NeedEngage)) {
+        (Adapter.IsPresent || Adapter.IsEmulated || m_simulated || Adapter.NeedEngage)) {
         mArmState.SetCurrentState("CHANGING_COUPLING_ADAPTER");
     }
 
     if (!m_simulated) {
         Tool.GetButton(Tool.IsPresent);
-        if (!Tool.IsPresent) {
+        if (!(Tool.IsPresent || Tool.IsEmulated)) {
             Tool.IsEngaged = false;
         }
     }
     if (Adapter.IsEngaged && !Tool.IsEngaged) {
         if (!m_simulated) {
-            if (Tool.IsPresent && mToolConfigured) {
+            if ((Tool.IsPresent || Tool.IsEmulated) && mToolConfigured) {
                 set_tool_present(true);
                 mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
             }
@@ -1009,7 +1007,7 @@ void mtsIntuitiveResearchKitPSM::EnterEngagingAdapter(void)
     // after coupling is loaded, is it safe to engage?  If a tool is
     // present, the adapter is already engaged
     Tool.GetButton(Tool.IsPresent);
-    if (Tool.IsPresent) {
+    if ((Tool.IsPresent || Tool.IsEmulated)) {
         // we can skip engage later
         Tool.NeedEngage = false;
         Adapter.IsEngaged = true;
@@ -1460,6 +1458,18 @@ void mtsIntuitiveResearchKitPSM::set_adapter_present(const bool & present)
     }
 }
 
+void mtsIntuitiveResearchKitPSM::emulate_adapter_present(const bool & present)
+{
+    Adapter.IsEngaged = false;
+    Adapter.IsEmulated = present;
+    if (present) {
+        // we will need to engage this adapter
+        Adapter.NeedEngage = true;
+    } else {
+        Adapter.NeedEngage = false;
+    }
+}
+
 void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & button)
 {
     switch (button.Type()) {
@@ -1476,7 +1486,6 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & butt
 
 void mtsIntuitiveResearchKitPSM::set_tool_present(const bool & present)
 {
-    Tool.IsPresent = present;
     if (present) {
         // we will need to engage this tool
         Tool.NeedEngage = true;
@@ -1484,6 +1493,18 @@ void mtsIntuitiveResearchKitPSM::set_tool_present(const bool & present)
     } else {
         ToolEvents.tool_type(std::string());
     }
+}
+
+void mtsIntuitiveResearchKitPSM::emulate_tool_present(const bool & present)
+{
+    Tool.IsEmulated = present;
+    prmEventButton emulatedEvent;
+    if (present) {
+        emulatedEvent.Type() = prmEventButton::PRESSED;
+    } else {
+        emulatedEvent.Type() = prmEventButton::RELEASED;
+    }
+    EventHandlerTool(emulatedEvent);
 }
 
 void mtsIntuitiveResearchKitPSM::set_tool_type(const std::string & toolType)
