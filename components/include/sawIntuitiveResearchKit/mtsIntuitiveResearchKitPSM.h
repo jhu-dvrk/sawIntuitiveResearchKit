@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -121,11 +121,26 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void EnterManual(void);
     void EventHandlerAdapter(const prmEventButton & button);
 
-    /*! Set tool present.  This should only be used by the tool event
-      handler or for custom tools that can't be detected
-      automatically. */
-    void set_adapter_present(const bool & present);
+    /*! Set tool present.  This should only be used when the tool is
+      fully installed/configured. */
     void set_tool_present(const bool & present);
+
+    /*! Method called when adapter is detected. */
+    void set_adapter_present(const bool & present);
+
+    /*! Emulate adapter present.  This is not likely to be used unless
+      you have a custom sterile adapter without contacts for
+      detection.  This will trigger the engage motion on the last 4
+      actuators, moving back and forth on the full range of
+      motion. */
+    void emulate_adapter_present(const bool & present);
+
+    /*! Emulate tool present.  This can be used for custom instruments
+      that don't have the Dallas chip installed.  This will trigger
+      the engage motion on the last 4 actuators, moving back and forth
+      using the range defined in the instrument definition file
+      (.json). */
+    void emulate_tool_present(const bool & present);
 
     void EventHandlerTool(const prmEventButton & button);
     void EventHandlerManipClutch(const prmEventButton & button);
@@ -149,14 +164,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
         bool IsPresent;
         bool NeedEngage = false;
         bool IsEngaged = false;
-    } Adapter;
-
-    struct {
-        mtsFunctionRead GetButton;
-        bool IsPresent;
-        bool NeedEngage = false;
-        bool IsEngaged = false;
-    } Tool;
+        bool IsEmulated = false;
+    } Adapter, Tool;
     //@}
 
     struct {
