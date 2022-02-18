@@ -12,7 +12,7 @@
                 "offset":  1.5708,
                 "qmin": -4.71239, // -270
                 "qmax": 4.71239,  //  270
-                "ftmax": 30.316101
+                "ftmax": 17.0845 // maxA / Nm_to_A from sawRobotIO
             },
             {
                 "name": "outer_pitch",
@@ -22,7 +22,7 @@
                 "offset": -1.5708,
                 "qmin": -0.925025, // -53
                 "qmax":  0.925025, //  53
-                "ftmax": 30.316101
+                "ftmax": 17.0845 // maxA / Nm_to_A from sawRobotIO
             },
             {
                 "name": "outer_insertion",
@@ -32,7 +32,7 @@
                 "offset": -0.4318,
                 "qmin": 0.0,
                 "qmax": 0.29,  // 290 mm
-                "ftmax": 99999999999999.877926
+                "ftmax": 40.9063 // maxA / Nm_to_A from sawRobotIO
             }
         ]
     }

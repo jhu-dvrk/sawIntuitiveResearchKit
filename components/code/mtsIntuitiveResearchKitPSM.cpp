@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -83,6 +83,38 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
                                                const cmnPath & configPath,
                                                const std::string & filename)
 {
+    // joint configuration when instrument is not present. First make sure
+    // the DH are loaded for the first 3 joints and use the values
+    // from the manipulator. For last 4, values are hard coded in
+    // this method
+    CMN_ASSERT(Manipulator->links.size() >= 3);
+
+    // names
+    CouplingChange.NoToolConfiguration.Name().SetSize(7);
+    std::vector<std::string> names(3);
+    Manipulator->GetJointNames(names);
+    std::copy(names.begin(), names.end(), CouplingChange.NoToolConfiguration.Name().begin());
+    CouplingChange.NoToolConfiguration.Name().at(3) = "disc_1";
+    CouplingChange.NoToolConfiguration.Name().at(4) = "disc_2";
+    CouplingChange.NoToolConfiguration.Name().at(5) = "disc_3";
+    CouplingChange.NoToolConfiguration.Name().at(6) = "disc_4";
+    CouplingChange.NoToolConfiguration.Type().SetSize(7);
+    // for type, we can even ignore values loaded from config file
+    CouplingChange.NoToolConfiguration.Type().SetAll(PRM_JOINT_REVOLUTE);
+    // position limits
+    CouplingChange.NoToolConfiguration.PositionMin().SetSize(number_of_joints());
+    CouplingChange.NoToolConfiguration.PositionMax().SetSize(number_of_joints());
+    Manipulator->GetJointLimits(CouplingChange.NoToolConfiguration.PositionMin().Ref(3, 0),
+                                CouplingChange.NoToolConfiguration.PositionMax().Ref(3, 0));
+    CouplingChange.NoToolConfiguration.PositionMin().Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
+    CouplingChange.NoToolConfiguration.PositionMax().Ref(4, 3).SetAll( mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
+    // efforts
+    CouplingChange.NoToolConfiguration.EffortMin().SetSize(number_of_joints());
+    CouplingChange.NoToolConfiguration.EffortMax().SetSize(number_of_joints());
+    Manipulator->GetFTMaximums(CouplingChange.NoToolConfiguration.EffortMax().Ref(3, 0));
+    CouplingChange.NoToolConfiguration.EffortMax().Ref(4, 3).SetAll(0.343642);
+    CouplingChange.NoToolConfiguration.EffortMin().Assign(-CouplingChange.NoToolConfiguration.EffortMax());
+
     // load default tool index
     load_tool_list(configPath);
 
@@ -611,46 +643,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     PID.DefaultTrackingErrorTolerance.Ref(3, 3).SetAll(35.0 * cmnPI_180); // 3 elements starting at 3 -> 3, 4, 5
     // jaws, allow more since we use PID large errors to apply large torques
     PID.DefaultTrackingErrorTolerance.Element(6) = 90.0 * cmnPI_180;
-
-    // joint limits when tool is not present
-    CouplingChange.NoToolConfiguration.Name().SetSize(7);
-    CouplingChange.NoToolConfiguration.Name().at(0) = "outer_yaw";
-    CouplingChange.NoToolConfiguration.Name().at(1) = "outer_pitch";
-    CouplingChange.NoToolConfiguration.Name().at(2) = "outer_insertion";
-    CouplingChange.NoToolConfiguration.Name().at(3) = "disc_1";
-    CouplingChange.NoToolConfiguration.Name().at(4) = "disc_2";
-    CouplingChange.NoToolConfiguration.Name().at(5) = "disc_3";
-    CouplingChange.NoToolConfiguration.Name().at(6) = "disc_4";
-    CouplingChange.NoToolConfiguration.Type().SetSize(7);
-    CouplingChange.NoToolConfiguration.Type().SetAll(PRM_JOINT_REVOLUTE);
-    CouplingChange.NoToolConfiguration.PositionMin().SetSize(number_of_joints());
-    CouplingChange.NoToolConfiguration.PositionMax().SetSize(number_of_joints());
-    CouplingChange.NoToolConfiguration.PositionMin().Assign(-91.0 * cmnPI_180,
-                                                            -53.0 * cmnPI_180,
-                                                            0.0 * cmn_mm,
-                                                            -mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
-                                                            -mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
-                                                            -mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
-                                                            -mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
-    CouplingChange.NoToolConfiguration.PositionMax().Assign(91.0 * cmnPI_180,
-                                                            53.0 * cmnPI_180,
-                                                            240.0 * cmn_mm,
-                                                            mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
-                                                            mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
-                                                            mtsIntuitiveResearchKit::PSM::AdapterEngageRange,
-                                                            mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
-    // using values from sawControllersPID.xml: max_amp / nm_to_amp
-    CouplingChange.NoToolConfiguration.EffortMin().SetSize(number_of_joints());
-    CouplingChange.NoToolConfiguration.EffortMax().SetSize(number_of_joints());
-    CouplingChange.NoToolConfiguration.EffortMax().Assign(3.316101,
-                                                          3.316101,
-                                                          2000.877926,
-                                                          0.343642,
-                                                          0.343642,
-                                                          0.343642,
-                                                          0.343642);
-    CouplingChange.NoToolConfiguration.EffortMin().Assign(-CouplingChange.NoToolConfiguration.EffortMax());
-
     mtsInterfaceRequired * interfaceRequired;
 
     // Main interface should have been created by base class init
