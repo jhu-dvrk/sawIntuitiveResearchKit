@@ -243,10 +243,10 @@ if (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2') || strcmp(han
     handles.m_digiIn{3,5,1} = 0.2;
     handles.m_digiIn{8,2,2} = [handles.m_type '-Tool'];
     handles.m_digiIn{8,3,2} = '1';
-    handles.m_digiIn{8,5,2} = 1.5;
+    handles.m_digiIn{8,5,2} = 0.2;
     handles.m_digiIn{11,2,2} = [handles.m_type '-Adapter'];
     handles.m_digiIn{11,3,2} = '1';
-    handles.m_digiIn{11,5,2} = 1.5;
+    handles.m_digiIn{11,5,2} = 0.2;
 end
 
 if (strcmp(handles.m_type,'ECM'))

@@ -1515,6 +1515,12 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
 {
     switch (button.Type()) {
     case prmEventButton::PRESSED:
+        // if the adapter was engaging, make sure it stops immediately
+        if ((mArmState.CurrentState() == "CHANGING_COUPLING_ADAPTER")
+            || (mArmState.CurrentState() == "ENGAGING_ADAPTER")) {
+            mArmState.SetCurrentState("HOMED");
+        }
+        // then figure out which tool we're using
         switch (mToolDetection) {
         case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
             Dallas.TriggerRead();
