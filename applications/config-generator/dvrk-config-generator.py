@@ -325,6 +325,8 @@ class SiPSM(Robot):
             yield PotentiometerTolerance(index, units, latency, distance)
 
     def generateBrakes(self):
+        # Only actuators 0-2 have brakes,
+        # Axis IDs are 0-6 for actuators, and 7-9 for brakes
         for index in range(self.numberOfActuators):
             if index <= 2:
                 maxCurrent = self.brakeMaxCurrent(index)
@@ -332,8 +334,9 @@ class SiPSM(Robot):
                 releaseTime = self.brakeReleaseTime(index)
                 releasedCurrent = self.brakeReleasedCurrent(index)
                 engagedCurrent = self.brakeEngagedCurrent(index)
+                axisID = 7 + index # Brake 7 corresponds to actuator 0, etc. 
                 yield AnalogBrake(
-                    index,
+                    axisID,
                     self.boardIDs[0],
                     maxCurrent,
                     releaseCurrent,
@@ -380,7 +383,7 @@ class SiPSM(Robot):
         for index, drive, encoder, analogIn, brake, digitalPot in data:
             type = self.actuatorType(index)
             yield Actuator(
-                index, index, type, self.boardIDs[0], drive, encoder, analogIn, brake, digitalPot
+                index, index, type, self.boardIDs[0], drive, encoder, analogIn, brake, digitalPot, 10
             )
 
     def generateDigitalInputs(self):
@@ -825,10 +828,11 @@ class Actuator(Serializable):
         analogIn: AnalogIn = None,
         brake: AnalogBrake = None,
         digitalPotentiometer = None,
+        actuatorsPerBoard = 4,
     ):
         self.id = id
         self.boardID = boardID
-        self.axisID = index % 4
+        self.axisID = index % actuatorsPerBoard
         self.type = type
         self.drive = drive
         self.encoder = encoder
