@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -126,6 +126,11 @@ protected:
     struct {
         mtsFunctionVoid pinch;
         mtsFunctionWrite closed;
+        double zero_angle = 0.0; // in radians
+        bool is_closed = false;
+        double debounce_threshold = 0.2; // in seconds
+        bool debounce_ended;
+        double debounce_start;
     } gripper_events;
 
     mtsInterfaceRequired * GripperIOInterface;
@@ -136,7 +141,6 @@ protected:
     //! Gripper angle
     prmStateJoint m_gripper_measured_js;
     prmConfigurationJoint m_gripper_configuration_js;
-    bool m_gripper_closed;
 
     robGravityCompensationMTM * GravityCompensationMTM = 0;
 

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Rishibrata Biswas, Adnan Munawar
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -113,8 +113,6 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     m_gripper_configuration_js.PositionMax().SetSize(1);
     m_gripper_configuration_js.PositionMax().at(0) = 60.0 * cmnPI_180; // based on dVRK MTM gripper calibration procedure
 
-    m_gripper_closed = false;
-
     // initialize trajectory data
     m_trajectory_j.v_max.SetAll(90.0 * cmnPI_180); // degrees per second
     m_trajectory_j.v_max.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180; // roll can go fast
@@ -180,6 +178,25 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
         } else {
             m_platform_gain = gain;
         }
+    }
+
+    // gripper events
+    const auto jsonGripperEventDebounce = jsonConfig["gripper-events-debounce"];
+    if (!jsonGripperEventDebounce.isNull()) {
+        const auto debounce = jsonGripperEventDebounce.asDouble();
+        if (debounce < 0.0) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                     << " gripper-events-debounce must be greater or equal to 0, found: "
+                                     << debounce << std::endl;
+            exit(EXIT_FAILURE);
+        } else {
+            gripper_events.debounce_threshold = debounce;
+        }
+    }
+
+    const auto jsonGripperEventZero = jsonConfig["gripper-events-zero"];
+    if (!jsonGripperEventZero.isNull()) {
+        gripper_events.zero_angle = jsonGripperEventZero.asDouble();
     }
 
     // which IK to use
@@ -508,21 +525,43 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
                                 << executionResult << "\"" << std::endl;
         return;
     }
-    // for timestamp, we assume the value ws collected at the same time as other joints
+    // for timestamp, we assume the value was collected at the same time as other joints
     m_gripper_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
     m_gripper_measured_js.Valid() = m_pid_measured_js.Valid();
 
     // events associated to gripper
-    if (m_gripper_closed) {
-        if (m_gripper_measured_js.Position().at(0) > 0.0) {
-            m_gripper_closed = false;
-            gripper_events.closed(false);
+    if (gripper_events.is_closed) {
+        if (m_gripper_measured_js.Position().at(0) >= gripper_events.zero_angle) {
+            // transition
+            gripper_events.is_closed = false;
+            gripper_events.debounce_ended = false;
+            gripper_events.debounce_start =  m_gripper_measured_js.Timestamp();
+        } else {
+            // check debounce
+            if (!gripper_events.debounce_ended
+                && (( m_gripper_measured_js.Timestamp() - gripper_events.debounce_start)
+                    >= gripper_events.debounce_threshold
+                    )) {
+                gripper_events.debounce_ended = true;
+                gripper_events.closed(false);
+            }
         }
     } else {
-        if (m_gripper_measured_js.Position().at(0) < 0.0) {
-            m_gripper_closed = true;
-            gripper_events.closed(true);
-            gripper_events.pinch();
+        if (m_gripper_measured_js.Position().at(0) < gripper_events.zero_angle) {
+            // transition
+            gripper_events.is_closed = true;
+            gripper_events.debounce_ended = false;
+            gripper_events.debounce_start =  m_gripper_measured_js.Timestamp();
+        } else {
+            // check debounce
+            if (!gripper_events.debounce_ended
+                && (( m_gripper_measured_js.Timestamp() - gripper_events.debounce_start)
+                    >= gripper_events.debounce_threshold
+                    )) {
+                gripper_events.debounce_ended = true;
+                gripper_events.closed(true);
+                gripper_events.pinch();
+            }
         }
     }
 }
