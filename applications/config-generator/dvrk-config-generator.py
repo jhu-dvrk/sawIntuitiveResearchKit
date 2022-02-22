@@ -650,7 +650,7 @@ class Encoder(Serializable):
         self, potentiometerUnits, driveDirection, CPT, pitch, gearRatio
     ):
         encoderPos = driveDirection * (360 / CPT) * (pitch / gearRatio)
-        encoderPos = "{:10.8f}".format(encoderPos)
+        encoderPos = "{:10.15f}".format(encoderPos)
         self.bitsToPosSI = Conversion(encoderPos, None, potentiometerUnits)
 
     def toDict(self):
