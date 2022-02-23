@@ -594,7 +594,7 @@ class Drive(Serializable):
         )
 
         self.nmToAmps = Conversion(
-            "{:7.6f}".format(1.0 / (gearRatio * motorTorque)), None
+            "{:7.10f}".format(1.0 / (gearRatio * motorTorque)), None
         )
         self.maxCurrent = UnitValue("{:5.3f}".format(motorMaxCurrent), "A")
 
