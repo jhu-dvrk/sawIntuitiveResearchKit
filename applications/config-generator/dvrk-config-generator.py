@@ -293,7 +293,8 @@ class SiPSM(Robot):
         self.potentiometerLatency = lambda index: 0.01
         self.potentiometerDistance = lambda index: 10.0
 
-        self.driveLinearAmpCurrent = 8.192
+        # # 2^13/10^3 or 2^11/10^3
+        self.driveLinearAmpCurrent = lambda index: [8.192, 8.192, -2.048, 2.048, 2.048, 2.048, 2.048][index]
         self.digitalPotResolution = lambda index: 4095 # 2^12 - 1
 
         self.brakeMaxCurrent = lambda index: [0.2, 0.2, 0.3][index]
@@ -301,7 +302,7 @@ class SiPSM(Robot):
         self.brakeReleaseTime = lambda index: 0.5
         self.brakeReleasedCurrent = lambda index: [0.08, 0.08, -0.25][index]
         self.brakeEngagedCurrent = lambda index: 0.0
-        self.brakeLinearAmpCurrent = 2.048 # 2^11/10^3
+        self.brakeLinearAmpCurrent = lambda index: 2.048 # 2^11/10^3
 
         super().__init__(robotTypeName, serialNumber, calData, 7)
 
@@ -350,31 +351,29 @@ class SiPSM(Robot):
                 releasedCurrent = self.brakeReleasedCurrent(index)
                 engagedCurrent = self.brakeEngagedCurrent(index)
                 axisID = 7 + index # Brake 7 corresponds to actuator 0, etc. 
+                direction = 1 if index != 2 else -1 # some values in the third brake are reversed
                 yield AnalogBrake(
                     axisID,
                     self.boardIDs[0],
+                    direction,
                     maxCurrent,
                     releaseCurrent,
                     releaseTime,
                     releasedCurrent,
                     engagedCurrent,
-                    linearAmpCurrent=self.brakeLinearAmpCurrent
+                    linearAmpCurrent=self.brakeLinearAmpCurrent(index)
                 )
             else:
                 yield None
 
     def generateDrives(self):
         for index in range(self.numberOfActuators):
-            direction = self.driveDirection(index)
-            gearRatio = self.gearRatio(index)
-            motorTorque = self.motorTorque(index)
-            maxCurrent = self.motorMaxCurrent(index)
             yield Drive(
-                direction,
-                gearRatio,
-                motorTorque,
-                maxCurrent,
-                linearAmpCurrent=self.driveLinearAmpCurrent,
+                self.driveDirection(index),
+                self.gearRatio(index),
+                self.motorTorque(index),
+                self.motorMaxCurrent(index),
+                linearAmpCurrent=self.driveLinearAmpCurrent(index),
             )
 
     def generateDigitalPotentiometers(self):
@@ -579,7 +578,7 @@ class MTMGripper(Robot):
             type = self.actuatorType(index)
             id = self.boardIDs[1]
             yield Actuator(
-                id, index, type, self.boardIDs, drive, encoder, analogIn, brake
+                id, index, type, id, drive, encoder, analogIn, brake
             )
 
     def toDict(self):
@@ -629,6 +628,7 @@ class AnalogBrake(Serializable):
         self,
         axisID,
         boardID,
+        direction,
         maxCurrent,
         releaseCurrent,
         releaseTime,
@@ -642,7 +642,7 @@ class AnalogBrake(Serializable):
 
         ampsToBitsScale = (2**(DACresolution-1))/linearAmpCurrent
         bitsToAmpsScale = 1.0 / ampsToBitsScale
-        self.ampsToBits = Conversion(ampsToBitsScale, 2 ** (DACresolution-1))
+        self.ampsToBits = Conversion(ampsToBitsScale, direction * 2 ** (DACresolution-1))
         self.bitsToFeedbackAmps = Conversion(bitsToAmpsScale, -linearAmpCurrent)
 
         self.maxCurrent = UnitValue(maxCurrent, "A")
