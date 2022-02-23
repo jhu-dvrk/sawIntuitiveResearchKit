@@ -312,10 +312,25 @@ class SiPSM(Robot):
         lower_limit_index = self.calData["LOWER_LIMIT"] - 1
         raw_pot_minimum = self.calData["motor"]["pot_limit_checks"][lower_limit_index][index]
 
-        # Make minimum limit be positive
+        # Make minimum limit be in range 0-resolution
         resolution = self.digitalPotResolution(index)
-        pot_minimum = (raw_pot_minimum + resolution) % resolution
+        range = resolution + 1
+        pot_minimum = (raw_pot_minimum + range) % range
+        # Offset by 20 to prevent move overflow point below joint minimum
+        pot_minimum = pot_minimum - 20
         return int(pot_minimum)
+
+    def digitalPotScale(self, index):
+        gain_radians = self.calData["motor"]["pot_input_gain"][index]
+        return math.degrees(gain_radians)
+
+    def digitalPotOffset(self, index):
+        lower_limit_index = self.calData["LOWER_LIMIT"] - 1
+        lower_signal_limit = self.calData["joint"]["signal_range"][lower_limit_index][index]
+
+        # Adjust lower limit down by 20 to match digitalPotMinimum
+        lower_signal_limit -= self.calData["motor"]["pot_input_gain"][index]*20.0
+        return self.driveDirection(index) * math.degrees(lower_signal_limit)
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
@@ -366,8 +381,10 @@ class SiPSM(Robot):
         for index in range(self.numberOfActuators):
             min =  self.digitalPotMinimum(index)
             resolution = self.digitalPotResolution(index)
+            scale = self.digitalPotScale(index)
+            offset = self.digitalPotOffset(index)
             units = self.potentiometerUnits(index)
-            yield DigitalPotentiometer(min, resolution, units)
+            yield DigitalPotentiometer(min, resolution, scale, offset, units)
 
     def generateAnalogIns(self):
         for index in range(self.numberOfActuators):
@@ -745,9 +762,9 @@ class Potentiometer(Serializable):
         }
 
 class DigitalPotentiometer(Serializable):
-    def __init__(self, min, resolution, units):
+    def __init__(self, min, resolution, scale, offset, units):
         self.pot = Potentiometer(min, resolution)
-        self.potentiometerToPositionSI = Conversion(0.0, 0.0, units)
+        self.potentiometerToPositionSI = Conversion(scale, offset, units)
 
     def toDict(self):
         return {
