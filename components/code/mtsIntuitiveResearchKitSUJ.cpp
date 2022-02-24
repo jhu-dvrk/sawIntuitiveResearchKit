@@ -128,8 +128,8 @@ public:
         // arbitrarily wide limits
         m_configuration_js.PositionMin().SetSize(MUX_ARRAY_SIZE);
         m_configuration_js.PositionMax().SetSize(MUX_ARRAY_SIZE);
-        m_configuration_js.PositionMin().SetAll(-cmnPI);
-        m_configuration_js.PositionMax().SetAll( cmnPI);
+        m_configuration_js.PositionMin().SetAll(-2.0 * cmnPI);
+        m_configuration_js.PositionMax().SetAll( 2.0 * cmnPI);
         m_configuration_js.PositionMin().at(0) = -2.0 * cmn_m;
         m_configuration_js.PositionMax().at(0) =  2.0 * cmn_m;
 

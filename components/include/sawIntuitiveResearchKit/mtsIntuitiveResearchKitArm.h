@@ -70,6 +70,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         m_calibration_mode = mode;
     }
 
+    typedef enum {GENERATION_UNDEFINED, GENERATION_CLASSIC, GENERATION_S} GenerationType;
+    virtual inline void set_generation(const GenerationType generation) {
+        m_generation = generation;
+    }
+
  protected:
 
     /*! Define wrench reference frame */
@@ -109,9 +114,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void GetRobotData(void);
     virtual void UpdateStateJointKinematics(void);
     virtual void ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID);
-
-    // state machine
-    std::string m_resume_current_state, m_resume_desired_state;
 
     void UpdateOperatingStateAndBusy(const prmOperatingState::StateType & state,
                                      const bool isBusy);
@@ -156,6 +158,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     mtsStdString mStateTableStateCurrent;
     mtsStdString mStateTableStateDesired;
     prmOperatingState m_operating_state; // crtk operating state
+    // state machine
+    std::string m_resume_current_state, m_resume_desired_state;
 
     // state table for configuration parameters
     mtsStateTable mStateTableConfiguration;
@@ -195,14 +199,14 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     void BiasEncoderEventHandler(const int & nbSamples);
 
     /*! Configuration methods specific to derived classes. */
-    virtual size_t NumberOfJoints(void) const = 0;         // used PID: ECM 4, PSM 7, MTM 7
-    virtual size_t NumberOfJointsKinematics(void) const = 0; // ECM 4, MTM 7, PSM 6 or 8 (snake like tools)
-    virtual size_t NumberOfBrakes(void) const = 0;         // ECM 3, PSM 0, MTM 0
-    inline bool HasBrakes(void) const {
-        return (NumberOfBrakes() > 0);
+    virtual size_t number_of_joints(void) const = 0;         // used PID: ECM 4, PSM 7, MTM 7
+    virtual size_t number_of_joints_kinematics(void) const = 0; // ECM 4, MTM 7, PSM 6 or 8 (snake like tools)
+    virtual size_t number_of_brakes(void) const = 0;         // ECM 3, PSM 0, MTM 0
+    inline bool has_brakes(void) const {
+        return (number_of_brakes() > 0);
     }
 
-    inline virtual bool UsePIDTrackingError(void) const {
+    inline virtual bool use_PID_tracking_error(void) const {
         return true;
     }
 
@@ -290,12 +294,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionWrite operating_state;
     } state_events;
 
-    robManipulator * Manipulator;
+    robManipulator * Manipulator = nullptr;
     std::string mConfigurationFile;
 
     // cache cartesian goal position and increment
-    bool m_new_pid_goal;
-    prmPositionCartesianSet CartesianSetParam;
+    bool m_new_pid_goal = false;
+    prmPositionCartesianSet m_servo_cp;
     vctFrm3 mCartesianRelative;
 
     // internal kinematics
@@ -322,7 +326,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctDoubleMat m_body_jacobian, m_body_jacobian_transpose, m_spatial_jacobian, m_spatial_jacobian_transpose;
     WrenchType m_cf_type;
     prmForceCartesianSet m_cf_set;
-    bool m_body_cf_orientation_absolute;
+    bool m_body_cf_orientation_absolute = false;
     prmForceTorqueJointSet
         mTorqueSetParam, // number of joints PID, used in servo_jf_internal
         mEffortJointSet; // number of joints for kinematics
@@ -333,14 +337,14 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     // cartesian impendance controller
     osaCartesianImpedanceController * mCartesianImpedanceController;
-    bool m_cartesian_impedance;
+    bool m_cartesian_impedance = false;
 
     // used by MTM only
-    bool m_effort_orientation_locked;
+    bool m_effort_orientation_locked = false;
     vctDoubleVec mEffortOrientationJoint;
     vctMatRot3 mEffortOrientation;
     // gravity compensation
-    bool m_gravity_compensation;
+    bool m_gravity_compensation = false;
     virtual void control_add_gravity_compensation(vctDoubleVec & efforts);
     // add custom efforts for derived classes
     inline virtual void control_add_jf(vctDoubleVec & CMN_UNUSED(efforts)) {};
@@ -484,12 +488,15 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     bool m_encoders_biased_from_pots = false; // encoders biased from pots
     bool m_encoders_biased = false; // encoder might have to be biased on joint limits (MTM roll)
     bool m_re_home = false; // force re-biasing encoder even if values are found on FPGA
-    bool m_homing_goes_to_zero;
-    bool mHomingBiasEncoderRequested;
-    double mHomingTimer;
+    bool m_homing_goes_to_zero = false;
+    bool m_homing_bias_encoder_requested = false;
+    double m_homing_timer;
+
+    // generation
+    GenerationType m_generation = GENERATION_UNDEFINED;
 
     // flag to determine if this is connected to actual IO/hardware or simulated
-    bool m_simulated;
+    bool m_simulated = false;
 
     // flag to determine if the arm is running in calibration mode, i.e. turn off checks using potentiometers
     bool m_calibration_mode;

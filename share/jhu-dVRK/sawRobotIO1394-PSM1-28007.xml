@@ -117,7 +117,7 @@
    </Robot>
    <DigitalIn BitID="0" BoardID="6" Debounce="0.2" Name="PSM1-SUJClutch" Pressed="1" Trigger="all" />
    <DigitalIn BitID="2" BoardID="6" Debounce="0.2" Name="PSM1-ManipClutch" Pressed="1" Trigger="all" />
-   <DigitalIn BitID="7" BoardID="7" Debounce="1.5" Name="PSM1-Tool" Pressed="1" Trigger="all" />
-   <DigitalIn BitID="10" BoardID="7" Debounce="1.5" Name="PSM1-Adapter" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="7" BoardID="7" Debounce="0.2" Name="PSM1-Tool" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="10" BoardID="7" Debounce="0.2" Name="PSM1-Adapter" Pressed="1" Trigger="all" />
    <DallasChip BoardID="7" Name="PSM1-Dallas" />
 </Config>

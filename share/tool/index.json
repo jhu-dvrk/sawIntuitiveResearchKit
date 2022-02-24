@@ -83,7 +83,7 @@
         ,
         {
             "model": "400172",
-            "names": ["MARYLAND_BIPOLAR_FORCEPS"],
+            "names": ["MARYLAND_BIPOLAR_FORCEPS", "BIPOLAR_MARYLAND_FORCEPS"],
             "description": "Maryland Bipolar Forceps",
             "generation": "Classic",
             "file": "MARYLAND_BIPOLAR_FORCEPS_400172.json"

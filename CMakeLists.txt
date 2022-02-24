@@ -12,15 +12,11 @@
 cmake_minimum_required(VERSION 3.10)
 project (sawIntuitiveResearchKitAll VERSION 2.1.0)
 
-if (UNIX)
-  set (CPACK_PACKAGE_VENDOR "JHU")
-  set (CPACK_DEBIAN_PACKAGE_MAINTAINER "anton.deguet@jhu.edu")
-  set (CPACK_GENERATOR "DEB")
-  set (CPACK_DEB_PACKAGE_COMPONENT ON)
-  set (CPACK_DEB_COMPONENT_INSTALL ON)
-  set (CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-  set (CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS ON)
-endif (UNIX)
+find_package (cisst REQUIRED)
+include (${CISST_USE_FILE})
+cisst_cpack_settings (
+  VENDOR "JHU"
+  MAINTAINER "anton.deguet@jhu.edu")
 
 add_subdirectory (components)
 

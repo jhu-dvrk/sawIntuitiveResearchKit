@@ -58,25 +58,26 @@ if (cisst_FOUND)
                       ${sawControllers_LIBRARY_DIR})
 
     # catkin/ROS paths
-    cisst_is_catkin_build (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
-    if (sawIntuitiveResearchKit_IS_CATKIN_BUILT)
-      set (sawIntuitiveResearchKit_CONFIG_FILE_DIR
-           "${CATKIN_DEVEL_PREFIX}/share/sawIntuitiveResearchKit/cmake")
-      set (LIBRARY_OUTPUT_PATH "${CATKIN_DEVEL_PREFIX}/lib")
-    else ()
-      set (sawIntuitiveResearchKit_CONFIG_FILE_DIR "${sawIntuitiveResearchKit_BINARY_DIR}")
-    endif ()
+    cisst_set_output_path ()
 
     # create/configure file for find_package (sawIntuitiveResearchKit)
     set (sawIntuitiveResearchKit_INCLUDE_DIR
          "${sawIntuitiveResearchKit_SOURCE_DIR}/include"
          "${sawIntuitiveResearchKit_BINARY_DIR}/include")
+    set (sawIntuitiveResearchKit_HEADER_DIR
+         "${sawIntuitiveResearchKit_SOURCE_DIR}/include/sawIntuitiveResearchKit")
     set (sawIntuitiveResearchKit_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
     set (sawIntuitiveResearchKit_LIBRARIES sawIntuitiveResearchKit)
 
-    # Generate sawIntuitiveResearchKitRevision.h
-    configure_file ("${sawIntuitiveResearchKit_SOURCE_DIR}/code/sawIntuitiveResearchKitRevision.h.in"
-                    "${sawIntuitiveResearchKit_BINARY_DIR}/include/sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h")
+    include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
+
+    if (CISST_HAS_QT)
+      add_subdirectory (code/Qt)
+      set (sawIntuitiveResearchKit_LIBRARIES ${sawIntuitiveResearchKit_LIBRARIES} sawIntuitiveResearchKitQt)
+    endif ()
+
+    # add all config files for this component
+    cisst_add_config_files (sawIntuitiveResearchKit)
 
     # Generate sawIntuitiveResearchKitConfig.h
     configure_file ("${sawIntuitiveResearchKit_SOURCE_DIR}/code/sawIntuitiveResearchKitConfig.h.in"
@@ -91,9 +92,6 @@ if (cisst_FOUND)
                           code/mtsIntuitiveResearchKitEndoscopeTypes.cdg
                           code/socketMessages.cdg)
 
-    include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
-    set (sawIntuitiveResearchKit_HEADER_DIR
-         "${sawIntuitiveResearchKit_SOURCE_DIR}/include/sawIntuitiveResearchKit")
 
     set (HEADER_FILES
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsStateMachine.h
@@ -159,22 +157,6 @@ if (cisst_FOUND)
                            ${sawRobotIO1394_LIBRARIES}
                            ${sawControllers_LIBRARIES})
 
-    # add Qt code
-    add_subdirectory (code/Qt)
-    set (sawIntuitiveResearchKit_LIBRARIES ${sawIntuitiveResearchKit_LIBRARIES} ${sawIntuitiveResearchKitQt_LIBRARIES})
-
-    set (sawIntuitiveResearchKit_CMAKE_CONFIG_FILE
-         "${sawIntuitiveResearchKit_CONFIG_FILE_DIR}/sawIntuitiveResearchKitConfig.cmake")
-
-    configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/cmake/sawIntuitiveResearchKitConfig.cmake.in"
-                    "${sawIntuitiveResearchKit_CMAKE_CONFIG_FILE}"
-                    @ONLY)
-
-    cisst_add_config_version ("${sawIntuitiveResearchKit_CONFIG_FILE_DIR}/sawIntuitiveResearchKitConfigVersion.cmake"
-                              VERSION ${sawIntuitiveResearchKit_VERSION}
-                              DESTINATION "share/sawIntuitiveResearchKit"
-                              COMPONENT sawIntuitiveResearchKit-dev)
-
     # Install targets for headers and library
     install (DIRECTORY
              ${sawIntuitiveResearchKit_SOURCE_DIR}/include/sawIntuitiveResearchKit
@@ -187,10 +169,6 @@ if (cisst_FOUND)
              RUNTIME DESTINATION bin
              LIBRARY DESTINATION lib
              ARCHIVE DESTINATION lib)
-
-    install (FILES "${sawIntuitiveResearchKit_CMAKE_CONFIG_FILE}"
-             DESTINATION "share/sawIntuitiveResearchKit"
-             COMPONENT sawIntuitiveResearchKit-dev)
 
   endif (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -54,19 +54,19 @@ protected:
                       const std::string & filename) override;
 
     /*! Configuration methods */
-    inline size_t NumberOfJoints(void) const override {
+    inline size_t number_of_joints(void) const override {
         return 7;
     }
 
-    inline size_t NumberOfJointsKinematics(void) const override {
+    inline size_t number_of_joints_kinematics(void) const override {
         return 7;
     }
 
-    inline size_t NumberOfBrakes(void) const override {
+    inline size_t number_of_brakes(void) const override {
         return 0;
     }
 
-    inline bool UsePIDTrackingError(void) const override {
+    inline bool use_PID_tracking_error(void) const override {
         return false;
     }
 
@@ -126,6 +126,11 @@ protected:
     struct {
         mtsFunctionVoid pinch;
         mtsFunctionWrite closed;
+        double zero_angle = 0.0; // in radians
+        bool is_closed = false;
+        double debounce_threshold = 0.2; // in seconds
+        bool debounce_ended;
+        double debounce_start;
     } gripper_events;
 
     mtsInterfaceRequired * GripperIOInterface;
@@ -136,7 +141,6 @@ protected:
     //! Gripper angle
     prmStateJoint m_gripper_measured_js;
     prmConfigurationJoint m_gripper_configuration_js;
-    bool m_gripper_closed;
 
     robGravityCompensationMTM * GravityCompensationMTM = 0;
 

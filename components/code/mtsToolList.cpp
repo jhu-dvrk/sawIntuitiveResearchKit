@@ -200,15 +200,31 @@ bool mtsToolList::Find(const std::string & toolName, size_t & index) const
         nameModel = toolName;
     }
 
+    // make sure we have a name, search for :
+    bool hasName = (nameModel[0] != ':');
+    if (!hasName) {
+        // remove the starting ":"
+        nameModel.erase(0, 1);
+    }
+
     // then look for the model and use version if and only if we have multiple options
-    auto nb_found =  mToolsByNameModel.count(nameModel);
+    size_t nb_found;
+    if (hasName) {
+        nb_found = mToolsByNameModel.count(nameModel);
+    } else {
+        nb_found = mToolsByModel.count(nameModel);
+    }
+
     // not found
     if (nb_found == 0) {
         return false;
     }
 
-    // we have at least one definition
-    auto range = mToolsByNameModel.equal_range(nameModel);
+    // we have at least one definition so we can search
+    auto range = mToolsByModel.equal_range(nameModel);
+    if (hasName) {
+        range = mToolsByNameModel.equal_range(nameModel);
+    }
 
     // if there's only one, let's use it
     if (nb_found == 1) {

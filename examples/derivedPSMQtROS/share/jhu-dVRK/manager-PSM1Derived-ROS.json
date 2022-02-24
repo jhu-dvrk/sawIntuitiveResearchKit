@@ -1,0 +1,16 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "components":
+    [
+        // ROS bridge
+        {
+            "shared-library": "sawIntuitiveResearchKitDerivedPSM",
+            "class-name": "mtsDerivedPSMROSBridge",
+            "constructor-arg": {
+                "Name": "PSM1-DerivedROS",
+                "Period": 0.033
+            },
+            "configure-parameter": "PSM1" // name of arm to bridge, use to create namespace and connect component
+        }
+    ]
+}

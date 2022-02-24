@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Rishibrata Biswas, Adnan Munawar
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -97,7 +97,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     m_homing_goes_to_zero = true;
 
     // joint values when orientation is locked
-    mEffortOrientationJoint.SetSize(NumberOfJoints());
+    mEffortOrientationJoint.SetSize(number_of_joints());
 
     // initialize gripper state
     m_gripper_measured_js.Name().SetSize(1);
@@ -113,8 +113,6 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     m_gripper_configuration_js.PositionMax().SetSize(1);
     m_gripper_configuration_js.PositionMax().at(0) = 60.0 * cmnPI_180; // based on dVRK MTM gripper calibration procedure
 
-    m_gripper_closed = false;
-
     // initialize trajectory data
     m_trajectory_j.v_max.SetAll(90.0 * cmnPI_180); // degrees per second
     m_trajectory_j.v_max.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180; // roll can go fast
@@ -124,7 +122,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     m_trajectory_j.goal_tolerance.at(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
 
     // default PID tracking errors, defaults are used for homing
-    PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
+    PID.DefaultTrackingErrorTolerance.SetSize(number_of_joints());
     PID.DefaultTrackingErrorTolerance.SetAll(10.0 * cmnPI_180);
     // last 3 joints tend to be weaker
     PID.DefaultTrackingErrorTolerance.Ref(3, 4) = 30.0 * cmnPI_180;
@@ -180,6 +178,25 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
         } else {
             m_platform_gain = gain;
         }
+    }
+
+    // gripper events
+    const auto jsonGripperEventDebounce = jsonConfig["gripper-events-debounce"];
+    if (!jsonGripperEventDebounce.isNull()) {
+        const auto debounce = jsonGripperEventDebounce.asDouble();
+        if (debounce < 0.0) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                     << " gripper-events-debounce must be greater or equal to 0, found: "
+                                     << debounce << std::endl;
+            exit(EXIT_FAILURE);
+        } else {
+            gripper_events.debounce_threshold = debounce;
+        }
+    }
+
+    const auto jsonGripperEventZero = jsonConfig["gripper-events-zero"];
+    if (!jsonGripperEventZero.isNull()) {
+        gripper_events.zero_angle = jsonGripperEventZero.asDouble();
     }
 
     // which IK to use
@@ -322,11 +339,9 @@ void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
 {
     // if simulated, start at zero but insert tool so it can be used in cartesian mode
     if (m_simulated || m_homing_goes_to_zero) {
-        std::cerr << " 000000 " << std::endl;
         m_trajectory_j.goal.SetAll(0.0);
     } else {
         // stay at current position by default
-        std::cerr << " ------ " << std::endl;
         m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position());
     }
 }
@@ -367,7 +382,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     PID.SetCheckPositionLimit(false);
     PID.EnableTrackingError(false);
     // enable PID for roll only
-    vctBoolVec enableJoints(NumberOfJoints());
+    vctBoolVec enableJoints(number_of_joints());
     enableJoints.SetAll(false);
     enableJoints.at(JNT_WRIST_ROLL) = true;
     PID.EnableJoints(enableJoints);
@@ -402,7 +417,7 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
         // if this is the first evaluation, we can't calculate expected completion time
         if (m_trajectory_j.end_time == 0.0) {
             m_trajectory_j.end_time = currentTime + m_trajectory_j.Reflexxes.Duration();
-            mHomingTimer = m_trajectory_j.end_time;
+            m_homing_timer = m_trajectory_j.end_time;
         }
 
         // detect tracking error and set lower limit
@@ -415,7 +430,7 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
             mArmState.SetCurrentState("ROLL_CALIBRATED");
         } else {
             // time out
-            if (currentTime > mHomingTimer + extraTime) {
+            if (currentTime > m_homing_timer + extraTime) {
                 m_arm_interface->SendError(this->GetName() + ": unable to hit roll lower limit in time");
                 SetDesiredState("FAULT");
             }
@@ -453,7 +468,7 @@ void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
     }
 
     // reset encoder on last joint as well as PID target position to reflect new roll position = 0
-    prmMaskedDoubleVec values(NumberOfJoints());
+    prmMaskedDoubleVec values(number_of_joints());
     values.Mask().SetAll(false);
     values.Data().SetAll(0.0); // this shouldn't be used but safe to zero
     values.Mask().at(JNT_WRIST_ROLL) = true;
@@ -462,7 +477,7 @@ void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
 
     // start timer
     const double currentTime = this->StateTable.GetTic();
-    mHomingTimer = currentTime;
+    m_homing_timer = currentTime;
 }
 
 void mtsIntuitiveResearchKitMTM::RunResettingRollEncoder(void)
@@ -470,7 +485,7 @@ void mtsIntuitiveResearchKitMTM::RunResettingRollEncoder(void)
     // wait for some time, no easy way to check if encoder has been reset
     const double timeToWait = 10.0 * cmn_ms;
     const double currentTime = this->StateTable.GetTic();
-    if ((currentTime - mHomingTimer) < timeToWait) {
+    if ((currentTime - m_homing_timer) < timeToWait) {
         return;
     }
 
@@ -510,21 +525,43 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
                                 << executionResult << "\"" << std::endl;
         return;
     }
-    // for timestamp, we assume the value ws collected at the same time as other joints
+    // for timestamp, we assume the value was collected at the same time as other joints
     m_gripper_measured_js.Timestamp() = m_pid_measured_js.Timestamp();
     m_gripper_measured_js.Valid() = m_pid_measured_js.Valid();
 
     // events associated to gripper
-    if (m_gripper_closed) {
-        if (m_gripper_measured_js.Position().at(0) > 0.0) {
-            m_gripper_closed = false;
-            gripper_events.closed(false);
+    if (gripper_events.is_closed) {
+        if (m_gripper_measured_js.Position().at(0) >= gripper_events.zero_angle) {
+            // transition
+            gripper_events.is_closed = false;
+            gripper_events.debounce_ended = false;
+            gripper_events.debounce_start =  m_gripper_measured_js.Timestamp();
+        } else {
+            // check debounce
+            if (!gripper_events.debounce_ended
+                && (( m_gripper_measured_js.Timestamp() - gripper_events.debounce_start)
+                    >= gripper_events.debounce_threshold
+                    )) {
+                gripper_events.debounce_ended = true;
+                gripper_events.closed(false);
+            }
         }
     } else {
-        if (m_gripper_measured_js.Position().at(0) < 0.0) {
-            m_gripper_closed = true;
-            gripper_events.closed(true);
-            gripper_events.pinch();
+        if (m_gripper_measured_js.Position().at(0) < gripper_events.zero_angle) {
+            // transition
+            gripper_events.is_closed = true;
+            gripper_events.debounce_ended = false;
+            gripper_events.debounce_start =  m_gripper_measured_js.Timestamp();
+        } else {
+            // check debounce
+            if (!gripper_events.debounce_ended
+                && (( m_gripper_measured_js.Timestamp() - gripper_events.debounce_start)
+                    >= gripper_events.debounce_threshold
+                    )) {
+                gripper_events.debounce_ended = true;
+                gripper_events.closed(true);
+                gripper_events.pinch();
+            }
         }
     }
 }
@@ -544,7 +581,7 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
         const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
         jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
         // initialize trajectory
-        m_trajectory_j.goal.Ref(NumberOfJointsKinematics()).Assign(jointSet);
+        m_trajectory_j.goal.Ref(number_of_joints_kinematics()).Assign(jointSet);
         m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
                                           m_servo_jv,
                                           m_trajectory_j.goal,
@@ -557,7 +594,7 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
 
 void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
 {
-    vctBoolVec torqueMode(NumberOfJoints());
+    vctBoolVec torqueMode(number_of_joints());
     // if orientation is locked
     if (m_effort_orientation_locked) {
         // first 3 joints in torque mode
@@ -635,8 +672,8 @@ void mtsIntuitiveResearchKitMTM::lock_orientation(const vctMatRot3 & orientation
         m_effort_orientation_locked = true;
         SetControlEffortActiveJoints();
         // initialize trajectory
-        m_servo_jp.Assign(m_pid_measured_js.Position(), NumberOfJoints());
-        m_servo_jv.Assign(m_pid_measured_js.Velocity(), NumberOfJoints());
+        m_servo_jp.Assign(m_pid_measured_js.Position(), number_of_joints());
+        m_servo_jv.Assign(m_pid_measured_js.Velocity(), number_of_joints());
         m_trajectory_j.Reflexxes.Set(m_trajectory_j.v,
                                      m_trajectory_j.a,
                                      StateTable.PeriodStats.PeriodAvg(),

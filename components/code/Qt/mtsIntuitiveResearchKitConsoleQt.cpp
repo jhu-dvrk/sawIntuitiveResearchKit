@@ -125,18 +125,17 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_S:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_S_DERIVED:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED:
             // PID widget
             size_t numberOfJoints;
-            if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM) ||
-                (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED)) {
+            if (armIter->second->native_or_derived_psm()) {
                 numberOfJoints = 7;
-            } else if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM) ||
-                       (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED)) {
+            } else if (armIter->second->native_or_derived_mtm()) {
                 numberOfJoints = 7;
-            } else if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM) ||
-                       (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED)) {
+            } else if (armIter->second->native_or_derived_ecm()) {
                 numberOfJoints = 4;
             } else {
                 numberOfJoints = 0; // can't happen but prevents compiler warning
@@ -149,14 +148,11 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             pidTabWidget->addTab(pidGUI, (name + " PID").c_str());
 
             // Arm widget
-            if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM)
-                || (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED)) {
+            if (armIter->second->native_or_derived_psm()) {
                 armGUI = new mtsIntuitiveResearchKitPSMQtWidget(name + "-GUI");
-            } else if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM)
-                       || (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED)) {
+            } else if (armIter->second->native_or_derived_mtm()) {
                 armGUI = new mtsIntuitiveResearchKitMTMQtWidget(name + "-GUI");
-            } else if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM)
-                       || (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED)) {
+            } else if (armIter->second->native_or_derived_ecm()) {
                 armGUI = new mtsIntuitiveResearchKitECMQtWidget(name + "-GUI");
             } else {
                 armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");

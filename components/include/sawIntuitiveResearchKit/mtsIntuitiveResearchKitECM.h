@@ -44,15 +44,15 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
                        const std::string & filename) override;
 
     /*! Configuration methods */
-    inline size_t NumberOfJoints(void) const override {
+    inline size_t number_of_joints(void) const override {
         return 4;
     }
 
-    inline size_t NumberOfJointsKinematics(void) const override {
+    inline size_t number_of_joints_kinematics(void) const override {
         return 4;
     }
 
-    inline size_t NumberOfBrakes(void) const override {
+    inline size_t number_of_brakes(void) const override {
         return 3;
     }
 

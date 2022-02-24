@@ -250,7 +250,7 @@
                             {
                                 "base-frame": {
                                     "component": "ECM",
-                                    "interface": "Robot"
+                                    "interface": "Arm"
                                 }
                             }
                         ],
@@ -419,7 +419,7 @@
                                 "psm": "PSM1",
                                 "psm-base-frame": {
                                     "component": "ECM",
-                                    "interface": "Robot"
+                                    "interface": "Arm"
                                 }
                             }
                         ]

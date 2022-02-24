@@ -29,6 +29,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+
+// Always include last!
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 // for ROS console
@@ -52,9 +55,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     class CISST_EXPORT Arm {
     public:
         typedef enum {ARM_UNDEFINED,
-                      ARM_MTM, ARM_PSM, ARM_ECM, ARM_SUJ,
+                      ARM_MTM, ARM_PSM, ARM_PSM_S, ARM_ECM, ARM_SUJ,
                       ARM_MTM_GENERIC, ARM_PSM_GENERIC, ARM_ECM_GENERIC,
-                      ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_ECM_DERIVED,
+                      ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_PSM_S_DERIVED, ARM_ECM_DERIVED,
                       ARM_PSM_SOCKET,
                       FOCUS_CONTROLLER} ArmType;
 
@@ -65,6 +68,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         friend class mtsIntuitiveResearchKitConsole;
         friend class mtsIntuitiveResearchKitConsoleQt;
         friend class dvrk::console;
+
+        bool native_or_derived(void) const;
+        bool native_or_derived_mtm(void) const;
+        bool native_or_derived_psm(void) const;
+        bool native_or_derived_ecm(void) const;
+        mtsIntuitiveResearchKitArm::GenerationType generation(void) const;
+        bool expects_PID(void) const;
 
         Arm(mtsIntuitiveResearchKitConsole * console,
             const std::string & name,
@@ -100,10 +110,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         mtsIntuitiveResearchKitConsole * m_console = nullptr;
         std::string m_name;
         ArmType m_type;
-        bool m_native_or_derived;
         std::string m_serial;
         SimulationType m_simulation;
-        bool m_calibration_mode;
+        bool m_calibration_mode = false;
 
         // low level
         std::string m_IO_component_name;
@@ -122,8 +131,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         int m_port;
         bool m_socket_server;
         std::string m_socket_component_name;
-        // generic arm
-        bool m_generic;
+        // add ROS bridge
         bool m_skip_ROS_bridge;
 
         // base frame

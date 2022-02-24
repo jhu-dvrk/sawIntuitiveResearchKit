@@ -52,9 +52,6 @@ if (cisst_FOUND_AS_REQUIRED)
                        ${CMAKE_CURRENT_SOURCE_DIR}/logo.qrc)
   endif (CISST_HAS_QT4)
 
-  # make sure the new library is known by the parent folder to add to the config file
-  set (sawIntuitiveResearchKitQt_LIBRARIES sawIntuitiveResearchKitQt PARENT_SCOPE)
-
   add_library (sawIntuitiveResearchKitQt
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQt.h
                mtsIntuitiveResearchKitConsoleQt.cpp
