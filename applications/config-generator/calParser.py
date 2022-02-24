@@ -257,10 +257,17 @@ class IndexAssignment(AssignmentNode):
         # Zero-pad numeric arrays, None-pad object arrays
         numeric_array = isinstance(value, np.ndarray) and value.dtype != np.dtype(object)
         if numeric_array:
-            return np.pad(data, ((0, padRows), (0, padColumns)))
+            return np.pad(data, ((0, padRows), (0, padColumns)), mode='constant', constant_values=0.0)
         else:
-            data = data.astype(object)
-            return np.pad(data, ((0, padRows), (0, padColumns)), constant_values=None)
+            # Older versions of numpy.pad assume numeric array, so we can't pad with None
+            # Instead have to manually extend rows and columns
+            for i in range(padRows):
+                data.append(np.full((1, columns), None))
+
+            for i in range(padColumns):
+                data = np.c_[data, np.full((rows + padRows, 1), None)]
+
+            return data
 
 
 class ArrayParser:
