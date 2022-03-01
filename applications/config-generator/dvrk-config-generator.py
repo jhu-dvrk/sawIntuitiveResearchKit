@@ -462,6 +462,7 @@ class ClassicECM(Robot):
                 yield AnalogBrake(
                     index,
                     self.boardIDs[1],
+                    1,
                     maxCurrent,
                     releaseCurrent,
                     releaseTime,
