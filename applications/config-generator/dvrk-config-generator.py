@@ -117,9 +117,7 @@ class Config(Serializable):
             self.robot = MTMGripper(calData, robotTypeName, serialNumber)
 
         self.digitalInputs = list(self.robot.generateDigitalInputs())
-        self.dallasChip = (
-            DallasChip(robotTypeName) if robotType == RobotType.PSM else None
-        )
+        self.dallasChip = self.robot.generateDallasChip()
 
     def toDict(self):
         dict = {
@@ -226,6 +224,9 @@ class Robot(Serializable):
         # Creates generator that terminates without yielding anything
         yield from ()
 
+    def generateDallasChip(self):
+        return None
+
     def toDict(self):
         dict = {
             "Name": self.name,
@@ -274,6 +275,9 @@ class ClassicPSM(Robot):
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
             yield DigitalInput(self.name, inputType, bitID, boardID, 1, debounceTime)
 
+    def generateDallasChip(self):
+        return DallasChip(self.boardIDs[1], self.name)
+
     def toDict(self):
         dict = super().toDict()
         dict["Potentiometers"] = self.potentiometers
@@ -284,7 +288,7 @@ class SiPSM(Robot):
     def __init__(self, calData, robotTypeName, serialNumber):
         self.driveDirection = lambda index: [1, -1, 1, -1, -1, 1, 1][index]
         self.encoderCPT = lambda index: [81920, 81920, 50000, 4000, 4000, 4000, 4000][index]
-        self.gearRatio = lambda index: [83.3333, 85.000, 965.91, 13.813, 13.813, 13.813, 13.813][index]
+        self.gearRatio = lambda index: [83.3333, 85.000, -965.91, 13.813, 13.813, 13.813, 13.813][index]
         self.pitch = lambda index: [1, 1, 17.4533, 1, 1, 1, 1][index]
         self.motorMaxCurrent = lambda index: [3.4, 3.4, 1.1, 1.1, 1.1, 1.1, 1.1][index]
         self.motorTorque = lambda index: [0.0603, 0.0603, 0.0385, 0.0385, 0.0385, 0.0385, 0.0385][index]
@@ -294,7 +298,7 @@ class SiPSM(Robot):
         self.potentiometerDistance = lambda index: 10.0
 
         # # 2^13/10^3 or 2^11/10^3
-        self.driveLinearAmpCurrent = lambda index: [8.192, 8.192, -2.048, 2.048, 2.048, 2.048, 2.048][index]
+        self.driveLinearAmpCurrent = lambda index: [8.192, 8.192, 2.048, 2.048, 2.048, 2.048, 2.048][index]
         self.digitalPotResolution = lambda index: 4095 # 2^12 - 1
 
         self.brakeMaxCurrent = lambda index: [0.2, 0.2, 0.3][index]
@@ -322,8 +326,14 @@ class SiPSM(Robot):
         return int(pot_minimum)
 
     def digitalPotScale(self, index):
-        gain_radians = self.calData["motor"]["pot_input_gain"][index]
-        return math.degrees(gain_radians)
+        gain = self.calData["motor"]["pot_input_gain"][index]
+        units = self.potentiometerUnits(index)
+        if units == "deg":
+            return math.degrees(gain)
+        elif units == "mm":
+            return gain * 1000.0
+        else:
+            raise ValueException("Unsupported gain units: {}".format(units))
 
     def digitalPotOffset(self, index):
         lower_limit_index = self.calData["LOWER_LIMIT"] - 1
@@ -413,6 +423,9 @@ class SiPSM(Robot):
 
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
             yield DigitalInput(self.name, inputType, bitID, boardID, 0, debounceTime)
+
+    def generateDallasChip(self):
+        return DallasChip(self.boardIDs[0], self.name)
 
     def toDict(self):
         dict = super().toDict()
@@ -814,9 +827,9 @@ class DigitalInput(Serializable):
 
 
 class DallasChip(Serializable):
-    def __init__(self, robotTypeName):
+    def __init__(self, boardID, robotTypeName):
         self.name = "{}-Dallas".format(robotTypeName)
-        self.boardID = getBoardIDs(robotTypeName)[1]
+        self.boardID = boardID
 
     def toDict(self):
         return {
