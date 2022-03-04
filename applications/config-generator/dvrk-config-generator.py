@@ -268,8 +268,8 @@ class ClassicPSM(Robot):
         digitalInputBitIDs = [
             (self.boardIDs[0], 0, "SUJClutch", 0.2),
             (self.boardIDs[0], 2, "ManipClutch", 0.2),
-            (self.boardIDs[1], 7, "Tool", 1.5),
-            (self.boardIDs[1], 10, "Adapter", 1.5),
+            (self.boardIDs[1], 7, "Tool", 0.2),
+            (self.boardIDs[1], 10, "Adapter", 0.2),
         ]
 
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
@@ -360,7 +360,7 @@ class SiPSM(Robot):
                 releaseTime = self.brakeReleaseTime(index)
                 releasedCurrent = self.brakeReleasedCurrent(index)
                 engagedCurrent = self.brakeEngagedCurrent(index)
-                axisID = 7 + index # Brake 7 corresponds to actuator 0, etc. 
+                axisID = 7 + index # Brake 7 corresponds to actuator 0, etc.
                 direction = 1 if index != 2 else -1 # some values in the third brake are reversed
                 yield AnalogBrake(
                     axisID,
@@ -416,9 +416,9 @@ class SiPSM(Robot):
         digitalInputBitIDs = [
             (self.boardIDs[0], 0, "SUJClutch2", 0.2),
             (self.boardIDs[0], 4, "SUJClutch", 0.2),
-            (self.boardIDs[0], 11, "Tool", 1.5),
+            (self.boardIDs[0], 11, "Tool", 0.2),
             (self.boardIDs[0], 13, "ManipClutch", 0.01),
-            (self.boardIDs[0], 17, "Adapter", 1.5),
+            (self.boardIDs[0], 17, "Adapter", 0.2),
         ]
 
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
