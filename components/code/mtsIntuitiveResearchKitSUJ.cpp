@@ -553,6 +553,15 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
     // base component configuration
     mtsComponent::ConfigureJSON(jsonConfig);
 
+    // get the reference arm if defined.  By default ECM and should be
+    // used only and only if user want to use a PSM to hold a camera
+    std::string referenceArmName = "ECM";
+    const Json::Value jsonReferenceArm = jsonConfig["reference-arm"];
+    if (!jsonReferenceArm.isNull()) {
+        referenceArmName = jsonReferenceArm.asString();
+        CMN_LOG_CLASS_INIT_WARNING << "Configure: \"reference-arm\" is user defined.  This should only happen if you are using a PSM to hold a camera.  Most users shouldn't define \"reference-arm\".  If undefined, all arm cartesian positions will be defined with respect to the ECM" << std::endl; 
+    }
+    
     // find all arms, there should be 4 of them
     const Json::Value jsonArms = jsonConfig["arms"];
     if (jsonArms.size() != 4) {
@@ -607,9 +616,9 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
                                                     interfaceProvided, interfaceRequired);
         Arms[armIndex] = arm;
 
-        // save which arm is the ECM
-        if (type == mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
-            ECMIndex = armIndex;
+        // save which arm is the Reference Arm
+        if (name == referenceArmName) {
+            BaseFrameArmIndex = armIndex;
         }
 
         // Arm State so GUI widget for each arm can set/get state
@@ -868,37 +877,37 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
     ProcessQueuedCommands();
 
     // update all base frame kinematics
-    // first see if there's an ECM connected
-    prmPositionCartesianGet ecmPositionParam;
-    prmPositionCartesianGet ecmTipToSUJBase;
+    // first see if there's an BaseFrameArm connected
+    prmPositionCartesianGet baseFrameArmPositionParam;
+    prmPositionCartesianGet baseFrameArmTipToSUJBase;
 
-    mtsIntuitiveResearchKitSUJArmData * arm = Arms[ECMIndex];
-    if (! (Arms[ECMIndex]->mGetArmPositionCartesianLocal(ecmPositionParam))) {
+    mtsIntuitiveResearchKitSUJArmData * arm = Arms[BaseFrameArmIndex];
+    if (! (Arms[BaseFrameArmIndex]->mGetArmPositionCartesianLocal(baseFrameArmPositionParam))) {
         // interface not connected, reporting wrt cart
-        ecmTipToSUJBase.SetValid(true);
-        ecmTipToSUJBase.SetReferenceFrame("Cart");
+        baseFrameArmTipToSUJBase.SetValid(true);
+        baseFrameArmTipToSUJBase.SetReferenceFrame("Cart");
     } else {
-        // get position from ECM and convert to useful type
-        vctFrm3 sujBaseToSUJTip = arm->m_local_measured_cp.Position() * ecmPositionParam.Position();
-        // compute and send new base frame for all SUJs (SUJ will handle ECM differently)
-        ecmTipToSUJBase.Position().From(sujBaseToSUJTip.Inverse());
+        // get position from BaseFrameArm and convert to useful type
+        vctFrm3 sujBaseToSUJTip = arm->m_local_measured_cp.Position() * baseFrameArmPositionParam.Position();
+        // compute and send new base frame for all SUJs (SUJ will handle BaseFrameArm differently)
+        baseFrameArmTipToSUJBase.Position().From(sujBaseToSUJTip.Inverse());
         // it's an inverse, swap moving and reference frames
-        ecmTipToSUJBase.SetReferenceFrame(ecmPositionParam.MovingFrame());
-        ecmTipToSUJBase.SetMovingFrame(arm->m_local_measured_cp.ReferenceFrame());
+        baseFrameArmTipToSUJBase.SetReferenceFrame(baseFrameArmPositionParam.MovingFrame());
+        baseFrameArmTipToSUJBase.SetMovingFrame(arm->m_local_measured_cp.ReferenceFrame());
         // valid only if both are valid
-        ecmTipToSUJBase.SetValid(arm->m_local_measured_cp.Valid()
-                                 && ecmPositionParam.Valid());
-        ecmTipToSUJBase.SetTimestamp(ecmPositionParam.Timestamp());
+        baseFrameArmTipToSUJBase.SetValid(arm->m_local_measured_cp.Valid()
+                                          && baseFrameArmPositionParam.Valid());
+        baseFrameArmTipToSUJBase.SetTimestamp(baseFrameArmPositionParam.Timestamp());
     }
 
     for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
         arm = Arms[armIndex];
         // update positions with base frame, local positions are only
         // updated from FK when joints are ready
-        if (arm->mType != mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
-            arm->mBaseFrame.From(ecmTipToSUJBase.Position());
-            arm->mBaseFrameValid = ecmTipToSUJBase.Valid();
-            arm->m_measured_cp.SetReferenceFrame(ecmTipToSUJBase.ReferenceFrame());
+        if (armIndex != BaseFrameArmIndex) {
+            arm->mBaseFrame.From(baseFrameArmTipToSUJBase.Position());
+            arm->mBaseFrameValid = baseFrameArmTipToSUJBase.Valid();
+            arm->m_measured_cp.SetReferenceFrame(baseFrameArmTipToSUJBase.ReferenceFrame());
         }
         vctFrm4x4 armLocal(arm->m_local_measured_cp.Position());
         vctFrm4x4 armBase = arm->mBaseFrame * armLocal;
