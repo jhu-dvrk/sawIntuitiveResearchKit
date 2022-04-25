@@ -30,4 +30,6 @@
             "type": "prmPositionJointSet"
         }
     ]
+    ,
+    "write-events": ["operating_state"]
 }
