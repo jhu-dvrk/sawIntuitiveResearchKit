@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -69,6 +69,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         friend class mtsIntuitiveResearchKitConsoleQt;
         friend class dvrk::console;
 
+        bool generic(void) const;
         bool native_or_derived(void) const;
         bool native_or_derived_mtm(void) const;
         bool native_or_derived_psm(void) const;

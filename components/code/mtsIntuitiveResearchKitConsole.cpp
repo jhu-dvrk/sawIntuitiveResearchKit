@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -65,6 +65,21 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived(void) const
     case ARM_ECM_DERIVED:
     case ARM_SUJ:
     case FOCUS_CONTROLLER:
+        return true;
+        break;
+    default:
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool mtsIntuitiveResearchKitConsole::Arm::generic(void) const
+{
+    switch (m_type) {
+    case ARM_MTM_GENERIC:
+    case ARM_PSM_GENERIC:
+    case ARM_ECM_GENERIC:
         return true;
         break;
     default:
