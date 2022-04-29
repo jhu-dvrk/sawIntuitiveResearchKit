@@ -24,6 +24,8 @@
         }
     ]
     ,
+    "void-commands": ["Freeze"]
+    ,
     "write-commands": [
         {
             "name": "servo_jp",
