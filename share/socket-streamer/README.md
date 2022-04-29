@@ -56,10 +56,11 @@ The data is sent in JSON format.  For example:
                    [-2.6984803280782899e-11,-7.3464102068321324e-06,0.99999999997301525],
                    [0.99999999999325384,-3.6732051035270885e-06,0]],
       "Translation": [-1.3388794904003909e-06,-0.36449897370403511,0.12879999999811512]
-    } ,
+    },
     "ReferenceFrame": "MTML_base",
     "Timestamp":19.699094908999999,
-    "Valid":true},
+    "Valid":true
+  },
   "measured_js": {
     "AutomaticTimestamp":false,
     "Effort":[0,0,0,0,0,0,0],
