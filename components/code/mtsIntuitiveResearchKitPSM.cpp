@@ -101,6 +101,7 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
     CouplingChange.NoToolConfiguration.Type().SetSize(7);
     // for type, we can even ignore values loaded from config file
     CouplingChange.NoToolConfiguration.Type().SetAll(PRM_JOINT_REVOLUTE);
+    CouplingChange.NoToolConfiguration.Type().at(2) = PRM_JOINT_PRISMATIC;
     // position limits
     CouplingChange.NoToolConfiguration.PositionMin().SetSize(number_of_joints());
     CouplingChange.NoToolConfiguration.PositionMax().SetSize(number_of_joints());
@@ -114,6 +115,11 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
     Manipulator->GetFTMaximums(CouplingChange.NoToolConfiguration.EffortMax().Ref(3, 0));
     CouplingChange.NoToolConfiguration.EffortMax().Ref(4, 3).SetAll(0.343642);
     CouplingChange.NoToolConfiguration.EffortMin().Assign(-CouplingChange.NoToolConfiguration.EffortMax());
+
+    // set as default
+    mStateTableConfiguration.Start();
+    m_kin_configuration_js = CouplingChange.NoToolConfiguration;
+    mStateTableConfiguration.Advance();
 
     // load default tool index
     load_tool_list(configPath);
@@ -717,7 +723,7 @@ bool mtsIntuitiveResearchKitPSM::IsHomed(void) const
     if (Tool.IsPresent || Tool.IsEmulated) {
         return m_powered && m_encoders_biased_from_pots && Adapter.IsEngaged && Tool.IsEngaged;
     }
-    if (Adapter.IsPresent || Adapter.IsPresent) {
+    if (Adapter.IsPresent) {
         return m_powered && m_encoders_biased_from_pots && Adapter.IsEngaged;
     }
     return m_powered && m_encoders_biased_from_pots;
@@ -1550,6 +1556,13 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
             break;
         default:
             break;
+        }
+        // make sure we change the coupling back to default
+        if (Adapter.IsPresent) {
+            mStateTableConfiguration.Start();
+            m_kin_configuration_js = CouplingChange.NoToolConfiguration;
+            mStateTableConfiguration.Advance();
+            mArmState.SetCurrentState("CHANGING_COUPLING_ADAPTER");
         }
         break;
     default:
