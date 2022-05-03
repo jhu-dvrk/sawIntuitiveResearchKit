@@ -298,7 +298,8 @@ class SiPSM(Robot):
         self.potentiometerDistance = lambda index: 10.0
 
         # # 2^13/10^3 or 2^11/10^3
-        self.driveLinearAmpCurrent = lambda index: [8.192, 8.192, 2.048, 2.048, 2.048, 2.048, 2.048][index]
+        i_high = 65536 / 4800 / 2
+        self.driveLinearAmpCurrent = lambda index: [i_high, i_high, 2.048, 2.048, 2.048, 2.048, 2.048][index]
         self.digitalPotResolution = lambda index: 4095 # 2^12 - 1
 
         self.brakeMaxCurrent = lambda index: [0.2, 0.2, 0.3][index]
