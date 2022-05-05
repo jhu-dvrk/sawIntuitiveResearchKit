@@ -2,10 +2,10 @@
    <Robot Name="PSM1" NumOfActuator="7" NumOfJoint="7" SN="586288">
       <Actuator ActuatorID="0" AxisID="0" BoardID="6" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32767" Scale="4000.00" />
-            <BitsToFeedbackAmps Offset="-8.192" Scale="0.00025" />
-            <NmToAmps Scale="0.19900505472640004" /> // 1 / (60.3e-3 * 83.3333)
-            <MaxCurrent Unit="A" Value="3.4" />
+                <AmpsToBits Offset="32767" Scale="-4800.0000" />
+                <BitsToFeedbackAmps Offset="6.8267" Scale="-0.000208333" />
+                <NmToAmps Scale="0.1990050547" />
+                <MaxCurrent Unit="A" Value="3.400" />
          </Drive>
          <AnalogBrake AxisID="7" BoardID="6">
             <AmpsToBits Offset="32768" Scale="16000.00" />
@@ -26,10 +26,10 @@
       </Actuator>
       <Actuator ActuatorID="1" AxisID="1" BoardID="6" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32768" Scale="-4000.00" />
-            <BitsToFeedbackAmps Offset="8.192" Scale="-0.00025" />
-            <NmToAmps Scale="0.195102916788606" />
-            <MaxCurrent Unit="A" Value="3.4" />
+                <AmpsToBits Offset="32768" Scale="4800.0000" />
+                <BitsToFeedbackAmps Offset="-6.8267" Scale="0.000208333" />
+                <NmToAmps Scale="0.1951029168" />
+                <MaxCurrent Unit="A" Value="3.400" />
          </Drive>
          <AnalogBrake AxisID="8" BoardID="6">
             <AmpsToBits Offset="32768" Scale="16000.00" />
@@ -50,8 +50,8 @@
       </Actuator>
       <Actuator ActuatorID="2" AxisID="2" BoardID="6" Type="Prismatic">
          <Drive>
-            <AmpsToBits Offset="32768" Scale="-16000.00" />
-            <BitsToFeedbackAmps Offset="2.048" Scale="-0.0000625" />
+            <AmpsToBits Offset="32768" Scale="16000.00" />
+            <BitsToFeedbackAmps Offset="-2.048" Scale="0.0000625" />
             <NmToAmps Scale="0.026890730993597723" /> // unit is N to A?
             <MaxCurrent Unit="A" Value="1.1" />
          </Drive>
@@ -74,8 +74,8 @@
       </Actuator>
       <Actuator ActuatorID="3" AxisID="3" BoardID="6" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32768" Scale="-16000.00" />
-            <BitsToFeedbackAmps Offset="2.048" Scale="-0.0000625" />
+            <AmpsToBits Offset="32768" Scale="16000.00" />
+            <BitsToFeedbackAmps Offset="-2.048" Scale="0.0000625" />
             <NmToAmps Scale="1.8804043997702145" />
             <MaxCurrent Unit="A" Value="1.1" />
          </Drive>
@@ -89,8 +89,8 @@
       </Actuator>
             <Actuator ActuatorID="4" AxisID="4" BoardID="6" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32768" Scale="-16000.00" />
-            <BitsToFeedbackAmps Offset="2.048" Scale="-0.0000625" />
+            <AmpsToBits Offset="32768" Scale="16000.00" />
+            <BitsToFeedbackAmps Offset="-2.048" Scale="0.0000625" />
             <NmToAmps Scale="1.8804043997702145" />
             <MaxCurrent Unit="A" Value="1.1" />
          </Drive>
@@ -104,8 +104,8 @@
       </Actuator>
             <Actuator ActuatorID="5" AxisID="5" BoardID="6" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32768" Scale="16000.00" />
-            <BitsToFeedbackAmps Offset="-2.048" Scale="0.0000625" />
+            <AmpsToBits Offset="32768" Scale="-16000.00" />
+            <BitsToFeedbackAmps Offset="2.048" Scale="-0.0000625" />
             <NmToAmps Scale="1.8804043997702145" />
             <MaxCurrent Unit="A" Value="1.1" />
          </Drive>
@@ -119,8 +119,8 @@
       </Actuator>
             <Actuator ActuatorID="6" AxisID="6" BoardID="6" Type="Revolute">
          <Drive>
-            <AmpsToBits Offset="32768" Scale="16000.00" />
-            <BitsToFeedbackAmps Offset="-2.048" Scale="0.0000625" />
+            <AmpsToBits Offset="32768" Scale="-16000.00" />
+            <BitsToFeedbackAmps Offset="2.048" Scale="-0.0000625" />
             <NmToAmps Scale="1.8804043997702145" />
             <MaxCurrent Unit="A" Value="1.1" />
          </Drive>
