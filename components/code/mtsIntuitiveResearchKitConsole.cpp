@@ -938,7 +938,8 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             iter->second->ConfigurePID(pidConfig);
         }
         // for generic arms, nothing to do
-        if (iter->second->native_or_derived()) {
+        if (iter->second->native_or_derived()
+            || (iter->second->m_type == Arm::ARM_PSM_SOCKET)) {
             const std::string armConfig = iter->second->m_arm_configuration_file;
             iter->second->ConfigureArm(iter->second->m_type, armConfig,
                                        iter->second->m_arm_period);
