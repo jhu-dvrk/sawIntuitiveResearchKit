@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -350,7 +350,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     inline virtual void control_add_jf(vctDoubleVec & CMN_UNUSED(efforts)) {};
 
     // Velocities
-    prmVelocityCartesianGet m_measured_cv;
+    prmVelocityCartesianGet m_local_measured_cv, m_measured_cv;
     vctFrm4x4 CartesianPositionFrm;
 
     // Base frame
