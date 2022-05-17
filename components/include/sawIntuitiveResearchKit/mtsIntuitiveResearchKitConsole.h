@@ -70,6 +70,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         friend class dvrk::console;
 
         bool generic(void) const;
+        bool psm(void) const;
+        bool mtm(void) const;
+        bool ecm(void) const;
         bool native_or_derived(void) const;
         bool native_or_derived_mtm(void) const;
         bool native_or_derived_psm(void) const;

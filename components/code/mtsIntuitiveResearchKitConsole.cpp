@@ -74,6 +74,53 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived(void) const
     return false;
 }
 
+bool mtsIntuitiveResearchKitConsole::Arm::psm(void) const
+{
+    switch (m_type) {
+    case ARM_PSM:
+    case ARM_PSM_DERIVED:
+    case ARM_PSM_S:
+    case ARM_PSM_S_DERIVED:
+    case ARM_PSM_GENERIC:
+    case ARM_PSM_SOCKET:
+        return true;
+        break;
+    default:
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool mtsIntuitiveResearchKitConsole::Arm::mtm(void) const
+{
+    switch (m_type) {
+    case ARM_MTM:
+    case ARM_MTM_DERIVED:
+    case ARM_MTM_GENERIC:
+        return true;
+        break;
+    default:
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool mtsIntuitiveResearchKitConsole::Arm::ecm(void) const
+{
+    switch (m_type) {
+    case ARM_ECM:
+    case ARM_ECM_DERIVED:
+        return true;
+        break;
+    default:
+        return false;
+        break;
+    }
+    return false;
+}
+
 bool mtsIntuitiveResearchKitConsole::Arm::generic(void) const
 {
     switch (m_type) {
@@ -1680,11 +1727,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->m_type == Arm::ARM_MTM_GENERIC) ||
-              (armPointer->m_type == Arm::ARM_MTM_DERIVED) ||
-              (armPointer->m_type == Arm::ARM_MTM))) {
+        if (!armPointer->mtm()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm left\""
-                                     << mtmLeftName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
+                                     << mtmLeftName << "\" type must be some kind of MTM" << std::endl;
             return false;
         }
         mtmLeftComponent = armPointer->ComponentName();
@@ -1697,11 +1742,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->m_type == Arm::ARM_MTM_GENERIC) ||
-              (armPointer->m_type == Arm::ARM_MTM_DERIVED) ||
-              (armPointer->m_type == Arm::ARM_MTM))) {
+        if (!armPointer->mtm()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm right\""
-                                     << mtmRightName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
+                                     << mtmRightName << "\" type must be some kind of MTM" << std::endl;
             return false;
         }
         mtmRightComponent = armPointer->ComponentName();
@@ -1714,11 +1757,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->m_type == Arm::ARM_ECM_GENERIC) ||
-              (armPointer->m_type == Arm::ARM_ECM_DERIVED) ||
-              (armPointer->m_type == Arm::ARM_ECM))) {
+        if (!armPointer->ecm()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: ecm \""
-                                     << ecmName << "\" type must be \"ECM\" or \"GENERIC_ECM\"" << std::endl;
+                                     << ecmName << "\" type must be some kind of ECM" << std::endl;
             return false;
         }
         ecmComponent = armPointer->ComponentName();
@@ -1809,11 +1850,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->m_type == Arm::ARM_MTM_GENERIC) ||
-              (armPointer->m_type == Arm::ARM_MTM_DERIVED) ||
-              (armPointer->m_type == Arm::ARM_MTM))) {
+        if (!armPointer->mtm()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: mtm \""
-                                     << mtmName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
+                                     << mtmName << "\" type must be some kind of MTM" << std::endl;
             return false;
         }
         mtmComponent = armPointer->ComponentName();
@@ -1826,12 +1865,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->m_type == Arm::ARM_PSM_GENERIC) ||
-              (armPointer->m_type == Arm::ARM_PSM_DERIVED) ||
-              (armPointer->m_type == Arm::ARM_PSM_SOCKET)  ||
-              (armPointer->m_type == Arm::ARM_PSM))) {
+        if (!armPointer->psm()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: psm \""
-                                     << psmName << "\" type must be \"PSM\", \"PSM_DERIVED\" or \"PSM_GENERIC\"" << std::endl;
+                                     << psmName << "\" type must be some kind of PSM" << std::endl;
             return false;
         }
         psmComponent = armPointer->ComponentName();
