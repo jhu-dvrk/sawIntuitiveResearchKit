@@ -13,7 +13,7 @@
             "type": "PSM_S",
             "serial": "586288",
             "socket-server": true,
-            "remote-ip": "10.162.34.80",
+            "remote-ip": "127.0.0.1",
             "port": 10001
         }
     ]

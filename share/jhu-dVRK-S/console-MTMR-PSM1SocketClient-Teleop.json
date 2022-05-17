@@ -10,7 +10,7 @@
         {
             "name": "PSM1",
             "type": "PSM_SOCKET",
-            "remote-ip": "lcsr-dvrk-04.hwcampus.jhu.edu",
+            "remote-ip": "127.0.0.1",
             "port": 10001
         }
         ,
