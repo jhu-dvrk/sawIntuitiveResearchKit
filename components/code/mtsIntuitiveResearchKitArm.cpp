@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -213,6 +213,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
     m_trajectory_j.is_active = false;
 
     // initialize velocity
+    m_local_measured_cv.SetVelocityLinear(vct3(0.0));
+    m_local_measured_cv.SetVelocityAngular(vct3(0.0));
+    m_local_measured_cv.SetValid(false);
     m_measured_cv.SetVelocityLinear(vct3(0.0));
     m_measured_cv.SetVelocityAngular(vct3(0.0));
     m_measured_cv.SetValid(false);
@@ -256,6 +259,11 @@ void mtsIntuitiveResearchKitArm::Init(void)
     this->StateTable.AddData(m_local_setpoint_cp, "local/setpoint_cp");
 
     this->StateTable.AddData(m_base_frame, "base_frame");
+
+    m_local_measured_cv.SetAutomaticTimestamp(false); // keep PID timestamp
+    m_local_measured_cv.SetMovingFrame(GetName());
+    m_local_measured_cv.SetReferenceFrame(GetName() + "_base");
+    this->StateTable.AddData(m_local_measured_cv, "local/measured_cv");
 
     m_measured_cv.SetAutomaticTimestamp(false); // keep PID timestamp
     m_measured_cv.SetMovingFrame(GetName());
@@ -328,6 +336,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         m_arm_interface->AddCommandReadState(this->StateTable, m_measured_cp, "measured_cp");
         m_arm_interface->AddCommandReadState(this->StateTable, m_setpoint_cp, "setpoint_cp");
         m_arm_interface->AddCommandReadState(this->StateTable, m_base_frame, "base_frame");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_local_measured_cv, "local/measured_cv");
         m_arm_interface->AddCommandReadState(this->StateTable, m_measured_cv, "measured_cv");
         m_arm_interface->AddCommandReadState(this->StateTable, m_body_measured_cf, "body/measured_cf");
         m_arm_interface->AddCommandReadState(this->StateTable, m_body_jacobian, "body/jacobian");
@@ -843,13 +852,17 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         vct3 relative, absolute;
         // linear
         relative.Assign(cartesianVelocity.Ref(3, 0));
+        m_local_measured_cv.SetVelocityLinear(relative);
         m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
         m_measured_cv.SetVelocityLinear(absolute);
         // angular
         relative.Assign(cartesianVelocity.Ref(3, 3));
+        m_local_measured_cv.SetVelocityAngular(relative);
         m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
         m_measured_cv.SetVelocityAngular(absolute);
         // valid/timestamp
+        m_local_measured_cv.SetValid(true);
+        m_local_measured_cv.SetTimestamp(m_kin_measured_js.Timestamp());
         m_measured_cv.SetValid(true);
         m_measured_cv.SetTimestamp(m_kin_measured_js.Timestamp());
 
@@ -903,6 +916,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         m_local_measured_cp.SetValid(false);
         m_measured_cp.SetValid(false);
         // velocities and wrench
+        m_local_measured_cv.SetValid(false);
         m_measured_cv.SetValid(false);
         m_body_measured_cf.SetValid(false);
         m_spatial_measured_cf.SetValid(false);
