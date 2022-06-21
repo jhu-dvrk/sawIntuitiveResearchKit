@@ -123,16 +123,21 @@ int main(int argc, char * argv[])
     std::cout << std::endl
               << "Press any key to power brakes and start collecting data." << std::endl;
     cmnGetChar();
-    // enable brakes
+
+    // turn off pots used to check encoders
+    robot->UsePotsForSafetyCheck(false);
+
+    // enable power and brakes
     vctDoubleVec zeros(3, 0.0);
     robot->SetBrakeCurrent(zeros);
+    port->Write();
     robot->WriteSafetyRelay(true);
     robot->WritePowerEnable(true);
     robot->SetBrakeAmpEnable(true);
     port->Write();
 
-    // wait a bit to make sure current stabilizes, 500 * 10 ms = 5 seconds
-    for (size_t i = 0; i < 500; ++i) {
+    // wait a bit to make sure current stabilizes, 100 * 10 ms = 5 seconds
+    for (size_t i = 0; i < 100; ++i) {
         osaSleep(10.0 * cmn_ms);
         port->Read();
         port->Write();
@@ -156,9 +161,11 @@ int main(int argc, char * argv[])
               << "Press any key to stop collecting data." << std::endl << std::endl;
 
     // vector of actuator positions corresponding to pot index
+    size_t nbAxis = 0;
     const size_t potRange = 4096;
     const double missing = std::numeric_limits<double>::max();
     vctDoubleMat potToEncoder;
+    vctDoubleVec minEncoder, maxEncoder;
     vctDynamicVector<size_t> dataCounter;
     bool brakesReleased = false;
 
@@ -171,7 +178,6 @@ int main(int argc, char * argv[])
         robot->PollState();
         robot->ConvertState();
         robot->CheckState();
-        port->Write();
 
         // brakes
         if (brakesReleased != clutchInput->Value()) {
@@ -182,23 +188,36 @@ int main(int argc, char * argv[])
                 robot->BrakeEngage();
             }
         }
+        port->Write();
 
         // read values
         vctIntVec potBits = robot->PotBits();
         // first iteration, create memory to store all
-        if (potToEncoder.size() == 0) {
-            potToEncoder.SetSize(potBits.size(), potRange);
+        if (nbAxis == 0) {
+            nbAxis = potBits.size();
+            potToEncoder.SetSize(nbAxis, potRange);
             potToEncoder.SetAll(missing);
-            dataCounter.SetSize(potBits.size());
+            minEncoder.SetSize(nbAxis);
+            minEncoder.SetAll(std::numeric_limits<double>::max());
+            maxEncoder.SetSize(nbAxis);
+            maxEncoder.SetAll(std::numeric_limits<double>::min());
+            dataCounter.SetSize(nbAxis);
             dataCounter.SetAll(0);
         }
 
         vctDoubleVec actuatorPos = robot->ActuatorJointState().Position();
         for (size_t axis = 0;
-             axis < potBits.size();
+             axis < nbAxis;
              ++axis) {
             if (potToEncoder.at(axis, potBits[axis]) == missing) {
-                potToEncoder.at(axis, potBits[axis]) = actuatorPos[axis];
+                double encoder = actuatorPos[axis];
+                potToEncoder.at(axis, potBits[axis]) = encoder;
+                if (encoder < minEncoder.at(axis)) {
+                    minEncoder.at(axis) = encoder;
+                }
+                if (encoder > maxEncoder.at(axis)) {
+                    maxEncoder.at(axis) = encoder;
+                }
                 dataCounter.at(axis)++;
             }
         }
@@ -206,8 +225,10 @@ int main(int argc, char * argv[])
     }
 
     // finding the deadzone(s)
+    vctIntVec potMin(nbAxis);
+    size_t deadZoneBegin, deadZoneEnd;
     for (size_t axis = 0;
-         axis < potToEncoder.rows();
+         axis < nbAxis;
          ++axis) {
         bool deadZone = (potToEncoder.at(axis, 0) == missing);
         for (size_t index = 1;
@@ -216,10 +237,31 @@ int main(int argc, char * argv[])
             bool current = (potToEncoder.at(axis, index) == missing);
             if (current != deadZone) {
                 deadZone = current;
-                std::cerr << "axis " << axis
-                          << ": dead zone " << (deadZone?"started":"ended") << " at index " << index << std::endl;
+                if (deadZone) {
+                    deadZoneBegin = index;
+                } else {
+                    deadZoneEnd = index;
+                    if ((deadZoneEnd - deadZoneBegin) > 50) {
+                        std::cout << axis
+                                  << "> found dead zone from " << deadZoneBegin << " to " << deadZoneEnd << std::endl;
+                        potMin.at(axis) = deadZoneEnd;
+                    }
+                }
             }
         }
+    }
+
+    for (size_t axis = 0;
+         axis < nbAxis;
+         ++axis) {
+        double toh = 1000.0; // human readable
+        if (axis != 2) {
+            toh = cmn180_PI;
+        }
+        std::cout << axis << "> pot min: " << potMin.at(axis)
+                  << " angle: " << potToEncoder.at(axis, potMin.at(axis)) * toh
+                  << " range: [" << minEncoder.at(axis) * toh
+                  << ", " << maxEncoder.at(axis) * toh << "]" << std::endl;
     }
 
     cmnGetChar(); // to read the pressed key
