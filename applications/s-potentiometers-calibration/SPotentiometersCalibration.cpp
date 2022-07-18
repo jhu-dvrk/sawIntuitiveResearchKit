@@ -63,8 +63,14 @@ int main(int argc, char * argv[])
     const char * context = "Config";
     std::string armName;
     xmlConfig.GetXMLValue(context, "Robot[1]/@Name", armName);
+    int nbActuators;
+    xmlConfig.GetXMLValue(context, "Robot[1]/@NumOfActuator", nbActuators);
+    std::string serialNumber;
+    xmlConfig.GetXMLValue(context, "Robot[1]/@SN", serialNumber);
 
-    std::cout << "Configuration file: " << configFile << " for arm " << armName << std::endl
+    std::cout << "Configuration file: " << configFile
+              << " for arm " << armName << " [" << serialNumber << "] ("
+              << nbActuators << ")" << std::endl
               << "Port: " << portName << std::endl;
 
     std::cout << "Make sure:" << std::endl
@@ -127,16 +133,46 @@ int main(int argc, char * argv[])
     // turn off pots used to check encoders
     robot->UsePotsForSafetyCheck(false);
 
+    // create memory to store all data
+    size_t nbAxis = nbActuators;
+    const size_t potRange = 4096;
+    const double missing = std::numeric_limits<double>::max();
+
+    vctDoubleMat potToEncoder;
+    vctDoubleVec directionEncoder;
+    vctDoubleVec minEncoder, maxEncoder;
+    vctDynamicVector<size_t> dataCounter;
+
+    potToEncoder.SetSize(nbAxis, potRange);
+    potToEncoder.SetAll(missing);
+
+    directionEncoder.SetSize(nbAxis, 1.0);
+    // PSM specific
+    directionEncoder.at(1) = -1.0;
+    directionEncoder.at(3) = -1.0;
+    directionEncoder.at(4) = -1.0;
+    directionEncoder.at(5) = -1.0;
+
+    minEncoder.SetSize(nbAxis);
+    minEncoder.SetAll(std::numeric_limits<double>::max());
+    maxEncoder.SetSize(nbAxis);
+    maxEncoder.SetAll(std::numeric_limits<double>::min());
+    dataCounter.SetSize(nbAxis);
+    dataCounter.SetAll(0);
+
     // enable power and brakes
-    vctDoubleVec zeros(3, 0.0);
-    robot->SetBrakeCurrent(zeros);
+    vctDoubleVec brakeCurrent(3, 0.0);
+    robot->SetBrakeCurrent(brakeCurrent);
+    vctDoubleVec actuatorVoltageRatio(nbAxis, 0.0);
+    robot->SetActuatorVoltageRatio(actuatorVoltageRatio);
     port->Write();
     robot->WriteSafetyRelay(true);
     robot->WritePowerEnable(true);
     robot->SetBrakeAmpEnable(true);
+    robot->SetActuatorAmpEnable(true);
     port->Write();
 
-    // wait a bit to make sure current stabilizes, 100 * 10 ms = 5 seconds
+    // wait a bit to make sure current stabilizes, 100 * 10 ms = 1 second
     for (size_t i = 0; i < 100; ++i) {
         osaSleep(10.0 * cmn_ms);
         port->Read();
@@ -160,13 +196,6 @@ int main(int argc, char * argv[])
               << "Keep closing and opening until the counter and range stop increasing." << std::endl
               << "Press any key to stop collecting data." << std::endl << std::endl;
 
-    // vector of actuator positions corresponding to pot index
-    size_t nbAxis = 0;
-    const size_t potRange = 4096;
-    const double missing = std::numeric_limits<double>::max();
-    vctDoubleMat potToEncoder;
-    vctDoubleVec minEncoder, maxEncoder;
-    vctDynamicVector<size_t> dataCounter;
     bool brakesReleased = false;
 
     while (1) {
@@ -192,25 +221,12 @@ int main(int argc, char * argv[])
 
         // read values
         vctIntVec potBits = robot->PotBits();
-        // first iteration, create memory to store all
-        if (nbAxis == 0) {
-            nbAxis = potBits.size();
-            potToEncoder.SetSize(nbAxis, potRange);
-            potToEncoder.SetAll(missing);
-            minEncoder.SetSize(nbAxis);
-            minEncoder.SetAll(std::numeric_limits<double>::max());
-            maxEncoder.SetSize(nbAxis);
-            maxEncoder.SetAll(std::numeric_limits<double>::min());
-            dataCounter.SetSize(nbAxis);
-            dataCounter.SetAll(0);
-        }
-
         vctDoubleVec actuatorPos = robot->ActuatorJointState().Position();
         for (size_t axis = 0;
              axis < nbAxis;
              ++axis) {
-            if (potToEncoder.at(axis, potBits[axis]) == missing) {
-                double encoder = actuatorPos[axis];
+            if (potToEncoder.at(axis, potBits.at(axis)) == missing) {
+                const double encoder = directionEncoder.at(axis) * actuatorPos.at(axis);
                 potToEncoder.at(axis, potBits[axis]) = encoder;
                 if (encoder < minEncoder.at(axis)) {
                     minEncoder.at(axis) = encoder;
@@ -221,35 +237,80 @@ int main(int argc, char * argv[])
                 dataCounter.at(axis)++;
             }
         }
-        std::cout << "\r Counter: " << dataCounter << std::flush;
+        std::cout << "\rPer axis counters: " << dataCounter << std::flush;
     }
 
     // finding the deadzone(s)
-    vctIntVec potMin(nbAxis);
-    size_t deadZoneBegin, deadZoneEnd;
     for (size_t axis = 0;
          axis < nbAxis;
          ++axis) {
-        bool deadZone = (potToEncoder.at(axis, 0) == missing);
+        // start from first element
+        std::list<std::pair<size_t, size_t> > encoderAreas;
+        bool previousHasEncoder = (potToEncoder.at(axis, 0) != missing);
+        bool encoderStarted = previousHasEncoder;
+        size_t encoderStart;
+        if (encoderStarted) {
+            encoderStart = 0;
+        }
+        // build list of consecutive areas of encoder values
         for (size_t index = 1;
              index < potRange;
              ++index) {
-            bool current = (potToEncoder.at(axis, index) == missing);
-            if (current != deadZone) {
-                deadZone = current;
-                if (deadZone) {
-                    deadZoneBegin = index;
+            bool hasEncoder = (potToEncoder.at(axis, index) != missing);
+            // transitions
+            if (hasEncoder != previousHasEncoder) {
+                if (encoderStarted) {
+                    // check, this should be a encoder end
+                    assert(!hasEncoder);
+                    encoderStarted = false;
+                    encoderAreas.push_back({encoderStart, index - 1});
+                    std::cerr << "Axis " << axis << ", found encoder values from " << encoderStart << " to " << index << std::endl;
                 } else {
-                    deadZoneEnd = index;
-                    if ((deadZoneEnd - deadZoneBegin) > 50) {
-                        std::cout << axis
-                                  << "> found dead zone from " << deadZoneBegin << " to " << deadZoneEnd << std::endl;
-                        potMin.at(axis) = deadZoneEnd;
-                    }
+                    // check, this should be a start
+                    assert(hasEncoder);
+                    encoderStarted = true;
+                    encoderStart = index;
                 }
             }
+            previousHasEncoder = hasEncoder;
+        }
+        // cleanup list by merging two consecutive elements if the
+        // difference between end and start is small
+        if (encoderAreas.size() > 1) {
+            auto previous = encoderAreas.begin();
+            auto iter = previous++;
+            for (; iter != encoderAreas.end(); ++iter) {
+                // remove previous and update first of current from first of previous
+                if ((iter->first - previous->second) < 20) {
+                    iter->first = previous->first;
+                    encoderAreas.erase(previous);
+                }
+                previous = iter;
+            }
+        }
+        // display final results
+        for (auto iter : encoderAreas) {
+            std::cerr << "Axis " << axis << ", assuming encoder areas from " << iter.first << " to " << iter.second << std::endl;
         }
     }
+
+#if 0
+    // this is for a PSM
+    vctDoubleVec minEncoderExpected, maxEncoderExpected;
+    minEncoderExpected.SetSize(7);
+    maxEncoderExpected.SetSize(7);
+    minEncoderExpected.at(0) = -170.0 * cmnPI_180;
+    maxEncoderExpected.at(0) =  170.0 * cmnPI_180;
+    minEncoderExpected.at(1) =  -60.0 * cmnPI_180;
+    maxEncoderExpected.at(1) =   85.0 * cmnPI_180;
+    // translation
+    minEncoderExpected.at(2) =   0.0 * cmn_mm;
+    maxEncoderExpected.at(2) = 290.0 * cmn_mm;
+    // last 4 elements
+    minEncoderExpected.Ref(4, 3) = -172.0 * cmnPI_180;
+    maxEncoderExpected.Ref(4, 3) =  172.0 * cmnPI_180;
+
+    vctDoubleVec offsetEncoder(nbAxis, 0.0);
 
     for (size_t axis = 0;
          axis < nbAxis;
@@ -258,12 +319,43 @@ int main(int argc, char * argv[])
         if (axis != 2) {
             toh = cmn180_PI;
         }
-        std::cout << axis << "> pot min: " << potMin.at(axis)
-                  << " angle: " << potToEncoder.at(axis, potMin.at(axis)) * toh
-                  << " range: [" << minEncoder.at(axis) * toh
+        std::cout << "Axis " << axis << std::endl
+                  << " - pot min: " << potMin.at(axis) << std::endl
+                  << " - angle min : " << potToEncoder.at(axis, potMin.at(axis)) * toh << std::endl
+                  << " - range: [" << minEncoder.at(axis) * toh
                   << ", " << maxEncoder.at(axis) * toh << "]" << std::endl;
+        const double encoderRange = maxEncoder.at(axis) - minEncoder.at(axis);
+        const double encoderRangeExpected =  maxEncoderExpected.at(axis) - minEncoderExpected.at(axis);
+        if ((encoderRange < 0.95 * encoderRangeExpected)
+            || (encoderRange > 1.05 * encoderRangeExpected)) {
+            std::cerr << "Axis " << axis
+                      << ", range for encoder values is not within 5% of what was expected.  Found "
+                      << encoderRange * toh << " but we were expecting "
+                      << encoderRangeExpected * toh << std::endl;
+            return -1;
+        }
+        // compute offset using mid point
+        offsetEncoder.at(axis) = encoderRange / 2.0 - encoderRangeExpected / 2.0;
+        std::cout << " - encoder offset: " << offsetEncoder.at(axis) * toh << std::endl;
+        // add offset to recorded values
+        potToEncoder.Row(axis).Add(offsetEncoder.at(axis));
+        // try to find the closest to zero encoder value within pot range
+        double homePot = potMin.at(axis);
+        double homeEncoder = std::abs(potToEncoder.at(axis, homePot));
+        for (size_t index = potMin.at(axis) + 1;
+             index <= potMax.at(axis);
+             ++index) {
+            const double enc = std::abs(potToEncoder.at(axis, homePot));
+            if (enc < homeEncoder) {
+                homeEncoder = enc;
+                homePot = index;
+            }
+        }
+        std::cout << " - home pot index: " << homePot << std::endl
+                  << " - home encoder value: " << homeEncoder * toh << std::endl;
     }
-
+#endif
+    
     cmnGetChar(); // to read the pressed key
 #if 0
 
