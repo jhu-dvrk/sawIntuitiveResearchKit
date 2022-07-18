@@ -66,7 +66,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
         case mtsIntuitiveResearchKitArm::GENERATION_CLASSIC:
             return 0;
             break;
-        case mtsIntuitiveResearchKitArm::GENERATION_S:
+        case mtsIntuitiveResearchKitArm::GENERATION_Si:
             return 3;
             break;
         default:
