@@ -55,9 +55,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     class CISST_EXPORT Arm {
     public:
         typedef enum {ARM_UNDEFINED,
-                      ARM_MTM, ARM_PSM, ARM_PSM_S, ARM_ECM, ARM_SUJ,
+                      ARM_MTM, ARM_PSM, ARM_PSM_Si, ARM_ECM, ARM_ECM_Si, ARM_SUJ,
                       ARM_MTM_GENERIC, ARM_PSM_GENERIC, ARM_ECM_GENERIC,
-                      ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_PSM_S_DERIVED, ARM_ECM_DERIVED,
+                      ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_PSM_Si_DERIVED, ARM_ECM_DERIVED, ARM_ECM_Si_DERIVED,
                       ARM_PSM_SOCKET,
                       FOCUS_CONTROLLER} ArmType;
 

@@ -125,10 +125,12 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_S:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_S_DERIVED:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_Si:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_Si_DERIVED:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_Si:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_Si_DERIVED:
             // PID widget
             size_t numberOfJoints;
             if (armIter->second->native_or_derived_psm()) {

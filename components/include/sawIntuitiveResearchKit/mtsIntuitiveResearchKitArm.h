@@ -70,7 +70,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         m_calibration_mode = mode;
     }
 
-    typedef enum {GENERATION_UNDEFINED, GENERATION_CLASSIC, GENERATION_S} GenerationType;
+    typedef enum {GENERATION_UNDEFINED, GENERATION_CLASSIC, GENERATION_Si} GenerationType;
     virtual inline void set_generation(const GenerationType generation) {
         m_generation = generation;
     }

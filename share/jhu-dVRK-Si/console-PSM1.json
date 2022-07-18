@@ -10,7 +10,7 @@
     [
         {
             "name": "PSM1",
-            "type": "PSM_S",
+            "type": "PSM_Si",
             "serial": "586288",
             "socket-server": true,
             "remote-ip": "127.0.0.1",

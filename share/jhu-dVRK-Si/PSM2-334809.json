@@ -1,5 +1,5 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "kinematic": "kinematic/spsm.json",
+    "kinematic": "kinematic/psm-si.json",
     "tool-detection": "AUTOMATIC"
 }
