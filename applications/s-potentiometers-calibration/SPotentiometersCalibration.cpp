@@ -39,18 +39,28 @@ int main(int argc, char * argv[])
     cmnCommandLineOptions options;
     std::string portName = mtsRobotIO1394::DefaultPort();
     std::string configFile;
+    std::string savedData;
     options.AddOptionOneValue("c", "config",
                               "arm sawRobotIO1394 XML configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &configFile);
     options.AddOptionOneValue("p", "port",
                               "firewire port number(s)",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &portName);
+    options.AddOptionOneValue("d", "debug-data",
+                              "run using data previously saved (for debug only)",
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &savedData);
+
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
         std::cerr << "Error: " << errorMessage << std::endl;
         options.PrintUsage(std::cerr);
         return -1;
     }
+    std::string parsedArguments;
+    options.PrintParsedArguments(parsedArguments);
+    std::cout << "Arguments:" << std::endl << parsedArguments << std::endl;
+
+    const bool collectData = savedData.empty();
 
     if (!cmnPath::Exists(configFile)) {
         std::cerr << "Can't find file \"" << configFile << "\"." << std::endl;
@@ -83,56 +93,6 @@ int main(int argc, char * argv[])
               << "Press any key to start." << std::endl;
     cmnGetChar();
 
-    std::cout << "Loading config file ..." << std::endl;
-    mtsRobotIO1394 * port = new mtsRobotIO1394("io", 1.0 * cmn_ms, portName);
-    port->Configure(configFile);
-
-    std::cout << "Creating robot ..." << std::endl;
-    int numberOfRobots;
-    port->GetNumberOfRobots(numberOfRobots);
-    if (numberOfRobots == 0) {
-        std::cerr << "Error: the config file doesn't define a robot." << std::endl;
-        return -1;
-    }
-    if (numberOfRobots != 1) {
-        std::cerr << "Error: the config file defines more than one robot." << std::endl;
-        return -1;
-    }
-    mtsRobot1394 * robot = port->Robot(0);
-
-    // locate the manip clutch so we can release the brakes
-    int numberOfDigitalInput;
-    port->GetNumberOfDigitalInputs(numberOfDigitalInput);
-    mtsDigitalInput1394 * clutchInput = nullptr;
-    const std::string clutchName = armName + "-ManipClutch";
-    for (size_t index = 0;
-         index < numberOfDigitalInput;
-         ++index) {
-        if (port->DigitalInput(index)->Name() == clutchName) {
-            clutchInput = port->DigitalInput(index);
-            break;
-        }
-    }
-    if (!clutchInput) {
-        std::cerr << "Error: failed to find digital input \"" << clutchName
-                  << "\", make sure you're using a PSM or ECM-S configuration file!" << std::endl;
-        return -1;
-    }
-
-    // make sure we have at least one set of pots values
-    try {
-        port->Read();
-    } catch (const std::runtime_error & e) {
-        std::cerr << "Caught exception: " << e.what() << std::endl;
-    }
-
-    std::cout << std::endl
-              << "Press any key to power brakes and start collecting data." << std::endl;
-    cmnGetChar();
-
-    // turn off pots used to check encoders
-    robot->UsePotsForSafetyCheck(false);
-
     // create memory to store all data
     size_t nbAxis = nbActuators;
     const size_t potRange = 4096;
@@ -141,6 +101,7 @@ int main(int argc, char * argv[])
     vctDoubleMat potToEncoder;
     vctDoubleVec directionEncoder;
     vctDoubleVec minEncoder, maxEncoder;
+    vctDynamicVector<size_t> minPotIndex, maxPotIndex, zeroPotIndex;
     vctDynamicVector<size_t> dataCounter;
 
     potToEncoder.SetSize(nbAxis, potRange);
@@ -157,87 +118,176 @@ int main(int argc, char * argv[])
     minEncoder.SetAll(std::numeric_limits<double>::max());
     maxEncoder.SetSize(nbAxis);
     maxEncoder.SetAll(std::numeric_limits<double>::min());
+    minPotIndex.SetSize(nbAxis);
+    maxPotIndex.SetSize(nbAxis);
+    zeroPotIndex.SetSize(nbAxis);
     dataCounter.SetSize(nbAxis);
     dataCounter.SetAll(0);
 
-    // enable power and brakes
-    vctDoubleVec brakeCurrent(3, 0.0);
-    robot->SetBrakeCurrent(brakeCurrent);
-    vctDoubleVec actuatorVoltageRatio(nbAxis, 0.0);
-    robot->SetActuatorVoltageRatio(actuatorVoltageRatio);
-    port->Write();
-    robot->WriteSafetyRelay(true);
-    robot->WritePowerEnable(true);
-    robot->SetBrakeAmpEnable(true);
-    robot->SetActuatorAmpEnable(true);
-    port->Write();
+    if (collectData) {
+        std::cout << "Loading config file ..." << std::endl;
+        mtsRobotIO1394 * port = new mtsRobotIO1394("io", 1.0 * cmn_ms, portName);
+        port->Configure(configFile);
 
-    // wait a bit to make sure current stabilizes, 100 * 10 ms = 1 second
-    for (size_t i = 0; i < 100; ++i) {
-        osaSleep(10.0 * cmn_ms);
-        port->Read();
-        port->Write();
-    }
-
-    // check that power is on
-    if (!robot->PowerStatus()) {
-        std::cerr << "Error: unable to power on controllers, make sure E-Stop is ok." << std::endl;
-        return -1;
-    }
-    if (!robot->BrakeAmpStatus().All()) {
-        std::cerr << "Error: failed to turn on brake amplifiers:" << std::endl
-                  << " - status:  " << robot->BrakeAmpStatus() << std::endl
-                  << " - desired: " << robot->BrakeAmpEnable() << std::endl;
-        return -1;
-    }
-
-    std::cout << "Fully open and close the gripper up to the second spring on the MTM multiple times." << std::endl
-              << "NOTE: It is very important to not close the gripper all the way; stop when you feel some resistance from the second spring." << std::endl
-              << "Keep closing and opening until the counter and range stop increasing." << std::endl
-              << "Press any key to stop collecting data." << std::endl << std::endl;
-
-    bool brakesReleased = false;
-
-    while (1) {
-        if (cmnKbHit()) {
-            std::cout << std::endl;
-            break;
+        std::cout << "Creating robot ..." << std::endl;
+        int numberOfRobots;
+        port->GetNumberOfRobots(numberOfRobots);
+        if (numberOfRobots == 0) {
+            std::cerr << "Error: the config file doesn't define a robot." << std::endl;
+            return -1;
         }
-        port->Read();
-        robot->PollState();
-        robot->ConvertState();
-        robot->CheckState();
+        if (numberOfRobots != 1) {
+            std::cerr << "Error: the config file defines more than one robot." << std::endl;
+            return -1;
+        }
+        mtsRobot1394 * robot = port->Robot(0);
 
-        // brakes
-        if (brakesReleased != clutchInput->Value()) {
-            brakesReleased = clutchInput->Value();
-            if (brakesReleased) {
-                robot->BrakeRelease();
-            } else {
-                robot->BrakeEngage();
+        // locate the manip clutch so we can release the brakes
+        int numberOfDigitalInput;
+        port->GetNumberOfDigitalInputs(numberOfDigitalInput);
+        mtsDigitalInput1394 * clutchInput = nullptr;
+        const std::string clutchName = armName + "-ManipClutch";
+        for (size_t index = 0;
+             index < numberOfDigitalInput;
+             ++index) {
+            if (port->DigitalInput(index)->Name() == clutchName) {
+                clutchInput = port->DigitalInput(index);
+                break;
             }
         }
+        if (!clutchInput) {
+            std::cerr << "Error: failed to find digital input \"" << clutchName
+                      << "\", make sure you're using a PSM or ECM-S configuration file!" << std::endl;
+            return -1;
+        }
+
+        // make sure we have at least one set of pots values
+        try {
+            port->Read();
+        } catch (const std::runtime_error & e) {
+            std::cout << "Caught exception: " << e.what() << std::endl;
+        }
+
+        std::cout << std::endl
+                  << "Press any key to power brakes and start collecting data." << std::endl;
+        cmnGetChar();
+
+        // turn off pots used to check encoders
+        robot->UsePotsForSafetyCheck(false);
+
+        // enable power and brakes
+        vctDoubleVec brakeCurrent(3, 0.0);
+        robot->SetBrakeCurrent(brakeCurrent);
+        vctDoubleVec actuatorVoltageRatio(nbAxis, 0.0);
+        robot->SetActuatorVoltageRatio(actuatorVoltageRatio);
+        port->Write();
+        robot->WriteSafetyRelay(true);
+        robot->WritePowerEnable(true);
+        robot->SetBrakeAmpEnable(true);
+        robot->SetActuatorAmpEnable(true);
         port->Write();
 
-        // read values
-        vctIntVec potBits = robot->PotBits();
-        vctDoubleVec actuatorPos = robot->ActuatorJointState().Position();
-        for (size_t axis = 0;
-             axis < nbAxis;
-             ++axis) {
-            if (potToEncoder.at(axis, potBits.at(axis)) == missing) {
-                const double encoder = directionEncoder.at(axis) * actuatorPos.at(axis);
-                potToEncoder.at(axis, potBits[axis]) = encoder;
-                if (encoder < minEncoder.at(axis)) {
-                    minEncoder.at(axis) = encoder;
-                }
-                if (encoder > maxEncoder.at(axis)) {
-                    maxEncoder.at(axis) = encoder;
-                }
-                dataCounter.at(axis)++;
-            }
+        // wait a bit to make sure current stabilizes, 100 * 10 ms = 1 second
+        for (size_t i = 0; i < 100; ++i) {
+            osaSleep(10.0 * cmn_ms);
+            port->Read();
+            port->Write();
         }
-        std::cout << "\rPer axis counters: " << dataCounter << std::flush;
+
+        // check that power is on
+        if (!robot->PowerStatus()) {
+            std::cerr << "Error: unable to power on controllers, make sure E-Stop is ok." << std::endl;
+            return -1;
+        }
+        if (!robot->BrakeAmpStatus().All()) {
+            std::cerr << "Error: failed to turn on brake amplifiers:" << std::endl
+                      << " - status:  " << robot->BrakeAmpStatus() << std::endl
+                      << " - desired: " << robot->BrakeAmpEnable() << std::endl;
+            return -1;
+        }
+
+        std::cout << "Move every joint from limit to limit.  Press the arm clutch to release the brakes if needed" << std::endl
+                  << "Press any key to stop collecting data." << std::endl << std::endl;
+
+        bool brakesReleased = false;
+
+        while (1) {
+            if (cmnKbHit()) {
+                std::cout << std::endl;
+                break;
+            }
+            port->Read();
+            robot->PollState();
+            robot->ConvertState();
+            robot->CheckState();
+
+            // brakes
+            if (brakesReleased != clutchInput->Value()) {
+                brakesReleased = clutchInput->Value();
+                if (brakesReleased) {
+                    robot->BrakeRelease();
+                } else {
+                    robot->BrakeEngage();
+                }
+            }
+            port->Write();
+
+            // read values
+            vctIntVec potBits = robot->PotBits();
+            vctDoubleVec actuatorPos = robot->ActuatorJointState().Position();
+            for (size_t axis = 0;
+                 axis < nbAxis;
+                 ++axis) {
+                if (potToEncoder.at(axis, potBits.at(axis)) == missing) {
+                    potToEncoder.at(axis, potBits[axis]) = directionEncoder.at(axis) * actuatorPos.at(axis);
+                    dataCounter.at(axis)++;
+                }
+            }
+            std::cout << "\rPer axis counters: " << dataCounter << std::flush;
+        }
+
+        // power off
+        robot->SetBrakeAmpEnable(false);
+        port->Write();
+        robot->WritePowerEnable(false);
+        robot->WriteSafetyRelay(false);
+        delete port;
+
+        // record the raw data (for debugging purposes)
+        std::ofstream rawFile;
+        std::string rawFileName = "sawRobotIO1394PotToEncoder-" + armName + "-" + serialNumber + "-raw-data.json";
+        rawFile.open(rawFileName);
+        Json::Value jsonValue;
+        cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue);
+        rawFile << jsonValue;
+        rawFile.close();
+        std::cout << "Raw data saved to " << rawFileName << std::endl
+                  << "You can plot the data in python using:" << std::endl
+                  << "import matplotlib.pyplot as plt" << std::endl
+                  << "import json, sys" << std::endl
+                  << "data = json.load(open('" << rawFileName << "'))" << std::endl
+                  << "data = [[(a if a != sys.float_info.max else 0) for a in row] for row in data]" << std::endl
+                  << "plt.plot(data[0]) # or whatever axis index you need" << std::endl
+                  << "plt.show()" << std::endl;
+    }
+    // using recorded data
+    else {
+        // make sure file exists
+        if (!cmnPath::Exists(savedData)) {
+            std::cerr << "Can't find file \"" << savedData << "\"." << std::endl;
+            return -1;
+        }
+        // load content
+        std::ifstream jsonStream;
+        Json::Value jsonValue;
+        Json::Reader jsonReader;
+        jsonStream.open(savedData.c_str());
+        if (!jsonReader.parse(jsonStream, jsonValue)) {
+            std::cerr << "JSON parsing failed for " << savedData << ", "
+                      << jsonReader.getFormattedErrorMessages();
+            return false;
+        }
+        cmnDataJSON<vctDoubleMat>::DeSerializeText(potToEncoder, jsonValue);
     }
 
     // finding the deadzone(s)
@@ -253,27 +303,39 @@ int main(int argc, char * argv[])
             encoderStart = 0;
         }
         // build list of consecutive areas of encoder values
+        std::cout << "Axis " << axis << ", found encoder values for ranges";
         for (size_t index = 1;
              index < potRange;
              ++index) {
-            bool hasEncoder = (potToEncoder.at(axis, index) != missing);
+            const bool hasEncoder = (potToEncoder.at(axis, index) != missing);
             // transitions
-            if (hasEncoder != previousHasEncoder) {
+            if ((hasEncoder != previousHasEncoder)
+                || (index == (potRange - 1))) {
                 if (encoderStarted) {
-                    // check, this should be a encoder end
-                    assert(!hasEncoder);
                     encoderStarted = false;
                     encoderAreas.push_back({encoderStart, index - 1});
-                    std::cerr << "Axis " << axis << ", found encoder values from " << encoderStart << " to " << index << std::endl;
+                    std::cout << " [" << encoderStart << ", " << index - 1 << "]";
                 } else {
-                    // check, this should be a start
-                    assert(hasEncoder);
                     encoderStarted = true;
                     encoderStart = index;
                 }
             }
+            // update min/max
+            if (hasEncoder) {
+                const double enc = potToEncoder.at(axis, index);
+                if (enc < minEncoder.at(axis)) {
+                    minEncoder.at(axis) = enc;
+                    minPotIndex.at(axis) = index;
+                }
+                if (enc > maxEncoder.at(axis)) {
+                    maxEncoder.at(axis) = enc;
+                    maxPotIndex.at(axis) = index;
+                }
+            }
             previousHasEncoder = hasEncoder;
         }
+        std::cout << std::endl;
+
         // cleanup list by merging two consecutive elements if the
         // difference between end and start is small
         if (encoderAreas.size() > 1) {
@@ -282,6 +344,20 @@ int main(int argc, char * argv[])
             for (; iter != encoderAreas.end(); ++iter) {
                 // remove previous and update first of current from first of previous
                 if ((iter->first - previous->second) < 20) {
+                    // simple interpolation to fill in the missing values
+                    const double start = potToEncoder.at(axis, previous->second);
+                    const double end = potToEncoder.at(axis, iter->first);
+                    const size_t nbMissing = iter->first - previous->second - 1;
+                    std::cout << "Axis " << axis << ", found " << nbMissing << " missing consecutive pot indices" << std::endl;
+                    const double delta = (end - start) / nbMissing;
+                    size_t counter = 1;
+                    for (size_t index = previous->second + 1;
+                         index < iter->first;
+                         ++index, ++counter) {
+                        std::cerr << index << " ";
+                        potToEncoder.at(axis, index) = start + counter * delta;
+                    }
+                    // concatenate lists of indices
                     iter->first = previous->first;
                     encoderAreas.erase(previous);
                 }
@@ -290,11 +366,10 @@ int main(int argc, char * argv[])
         }
         // display final results
         for (auto iter : encoderAreas) {
-            std::cerr << "Axis " << axis << ", assuming encoder areas from " << iter.first << " to " << iter.second << std::endl;
+            std::cout << "Axis " << axis << ", using encoder for range [" << iter.first << ", " << iter.second << "]" << std::endl;
         }
     }
 
-#if 0
     // this is for a PSM
     vctDoubleVec minEncoderExpected, maxEncoderExpected;
     minEncoderExpected.SetSize(7);
@@ -320,8 +395,6 @@ int main(int argc, char * argv[])
             toh = cmn180_PI;
         }
         std::cout << "Axis " << axis << std::endl
-                  << " - pot min: " << potMin.at(axis) << std::endl
-                  << " - angle min : " << potToEncoder.at(axis, potMin.at(axis)) * toh << std::endl
                   << " - range: [" << minEncoder.at(axis) * toh
                   << ", " << maxEncoder.at(axis) * toh << "]" << std::endl;
         const double encoderRange = maxEncoder.at(axis) - minEncoder.at(axis);
@@ -337,86 +410,38 @@ int main(int argc, char * argv[])
         // compute offset using mid point
         offsetEncoder.at(axis) = encoderRange / 2.0 - encoderRangeExpected / 2.0;
         std::cout << " - encoder offset: " << offsetEncoder.at(axis) * toh << std::endl;
-        // add offset to recorded values
-        potToEncoder.Row(axis).Add(offsetEncoder.at(axis));
-        // try to find the closest to zero encoder value within pot range
-        double homePot = potMin.at(axis);
-        double homeEncoder = std::abs(potToEncoder.at(axis, homePot));
-        for (size_t index = potMin.at(axis) + 1;
-             index <= potMax.at(axis);
+        // add offset to recorded values and try to find the closest
+        // to zero encoder value within pot range
+        double zeroEncoder = std::numeric_limits<double>::max();
+        for (size_t index = 0;
+             index < potRange;
              ++index) {
-            const double enc = std::abs(potToEncoder.at(axis, homePot));
-            if (enc < homeEncoder) {
-                homeEncoder = enc;
-                homePot = index;
+            const bool hasEncoder = (potToEncoder.at(axis, index) != missing);
+            if (hasEncoder) {
+                // add offset
+                potToEncoder.at(axis, index) += offsetEncoder.at(axis);
+                // try to find lowest encoder value
+                const double enc = std::abs(potToEncoder.at(axis, index));
+                if (enc < zeroEncoder) {
+                    zeroEncoder = enc;
+                    zeroPotIndex.at(axis) = index;
+                }
             }
         }
-        std::cout << " - home pot index: " << homePot << std::endl
-                  << " - home encoder value: " << homeEncoder * toh << std::endl;
+        std::cout << " - zero pot index: " << zeroPotIndex.at(axis) << std::endl
+                  << " - zero encoder value: " << zeroEncoder * toh << std::endl;
     }
-#endif
-    
-    cmnGetChar(); // to read the pressed key
-#if 0
+
+    // record the pot to encoder file
+    std::ofstream potToEncoderFile;
+    std::string potToEncoderFileName = "sawRobotIO1394PotToEncoder-" + armName + "-" + serialNumber + ".json-new";
+    potToEncoderFile.open(potToEncoderFileName);
+    Json::Value jsonValue;
+    cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue);
+    potToEncoderFile << jsonValue;
+    potToEncoderFile.close();
 
     std::cout << std::endl
-              << "Status: found range [" << minPot << ", " << maxPot
-              << "]" << std::endl
-              << std::endl
-              << "Do you want to update the config file with these values? [Y/y]" << std::endl;
-
-
-    // save if needed
-    char key = cmnGetChar();
-    if ((key == 'y') || (key == 'Y')) {
-        // query previous current offset and scales
-        double previousOffset;
-        double previousScale;
-        xmlConfig.GetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Offset", previousOffset);
-        xmlConfig.GetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Scale", previousScale);
-
-        // compute new offsets assuming a range [0, user-max]
-        double userMaxDeg;
-        std::cout << "Enter the new desired max for the gripper, 60 (degrees) is recommended to match the maximum tool opening." << std::endl;
-        std::cin >> userMaxDeg;
-        cmnGetChar(); // to get the CR
-        double userMaxRad = userMaxDeg * cmnPI / 180.0;
-        // find corresponding pot values using previous scale and offset - carefull, offsets are in degrees in the file
-        double minVolt = (minRad - previousOffset * cmnPI / 180.0) / previousScale;
-        double maxVolt = (maxRad - previousOffset * cmnPI / 180.0) / previousScale;
-        // compute new scale and offset to match pot -> [0, user-max]
-        double newScale = (userMaxRad - 0.0) / (maxVolt - minVolt);
-        double newOffset = - newScale * minVolt * 180.0 / cmnPI; // also convert back to degrees
-
-        // ask one last confirmation from user
-        std::cout << "Status: offset and scale in XML configuration file: " << previousOffset << " " << previousScale << std::endl
-                  << "Status: new offset and scale:                       " << newOffset << " " << newScale << std::endl
-                  << std::endl
-                  << "Do you want to save these values? [S/s]" << std::endl;
-        key = cmnGetChar();
-        if ((key == 's') || (key == 'S')) {
-            const char * context = "Config";
-            xmlConfig.SetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Offset", newOffset);
-            xmlConfig.SetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Scale", newScale);
-            std::string newConfigFile = configFile + "-new";
-            xmlConfig.SaveAs(newConfigFile);
-            std::cout << "Status: new config file is \"" << newConfigFile << "\"" << std::endl
-                      << "You can copy the new file over the old one using:\n  cp -i "
-                      << newConfigFile << " " << configFile << std::endl;
-        } else {
-            std::cout << "Status: user didn't want to save new offsets." << std::endl;
-        }
-    } else {
-        std::cout << "Status: no data saved in config file." << std::endl;
-    }
-#endif
-
-    // power off
-    robot->SetBrakeAmpEnable(false);
-    port->Write();
-    robot->WritePowerEnable(false);
-    robot->WriteSafetyRelay(false);
-
-    delete port;
+              << "Results saved in " << potToEncoderFileName << std::endl;
     return 0;
 }
