@@ -40,6 +40,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJSi.h>
 #include <sawIntuitiveResearchKit/mtsSocketClientPSM.h>
 #include <sawIntuitiveResearchKit/mtsSocketServerPSM.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciHeadSensor.h>
@@ -66,6 +67,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived(void) const
     case ARM_ECM_DERIVED:
     case ARM_ECM_Si_DERIVED:
     case ARM_SUJ:
+    case ARM_SUJ_Si:
     case FOCUS_CONTROLLER:
         return true;
         break;
@@ -116,6 +118,20 @@ bool mtsIntuitiveResearchKitConsole::Arm::ecm(void) const
     case ARM_ECM_DERIVED:
     case ARM_ECM_Si:
     case ARM_ECM_Si_DERIVED:
+        return true;
+        break;
+    default:
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool mtsIntuitiveResearchKitConsole::Arm::suj(void) const
+{
+    switch (m_type) {
+    case ARM_SUJ:
+    case ARM_SUJ_Si:
         return true;
         break;
     default:
@@ -207,7 +223,16 @@ mtsIntuitiveResearchKitArm::GenerationType mtsIntuitiveResearchKitConsole::Arm::
 
 bool mtsIntuitiveResearchKitConsole::Arm::expects_PID(void) const
 {
-    return (native_or_derived() && (m_type != ARM_SUJ));
+    return (native_or_derived()
+            && !suj());
+}
+
+bool mtsIntuitiveResearchKitConsole::Arm::expects_IO(void) const
+{
+    return (native_or_derived()
+            && (m_type != Arm::ARM_PSM_SOCKET)
+            && (m_type != Arm::ARM_SUJ_Si)
+            && (m_simulation == Arm::SIMULATION_NONE));
 }
 
 mtsIntuitiveResearchKitConsole::Arm::Arm(mtsIntuitiveResearchKitConsole * console,
@@ -347,6 +372,24 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                                             IOComponentName(), "SUJ-Clutch-3");
                 m_console->mConnections.Add(Name(), "SUJ-Clutch-4",
                                             IOComponentName(), "SUJ-Clutch-4");
+            }
+            suj->Configure(m_arm_configuration_file);
+            componentManager->AddComponent(suj);
+        }
+        break;
+    case ARM_SUJ_Si:
+        {
+            mtsIntuitiveResearchKitSUJSi * suj = new mtsIntuitiveResearchKitSUJSi(Name(), periodInSeconds);
+            if (m_simulation == SIMULATION_KINEMATIC) {
+                suj->set_simulated();
+            } else if (m_simulation == SIMULATION_NONE) {
+                for (size_t index = 0;
+                     index < 4;
+                     ++index) {
+                    const std::string itf = "Brake" + std::to_string(index);
+                    m_console->mConnections.Add(Name(), itf,
+                                                IOComponentName(), itf);
+                }
             }
             suj->Configure(m_arm_configuration_file);
             componentManager->AddComponent(suj);
@@ -1133,7 +1176,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // search for SUJs
     bool hasSUJ = false;
     for (auto iter = mArms.begin(); iter != end; ++iter) {
-        if (iter->second->m_type == Arm::ARM_SUJ) {
+        if (iter->second->suj()) {
             hasSUJ = true;
         }
     }
@@ -1238,7 +1281,7 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
 {
     if ((newArm->m_type != Arm::ARM_PSM_SOCKET)
         && (newArm->native_or_derived())) {
-        if (newArm->m_type != Arm::ARM_SUJ) {
+        if (!newArm->suj()) {
             if (newArm->m_PID_configuration_file.empty()) {
                 CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, "
                                          << newArm->Name() << " must be configured first (PID)." << std::endl;
@@ -1410,7 +1453,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             armPointer->m_type = Arm::ARM_PSM_Si;
         } else if (typeString == "ECM") {
             armPointer->m_type = Arm::ARM_ECM;
-        } else if (typeString == "ECM_si") {
+        } else if (typeString == "ECM_Si") {
             armPointer->m_type = Arm::ARM_ECM_Si;
         } else if (typeString == "MTM_DERIVED") {
             armPointer->m_type = Arm::ARM_MTM_DERIVED;
@@ -1434,14 +1477,16 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             armPointer->m_type = Arm::FOCUS_CONTROLLER;
         } else if (typeString == "SUJ") {
             armPointer->m_type = Arm::ARM_SUJ;
+        } else if (typeString == "SUJ_Si") {
+            armPointer->m_type = Arm::ARM_SUJ_Si;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName << ": invalid type \""
-                                     << typeString << "\", needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC}" << std::endl;
+                                     << typeString << "\", needs to be one of {MTM,PSM,ECM,SUJ}{,_Si}{,_DERIVED,_GENERIC}" << std::endl;
             return false;
         }
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << armName
-                                 << ": doesn't have a \"type\" specified, needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC} or FOCUS_CONTROLLER" << std::endl;
+                                 << ": doesn't have a \"type\" specified, needs to be one of {MTM,PSM,ECM,SUJ}{,_Si}{,_DERIVED,_GENERIC} or FOCUS_CONTROLLER" << std::endl;
         return false;
     }
 
@@ -1519,59 +1564,56 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         }
     }
 
-    // IO for anything not simulated or socket client
-    if ((armPointer->m_type != Arm::ARM_PSM_SOCKET)
-        && (armPointer->native_or_derived())) {
-        if (armPointer->m_simulation == Arm::SIMULATION_NONE) {
-            jsonValue = jsonArm["io"];
-            if (!jsonValue.empty()) {
-                armPointer->m_IO_configuration_file = armConfigPath.Find(jsonValue.asString());
+    // IO for anything not simulated or socket client or Si SUJ
+    if (armPointer->expects_IO()) {
+        jsonValue = jsonArm["io"];
+        if (!jsonValue.empty()) {
+            armPointer->m_IO_configuration_file = armConfigPath.Find(jsonValue.asString());
+            if (armPointer->m_IO_configuration_file == "") {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO file " << jsonValue.asString() << std::endl;
+                return false;
+            }
+        } else {
+            // try to find default if serial number has been provided
+            if (armPointer->m_serial != "") {
+                std::string defaultFile = "sawRobotIO1394-" + armName + "-" + armPointer->m_serial + ".xml";
+                armPointer->m_IO_configuration_file = armConfigPath.Find(defaultFile);
                 if (armPointer->m_IO_configuration_file == "") {
-                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO file " << jsonValue.asString() << std::endl;
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO file " << defaultFile << std::endl;
+                    return false;
+                }
+            } else {
+                // no io nor serial
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"io\" setting for arm \""
+                                         << armName << "\" and \"serial\" is not provided so we can't search for it" << std::endl;
+                return false;
+            }
+        }
+        // IO for MTM gripper
+        if ((armPointer->m_type == Arm::ARM_MTM)
+            || (armPointer->m_type == Arm::ARM_MTM_DERIVED)) {
+            jsonValue = jsonArm["io-gripper"];
+            if (!jsonValue.empty()) {
+                armPointer->m_IO_gripper_configuration_file = armConfigPath.Find(jsonValue.asString());
+                if (armPointer->m_IO_gripper_configuration_file == "") {
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO gripper file "
+                                             << jsonValue.asString() << std::endl;
                     return false;
                 }
             } else {
                 // try to find default if serial number has been provided
                 if (armPointer->m_serial != "") {
-                    std::string defaultFile = "sawRobotIO1394-" + armName + "-" + armPointer->m_serial + ".xml";
-                    armPointer->m_IO_configuration_file = armConfigPath.Find(defaultFile);
-                    if (armPointer->m_IO_configuration_file == "") {
-                        CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO file " << defaultFile << std::endl;
+                    std::string defaultFile = "sawRobotIO1394-" + armName + "-gripper-" + armPointer->m_serial + ".xml";
+                    armPointer->m_IO_gripper_configuration_file = armConfigPath.Find(defaultFile);
+                    if (armPointer->m_IO_gripper_configuration_file == "") {
+                        CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO gripper file " << defaultFile << std::endl;
                         return false;
                     }
                 } else {
                     // no io nor serial
-                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"io\" setting for arm \""
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"io-gripper\" setting for arm \""
                                              << armName << "\" and \"serial\" is not provided so we can't search for it" << std::endl;
                     return false;
-                }
-            }
-            // IO for MTM gripper
-            if ((armPointer->m_type == Arm::ARM_MTM)
-                || (armPointer->m_type == Arm::ARM_MTM_DERIVED)) {
-                jsonValue = jsonArm["io-gripper"];
-                if (!jsonValue.empty()) {
-                    armPointer->m_IO_gripper_configuration_file = armConfigPath.Find(jsonValue.asString());
-                    if (armPointer->m_IO_gripper_configuration_file == "") {
-                        CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO gripper file "
-                                                 << jsonValue.asString() << std::endl;
-                        return false;
-                    }
-                } else {
-                    // try to find default if serial number has been provided
-                    if (armPointer->m_serial != "") {
-                        std::string defaultFile = "sawRobotIO1394-" + armName + "-gripper-" + armPointer->m_serial + ".xml";
-                        armPointer->m_IO_gripper_configuration_file = armConfigPath.Find(defaultFile);
-                        if (armPointer->m_IO_gripper_configuration_file == "") {
-                            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find IO gripper file " << defaultFile << std::endl;
-                            return false;
-                        }
-                    } else {
-                        // no io nor serial
-                        CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"io-gripper\" setting for arm \""
-                                                 << armName << "\" and \"serial\" is not provided so we can't search for it" << std::endl;
-                        return false;
-                    }
                 }
             }
         }
