@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -74,10 +74,6 @@ public:
 
         // emit an event the first time we have a valid position
         mNumberOfMuxCyclesBeforeStable = 0;
-
-        // joints
-        mJointGet.SetSize(6);
-        mJointGet.Zeros();
 
         // base frame
         mBaseFrameValid = true;
@@ -347,7 +343,6 @@ public:
 
     // kinematics
     robManipulator mManipulator;
-    vctDoubleVec mJointGet;
     vctMat mRecalibrationMatrix;
     vctDoubleVec mNewJointScales[2];
     vctDoubleVec mNewJointOffsets[2];
@@ -559,9 +554,9 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
     const Json::Value jsonReferenceArm = jsonConfig["reference-arm"];
     if (!jsonReferenceArm.isNull()) {
         referenceArmName = jsonReferenceArm.asString();
-        CMN_LOG_CLASS_INIT_WARNING << "Configure: \"reference-arm\" is user defined.  This should only happen if you are using a PSM to hold a camera.  Most users shouldn't define \"reference-arm\".  If undefined, all arm cartesian positions will be defined with respect to the ECM" << std::endl; 
+        CMN_LOG_CLASS_INIT_WARNING << "Configure: \"reference-arm\" is user defined.  This should only happen if you are using a PSM to hold a camera.  Most users shouldn't define \"reference-arm\".  If undefined, all arm cartesian positions will be defined with respect to the ECM" << std::endl;
     }
-    
+
     // find all arms, there should be 4 of them
     const Json::Value jsonArms = jsonConfig["arms"];
     if (jsonArms.size() != 4) {
@@ -1118,9 +1113,6 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                 arm->m_measured_js.Position().Divide(2.0);
                 arm->m_measured_js.SetValid(true);
 
-                // Joint forward kinematics
-                arm->mJointGet.Assign(arm->m_measured_js.Position(), arm->mManipulator.links.size());
-
                 // this mux cycle might have started before brakes where engaged so we can set the valid flag
                 if (arm->mNumberOfMuxCyclesBeforeStable < NUMBER_OF_MUX_CYCLE_BEFORE_STABLE) {
                     arm->mNumberOfMuxCyclesBeforeStable++;
@@ -1134,7 +1126,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                 arm->m_measured_cp.SetValid(arm->mBaseFrameValid && arm->m_local_measured_cp.Valid());
 
                 // forward kinematic
-                vctFrm4x4 suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
+                vctFrm4x4 suj = arm->mManipulator.ForwardKinematics(arm->m_measured_js.Position(), 6);
                 // pre and post transformations loaded from JSON file, base frame updated using events
                 arm->mPositionCartesianLocal = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
                 // update local only
@@ -1228,10 +1220,8 @@ void mtsIntuitiveResearchKitSUJ::RunEnabled(void)
             for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
                 mtsIntuitiveResearchKitSUJArmData * arm = Arms[armIndex];
                 arm->mStateTable.Start();
-                // Joint forward kinematics
-                arm->mJointGet.Assign(arm->m_measured_js.Position(), arm->mManipulator.links.size());
                 // forward kinematic
-                vctFrm4x4 suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
+                vctFrm4x4 suj = arm->mManipulator.ForwardKinematics(arm->m_measured_js.Position(), 6);
                 // pre and post transformations loaded from JSON file, base frame updated using events
                 vctFrm4x4 armLocal = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
                 // apply base frame
