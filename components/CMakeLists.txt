@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2021 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2022 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -101,6 +101,7 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitECM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJ.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJSi.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
@@ -124,6 +125,7 @@ if (cisst_FOUND)
          code/mtsIntuitiveResearchKitPSM.cpp
          code/mtsIntuitiveResearchKitECM.cpp
          code/mtsIntuitiveResearchKitSUJ.cpp
+         code/mtsIntuitiveResearchKitSUJSi.cpp
          code/mtsTeleOperationPSM.cpp
          code/mtsTeleOperationECM.cpp
          code/mtsIntuitiveResearchKitConsole.cpp
