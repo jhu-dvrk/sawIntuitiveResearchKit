@@ -97,11 +97,6 @@ protected:
 
     void SetHomed(const bool homed);
 
-    // Functions for IO
-    struct {
-        mtsFunctionWrite brakes[4];
-    } RobotIO;
-
     // Functions for events
     struct {
         mtsFunctionWrite desired_state;
@@ -110,7 +105,6 @@ protected:
     } state_events;
     mtsInterfaceProvided * mInterface;
 
-    vctDoubleVec mVoltages;
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJSiArmData *, 4> Arms;
     size_t BaseFrameArmIndex; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
 
@@ -124,6 +118,7 @@ protected:
     void DispatchStatus(const std::string & message);
     void DispatchState(void);
     void DispatchOperatingState(void);
+    void EngageBrakes(void);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJSi);

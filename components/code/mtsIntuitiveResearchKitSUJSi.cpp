@@ -44,25 +44,19 @@ public:
     typedef enum {SUJ_UNDEFINED, SUJ_PSM, SUJ_ECM, SUJ_MOTORIZED_PSM} SujType;
 
     inline mtsIntuitiveResearchKitSUJSiArmData(const std::string & name,
-                                             const SujType type,
-                                             const unsigned int plugNumber,
-                                             const bool isSimulated,
-                                             mtsInterfaceProvided * interfaceProvided,
-                                             mtsInterfaceRequired * interfaceRequired):
+                                               const std::string & arduinoMAC,
+                                               const bool isSimulated,
+                                               mtsInterfaceProvided * interfaceProvided,
+                                               mtsInterfaceRequired * interfaceRequiredBaseFrame,
+                                               mtsInterfaceRequired * interfaceRequiredBrake):
         mName(name),
-        mType(type),
-        mPlugNumber(plugNumber),
+        mArduinoMAC(arduinoMAC),
         m_simulated(isSimulated),
-        mInterfaceProvided(0),
-        mInterfaceRequired(0),
         mStateTable(500, name),
         mStateTableConfiguration(100, name + "Configuration")
     {
         // brake info
         mClutched = 0;
-
-        // emit an event the first time we have a valid position
-        mNumberOfMuxCyclesBeforeStable = 0;
 
         // base frame
         mBaseFrameValid = true;
@@ -129,7 +123,7 @@ public:
         mStateTable.AddData(mBaseFrame, "base_frame");
         mStateTableConfiguration.AddData(mName, "name");
         mStateTableConfiguration.AddData(mSerialNumber, "serial_number");
-        mStateTableConfiguration.AddData(mPlugNumber, "plug_number");
+        mStateTableConfiguration.AddData(mArduinoMAC, "arduino_mac");
         mStateTableConfiguration.AddData(mVoltageToPositionOffsets[0], "PrimaryJointOffset");
         mStateTableConfiguration.AddData(mVoltageToPositionOffsets[1], "SecondaryJointOffset");
 
@@ -156,7 +150,7 @@ public:
         mInterfaceProvided->AddCommandReadState(mStateTable, mVoltages[1], "GetVoltagesSecondary");
         mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mName, "GetName");
         mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mSerialNumber, "GetSerialNumber");
-        mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mPlugNumber, "GetPlugNumber");
+        mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mArduinoMAC, "ArduinoMAC");
 
         // write commands
         mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJSiArmData::ClutchCommand, this,
@@ -178,18 +172,24 @@ public:
         mInterfaceProvided->AddCommandReadState(mStateTable, mStateTable.PeriodStats,
                                         "period_statistics");
 
-        CMN_ASSERT(interfaceRequired);
-        mInterfaceRequired = interfaceRequired;
-        mInterfaceRequired->AddFunction("set_base_frame", mSetArmBaseFrame);
-        mInterfaceRequired->AddFunction("local/measured_cp", mGetArmPositionCartesianLocal);
+        CMN_ASSERT(interfaceRequiredBaseFrame);
+        mInterfaceRequiredBaseFrame = interfaceRequiredBaseFrame;
+        mInterfaceRequiredBaseFrame->AddFunction("set_base_frame", mSetArmBaseFrame);
+        mInterfaceRequiredBaseFrame->AddFunction("local/measured_cp", mGetArmPositionCartesianLocal);
+
+        CMN_ASSERT(interfaceRequiredBrake);
+        mInterfaceRequiredBrake = interfaceRequiredBrake;
+        mInterfaceRequiredBrake->AddFunction("Brake", mBrake);
     }
 
     inline void ClutchCallback(const prmEventButton & button) {
         if (button.Type() == prmEventButton::PRESSED) {
             mClutched += 1;
             if (mClutched == 1) {
+                // release the brakes
+                mBrake(true);
                 // clutch is pressed, arm is moving around and we know the pots are slow, we mark position as invalid
-                mInterfaceProvided->SendStatus(mName.Data + ": SUJ clutched");
+                mInterfaceProvided->SendStatus(mName + ": SUJ clutched");
                 m_measured_cp.SetTimestamp(m_measured_js.Timestamp());
                 m_measured_cp.SetValid(false);
                 EventPositionCartesian(m_measured_cp);
@@ -199,14 +199,15 @@ public:
             }
         } else {
             // first event to release (physical button or GUI) forces release
+            mBrake(false);
             mClutched = 0;
-            mInterfaceProvided->SendStatus(mName.Data + ": SUJ not clutched");
+            mInterfaceProvided->SendStatus(mName + ": SUJ not clutched");
         }
     }
 
     inline void servo_jp(const prmPositionJointSet & newPosition) {
         if (!m_simulated) {
-            mInterfaceProvided->SendWarning(mName.Data + ": servo_jp can't be used unless the SUJs are in simulated mode");
+            mInterfaceProvided->SendWarning(mName + ": servo_jp can't be used unless the SUJs are in simulated mode");
             return;
         }
         // save the desired position
@@ -280,20 +281,19 @@ public:
     }
 
     // name of this SUJ arm (ECM, PSM1, ...)
-    mtsStdString mName;
-    // suj type
-    SujType mType;
+    std::string mName;
     // serial number
-    mtsStdString mSerialNumber;
+    std::string mSerialNumber;
     // plug on back of controller, 1 to 4
-    unsigned int mPlugNumber;
+    std::string mArduinoMAC;
 
     // simulated or not
     bool m_simulated;
 
     // interfaces
-    mtsInterfaceProvided * mInterfaceProvided;
-    mtsInterfaceRequired * mInterfaceRequired;
+    mtsInterfaceProvided * mInterfaceProvided = nullptr;
+    mtsInterfaceRequired * mInterfaceRequiredBaseFrame = nullptr;
+    mtsInterfaceRequired * mInterfaceRequiredBrake = nullptr;
 
     // state of this SUJ arm
     mtsStateTable mStateTable; // for positions, fairly slow, i.e 12 * delay for a2d
@@ -334,6 +334,7 @@ public:
 
     // clutch data
     unsigned int mClutched;
+    mtsFunctionWrite mBrake;
 
     // functions for events
     mtsFunctionWrite EventPositionCartesian;
@@ -367,9 +368,7 @@ void mtsIntuitiveResearchKitSUJSi::Init(void)
     mSimulatedTimer = 0.0;
 
     // initialize arm pointers
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex] = 0;
-    }
+    Arms.SetAll(nullptr);
 
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
@@ -428,16 +427,6 @@ void mtsIntuitiveResearchKitSUJSi::Init(void)
 
     // default values
     m_simulated = false;
-    mVoltages.SetSize(4);
-
-    // Arm IO
-    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("RobotIO");
-    if (interfaceRequired) {
-        for (size_t index = 0; index < 4; ++index) {
-            interfaceRequired->AddFunction("Brake" + std::to_string(index), RobotIO.brakes[index], MTS_OPTIONAL);
-        }
-        // interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJSi::ErrorEventHandler, this, "error");
-    }
 
     mInterface = AddInterfaceProvided("Arm");
     if (mInterface) {
@@ -509,45 +498,29 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
                                      << std::endl;
             exit(EXIT_FAILURE);
         }
-        std::string typeString = jsonArm["type"].asString();
-        mtsIntuitiveResearchKitSUJSiArmData::SujType type;
-        if (typeString == "ECM") {
-            type = mtsIntuitiveResearchKitSUJSiArmData::SUJ_ECM;
-        }
-        else if (typeString == "PSM") {
-            type = mtsIntuitiveResearchKitSUJSiArmData::SUJ_PSM;
-        }
-        else if (typeString == "Motorized PSM") {
-            type = mtsIntuitiveResearchKitSUJSiArmData::SUJ_MOTORIZED_PSM;
-        }
-        else {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect arm type for SUJ \""
-                                     << name << "\", must be one of \"PSM\", \"ECM\" or \"Motorized PSM\""
-                                     << std::endl;
-            exit(EXIT_FAILURE);
-        }
 
-        if (!jsonArm["plug-number"]) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: plug number is missing for SUJ \""
-                                     << name << "\", must be an integer between 1 and 4"
-                                     << std::endl;
+        if (!jsonArm["arduino-mac"]) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: \"arduino-mac\" is missing for SUJ \""
+                                     << name << "\"" << std::endl;
             exit(EXIT_FAILURE);
         }
-        unsigned int plugNumber = jsonArm["plug-number"].asInt();
-        unsigned int armIndex = plugNumber - 1;
+        const std::string arduinoMac = jsonArm["arduino-mac"].asString();
 
         // add interfaces, one is provided so users can find the SUJ
         // info, the other is required to the SUJ can get position of
         // ECM and change base frame on attached arms
         mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided(name);
-        mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
-        arm = new mtsIntuitiveResearchKitSUJSiArmData(name, type, plugNumber, m_simulated,
-                                                    interfaceProvided, interfaceRequired);
-        Arms[armIndex] = arm;
+        mtsInterfaceRequired * interfaceRequiredBaseFrame = this->AddInterfaceRequired(name + "BaseFrame", MTS_OPTIONAL);
+        mtsInterfaceRequired * interfaceRequiredBrake = this->AddInterfaceRequired(name + "Brake", MTS_OPTIONAL);
+        arm = new mtsIntuitiveResearchKitSUJSiArmData(name, arduinoMac, m_simulated,
+                                                      interfaceProvided,
+                                                      interfaceRequiredBaseFrame,
+                                                      interfaceRequiredBrake);
+        Arms[index] = arm;
 
         // save which arm is the Reference Arm
         if (name == referenceArmName) {
-            BaseFrameArmIndex = armIndex;
+            BaseFrameArmIndex = index;
         }
 
         // Arm State so GUI widget for each arm can set/get state
@@ -556,16 +529,14 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
 
         // create a required interface for each arm to handle clutch button
         if (!m_simulated) {
-            std::stringstream interfaceName;
-            interfaceName << "SUJ-Clutch-" << plugNumber;
-            mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
+            std::string itf = "SUJ-Clutch-" + name;
+            mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(itf);
             if (requiredInterface) {
                 requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJSiArmData::ClutchCallback, arm,
                                                         "Button");
             } else {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: can't add required interface for SUJ \""
-                                         << name << "\" clutch button because this interface already exists: \""
-                                         << interfaceName.str() << "\".  Make sure all arms have a different plug number."
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: can't add required interface \"" << itf
+                                         << "\" for SUJ \"" << name << "\" clutch button"
                                          << std::endl;
                 exit(EXIT_FAILURE);
             }
@@ -599,15 +570,23 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
         cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionScales[1], jsonArm["secondary-scales"]);
         arm->mStateTableConfiguration.Advance();
 
-        // look for DH
-        arm->mManipulator.LoadRobot(jsonArm["DH"]);
+        // DH and transforms should be loaded from the share/kinematic
+        // directory bit if DH is defined in this scope, assumes user
+        // want to provide DH and base/tip transforms
+        Json::Value jsonDH = jsonArm["DH"];
+        if (!jsonDH.empty()) {
+            // look for DH
+            arm->mManipulator.LoadRobot(jsonArm["DH"]);
+            // read setup transforms
+            vctFrm3 transform;
+            cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["world-origin-to-suj"]);
+            arm->mWorldToSUJ.From(transform);
+            cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["suj-tip-to-tool-origin"]);
+            arm->mSUJToArmBase.From(transform);
+        } else {
+            // look for configuration file in share/kinematics
 
-        // Read setup transforms
-        vctFrm3 transform;
-        cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["world-origin-to-suj"]);
-        arm->mWorldToSUJ.From(transform);
-        cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["suj-tip-to-tool-origin"]);
-        arm->mSUJToArmBase.From(transform);
+        }
     }
 }
 
@@ -643,12 +622,7 @@ void mtsIntuitiveResearchKitSUJSi::RunAllStates(void)
 void mtsIntuitiveResearchKitSUJSi::EnterDisabled(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::DISABLED, false);
-
-    // power off brakes
-    for (auto brake : RobotIO.brakes) {
-        brake(false);
-    }
-
+    EngageBrakes();
     m_powered = false;
 }
 
@@ -669,11 +643,7 @@ void mtsIntuitiveResearchKitSUJSi::EnterPowering(void)
         return;
     }
 
-    // pre-load the boards with zero current
-    for (auto brake : RobotIO.brakes) {
-        brake(false);
-    }
-
+    EngageBrakes();
     DispatchStatus(this->GetName() + ": power requested");
 }
 
@@ -689,24 +659,20 @@ void mtsIntuitiveResearchKitSUJSi::EnterEnabled(void)
 
     if (m_simulated) {
         // set all data to be valid
-        for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-            if (Arms[armIndex]) {
-                Arms[armIndex]->m_measured_js.Valid() = true;
-                Arms[armIndex]->m_measured_cp.Valid() = true;
-                Arms[armIndex]->m_local_measured_cp.Valid() = true;
-            }
+        for (auto arm : Arms) {
+            arm->m_measured_js.Valid() = true;
+            arm->m_measured_cp.Valid() = true;
+            arm->m_local_measured_cp.Valid() = true;
         }
         SetHomed(true);
         return;
     }
 
     // when returning from manual mode, make sure brakes are not released
-    mtsIntuitiveResearchKitSUJSiArmData * arm;
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        arm = Arms[armIndex];
+    for (auto arm : Arms) {
         arm->mClutched = 0;
-        RobotIO.brakes[armIndex](false);
     }
+    EngageBrakes();
 }
 
 void mtsIntuitiveResearchKitSUJSi::TransitionEnabled(void)
@@ -789,18 +755,16 @@ void mtsIntuitiveResearchKitSUJSi::Run(void)
 
 void mtsIntuitiveResearchKitSUJSi::Cleanup(void)
 {
-    for (auto brake : RobotIO.brakes) {
-        brake(false);
-    }
+    EngageBrakes();
 }
 
 void mtsIntuitiveResearchKitSUJSi::set_simulated(void)
 {
     m_simulated = true;
     // set all arms simulated
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        if (Arms[armIndex]) {
-            Arms[armIndex]->m_simulated = true;
+    for (auto arm : Arms) {
+        if (arm != nullptr) {
+            arm->m_simulated = true;
         }
     }
     // in simulation mode, we don't need IOs
@@ -950,8 +914,7 @@ void mtsIntuitiveResearchKitSUJSi::RunEnabled(void)
         const double currentTime = this->StateTable.GetTic();
         if (currentTime - mSimulatedTimer > 1.0 * cmn_s) {
             mSimulatedTimer = currentTime;
-            for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-                mtsIntuitiveResearchKitSUJSiArmData * arm = Arms[armIndex];
+            for (auto arm : Arms) {
                 arm->mStateTable.Start();
                 // forward kinematic
                 vctFrm4x4 suj = arm->mManipulator.ForwardKinematics(arm->m_measured_js.Position(), 6);
@@ -977,20 +940,6 @@ void mtsIntuitiveResearchKitSUJSi::RunEnabled(void)
         }
         return;
     }
-
-    mtsIntuitiveResearchKitSUJSiArmData * arm;
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        arm = Arms[armIndex];
-        // brakes
-        // increase current for brakes
-        if (arm->mClutched > 0) {
-            std::cerr << CMN_LOG_DETAILS << " anything to do to maintain brakes? " << std::endl;
-        }
-        // decrease current for brakes
-        else {
-            std::cerr << CMN_LOG_DETAILS << " anything to do to release brakes? " << std::endl;
-        }
-    }
 }
 
 void mtsIntuitiveResearchKitSUJSi::SetHomed(const bool homed)
@@ -1010,36 +959,36 @@ void mtsIntuitiveResearchKitSUJSi::ErrorEventHandler(const mtsMessage & message)
 void mtsIntuitiveResearchKitSUJSi::DispatchError(const std::string & message)
 {
     mInterface->SendError(message);
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->mInterfaceProvided->SendError(Arms[armIndex]->mName.Data + " " + message);
+    for (auto arm : Arms) {
+        arm->mInterfaceProvided->SendError(arm->mName + " " + message);
     }
 }
 
 void mtsIntuitiveResearchKitSUJSi::DispatchWarning(const std::string & message)
 {
     mInterface->SendWarning(message);
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->mInterfaceProvided->SendWarning(Arms[armIndex]->mName.Data + " " + message);
+    for (auto arm : Arms) {
+        arm->mInterfaceProvided->SendWarning(arm->mName + " " + message);
     }
 }
 
 void mtsIntuitiveResearchKitSUJSi::DispatchStatus(const std::string & message)
 {
     mInterface->SendStatus(message);
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->mInterfaceProvided->SendStatus(Arms[armIndex]->mName.Data + " " + message);
+    for (auto arm : Arms) {
+        arm->mInterfaceProvided->SendStatus(arm->mName + " " + message);
     }
 }
 
 void mtsIntuitiveResearchKitSUJSi::DispatchState(void)
 {
     state_events.current_state(mArmState.CurrentState());
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->state_events.current_state(mArmState.CurrentState());
+    for (auto arm : Arms) {
+        arm->state_events.current_state(mArmState.CurrentState());
     }
     state_events.desired_state(mArmState.DesiredState());
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->state_events.desired_state(mArmState.DesiredState());
+    for (auto arm : Arms) {
+        arm->state_events.desired_state(mArmState.DesiredState());
     }
     DispatchOperatingState();
 }
@@ -1047,7 +996,14 @@ void mtsIntuitiveResearchKitSUJSi::DispatchState(void)
 void mtsIntuitiveResearchKitSUJSi::DispatchOperatingState(void)
 {
     state_events.operating_state(m_operating_state);
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->state_events.operating_state(m_operating_state);
+    for (auto arm : Arms) {
+        arm->state_events.operating_state(m_operating_state);
+    }
+}
+
+void mtsIntuitiveResearchKitSUJSi::EngageBrakes(void)
+{
+    for (auto arm : Arms) {
+        arm->mBrake(false);
     }
 }
