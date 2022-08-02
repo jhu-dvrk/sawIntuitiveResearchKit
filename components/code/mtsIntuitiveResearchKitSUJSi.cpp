@@ -33,6 +33,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstRobot/robManipulator.h>
 
+// BLE arduino over gatt
+#include <gattlib.h>
+
 static const size_t MUX_ARRAY_SIZE = 6;
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJSi, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
