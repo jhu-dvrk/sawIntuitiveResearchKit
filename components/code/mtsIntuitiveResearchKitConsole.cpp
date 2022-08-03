@@ -2069,7 +2069,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     if (arm->ArmInterfaceRequired) {
         arm->ArmInterfaceRequired->AddFunction("state_command", arm->state_command);
         if (arm->m_type != Arm::ARM_SUJ) {
-            arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze);
+            arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze, MTS_OPTIONAL);
         }
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
                                                         this, "error");
@@ -2385,9 +2385,10 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         // freeze arms if we stopped any teleop
         if (freezeNeeded) {
             for (auto & iterArms : mArms) {
-                if ((iterArms.second->m_type == Arm::ARM_MTM) ||
-                    (iterArms.second->m_type == Arm::ARM_MTM_DERIVED) ||
-                    (iterArms.second->m_type == Arm::ARM_MTM_GENERIC)) {
+                if (((iterArms.second->m_type == Arm::ARM_MTM) ||
+                     (iterArms.second->m_type == Arm::ARM_MTM_DERIVED) ||
+                     (iterArms.second->m_type == Arm::ARM_MTM_GENERIC))
+                    && iterArms.second->Freeze.IsValid()) {
                     iterArms.second->Freeze();
                 }
             }
@@ -2398,9 +2399,10 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
     // if none are running, freeze
     if (!mTeleopECMRunning && !mTeleopPSMRunning) {
         for (auto & iterArms : mArms) {
-            if ((iterArms.second->m_type == Arm::ARM_MTM) ||
-                (iterArms.second->m_type == Arm::ARM_MTM_DERIVED) ||
-                (iterArms.second->m_type == Arm::ARM_MTM_GENERIC)) {
+            if (((iterArms.second->m_type == Arm::ARM_MTM) ||
+                 (iterArms.second->m_type == Arm::ARM_MTM_DERIVED) ||
+                 (iterArms.second->m_type == Arm::ARM_MTM_GENERIC))
+                && iterArms.second->Freeze.IsValid()) {
                 iterArms.second->Freeze();
             }
         }

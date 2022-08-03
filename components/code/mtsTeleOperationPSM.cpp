@@ -122,7 +122,7 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("measured_cp", mMTM.measured_cp);
         interfaceRequired->AddFunction("setpoint_cp", mMTM.setpoint_cp);
         interfaceRequired->AddFunction("move_cp", mMTM.move_cp);
-        interfaceRequired->AddFunction("gripper/measured_js", mMTM.gripper_measured_js);
+        interfaceRequired->AddFunction("gripper/measured_js", mMTM.gripper_measured_js, MTS_OPTIONAL);
         interfaceRequired->AddFunction("lock_orientation", mMTM.lock_orientation, MTS_OPTIONAL);
         interfaceRequired->AddFunction("unlock_orientation", mMTM.unlock_orientation, MTS_OPTIONAL);
         interfaceRequired->AddFunction("body/servo_cf", mMTM.body_servo_cf);
@@ -462,12 +462,15 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         prmForceCartesianSet wrench;
         mMTM.body_servo_cf(wrench);
         mMTM.use_gravity_compensation(true);
-        if (m_align_mtm || m_rotation_locked) {
+        if ((m_align_mtm || m_rotation_locked)
+            && mMTM.lock_orientation.IsValid()) {
             // lock in current position
             mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
         } else {
             // make sure it is freed
-            mMTM.unlock_orientation();
+            if (mMTM.unlock_orientation.IsValid()) {
+                mMTM.unlock_orientation();
+            }
         }
 
         // make sure PSM stops moving
@@ -578,7 +581,8 @@ void mtsTeleOperationPSM::lock_rotation(const bool & lock)
         // update MTM/PSM previous position
         UpdateInitialState();
         // lock orientation if the arm is running
-        if (mTeleopState.CurrentState() == "ENABLED") {
+        if ((mTeleopState.CurrentState() == "ENABLED")
+            && mMTM.lock_orientation.IsValid()) {
             mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
         }
     }
@@ -816,14 +820,17 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     // if not active, use gripper and/or roll to detect if the user is ready
     if (!m_operator.is_active) {
         // update gripper values
-        mMTM.gripper_measured_js(mMTM.m_gripper_measured_js);
-        const double gripper = mMTM.m_gripper_measured_js.Position()[0];
-        if (gripper > m_operator.gripper_max) {
-            m_operator.gripper_max = gripper;
-        } else if (gripper < m_operator.gripper_min) {
-            m_operator.gripper_min = gripper;
+        double gripperRange = 0.0;
+        if (mMTM.gripper_measured_js.IsValid()) {
+            mMTM.gripper_measured_js(mMTM.m_gripper_measured_js);
+            const double gripper = mMTM.m_gripper_measured_js.Position()[0];
+            if (gripper > m_operator.gripper_max) {
+                m_operator.gripper_max = gripper;
+            } else if (gripper < m_operator.gripper_min) {
+                m_operator.gripper_min = gripper;
+            }
+            gripperRange = m_operator.gripper_max - m_operator.gripper_min;
         }
-        const double gripperRange = m_operator.gripper_max - m_operator.gripper_min;
 
         // checking roll
         const double roll = acos(vctDotProduct(desiredOrientation.Column(1),
@@ -888,10 +895,13 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     // set forces to zero and lock/unlock orientation as needed
     prmForceCartesianSet wrench;
     mMTM.body_servo_cf(wrench);
-    if (m_rotation_locked) {
+    if (m_rotation_locked
+        && mMTM.lock_orientation.IsValid()) {
         mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
     } else {
-        mMTM.unlock_orientation();
+        if (mMTM.unlock_orientation.IsValid()) {
+            mMTM.unlock_orientation();
+        }
     }
     // check if by any chance the clutch pedal is pressed
     if (m_clutched) {
