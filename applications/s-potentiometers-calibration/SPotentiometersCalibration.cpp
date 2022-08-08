@@ -80,7 +80,7 @@ int main(int argc, char * argv[])
 
     std::cout << "Configuration file: " << configFile
               << " for arm " << armName << " [" << serialNumber << "] ("
-              << nbActuators << ")" << std::endl
+              << nbActuators << " actuators)" << std::endl
               << "Port: " << portName << std::endl;
 
     std::cout << "Make sure:" << std::endl
@@ -123,6 +123,13 @@ int main(int argc, char * argv[])
     zeroPotIndex.SetSize(nbAxis);
     dataCounter.SetSize(nbAxis);
     dataCounter.SetAll(0);
+
+    // JSON writer used to save data/calibration
+    Json::StreamWriterBuilder builder;
+    builder["commentStyle"] = "None";
+    builder["indentation"] = "  ";
+    builder["precision"] = 6;
+    std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
 
     if (collectData) {
         std::cout << "Loading config file ..." << std::endl;
@@ -255,11 +262,11 @@ int main(int argc, char * argv[])
 
         // record the raw data (for debugging purposes)
         std::ofstream rawFile;
-        std::string rawFileName = "sawRobotIO1394PotToEncoder-" + armName + "-" + serialNumber + "-raw-data.json";
+        std::string rawFileName = "sawRobotIO1394-" + armName + "-" + serialNumber + "-PotentiometerLookupTable-Raw.json";
         rawFile.open(rawFileName);
         Json::Value jsonValue;
         cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue);
-        rawFile << jsonValue;
+        writer->write(jsonValue, &rawFile);
         rawFile.close();
         std::cout << "Raw data saved to " << rawFileName << std::endl
                   << "You can plot the data in python using:" << std::endl
@@ -348,18 +355,29 @@ int main(int argc, char * argv[])
                     const double start = potToEncoder.at(axis, previous->second);
                     const double end = potToEncoder.at(axis, iter->first);
                     const size_t nbMissing = iter->first - previous->second - 1;
-                    std::cout << "Axis " << axis << ", found " << nbMissing << " missing consecutive pot indices" << std::endl;
+                    std::cout << "Axis " << axis << ", found " << nbMissing << " missing consecutive pot value(s)" << std::endl;
                     const double delta = (end - start) / nbMissing;
                     size_t counter = 1;
                     for (size_t index = previous->second + 1;
                          index < iter->first;
                          ++index, ++counter) {
-                        std::cerr << index << " ";
                         potToEncoder.at(axis, index) = start + counter * delta;
                     }
                     // concatenate lists of indices
                     iter->first = previous->first;
                     encoderAreas.erase(previous);
+                } else {
+                    // pad with constant values around the limits
+                    // pad after previous range
+                    double encoder = potToEncoder.at(axis, previous->second);
+                    for (size_t index = 1; index < 10; ++index) {
+                        potToEncoder.at(axis, (previous->second + index) % 4096) = encoder;
+                    }
+                    // pad before current range
+                    encoder = potToEncoder.at(axis, iter->first);
+                    for (size_t index = 1; index < 10; ++index) {
+                        potToEncoder.at(axis, (iter->first - index) % 4096) = encoder;
+                    }
                 }
                 previous = iter;
             }
@@ -370,20 +388,28 @@ int main(int argc, char * argv[])
         }
     }
 
-    // this is for a PSM
+    // this is for a PSM.  We don't have the exact numbers but we have 3
+    // calibration files.  Ranges differ between arms but the midpoint
+    // is always the same.  Values are from jhu-dVRK-Si/cal-files 292409 586288 334809
     vctDoubleVec minEncoderExpected, maxEncoderExpected;
     minEncoderExpected.SetSize(7);
     maxEncoderExpected.SetSize(7);
-    minEncoderExpected.at(0) = -170.0 * cmnPI_180;
-    maxEncoderExpected.at(0) =  170.0 * cmnPI_180;
-    minEncoderExpected.at(1) =  -60.0 * cmnPI_180;
-    maxEncoderExpected.at(1) =   85.0 * cmnPI_180;
+    minEncoderExpected.at(0) = (-2.9646 + -2.9668 + -2.9675) / 3.0;
+    maxEncoderExpected.at(0) = ( 2.9646 +  2.9668 +  2.9675) / 3.0;
+    minEncoderExpected.at(1) = (-1.2656 + -1.2661 + -1.2667) / 3.0;
+    maxEncoderExpected.at(1) = ( 1.3010 +  1.3015 +  1.3021) / 3.0;
     // translation
-    minEncoderExpected.at(2) =   0.0 * cmn_mm;
-    maxEncoderExpected.at(2) = 290.0 * cmn_mm;
+    minEncoderExpected.at(2) = (-0.00099057 + -0.00099124 + -0.0009907) / 3.0;
+    maxEncoderExpected.at(2) = ( 0.29035    +  0.29055    +  0.29039) / 3.0;
     // last 4 elements
-    minEncoderExpected.Ref(4, 3) = -172.0 * cmnPI_180;
-    maxEncoderExpected.Ref(4, 3) =  172.0 * cmnPI_180;
+    minEncoderExpected.at(3) = (-3.0346 + -3.0283 + -3.03) / 3.0;
+    maxEncoderExpected.at(3) = ( 3.0346 +  3.0283 +  3.03) / 3.0;
+    minEncoderExpected.at(4) = (-3.0358 + -3.0271 + -3.0271) / 3.0;
+    maxEncoderExpected.at(4) = ( 3.0358 +  3.0271 +  3.0271) / 3.0;
+    minEncoderExpected.at(5) = (-3.0350 + -3.0303 + -3.0294) / 3.0;
+    maxEncoderExpected.at(5) = ( 3.0350 +  3.0303 +  3.0294) / 3.0;
+    minEncoderExpected.at(6) = (-3.0378 + -3.03   + -3.0268) / 3.0;
+    maxEncoderExpected.at(6) = ( 3.0378 +  3.03   +  3.0268) / 3.0;
 
     vctDoubleVec offsetEncoder(nbAxis, 0.0);
 
@@ -396,7 +422,8 @@ int main(int argc, char * argv[])
         }
         std::cout << "Axis " << axis << std::endl
                   << " - range: [" << minEncoder.at(axis) * toh
-                  << ", " << maxEncoder.at(axis) * toh << "]" << std::endl;
+                  << ", " << maxEncoder.at(axis) * toh << "] = "
+                  << (maxEncoder.at(axis) - minEncoder.at(axis)) * toh << std::endl;
         const double encoderRange = maxEncoder.at(axis) - minEncoder.at(axis);
         const double encoderRangeExpected =  maxEncoderExpected.at(axis) - minEncoderExpected.at(axis);
         if ((encoderRange < 0.95 * encoderRangeExpected)
@@ -408,7 +435,8 @@ int main(int argc, char * argv[])
             return -1;
         }
         // compute offset using mid point
-        offsetEncoder.at(axis) = encoderRange / 2.0 - encoderRangeExpected / 2.0;
+        offsetEncoder.at(axis) = (minEncoderExpected.at(axis) + maxEncoderExpected.at(axis)) / 2.0
+            - (minEncoder.at(axis) + maxEncoder.at(axis)) / 2.0;
         std::cout << " - encoder offset: " << offsetEncoder.at(axis) * toh << std::endl;
         // add offset to recorded values and try to find the closest
         // to zero encoder value within pot range
@@ -420,6 +448,7 @@ int main(int argc, char * argv[])
             if (hasEncoder) {
                 // add offset
                 potToEncoder.at(axis, index) += offsetEncoder.at(axis);
+                potToEncoder.at(axis, index) *= directionEncoder.at(axis);
                 // try to find lowest encoder value
                 const double enc = std::abs(potToEncoder.at(axis, index));
                 if (enc < zeroEncoder) {
@@ -434,14 +463,17 @@ int main(int argc, char * argv[])
 
     // record the pot to encoder file
     std::ofstream potToEncoderFile;
-    std::string potToEncoderFileName = "sawRobotIO1394PotToEncoder-" + armName + "-" + serialNumber + ".json-new";
-    potToEncoderFile.open(potToEncoderFileName);
+    std::string potToEncoderFileName = "sawRobotIO1394-" + armName + "-" + serialNumber + "-PotentiometerLookupTable.json";
+    std::string potToEncoderFileNameNew = potToEncoderFileName + "-new";
+    potToEncoderFile.open(potToEncoderFileNameNew);
     Json::Value jsonValue;
     cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue);
-    potToEncoderFile << jsonValue;
+    writer->write(jsonValue, &potToEncoderFile);
     potToEncoderFile.close();
 
     std::cout << std::endl
-              << "Results saved in " << potToEncoderFileName << std::endl;
+              << "Results saved in " << potToEncoderFileNameNew << std::endl
+              << "You can move the new file over the existing one using:" << std::endl
+              << "mv -i " << potToEncoderFileNameNew << " " << potToEncoderFileName << std::endl;
     return 0;
 }

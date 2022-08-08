@@ -19,10 +19,6 @@
          <Encoder>
             <BitsToPosSI Scale="5.273437242507947e-05" Unit="deg" />
          </Encoder>
-         <DigitalPot>
-           <Pot Min="2870" Resolution="4095"/>
-           <PotToPosSI Offset="-176.0" Scale="0.101721263" Unit="deg"/> // empirical values, still need ISI numbers
-	 </DigitalPot>
       </Actuator>
       <Actuator ActuatorID="1" AxisID="1" BoardID="6" Type="Revolute">
          <Drive>
@@ -43,10 +39,6 @@
          <Encoder>
             <BitsToPosSI Scale="-5.170036764705882e-05" Unit="deg" />
          </Encoder>
-	 <DigitalPot>
-           <Pot Min="1950" Resolution="4095"/>
-           <PotToPosSI Offset="85.0" Scale="-0.043332329" Unit="deg"/> // empirical
-         </DigitalPot>
       </Actuator>
       <Actuator ActuatorID="2" AxisID="2" BoardID="6" Type="Prismatic">
          <Drive>
@@ -67,10 +59,6 @@
          <Encoder>
             <BitsToPosSI Scale="-0.00013010281114445068" Unit="mm" />
          </Encoder>
-	 <DigitalPot>
-           <Pot Min="550" Resolution="4095"/>
-           <PotToPosSI Offset="-0.01" Scale="0.084089197799" Unit="mm"/> // empirical
-         </DigitalPot>
       </Actuator>
       <Actuator ActuatorID="3" AxisID="3" BoardID="6" Type="Revolute">
          <Drive>
@@ -82,10 +70,6 @@
          <Encoder>
             <BitsToPosSI Scale="-0.0065154833221725515" Unit="deg" />
          </Encoder>
-	 <DigitalPot>
-           <Pot Min="1900" Resolution="4095"/>
-           <PotToPosSI Offset="178.7" Scale="-0.1028181548"  Unit="deg"/>
-         </DigitalPot>
       </Actuator>
             <Actuator ActuatorID="4" AxisID="4" BoardID="6" Type="Revolute">
          <Drive>
@@ -97,10 +81,6 @@
          <Encoder>
             <BitsToPosSI Scale="-0.0065154833221725515" Unit="deg" />
          </Encoder>
-         <DigitalPot>
-           <Pot Min="1600" Resolution="4095"/>
-           <PotToPosSI Offset="179.11" Scale="-0.1028181548"  Unit="deg"/> // empirical?
-         </DigitalPot>
       </Actuator>
             <Actuator ActuatorID="5" AxisID="5" BoardID="6" Type="Revolute">
          <Drive>
@@ -112,10 +92,6 @@
          <Encoder>
             <BitsToPosSI Scale="0.0065154833221725515" Unit="deg" />
          </Encoder>
-         <DigitalPot>
-           <Pot Min="700" Resolution="4095"/>
-           <PotToPosSI Offset="-175.82" Scale="0.1028181548"  Unit="deg"/>
-         </DigitalPot>
       </Actuator>
             <Actuator ActuatorID="6" AxisID="6" BoardID="6" Type="Revolute">
          <Drive>
@@ -127,25 +103,21 @@
          <Encoder>
             <BitsToPosSI Scale="0.0065154833221725515" Unit="deg" />
          </Encoder>
-	 <DigitalPot>
-           <Pot Min="3600" Resolution="4095"/>
-           <PotToPosSI Offset="-179.42" Scale="0.1028181548"  Unit="deg"/>
-         </DigitalPot>
       </Actuator>
-      <Potentiometers Position="Actuators">
-	<Tolerance Axis="0" Distance="10.0" Latency="0.01" Unit="deg" />
-	<Tolerance Axis="1" Distance="10.0" Latency="0.01" Unit="deg" />
-	<Tolerance Axis="2" Distance="10.0" Latency="0.01" Unit="mm" />
-	<Tolerance Axis="3" Distance="10.0" Latency="0.01" Unit="deg" />
-	<Tolerance Axis="4" Distance="10.0" Latency="0.01" Unit="deg" />
-	<Tolerance Axis="5" Distance="10.0" Latency="0.01" Unit="deg" />
-	<Tolerance Axis="6" Distance="10.0" Latency="0.01" Unit="deg" />
+      <Potentiometers Position="Actuators" LookupTable="sawRobotIO1394-PSM1-586288-PotentiometerLookupTable.json">
+	<Tolerance Axis="0" Distance="4.0" Latency="0.01" Unit="deg" />
+	<Tolerance Axis="1" Distance="4.0" Latency="0.01" Unit="deg" />
+	<Tolerance Axis="2" Distance="4.0" Latency="0.01" Unit="mm" />
+	<Tolerance Axis="3" Distance="4.0" Latency="0.01" Unit="deg" />
+	<Tolerance Axis="4" Distance="4.0" Latency="0.01" Unit="deg" />
+	<Tolerance Axis="5" Distance="4.0" Latency="0.01" Unit="deg" />
+	<Tolerance Axis="6" Distance="4.0" Latency="0.01" Unit="deg" />
       </Potentiometers>
    </Robot>
-   <DigitalIn BitID="0" BoardID="6" Debounce="0.2" Name="PSM1-SUJClutch2" Pressed="0" Trigger="all" />
+   <DigitalIn BitID="1" BoardID="6" Debounce="0.2" Name="PSM1-SUJClutch2" Pressed="0" Trigger="all" />
    <DigitalIn BitID="4" BoardID="6" Debounce="0.2" Name="PSM1-SUJClutch" Pressed="0" Trigger="all" />
    <DigitalIn BitID="13" BoardID="6" Debounce="0.01" Name="PSM1-ManipClutch" Pressed="0" Trigger="all" />
-   <DigitalIn BitID="11" BoardID="6" Debounce="1.5" Name="PSM1-Tool" Pressed="0" Trigger="all" />
-   <DigitalIn BitID="7" BoardID="6" Debounce="1.5" Name="PSM1-Adapter" Pressed="0" Trigger="all" />
+   <DigitalIn BitID="9" BoardID="6" Debounce="1.5" Name="PSM1-Tool" Pressed="0" Trigger="all" />
+   <DigitalIn BitID="10" BoardID="6" Debounce="1.5" Name="PSM1-Adapter" Pressed="0" Trigger="all" />
    <DallasChip BoardID="6" Name="PSM1-Dallas" />
 </Config>
