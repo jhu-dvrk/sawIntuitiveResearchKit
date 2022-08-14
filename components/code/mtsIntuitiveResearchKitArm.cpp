@@ -373,8 +373,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                          this, "spatial/servo_cf");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::use_gravity_compensation,
                                          this, "use_gravity_compensation");
-        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::set_cartesian_impedance_gains,
-                                         this, "set_cartesian_impedance_gains");
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_ci,
+                                         this, "servo_ci");
         // Kinematic queries
         m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::query_cp,
                                                  this, "query_cp");
@@ -2074,7 +2074,7 @@ void mtsIntuitiveResearchKitArm::control_add_gravity_compensation(vctDoubleVec &
     efforts.Add(gravityEfforts);
 }
 
-void mtsIntuitiveResearchKitArm::set_cartesian_impedance_gains(const prmCartesianImpedanceGains & gains)
+void mtsIntuitiveResearchKitArm::servo_ci(const prmCartesianImpedanceGains & gains)
 {
     if (!ArmIsReady("servo_cf_body", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
         return;

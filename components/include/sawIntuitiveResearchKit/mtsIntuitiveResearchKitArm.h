@@ -184,7 +184,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
     virtual void body_set_cf_orientation_absolute(const bool & absolute);
     virtual void use_gravity_compensation(const bool & gravityCompensation);
-    virtual void set_cartesian_impedance_gains(const prmCartesianImpedanceGains & gains);
+    virtual void servo_ci(const prmCartesianImpedanceGains & gains);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
     virtual void set_base_frame(const prmPositionCartesianSet & newBaseFrame);
