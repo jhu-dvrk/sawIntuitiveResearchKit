@@ -58,6 +58,30 @@ void mtsIntuitiveResearchKitPSM::set_simulated(void)
     RemoveInterfaceRequired("Dallas");
 }
 
+void mtsIntuitiveResearchKitPSM::set_generation(const GenerationType generation)
+{
+    mtsIntuitiveResearchKitArm::set_generation(generation);
+    // for S/si, add SUJClutch interface
+    if (generation == GENERATION_Si) {
+        auto interfaceRequired = AddInterfaceRequired("SUJClutch");
+        if (interfaceRequired) {
+            interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch, this, "Button");
+        }
+        interfaceRequired = AddInterfaceRequired("SUJClutch2");
+        if (interfaceRequired) {
+            interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch, this, "Button");
+        }
+        interfaceRequired = AddInterfaceRequired("SUJBrake");
+        if (interfaceRequired) {
+            interfaceRequired->AddFunction("SetValue", SUJClutch.Brake);
+        }
+    } else {
+        if (GetInterfaceProvided("SUJClutch")) {
+            RemoveInterfaceRequired("SUJClutch");
+        }
+    }
+}
+
 void mtsIntuitiveResearchKitPSM::load_tool_list(const cmnPath & path,
                                                 const std::string & indexFile)
 {
@@ -1591,6 +1615,17 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
         break;
     default:
         break;
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch(const prmEventButton & button)
+{
+    bool value = (button.Type() == prmEventButton::PRESSED);
+    if (value
+        && (m_operating_state.State() != prmOperatingState::ENABLED)) {
+        m_arm_interface->SendWarning(this->GetName() + ": arm needs to be enabled to release the SUJ brakes");
+    } else {
+        SUJClutch.Brake(value);
     }
 }
 

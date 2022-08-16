@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -40,34 +40,25 @@ mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std
     mShowMore(false)
 {
     CMN_ASSERT(InterfaceRequired);
-    InterfaceRequired->AddFunction("GetBrakeCurrent", GetBrakeCurrent);
+    InterfaceRequired->AddFunction("GetBrakeCurrent", GetBrakeCurrent, MTS_OPTIONAL); // optional for Si
     InterfaceRequired->AddFunction("Clutch", Clutch);
-    InterfaceRequired->AddFunction("SetLiftVelocity", SetLiftVelocity, MTS_OPTIONAL);
+    InterfaceRequired->AddFunction("SetLiftVelocity", SetLiftVelocity, MTS_OPTIONAL); // only used for Classic PSM3 
     InterfaceRequired->AddFunction("GetVoltagesPrimary", GetPrimaryVoltages);
     InterfaceRequired->AddFunction("GetVoltagesSecondary", GetSecondaryVoltages);
-    InterfaceRequired->AddFunction("GetVoltagesExtra", GetExtraVoltages);
+    InterfaceRequired->AddFunction("GetVoltagesExtra", GetExtraVoltages, MTS_OPTIONAL); // optional for Si
     InterfaceRequired->AddFunction("SetRecalibrationMatrix", SetRecalibratioMatrix);
 
     const double negativeInfinity = cmnTypeTraits<double>::MinusInfinity();
-
-    JointVoltageStart.SetSize(6);
-    JointVoltageStart.SetAll(negativeInfinity);
-    JointVoltageFinish.SetSize(6);
-    JointVoltageFinish.SetAll(negativeInfinity);
 
     JointPositionStart.SetSize(6);
     JointPositionStart.SetAll(negativeInfinity);
     JointPositionFinish.SetSize(6);
     JointPositionFinish.SetAll(negativeInfinity);
 
-    mVoltages[0].SetSize(6);
-    mVoltages[0].Zeros();
-    mVoltages[1].SetSize(6);
-    mVoltages[1].Zeros();
     mVoltagesExtra.SetSize(4);
     mVoltagesExtra.Zeros();
 
-    mJointsRecalibrationMatrix.SetSize(6,6);
+    mJointsRecalibrationMatrix.SetSize(6, 6);
     mJointsRecalibrationMatrix.SetAll(negativeInfinity);
 }
 
@@ -77,6 +68,12 @@ void mtsIntuitiveResearchKitSUJQtWidget::Startup(void)
     if (!SetLiftVelocity.IsValid()) {
         QPBLiftDown->hide();
         QPBLiftUp->hide();
+    }
+    if (!GetBrakeCurrent.IsValid()) {
+        QVBrakeCurrentWidget->hide();
+    }
+    if (!GetExtraVoltages.IsValid()) {
+        QVExtraVoltagesWidget->hide();
     }
 }
 
@@ -186,11 +183,16 @@ void mtsIntuitiveResearchKitSUJQtWidget::timerEventDerived(void)
     // display more if needed
     if (mShowMore) {
         // brake voltage
-        GetBrakeCurrent(BrakeCurrent);
-        QVBrakeCurrentWidget->SetValue(vctDoubleVec(1, BrakeCurrent * 1000.0));
+        if (GetBrakeCurrent.IsValid()) {
+            GetBrakeCurrent(BrakeCurrent);
+            QVBrakeCurrentWidget->SetValue(vctDoubleVec(1, BrakeCurrent * 1000.0));
+        }
         // extra voltages
-        GetExtraVoltages(mVoltagesExtra);
-        QVExtraVoltagesWidget->SetValue(mVoltagesExtra);
+        if (GetExtraVoltages.IsValid()) {
+            GetExtraVoltages(mVoltagesExtra);
+            QVExtraVoltagesWidget->SetValue(mVoltagesExtra);
+        }
+        // potentiometers
         GetPrimaryVoltages(mVoltages[0]);
         QVPrimaryVoltagesWidget->SetValue(mVoltages[0]);
         GetSecondaryVoltages(mVoltages[1]);

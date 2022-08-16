@@ -63,7 +63,7 @@ if (cisst_FOUND)
                                           -DGATTLIB_BUILD_DOCS:BOOL=OFF
                                           -DGATTLIB_PYTHON_INTERFACE:BOOL=OFF
                                           -DGATTLIB_BUILD_EXAMPLES:BOOL=OFF
-                                          -DGATTLIB_SHARED_LIB:BOOL=OFF # to make it easier to find libraries
+                                          -DGATTLIB_SHARED_LIB:BOOL=ON
                                           -DCMAKE_INSTALL_PREFIX:FILEPATH=${CMAKE_CURRENT_BINARY_DIR}/gattlib
                          INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/gattlib
                          UPDATE_COMMAND ""

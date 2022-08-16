@@ -118,7 +118,6 @@ protected:
     void DispatchStatus(const std::string & message);
     void DispatchState(void);
     void DispatchOperatingState(void);
-    void EngageBrakes(void);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJSi);

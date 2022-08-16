@@ -382,14 +382,6 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             mtsIntuitiveResearchKitSUJSi * suj = new mtsIntuitiveResearchKitSUJSi(Name(), periodInSeconds);
             if (m_simulation == SIMULATION_KINEMATIC) {
                 suj->set_simulated();
-            } else if (m_simulation == SIMULATION_NONE) {
-                for (size_t index = 0;
-                     index < 4;
-                     ++index) {
-                    const std::string itf = "Brake" + std::to_string(index);
-                    m_console->mConnections.Add(Name(), itf,
-                                                IOComponentName(), itf);
-                }
             }
             suj->Configure(m_arm_configuration_file);
             componentManager->AddComponent(suj);
@@ -482,19 +474,26 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     }
 
     if (armPSMOrDerived && (m_simulation == SIMULATION_NONE)) {
-        m_console->mConnections.Add(Name(), "Adapter",
-                                    IOComponentName(), Name() + "-Adapter");
-        m_console->mConnections.Add(Name(), "Tool",
-                                    IOComponentName(), Name() + "-Tool");
-        m_console->mConnections.Add(Name(), "ManipClutch",
-                                    IOComponentName(), Name() + "-ManipClutch");
-        m_console->mConnections.Add(Name(), "Dallas",
-                                    IOComponentName(), Name() + "-Dallas");
+        std::vector<std::string> itfs = {"Adapter", "Tool", "ManipClutch", "Dallas"};
+        for (const auto itf : itfs) {
+            m_console->mConnections.Add(Name(), itf,
+                                        IOComponentName(), Name() + "-" + itf);
+        }
     }
 
     if (armECMOrDerived && (m_simulation == SIMULATION_NONE)) {
         m_console->mConnections.Add(Name(), "ManipClutch",
                                     IOComponentName(), Name() + "-ManipClutch");
+    }
+
+    // for Si patient side, connect the SUJ brakes to buttons on arm
+    if ((armPSMOrDerived || armECMOrDerived)
+        && (generation() == mtsIntuitiveResearchKitArm::GENERATION_Si)) {
+        std::vector<std::string> itfs = {"SUJClutch", "SUJClutch2", "SUJBrake"};
+        for (const auto itf : itfs) {
+            m_console->mConnections.Add(Name(), itf,
+                                        IOComponentName(), Name() + "-" + itf);
+        }
     }
 }
 
@@ -511,7 +510,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::Connect(void)
     // if the arm is a research kit arm
     if (native_or_derived()) {
         // Connect arm to IO if not simulated
-        if (m_simulation == SIMULATION_NONE) {
+        if (expects_IO()) {
             componentManager->Connect(Name(), "RobotIO",
                                       IOComponentName(), Name());
         }
