@@ -28,7 +28,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
-// forward declaration
+// forward declarations
+class mtsIntuitiveResearchKitSUJSiArduino;
 class mtsIntuitiveResearchKitSUJSiArmData;
 
 class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
@@ -69,9 +70,6 @@ protected:
     virtual void EnterDisabled(void);
     virtual void TransitionDisabled(void);
 
-    virtual void EnterPowering(void);
-    virtual void TransitionPowering(void);
-
     virtual void EnterEnabled(void);
     virtual void RunEnabled(void);
     virtual void TransitionEnabled(void);
@@ -87,7 +85,6 @@ protected:
 
     // Arm state machine
     mtsStateMachine mArmState;
-    bool m_powered = false;
 
     // Just to have read commands to retrieve states
     mtsStateTable mStateTableState;
@@ -105,6 +102,7 @@ protected:
     } state_events;
     mtsInterfaceProvided * mInterface;
 
+    mtsIntuitiveResearchKitSUJSiArduino * m_base_arduino = nullptr;
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJSiArmData *, 4> Arms;
     size_t BaseFrameArmIndex; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
 
