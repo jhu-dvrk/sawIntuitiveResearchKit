@@ -2,22 +2,22 @@
 {
     "io":
     {
-        "footpedals": "sawRobotIO1394-MTMR-foot-pedals.xml"
+        "footpedals": "io/sawRobotIO1394-MTMR-foot-pedals.xml",
+        "firewire-protocol": "sequential-read-write" // for debugging
     }
     ,
     "arms":
     [
         {
             "name": "PSM1",
-            "type": "PSM_SOCKET",
-            "remote-ip": "lcsr-dvrk-04.hwcampus.jhu.edu",
-            "port": 10001
+            "type": "PSM_Si",
+            "serial": "586288"
         }
         ,
         {
             "name": "MTMR",
             "type": "MTM",
-            "serial": "22403"
+            "serial": "30924"
         }
     ]
     ,
@@ -27,10 +27,8 @@
             "mtm": "MTMR",
             "psm": "PSM1",
             "configure-parameter": {
-                "ignore-jaw" : true
-                ,
-                "rotation" : [[ 0.0000, -1.0000,  0.0000],
-                              [ 1.0000,  0.0000,  0.0000],
+                "rotation" : [[-1.0000,  0.0000,  0.0000],
+                              [ 0.0000, -1.0000,  0.0000],
                               [ 0.0000,  0.0000,  1.0000]]
             }
         }

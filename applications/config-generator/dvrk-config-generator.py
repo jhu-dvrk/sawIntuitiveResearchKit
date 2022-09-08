@@ -267,8 +267,8 @@ class ClassicPSM(Robot):
         digitalInputBitIDs = [
             (self.boardIDs[0], 0, "SUJClutch", 0.2),
             (self.boardIDs[0], 2, "ManipClutch", 0.2),
-            (self.boardIDs[1], 7, "Tool", 1.5),
-            (self.boardIDs[1], 10, "Adapter", 1.5),
+            (self.boardIDs[1], 7, "Tool", 0.2),
+            (self.boardIDs[1], 10, "Adapter", 0.2),
         ]
 
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
@@ -298,7 +298,8 @@ class SiPSM(Robot):
         self.potentiometerDistance = lambda index: 4.0
 
         # # 2^13/10^3 or 2^11/10^3
-        self.driveLinearAmpCurrent = lambda index: [6.8266666, 6.8266666, 2.048, 2.048, 2.048, 2.048, 2.048][index]
+        i_high = 65536 / 4800 / 2
+        self.driveLinearAmpCurrent = lambda index: [i_high, i_high, 2.048, 2.048, 2.048, 2.048, 2.048][index]
 
         self.brakeMaxCurrent = lambda index: [0.2, 0.2, 0.3][index]
         self.brakeReleaseCurrent = lambda index: [0.15, 0.15, -0.25][index]
@@ -330,7 +331,7 @@ class SiPSM(Robot):
                 releaseTime = self.brakeReleaseTime(index)
                 releasedCurrent = self.brakeReleasedCurrent(index)
                 engagedCurrent = self.brakeEngagedCurrent(index)
-                axisID = 7 + index # Brake 7 corresponds to actuator 0, etc. 
+                axisID = 7 + index # Brake 7 corresponds to actuator 0, etc.
                 direction = 1 if index != 2 else -1 # some values in the third brake are reversed
                 yield AnalogBrake(
                     axisID,

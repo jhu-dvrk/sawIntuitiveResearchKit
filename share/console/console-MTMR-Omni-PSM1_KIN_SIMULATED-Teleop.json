@@ -9,7 +9,7 @@
                 "constructor-arg": {
                     "Name": "Sensable"
                 },
-                "configure-parameter": "sawSensablePhantomRight.json"
+                "configure-parameter": "sawSensablePhantomDefault.json"
             }
         ]
     }
@@ -18,12 +18,12 @@
     {
         "operator-present": {
             "component": "Sensable",
-            "interface": "Right-Button1"
+            "interface": "armButton1"
         }
         ,
         "clutch": {
             "component": "Sensable",
-            "interface": "Right-Button2"
+            "interface": "armButton2"
         }
     }
     ,
@@ -33,15 +33,14 @@
             "name": "MTMR",  // created previously using custom components
             "type": "MTM_GENERIC",
             "component": "Sensable",
-            "interface": "Right"
+            "interface": "arm"
         }
         ,
         {
             "name": "PSM1",
             "type": "PSM",
             "simulation": "KINEMATIC",
-            "pid": "sawControllersPID-PSM.xml",
-            "kinematic": "psm-large-needle-driver.json"
+            "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json"
         }
     ]
     ,
@@ -52,6 +51,7 @@
             "psm": "PSM1",
             "configure-parameter": {
                 "ignore-jaw": true,
+                "align-mtm": false,
                 "rotation" : [[ 0.0000, -1.0000,  0.0000],
                               [ 1.0000,  0.0000,  0.0000],
                               [ 0.0000,  0.0000,  1.0000]]

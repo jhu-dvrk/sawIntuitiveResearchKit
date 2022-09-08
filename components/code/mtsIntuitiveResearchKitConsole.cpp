@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -57,14 +57,80 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived(void) const
     switch (m_type) {
     case ARM_MTM:
     case ARM_PSM:
-    case ARM_PSM_S:
+    case ARM_PSM_Si:
     case ARM_ECM:
+    case ARM_ECM_Si:
     case ARM_MTM_DERIVED:
     case ARM_PSM_DERIVED:
-    case ARM_PSM_S_DERIVED:
+    case ARM_PSM_Si_DERIVED:
     case ARM_ECM_DERIVED:
+    case ARM_ECM_Si_DERIVED:
     case ARM_SUJ:
     case FOCUS_CONTROLLER:
+        return true;
+        break;
+    default:
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool mtsIntuitiveResearchKitConsole::Arm::psm(void) const
+{
+    switch (m_type) {
+    case ARM_PSM:
+    case ARM_PSM_DERIVED:
+    case ARM_PSM_Si:
+    case ARM_PSM_Si_DERIVED:
+    case ARM_PSM_GENERIC:
+    case ARM_PSM_SOCKET:
+        return true;
+        break;
+    default:
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool mtsIntuitiveResearchKitConsole::Arm::mtm(void) const
+{
+    switch (m_type) {
+    case ARM_MTM:
+    case ARM_MTM_DERIVED:
+    case ARM_MTM_GENERIC:
+        return true;
+        break;
+    default:
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool mtsIntuitiveResearchKitConsole::Arm::ecm(void) const
+{
+    switch (m_type) {
+    case ARM_ECM:
+    case ARM_ECM_DERIVED:
+    case ARM_ECM_Si:
+    case ARM_ECM_Si_DERIVED:
+        return true;
+        break;
+    default:
+        return false;
+        break;
+    }
+    return false;
+}
+
+bool mtsIntuitiveResearchKitConsole::Arm::generic(void) const
+{
+    switch (m_type) {
+    case ARM_MTM_GENERIC:
+    case ARM_PSM_GENERIC:
+    case ARM_ECM_GENERIC:
         return true;
         break;
     default:
@@ -93,8 +159,8 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_psm(void) const
     switch (m_type) {
     case ARM_PSM:
     case ARM_PSM_DERIVED:
-    case ARM_PSM_S:
-    case ARM_PSM_S_DERIVED:
+    case ARM_PSM_Si:
+    case ARM_PSM_Si_DERIVED:
         return true;
         break;
     default:
@@ -109,6 +175,8 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_ecm(void) const
     switch (m_type) {
     case ARM_ECM:
     case ARM_ECM_DERIVED:
+    case ARM_ECM_Si:
+    case ARM_ECM_Si_DERIVED:
         return true;
         break;
     default:
@@ -124,9 +192,11 @@ mtsIntuitiveResearchKitArm::GenerationType mtsIntuitiveResearchKitConsole::Arm::
         return mtsIntuitiveResearchKitArm::GENERATION_UNDEFINED;
     }
     switch (m_type) {
-    case ARM_PSM_S:
-    case ARM_PSM_S_DERIVED:
-        return mtsIntuitiveResearchKitArm::GENERATION_S;
+    case ARM_PSM_Si:
+    case ARM_PSM_Si_DERIVED:
+    case ARM_ECM_Si:
+    case ARM_ECM_Si_DERIVED:
+        return mtsIntuitiveResearchKitArm::GENERATION_Si;
         break;
     default:
         return mtsIntuitiveResearchKitArm::GENERATION_CLASSIC;
@@ -207,7 +277,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         }
         break;
     case ARM_PSM:
-    case ARM_PSM_S:
+    case ARM_PSM_Si:
         armPSMOrDerived = true;
         {
             mtsIntuitiveResearchKitPSM * psm = new mtsIntuitiveResearchKitPSM(Name(), periodInSeconds);
@@ -237,6 +307,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         }
         break;
     case ARM_ECM:
+    case ARM_ECM_Si:
         armECMOrDerived = true;
         {
             mtsIntuitiveResearchKitECM * ecm = new mtsIntuitiveResearchKitECM(Name(), periodInSeconds);
@@ -308,7 +379,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
         }
         break;
     case ARM_PSM_DERIVED:
-    case ARM_PSM_S_DERIVED:
+    case ARM_PSM_Si_DERIVED:
         armPSMOrDerived = true;
         {
             mtsComponent * component;
@@ -923,7 +994,8 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             iter->second->ConfigurePID(pidConfig);
         }
         // for generic arms, nothing to do
-        if (iter->second->native_or_derived()) {
+        if (iter->second->native_or_derived()
+            || (iter->second->m_type == Arm::ARM_PSM_SOCKET)) {
             const std::string armConfig = iter->second->m_arm_configuration_file;
             iter->second->ConfigureArm(iter->second->m_type, armConfig,
                                        iter->second->m_arm_period);
@@ -1334,18 +1406,22 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             armPointer->m_type = Arm::ARM_MTM;
         } else if (typeString == "PSM") {
             armPointer->m_type = Arm::ARM_PSM;
-        } else if (typeString == "PSM_S") {
-            armPointer->m_type = Arm::ARM_PSM_S;
+        } else if (typeString == "PSM_Si") {
+            armPointer->m_type = Arm::ARM_PSM_Si;
         } else if (typeString == "ECM") {
             armPointer->m_type = Arm::ARM_ECM;
+        } else if (typeString == "ECM_si") {
+            armPointer->m_type = Arm::ARM_ECM_Si;
         } else if (typeString == "MTM_DERIVED") {
             armPointer->m_type = Arm::ARM_MTM_DERIVED;
         } else if (typeString == "PSM_DERIVED") {
             armPointer->m_type = Arm::ARM_PSM_DERIVED;
-        } else if (typeString == "PSM_S_DERIVED") {
-            armPointer->m_type = Arm::ARM_PSM_S_DERIVED;
+        } else if (typeString == "PSM_Si_DERIVED") {
+            armPointer->m_type = Arm::ARM_PSM_Si_DERIVED;
         } else if (typeString == "ECM_DERIVED") {
             armPointer->m_type = Arm::ARM_ECM_DERIVED;
+        } else if (typeString == "ECM_Si_DERIVED") {
+            armPointer->m_type = Arm::ARM_ECM_Si_DERIVED;
         } else if (typeString == "MTM_GENERIC") {
             armPointer->m_type = Arm::ARM_MTM_GENERIC;
         } else if (typeString == "PSM_GENERIC") {
@@ -1515,10 +1591,12 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             std::string defaultFile;
             if ((armPointer->m_type == Arm::ARM_PSM) || (armPointer->m_type == Arm::ARM_PSM_DERIVED)) {
                 defaultFile = "pid/sawControllersPID-PSM.xml";
-            } else if ((armPointer->m_type == Arm::ARM_PSM_S) || (armPointer->m_type == Arm::ARM_PSM_S_DERIVED)) {
-                defaultFile = "pid/sawControllersPID-PSM-S.xml";
+            } else if ((armPointer->m_type == Arm::ARM_PSM_Si) || (armPointer->m_type == Arm::ARM_PSM_Si_DERIVED)) {
+                defaultFile = "pid/sawControllersPID-PSM-Si.xml";
             } else if ((armPointer->m_type == Arm::ARM_ECM) || (armPointer->m_type == Arm::ARM_ECM_DERIVED)) {
                 defaultFile = "pid/sawControllersPID-ECM.xml";
+            } else if ((armPointer->m_type == Arm::ARM_ECM_Si) || (armPointer->m_type == Arm::ARM_ECM_Si_DERIVED)) {
+                defaultFile = "pid/sawControllersPID-ECM-Si.xml";
             } else {
                 defaultFile = "pid/sawControllersPID-" + armName + ".xml";
             }
@@ -1664,11 +1742,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->m_type == Arm::ARM_MTM_GENERIC) ||
-              (armPointer->m_type == Arm::ARM_MTM_DERIVED) ||
-              (armPointer->m_type == Arm::ARM_MTM))) {
+        if (!armPointer->mtm()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm left\""
-                                     << mtmLeftName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
+                                     << mtmLeftName << "\" type must be some kind of MTM" << std::endl;
             return false;
         }
         mtmLeftComponent = armPointer->ComponentName();
@@ -1681,11 +1757,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->m_type == Arm::ARM_MTM_GENERIC) ||
-              (armPointer->m_type == Arm::ARM_MTM_DERIVED) ||
-              (armPointer->m_type == Arm::ARM_MTM))) {
+        if (!armPointer->mtm()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm right\""
-                                     << mtmRightName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
+                                     << mtmRightName << "\" type must be some kind of MTM" << std::endl;
             return false;
         }
         mtmRightComponent = armPointer->ComponentName();
@@ -1698,11 +1772,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->m_type == Arm::ARM_ECM_GENERIC) ||
-              (armPointer->m_type == Arm::ARM_ECM_DERIVED) ||
-              (armPointer->m_type == Arm::ARM_ECM))) {
+        if (!armPointer->ecm()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: ecm \""
-                                     << ecmName << "\" type must be \"ECM\" or \"GENERIC_ECM\"" << std::endl;
+                                     << ecmName << "\" type must be some kind of ECM" << std::endl;
             return false;
         }
         ecmComponent = armPointer->ComponentName();
@@ -1793,11 +1865,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->m_type == Arm::ARM_MTM_GENERIC) ||
-              (armPointer->m_type == Arm::ARM_MTM_DERIVED) ||
-              (armPointer->m_type == Arm::ARM_MTM))) {
+        if (!armPointer->mtm()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: mtm \""
-                                     << mtmName << "\" type must be \"MTM\", \"MTM_DERIVED\" or \"MTM_GENERIC\"" << std::endl;
+                                     << mtmName << "\" type must be some kind of MTM" << std::endl;
             return false;
         }
         mtmComponent = armPointer->ComponentName();
@@ -1810,12 +1880,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
         return false;
     } else {
         armPointer = armIterator->second;
-        if (!((armPointer->m_type == Arm::ARM_PSM_GENERIC) ||
-              (armPointer->m_type == Arm::ARM_PSM_DERIVED) ||
-              (armPointer->m_type == Arm::ARM_PSM_SOCKET)  ||
-              (armPointer->m_type == Arm::ARM_PSM))) {
+        if (!armPointer->psm()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: psm \""
-                                     << psmName << "\" type must be \"PSM\", \"PSM_DERIVED\" or \"PSM_GENERIC\"" << std::endl;
+                                     << psmName << "\" type must be some kind of PSM" << std::endl;
             return false;
         }
         psmComponent = armPointer->ComponentName();
@@ -2002,7 +2069,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     if (arm->ArmInterfaceRequired) {
         arm->ArmInterfaceRequired->AddFunction("state_command", arm->state_command);
         if (arm->m_type != Arm::ARM_SUJ) {
-            arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze);
+            arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze, MTS_OPTIONAL);
         }
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
                                                         this, "error");
@@ -2318,9 +2385,10 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         // freeze arms if we stopped any teleop
         if (freezeNeeded) {
             for (auto & iterArms : mArms) {
-                if ((iterArms.second->m_type == Arm::ARM_MTM) ||
-                    (iterArms.second->m_type == Arm::ARM_MTM_DERIVED) ||
-                    (iterArms.second->m_type == Arm::ARM_MTM_GENERIC)) {
+                if (((iterArms.second->m_type == Arm::ARM_MTM) ||
+                     (iterArms.second->m_type == Arm::ARM_MTM_DERIVED) ||
+                     (iterArms.second->m_type == Arm::ARM_MTM_GENERIC))
+                    && iterArms.second->Freeze.IsValid()) {
                     iterArms.second->Freeze();
                 }
             }
@@ -2331,9 +2399,10 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
     // if none are running, freeze
     if (!mTeleopECMRunning && !mTeleopPSMRunning) {
         for (auto & iterArms : mArms) {
-            if ((iterArms.second->m_type == Arm::ARM_MTM) ||
-                (iterArms.second->m_type == Arm::ARM_MTM_DERIVED) ||
-                (iterArms.second->m_type == Arm::ARM_MTM_GENERIC)) {
+            if (((iterArms.second->m_type == Arm::ARM_MTM) ||
+                 (iterArms.second->m_type == Arm::ARM_MTM_DERIVED) ||
+                 (iterArms.second->m_type == Arm::ARM_MTM_GENERIC))
+                && iterArms.second->Freeze.IsValid()) {
                 iterArms.second->Freeze();
             }
         }

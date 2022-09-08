@@ -6,7 +6,7 @@
             "name": "MTMR",
             "type": "MTM",
             "simulation": "KINEMATIC",
-            "arm": "arm/MTM_KIN_SIMULATED.json"
+            "arm": "arm/MTMR_KIN_SIMULATED.json"
         }
     ]
 }

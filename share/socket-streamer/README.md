@@ -18,13 +18,13 @@ run fine on all OSs supported by both the dVRK and *cisst* `osaSocket`.
 
 ## Dynamic loading
 
-you will need two extra configuration files (examples can be found in `share/socket-streamer` directory):
-* Component manager configuration file to load the dynamic library `sawSocketStreamer` and create/configure the socket streamer bridge.  The cisst component manager creates an instance of the class `mtsSocketStreamer` and connects the streamer to an existing component/interface (e.g. `PSM1/Arm`).  The component manager configuration file is passed to the main program using the option `-m`.
+You will need two extra configuration files (examples can be found in the `share/socket-streamer` directory):
+* Component manager configuration file to load the dynamic library `sawSocketStreamer` and create/configure the socket streamer bridge.  The cisst component manager creates an instance of the class `mtsSocketStreamer` and connects the streamer to an existing component/interface (e.g., `PSM1/Arm`).  The component manager configuration file is passed to the main program using the option `-m`.
 * Socket streamer configuration file.  This indicates which commands and types to stream out (e.g. `measured_js/prmStateJoint`).
 
 ## Running the code and testing
 
-Go in the directory with the socket streamer configuration files (i.e. the directory containing this README).  Then launch a dVRK console with a simulated PSM:
+Go in the directory with the socket streamer configuration files (i.e., the directory containing this README).  Then launch a dVRK console with a simulated PSM:
 ```sh
 rosrun dvrk_robot dvrk_console_json -j  ../console/console-PSM1_KIN_SIMULATED.json -m manager-socket-streamer-PSM1.json
 ```
@@ -56,10 +56,11 @@ The data is sent in JSON format.  For example:
                    [-2.6984803280782899e-11,-7.3464102068321324e-06,0.99999999997301525],
                    [0.99999999999325384,-3.6732051035270885e-06,0]],
       "Translation": [-1.3388794904003909e-06,-0.36449897370403511,0.12879999999811512]
-    } ,
+    },
     "ReferenceFrame": "MTML_base",
     "Timestamp":19.699094908999999,
-    "Valid":true},
+    "Valid":true
+  },
   "measured_js": {
     "AutomaticTimestamp":false,
     "Effort":[0,0,0,0,0,0,0],
@@ -72,4 +73,4 @@ The data is sent in JSON format.  For example:
 }
 ```
 
-Output has been reformated for readability, actual output has no carriage return nor space.
+Output has been reformated for readability, actual output has no carriage returns or spaces.

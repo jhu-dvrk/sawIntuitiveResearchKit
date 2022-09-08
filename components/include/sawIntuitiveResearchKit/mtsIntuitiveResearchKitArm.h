@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -70,7 +70,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         m_calibration_mode = mode;
     }
 
-    typedef enum {GENERATION_UNDEFINED, GENERATION_CLASSIC, GENERATION_S} GenerationType;
+    typedef enum {GENERATION_UNDEFINED, GENERATION_CLASSIC, GENERATION_Si} GenerationType;
     virtual inline void set_generation(const GenerationType generation) {
         m_generation = generation;
     }
@@ -184,7 +184,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
     virtual void body_set_cf_orientation_absolute(const bool & absolute);
     virtual void use_gravity_compensation(const bool & gravityCompensation);
-    virtual void set_cartesian_impedance_gains(const prmCartesianImpedanceGains & gains);
+    virtual void servo_ci(const prmCartesianImpedanceGains & gains);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
     virtual void set_base_frame(const prmPositionCartesianSet & newBaseFrame);
@@ -350,7 +350,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     inline virtual void control_add_jf(vctDoubleVec & CMN_UNUSED(efforts)) {};
 
     // Velocities
-    prmVelocityCartesianGet m_measured_cv;
+    prmVelocityCartesianGet m_local_measured_cv, m_measured_cv;
     vctFrm4x4 CartesianPositionFrm;
 
     // Base frame

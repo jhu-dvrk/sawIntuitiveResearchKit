@@ -1,0 +1,15 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "devices":
+    [
+        {
+            "name": "Default PHANToM",  // name defined in driver
+            "rename": "arm",  // name from there on (optional)
+            "servo_cf_viscosity": 3.0,
+            "servo_cp_p_gain": 50.0,
+            "servo_cp_d_gain": 5.0,
+            "joint-scales": [1.0, 1.0, 1.0, 1.0, -1.0, 1.0],
+            "joint-offsets": [0.0, 0.0, 0.0, 3.66519, -3.80482, 3.08923]
+        }
+    ]
+}

@@ -165,7 +165,7 @@ protected:
     size_t mVoltageSamplesCounter;
     vctDoubleVec mVoltages;
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> Arms;
-    size_t ECMIndex;
+    size_t BaseFrameArmIndex; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
 
     // Flag to determine if this is connected to actual IO/hardware or simulated
     bool m_simulated;
