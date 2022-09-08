@@ -20,6 +20,7 @@ project (sawIntuitiveResearchKitApplications)
 
 # applications in separate directories
 add_subdirectory (gripper-calibration)
+add_subdirectory (s-potentiometers-calibration)
 
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES cisstCommon
