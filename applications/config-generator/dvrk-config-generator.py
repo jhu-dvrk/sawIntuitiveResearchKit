@@ -95,9 +95,8 @@ def getBoardIDs(robotTypeName):
 
 # Root config object
 class Config(Serializable):
-    def __init__(self, calData, versionID, robotTypeName, robotGeneration):
+    def __init__(self, calData, versionID, serialNumber, robotTypeName, robotGeneration):
         self.versionID = versionID
-        serialNumber = calData["serial_number"]
 
         robotType = RobotType.fromTypeName(robotTypeName)
         isClassic = robotGeneration == "Classic"
@@ -135,17 +134,21 @@ class Config(Serializable):
 
 
 class Robot(Serializable):
-    def __init__(self, robotTypeName, serialNumber, calData, numberOfActuators):
+    def __init__(self, robotTypeName, serialNumber, calData, numberOfActuators, actuatorsPerBoard):
         self.name = robotTypeName
         self.type = RobotType.fromTypeName(robotTypeName)
         self.serialNumber = serialNumber
         self.calData = calData
         self.boardIDs = getBoardIDs(robotTypeName)
         self.numberOfActuators = numberOfActuators
+        self.actuatorsPerBoard = actuatorsPerBoard
         self.actuators = list(self.generateActuators())
 
     def driveDirection(self, index: int) -> int:
         raise NotImplementedError()
+
+    def encoderDirection(self, index: int) -> int:
+        return self.driveDirection(index)
 
     def encoderCPT(self, index: int) -> int:
         raise NotImplementedError()
@@ -185,7 +188,7 @@ class Robot(Serializable):
     def generateEncoders(self):
         for index in range(self.numberOfActuators):
             units = self.potentiometerUnits(index)
-            direction = self.driveDirection(index)
+            direction = self.encoderDirection(index)
             encoderCPT = self.encoderCPT(index)
             pitch = self.pitch(index)
             gearRatio = self.gearRatio(index)
@@ -201,23 +204,19 @@ class Robot(Serializable):
         for index in range(self.numberOfActuators):
             yield None
 
-    def generateDigitalPotentiometers(self):
-        for index in range(self.numberOfActuators):
-            yield None
-
     def generateActuators(self):
         drives = self.generateDrives()
         encoders = self.generateEncoders()
         analogIns = self.generateAnalogIns()
         brakes = self.generateBrakes()
-        digitalPots = self.generateDigitalPotentiometers()
-        data = zip(range(self.numberOfActuators), drives, encoders, analogIns, brakes, digitalPots)
-        for index, drive, encoder, analogIn, brake, digitalPot in data:
+        data = zip(range(self.numberOfActuators), drives, encoders, analogIns, brakes)
+        for index, drive, encoder, analogIn, brake in data:
             type = self.actuatorType(index)
-            boardID = self.boardIDs[0] if index < 4 else self.boardIDs[1]
+            boardID = self.boardIDs[index // self.actuatorsPerBoard]
+            axisID = index % self.actuatorsPerBoard
 
             yield Actuator(
-                index, index, type, boardID, drive, encoder, analogIn, brake, digitalPot
+                index, type, boardID, axisID, drive, encoder, analogIn, brake
             )
 
     def generateDigitalInputs(self):
@@ -252,7 +251,7 @@ class ClassicPSM(Robot):
         self.potentiometerLatency = lambda index: 0.01
         self.potentiometerDistance = lambda index: 5.0
 
-        super().__init__(robotTypeName, serialNumber, calData, 7)
+        super().__init__(robotTypeName, serialNumber, calData, 7, 4)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         self.potentiometers = Potentiometers("Actuators", potentiometerTolerances)
@@ -286,21 +285,21 @@ class ClassicPSM(Robot):
 
 class SiPSM(Robot):
     def __init__(self, calData, robotTypeName, serialNumber):
-        self.driveDirection = lambda index: [1, -1, 1, -1, -1, 1, 1][index]
+        self.driveDirection = lambda index: [-1, 1, 1, 1, 1, -1, -1][index]
+        self.encoderDirection = lambda index: -self.driveDirection(index)
         self.encoderCPT = lambda index: [81920, 81920, 50000, 4000, 4000, 4000, 4000][index]
-        self.gearRatio = lambda index: [83.3333, 85.000, -965.91, 13.813, 13.813, 13.813, 13.813][index]
+        self.gearRatio = lambda index: [83.3333, 85.000, 965.91, 13.813, 13.813, 13.813, 13.813][index]
         self.pitch = lambda index: [1, 1, 17.4533, 1, 1, 1, 1][index]
         self.motorMaxCurrent = lambda index: [3.4, 3.4, 1.1, 1.1, 1.1, 1.1, 1.1][index]
         self.motorTorque = lambda index: [0.0603, 0.0603, 0.0385, 0.0385, 0.0385, 0.0385, 0.0385][index]
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
         self.potentiometerUnits = lambda index: "deg" if index != 2 else "mm"
         self.potentiometerLatency = lambda index: 0.01
-        self.potentiometerDistance = lambda index: 10.0
+        self.potentiometerDistance = lambda index: 4.0
 
         # # 2^13/10^3 or 2^11/10^3
         i_high = 65536 / 4800 / 2
         self.driveLinearAmpCurrent = lambda index: [i_high, i_high, 2.048, 2.048, 2.048, 2.048, 2.048][index]
-        self.digitalPotResolution = lambda index: 4095 # 2^12 - 1
 
         self.brakeMaxCurrent = lambda index: [0.2, 0.2, 0.3][index]
         self.brakeReleaseCurrent = lambda index: [0.15, 0.15, -0.25][index]
@@ -309,40 +308,11 @@ class SiPSM(Robot):
         self.brakeEngagedCurrent = lambda index: 0.0
         self.brakeLinearAmpCurrent = lambda index: 2.048 # 2^11/10^3
 
-        super().__init__(robotTypeName, serialNumber, calData, 7)
+        super().__init__(robotTypeName, serialNumber, calData, 7, 10)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
-        self.potentiometers = Potentiometers("Actuators", potentiometerTolerances)
-
-    def digitalPotMinimum(self, index):
-        lower_limit_index = self.calData["LOWER_LIMIT"] - 1
-        raw_pot_minimum = self.calData["motor"]["pot_limit_checks"][lower_limit_index][index]
-
-        # Make minimum limit be in range 0-resolution
-        resolution = self.digitalPotResolution(index)
-        range = resolution + 1
-        pot_minimum = (raw_pot_minimum + range) % range
-        # Offset by 20 to prevent move overflow point below joint minimum
-        pot_minimum = pot_minimum - 20
-        return int(pot_minimum)
-
-    def digitalPotScale(self, index):
-        gain = self.calData["motor"]["pot_input_gain"][index]
-        units = self.potentiometerUnits(index)
-        if units == "deg":
-            return math.degrees(gain)
-        elif units == "mm":
-            return gain * 1000.0
-        else:
-            raise ValueException("Unsupported gain units: {}".format(units))
-
-    def digitalPotOffset(self, index):
-        lower_limit_index = self.calData["LOWER_LIMIT"] - 1
-        lower_signal_limit = self.calData["joint"]["signal_range"][lower_limit_index][index]
-
-        # Adjust lower limit down by 20 to match digitalPotMinimum
-        lower_signal_limit -= self.calData["motor"]["pot_input_gain"][index]*20.0
-        return self.driveDirection(index) * math.degrees(lower_signal_limit)
+        lookupTable = "sawRobotIO1394-{}-{}-PotentiometerLookupTable.json".format(robotTypeName, serialNumber)
+        self.potentiometers = Potentiometers("Actuators", potentiometerTolerances, lookupTable)
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
@@ -387,39 +357,17 @@ class SiPSM(Robot):
                 linearAmpCurrent=self.driveLinearAmpCurrent(index),
             )
 
-    def generateDigitalPotentiometers(self):
-        for index in range(self.numberOfActuators):
-            min =  self.digitalPotMinimum(index)
-            resolution = self.digitalPotResolution(index)
-            scale = self.digitalPotScale(index)
-            offset = self.digitalPotOffset(index)
-            units = self.potentiometerUnits(index)
-            yield DigitalPotentiometer(min, resolution, scale, offset, units)
-
     def generateAnalogIns(self):
         for index in range(self.numberOfActuators):
             yield None
 
-    def generateActuators(self):
-        drives = self.generateDrives()
-        encoders = self.generateEncoders()
-        analogIns = self.generateAnalogIns()
-        brakes = self.generateBrakes()
-        digitalPots = self.generateDigitalPotentiometers()
-        data = zip(range(self.numberOfActuators), drives, encoders, analogIns, brakes, digitalPots)
-        for index, drive, encoder, analogIn, brake, digitalPot in data:
-            type = self.actuatorType(index)
-            yield Actuator(
-                index, index, type, self.boardIDs[0], drive, encoder, analogIn, brake, digitalPot, 10
-            )
-
     def generateDigitalInputs(self):
         digitalInputBitIDs = [
-            (self.boardIDs[0], 0, "SUJClutch2", 0.2),
+            (self.boardIDs[0], 1, "SUJClutch2", 0.2),
             (self.boardIDs[0], 4, "SUJClutch", 0.2),
-            (self.boardIDs[0], 11, "Tool", 0.2),
+            (self.boardIDs[0], 9, "Tool", 1.5),
             (self.boardIDs[0], 13, "ManipClutch", 0.01),
-            (self.boardIDs[0], 17, "Adapter", 0.2),
+            (self.boardIDs[0], 10, "Adapter", 1.5),
         ]
 
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
@@ -453,7 +401,7 @@ class ClassicECM(Robot):
         self.brakeReleasedCurrent = lambda index: [0.08, 0.07, 0.20][index]
         self.brakeEngagedCurrent = lambda index: 0.0
 
-        super().__init__(robotTypeName, serialNumber, calData, 4)
+        super().__init__(robotTypeName, serialNumber, calData, 4, 4)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         self.potentiometers = Potentiometers("Actuators", potentiometerTolerances)
@@ -521,7 +469,7 @@ class MTM(Robot):
         self.potentiometerLatency = lambda index: 0.01 if index <= 5 else 0.0
         self.potentiometerDistance = lambda index: 5.0 if index <= 5 else 0.0
 
-        super().__init__(robotTypeName, serialNumber, calData, 7)
+        super().__init__(robotTypeName, serialNumber, calData, 7, 4)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         self.potentiometers = Potentiometers("Joints", potentiometerTolerances)
@@ -566,7 +514,7 @@ class MTMGripper(Robot):
         self.voltsToPosSIScale = -23.1788
         self.voltsToPosSIOffset = 91.4238
 
-        super().__init__(robotTypeName, serialNumber, calData, 1)
+        super().__init__(robotTypeName, serialNumber, calData, 1, 4)
 
     def generateAnalogIns(self):
         for index in range(self.numberOfActuators):
@@ -593,7 +541,7 @@ class MTMGripper(Robot):
             type = self.actuatorType(index)
             id = self.boardIDs[1]
             yield Actuator(
-                id, index, type, id, drive, encoder, analogIn, brake
+                id, type, id, index, drive, encoder, analogIn, brake
             )
 
     def toDict(self):
@@ -682,9 +630,9 @@ class AnalogBrake(Serializable):
 
 class Encoder(Serializable):
     def __init__(
-        self, potentiometerUnits, driveDirection, CPT, pitch, gearRatio
+        self, potentiometerUnits, direction, CPT, pitch, gearRatio
     ):
-        encoderPos = driveDirection * (360 / CPT) * (pitch / gearRatio)
+        encoderPos = direction * (360 / CPT) * (pitch / gearRatio)
         encoderPos = "{:10.15f}".format(encoderPos)
         self.bitsToPosSI = Conversion(encoderPos, None, potentiometerUnits)
 
@@ -739,15 +687,21 @@ class AnalogIn(Serializable):
 
 
 class Potentiometers(Serializable):
-    def __init__(self, position, tolerances):
+    def __init__(self, position, tolerances, lookupTable=None):
         self.position = position
         self.tolerances = tolerances
+        self.lookupTable = lookupTable
 
     def toDict(self):
-        return {
+        dict = {
             "Position": self.position,
             "Tolerances": self.tolerances,
         }
+
+        if self.lookupTable is not None:
+            dict["LookupTable"] = self.lookupTable
+
+        return dict
 
 
 class PotentiometerTolerance(Serializable):
@@ -774,17 +728,6 @@ class Potentiometer(Serializable):
         return {
             "Min": self.min,
             "Resolution": self.resolution,
-        }
-
-class DigitalPotentiometer(Serializable):
-    def __init__(self, min, resolution, scale, offset, units):
-        self.pot = Potentiometer(min, resolution)
-        self.potentiometerToPositionSI = Conversion(scale, offset, units)
-
-    def toDict(self):
-        return {
-            "Pot": self.pot,
-            "PotToPosSI": self.potentiometerToPositionSI,
         }
 
 
@@ -852,25 +795,22 @@ class Actuator(Serializable):
     def __init__(
         self,
         id: int,
-        index: int,
         type: str,
         boardID: int,
+        axisID: int,
         drive: Drive,
         encoder: Encoder,
         analogIn: AnalogIn = None,
         brake: AnalogBrake = None,
-        digitalPotentiometer = None,
-        actuatorsPerBoard = 4,
     ):
         self.id = id
         self.boardID = boardID
-        self.axisID = index % actuatorsPerBoard
+        self.axisID = axisID
         self.type = type
         self.drive = drive
         self.encoder = encoder
         self.analogIn = analogIn
         self.brake = brake
-        self.digitalPotentiometer = digitalPotentiometer
 
     def toDict(self):
         dict = {
@@ -887,9 +827,6 @@ class Actuator(Serializable):
 
         if self.analogIn is not None:
             dict["AnalogIn"] = self.analogIn
-
-        if self.digitalPotentiometer is not None:
-            dict["DigitalPot"] = self.digitalPotentiometer
 
         return dict
 
@@ -994,7 +931,7 @@ def saveConfigFile(fileName, config, format):
     print("Generated config file {}".format(fileName))
 
 
-def generateConfig(calFileName, robotTypeName, generation, outputFormat):
+def generateConfig(calFileName, robotTypeName, serialNumber, generation, outputFormat):
     # Array index/dimension constants that .cal file parser needs to know
     constants = {
         "UPPER_LIMIT": 1,
@@ -1020,29 +957,30 @@ def generateConfig(calFileName, robotTypeName, generation, outputFormat):
     }
 
     parser = calParser.CalParser(constants)
-    calData = parser.parseFile(calFileName)
+    calData = parser.parseFile(calFileName) if generation == "Classic" else None
 
     # sanity check robot type matches cal file
-    assert (
-        robotTypeName[0:3] == calData["FileType"][0:3]
-    ), "Robot hardware type doesn't match type from cal file"
+    if calData is not None:
+        assert (
+            robotTypeName[0:3] == calData["FileType"][0:3]
+        ), "Robot hardware type doesn't match type from cal file"
 
     version = 4
-    config = Config(calData, version, robotTypeName, generation)
+    serialNumber = str(serialNumber or calData["serial_number"])
+    config = Config(calData, version, serialNumber, robotTypeName, generation)
 
-    outputFileName = "sawRobotIO1394-" + robotTypeName + "-" + str(calData["serial_number"])
+    outputFileName = "sawRobotIO1394-" + robotTypeName + "-" + serialNumber
     saveConfigFile(outputFileName, config, outputFormat)
 
     if robotTypeName[0:3] == "MTM":
         gripperConfigFileName = (
-            "sawRobotIO1394-" + robotTypeName + "-gripper-" + str(calData["serial_number"])
+            "sawRobotIO1394-" + robotTypeName + "-gripper-" + serialNumber
         )
-        gripperConfig = Config(calData, version, robotTypeName + "-Gripper", generation)
+        gripperConfig = Config(calData, version, serialNumber, robotTypeName + "-Gripper", generation)
         saveConfigFile(gripperConfigFileName, gripperConfig, outputFormat)
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+def main():
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         "-a",
         "--arm",
@@ -1050,6 +988,7 @@ if __name__ == "__main__":
         required=True,
         choices=["MTML", "MTMR", "PSM1", "PSM2", "PSM3", "ECM"],
         help="robot arm hardware type",
+        default=argparse.SUPPRESS,
     )
     parser.add_argument(
         "-g",
@@ -1059,7 +998,8 @@ if __name__ == "__main__":
         choices=["Classic", "Si"],
         help="robot arm hardware generation",
     )
-    parser.add_argument("-c", "--cal", type=str, required=True, help="calibration file")
+    parser.add_argument("-c", "--cal", type=str, help="calibration file", default=None)
+    parser.add_argument("-s", "--serial", type=int, help="serial number (for Si arms)", default=None)
     parser.add_argument(
         "-f",
         "--format",
@@ -1070,6 +1010,16 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    if args.generation == "Classic" and args.cal is None:
+        print("ERROR: must specify calibration file ('--cal') for classic generation arms")
+        return
+
+    if args.generation == "Si" and args.serial is None:
+        print("ERROR: must specify serial number ('--serial') for Si generation arms")
+        return
 
     outputFormat = OutputFormat.XML if args.format == "XML" else OutputFormat.JSON
-    generateConfig(args.cal, args.arm, args.generation, outputFormat)
+    generateConfig(args.cal, args.arm, args.serial, args.generation, outputFormat)
+
+if __name__ == "__main__":
+    main()
