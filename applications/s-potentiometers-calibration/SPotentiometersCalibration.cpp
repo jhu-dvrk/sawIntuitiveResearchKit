@@ -137,7 +137,7 @@ int main(int argc, char * argv[])
         port->Configure(configFile);
 
         std::cout << "Creating robot ..." << std::endl;
-        int numberOfRobots;
+        size_t numberOfRobots;
         port->GetNumberOfRobots(numberOfRobots);
         if (numberOfRobots == 0) {
             std::cerr << "Error: the config file doesn't define a robot." << std::endl;
@@ -150,7 +150,7 @@ int main(int argc, char * argv[])
         mtsRobot1394 * robot = port->Robot(0);
 
         // locate the manip clutch so we can release the brakes
-        int numberOfDigitalInput;
+        size_t numberOfDigitalInput;
         port->GetNumberOfDigitalInputs(numberOfDigitalInput);
         mtsDigitalInput1394 * clutchInput = nullptr;
         const std::string clutchName = armName + "-ManipClutch";
