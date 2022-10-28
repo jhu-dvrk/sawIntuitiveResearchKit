@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -74,10 +74,6 @@ public:
 
         // emit an event the first time we have a valid position
         mNumberOfMuxCyclesBeforeStable = 0;
-
-        // joints
-        mJointGet.SetSize(6);
-        mJointGet.Zeros();
 
         // base frame
         mBaseFrameValid = true;
@@ -213,7 +209,7 @@ public:
             mClutched += 1;
             if (mClutched == 1) {
                 // clutch is pressed, arm is moving around and we know the pots are slow, we mark position as invalid
-                mInterfaceProvided->SendStatus(mName.Data + ": SUJ clutched");
+                mInterfaceProvided->SendStatus(mName + ": SUJ clutched");
                 m_measured_cp.SetTimestamp(m_measured_js.Timestamp());
                 m_measured_cp.SetValid(false);
                 EventPositionCartesian(m_measured_cp);
@@ -224,13 +220,13 @@ public:
         } else {
             // first event to release (physical button or GUI) forces release
             mClutched = 0;
-            mInterfaceProvided->SendStatus(mName.Data + ": SUJ not clutched");
+            mInterfaceProvided->SendStatus(mName + ": SUJ not clutched");
         }
     }
 
     inline void servo_jp(const prmPositionJointSet & newPosition) {
         if (!m_simulated) {
-            mInterfaceProvided->SendWarning(mName.Data + ": servo_jp can't be used unless the SUJs are in simulated mode");
+            mInterfaceProvided->SendWarning(mName + ": servo_jp can't be used unless the SUJs are in simulated mode");
             return;
         }
         // save the desired position
@@ -304,11 +300,11 @@ public:
     }
 
     // name of this SUJ arm (ECM, PSM1, ...)
-    mtsStdString mName;
+    std::string mName;
     // suj type
     SujType mType;
     // serial number
-    mtsStdString mSerialNumber;
+    std::string mSerialNumber;
     // plug on back of controller, 1 to 4
     unsigned int mPlugNumber;
 
@@ -347,7 +343,6 @@ public:
 
     // kinematics
     robManipulator mManipulator;
-    vctDoubleVec mJointGet;
     vctMat mRecalibrationMatrix;
     vctDoubleVec mNewJointScales[2];
     vctDoubleVec mNewJointOffsets[2];
@@ -404,9 +399,7 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     mSimulatedTimer = 0.0;
 
     // initialize arm pointers
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex] = 0;
-    }
+    Arms.SetAll(nullptr);
 
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
@@ -559,9 +552,9 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
     const Json::Value jsonReferenceArm = jsonConfig["reference-arm"];
     if (!jsonReferenceArm.isNull()) {
         referenceArmName = jsonReferenceArm.asString();
-        CMN_LOG_CLASS_INIT_WARNING << "Configure: \"reference-arm\" is user defined.  This should only happen if you are using a PSM to hold a camera.  Most users shouldn't define \"reference-arm\".  If undefined, all arm cartesian positions will be defined with respect to the ECM" << std::endl; 
+        CMN_LOG_CLASS_INIT_WARNING << "Configure: \"reference-arm\" is user defined.  This should only happen if you are using a PSM to hold a camera.  Most users shouldn't define \"reference-arm\".  If undefined, all arm cartesian positions will be defined with respect to the ECM" << std::endl;
     }
-    
+
     // find all arms, there should be 4 of them
     const Json::Value jsonArms = jsonConfig["arms"];
     if (jsonArms.size() != 4) {
@@ -821,12 +814,10 @@ void mtsIntuitiveResearchKitSUJ::EnterEnabled(void)
 
     if (m_simulated) {
         // set all data to be valid
-        for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-            if (Arms[armIndex]) {
-                Arms[armIndex]->m_measured_js.Valid() = true;
-                Arms[armIndex]->m_measured_cp.Valid() = true;
-                Arms[armIndex]->m_local_measured_cp.Valid() = true;
-            }
+        for (auto arm : Arms) {
+            arm->m_measured_js.Valid() = true;
+            arm->m_measured_cp.Valid() = true;
+            arm->m_local_measured_cp.Valid() = true;
         }
         SetHomed(true);
         return;
@@ -839,9 +830,7 @@ void mtsIntuitiveResearchKitSUJ::EnterEnabled(void)
     RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
 
     // when returning from manual mode, make sure brakes are not released
-    mtsIntuitiveResearchKitSUJArmData * arm;
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        arm = Arms[armIndex];
+    for (auto arm : Arms) {
         arm->mClutched = 0;
         arm->mBrakeDesiredCurrent = 0.0;
         mPreviousTic = 0.0;
@@ -941,9 +930,9 @@ void mtsIntuitiveResearchKitSUJ::set_simulated(void)
 {
     m_simulated = true;
     // set all arms simulated
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        if (Arms[armIndex]) {
-            Arms[armIndex]->m_simulated = true;
+    for (auto arm : Arms) {
+        if (arm != nullptr) {
+            arm->m_simulated = true;
         }
     }
     // in simulation mode, we don't need IOs
@@ -1095,18 +1084,18 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                         (arm->mPositionDifference.Ref(5, 1).MaxAbsElement() > angleTolerance)) {
                         // send messages if this is new
                         if (arm->mPotsAgree) {
-                            mInterface->SendWarning(this->GetName() + ": " + arm->mName.Data + " primary and secondary potentiometers don't seem to agree.");
+                            mInterface->SendWarning(this->GetName() + ": " + arm->mName + " primary and secondary potentiometers don't seem to agree.");
                             CMN_LOG_CLASS_RUN_WARNING << "GetAndConvertPotentiometerValues, error: " << std::endl
-                                                      << " - " << this->GetName() << ": " << arm->mName.Data << std::endl
+                                                      << " - " << this->GetName() << ": " << arm->mName << std::endl
                                                       << " - primary:   " << arm->mPositions[0] << std::endl
                                                       << " - secondary: " << arm->mPositions[1] << std::endl;
                             arm->mPotsAgree = false;
                         }
                     } else {
                         if (!arm->mPotsAgree) {
-                            mInterface->SendStatus(this->GetName() + ": " + arm->mName.Data + " primary and secondary potentiometers agree.");
+                            mInterface->SendStatus(this->GetName() + ": " + arm->mName + " primary and secondary potentiometers agree.");
                             CMN_LOG_CLASS_RUN_VERBOSE << "GetAndConvertPotentiometerValues recovery" << std::endl
-                                                      << " - " << this->GetName() << ": " << arm->mName.Data << std::endl;
+                                                      << " - " << this->GetName() << ": " << arm->mName << std::endl;
                             arm->mPotsAgree = true;
                         }
                     }
@@ -1117,9 +1106,6 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                                                   arm->mPositions[1]);
                 arm->m_measured_js.Position().Divide(2.0);
                 arm->m_measured_js.SetValid(true);
-
-                // Joint forward kinematics
-                arm->mJointGet.Assign(arm->m_measured_js.Position(), arm->mManipulator.links.size());
 
                 // this mux cycle might have started before brakes where engaged so we can set the valid flag
                 if (arm->mNumberOfMuxCyclesBeforeStable < NUMBER_OF_MUX_CYCLE_BEFORE_STABLE) {
@@ -1134,7 +1120,7 @@ void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
                 arm->m_measured_cp.SetValid(arm->mBaseFrameValid && arm->m_local_measured_cp.Valid());
 
                 // forward kinematic
-                vctFrm4x4 suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
+                vctFrm4x4 suj = arm->mManipulator.ForwardKinematics(arm->m_measured_js.Position(), 6);
                 // pre and post transformations loaded from JSON file, base frame updated using events
                 arm->mPositionCartesianLocal = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
                 // update local only
@@ -1225,13 +1211,10 @@ void mtsIntuitiveResearchKitSUJ::RunEnabled(void)
         const double currentTime = this->StateTable.GetTic();
         if (currentTime - mSimulatedTimer > 1.0 * cmn_s) {
             mSimulatedTimer = currentTime;
-            for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-                mtsIntuitiveResearchKitSUJArmData * arm = Arms[armIndex];
+            for (auto arm : Arms) {
                 arm->mStateTable.Start();
-                // Joint forward kinematics
-                arm->mJointGet.Assign(arm->m_measured_js.Position(), arm->mManipulator.links.size());
                 // forward kinematic
-                vctFrm4x4 suj = arm->mManipulator.ForwardKinematics(arm->mJointGet, 6);
+                vctFrm4x4 suj = arm->mManipulator.ForwardKinematics(arm->m_measured_js.Position(), 6);
                 // pre and post transformations loaded from JSON file, base frame updated using events
                 vctFrm4x4 armLocal = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
                 // apply base frame
@@ -1343,36 +1326,36 @@ void mtsIntuitiveResearchKitSUJ::ErrorEventHandler(const mtsMessage & message)
 void mtsIntuitiveResearchKitSUJ::DispatchError(const std::string & message)
 {
     mInterface->SendError(message);
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->mInterfaceProvided->SendError(Arms[armIndex]->mName.Data + " " + message);
+    for (auto arm : Arms) {
+        arm->mInterfaceProvided->SendError(arm->mName + " " + message);
     }
 }
 
 void mtsIntuitiveResearchKitSUJ::DispatchWarning(const std::string & message)
 {
     mInterface->SendWarning(message);
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->mInterfaceProvided->SendWarning(Arms[armIndex]->mName.Data + " " + message);
+    for (auto arm : Arms) {
+        arm->mInterfaceProvided->SendWarning(arm->mName + " " + message);
     }
 }
 
 void mtsIntuitiveResearchKitSUJ::DispatchStatus(const std::string & message)
 {
     mInterface->SendStatus(message);
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->mInterfaceProvided->SendStatus(Arms[armIndex]->mName.Data + " " + message);
+    for (auto arm : Arms) {
+        arm->mInterfaceProvided->SendStatus(arm->mName + " " + message);
     }
 }
 
 void mtsIntuitiveResearchKitSUJ::DispatchState(void)
 {
     state_events.current_state(mArmState.CurrentState());
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->state_events.current_state(mArmState.CurrentState());
+    for (auto arm : Arms) {
+        arm->state_events.current_state(mArmState.CurrentState());
     }
     state_events.desired_state(mArmState.DesiredState());
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->state_events.desired_state(mArmState.DesiredState());
+    for (auto arm : Arms) {
+        arm->state_events.desired_state(mArmState.DesiredState());
     }
     DispatchOperatingState();
 }
@@ -1380,7 +1363,7 @@ void mtsIntuitiveResearchKitSUJ::DispatchState(void)
 void mtsIntuitiveResearchKitSUJ::DispatchOperatingState(void)
 {
     state_events.operating_state(m_operating_state);
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        Arms[armIndex]->state_events.operating_state(m_operating_state);
+    for (auto arm : Arms) {
+        arm->state_events.operating_state(m_operating_state);
     }
 }

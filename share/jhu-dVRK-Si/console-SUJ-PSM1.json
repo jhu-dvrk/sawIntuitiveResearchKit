@@ -1,0 +1,17 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "arms":
+    [
+        {
+            "name": "SUJ",
+            "type": "SUJ_Si",
+            "arm": "suj.json"
+        }
+        ,
+        {
+            "name": "PSM1",
+            "type": "PSM_Si",
+            "serial": "586288"
+        }
+    ]
+}

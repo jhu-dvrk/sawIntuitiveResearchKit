@@ -37,6 +37,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitPSM() override {};
     void set_simulated(void) override;
+    void set_generation(const GenerationType generation) override;
 
  protected:
 
@@ -144,6 +145,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     void EventHandlerTool(const prmEventButton & button);
     void EventHandlerManipClutch(const prmEventButton & button);
+    void EventHandlerSUJClutch(const prmEventButton & button);
 
     void jaw_servo_jp(const prmPositionJointSet & jawPosition);
     void jaw_move_jp(const prmPositionJointSet & jawPosition);
@@ -172,6 +174,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
         mtsFunctionRead GetButton;
         bool IsPressed;
     } ManipClutch;
+
+    struct {
+        mtsFunctionWrite Brake;
+    } SUJClutch;
 
     struct {
         mtsFunctionVoid TriggerRead;

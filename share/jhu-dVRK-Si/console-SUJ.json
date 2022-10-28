@@ -3,9 +3,9 @@
     "arms":
     [
         {
-            "name": "ECM",
-            "type": "ECM_Si",
-            "serial": "438610"
+            "name": "SUJ",
+            "type": "SUJ_Si",
+            "arm": "suj.json"
         }
     ]
 }

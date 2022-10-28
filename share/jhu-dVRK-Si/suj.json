@@ -1,0 +1,47 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "base-arduino-mac": "2B:0D:3D:47:80:A3"
+    ,
+    "arms":
+    [
+        {
+            "name": "ECM",
+            "arduino-mac": "",
+            "serial-number": "0000",
+            "primary-offsets": [ 0.0, -0.098948, -2.382, -3.0573],
+            "primary-scales": [ 1.0, 0.25466, 1.0656, 1.3612],
+            "secondary-offsets": [0.0, -0.11506, -2.3825, -3.0766],
+            "secondary-scales": [1.0, 0.25819, 1.065, 1.3684]
+        }
+        ,
+        {
+            "name": "PSM1",
+            "arduino-mac": "",
+            "serial-number": "0000",
+            "primary-offsets": [ 0.0, -0.098948, -2.382, -3.0573],
+            "primary-scales": [ 1.0, 0.25466, 1.0656, 1.3612],
+            "secondary-offsets": [0.0, -0.11506, -2.3825, -3.0766],
+            "secondary-scales": [1.0, 0.25819, 1.065, 1.3684]
+        }
+        ,
+        {
+            "name": "PSM2",
+            "arduino-mac": "48:CF:9D:1F:41:C9",
+            "serial-number": "0000",
+            "primary-offsets": [ 0.525679, -2.42484, -0.97679, 2.43054],
+            "primary-scales": [-1.71779e-05, 7.29637e-05, 7.28496e-05, -7.35681e-05],
+            "secondary-offsets": [ 0.517559, -2.41912, -0.990611, 2.42459],
+            "secondary-scales": [ -1.71599e-05, 7.28341e-05, 7.33879e-05, -7.3418e-05]
+        }
+        ,
+        {
+            "name": "PSM3",
+            "arduino-mac": "",
+            "serial-number": "0000",
+            "primary-offsets": [ 0.0, -0.098948, -2.382, -3.0573, 0.0],
+            "primary-scales": [ 1.0, 0.25466, 1.0656, 1.3612, 1.0],
+            "secondary-offsets": [0.0, -0.11506, -2.3825, -3.0766, 0.0],
+            "secondary-scales": [1.0, 0.25819, 1.065, 1.3684, 1.0]
+        }
+    ]
+}

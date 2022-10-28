@@ -109,7 +109,7 @@ class Config(Serializable):
             if isClassic:
                 self.robot = ClassicECM(calData, robotTypeName, serialNumber)
             else:
-                raise ValueError("Si ECM is currently unsupported.")
+                self.robot = SiECM(calData, robotTypeName, serialNumber)
         elif robotType == RobotType.MTM:
             self.robot = MTM(calData, robotTypeName, serialNumber)
         else:
@@ -442,6 +442,102 @@ class ClassicECM(Robot):
 
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
             yield DigitalInput(self.name, inputType, bitID, boardID, 1, debounceTime)
+
+    def toDict(self):
+        dict = super().toDict()
+        dict["Potentiometers"] = self.potentiometers
+        return dict
+
+
+class SiECM(Robot):
+    def __init__(self, calData, robotTypeName, serialNumber):
+        self.driveDirection = lambda index: [-1, 1, 1, 1][index]
+        self.encoderDirection = lambda index: -self.driveDirection(index)
+        self.encoderCPT = lambda index: [81920, 81920, 50000, 4000][index]
+        self.gearRatio = lambda index: [83.3333, 85.000, 965.91, 13.813][index]
+        self.pitch = lambda index: [1, 1, 17.4533, 1][index]
+        self.motorMaxCurrent = lambda index: [3.4, 3.4, 1.1, 1.1][index]
+        self.motorTorque = lambda index: [0.0603, 0.0603, 0.0385, 0.0385][index]
+        self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
+        self.potentiometerUnits = lambda index: "deg" if index != 2 else "mm"
+        self.potentiometerLatency = lambda index: 0.01
+        self.potentiometerDistance = lambda index: 4.0
+
+        # # 2^13/10^3 or 2^11/10^3
+        i_high = 65536 / 4800 / 2
+        self.driveLinearAmpCurrent = lambda index: [i_high, i_high, 2.048, 2.048][index]
+
+        self.brakeMaxCurrent = lambda index: [0.2, 0.2, 0.3][index]
+        self.brakeReleaseCurrent = lambda index: [0.15, 0.15, -0.25][index]
+        self.brakeReleaseTime = lambda index: 0.5
+        self.brakeReleasedCurrent = lambda index: [0.08, 0.08, -0.25][index]
+        self.brakeEngagedCurrent = lambda index: 0.0
+        self.brakeLinearAmpCurrent = lambda index: 2.048 # 2^11/10^3
+
+        super().__init__(robotTypeName, serialNumber, calData, 4, 7)
+
+        potentiometerTolerances = list(self.generatePotentiometerTolerances())
+        lookupTable = "sawRobotIO1394-{}-{}-PotentiometerLookupTable.json".format(robotTypeName, serialNumber)
+        self.potentiometers = Potentiometers("Actuators", potentiometerTolerances, lookupTable)
+
+    def generatePotentiometerTolerances(self):
+        for index in range(self.numberOfActuators):
+            units = self.potentiometerUnits(index)
+            latency = self.potentiometerLatency(index)
+            distance = self.potentiometerDistance(index)
+            yield PotentiometerTolerance(index, units, latency, distance)
+
+    def generateBrakes(self):
+        # Only actuators 0-2 have brakes,
+        # Axis IDs are 0-3 for actuators, and 7-9 for brakes
+        for index in range(self.numberOfActuators):
+            if index <= 2:
+                maxCurrent = self.brakeMaxCurrent(index)
+                releaseCurrent = self.brakeReleaseCurrent(index)
+                releaseTime = self.brakeReleaseTime(index)
+                releasedCurrent = self.brakeReleasedCurrent(index)
+                engagedCurrent = self.brakeEngagedCurrent(index)
+                axisID = 7 + index # Brake 7 corresponds to actuator 0, etc.
+                direction = 1 if index != 2 else -1 # some values in the third brake are reversed
+                yield AnalogBrake(
+                    axisID,
+                    self.boardIDs[0],
+                    direction,
+                    maxCurrent,
+                    releaseCurrent,
+                    releaseTime,
+                    releasedCurrent,
+                    engagedCurrent,
+                    linearAmpCurrent=self.brakeLinearAmpCurrent(index)
+                )
+            else:
+                yield None
+
+    def generateDrives(self):
+        for index in range(self.numberOfActuators):
+            yield Drive(
+                self.driveDirection(index),
+                self.gearRatio(index),
+                self.motorTorque(index),
+                self.motorMaxCurrent(index),
+                linearAmpCurrent=self.driveLinearAmpCurrent(index),
+            )
+
+    def generateAnalogIns(self):
+        for index in range(self.numberOfActuators):
+            yield None
+
+    def generateDigitalInputs(self):
+        digitalInputBitIDs = [
+            (self.boardIDs[0], 1, "SUJClutch2", 0.2),
+            (self.boardIDs[0], 4, "SUJClutch", 0.2)
+        ]
+
+        for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
+            yield DigitalInput(self.name, inputType, bitID, boardID, 0, debounceTime)
+
+    def generateDallasChip(self):
+        return DallasChip(self.boardIDs[0], self.name)
 
     def toDict(self):
         dict = super().toDict()
