@@ -94,6 +94,6 @@
          <Tolerance Axis="3" Distance="5.00" Latency="0.01" Unit="deg" />
       </Potentiometers>
    </Robot>
-   <DigitalIn BitID="0" BoardID="6" Debounce="0.2" Name="ECM-ManipClutch" Pressed="1" Trigger="all" />
-   <DigitalIn BitID="2" BoardID="6" Debounce="0.2" Name="ECM-SUJClutch" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="0" BoardID="4" Debounce="0.2" Name="ECM-ManipClutch" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="2" BoardID="4" Debounce="0.2" Name="ECM-SUJClutch" Pressed="1" Trigger="all" />
 </Config>
