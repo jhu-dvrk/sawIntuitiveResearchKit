@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -23,6 +23,7 @@
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmForceCartesianSet.h>
 #include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
@@ -53,6 +54,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void lock_rotation(const bool & lock);
     void lock_translation(const bool & lock);
     void set_align_mtm(const bool & alignMTM);
+    void following_mtm_body_servo_cf(const prmForceCartesianSet & wrench);
 
  protected:
 
@@ -194,6 +196,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     bool m_rotation_locked = false;
     bool m_translation_locked = false;
     bool m_align_mtm = true; // default on da Vinci
+    prmForceCartesianSet m_following_mtm_body_servo_cf;
 
     vctMatRot3 mMTMClutchedOrientation;
     mtsStateTable * mConfigurationStateTable;

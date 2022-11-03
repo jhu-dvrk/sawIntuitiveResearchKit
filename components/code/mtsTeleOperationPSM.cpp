@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -25,7 +25,6 @@
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmOperatingState.h>
-#include <cisstParameterTypes/prmForceCartesianSet.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -177,6 +176,8 @@ void mtsTeleOperationPSM::Init(void)
                                     "lock_translation", m_translation_locked);
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::set_align_mtm, this,
                                     "set_align_mtm", m_align_mtm);
+        mInterface->AddCommandWrite(&mtsTeleOperationPSM::following_mtm_body_servo_cf, this,
+                                    "following/mtm/body/servo_cf");
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
                                         m_scale,
                                         "scale");
@@ -619,6 +620,11 @@ void mtsTeleOperationPSM::set_align_mtm(const bool & alignMTM)
     }
 }
 
+void mtsTeleOperationPSM::following_mtm_body_servo_cf(const prmForceCartesianSet & wrench)
+{
+    m_following_mtm_body_servo_cf = wrench;
+}
+
 void mtsTeleOperationPSM::StateChanged(void)
 {
     const std::string newState = mTeleopState.CurrentState();
@@ -895,6 +901,10 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     // set forces to zero and lock/unlock orientation as needed
     prmForceCartesianSet wrench;
     mMTM.body_servo_cf(wrench);
+    // reset user wrench
+    m_following_mtm_body_servo_cf = wrench;
+
+    // orientation locked or not
     if (m_rotation_locked
         && mMTM.lock_orientation.IsValid()) {
         mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
@@ -917,6 +927,10 @@ void mtsTeleOperationPSM::RunEnabled(void)
         && mPSM.m_setpoint_cp.Valid()) {
         // follow mode
         if (!m_clutched) {
+
+            // on MTM, just apply user provided effort
+            mMTM.body_servo_cf(m_following_mtm_body_servo_cf);
+
             // compute mtm Cartesian motion
             vctFrm4x4 mtmPosition(mMTM.m_measured_cp.Position());
 
