@@ -64,12 +64,12 @@ if (cisst_FOUND)
                                           -DGATTLIB_PYTHON_INTERFACE:BOOL=OFF
                                           -DGATTLIB_BUILD_EXAMPLES:BOOL=OFF
                                           -DGATTLIB_SHARED_LIB:BOOL=ON
-                                          -DCMAKE_INSTALL_PREFIX:FILEPATH=${CMAKE_CURRENT_BINARY_DIR}/gattlib
-                         INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/gattlib
+                                          -DCMAKE_INSTALL_PREFIX:FILEPATH=${CMAKE_INSTALL_PREFIX}
                          UPDATE_COMMAND ""
+                         INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
                          )
-    set (gattlib_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/gattlib/include")
-    set (gattlib_LIBRARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/gattlib/lib")
+    set (gattlib_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
+    set (gattlib_LIBRARY_DIR "${CMAKE_INSTALL_PREFIX}/lib")
     set (gattlib_LIBRARIES gattlib)
 
     # saw components configuration
@@ -89,7 +89,10 @@ if (cisst_FOUND)
          "${sawIntuitiveResearchKit_BINARY_DIR}/include")
     set (sawIntuitiveResearchKit_HEADER_DIR
          "${sawIntuitiveResearchKit_SOURCE_DIR}/include/sawIntuitiveResearchKit")
-    set (sawIntuitiveResearchKit_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
+    set (sawIntuitiveResearchKit_LIBRARY_DIR
+         "${LIBRARY_OUTPUT_PATH}"
+         "${gattlib_LIBRARY_DIR}")
+
     set (sawIntuitiveResearchKit_LIBRARIES sawIntuitiveResearchKit)
 
     include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
