@@ -201,7 +201,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     m_servo_jp.SetSize(number_of_joints());
     m_servo_jv.SetSize(number_of_joints());
     m_servo_jp_param.Goal().SetSize(number_of_joints());
-    m_feed_forward_jf.ForceTorque().SetSize(number_of_joints());
+    m_pid_feed_forward_servo_jf.ForceTorque().SetSize(number_of_joints());
+    m_pid_feed_forward_servo_jf.ForceTorque().SetAll(0.0);
     m_trajectory_j.v_max.SetSize(number_of_joints());
     m_trajectory_j.v.SetSize(number_of_joints());
     m_trajectory_j.a_max.SetSize(number_of_joints());
@@ -373,6 +374,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                          this, "move_cp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jf,
                                          this, "servo_jf");
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::pid_feed_forward_servo_jf,
+                                         this, "pid_feed_forward/servo_jf");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::body_servo_cf,
                                          this, "body/servo_cf");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::body_set_cf_orientation_absolute,
@@ -1570,6 +1573,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             // configure PID
             PID.EnableTrackingError(use_PID_tracking_error());
             PID.EnableTorqueMode(vctBoolVec(number_of_joints(), false));
+            m_pid_feed_forward_servo_jf.ForceTorque().SetAll(0.0);
             m_new_pid_goal = false;
             mCartesianRelative = vctFrm3::Identity();
             m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
@@ -1579,6 +1583,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             // configure PID
             PID.EnableTrackingError(use_PID_tracking_error());
             PID.EnableTorqueMode(vctBoolVec(number_of_joints(), false));
+            m_pid_feed_forward_servo_jf.ForceTorque().SetAll(0.0);
             m_effort_orientation_locked = false;
             // initialize trajectory
             m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
@@ -1784,9 +1789,10 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & newPosit
 {
     // feed forward
     if (use_feed_forward()) {
-        update_feed_forward(m_feed_forward_jf.ForceTorque());
-        PID.feed_forward_jf(m_feed_forward_jf);
+        update_feed_forward(m_pid_feed_forward_servo_jf.ForceTorque());
     }
+    PID.feed_forward_jf(m_pid_feed_forward_servo_jf);
+
     // position
     m_servo_jp_param.Goal().Zeros();
     m_servo_jp_param.Goal().Assign(newPosition, number_of_joints());
@@ -2028,6 +2034,11 @@ void mtsIntuitiveResearchKitArm::servo_jf(const prmForceTorqueJointSet & effort)
 
     // set new effort
     m_servo_jf.ForceTorque().Assign(effort.ForceTorque());
+}
+
+void mtsIntuitiveResearchKitArm::pid_feed_forward_servo_jf(const prmForceTorqueJointSet & effort)
+{
+    m_pid_feed_forward_servo_jf.ForceTorque().Assign(effort.ForceTorque());
 }
 
 void mtsIntuitiveResearchKitArm::body_servo_cf(const prmForceCartesianSet & wrench)
