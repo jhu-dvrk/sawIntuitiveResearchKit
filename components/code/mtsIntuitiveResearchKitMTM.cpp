@@ -612,7 +612,7 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_preload(vctDoubleVec & effortP
                                                           vctDoubleVec & wrenchPreload)
 {
     // not handling this yet
-    if (m_cf_type == WRENCH_SPATIAL) {
+    if (m_servo_cf_type == WRENCH_SPATIAL) {
         effortPreload.SetAll(0.0);
         wrenchPreload.SetAll(0.0);
         return;
@@ -699,8 +699,9 @@ void mtsIntuitiveResearchKitMTM::unlock_orientation(void)
 }
 
 
-void mtsIntuitiveResearchKitMTM::control_add_gravity_compensation(vctDoubleVec & efforts)
+void mtsIntuitiveResearchKitMTM::gravity_compensation(vctDoubleVec & efforts)
 {
+    efforts.SetAll(0.0);
     if (GravityCompensationMTM) {
         GravityCompensationMTM->AddGravityCompensationEfforts(m_kin_measured_js.Position(),
                                                               m_kin_measured_js.Velocity(),

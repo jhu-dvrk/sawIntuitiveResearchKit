@@ -229,10 +229,17 @@ void mtsIntuitiveResearchKitArm::Init(void)
     this->StateTable.AddData(m_spatial_jacobian, "spatial_jacobian");
 
     // efforts for kinematics
-    mEffortJointSet.SetSize(number_of_joints_kinematics());
-    mEffortJointSet.ForceTorque().SetAll(0.0);
+    m_servo_jf.SetSize(number_of_joints_kinematics());
+    m_servo_jf.ForceTorque().SetAll(0.0);
     m_body_measured_cf.SetValid(false);
     m_spatial_measured_cf.SetValid(false);
+
+    // efforts computed by gravity compensation
+    m_gravity_compensation_setpoint_js.SetSize(number_of_joints_kinematics());
+    m_gravity_compensation_setpoint_js.Effort().SetAll(0.0);
+    m_gravity_compensation_setpoint_js.SetAutomaticTimestamp(false);
+    m_gravity_compensation_setpoint_js.SetValid(false);
+    this->StateTable.AddData(m_gravity_compensation_setpoint_js, "gravity_compensation/setpoint_js");
 
     // base frame, mostly for cases where no base frame is set by user
     m_base_frame = vctFrm4x4::Identity();
@@ -331,6 +338,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         m_arm_interface->AddCommandReadState(this->mStateTableConfiguration, m_kin_configuration_js, "configuration_js");
         m_arm_interface->AddCommandReadState(this->StateTable, m_kin_measured_js, "measured_js");
         m_arm_interface->AddCommandReadState(this->StateTable, m_kin_setpoint_js, "setpoint_js");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_gravity_compensation_setpoint_js, "gravity_compensation/setpoint_js");
         m_arm_interface->AddCommandReadState(this->StateTable, m_local_measured_cp, "local/measured_cp");
         m_arm_interface->AddCommandReadState(this->StateTable, m_local_setpoint_cp, "local/setpoint_cp");
         m_arm_interface->AddCommandReadState(this->StateTable, m_measured_cp, "measured_cp");
@@ -523,10 +531,10 @@ void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
     m_body_jacobian_transpose.ForceAssign(m_body_jacobian.Transpose());
     m_spatial_jacobian_transpose.ForceAssign(m_spatial_jacobian.Transpose());
     mJacobianPInverseData.Allocate(m_body_jacobian_transpose);
-    mEffortJointSet.SetSize(number_of_joints_kinematics());
-    mEffortJointSet.ForceTorque().SetAll(0.0);
-    mEffortJoint.SetSize(number_of_joints_kinematics());
-    mEffortJoint.SetAll(0.0);
+    m_servo_jf.SetSize(number_of_joints_kinematics());
+    m_servo_jf.ForceTorque().SetAll(0.0);
+    m_servo_jf_vector.SetSize(number_of_joints_kinematics());
+    m_servo_jf_vector.SetAll(0.0);
 }
 
 void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
@@ -909,6 +917,14 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         m_setpoint_cp.SetTimestamp(m_kin_setpoint_js.Timestamp());
         m_setpoint_cp.SetValid(m_base_frame_valid);
 
+        // updated joint efforts for gravity compensation
+        if (m_gravity_compensation) {
+            gravity_compensation(m_gravity_compensation_setpoint_js.Effort());
+        } else {
+            m_gravity_compensation_setpoint_js.Effort().SetAll(0.0);
+        }
+        m_gravity_compensation_setpoint_js.SetTimestamp(m_kin_setpoint_js.Timestamp());
+        m_gravity_compensation_setpoint_js.SetValid(true);
     } else {
         // set cartesian data to "zero"
         m_local_measured_cp_frame.Assign(vctFrm4x4::Identity());
@@ -925,6 +941,8 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         m_setpoint_cp_frame.Assign(vctFrm4x4::Identity());
         m_local_setpoint_cp.SetValid(false);
         m_setpoint_cp.SetValid(false);
+        // estimated gravity compensation
+        m_gravity_compensation_setpoint_js.SetValid(false);
     }
 }
 
@@ -1579,7 +1597,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
         case mtsIntuitiveResearchKitArmTypes::EFFORT_MODE:
             // configure PID
             PID.EnableTrackingError(false);
-            mEffortJoint.Assign(vctDoubleVec(number_of_joints_kinematics(), 0.0));
+            m_servo_jf_vector.Assign(vctDoubleVec(number_of_joints_kinematics(), 0.0));
             SetControlEffortActiveJoints();
             break;
         default:
@@ -1682,18 +1700,15 @@ void mtsIntuitiveResearchKitArm::control_servo_cf_preload(vctDoubleVec & effortP
 void mtsIntuitiveResearchKitArm::control_servo_jf(void)
 {
     // effort required
-    mEffortJoint.Assign(mEffortJointSet.ForceTorque());
+    m_servo_jf_vector.Assign(m_servo_jf.ForceTorque());
 
     // add gravity compensation if needed
     if (m_gravity_compensation) {
-        control_add_gravity_compensation(mEffortJoint);
+        m_servo_jf_vector.Add(m_gravity_compensation_setpoint_js.Effort());
     }
 
-    // add custom efforts
-    control_add_jf(mEffortJoint);
-
     // convert to cisstParameterTypes
-    servo_jf_internal(mEffortJoint);
+    servo_jf_internal(m_servo_jf_vector);
 }
 
 void mtsIntuitiveResearchKitArm::control_servo_cf(void)
@@ -1708,51 +1723,48 @@ void mtsIntuitiveResearchKitArm::control_servo_cf(void)
     control_servo_cf_preload(effortPreload, wrenchPreload);
 
     // body wrench
-    if (m_cf_type == WRENCH_BODY) {
+    if (m_servo_cf_type == WRENCH_BODY) {
         // either using wrench provided by user or cartesian impedance
         if (m_cartesian_impedance) {
             mCartesianImpedanceController->Update(m_measured_cp,
                                                   m_measured_cv,
-                                                  m_cf_set,
+                                                  m_servo_cf,
                                                   m_body_cf_orientation_absolute);
-            wrench.Assign(m_cf_set.Force());
+            wrench.Assign(m_servo_cf.Force());
         } else {
             // user provided wrench
             if (m_body_cf_orientation_absolute) {
                 // use forward kinematics orientation to have constant wrench orientation
                 vct3 relative, absolute;
                 // force
-                relative.Assign(m_cf_set.Force().Ref<3>(0));
+                relative.Assign(m_servo_cf.Force().Ref<3>(0));
                 m_measured_cp_frame.Rotation().ApplyInverseTo(relative, absolute);
                 wrench.Ref(3, 0).Assign(absolute);
                 // torque
-                relative.Assign(m_cf_set.Force().Ref<3>(3));
+                relative.Assign(m_servo_cf.Force().Ref<3>(3));
                 m_measured_cp_frame.Rotation().ApplyInverseTo(relative, absolute);
                 wrench.Ref(3, 3).Assign(absolute);
             } else {
-                wrench.Assign(m_cf_set.Force());
+                wrench.Assign(m_servo_cf.Force());
             }
         }
-        mEffortJoint.ProductOf(m_body_jacobian.Transpose(), wrench + wrenchPreload);
-        mEffortJoint.Add(effortPreload);
+        m_servo_jf_vector.ProductOf(m_body_jacobian.Transpose(), wrench + wrenchPreload);
+        m_servo_jf_vector.Add(effortPreload);
     }
     // spatial wrench
-    else if (m_cf_type == WRENCH_SPATIAL) {
-        wrench.Assign(m_cf_set.Force());
-        mEffortJoint.ProductOf(m_spatial_jacobian.Transpose(), wrench + wrenchPreload);
-        mEffortJoint.Add(effortPreload);
+    else if (m_servo_cf_type == WRENCH_SPATIAL) {
+        wrench.Assign(m_servo_cf.Force());
+        m_servo_jf_vector.ProductOf(m_spatial_jacobian.Transpose(), wrench + wrenchPreload);
+        m_servo_jf_vector.Add(effortPreload);
     }
 
     // add gravity compensation if needed
     if (m_gravity_compensation) {
-        control_add_gravity_compensation(mEffortJoint);
+        m_servo_jf_vector.Add(m_gravity_compensation_setpoint_js.Effort());
     }
 
-    // add custom efforts
-    control_add_jf(mEffortJoint);
-
     // send to PID
-    servo_jf_internal(mEffortJoint);
+    servo_jf_internal(m_servo_jf_vector);
 
     // lock orientation if needed
     if (m_effort_orientation_locked) {
@@ -2015,7 +2027,7 @@ void mtsIntuitiveResearchKitArm::servo_jf(const prmForceTorqueJointSet & effort)
                            mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
 
     // set new effort
-    mEffortJointSet.ForceTorque().Assign(effort.ForceTorque());
+    m_servo_jf.ForceTorque().Assign(effort.ForceTorque());
 }
 
 void mtsIntuitiveResearchKitArm::body_servo_cf(const prmForceCartesianSet & wrench)
@@ -2030,9 +2042,9 @@ void mtsIntuitiveResearchKitArm::body_servo_cf(const prmForceCartesianSet & wren
 
     // set new wrench
     m_cartesian_impedance = false;
-    m_cf_set = wrench;
-    if (m_cf_type != WRENCH_BODY) {
-        m_cf_type = WRENCH_BODY;
+    m_servo_cf = wrench;
+    if (m_servo_cf_type != WRENCH_BODY) {
+        m_servo_cf_type = WRENCH_BODY;
         m_arm_interface->SendStatus(this->GetName() + ": effort cartesian WRENCH_BODY");
     }
 }
@@ -2049,9 +2061,9 @@ void mtsIntuitiveResearchKitArm::spatial_servo_cf(const prmForceCartesianSet & w
 
     // set new wrench
     m_cartesian_impedance = false;
-    m_cf_set = wrench;
-    if (m_cf_type != WRENCH_SPATIAL) {
-        m_cf_type = WRENCH_SPATIAL;
+    m_servo_cf = wrench;
+    if (m_servo_cf_type != WRENCH_SPATIAL) {
+        m_servo_cf_type = WRENCH_SPATIAL;
         m_arm_interface->SendStatus(this->GetName() + ": effort cartesian WRENCH_SPATIAL");
     }
 }
@@ -2066,12 +2078,10 @@ void mtsIntuitiveResearchKitArm::use_gravity_compensation(const bool & gravityCo
     m_gravity_compensation = gravityCompensation;
 }
 
-void mtsIntuitiveResearchKitArm::control_add_gravity_compensation(vctDoubleVec & efforts)
+void mtsIntuitiveResearchKitArm::gravity_compensation(vctDoubleVec & efforts)
 {
     vctDoubleVec qd(this->number_of_joints_kinematics(), 0.0);
-    vctDoubleVec gravityEfforts;
-    gravityEfforts.ForceAssign(Manipulator->CCG(m_kin_measured_js.Position(), qd));  // should this take joint velocities?
-    efforts.Add(gravityEfforts);
+    efforts.ForceAssign(Manipulator->CCG(m_kin_measured_js.Position(), qd));  // should this take joint velocities?
 }
 
 void mtsIntuitiveResearchKitArm::servo_ci(const prmCartesianImpedanceGains & gains)
@@ -2088,8 +2098,8 @@ void mtsIntuitiveResearchKitArm::servo_ci(const prmCartesianImpedanceGains & gai
     m_cartesian_impedance = true;
     m_body_cf_orientation_absolute = true;
     mCartesianImpedanceController->SetGains(gains);
-    if (m_cf_type != WRENCH_BODY) {
-        m_cf_type = WRENCH_BODY;
+    if (m_servo_cf_type != WRENCH_BODY) {
+        m_servo_cf_type = WRENCH_BODY;
         m_arm_interface->SendStatus(this->GetName() + ": effort cartesian WRENCH_BODY");
     }
 }

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -245,11 +245,11 @@ void mtsIntuitiveResearchKitECM::EnterManual(void)
 void mtsIntuitiveResearchKitECM::RunManual(void)
 {
     // zero efforts
-    mEffortJoint.SetAll(0.0);
+    m_servo_jf_vector.SetAll(0.0);
     if (m_gravity_compensation) {
-        control_add_gravity_compensation(mEffortJoint);
+        m_servo_jf_vector.Add(m_gravity_compensation_setpoint_js.Effort());
     }
-    servo_jf_internal(mEffortJoint);
+    servo_jf_internal(m_servo_jf_vector);
 }
 
 void mtsIntuitiveResearchKitECM::LeaveManual(void)
@@ -294,14 +294,14 @@ void mtsIntuitiveResearchKitECM::update_feed_forward(vctDoubleVec & feedForward)
 {
     feedForward.SetAll(0.0);
     if (!m_simulated) {
-        control_add_gravity_compensation(feedForward);
+        feedForward.Add(m_gravity_compensation_setpoint_js.Effort());
     }
 }
 
-void mtsIntuitiveResearchKitECM::control_add_gravity_compensation(vctDoubleVec & efforts)
+void mtsIntuitiveResearchKitECM::gravity_compensation(vctDoubleVec & efforts)
 {
     vctDoubleVec qd(this->number_of_joints_kinematics(), 0.0);
-    efforts.Add(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, 9.81));
+    efforts.ForceAssign(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, 9.81));
 }
 
 void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscopeType)

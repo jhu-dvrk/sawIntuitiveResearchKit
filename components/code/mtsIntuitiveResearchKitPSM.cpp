@@ -1405,7 +1405,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
                                    mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
             // make sure all other joints have a reasonable cartesian
             // goal
-            m_cf_set.Force().SetAll(0.0);
+            m_servo_cf.Force().SetAll(0.0);
         }
         break;
     default:
@@ -1413,7 +1413,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
         // make sure all other joints have a reasonable goal
-        mEffortJointSet.ForceTorque().SetAll(0.0);
+        m_servo_jf.ForceTorque().SetAll(0.0);
     }
 
     // save the desired effort

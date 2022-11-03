@@ -116,7 +116,7 @@ protected:
     virtual void lock_orientation(const vctMatRot3 & orientation);
     virtual void unlock_orientation(void);
 
-    void control_add_gravity_compensation(vctDoubleVec & efforts) override;
+    void gravity_compensation(vctDoubleVec & efforts) override;
 
     // Functions for events
     struct {

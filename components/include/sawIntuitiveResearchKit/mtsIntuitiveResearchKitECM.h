@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -87,7 +87,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     void EventHandlerManipClutch(const prmEventButton & button);
 
     void update_feed_forward(vctDoubleVec & feedForward) override;
-    void control_add_gravity_compensation(vctDoubleVec & efforts) override;
+    void gravity_compensation(vctDoubleVec & efforts) override;
 
     struct {
         mtsFunctionRead GetButton;

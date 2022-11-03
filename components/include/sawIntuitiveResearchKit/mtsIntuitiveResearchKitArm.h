@@ -319,18 +319,23 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctDoubleVec m_servo_jp;
     vctDoubleVec m_servo_jv;
     prmForceTorqueJointSet m_feed_forward_jf;
-    prmStateJoint m_pid_measured_js, m_pid_setpoint_js, m_kin_measured_js, m_kin_setpoint_js;
+    prmStateJoint
+        m_pid_measured_js,
+        m_pid_setpoint_js,
+        m_kin_measured_js,
+        m_kin_setpoint_js,
+        m_gravity_compensation_setpoint_js;
     prmConfigurationJoint m_pid_configuration_js, m_kin_configuration_js;
 
     // efforts
     vctDoubleMat m_body_jacobian, m_body_jacobian_transpose, m_spatial_jacobian, m_spatial_jacobian_transpose;
-    WrenchType m_cf_type;
-    prmForceCartesianSet m_cf_set;
+    WrenchType m_servo_cf_type;
+    prmForceCartesianSet m_servo_cf;
     bool m_body_cf_orientation_absolute = false;
     prmForceTorqueJointSet
         mTorqueSetParam, // number of joints PID, used in servo_jf_internal
-        mEffortJointSet; // number of joints for kinematics
-    vctDoubleVec mEffortJoint; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
+        m_servo_jf; // number of joints for kinematics
+    vctDoubleVec m_servo_jf_vector; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData mJacobianPInverseData;
     prmForceCartesianGet m_body_measured_cf, m_spatial_measured_cf;
@@ -343,11 +348,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     bool m_effort_orientation_locked = false;
     vctDoubleVec mEffortOrientationJoint;
     vctMatRot3 mEffortOrientation;
-    // gravity compensation
+    // use gravity compensation or not
     bool m_gravity_compensation = false;
-    virtual void control_add_gravity_compensation(vctDoubleVec & efforts);
-    // add custom efforts for derived classes
-    inline virtual void control_add_jf(vctDoubleVec & CMN_UNUSED(efforts)) {};
+    // compute effort for gravity compensation based on current state, called in GetRobotData
+    virtual void gravity_compensation(vctDoubleVec & efforts);
 
     // Velocities
     prmVelocityCartesianGet m_local_measured_cv, m_measured_cv;
