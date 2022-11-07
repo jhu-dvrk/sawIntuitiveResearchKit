@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='us-ascii'?>
+<Config Version="4">
+    <Robot Name="ECM" NumOfActuator="4" NumOfJoint="4" SN="438610">
+        <Actuator ActuatorID="0" AxisID="0" BoardID="6" Type="Revolute">
+            <Drive>
+                <AmpsToBits Offset="32767" Scale="-4800.0000" />
+                <BitsToFeedbackAmps Offset="6.8267" Scale="-0.000208333" />
+                <NmToAmps Scale="0.1990050547" />
+                <MaxCurrent Unit="A" Value="3.400" />
+            </Drive>
+            <Encoder>
+                <BitsToPosSI Scale="0.000052734396094" Unit="deg" />
+            </Encoder>
+            <AnalogBrake AxisID="7" BoardID="6">
+                <AmpsToBits Offset="32768" Scale="16000.0" />
+                <BitsToFeedbackAmps Offset="-2.048" Scale="6.25e-05" />
+                <MaxCurrent Unit="A" Value="0.1" />
+                <ReleaseCurrent Unit="A" Value="0.1" />
+                <ReleaseTime Unit="s" Value="0.5" />
+                <ReleasedCurrent Unit="A" Value="0.05" />
+                <EngagedCurrent Unit="A" Value="0.0" />
+            </AnalogBrake>
+        </Actuator>
+        <Actuator ActuatorID="1" AxisID="1" BoardID="6" Type="Revolute">
+            <Drive>
+                <AmpsToBits Offset="32768" Scale="4800.0000" />
+                <BitsToFeedbackAmps Offset="-6.8267" Scale=" 0.000208333" />
+                <NmToAmps Scale="0.1951029168" />
+                <MaxCurrent Unit="A" Value="3.400" />
+            </Drive>
+            <Encoder>
+                <BitsToPosSI Scale="-0.000051700367647" Unit="deg" />
+            </Encoder>
+            <AnalogBrake AxisID="8" BoardID="6">
+                <AmpsToBits Offset="32768" Scale="16000.0" />
+                <BitsToFeedbackAmps Offset="-2.048" Scale="6.25e-05" />
+                <MaxCurrent Unit="A" Value="0.1" />
+                <ReleaseCurrent Unit="A" Value="0.1" />
+                <ReleaseTime Unit="s" Value="0.5" />
+                <ReleasedCurrent Unit="A" Value="0.05" />
+                <EngagedCurrent Unit="A" Value="0.0" />
+            </AnalogBrake>
+        </Actuator>
+        <Actuator ActuatorID="2" AxisID="2" BoardID="6" Type="Prismatic">
+            <Drive>
+                <AmpsToBits Offset="32768" Scale="16000.0000" />
+                <BitsToFeedbackAmps Offset="-2.0480" Scale=" 0.000062500" />
+                <NmToAmps Scale="0.0094499112" />
+                <MaxCurrent Unit="A" Value="0.670" />
+            </Drive>
+            <Encoder>
+                <BitsToPosSI Scale="0.003571811558612" Unit="mm" />
+            </Encoder>
+            <AnalogBrake AxisID="9" BoardID="6">
+                <AmpsToBits Offset="-32768" Scale="16000.0" />
+                <BitsToFeedbackAmps Offset="-2.048" Scale="6.25e-05" />
+                <MaxCurrent Unit="A" Value="0.7" />
+                <ReleaseCurrent Unit="A" Value="0.7" />
+                <ReleaseTime Unit="s" Value="0.5" />
+                <ReleasedCurrent Unit="A" Value="0.15" />
+                <EngagedCurrent Unit="A" Value="0.0" />
+            </AnalogBrake>
+        </Actuator>
+        <Actuator ActuatorID="3" AxisID="3" BoardID="6" Type="Revolute">
+            <Drive>
+                <AmpsToBits Offset="32768" Scale="16000.0000" />
+                <BitsToFeedbackAmps Offset="-2.0480" Scale=" 0.000062500" />
+                <NmToAmps Scale="0.0865224050" />
+                <MaxCurrent Unit="A" Value="0.590" />
+            </Drive>
+            <Encoder>
+                <BitsToPosSI Scale="-0.018737508327781" Unit="deg" />
+            </Encoder>
+        </Actuator>
+        <Potentiometers Position="Actuators" LookupTable="sawRobotIO1394-ECM-438610-PotentiometerLookupTable.json">
+            <Tolerance Axis="0" Distance=" 4.00" Latency=" 0.01" Unit="deg" />
+            <Tolerance Axis="1" Distance=" 4.00" Latency=" 0.01" Unit="deg" />
+            <Tolerance Axis="2" Distance=" 4.00" Latency=" 0.01" Unit="mm" />
+            <Tolerance Axis="3" Distance=" 4.00" Latency=" 0.01" Unit="deg" />
+        </Potentiometers>
+    </Robot>
+    <DigitalIn BitID="1" BoardID="6" Debounce="0.2" Name="ECM-SUJClutch2" Pressed="0" Trigger="all" />
+    <DigitalIn BitID="4" BoardID="6" Debounce="0.2" Name="ECM-SUJClutch" Pressed="0" Trigger="all" />
+</Config>

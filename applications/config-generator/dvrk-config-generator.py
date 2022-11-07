@@ -453,10 +453,10 @@ class SiECM(Robot):
     def __init__(self, calData, robotTypeName, serialNumber):
         self.driveDirection = lambda index: [-1, 1, 1, 1][index]
         self.encoderDirection = lambda index: -self.driveDirection(index)
-        self.encoderCPT = lambda index: [81920, 81920, 50000, 4000][index]
-        self.gearRatio = lambda index: [83.3333, 85.000, 965.91, 13.813][index]
-        self.pitch = lambda index: [1, 1, 17.4533, 1][index]
-        self.motorMaxCurrent = lambda index: [3.4, 3.4, 1.1, 1.1][index]
+        self.encoderCPT = lambda index: [81920, 81920, 640, 64][index]
+        self.gearRatio = lambda index: [83.3333, 85.000, 2748.6, 300.2][index]
+        self.pitch = lambda index: [1, 1, -17.4533, 1][index]
+        self.motorMaxCurrent = lambda index: [3.4, 3.4, 0.670, 0.590][index]
         self.motorTorque = lambda index: [0.0603, 0.0603, 0.0385, 0.0385][index]
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
         self.potentiometerUnits = lambda index: "deg" if index != 2 else "mm"
@@ -467,10 +467,10 @@ class SiECM(Robot):
         i_high = 65536 / 4800 / 2
         self.driveLinearAmpCurrent = lambda index: [i_high, i_high, 2.048, 2.048][index]
 
-        self.brakeMaxCurrent = lambda index: [0.2, 0.2, 0.3][index]
-        self.brakeReleaseCurrent = lambda index: [0.15, 0.15, -0.25][index]
+        self.brakeMaxCurrent = lambda index: [0.1, 0.1, 0.7][index]
+        self.brakeReleaseCurrent = lambda index: [0.1, 0.1, 0.7][index]
         self.brakeReleaseTime = lambda index: 0.5
-        self.brakeReleasedCurrent = lambda index: [0.08, 0.08, -0.25][index]
+        self.brakeReleasedCurrent = lambda index: [0.05, 0.05, 0.15][index]
         self.brakeEngagedCurrent = lambda index: 0.0
         self.brakeLinearAmpCurrent = lambda index: 2.048 # 2^11/10^3
 
@@ -537,7 +537,7 @@ class SiECM(Robot):
             yield DigitalInput(self.name, inputType, bitID, boardID, 0, debounceTime)
 
     def generateDallasChip(self):
-        return DallasChip(self.boardIDs[0], self.name)
+        return None
 
     def toDict(self):
         dict = super().toDict()
