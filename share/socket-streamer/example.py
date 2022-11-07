@@ -31,4 +31,4 @@ while True:
     # example of write command, tested with a dVRK PSM simulated so it starts at 0, 0, 120mm, 0, 0, 0
     sock.sendto(('{"servo_jp": {"Goal": [%f, 0.0, 0.12, 0.0, 0.0, 0.0] } }' % counter).encode(), addr)
     # example of void command, incompatible with command above so uncomment only one
-    # sock.sendto('{"Freeze": "" }'.encode(), addr)
+    # sock.sendto('{"hold": "" }'.encode(), addr)

@@ -356,8 +356,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         // Set
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::set_base_frame,
                                          this, "set_base_frame");
-        m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitArm::Freeze,
-                                        this, "Freeze");
+        m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitArm::hold,
+                                        this, "hold");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jp,
                                          this, "servo_jp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jr,
@@ -1358,10 +1358,10 @@ void mtsIntuitiveResearchKitArm::EnterFault(void)
 
 void mtsIntuitiveResearchKitArm::control_servo_jp(void)
 {
-    if (m_new_pid_goal) {
+    if (m_pid_new_goal) {
         servo_jp_internal(m_servo_jp);
         // reset flag
-        m_new_pid_goal = false;
+        m_pid_new_goal = false;
     }
 }
 
@@ -1400,7 +1400,7 @@ void mtsIntuitiveResearchKitArm::control_move_jp(void)
 
 void mtsIntuitiveResearchKitArm::control_servo_cp(void)
 {
-    if (m_new_pid_goal) {
+    if (m_pid_new_goal) {
         // copy current position
         vctDoubleVec jointSet(m_kin_measured_js.Position());
 
@@ -1420,7 +1420,7 @@ void mtsIntuitiveResearchKitArm::control_servo_cp(void)
             }
         }
         // reset flag
-        m_new_pid_goal = false;
+        m_pid_new_goal = false;
     }
 }
 
@@ -1574,7 +1574,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             PID.EnableTrackingError(use_PID_tracking_error());
             PID.EnableTorqueMode(vctBoolVec(number_of_joints(), false));
             m_pid_feed_forward_servo_jf.ForceTorque().SetAll(0.0);
-            m_new_pid_goal = false;
+            m_pid_new_goal = false;
             mCartesianRelative = vctFrm3::Identity();
             m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
             m_effort_orientation_locked = false;
@@ -1800,9 +1800,9 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & newPosit
     PID.servo_jp(m_servo_jp_param);
 }
 
-void mtsIntuitiveResearchKitArm::Freeze(void)
+void mtsIntuitiveResearchKitArm::hold(void)
 {
-    if (!ArmIsReady("Freeze", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    if (!ArmIsReady("hold", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
         return;
     }
 
@@ -1811,7 +1811,7 @@ void mtsIntuitiveResearchKitArm::Freeze(void)
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     m_servo_jp.Assign(m_kin_setpoint_js.Position(), number_of_joints_kinematics());
-    m_new_pid_goal = true;
+    m_pid_new_goal = true;
 }
 
 void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & newPosition)
@@ -1825,7 +1825,7 @@ void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & newPositio
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     m_servo_jp.Assign(newPosition.Goal(), number_of_joints_kinematics());
-    m_new_pid_goal = true;
+    m_pid_new_goal = true;
 }
 
 void mtsIntuitiveResearchKitArm::servo_jr(const prmPositionJointSet & difference)
@@ -1838,11 +1838,11 @@ void mtsIntuitiveResearchKitArm::servo_jr(const prmPositionJointSet & difference
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // if there's no current goal, reset it
-    if (!m_new_pid_goal) {
+    if (!m_pid_new_goal) {
         m_servo_jp.Assign(m_pid_setpoint_js.Position());
     }
     m_servo_jp.Ref(number_of_joints_kinematics()).Add(difference.Goal());
-    m_new_pid_goal = true;
+    m_pid_new_goal = true;
 }
 
 void mtsIntuitiveResearchKitArm::move_jp(const prmPositionJointSet & newPosition)
@@ -1898,7 +1898,7 @@ void mtsIntuitiveResearchKitArm::servo_cp(const prmPositionCartesianSet & newPos
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     m_servo_cp = newPosition;
-    m_new_pid_goal = true;
+    m_pid_new_goal = true;
 }
 
 void mtsIntuitiveResearchKitArm::servo_cr(const prmPositionCartesianSet & difference)
@@ -1912,7 +1912,7 @@ void mtsIntuitiveResearchKitArm::servo_cr(const prmPositionCartesianSet & differ
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal --- not sure of this math, move relative to base or tool?
     mCartesianRelative = mCartesianRelative * difference.Goal();
-    m_new_pid_goal = true;
+    m_pid_new_goal = true;
 }
 
 void mtsIntuitiveResearchKitArm::move_cp(const prmPositionCartesianSet & newPosition)
@@ -2039,6 +2039,7 @@ void mtsIntuitiveResearchKitArm::servo_jf(const prmForceTorqueJointSet & effort)
 void mtsIntuitiveResearchKitArm::pid_feed_forward_servo_jf(const prmForceTorqueJointSet & effort)
 {
     m_pid_feed_forward_servo_jf.ForceTorque().Assign(effort.ForceTorque());
+    m_pid_new_goal = true;
 }
 
 void mtsIntuitiveResearchKitArm::body_servo_cf(const prmForceCartesianSet & wrench)

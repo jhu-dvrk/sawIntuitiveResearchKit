@@ -255,7 +255,7 @@ void mtsIntuitiveResearchKitECM::RunManual(void)
 void mtsIntuitiveResearchKitECM::LeaveManual(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
-    Freeze();
+    hold();
 }
 
 void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)

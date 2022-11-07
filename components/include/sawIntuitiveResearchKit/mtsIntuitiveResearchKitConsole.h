@@ -147,7 +147,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         std::string m_base_frame_interface_name;
 
         mtsFunctionWrite state_command;
-        mtsFunctionVoid Freeze;
+        mtsFunctionVoid hold;
         mtsInterfaceRequired * IOInterfaceRequired;
         mtsInterfaceRequired * IODallasInterfaceRequired;
         mtsInterfaceRequired * PIDInterfaceRequired;

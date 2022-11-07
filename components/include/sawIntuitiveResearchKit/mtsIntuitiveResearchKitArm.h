@@ -170,7 +170,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     inline virtual void update_feed_forward(vctDoubleVec & CMN_UNUSED(feedForward)) {};
 
     /*! Methods used for commands */
-    virtual void Freeze(void);
+    virtual void hold(void);
     virtual void servo_jp(const prmPositionJointSet & newPosition);
     virtual void servo_jr(const prmPositionJointSet & difference);
     virtual void move_jp(const prmPositionJointSet & newPosition);
@@ -299,7 +299,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     std::string mConfigurationFile;
 
     // cache cartesian goal position and increment
-    bool m_new_pid_goal = false;
+    bool m_pid_new_goal = false;
     prmPositionCartesianSet m_servo_cp;
     vctFrm3 mCartesianRelative;
 

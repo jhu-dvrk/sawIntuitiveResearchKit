@@ -35,8 +35,8 @@ mtsSocketClientPSM::mtsSocketClientPSM(const std::string & componentName, const 
         interfaceProvided->AddCommandReadState(this->StateTable, m_setpoint_cp, "setpoint_cp");
         interfaceProvided->AddCommandReadState(this->StateTable, m_jaw_setpoint_js, "jaw/setpoint_js");
         interfaceProvided->AddCommandReadState(this->StateTable, m_operating_state, "operating_state");
-        interfaceProvided->AddCommandVoid(&mtsSocketClientPSM::Freeze,
-                                          this, "Freeze");
+        interfaceProvided->AddCommandVoid(&mtsSocketClientPSM::hold,
+                                          this, "hold");
         interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::servo_cp,
                                            this , "servo_cp");
         interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::jaw_servo_jp,
@@ -98,7 +98,7 @@ void mtsSocketClientPSM::UpdateApplication(void)
     
 }
 
-void mtsSocketClientPSM::Freeze(void)
+void mtsSocketClientPSM::hold(void)
 {
     DesiredState = socketMessages::SCK_CART_POS;
     Command.Data.GoalPose.From(State.Data.CurrentPose);

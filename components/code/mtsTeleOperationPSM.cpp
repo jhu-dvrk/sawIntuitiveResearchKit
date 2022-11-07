@@ -136,7 +136,7 @@ void mtsTeleOperationPSM::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddFunction("setpoint_cp", mPSM.setpoint_cp);
         interfaceRequired->AddFunction("servo_cp", mPSM.servo_cp);
-        interfaceRequired->AddFunction("Freeze", mPSM.Freeze);
+        interfaceRequired->AddFunction("hold", mPSM.hold);
         interfaceRequired->AddFunction("jaw/setpoint_js", mPSM.jaw_setpoint_js, MTS_OPTIONAL);
         interfaceRequired->AddFunction("jaw/configuration_js", mPSM.jaw_configuration_js, MTS_OPTIONAL);
         interfaceRequired->AddFunction("jaw/servo_jp", mPSM.jaw_servo_jp, MTS_OPTIONAL);
@@ -475,7 +475,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         }
 
         // make sure PSM stops moving
-        mPSM.Freeze();
+        mPSM.hold();
     } else {
         mInterface->SendStatus(this->GetName() + ": console clutch released");
         mTeleopState.SetCurrentState("SETTING_ARMS_STATE");

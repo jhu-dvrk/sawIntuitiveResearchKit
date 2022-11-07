@@ -123,7 +123,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     struct {
         mtsFunctionRead  setpoint_cp;
         mtsFunctionWrite servo_cp;
-        mtsFunctionVoid  Freeze;
+        mtsFunctionVoid  hold;
         mtsFunctionRead  jaw_setpoint_js;
         mtsFunctionRead  jaw_configuration_js;
         mtsFunctionWrite jaw_servo_jp;

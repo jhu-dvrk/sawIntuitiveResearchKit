@@ -24,7 +24,7 @@
         }
     ]
     ,
-    "void-commands": ["Freeze"]
+    "void-commands": ["hold"]
     ,
     "write-commands": [
         {

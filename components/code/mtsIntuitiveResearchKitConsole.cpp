@@ -2110,7 +2110,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     if (arm->ArmInterfaceRequired) {
         arm->ArmInterfaceRequired->AddFunction("state_command", arm->state_command);
         if (arm->m_type != Arm::ARM_SUJ) {
-            arm->ArmInterfaceRequired->AddFunction("Freeze", arm->Freeze, MTS_OPTIONAL);
+            arm->ArmInterfaceRequired->AddFunction("hold", arm->hold, MTS_OPTIONAL);
         }
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
                                                         this, "error");
@@ -2406,11 +2406,11 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
 {
     // Check if teleop is enabled
     if (!mTeleopEnabled) {
-        bool freezeNeeded = false;
+        bool holdNeeded = false;
         for (auto & iterTeleopPSM : mTeleopsPSM) {
             iterTeleopPSM.second->state_command(std::string("disable"));
             if (mTeleopPSMRunning) {
-                freezeNeeded = true;
+                holdNeeded = true;
             }
             mTeleopPSMRunning = false;
         }
@@ -2418,33 +2418,33 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         if (mTeleopECM) {
             mTeleopECM->state_command(std::string("disable"));
             if (mTeleopECMRunning) {
-                freezeNeeded = true;
+                holdNeeded = true;
             }
             mTeleopECMRunning = false;
         }
 
-        // freeze arms if we stopped any teleop
-        if (freezeNeeded) {
+        // hold arms if we stopped any teleop
+        if (holdNeeded) {
             for (auto & iterArms : mArms) {
                 if (((iterArms.second->m_type == Arm::ARM_MTM) ||
                      (iterArms.second->m_type == Arm::ARM_MTM_DERIVED) ||
                      (iterArms.second->m_type == Arm::ARM_MTM_GENERIC))
-                    && iterArms.second->Freeze.IsValid()) {
-                    iterArms.second->Freeze();
+                    && iterArms.second->hold.IsValid()) {
+                    iterArms.second->hold();
                 }
             }
         }
         return;
     }
 
-    // if none are running, freeze
+    // if none are running, hold
     if (!mTeleopECMRunning && !mTeleopPSMRunning) {
         for (auto & iterArms : mArms) {
             if (((iterArms.second->m_type == Arm::ARM_MTM) ||
                  (iterArms.second->m_type == Arm::ARM_MTM_DERIVED) ||
                  (iterArms.second->m_type == Arm::ARM_MTM_GENERIC))
-                && iterArms.second->Freeze.IsValid()) {
-                iterArms.second->Freeze();
+                && iterArms.second->hold.IsValid()) {
+                iterArms.second->hold();
             }
         }
     }

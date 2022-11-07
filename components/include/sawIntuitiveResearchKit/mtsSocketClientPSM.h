@@ -41,7 +41,7 @@ public :
 protected:
     void state_command(const std::string & state);
 
-    void Freeze(void);
+    void hold(void);
     void servo_cp(const prmPositionCartesianSet & position);
     void jaw_servo_jp(const prmPositionJointSet & position);
     void UpdateApplication(void);
