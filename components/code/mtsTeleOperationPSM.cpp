@@ -929,7 +929,9 @@ void mtsTeleOperationPSM::RunEnabled(void)
         if (!m_clutched) {
 
             // on MTM, just apply user provided effort
-            mMTM.body_servo_cf(m_following_mtm_body_servo_cf);
+            if (m_following_mtm_body_servo_cf.Valid()) {
+                mMTM.body_servo_cf(m_following_mtm_body_servo_cf);
+            }
 
             // compute mtm Cartesian motion
             vctFrm4x4 mtmPosition(mMTM.m_measured_cp.Position());
@@ -1058,4 +1060,6 @@ void mtsTeleOperationPSM::set_following(const bool following)
 {
     MessageEvents.following(following);
     m_following = following;
+    // reset user servo_cf at each transition
+    m_following_mtm_body_servo_cf.SetValid(false);
 }
