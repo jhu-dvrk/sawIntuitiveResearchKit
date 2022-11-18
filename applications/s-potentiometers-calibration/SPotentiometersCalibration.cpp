@@ -108,11 +108,15 @@ int main(int argc, char * argv[])
     potToEncoder.SetAll(missing);
 
     directionEncoder.SetSize(nbAxis, 1.0);
-    // PSM specific
-    directionEncoder.at(1) = -1.0;
-    directionEncoder.at(3) = -1.0;
-    directionEncoder.at(4) = -1.0;
-    directionEncoder.at(5) = -1.0;
+    if (nbActuators == 7) {
+        // PSM specific
+        directionEncoder.at(1) = -1.0;
+        directionEncoder.at(3) = -1.0;
+        directionEncoder.at(4) = -1.0;
+        directionEncoder.at(5) = -1.0;
+    } else if (nbActuators == 4) {
+
+    }
 
     minEncoder.SetSize(nbAxis);
     minEncoder.SetAll(std::numeric_limits<double>::max());
@@ -134,6 +138,8 @@ int main(int argc, char * argv[])
     if (collectData) {
         std::cout << "Loading config file ..." << std::endl;
         mtsRobotIO1394 * port = new mtsRobotIO1394("io", 1.0 * cmn_ms, portName);
+        // to support cases when user doesn't have an existing lookup table
+        port->SetCalibrationMode(true);
         port->Configure(configFile);
 
         std::cout << "Creating robot ..." << std::endl;
@@ -310,7 +316,7 @@ int main(int argc, char * argv[])
             encoderStart = 0;
         }
         // build list of consecutive areas of encoder values
-        std::cout << "Axis " << axis << ", found encoder values for ranges";
+        std::cout << "Axis [" << axis << "], found encoder values for ranges";
         for (size_t index = 1;
              index < potRange;
              ++index) {
@@ -355,12 +361,15 @@ int main(int argc, char * argv[])
                     const double start = potToEncoder.at(axis, previous->second);
                     const double end = potToEncoder.at(axis, iter->first);
                     const size_t nbMissing = iter->first - previous->second - 1;
-                    std::cout << "Axis " << axis << ", found " << nbMissing << " missing consecutive pot value(s)" << std::endl;
+                    std::cout << "Axis [" << axis << "], found " << nbMissing << " missing consecutive pot value(s)" << std::endl;
                     const double delta = (end - start) / nbMissing;
                     size_t counter = 1;
                     for (size_t index = previous->second + 1;
                          index < iter->first;
                          ++index, ++counter) {
+                        if (potToEncoder.at(axis, index) != missing) {
+                            std::cerr << "!!!! this shouldn't be happening" << std::endl;
+                        }
                         potToEncoder.at(axis, index) = start + counter * delta;
                     }
                     // concatenate lists of indices
@@ -369,14 +378,25 @@ int main(int argc, char * argv[])
                 } else {
                     // pad with constant values around the limits
                     // pad after previous range
+                    const size_t paddingSize = 40;
                     double encoder = potToEncoder.at(axis, previous->second);
-                    for (size_t index = 1; index < 10; ++index) {
-                        potToEncoder.at(axis, (previous->second + index) % 4096) = encoder;
+                    for (size_t index = 1; index < paddingSize; ++index) {
+                        size_t actualIndex = (previous->second + index) % 4096;
+                        if (potToEncoder.at(axis, actualIndex) == missing) {
+                            potToEncoder.at(axis, actualIndex) = encoder;
+                        } else {
+                            std::cerr << "Padding for axis [" << axis << "] is overwritting " << actualIndex << std::endl;
+                        }
                     }
                     // pad before current range
                     encoder = potToEncoder.at(axis, iter->first);
-                    for (size_t index = 1; index < 10; ++index) {
-                        potToEncoder.at(axis, (iter->first - index) % 4096) = encoder;
+                    for (size_t index = 1; index < paddingSize; ++index) {
+                        size_t actualIndex = (iter->first - index) % 4096;
+                        if (potToEncoder.at(axis, actualIndex) == missing) {
+                            potToEncoder.at(axis, actualIndex) = encoder;
+                        } else {
+                            std::cerr << "Padding for axis [" << axis << "] is overwritting " << actualIndex << std::endl;
+                        }
                     }
                 }
                 previous = iter;
@@ -384,32 +404,48 @@ int main(int argc, char * argv[])
         }
         // display final results
         for (auto iter : encoderAreas) {
-            std::cout << "Axis " << axis << ", using encoder for range [" << iter.first << ", " << iter.second << "]" << std::endl;
+            std::cout << "Axis [" << axis << "], using encoder for range [" << iter.first << ", " << iter.second << "]" << std::endl;
         }
     }
 
-    // this is for a PSM.  We don't have the exact numbers but we have 3
-    // calibration files.  Ranges differ between arms but the midpoint
-    // is always the same.  Values are from jhu-dVRK-Si/cal-files 292409 586288 334809
     vctDoubleVec minEncoderExpected, maxEncoderExpected;
-    minEncoderExpected.SetSize(7);
-    maxEncoderExpected.SetSize(7);
-    minEncoderExpected.at(0) = (-2.9646 + -2.9668 + -2.9675) / 3.0;
-    maxEncoderExpected.at(0) = ( 2.9646 +  2.9668 +  2.9675) / 3.0;
-    minEncoderExpected.at(1) = (-1.2656 + -1.2661 + -1.2667) / 3.0;
-    maxEncoderExpected.at(1) = ( 1.3010 +  1.3015 +  1.3021) / 3.0;
-    // translation
-    minEncoderExpected.at(2) = (-0.00099057 + -0.00099124 + -0.0009907) / 3.0;
-    maxEncoderExpected.at(2) = ( 0.29035    +  0.29055    +  0.29039) / 3.0;
-    // last 4 elements
-    minEncoderExpected.at(3) = (-3.0346 + -3.0283 + -3.03) / 3.0;
-    maxEncoderExpected.at(3) = ( 3.0346 +  3.0283 +  3.03) / 3.0;
-    minEncoderExpected.at(4) = (-3.0358 + -3.0271 + -3.0271) / 3.0;
-    maxEncoderExpected.at(4) = ( 3.0358 +  3.0271 +  3.0271) / 3.0;
-    minEncoderExpected.at(5) = (-3.0350 + -3.0303 + -3.0294) / 3.0;
-    maxEncoderExpected.at(5) = ( 3.0350 +  3.0303 +  3.0294) / 3.0;
-    minEncoderExpected.at(6) = (-3.0378 + -3.03   + -3.0268) / 3.0;
-    maxEncoderExpected.at(6) = ( 3.0378 +  3.03   +  3.0268) / 3.0;
+    if (nbActuators == 7) {
+        // this is for a PSM.  We don't have the exact numbers but we have 3
+        // calibration files.  Ranges differ between arms but the midpoint
+        // is always the same.  Values are from jhu-dVRK-Si/cal-files 292409 586288 334809
+        minEncoderExpected.SetSize(7);
+        maxEncoderExpected.SetSize(7);
+        minEncoderExpected.at(0) = (-2.9646 + -2.9668 + -2.9675) / 3.0;
+        maxEncoderExpected.at(0) = ( 2.9646 +  2.9668 +  2.9675) / 3.0;
+        minEncoderExpected.at(1) = (-1.2656 + -1.2661 + -1.2667) / 3.0;
+        maxEncoderExpected.at(1) = ( 1.3010 +  1.3015 +  1.3021) / 3.0;
+        // translation
+        minEncoderExpected.at(2) = (-0.00099057 + -0.00099124 + -0.0009907) / 3.0;
+        maxEncoderExpected.at(2) = ( 0.29035    +  0.29055    +  0.29039) / 3.0;
+        // last 4 elements
+        minEncoderExpected.at(3) = (-3.0346 + -3.0283 + -3.03) / 3.0;
+        maxEncoderExpected.at(3) = ( 3.0346 +  3.0283 +  3.03) / 3.0;
+        minEncoderExpected.at(4) = (-3.0358 + -3.0271 + -3.0271) / 3.0;
+        maxEncoderExpected.at(4) = ( 3.0358 +  3.0271 +  3.0271) / 3.0;
+        minEncoderExpected.at(5) = (-3.0350 + -3.0303 + -3.0294) / 3.0;
+        maxEncoderExpected.at(5) = ( 3.0350 +  3.0303 +  3.0294) / 3.0;
+        minEncoderExpected.at(6) = (-3.0378 + -3.03   + -3.0268) / 3.0;
+        maxEncoderExpected.at(6) = ( 3.0378 +  3.03   +  3.0268) / 3.0;
+    } else if (nbActuators == 4) {
+        // this is for an ECM, using 267579 438610
+        minEncoderExpected.SetSize(4);
+        maxEncoderExpected.SetSize(4);
+        minEncoderExpected.at(0) = (-2.9657 + -2.968) / 2.0;
+        maxEncoderExpected.at(0) = ( 2.9657 +  2.968) / 2.0;
+        minEncoderExpected.at(1) = (-1.1253 + -1.1061) / 2.0;
+        maxEncoderExpected.at(1) = ( 1.0612 +  1.0431) / 2.0;
+        // translation
+        minEncoderExpected.at(2) = ( 0.001  +  0.001) / 2.0;
+        maxEncoderExpected.at(2) = ( 0.2595 +  0.25894) / 2.0;
+        // last 4 elements
+        minEncoderExpected.at(3) = (-1.5434 + -1.5414) / 2.0;
+        maxEncoderExpected.at(3) = ( 1.5434 +  1.5414) / 2.0;
+    }
 
     vctDoubleVec offsetEncoder(nbAxis, 0.0);
 
@@ -420,16 +456,16 @@ int main(int argc, char * argv[])
         if (axis != 2) {
             toh = cmn180_PI;
         }
-        std::cout << "Axis " << axis << std::endl
-                  << " - range: [" << minEncoder.at(axis) * toh
+        std::cout << "Axis [" << axis << std::endl
+                  << "] - range: [" << minEncoder.at(axis) * toh
                   << ", " << maxEncoder.at(axis) * toh << "] = "
                   << (maxEncoder.at(axis) - minEncoder.at(axis)) * toh << std::endl;
         const double encoderRange = maxEncoder.at(axis) - minEncoder.at(axis);
         const double encoderRangeExpected =  maxEncoderExpected.at(axis) - minEncoderExpected.at(axis);
         if ((encoderRange < 0.95 * encoderRangeExpected)
             || (encoderRange > 1.05 * encoderRangeExpected)) {
-            std::cerr << "Axis " << axis
-                      << ", range for encoder values is not within 5% of what was expected.  Found "
+            std::cerr << "Axis [" << axis
+                      << "], range for encoder values is not within 5% of what was expected.  Found "
                       << encoderRange * toh << " but we were expecting "
                       << encoderRangeExpected * toh << std::endl;
             return -1;
