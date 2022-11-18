@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -64,10 +64,7 @@ int main(int argc, char ** argv)
                               "robot name (i.e. PSM1, PSM2, MTML or MTMR) as defined in the sawRobotIO1394 file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &robotName);
 
-    std::string errorMessage;
-    if (!options.Parse(argc, argv, errorMessage)) {
-        std::cerr << "Error: " << errorMessage << std::endl;
-        options.PrintUsage(std::cerr);
+    if (!options.Parse(argc, argv, std::cerr)) {
         return -1;
     }
 
