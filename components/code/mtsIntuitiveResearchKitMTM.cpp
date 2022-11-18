@@ -132,7 +132,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // Gripper IO
     GripperIOInterface = AddInterfaceRequired("GripperIO");
     if (GripperIOInterface) {
-        GripperIOInterface->AddFunction("GetAnalogInputPosSI", GripperIO.GetAnalogInputPosSI);
+        GripperIOInterface->AddFunction("pot/measured_js", GripperIO.pot_measured_js);
     }
 
     // Main interface should have been created by base class init
@@ -519,9 +519,9 @@ void mtsIntuitiveResearchKitMTM::GetRobotData(void)
     }
 
     // get gripper based on analog inputs
-    mtsExecutionResult executionResult = GripperIO.GetAnalogInputPosSI(m_gripper_measured_js);
+    mtsExecutionResult executionResult = GripperIO.pot_measured_js(m_gripper_measured_js);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetAnalogInputPosSI failed \""
+        CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to pot_measured_js failed \""
                                 << executionResult << "\"" << std::endl;
         return;
     }

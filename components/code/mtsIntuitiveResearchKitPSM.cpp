@@ -879,7 +879,7 @@ void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
                     // set desired
                     CouplingChange.DesiredCoupling.Assign(identity);
                 }
-                PID.SetCoupling(CouplingChange.DesiredCoupling);
+                // PID.SetCoupling(CouplingChange.DesiredCoupling);
                 CouplingChange.WaitingForEnabledJoints = false;
                 CouplingChange.WaitingForCoupling = true;
                 CouplingChange.ReceivedCoupling = false;

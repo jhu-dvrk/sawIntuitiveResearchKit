@@ -135,7 +135,7 @@ protected:
 
     mtsInterfaceRequired * GripperIOInterface;
     struct {
-        mtsFunctionRead GetAnalogInputPosSI;
+        mtsFunctionRead pot_measured_js;
     } GripperIO;
 
     //! Gripper angle

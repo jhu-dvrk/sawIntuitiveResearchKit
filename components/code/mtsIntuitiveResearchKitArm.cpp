@@ -31,6 +31,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+#include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -293,7 +294,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
     // PID
     PIDInterface = AddInterfaceRequired("PID");
     if (PIDInterface) {
-        PIDInterface->AddFunction("SetCoupling", PID.SetCoupling);
         PIDInterface->AddFunction("Enable", PID.Enable);
         PIDInterface->AddFunction("EnableJoints", PID.EnableJoints);
         PIDInterface->AddFunction("Enabled", PID.Enabled);
@@ -683,6 +683,17 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
 
     // resize data members using kinematics (jacobians and effort vectors)
     ResizeKinematicsData();
+
+    // coupling matrix
+    const Json::Value jsonCoupling = jsonConfig["coupling"];
+    if (!jsonCoupling.isNull()) {
+        prmActuatorJointCoupling coupling;
+        cmnDataJSON<prmActuatorJointCoupling>::DeSerializeText(coupling,
+                                                               jsonCoupling);
+        prmActuatorJointCouplingCheck(number_of_joints(),
+                                      number_of_joints(),
+                                      coupling, m_coupling);
+    }
 }
 
 void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)

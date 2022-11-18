@@ -35,6 +35,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 #include <cisstParameterTypes/prmCartesianImpedanceGains.h>
+#include <cisstParameterTypes/prmActuatorJointCoupling.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
@@ -250,7 +251,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     // Interface to PID component
     mtsInterfaceRequired * PIDInterface;
     struct {
-        mtsFunctionWrite SetCoupling;
         mtsFunctionWrite Enable;
         mtsFunctionWrite EnableJoints;
         mtsFunctionRead  Enabled;
@@ -297,6 +297,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     robManipulator * Manipulator = nullptr;
     std::string mConfigurationFile;
+    prmActuatorJointCoupling m_coupling;
 
     // cache cartesian goal position and increment
     bool m_pid_new_goal = false;
