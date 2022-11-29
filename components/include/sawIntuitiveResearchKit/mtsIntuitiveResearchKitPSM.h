@@ -83,15 +83,15 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal) override;
 
-    bool IsSafeForCartesianControl(void) const override;
+    bool is_safe_for_cartesian_control(void) const override;
 
 
     void Init(void) override;
 
-    bool IsHomed(void) const override;
-    void UnHome(void) override;
-    bool IsJointReady(void) const override;
-    bool IsCartesianReady(void) const override;
+    bool is_homed(void) const override;
+    void unhome(void) override;
+    bool is_joint_ready(void) const override;
+    bool is_cartesian_ready(void) const override;
 
     // state related methods
     void SetGoalHomingArm(void) override;

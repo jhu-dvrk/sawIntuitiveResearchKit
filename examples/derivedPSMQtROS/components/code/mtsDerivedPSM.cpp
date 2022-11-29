@@ -65,7 +65,7 @@ void mtsDerivedPSM::Configure(const std::string & filename)
 void mtsDerivedPSM::RunHomed(void)
 {
     if (m_activated) {
-        if (IsCartesianReady()) {
+        if (is_cartesian_ready()) {
             // steps performed once at each activation
             if (m_recently_activated) {
                 m_recently_activated = false;

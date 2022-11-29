@@ -194,7 +194,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     m_control_space = mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE;
     m_control_mode = mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE;
 
-    mSafeForCartesianControlCounter = 0;
+    m_safe_for_cartesian_control_counter = 0;
     mArmNotReadyCounter = 0;
     mArmNotReadyTimeLastMessage = 0.0;
 
@@ -472,7 +472,7 @@ void mtsIntuitiveResearchKitArm::state_command(const std::string & command)
                 return;
             }
             if (command == "unhome") {
-                UnHome();
+                unhome();
                 UpdateHomed(false);
                 return;
             }
@@ -690,9 +690,17 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
         prmActuatorJointCoupling coupling;
         cmnDataJSON<prmActuatorJointCoupling>::DeSerializeText(coupling,
                                                                jsonCoupling);
-        prmActuatorJointCouplingCheck(number_of_joints(),
-                                      number_of_joints(),
-                                      coupling, m_coupling);
+        try {
+            prmActuatorJointCouplingCheck(number_of_joints(),
+                                          number_of_joints(),
+                                          coupling, m_coupling);
+            m_has_coupling = true;
+        } catch (std::exception & e) {
+            CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
+                                     << ": caught exception \"" << e.what() << "\" for coupling from \""
+                                     << filename << "\"" << std::endl;
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -779,7 +787,7 @@ void mtsIntuitiveResearchKitArm::set_simulated(void)
     RemoveInterfaceRequired("RobotIO");
 }
 
-void mtsIntuitiveResearchKitArm::GetRobotData(void)
+void mtsIntuitiveResearchKitArm::get_robot_data(void)
 {
     // check that the robot still has power
     if (m_powered && !m_simulated) {
@@ -791,7 +799,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         }
         if (!(actuatorAmplifiersStatus.All())) {
             m_powered = false;
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData:\n - Actuator amp status: "
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": get_robot_data:\n - Actuator amp status: "
                                     << actuatorAmplifiersStatus << std::endl;
             m_arm_interface->SendError(this->GetName() + ": detected power loss (actuators)");
             SetDesiredState("FAULT");
@@ -799,7 +807,7 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         }
         if (!(brakeAmplifiersStatus.All())) {
             m_powered = false;
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData:\n - Brake amp status: "
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": get_robot_data:\n - Brake amp status: "
                                     << brakeAmplifiersStatus << std::endl;
             m_arm_interface->SendError(this->GetName() + ": detected power loss (brakes)");
             SetDesiredState("FAULT");
@@ -808,14 +816,14 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
     }
 
     // we can start reporting some joint values after the robot is powered
-    if (IsJointReady()) {
+    if (is_joint_ready()) {
         mtsExecutionResult executionResult;
         // joint state
         executionResult = PID.measured_js(m_pid_measured_js);
         if (executionResult.IsOK()) {
             m_pid_measured_js.SetValid(true);
         } else {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to PID.measured_js failed \""
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": get_robot_data: call to PID.measured_js failed \""
                                     << executionResult << "\"" << std::endl;
             m_pid_measured_js.SetValid(false);
         }
@@ -825,9 +833,19 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
         if (executionResult.IsOK()) {
             m_pid_setpoint_js.SetValid(true);
         } else {
-            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to PID.setpoint_js failed \""
+            CMN_LOG_CLASS_RUN_ERROR << GetName() << ": get_robot_data: call to PID.setpoint_js failed \""
                                     << executionResult << "\"" << std::endl;
             m_pid_setpoint_js.SetValid(false);
+        }
+
+        // apply coupling if needed
+        if (m_has_coupling) {
+            m_pid_measured_js.Position() = m_coupling.ActuatorToJointPosition() * m_pid_measured_js.Position();
+            m_pid_measured_js.Velocity() = m_coupling.ActuatorToJointPosition() * m_pid_measured_js.Velocity();
+            m_pid_measured_js.Effort() = m_coupling.ActuatorToJointEffort() * m_pid_measured_js.Effort();
+            m_pid_setpoint_js.Position() = m_coupling.ActuatorToJointPosition() * m_pid_setpoint_js.Position();
+            m_pid_setpoint_js.Velocity() = m_coupling.ActuatorToJointPosition() * m_pid_setpoint_js.Velocity();
+            m_pid_setpoint_js.Effort() = m_coupling.ActuatorToJointEffort() * m_pid_setpoint_js.Effort();
         }
 
         // update joint states used for kinematics
@@ -847,8 +865,8 @@ void mtsIntuitiveResearchKitArm::GetRobotData(void)
     }
 
     // when the robot is ready, we can compute cartesian position
-    if (IsCartesianReady()) {
-        CMN_ASSERT(IsJointReady());
+    if (is_cartesian_ready()) {
+        CMN_ASSERT(is_joint_ready());
         // update cartesian position
         m_local_measured_cp_frame = Manipulator->ForwardKinematics(m_kin_measured_js.Position());
         m_measured_cp_frame = m_base_frame * m_local_measured_cp_frame;
@@ -976,7 +994,7 @@ void mtsIntuitiveResearchKitArm::UpdateOperatingStateAndBusy(const prmOperatingS
 {
     mStateTableState.Start();
     m_operating_state.State() = state;
-    m_operating_state.IsHomed() = IsHomed();
+    m_operating_state.IsHomed() = is_homed();
     m_operating_state.IsBusy() = isBusy;
     m_operating_state.SubState() = mArmState.CurrentState();
     mStateTableState.Advance();
@@ -1026,7 +1044,7 @@ void mtsIntuitiveResearchKitArm::StateChanged(void)
 
 void mtsIntuitiveResearchKitArm::RunAllStates(void)
 {
-    GetRobotData();
+    get_robot_data();
 }
 
 void mtsIntuitiveResearchKitArm::EnterDisabled(void)
@@ -1250,7 +1268,7 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
 
     // get robot data to make sure we have latest state
     CMN_ASSERT(IsJointReady());
-    GetRobotData();
+    get_robot_data();
 
     // compute joint goal position
     this->SetGoalHomingArm();
@@ -1447,9 +1465,9 @@ bool mtsIntuitiveResearchKitArm::ArmIsReady(const std::string & methodName,
     // reset counter if ready
     if (m_operating_state.State() == prmOperatingState::ENABLED) {
         if (((space == mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)
-             && IsJointReady())
+             && is_joint_ready())
             || ((space == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)
-                && IsCartesianReady())) {
+                && is_cartesian_ready())) {
             mArmNotReadyCounter = 0;
             mArmNotReadyTimeLastMessage = 0.0;
             return true;
@@ -1553,16 +1571,16 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
     if (space != m_control_space) {
         // check if the arm is ready to use in cartesian space
         if (space == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE) {
-            if (this->IsSafeForCartesianControl()) {
+            if (this->is_safe_for_cartesian_control()) {
                 // set flag
                 m_control_space = space;
-                mSafeForCartesianControlCounter = 0;
+                m_safe_for_cartesian_control_counter = 0;
             } else {
-                if (mSafeForCartesianControlCounter == 0) {
+                if (m_safe_for_cartesian_control_counter == 0) {
                     // message if needed
                     m_arm_interface->SendWarning(this->GetName() + ": tool/endoscope needs to be inserted past the cannula to switch to cartesian space");
                 }
-                mSafeForCartesianControlCounter = (mSafeForCartesianControlCounter + 1) % 1000;
+                m_safe_for_cartesian_control_counter = (m_safe_for_cartesian_control_counter + 1) % 1000;
                 return;
             }
         } else {
@@ -1791,9 +1809,12 @@ void mtsIntuitiveResearchKitArm::control_servo_cf(void)
 void mtsIntuitiveResearchKitArm::servo_jf_internal(const vctDoubleVec & newEffort)
 {
     // convert to cisstParameterTypes
-    mTorqueSetParam.SetForceTorque(newEffort);
-    mTorqueSetParam.SetTimestamp(StateTable.GetTic());
-    PID.servo_jf(mTorqueSetParam);
+    m_servo_jf_param.SetForceTorque(newEffort);
+    m_servo_jf_param.SetTimestamp(StateTable.GetTic());
+    if (m_has_coupling) {
+        m_servo_jf_param.ForceTorque() = m_coupling.JointToActuatorEffort() * m_servo_jf_param.ForceTorque();
+    }
+    PID.servo_jf(m_servo_jf_param);
 }
 
 void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & newPosition)
@@ -1808,6 +1829,9 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & newPosit
     m_servo_jp_param.Goal().Zeros();
     m_servo_jp_param.Goal().Assign(newPosition, number_of_joints());
     m_servo_jp_param.SetTimestamp(StateTable.GetTic());
+    if (m_has_coupling) {
+        m_servo_jp_param.Goal() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Goal();
+    }
     PID.servo_jp(m_servo_jp_param);
 }
 

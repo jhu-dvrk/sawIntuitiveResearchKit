@@ -311,12 +311,12 @@ void mtsIntuitiveResearchKitMTM::CreateManipulator(void)
     }
 }
 
-bool mtsIntuitiveResearchKitMTM::IsHomed(void) const
+bool mtsIntuitiveResearchKitMTM::is_homed(void) const
 {
     return m_powered && m_encoders_biased;
 }
 
-void mtsIntuitiveResearchKitMTM::UnHome(void)
+void mtsIntuitiveResearchKitMTM::unhome(void)
 {
     // to force re-bias on pots
     m_re_home = true;
@@ -325,12 +325,12 @@ void mtsIntuitiveResearchKitMTM::UnHome(void)
     m_encoders_biased = false;
 }
 
-bool mtsIntuitiveResearchKitMTM::IsJointReady(void) const
+bool mtsIntuitiveResearchKitMTM::is_joint_ready(void) const
 {
     return m_powered && m_encoders_biased;
 }
 
-bool mtsIntuitiveResearchKitMTM::IsCartesianReady(void) const
+bool mtsIntuitiveResearchKitMTM::is_cartesian_ready(void) const
 {
     return m_powered && m_encoders_biased;
 }
@@ -357,7 +357,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
-    if (m_simulated || IsHomed()) {
+    if (m_simulated || is_homed()) {
         if (m_simulated) {
             // all encoders are biased, including roll
             m_encoders_biased = true;
@@ -393,7 +393,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 
 void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 {
-    if (m_simulated || IsHomed()) {
+    if (m_simulated || is_homed()) {
         mArmState.SetCurrentState("ROLL_CALIBRATED");
         return;
     }
@@ -462,7 +462,7 @@ void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
-    if (m_simulated || IsHomed()) {
+    if (m_simulated || is_homed()) {
         mArmState.SetCurrentState("HOMING");
         return;
     }
@@ -510,9 +510,9 @@ void mtsIntuitiveResearchKitMTM::TransitionRollEncoderReset(void)
     }
 }
 
-void mtsIntuitiveResearchKitMTM::GetRobotData(void)
+void mtsIntuitiveResearchKitMTM::get_robot_data(void)
 {
-    mtsIntuitiveResearchKitArm::GetRobotData();
+    mtsIntuitiveResearchKitArm::get_robot_data();
 
     if (m_simulated) {
         return;

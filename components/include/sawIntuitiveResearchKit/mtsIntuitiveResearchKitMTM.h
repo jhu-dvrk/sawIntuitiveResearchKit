@@ -75,7 +75,7 @@ protected:
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal) override;
 
-    inline bool IsSafeForCartesianControl(void) const override {
+    inline bool is_safe_for_cartesian_control(void) const override {
         return true;
     };
 
@@ -87,10 +87,10 @@ protected:
     virtual void CreateManipulator(void) override;
     virtual void Init(void) override;
 
-    bool IsHomed(void) const override;
-    void UnHome(void) override;
-    bool IsJointReady(void) const override;
-    bool IsCartesianReady(void) const override;
+    bool is_homed(void) const override;
+    void unhome(void) override;
+    bool is_joint_ready(void) const override;
+    bool is_cartesian_ready(void) const override;
 
     // state related methods
     void SetGoalHomingArm(void) override;
@@ -104,7 +104,7 @@ protected:
 
     /*! Get data specific to the MTM (gripper angle using analog inputs) after
       calling mtsIntuitiveResearchKitArm::GetRobotData. */
-    void GetRobotData(void) override;
+    void get_robot_data(void) override;
 
     // see base class
     void control_servo_cf_orientation_locked(void) override;

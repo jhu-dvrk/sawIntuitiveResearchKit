@@ -64,17 +64,17 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
                                             const vctFrm4x4 & cartesianGoal) override;
 
     // see base class
-    inline bool IsSafeForCartesianControl(void) const override {
+    inline bool is_safe_for_cartesian_control(void) const override {
         return (m_kin_measured_js.Position().at(2) > 50.0 * cmn_mm);
     }
 
     void CreateManipulator(void) override;
     void Init(void) override;
 
-    bool IsHomed(void) const override;
-    void UnHome(void) override;
-    bool IsJointReady(void) const override;
-    bool IsCartesianReady(void) const override;
+    bool is_homed(void) const override;
+    void unhome(void) override;
+    bool is_joint_ready(void) const override;
+    bool is_cartesian_ready(void) const override;
 
     // state related methods
     void SetGoalHomingArm(void) override;

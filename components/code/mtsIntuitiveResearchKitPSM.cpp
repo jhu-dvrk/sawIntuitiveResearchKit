@@ -430,7 +430,7 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
 void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
 {
     // if there is no tool, report joints as PID joints
-    if (!IsCartesianReady()) {
+    if (!is_cartesian_ready()) {
         mtsIntuitiveResearchKitArm::UpdateStateJointKinematics();
         return;
     }
@@ -511,7 +511,7 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
 
 void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID)
 {
-    if (IsCartesianReady()) {
+    if (is_cartesian_ready()) {
         // tool is present
         if (mSnakeLike) {
             CMN_ASSERT(jointsKinematics.size() == 8);
@@ -590,7 +590,7 @@ robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec
     return robManipulator::EFAILURE;
 }
 
-bool mtsIntuitiveResearchKitPSM::IsSafeForCartesianControl(void) const
+bool mtsIntuitiveResearchKitPSM::is_safe_for_cartesian_control(void) const
 {
     vctFrm4x4 f4;
     if (Manipulator->links.size() >= 4) {
@@ -742,7 +742,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     }
 }
 
-bool mtsIntuitiveResearchKitPSM::IsHomed(void) const
+bool mtsIntuitiveResearchKitPSM::is_homed(void) const
 {
     if (Tool.IsPresent || Tool.IsEmulated) {
         return m_powered && m_encoders_biased_from_pots && Adapter.IsEngaged && Tool.IsEngaged;
@@ -753,7 +753,7 @@ bool mtsIntuitiveResearchKitPSM::IsHomed(void) const
     return m_powered && m_encoders_biased_from_pots;
 }
 
-void mtsIntuitiveResearchKitPSM::UnHome(void)
+void mtsIntuitiveResearchKitPSM::unhome(void)
 {
     if (Tool.IsPresent || Tool.IsEmulated) {
         Tool.IsEngaged = false;
@@ -768,12 +768,12 @@ void mtsIntuitiveResearchKitPSM::UnHome(void)
     m_encoders_biased_from_pots = false;
 }
 
-bool mtsIntuitiveResearchKitPSM::IsJointReady(void) const
+bool mtsIntuitiveResearchKitPSM::is_joint_ready(void) const
 {
     return m_powered && m_encoders_biased_from_pots;
 }
 
-bool mtsIntuitiveResearchKitPSM::IsCartesianReady(void) const
+bool mtsIntuitiveResearchKitPSM::is_cartesian_ready(void) const
 {
     return m_powered && m_encoders_biased_from_pots && Tool.IsEngaged;
 }
@@ -1379,7 +1379,7 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
 
 void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & newPosition)
 {
-    if (!IsCartesianReady()) {
+    if (!is_cartesian_ready()) {
         mtsIntuitiveResearchKitArm::servo_jp_internal(newPosition);
         return;
     }
@@ -1422,7 +1422,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
 
 void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffort)
 {
-    if (!IsCartesianReady()) {
+    if (!is_cartesian_ready()) {
         mtsIntuitiveResearchKitArm::servo_jf_internal(newEffort);
         return;
     }
@@ -1438,14 +1438,17 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffor
     torqueDesired.at(6) = m_jaw_servo_jf;
 
     // convert to cisstParameterTypes
-    mTorqueSetParam.SetForceTorque(torqueDesired);
-    mTorqueSetParam.SetTimestamp(StateTable.GetTic());
-    PID.servo_jf(mTorqueSetParam);
+    m_servo_jf_param.SetForceTorque(torqueDesired);
+    m_servo_jf_param.SetTimestamp(StateTable.GetTic());
+    if (m_has_coupling) {
+        m_servo_jf_param.ForceTorque() = m_coupling.JointToActuatorEffort() * m_servo_jf_param.ForceTorque();
+    }
+    PID.servo_jf(m_servo_jf_param);
 }
 
 void mtsIntuitiveResearchKitPSM::control_move_jp_on_stop(const bool goal_reached)
 {
-    if (IsCartesianReady()) {
+    if (is_cartesian_ready()) {
         // save end position as starting servo for jaws
         m_jaw_servo_jp = m_servo_jp_param.Goal().at(6);
     }
@@ -1457,7 +1460,7 @@ void mtsIntuitiveResearchKitPSM::CouplingEventHandler(const prmActuatorJointCoup
     CouplingChange.ReceivedCoupling = true;
     CouplingChange.LastCoupling.Assign(coupling);
     // refresh robot data
-    GetRobotData();
+    get_robot_data();
 }
 
 void mtsIntuitiveResearchKitPSM::EnableJointsEventHandler(const vctBoolVec & enable)

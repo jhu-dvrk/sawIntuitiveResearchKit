@@ -183,22 +183,22 @@ void mtsIntuitiveResearchKitECM::Init(void)
     }
 }
 
-bool mtsIntuitiveResearchKitECM::IsHomed(void) const
+bool mtsIntuitiveResearchKitECM::is_homed(void) const
 {
     return m_powered && m_encoders_biased_from_pots;
 }
 
-void mtsIntuitiveResearchKitECM::UnHome(void)
+void mtsIntuitiveResearchKitECM::unhome(void)
 {
     m_encoders_biased_from_pots = false;
 }
 
-bool mtsIntuitiveResearchKitECM::IsJointReady(void) const
+bool mtsIntuitiveResearchKitECM::is_joint_ready(void) const
 {
     return m_powered && m_encoders_biased_from_pots;
 }
 
-bool mtsIntuitiveResearchKitECM::IsCartesianReady(void) const
+bool mtsIntuitiveResearchKitECM::is_cartesian_ready(void) const
 {
     return m_powered && m_encoders_biased_from_pots;
 }
@@ -272,7 +272,7 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
     // Start manual mode but save the previous state
     switch (button.Type()) {
     case prmEventButton::PRESSED:
-        if (IsJointReady()) {
+        if (is_joint_ready()) {
             ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
             mArmState.SetCurrentState("MANUAL");
         } else {
