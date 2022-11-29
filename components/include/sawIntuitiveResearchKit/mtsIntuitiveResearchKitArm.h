@@ -82,7 +82,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     typedef enum {WRENCH_UNDEFINED, WRENCH_SPATIAL, WRENCH_BODY} WrenchType;
 
     /*! Load m_base_frame and DH parameters from JSON */
-    void ConfigureDH(const Json::Value & jsonConfig, const std::string & filename);
+    void ConfigureDH(const Json::Value & jsonConfig, const std::string & filename, const bool ignoreCoupling = false);
     void ConfigureDH(const std::string & filename);
 
     /*! Arm specific configuration for derived classes PSM,

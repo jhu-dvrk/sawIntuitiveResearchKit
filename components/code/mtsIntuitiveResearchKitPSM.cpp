@@ -31,6 +31,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
+#include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -289,7 +290,7 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         Manipulator->Truncate(3);
 
         // now configure the links specific to the tool
-        ConfigureDH(jsonConfig, fullFilename);
+        ConfigureDH(jsonConfig, fullFilename, true /* ignore coupling, we load this later */);
 
         // check that the kinematic chain length makes sense
         size_t expectedNumberOfJoint;
@@ -340,15 +341,17 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         }
 
         // read 4x4 coupling for last 3 DOFs and jaws
-        prmActuatorJointCoupling toolCoupling4;
-        cmnDataJSON<prmActuatorJointCoupling>::DeSerializeText(toolCoupling4,
+        prmActuatorJointCoupling toolCoupling, armCoupling;
+        cmnDataJSON<prmActuatorJointCoupling>::DeSerializeText(toolCoupling,
                                                                jsonCoupling);
         // build a coupling matrix for all 7 actuators/dofs
-        CouplingChange.ToolCoupling
-            .ActuatorToJointPosition().ForceAssign(vctDynamicMatrix<double>::Eye(number_of_joints()));
+        armCoupling.ActuatorToJointPosition().ForceAssign(vctDynamicMatrix<double>::Eye(number_of_joints()));
         // assign 4x4 matrix starting at position 3, 3
-        CouplingChange.ToolCoupling
-            .ActuatorToJointPosition().Ref(4, 4, 3, 3).Assign(toolCoupling4.ActuatorToJointPosition());
+        armCoupling.ActuatorToJointPosition().Ref(4, 4, 3, 3).Assign(toolCoupling.ActuatorToJointPosition());
+        // update coupling matrix
+        prmActuatorJointCouplingCheck(number_of_joints(),
+                                      number_of_joints(),
+                                      armCoupling, m_coupling);
 
         // load jaw data, i.e. joint and torque limits
         const Json::Value jsonJaw = jsonConfig["jaw"];
@@ -609,9 +612,7 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mtsIntuitiveResearchKitArm::Init();
 
     // state machine specific to PSM, see base class for other states
-    mArmState.AddState("CHANGING_COUPLING_ADAPTER");
     mArmState.AddState("ENGAGING_ADAPTER");
-    mArmState.AddState("CHANGING_COUPLING_TOOL");
     mArmState.AddState("ENGAGING_TOOL");
     mArmState.AddState("TOOL_ENGAGED");
     mArmState.AddState("MANUAL");
@@ -620,23 +621,11 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mArmState.SetTransitionCallback("HOMED",
                                     &mtsIntuitiveResearchKitPSM::TransitionHomed,
                                     this);
-    mArmState.SetEnterCallback("CHANGING_COUPLING_ADAPTER",
-                               &mtsIntuitiveResearchKitPSM::EnterChangingCouplingAdapter,
-                               this);
-    mArmState.SetRunCallback("CHANGING_COUPLING_ADAPTER",
-                             &mtsIntuitiveResearchKitPSM::RunChangingCouplingAdapter,
-                             this);
     mArmState.SetEnterCallback("ENGAGING_ADAPTER",
                                &mtsIntuitiveResearchKitPSM::EnterEngagingAdapter,
                                this);
     mArmState.SetRunCallback("ENGAGING_ADAPTER",
                              &mtsIntuitiveResearchKitPSM::RunEngagingAdapter,
-                             this);
-    mArmState.SetEnterCallback("CHANGING_COUPLING_TOOL",
-                               &mtsIntuitiveResearchKitPSM::EnterChangingCouplingTool,
-                               this);
-    mArmState.SetRunCallback("CHANGING_COUPLING_TOOL",
-                             &mtsIntuitiveResearchKitPSM::RunChangingCouplingAdapter,
                              this);
     mArmState.SetEnterCallback("ENGAGING_TOOL",
                                &mtsIntuitiveResearchKitPSM::EnterEngagingTool,
@@ -707,12 +696,6 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     m_arm_interface->AddEventVoid(ToolEvents.tool_type_request, "tool_type_request");
 
     m_arm_interface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
-
-    CMN_ASSERT(PIDInterface);
-    PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::CouplingEventHandler, this, "Coupling");
-    PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EnableJointsEventHandler, this, "EnabledJoints");
-    CouplingChange.LastEnabledJoints.SetSize(number_of_joints());
-    CouplingChange.DesiredEnabledJoints.SetSize(number_of_joints());
 
     // Event Adapter engage: digital input button event from PSM
     interfaceRequired = AddInterfaceRequired("Adapter");
@@ -809,7 +792,7 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
     }
     if (!Adapter.IsEngaged &&
         (Adapter.IsPresent || Adapter.IsEmulated || m_simulated || Adapter.NeedEngage)) {
-        mArmState.SetCurrentState("CHANGING_COUPLING_ADAPTER");
+        mArmState.SetCurrentState("ENGAGING_ADAPTER");
     }
 
     if (!m_simulated) {
@@ -822,14 +805,14 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
         if (!m_simulated) {
             if ((Tool.IsPresent || Tool.IsEmulated) && mToolConfigured) {
                 set_tool_present(true);
-                mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
+                mArmState.SetCurrentState("ENGAGING_TOOL");
             }
         } else {
             // simulated case
             set_tool_present(true);
             // check if tool is configured, i.e. fixed or manual
             if (mToolConfigured) {
-                mArmState.SetCurrentState("CHANGING_COUPLING_TOOL");
+                mArmState.SetCurrentState("ENGAGING_TOOL");
             } else {
                 // request tool type if needed
                 if (!mToolTypeRequested) {
@@ -838,86 +821,6 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
                     m_arm_interface->SendWarning(this->GetName() + ": tool type requested from user");
                 }
             }
-        }
-    }
-}
-
-void mtsIntuitiveResearchKitPSM::RunChangingCoupling(void)
-{
-    if (m_simulated) {
-        // now set PID limits based on tool/no tool
-        UpdateConfigurationJointPID(CouplingChange.CouplingForTool);
-        mArmState.SetCurrentState(CouplingChange.NextState);
-        return;
-    }
-
-    const double currentTime = this->StateTable.GetTic();
-
-    // first phase, disable last 4 joints and wait
-    if (!CouplingChange.Started) {
-        // keep first 3 on
-        CouplingChange.DesiredEnabledJoints.Ref(3, 0).SetAll(true);
-        // turn off last 4
-        CouplingChange.DesiredEnabledJoints.Ref(4, 3).SetAll(false);
-        PID.EnableJoints(CouplingChange.DesiredEnabledJoints);
-        CouplingChange.WaitingForEnabledJoints = true;
-        m_homing_timer = currentTime;
-        CouplingChange.ReceivedEnabledJoints = false;
-        CouplingChange.Started = true;
-        return;
-    }
-
-    if (CouplingChange.WaitingForEnabledJoints) {
-        // check if received new EnabledJoints
-        if (CouplingChange.ReceivedEnabledJoints) {
-            if (CouplingChange.DesiredEnabledJoints.Equal(CouplingChange.LastEnabledJoints)) {
-                CouplingChange.WaitingForEnabledJoints = false;
-                if (CouplingChange.CouplingForTool) {
-                    CouplingChange.DesiredCoupling.Assign(CouplingChange.ToolCoupling);
-                } else {
-                    const vctDoubleMat identity(vctDoubleMat::Eye(number_of_joints()));
-                    // set desired
-                    CouplingChange.DesiredCoupling.Assign(identity);
-                }
-                // PID.SetCoupling(CouplingChange.DesiredCoupling);
-                CouplingChange.WaitingForEnabledJoints = false;
-                CouplingChange.WaitingForCoupling = true;
-                CouplingChange.ReceivedCoupling = false;
-                return;
-            } else {
-                // check time
-                const double timeToEnableJoints = 30.0 * cmn_s; // large timeout
-                if ((currentTime - m_homing_timer) > timeToEnableJoints) {
-                    m_arm_interface->SendError(this->GetName() + ": can't disable last four axes to change coupling.");
-                    CMN_LOG_CLASS_RUN_ERROR << "RunChangingCoupling: " << this->GetName()
-                                            << "\nexpecting enabled joints:" << CouplingChange.DesiredEnabledJoints
-                                            << "\nbut received: " << CouplingChange.LastEnabledJoints
-                                            << std::endl;
-                    SetDesiredState("FAULT");
-                } else {
-                    m_arm_interface->SendStatus(this->GetName() + ": waiting to disable last four axes to change coupling.");
-                }
-            }
-        } else {
-            return;
-        }
-    }
-
-    if (CouplingChange.WaitingForCoupling) {
-        // check if received new coupling
-        if (CouplingChange.ReceivedCoupling) {
-            if (CouplingChange.DesiredCoupling.Equal(CouplingChange.LastCoupling)) {
-                CouplingChange.WaitingForCoupling = false;
-                // now set PID limits based on tool/no tool
-                UpdateConfigurationJointPID(CouplingChange.CouplingForTool);
-                // finally move to next state
-                mArmState.SetCurrentState(CouplingChange.NextState);
-            } else {
-                m_arm_interface->SendError(this->GetName() + ": can't set coupling.");
-                SetDesiredState("FAULT");
-            }
-        } else {
-            return;
         }
     }
 }
@@ -1010,17 +913,11 @@ void mtsIntuitiveResearchKitPSM::UpdateConfigurationJointPID(const bool toolPres
     }
 }
 
-void mtsIntuitiveResearchKitPSM::EnterChangingCouplingAdapter(void)
-{
-    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
-    CouplingChange.Started = false;
-    CouplingChange.CouplingForTool = false; // Load identity coupling
-    CouplingChange.NextState = "ENGAGING_ADAPTER";
-}
-
 void mtsIntuitiveResearchKitPSM::EnterEngagingAdapter(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
+    m_has_coupling = false;
+    get_robot_data();
     // if simulated, nothing to do
     if (m_simulated) {
         return;
@@ -1141,21 +1038,10 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
     }
 }
 
-void mtsIntuitiveResearchKitPSM::EnterChangingCouplingTool(void)
-{
-    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
-    CouplingChange.Started = false;
-    CouplingChange.CouplingForTool = true; // Load tool coupling
-    if (Tool.NeedEngage) {
-        CouplingChange.NextState = "ENGAGING_TOOL";
-    } else {
-        CouplingChange.NextState = "TOOL_ENGAGED";
-    }
-}
-
 void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
+    m_has_coupling = true;
 
     // set PID limits for tool present
     UpdateConfigurationJointPID(true);
@@ -1455,22 +1341,6 @@ void mtsIntuitiveResearchKitPSM::control_move_jp_on_stop(const bool goal_reached
     mtsIntuitiveResearchKitArm::control_move_jp_on_stop(goal_reached);
 }
 
-void mtsIntuitiveResearchKitPSM::CouplingEventHandler(const prmActuatorJointCoupling & coupling)
-{
-    CouplingChange.ReceivedCoupling = true;
-    CouplingChange.LastCoupling.Assign(coupling);
-    // refresh robot data
-    get_robot_data();
-}
-
-void mtsIntuitiveResearchKitPSM::EnableJointsEventHandler(const vctBoolVec & enable)
-{
-    if (CouplingChange.WaitingForEnabledJoints) {
-        CouplingChange.ReceivedEnabledJoints = true;
-        CouplingChange.LastEnabledJoints.Assign(enable);
-    }
-}
-
 void mtsIntuitiveResearchKitPSM::set_adapter_present(const bool & present)
 {
     Adapter.IsEngaged = false;
@@ -1517,6 +1387,8 @@ void mtsIntuitiveResearchKitPSM::set_tool_present(const bool & present)
         ToolEvents.tool_type(mToolList.Name(mToolIndex));
     } else {
         ToolEvents.tool_type(std::string());
+        m_has_coupling = false;
+        get_robot_data();
     }
 }
 
@@ -1549,8 +1421,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
     switch (button.Type()) {
     case prmEventButton::PRESSED:
         // if the adapter was engaging, make sure it stops immediately
-        if ((mArmState.CurrentState() == "CHANGING_COUPLING_ADAPTER")
-            || (mArmState.CurrentState() == "ENGAGING_ADAPTER")) {
+        if (mArmState.CurrentState() == "ENGAGING_ADAPTER") {
             mArmState.SetCurrentState("HOMED");
         }
         // then figure out which tool we're using
@@ -1584,13 +1455,14 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         default:
             break;
         }
-        // make sure we change the coupling back to default
-        if (Adapter.IsPresent) {
-            mStateTableConfiguration.Start();
-            m_kin_configuration_js = CouplingChange.NoToolConfiguration;
-            mStateTableConfiguration.Advance();
-            mArmState.SetCurrentState("CHANGING_COUPLING_ADAPTER");
-        }
+        // update for users
+        mStateTableConfiguration.Start();
+        m_kin_configuration_js = CouplingChange.NoToolConfiguration;
+        mStateTableConfiguration.Advance();
+        m_arm_interface->SendStatus(this->GetName() + ": tool has been removed");            
+        // update down to PID
+        UpdateConfigurationJointPID(false /* no tool*/);
+        mArmState.SetCurrentState("HOMED");
         break;
     default:
         break;

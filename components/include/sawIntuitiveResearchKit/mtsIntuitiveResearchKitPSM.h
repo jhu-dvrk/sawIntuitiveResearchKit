@@ -98,21 +98,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void TransitionHomed(void); // for adapter/tool detection
 
     // methods used in change coupling/engaging
-    void RunChangingCoupling(void);
     void UpdateConfigurationJointPID(const bool toolPresent);
 
     // engaging adapter
-    void EnterChangingCouplingAdapter(void);
-    inline void RunChangingCouplingAdapter(void) {
-        RunChangingCoupling();
-    }
     void EnterEngagingAdapter(void);
     void RunEngagingAdapter(void);
+
     // engaging tool
-    void EnterChangingCouplingTool(void);
-    inline void RunChangingCouplingTool(void) {
-        RunChangingCoupling();
-    }
     void EnterEngagingTool(void);
     void RunEngagingTool(void);
     void EnterToolEngaged(void);
@@ -155,9 +147,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void servo_jf_internal(const vctDoubleVec & newEffort) override;
 
     void control_move_jp_on_stop(const bool reached) override;
-
-    void EnableJointsEventHandler(const vctBoolVec & enable);
-    void CouplingEventHandler(const prmActuatorJointCoupling & coupling);
 
     /*! Event handlers for tools */
     //@{
@@ -227,13 +216,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     unsigned int LastEngagingStage;
 
     struct {
-        bool Started;
-        std::string NextState;
-        bool CouplingForTool;
-        bool WaitingForEnabledJoints, ReceivedEnabledJoints;
-        vctBoolVec LastEnabledJoints, DesiredEnabledJoints;
-        bool WaitingForCoupling, ReceivedCoupling;
-        prmActuatorJointCoupling LastCoupling, DesiredCoupling, ToolCoupling;
         vctDoubleVec ToolEngageLowerPosition, ToolEngageUpperPosition;
         prmConfigurationJoint ToolConfiguration;
         prmConfigurationJoint NoToolConfiguration;

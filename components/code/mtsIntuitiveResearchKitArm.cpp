@@ -634,7 +634,8 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
 }
 
 void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
-                                             const std::string & filename)
+                                             const std::string & filename,
+                                             const bool ignoreCoupling)
 {
     // load base offset transform if any (without warning)
     const Json::Value jsonBase = jsonConfig["base-offset"];
@@ -685,21 +686,23 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
     ResizeKinematicsData();
 
     // coupling matrix
-    const Json::Value jsonCoupling = jsonConfig["coupling"];
-    if (!jsonCoupling.isNull()) {
-        prmActuatorJointCoupling coupling;
-        cmnDataJSON<prmActuatorJointCoupling>::DeSerializeText(coupling,
-                                                               jsonCoupling);
-        try {
-            prmActuatorJointCouplingCheck(number_of_joints(),
-                                          number_of_joints(),
-                                          coupling, m_coupling);
-            m_has_coupling = true;
-        } catch (std::exception & e) {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
-                                     << ": caught exception \"" << e.what() << "\" for coupling from \""
-                                     << filename << "\"" << std::endl;
-            exit(EXIT_FAILURE);
+    if (!ignoreCoupling) {
+        const Json::Value jsonCoupling = jsonConfig["coupling"];
+        if (!jsonCoupling.isNull()) {
+            prmActuatorJointCoupling coupling;
+            cmnDataJSON<prmActuatorJointCoupling>::DeSerializeText(coupling,
+                                                                   jsonCoupling);
+            try {
+                prmActuatorJointCouplingCheck(number_of_joints(),
+                                              number_of_joints(),
+                                              coupling, m_coupling);
+                m_has_coupling = true;
+            } catch (std::exception & e) {
+                CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
+                                         << ": caught exception \"" << e.what() << "\" for coupling from \""
+                                         << filename << "\"" << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
     }
 }
