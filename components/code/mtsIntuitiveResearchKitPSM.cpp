@@ -1279,6 +1279,9 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & newPosit
     ToJointsPID(newPosition, m_servo_jp_param.Goal());
     m_servo_jp_param.Goal().at(6) = m_jaw_servo_jp;
     m_servo_jp_param.SetTimestamp(StateTable.GetTic());
+    if (m_has_coupling) {
+        m_servo_jp_param.Goal() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Goal();
+    }
     PID.servo_jp(m_servo_jp_param);
 }
 
