@@ -193,7 +193,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     mtsToolList mToolList;
     size_t mToolIndex;
     mtsIntuitiveResearchKitToolTypes::Detection mToolDetection;
-    double mEngageDepth = mtsIntuitiveResearchKit::PSM::EngageDepthClassic; // use safer value by default
     bool mToolConfigured = false;
     bool mToolTypeRequested = false;
     struct {

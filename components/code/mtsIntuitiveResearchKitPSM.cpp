@@ -1086,8 +1086,13 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         m_servo_jp.Assign(m_pid_setpoint_js.Position());
         m_servo_jv.Assign(m_pid_measured_js.Velocity());
 
-        // check if the tool in outside the cannula
-        if (m_pid_measured_js.Position().Element(2) >= mEngageDepth) {
+        // check if the tool in outside the cannula, measured_cp is
+        // not yet computed by get_robot_data so we need to compute
+        // the FK ourselves.  This is fine for instruments with 6 dofs
+        // but is not perfect for a snake-like instrument since we don't have 8 joint values
+        vctFrm4x4 _measured_cp = Manipulator->ForwardKinematics(m_pid_measured_js.Position(), 6);
+        double distanceToRCM = _measured_cp.Translation().Norm();
+        if (distanceToRCM >= mtsIntuitiveResearchKit::PSM::EngageDepthCannula) {
             std::string message = this->GetName();
             message.append(": tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
             message.append("  If the tool is not engaged properly, move the sterile adapter all the way up and re-insert the tool.");
@@ -1459,7 +1464,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         mStateTableConfiguration.Start();
         m_kin_configuration_js = CouplingChange.NoToolConfiguration;
         mStateTableConfiguration.Advance();
-        m_arm_interface->SendStatus(this->GetName() + ": tool has been removed");            
+        m_arm_interface->SendStatus(this->GetName() + ": tool has been removed");
         // update down to PID
         UpdateConfigurationJointPID(false /* no tool*/);
         mArmState.SetCurrentState("HOMED");
@@ -1522,11 +1527,6 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
     mToolConfigured = ConfigureTool(toolFile);
     if (mToolConfigured) {
         set_tool_present(true);
-        if (mToolList.Generation(mToolIndex) == "S") {
-            mEngageDepth = mtsIntuitiveResearchKit::PSM::EngageDepthS;
-        } else {
-            mEngageDepth = mtsIntuitiveResearchKit::PSM::EngageDepthClassic;
-        }
     } else {
         m_arm_interface->SendError(this->GetName() + ": failed to configure tool \"" + toolType + "\", check terminal output and cisstLog file");
         ToolEvents.tool_type(std::string("ERROR"));
