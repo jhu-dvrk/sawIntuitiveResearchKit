@@ -357,12 +357,14 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
-    if (m_simulated || is_homed()) {
-        if (m_simulated) {
-            // all encoders are biased, including roll
-            m_encoders_biased = true;
+    if (!m_calibration_mode) {
+        if (m_simulated || is_homed()) {
+            if (m_simulated) {
+                // all encoders are biased, including roll
+                m_encoders_biased = true;
+            }
+            return;
         }
-        return;
     }
 
     static const double maxTrackingError = 0.5 * cmnPI; // 1/4 turn
@@ -393,9 +395,11 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 
 void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 {
-    if (m_simulated || is_homed()) {
-        mArmState.SetCurrentState("ROLL_CALIBRATED");
-        return;
+    if (!m_calibration_mode) {
+        if (m_simulated || is_homed()) {
+            mArmState.SetCurrentState("ROLL_CALIBRATED");
+            return;
+        }
     }
 
     static const double maxTrackingError = 1.0 * cmnPI; // 1/2 turn
@@ -521,7 +525,7 @@ void mtsIntuitiveResearchKitMTM::get_robot_data(void)
     // get gripper based on analog inputs
     mtsExecutionResult executionResult = GripperIO.pot_measured_js(m_gripper_measured_js);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to pot_measured_js failed \""
+        CMN_LOG_CLASS_RUN_ERROR << GetName() << ": get_robot_data: call to pot_measured_js failed \""
                                 << executionResult << "\"" << std::endl;
         return;
     }
