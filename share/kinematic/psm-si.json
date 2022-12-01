@@ -1,7 +1,7 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
     // see dVRK user guide
-    
+
     // joint limits are based on cal files from 3 PSMs
     // (jhu-dVRK-Si/cal-files), these are a bit approximative
     "DH": {
@@ -32,7 +32,7 @@
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "prismatic",
                 "mode": "active",
-                "offset": -0.4318,
+                "offset": -0.4826, // based on Classic -0.4318 + offset estimated from instrument shaft lenght difference
                 "qmin": 0.0,
                 "qmax": 0.29,  // 290 mm
                 "ftmax": 40.9063 // maxA / Nm_to_A from sawRobotIO
