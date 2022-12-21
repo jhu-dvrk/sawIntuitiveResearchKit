@@ -301,7 +301,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("setpoint_js", PID.setpoint_js);
         PIDInterface->AddFunction("servo_jp", PID.servo_jp);
         PIDInterface->AddFunction("feed_forward_jf", PID.feed_forward_jf);
-        PIDInterface->AddFunction("SetCheckPositionLimit", PID.SetCheckPositionLimit);
+        PIDInterface->AddFunction("enforce_position_limits", PID.enforce_position_limits);
         PIDInterface->AddFunction("configuration_js", PID.configuration_js);
         PIDInterface->AddFunction("configure_js", PID.configure_js);
         PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
@@ -1062,7 +1062,7 @@ void mtsIntuitiveResearchKitArm::EnterDisabled(void)
     IO.SetActuatorCurrent(vctDoubleVec(number_of_joints(), 0.0));
     IO.PowerOffSequence(false); // do not open safety relays
     PID.Enable(false);
-    PID.SetCheckPositionLimit(true);
+    PID.enforce_position_limits(true);
     m_powered = false;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
@@ -1260,7 +1260,7 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
     // disable joint limits, arm might start outside them
-    PID.SetCheckPositionLimit(false);
+    PID.enforce_position_limits(false);
     // enable tracking errors
     PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
 
@@ -1320,7 +1320,7 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
         isHomed = !m_trajectory_j.goal_error.ElementwiseGreaterOrEqual(m_trajectory_j.goal_tolerance).Any();
         if (isHomed) {
             m_operating_state.IsHomed() = true;
-            PID.SetCheckPositionLimit(true);
+            PID.enforce_position_limits(true);
             mArmState.SetCurrentState("HOMED");
         } else {
             // time out
@@ -1356,7 +1356,7 @@ void mtsIntuitiveResearchKitArm::EnterHomed(void)
     mtsIntuitiveResearchKitArm::servo_jp_internal(m_pid_setpoint_js.Position());
     PID.EnableTrackingError(use_PID_tracking_error());
     PID.EnableJoints(vctBoolVec(number_of_joints(), true));
-    PID.SetCheckPositionLimit(true);
+    PID.enforce_position_limits(true);
     PID.Enable(true);
     PID.EnableJoints(vctBoolVec(number_of_joints(), true));
 }

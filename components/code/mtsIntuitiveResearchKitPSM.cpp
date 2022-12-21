@@ -959,7 +959,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
     if (EngagingStage == 1) {
         // configure PID to fail in case of tracking error
-        PID.SetCheckPositionLimit(false);
+        PID.enforce_position_limits(false);
         vctDoubleVec tolerances(number_of_joints());
         // first two rotations and translation, in case someone is pushing/holding arm
         tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees
@@ -1069,7 +1069,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 
     if (EngagingStage == 1) {
         // configure PID to fail in case of tracking error
-        PID.SetCheckPositionLimit(false);
+        PID.enforce_position_limits(false);
         vctDoubleVec tolerances(number_of_joints());
         // first two rotations and translation, in case someone is pushing/holding arm
         tolerances.Ref(2, 0).SetAll(10.0 * cmnPI_180); // 10 degrees

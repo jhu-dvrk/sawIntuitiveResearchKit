@@ -381,7 +381,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
 
     // disable safety features so we can look for physical joint limit
-    PID.SetCheckPositionLimit(false);
+    PID.enforce_position_limits(false);
     PID.EnableTrackingError(false);
     // enable PID for roll only
     vctBoolVec enableJoints(number_of_joints());

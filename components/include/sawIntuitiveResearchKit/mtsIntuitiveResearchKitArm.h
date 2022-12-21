@@ -258,7 +258,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionRead  setpoint_js;
         mtsFunctionWrite servo_jp;
         mtsFunctionWrite feed_forward_jf;
-        mtsFunctionWrite SetCheckPositionLimit;
+        mtsFunctionWrite enforce_position_limits;
         mtsFunctionRead  configuration_js;
         mtsFunctionWrite configure_js;
         mtsFunctionWrite EnableTorqueMode;
