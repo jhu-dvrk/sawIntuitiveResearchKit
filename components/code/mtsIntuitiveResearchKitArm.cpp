@@ -1270,7 +1270,7 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
     }
 
     // get robot data to make sure we have latest state
-    CMN_ASSERT(IsJointReady());
+    CMN_ASSERT(is_joint_ready());
     get_robot_data();
 
     // compute joint goal position
