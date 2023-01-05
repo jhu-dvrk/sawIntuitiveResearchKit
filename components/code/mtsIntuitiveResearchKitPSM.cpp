@@ -825,10 +825,10 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
     }
 }
 
-void mtsIntuitiveResearchKitPSM::UpdateConfigurationJointPID(const bool toolPresent)
+void mtsIntuitiveResearchKitPSM::UpdateConfigurationJointPID(void)
 {
     // now set PID limits based on tool/no tool
-    if (toolPresent && mToolConfigured) {
+    if (mToolConfigured) {
 
         // just to be absolutely totally sure
         CMN_ASSERT(number_of_joints() == 7);
@@ -1044,7 +1044,7 @@ void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
     m_has_coupling = true;
 
     // set PID limits for tool present
-    UpdateConfigurationJointPID(true);
+    UpdateConfigurationJointPID();
 
     // if for some reason we don't need to engage, basically, tool was
     // found before homing
@@ -1469,7 +1469,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         mStateTableConfiguration.Advance();
         m_arm_interface->SendStatus(this->GetName() + ": tool has been removed");
         // update down to PID
-        UpdateConfigurationJointPID(false /* no tool*/);
+        UpdateConfigurationJointPID();
         mArmState.SetCurrentState("HOMED");
         break;
     default:

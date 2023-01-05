@@ -100,6 +100,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void Init(void);
 
     void UpdateConfigurationJointKinematic(void);
+    virtual void UpdateConfigurationJointPID(void);
     void ResizeKinematicsData(void);
 
     /*! Verify that the state transition is possible, initialize

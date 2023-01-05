@@ -98,7 +98,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void TransitionHomed(void); // for adapter/tool detection
 
     // methods used in change coupling/engaging
-    void UpdateConfigurationJointPID(const bool toolPresent);
+    void UpdateConfigurationJointPID(void) override;
 
     // engaging adapter
     void EnterEngagingAdapter(void);

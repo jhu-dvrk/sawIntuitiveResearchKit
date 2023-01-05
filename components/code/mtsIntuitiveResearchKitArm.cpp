@@ -32,6 +32,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 #include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
+#include <sawIntuitiveResearchKit/prmConfigurationJointFromManipulator.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitArm, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -498,32 +499,25 @@ void mtsIntuitiveResearchKitArm::UpdateConfigurationJointKinematic(void)
     // get names, types and joint limits for kinematics config from the manipulator
     // name and types need conversion
     mStateTableConfiguration.Start();
-    m_kin_configuration_js.Name().SetSize(number_of_joints_kinematics());
-    m_kin_configuration_js.Type().SetSize(number_of_joints_kinematics());
-    const size_t jointsConfiguredSoFar = this->Manipulator->links.size();
-    std::vector<std::string> names(jointsConfiguredSoFar);
-    std::vector<robJoint::Type> types(jointsConfiguredSoFar);
-    this->Manipulator->GetJointNames(names);
-    this->Manipulator->GetJointTypes(types);
-    for (size_t index = 0; index < jointsConfiguredSoFar; ++index) {
-        m_kin_configuration_js.Name().at(index) = names.at(index);
-        switch (types.at(index)) {
-        case robJoint::HINGE:
-            m_kin_configuration_js.Type().at(index) = PRM_JOINT_REVOLUTE;
-            break;
-        case robJoint::SLIDER:
-            m_kin_configuration_js.Type().at(index) = PRM_JOINT_PRISMATIC;
-            break;
-        default:
-            m_kin_configuration_js.Type().at(index) = PRM_JOINT_UNDEFINED;
-            break;
-        }
+    prmConfigurationJointFromManipulator(*(this->Manipulator),
+                                         number_of_joints_kinematics(),
+                                         m_kin_configuration_js);
+    mStateTableConfiguration.Advance();
+}
+
+void mtsIntuitiveResearchKitArm::UpdateConfigurationJointPID(void)
+{
+    // by default, we assume all joints are used for kinematics.  This
+    // method needs to be overloaded for a PSM!
+    prmConfigurationJointFromManipulator(*(this->Manipulator),
+                                         number_of_joints_kinematics(),
+                                         m_pid_configuration_js);
+    if (m_has_coupling) {
+        m_pid_configuration_js.PositionMin() = m_coupling.JointToActuatorPosition() * m_pid_configuration_js.PositionMin();
+        m_pid_configuration_js.PositionMax() = m_coupling.JointToActuatorPosition() * m_pid_configuration_js.PositionMax();
+        m_pid_configuration_js.EffortMin() = m_coupling.JointToActuatorEffort() * m_pid_configuration_js.EffortMin();
+        m_pid_configuration_js.EffortMax() = m_coupling.JointToActuatorEffort() * m_pid_configuration_js.EffortMax();
     }
-    // position limits can be read as is
-    m_kin_configuration_js.PositionMin().SetSize(number_of_joints_kinematics());
-    m_kin_configuration_js.PositionMax().SetSize(number_of_joints_kinematics());
-    this->Manipulator->GetJointLimits(m_kin_configuration_js.PositionMin().Ref(jointsConfiguredSoFar),
-                                      m_kin_configuration_js.PositionMax().Ref(jointsConfiguredSoFar));
     mStateTableConfiguration.Advance();
 }
 
@@ -705,6 +699,9 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
             }
         }
     }
+
+    // PID configuration is coupling dependant so we need to do this after loading the coupling
+    UpdateConfigurationJointPID();
 }
 
 void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)
@@ -1062,6 +1059,7 @@ void mtsIntuitiveResearchKitArm::EnterDisabled(void)
     IO.SetActuatorCurrent(vctDoubleVec(number_of_joints(), 0.0));
     IO.PowerOffSequence(false); // do not open safety relays
     PID.Enable(false);
+    PID.configure_js(m_pid_configuration_js);
     PID.enforce_position_limits(true);
     m_powered = false;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
@@ -1216,28 +1214,6 @@ void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
 
-    // update joint limits if the arm is passed them
-    prmStateJoint _measured_js;
-    mtsExecutionResult _execution_result = PID.measured_js(_measured_js);
-    if (_execution_result.IsOK()) {
-        prmConfigurationJoint _configuration_js;
-        _execution_result = PID.configuration_js(_configuration_js);
-        if (_execution_result.IsOK()) {
-            const size_t _nb_joints = _measured_js.Position().size();
-            CMN_ASSERT(_nb_joints == _configuration_js.PositionMin().size());
-            CMN_ASSERT(_nb_joints == _configuration_js.PositionMax().size());
-            for (size_t index = 0; index < _nb_joints; ++index) {
-                double _position = _measured_js.Position().at(index);
-                if (_position < _configuration_js.PositionMin().at(index)) {
-                    _configuration_js.PositionMin().at(index) = _position;
-                } else if (_position > _configuration_js.PositionMax().at(index)) {
-                    _configuration_js.PositionMax().at(index) = _position;
-                }
-            }
-            PID.configure_js(_configuration_js);
-        }
-    }
-
     // use pots for redundancy when not in calibration mode
     if (m_calibration_mode) {
         IO.UsePotsForSafetyCheck(false);
@@ -1259,6 +1235,8 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
+    // set joint configuration
+    PID.configure_js(m_pid_configuration_js);
     // disable joint limits, arm might start outside them
     PID.enforce_position_limits(false);
     // enable tracking errors
