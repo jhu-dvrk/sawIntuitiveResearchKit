@@ -143,6 +143,7 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/robManipulatorPSMSnake.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsPSMCompensation.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/prmActuatorJointCouplingCheck.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/prmConfigurationJointFromManipulator.h
         )
 
     set (SOURCE_FILES
@@ -168,6 +169,7 @@ if (cisst_FOUND)
          code/robManipulatorPSMSnake.cpp
          code/mtsPSMCompensation.cpp
          code/prmActuatorJointCouplingCheck.cpp
+         code/prmConfigurationJointFromManipulator.cpp
          code/robGravityCompensationMTM.cpp
          code/robGravityCompensationMTM.h
          )
