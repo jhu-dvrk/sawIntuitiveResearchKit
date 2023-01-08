@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -494,7 +494,7 @@ void mtsIntuitiveResearchKitArm::state_command(const std::string & command)
     }
 }
 
-void mtsIntuitiveResearchKitArm::UpdateConfigurationJointKinematic(void)
+void mtsIntuitiveResearchKitArm::update_kin_configuration_js(void)
 {
     // get names, types and joint limits for kinematics config from the manipulator
     // name and types need conversion
@@ -505,7 +505,7 @@ void mtsIntuitiveResearchKitArm::UpdateConfigurationJointKinematic(void)
     mStateTableConfiguration.Advance();
 }
 
-void mtsIntuitiveResearchKitArm::UpdateConfigurationJointPID(void)
+void mtsIntuitiveResearchKitArm::update_pid_configuration_js(void)
 {
     // by default, we assume all joints are used for kinematics.  This
     // method needs to be overloaded for a PSM!
@@ -673,8 +673,8 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
                                    << mConfigurationFile << std::endl;
     }
 
-    // update ConfigurationJointKinematic from manipulator
-    UpdateConfigurationJointKinematic();
+    // update configuration joint from manipulator
+    update_kin_configuration_js();
 
     // resize data members using kinematics (jacobians and effort vectors)
     ResizeKinematicsData();
@@ -701,7 +701,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
     }
 
     // PID configuration is coupling dependant so we need to do this after loading the coupling
-    UpdateConfigurationJointPID();
+    update_pid_configuration_js();
 }
 
 void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)

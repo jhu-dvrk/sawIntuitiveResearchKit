@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -99,8 +99,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void CreateManipulator(void);
     virtual void Init(void);
 
-    void UpdateConfigurationJointKinematic(void);
-    virtual void UpdateConfigurationJointPID(void);
+    virtual void update_kin_configuration_js(void);
+    virtual void update_pid_configuration_js(void);
+
     void ResizeKinematicsData(void);
 
     /*! Verify that the state transition is possible, initialize
@@ -247,7 +248,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     /*! Counter to total number of consecutive times the user is
       trying to switch to cartesian control space when it's not
       safe.  Used to throttle error messages. */
-    size_t m_safe_for_cartesian_control_counter;
+    size_t m_safe_for_cartesian_control_counter = 0;
 
     // Interface to PID component
     mtsInterfaceRequired * PIDInterface;
@@ -507,7 +508,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     bool m_simulated = false;
 
     // flag to determine if the arm is running in calibration mode, i.e. turn off checks using potentiometers
-    bool m_calibration_mode;
+    bool m_calibration_mode = false;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitArm);
