@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<Config Version="4">
+<Config Version="5">
    <Robot Name="PSM1" NumOfActuator="7" NumOfJoint="7" SN="49695">
       <Actuator ActuatorID="0" AxisID="0" BoardID="6" Type="Revolute">
          <Drive>

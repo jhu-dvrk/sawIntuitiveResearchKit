@@ -46,3 +46,25 @@ psm_j_max_torque = psm_j2a_p.T.dot(psm_a_max_torque)
 print('PSM max torques')
 print(psm_j_max_torque)
 
+
+
+
+
+# copied from config-generator.py
+ecm_a_max_current = np.array([0.943, 0.943, 0.67, 0.59])
+ecm_a_gearRatio = np.array([240, 240, 2748.55, 300.15])
+ecm_a_motorTorque = np.array([0.1190, 0.1190, 0.0438, 0.00495])
+
+# coupling matrix
+ecm_a2j_p = np.identity(4)
+
+# start computations
+ecm_a_nmToAmps = 1.0 / (ecm_a_gearRatio * ecm_a_motorTorque)
+ecm_a_max_torque = ecm_a_max_current / ecm_a_nmToAmps
+
+ecm_j2a_p = inv(ecm_a2j_p)
+ecm_j_max_torque = ecm_j2a_p.T.dot(ecm_a_max_torque)
+
+print('ECM max torques')
+print(ecm_j_max_torque)
+

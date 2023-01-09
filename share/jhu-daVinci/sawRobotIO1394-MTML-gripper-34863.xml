@@ -1,4 +1,4 @@
-<Config Version="4">
+<Config Version="5">
    <Robot Name="MTML-Gripper" NumOfActuator="1" NumOfJoint="1" SN="34863" Type="io-only">
       <Actuator ActuatorID="1" AxisID="3" BoardID="1" Type="Revolute">
          <Drive>

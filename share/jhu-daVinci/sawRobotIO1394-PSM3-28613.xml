@@ -1,4 +1,4 @@
-<Config Version="4">
+<Config Version="5">
    <Robot Name="PSM3" NumOfActuator="7" NumOfJoint="7" SN="28613">
       <Actuator ActuatorID="0" AxisID="0" BoardID="10" Type="Revolute">
          <Drive>

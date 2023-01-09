@@ -1,0 +1,66 @@
+{
+    "pid": [
+	{
+	    "index": 0,
+	    "name": "outer_yaw",
+	    "type": 2,
+	    "p_gain": 200.0,
+	    "d_gain": 12.0,
+	    "i_gain": 0.0
+	}
+	,
+	{
+	    "index": 1,
+	    "name": "outer_pitch",
+	    "type": 2,
+	    "p_gain": 200.0,
+	    "d_gain": 12.0,
+	    "i_gain": 0.0
+	}
+	,
+	{
+	    "index": 2,
+	    "name": "outer_insertion",
+	    "type": 1,
+	    "p_gain": 8000.0,
+	    "d_gain": 300.0,
+	    "i_gain": 0.0
+	}
+	,
+	{
+	    "index": 3,
+	    "name": "outer_roll",
+	    "type": 2,
+	    "p_gain": 6.0,
+	    "d_gain": 0.09,
+	    "i_gain": 0.0
+	}
+	,
+	{
+	    "index": 4,
+	    "name": "outer_wrist_pitch",
+	    "type": 2,
+	    "p_gain": 6.0,
+	    "d_gain": 0.09,
+	    "i_gain": 0.0
+	}
+	,
+	{
+	    "index": 5,
+	    "name": "outer_wrist_yaw",
+	    "type": 2,
+	    "p_gain": 6.0,
+	    "d_gain": 0.09,
+	    "i_gain": 0.0
+	}
+	,
+	{
+	    "index": 6,
+	    "name": "jaw",
+	    "type": 2,
+	    "p_gain": 6.0,
+	    "d_gain": 0.09,
+	    "i_gain": 0.0
+	}
+    ]
+}

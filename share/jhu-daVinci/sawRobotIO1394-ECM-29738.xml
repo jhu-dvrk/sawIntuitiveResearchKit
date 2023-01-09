@@ -1,4 +1,4 @@
-<Config Version="4">
+<Config Version="5">
    <Robot Name="ECM" NumOfActuator="4" NumOfJoint="4" SN="29738">
       <Actuator ActuatorID="0" AxisID="0" BoardID="4" Type="Revolute">
          <Drive>

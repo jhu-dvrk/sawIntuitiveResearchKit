@@ -1,4 +1,4 @@
-<Config Version="4">
+<Config Version="5">
    <Robot Name="MTML" NumOfActuator="7" NumOfJoint="7" SN="34863">
       <Actuator ActuatorID="0" AxisID="0" BoardID="0" Type="Revolute">
          <Drive>
@@ -113,17 +113,15 @@
          <Tolerance Axis="4" Distance="5.00" Latency="0.01" Unit="deg" />
          <Tolerance Axis="5" Distance="5.00" Latency="0.01" Unit="deg" />
          <Tolerance Axis="6" Distance="0.00" Latency="0.00" Unit="deg" />
-      </Potentiometers>
-      <Coupling Value="1">
-         <ActuatorToJointPosition>
+         <JointToActuatorPosition>
             <Row Val="1.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000" />
             <Row Val="0.0000 1.0000 0.0000 0.0000 0.0000 0.0000 0.0000" />
-            <Row Val="0.0000 -1.0000 1.0000 0.0000 0.0000 0.0000 0.0000" />
-            <Row Val="0.0000 0.6697 -0.6697 1.0000 0.0000 0.0000 0.0000" />
+            <Row Val="0.0000 1.0000 1.0000 0.0000 0.0000 0.0000 0.0000" />
+            <Row Val="0.0000 0.0000 0.6697 1.0000 0.0000 0.0000 0.0000" />
             <Row Val="0.0000 0.0000 0.0000 0.0000 1.0000 0.0000 0.0000" />
             <Row Val="0.0000 0.0000 0.0000 0.0000 0.0000 1.0000 0.0000" />
             <Row Val="0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 1.0000" />
-         </ActuatorToJointPosition>
-      </Coupling>
+         </JointToActuatorPosition>
+      </Potentiometers>
    </Robot>
 </Config>

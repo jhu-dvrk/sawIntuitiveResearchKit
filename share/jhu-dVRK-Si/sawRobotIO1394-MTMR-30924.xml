@@ -1,4 +1,4 @@
-<Config Version="4">
+<Config Version="5">
    <Robot Name="MTMR" NumOfActuator="7" NumOfJoint="7" SN="30924">
       <Actuator ActuatorID="0" AxisID="0" BoardID="2" Type="Revolute">
          <Drive>

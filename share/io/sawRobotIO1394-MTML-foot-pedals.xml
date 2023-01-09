@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Config Version="4">
+<Config Version="5">
    <DigitalIn BitID="3" BoardID="0" Debounce="0.05" Name="Head" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="0" BoardID="1" Debounce="0.20" Name="Clutch" Pressed="1" Trigger="all"/>
    <DigitalIn BitID="1" BoardID="1" Debounce="0.05" Name="Cam-" Pressed="1" Trigger="all"/>
