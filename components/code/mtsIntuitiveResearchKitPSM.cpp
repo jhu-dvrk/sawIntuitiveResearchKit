@@ -408,20 +408,6 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
     const size_t nbPIDJoints = m_pid_measured_js.Name().size();
     const size_t jawIndex = nbPIDJoints - 1;
 
-    if (m_jaw_measured_js.Name().size() == 0) {
-        m_jaw_measured_js.Name().SetSize(1);
-        m_jaw_measured_js.Name().at(0) = m_pid_measured_js.Name().at(jawIndex);
-        m_jaw_measured_js.Position().SetSize(1);
-        m_jaw_measured_js.Velocity().SetSize(1);
-        m_jaw_measured_js.Effort().SetSize(1);
-
-        m_jaw_setpoint_js.Name().SetSize(1);
-        m_jaw_setpoint_js.Name().at(0) = m_pid_setpoint_js.Name().at(jawIndex);
-        m_jaw_setpoint_js.Position().SetSize(1);
-        m_jaw_setpoint_js.Velocity().SetSize(0);
-        m_jaw_setpoint_js.Effort().SetSize(1);
-    }
-
     m_jaw_measured_js.Position().at(0) = m_pid_measured_js.Position().at(jawIndex);
     m_jaw_measured_js.Velocity().at(0) = m_pid_measured_js.Velocity().at(jawIndex);
     m_jaw_measured_js.Effort().at(0)   = m_pid_measured_js.Effort().at(jawIndex);
@@ -806,7 +792,7 @@ void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(prmConfiguratio
     configuration_js.Name().at(4) = "disc_2";
     configuration_js.Name().at(5) = "disc_3";
     configuration_js.Name().at(6) = "disc_4";
-    // for type, we can even ignore values loaded from config file    
+    // for type, we can even ignore values loaded from config file
     configuration_js.Type().SetSize(number_of_joints());
     configuration_js.Type().SetAll(PRM_JOINT_REVOLUTE);
     configuration_js.Type().at(2) = PRM_JOINT_PRISMATIC;
@@ -912,6 +898,17 @@ void mtsIntuitiveResearchKitPSM::update_pid_configuration_js(void)
         // ...and jaw
         m_pid_configuration_js.EffortMax().at(jawIndex) = m_jaw_configuration_js.EffortMax().at(0);
         m_pid_configuration_js.EffortMin().ProductOf(-1.0, m_pid_configuration_js.EffortMax()); // manipulator assumes symmetry
+
+        // and finally apply coupling
+        auto coupling = m_coupling.JointToActuatorPosition();
+        coupling.AbsSelf();
+        m_pid_configuration_js.PositionMin() = coupling * m_pid_configuration_js.PositionMin();
+        m_pid_configuration_js.PositionMax() = coupling * m_pid_configuration_js.PositionMax();
+        coupling = m_coupling.JointToActuatorEffort();
+        coupling.AbsSelf();
+        m_pid_configuration_js.EffortMin() = coupling * m_pid_configuration_js.EffortMin();
+        m_pid_configuration_js.EffortMax() = coupling * m_pid_configuration_js.EffortMax();
+
     } else {
         update_configuration_js_no_tool(m_pid_configuration_js);
     }
@@ -1046,7 +1043,7 @@ void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
 
     // if for some reason we don't need to engage, basically, tool was
     // found before homing
-    if (!Tool.NeedEngage) {
+    if (!m_simulated && !Tool.NeedEngage) {
         mArmState.SetCurrentState("TOOL_ENGAGED");
         return;
     }
@@ -1170,16 +1167,23 @@ void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
     // restore default PID tracking error
     PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
     // resize kinematics vectors
-    const size_t numberOfKinematicsJoints = this->Manipulator->links.size();
-    m_kin_measured_js.Name().SetSize(numberOfKinematicsJoints);
-    m_kin_measured_js.Name().Assign(m_kin_configuration_js.Name());
-    m_kin_measured_js.Position().SetSize(numberOfKinematicsJoints);
-    m_kin_measured_js.Velocity().SetSize(numberOfKinematicsJoints);
-    m_kin_measured_js.Effort().SetSize(numberOfKinematicsJoints);
-    m_kin_setpoint_js.Name().SetSize(numberOfKinematicsJoints);
-    m_kin_setpoint_js.Name().Assign(m_kin_configuration_js.Name());
-    m_kin_setpoint_js.Position().SetSize(numberOfKinematicsJoints);
-    m_kin_setpoint_js.Effort().SetSize(numberOfKinematicsJoints);
+    m_kin_measured_js.Name().ForceAssign(m_kin_configuration_js.Name());
+    m_kin_measured_js.Position().SetSize(number_of_joints_kinematics());
+    m_kin_measured_js.Velocity().SetSize(number_of_joints_kinematics());
+    m_kin_measured_js.Effort().SetSize(number_of_joints_kinematics());
+    m_kin_setpoint_js.Name().ForceAssign(m_kin_configuration_js.Name());
+    m_kin_setpoint_js.Position().SetSize(number_of_joints_kinematics());
+    m_kin_setpoint_js.Velocity().SetSize(0);
+    m_kin_setpoint_js.Effort().SetSize(number_of_joints_kinematics());
+    // jaw
+    m_jaw_measured_js.Name().ForceAssign(m_jaw_configuration_js.Name());
+    m_jaw_measured_js.Position().SetSize(1);
+    m_jaw_measured_js.Velocity().SetSize(1);
+    m_jaw_measured_js.Effort().SetSize(1);
+    m_jaw_setpoint_js.Name().ForceAssign(m_jaw_configuration_js.Name());
+    m_jaw_setpoint_js.Position().SetSize(1);
+    m_jaw_setpoint_js.Velocity().SetSize(0);
+    m_jaw_setpoint_js.Effort().SetSize(1);
 }
 
 void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
@@ -1405,14 +1409,15 @@ void mtsIntuitiveResearchKitPSM::set_tool_present_and_configured(const bool & pr
             // and no coupling
             m_has_coupling = false;
         }
-        // update for users
-        update_kin_configuration_js();
-        // update down to PID
-        update_pid_configuration_js();
-        PID.configure_js(m_pid_configuration_js);
-        // refresh data to take coupling into account
-        get_robot_data();
     }
+    // update for users
+    update_kin_configuration_js();
+    // update down to PID
+    update_pid_configuration_js();
+    PID.configure_js(m_pid_configuration_js);
+    // refresh data to take coupling into account
+    get_robot_data();
+
     // general update
     if (m_tool_present && m_tool_configured) {
         // we will need to engage this tool
