@@ -6,44 +6,44 @@
 
   <joints>
     <joint index="0" name="outer_yaw" type="Revolute">
-      <pid PGain="200.0" DGain="9.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+      <pid PGain="200.0" DGain="9.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" LowPassCutoff="1.0"/>
+      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Units="rad"/>
       <pos LowerLimit="-70.0" UpperLimit="70.0" Units="deg"/>
     </joint>
 
     <joint index="1" name="outer_pitch" type="Revolute">
-      <pid PGain="200.0" DGain="9.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+      <pid PGain="200.0" DGain="9.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" LowPassCutoff="1.0"/>
+      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Units="rad"/>
       <pos LowerLimit="-50.0" UpperLimit="50.0" Units="deg"/>
     </joint>
 
     <joint index="2" name="outer_insertion" type="Prismatic">
-      <pid PGain="8000.0" DGain="300.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+      <pid PGain="8000.0" DGain="300.0" IGain="0.0" OffsetTorque="0.0" Forget="1.0" LowPassCutoff="1.0"/>
+      <limit MinILimit="-20" MaxILimit="20" ErrorLimit="0.5" Units="rad"/>
       <pos LowerLimit="0.0" UpperLimit="235.0" Units="mm"/>
     </joint>
 
     <joint index="3" name="outer_roll" type="Revolute">
-      <pid PGain="6.0" DGain="0.09" IGain="0.002" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-10" MaxILimit="10" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+      <pid PGain="6.0" DGain="0.09" IGain="0.002" OffsetTorque="0.0" Forget="1.0" LowPassCutoff="1.0"/>
+      <limit MinILimit="-10" MaxILimit="10" ErrorLimit="0.5" Units="rad"/>
       <pos LowerLimit="-175.0" UpperLimit="175.0" Units="deg"/>
     </joint>
 
     <joint index="4" name="outer_wrist_pitch" type="Revolute">
-      <pid PGain="6.0" DGain="0.09" IGain="0.002" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+      <pid PGain="6.0" DGain="0.09" IGain="0.002" OffsetTorque="0.0" Forget="1.0" LowPassCutoff="1.0"/>
+      <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Units="rad"/>
       <pos LowerLimit="-175.0" UpperLimit="175.0" Units="deg"/>
     </joint>
 
     <joint index="5" name="outer_wrist_yaw" type="Revolute">
-      <pid PGain="6.0" DGain="0.09" IGain="0.002" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+      <pid PGain="6.0" DGain="0.09" IGain="0.002" OffsetTorque="0.0" Forget="1.0" LowPassCutoff="1.0"/>
+      <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Units="rad"/>
       <pos LowerLimit="-175.0" UpperLimit="175.0" Units="deg"/>
     </joint>
 
     <joint index="6" name="jaw" type="Revolute">
-      <pid PGain="6.0" DGain="0.09" IGain="0.002" OffsetTorque="0.0" Forget="1.0" Nonlinear="0.0"/>
-      <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Deadband="0.0" Units="rad"/>
+      <pid PGain="6.0" DGain="0.09" IGain="0.002" OffsetTorque="0.0" Forget="1.0" LowPassCutoff="1.0"/>
+      <limit MinILimit="-5" MaxILimit="5" ErrorLimit="0.5" Units="rad"/>
       <pos LowerLimit="-175.0" UpperLimit="175.0" Units="deg"/>
     </joint>
 

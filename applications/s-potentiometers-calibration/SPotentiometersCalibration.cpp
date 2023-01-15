@@ -32,6 +32,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/mtsRobot1394.h>
 #include <sawRobotIO1394/mtsDigitalInput1394.h>
 
+const double Missing = 33.333; // something high enough to never happen in SI units
+bool IsMissing(const double & value) {
+    // random 0.003 takes into account floating point error, specially
+    // when read from a file
+    return (value >= (Missing - 0.003));
+}
+
 using namespace sawRobotIO1394;
 
 int main(int argc, char * argv[])
@@ -51,9 +58,7 @@ int main(int argc, char * argv[])
                               cmnCommandLineOptions::OPTIONAL_OPTION, &savedData);
 
     std::string errorMessage;
-    if (!options.Parse(argc, argv, errorMessage)) {
-        std::cerr << "Error: " << errorMessage << std::endl;
-        options.PrintUsage(std::cerr);
+    if (!options.Parse(argc, argv, std::cerr)) {
         return -1;
     }
     std::string parsedArguments;
@@ -89,14 +94,16 @@ int main(int argc, char * argv[])
               << " - the E-Stop is closed, this program requires power." << std::endl
               << " - if you're using a PSM, make sure there is no instrument nor sterile adapter." << std::endl
               << " - you have no other program trying to communicate with the controller." << std::endl
-              << std::endl
-              << "Press any key to start." << std::endl;
-    cmnGetChar();
+              << std::endl;
+
+    if (collectData) {
+        std::cout << std::endl << "Press any key to start." << std::endl;
+        cmnGetChar();
+    }
 
     // create memory to store all data
     size_t nbAxis = nbActuators;
     const size_t potRange = 4096;
-    const double missing = std::numeric_limits<double>::max();
 
     vctDoubleMat potToEncoder;
     vctDoubleVec directionEncoder;
@@ -105,14 +112,21 @@ int main(int argc, char * argv[])
     vctDynamicVector<size_t> dataCounter;
 
     potToEncoder.SetSize(nbAxis, potRange);
-    potToEncoder.SetAll(missing);
+    potToEncoder.SetAll(Missing);
+
+    // human readable, works for PSM and ECM
+    std::vector<double> toh = {cmn180_PI, cmn180_PI, 1000.0, cmn180_PI, cmn180_PI, cmn180_PI, cmn180_PI};
 
     directionEncoder.SetSize(nbAxis, 1.0);
-    // PSM specific
-    directionEncoder.at(1) = -1.0;
-    directionEncoder.at(3) = -1.0;
-    directionEncoder.at(4) = -1.0;
-    directionEncoder.at(5) = -1.0;
+    if (nbActuators == 7) {
+        // PSM specific
+        directionEncoder.at(1) = -1.0;
+        directionEncoder.at(3) = -1.0;
+        directionEncoder.at(4) = -1.0;
+        directionEncoder.at(5) = -1.0;
+    } else if (nbActuators == 4) {
+
+    }
 
     minEncoder.SetSize(nbAxis);
     minEncoder.SetAll(std::numeric_limits<double>::max());
@@ -128,12 +142,14 @@ int main(int argc, char * argv[])
     Json::StreamWriterBuilder builder;
     builder["commentStyle"] = "None";
     builder["indentation"] = "  ";
-    builder["precision"] = 6;
+    builder["precision"] = 9;
     std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
 
     if (collectData) {
         std::cout << "Loading config file ..." << std::endl;
         mtsRobotIO1394 * port = new mtsRobotIO1394("io", 1.0 * cmn_ms, portName);
+        // to support cases when user doesn't have an existing lookup table
+        port->SetCalibrationMode(true);
         port->Configure(configFile);
 
         std::cout << "Creating robot ..." << std::endl;
@@ -179,6 +195,12 @@ int main(int argc, char * argv[])
                   << "Press any key to power brakes and start collecting data." << std::endl;
         cmnGetChar();
 
+        // set watchdog to a reasonable default
+        robot->SetWatchdogPeriod(30.0 * cmn_ms);
+
+        // make sure we reset the encoders to 0
+        robot->SetEncoderPosition(vctDoubleVec(nbAxis, 0.0));
+
         // turn off pots used to check encoders
         robot->UsePotsForSafetyCheck(false);
 
@@ -213,11 +235,16 @@ int main(int argc, char * argv[])
             return -1;
         }
 
-        std::cout << "Move every joint from limit to limit.  Press the arm clutch to release the brakes if needed" << std::endl
+        std::cout << std::endl
+                  << "Move every joint one by one from physical limit to pysical limit." << std::endl
+                  << "Press the arm clutch to release the brakes if needed (first 3 joints)." << std::endl
+                  << "The counters below will increase as you cover new positions." << std::endl
+                  << "The counters should reach values in the 3000s." << std::endl
                   << "Press any key to stop collecting data." << std::endl << std::endl;
 
         bool brakesReleased = false;
 
+        // data collection
         while (1) {
             if (cmnKbHit()) {
                 std::cout << std::endl;
@@ -245,7 +272,7 @@ int main(int argc, char * argv[])
             for (size_t axis = 0;
                  axis < nbAxis;
                  ++axis) {
-                if (potToEncoder.at(axis, potBits.at(axis)) == missing) {
+                if (IsMissing(potToEncoder.at(axis, potBits.at(axis)))) {
                     potToEncoder.at(axis, potBits[axis]) = directionEncoder.at(axis) * actuatorPos.at(axis);
                     dataCounter.at(axis)++;
                 }
@@ -268,14 +295,14 @@ int main(int argc, char * argv[])
         cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue);
         writer->write(jsonValue, &rawFile);
         rawFile.close();
-        std::cout << "Raw data saved to " << rawFileName << std::endl
+        std::cout << std::endl << "Raw data saved to " << rawFileName << std::endl
                   << "You can plot the data in python using:" << std::endl
                   << "import matplotlib.pyplot as plt" << std::endl
                   << "import json, sys" << std::endl
                   << "data = json.load(open('" << rawFileName << "'))" << std::endl
-                  << "data = [[(a if a != sys.float_info.max else 0) for a in row] for row in data]" << std::endl
+                  << "data = [[(a if a < 33.33 else 0) for a in row] for row in data]" << std::endl
                   << "plt.plot(data[0]) # or whatever axis index you need" << std::endl
-                  << "plt.show()" << std::endl;
+                  << "plt.show()" << std::endl << std::endl;
     }
     // using recorded data
     else {
@@ -303,18 +330,18 @@ int main(int argc, char * argv[])
          ++axis) {
         // start from first element
         std::list<std::pair<size_t, size_t> > encoderAreas;
-        bool previousHasEncoder = (potToEncoder.at(axis, 0) != missing);
+        bool previousHasEncoder = !IsMissing(potToEncoder.at(axis, 0));
         bool encoderStarted = previousHasEncoder;
         size_t encoderStart;
         if (encoderStarted) {
             encoderStart = 0;
         }
         // build list of consecutive areas of encoder values
-        std::cout << "Axis " << axis << ", found encoder values for ranges";
+        std::cout << "Axis[" << axis << "]: found encoder values for ranges";
         for (size_t index = 1;
              index < potRange;
              ++index) {
-            const bool hasEncoder = (potToEncoder.at(axis, index) != missing);
+            const bool hasEncoder = !IsMissing(potToEncoder.at(axis, index));
             // transitions
             if ((hasEncoder != previousHasEncoder)
                 || (index == (potRange - 1))) {
@@ -355,96 +382,103 @@ int main(int argc, char * argv[])
                     const double start = potToEncoder.at(axis, previous->second);
                     const double end = potToEncoder.at(axis, iter->first);
                     const size_t nbMissing = iter->first - previous->second - 1;
-                    std::cout << "Axis " << axis << ", found " << nbMissing << " missing consecutive pot value(s)" << std::endl;
+                    std::cout << "Axis[" << axis << "]: found " << nbMissing << " missing consecutive pot value(s)" << std::endl;
                     const double delta = (end - start) / nbMissing;
                     size_t counter = 1;
                     for (size_t index = previous->second + 1;
                          index < iter->first;
                          ++index, ++counter) {
+                        if (!IsMissing(potToEncoder.at(axis, index))) {
+                            std::cerr << "!!!! this shouldn't be happening" << std::endl;
+                        }
                         potToEncoder.at(axis, index) = start + counter * delta;
                     }
                     // concatenate lists of indices
                     iter->first = previous->first;
                     encoderAreas.erase(previous);
-                } else {
-                    // pad with constant values around the limits
-                    // pad after previous range
-                    double encoder = potToEncoder.at(axis, previous->second);
-                    for (size_t index = 1; index < 10; ++index) {
-                        potToEncoder.at(axis, (previous->second + index) % 4096) = encoder;
-                    }
-                    // pad before current range
-                    encoder = potToEncoder.at(axis, iter->first);
-                    for (size_t index = 1; index < 10; ++index) {
-                        potToEncoder.at(axis, (iter->first - index) % 4096) = encoder;
-                    }
                 }
                 previous = iter;
             }
         }
+
         // display final results
         for (auto iter : encoderAreas) {
-            std::cout << "Axis " << axis << ", using encoder for range [" << iter.first << ", " << iter.second << "]" << std::endl;
+            std::cout << "Axis[" << axis << "]: using encoder for range [" << iter.first
+                      << " (" << potToEncoder.at(axis, iter.first) * toh.at(axis)
+                      << "), " << iter.second << " ("
+                      << potToEncoder.at(axis, iter.second) * toh.at(axis)<< ")]" << std::endl;
         }
     }
 
-    // this is for a PSM.  We don't have the exact numbers but we have 3
-    // calibration files.  Ranges differ between arms but the midpoint
-    // is always the same.  Values are from jhu-dVRK-Si/cal-files 292409 586288 334809
     vctDoubleVec minEncoderExpected, maxEncoderExpected;
-    minEncoderExpected.SetSize(7);
-    maxEncoderExpected.SetSize(7);
-    minEncoderExpected.at(0) = (-2.9646 + -2.9668 + -2.9675) / 3.0;
-    maxEncoderExpected.at(0) = ( 2.9646 +  2.9668 +  2.9675) / 3.0;
-    minEncoderExpected.at(1) = (-1.2656 + -1.2661 + -1.2667) / 3.0;
-    maxEncoderExpected.at(1) = ( 1.3010 +  1.3015 +  1.3021) / 3.0;
-    // translation
-    minEncoderExpected.at(2) = (-0.00099057 + -0.00099124 + -0.0009907) / 3.0;
-    maxEncoderExpected.at(2) = ( 0.29035    +  0.29055    +  0.29039) / 3.0;
-    // last 4 elements
-    minEncoderExpected.at(3) = (-3.0346 + -3.0283 + -3.03) / 3.0;
-    maxEncoderExpected.at(3) = ( 3.0346 +  3.0283 +  3.03) / 3.0;
-    minEncoderExpected.at(4) = (-3.0358 + -3.0271 + -3.0271) / 3.0;
-    maxEncoderExpected.at(4) = ( 3.0358 +  3.0271 +  3.0271) / 3.0;
-    minEncoderExpected.at(5) = (-3.0350 + -3.0303 + -3.0294) / 3.0;
-    maxEncoderExpected.at(5) = ( 3.0350 +  3.0303 +  3.0294) / 3.0;
-    minEncoderExpected.at(6) = (-3.0378 + -3.03   + -3.0268) / 3.0;
-    maxEncoderExpected.at(6) = ( 3.0378 +  3.03   +  3.0268) / 3.0;
+    if (nbActuators == 7) {
+        // this is for a PSM.  We don't have the exact numbers but we have 3
+        // calibration files.  Ranges differ between arms but the midpoint
+        // is always the same.  Values are from jhu-dVRK-Si/cal-files 292409 586288 334809
+        minEncoderExpected.SetSize(7);
+        maxEncoderExpected.SetSize(7);
+        minEncoderExpected.at(0) = (-2.9646 + -2.9668 + -2.9675) / 3.0;
+        maxEncoderExpected.at(0) = ( 2.9646 +  2.9668 +  2.9675) / 3.0;
+        minEncoderExpected.at(1) = (-1.2656 + -1.2661 + -1.2667) / 3.0;
+        maxEncoderExpected.at(1) = ( 1.3010 +  1.3015 +  1.3021) / 3.0;
+        // translation
+        minEncoderExpected.at(2) = (-0.00099057 + -0.00099124 + -0.0009907) / 3.0;
+        maxEncoderExpected.at(2) = ( 0.29035    +  0.29055    +  0.29039) / 3.0;
+        // last 4 elements
+        minEncoderExpected.at(3) = (-3.0346 + -3.0283 + -3.03) / 3.0;
+        maxEncoderExpected.at(3) = ( 3.0346 +  3.0283 +  3.03) / 3.0;
+        minEncoderExpected.at(4) = (-3.0358 + -3.0271 + -3.0271) / 3.0;
+        maxEncoderExpected.at(4) = ( 3.0358 +  3.0271 +  3.0271) / 3.0;
+        minEncoderExpected.at(5) = (-3.0350 + -3.0303 + -3.0294) / 3.0;
+        maxEncoderExpected.at(5) = ( 3.0350 +  3.0303 +  3.0294) / 3.0;
+        minEncoderExpected.at(6) = (-3.0378 + -3.03   + -3.0268) / 3.0;
+        maxEncoderExpected.at(6) = ( 3.0378 +  3.03   +  3.0268) / 3.0;
+    } else if (nbActuators == 4) {
+        // this is for an ECM, using 267579 438610
+        minEncoderExpected.SetSize(4);
+        maxEncoderExpected.SetSize(4);
+        minEncoderExpected.at(0) = (-2.9657 + -2.968) / 2.0;
+        maxEncoderExpected.at(0) = ( 2.9657 +  2.968) / 2.0;
+        minEncoderExpected.at(1) = (-1.1253 + -1.1061) / 2.0;
+        maxEncoderExpected.at(1) = ( 1.0612 +  1.0431) / 2.0;
+        // translation
+        minEncoderExpected.at(2) = ( 0.001  +  0.001) / 2.0;
+        maxEncoderExpected.at(2) = ( 0.2595 +  0.25894) / 2.0;
+        // last 4 elements
+        minEncoderExpected.at(3) = (-1.5434 + -1.5414) / 2.0;
+        maxEncoderExpected.at(3) = ( 1.5434 +  1.5414) / 2.0;
+    }
 
     vctDoubleVec offsetEncoder(nbAxis, 0.0);
 
     for (size_t axis = 0;
          axis < nbAxis;
          ++axis) {
-        double toh = 1000.0; // human readable
-        if (axis != 2) {
-            toh = cmn180_PI;
-        }
-        std::cout << "Axis " << axis << std::endl
-                  << " - range: [" << minEncoder.at(axis) * toh
-                  << ", " << maxEncoder.at(axis) * toh << "] = "
-                  << (maxEncoder.at(axis) - minEncoder.at(axis)) * toh << std::endl;
+        std::cout << "Axis[" << axis
+                  << "]: range [" << minEncoder.at(axis) * toh.at(axis)
+                  << ", " << maxEncoder.at(axis) * toh.at(axis) << "] = "
+                  << (maxEncoder.at(axis) - minEncoder.at(axis)) * toh.at(axis) << std::endl;
         const double encoderRange = maxEncoder.at(axis) - minEncoder.at(axis);
         const double encoderRangeExpected =  maxEncoderExpected.at(axis) - minEncoderExpected.at(axis);
         if ((encoderRange < 0.95 * encoderRangeExpected)
             || (encoderRange > 1.05 * encoderRangeExpected)) {
-            std::cerr << "Axis " << axis
-                      << ", range for encoder values is not within 5% of what was expected.  Found "
-                      << encoderRange * toh << " but we were expecting "
-                      << encoderRangeExpected * toh << std::endl;
+            std::cerr << "Axis[" << axis
+                      << "]: range for encoder values is not within 5% of what was expected.  Found "
+                      << encoderRange * toh.at(axis) << " but we were expecting "
+                      << encoderRangeExpected * toh.at(axis) << std::endl;
             return -1;
         }
         // compute offset using mid point
         offsetEncoder.at(axis) = (minEncoderExpected.at(axis) + maxEncoderExpected.at(axis)) / 2.0
             - (minEncoder.at(axis) + maxEncoder.at(axis)) / 2.0;
-        std::cout << " - encoder offset: " << offsetEncoder.at(axis) * toh << std::endl;
+        std::cout << " - encoder offset: " << offsetEncoder.at(axis) * toh.at(axis) << std::endl;
         // add offset to recorded values and try to find the closest
         // to zero encoder value within pot range
         double zeroEncoder = std::numeric_limits<double>::max();
         for (size_t index = 0;
              index < potRange;
              ++index) {
-            const bool hasEncoder = (potToEncoder.at(axis, index) != missing);
+            const bool hasEncoder = !IsMissing(potToEncoder.at(axis, index));
             if (hasEncoder) {
                 // add offset
                 potToEncoder.at(axis, index) += offsetEncoder.at(axis);
@@ -458,7 +492,35 @@ int main(int argc, char * argv[])
             }
         }
         std::cout << " - zero pot index: " << zeroPotIndex.at(axis) << std::endl
-                  << " - zero encoder value: " << zeroEncoder * toh << std::endl;
+                  << " - zero encoder value: " << zeroEncoder * toh.at(axis) << std::endl;
+
+        // padding
+        bool previousValueIsMissing = IsMissing(potToEncoder(axis, 0));
+        const size_t paddingWidth = 30;
+        for (size_t index = 1;
+             index < potRange;
+             ++index) {
+            // two cases, from missing to set
+            bool currentValueIsMissing = IsMissing(potToEncoder(axis, index));
+            if (previousValueIsMissing && !currentValueIsMissing) {
+                const size_t startPadding = std::max(static_cast<size_t>(0), index - paddingWidth);
+                for (size_t indexPadding = startPadding;
+                     indexPadding < index;
+                     ++indexPadding) {
+                    potToEncoder.at(axis, indexPadding) = potToEncoder.at(axis, index);
+                }
+            } else if (!previousValueIsMissing && currentValueIsMissing) {
+                const size_t endPadding = std::min(potRange, index + paddingWidth);
+                for (size_t indexPadding = index;
+                     indexPadding < endPadding;
+                     ++indexPadding) {
+                    potToEncoder.at(axis, indexPadding) = potToEncoder.at(axis, index - 1);
+                }
+                // then skip forward
+                index = endPadding;
+            }
+            previousValueIsMissing = currentValueIsMissing;
+        }
     }
 
     // record the pot to encoder file

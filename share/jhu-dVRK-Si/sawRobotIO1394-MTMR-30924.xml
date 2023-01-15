@@ -1,4 +1,4 @@
-<Config Version="4">
+<Config Version="5">
    <Robot Name="MTMR" NumOfActuator="7" NumOfJoint="7" SN="30924">
       <Actuator ActuatorID="0" AxisID="0" BoardID="2" Type="Revolute">
          <Drive>
@@ -105,7 +105,7 @@
             <VoltsToPosSI Offset="-91.9206954809665" Scale="-41.19063604689957" Unit="deg" />
          </AnalogIn>
       </Actuator>
-      <Potentiometers Position="Joints">
+      <Potentiometers>
          <Tolerance Axis="0" Distance="5.00" Latency="0.01" Unit="deg" />
          <Tolerance Axis="1" Distance="5.00" Latency="0.01" Unit="deg" />
          <Tolerance Axis="2" Distance="5.00" Latency="0.01" Unit="deg" />
@@ -113,17 +113,15 @@
          <Tolerance Axis="4" Distance="5.00" Latency="0.01" Unit="deg" />
          <Tolerance Axis="5" Distance="5.00" Latency="0.01" Unit="deg" />
          <Tolerance Axis="6" Distance="0.00" Latency="0.00" Unit="deg" />
-      </Potentiometers>
-      <Coupling Value="1">
-         <ActuatorToJointPosition>
+         <JointToActuatorPosition>
             <Row Val="1.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000" />
             <Row Val="0.0000 1.0000 0.0000 0.0000 0.0000 0.0000 0.0000" />
-            <Row Val="0.0000 -1.0000 1.0000 0.0000 0.0000 0.0000 0.0000" />
-            <Row Val="0.0000 0.6697 -0.6697 1.0000 0.0000 0.0000 0.0000" />
+            <Row Val="0.0000 1.0000 1.0000 0.0000 0.0000 0.0000 0.0000" />
+            <Row Val="0.0000 0.0000 0.6697 1.0000 0.0000 0.0000 0.0000" />
             <Row Val="0.0000 0.0000 0.0000 0.0000 1.0000 0.0000 0.0000" />
             <Row Val="0.0000 0.0000 0.0000 0.0000 0.0000 1.0000 0.0000" />
             <Row Val="0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 1.0000" />
-         </ActuatorToJointPosition>
-      </Coupling>
+         </JointToActuatorPosition>
+      </Potentiometers>
    </Robot>
 </Config>

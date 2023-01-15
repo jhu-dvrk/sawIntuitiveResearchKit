@@ -25,11 +25,11 @@
             <Drive>
                 <AmpsToBits Offset="32768" Scale="4800.0000" />
                 <BitsToFeedbackAmps Offset="-6.8267" Scale=" 0.000208333" />
-                <NmToAmps Scale="0.1951029168" />
+                <NmToAmps Scale="0.0985173339" />
                 <MaxCurrent Unit="A" Value="3.400" />
             </Drive>
             <Encoder>
-                <BitsToPosSI Scale="-0.000051700367647" Unit="deg" />
+                <BitsToPosSI Scale="-0.000026106131407" Unit="deg" />
             </Encoder>
             <AnalogBrake AxisID="8" BoardID="6">
                 <AmpsToBits Offset="32768" Scale="16000.0" />
@@ -79,6 +79,7 @@
             <Tolerance Axis="3" Distance=" 4.00" Latency=" 0.01" Unit="deg" />
         </Potentiometers>
     </Robot>
-    <DigitalIn BitID="1" BoardID="6" Debounce="0.2" Name="ECM-SUJClutch2" Pressed="0" Trigger="all" />
     <DigitalIn BitID="4" BoardID="6" Debounce="0.2" Name="ECM-SUJClutch" Pressed="0" Trigger="all" />
+    <DigitalIn BitID="13" BoardID="6" Debounce="0.2" Name="ECM-ManipClutch" Pressed="0" Trigger="all" />
+    <DigitalIn BitID="16" BoardID="6" Debounce="0.2" Name="ECM-SUJClutch2" Pressed="0" Trigger="all" />
 </Config>

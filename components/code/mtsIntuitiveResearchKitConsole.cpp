@@ -1630,16 +1630,18 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         } else {
             // try to find default
             std::string defaultFile;
-            if ((armPointer->m_type == Arm::ARM_PSM) || (armPointer->m_type == Arm::ARM_PSM_DERIVED)) {
-                defaultFile = "pid/sawControllersPID-PSM.xml";
+            if ((armPointer->m_type == Arm::ARM_MTM) || (armPointer->m_type == Arm::ARM_MTM_DERIVED)) {
+                defaultFile = "pid/sawControllersPID-MTM.json";
+            } else if ((armPointer->m_type == Arm::ARM_PSM) || (armPointer->m_type == Arm::ARM_PSM_DERIVED)) {
+                defaultFile = "pid/sawControllersPID-PSM.json";
             } else if ((armPointer->m_type == Arm::ARM_PSM_Si) || (armPointer->m_type == Arm::ARM_PSM_Si_DERIVED)) {
-                defaultFile = "pid/sawControllersPID-PSM-Si.xml";
+                defaultFile = "pid/sawControllersPID-PSM-Si.json";
             } else if ((armPointer->m_type == Arm::ARM_ECM) || (armPointer->m_type == Arm::ARM_ECM_DERIVED)) {
-                defaultFile = "pid/sawControllersPID-ECM.xml";
+                defaultFile = "pid/sawControllersPID-ECM.json";
             } else if ((armPointer->m_type == Arm::ARM_ECM_Si) || (armPointer->m_type == Arm::ARM_ECM_Si_DERIVED)) {
-                defaultFile = "pid/sawControllersPID-ECM-Si.xml";
+                defaultFile = "pid/sawControllersPID-ECM-Si.json";
             } else {
-                defaultFile = "pid/sawControllersPID-" + armName + ".xml";
+                defaultFile = "pid/sawControllersPID-" + armName + ".json";
             }
             CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureArmJSON: can't find \"pid\" setting for arm \""
                                        << armName << "\", using default: \""

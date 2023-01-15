@@ -132,7 +132,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // Gripper IO
     GripperIOInterface = AddInterfaceRequired("GripperIO");
     if (GripperIOInterface) {
-        GripperIOInterface->AddFunction("GetAnalogInputPosSI", GripperIO.GetAnalogInputPosSI);
+        GripperIOInterface->AddFunction("pot/measured_js", GripperIO.pot_measured_js);
     }
 
     // Main interface should have been created by base class init
@@ -311,12 +311,12 @@ void mtsIntuitiveResearchKitMTM::CreateManipulator(void)
     }
 }
 
-bool mtsIntuitiveResearchKitMTM::IsHomed(void) const
+bool mtsIntuitiveResearchKitMTM::is_homed(void) const
 {
     return m_powered && m_encoders_biased;
 }
 
-void mtsIntuitiveResearchKitMTM::UnHome(void)
+void mtsIntuitiveResearchKitMTM::unhome(void)
 {
     // to force re-bias on pots
     m_re_home = true;
@@ -325,12 +325,12 @@ void mtsIntuitiveResearchKitMTM::UnHome(void)
     m_encoders_biased = false;
 }
 
-bool mtsIntuitiveResearchKitMTM::IsJointReady(void) const
+bool mtsIntuitiveResearchKitMTM::is_joint_ready(void) const
 {
     return m_powered && m_encoders_biased;
 }
 
-bool mtsIntuitiveResearchKitMTM::IsCartesianReady(void) const
+bool mtsIntuitiveResearchKitMTM::is_cartesian_ready(void) const
 {
     return m_powered && m_encoders_biased;
 }
@@ -357,12 +357,14 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
-    if (m_simulated || IsHomed()) {
-        if (m_simulated) {
-            // all encoders are biased, including roll
-            m_encoders_biased = true;
+    if (!m_calibration_mode) {
+        if (m_simulated || is_homed()) {
+            if (m_simulated) {
+                // all encoders are biased, including roll
+                m_encoders_biased = true;
+            }
+            return;
         }
-        return;
     }
 
     static const double maxTrackingError = 0.5 * cmnPI; // 1/4 turn
@@ -379,7 +381,7 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
                            mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
 
     // disable safety features so we can look for physical joint limit
-    PID.SetCheckPositionLimit(false);
+    PID.enforce_position_limits(false);
     PID.EnableTrackingError(false);
     // enable PID for roll only
     vctBoolVec enableJoints(number_of_joints());
@@ -393,9 +395,11 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 
 void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
 {
-    if (m_simulated || IsHomed()) {
-        mArmState.SetCurrentState("ROLL_CALIBRATED");
-        return;
+    if (!m_calibration_mode) {
+        if (m_simulated || is_homed()) {
+            mArmState.SetCurrentState("ROLL_CALIBRATED");
+            return;
+        }
     }
 
     static const double maxTrackingError = 1.0 * cmnPI; // 1/2 turn
@@ -462,7 +466,7 @@ void mtsIntuitiveResearchKitMTM::EnterResettingRollEncoder(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
-    if (m_simulated || IsHomed()) {
+    if (m_simulated || is_homed()) {
         mArmState.SetCurrentState("HOMING");
         return;
     }
@@ -510,18 +514,18 @@ void mtsIntuitiveResearchKitMTM::TransitionRollEncoderReset(void)
     }
 }
 
-void mtsIntuitiveResearchKitMTM::GetRobotData(void)
+void mtsIntuitiveResearchKitMTM::get_robot_data(void)
 {
-    mtsIntuitiveResearchKitArm::GetRobotData();
+    mtsIntuitiveResearchKitArm::get_robot_data();
 
     if (m_simulated) {
         return;
     }
 
     // get gripper based on analog inputs
-    mtsExecutionResult executionResult = GripperIO.GetAnalogInputPosSI(m_gripper_measured_js);
+    mtsExecutionResult executionResult = GripperIO.pot_measured_js(m_gripper_measured_js);
     if (!executionResult.IsOK()) {
-        CMN_LOG_CLASS_RUN_ERROR << GetName() << ": GetRobotData: call to GetAnalogInputPosSI failed \""
+        CMN_LOG_CLASS_RUN_ERROR << GetName() << ": get_robot_data: call to pot_measured_js failed \""
                                 << executionResult << "\"" << std::endl;
         return;
     }

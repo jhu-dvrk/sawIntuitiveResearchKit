@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -59,7 +59,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     }
 
     inline size_t number_of_joints_kinematics(void) const override {
-        return mSnakeLike ? 8 : 6;
+        return m_snake_like ? 8 : 6;
     }
 
     inline size_t number_of_brakes(void) const override {
@@ -83,36 +83,30 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal) override;
 
-    bool IsSafeForCartesianControl(void) const override;
+    bool is_safe_for_cartesian_control(void) const override;
 
 
     void Init(void) override;
 
-    bool IsHomed(void) const override;
-    void UnHome(void) override;
-    bool IsJointReady(void) const override;
-    bool IsCartesianReady(void) const override;
+    bool is_homed(void) const override;
+    void unhome(void) override;
+    bool is_joint_ready(void) const override;
+    bool is_cartesian_ready(void) const override;
 
     // state related methods
     void SetGoalHomingArm(void) override;
     void TransitionHomed(void); // for adapter/tool detection
 
     // methods used in change coupling/engaging
-    void RunChangingCoupling(void);
-    void UpdateConfigurationJointPID(const bool toolPresent);
+    void update_configuration_js_no_tool(prmConfigurationJoint & configuration_js);
+    void update_kin_configuration_js(void) override;
+    void update_pid_configuration_js(void) override;
 
     // engaging adapter
-    void EnterChangingCouplingAdapter(void);
-    inline void RunChangingCouplingAdapter(void) {
-        RunChangingCoupling();
-    }
     void EnterEngagingAdapter(void);
     void RunEngagingAdapter(void);
+
     // engaging tool
-    void EnterChangingCouplingTool(void);
-    inline void RunChangingCouplingTool(void) {
-        RunChangingCoupling();
-    }
     void EnterEngagingTool(void);
     void RunEngagingTool(void);
     void EnterToolEngaged(void);
@@ -122,19 +116,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void EnterManual(void);
     void EventHandlerAdapter(const prmEventButton & button);
 
-    /*! Set tool present.  This should only be used when the tool is
-      fully installed/configured. */
-    void set_tool_present(const bool & present);
+    /*! This should be called to set either m_tool_present or m_tool_configured. */
+    void set_tool_present_and_configured(const bool & present, const bool & configured);
 
     /*! Method called when adapter is detected. */
     void set_adapter_present(const bool & present);
-
-    /*! Emulate adapter present.  This is not likely to be used unless
-      you have a custom sterile adapter without contacts for
-      detection.  This will trigger the engage motion on the last 4
-      actuators, moving back and forth on the full range of
-      motion. */
-    void emulate_adapter_present(const bool & present);
 
     /*! Emulate tool present.  This can be used for custom instruments
       that don't have the Dallas chip installed.  This will trigger
@@ -155,9 +141,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void servo_jf_internal(const vctDoubleVec & newEffort) override;
 
     void control_move_jp_on_stop(const bool reached) override;
-
-    void EnableJointsEventHandler(const vctBoolVec & enable);
-    void CouplingEventHandler(const prmActuatorJointCoupling & coupling);
 
     /*! Event handlers for tools */
     //@{
@@ -204,21 +187,22 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     mtsToolList mToolList;
     size_t mToolIndex;
     mtsIntuitiveResearchKitToolTypes::Detection mToolDetection;
-    double mEngageDepth = mtsIntuitiveResearchKit::PSM::EngageDepthClassic; // use safer value by default
-    bool mToolConfigured = false;
-    bool mToolTypeRequested = false;
+    bool m_tool_present = false;
+    bool m_tool_configured = false;
+    bool m_tool_type_requested = false;
     struct {
         mtsFunctionWrite tool_type;
         mtsFunctionVoid tool_type_request;
     } ToolEvents;
 
     /*! 5mm tools with 8 joints */
-    bool mSnakeLike = false;
+    bool m_snake_like = false;
 
     robManipulator * ToolOffset = nullptr;
     vctFrm4x4 ToolOffsetTransformation;
 
     prmStateJoint m_jaw_measured_js, m_jaw_setpoint_js;
+    prmConfigurationJoint m_jaw_configuration_js;
     double m_jaw_servo_jp;
     double m_jaw_servo_jf;
 
@@ -226,19 +210,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     unsigned int EngagingStage; // 0 requested
     unsigned int LastEngagingStage;
 
-    struct {
-        bool Started;
-        std::string NextState;
-        bool CouplingForTool;
-        bool WaitingForEnabledJoints, ReceivedEnabledJoints;
-        vctBoolVec LastEnabledJoints, DesiredEnabledJoints;
-        bool WaitingForCoupling, ReceivedCoupling;
-        prmActuatorJointCoupling LastCoupling, DesiredCoupling, ToolCoupling;
-        vctDoubleVec ToolEngageLowerPosition, ToolEngageUpperPosition;
-        prmConfigurationJoint ToolConfiguration;
-        prmConfigurationJoint NoToolConfiguration;
-        prmConfigurationJoint jaw_configuration_js;
-    } CouplingChange;
+    vctDoubleVec m_tool_engage_lower_position,
+        m_tool_engage_upper_position;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitPSM);

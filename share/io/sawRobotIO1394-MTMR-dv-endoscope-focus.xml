@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Config Version="4">
+<Config Version="5">
   <!-- Digital Output Configuration -->
   <DigitalOut BitID="0" BoardID="2" Name="EndoscopeFocusIn"/>
   <DigitalOut BitID="1" BoardID="2" Name="EndoscopeFocusOut"/>

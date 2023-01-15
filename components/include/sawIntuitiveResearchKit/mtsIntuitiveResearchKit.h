@@ -50,8 +50,7 @@ namespace mtsIntuitiveResearchKit {
     // PSM constants
     namespace PSM {
         // distance in joint space for insertion
-        const double EngageDepthClassic = 40.0 * cmn_mm;
-        const double EngageDepthS = 10.0 * cmn_mm; // instrument shaft is about 40mm longer, so technically the tip is always outside the cannula.
+        const double EngageDepthCannula = 25.0 * cmn_mm; // approximative depth from cannula tip to RCM
 
         // distance for RCM in cartesian space for first joint at end of instrument's shaft
         const double SafeDistanceFromRCM = 45.0 * cmn_mm;

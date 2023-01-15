@@ -454,7 +454,7 @@ class SiECM(Robot):
         self.driveDirection = lambda index: [-1, 1, 1, 1][index]
         self.encoderDirection = lambda index: -self.driveDirection(index)
         self.encoderCPT = lambda index: [81920, 81920, 640, 64][index]
-        self.gearRatio = lambda index: [83.3333, 85.000, 2748.6, 300.2][index]
+        self.gearRatio = lambda index: [83.3333, 168.3333, 2748.6, 300.2][index]
         self.pitch = lambda index: [1, 1, -17.4533, 1][index]
         self.motorMaxCurrent = lambda index: [3.4, 3.4, 0.670, 0.590][index]
         self.motorTorque = lambda index: [0.0603, 0.0603, 0.0385, 0.0385][index]
@@ -529,8 +529,9 @@ class SiECM(Robot):
 
     def generateDigitalInputs(self):
         digitalInputBitIDs = [
-            (self.boardIDs[0], 1, "SUJClutch2", 0.2),
-            (self.boardIDs[0], 4, "SUJClutch", 0.2)
+            (self.boardIDs[0], 4, "SUJClutch", 0.2),
+            (self.boardIDs[0], 13, "ManipClutch", 0.2),
+            (self.boardIDs[0], 16, "SUJClutch2", 0.2)
         ]
 
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:

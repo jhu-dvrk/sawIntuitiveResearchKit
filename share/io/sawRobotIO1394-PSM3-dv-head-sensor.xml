@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Config Version="4">
+<Config Version="5">
   <!-- Digital Output Configuration -->
   <DigitalIn BitID="0" BoardID="10" Debounce="0.05" Name="HeadSensor1" Pressed="1" Trigger="all"/>
   <DigitalIn BitID="4" BoardID="10" Debounce="0.05" Name="HeadSensor2" Pressed="1" Trigger="all"/>
