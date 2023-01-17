@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<Config Version="4">
+<Config Version="5">
    <Robot Name="Focus" NumOfActuator="1" NumOfJoint="1" SN="28247">
       <Actuator ActuatorID="0" AxisID="3" BoardID="7" Type="Prismatic">
          <Drive>
