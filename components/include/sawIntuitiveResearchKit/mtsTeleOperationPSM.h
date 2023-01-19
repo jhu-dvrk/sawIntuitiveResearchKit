@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -22,6 +22,7 @@
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 #include <cisstParameterTypes/prmStateJoint.h>
@@ -102,6 +103,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 
     struct {
         mtsFunctionRead  measured_cp;
+        mtsFunctionRead  measured_cv;
         mtsFunctionRead  setpoint_cp;
         mtsFunctionWrite move_cp;
         mtsFunctionRead  gripper_measured_js;
@@ -115,8 +117,10 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 
         prmStateJoint m_gripper_measured_js;
         prmPositionCartesianGet m_measured_cp;
+        prmVelocityCartesianGet m_measured_cv;
         prmPositionCartesianGet m_setpoint_cp;
         prmPositionCartesianSet m_move_cp;
+        bool use_measured_cv = false;
         vctFrm4x4 CartesianInitial;
     } mMTM;
 

@@ -1416,6 +1416,7 @@ void mtsIntuitiveResearchKitArm::control_servo_cp(void)
 
         // compute desired arm position
         CartesianPositionFrm.From(m_servo_cp.Goal());
+        std::cerr << m_servo_cp.Velocity() << std::endl;
         if (this->InverseKinematics(jointSet, m_base_frame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
             // finally send new joint values
             servo_jp_internal(jointSet);
