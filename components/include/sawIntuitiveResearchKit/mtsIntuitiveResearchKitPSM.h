@@ -133,12 +133,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void EventHandlerManipClutch(const prmEventButton & button);
     void EventHandlerSUJClutch(const prmEventButton & button);
 
-    void jaw_servo_jp(const prmPositionJointSet & jawPosition);
-    void jaw_move_jp(const prmPositionJointSet & jawPosition);
-    void jaw_servo_jf(const prmForceTorqueJointSet & effort);
+    void jaw_servo_jp(const prmPositionJointSet & jp);
+    void jaw_move_jp(const prmPositionJointSet & jp);
+    void jaw_servo_jf(const prmForceTorqueJointSet & jf);
 
-    void servo_jp_internal(const vctDoubleVec & newPosition) override;
-    void servo_jf_internal(const vctDoubleVec & newEffort) override;
+    void servo_jp_internal(const vctDoubleVec & jp,
+                           const vctDoubleVec & jv) override;
+    void servo_jf_internal(const vctDoubleVec & jf) override;
 
     void control_move_jp_on_stop(const bool reached) override;
 

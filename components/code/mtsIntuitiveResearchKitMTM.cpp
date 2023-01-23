@@ -411,7 +411,7 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
                                       m_servo_jv,
                                       m_trajectory_j.goal,
                                       m_trajectory_j.goal_v);
-    servo_jp_internal(m_servo_jp);
+    servo_jp_internal(m_servo_jp, m_servo_jv);
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
 
@@ -590,7 +590,7 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
                                           m_servo_jv,
                                           m_trajectory_j.goal,
                                           m_trajectory_j.goal_v);
-        servo_jp_internal(m_servo_jp);
+        servo_jp_internal(m_servo_jp, m_servo_jv);
     } else {
         m_arm_interface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in control_servo_cf_orientation_locked");
     }

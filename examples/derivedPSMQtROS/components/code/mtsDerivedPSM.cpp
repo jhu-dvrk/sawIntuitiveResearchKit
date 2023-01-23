@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2017-08-09
 
-  (C) Copyright 2017-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2017-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -70,7 +70,7 @@ void mtsDerivedPSM::RunHomed(void)
             if (m_recently_activated) {
                 m_recently_activated = false;
                 // set initial PID position goal using current setpoint
-                servo_jp_internal(m_pid_measured_js.Position());
+                servo_jp_internal(m_pid_measured_js.Position(), vctDoubleVec());
                 // set default effort to 0.0
                 servo_jf_internal(vctDoubleVec(number_of_joints(), 0.0));
                 // set all joints in PID mode except 3rd one (translation)
