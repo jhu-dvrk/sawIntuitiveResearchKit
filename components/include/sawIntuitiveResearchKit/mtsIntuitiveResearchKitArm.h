@@ -168,23 +168,24 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     mtsStateTable mStateTableConfiguration;
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
-    virtual void servo_jp_internal(const vctDoubleVec & newPosition);
-    virtual void servo_jf_internal(const vctDoubleVec & newEffort);
+    virtual void servo_jp_internal(const vctDoubleVec & jp,
+                                   const vctDoubleVec & jv);
+    virtual void servo_jf_internal(const vctDoubleVec & jf);
     inline virtual void update_feed_forward(vctDoubleVec & CMN_UNUSED(feedForward)) {};
 
     /*! Methods used for commands */
     virtual void hold(void);
-    virtual void servo_jp(const prmPositionJointSet & newPosition);
+    virtual void servo_jp(const prmPositionJointSet & jp);
     virtual void servo_jr(const prmPositionJointSet & difference);
-    virtual void move_jp(const prmPositionJointSet & newPosition);
-    virtual void move_jr(const prmPositionJointSet & newPosition);
-    virtual void servo_cp(const prmPositionCartesianSet & newPosition);
+    virtual void move_jp(const prmPositionJointSet & jp);
+    virtual void move_jr(const prmPositionJointSet & jp);
+    virtual void servo_cp(const prmPositionCartesianSet & cp);
     virtual void servo_cr(const prmPositionCartesianSet & difference);
-    virtual void move_cp(const prmPositionCartesianSet & newPosition);
-    virtual void servo_jf(const prmForceTorqueJointSet & newEffort);
-    virtual void pid_feed_forward_servo_jf(const prmForceTorqueJointSet & newEffort);
-    virtual void spatial_servo_cf(const prmForceCartesianSet & newForce);
-    virtual void body_servo_cf(const prmForceCartesianSet & newForce);
+    virtual void move_cp(const prmPositionCartesianSet & cp);
+    virtual void servo_jf(const prmForceTorqueJointSet & jf);
+    virtual void pid_feed_forward_servo_jf(const prmForceTorqueJointSet & jf);
+    virtual void spatial_servo_cf(const prmForceCartesianSet & cf);
+    virtual void body_servo_cf(const prmForceCartesianSet & cf);
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
     virtual void body_set_cf_orientation_absolute(const bool & absolute);
     virtual void use_gravity_compensation(const bool & gravityCompensation);
@@ -342,7 +343,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         m_servo_jf; // number of joints for kinematics
     vctDoubleVec m_servo_jf_vector; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
-    nmrPInverseDynamicData mJacobianPInverseData;
+    nmrPInverseDynamicData
+        m_jacobian_pinverse_data,
+        m_jacobian_transpose_pinverse_data;
     prmForceCartesianGet m_body_measured_cf, m_spatial_measured_cf;
 
     // cartesian impendance controller
@@ -359,7 +362,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void gravity_compensation(vctDoubleVec & efforts);
 
     // Velocities
-    prmVelocityCartesianGet m_local_measured_cv, m_measured_cv;
+    prmVelocityCartesianGet
+        m_local_measured_cv, m_measured_cv,
+        m_local_setpoint_cv, m_setpoint_cv;
     vctFrm4x4 CartesianPositionFrm;
 
     // Base frame

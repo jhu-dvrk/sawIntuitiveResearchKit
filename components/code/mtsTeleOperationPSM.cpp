@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -102,6 +102,7 @@ void mtsTeleOperationPSM::Init(void)
     mPSM.m_jaw_servo_jp.Goal().SetSize(1);
 
     this->StateTable.AddData(mMTM.m_measured_cp, "MTM/measured_cp");
+    this->StateTable.AddData(mMTM.m_measured_cv, "MTM/measured_cv");
     this->StateTable.AddData(mMTM.m_setpoint_cp, "MTM/setpoint_cp");
     this->StateTable.AddData(mPSM.m_setpoint_cp, "PSM/setpoint_cp");
     this->StateTable.AddData(m_alignment_offset, "alignment_offset");
@@ -119,6 +120,7 @@ void mtsTeleOperationPSM::Init(void)
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MTM");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("measured_cp", mMTM.measured_cp);
+        interfaceRequired->AddFunction("measured_cv", mMTM.measured_cv, MTS_OPTIONAL);
         interfaceRequired->AddFunction("setpoint_cp", mMTM.setpoint_cp);
         interfaceRequired->AddFunction("move_cp", mMTM.move_cp);
         interfaceRequired->AddFunction("gripper/measured_js", mMTM.gripper_measured_js, MTS_OPTIONAL);
@@ -193,6 +195,9 @@ void mtsTeleOperationPSM::Init(void)
         mInterface->AddCommandReadState(this->StateTable,
                                         mMTM.m_measured_cp,
                                         "MTM/measured_cp");
+        mInterface->AddCommandReadState(this->StateTable,
+                                        mMTM.m_measured_cv,
+                                        "MTM/measured_cv");
         mInterface->AddCommandReadState(this->StateTable,
                                         mPSM.m_setpoint_cp,
                                         "PSM/setpoint_cp");
@@ -400,6 +405,14 @@ void mtsTeleOperationPSM::Startup(void)
             mInterface->SendError(this->GetName() + ": optional functions \"jaw/servo_jp\" and \"jaw/setpoint_js\" are not connected, setting \"ignore-jaw\" to true");
             m_jaw.ignore = true;
         }
+    }
+
+    // check if MTM has measured_cv
+    std::cerr << "------------------- " << CMN_LOG_DETAILS << "  we should add a config flag so users can use position only" << std::endl;
+    if (mMTM.measured_cv.IsValid()) {
+        mMTM.use_measured_cv = true;
+    } else {
+        mMTM.use_measured_cv = false;
     }
 }
 
@@ -644,6 +657,16 @@ void mtsTeleOperationPSM::RunAllStates(void)
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTM");
         mTeleopState.SetDesiredState("DISABLED");
     }
+    if (mMTM.use_measured_cv) {
+        executionResult = mMTM.measured_cv(mMTM.m_measured_cv);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.measured_cv failed \""
+                                    << executionResult << "\"" << std::endl;
+            mInterface->SendError(this->GetName() + ": unable to get cartesian velocity from MTM");
+            mTeleopState.SetDesiredState("DISABLED");
+        }
+    }
+
     executionResult = mMTM.setpoint_cp(mMTM.m_setpoint_cp);
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.setpoint_cp failed \""
@@ -969,8 +992,20 @@ void mtsTeleOperationPSM::RunEnabled(void)
                 mtmPosition.Rotation().ApplyInverseTo(psmCartesianGoal.Rotation(), m_alignment_offset);
             }
 
-            // PSM go this cartesian position
+            // PSM go this cartesian position -> m_servo_cp
             mPSM.m_servo_cp.Goal().FromNormalized(psmCartesianGoal);
+
+            // Add desired velocity if needed
+            if (mMTM.use_measured_cv) {
+                // linear is scaled and re-oriented
+                mPSM.m_servo_cp.Velocity() = m_scale * (m_registration_rotation * mMTM.m_measured_cv.VelocityLinear());
+                // angular is re-oriented, not scaled
+                mPSM.m_servo_cp.VelocityAngular() = m_registration_rotation * mMTM.m_measured_cv.VelocityAngular();
+            } else {
+                mPSM.m_servo_cp.Velocity().Assign(vct3(0));
+                mPSM.m_servo_cp.VelocityAngular().Assign(vct3(0));
+            }
+
             mPSM.servo_cp(mPSM.m_servo_cp);
 
             if (!m_jaw.ignore) {

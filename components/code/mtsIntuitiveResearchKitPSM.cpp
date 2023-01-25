@@ -431,6 +431,7 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
 
         // setpoint p/e
         m_kin_setpoint_js.Position().Assign(m_pid_setpoint_js.Position().Ref(number_of_joints_kinematics()));
+        m_kin_setpoint_js.Velocity().Assign(m_pid_setpoint_js.Velocity().Ref(number_of_joints_kinematics()));
         m_kin_setpoint_js.Effort().Assign(m_pid_setpoint_js.Effort().Ref(number_of_joints_kinematics()));
         m_kin_setpoint_js.Timestamp() = m_pid_setpoint_js.Timestamp();
         m_kin_setpoint_js.Valid() = m_pid_setpoint_js.Valid();
@@ -456,7 +457,7 @@ void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
         m_kin_setpoint_js.Position().Assign(m_pid_setpoint_js.Position(), 4);
         m_kin_setpoint_js.Position().at(4) = m_kin_setpoint_js.Position().at(7) = m_pid_setpoint_js.Position().at(4) / 2.0;
         m_kin_setpoint_js.Position().at(5) = m_kin_setpoint_js.Position().at(6) = m_pid_setpoint_js.Position().at(5) / 2.0;
-
+        std::cerr << CMN_LOG_DETAILS << " ------- need to add code to generate setpoint_js.Velocity " << std::endl;
         m_kin_setpoint_js.Effort().Assign(m_pid_measured_js.Effort(), 4);
         m_kin_setpoint_js.Effort().at(4) = m_kin_setpoint_js.Effort().at(7) = m_pid_setpoint_js.Effort().at(4) / 2.0;
         m_kin_setpoint_js.Effort().at(5) = m_kin_setpoint_js.Effort().at(6) = m_pid_setpoint_js.Effort().at(5) / 2.0;
@@ -966,7 +967,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         // tool/adapter gears should have little resistance?
         tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
         PID.SetTrackingErrorTolerance(tolerances);
-        servo_jp_internal(m_pid_setpoint_js.Position());
+        servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
         // turn on PID
         PID.EnableJoints(vctBoolVec(number_of_joints(), true));
         PID.EnableTrackingError(true);
@@ -993,7 +994,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
                                       m_servo_jv,
                                       m_trajectory_j.goal,
                                       m_trajectory_j.goal_v);
-    servo_jp_internal(m_servo_jp);
+    servo_jp_internal(m_servo_jp, m_servo_jv);
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
 
@@ -1072,7 +1073,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         // tool/adapter gears should have little resistance?
         tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
         PID.SetTrackingErrorTolerance(tolerances);
-        servo_jp_internal(m_pid_setpoint_js.Position());
+        servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
         // turn on PID
         PID.EnableJoints(vctBoolVec(number_of_joints(), true));
         PID.EnableTrackingError(true);
@@ -1111,7 +1112,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
                                       m_servo_jv,
                                       m_trajectory_j.goal,
                                       m_trajectory_j.goal_v);
-    servo_jp_internal(m_servo_jp);
+    servo_jp_internal(m_servo_jp, m_servo_jv);
 
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
@@ -1173,7 +1174,7 @@ void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
     m_kin_measured_js.Effort().SetSize(number_of_joints_kinematics());
     m_kin_setpoint_js.Name().ForceAssign(m_kin_configuration_js.Name());
     m_kin_setpoint_js.Position().SetSize(number_of_joints_kinematics());
-    m_kin_setpoint_js.Velocity().SetSize(0);
+    m_kin_setpoint_js.Velocity().SetSize(number_of_joints_kinematics());
     m_kin_setpoint_js.Effort().SetSize(number_of_joints_kinematics());
     // jaw
     m_jaw_measured_js.Name().ForceAssign(m_jaw_configuration_js.Name());
@@ -1270,19 +1271,33 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
     m_jaw_servo_jp = jawPosition.Goal().at(0);
 }
 
-void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & newPosition)
+void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
+                                                   const vctDoubleVec & jv)
 {
     if (!is_cartesian_ready()) {
-        mtsIntuitiveResearchKitArm::servo_jp_internal(newPosition);
+        mtsIntuitiveResearchKitArm::servo_jp_internal(jp, jv);
         return;
     }
     CMN_ASSERT(m_servo_jp_param.Goal().size() == 7);
-    m_servo_jp_param.Goal().Zeros();
-    ToJointsPID(newPosition, m_servo_jp_param.Goal());
+    // first 6 joints
+    ToJointsPID(jp, m_servo_jp_param.Goal());
+    // velocity - current code only support jaw_servo_jv if servo_jp has a velocity goal
+    const size_t jv_size = jv.size(); 
+    m_servo_jp_param.Velocity().SetSize(7);
+    if (jv_size != 0) {
+        ToJointsPID(jv, m_servo_jp_param.Velocity());
+    }
+    // add jaws - current code has velocity goal set to 0
     m_servo_jp_param.Goal().at(6) = m_jaw_servo_jp;
+    if (jv_size != 0) {
+        m_servo_jp_param.Velocity().at(6) = 0.0;
+    }
     m_servo_jp_param.SetTimestamp(StateTable.GetTic());
     if (m_has_coupling) {
         m_servo_jp_param.Goal() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Goal();
+        if (jv_size != 0) {
+            m_servo_jp_param.Velocity() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Velocity();
+        }
     }
     PID.servo_jp(m_servo_jp_param);
 }
