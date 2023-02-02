@@ -88,21 +88,7 @@ if (cisst_FOUND_AS_REQUIRED)
       # link against cisst libraries (and dependencies)
       cisst_target_link_libraries (sawIntuitiveResearchKitQtPID ${REQUIRED_CISST_LIBRARIES})
 
-      # main program used to test a single arm
-      add_executable (sawIntuitiveResearchKitQtArm mainQtArm.cpp)
-      set_target_properties (sawIntuitiveResearchKitQtArm PROPERTIES
-                             COMPONENT sawIntuitiveResearchKit-Applications
-                             FOLDER "sawIntuitiveResearchKit")
-      # link against non cisst libraries and cisst components
-      target_link_libraries (sawIntuitiveResearchKitQtArm
-                             ${sawIntuitiveResearchKit_LIBRARIES}
-                             ${sawRobotIO1394_LIBRARIES}
-                             ${sawControllers_LIBRARIES}
-                             ${sawTextToSpeech_LIBRARIES})
-      # link against cisst libraries (and dependencies)
-      cisst_target_link_libraries (sawIntuitiveResearchKitQtArm ${REQUIRED_CISST_LIBRARIES})
-
-      install (TARGETS sawIntuitiveResearchKitQtPID sawIntuitiveResearchKitQtArm
+      install (TARGETS sawIntuitiveResearchKitQtPID
                COMPONENT sawIntuitiveResearchKit-Applications
                RUNTIME DESTINATION bin
                LIBRARY DESTINATION lib
