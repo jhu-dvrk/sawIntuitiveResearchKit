@@ -475,7 +475,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
 
     if (armPSMOrDerived && (m_simulation == SIMULATION_NONE)) {
         std::vector<std::string> itfs = {"Adapter", "Tool", "ManipClutch", "Dallas"};
-        for (const auto itf : itfs) {
+        for (const auto & itf : itfs) {
             m_console->mConnections.Add(Name(), itf,
                                         IOComponentName(), Name() + "-" + itf);
         }
@@ -490,7 +490,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
     if ((armPSMOrDerived || armECMOrDerived)
         && (generation() == mtsIntuitiveResearchKitArm::GENERATION_Si)) {
         std::vector<std::string> itfs = {"SUJClutch", "SUJClutch2", "SUJBrake"};
-        for (const auto itf : itfs) {
+        for (const auto & itf : itfs) {
             m_console->mConnections.Add(Name(), itf,
                                         IOComponentName(), Name() + "-" + itf);
         }
