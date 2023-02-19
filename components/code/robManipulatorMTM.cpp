@@ -19,6 +19,9 @@
 #include <sawIntuitiveResearchKit/robManipulatorMTM.h>
 
 #include <cmath>
+#include <string>
+
+using namespace std::literals::string_literals;
 
 // coordinate system of MTM(R/L) link 0 is:
 //     z up, y away, x right
@@ -52,9 +55,9 @@
 //   6: wrist roll. zero is horizontal, positive is *clockwise* from the front
 
 // inverse of frame 4->7 transformation given above
-const vctRot3 robManipulatorMTM::rotation_78 = vctRot3(vctEulerYZXRotation3(cmnPI_2, 0, cmnPI_2));
+const vctRot3 robManipulatorMTM::rotation_78 = vctRot3(vctEulerYZXRotation3(cmnPI_2, 0.0, cmnPI_2));
 
-robManipulatorMTM::robManipulatorMTM(const std::vector<robKinematics *> linkParms,
+robManipulatorMTM::robManipulatorMTM(const std::vector<robKinematics*> linkParms,
                                      const vctFrame4x4<double> &Rtw0)
     : robManipulator(linkParms, Rtw0) {}
 
@@ -73,25 +76,21 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double>& q,
                                      double CMN_UNUSED(LAMBDA))
 {
     if (q.size() != links.size()) {
-        std::stringstream ss;
-        ss << "robManipulatorMTM::InverseKinematics: expected " << links.size()
-           << " joints values but received " << q.size();
-        mLastError = ss.str();
+        mLastError = "robManipulatorMTM::InverseKinematics: expected "s + std::to_string(links.size())
+            + " joints values but received "s + std::to_string(q.size());
         CMN_LOG_RUN_ERROR << mLastError << std::endl;
         return robManipulator::EFAILURE;
     }
 
     if (links.size() != 7) {
-        std::stringstream ss;
-        ss << "robManipulatorMTM::InverseKinematics: manipulator should have 7 links"
-           << " but received " << links.size();
-        mLastError = ss.str();
+        mLastError = "robManipulatorMTM::InverseKinematics: manipulator should have 7 links"s
+            + " but received "s + std::to_string(links.size());
         CMN_LOG_RUN_ERROR << mLastError << std::endl;
         return robManipulator::EFAILURE;
     }
 
     // take Rtw0 (world to frame 0) into account
-    vctFrm4x4 Rt07 = Rtw0.Inverse()*Rts;
+    vctFrm4x4 Rt07 = Rtw0.Inverse() * Rts;
 
     // shoulder and elbow entirely determine position, so we can solve
     // for first three joints separately
@@ -103,14 +102,14 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double>& q,
     // determine remaining transformation once shoulder/elbow are set
     q[3] = 0.0;
     vctFrm4x4 Rt04 = ForwardKinematics(q, 4);
-    vctFrm4x4 Rt47 = Rt04.Inverse()*Rt07;
+    vctFrm4x4 Rt47 = Rt04.Inverse() * Rt07;
 
     // optimized yaw of platform to maximize range of motion
     q[3] = ChoosePlatformYaw(vctRot3(Rt47.Rotation()));
 
     // once platform yaw has been chosen, need to re-compute 4->7 frame transformation
     Rt04 = ForwardKinematics(q, 4);
-    Rt47 = Rt04.Inverse()*Rt07;
+    Rt47 = Rt04.Inverse() * Rt07;
 
     // once platform yaw is set, wrist/gimbal IK is uniquely determined by
     // the remaining portion of the desired overall transformation
@@ -137,9 +136,9 @@ double robManipulatorMTM::SolveTriangleInteriorAngle(double side_a, double side_
 {
     // law of cosines: c^2 = a^2 + b^2 - 2ab*cos(gamma)
     // where triangle has sides a, b, c and gamma is the angle opposite side c
-    double numerator = side_a*side_a + side_b*side_b - side_c*side_c;
-    double denominator = 2*side_a*side_b;
-    double cos_gamma = numerator/denominator;
+    double numerator = side_a * side_a + side_b * side_b - side_c * side_c;
+    double denominator = 2 * side_a * side_b;
+    double cos_gamma = numerator / denominator;
     return std::acos(cos_gamma);
 }
 
@@ -149,8 +148,8 @@ vct3 robManipulatorMTM::ShoulderElbowIK(const vct3& position_07) const {
     const double shoulder_yaw = std::atan2(position_07.X(), -position_07.Y());
 
     const double shoulder_to_wrist_distance = position_07.Norm();
-    const double elbow_to_gimbal_angle = std::atan(forearm_to_gimbal_m/forearm_length_m);
-    const double elbow_to_gimbal_length = std::sqrt(forearm_to_gimbal_m*forearm_to_gimbal_m + forearm_length_m*forearm_length_m);
+    const double elbow_to_gimbal_angle = std::atan(forearm_to_gimbal_m / forearm_length_m);
+    const double elbow_to_gimbal_length = std::sqrt(forearm_to_gimbal_m * forearm_to_gimbal_m + forearm_length_m * forearm_length_m);
 
     // shoulder-elbow-wrist is a triangle with three known side lengths
     // so the shoulder-elbow-wrist angle is fully determined
@@ -161,7 +160,7 @@ vct3 robManipulatorMTM::ShoulderElbowIK(const vct3& position_07) const {
     const double elbow_pitch = (cmnPI - elbow_interior_angle) - cmnPI_2;
 
     // angle of ground-shoulder-wrist
-    const double alpha = std::acos(-position_07.Z()/shoulder_to_wrist_distance);
+    const double alpha = std::acos(-position_07.Z() / shoulder_to_wrist_distance);
     // angle of elbow-shoulder-wrist
     const double beta = SolveTriangleInteriorAngle(upper_arm_length_m, shoulder_to_wrist_distance, elbow_to_gimbal_length);
     // shoulder pitch is ground-shoulder-elbow angle
@@ -173,7 +172,7 @@ vct3 robManipulatorMTM::ShoulderElbowIK(const vct3& position_07) const {
 vct3 robManipulatorMTM::WristGimbalIK(const vctRot3& rotation_47) const
 {
     // Add virtual frame 8 to align frame 7 with frame 4
-    const vctRot3 rotation_48 = rotation_47*rotation_78;
+    const vctRot3 rotation_48 = rotation_47 * rotation_78;
 
     // decompose rotation from frame 4 to frame 8 into Euler angles,
     vctEulerZYXRotation3 euler_rotation_decomposition(rotation_48);
@@ -189,7 +188,7 @@ vct3 robManipulatorMTM::WristGimbalIK(const vctRot3& rotation_47) const
 double robManipulatorMTM::ChoosePlatformYaw(const vctRot3& rotation_47) const
 {
     // Add virtual frame 8 to align frame 7 with frame 4.
-    const vctRot3 rotation_48 = rotation_47*rotation_78;
+    const vctRot3 rotation_48 = rotation_47 * rotation_78;
 
     // We want platform yaw to account for as muchas possible of the
     // overall yaw rotation of the 4->7 transformation. This maximizes
@@ -204,10 +203,10 @@ double robManipulatorMTM::ChoosePlatformYaw(const vctRot3& rotation_47) const
     const double min = links[3].GetKinematics()->PositionMin();
 
     double best_value = yaw_angle;
-    double best_distance = 2*cmnPI;
+    double best_distance = 2 * cmnPI;
 
     for (int k = -1; k <= 1; k++) {
-        double value = yaw_angle + k*2*cmnPI;
+        double value = yaw_angle + k * 2 * cmnPI;
         if (value < min) {
             double distance = min - value;
             if (distance < best_distance) {
