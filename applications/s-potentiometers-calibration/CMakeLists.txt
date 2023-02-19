@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2022 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2022-2023 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -9,7 +9,8 @@
 #
 # --- end cisst license ---
 
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.10)
+project (sawIntuitiveResearchKitSPotentiometersCalibration VERSION 2.1.0)
 
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES cisstCommon
@@ -52,6 +53,13 @@ if (cisst_FOUND_AS_REQUIRED)
 
     # link against cisst libraries (and dependencies)
     cisst_target_link_libraries (sawIntuitiveResearchKitSPotentiometersCalibration ${REQUIRED_CISST_LIBRARIES})
+
+    install (
+      TARGETS sawIntuitiveResearchKitSPotentiometersCalibration
+      COMPONENT sawIntuitiveResearchKit-Applications
+      RUNTIME DESTINATION bin
+      LIBRARY DESTINATION lib
+      ARCHIVE DESTINATION lib)
 
   endif () # components found
 
