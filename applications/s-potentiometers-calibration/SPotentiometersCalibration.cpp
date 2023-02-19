@@ -32,13 +32,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/mtsRobot1394.h>
 #include <sawRobotIO1394/mtsDigitalInput1394.h>
 
-const double Missing = 33.333; // something high enough to never happen in SI units
-bool IsMissing(const double & value) {
-    // random 0.003 takes into account floating point error, specially
-    // when read from a file
-    return (value >= (Missing - 0.003));
-}
-
 using namespace sawRobotIO1394;
 
 int main(int argc, char * argv[])
@@ -112,7 +105,7 @@ int main(int argc, char * argv[])
     vctDynamicVector<size_t> dataCounter;
 
     potToEncoder.SetSize(nbAxis, potRange);
-    potToEncoder.SetAll(Missing);
+    potToEncoder.SetAll(mtsRobot1394::GetMissingPotValue());
 
     // human readable, works for PSM and ECM
     std::vector<double> toh = {cmn180_PI, cmn180_PI, 1000.0, cmn180_PI, cmn180_PI, cmn180_PI, cmn180_PI};
@@ -274,7 +267,7 @@ int main(int argc, char * argv[])
             for (size_t axis = 0;
                  axis < nbAxis;
                  ++axis) {
-                if (IsMissing(potToEncoder.at(axis, potBits.at(axis)))) {
+                if (mtsRobot1394::IsMissingPotValue(potToEncoder.at(axis, potBits.at(axis)))) {
                     potToEncoder.at(axis, potBits[axis]) = directionEncoder.at(axis) * actuatorPos.at(axis);
                     dataCounter.at(axis)++;
                 }
@@ -302,7 +295,7 @@ int main(int argc, char * argv[])
                   << "import matplotlib.pyplot as plt" << std::endl
                   << "import json, sys" << std::endl
                   << "data = json.load(open('" << rawFileName << "'))" << std::endl
-                  << "data = [[(a if a < 33.33 else 0) for a in row] for row in data]" << std::endl
+                  << "data = [[(a if a < 31.0 else 0) for a in row] for row in data]" << std::endl
                   << "plt.plot(data[0]) # or whatever axis index you need" << std::endl
                   << "plt.show()" << std::endl << std::endl;
     }
@@ -332,7 +325,7 @@ int main(int argc, char * argv[])
          ++axis) {
         // start from first element
         std::list<std::pair<size_t, size_t> > encoderAreas;
-        bool previousHasEncoder = !IsMissing(potToEncoder.at(axis, 0));
+        bool previousHasEncoder = !mtsRobot1394::IsMissingPotValue(potToEncoder.at(axis, 0));
         bool encoderStarted = previousHasEncoder;
         size_t encoderStart;
         if (encoderStarted) {
@@ -343,7 +336,7 @@ int main(int argc, char * argv[])
         for (size_t index = 1;
              index < potRange;
              ++index) {
-            const bool hasEncoder = !IsMissing(potToEncoder.at(axis, index));
+            const bool hasEncoder = !mtsRobot1394::IsMissingPotValue(potToEncoder.at(axis, index));
             // transitions
             if ((hasEncoder != previousHasEncoder)
                 || (index == (potRange - 1))) {
@@ -390,7 +383,7 @@ int main(int argc, char * argv[])
                     for (size_t index = previous->second + 1;
                          index < iter->first;
                          ++index, ++counter) {
-                        if (!IsMissing(potToEncoder.at(axis, index))) {
+                        if (!mtsRobot1394::IsMissingPotValue(potToEncoder.at(axis, index))) {
                             std::cerr << "!!!! this shouldn't be happening" << std::endl;
                         }
                         potToEncoder.at(axis, index) = start + counter * delta;
@@ -480,7 +473,7 @@ int main(int argc, char * argv[])
         for (size_t index = 0;
              index < potRange;
              ++index) {
-            const bool hasEncoder = !IsMissing(potToEncoder.at(axis, index));
+            const bool hasEncoder = !mtsRobot1394::IsMissingPotValue(potToEncoder.at(axis, index));
             if (hasEncoder) {
                 // add offset
                 potToEncoder.at(axis, index) += offsetEncoder.at(axis);
@@ -497,13 +490,13 @@ int main(int argc, char * argv[])
                   << " - zero encoder value: " << zeroEncoder * toh.at(axis) << std::endl;
 
         // padding
-        bool previousValueIsMissing = IsMissing(potToEncoder(axis, 0));
+        bool previousValueIsMissing = mtsRobot1394::IsMissingPotValue(potToEncoder(axis, 0));
         const size_t paddingWidth = 30;
         for (size_t index = 1;
              index < potRange;
              ++index) {
             // two cases, from missing to set
-            bool currentValueIsMissing = IsMissing(potToEncoder(axis, index));
+            bool currentValueIsMissing = mtsRobot1394::IsMissingPotValue(potToEncoder(axis, index));
             if (previousValueIsMissing && !currentValueIsMissing) {
                 const size_t startPadding = std::max(static_cast<size_t>(0), index - paddingWidth);
                 for (size_t indexPadding = startPadding;
