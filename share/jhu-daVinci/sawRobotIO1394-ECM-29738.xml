@@ -1,5 +1,5 @@
 <Config Version="5">
-   <Robot Name="ECM" NumOfActuator="4" NumOfJoint="4" SN="29738">
+   <Robot Name="ECM" ControllerType="QLA1" NumOfActuator="4" NumOfJoint="4" SN="29738">
       <Actuator ActuatorID="0" AxisID="0" BoardID="4" Type="Revolute">
          <Drive>
             <AmpsToBits Offset="33190" Scale="5242.88" />
