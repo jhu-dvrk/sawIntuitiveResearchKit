@@ -1218,7 +1218,10 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
         m_arm_interface->SendStatus(this->GetName() + ": simulated mode, no need to calibrate encoders");
         return;
     }
-    if (m_encoders_biased_from_pots && !m_calibration_mode) {
+    // for Si, always calibrate from pot
+    if (m_encoders_biased_from_pots
+        && !m_calibration_mode
+        && (m_generation == GENERATION_CLASSIC)) {
         m_arm_interface->SendStatus(this->GetName() + ": encoders have already been calibrated, skipping");
         return;
     }
@@ -1226,7 +1229,9 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
     // request bias encoder
     const double currentTime = this->StateTable.GetTic();
     const int nb_samples = 1970; // birth year, state table contains 1999 elements so anything under that would work
-    if (m_re_home || m_calibration_mode) {
+    if (m_re_home
+        || m_calibration_mode
+        || (m_generation == GENERATION_Si)) {
         // positive number to ignore encoder preloads
         IO.BiasEncoder(nb_samples);
     } else {
@@ -1258,8 +1263,10 @@ void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
 
-    // use pots for redundancy when not in calibration mode
-    if (m_calibration_mode) {
+    // use pots for redundancy when not in calibration mode and always
+    // for the Si
+    if (m_calibration_mode
+        && (m_generation == GENERATION_CLASSIC)) {
         IO.UsePotsForSafetyCheck(false);
     } else {
         IO.UsePotsForSafetyCheck(true);

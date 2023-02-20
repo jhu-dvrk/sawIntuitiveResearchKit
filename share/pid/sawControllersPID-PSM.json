@@ -14,7 +14,7 @@
 	    "name": "outer_pitch",
 	    "type": 2,
 	    "p_gain": 200.0,
-	    "d_gain": 12.0,
+	    "d_gain": 8.0,
 	    "i_gain": 0.0
 	}
 	,

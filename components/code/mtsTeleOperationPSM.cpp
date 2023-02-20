@@ -915,6 +915,10 @@ void mtsTeleOperationPSM::EnterEnabled(void)
         m_jaw_caught_up_after_clutch = false;
         // gripper ghost
         mPSM.jaw_setpoint_js(mPSM.m_jaw_setpoint_js);
+        if (mPSM.m_jaw_setpoint_js.Position().size() != 1) {
+            mInterface->SendWarning(this->GetName() + ": unable to get jaw position.  Make sure there is an instrument on the PSM");
+            mTeleopState.SetDesiredState("DISABLE");
+        }
         double currentJaw = mPSM.m_jaw_setpoint_js.Position()[0];
         m_gripper_ghost = JawToGripper(currentJaw);
     }

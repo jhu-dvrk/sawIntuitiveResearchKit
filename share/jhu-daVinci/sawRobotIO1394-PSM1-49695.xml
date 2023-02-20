@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <Config Version="5">
-   <Robot Name="PSM1" NumOfActuator="7" NumOfJoint="7" SN="49695">
+   <Robot Name="PSM1" ControllerType="QLA1" NumOfActuator="7" NumOfJoint="7" SN="49695">
       <Actuator ActuatorID="0" AxisID="0" BoardID="6" Type="Revolute">
          <Drive>
             <AmpsToBits Offset="33087" Scale="-5242.88"/>
