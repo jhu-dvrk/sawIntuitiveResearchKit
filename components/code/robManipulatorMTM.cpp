@@ -18,6 +18,7 @@
 
 #include <sawIntuitiveResearchKit/robManipulatorMTM.h>
 
+#include <array>
 #include <cmath>
 #include <string>
 
@@ -132,7 +133,7 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double>& q,
 }
 
 // solve for triangle's interior angle opposite from side c
-double robManipulatorMTM::SolveTriangleInteriorAngle(double side_a, double side_b, double side_c) const
+double robManipulatorMTM::SolveTriangleInteriorAngle(double side_a, double side_b, double side_c)
 {
     // law of cosines: c^2 = a^2 + b^2 - 2ab*cos(gamma)
     // where triangle has sides a, b, c and gamma is the angle opposite side c
@@ -178,11 +179,54 @@ vct3 robManipulatorMTM::WristGimbalIK(const vctRot3& rotation_47) const
     vctEulerZYXRotation3 euler_rotation_decomposition(rotation_48);
 
     // alignment of frame 4 means pitch/yaw/roll are Z/Y/X rotations
-    const double wrist_pitch = euler_rotation_decomposition.alpha();
-    const double wrist_yaw = euler_rotation_decomposition.beta();
-    const double wrist_roll = -euler_rotation_decomposition.gamma();
+    // roll joint axis is negative of frame's x axis
+    const double raw_wrist_pitch = euler_rotation_decomposition.alpha();
+    const double raw_wrist_yaw = euler_rotation_decomposition.beta();
+    const double raw_wrist_roll = -euler_rotation_decomposition.gamma();
+
+    const double wrist_pitch = ClosestAngleToJointRange(raw_wrist_pitch, 2 * cmnPI, links[4].PositionMin(), links[4].PositionMax());
+    const double wrist_yaw = ClosestAngleToJointRange(raw_wrist_yaw, 2 * cmnPI, links[5].PositionMin(), links[5].PositionMax());
+    const double wrist_roll = ClosestAngleToJointRange(raw_wrist_roll, 2 * cmnPI, links[6].PositionMin(), links[6].PositionMax());
 
     return vct3(wrist_pitch, wrist_yaw, wrist_roll);
+}
+
+double robManipulatorMTM::AngleMagnitude(double value)
+{
+    // get angle in range [-PI, +PI] (both endpoints are possible)
+    const double normalized_angle = std::remainder(value, 2 * cmnPI);
+    return std::fabs(normalized_angle);
+}
+
+double robManipulatorMTM::ClosestAngleToJointRange(
+    double angle, double modulus, double min, double max
+)
+{
+    const double normalized = std::remainder(angle, 2 * cmnPI);
+    double best_value = normalized;
+    double best_error = modulus;
+
+    for (int k = -1; k <= 1; k++) {
+        double value = normalized + k * modulus;
+        if (value < min) {
+            double error = min - value;
+            if (error < best_error) {
+                best_error = error;
+                best_value = min;
+            }
+        } else if (value > max) {
+            double error = value - max;
+            if (error < best_error) {
+                best_error = error;
+                best_value = max;
+            }
+        } else {
+            best_value = value;
+            best_error = 0.0;
+        }
+    }
+
+    return best_value;
 }
 
 double robManipulatorMTM::ChoosePlatformYaw(const vctRot3& rotation_47) const
@@ -195,35 +239,19 @@ double robManipulatorMTM::ChoosePlatformYaw(const vctRot3& rotation_47) const
     // overall range of motion by minimizing the rotation required
     // from the remaining joints.
     vctEulerYZXRotation3 yaw_decomposition(rotation_48);
-    const double yaw_angle = yaw_decomposition.alpha();
 
     // Find yaw (mod 2PI) that is within joint limits,
     // or find closest joint limit (mod 2PI).
-    const double max = links[3].GetKinematics()->PositionMax();
-    const double min = links[3].GetKinematics()->PositionMin();
+    const double max = links[3].PositionMax();
+    const double min = links[3].PositionMin();
 
-    double best_value = yaw_angle;
-    double best_distance = 2 * cmnPI;
-
-    for (int k = -1; k <= 1; k++) {
-        double value = yaw_angle + k * 2 * cmnPI;
-        if (value < min) {
-            double distance = min - value;
-            if (distance < best_distance) {
-                best_distance = distance;
-                best_value = min;
-            }
-        } else if (value > max) {
-            double distance = value - max;
-            if (distance < best_distance) {
-                best_distance = distance;
-                best_value = max;
-            }
-        } else {
-            best_value = value;
-            best_distance = 0.0;
-        }
+    const double yaw = ClosestAngleToJointRange(yaw_decomposition.alpha(), 2 * cmnPI, min, max);
+    
+    if (yaw < min) {
+        return min;
+    } else if (yaw > max) {
+        return max;
+    } else {
+        return yaw;
     }
-
-    return best_value;
 }

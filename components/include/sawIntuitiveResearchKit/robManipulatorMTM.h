@@ -59,7 +59,9 @@ private:
     // allowed (absolute) tolerance when enforcing joint limits
     static constexpr double joint_limit_tolerance = 1e-5;
 
-    double SolveTriangleInteriorAngle(double side_a, double side_b, double side_c) const;
+    static double SolveTriangleInteriorAngle(double side_a, double side_b, double side_c);
+    static double AngleMagnitude(double value);
+    static double ClosestAngleToJointRange(double angle, double modulus, double min, double max);
 
     double ChoosePlatformYaw(const vctRot3& rotation_47) const;
 
