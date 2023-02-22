@@ -38,7 +38,7 @@
 	    "name": "wrist_platform",
 	    "type": 2,
 	    "p_gain": 3.0,
-	    "d_gain": 0.5,
+	    "d_gain": 0.35,
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
 	    "i_limit": 0.0
