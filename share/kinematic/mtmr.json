@@ -10,8 +10,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset":  -1.5708,
-                "qmin": -1.13446,  // -65
-                "qmax":  0.698132, //  40.0
+                "qmin": -1.13446,  // -65   - manual says -1.277 but we can't reach that far 
+                "qmax":  0.698132, //  40.0 - manual says 0.783 but we can't reach that far
                 "ftmax": 1.86082986
             },
             { // 2
@@ -20,8 +20,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset": -1.5708,
-                "qmin": -0.261799, // -15.0
-                "qmax":  0.872665, //  50.0
+                "qmin": -0.261799, // -15.0 - manual says -0.352 but we can't reach that far
+                "qmax":  1.13446, //  65.0 - manual says 1.1633 ~66.65, we're rounding down
                 "ftmax": 3.21661506
             },
             { // 3
@@ -30,8 +30,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset":  1.5708,
-                "qmin": -0.872665, // -50.0
-                "qmax":  0.610865, //  35.0
+                "qmin": -0.872665, // -35.0 - manual says -0.2416 ~-13.84 but we can go further
+                "qmax":  0.610865, //  48.0 - manual says 0.73519 ~42.1 but we can go further
                 "ftmax":  1.95978284
             },
             { // 4
@@ -40,8 +40,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset":  0.0000,
-                "qmin": -1.22173, // -70.0
-                "qmax":  4.01426, //  230.0
+                "qmin": -1.6580, // -95.0 - manual says 1.6799 ~96.25, we're rounding down
+                "qmax":  3.5779, //  205.0 - manual says 3.5997 ~206.2, we're rounding down
                 "ftmax": 0.30901338
             },
             { // 5
@@ -50,8 +50,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset":  0.0000,
-                "qmin": -1.5708,  // -90.0
-                "qmax":  3.14159, //  180.0
+                "qmin": -1.6580, // -95.0 - manual says -1.7055 ~-97.7 but we can't reach that far
+                "qmax":  3.2288, //  185.0 - manual says 3.2763 ~187.7, we're rounding down
                 "ftmax": 0.09684378
             },
             { // 6
@@ -60,8 +60,8 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset": -1.5708,
-                "qmin": -0.785398, // -45.0
-                "qmax":  0.785398, //  45.0
+                "qmin": -0.785398, // -45.0 - manual says -0.8194 ~-46.95 but we can't reach that far
+                "qmax":  0.785398, //  45.0 - see above
                 "ftmax": 0.09684378
             },
             { // 7
