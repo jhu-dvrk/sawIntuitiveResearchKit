@@ -233,19 +233,16 @@ double robManipulatorMTM::ChoosePlatformYaw(const vctRot3& rotation_47) const
 {
     // Add virtual frame 8 to align frame 7 with frame 4.
     const vctRot3 rotation_48 = rotation_47 * rotation_78;
+    auto x_axis = rotation_48*vct3(1.0, 0.0, 0.0);
 
-    // We want platform yaw to account for as muchas possible of the
-    // overall yaw rotation of the 4->7 transformation. This maximizes
-    // overall range of motion by minimizing the rotation required
-    // from the remaining joints.
-    vctEulerYZXRotation3 yaw_decomposition(rotation_48);
+    const double raw_yaw = std::cos(x_axis.Y())*std::atan2(x_axis.X(), x_axis.Z()) - cmnPI_2;
 
     // Find yaw (mod 2PI) that is within joint limits,
     // or find closest joint limit (mod 2PI).
     const double max = links[3].PositionMax();
     const double min = links[3].PositionMin();
 
-    const double yaw = ClosestAngleToJointRange(yaw_decomposition.alpha(), 2 * cmnPI, min, max);
+    const double yaw = ClosestAngleToJointRange(raw_yaw, 2 * cmnPI, min, max);
     
     if (yaw < min) {
         return min;
