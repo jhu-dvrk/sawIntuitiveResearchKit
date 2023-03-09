@@ -1,0 +1,68 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    // see dVRK user guide
+    "DH": {
+        "convention": "modified",
+        "joints": [
+            {
+                "name": "outer_roll",
+                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4670,
+                "type": "revolute",
+                "mode": "active",
+                "offset":  0.0000,
+                "qmin": -4.53786, // -260 degrees
+                "qmax":  4.53786, //  260 degrees
+                "ftmax": 0.33
+            },
+            {
+                "name": "outer_wrist_pitch",
+                "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset": -1.5708,
+                "qmin": -1.39626, // -80 degrees
+                "qmax":  1.39626, //  80 degrees
+                "ftmax": 0.25
+            },
+            {
+                "name": "outer_wrist_yaw",
+                "alpha": -1.5708, "A":  0.0091, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset": -1.5708,
+                "qmin": -1.39626, // -80 degrees
+                "qmax":  1.39626, //  80 degrees
+                "ftmax": 0.20
+            }
+        ]
+    }
+    ,
+    "jaw" : {
+        // for last joint, manual says [0, 30] but we need -20 to allow stronger torque, 80 to open wide
+        "qmin": -0.349066, // -20 degrees
+        "qmax":  1.39626,  //  80 degrees
+        "ftmax": 0.16
+    }
+    ,
+    // rotation to match ISI convention (for read-only research API on commercial da Vinci)
+    "tooltip-offset" : [[ 0.0, -1.0,  0.0,  0.0],
+                        [ 0.0,  0.0,  1.0,  0.0],
+                        [-1.0,  0.0,  0.0,  0.0],
+                        [ 0.0,  0.0,  0.0,  1.0]]
+    ,
+    // values from the dVRK user guide, see tool appendix C
+    "coupling" : {
+        "ActuatorToJointPosition" : [[ -1.5632,  0.0000,  0.0000,  0.0000],
+                                     [  0.0000,  1.0186,  0.0000,  0.0000],
+                                     [  0.0000, -0.8306,  0.6089,  0.6089],
+                                     [  0.0000,  0.0000, -1.2177,  1.2177]]
+    }
+    ,
+    // angles used to engage the tool, in radians
+    // make sure these are within the range of motion IN the cannula
+    // 263, 15, 15, 0 degrees
+    "tool-engage-position" : {
+        "lower" : [-4.59022, -0.261799, -0.261799, 0.0],
+        "upper" : [ 4.59022,  0.261799,  0.261799, 0.0]
+    }
+}
