@@ -10,6 +10,14 @@
     "instruments": [
         // Classic instruments
         {
+            "model": "400001",
+            "names": ["POTTS_SCISSORS"],
+            "description": "Potts Scissors",
+            "generation": "Classic",
+            "file": "POTTS_SCISSORS_400001.json"
+        }
+        ,
+        {
             "model": "400003",
             "names": ["SMALL_CLIP_APPLIER"],
             "description": "Small Clip Applier",
@@ -31,6 +39,14 @@
             "description": "Micro Forceps",
             "generation": "Classic",
             "file": "MICRO_FORCEPS_400033.json"
+        }
+        ,
+        {
+            "model": "400035",
+            "names": ["ROUND_TOOTH_FORCEPS"],
+            "description": "Round Tooth Forceps",
+            "generation": "Classic",
+            "file": "ROUND_TOOTH_FORCEPS_400035.json"
         }
         ,
         {
@@ -74,6 +90,14 @@
         }
         ,
         {
+            "model": "400127",
+            "names": ["BOWEL_GRASPER"],
+            "description": "Bowel Grasper",
+            "generation": "Classic",
+            "file": "BOWEL_GRASPER_400127.json"
+        }
+        ,
+        {
             "model": "400143",
             "names": ["MARYLAND_DISSECTOR", "5MM_MARYLAND_DISSECTOR"],
             "description": "5mm Maryland Dissector",
@@ -83,7 +107,7 @@
         ,
         {
             "model": "400172",
-            "names": ["MARYLAND_BIPOLAR_FORCEPS"],
+            "names": ["MARYLAND_BIPOLAR_FORCEPS", "BIPOLAR_MARYLAND_FORCEPS"],
             "description": "Maryland Bipolar Forceps",
             "generation": "Classic",
             "file": "MARYLAND_BIPOLAR_FORCEPS_400172.json"
@@ -114,11 +138,27 @@
         }
         ,
         {
+            "model": "400183",
+            "names": ["PERMANENT_CAUTERY_HOOK"],
+            "description": "Permanent Cautery Hook",
+            "generation": "Classic",
+            "file": "PERMANENT_CAUTERY_HOOK_400183.json"
+        }
+        ,
+        {
             "model": "400184",
             "names": ["PERMANENT_CAUTERY_SPATULA"],
             "description": "Permanent Cautery Spatula",
             "generation": "Classic",
             "file": "PERMANENT_CAUTERY_SPATULA_400184.json"
+        }
+        ,
+        {
+            "model": "400189",
+            "names": ["DOUBLE_FENESTRATED_GRASPER"],
+            "description": "Double Fenestrated Grasper",
+            "generation": "Classic",
+            "file": "DOUBLE_FENESTRATED_GRASPER_400189.json"
         }
         ,
         {
@@ -135,6 +175,14 @@
             "description": "Fenestrated Bipolar Forceps",
             "generation": "Classic",
             "file": "FENESTRATED_BIPOLAR_FORCEPS_400205.json"
+        }
+        ,
+        {
+            "model": "400207",
+            "names": ["TENACULUM_FORCEPS"],
+            "description": "Tenaculum Forceps",
+            "generation": "Classic",
+            "file": "TENACULUM_FORCEPS_400207.json"
         }
         ,
         {
@@ -189,6 +237,22 @@
         }
         ,
         {
+            "model": "420048",
+            "names": ["LONG_TIP_FORCEPS"],
+            "description": "Long Tip Forceps",
+            "generation": "S",
+            "file": "LONG_TIP_FORCEPS_420048.json"
+        }
+        ,
+        {
+            "model": "420049",
+            "names": ["CADIERE_FORCEPS"],
+            "description": "Cadiere Forceps",
+            "generation": "S",
+            "file": "CADIERE_FORCEPS_420049.json"
+        }
+        ,
+        {
             "model": "420093",
             "names": ["PROGRASP_FORCEPS"],
             "description": "Prograsp Forceps",
@@ -218,6 +282,54 @@
             "description": "Curved Scissors",
             "generation": "S",
             "file": "CURVED_SCISSORS_420178.json"
+        }
+        ,
+        {
+            "model": "420179",
+            "names": ["MONOPOLAR_CURVED_SCISSORS"],
+            "description": "Monopolar Curved Scissors",
+            "generation": "S",
+            "file": "MONOPOLAR_CURVED_SCISSORS_420179.json"
+        }
+        ,
+        {
+            "model": "420181",
+            "names": ["RESANO_FORCEPS"],
+            "description": "Resano Forceps",
+            "generation": "S",
+            "file": "RESANO_FORCEPS_420181.json"
+        }
+        ,
+        {
+            "model": "420183",
+            "names": ["PERMANENT_CAUTERY_HOOK"],
+            "description": "Permanent Cautery Hook",
+            "generation": "S",
+            "file": "PERMANENT_CAUTERY_HOOK_420183.json"
+        }
+        ,
+        {
+            "model": "420184",
+            "names": ["PERMANENT_CAUTERY_SPATULA"],
+            "description": "Permanent Cautery Spatula",
+            "generation": "S",
+            "file": "PERMANENT_CAUTERY_SPATULA_420184.json"
+        }
+        ,
+        {
+            "model": "420194",
+            "names": ["MEGA_NEEDLE_DRIVER"],
+            "description": "Mega Needle Driver",
+            "generation": "S",
+            "file": "MEGA_NEEDLE_DRIVER_420194.json"
+        }
+        ,
+        {
+            "model": "420205",
+            "names": ["FENESTRATED_BIPOLAR_FORCEPS"],
+            "description": "Fenestrated Bipolar Forceps",
+            "generation": "S",
+            "file": "FENESTRATED_BIPOLAR_FORCEPS_420205.json"
         }
         ,
         {
