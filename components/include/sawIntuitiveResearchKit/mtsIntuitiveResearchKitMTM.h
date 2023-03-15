@@ -92,6 +92,10 @@ protected:
     bool is_joint_ready(void) const override;
     bool is_cartesian_ready(void) const override;
 
+    void UpdateStateJointKinematics(void) override;
+    void ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID) override;
+    void servo_jp_internal(const vctDoubleVec & jp, const vctDoubleVec & jv) override;
+
     // state related methods
     void SetGoalHomingArm(void) override;
     void TransitionEncodersBiased(void) override;
@@ -117,6 +121,9 @@ protected:
     virtual void unlock_orientation(void);
 
     void gravity_compensation(vctDoubleVec & efforts) override;
+
+    double closest_equivalent_roll(double current_angle, double target_angle);
+    int m_wrist_roll_virtual_offset = 0;
 
     // Functions for events
     struct {

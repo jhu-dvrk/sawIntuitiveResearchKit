@@ -3,5 +3,6 @@
     "kinematic": "kinematic/mtml.json",
     "gravity-compensation": "gc-MTML-34863.json",
     "gripper-events-debounce": 0.2, // in seconds
-    "gripper-events-zero": 0.0      // in radians
+    "gripper-events-zero": 0.0,      // in radians
+    "kinematic-type": "CLOSED"
 }

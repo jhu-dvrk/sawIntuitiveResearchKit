@@ -20,6 +20,7 @@
 
 #include <array>
 #include <cmath>
+#include <iostream>
 #include <string>
 
 using namespace std::literals::string_literals;
@@ -233,17 +234,23 @@ double robManipulatorMTM::ChoosePlatformYaw(const vctRot3& rotation_47) const
 {
     // Add virtual frame 8 to align frame 7 with frame 4.
     const vctRot3 rotation_48 = rotation_47 * rotation_78;
-    auto x_axis = rotation_48*vct3(1.0, 0.0, 0.0);
 
-    const double raw_yaw = std::cos(x_axis.Y())*std::atan2(x_axis.X(), x_axis.Z()) - cmnPI_2;
+    auto x_axis = rotation_48 * vct3(1.0, 0.0, 0.0);
+
+    const double xz_length = std::sqrt(x_axis.X() * x_axis.X() + x_axis.Z() * x_axis.Z());
+    const double cos_phi = xz_length/x_axis.Norm();
+    const double alpha = 0.6;
+    const double beta = 0.3;
+    const double interpolation_factor = cos_phi < beta ? 0.0 : (cos_phi > alpha ? 1.0 : (cos_phi-beta)/(alpha-beta));
+    const double raw_yaw = std::atan2(x_axis.X(), x_axis.Z()) - cmnPI_2;
 
     // Find yaw (mod 2PI) that is within joint limits,
     // or find closest joint limit (mod 2PI).
     const double max = links[3].PositionMax();
     const double min = links[3].PositionMin();
 
-    const double yaw = ClosestAngleToJointRange(raw_yaw, 2 * cmnPI, min, max);
-    
+    const double yaw = interpolation_factor*ClosestAngleToJointRange(raw_yaw, 2 * cmnPI, min, max);
+
     if (yaw < min) {
         return min;
     } else if (yaw > max) {
