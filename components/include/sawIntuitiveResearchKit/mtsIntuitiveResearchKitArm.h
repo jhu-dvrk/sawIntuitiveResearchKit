@@ -101,6 +101,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     virtual void update_kin_configuration_js(void);
     virtual void update_pid_configuration_js(void);
+    void actuator_to_joint_position(const vctDoubleVec & actuator, vctDoubleVec & joint) const;
 
     void ResizeKinematicsData(void);
 
