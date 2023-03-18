@@ -88,7 +88,7 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
 }
 
 robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec & jointSet,
-                                                                    const vctFrm4x4 & cartesianGoal)
+                                                                    const vctFrm4x4 & cartesianGoal) const
 {
     // solve IK
     if (Manipulator->InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {

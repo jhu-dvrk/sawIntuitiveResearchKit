@@ -489,7 +489,7 @@ void mtsIntuitiveResearchKitPSM::ToJointsPID(const vctDoubleVec & jointsKinemati
 }
 
 robManipulator::Errno mtsIntuitiveResearchKitPSM::InverseKinematics(vctDoubleVec & jointSet,
-                                                                    const vctFrm4x4 & cartesianGoal)
+                                                                    const vctFrm4x4 & cartesianGoal) const
 {
     // make sure we are away from RCM point, create a new goal on sphere around RCM point (i.e. origin)
     double distanceToRCM = cartesianGoal.Translation().Norm();

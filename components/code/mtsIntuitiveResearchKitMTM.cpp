@@ -269,7 +269,7 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const std::string & filename)
 }
 
 robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec & jointSet,
-                                                                    const vctFrm4x4 & cartesianGoal)
+                                                                    const vctFrm4x4 & cartesianGoal) const
 {
     if (mKinematicType == MTM_ITERATIVE) {
         // projection of roll axis on platform tells us how the platform

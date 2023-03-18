@@ -415,6 +415,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                                  this, "query_cp");
         m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::local_query_cp,
                                                  this, "local/query_cp");
+        m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::inverse_kinematics,
+                                                 this, "inverse_kinematics");
+
         // Trajectory
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::trajectory_j_set_ratio_v,
                                          this, "trajectory_j/set_ratio_v");
@@ -2106,6 +2109,15 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
     }
 }
 
+
+void mtsIntuitiveResearchKitArm::inverse_kinematics(const prmInverseKinematicsQuery & input,
+                                                    vctDoubleVec & output) const
+{
+    output.ForceAssign(input.measured_jp());
+    this->InverseKinematics(output, input.goal_cp());
+}
+
+                                                   
 void mtsIntuitiveResearchKitArm::query_cp(const vctDoubleVec & jointValues,
                                           vctFrm4x4 & pose) const
 {

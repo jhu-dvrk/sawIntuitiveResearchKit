@@ -36,6 +36,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 #include <cisstParameterTypes/prmCartesianImpedanceGains.h>
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
+#include <cisstParameterTypes/prmInverseKinematicsQuery.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
@@ -222,7 +223,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     /*! Inverse kinematics must be redefined for each arm type. */
     virtual robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                                    const vctFrm4x4 & cartesianGoal) = 0;
+                                                    const vctFrm4x4 & cartesianGoal) const = 0;
+
+    /*! Alternate signature for ROS services. */
+    void inverse_kinematics(const prmInverseKinematicsQuery & input,
+                            vctDoubleVec & output) const ;
 
     /*! Forward kinematic queries using joint values provided by user.
       The number of joints (size of the vector) determines up to which
