@@ -38,6 +38,11 @@ public:
 
     ~robManipulatorMTM() {}
 
+    // NOTE: this is the *ONLY* supported way to load kinematic parameters for the MTMs
+#if CISST_HAS_JSON
+    robManipulator::Errno LoadRobot(const Json::Value & config) override;
+#endif
+
     robManipulator::Errno
     InverseKinematics(vctDynamicVector<double> & q,
                       const vctFrame4x4<double> & Rts,
@@ -46,16 +51,16 @@ public:
                       double LAMBDA = 0.001);
 
 private:
-    // values (in meters) taken from jhu-dVRK/kinematic/mtm(rl).json:
     // length from shoulder to elbow
-    static constexpr double upper_arm_length_m = 0.2794;
-    // legnth from elbow to end of forearm
-    static constexpr double forearm_length_m = 0.3645;
-    // length from end of forearm to wrist/gimbal's center of rotation
-    static constexpr double forearm_to_gimbal_m = 0.1506;
-    // Rotation to align zero-position of frame 7 with frame 4
+    double upper_arm_length;
+    // angle formed by gimbal-elbow-forearm
+    double elbow_to_gimbal_angle;
+    // length from elbow to gimbal center of rotation
+    double elbow_to_gimbal_length;
+
+    // rotation to align zero-position of frame 7 with frame 4
     static const vctRot3 rotation_78;
-    // Constant to control platform angle behavior, see ChoosePlatformYaw()
+    // constant to control platform angle behavior, see ChoosePlatformYaw()
     static constexpr double platform_alpha = 0.8;
 
     // allowed (absolute) tolerance when enforcing joint limits

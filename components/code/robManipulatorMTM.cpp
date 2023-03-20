@@ -68,6 +68,26 @@ robManipulatorMTM::robManipulatorMTM(const std::string &robotfilename,
 robManipulatorMTM::robManipulatorMTM(const vctFrame4x4<double> &Rtw0)
     : robManipulator(Rtw0) {}
 
+#if CISST_HAS_JSON
+robManipulator::Errno robManipulatorMTM::LoadRobot(const Json::Value & config)
+{
+    robManipulator::Errno result = robManipulator::LoadRobot(config);
+    if (result != robManipulator::ESUCCESS) {
+        return result;
+    }
+
+    upper_arm_length = links[1].PStar().Norm();
+    double forearm_length = links[2].PStar().Norm();
+    double forearm_to_gimbal = links[3].PStar().Norm();
+
+    // pre-compute kinematic constants
+    elbow_to_gimbal_angle = std::atan(forearm_to_gimbal / forearm_length);
+    elbow_to_gimbal_length = std::sqrt(forearm_to_gimbal * forearm_to_gimbal + forearm_length * forearm_length);
+
+    return robManipulator::ESUCCESS;
+}
+#endif
+
 robManipulator::Errno
 robManipulatorMTM::InverseKinematics(vctDynamicVector<double>& q,
                                      const vctFrame4x4<double>& Rts,
@@ -89,17 +109,17 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double>& q,
         return robManipulator::EFAILURE;
     }
 
-    // take Rtw0 (link 0 to world transform) into account
+    // eliminate Rtw0 (link 0 to world transform)
     vctFrm4x4 Rt07 = Rtw0.Inverse() * Rts;
 
-    // shoulder and elbow entirely determine position, so we can solve
+    // shoulder and elbow angles entirely determine position, so we can solve
     // for first three joints separately
     vct3 position_ik = ShoulderElbowIK(Rt07.Translation());
     q[0] = position_ik[0];
     q[1] = position_ik[1];
     q[2] = position_ik[2];
 
-    // determine remaining transformation once shoulder/elbow are set
+    // determine remaining transformation once shoulder/elbow is determined
     q[3] = 0.0;
     vctFrm4x4 Rt04 = ForwardKinematics(q, 4);
     vctFrm4x4 Rt47 = Rt04.Inverse() * Rt07;
@@ -128,6 +148,7 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double>& q,
         joint_limit_reached = joint_limit_reached || out_of_range;
     }
 
+    // return failure if target pose is not achievable within joint limits
     return joint_limit_reached ? EFAILURE : ESUCCESS;
 }
 
@@ -146,14 +167,11 @@ vct3 robManipulatorMTM::ShoulderElbowIK(const vct3& position_07) const {
     // shoulder yaw is just angle in transverse/horizontal plane
     // coordinate system of shoulder is rotated 90 degrees, so we use X/-Y instead of Y/X
     const double shoulder_yaw = std::atan2(position_07.X(), -position_07.Y());
-
     const double shoulder_to_wrist_distance = position_07.Norm();
-    const double elbow_to_gimbal_angle = std::atan(forearm_to_gimbal_m / forearm_length_m);
-    const double elbow_to_gimbal_length = std::sqrt(forearm_to_gimbal_m * forearm_to_gimbal_m + forearm_length_m * forearm_length_m);
 
     // shoulder-elbow-wrist is a triangle with three known side lengths
     // so the shoulder-elbow-wrist angle is fully determined
-    const double theta = SolveTriangleInteriorAngle(upper_arm_length_m, elbow_to_gimbal_length, shoulder_to_wrist_distance);
+    const double theta = SolveTriangleInteriorAngle(upper_arm_length, elbow_to_gimbal_length, shoulder_to_wrist_distance);
     // interior angle formed by shoulder-elbow-forearm
     const double elbow_interior_angle = theta + elbow_to_gimbal_angle;
     // elbow joint pitch is supplementary/exterior angle, with 90 degree offset
@@ -162,7 +180,7 @@ vct3 robManipulatorMTM::ShoulderElbowIK(const vct3& position_07) const {
     // angle of ground-shoulder-wrist
     const double alpha = std::acos(-position_07.Z() / shoulder_to_wrist_distance);
     // angle of elbow-shoulder-wrist
-    const double beta = SolveTriangleInteriorAngle(upper_arm_length_m, shoulder_to_wrist_distance, elbow_to_gimbal_length);
+    const double beta = SolveTriangleInteriorAngle(upper_arm_length, shoulder_to_wrist_distance, elbow_to_gimbal_length);
     // shoulder pitch is ground-shoulder-elbow angle
     const double shoulder_pitch = alpha - beta;
 
@@ -183,6 +201,8 @@ vct3 robManipulatorMTM::WristGimbalIK(const vctRot3& rotation_47) const
     const double raw_wrist_yaw = euler_rotation_decomposition.beta();
     const double raw_wrist_roll = -euler_rotation_decomposition.gamma();
 
+    // finds equivalent angle inside joint limits when possible,
+    // however does not actually clamp to joint limits
     const double wrist_pitch = ClosestAngleToJointRange(raw_wrist_pitch, 2 * cmnPI, links[4].PositionMin(), links[4].PositionMax());
     const double wrist_yaw = ClosestAngleToJointRange(raw_wrist_yaw, 2 * cmnPI, links[5].PositionMin(), links[5].PositionMax());
     const double wrist_roll = ClosestAngleToJointRange(raw_wrist_roll, 2 * cmnPI, links[6].PositionMin(), links[6].PositionMax());
@@ -218,7 +238,7 @@ double robManipulatorMTM::ChoosePlatformYaw(const vctRot3& rotation_47) const
 
     // When gripper is pointed up, platform angle is effectively irrelevant,
     // so as gripper gets closer to pointing straight up we move platform towards zero.
-    // When gripper points straight down, it is very near lower joint limit so platform
+    // When gripper points straight down, wrist pitch is very near lower joint limit so platform
     // angle is very important (although this situation should be rare)
     const double interpolation_factor = sin_phi < platform_alpha ? 1.0 : (1.0-sin_phi)/(1.0-platform_alpha);
     const double interpolated_yaw = interpolation_factor * raw_yaw;
@@ -229,6 +249,8 @@ double robManipulatorMTM::ChoosePlatformYaw(const vctRot3& rotation_47) const
     // Find yaw (mod 2PI) that is within joint limits, or find closest joint limit (mod 2PI).
     const double yaw = ClosestAngleToJointRange(interpolated_yaw, 2 * cmnPI, min, max);
 
+    // it is ok if yaw is outside joint limits, we can clamp and use
+    // other joints to make up for the difference
     if (yaw < min) {
         return min;
     } else if (yaw > max) {
