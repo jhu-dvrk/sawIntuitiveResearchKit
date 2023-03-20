@@ -80,8 +80,8 @@ public:
         jointErrorsAbsolute.AbsOf(jointErrors);
 
         std::string details =
-            "Actual joints: " + (SolutionJoints * cmn180_PI).ToString() + "\n"
-            "Solution     : " + (ActualJoints * cmn180_PI).ToString() + "\n"
+            "Actual joints: " + (ActualJoints * cmn180_PI).ToString() + "\n"
+            "Solution     : " + (SolutionJoints * cmn180_PI).ToString() + "\n"
             "Error        : " + (jointErrors * cmn180_PI).ToString() + "\n";
 
         // compare joint values
