@@ -55,12 +55,13 @@ private:
     static constexpr double forearm_to_gimbal_m = 0.1506;
     // Rotation to align zero-position of frame 7 with frame 4
     static const vctRot3 rotation_78;
+    // Constant to control platform angle behavior, see ChoosePlatformYaw()
+    static constexpr double platform_alpha = 0.8;
 
     // allowed (absolute) tolerance when enforcing joint limits
     static constexpr double joint_limit_tolerance = 1e-5;
 
     static double SolveTriangleInteriorAngle(double side_a, double side_b, double side_c);
-    static double AngleMagnitude(double value);
     static double ClosestAngleToJointRange(double angle, double modulus, double min, double max);
 
     double ChoosePlatformYaw(const vctRot3& rotation_47) const;

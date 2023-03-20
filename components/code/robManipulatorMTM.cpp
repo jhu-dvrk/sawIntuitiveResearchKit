@@ -18,9 +18,7 @@
 
 #include <sawIntuitiveResearchKit/robManipulatorMTM.h>
 
-#include <array>
 #include <cmath>
-#include <iostream>
 #include <string>
 
 using namespace std::literals::string_literals;
@@ -47,7 +45,7 @@ using namespace std::literals::string_literals;
 //  1  0  0
 //  0 -1  0
 
-// joints:
+// joints (directions specified relative to all-zero joint positions):
 //   0: shoulder yaw. 0 is centered, positive is counterclockwise when viewed from above
 //   1: shoulder pitch. 0 is straight down, positive is rotating forward
 //   2: elbow pitch. 0 is straight forward, positive is rotating forward/up
@@ -91,7 +89,7 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double>& q,
         return robManipulator::EFAILURE;
     }
 
-    // take Rtw0 (world to frame 0) into account
+    // take Rtw0 (link 0 to world transform) into account
     vctFrm4x4 Rt07 = Rtw0.Inverse() * Rts;
 
     // shoulder and elbow entirely determine position, so we can solve
@@ -109,11 +107,11 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double>& q,
     // optimized yaw of platform to maximize range of motion
     q[3] = ChoosePlatformYaw(vctRot3(Rt47.Rotation()));
 
-    // once platform yaw has been chosen, need to re-compute 4->7 frame transformation
+    // once platform yaw has been chosen, need to re-compute link 4-7 frame transformation
     Rt04 = ForwardKinematics(q, 4);
     Rt47 = Rt04.Inverse() * Rt07;
 
-    // once platform yaw is set, wrist/gimbal IK is uniquely determined by
+    // once platform angle is chosen, wrist/gimbal IK is uniquely determined by
     // the remaining portion of the desired overall transformation
     vct3 gimbal_ik = WristGimbalIK(vctRot3(Rt47.Rotation()));
     q[4] = gimbal_ik[0];
@@ -192,42 +190,12 @@ vct3 robManipulatorMTM::WristGimbalIK(const vctRot3& rotation_47) const
     return vct3(wrist_pitch, wrist_yaw, wrist_roll);
 }
 
-double robManipulatorMTM::AngleMagnitude(double value)
-{
-    // get angle in range [-PI, +PI] (both endpoints are possible)
-    const double normalized_angle = std::remainder(value, 2 * cmnPI);
-    return std::fabs(normalized_angle);
-}
-
 double robManipulatorMTM::ClosestAngleToJointRange(
     double angle, double modulus, double min, double max
 )
 {
-    const double normalized = std::remainder(angle, 2 * cmnPI);
-    double best_value = normalized;
-    double best_error = modulus;
-
-    for (int k = -1; k <= 1; k++) {
-        double value = normalized + k * modulus;
-        if (value < min) {
-            double error = min - value;
-            if (error < best_error) {
-                best_error = error;
-                best_value = min;
-            }
-        } else if (value > max) {
-            double error = value - max;
-            if (error < best_error) {
-                best_error = error;
-                best_value = max;
-            }
-        } else {
-            best_value = value;
-            best_error = 0.0;
-        }
-    }
-
-    return best_value;
+    const double range_center = 0.5*(min + max);
+    return std::remainder(angle - range_center, modulus) + range_center;
 }
 
 double robManipulatorMTM::ChoosePlatformYaw(const vctRot3& rotation_47) const
@@ -235,21 +203,31 @@ double robManipulatorMTM::ChoosePlatformYaw(const vctRot3& rotation_47) const
     // Add virtual frame 8 to align frame 7 with frame 4.
     const vctRot3 rotation_48 = rotation_47 * rotation_78;
 
+    // X-axis of frame 8 with respect to frame 4 gives orientation
+    // of gripper with respect to platform
     auto x_axis = rotation_48 * vct3(1.0, 0.0, 0.0);
+    // phi is polar angle of the X-axis
+    const double sin_phi = x_axis.Y();
+    // theta is azimuthal angle of the X-axis
+    const double theta = std::atan2(x_axis.X(), x_axis.Z());
 
-    const double xz_length = std::sqrt(x_axis.X() * x_axis.X() + x_axis.Z() * x_axis.Z());
-    const double cos_phi = xz_length/x_axis.Norm();
-    const double alpha = 0.6;
-    const double beta = 0.3;
-    const double interpolation_factor = cos_phi < beta ? 0.0 : (cos_phi > alpha ? 1.0 : (cos_phi-beta)/(alpha-beta));
-    const double raw_yaw = std::atan2(x_axis.X(), x_axis.Z()) - cmnPI_2;
+    // We want platform at 90-degree angle from projection of gripper into
+    // the horizontal plane, both to maximize range of motion and keep
+    // platform out of user's way.
+    const double raw_yaw = std::remainder(theta - cmnPI_2, 2 * cmnPI);
 
-    // Find yaw (mod 2PI) that is within joint limits,
-    // or find closest joint limit (mod 2PI).
+    // When gripper is pointed up, platform angle is effectively irrelevant,
+    // so as gripper gets closer to pointing straight up we move platform towards zero.
+    // When gripper points straight down, it is very near lower joint limit so platform
+    // angle is very important (although this situation should be rare)
+    const double interpolation_factor = sin_phi < platform_alpha ? 1.0 : (1.0-sin_phi)/(1.0-platform_alpha);
+    const double interpolated_yaw = interpolation_factor * raw_yaw;
+
     const double max = links[3].PositionMax();
     const double min = links[3].PositionMin();
 
-    const double yaw = interpolation_factor*ClosestAngleToJointRange(raw_yaw, 2 * cmnPI, min, max);
+    // Find yaw (mod 2PI) that is within joint limits, or find closest joint limit (mod 2PI).
+    const double yaw = ClosestAngleToJointRange(interpolated_yaw, 2 * cmnPI, min, max);
 
     if (yaw < min) {
         return min;
@@ -259,3 +237,4 @@ double robManipulatorMTM::ChoosePlatformYaw(const vctRot3& rotation_47) const
         return yaw;
     }
 }
+
