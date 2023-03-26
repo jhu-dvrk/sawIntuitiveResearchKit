@@ -190,8 +190,8 @@ int main(int argc, char * argv[])
                   << "Press any key to power brakes and start collecting data." << std::endl;
         cmnGetChar();
 
-        // set watchdog to a reasonable default
-        robot->SetWatchdogPeriod(30.0 * cmn_ms);
+        // set watchdog to very high value
+        robot->SetWatchdogPeriod(300.0 * cmn_ms);
 
         // make sure we reset the encoders to 0
         robot->SetEncoderPosition(vctDoubleVec(nbAxis, 0.0));
@@ -203,6 +203,7 @@ int main(int argc, char * argv[])
         vctDoubleVec brakeCurrent(3, 0.0);
         robot->SetBrakeCurrent(brakeCurrent);
         vctDoubleVec actuatorVoltageRatio(nbAxis, 0.0);
+        actuatorVoltageRatio.Ref(4, 3) = 1.0; // for the last for disks
         robot->SetActuatorVoltageRatio(actuatorVoltageRatio);
         port->Write();
         robot->WriteSafetyRelay(true);
@@ -211,9 +212,9 @@ int main(int argc, char * argv[])
         robot->SetActuatorAmpEnable(true);
         port->Write();
 
-        // wait a bit to make sure current stabilizes, 100 * 10 ms = 1 second
-        for (size_t i = 0; i < 100; ++i) {
-            osaSleep(10.0 * cmn_ms);
+        // wait a bit to make sure current stabilizes, 1 second
+        for (size_t i = 0; i < 1000; ++i) {
+            osaSleep(1.0 * cmn_ms);
             port->Read();
             port->Write();
         }
@@ -287,7 +288,8 @@ int main(int argc, char * argv[])
         std::string rawFileName = "sawRobotIO1394-" + armName + "-" + serialNumber + "-PotentiometerLookupTable-Raw.json";
         rawFile.open(rawFileName);
         Json::Value jsonValue;
-        cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue);
+        jsonValue["serial"] = serialNumber;
+        cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue["lookup"]);
         writer->write(jsonValue, &rawFile);
         rawFile.close();
         std::cout << std::endl << "Raw data saved to " << rawFileName << std::endl
@@ -316,7 +318,7 @@ int main(int argc, char * argv[])
                       << jsonReader.getFormattedErrorMessages();
             return false;
         }
-        cmnDataJSON<vctDoubleMat>::DeSerializeText(potToEncoder, jsonValue);
+        cmnDataJSON<vctDoubleMat>::DeSerializeText(potToEncoder, jsonValue["lookup"]);
     }
 
     // finding the deadzone(s)
@@ -491,7 +493,7 @@ int main(int argc, char * argv[])
 
         // padding
         bool previousValueIsMissing = mtsRobot1394::IsMissingPotValue(potToEncoder(axis, 0));
-        const size_t paddingWidth = 30;
+        const size_t paddingWidth = 50;
         for (size_t index = 1;
              index < potRange;
              ++index) {
@@ -521,16 +523,25 @@ int main(int argc, char * argv[])
     // record the pot to encoder file
     std::ofstream potToEncoderFile;
     std::string potToEncoderFileName = "sawRobotIO1394-" + armName + "-" + serialNumber + "-PotentiometerLookupTable.json";
-    std::string potToEncoderFileNameNew = potToEncoderFileName + "-new";
-    potToEncoderFile.open(potToEncoderFileNameNew);
+    bool saveAsNew = cmnPath::Exists(potToEncoderFileName);
+    std::string finalFileName;
+    if (saveAsNew) {
+        finalFileName = potToEncoderFileName + "-new";
+    } else {
+        finalFileName = potToEncoderFileName;
+    }
+    potToEncoderFile.open(finalFileName);
     Json::Value jsonValue;
-    cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue);
+    jsonValue["serial"] = serialNumber;
+    cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue["lookup"]);
     writer->write(jsonValue, &potToEncoderFile);
     potToEncoderFile.close();
 
     std::cout << std::endl
-              << "Results saved in " << potToEncoderFileNameNew << std::endl
-              << "You can move the new file over the existing one using:" << std::endl
-              << "mv -i " << potToEncoderFileNameNew << " " << potToEncoderFileName << std::endl;
+              << "Results saved in " << finalFileName << std::endl;
+    if (saveAsNew) {
+        std::cout << "You can move the new file over the existing one using:" << std::endl
+                  << "mv -i " << finalFileName << " " << potToEncoderFileName << std::endl;
+    }
     return 0;
 }
