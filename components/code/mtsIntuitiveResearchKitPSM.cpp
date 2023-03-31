@@ -597,13 +597,13 @@ void mtsIntuitiveResearchKitPSM::Init(void)
                                &mtsIntuitiveResearchKitPSM::EnterManual,
                                this);
 
-    // initialize trajectory data
-    m_trajectory_j.v_max.Ref(2, 0).SetAll(180.0 * cmnPI_180); // degrees per second
+    // initialize trajectory data, last 4 tweaked for engage procedures
+    m_trajectory_j.v_max.Ref(2, 0).SetAll(90.0 * cmnPI_180); // degrees per second
     m_trajectory_j.v_max.Element(2) = 0.2; // m per second
-    m_trajectory_j.v_max.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
-    m_trajectory_j.a_max.Ref(2, 0).SetAll(180.0 * cmnPI_180);
+    m_trajectory_j.v_max.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
+    m_trajectory_j.a_max.Ref(2, 0).SetAll(90.0 * cmnPI_180);
     m_trajectory_j.a_max.Element(2) = 0.2; // m per second
-    m_trajectory_j.a_max.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
+    m_trajectory_j.a_max.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
 
     // default PID tracking errors
@@ -1282,7 +1282,7 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
     // first 6 joints
     ToJointsPID(jp, m_servo_jp_param.Goal());
     // velocity - current code only support jaw_servo_jv if servo_jp has a velocity goal
-    const size_t jv_size = jv.size(); 
+    const size_t jv_size = jv.size();
     m_servo_jp_param.Velocity().SetSize(7);
     if (jv_size != 0) {
         ToJointsPID(jv, m_servo_jp_param.Velocity());
