@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -48,6 +48,29 @@ void mtsIntuitiveResearchKitECM::set_simulated(void)
     RemoveInterfaceRequired("ManipClutch");
 }
 
+void mtsIntuitiveResearchKitECM::set_generation(const GenerationType generation)
+{
+    mtsIntuitiveResearchKitArm::set_generation(generation);
+    // for S/si, add SUJClutch interface
+    if (generation == GENERATION_Si) {
+        auto interfaceRequired = AddInterfaceRequired("SUJClutch");
+        if (interfaceRequired) {
+            interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitECM::EventHandlerSUJClutch, this, "Button");
+        }
+        interfaceRequired = AddInterfaceRequired("SUJClutch2");
+        if (interfaceRequired) {
+            interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitECM::EventHandlerSUJClutch, this, "Button");
+        }
+        interfaceRequired = AddInterfaceRequired("SUJBrake");
+        if (interfaceRequired) {
+            interfaceRequired->AddFunction("SetValue", SUJClutch.Brake);
+        }
+    } else {
+        if (GetInterfaceProvided("SUJClutch")) {
+            RemoveInterfaceRequired("SUJClutch");
+        }
+    }
+}
 
 void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
                                                const cmnPath & CMN_UNUSED(configPath),
@@ -128,7 +151,7 @@ void mtsIntuitiveResearchKitECM::Init(void)
     ToolOffset = 0;
 
     // set gravity compensation by default
-    m_gravity_compensation = true;
+    m_gravity_compensation = (m_generation == GENERATION_CLASSIC);
 
     // state machine specific to ECM, see base class for other states
     mArmState.AddState("MANUAL");
@@ -287,6 +310,17 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
         break;
     default:
         break;
+    }
+}
+
+void mtsIntuitiveResearchKitECM::EventHandlerSUJClutch(const prmEventButton & button)
+{
+    bool value = (button.Type() == prmEventButton::PRESSED);
+    if (value
+        && (m_operating_state.State() != prmOperatingState::ENABLED)) {
+        m_arm_interface->SendWarning(this->GetName() + ": arm needs to be enabled to release the SUJ brakes");
+    } else {
+        SUJClutch.Brake(value);
     }
 }
 

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -36,6 +36,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     inline ~mtsIntuitiveResearchKitECM() {}
 
     void set_simulated(void) override;
+    void set_generation(const GenerationType generation) override;
 
  protected:
 
@@ -85,6 +86,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
 
     void EventHandlerTrackingError(void);
     void EventHandlerManipClutch(const prmEventButton & button);
+    void EventHandlerSUJClutch(const prmEventButton & button);
 
     void update_feed_forward(vctDoubleVec & feedForward) override;
     void gravity_compensation(vctDoubleVec & efforts) override;
@@ -99,6 +101,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
         mtsFunctionWrite ManipClutch;
         std::string ManipClutchPreviousState;
     } ClutchEvents;
+
+    struct {
+        mtsFunctionWrite Brake;
+    } SUJClutch;
 
     /*! Set endoscope type.  Uses string as defined in
       mtsIntuitiveResearchKitEndoscopeTypes.cdg, upper case with separating

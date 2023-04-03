@@ -111,14 +111,15 @@ int main(int argc, char * argv[])
     std::vector<double> toh = {cmn180_PI, cmn180_PI, 1000.0, cmn180_PI, cmn180_PI, cmn180_PI, cmn180_PI};
 
     directionEncoder.SetSize(nbAxis, 1.0);
-    if (nbActuators == 7) {
+    if (nbAxis == 7) {
         // PSM specific
         directionEncoder.at(1) = -1.0;
         directionEncoder.at(3) = -1.0;
         directionEncoder.at(4) = -1.0;
         directionEncoder.at(5) = -1.0;
-    } else if (nbActuators == 4) {
-
+    } else if (nbAxis == 4) {
+        directionEncoder.at(1) = -1.0;
+        directionEncoder.at(3) = -1.0;
     }
 
     minEncoder.SetSize(nbAxis);
@@ -202,14 +203,13 @@ int main(int argc, char * argv[])
         // enable power and brakes
         vctDoubleVec brakeCurrent(3, 0.0);
         robot->SetBrakeCurrent(brakeCurrent);
-        vctDoubleVec actuatorVoltageRatio(nbAxis, 0.0);
-        actuatorVoltageRatio.Ref(4, 3) = 1.0; // for the last for disks
-        robot->SetActuatorVoltageRatio(actuatorVoltageRatio);
+        // vctDoubleVec actuatorVoltageRatio(nbAxis, 0.0);
+        // robot->SetActuatorVoltageRatio(actuatorVoltageRatio);
         port->Write();
         robot->WriteSafetyRelay(true);
         robot->WritePowerEnable(true);
         robot->SetBrakeAmpEnable(true);
-        robot->SetActuatorAmpEnable(true);
+        // robot->SetActuatorAmpEnable(true);
         port->Write();
 
         // wait a bit to make sure current stabilizes, 1 second
@@ -408,7 +408,7 @@ int main(int argc, char * argv[])
     }
 
     vctDoubleVec minEncoderExpected, maxEncoderExpected;
-    if (nbActuators == 7) {
+    if (nbAxis == 7) {
         // this is for a PSM.  We don't have the exact numbers but we have 3
         // calibration files.  Ranges differ between arms but the midpoint
         // is always the same.  Values are from jhu-dVRK-Si/cal-files 292409 586288 334809
@@ -430,7 +430,7 @@ int main(int argc, char * argv[])
         maxEncoderExpected.at(5) = ( 3.0350 +  3.0303 +  3.0294) / 3.0;
         minEncoderExpected.at(6) = (-3.0378 + -3.03   + -3.0268) / 3.0;
         maxEncoderExpected.at(6) = ( 3.0378 +  3.03   +  3.0268) / 3.0;
-    } else if (nbActuators == 4) {
+    } else if (nbAxis == 4) {
         // this is for an ECM, using 267579 438610
         minEncoderExpected.SetSize(4);
         maxEncoderExpected.SetSize(4);
