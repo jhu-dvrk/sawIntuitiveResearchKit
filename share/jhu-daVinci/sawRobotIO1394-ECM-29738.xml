@@ -16,7 +16,7 @@
             <ReleasedCurrent Unit="A" Value="0.080" />
             <EngagedCurrent Unit="A" Value="0.000" />
          </AnalogBrake>
-         <Encoder>
+         <Encoder VelocitySource="FIRMWARE">
             <BitsToPosSI Scale="0.00037500" Unit="deg" />
          </Encoder>
          <AnalogIn>
@@ -40,7 +40,7 @@
             <ReleasedCurrent Unit="A" Value="0.070" />
             <EngagedCurrent Unit="A" Value="0.000" />
          </AnalogBrake>
-         <Encoder>
+         <Encoder VelocitySource="FIRMWARE">
             <BitsToPosSI Scale="0.00037500" Unit="deg" />
          </Encoder>
          <AnalogIn>
@@ -64,7 +64,7 @@
             <ReleasedCurrent Unit="A" Value="0.200" />
             <EngagedCurrent Unit="A" Value="0.000" />
          </AnalogBrake>
-         <Encoder>
+         <Encoder VelocitySource="FIRMWARE">
             <BitsToPosSI Scale="-0.00357188" Unit="mm" />
          </Encoder>
          <AnalogIn>
@@ -79,7 +79,7 @@
             <NmToAmps Scale="0.673064" />
             <MaxCurrent Unit="A" Value="0.590" />
          </Drive>
-         <Encoder>
+         <Encoder VelocitySource="FIRMWARE">
             <BitsToPosSI Scale="0.01874063" Unit="deg" />
          </Encoder>
          <AnalogIn>

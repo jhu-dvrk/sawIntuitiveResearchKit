@@ -8,7 +8,7 @@
             <NmToAmps Scale="0.404089"/>
             <MaxCurrent Unit="A" Value="1.340"/>
          </Drive>
-         <Encoder>
+         <Encoder VelocitySource="FIRMWARE">
             <BitsToPosSI Scale="-0.00044248" Unit="deg"/>
          </Encoder>
          <AnalogIn>
@@ -23,7 +23,7 @@
             <NmToAmps Scale="0.404089"/>
             <MaxCurrent Unit="A" Value="1.340"/>
          </Drive>
-         <Encoder>
+         <Encoder VelocitySource="FIRMWARE">
             <BitsToPosSI Scale="-0.00044248" Unit="deg"/>
          </Encoder>
          <AnalogIn>
@@ -38,7 +38,7 @@
             <NmToAmps Scale="0.067828"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
-         <Encoder>
+         <Encoder VelocitySource="FIRMWARE">
             <BitsToPosSI Scale="0.00129629" Unit="mm"/>
          </Encoder>
          <AnalogIn>
@@ -53,7 +53,7 @@
             <NmToAmps Scale="1.949705"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
-         <Encoder>
+         <Encoder VelocitySource="FIRMWARE">
             <BitsToPosSI Scale="-0.00768574" Unit="deg"/>
          </Encoder>
          <AnalogIn>
@@ -68,7 +68,7 @@
             <NmToAmps Scale="1.949705"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
-         <Encoder>
+         <Encoder VelocitySource="FIRMWARE">
             <BitsToPosSI Scale="-0.00768574" Unit="deg"/>
          </Encoder>
          <AnalogIn>
@@ -83,7 +83,7 @@
             <NmToAmps Scale="1.949705"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
-         <Encoder>
+         <Encoder VelocitySource="FIRMWARE">
             <BitsToPosSI Scale="0.00768574" Unit="deg"/>
          </Encoder>
          <AnalogIn>
@@ -98,7 +98,7 @@
             <NmToAmps Scale="1.949705"/>
             <MaxCurrent Unit="A" Value="0.670"/>
          </Drive>
-         <Encoder>
+         <Encoder VelocitySource="FIRMWARE">
             <BitsToPosSI Scale="0.00768574" Unit="deg"/>
          </Encoder>
          <AnalogIn>

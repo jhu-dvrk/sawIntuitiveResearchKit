@@ -7,7 +7,7 @@
             <NmToAmps Scale="1.000000" />
             <MaxCurrent Unit="A" Value="0.000" />
          </Drive>
-         <Encoder>
+         <Encoder VelocitySource="FIRMWARE">
             <BitsToPosSI Scale="360.00000000" Unit="deg" />
          </Encoder>
          <AnalogIn>
