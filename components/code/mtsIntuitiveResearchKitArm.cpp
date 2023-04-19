@@ -238,7 +238,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     this->StateTable.AddData(m_spatial_jacobian, "spatial_jacobian");
 
     // efforts for kinematics
-    m_servo_jf.SetSize(number_of_joints_kinematics());
+    m_servo_jf.ForceTorque().SetSize(number_of_joints_kinematics());
     m_servo_jf.ForceTorque().Zeros();
     m_body_measured_cf.SetValid(false);
     m_spatial_measured_cf.SetValid(false);
@@ -568,7 +568,7 @@ void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
     m_spatial_jacobian_transpose.ForceAssign(m_spatial_jacobian.Transpose());
     m_jacobian_transpose_pinverse_data.Allocate(m_body_jacobian_transpose);
     // servo
-    m_servo_jf.SetSize(number_of_joints_kinematics());
+    m_servo_jf.ForceTorque().SetSize(number_of_joints_kinematics());
     m_servo_jf.ForceTorque().Zeros();
     m_servo_jf_vector.SetSize(number_of_joints_kinematics());
     m_servo_jf_vector.Zeros();
