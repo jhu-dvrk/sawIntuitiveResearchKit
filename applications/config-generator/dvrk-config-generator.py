@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
-import os.path
+import os
+import datetime
 import json
 import math
 import xml.etree.ElementTree as ET
@@ -1081,6 +1082,11 @@ def configSerializeJSON(obj):
 def saveConfigFile(fileName, config, format):
     fileName += ".json" if format == OutputFormat.JSON else ".xml"
 
+    if os.path.exists(fileName):
+        backup =  fileName + datetime.datetime.now().strftime("-backup-%Y-%m-%d_%H:%M:%S")
+        os.rename(fileName, backup)
+        print("Existing IO config file has been renamed {}".format(backup))
+
     if format == OutputFormat.JSON:
         with open(fileName, "w") as f:
             json.dump(config, f, indent=4, default=configSerializeJSON)
@@ -1091,7 +1097,7 @@ def saveConfigFile(fileName, config, format):
         tree = ET.ElementTree(root)
         tree.write(fileName, xml_declaration=True)
 
-    print("Generated config file {}".format(fileName))
+    print("Generated IO config file {}".format(fileName))
 
 
 def generateConfig(calFileName, robotTypeName, controllerTypeName, serialNumber, generationName, outputFormat):
@@ -1143,31 +1149,13 @@ def generateConfig(calFileName, robotTypeName, controllerTypeName, serialNumber,
         saveConfigFile(gripperConfigFileName, gripperConfig, outputFormat)
 
 
-class ArmConfig:
-    def __init__(self, robotTypeName, controllerTypeName, serialNumber, generationName):
-        self.kinematic = "kinematic/";
-        if robotTypeName.startswith("PSM"):
-            self.kinematic += "psm"
-        elif robotTypeName == "MTML":
-            self.kinematic += "mtml"
-        elif robotTypeName == "MTMR":
-            self.kinematic += "mtmr"
-        elif robotTypeName == "ECM":
-            self.kinematic += "ecm"
-        else:
-            raise ValueError("Unrecognized robot type: {}".format(robotTypeName))
-        if generationName == "Si":
-            self.kinematic += "-si"
-        self.kinematic += ".json"
-
-
 def generateArmConfig(robotTypeName, controllerTypeName, serialNumber, generationName):
-    outputFileName = "{}-{}.json".format(robotTypeName, serialNumber)
-    finalFileName = outputFileName
-    if os.path.exists(finalFileName):
-        finalFileName += "-new"
-    armConfig = ArmConfig(robotTypeName, controllerTypeName, serialNumber, generationName)
-    kinematic = "    \"kinematic\": \"kinematic/";
+    fileName = "{}-{}.json".format(robotTypeName, serialNumber)
+    if os.path.exists(fileName):
+        backup =  fileName + datetime.datetime.now().strftime("-backup-%Y-%m-%d_%H:%M:%S")
+        os.rename(fileName, backup)
+        print("Existing arm config file has been renamed {}".format(backup))
+    kinematic = '  "kinematic": "kinematic/';
     if robotTypeName.startswith("PSM"):
         kinematic += "psm"
     elif robotTypeName == "MTML":
@@ -1180,18 +1168,45 @@ def generateArmConfig(robotTypeName, controllerTypeName, serialNumber, generatio
         raise ValueError("Unrecognized robot type: {}".format(robotTypeName))
     if generationName == "Si":
         kinematic += "-si"
-    kinematic += ".json\"\n"
+    kinematic += '.json"\n'
 
-    with open(finalFileName, "w") as f:
+    with open(fileName, "w") as f:
         f.write("{\n")
         f.write(kinematic)
+        f.write('  , "generation": "' + generationName + '"\n')
         if robotTypeName.startswith("PSM"):
-            f.write("    // , \"tool-detection\": \"MANUAL\"\n")
-            f.write("    , \"tool-detection\": \"AUTOMATIC\"\n")
+            f.write('  // , "tool-detection": "MANUAL"\n')
+            f.write('  , "tool-detection": "AUTOMATIC"\n')
         f.write("}\n")
-    print("Generated config file {}".format(finalFileName))
-    if finalFileName != outputFileName:
-        print("To use the new file: cp -i {} {}".format(finalFileName, outputFileName))
+    print("Generated arm config file {}".format(fileName))
+
+
+def generateConsoleConfig(robotTypeName, controllerTypeName, serialNumber, generationName):
+    fileName = "console-{}.json".format(robotTypeName)
+    if os.path.exists(fileName):
+        backup =  fileName + datetime.datetime.now().strftime("-backup-%Y-%m-%d_%H:%M:%S")
+        os.rename(fileName, backup)
+        print("Existing console file has been renamed {}".format(backup))
+    type = ""
+    if robotTypeName.startswith("PSM"):
+        type = "PSM"
+    elif robotTypeName == "MTML" or robotTypeName == "MTMR" or robotTypeName == "ECM":
+        type = robotTypeName
+    else:
+        raise ValueError("Unrecognized robot type: {}".format(robotTypeName))
+
+    with open(fileName, "w") as f:
+        f.write('{\n')
+        f.write('  "arms": [\n')
+        f.write('    {\n')
+        f.write('      "name": "' + robotTypeName + '"\n')
+        f.write('      "type": "' + type + '"\n')
+        f.write('      "serial": "' + str(serialNumber) + '"\n')
+        f.write('    }\n')
+        f.write('  ]\n')
+        f.write('}\n')
+    print("Generated console file {}".format(fileName))
+
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -1269,8 +1284,9 @@ def main():
     outputFormat = OutputFormat.XML if args.format == "XML" else OutputFormat.JSON
     # sawRobotIO config file
     generateConfig(args.cal, args.arm, args.type, args.serial, args.generation, outputFormat)
-    # sawIntuitiveResearchKit arm config file
+    # sawIntuitiveResearchKit arm and console config files
     generateArmConfig(args.arm, args.type, args.serial, args.generation)
+    generateConsoleConfig(args.arm, args.type, args.serial, args.generation)
 
 if __name__ == "__main__":
     main()
