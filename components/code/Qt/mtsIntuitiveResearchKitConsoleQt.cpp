@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-07-13
 
-  (C) Copyright 2015-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -125,12 +125,8 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_Si:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_Si_DERIVED:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_Si:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_Si_DERIVED:
             // PID widget
             size_t numberOfJoints;
             if (armIter->second->native_or_derived_psm()) {
@@ -180,7 +176,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
 
             break;
 
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ_Classic:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ_Si:
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1-SUJ");

@@ -636,11 +636,31 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
                     << "----------------------------------------------------" << std::endl
                     << " ERROR:" << std::endl
                     << "   You should have a \"arm\" file for each arm in the console" << std::endl
-                    << "   file.  The arm file should contain the fields" << std::endl
+                    << "   file.  The arm file should contain the field" << std::endl
                     << "   \"kinematic\" and options specific to each arm type." << std::endl
                     << "----------------------------------------------------";
             std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
             CMN_LOG_CLASS_INIT_ERROR << message.str() << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        // detect generation
+        const auto jsonGeneration = jsonConfig["generation"];
+        if (!jsonGeneration.isNull()) {
+            const auto generation = jsonGeneration.asString();
+            if (generation == "Classic") {
+                set_generation(GENERATION_Classic);
+            } else if (generation == "Si") {
+                set_generation(GENERATION_Si);
+            } else {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                         << ": \"generation\" must be either \"Classic\" or \"Si\", found: "
+                                         << generation << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": missing \"generation\"" << std::endl;
             exit(EXIT_FAILURE);
         }
 
@@ -1239,7 +1259,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
     // for Si, always calibrate from pot
     if (m_encoders_biased_from_pots
         && !m_calibration_mode
-        && (m_generation == GENERATION_CLASSIC)) {
+        && (m_generation == GENERATION_Classic)) {
         m_arm_interface->SendStatus(this->GetName() + ": encoders have already been calibrated, skipping");
         return;
     }
@@ -1284,7 +1304,7 @@ void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
     // use pots for redundancy when not in calibration mode and always
     // for the Si
     if (m_calibration_mode
-        && (m_generation == GENERATION_CLASSIC)) {
+        && (m_generation == GENERATION_Classic)) {
         IO.UsePotsForSafetyCheck(false);
     } else {
         IO.UsePotsForSafetyCheck(true);
@@ -2117,7 +2137,7 @@ void mtsIntuitiveResearchKitArm::inverse_kinematics(const prmInverseKinematicsQu
     this->InverseKinematics(output, input.goal_cp());
 }
 
-                                                   
+
 void mtsIntuitiveResearchKitArm::query_cp(const vctDoubleVec & jointValues,
                                           vctFrm4x4 & pose) const
 {

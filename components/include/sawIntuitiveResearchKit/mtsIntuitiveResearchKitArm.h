@@ -72,9 +72,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         m_calibration_mode = mode;
     }
 
-    typedef enum {GENERATION_UNDEFINED, GENERATION_CLASSIC, GENERATION_Si} GenerationType;
-    virtual inline void set_generation(const GenerationType generation) {
-        m_generation = generation;
+    typedef enum {GENERATION_UNDEFINED, GENERATION_Classic, GENERATION_Si} GenerationType;
+    virtual inline GenerationType generation(void) const {
+        return m_generation;
     }
 
  protected:
@@ -94,6 +94,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     inline virtual void PostConfigure(const Json::Value & CMN_UNUSED(jsonConfig),
                                       const cmnPath & CMN_UNUSED(configPath),
                                       const std::string & CMN_UNUSED(filename)) {};
+    inline virtual void set_generation(const GenerationType generation) {
+        m_generation = generation;
+    }
 
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */

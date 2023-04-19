@@ -151,7 +151,7 @@ void mtsIntuitiveResearchKitECM::Init(void)
     ToolOffset = 0;
 
     // set gravity compensation by default
-    m_gravity_compensation = (m_generation == GENERATION_CLASSIC);
+    m_gravity_compensation = (m_generation == GENERATION_Classic);
 
     // state machine specific to ECM, see base class for other states
     mArmState.AddState("MANUAL");
