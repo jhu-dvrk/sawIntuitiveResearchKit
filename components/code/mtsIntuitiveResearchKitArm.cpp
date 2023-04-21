@@ -601,36 +601,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
 
         // detect if we're using 1.8 and up with two fields, kinematic and tool-detection
         const auto jsonKinematic = jsonConfig["kinematic"];
-        if (!jsonKinematic.isNull()) {
-            // extract path of main json config file to search other files relative to it
-            cmnPath configPath(cmnPath::GetWorkingDirectory());
-            std::string fullname = configPath.Find(filename);
-            std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
-            // for user files first
-            configPath.Add(configDir, cmnPath::TAIL);
-            // for standard files using io/xyz.json, arm/xyz.json
-            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
-            // for tool definition files
-            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
-
-            // arm specific configuration
-            PreConfigure(jsonConfig, configPath, filename);
-
-            // kinematic
-            const auto fileKinematic = configPath.Find(jsonKinematic.asString());
-            if (fileKinematic == "") {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                         << " using file \"" << filename << "\" can't find kinematic file \""
-                                         << jsonKinematic.asString() << "\"" << std::endl;
-                exit(EXIT_FAILURE);
-            } else {
-                ConfigureDH(fileKinematic);
-            }
-
-            // arm specific configuration
-            PostConfigure(jsonConfig, configPath, filename);
-
-        } else {
+        if (jsonKinematic.isNull()) {
             std::stringstream message;
             message << "Configure " << this->GetName() << ":" << std::endl
                     << "----------------------------------------------------" << std::endl
@@ -642,6 +613,31 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
             std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
             CMN_LOG_CLASS_INIT_ERROR << message.str() << std::endl;
             exit(EXIT_FAILURE);
+        }
+
+        // extract path of main json config file to search other files relative to it
+        cmnPath configPath(cmnPath::GetWorkingDirectory());
+        std::string fullname = configPath.Find(filename);
+        std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
+        // for user files first
+        configPath.Add(configDir, cmnPath::TAIL);
+        // for standard files using io/xyz.json, arm/xyz.json
+        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
+        // for tool definition files
+        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
+
+        // arm specific configuration
+        PreConfigure(jsonConfig, configPath, filename);
+
+        // kinematic
+        const auto fileKinematic = configPath.Find(jsonKinematic.asString());
+        if (fileKinematic == "") {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                     << " using file \"" << filename << "\" can't find kinematic file \""
+                                     << jsonKinematic.asString() << "\"" << std::endl;
+            exit(EXIT_FAILURE);
+        } else {
+            ConfigureDH(fileKinematic);
         }
 
         // detect generation
@@ -675,6 +671,9 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         if (!jsonAlwaysHome.isNull()) {
             m_re_home = jsonAlwaysHome.asBool();
         }
+
+        // arm specific configuration
+        PostConfigure(jsonConfig, configPath, filename);
 
     } catch (std::exception & e) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": parsing file \""

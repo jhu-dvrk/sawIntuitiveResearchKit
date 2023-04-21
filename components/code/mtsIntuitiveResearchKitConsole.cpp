@@ -273,9 +273,9 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
             if (m_simulation == SIMULATION_KINEMATIC) {
                 mtm->set_simulated();
             }
-            mtm->set_generation(generation());
             mtm->set_calibration_mode(m_calibration_mode);
             mtm->Configure(m_arm_configuration_file);
+            m_generation = mtm->generation();
             SetBaseFrameIfNeeded(mtm);
             componentManager->AddComponent(mtm);
         }
@@ -374,9 +374,9 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType armType,
                     if (m_simulation == SIMULATION_KINEMATIC) {
                         mtm->set_simulated();
                     }
-                    mtm->set_generation(generation());
                     mtm->set_calibration_mode(m_calibration_mode);
                     mtm->Configure(m_arm_configuration_file);
+                    m_generation = mtm->generation();
                     SetBaseFrameIfNeeded(mtm);
                 } else {
                     CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: component \""
