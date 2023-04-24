@@ -8,7 +8,10 @@
 	    "d_gain": 10.0,
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
-	    "i_limit": 0.0
+	    "i_limit": 0.0,
+	    "use_disturbance_observer": true,
+	    "nominal_mass": 0.001,
+	    "disturbance_cutoff": 20.0
 	}
 	,
 	{
@@ -19,7 +22,10 @@
 	    "d_gain": 5.0,
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
-	    "i_limit": 0.0
+	    "i_limit": 0.0,
+	    "use_disturbance_observer": true,
+	    "nominal_mass": 0.001,
+	    "disturbance_cutoff": 20.0
 	}
 	,
 	{
@@ -30,7 +36,10 @@
 	    "d_gain": 5.0,
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
-	    "i_limit": 0.0
+	    "i_limit": 0.0,
+	    "use_disturbance_observer": true,
+	    "nominal_mass": 0.001,
+	    "disturbance_cutoff": 20.0
 	}
 	,
 	{
@@ -41,7 +50,10 @@
 	    "d_gain": 0.35,
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
-	    "i_limit": 0.0
+	    "i_limit": 0.0,
+	    "use_disturbance_observer": true,
+	    "nominal_mass": 0.001,
+	    "disturbance_cutoff": 15.0
 	}
 	,
 	{
@@ -53,7 +65,10 @@
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
 	    "i_limit": 0.0,
-	    "p_deadband": 0.02
+	    "p_deadband": 0.0,
+	    "use_disturbance_observer": true,
+	    "nominal_mass": 0.001,
+	    "disturbance_cutoff": 8.0
 	}
 	,
 	{
@@ -65,7 +80,10 @@
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
 	    "i_limit": 0.0,
-	    "p_deadband": 0.015
+	    "p_deadband": 0.015,
+	    "use_disturbance_observer": true,
+	    "nominal_mass": 0.001,
+	    "disturbance_cutoff": 8.0
 	}
 	,
 	{
