@@ -75,7 +75,6 @@ int main(int argc, char ** argv)
     // parse options
     cmnCommandLineOptions options;
     std::string jsonMainConfigFile;
-    std::list<std::string> jsonIOConfigFiles;
     std::string jsonCollectionConfigFile;
     std::list<std::string> managerConfig;
     std::string qtStyle;
@@ -83,10 +82,6 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
-
-    options.AddOptionMultipleValues("i", "ros-io-config",
-                                    "json config file to configure ROS bridges to collect low level data (IO)",
-                                    cmnCommandLineOptions::OPTIONAL_OPTION, &jsonIOConfigFiles);
 
     options.AddOptionNoValue("t", "text-only",
                              "text only interface, do not create Qt widgets");
