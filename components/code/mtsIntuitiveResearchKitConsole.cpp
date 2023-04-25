@@ -124,6 +124,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::suj(void) const
     switch (m_type) {
     case ARM_SUJ_Classic:
     case ARM_SUJ_Si:
+    case ARM_SUJ_Fixed :
         return true;
         break;
     default:

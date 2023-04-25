@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2022-07-27
 
-  (C) Copyright 2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2022-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -45,8 +45,10 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJSi, mtsTaskPerio
 class mtsIntuitiveResearchKitSUJSiArduino
 {
 public:
-    inline mtsIntuitiveResearchKitSUJSiArduino(const std::string & arduinoMAC):
-        m_MAC(arduinoMAC)
+    inline mtsIntuitiveResearchKitSUJSiArduino(const std::string & arduinoMAC,
+                                               const std::string & name):
+        m_MAC(arduinoMAC),
+        m_name(name)
     {
         gattlib_string_to_uuid(ATTRIB_POTS, strlen(ATTRIB_POTS) + 1, &m_g_uuid);
     }
@@ -63,7 +65,7 @@ public:
             if (m_connection != nullptr) {
                 m_connected = true;
             } else {
-                std::cerr << CMN_LOG_DETAILS << " -------- BT connection issue" << std::endl;
+                std::cerr << CMN_LOG_DETAILS << " -- " << m_name << " -- BT connection issue " << std::endl;
                 gattlib_disconnect(m_connection);
                 m_connected = false;
                 m_connection = nullptr;
@@ -90,6 +92,7 @@ public:
 
     // arduino/gatt
     std::string m_MAC;
+    std::string m_name;
     bool m_connected = false;
     gatt_connection_t * m_connection = nullptr;
     uuid_t m_g_uuid;
@@ -111,7 +114,7 @@ public:
                                                const bool isSimulated,
                                                mtsInterfaceProvided * interfaceProvided,
                                                mtsInterfaceRequired * interfaceRequired):
-        mtsIntuitiveResearchKitSUJSiArduino(arduinoMAC),
+        mtsIntuitiveResearchKitSUJSiArduino(arduinoMAC, name),
         m_name(name),
         m_nb_joints(NB_JOINTS.at(name)),
         m_base_arduino_pot_index(BASE_POT_INDEX.at(name)),
@@ -518,7 +521,7 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
         exit(EXIT_FAILURE);
     }
     const std::string mac = jsonConfig["base-arduino-mac"].asString();
-    m_base_arduino = new mtsIntuitiveResearchKitSUJSiArduino(mac);
+    m_base_arduino = new mtsIntuitiveResearchKitSUJSiArduino(mac, "column");
 
     // find all arms, there should be 4 of them
     const Json::Value jsonArms = jsonConfig["arms"];
