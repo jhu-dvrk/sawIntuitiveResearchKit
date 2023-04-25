@@ -65,10 +65,7 @@
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
 	    "i_limit": 0.0,
-	    "p_deadband": 0.0,
-	    "use_disturbance_observer": true,
-	    "nominal_mass": 0.001,
-	    "disturbance_cutoff": 8.0
+	    "p_deadband": 0.0
 	}
 	,
 	{
@@ -80,10 +77,7 @@
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
 	    "i_limit": 0.0,
-	    "p_deadband": 0.015,
-	    "use_disturbance_observer": true,
-	    "nominal_mass": 0.001,
-	    "disturbance_cutoff": 8.0
+	    "p_deadband": 0.015
 	}
 	,
 	{
