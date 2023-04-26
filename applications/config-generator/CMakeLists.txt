@@ -21,10 +21,7 @@ if (cisst_FOUND_AS_REQUIRED)
   include (${CISST_USE_FILE})
 
   # catkin/ROS paths
-  cisst_is_catkin_build (sawIntuitiveResearchKitConfigGenerator_IS_CATKIN_BUILT)
-  if (sawIntuitiveResearchKitConfigGenerator_IS_CATKIN_BUILT)
-    set (EXECUTABLE_OUTPUT_PATH "${CATKIN_DEVEL_PREFIX}/bin")
-  endif ()
+  cisst_set_output_path ()
 
   set (sawIntuitiveResearchKitConfigGenerator_FILES
     ${sawIntuitiveResearchKitConfigGenerator_SOURCE_DIR}/calParser.py
