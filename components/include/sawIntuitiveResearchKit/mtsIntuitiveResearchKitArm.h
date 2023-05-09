@@ -36,7 +36,10 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 #include <cisstParameterTypes/prmCartesianImpedanceGains.h>
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
-#include <cisstParameterTypes/prmInverseKinematicsQuery.h>
+#include <cisstParameterTypes/prmInverseKinematicsRequest.h>
+#include <cisstParameterTypes/prmInverseKinematicsResponse.h>
+#include <cisstParameterTypes/prmForwardKinematicsRequest.h>
+#include <cisstParameterTypes/prmForwardKinematicsResponse.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
@@ -229,19 +232,19 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
                                                     const vctFrm4x4 & cartesianGoal) const = 0;
 
     /*! Alternate signature for ROS services. */
-    void inverse_kinematics(const prmInverseKinematicsQuery & input,
-                            vctDoubleVec & output) const ;
+    void inverse_kinematics(const prmInverseKinematicsRequest & request,
+                            prmInverseKinematicsResponse & response) const ;
 
     /*! Forward kinematic queries using joint values provided by user.
       The number of joints (size of the vector) determines up to which
       ling the forward kinematic is computed.  If the number of joint
-      is invalid, i.e. greater than the number of links, the result is
-      identity. */
+      is invalid, i.e. greater than the number of links, the
+      response.result is set to false. */
     //@{{
-    virtual void query_cp(const vctDoubleVec & jointValues,
-                          vctFrm4x4 & pose) const;
-    virtual void local_query_cp(const vctDoubleVec & jointValues,
-                                vctFrm4x4 & pose) const;
+    virtual void forward_kinematics(const prmForwardKinematicsRequest & request,
+                                    prmForwardKinematicsResponse & response) const;
+    virtual void local_forward_kinematics(const prmForwardKinematicsRequest & request,
+                                          prmForwardKinematicsResponse & response) const;
     //@}
 
     /*! Each arm has a different homing procedure. */
