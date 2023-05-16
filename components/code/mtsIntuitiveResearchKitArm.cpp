@@ -1693,6 +1693,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             m_pid_new_goal = false;
             mCartesianRelative = vctFrm3::Identity();
             m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
+            m_servo_jv.Zeros();
             m_effort_orientation_locked = false;
             break;
         case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
@@ -1913,9 +1914,9 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
     }
     PID.feed_forward_jf(m_pid_feed_forward_servo_jf);
 
-    // position
-    m_servo_jp_param.Goal().Assign(jp); // , number_of_joints());
-    m_servo_jp_param.Velocity().ForceAssign(jv); // , number_of_joints());
+    // position and velocity
+    m_servo_jp_param.Goal().Assign(jp);
+    m_servo_jp_param.Velocity().ForceAssign(jv);
     m_servo_jp_param.SetTimestamp(StateTable.GetTic());
     if (m_has_coupling) {
         m_servo_jp_param.Goal() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Goal();
@@ -1951,6 +1952,7 @@ void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & jp)
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     m_servo_jp.Assign(jp.Goal(), number_of_joints_kinematics());
+    m_servo_jv.Assign(jp.Velocity(), number_of_joints_kinematics());
     m_pid_new_goal = true;
 }
 
