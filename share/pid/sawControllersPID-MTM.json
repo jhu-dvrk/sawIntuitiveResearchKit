@@ -65,7 +65,7 @@
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
 	    "i_limit": 0.0,
-	    "p_deadband": 0.0
+	    "p_deadband": 0.008
 	}
 	,
 	{
@@ -89,7 +89,7 @@
 	    "i_gain": 0.0,
 	    "i_forget_rate": 0.99,
 	    "i_limit": 0.0,
-	    "p_deadband": 0.015
+	    "p_deadband": 0.02
 	}
     ]
 }
