@@ -116,7 +116,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // initialize trajectory data
     m_trajectory_j.v_max.SetAll(90.0 * cmnPI_180); // degrees per second
     m_trajectory_j.v_max.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180; // roll can go fast
-    m_trajectory_j.a_max.SetAll(90.0 * cmnPI_180);
+    m_trajectory_j.a_max.SetAll(45.0 * cmnPI_180);
     m_trajectory_j.a_max.at(JNT_WRIST_ROLL) = 360.0 * cmnPI_180;
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
     m_trajectory_j.goal_tolerance.at(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
