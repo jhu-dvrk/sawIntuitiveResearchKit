@@ -411,10 +411,10 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                                  "actuator_to_joint_position", vctDoubleVec(), vctDoubleVec());
 
         // Kinematic queries
-        m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::query_cp,
-                                                 this, "query_cp");
-        m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::local_query_cp,
-                                                 this, "local/query_cp");
+        m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::forward_kinematics,
+                                                 this, "forward_kinematics");
+        m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::local_forward_kinematics,
+                                                 this, "local/forward_kinematics");
         m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::inverse_kinematics,
                                                  this, "inverse_kinematics");
 
@@ -1693,6 +1693,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             m_pid_new_goal = false;
             mCartesianRelative = vctFrm3::Identity();
             m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
+            m_servo_jv.Zeros();
             m_effort_orientation_locked = false;
             break;
         case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
@@ -1913,9 +1914,9 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
     }
     PID.feed_forward_jf(m_pid_feed_forward_servo_jf);
 
-    // position
-    m_servo_jp_param.Goal().Assign(jp); // , number_of_joints());
-    m_servo_jp_param.Velocity().ForceAssign(jv); // , number_of_joints());
+    // position and velocity
+    m_servo_jp_param.Goal().Assign(jp);
+    m_servo_jp_param.Velocity().ForceAssign(jv);
     m_servo_jp_param.SetTimestamp(StateTable.GetTic());
     if (m_has_coupling) {
         m_servo_jp_param.Goal() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Goal();
@@ -1951,6 +1952,7 @@ void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & jp)
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     m_servo_jp.Assign(jp.Goal(), number_of_joints_kinematics());
+    m_servo_jv.Assign(jp.Velocity(), number_of_joints_kinematics());
     m_pid_new_goal = true;
 }
 
@@ -2128,33 +2130,47 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
     }
 }
 
-
-void mtsIntuitiveResearchKitArm::inverse_kinematics(const prmInverseKinematicsQuery & input,
-                                                    vctDoubleVec & output) const
+void mtsIntuitiveResearchKitArm::inverse_kinematics(const prmInverseKinematicsRequest & request,
+                                                    prmInverseKinematicsResponse & response) const
 {
-    output.ForceAssign(input.measured_jp());
-    this->InverseKinematics(output, input.goal_cp());
+    if (request.jp().size() != number_of_joints_kinematics()) {
+        response.result() = false;
+        response.message() = "incorrect number of joints";
+        return;
+    }
+    response.jp().ForceAssign(request.jp());
+    if (this->InverseKinematics(response.jp(), request.cp()) == robManipulator::ESUCCESS) {
+        response.result() = true;
+    } else {
+        response.result() = false;
+        response.message() = "inverse kinematics failed";
+    }
 }
 
-
-void mtsIntuitiveResearchKitArm::query_cp(const vctDoubleVec & jointValues,
-                                          vctFrm4x4 & pose) const
+void mtsIntuitiveResearchKitArm::forward_kinematics(const prmForwardKinematicsRequest & request,
+                                                    prmForwardKinematicsResponse & response) const
 {
-    size_t nbJoints = jointValues.size();
-    if (nbJoints > this->number_of_joints_kinematics()) {
-        nbJoints = this->number_of_joints_kinematics();
+    size_t nb_joints = request.jp().size();
+    if (nb_joints > this->number_of_joints_kinematics()) {
+        response.result() = false;
+        response.message() = "too many joints";
+        return;
     }
-    pose = m_base_frame * Manipulator->ForwardKinematics(jointValues, nbJoints);
+    response.cp() = m_base_frame * Manipulator->ForwardKinematics(request.jp(), nb_joints);
+    response.result() = true;
 }
 
-void mtsIntuitiveResearchKitArm::local_query_cp(const vctDoubleVec & jointValues,
-                                                vctFrm4x4 & pose) const
+void mtsIntuitiveResearchKitArm::local_forward_kinematics(const prmForwardKinematicsRequest & request,
+                                                          prmForwardKinematicsResponse & response) const
 {
-    size_t nbJoints = jointValues.size();
-    if (nbJoints > this->number_of_joints_kinematics()) {
-        nbJoints = this->number_of_joints_kinematics();
+    size_t nb_joints = request.jp().size();
+    if (nb_joints > this->number_of_joints_kinematics()) {
+        response.result() = false;
+        response.message() = "too many joints";
+        return;
     }
-    pose = Manipulator->ForwardKinematics(jointValues, nbJoints);
+    response.cp() = Manipulator->ForwardKinematics(request.jp(), nb_joints);
+    response.result() = true;
 }
 
 void mtsIntuitiveResearchKitArm::servo_jf(const prmForceTorqueJointSet & effort)

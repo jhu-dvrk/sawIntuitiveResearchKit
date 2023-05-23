@@ -87,7 +87,7 @@
         },
 
         "rotation": {
-            "description": "[Deprecated] Make sure your arms are properly aligned using their \"base-frame\".  Only use this attribute if your arms don't support \"base-frame\", i.e. non-dVRK arms.",
+            "description": "[Deprecated] Make sure your arms are properly aligned using their \"base-frame\".",
             "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/cisst-matrices.schema.json#/properties/matrix3x3"
         }
     }

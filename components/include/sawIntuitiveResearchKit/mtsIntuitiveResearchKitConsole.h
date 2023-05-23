@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitConsole_h
 #define _mtsIntuitiveResearchKitConsole_h
 
+#include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsTaskFromSignal.h>
 #include <cisstMultiTask/mtsDelayedConnections.h>
 #include <cisstParameterTypes/prmOperatingState.h>
@@ -122,6 +123,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         std::string m_serial;
         SimulationType m_simulation;
         bool m_calibration_mode = false;
+        cmnPath m_config_path;
 
         // low level
         std::string m_IO_component_name;
