@@ -685,7 +685,7 @@ const std::string & mtsIntuitiveResearchKitConsole::TeleopPSM::Name(void) const 
 
 mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string & componentName):
     mtsTaskFromSignal(componentName, 100),
-    mConfigured(false),
+    m_configured(false),
     mTimeOfLastErrorBeep(0.0),
     mTeleopMTMToCycle(""),
     mTeleopECM(0),
@@ -695,6 +695,15 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mCameraPressed(false),
     m_IO_component_name("io")
 {
+    // configure search path
+    m_config_path.Add(cmnPath::GetWorkingDirectory());
+    // add path to source/share directory to find common files.  This
+    // will work as long as this component is located in the same
+    // parent directory as the "shared" directory.
+    m_config_path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
+    // default installation directory
+    m_config_path.Add(mtsIntuitiveResearchKit::DefaultInstallationDirectory, cmnPath::TAIL);
+
     mInterface = AddInterfaceProvided("Main");
     if (mInterface) {
         mInterface->AddMessageEvents();
@@ -774,7 +783,7 @@ void mtsIntuitiveResearchKitConsole::calibration_mode(bool & result) const
 
 void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 {
-    mConfigured = false;
+    m_configured = false;
 
     std::ifstream jsonStream;
     jsonStream.open(filename.c_str());
@@ -785,7 +794,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to parse configuration" << std::endl
                                  << "File: " << filename << std::endl << "Error(s):" << std::endl
                                  << jsonReader.getFormattedErrorMessages();
-        this->mConfigured = false;
+        this->m_configured = false;
         exit(EXIT_FAILURE);
     }
 
@@ -799,25 +808,16 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     mtsComponent::ConfigureJSON(jsonConfig);
 
     // extract path of main json config file to search other files relative to it
-    cmnPath configPath(cmnPath::GetWorkingDirectory());
-    std::string fullname = configPath.Find(filename);
+    std::string fullname = m_config_path.Find(filename);
     std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
-    configPath.Add(configDir, cmnPath::TAIL);
-
-    // add path to source/share directory to find common files.  This
-    // will work as long as this component is located in the same
-    // parent directory as the "shared" directory.
-    configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
-
-    // default installation directory
-    configPath.Add(mtsIntuitiveResearchKit::DefaultInstallationDirectory, cmnPath::TAIL);
+    m_config_path.Add(configDir, cmnPath::TAIL);
 
     mtsComponentManager * manager = mtsComponentManager::GetInstance();
 
     // first, create all custom components and connections, i.e. dynamic loading and creation
     const Json::Value componentManager = jsonConfig["component-manager"];
     if (!componentManager.empty()) {
-        if (!manager->ConfigureJSON(componentManager, configPath)) {
+        if (!manager->ConfigureJSON(componentManager, m_config_path)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure component-manager" << std::endl;
             exit(EXIT_FAILURE);
         }
@@ -905,7 +905,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
 
     const Json::Value arms = jsonConfig["arms"];
     for (unsigned int index = 0; index < arms.size(); ++index) {
-        if (!ConfigureArmJSON(arms[index], m_IO_component_name, configPath)) {
+        if (!ConfigureArmJSON(arms[index], m_IO_component_name)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure arms[" << index << "]" << std::endl;
             exit(EXIT_FAILURE);
         }
@@ -972,7 +972,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             Json::Value configFiles = jsonValue["configuration-files"];
             if (!configFiles.empty()) {
                 for (unsigned int index = 0; index < configFiles.size(); ++index) {
-                    const std::string configFile = configPath.Find(configFiles[index].asString());
+                    const std::string configFile = m_config_path.Find(configFiles[index].asString());
                     if (configFile == "") {
                         CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
                                                  << configFiles[index].asString() << std::endl;
@@ -985,7 +985,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             // footpedals, we assume these are the default one provided along the dVRK
             configFiles = jsonValue["footpedals"];
             if (!configFiles.empty()) {
-                const std::string configFile = configPath.Find(configFiles.asString());
+                const std::string configFile = m_config_path.Find(configFiles.asString());
                 if (configFile == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
                                              << configFiles.asString() << std::endl;
@@ -1010,7 +1010,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             // check if operator present uses IO
             Json::Value jsonConfigFile = jsonValue["io"];
             if (!jsonConfigFile.empty()) {
-                const std::string configFile = configPath.Find(jsonConfigFile.asString());
+                const std::string configFile = m_config_path.Find(jsonConfigFile.asString());
                 if (configFile == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
                                              << jsonConfigFile.asString() << std::endl;
@@ -1027,7 +1027,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             // check if operator present uses IO
             Json::Value jsonConfigFile = jsonValue["io"];
             if (!jsonConfigFile.empty()) {
-                const std::string configFile = configPath.Find(jsonConfigFile.asString());
+                const std::string configFile = m_config_path.Find(jsonConfigFile.asString());
                 if (configFile == "") {
                     CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
                                              << jsonConfigFile.asString() << std::endl;
@@ -1217,12 +1217,12 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         }
     }
 
-    mConfigured = true;
+    m_configured = true;
 }
 
 const bool & mtsIntuitiveResearchKitConsole::Configured(void) const
 {
-    return mConfigured;
+    return m_configured;
 }
 
 void mtsIntuitiveResearchKitConsole::Startup(void)
@@ -1416,9 +1416,7 @@ void mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
 }
 
 bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonArm,
-                                                      const std::string & ioComponentName,
-                                                      const cmnPath & configPath)
-{
+                                                      const std::string & ioComponentName)                                          {
     const std::string arm_name = jsonArm["name"].asString();
     const auto armIterator = mArms.find(arm_name);
     Arm * arm_pointer = 0;
@@ -1432,7 +1430,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     Json::Value jsonValue;
 
     // create search path based on optional system
-    arm_pointer->m_config_path = configPath;
+    arm_pointer->m_config_path = m_config_path;
     jsonValue = jsonArm["system"];
     if (!jsonValue.empty()) {
         arm_pointer->m_config_path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR)
@@ -2125,6 +2123,11 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
     }
 
     return true;
+}
+
+std::string mtsIntuitiveResearchKitConsole::locate_file(const std::string & filename)
+{
+    return m_config_path.Find(filename);
 }
 
 void mtsIntuitiveResearchKitConsole::power_off(void)

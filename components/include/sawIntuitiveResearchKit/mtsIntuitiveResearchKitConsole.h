@@ -273,8 +273,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     bool Connect(void);
 
+    std::string locate_file(const std::string & filename);
+
  protected:
-    bool mConfigured;
+    bool m_configured;
+    cmnPath m_config_path;
     mtsDelayedConnections mConnections;
 
     double mTimeOfLastErrorBeep;
@@ -316,8 +319,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     /*! Find all arm data from JSON configuration. */
     bool ConfigureArmJSON(const Json::Value & jsonArm,
-                          const std::string & ioComponentName,
-                          const cmnPath & configPath);
+                          const std::string & ioComponentName);
     bool AddArmInterfaces(Arm * arm);
 
     // these two methods have exact same implementation.it would be
