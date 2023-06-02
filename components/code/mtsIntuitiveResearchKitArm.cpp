@@ -1952,7 +1952,7 @@ void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & jp)
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     m_servo_jp.Assign(jp.Goal(), number_of_joints_kinematics());
-    m_servo_jv.Assign(jp.Velocity(), number_of_joints_kinematics());
+    m_servo_jv.Assign(jp.Velocity(), jp.Velocity().size());
     m_pid_new_goal = true;
 }
 
