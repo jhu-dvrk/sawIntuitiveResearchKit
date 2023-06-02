@@ -150,9 +150,6 @@ void mtsIntuitiveResearchKitECM::Init(void)
 
     ToolOffset = 0;
 
-    // set gravity compensation by default
-    m_gravity_compensation = (m_generation == GENERATION_Classic);
-
     // state machine specific to ECM, see base class for other states
     mArmState.AddState("MANUAL");
 
@@ -253,6 +250,9 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
 void mtsIntuitiveResearchKitECM::EnterHomed(void)
 {
     mtsIntuitiveResearchKitArm::EnterHomed();
+
+    // set gravity compensation based on generation
+    m_gravity_compensation = (generation() == GENERATION_Classic);
 
     // event to propagate endoscope type based on configuration file
     EndoscopeEvents.endoscope_type(mtsIntuitiveResearchKitEndoscopeTypes::TypeToString(m_endoscope_type));
@@ -391,15 +391,15 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     case mtsIntuitiveResearchKitEndoscopeTypes::SD_STRAIGHT:
     case mtsIntuitiveResearchKitEndoscopeTypes::SD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::SD_DOWN:
-        mass = 1.5;
+        mass = mtsIntuitiveResearchKit::ECM::SDMass;
         break;
     case mtsIntuitiveResearchKitEndoscopeTypes::HD_STRAIGHT:
     case mtsIntuitiveResearchKitEndoscopeTypes::HD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::HD_DOWN:
-        mass = 2.5;
+        mass = mtsIntuitiveResearchKit::ECM::HDMass;
         break;
     default:
-        mass = 0.0;
+        mass = mtsIntuitiveResearchKit::ECM::EmptyMass;
         break;
     }
 
