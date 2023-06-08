@@ -282,7 +282,7 @@ class ClassicPSM(Robot):
         super().__init__(robotTypeName, controllerTypeName, serialNumber, calData, 7)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
-        self.potentiometers = Potentiometers("Actuators", potentiometerTolerances)
+        self.potentiometers = Potentiometers(potentiometerTolerances)
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
@@ -341,7 +341,7 @@ class SiPSM(Robot):
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         lookupTable = "sawRobotIO1394-{}-{}-PotentiometerLookupTable.json".format(robotTypeName, serialNumber)
-        self.potentiometers = Potentiometers("Actuators", potentiometerTolerances, lookupTable)
+        self.potentiometers = Potentiometers(potentiometerTolerances, lookupTable=lookupTable)
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
@@ -442,7 +442,7 @@ class ClassicECM(Robot):
         super().__init__(robotTypeName, controllerTypeName, serialNumber, calData, 4)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
-        self.potentiometers = Potentiometers("Actuators", potentiometerTolerances)
+        self.potentiometers = Potentiometers(potentiometerTolerances)
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
@@ -517,7 +517,7 @@ class SiECM(Robot):
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         lookupTable = "sawRobotIO1394-{}-{}-PotentiometerLookupTable.json".format(robotTypeName, serialNumber)
-        self.potentiometers = Potentiometers("Actuators", potentiometerTolerances, lookupTable)
+        self.potentiometers = Potentiometers(potentiometerTolerances, lookupTable=lookupTable)
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
@@ -600,7 +600,7 @@ class MTM(Robot):
         elif robotTypeName.startswith("MTMR"):
             driveDirections = [-1, 1, 1, 1, 1, 1, -1]
         else:
-            raise ValueError("Unsupport MTM type: {}".format(robotTypeName))
+            raise ValueError("Unsupported MTM type: {}".format(robotTypeName))
 
         self.driveDirection = lambda index: driveDirections[index]
         self.encoderCPT = lambda index: [4000, 4000, 4000, 4000, 64, 64, 64][index]
@@ -617,8 +617,7 @@ class MTM(Robot):
         super().__init__(robotTypeName, controllerTypeName, serialNumber, calData, 7)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
-        self.potentiometers = Potentiometers("Joints", potentiometerTolerances)
-        self.coupling = MTMCoupling()
+        self.potentiometers = Potentiometers(potentiometerTolerances, couplingMatrix=MTMCoupling())
 
     def generatePotentiometerTolerances(self):
         for index in range(self.numberOfActuators):
@@ -630,7 +629,6 @@ class MTM(Robot):
     def toDict(self):
         dict = super().toDict()
         dict["Potentiometers"] = self.potentiometers
-        dict["Coupling"] = self.coupling
         return dict
 
 
@@ -659,7 +657,6 @@ class MTMGripper(Robot):
 
         self.voltsToPosSIScale = -23.1788
         self.voltsToPosSIOffset = 91.4238
-
         super().__init__(robotTypeName, controllerTypeName, serialNumber, calData, 1)
 
     def generateAnalogIns(self):
@@ -685,9 +682,10 @@ class MTMGripper(Robot):
 
         for drive, encoder, analogIn, brake in data:
             type = self.actuatorType(index)
-            id = self.boardIDs[1]
+            boardID = self.boardIDs[index // self.actuatorsPerBoard]
+            axisID = index % self.actuatorsPerBoard
             yield Actuator(
-                id, type, id, index, drive, encoder, analogIn, brake
+                0, type, boardID, axisID, drive, encoder, analogIn, brake
             )
 
     def toDict(self):
@@ -837,16 +835,18 @@ class AnalogIn(Serializable):
 
 
 class Potentiometers(Serializable):
-    def __init__(self, position, tolerances, lookupTable=None):
-        self.position = position
+    def __init__(self, tolerances, lookupTable=None, couplingMatrix=None):
         self.tolerances = tolerances
         self.lookupTable = lookupTable
+        self.coupling = couplingMatrix
 
     def toDict(self):
         dict = {
-            "Position": self.position,
             "Tolerances": self.tolerances,
         }
+
+        if self.coupling is not None:
+            dict["JointToActuatorPosition"] = self.coupling.jointToActuatorPosition
 
         if self.lookupTable is not None:
             dict["LookupTable"] = self.lookupTable
@@ -864,8 +864,8 @@ class PotentiometerTolerance(Serializable):
     def toDict(self):
         return {
             "Axis": self.axisID,
-            "Distance": "{:5.2f}".format(self.distance),
-            "Latency": "{:5.2f}".format(self.latency),
+            "Distance": self.distance,
+            "Latency": self.latency,
             "Unit": self.units,
         }
 
@@ -883,22 +883,15 @@ class Potentiometer(Serializable):
 
 class MTMCoupling(Serializable):
     def __init__(self):
-        self.actuatorToJointPositionMatrix = [
+        self.jointToActuatorPosition = [
             [1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
             [0.00, 1.00, 0.00, 0.00, 0.00, 0.00, 0.00],
-            [0.00, -1.00, 1.00, 0.00, 0.00, 0.00, 0.00],
-            [0.00, 0.6697, -0.6697, 1.00, 0.00, 0.00, 0.00],
+            [0.00, 1.00, 1.00, 0.00, 0.00, 0.00, 0.00],
+            [0.00, 0.00, 0.6697, 1.00, 0.00, 0.00, 0.00],
             [0.00, 0.00, 0.00, 0.00, 1.00, 0.00, 0.00],
             [0.00, 0.00, 0.00, 0.00, 0.00, 1.00, 0.00],
             [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1.00],
         ]
-
-    def toDict(self):
-        return {
-            "Value": 1,
-            "ActuatorToJointPosition": self.actuatorToJointPositionMatrix,
-        }
-
 
 class DigitalInput(Serializable):
     def __init__(self, robotTypeName: str, type: str, bitID: int, boardID: int, pressed: int, debounceTime: float):
@@ -1057,7 +1050,7 @@ def toXML(name, object, parent=None):
 
 # Adds nice indentation to existing ElementTree XML object
 def pretty_print_xml(node, parent=None, index=-1, depth=0):
-    indent = "    "
+    indent = "  "
     for i, subNode in enumerate(node):
         pretty_print_xml(subNode, node, i, depth + 1)
 
@@ -1145,7 +1138,7 @@ def generateConfig(calFileName, robotTypeName, controllerTypeName, serialNumber,
         gripperConfigFileName = (
             "sawRobotIO1394-" + robotTypeName + "-gripper-" + serialNumber
         )
-        gripperConfig = Config(calData, version, serialNumber, robotTypeName + "-Gripper", generationName, controllerTypeName)
+        gripperConfig = Config(calData, version, robotTypeName + "-Gripper", controllerTypeName, serialNumber, generationName)
         saveConfigFile(gripperConfigFileName, gripperConfig, outputFormat)
 
 
@@ -1155,7 +1148,7 @@ def generateArmConfig(robotTypeName, controllerTypeName, serialNumber, generatio
         backup =  fileName + datetime.datetime.now().strftime("-backup-%Y-%m-%d_%H:%M:%S")
         os.rename(fileName, backup)
         print("Existing arm config file has been renamed {}".format(backup))
-    kinematic = '  "kinematic": "kinematic/';
+    kinematic = '    "kinematic": "kinematic/';
     if robotTypeName.startswith("PSM"):
         kinematic += "psm"
     elif robotTypeName == "MTML":
@@ -1173,10 +1166,10 @@ def generateArmConfig(robotTypeName, controllerTypeName, serialNumber, generatio
     with open(fileName, "w") as f:
         f.write("{\n")
         f.write(kinematic)
-        f.write('  , "generation": "' + generationName + '"\n')
+        f.write('    , "generation": "' + generationName + '"\n')
         if robotTypeName.startswith("PSM"):
-            f.write('  // , "tool-detection": "MANUAL"\n')
-            f.write('  , "tool-detection": "AUTOMATIC"\n')
+            f.write('    // , "tool-detection": "MANUAL"\n')
+            f.write('    , "tool-detection": "AUTOMATIC"\n')
         f.write("}\n")
     print("Generated arm config file {}".format(fileName))
 
@@ -1190,20 +1183,23 @@ def generateConsoleConfig(robotTypeName, controllerTypeName, serialNumber, gener
     type = ""
     if robotTypeName.startswith("PSM"):
         type = "PSM"
-    elif robotTypeName == "MTML" or robotTypeName == "MTMR" or robotTypeName == "ECM":
+    if robotTypeName.startswith("MTM"):
+        type = "MTM"
+    elif robotTypeName == "ECM":
         type = robotTypeName
     else:
         raise ValueError("Unrecognized robot type: {}".format(robotTypeName))
 
     with open(fileName, "w") as f:
         f.write('{\n')
-        f.write('  "arms": [\n')
-        f.write('    {\n')
-        f.write('      "name": "' + robotTypeName + '",\n')
-        f.write('      "type": "' + type + '"\n,')
-        f.write('      "serial": "' + str(serialNumber) + '"\n')
-        f.write('    }\n')
-        f.write('  ]\n')
+        f.write('    "arms":\n')
+        f.write('    [\n')
+        f.write('        {\n')
+        f.write('            "name": "' + robotTypeName + '",\n')
+        f.write('            "type": "' + type + '",\n')
+        f.write('            "serial": "' + str(serialNumber) + '"\n')
+        f.write('        }\n')
+        f.write('    ]\n')
         f.write('}\n')
     print("Generated console file {}".format(fileName))
 
