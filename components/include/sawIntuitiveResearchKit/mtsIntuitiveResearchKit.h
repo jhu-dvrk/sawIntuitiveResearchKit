@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -70,6 +70,13 @@ namespace mtsIntuitiveResearchKit {
         const double PGain = 1.0;
         const double DGain = 0.1;
         const double EffortMax = 0.4;
+    }
+
+    // ECM constants
+    namespace ECM {
+        const double SDMass = 1.5;
+        const double HDMass = 2.5;
+        const double EmptyMass = 0.05;
     }
 
     // teleoperation constants

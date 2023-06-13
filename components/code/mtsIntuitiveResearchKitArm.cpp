@@ -1952,7 +1952,7 @@ void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & jp)
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     m_servo_jp.Assign(jp.Goal(), number_of_joints_kinematics());
-    m_servo_jv.Assign(jp.Velocity(), number_of_joints_kinematics());
+    m_servo_jv.Assign(jp.Velocity(), jp.Velocity().size());
     m_pid_new_goal = true;
 }
 
@@ -2247,7 +2247,7 @@ void mtsIntuitiveResearchKitArm::gravity_compensation(vctDoubleVec & efforts)
     efforts.ForceAssign(Manipulator->CCG(m_kin_measured_js.Position(), qd));  // should this take joint velocities?
 }
 
-void mtsIntuitiveResearchKitArm::servo_ci(const prmCartesianImpedanceGains & gains)
+void mtsIntuitiveResearchKitArm::servo_ci(const prmCartesianImpedance & goal)
 {
     if (!ArmIsReady("servo_cf_body", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
         return;
@@ -2260,7 +2260,7 @@ void mtsIntuitiveResearchKitArm::servo_ci(const prmCartesianImpedanceGains & gai
     // set new wrench
     m_cartesian_impedance = true;
     m_body_cf_orientation_absolute = true;
-    mCartesianImpedanceController->SetGains(gains);
+    mCartesianImpedanceController->SetGoal(goal);
     if (m_servo_cf_type != WRENCH_BODY) {
         m_servo_cf_type = WRENCH_BODY;
         m_arm_interface->SendStatus(this->GetName() + ": effort cartesian WRENCH_BODY");

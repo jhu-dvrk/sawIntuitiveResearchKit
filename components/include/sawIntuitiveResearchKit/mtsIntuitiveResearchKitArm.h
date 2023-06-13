@@ -34,7 +34,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
-#include <cisstParameterTypes/prmCartesianImpedanceGains.h>
+#include <cisstParameterTypes/prmCartesianImpedance.h>
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
 #include <cisstParameterTypes/prmInverseKinematicsRequest.h>
 #include <cisstParameterTypes/prmInverseKinematicsResponse.h>
@@ -197,7 +197,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
     virtual void body_set_cf_orientation_absolute(const bool & absolute);
     virtual void use_gravity_compensation(const bool & gravityCompensation);
-    virtual void servo_ci(const prmCartesianImpedanceGains & gains);
+    virtual void servo_ci(const prmCartesianImpedance & gains);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
     virtual void set_base_frame(const prmPositionCartesianSet & newBaseFrame);
