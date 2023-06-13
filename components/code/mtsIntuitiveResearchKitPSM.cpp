@@ -781,18 +781,23 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
 
 void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(prmConfigurationJoint & configuration_js)
 {
+    // all vectors used to get data from Manipulator must match the
+    // manipulator size, potentially 3, 6 or 8 (snake).  we can then
+    // picj the first 3 elements to set the configuration_js.
+
     // names
     const size_t manipulator_size = Manipulator->links.size();
     configuration_js.Name().SetSize(number_of_joints());
-    std::vector<std::string> names(manipulator_size);
-    Manipulator->GetJointNames(names);
-    // copy all names to config vector
-    std::copy(names.begin(), names.end(), configuration_js.Name().begin());
+    std::vector<std::string> name_tmp(manipulator_size);
+    Manipulator->GetJointNames(name_tmp);
+    // copy first 3 names to config vector
+    for (size_t i = 0; i < 3; ++i) {
+        configuration_js.Name().at(i) = name_tmp.at(i);
+    }
     // overwrite last 4
-    configuration_js.Name().at(3) = "disc_1";
-    configuration_js.Name().at(4) = "disc_2";
-    configuration_js.Name().at(5) = "disc_3";
-    configuration_js.Name().at(6) = "disc_4";
+    for (size_t i = 3; i < 7; ++i) {
+        configuration_js.Name().at(i) = "disc_" + std::to_string(i - 2);
+    }
     // for type, we can even ignore values loaded from config file
     configuration_js.Type().SetSize(number_of_joints());
     configuration_js.Type().SetAll(PRM_JOINT_REVOLUTE);
@@ -800,15 +805,19 @@ void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(prmConfiguratio
     // position limits
     configuration_js.PositionMin().SetSize(number_of_joints());
     configuration_js.PositionMax().SetSize(number_of_joints());
-    Manipulator->GetJointLimits(configuration_js.PositionMin().Ref(manipulator_size, 0),
-                                configuration_js.PositionMax().Ref(manipulator_size, 0));
+    vctDoubleVec min_tmp(manipulator_size);
+    vctDoubleVec max_tmp(manipulator_size);
+    Manipulator->GetJointLimits(min_tmp, max_tmp);
+    configuration_js.PositionMin().Ref(3, 0).Assign(min_tmp.Ref(3, 0));
+    configuration_js.PositionMax().Ref(3, 0).Assign(max_tmp.Ref(3, 0));
     configuration_js.PositionMin().Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
     configuration_js.PositionMax().Ref(4, 3).SetAll( mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
     // efforts
     configuration_js.EffortMin().SetSize(number_of_joints());
     configuration_js.EffortMax().SetSize(number_of_joints());
-    Manipulator->GetFTMaximums(configuration_js.EffortMax().Ref(manipulator_size, 0));
-    configuration_js.EffortMax().Ref(4, 3).SetAll(0.343642);
+    Manipulator->GetFTMaximums(max_tmp);
+    configuration_js.EffortMax().Ref(3, 0).Assign(max_tmp.Ref(3, 0));
+    configuration_js.EffortMax().Ref(4, 3).SetAll(mtsIntuitiveResearchKit::PSM::DiskMaxTorque);
     configuration_js.EffortMin().Assign(-configuration_js.EffortMax());
 }
 
@@ -1498,6 +1507,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         switch (mToolDetection) {
         case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
         case mtsIntuitiveResearchKitToolTypes::MANUAL:
+            Manipulator->Truncate(3);
             set_tool_present_and_configured(false, false);
             break;
         case mtsIntuitiveResearchKitToolTypes::FIXED:

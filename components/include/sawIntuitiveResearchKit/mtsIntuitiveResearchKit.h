@@ -59,7 +59,10 @@ namespace mtsIntuitiveResearchKit {
 
         // range of motion used for 4 last actuators to engage the sterile adapter
         const double AdapterEngageRange = 171.0 * cmnPI_180;
-    }
+
+        // disk max torque for engage procedures
+        const double DiskMaxTorque = 0.343642;
+}
 
     // MTM constants
     namespace MTMPlatform {
