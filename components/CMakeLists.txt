@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2022 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2023 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -95,7 +95,7 @@ if (cisst_FOUND)
 
     set (sawIntuitiveResearchKit_LIBRARIES sawIntuitiveResearchKit)
 
-    include_directories (${sawIntuitiveResearchKit_INCLUDE_DIR})
+    include_directories (BEFORE ${sawIntuitiveResearchKit_INCLUDE_DIR})
 
     if (CISST_HAS_QT)
       add_subdirectory (code/Qt)
