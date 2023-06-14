@@ -377,6 +377,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                          this, "set_base_frame");
         m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitArm::hold,
                                         this, "hold");
+        m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitArm::free,
+                                        this, "free");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jp,
                                          this, "servo_jp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jr,
@@ -1939,6 +1941,23 @@ void mtsIntuitiveResearchKitArm::hold(void)
     // set goal
     m_servo_jp.Assign(m_kin_setpoint_js.Position(), number_of_joints_kinematics());
     m_pid_new_goal = true;
+}
+
+void mtsIntuitiveResearchKitArm::free(void)
+{
+    if (!ArmIsReady("free", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+        return;
+    }
+
+    // turn gravity compensation on
+    this->use_gravity_compensation(true);
+    // request zero effort in joint space
+    prmForceTorqueJointSet jf;
+    jf.ForceTorque().SetSize(number_of_joints_kinematics());
+    jf.ForceTorque().Zeros();
+    this->servo_jf(jf);
+    // for MTMs
+    m_effort_orientation_locked = false;
 }
 
 void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & jp)

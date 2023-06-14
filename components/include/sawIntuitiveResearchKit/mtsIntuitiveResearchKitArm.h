@@ -183,6 +183,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     /*! Methods used for commands */
     virtual void hold(void);
+    virtual void free(void);
     virtual void servo_jp(const prmPositionJointSet & jp);
     virtual void servo_jr(const prmPositionJointSet & difference);
     virtual void move_jp(const prmPositionJointSet & jp);
