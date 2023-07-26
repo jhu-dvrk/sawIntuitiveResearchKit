@@ -128,6 +128,7 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitECM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJ.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJSi.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJFixed.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
@@ -154,6 +155,7 @@ if (cisst_FOUND)
          code/mtsIntuitiveResearchKitECM.cpp
          code/mtsIntuitiveResearchKitSUJ.cpp
          code/mtsIntuitiveResearchKitSUJSi.cpp
+         code/mtsIntuitiveResearchKitSUJFixed.cpp
          code/mtsTeleOperationPSM.cpp
          code/mtsTeleOperationECM.cpp
          code/mtsIntuitiveResearchKitConsole.cpp

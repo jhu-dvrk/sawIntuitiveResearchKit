@@ -40,6 +40,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJSi.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJFixed.h>
 #include <sawIntuitiveResearchKit/mtsSocketClientPSM.h>
 #include <sawIntuitiveResearchKit/mtsSocketServerPSM.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciHeadSensor.h>
@@ -63,6 +64,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived(void) const
     case ARM_ECM_DERIVED:
     case ARM_SUJ_Classic:
     case ARM_SUJ_Si:
+    case ARM_SUJ_Fixed:
     case FOCUS_CONTROLLER:
         return true;
         break;
@@ -211,6 +213,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::expects_IO(void) const
     return (native_or_derived()
             && (m_type != Arm::ARM_PSM_SOCKET)
             && (m_type != Arm::ARM_SUJ_Si)
+            && (m_type != Arm::ARM_SUJ_Fixed)
             && (m_simulation == Arm::SIMULATION_NONE));
 }
 
@@ -391,6 +394,13 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType arm_type,
             if (m_simulation == SIMULATION_KINEMATIC) {
                 suj->set_simulated();
             }
+            suj->Configure(m_arm_configuration_file);
+            componentManager->AddComponent(suj);
+        }
+        break;
+    case ARM_SUJ_Fixed:
+        {
+            mtsIntuitiveResearchKitSUJFixed * suj = new mtsIntuitiveResearchKitSUJFixed(Name(), periodInSeconds);
             suj->Configure(m_arm_configuration_file);
             componentManager->AddComponent(suj);
         }
@@ -1469,9 +1479,11 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             arm_pointer->m_type = Arm::ARM_SUJ_Classic;
         } else if (typeString == "SUJ_Si") {
             arm_pointer->m_type = Arm::ARM_SUJ_Si;
+        } else if (typeString == "SUJ_Fixed") {
+            arm_pointer->m_type = Arm::ARM_SUJ_Fixed;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << arm_name << ": invalid type \""
-                                     << typeString << "\", needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC} or SUJ_{Classic,Si}" << std::endl;
+                                     << typeString << "\", needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC} or SUJ_{Classic,Si,Fixed}" << std::endl;
             return false;
         }
     } else {
@@ -1642,7 +1654,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             } else {
                 arm_pointer->m_arm_configuration_file = arm_pointer->m_config_path.Find(jsonValue.asString());
                 if (arm_pointer->m_arm_configuration_file == "") {
-                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find kinematic file " << jsonValue.asString() << std::endl;
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find arm configuration file " << jsonValue.asString() << std::endl;
                     return false;
                 }
             }
@@ -2078,7 +2090,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     arm->ArmInterfaceRequired = AddInterfaceRequired(interfaceNameArm);
     if (arm->ArmInterfaceRequired) {
         arm->ArmInterfaceRequired->AddFunction("state_command", arm->state_command);
-        if (arm->m_type != Arm::ARM_SUJ_Classic) {
+        if (!arm->suj()) {
             arm->ArmInterfaceRequired->AddFunction("hold", arm->hold, MTS_OPTIONAL);
         }
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,

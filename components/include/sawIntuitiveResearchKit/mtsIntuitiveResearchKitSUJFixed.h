@@ -3,9 +3,9 @@
 
 /*
   Author(s):  Anton Deguet
-  Created on: 2022-07-27
+  Created on: 2023-06-16
 
-  (C) Copyright 2022-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -16,11 +16,10 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef _mtsIntuitiveResearchKitSUJSi_h
-#define _mtsIntuitiveResearchKitSUJSi_h
+#ifndef _mtsIntuitiveResearchKitSUJFixed_h
+#define _mtsIntuitiveResearchKitSUJFixed_h
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
-#include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmOperatingState.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
@@ -28,21 +27,26 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
-// forward declarations
-class mtsIntuitiveResearchKitSUJSiArduino;
-class mtsIntuitiveResearchKitSUJSiArmData;
+// notes for all SUJ classes
+// - snake case: GetRobotData, SetDesiredState
+// - mtsStdString -> std::string
+// - do we need interface_provided mtsFunction for current_state, desired_state?
+// - do we need dispatch_state? or just use operating_state
+// - what are the events EventPositionCartesian{,Local} for?
+// - renamed main interface Arm -> Cart
 
-class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
+// forward declarations
+class mtsIntuitiveResearchKitSUJFixedArmData;
+
+class CISST_EXPORT mtsIntuitiveResearchKitSUJFixed: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
  public:
-    static const size_t NumberOfJoints = 4;
-    static const size_t NumberOfBrakes = 3;
 
-    mtsIntuitiveResearchKitSUJSi(const std::string & componentName, const double periodInSeconds);
-    mtsIntuitiveResearchKitSUJSi(const mtsTaskPeriodicConstructorArg & arg);
-    inline ~mtsIntuitiveResearchKitSUJSi() {}
+    mtsIntuitiveResearchKitSUJFixed(const std::string & componentName, const double periodInSeconds);
+    mtsIntuitiveResearchKitSUJFixed(const mtsTaskPeriodicConstructorArg & arg);
+    inline ~mtsIntuitiveResearchKitSUJFixed() {}
 
     void Configure(const std::string & filename);
     void Startup(void);
@@ -55,30 +59,19 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
 
     void init(void);
 
-    void start_state_tables(void);
-    void advance_state_tables(void);
-
-    /*! Get data from the PID level based on current state. */
+    /*! Get data from the PID level based on current state.  Does nothing. */
     void get_robot_data(void);
 
     /*! Update the forward kinematics for all arms.  In this case,
       just preprend inverse of IK for reference arm (ECM). */
     void update_forward_kinematics(void);
 
-    /*! Logic used to read the potentiometer values and updated the
-      appropriate joint values based on the mux state. */
-    void get_and_convert_potentiometers(void);
-
     void update_operating_state_and_busy(const prmOperatingState::StateType & state,
                                          const bool isBusy);
     void state_changed(void);
     void run_all_states(void); // this should happen for all states
-
     virtual void enter_DISABLED(void);
-    virtual void transition_DISABLED(void);
-
     virtual void enter_ENABLED(void);
-    virtual void transition_ENABLED(void);
 
     /*! Verify that the state transition is possible, initialize
       global variables for the desired state and finally set the
@@ -96,24 +89,22 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
     mtsStateMachine m_state_machine;
     prmOperatingState m_operating_state;
 
-    // Functions for events
+    /*! cisst interface to control state */
     struct {
         mtsFunctionWrite operating_state;
     } state_events;
-    mtsInterfaceProvided * m_interface;
+    mtsInterfaceProvided * m_interface_provided;
 
-    mtsIntuitiveResearchKitSUJSiArduino * m_base_arduino = nullptr;
-    // SUJ arms
-    vctFixedSizeVector<mtsIntuitiveResearchKitSUJSiArmData *, 4> m_sarms;
+    vctFixedSizeVector<mtsIntuitiveResearchKitSUJFixedArmData *, 4> m_sarms;
     size_t m_reference_arm_index; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
 
+    void error_event_handler(const mtsMessage & message);
     void dispatch_error(const std::string & message);
     void dispatch_warning(const std::string & message);
     void dispatch_status(const std::string & message);
-    void dispatch_state(void);
     void dispatch_operating_state(void);
 };
 
-CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJSi);
+CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJFixed);
 
-#endif // _mtsIntuitiveResearchKitSUJSi_h
+#endif // _mtsIntuitiveResearchKitSUJFixed_h

@@ -178,6 +178,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ_Classic:
         case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ_Si:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ_Fixed:
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1-SUJ");
             componentManager->AddComponent(sujGUI);
