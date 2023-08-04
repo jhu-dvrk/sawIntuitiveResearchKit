@@ -228,7 +228,7 @@ public:
         // write commands
         m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJSiArmData::clutch_command, this,
                                               "Clutch", false);
-        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJSiArmData::CalibratePotentiometers, this,
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJSiArmData::calibrate_potentiometers, this,
                                               "SetRecalibrationMatrix", m_recalibration_matrix);
 
         // cartesian position events
@@ -263,7 +263,7 @@ public:
             m_local_measured_cp.SetTimestamp(m_measured_js.Timestamp());
             m_local_measured_cp.SetValid(false);
             EventPositionCartesianLocal(m_local_measured_cp);
-        } else {
+        } else if (button.Type() == prmEventButton::RELEASED) {
             m_interface_provided->SendStatus(m_name + ": SUJ not clutched");
             m_waiting_for_live = true;
         }
@@ -282,7 +282,7 @@ public:
     }
 
 
-    inline void CalibratePotentiometers(const vctMat & mat)
+    inline void calibrate_potentiometers(const vctMat & mat)
     {
         for (size_t col = 0; col < m_nb_joints; col++) {
             // IF:                                      Pi = Offset + Vi * Scale
@@ -360,11 +360,12 @@ public:
     vctDoubleVec m_voltages_to_position_offsets[2];
     prmStateJoint m_measured_js, m_live_measured_js;
     prmConfigurationJoint m_configuration_js;
-    // 0 is no, 1 tells we need to send, 2 is for first full mux cycle has started
+
+    // kinematics
+    bool m_need_update_forward_kinemactics = false;
     prmPositionCartesianGet m_measured_cp;
     prmPositionCartesianGet m_local_measured_cp;
 
-    // kinematics
     robManipulator m_manipulator;
     vctMat m_recalibration_matrix;
     vctDoubleVec m_new_joint_scales[2];
@@ -633,7 +634,7 @@ void mtsIntuitiveResearchKitSUJSi::update_operating_state_and_busy(const prmOper
 
 void mtsIntuitiveResearchKitSUJSi::state_changed(void)
 {
-    dispatch_status(this->GetName() + ": current state " + m_state_machine.CurrentState());
+    dispatch_status("current state " + m_state_machine.CurrentState());
     dispatch_operating_state();
 }
 
@@ -691,7 +692,7 @@ void mtsIntuitiveResearchKitSUJSi::Run(void)
     try {
         m_state_machine.Run();
     } catch (std::exception & e) {
-        dispatch_error(this->GetName() + ": in state " + m_state_machine.CurrentState()
+        dispatch_error("in state " + m_state_machine.CurrentState()
                        + ", caught exception \"" + e.what() + "\"");
         set_desired_state("DISABLED");
     }
@@ -708,7 +709,7 @@ void mtsIntuitiveResearchKitSUJSi::Cleanup(void)
 
 void mtsIntuitiveResearchKitSUJSi::set_simulated(void)
 {
-    dispatch_error(this->GetName() + ": simulated mode not supported on SUJ Si");
+    dispatch_error("simulated mode not supported on SUJ Si");
 }
 
 
@@ -769,7 +770,7 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
                     (sarm->m_delta_measured_js.Ref(3, 1).MaxAbsElement() > angleTolerance)) {
                     // send messages if this is new
                     if (sarm->m_pots_agree) {
-                        m_interface->SendWarning(this->GetName() + ": " + sarm->m_name + " primary and secondary potentiometers don't seem to agree.");
+                        m_interface->SendWarning(sarm->m_name + " SUJ: primary and secondary potentiometers don't seem to agree.");
                         CMN_LOG_CLASS_RUN_WARNING << "get_and_convert_potentiometers, error: " << std::endl
                                                   << " - " << this->GetName() << ": " << sarm->m_name << std::endl
                                                   << " - primary:   " << sarm->m_positions[0] << std::endl
@@ -778,7 +779,7 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
                     }
                 } else {
                     if (!sarm->m_pots_agree) {
-                        m_interface->SendStatus(this->GetName() + ": " + sarm->m_name + " primary and secondary potentiometers agree.");
+                        m_interface->SendStatus(sarm->m_name + " SUJ: primary and secondary potentiometers agree.");
                         CMN_LOG_CLASS_RUN_VERBOSE << "get_and_convert_potentiometers recovery" << std::endl
                                                   << " - " << this->GetName() << ": " << sarm->m_name << std::endl;
                         sarm->m_pots_agree = true;
@@ -796,8 +797,8 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
                     sarm->m_measured_js.Position().Assign(sarm->m_live_measured_js.Position());
                     sarm->m_measured_js.SetValid(true);
                     sarm->m_waiting_for_live = false;
+                    sarm->m_need_update_forward_kinemactics = true;
                 }
-
             }
         }
     }
@@ -810,20 +811,21 @@ void mtsIntuitiveResearchKitSUJSi::update_forward_kinematics(void)
     for (auto sarm : m_sarms) {
         if (sarm != nullptr) {
             if (sarm->m_measured_js.Valid()) {
-                // cartesian position
-                sarm->m_local_measured_cp.SetValid(true);
-
-                // forward kinematic
-                vctDoubleVec jp(sarm->m_manipulator.links.size(), 0.0);
-                jp.Ref(sarm->m_measured_js.Position().size()).Assign(sarm->m_measured_js.Position());
-                vctFrm4x4 suj_cp = sarm->m_manipulator.ForwardKinematics(jp);
-                // pre and post transformations loaded from JSON file, base frame updated using events
-                vctFrm4x4 local_cp = sarm->m_world_to_SUJ * suj_cp * sarm->m_SUJ_to_arm_base;
-                // update local only
-                sarm->m_local_measured_cp.Position().From(local_cp);
-                sarm->m_local_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
-                sarm->m_local_measured_cp.SetValid(true);
-                sarm->EventPositionCartesianLocal(sarm->m_local_measured_cp);
+                if (sarm->m_need_update_forward_kinemactics) {
+                    sarm->m_need_update_forward_kinemactics = false;
+                    // forward kinematic
+                    vctDoubleVec jp(sarm->m_manipulator.links.size(), 0.0);
+                    jp.Ref(sarm->m_measured_js.Position().size()).Assign(sarm->m_measured_js.Position());
+                    vctFrm4x4 dh_cp = sarm->m_manipulator.ForwardKinematics(jp);
+                    // pre and post transformations loaded from JSON file, base frame updated using events
+                    vctFrm4x4 local_cp = sarm->m_world_to_SUJ * dh_cp * sarm->m_SUJ_to_arm_base;
+                    // update local only
+                    sarm->m_local_measured_cp.Position().From(local_cp);
+                    sarm->m_local_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
+                    sarm->m_local_measured_cp.SetValid(true);
+                    sarm->EventPositionCartesianLocal(sarm->m_local_measured_cp);
+                    sarm->m_interface_provided->SendStatus(sarm->m_name + " SUJ: measured_cp updated");
+                }
             } else {
                 sarm->m_local_measured_cp.SetValid(false);
             }
@@ -887,19 +889,19 @@ void mtsIntuitiveResearchKitSUJSi::set_desired_state(const std::string & state)
     dispatch_operating_state();
     // try to find the state in state machine
     if (!m_state_machine.StateExists(state)) {
-        dispatch_error(this->GetName() + ": unsupported state " + state);
+        dispatch_error("unsupported state " + state);
         return;
     }
     // try to set the desired state
     try {
         m_state_machine.SetDesiredState(state);
     } catch (...) {
-        dispatch_error(this->GetName() + ": " + state + " is not an allowed desired state");
+        dispatch_error(state + " is not an allowed desired state");
         return;
     }
 
     dispatch_operating_state();
-    dispatch_status(this->GetName() + ": desired state " + state);
+    dispatch_status("desired state " + state);
 
     // state transitions with direct transitions
     if (state == "DISABLED") {
@@ -941,10 +943,10 @@ void mtsIntuitiveResearchKitSUJSi::state_command(const std::string & command)
                 return;
             }
         } else {
-            dispatch_warning(this->GetName() + ": " + humanReadableMessage);
+            dispatch_warning(humanReadableMessage);
         }
     } catch (std::runtime_error & e) {
-        dispatch_warning(this->GetName() + ": " + command + " doesn't seem to be a valid state_command (" + e.what() + ")");
+        dispatch_warning(command + " doesn't seem to be a valid state_command (" + e.what() + ")");
     }
 }
 
@@ -960,27 +962,27 @@ void mtsIntuitiveResearchKitSUJSi::set_homed(const bool homed)
 
 void mtsIntuitiveResearchKitSUJSi::dispatch_error(const std::string & message)
 {
-    m_interface->SendError(message);
+    m_interface->SendError(this->GetName() + ": " + message);
     for (auto sarm : m_sarms) {
-        sarm->m_interface_provided->SendError(sarm->m_name + " " + message);
+        sarm->m_interface_provided->SendError(sarm->m_name + " SUJ: " + message);
     }
 }
 
 
 void mtsIntuitiveResearchKitSUJSi::dispatch_warning(const std::string & message)
 {
-    m_interface->SendWarning(message);
+    m_interface->SendWarning(this->GetName() + ": " + message);
     for (auto sarm : m_sarms) {
-        sarm->m_interface_provided->SendWarning(sarm->m_name + " " + message);
+        sarm->m_interface_provided->SendWarning(sarm->m_name + " SUJ: " + message);
     }
 }
 
 
 void mtsIntuitiveResearchKitSUJSi::dispatch_status(const std::string & message)
 {
-    m_interface->SendStatus(message);
+    m_interface->SendStatus(this->GetName() + ": " + message);
     for (auto sarm : m_sarms) {
-        sarm->m_interface_provided->SendStatus(sarm->m_name + " " + message);
+        sarm->m_interface_provided->SendStatus(sarm->m_name + " SUJ: " + message);
     }
 }
 
@@ -990,5 +992,7 @@ void mtsIntuitiveResearchKitSUJSi::dispatch_operating_state(void)
     state_events.operating_state(m_operating_state);
     for (auto sarm : m_sarms) {
         sarm->state_events.operating_state(m_operating_state);
+        sarm->state_events.current_state(m_state_machine.CurrentState());
+        sarm->state_events.desired_state(m_state_machine.DesiredState());
     }
 }
