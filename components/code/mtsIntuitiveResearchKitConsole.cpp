@@ -224,11 +224,6 @@ mtsIntuitiveResearchKitConsole::Arm::Arm(mtsIntuitiveResearchKitConsole * consol
     m_name(name),
     m_IO_component_name(ioComponentName),
     m_arm_period(mtsIntuitiveResearchKit::ArmPeriod),
-    IOInterfaceRequired(0),
-    PIDInterfaceRequired(0),
-    ArmInterfaceRequired(0),
-    SUJInterfaceRequiredFromIO(0),
-    SUJInterfaceRequiredToSUJ(0),
     mSUJClutched(false)
 {}
 
@@ -1216,13 +1211,14 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                  || (arm->m_type == Arm::ARM_PSM_DERIVED)
                  )
                 && (arm->m_simulation == Arm::SIMULATION_NONE)) {
-                arm->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJ-" + arm->Name() + "-IO");
+                arm->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJClutch-" + arm->Name() + "-IO");
                 arm->SUJInterfaceRequiredFromIO->AddEventHandlerWrite(&Arm::SUJClutchEventHandlerFromIO, arm, "Button");
-                arm->SUJInterfaceRequiredToSUJ = this->AddInterfaceRequired("SUJ-" + arm->Name());
+                if (arm->m_generation == mtsIntuitiveResearchKitArm::GENERATION_Si) {
+                    arm->SUJInterfaceRequiredFromIO2 = this->AddInterfaceRequired("SUJClutchBack-" + arm->Name() + "-IO");
+                    arm->SUJInterfaceRequiredFromIO2->AddEventHandlerWrite(&Arm::SUJClutchEventHandlerFromIO, arm, "Button");
+                }
+                arm->SUJInterfaceRequiredToSUJ = this->AddInterfaceRequired("SUJClutch-" + arm->Name());
                 arm->SUJInterfaceRequiredToSUJ->AddFunction("Clutch", arm->SUJClutch);
-            } else {
-                arm->SUJInterfaceRequiredFromIO = 0;
-                arm->SUJInterfaceRequiredToSUJ = 0;
             }
         }
     }
@@ -2126,11 +2122,17 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
         // arm specific interfaces
         arm->Connect();
         // connect to SUJ if needed
-        if (arm->SUJInterfaceRequiredFromIO && arm->SUJInterfaceRequiredToSUJ) {
-            componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredToSUJ->GetName(),
-                                      "SUJ", arm->Name());
+        if (arm->SUJInterfaceRequiredFromIO) {
             componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredFromIO->GetName(),
                                       arm->IOComponentName(), arm->Name() + "-SUJClutch");
+        }
+        if (arm->SUJInterfaceRequiredFromIO2) {
+            componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredFromIO2->GetName(),
+                                      arm->IOComponentName(), arm->Name() + "-SUJClutch2");
+        }
+        if (arm->SUJInterfaceRequiredToSUJ) {
+            componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredToSUJ->GetName(),
+                                      "SUJ", arm->Name());
         }
     }
 
