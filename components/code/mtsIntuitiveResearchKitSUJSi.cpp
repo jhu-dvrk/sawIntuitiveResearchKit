@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstMultiTask/mtsManagerLocal.h>
 #include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
@@ -133,9 +134,6 @@ public:
         m_state_table(500, name),
         m_state_table_configuration(100, name + "Configuration")
     {
-        // base frame
-        m_reference_frame_valid = false;
-
         // recalibration matrix
         m_recalibration_matrix.SetSize(m_nb_joints, m_nb_joints);
         m_recalibration_matrix.Zeros();
@@ -199,7 +197,6 @@ public:
         m_local_measured_cp.SetMovingFrame(name + "_base");
         m_state_table.AddData(m_local_measured_cp, "local/measured_cp");
 
-        m_state_table.AddData(m_reference_frame, "reference_frame");
         m_state_table_configuration.AddData(m_name, "name");
         m_state_table_configuration.AddData(m_serial_number, "serial_number");
         m_state_table_configuration.AddData(m_voltages_to_position_offsets[0], "primary_joint_offsets");
@@ -219,7 +216,6 @@ public:
                                                   "measured_cp");
         m_interface_provided->AddCommandReadState(m_state_table, m_local_measured_cp,
                                                   "local/measured_cp");
-        m_interface_provided->AddCommandReadState(m_state_table, m_reference_frame, "base_frame");
         m_interface_provided->AddCommandReadState(m_state_table, m_voltages[0], "GetVoltagesPrimary");
         m_interface_provided->AddCommandReadState(m_state_table, m_voltages[1], "GetVoltagesSecondary");
         m_interface_provided->AddCommandReadState(m_state_table_configuration, m_name, "GetName");
@@ -377,8 +373,6 @@ public:
 
     // base frame
     mtsFunctionWrite m_arm_set_base_frame;
-    vctFrame4x4<double> m_reference_frame;
-    bool m_reference_frame_valid;
     // for reference arm only, get current position
     mtsFunctionRead m_get_local_measured_cp;
 
@@ -796,6 +790,7 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
                     // copy live jp
                     sarm->m_measured_js.Position().Assign(sarm->m_live_measured_js.Position());
                     sarm->m_measured_js.SetValid(true);
+                    sarm->m_measured_js.SetTimestamp(mtsComponentManager::GetInstance()->GetTimeServer().GetRelativeTime());
                     sarm->m_waiting_for_live = false;
                     sarm->m_need_update_forward_kinemactics = true;
                 }
@@ -853,32 +848,42 @@ void mtsIntuitiveResearchKitSUJSi::update_forward_kinematics(void)
         // valid only if both are valid
         reference_arm_to_cart_cp.SetValid(reference_sarm->m_local_measured_cp.Valid()
                                           && reference_arm_local_cp.Valid());
-        reference_arm_to_cart_cp.SetTimestamp(reference_arm_local_cp.Timestamp());
+        // take most recent timestamp
+        reference_arm_to_cart_cp.SetTimestamp(std::max(reference_sarm->m_local_measured_cp.Timestamp(),
+                                                       reference_arm_local_cp.Timestamp()));
     }
+    // reference sarm measured_cp is always with respect to cart, same as local
+    reference_sarm->m_measured_cp.Position().Assign(reference_sarm->m_local_measured_cp.Position());
+    reference_sarm->m_measured_cp.SetValid(reference_sarm->m_local_measured_cp.Valid());
+    reference_sarm->m_measured_cp.SetTimestamp(reference_sarm->m_local_measured_cp.Timestamp());
 
+    // update other arms
+    vctFrm4x4 reference_frame(reference_arm_to_cart_cp.Position());
+    vctFrm4x4 local_cp, cp;
     for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
         mtsIntuitiveResearchKitSUJSiArmData * sarm = m_sarms[arm_index];
         // update positions with base frame, local positions are only
         // updated from FK when joints are ready
         if (arm_index != m_reference_arm_index) {
-            sarm->m_reference_frame.From(reference_arm_to_cart_cp.Position());
-            sarm->m_reference_frame_valid = reference_arm_to_cart_cp.Valid();
             sarm->m_measured_cp.SetReferenceFrame(reference_arm_to_cart_cp.ReferenceFrame());
+            local_cp.From(sarm->m_local_measured_cp.Position());
+            cp = reference_frame * local_cp;
+            // - with base frame
+            sarm->m_measured_cp.Position().From(cp);
+            sarm->m_measured_cp.SetValid(reference_sarm->m_local_measured_cp.Valid()
+                                         && reference_arm_local_cp.Valid());
+            sarm->m_measured_cp.SetTimestamp(std::max(reference_sarm->m_local_measured_cp.Timestamp(),
+                                                      sarm->m_local_measured_cp.Timestamp()));
+            sarm->EventPositionCartesian(sarm->m_measured_cp);
+            // - set base frame for the arm
+            prmPositionCartesianSet setpoint_cp;
+            setpoint_cp.Goal().Assign(sarm->m_measured_cp.Position());
+            setpoint_cp.SetValid(sarm->m_measured_cp.Valid());
+            setpoint_cp.SetTimestamp(sarm->m_measured_cp.Timestamp());
+            setpoint_cp.SetReferenceFrame(sarm->m_measured_cp.ReferenceFrame());
+            setpoint_cp.SetMovingFrame(sarm->m_measured_cp.MovingFrame());
+            sarm->m_arm_set_base_frame(setpoint_cp);
         }
-        vctFrm4x4 local_cp(sarm->m_local_measured_cp.Position());
-        vctFrm4x4 cp = sarm->m_reference_frame * local_cp;
-        // - with base frame
-        sarm->m_measured_cp.Position().From(cp);
-        sarm->m_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
-        sarm->EventPositionCartesian(sarm->m_measured_cp);
-        // - set base frame for the arm
-        prmPositionCartesianSet setpoint_cp;
-        setpoint_cp.Goal().Assign(sarm->m_measured_cp.Position());
-        setpoint_cp.Valid() = sarm->m_measured_cp.Valid();
-        setpoint_cp.Timestamp() = sarm->m_measured_cp.Timestamp();
-        setpoint_cp.ReferenceFrame() = sarm->m_measured_cp.ReferenceFrame();
-        setpoint_cp.MovingFrame() = sarm->m_measured_cp.MovingFrame();
-        sarm->m_arm_set_base_frame(setpoint_cp);
     }
 }
 
