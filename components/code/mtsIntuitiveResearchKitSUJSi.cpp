@@ -199,8 +199,6 @@ public:
 
         m_state_table_configuration.AddData(m_name, "name");
         m_state_table_configuration.AddData(m_serial_number, "serial_number");
-        m_state_table_configuration.AddData(m_voltages_to_position_offsets[0], "primary_joint_offsets");
-        m_state_table_configuration.AddData(m_voltages_to_position_offsets[1], "secondary_joint_offsets");
 
         CMN_ASSERT(interfaceProvided);
         m_interface_provided = interfaceProvided;
@@ -208,10 +206,6 @@ public:
         m_interface_provided->AddCommandReadState(m_state_table, m_measured_js, "measured_js");
         m_interface_provided->AddCommandReadState(m_state_table, m_live_measured_js, "live/measured_js");
         m_interface_provided->AddCommandReadState(m_state_table, m_configuration_js, "configuration_js");
-        m_interface_provided->AddCommandReadState(m_state_table_configuration, m_voltages_to_position_offsets[0],
-                                                  "GetPrimaryJointOffset");
-        m_interface_provided->AddCommandReadState(m_state_table_configuration, m_voltages_to_position_offsets[1],
-                                                  "GetSecondaryJointOffset");
         m_interface_provided->AddCommandReadState(m_state_table, m_measured_cp,
                                                   "measured_cp");
         m_interface_provided->AddCommandReadState(m_state_table, m_local_measured_cp,
@@ -352,8 +346,8 @@ public:
     bool m_pots_agree;
     bool m_waiting_for_live = true;
 
-    vctDoubleVec m_voltages_to_position_scales[2];
-    vctDoubleVec m_voltages_to_position_offsets[2];
+    vctDoubleVec m_voltage_to_position_scales[2];
+    vctDoubleVec m_voltage_to_position_offsets[2];
     prmStateJoint m_measured_js, m_live_measured_js;
     prmConfigurationJoint m_configuration_js;
 
@@ -569,12 +563,12 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
 
         // read pot settings
         sarm->m_state_table_configuration.Start();
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltages_to_position_offsets[0], jsonArm["primary-offsets"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltages_to_position_offsets[1], jsonArm["secondary-offsets"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltages_to_position_scales[0], jsonArm["primary-scales"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltages_to_position_scales[1], jsonArm["secondary-scales"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[0], jsonArm["primary-offsets"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[1], jsonArm["secondary-offsets"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[0], jsonArm["primary-scales"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[1], jsonArm["secondary-scales"]);
         const size_t nb_joints = NB_JOINTS.at(name);
-        for (auto vec : sarm->m_voltages_to_position_offsets) {
+        for (auto vec : sarm->m_voltage_to_position_offsets) {
             if (vec.size() != nb_joints) {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect number of voltage to position offsets for \""
                                          << name << "\", expected " << nb_joints
@@ -582,7 +576,7 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
                 exit(EXIT_FAILURE);
             }
         }
-        for (auto vec : sarm->m_voltages_to_position_scales) {
+        for (auto vec : sarm->m_voltage_to_position_scales) {
             if (vec.size() != nb_joints) {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect number of voltage to position scales for \""
                                          << name << "\", expected " << nb_joints
@@ -751,10 +745,10 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
                 sarm->m_voltages[1].Ref(joints_to_copy, 1) = sarm->m_raw_pots.Row(1).Ref(joints_to_copy);
 
                 // convert to SI
-                sarm->m_positions[0].Assign(sarm->m_voltages_to_position_offsets[0]);
-                sarm->m_positions[0].AddElementwiseProductOf(sarm->m_voltages_to_position_scales[0], sarm->m_voltages[0]);
-                sarm->m_positions[1].Assign(sarm->m_voltages_to_position_offsets[1]);
-                sarm->m_positions[1].AddElementwiseProductOf(sarm->m_voltages_to_position_scales[1], sarm->m_voltages[1]);
+                sarm->m_positions[0].Assign(sarm->m_voltage_to_position_offsets[0]);
+                sarm->m_positions[0].AddElementwiseProductOf(sarm->m_voltage_to_position_scales[0], sarm->m_voltages[0]);
+                sarm->m_positions[1].Assign(sarm->m_voltage_to_position_offsets[1]);
+                sarm->m_positions[1].AddElementwiseProductOf(sarm->m_voltage_to_position_scales[1], sarm->m_voltages[1]);
 
                 // compare primary and secondary pots when arm is not clutched
                 const double angleTolerance = 2.0 * cmnPI_180;

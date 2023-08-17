@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -57,8 +57,6 @@ protected:
     mtsFunctionWrite Clutch;
     mtsFunctionWrite SetLiftVelocity;
 
-    vctDoubleVec PrimaryJointOffset;
-    vctDoubleVec SecondaryJointOffset;
     vctDoubleVec JointPositionStart;
     vctDoubleVec JointPositionFinish;
     vctDoubleVec JointVoltageStart;
