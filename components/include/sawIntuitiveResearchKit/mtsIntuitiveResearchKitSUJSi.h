@@ -61,13 +61,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
     /*! Get data from the PID level based on current state. */
     void get_robot_data(void);
 
-    /*! Update the forward kinematics for all arms.  In this case,
-      just preprend inverse of IK for reference arm (ECM). */
+    /*! Update the forward kinematics for all arms. */
     void update_forward_kinematics(void);
-
-    /*! Logic used to read the potentiometer values and updated the
-      appropriate joint values based on the mux state. */
-    void get_and_convert_potentiometers(void);
 
     void update_operating_state_and_busy(const prmOperatingState::StateType & state,
                                          const bool isBusy);

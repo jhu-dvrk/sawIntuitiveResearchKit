@@ -759,7 +759,7 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
                     // send messages if this is new
                     if (sarm->m_pots_agree) {
                         m_interface->SendWarning(sarm->m_name + " SUJ: primary and secondary potentiometers don't seem to agree.");
-                        CMN_LOG_CLASS_RUN_WARNING << "get_and_convert_potentiometers, error: " << std::endl
+                        CMN_LOG_CLASS_RUN_WARNING << "get_robot_data, error: " << std::endl
                                                   << " - " << this->GetName() << ": " << sarm->m_name << std::endl
                                                   << " - primary:   " << sarm->m_positions[0] << std::endl
                                                   << " - secondary: " << sarm->m_positions[1] << std::endl;
@@ -768,7 +768,7 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
                 } else {
                     if (!sarm->m_pots_agree) {
                         m_interface->SendStatus(sarm->m_name + " SUJ: primary and secondary potentiometers agree.");
-                        CMN_LOG_CLASS_RUN_VERBOSE << "get_and_convert_potentiometers recovery" << std::endl
+                        CMN_LOG_CLASS_RUN_VERBOSE << "get_robot_data recovery" << std::endl
                                                   << " - " << this->GetName() << ": " << sarm->m_name << std::endl;
                         sarm->m_pots_agree = true;
                     }

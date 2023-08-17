@@ -54,12 +54,18 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
 
     void init(void);
 
+    void start_state_tables(void);
+    void advance_state_tables(void);
+
     /*! Get data from the PID level based on current state. */
     void get_robot_data(void);
 
     /*! Logic used to read the potentiometer values and updated the
       appropriate joint values based on the mux state. */
     void get_and_convert_potentiometers(void);
+
+    /*! Update the forward kinematics for all arms. */
+    void update_forward_kinematics(void);
 
     void update_operating_state_and_busy(const prmOperatingState::StateType & state,
                                          const bool isBusy);

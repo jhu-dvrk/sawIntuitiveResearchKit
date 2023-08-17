@@ -67,12 +67,6 @@ public:
         m_state_table_configuration(100, name + "Configuration"),
         m_state_table_brake_current(100, name + "BrakeCurrent")
     {
-        // emit an event the first time we have a valid position
-        m_number_of_mux_cycles = 0;
-
-        // base frame
-        mBaseFrameValid = true;  // todo : remove
-
         // recalibration matrix
         m_recalibration_matrix.SetSize(6, 6);
         m_recalibration_matrix.Zeros();
@@ -138,7 +132,6 @@ public:
         m_local_measured_cp.SetMovingFrame(name + "_base");
         m_state_table.AddData(m_local_measured_cp, "local/measured_cp");
 
-        m_state_table.AddData(mBaseFrame, "base_frame");
         m_state_table_configuration.AddData(m_name, "name");
         m_state_table_configuration.AddData(m_serial_number, "serial_number");
         m_state_table_configuration.AddData(m_plug_number, "plug_number");
@@ -158,7 +151,6 @@ public:
                                                   "measured_cp");
         m_interface_provided->AddCommandReadState(m_state_table, m_local_measured_cp,
                                                   "local/measured_cp");
-        m_interface_provided->AddCommandReadState(m_state_table, mBaseFrame, "base_frame");
         m_interface_provided->AddCommandReadState(m_state_table, m_voltages[0], "GetVoltagesPrimary");
         m_interface_provided->AddCommandReadState(m_state_table, m_voltages[1], "GetVoltagesSecondary");
         m_interface_provided->AddCommandReadState(m_state_table, m_voltages_extra, "GetVoltagesExtra");
@@ -189,12 +181,12 @@ public:
 
         CMN_ASSERT(interfaceRequired);
         m_interface_required = interfaceRequired;
-        m_interface_required->AddFunction("set_base_frame", mSetArmBaseFrame);
-        m_interface_required->AddFunction("local/measured_cp", mGetArmPositionCartesianLocal);
+        m_interface_required->AddFunction("set_base_frame", m_arm_set_base_frame);
+        m_interface_required->AddFunction("local/measured_cp", m_get_local_measured_cp);
     }
 
 
-    inline void ClutchCallback(const prmEventButton & button) {
+    inline void clutch_callback(const prmEventButton & button) {
         if (button.Type() == prmEventButton::PRESSED) {
             m_clutched += 1;
             if (m_clutched == 1) {
@@ -233,7 +225,7 @@ public:
         } else {
             button.SetType(prmEventButton::RELEASED);
         }
-        ClutchCallback(button);
+        clutch_callback(button);
     }
 
 
@@ -325,7 +317,7 @@ public:
     prmStateJoint m_measured_js;
     prmConfigurationJoint m_configuration_js;
     // 0 is no, 1 tells we need to send, 2 is for first full mux cycle has started
-    unsigned int m_number_of_mux_cycles;
+    unsigned int m_number_of_mux_cycles = 0;
     prmPositionCartesianGet m_measured_cp;
     prmPositionCartesianGet m_local_measured_cp;
 
@@ -345,11 +337,9 @@ public:
     vctFrame4x4<double> m_SUJ_to_arm_base;
 
     // base frame
-    mtsFunctionWrite mSetArmBaseFrame;
-    vctFrame4x4<double> mBaseFrame;
-    bool mBaseFrameValid;
-    // for ECM only, get current position
-    mtsFunctionRead mGetArmPositionCartesianLocal;
+    mtsFunctionWrite m_arm_set_base_frame;
+    // for reference arm only, get current position
+    mtsFunctionRead m_get_local_measured_cp;
 
     // clutch data
     unsigned int m_clutched = 0;
@@ -620,7 +610,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
             interfaceName << "SUJ-Clutch-" << plugNumber;
             mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
             if (requiredInterface) {
-                requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCallback, arm,
+                requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::clutch_callback, arm,
                                                         "Button");
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure: can't add required interface for SUJ \""
@@ -708,10 +698,12 @@ void mtsIntuitiveResearchKitSUJ::state_changed(void)
 
 void mtsIntuitiveResearchKitSUJ::run_all_states(void)
 {
+    start_state_tables();
     // get robot data, i.e. process mux/pots
     get_robot_data();
     // update all forward kinematics
-    // update_forward_kinematics();
+    update_forward_kinematics();
+    advance_state_tables();
 }
 
 
@@ -859,55 +851,6 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
     // trigger ExecOut event
     RunEvent();
     ProcessQueuedCommands();
-
-    // update all base frame kinematics
-    // first see if there's an BaseFrameArm connected
-    prmPositionCartesianGet baseFrameArmPositionParam;
-    prmPositionCartesianGet baseFrameArmTipToSUJBase;
-
-    mtsIntuitiveResearchKitSUJArmData * arm = m_sarms[m_reference_arm_index];
-    if (! (m_sarms[m_reference_arm_index]->mGetArmPositionCartesianLocal(baseFrameArmPositionParam))) {
-        // interface not connected, reporting wrt cart
-        baseFrameArmTipToSUJBase.SetValid(true);
-        baseFrameArmTipToSUJBase.SetReferenceFrame("Cart");
-    } else {
-        // get position from BaseFrameArm and convert to useful type
-        vctFrm3 sujBaseToSUJTip = arm->m_local_measured_cp.Position() * baseFrameArmPositionParam.Position();
-        // compute and send new base frame for all SUJs (SUJ will handle BaseFrameArm differently)
-        baseFrameArmTipToSUJBase.Position().From(sujBaseToSUJTip.Inverse());
-        // it's an inverse, swap moving and reference frames
-        baseFrameArmTipToSUJBase.SetReferenceFrame(baseFrameArmPositionParam.MovingFrame());
-        baseFrameArmTipToSUJBase.SetMovingFrame(arm->m_local_measured_cp.ReferenceFrame());
-        // valid only if both are valid
-        baseFrameArmTipToSUJBase.SetValid(arm->m_local_measured_cp.Valid()
-                                          && baseFrameArmPositionParam.Valid());
-        baseFrameArmTipToSUJBase.SetTimestamp(baseFrameArmPositionParam.Timestamp());
-    }
-
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        arm = m_sarms[armIndex];
-        // update positions with base frame, local positions are only
-        // updated from FK when joints are ready
-        if (armIndex != m_reference_arm_index) {
-            arm->mBaseFrame.From(baseFrameArmTipToSUJBase.Position());
-            arm->mBaseFrameValid = baseFrameArmTipToSUJBase.Valid();
-            arm->m_measured_cp.SetReferenceFrame(baseFrameArmTipToSUJBase.ReferenceFrame());
-        }
-        vctFrm4x4 armLocal(arm->m_local_measured_cp.Position());
-        vctFrm4x4 armBase = arm->mBaseFrame * armLocal;
-        // - with base frame
-        arm->m_measured_cp.Position().From(armBase);
-        arm->m_measured_cp.SetTimestamp(arm->m_measured_js.Timestamp());
-        arm->EventPositionCartesian(arm->m_measured_cp);
-        // - set base frame for the arm
-        prmPositionCartesianSet positionSet;
-        positionSet.Goal().Assign(arm->m_measured_cp.Position());
-        positionSet.Valid() = arm->m_measured_cp.Valid();
-        positionSet.Timestamp() = arm->m_measured_cp.Timestamp();
-        positionSet.ReferenceFrame() = arm->m_measured_cp.ReferenceFrame();
-        positionSet.MovingFrame() = arm->m_measured_cp.MovingFrame();
-        arm->mSetArmBaseFrame(positionSet);
-    }
 }
 
 
@@ -940,6 +883,26 @@ void mtsIntuitiveResearchKitSUJ::set_simulated(void)
     RemoveInterfaceRequired("DisablePWM");
     RemoveInterfaceRequired("MotorUp");
     RemoveInterfaceRequired("MotorDown");
+}
+
+
+void mtsIntuitiveResearchKitSUJ::start_state_tables(void)
+{
+    for (auto sarm : m_sarms) {
+        if (sarm != nullptr) {
+            sarm->m_state_table.Start();
+        }
+    }
+}
+
+
+void mtsIntuitiveResearchKitSUJ::advance_state_tables(void)
+{
+    for (auto sarm : m_sarms) {
+        if (sarm != nullptr) {
+            sarm->m_state_table.Advance();
+        }
+    }
 }
 
 
@@ -1100,36 +1063,139 @@ void mtsIntuitiveResearchKitSUJ::get_and_convert_potentiometers(void)
                     }
                 }
 
-                // use average of positions reported by potentiometers
-                arm->m_measured_js.Position().SumOf(arm->m_positions[0],
-                                                    arm->m_positions[1]);
-                arm->m_measured_js.Position().Divide(2.0);
-                arm->m_measured_js.SetValid(true);
-
                 // this mux cycle might have started before brakes where engaged so we can set the valid flag
                 if (arm->m_number_of_mux_cycles < NUMBER_OF_MUX_CYCLE_BEFORE_STABLE) {
                     arm->m_number_of_mux_cycles++;
                 } else {
                     // at that point we know there has been a full mux cycle with brakes engaged
                     // so we treat this as a fixed transformation until the SUJ move again (user clutch)
-                    arm->m_local_measured_cp.SetValid(true);
+                    // use average of positions reported by potentiometers
+                    arm->m_measured_js.Position().SumOf(arm->m_positions[0],
+                                                        arm->m_positions[1]);
+                    arm->m_measured_js.Position().Divide(2.0);
+                    arm->m_measured_js.SetValid(true);
                 }
-
-                // always update the global position valid flag to take into account base frame valid
-                arm->m_measured_cp.SetValid(arm->mBaseFrameValid && arm->m_local_measured_cp.Valid());
-
-                // forward kinematic
-                vctFrm4x4 dh_cp = arm->m_manipulator.ForwardKinematics(arm->m_measured_js.Position(), 6);
-                // pre and post transformations loaded from JSON file, base frame updated using events
-                vctFrm4x4 local_cp = arm->m_world_to_SUJ * dh_cp * arm->m_SUJ_to_arm_base;
-                // update local only
-                arm->m_local_measured_cp.Position().From(local_cp);
-                arm->m_local_measured_cp.SetTimestamp(arm->m_measured_js.Timestamp());
-                arm->EventPositionCartesianLocal(arm->m_local_measured_cp);
-
-                // advance this arm state table
-                arm->m_state_table.Advance();
             }
+        }
+    }
+}
+
+
+void mtsIntuitiveResearchKitSUJ::update_forward_kinematics(void)
+{
+    // special case for simulated
+    if (m_simulated) {
+#if 0
+        // this might not need to be different from non simulated since the only difference is how measured_js is populated
+        const double currentTime = this->StateTable.GetTic();
+        if (currentTime - m_simulated_timer > 1.0 * cmn_s) {
+            m_simulated_timer = currentTime;
+            for (auto sarm : m_sarms) {
+                sarm->m_state_table.Start();
+                // forward kinematic
+                vctFrm4x4 dh_cp = sarm->m_manipulator.ForwardKinematics(sarm->m_measured_js.Position(), 6);
+                // pre and post transformations loaded from JSON file, base frame updated using events
+                vctFrm4x4 local_cp = sarm->m_world_to_SUJ * dh_cp * sarm->m_SUJ_to_arm_base;
+                // apply base frame
+                vctFrm4x4 armBase = sarm->mBaseFrame * local_cp;
+                // emit events for continuous positions
+                // - joint state
+                sarm->m_measured_js.SetValid(true);
+                // - with base
+                sarm->m_measured_cp.Position().From(armBase);
+                sarm->m_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
+                sarm->m_measured_cp.SetValid(sarm->mBaseFrameValid);
+                sarm->EventPositionCartesian(sarm->m_measured_cp);
+                // - local
+                sarm->m_local_measured_cp.Position().From(local_cp);
+                sarm->m_local_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
+                sarm->m_local_measured_cp.SetValid(sarm->mBaseFrameValid);
+                sarm->EventPositionCartesianLocal(sarm->m_local_measured_cp);
+                sarm->m_state_table.Advance();
+            }
+        }
+#endif
+        return;
+    }
+
+    // for real robots first update all the local_measured_cp if all arms are ready
+    for (auto sarm : m_sarms) {
+        if (sarm != nullptr) {
+            if (sarm->m_measured_js.Valid()) {
+                // forward kinematic
+                vctDoubleVec jp(sarm->m_manipulator.links.size(), 0.0);
+                jp.Ref(sarm->m_measured_js.Position().size()).Assign(sarm->m_measured_js.Position());
+                vctFrm4x4 dh_cp = sarm->m_manipulator.ForwardKinematics(jp);
+                // pre and post transformations loaded from JSON file, base frame updated using events
+                vctFrm4x4 local_cp = sarm->m_world_to_SUJ * dh_cp * sarm->m_SUJ_to_arm_base;
+                // update local only
+                sarm->m_local_measured_cp.Position().From(local_cp);
+                sarm->m_local_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
+                sarm->m_local_measured_cp.SetValid(true);
+                sarm->EventPositionCartesianLocal(sarm->m_local_measured_cp);
+                sarm->m_interface_provided->SendStatus(sarm->m_name + " SUJ: measured_cp updated");
+            } else {
+                sarm->m_local_measured_cp.SetValid(false);
+            }
+        }
+    }
+
+    // find the reference arm (usually ECM)
+    prmPositionCartesianGet reference_arm_local_cp;
+    prmPositionCartesianGet reference_arm_to_cart_cp;
+
+    mtsIntuitiveResearchKitSUJArmData * reference_sarm = m_sarms[m_reference_arm_index];
+    if (! (reference_sarm->m_get_local_measured_cp(reference_arm_local_cp))) {
+        // interface not connected, reporting wrt cart
+        reference_arm_to_cart_cp.Position().Assign(vctFrm3::Identity());
+        reference_arm_to_cart_cp.SetValid(true);
+        reference_arm_to_cart_cp.SetReferenceFrame("Cart");
+    } else {
+        // get position from BaseFrameArm and convert to useful type
+        vctFrm3 cart_to_reference_arm_cp = reference_sarm->m_local_measured_cp.Position() * reference_arm_local_cp.Position();
+        // compute and send new base frame for all SUJs (SUJ will handle BaseFrameArm differently)
+        reference_arm_to_cart_cp.Position().From(cart_to_reference_arm_cp.Inverse());
+        // it's an inverse, swap moving and reference frames
+        reference_arm_to_cart_cp.SetReferenceFrame(reference_arm_local_cp.MovingFrame());
+        reference_arm_to_cart_cp.SetMovingFrame(reference_sarm->m_local_measured_cp.ReferenceFrame());
+        // valid only if both are valid
+        reference_arm_to_cart_cp.SetValid(reference_sarm->m_local_measured_cp.Valid()
+                                          && reference_arm_local_cp.Valid());
+        // take most recent timestamp
+        reference_arm_to_cart_cp.SetTimestamp(std::max(reference_sarm->m_local_measured_cp.Timestamp(),
+                                                       reference_arm_local_cp.Timestamp()));
+    }
+    // reference sarm measured_cp is always with respect to cart, same as local
+    reference_sarm->m_measured_cp.Position().Assign(reference_sarm->m_local_measured_cp.Position());
+    reference_sarm->m_measured_cp.SetValid(reference_sarm->m_local_measured_cp.Valid());
+    reference_sarm->m_measured_cp.SetTimestamp(reference_sarm->m_local_measured_cp.Timestamp());
+
+    // update other arms
+    vctFrm4x4 reference_frame(reference_arm_to_cart_cp.Position());
+    vctFrm4x4 local_cp, cp;
+    for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
+        mtsIntuitiveResearchKitSUJArmData * sarm = m_sarms[arm_index];
+        // update positions with base frame, local positions are only
+        // updated from FK when joints are ready
+        if (arm_index != m_reference_arm_index) {
+            sarm->m_measured_cp.SetReferenceFrame(reference_arm_to_cart_cp.ReferenceFrame());
+            local_cp.From(sarm->m_local_measured_cp.Position());
+            cp = reference_frame * local_cp;
+            // - with base frame
+            sarm->m_measured_cp.Position().From(cp);
+            sarm->m_measured_cp.SetValid(reference_sarm->m_local_measured_cp.Valid()
+                                         && reference_arm_local_cp.Valid());
+            sarm->m_measured_cp.SetTimestamp(std::max(reference_sarm->m_local_measured_cp.Timestamp(),
+                                                      sarm->m_local_measured_cp.Timestamp()));
+            sarm->EventPositionCartesian(sarm->m_measured_cp);
+            // - set base frame for the arm
+            prmPositionCartesianSet setpoint_cp;
+            setpoint_cp.Goal().Assign(sarm->m_measured_cp.Position());
+            setpoint_cp.SetValid(sarm->m_measured_cp.Valid());
+            setpoint_cp.SetTimestamp(sarm->m_measured_cp.Timestamp());
+            setpoint_cp.SetReferenceFrame(sarm->m_measured_cp.ReferenceFrame());
+            setpoint_cp.SetMovingFrame(sarm->m_measured_cp.MovingFrame());
+            sarm->m_arm_set_base_frame(setpoint_cp);
         }
     }
 }
@@ -1205,37 +1271,6 @@ void mtsIntuitiveResearchKitSUJ::state_command(const std::string & command)
 
 void mtsIntuitiveResearchKitSUJ::run_ENABLED(void)
 {
-    if (m_simulated) {
-        const double currentTime = this->StateTable.GetTic();
-        if (currentTime - m_simulated_timer > 1.0 * cmn_s) {
-            m_simulated_timer = currentTime;
-            for (auto sarm : m_sarms) {
-                sarm->m_state_table.Start();
-                // forward kinematic
-                vctFrm4x4 dh_cp = sarm->m_manipulator.ForwardKinematics(sarm->m_measured_js.Position(), 6);
-                // pre and post transformations loaded from JSON file, base frame updated using events
-                vctFrm4x4 local_cp = sarm->m_world_to_SUJ * dh_cp * sarm->m_SUJ_to_arm_base;
-                // apply base frame
-                vctFrm4x4 armBase = sarm->mBaseFrame * local_cp;
-                // emit events for continuous positions
-                // - joint state
-                sarm->m_measured_js.SetValid(true);
-                // - with base
-                sarm->m_measured_cp.Position().From(armBase);
-                sarm->m_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
-                sarm->m_measured_cp.SetValid(sarm->mBaseFrameValid);
-                sarm->EventPositionCartesian(sarm->m_measured_cp);
-                // - local
-                sarm->m_local_measured_cp.Position().From(local_cp);
-                sarm->m_local_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
-                sarm->m_local_measured_cp.SetValid(sarm->mBaseFrameValid);
-                sarm->EventPositionCartesianLocal(sarm->m_local_measured_cp);
-                sarm->m_state_table.Advance();
-            }
-        }
-        return;
-    }
-
     double currentTic = this->StateTable.GetTic();
     const double timeDelta = currentTic - m_previous_tic;
 
