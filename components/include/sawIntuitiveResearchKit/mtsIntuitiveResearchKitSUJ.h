@@ -88,12 +88,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
     // Arm state machine
     mtsStateMachine m_state_machine;
     bool m_powered = false;
-
-    // Just to have read commands to retrieve states
-    mtsStateTable m_state_table_state; // todo: check if needed, was removed on SUJSi
-    std::string m_state_table_state_current;
-    std::string m_state_table_state_desired;
-    prmOperatingState m_operating_state; // crtk operating state
+    prmOperatingState m_operating_state;
 
     void set_homed(const bool homed);
 
@@ -122,8 +117,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
 
     // Functions for events
     struct {
-        mtsFunctionWrite desired_state;
-        mtsFunctionWrite current_state;
         mtsFunctionWrite operating_state;
     } state_events;
     mtsInterfaceProvided * m_interface;
@@ -168,12 +161,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
 
     // Flag to determine if this is connected to actual IO/hardware or simulated
     bool m_simulated;
-    double mSimulatedTimer;
+    double m_simulated_timer;
 
     void dispatch_error(const std::string & message);
     void dispatch_warning(const std::string & message);
     void dispatch_status(const std::string & message);
-    void dispatch_state(void);
     void dispatch_operating_state(void);
 };
 

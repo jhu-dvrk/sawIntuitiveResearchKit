@@ -373,7 +373,6 @@ public:
 mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds),
     m_state_machine(componentName, "DISABLED"),
-    m_state_table_state(100, "State"),
     m_voltage_samples_number(ANALOG_SAMPLE_NUMBER)
 {
     init();
@@ -383,7 +382,6 @@ mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const std::string & compo
 mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg),
     m_state_machine(arg.Name, "DISABLED"),
-    m_state_table_state(100, "State"),
     m_voltage_samples_number(ANALOG_SAMPLE_NUMBER)
 {
     init();
@@ -392,7 +390,7 @@ mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicCons
 
 void mtsIntuitiveResearchKitSUJ::init(void)
 {
-    mSimulatedTimer = 0.0;
+    m_simulated_timer = 0.0;
 
     // initialize arm pointers
     m_sarms.SetAll(nullptr);
@@ -445,12 +443,10 @@ void mtsIntuitiveResearchKitSUJ::init(void)
                                           &mtsIntuitiveResearchKitSUJ::transition_ENABLED,
                                           this);
 
-    // state table to maintain state :-)
-    m_state_table_state.AddData(m_state_table_state_desired, "desired_state");
     m_operating_state.SetValid(true);
-    m_state_table_state.AddData(m_operating_state, "operating_state");
-    AddStateTable(&m_state_table_state);
-    m_state_table_state.SetAutomaticAdvance(false);
+    m_operating_state.SetState(prmOperatingState::DISABLED);
+    m_operating_state.SetIsHomed(true);
+    StateTable.AddData(m_operating_state, "operating_state");
 
     // default values
     m_simulated = false;
@@ -504,12 +500,10 @@ void mtsIntuitiveResearchKitSUJ::init(void)
         // Arm State
         m_interface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::state_command,
                                      this, "state_command", std::string(""));
-        m_interface->AddCommandReadState(m_state_table_state,
+        m_interface->AddCommandReadState(StateTable,
                                          m_operating_state, "operating_state");
         // Events
         m_interface->AddMessageEvents();
-        m_interface->AddEventWrite(state_events.desired_state, "desired_state", std::string(""));
-        m_interface->AddEventWrite(state_events.current_state, "current_state", std::string(""));
         m_interface->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
         // Stats
         m_interface->AddCommandReadState(StateTable, StateTable.PeriodStats,
@@ -699,25 +693,16 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
 void mtsIntuitiveResearchKitSUJ::update_operating_state_and_busy(const prmOperatingState::StateType & state,
                                                                  const bool isBusy)
 {
-    m_state_table_state.Start();
     m_operating_state.State() = state;
     m_operating_state.IsBusy() = isBusy;
-    m_state_table_state.Advance();
-    // push only operating_state since it's the only one changing
     dispatch_operating_state();
 }
 
 
 void mtsIntuitiveResearchKitSUJ::state_changed(void)
 {
-    const std::string newState = m_state_machine.CurrentState();
-    // update state table
-    m_state_table_state.Start();
-    m_state_table_state_current = newState;
-    m_state_table_state.Advance();
-    // event
-    dispatch_status(this->GetName() + ": current state " + newState);
-    dispatch_state();
+    dispatch_status("current state " + m_state_machine.CurrentState());
+    dispatch_operating_state();
 }
 
 
@@ -725,6 +710,8 @@ void mtsIntuitiveResearchKitSUJ::run_all_states(void)
 {
     // get robot data, i.e. process mux/pots
     get_robot_data();
+    // update all forward kinematics
+    // update_forward_kinematics();
 }
 
 
@@ -783,7 +770,7 @@ void mtsIntuitiveResearchKitSUJ::enter_POWERING(void)
     // enable power and set a flags to move to next step
     RobotIO.PowerOnSequence();
 
-    dispatch_status(this->GetName() + ": power requested");
+    dispatch_status("power requested");
 }
 
 
@@ -802,11 +789,11 @@ void mtsIntuitiveResearchKitSUJ::transition_POWERING(void)
         vctBoolVec actuatorAmplifiersStatus(4);
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         if (actuatorAmplifiersStatus.All()) {
-            dispatch_status(this->GetName() + ": power on");
+            dispatch_status("power on");
             m_powered = true;
             m_state_machine.SetCurrentState("ENABLED");
         } else {
-            dispatch_error(this->GetName() + ": failed to enable power");
+            dispatch_error("failed to enable power");
             set_desired_state("DISABLED");
         }
     }
@@ -865,7 +852,7 @@ void mtsIntuitiveResearchKitSUJ::Run(void)
     try {
         m_state_machine.Run();
     } catch (std::exception & e) {
-        dispatch_error(this->GetName() + ": in state " + m_state_machine.CurrentState()
+        dispatch_error("in state " + m_state_machine.CurrentState()
                        + ", caught exception \"" + e.what() + "\"");
         set_desired_state("DISABLED");
     }
@@ -968,7 +955,7 @@ void mtsIntuitiveResearchKitSUJ::get_robot_data(void)
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         if (!actuatorAmplifiersStatus.All()) {
             m_powered = false;
-            dispatch_error(this->GetName() + ": detected power loss");
+            dispatch_error("detected power loss");
             set_desired_state("DISABLED");
             return;
         }
@@ -1012,7 +999,7 @@ void mtsIntuitiveResearchKitSUJ::get_and_convert_potentiometers(void)
     // compute pot index
     m_mux_index = (m_mux_state[0]?1:0) + (m_mux_state[1]?2:0) + (m_mux_state[2]?4:0) + (m_mux_state[3]?8:0);
     if (m_mux_index != m_mux_index_expected) {
-        dispatch_warning(this->GetName() + ": unexpected multiplexer value.");
+        dispatch_warning("unexpected multiplexer value");
         CMN_LOG_CLASS_RUN_ERROR << "get_and_convert_potentiometers: mux from IO board, actual: " << m_mux_index << ", expected: " << m_mux_index_expected << std::endl;
         reset_mux();
         set_homed(false);
@@ -1151,7 +1138,7 @@ void mtsIntuitiveResearchKitSUJ::get_and_convert_potentiometers(void)
 void mtsIntuitiveResearchKitSUJ::set_desired_state(const std::string & state)
 {
     // setting desired state triggers a new event so user nows which state is current
-    dispatch_state();
+    dispatch_operating_state();
     // try to find the state in state machine
     if (!m_state_machine.StateExists(state)) {
         dispatch_error(this->GetName() + ": unsupported state " + state);
@@ -1161,16 +1148,12 @@ void mtsIntuitiveResearchKitSUJ::set_desired_state(const std::string & state)
     try {
         m_state_machine.SetDesiredState(state);
     } catch (...) {
-        dispatch_error(this->GetName() + ": " + state + " is not an allowed desired state");
+        dispatch_error(state + " is not an allowed desired state");
         return;
     }
-    // update state table
-    m_state_table_state.Start();
-    m_state_table_state_desired = state;
-    m_state_table_state.Advance();
 
-    dispatch_state();
-    dispatch_status(this->GetName() + ": desired state " + state);
+    dispatch_operating_state();
+    dispatch_status("desired state " + state);
 
     // state transitions with direct transitions
     if (state == "DISABLED") {
@@ -1212,10 +1195,10 @@ void mtsIntuitiveResearchKitSUJ::state_command(const std::string & command)
                 return;
             }
         } else {
-            dispatch_warning(this->GetName() + ": " + humanReadableMessage);
+            dispatch_warning(humanReadableMessage);
         }
     } catch (std::runtime_error & e) {
-        dispatch_warning(this->GetName() + ": " + command + " doesn't seem to be a valid state_command (" + e.what() + ")");
+        dispatch_warning(command + " doesn't seem to be a valid state_command (" + e.what() + ")");
     }
 }
 
@@ -1224,8 +1207,8 @@ void mtsIntuitiveResearchKitSUJ::run_ENABLED(void)
 {
     if (m_simulated) {
         const double currentTime = this->StateTable.GetTic();
-        if (currentTime - mSimulatedTimer > 1.0 * cmn_s) {
-            mSimulatedTimer = currentTime;
+        if (currentTime - m_simulated_timer > 1.0 * cmn_s) {
+            m_simulated_timer = currentTime;
             for (auto sarm : m_sarms) {
                 sarm->m_state_table.Start();
                 // forward kinematic
@@ -1338,55 +1321,44 @@ void mtsIntuitiveResearchKitSUJ::motor_up_event_handler(const prmEventButton & b
 void mtsIntuitiveResearchKitSUJ::error_event_handler(const mtsMessage & message)
 {
     RobotIO.PowerOffSequence(false);
-    dispatch_error(this->GetName() + ": received [" + message.Message + "]");
+    dispatch_error("received [" + message.Message + "]");
     set_desired_state("DISABLED");
 }
 
 
 void mtsIntuitiveResearchKitSUJ::dispatch_error(const std::string & message)
 {
-    m_interface->SendError(message);
-    for (auto arm : m_sarms) {
-        arm->m_interface_provided->SendError(arm->m_name + " " + message);
+    m_interface->SendError(this->GetName() + ": " + message);
+    for (auto sarm : m_sarms) {
+        sarm->m_interface_provided->SendError(sarm->m_name + " SUJ: " + message);
     }
 }
 
 
 void mtsIntuitiveResearchKitSUJ::dispatch_warning(const std::string & message)
 {
-    m_interface->SendWarning(message);
-    for (auto arm : m_sarms) {
-        arm->m_interface_provided->SendWarning(arm->m_name + " " + message);
+    m_interface->SendWarning(this->GetName() + ": " + message);
+    for (auto sarm : m_sarms) {
+        sarm->m_interface_provided->SendWarning(sarm->m_name + " SUJ: " + message);
     }
 }
 
 
 void mtsIntuitiveResearchKitSUJ::dispatch_status(const std::string & message)
 {
-    m_interface->SendStatus(message);
-    for (auto arm : m_sarms) {
-        arm->m_interface_provided->SendStatus(arm->m_name + " " + message);
+    m_interface->SendStatus(this->GetName() + ": " + message);
+    for (auto sarm : m_sarms) {
+        sarm->m_interface_provided->SendStatus(sarm->m_name + " SUJ: " + message);
     }
-}
-
-void mtsIntuitiveResearchKitSUJ::dispatch_state(void)
-{
-    state_events.current_state(m_state_machine.CurrentState());
-    for (auto arm : m_sarms) {
-        arm->state_events.current_state(m_state_machine.CurrentState());
-    }
-    state_events.desired_state(m_state_machine.DesiredState());
-    for (auto arm : m_sarms) {
-        arm->state_events.desired_state(m_state_machine.DesiredState());
-    }
-    dispatch_operating_state();
 }
 
 
 void mtsIntuitiveResearchKitSUJ::dispatch_operating_state(void)
 {
     state_events.operating_state(m_operating_state);
-    for (auto arm : m_sarms) {
-        arm->state_events.operating_state(m_operating_state);
+    for (auto sarm : m_sarms) {
+        sarm->state_events.operating_state(m_operating_state);
+        sarm->state_events.current_state(m_state_machine.CurrentState());
+        sarm->state_events.desired_state(m_state_machine.DesiredState());
     }
 }

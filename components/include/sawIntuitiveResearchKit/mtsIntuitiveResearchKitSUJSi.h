@@ -110,7 +110,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
     void dispatch_error(const std::string & message);
     void dispatch_warning(const std::string & message);
     void dispatch_status(const std::string & message);
-    void dispatch_state(void);
     void dispatch_operating_state(void);
 };
 
