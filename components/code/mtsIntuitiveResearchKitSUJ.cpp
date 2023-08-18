@@ -92,7 +92,6 @@ public:
             m_voltage_to_position_offsets[potArray].SetSize(MUX_ARRAY_SIZE);
         }
         m_delta_measured_js.SetSize(MUX_ARRAY_SIZE);
-        m_pots_agree = true;
         m_voltages_extra.SetSize(MUX_MAX_INDEX - 2 * MUX_ARRAY_SIZE + 1);
 
         m_measured_js.Position().SetSize(MUX_ARRAY_SIZE);
@@ -202,6 +201,7 @@ public:
         } else {
             // first event to release (physical button or GUI) forces release
             m_clutched = 0;
+            m_waiting_for_live = true;
             m_interface_provided->SendStatus(m_name + ": SUJ not clutched");
         }
     }
@@ -310,7 +310,8 @@ public:
     vctDoubleVec m_voltages[2];
     vctDoubleVec m_positions[2];
     vctDoubleVec m_delta_measured_js;
-    bool m_pots_agree;
+    bool m_pots_agree = false;
+    bool m_waiting_for_live = true;
 
     vctDoubleVec m_voltage_to_position_scales[2];
     vctDoubleVec m_voltage_to_position_offsets[2];
@@ -318,6 +319,9 @@ public:
     prmConfigurationJoint m_configuration_js;
     // 0 is no, 1 tells we need to send, 2 is for first full mux cycle has started
     unsigned int m_number_of_mux_cycles = 0;
+
+    // kinematics
+    bool m_need_update_forward_kinemactics = false;
     prmPositionCartesianGet m_measured_cp;
     prmPositionCartesianGet m_local_measured_cp;
 
@@ -542,7 +546,6 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         exit(EXIT_FAILURE);
     }
 
-    mtsIntuitiveResearchKitSUJArmData * arm;
     for (unsigned int index = 0; index < jsonArms.size(); ++index) {
         // name
         Json::Value jsonArm = jsonArms[index];
@@ -585,9 +588,9 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         // ECM and change base frame on attached arms
         mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided(name);
         mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
-        arm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, m_simulated,
-                                                    interfaceProvided, interfaceRequired);
-        m_sarms[armIndex] = arm;
+        auto sarm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, m_simulated,
+                                                          interfaceProvided, interfaceRequired);
+        m_sarms[armIndex] = sarm;
 
         // save which arm is the Reference Arm
         if (name == referenceArm_name) {
@@ -610,7 +613,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
             interfaceName << "SUJ-Clutch-" << plugNumber;
             mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
             if (requiredInterface) {
-                requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::clutch_callback, arm,
+                requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::clutch_callback, sarm,
                                                         "Button");
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure: can't add required interface for SUJ \""
@@ -625,12 +628,12 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
             if (!jsonPosition.empty()) {
                 vctDoubleVec position;
                 cmnDataJSON<vctDoubleVec>::DeSerializeText(position, jsonPosition);
-                if (position.size() == arm->m_measured_js.Position().size()) {
-                    arm->m_measured_js.Position().Assign(position);
+                if (position.size() == sarm->m_measured_js.Position().size()) {
+                    sarm->m_measured_js.Position().Assign(position);
                 } else {
                     CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to load \"position-simulated\" for \""
                                              << name << "\", expected vector size is "
-                                             << arm->m_measured_js.Position().size() << " but vector in configuration file has "
+                                             << sarm->m_measured_js.Position().size() << " but vector in configuration file has "
                                              << position.size() << " element(s)"
                                              << std::endl;
                     exit(EXIT_FAILURE);
@@ -639,43 +642,43 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         }
 
         // find serial number
-        arm->m_serial_number = jsonArm["serial-number"].asString();
+        sarm->m_serial_number = jsonArm["serial-number"].asString();
 
         // read brake current configuration
         // all math for ramping up/down current is done on positive values
         // negate only when applying
         double brakeCurrent = jsonArm["brake-release-current"].asFloat();
         if (brakeCurrent > 0.0) {
-            arm->m_brake_release_current = brakeCurrent;
-            arm->m_brake_direction_current = 1.0;
+            sarm->m_brake_release_current = brakeCurrent;
+            sarm->m_brake_direction_current = 1.0;
         } else {
-            arm->m_brake_release_current = -brakeCurrent;
-            arm->m_brake_direction_current = -1.0;
+            sarm->m_brake_release_current = -brakeCurrent;
+            sarm->m_brake_direction_current = -1.0;
         }
 
         brakeCurrent = 0.0;
         if (!jsonArm["brake-engaged-current"].isNull()) {
             brakeCurrent = jsonArm["brake-engaged-current"].asFloat();
         }
-        arm->m_brake_engaged_current = brakeCurrent;
+        sarm->m_brake_engaged_current = brakeCurrent;
 
         // read pot settings
-        arm->m_state_table_configuration.Start();
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->m_voltage_to_position_offsets[0], jsonArm["primary-offsets"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->m_voltage_to_position_offsets[1], jsonArm["secondary-offsets"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->m_voltage_to_position_scales[0], jsonArm["primary-scales"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->m_voltage_to_position_scales[1], jsonArm["secondary-scales"]);
-        arm->m_state_table_configuration.Advance();
+        sarm->m_state_table_configuration.Start();
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[0], jsonArm["primary-offsets"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[1], jsonArm["secondary-offsets"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[0], jsonArm["primary-scales"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[1], jsonArm["secondary-scales"]);
+        sarm->m_state_table_configuration.Advance();
 
         // look for DH
-        arm->m_manipulator.LoadRobot(jsonArm["DH"]);
+        sarm->m_manipulator.LoadRobot(jsonArm["DH"]);
 
         // Read setup transforms
         vctFrm3 transform;
         cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["world-origin-to-suj"]);
-        arm->m_world_to_SUJ.From(transform);
+        sarm->m_world_to_SUJ.From(transform);
         cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["suj-tip-to-tool-origin"]);
-        arm->m_SUJ_to_arm_base.From(transform);
+        sarm->m_SUJ_to_arm_base.From(transform);
     }
 }
 
@@ -798,10 +801,10 @@ void mtsIntuitiveResearchKitSUJ::enter_ENABLED(void)
 
     if (m_simulated) {
         // set all data to be valid
-        for (auto arm : m_sarms) {
-            arm->m_measured_js.Valid() = true;
-            arm->m_measured_cp.Valid() = true;
-            arm->m_local_measured_cp.Valid() = true;
+        for (auto sarm : m_sarms) {
+            sarm->m_measured_js.Valid() = true;
+            sarm->m_measured_cp.Valid() = true;
+            sarm->m_local_measured_cp.Valid() = true;
         }
         set_homed(true);
         return;
@@ -814,9 +817,9 @@ void mtsIntuitiveResearchKitSUJ::enter_ENABLED(void)
     RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
 
     // when returning from manual mode, make sure brakes are not released
-    for (auto arm : m_sarms) {
-        arm->m_clutched = 0;
-        arm->m_brake_desired_current = 0.0;
+    for (auto sarm : m_sarms) {
+        sarm->m_clutched = 0;
+        sarm->m_brake_desired_current = 0.0;
         m_previous_tic = 0.0;
     }
 }
@@ -870,9 +873,9 @@ void mtsIntuitiveResearchKitSUJ::set_simulated(void)
 {
     m_simulated = true;
     // set all arms simulated
-    for (auto arm : m_sarms) {
-        if (arm != nullptr) {
-            arm->m_simulated = true;
+    for (auto sarm : m_sarms) {
+        if (sarm != nullptr) {
+            sarm->m_simulated = true;
         }
     }
     // in simulation mode, we don't need IOs
@@ -955,8 +958,6 @@ void mtsIntuitiveResearchKitSUJ::get_robot_data(void)
 
 void mtsIntuitiveResearchKitSUJ::get_and_convert_potentiometers(void)
 {
-    mtsIntuitiveResearchKitSUJArmData * arm;
-
     // read encoder channel A to get the mux state
     mtsExecutionResult executionResult = RobotIO.GetEncoderChannelA(m_mux_state);
     // compute pot index
@@ -990,90 +991,94 @@ void mtsIntuitiveResearchKitSUJ::get_and_convert_potentiometers(void)
         }
         m_voltages.Divide(m_voltage_samples_number);
         // for each arm, i.e. SUJ1, SUJ2, SUJ3, ...
-        for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-            arm = m_sarms[armIndex];
+        for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
+            auto * sarm = m_sarms[arm_index];
             // start stable when reading 1st joint on all arms
             if (m_mux_index == 0) {
-                arm->m_state_table.Start();
+                sarm->m_state_table.Start();
             }
             // all 4 analog inputs are sent to all 4 arm data structures
             if (arrayIndex < 2) {
-                arm->m_voltages[arrayIndex][indexInArray] = m_voltages[armIndex];
+                sarm->m_voltages[arrayIndex][indexInArray] = m_voltages[arm_index];
             } else {
                 if (indexInArray == 2) {
-                    if ((armIndex == 0) || (armIndex == 1) || (armIndex == 2)) {
-                        m_sarms[3 - armIndex]->m_voltages_extra[indexInArray] = m_voltages[armIndex];
-                    } else if (armIndex == 3) {
+                    if ((arm_index == 0) || (arm_index == 1) || (arm_index == 2)) {
+                        m_sarms[3 - arm_index]->m_voltages_extra[indexInArray] = m_voltages[arm_index];
+                    } else if (arm_index == 3) {
 
                     }
-                } else if ((indexInArray == 3) && (armIndex == 3)) {
-                    m_sarms[0 /* 3 - armIndex */]->m_voltages_extra[2] = m_voltages[armIndex];
+                } else if ((indexInArray == 3) && (arm_index == 3)) {
+                    m_sarms[0 /* 3 - arm_index */]->m_voltages_extra[2] = m_voltages[arm_index];
                 } else {
                     // normal case
-                    arm->m_voltages_extra[indexInArray] = m_voltages[armIndex];
+                    sarm->m_voltages_extra[indexInArray] = m_voltages[arm_index];
                 }
             }
             // advance state table when all joints have been read
             if (m_mux_index == MUX_MAX_INDEX) {
-                arm->m_positions[0].Assign(arm->m_voltage_to_position_offsets[0]);
-                arm->m_positions[0].AddElementwiseProductOf(arm->m_voltage_to_position_scales[0], arm->m_voltages[0]);
-                arm->m_positions[1].Assign(arm->m_voltage_to_position_offsets[1]);
-                arm->m_positions[1].AddElementwiseProductOf(arm->m_voltage_to_position_scales[1], arm->m_voltages[1]);
+                sarm->m_positions[0].Assign(sarm->m_voltage_to_position_offsets[0]);
+                sarm->m_positions[0].AddElementwiseProductOf(sarm->m_voltage_to_position_scales[0], sarm->m_voltages[0]);
+                sarm->m_positions[1].Assign(sarm->m_voltage_to_position_offsets[1]);
+                sarm->m_positions[1].AddElementwiseProductOf(sarm->m_voltage_to_position_scales[1], sarm->m_voltages[1]);
 
                 // ignore values on ECM arm
-                if (arm->m_type == mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
+                if (sarm->m_type == mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
                     // ECM has only 4 joints
-                    arm->m_positions[0][4] = 0.0;
-                    arm->m_positions[0][5] = 0.0;
-                    arm->m_positions[1][4] = 0.0;
-                    arm->m_positions[1][5] = 0.0;
+                    sarm->m_positions[0][4] = 0.0;
+                    sarm->m_positions[0][5] = 0.0;
+                    sarm->m_positions[1][4] = 0.0;
+                    sarm->m_positions[1][5] = 0.0;
                 }
 
                 // if the arm is clutched, we keep resetting mux counter
-                if (arm->m_clutched > 0) {
-                    arm->m_number_of_mux_cycles = 0;
+                if (sarm->m_clutched > 0) {
+                    sarm->m_number_of_mux_cycles = 0;
                 }
 
                 // check pots when the SUJ is not clutch and if the
                 // counter for update cartesian desired position is
                 // back to zero (pot values should now be stable).
-                if ((arm->m_clutched == 0) && (arm->m_number_of_mux_cycles >= NUMBER_OF_MUX_CYCLE_BEFORE_STABLE)) {
+                if ((sarm->m_clutched == 0) && (sarm->m_number_of_mux_cycles >= NUMBER_OF_MUX_CYCLE_BEFORE_STABLE)) {
                     // compare primary and secondary pots when arm is not clutched
                     const double angleTolerance = 1.0 * cmnPI / 180.0;
                     const double distanceTolerance = 2.0 * cmn_mm;
-                    arm->m_delta_measured_js.DifferenceOf(arm->m_positions[0], arm->m_positions[1]);
-                    if ((arm->m_delta_measured_js[0] > distanceTolerance) ||
-                        (arm->m_delta_measured_js.Ref(5, 1).MaxAbsElement() > angleTolerance)) {
+                    sarm->m_delta_measured_js.DifferenceOf(sarm->m_positions[0], sarm->m_positions[1]);
+                    if ((sarm->m_delta_measured_js[0] > distanceTolerance) ||
+                        (sarm->m_delta_measured_js.Ref(5, 1).MaxAbsElement() > angleTolerance)) {
                         // send messages if this is new
-                        if (arm->m_pots_agree) {
-                            m_interface->SendWarning(this->GetName() + ": " + arm->m_name + " primary and secondary potentiometers don't seem to agree.");
+                        if (sarm->m_pots_agree) {
+                            m_interface->SendWarning(this->GetName() + ": " + sarm->m_name + " primary and secondary potentiometers don't seem to agree.");
                             CMN_LOG_CLASS_RUN_WARNING << "get_and_convert_potentiometers, error: " << std::endl
-                                                      << " - " << this->GetName() << ": " << arm->m_name << std::endl
-                                                      << " - primary:   " << arm->m_positions[0] << std::endl
-                                                      << " - secondary: " << arm->m_positions[1] << std::endl;
-                            arm->m_pots_agree = false;
+                                                      << " - " << this->GetName() << ": " << sarm->m_name << std::endl
+                                                      << " - primary:   " << sarm->m_positions[0] << std::endl
+                                                      << " - secondary: " << sarm->m_positions[1] << std::endl;
+                            sarm->m_pots_agree = false;
                         }
                     } else {
-                        if (!arm->m_pots_agree) {
-                            m_interface->SendStatus(this->GetName() + ": " + arm->m_name + " primary and secondary potentiometers agree.");
+                        if (!sarm->m_pots_agree) {
+                            m_interface->SendStatus(this->GetName() + ": " + sarm->m_name + " primary and secondary potentiometers agree.");
                             CMN_LOG_CLASS_RUN_VERBOSE << "get_and_convert_potentiometers recovery" << std::endl
-                                                      << " - " << this->GetName() << ": " << arm->m_name << std::endl;
-                            arm->m_pots_agree = true;
+                                                      << " - " << this->GetName() << ": " << sarm->m_name << std::endl;
+                            sarm->m_pots_agree = true;
                         }
                     }
                 }
 
                 // this mux cycle might have started before brakes where engaged so we can set the valid flag
-                if (arm->m_number_of_mux_cycles < NUMBER_OF_MUX_CYCLE_BEFORE_STABLE) {
-                    arm->m_number_of_mux_cycles++;
+                if (sarm->m_number_of_mux_cycles < NUMBER_OF_MUX_CYCLE_BEFORE_STABLE) {
+                    sarm->m_number_of_mux_cycles++;
                 } else {
                     // at that point we know there has been a full mux cycle with brakes engaged
                     // so we treat this as a fixed transformation until the SUJ move again (user clutch)
                     // use average of positions reported by potentiometers
-                    arm->m_measured_js.Position().SumOf(arm->m_positions[0],
-                                                        arm->m_positions[1]);
-                    arm->m_measured_js.Position().Divide(2.0);
-                    arm->m_measured_js.SetValid(true);
+                    sarm->m_measured_js.Position().SumOf(sarm->m_positions[0],
+                                                         sarm->m_positions[1]);
+                    sarm->m_measured_js.Position().Divide(2.0);
+                    sarm->m_measured_js.SetValid(true);
+                    if (sarm->m_waiting_for_live) {
+                        sarm->m_waiting_for_live = false;
+                        sarm->m_need_update_forward_kinemactics = true;
+                    }
                 }
             }
         }
@@ -1122,18 +1127,22 @@ void mtsIntuitiveResearchKitSUJ::update_forward_kinematics(void)
     for (auto sarm : m_sarms) {
         if (sarm != nullptr) {
             if (sarm->m_measured_js.Valid()) {
-                // forward kinematic
-                vctDoubleVec jp(sarm->m_manipulator.links.size(), 0.0);
-                jp.Ref(sarm->m_measured_js.Position().size()).Assign(sarm->m_measured_js.Position());
-                vctFrm4x4 dh_cp = sarm->m_manipulator.ForwardKinematics(jp);
-                // pre and post transformations loaded from JSON file, base frame updated using events
-                vctFrm4x4 local_cp = sarm->m_world_to_SUJ * dh_cp * sarm->m_SUJ_to_arm_base;
-                // update local only
-                sarm->m_local_measured_cp.Position().From(local_cp);
-                sarm->m_local_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
-                sarm->m_local_measured_cp.SetValid(true);
-                sarm->EventPositionCartesianLocal(sarm->m_local_measured_cp);
-                sarm->m_interface_provided->SendStatus(sarm->m_name + " SUJ: measured_cp updated");
+                if (sarm->m_need_update_forward_kinemactics) {
+                    sarm->m_need_update_forward_kinemactics = false;
+
+                    // forward kinematic
+                    vctDoubleVec jp(sarm->m_manipulator.links.size(), 0.0);
+                    jp.Ref(sarm->m_measured_js.Position().size()).Assign(sarm->m_measured_js.Position());
+                    vctFrm4x4 dh_cp = sarm->m_manipulator.ForwardKinematics(jp);
+                    // pre and post transformations loaded from JSON file, base frame updated using events
+                    vctFrm4x4 local_cp = sarm->m_world_to_SUJ * dh_cp * sarm->m_SUJ_to_arm_base;
+                    // update local only
+                    sarm->m_local_measured_cp.Position().From(local_cp);
+                    sarm->m_local_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
+                    sarm->m_local_measured_cp.SetValid(true);
+                    sarm->EventPositionCartesianLocal(sarm->m_local_measured_cp);
+                    sarm->m_interface_provided->SendStatus(sarm->m_name + " SUJ: measured_cp updated");
+                }
             } else {
                 sarm->m_local_measured_cp.SetValid(false);
             }
@@ -1144,7 +1153,7 @@ void mtsIntuitiveResearchKitSUJ::update_forward_kinematics(void)
     prmPositionCartesianGet reference_arm_local_cp;
     prmPositionCartesianGet reference_arm_to_cart_cp;
 
-    mtsIntuitiveResearchKitSUJArmData * reference_sarm = m_sarms[m_reference_arm_index];
+    auto * reference_sarm = m_sarms[m_reference_arm_index];
     if (! (reference_sarm->m_get_local_measured_cp(reference_arm_local_cp))) {
         // interface not connected, reporting wrt cart
         reference_arm_to_cart_cp.Position().Assign(vctFrm3::Identity());
@@ -1174,7 +1183,7 @@ void mtsIntuitiveResearchKitSUJ::update_forward_kinematics(void)
     vctFrm4x4 reference_frame(reference_arm_to_cart_cp.Position());
     vctFrm4x4 local_cp, cp;
     for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
-        mtsIntuitiveResearchKitSUJArmData * sarm = m_sarms[arm_index];
+        auto * sarm = m_sarms[arm_index];
         // update positions with base frame, local positions are only
         // updated from FK when joints are ready
         if (arm_index != m_reference_arm_index) {
@@ -1276,9 +1285,8 @@ void mtsIntuitiveResearchKitSUJ::run_ENABLED(void)
 
     const double brakeCurrentRate = 8.0; // rate = 8 A/s, about 1/4 second to get up/down
 
-    mtsIntuitiveResearchKitSUJArmData * sarm;
     for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
-        sarm = m_sarms[arm_index];
+        auto sarm = m_sarms[arm_index];
         // brakes
         // increase current for brakes
         if (sarm->m_clutched > 0) {

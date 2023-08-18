@@ -156,7 +156,6 @@ public:
             m_positions[potArray].SetSize(m_nb_joints);
         }
         m_delta_measured_js.SetSize(m_nb_joints);
-        m_pots_agree = true;
 
         m_measured_js.Position().SetSize(m_nb_joints, 0.0);
         m_measured_js.Name().SetSize(m_nb_joints);
@@ -254,8 +253,8 @@ public:
             m_local_measured_cp.SetValid(false);
             EventPositionCartesianLocal(m_local_measured_cp);
         } else if (button.Type() == prmEventButton::RELEASED) {
-            m_interface_provided->SendStatus(m_name + ": SUJ not clutched");
             m_waiting_for_live = true;
+            m_interface_provided->SendStatus(m_name + ": SUJ not clutched");
         }
     }
 
@@ -343,7 +342,7 @@ public:
     vctDoubleVec m_voltages[2];
     vctDoubleVec m_positions[2];
     vctDoubleVec m_delta_measured_js;
-    bool m_pots_agree;
+    bool m_pots_agree = false;
     bool m_waiting_for_live = true;
 
     vctDoubleVec m_voltage_to_position_scales[2];
@@ -507,7 +506,6 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
         exit(EXIT_FAILURE);
     }
 
-    mtsIntuitiveResearchKitSUJSiArmData * sarm;
     for (unsigned int index = 0; index < jsonArms.size(); ++index) {
         // name
         Json::Value jsonArm = jsonArms[index];
@@ -531,9 +529,9 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
         // ECM and change base frame on attached arms
         mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided(name);
         mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
-        sarm = new mtsIntuitiveResearchKitSUJSiArmData(name, mac,
-                                                       interfaceProvided,
-                                                       interfaceRequired);
+        auto sarm = new mtsIntuitiveResearchKitSUJSiArmData(name, mac,
+                                                            interfaceProvided,
+                                                            interfaceRequired);
         m_sarms[index] = sarm;
 
         // save which arm is the Reference Arm
@@ -825,7 +823,7 @@ void mtsIntuitiveResearchKitSUJSi::update_forward_kinematics(void)
     prmPositionCartesianGet reference_arm_local_cp;
     prmPositionCartesianGet reference_arm_to_cart_cp;
 
-    mtsIntuitiveResearchKitSUJSiArmData * reference_sarm = m_sarms[m_reference_arm_index];
+    auto * reference_sarm = m_sarms[m_reference_arm_index];
     if (! (reference_sarm->m_get_local_measured_cp(reference_arm_local_cp))) {
         // interface not connected, reporting wrt cart
         reference_arm_to_cart_cp.Position().Assign(vctFrm3::Identity());
@@ -855,7 +853,7 @@ void mtsIntuitiveResearchKitSUJSi::update_forward_kinematics(void)
     vctFrm4x4 reference_frame(reference_arm_to_cart_cp.Position());
     vctFrm4x4 local_cp, cp;
     for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
-        mtsIntuitiveResearchKitSUJSiArmData * sarm = m_sarms[arm_index];
+        auto * sarm = m_sarms[arm_index];
         // update positions with base frame, local positions are only
         // updated from FK when joints are ready
         if (arm_index != m_reference_arm_index) {
