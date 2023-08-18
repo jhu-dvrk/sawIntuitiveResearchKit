@@ -245,7 +245,7 @@ public:
     {
         if (button.Type() == prmEventButton::PRESSED) {
             // clutch is pressed, arm is moving around and we know the pots are slow, we mark position as invalid
-            m_interface_provided->SendStatus(m_name + ": SUJ clutched");
+            m_interface_provided->SendStatus(m_name + " SUJ: clutched");
             m_measured_cp.SetTimestamp(m_measured_js.Timestamp());
             m_measured_cp.SetValid(false);
             EventPositionCartesian(m_measured_cp);
@@ -254,7 +254,7 @@ public:
             EventPositionCartesianLocal(m_local_measured_cp);
         } else if (button.Type() == prmEventButton::RELEASED) {
             m_waiting_for_live = true;
-            m_interface_provided->SendStatus(m_name + ": SUJ not clutched");
+            m_interface_provided->SendStatus(m_name + " SUJ: not clutched");
         }
     }
 
@@ -756,7 +756,7 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
                     (sarm->m_delta_measured_js.Ref(3, 1).MaxAbsElement() > angleTolerance)) {
                     // send messages if this is new
                     if (sarm->m_pots_agree) {
-                        m_interface->SendWarning(sarm->m_name + " SUJ: primary and secondary potentiometers don't seem to agree.");
+                        dispatch_warning(sarm->m_name + " primary and secondary potentiometers don't seem to agree");
                         CMN_LOG_CLASS_RUN_WARNING << "get_robot_data, error: " << std::endl
                                                   << " - " << this->GetName() << ": " << sarm->m_name << std::endl
                                                   << " - primary:   " << sarm->m_positions[0] << std::endl
@@ -765,7 +765,7 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
                     }
                 } else {
                     if (!sarm->m_pots_agree) {
-                        m_interface->SendStatus(sarm->m_name + " SUJ: primary and secondary potentiometers agree.");
+                        dispatch_status(sarm->m_name + " primary and secondary potentiometers agree");
                         CMN_LOG_CLASS_RUN_VERBOSE << "get_robot_data recovery" << std::endl
                                                   << " - " << this->GetName() << ": " << sarm->m_name << std::endl;
                         sarm->m_pots_agree = true;

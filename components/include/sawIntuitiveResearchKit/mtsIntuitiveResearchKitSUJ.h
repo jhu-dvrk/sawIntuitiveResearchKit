@@ -167,7 +167,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
 
     // Flag to determine if this is connected to actual IO/hardware or simulated
     bool m_simulated;
-    double m_simulated_timer;
 
     void dispatch_error(const std::string & message);
     void dispatch_warning(const std::string & message);

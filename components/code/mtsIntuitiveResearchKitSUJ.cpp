@@ -190,7 +190,7 @@ public:
             m_clutched += 1;
             if (m_clutched == 1) {
                 // clutch is pressed, arm is moving around and we know the pots are slow, we mark position as invalid
-                m_interface_provided->SendStatus(m_name + ": SUJ clutched");
+                m_interface_provided->SendStatus(m_name + " SUJ: clutched");
                 m_measured_cp.SetTimestamp(m_measured_js.Timestamp());
                 m_measured_cp.SetValid(false);
                 EventPositionCartesian(m_measured_cp);
@@ -202,19 +202,21 @@ public:
             // first event to release (physical button or GUI) forces release
             m_clutched = 0;
             m_waiting_for_live = true;
-            m_interface_provided->SendStatus(m_name + ": SUJ not clutched");
+            m_interface_provided->SendStatus(m_name + " SUJ: not clutched");
         }
     }
 
 
     inline void servo_jp(const prmPositionJointSet & newPosition) {
         if (!m_simulated) {
-            m_interface_provided->SendWarning(m_name + ": servo_jp can't be used unless the SUJs are in simulated mode");
+            m_interface_provided->SendWarning(m_name + " SUJ: servo_jp can't be used unless the SUJs are in simulated mode");
             return;
         }
         // save the desired position
         m_measured_js.Position().Assign(newPosition.Goal());
-        m_measured_js.Timestamp() = newPosition.Timestamp();
+        m_measured_js.SetValid(true);
+        m_measured_js.SetTimestamp(newPosition.Timestamp());
+        m_need_update_forward_kinemactics = true;
     }
 
 
@@ -384,8 +386,6 @@ mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicCons
 
 void mtsIntuitiveResearchKitSUJ::init(void)
 {
-    m_simulated_timer = 0.0;
-
     // initialize arm pointers
     m_sarms.SetAll(nullptr);
 
@@ -630,6 +630,8 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
                 cmnDataJSON<vctDoubleVec>::DeSerializeText(position, jsonPosition);
                 if (position.size() == sarm->m_measured_js.Position().size()) {
                     sarm->m_measured_js.Position().Assign(position);
+                    sarm->m_measured_js.SetValid(true);
+                    sarm->m_need_update_forward_kinemactics = true;
                 } else {
                     CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to load \"position-simulated\" for \""
                                              << name << "\", expected vector size is "
@@ -800,12 +802,6 @@ void mtsIntuitiveResearchKitSUJ::enter_ENABLED(void)
     update_operating_state_and_busy(prmOperatingState::ENABLED, false);
 
     if (m_simulated) {
-        // set all data to be valid
-        for (auto sarm : m_sarms) {
-            sarm->m_measured_js.Valid() = true;
-            sarm->m_measured_cp.Valid() = true;
-            sarm->m_local_measured_cp.Valid() = true;
-        }
         set_homed(true);
         return;
     }
@@ -1047,7 +1043,7 @@ void mtsIntuitiveResearchKitSUJ::get_and_convert_potentiometers(void)
                         (sarm->m_delta_measured_js.Ref(5, 1).MaxAbsElement() > angleTolerance)) {
                         // send messages if this is new
                         if (sarm->m_pots_agree) {
-                            m_interface->SendWarning(this->GetName() + ": " + sarm->m_name + " primary and secondary potentiometers don't seem to agree.");
+                            dispatch_warning(sarm->m_name + " primary and secondary potentiometers don't seem to agree");
                             CMN_LOG_CLASS_RUN_WARNING << "get_and_convert_potentiometers, error: " << std::endl
                                                       << " - " << this->GetName() << ": " << sarm->m_name << std::endl
                                                       << " - primary:   " << sarm->m_positions[0] << std::endl
@@ -1056,7 +1052,7 @@ void mtsIntuitiveResearchKitSUJ::get_and_convert_potentiometers(void)
                         }
                     } else {
                         if (!sarm->m_pots_agree) {
-                            m_interface->SendStatus(this->GetName() + ": " + sarm->m_name + " primary and secondary potentiometers agree.");
+                            dispatch_status(sarm->m_name + " primary and secondary potentiometers agree");
                             CMN_LOG_CLASS_RUN_VERBOSE << "get_and_convert_potentiometers recovery" << std::endl
                                                       << " - " << this->GetName() << ": " << sarm->m_name << std::endl;
                             sarm->m_pots_agree = true;
@@ -1088,41 +1084,6 @@ void mtsIntuitiveResearchKitSUJ::get_and_convert_potentiometers(void)
 
 void mtsIntuitiveResearchKitSUJ::update_forward_kinematics(void)
 {
-    // special case for simulated
-    if (m_simulated) {
-#if 0
-        // this might not need to be different from non simulated since the only difference is how measured_js is populated
-        const double currentTime = this->StateTable.GetTic();
-        if (currentTime - m_simulated_timer > 1.0 * cmn_s) {
-            m_simulated_timer = currentTime;
-            for (auto sarm : m_sarms) {
-                sarm->m_state_table.Start();
-                // forward kinematic
-                vctFrm4x4 dh_cp = sarm->m_manipulator.ForwardKinematics(sarm->m_measured_js.Position(), 6);
-                // pre and post transformations loaded from JSON file, base frame updated using events
-                vctFrm4x4 local_cp = sarm->m_world_to_SUJ * dh_cp * sarm->m_SUJ_to_arm_base;
-                // apply base frame
-                vctFrm4x4 armBase = sarm->mBaseFrame * local_cp;
-                // emit events for continuous positions
-                // - joint state
-                sarm->m_measured_js.SetValid(true);
-                // - with base
-                sarm->m_measured_cp.Position().From(armBase);
-                sarm->m_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
-                sarm->m_measured_cp.SetValid(sarm->mBaseFrameValid);
-                sarm->EventPositionCartesian(sarm->m_measured_cp);
-                // - local
-                sarm->m_local_measured_cp.Position().From(local_cp);
-                sarm->m_local_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
-                sarm->m_local_measured_cp.SetValid(sarm->mBaseFrameValid);
-                sarm->EventPositionCartesianLocal(sarm->m_local_measured_cp);
-                sarm->m_state_table.Advance();
-            }
-        }
-#endif
-        return;
-    }
-
     // for real robots first update all the local_measured_cp if all arms are ready
     for (auto sarm : m_sarms) {
         if (sarm != nullptr) {
