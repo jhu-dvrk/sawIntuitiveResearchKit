@@ -159,15 +159,10 @@ public:
         m_interface_provided->AddCommandReadState(m_state_table_brake_current, m_brake_desired_current, "GetBrakeCurrent");
 
         // write commands
-        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCommand, this,
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::clutch_command, this,
                                               "Clutch", false);
-        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::CalibratePotentiometers, this,
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::calibrate_potentiometers, this,
                                               "SetRecalibrationMatrix", m_recalibration_matrix);
-
-        // cartesian position events
-        // m_base_frame is send everytime the mux has found all joint values
-        m_interface_provided->AddEventWrite(EventPositionCartesian, "PositionCartesian", prmPositionCartesianGet());
-        m_interface_provided->AddEventWrite(EventPositionCartesianLocal, "PositionCartesianLocal", prmPositionCartesianGet());
 
         // Events
         m_interface_provided->AddEventWrite(state_events.current_state, "current_state", std::string(""));
@@ -191,12 +186,11 @@ public:
             if (m_clutched == 1) {
                 // clutch is pressed, arm is moving around and we know the pots are slow, we mark position as invalid
                 m_interface_provided->SendStatus(m_name + " SUJ: clutched");
+                m_measured_js.SetValid(false);
                 m_measured_cp.SetTimestamp(m_measured_js.Timestamp());
                 m_measured_cp.SetValid(false);
-                EventPositionCartesian(m_measured_cp);
                 m_local_measured_cp.SetTimestamp(m_measured_js.Timestamp());
                 m_local_measured_cp.SetValid(false);
-                EventPositionCartesianLocal(m_local_measured_cp);
             }
         } else {
             // first event to release (physical button or GUI) forces release
@@ -207,7 +201,8 @@ public:
     }
 
 
-    inline void servo_jp(const prmPositionJointSet & newPosition) {
+    inline void servo_jp(const prmPositionJointSet & newPosition)
+    {
         if (!m_simulated) {
             m_interface_provided->SendWarning(m_name + " SUJ: servo_jp can't be used unless the SUJs are in simulated mode");
             return;
@@ -220,7 +215,8 @@ public:
     }
 
 
-    inline void ClutchCommand(const bool & clutch) {
+    inline void clutch_command(const bool & clutch)
+    {
         prmEventButton button;
         if (clutch) {
             button.SetType(prmEventButton::PRESSED);
@@ -231,7 +227,8 @@ public:
     }
 
 
-    inline void CalibratePotentiometers(const vctMat & mat) {
+    inline void calibrate_potentiometers(const vctMat & mat)
+    {
         for (size_t col = 0; col < 6; col++) {
             // IF:                                      Pi = Offset + Vi * Scale
             // Given P1 / V1 & P2 / V2, THEN:           Scale = (P1 - P2) / (V1 - V2)
@@ -252,7 +249,6 @@ public:
             m_new_joint_offsets[0][col] = mat.Element(0, col) - mat.Element(1, col) * m_new_joint_scales[0][col];
             m_new_joint_offsets[1][col] = mat.Element(0, col) - mat.Element(2, col) * m_new_joint_scales[1][col];
         }
-
 
         std::cerr << "SUJ scales and offsets for arm: " << m_name << std::endl
                   << "Please update your suj.json file using these values" << std::endl
@@ -353,10 +349,6 @@ public:
     double m_brake_release_current = 0.0;
     double m_brake_engaged_current = 0.0;
     double m_brake_direction_current;
-
-    // functions for events
-    mtsFunctionWrite EventPositionCartesian;
-    mtsFunctionWrite EventPositionCartesianLocal;
 
     struct {
         mtsFunctionWrite current_state;
@@ -532,10 +524,10 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
 
     // get the reference arm if defined.  By default ECM and should be
     // used only and only if user want to use a PSM to hold a camera
-    std::string referenceArm_name = "ECM";
+    std::string reference_sarm_name = "ECM";
     const Json::Value jsonReferenceArm = jsonConfig["reference-arm"];
     if (!jsonReferenceArm.isNull()) {
-        referenceArm_name = jsonReferenceArm.asString();
+        reference_sarm_name = jsonReferenceArm.asString();
         CMN_LOG_CLASS_INIT_WARNING << "Configure: \"reference-arm\" is user defined.  This should only happen if you are using a PSM to hold a camera.  Most users shouldn't define \"reference-arm\".  If undefined, all arm cartesian positions will be defined with respect to the ECM" << std::endl;
     }
 
@@ -593,7 +585,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         m_sarms[armIndex] = sarm;
 
         // save which arm is the Reference Arm
-        if (name == referenceArm_name) {
+        if (name == reference_sarm_name) {
             m_reference_arm_index = armIndex;
         }
 
@@ -1090,7 +1082,6 @@ void mtsIntuitiveResearchKitSUJ::update_forward_kinematics(void)
             if (sarm->m_measured_js.Valid()) {
                 if (sarm->m_need_update_forward_kinemactics) {
                     sarm->m_need_update_forward_kinemactics = false;
-
                     // forward kinematic
                     vctDoubleVec jp(sarm->m_manipulator.links.size(), 0.0);
                     jp.Ref(sarm->m_measured_js.Position().size()).Assign(sarm->m_measured_js.Position());
@@ -1101,11 +1092,11 @@ void mtsIntuitiveResearchKitSUJ::update_forward_kinematics(void)
                     sarm->m_local_measured_cp.Position().From(local_cp);
                     sarm->m_local_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
                     sarm->m_local_measured_cp.SetValid(true);
-                    sarm->EventPositionCartesianLocal(sarm->m_local_measured_cp);
                     sarm->m_interface_provided->SendStatus(sarm->m_name + " SUJ: measured_cp updated");
                 }
             } else {
                 sarm->m_local_measured_cp.SetValid(false);
+                sarm->m_measured_cp.SetValid(false);
             }
         }
     }
@@ -1121,7 +1112,7 @@ void mtsIntuitiveResearchKitSUJ::update_forward_kinematics(void)
         reference_arm_to_cart_cp.SetValid(true);
         reference_arm_to_cart_cp.SetReferenceFrame("Cart");
     } else {
-        // get position from BaseFrameArm and convert to useful type
+        // get position from reference arm and convert to useful type
         vctFrm3 cart_to_reference_arm_cp = reference_sarm->m_local_measured_cp.Position() * reference_arm_local_cp.Position();
         // compute and send new base frame for all SUJs (SUJ will handle BaseFrameArm differently)
         reference_arm_to_cart_cp.Position().From(cart_to_reference_arm_cp.Inverse());
@@ -1153,11 +1144,10 @@ void mtsIntuitiveResearchKitSUJ::update_forward_kinematics(void)
             cp = reference_frame * local_cp;
             // - with base frame
             sarm->m_measured_cp.Position().From(cp);
-            sarm->m_measured_cp.SetValid(reference_sarm->m_local_measured_cp.Valid()
-                                         && reference_arm_local_cp.Valid());
-            sarm->m_measured_cp.SetTimestamp(std::max(reference_sarm->m_local_measured_cp.Timestamp(),
-                                                      sarm->m_local_measured_cp.Timestamp()));
-            sarm->EventPositionCartesian(sarm->m_measured_cp);
+            sarm->m_measured_cp.SetValid(sarm->m_local_measured_cp.Valid()
+                                         && reference_arm_to_cart_cp.Valid());
+            sarm->m_measured_cp.SetTimestamp(std::max(sarm->m_local_measured_cp.Timestamp(),
+                                                      reference_arm_to_cart_cp.Timestamp()));
         } else {
             // for reference arm, measured_cp is local_measured_cp
             sarm->m_measured_cp = sarm->m_local_measured_cp;

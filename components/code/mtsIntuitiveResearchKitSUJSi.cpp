@@ -220,11 +220,6 @@ public:
         m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJSiArmData::calibrate_potentiometers, this,
                                               "SetRecalibrationMatrix", m_recalibration_matrix);
 
-        // cartesian position events
-        // m_base_frame is send everytime the mux has found all joint values
-        m_interface_provided->AddEventWrite(EventPositionCartesian, "PositionCartesian", prmPositionCartesianGet());
-        m_interface_provided->AddEventWrite(EventPositionCartesianLocal, "PositionCartesianLocal", prmPositionCartesianGet());
-
         // Events
         m_interface_provided->AddEventWrite(state_events.current_state, "current_state", std::string(""));
         m_interface_provided->AddEventWrite(state_events.desired_state, "desired_state", std::string(""));
@@ -246,12 +241,11 @@ public:
         if (button.Type() == prmEventButton::PRESSED) {
             // clutch is pressed, arm is moving around and we know the pots are slow, we mark position as invalid
             m_interface_provided->SendStatus(m_name + " SUJ: clutched");
+            m_measured_js.SetValid(false);
             m_measured_cp.SetTimestamp(m_measured_js.Timestamp());
             m_measured_cp.SetValid(false);
-            EventPositionCartesian(m_measured_cp);
             m_local_measured_cp.SetTimestamp(m_measured_js.Timestamp());
             m_local_measured_cp.SetValid(false);
-            EventPositionCartesianLocal(m_local_measured_cp);
         } else if (button.Type() == prmEventButton::RELEASED) {
             m_waiting_for_live = true;
             m_interface_provided->SendStatus(m_name + " SUJ: not clutched");
@@ -368,10 +362,6 @@ public:
     mtsFunctionWrite m_arm_set_base_frame;
     // for reference arm only, get current position
     mtsFunctionRead m_get_local_measured_cp;
-
-    // functions for events
-    mtsFunctionWrite EventPositionCartesian;
-    mtsFunctionWrite EventPositionCartesianLocal;
 
     struct {
         mtsFunctionWrite current_state;
@@ -810,11 +800,11 @@ void mtsIntuitiveResearchKitSUJSi::update_forward_kinematics(void)
                     sarm->m_local_measured_cp.Position().From(local_cp);
                     sarm->m_local_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
                     sarm->m_local_measured_cp.SetValid(true);
-                    sarm->EventPositionCartesianLocal(sarm->m_local_measured_cp);
                     sarm->m_interface_provided->SendStatus(sarm->m_name + " SUJ: measured_cp updated");
                 }
             } else {
                 sarm->m_local_measured_cp.SetValid(false);
+                sarm->m_measured_cp.SetValid(false);
             }
         }
     }
@@ -830,7 +820,7 @@ void mtsIntuitiveResearchKitSUJSi::update_forward_kinematics(void)
         reference_arm_to_cart_cp.SetValid(true);
         reference_arm_to_cart_cp.SetReferenceFrame("Cart");
     } else {
-        // get position from BaseFrameArm and convert to useful type
+        // get position from reference arm and convert to useful type
         vctFrm3 cart_to_reference_arm_cp = reference_sarm->m_local_measured_cp.Position() * reference_arm_local_cp.Position();
         // compute and send new base frame for all SUJs (SUJ will handle BaseFrameArm differently)
         reference_arm_to_cart_cp.Position().From(cart_to_reference_arm_cp.Inverse());
@@ -862,11 +852,10 @@ void mtsIntuitiveResearchKitSUJSi::update_forward_kinematics(void)
             cp = reference_frame * local_cp;
             // - with base frame
             sarm->m_measured_cp.Position().From(cp);
-            sarm->m_measured_cp.SetValid(reference_sarm->m_local_measured_cp.Valid()
-                                         && reference_arm_local_cp.Valid());
-            sarm->m_measured_cp.SetTimestamp(std::max(reference_sarm->m_local_measured_cp.Timestamp(),
-                                                      sarm->m_local_measured_cp.Timestamp()));
-            sarm->EventPositionCartesian(sarm->m_measured_cp);
+            sarm->m_measured_cp.SetValid(sarm->m_local_measured_cp.Valid()
+                                         && reference_arm_to_cart_cp.Valid());
+            sarm->m_measured_cp.SetTimestamp(std::max(sarm->m_local_measured_cp.Timestamp(),
+                                                      reference_arm_to_cart_cp.Timestamp()));
         } else {
             // for reference arm, measured_cp is local_measured_cp
             sarm->m_measured_cp = sarm->m_local_measured_cp;
