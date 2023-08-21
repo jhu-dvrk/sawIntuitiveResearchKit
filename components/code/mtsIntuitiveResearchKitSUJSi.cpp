@@ -867,15 +867,19 @@ void mtsIntuitiveResearchKitSUJSi::update_forward_kinematics(void)
             sarm->m_measured_cp.SetTimestamp(std::max(reference_sarm->m_local_measured_cp.Timestamp(),
                                                       sarm->m_local_measured_cp.Timestamp()));
             sarm->EventPositionCartesian(sarm->m_measured_cp);
-            // - set base frame for the arm
-            prmPositionCartesianSet setpoint_cp;
-            setpoint_cp.Goal().Assign(sarm->m_measured_cp.Position());
-            setpoint_cp.SetValid(sarm->m_measured_cp.Valid());
-            setpoint_cp.SetTimestamp(sarm->m_measured_cp.Timestamp());
-            setpoint_cp.SetReferenceFrame(sarm->m_measured_cp.ReferenceFrame());
-            setpoint_cp.SetMovingFrame(sarm->m_measured_cp.MovingFrame());
-            sarm->m_arm_set_base_frame(setpoint_cp);
+        } else {
+            // for reference arm, measured_cp is local_measured_cp
+            sarm->m_measured_cp = sarm->m_local_measured_cp;
         }
+        // convert from prmPositionCartesianGet to prmPositionCartesianSet
+        prmPositionCartesianSet base_frame;
+        base_frame.Goal().Assign(sarm->m_measured_cp.Position());
+        base_frame.SetValid(sarm->m_measured_cp.Valid());
+        base_frame.SetTimestamp(sarm->m_measured_cp.Timestamp());
+        base_frame.SetReferenceFrame(sarm->m_measured_cp.ReferenceFrame());
+        base_frame.SetMovingFrame(sarm->m_measured_cp.MovingFrame());
+        // and finally set the base frame
+        sarm->m_arm_set_base_frame(base_frame);
     }
 }
 
