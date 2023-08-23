@@ -40,6 +40,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJSi.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJFixed.h>
 #include <sawIntuitiveResearchKit/mtsSocketClientPSM.h>
 #include <sawIntuitiveResearchKit/mtsSocketServerPSM.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciHeadSensor.h>
@@ -63,6 +64,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived(void) const
     case ARM_ECM_DERIVED:
     case ARM_SUJ_Classic:
     case ARM_SUJ_Si:
+    case ARM_SUJ_Fixed:
     case FOCUS_CONTROLLER:
         return true;
         break;
@@ -211,6 +213,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::expects_IO(void) const
     return (native_or_derived()
             && (m_type != Arm::ARM_PSM_SOCKET)
             && (m_type != Arm::ARM_SUJ_Si)
+            && (m_type != Arm::ARM_SUJ_Fixed)
             && (m_simulation == Arm::SIMULATION_NONE));
 }
 
@@ -221,11 +224,6 @@ mtsIntuitiveResearchKitConsole::Arm::Arm(mtsIntuitiveResearchKitConsole * consol
     m_name(name),
     m_IO_component_name(ioComponentName),
     m_arm_period(mtsIntuitiveResearchKit::ArmPeriod),
-    IOInterfaceRequired(0),
-    PIDInterfaceRequired(0),
-    ArmInterfaceRequired(0),
-    SUJInterfaceRequiredFromIO(0),
-    SUJInterfaceRequiredToSUJ(0),
     mSUJClutched(false)
 {}
 
@@ -391,6 +389,13 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType arm_type,
             if (m_simulation == SIMULATION_KINEMATIC) {
                 suj->set_simulated();
             }
+            suj->Configure(m_arm_configuration_file);
+            componentManager->AddComponent(suj);
+        }
+        break;
+    case ARM_SUJ_Fixed:
+        {
+            mtsIntuitiveResearchKitSUJFixed * suj = new mtsIntuitiveResearchKitSUJFixed(Name(), periodInSeconds);
             suj->Configure(m_arm_configuration_file);
             componentManager->AddComponent(suj);
         }
@@ -1206,13 +1211,14 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                  || (arm->m_type == Arm::ARM_PSM_DERIVED)
                  )
                 && (arm->m_simulation == Arm::SIMULATION_NONE)) {
-                arm->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJ-" + arm->Name() + "-IO");
+                arm->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJClutch-" + arm->Name() + "-IO");
                 arm->SUJInterfaceRequiredFromIO->AddEventHandlerWrite(&Arm::SUJClutchEventHandlerFromIO, arm, "Button");
-                arm->SUJInterfaceRequiredToSUJ = this->AddInterfaceRequired("SUJ-" + arm->Name());
+                if (arm->m_generation == mtsIntuitiveResearchKitArm::GENERATION_Si) {
+                    arm->SUJInterfaceRequiredFromIO2 = this->AddInterfaceRequired("SUJClutchBack-" + arm->Name() + "-IO");
+                    arm->SUJInterfaceRequiredFromIO2->AddEventHandlerWrite(&Arm::SUJClutchEventHandlerFromIO, arm, "Button");
+                }
+                arm->SUJInterfaceRequiredToSUJ = this->AddInterfaceRequired("SUJClutch-" + arm->Name());
                 arm->SUJInterfaceRequiredToSUJ->AddFunction("Clutch", arm->SUJClutch);
-            } else {
-                arm->SUJInterfaceRequiredFromIO = 0;
-                arm->SUJInterfaceRequiredToSUJ = 0;
             }
         }
     }
@@ -1469,9 +1475,11 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             arm_pointer->m_type = Arm::ARM_SUJ_Classic;
         } else if (typeString == "SUJ_Si") {
             arm_pointer->m_type = Arm::ARM_SUJ_Si;
+        } else if (typeString == "SUJ_Fixed") {
+            arm_pointer->m_type = Arm::ARM_SUJ_Fixed;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << arm_name << ": invalid type \""
-                                     << typeString << "\", needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC} or SUJ_{Classic,Si}" << std::endl;
+                                     << typeString << "\", needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC} or SUJ_{Classic,Si,Fixed}" << std::endl;
             return false;
         }
     } else {
@@ -1642,7 +1650,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             } else {
                 arm_pointer->m_arm_configuration_file = arm_pointer->m_config_path.Find(jsonValue.asString());
                 if (arm_pointer->m_arm_configuration_file == "") {
-                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find kinematic file " << jsonValue.asString() << std::endl;
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find arm configuration file " << jsonValue.asString() << std::endl;
                     return false;
                 }
             }
@@ -2078,7 +2086,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     arm->ArmInterfaceRequired = AddInterfaceRequired(interfaceNameArm);
     if (arm->ArmInterfaceRequired) {
         arm->ArmInterfaceRequired->AddFunction("state_command", arm->state_command);
-        if (arm->m_type != Arm::ARM_SUJ_Classic) {
+        if (!arm->suj()) {
             arm->ArmInterfaceRequired->AddFunction("hold", arm->hold, MTS_OPTIONAL);
         }
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
@@ -2114,11 +2122,17 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
         // arm specific interfaces
         arm->Connect();
         // connect to SUJ if needed
-        if (arm->SUJInterfaceRequiredFromIO && arm->SUJInterfaceRequiredToSUJ) {
-            componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredToSUJ->GetName(),
-                                      "SUJ", arm->Name());
+        if (arm->SUJInterfaceRequiredFromIO) {
             componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredFromIO->GetName(),
                                       arm->IOComponentName(), arm->Name() + "-SUJClutch");
+        }
+        if (arm->SUJInterfaceRequiredFromIO2) {
+            componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredFromIO2->GetName(),
+                                      arm->IOComponentName(), arm->Name() + "-SUJClutch2");
+        }
+        if (arm->SUJInterfaceRequiredToSUJ) {
+            componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredToSUJ->GetName(),
+                                      "SUJ", arm->Name());
         }
     }
 

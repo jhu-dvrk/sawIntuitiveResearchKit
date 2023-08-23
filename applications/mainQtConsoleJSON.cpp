@@ -81,6 +81,7 @@ int main(int argc, char ** argv)
     std::string jsonCollectionConfigFile;
     std::list<std::string> managerConfig;
     std::string qtStyle;
+    std::string dotFile;
 
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
@@ -106,6 +107,10 @@ int main(int argc, char ** argv)
 
     options.AddOptionNoValue("D", "dark-mode",
                              "replaces the default Qt palette with darker colors");
+
+    options.AddOptionOneValue("d", "dot-file",
+                              "graphviz compatible dot file",
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &dotFile);
 
     // check that all required options have been provided
     if (!options.Parse(argc, argv, std::cerr)) {
@@ -181,6 +186,12 @@ int main(int argc, char ** argv)
     componentManager->CreateAllAndWait(2.0 * cmn_s);
     componentManager->StartAllAndWait(2.0 * cmn_s);
 
+    if (!dotFile.empty()) {
+        std::ofstream dotStream(dotFile, std::ofstream::out);
+        componentManager->ToStreamDot(dotStream);
+        dotStream.close();
+    }
+    
     if (hasQt) {
         application->exec();
     } else {
