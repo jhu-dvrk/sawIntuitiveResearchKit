@@ -48,11 +48,13 @@ protected:
     vctQtWidgetDynamicVectorDoubleWrite * QVPotentiometerRecalibrationFinishWidget;
 
     bool mShowMore;
+
+    QPushButton * QPBClutch;
     QPushButton * QPBShowMore;
     QWidget * QWMore;
-
     QPushButton * QPBLiftDown;
     QPushButton * QPBLiftUp;
+    QPushButton * QPBManualRecalibration;
 
     mtsFunctionWrite Clutch;
     mtsFunctionWrite SetLiftVelocity;
@@ -71,7 +73,7 @@ protected:
     vctDoubleMat mJointsRecalibrationMatrix;
     vctDoubleVec mVoltages[2];
     vctDoubleVec mVoltagesExtra;
-    mtsFunctionWrite SetRecalibratioMatrix;
+    mtsFunctionWrite SetRecalibrationMatrix;
 
 protected slots:
     void SlotShowMore(void);
