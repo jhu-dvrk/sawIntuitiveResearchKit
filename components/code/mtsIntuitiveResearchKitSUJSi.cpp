@@ -147,8 +147,8 @@ public:
         m_new_joint_offsets[1].SetSize(m_nb_joints);
         m_new_joint_offsets[1].Zeros();
 
-        // state table doesn't always advance, only when pots are stable
-        m_state_table.SetAutomaticAdvance(false);
+        // configuration table is not added to main component so this
+        // has no effect
         m_state_table_configuration.SetAutomaticAdvance(false);
 
         for (size_t potArray = 0; potArray < 2; ++potArray) {
@@ -523,6 +523,7 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
                                                             interfaceProvided,
                                                             interfaceRequired);
         m_sarms[index] = sarm;
+        AddStateTable(&(sarm->m_state_table));
 
         // save which arm is the Reference Arm
         if (name == reference_sarm_name) {
@@ -617,12 +618,10 @@ void mtsIntuitiveResearchKitSUJSi::state_changed(void)
 
 void mtsIntuitiveResearchKitSUJSi::run_all_states(void)
 {
-    start_state_tables();
     // get robot data, i.e. process mux/pots
     get_robot_data();
     // update all forward kinematics
     update_forward_kinematics();
-    advance_state_tables();
 }
 
 
@@ -686,26 +685,6 @@ void mtsIntuitiveResearchKitSUJSi::Cleanup(void)
 void mtsIntuitiveResearchKitSUJSi::set_simulated(void)
 {
     dispatch_error("simulated mode not supported on SUJ Si");
-}
-
-
-void mtsIntuitiveResearchKitSUJSi::start_state_tables(void)
-{
-    for (auto sarm : m_sarms) {
-        if (sarm != nullptr) {
-            sarm->m_state_table.Start();
-        }
-    }
-}
-
-
-void mtsIntuitiveResearchKitSUJSi::advance_state_tables(void)
-{
-    for (auto sarm : m_sarms) {
-        if (sarm != nullptr) {
-            sarm->m_state_table.Advance();
-        }
-    }
 }
 
 

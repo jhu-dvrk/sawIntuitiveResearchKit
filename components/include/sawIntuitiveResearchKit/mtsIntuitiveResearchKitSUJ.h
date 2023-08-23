@@ -54,9 +54,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
 
     void init(void);
 
-    void start_state_tables(void);
-    void advance_state_tables(void);
-
     /*! Get data from the PID level based on current state. */
     void get_robot_data(void);
 

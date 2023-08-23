@@ -80,10 +80,8 @@ public:
         m_new_joint_offsets[1].SetSize(6);
         m_new_joint_offsets[1].Zeros();
 
-        // state table doesn't always advance, only when pots are stable
-        m_state_table.SetAutomaticAdvance(false);
+        // state table doesn't always advance, only when values are changed
         m_state_table_configuration.SetAutomaticAdvance(false);
-        m_state_table_brake_current.SetAutomaticAdvance(false);
 
         for (size_t potArray = 0; potArray < 2; ++potArray) {
             m_voltages[potArray].SetSize(MUX_ARRAY_SIZE);
@@ -142,10 +140,10 @@ public:
         m_interface_provided->AddCommandReadState(m_state_table, m_measured_js, "measured_js");
         m_interface_provided->AddCommandReadState(m_state_table, m_configuration_js, "configuration_js");
         // set position is only for simulation, allows both servo and move
-        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::servo_jp,
-                                              this, "servo_jp");
-        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::servo_jp,
-                                              this, "move_jp");
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::local_servo_jp,
+                                              this, "local/servo_jp");
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::local_servo_jp,
+                                              this, "local/move_jp");
         m_interface_provided->AddCommandReadState(m_state_table, m_measured_cp,
                                                   "measured_cp");
         m_interface_provided->AddCommandReadState(m_state_table, m_local_measured_cp,
@@ -201,10 +199,10 @@ public:
     }
 
 
-    inline void servo_jp(const prmPositionJointSet & newPosition)
+    inline void local_servo_jp(const prmPositionJointSet & newPosition)
     {
         if (!m_simulated) {
-            m_interface_provided->SendWarning(m_name + " SUJ: servo_jp can't be used unless the SUJs are in simulated mode");
+            m_interface_provided->SendWarning(m_name + " SUJ: local/servo_jp can't be used unless the SUJs are in simulated mode");
             return;
         }
         // save the desired position
@@ -583,6 +581,8 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         auto sarm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, m_simulated,
                                                           interfaceProvided, interfaceRequired);
         m_sarms[armIndex] = sarm;
+        AddStateTable(&(sarm->m_state_table));
+        AddStateTable(&(sarm->m_state_table_brake_current));
 
         // save which arm is the Reference Arm
         if (name == reference_sarm_name) {
@@ -695,12 +695,10 @@ void mtsIntuitiveResearchKitSUJ::state_changed(void)
 
 void mtsIntuitiveResearchKitSUJ::run_all_states(void)
 {
-    start_state_tables();
     // get robot data, i.e. process mux/pots
     get_robot_data();
     // update all forward kinematics
     update_forward_kinematics();
-    advance_state_tables();
 }
 
 
@@ -874,26 +872,6 @@ void mtsIntuitiveResearchKitSUJ::set_simulated(void)
     RemoveInterfaceRequired("DisablePWM");
     RemoveInterfaceRequired("MotorUp");
     RemoveInterfaceRequired("MotorDown");
-}
-
-
-void mtsIntuitiveResearchKitSUJ::start_state_tables(void)
-{
-    for (auto sarm : m_sarms) {
-        if (sarm != nullptr) {
-            sarm->m_state_table.Start();
-        }
-    }
-}
-
-
-void mtsIntuitiveResearchKitSUJ::advance_state_tables(void)
-{
-    for (auto sarm : m_sarms) {
-        if (sarm != nullptr) {
-            sarm->m_state_table.Advance();
-        }
-    }
 }
 
 
@@ -1245,18 +1223,15 @@ void mtsIntuitiveResearchKitSUJ::run_ENABLED(void)
         // brakes
         // increase current for brakes
         if (sarm->m_clutched > 0) {
-            sarm->m_state_table_brake_current.Start();
             if (((brakeCurrentRate * timeDelta) + sarm->m_brake_desired_current) < sarm->m_brake_release_current) {
                 sarm->m_brake_desired_current += brakeCurrentRate * timeDelta;
             } else {
                 sarm->m_brake_desired_current = sarm->m_brake_release_current;
             }
-            sarm->m_state_table_brake_current.Advance();
         }
         // decrease current for brakes
         else {
             if (sarm->m_brake_desired_current != sarm->m_brake_engaged_current) {
-                sarm->m_state_table_brake_current.Start();
                 if ((sarm->m_brake_desired_current - (brakeCurrentRate * timeDelta)) >= sarm->m_brake_engaged_current) {
                     sarm->m_brake_desired_current -= brakeCurrentRate * timeDelta;
                     // if by any luck we have reached arm->m_brake_engaged_current, need to update cartesian desired
@@ -1267,7 +1242,6 @@ void mtsIntuitiveResearchKitSUJ::run_ENABLED(void)
                     sarm->m_brake_desired_current = sarm->m_brake_engaged_current;
                     sarm->m_number_of_mux_cycles = 0;
                 }
-                sarm->m_state_table_brake_current.Advance();
             }
         }
         m_brake_currents[arm_index] = sarm->m_brake_direction_current * sarm->m_brake_desired_current;

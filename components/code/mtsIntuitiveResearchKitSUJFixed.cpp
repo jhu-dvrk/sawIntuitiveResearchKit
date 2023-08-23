@@ -27,6 +27,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmStateJoint.h>
+#include <cisstParameterTypes/prmConfigurationJoint.h>
+
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJFixed, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -42,9 +45,6 @@ public:
         m_name(name),
         m_state_table(500, name)
     {
-        // base frame
-        m_base_frame_valid = true;
-
         m_measured_cp.SetReferenceFrame("Cart");
         m_measured_cp.SetMovingFrame(name + "_base");
         m_state_table.AddData(m_measured_cp, "measured_cp");
@@ -53,24 +53,22 @@ public:
         m_local_measured_cp.SetMovingFrame(name + "_base");
         m_state_table.AddData(m_local_measured_cp, "local/measured_cp");
 
-        m_state_table.AddData(m_base_frame, "base_frame");
-
         CMN_ASSERT(interface_provided);
         m_interface_provided = interface_provided;
 
         // set position
-        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJFixedArmData::servo_cp,
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJFixedArmData::local_servo_cp,
                                               this, "local/servo_cp");
         m_interface_provided->AddCommandReadState(m_state_table, m_measured_cp,
                                                   "measured_cp");
         m_interface_provided->AddCommandReadState(m_state_table, m_local_measured_cp,
                                                   "local/measured_cp");
-        m_interface_provided->AddCommandReadState(m_state_table, m_base_frame, "base_frame");
 
-        // cartesian position events
-        // m_base_frame is send everytime the mux has found all joint values
-        m_interface_provided->AddEventWrite(EventPositionCartesian, "measured_cp", prmPositionCartesianGet());
-        m_interface_provided->AddEventWrite(EventPositionCartesianLocal, "local/measured_cp", prmPositionCartesianGet());
+        // dummy joint stuff for GUI
+        m_interface_provided->AddCommandRead(&mtsIntuitiveResearchKitSUJFixedArmData::measured_js,
+                                             this, "measured_js");
+        m_interface_provided->AddCommandRead(&mtsIntuitiveResearchKitSUJFixedArmData::configuration_js,
+                                             this, "configuration_js");
 
         // Events
         m_interface_provided->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
@@ -85,10 +83,18 @@ public:
         m_interface_required->AddFunction("local/measured_cp", m_get_local_measured_cp);
     }
 
-    inline void servo_cp(const prmPositionCartesianSet & cp) {
-        m_measured_cp.Position().Assign(cp.Goal());
-        m_measured_cp.Timestamp() = cp.Timestamp();
-        m_measured_cp.Valid() = cp.Valid();
+    inline void local_servo_cp(const prmPositionCartesianSet & cp) {
+        m_local_measured_cp.Position().Assign(cp.Goal());
+        m_local_measured_cp.Timestamp() = cp.Timestamp();
+        m_local_measured_cp.Valid() = cp.Valid();
+    }
+
+    inline void measured_js(prmStateJoint & js) const {
+        js = prmStateJoint();
+    }
+
+    inline void configuration_js(prmConfigurationJoint & jc) const {
+        jc = prmConfigurationJoint();
     }
 
     // name of this SUJ arm (ECM, PSM1, ...)
@@ -105,14 +111,8 @@ public:
     prmPositionCartesianGet m_local_measured_cp;
 
     mtsFunctionWrite m_arm_set_base_frame;
-    vctFrame4x4<double> m_base_frame;
-    bool m_base_frame_valid;
-    // for ECM only, get current position
+    // for reference arm only, get current position
     mtsFunctionRead m_get_local_measured_cp;
-
-    // functions for events
-    mtsFunctionWrite EventPositionCartesian;
-    mtsFunctionWrite EventPositionCartesianLocal;
 
     struct {
         mtsFunctionWrite current_state;
@@ -251,6 +251,7 @@ void mtsIntuitiveResearchKitSUJFixed::Configure(const std::string & filename)
                                                           interfaceProvided,
                                                           interfaceRequired);
         m_sarms[index] = sarm;
+        AddStateTable(&(sarm->m_state_table));
 
         // save which arm is the Reference Arm
         if (name == reference_sarm_name) {
@@ -262,9 +263,7 @@ void mtsIntuitiveResearchKitSUJFixed::Configure(const std::string & filename)
                                            this, "state_command", std::string(""));
 
         // look for hard coded position if available - users can always push new joint values using ROS
-        sarm->m_state_table.Start();
         Json::Value json_cp = jsonArm["measured_cp"];
-        std::cerr << json_cp << std::endl;
         if (!json_cp.empty()) {
             vctFrm4x4 transform;
             try {
@@ -275,14 +274,13 @@ void mtsIntuitiveResearchKitSUJFixed::Configure(const std::string & filename)
                                          << name << " measured_cp" << std::endl;
                 exit(EXIT_FAILURE);
             }
-            sarm->m_measured_cp.Position().From(transform);
-            sarm->m_measured_cp.SetValid(true);
+            sarm->m_local_measured_cp.Position().From(transform);
+            sarm->m_local_measured_cp.SetValid(true);
         } else {
             CMN_LOG_CLASS_INIT_WARNING << "Configure: failed to load \"measured_cp\" for \""
                                        << name << "\"" << std::endl;
-            sarm->m_measured_cp.SetValid(false);
+            sarm->m_local_measured_cp.SetValid(false);
         }
-        sarm->m_state_table.Advance();
     }
 }
 
@@ -375,14 +373,14 @@ void mtsIntuitiveResearchKitSUJFixed::update_forward_kinematics(void)
     prmPositionCartesianGet reference_arm_local_cp;
     prmPositionCartesianGet reference_arm_to_cart_cp;
 
-    mtsIntuitiveResearchKitSUJFixedArmData * reference_sarm = m_sarms[m_reference_arm_index];
+    auto * reference_sarm = m_sarms[m_reference_arm_index];
     if (! (reference_sarm->m_get_local_measured_cp(reference_arm_local_cp))) {
         // interface not connected, reporting wrt cart
         reference_arm_to_cart_cp.Position().Assign(vctFrm3::Identity());
         reference_arm_to_cart_cp.SetValid(true);
         reference_arm_to_cart_cp.SetReferenceFrame("Cart");
     } else {
-        // get position from BaseFrameArm and convert to useful type
+        // get position from reference arm and convert to useful type
         vctFrm3 cart_to_reference_arm_cp = reference_sarm->m_local_measured_cp.Position() * reference_arm_local_cp.Position();
         // compute and send new base frame for all SUJs (SUJ will handle BaseFrameArm differently)
         reference_arm_to_cart_cp.Position().From(cart_to_reference_arm_cp.Inverse());
@@ -392,33 +390,45 @@ void mtsIntuitiveResearchKitSUJFixed::update_forward_kinematics(void)
         // valid only if both are valid
         reference_arm_to_cart_cp.SetValid(reference_sarm->m_local_measured_cp.Valid()
                                           && reference_arm_local_cp.Valid());
-        reference_arm_to_cart_cp.SetTimestamp(reference_arm_local_cp.Timestamp());
+        // take most recent timestamp
+        reference_arm_to_cart_cp.SetTimestamp(std::max(reference_sarm->m_local_measured_cp.Timestamp(),
+                                                       reference_arm_local_cp.Timestamp()));
     }
+    // reference sarm measured_cp is always with respect to cart, same as local
+    reference_sarm->m_measured_cp.Position().Assign(reference_sarm->m_local_measured_cp.Position());
+    reference_sarm->m_measured_cp.SetValid(reference_sarm->m_local_measured_cp.Valid());
+    reference_sarm->m_measured_cp.SetTimestamp(reference_sarm->m_local_measured_cp.Timestamp());
 
+    // update other arms
+    vctFrm4x4 reference_frame(reference_arm_to_cart_cp.Position());
+    vctFrm4x4 local_cp, cp;
     for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
-        mtsIntuitiveResearchKitSUJFixedArmData * sarm = m_sarms[arm_index];
+        auto * sarm = m_sarms[arm_index];
         // update positions with base frame, local positions are only
         // updated from FK when joints are ready
         if (arm_index != m_reference_arm_index) {
-            sarm->m_base_frame.From(reference_arm_to_cart_cp.Position());
-            sarm->m_base_frame_valid = reference_arm_to_cart_cp.Valid();
             sarm->m_measured_cp.SetReferenceFrame(reference_arm_to_cart_cp.ReferenceFrame());
+            local_cp.From(sarm->m_local_measured_cp.Position());
+            cp = reference_frame * local_cp;
+            // - with base frame
+            sarm->m_measured_cp.Position().From(cp);
+            sarm->m_measured_cp.SetValid(sarm->m_local_measured_cp.Valid()
+                                         && reference_arm_to_cart_cp.Valid());
+            sarm->m_measured_cp.SetTimestamp(std::max(sarm->m_local_measured_cp.Timestamp(),
+                                                      reference_arm_to_cart_cp.Timestamp()));
+        } else {
+            // for reference arm, measured_cp is local_measured_cp
+            sarm->m_measured_cp = sarm->m_local_measured_cp;
         }
-        vctFrm4x4 local_cp(sarm->m_local_measured_cp.Position());
-        vctFrm4x4 cp = sarm->m_base_frame * local_cp;
-        // - with base frame
-        sarm->m_measured_cp.Position().From(cp);
-        std::cerr << CMN_LOG_DETAILS << " --- need to set a timestamp " << std::endl;
-        // sarm->m_measured_cp.SetTimestamp(arm->m_measured_js.Timestamp());
-        sarm->EventPositionCartesian(sarm->m_measured_cp);
-        // - set base frame for the arm
-        prmPositionCartesianSet setpoint_cp;
-        setpoint_cp.Goal().Assign(sarm->m_measured_cp.Position());
-        setpoint_cp.Valid() = sarm->m_measured_cp.Valid();
-        setpoint_cp.Timestamp() = sarm->m_measured_cp.Timestamp();
-        setpoint_cp.ReferenceFrame() = sarm->m_measured_cp.ReferenceFrame();
-        setpoint_cp.MovingFrame() = sarm->m_measured_cp.MovingFrame();
-        sarm->m_arm_set_base_frame(setpoint_cp);
+        // convert from prmPositionCartesianGet to prmPositionCartesianSet
+        prmPositionCartesianSet base_frame;
+        base_frame.Goal().Assign(sarm->m_measured_cp.Position());
+        base_frame.SetValid(sarm->m_measured_cp.Valid());
+        base_frame.SetTimestamp(sarm->m_measured_cp.Timestamp());
+        base_frame.SetReferenceFrame(sarm->m_measured_cp.ReferenceFrame());
+        base_frame.SetMovingFrame(sarm->m_measured_cp.MovingFrame());
+        // and finally set the base frame
+        sarm->m_arm_set_base_frame(base_frame);
     }
 }
 
