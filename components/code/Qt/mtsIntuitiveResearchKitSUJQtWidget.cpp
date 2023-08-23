@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2013-08-24
 
-  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -41,12 +41,12 @@ mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std
 {
     CMN_ASSERT(InterfaceRequired);
     InterfaceRequired->AddFunction("GetBrakeCurrent", GetBrakeCurrent, MTS_OPTIONAL); // optional for Si
-    InterfaceRequired->AddFunction("Clutch", Clutch);
+    InterfaceRequired->AddFunction("Clutch", Clutch, MTS_OPTIONAL); // optional for fixed
     InterfaceRequired->AddFunction("SetLiftVelocity", SetLiftVelocity, MTS_OPTIONAL); // only used for Classic PSM3 
-    InterfaceRequired->AddFunction("GetVoltagesPrimary", GetPrimaryVoltages);
-    InterfaceRequired->AddFunction("GetVoltagesSecondary", GetSecondaryVoltages);
+    InterfaceRequired->AddFunction("GetVoltagesPrimary", GetPrimaryVoltages, MTS_OPTIONAL); // optional for fixed
+    InterfaceRequired->AddFunction("GetVoltagesSecondary", GetSecondaryVoltages, MTS_OPTIONAL); // optional for fixed
     InterfaceRequired->AddFunction("GetVoltagesExtra", GetExtraVoltages, MTS_OPTIONAL); // optional for Si
-    InterfaceRequired->AddFunction("SetRecalibrationMatrix", SetRecalibratioMatrix);
+    InterfaceRequired->AddFunction("SetRecalibrationMatrix", SetRecalibrationMatrix, MTS_OPTIONAL); // optional for fixed
 
     const double negativeInfinity = cmnTypeTraits<double>::MinusInfinity();
 
@@ -65,6 +65,9 @@ mtsIntuitiveResearchKitSUJQtWidget::mtsIntuitiveResearchKitSUJQtWidget(const std
 void mtsIntuitiveResearchKitSUJQtWidget::Startup(void)
 {
     mtsIntuitiveResearchKitArmQtWidget::Startup();
+    if (!Clutch.IsValid()) {
+        QPBClutch->hide();
+    }
     if (!SetLiftVelocity.IsValid()) {
         QPBLiftDown->hide();
         QPBLiftUp->hide();
@@ -72,8 +75,19 @@ void mtsIntuitiveResearchKitSUJQtWidget::Startup(void)
     if (!GetBrakeCurrent.IsValid()) {
         QVBrakeCurrentWidget->hide();
     }
+    if (!GetPrimaryVoltages.IsValid()) {
+        QVPrimaryVoltagesWidget->hide();
+    }
+    if (!GetSecondaryVoltages.IsValid()) {
+        QVSecondaryVoltagesWidget->hide();
+    }
     if (!GetExtraVoltages.IsValid()) {
         QVExtraVoltagesWidget->hide();
+    }
+    if (!SetRecalibrationMatrix.IsValid()) {
+        QVPotentiometerRecalibrationStartWidget->hide();
+        QVPotentiometerRecalibrationFinishWidget->hide();
+        QPBManualRecalibration->hide();
     }
 }
 
@@ -82,8 +96,8 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
     QGridLayout * sujLayout = new QGridLayout;
     MainLayout->addLayout(sujLayout);
 
-    QPushButton * clutchButton = new QPushButton("Clutch");
-    sujLayout->addWidget(clutchButton, 0, 0);
+    QPBClutch = new QPushButton("Clutch");
+    sujLayout->addWidget(QPBClutch, 0, 0);
     QPBLiftDown = new QPushButton("Lift down");
     sujLayout->addWidget(QPBLiftDown, 0, 1);
     QPBLiftUp = new QPushButton("Lift up");
@@ -146,16 +160,16 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
         = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::TEXT_WIDGET);
     QVPotentiometerRecalibrationFinishWidget->setToolTip("Measured height or angle in mm or degrees");
     moreLayout->addWidget(QVPotentiometerRecalibrationFinishWidget, row, 1, 1, -1);
-    QPushButton * ManualRecalibrationButton = new QPushButton("Manual Recalibration");
+    QPBManualRecalibration = new QPushButton("Manual Recalibration");
     row++;
 
-    moreLayout->addWidget(ManualRecalibrationButton, row, 2, 1, 1);
+    moreLayout->addWidget(QPBManualRecalibration, row, 2, 1, 1);
 
     QWMore->hide();
 
-    connect(clutchButton, SIGNAL(pressed()),
+    connect(QPBClutch, SIGNAL(pressed()),
             this, SLOT(SlotClutchPressed()));
-    connect(clutchButton, SIGNAL(released()),
+    connect(QPBClutch, SIGNAL(released()),
             this, SLOT(SlotClutchReleased()));
 
     connect(QPBLiftDown, SIGNAL(pressed()),
@@ -174,7 +188,7 @@ void mtsIntuitiveResearchKitSUJQtWidget::setupUiDerived(void)
             this, SLOT(SlotRecalibrationStartChanged()));
     connect(QVPotentiometerRecalibrationFinishWidget, SIGNAL(valueChanged()),
             this, SLOT(SlotRecalibrationFinishChanged()));
-    connect(ManualRecalibrationButton, SIGNAL(clicked()),
+    connect(QPBManualRecalibration, SIGNAL(clicked()),
             this, SLOT(SlotManualRecalibration()));
 }
 
@@ -271,7 +285,7 @@ void mtsIntuitiveResearchKitSUJQtWidget::SlotRecalibrationFinishChanged(void)
 void mtsIntuitiveResearchKitSUJQtWidget::SlotManualRecalibration(void)
 {
     if (mJointsRecalibrationMatrix.IsFinite()) {
-        SetRecalibratioMatrix(mJointsRecalibrationMatrix);
+        SetRecalibrationMatrix(mJointsRecalibrationMatrix);
     } else {
         QMessageBox::information(this, tr("mtsIntuitiveResearchKitSUJQtWidget"),
                                  tr("You need to provide all joint values"));
