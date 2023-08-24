@@ -20,7 +20,7 @@
                 "offset": -1.5708,
                 "qmin": -1.10,
                 "qmax":  1.04,
-                "ftmax": 17.0845 // maxA / Nm_to_A from sawRobotIO
+                "ftmax": 34.0845 // maxA / Nm_to_A from sawRobotIO
             },
             { // 3
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
