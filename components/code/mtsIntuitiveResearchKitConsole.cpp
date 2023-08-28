@@ -2054,7 +2054,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
                 mConnections.Add(this->GetName(), interfaceNameIODallas,
                                  arm->IOComponentName(), arm->Name() + "-Dallas");
             } else {
-                CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO Dallase interface for arm \""
+                CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO Dallas interface for arm \""
                                          << arm->Name() << "\"" << std::endl;
                 return false;
             }
