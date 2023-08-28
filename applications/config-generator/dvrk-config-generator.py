@@ -1141,6 +1141,8 @@ def generateConfig(calFileName, robotTypeName, hardwareVersionName, serialNumber
         gripperConfig = Config(calData, version, robotTypeName + "-Gripper", hardwareVersionName, serialNumber, generationName)
         saveConfigFile(gripperConfigFileName, gripperConfig, outputFormat)
 
+    return serialNumber
+
 
 def generateArmConfig(robotTypeName, hardwareVersionName, serialNumber, generationName):
     fileName = "{}-{}.json".format(robotTypeName, serialNumber)
@@ -1279,10 +1281,10 @@ def main():
 
     outputFormat = OutputFormat.XML if args.format == "XML" else OutputFormat.JSON
     # sawRobotIO config file
-    generateConfig(args.cal, args.arm, args.hardware_version, args.serial, args.generation, outputFormat)
+    actualSerial = generateConfig(args.cal, args.arm, args.hardware_version, args.serial, args.generation, outputFormat)
     # sawIntuitiveResearchKit arm and console config files
-    generateArmConfig(args.arm, args.hardware_version, args.serial, args.generation)
-    generateConsoleConfig(args.arm, args.hardware_version, args.serial, args.generation)
+    generateArmConfig(args.arm, args.hardware_version, actualSerial, args.generation)
+    generateConsoleConfig(args.arm, args.hardware_version, actualSerial, args.generation)
 
 if __name__ == "__main__":
     main()
