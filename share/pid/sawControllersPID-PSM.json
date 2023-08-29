@@ -4,8 +4,8 @@
 	    "index": 0,
 	    "name": "outer_yaw",
 	    "type": 2,
-	    "p_gain": 200.0,
-	    "d_gain": 12.0,
+	    "p_gain": 120.0,
+	    "d_gain": 6.0,
 	    "i_gain": 0.0
 	}
 	,
@@ -13,8 +13,8 @@
 	    "index": 1,
 	    "name": "outer_pitch",
 	    "type": 2,
-	    "p_gain": 200.0,
-	    "d_gain": 8.0,
+	    "p_gain": 120.0,
+	    "d_gain": 5.0,
 	    "i_gain": 0.0
 	}
 	,
@@ -22,8 +22,8 @@
 	    "index": 2,
 	    "name": "outer_insertion",
 	    "type": 1,
-	    "p_gain": 8000.0,
-	    "d_gain": 300.0,
+	    "p_gain": 6000.0,
+	    "d_gain": 200.0,
 	    "i_gain": 0.0
 	}
 	,
