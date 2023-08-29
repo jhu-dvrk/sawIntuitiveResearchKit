@@ -1185,7 +1185,7 @@ def generateConsoleConfig(robotTypeName, hardwareVersionName, serialNumber, gene
     type = ""
     if robotTypeName.startswith("PSM"):
         type = "PSM"
-    if robotTypeName.startswith("MTM"):
+    elif robotTypeName.startswith("MTM"):
         type = "MTM"
     elif robotTypeName == "ECM":
         type = robotTypeName
