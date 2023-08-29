@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnXMLPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstOSAbstraction/osaSleep.h>
+#include <cisstOSAbstraction/osaGetTime.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawRobotIO1394/mtsRobot1394.h>
 
@@ -178,11 +179,14 @@ int main(int argc, char * argv[])
             const char * context = "Config";
             xmlConfig.SetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Offset", newOffset);
             xmlConfig.SetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Scale", newScale);
-            std::string newConfigFile = configFile + "-new";
-            xmlConfig.SaveAs(newConfigFile);
-            std::cout << "Status: new config file is \"" << newConfigFile << "\"" << std::endl
-                      << "You can copy the new file over the old one using:\n  cp -i "
-                      << newConfigFile << " " << configFile << std::endl;
+            // rename old file and save in place
+            std::string currentDateTime;
+            osaGetDateTimeString(currentDateTime);
+            std::string newName = configFile + "-backup-" + currentDateTime;
+            cmnPath::RenameFile(configFile, newName);
+            std::cout << "Existing IO config file has been renamed " << newName << std::endl;
+            xmlConfig.SaveAs(configFile);
+            std::cout << "Results saved in IO config file " << configFile << std::endl;
         } else {
             std::cout << "Status: user didn't want to save new offsets." << std::endl;
         }
