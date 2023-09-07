@@ -46,13 +46,20 @@ void mtsIntuitiveResearchKitECM::set_simulated(void)
     mtsIntuitiveResearchKitArm::set_simulated();
     // in simulation mode, we don't need clutch IO
     RemoveInterfaceRequired("ManipClutch");
+    // for Si systems, remove a few more interfaces
+    if (m_generation == GENERATION_Si) {
+        RemoveInterfaceRequired("SUJClutch");
+        RemoveInterfaceRequired("SUJClutch2");
+        RemoveInterfaceRequired("SUJBrake");
+    }
 }
 
 void mtsIntuitiveResearchKitECM::set_generation(const GenerationType generation)
 {
     mtsIntuitiveResearchKitArm::set_generation(generation);
     // for S/si, add SUJClutch interface
-    if (generation == GENERATION_Si) {
+    if ((generation == GENERATION_Si)
+        && !m_simulated) {
         auto interfaceRequired = AddInterfaceRequired("SUJClutch");
         if (interfaceRequired) {
             interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitECM::EventHandlerSUJClutch, this, "Button");

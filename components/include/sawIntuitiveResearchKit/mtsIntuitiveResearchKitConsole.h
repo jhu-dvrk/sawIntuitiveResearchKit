@@ -161,7 +161,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         // this is used only by PSMs and ECM
         mtsInterfaceRequired * SUJInterfaceRequiredFromIO = nullptr;
         mtsInterfaceRequired * SUJInterfaceRequiredFromIO2 = nullptr; // for Si second clutch button
-        mtsInterfaceRequired * SUJInterfaceRequiredToSUJ;
+        mtsInterfaceRequired * SUJInterfaceRequiredToSUJ = nullptr;
         mtsFunctionWrite SUJClutch;
         bool mSUJClutched;
 

@@ -125,10 +125,12 @@ public:
 
     inline mtsIntuitiveResearchKitSUJSiArmData(const std::string & name,
                                                const std::string & arduinoMAC,
+                                               const bool simulated,
                                                mtsInterfaceProvided * interfaceProvided,
                                                mtsInterfaceRequired * interfaceRequired):
         mtsIntuitiveResearchKitSUJSiArduino(arduinoMAC, name),
         m_name(name),
+        m_simulated(simulated),
         m_nb_joints(NB_JOINTS.at(name)),
         m_base_arduino_pot_index(BASE_POT_INDEX.at(name)),
         m_state_table(500, name),
@@ -205,6 +207,11 @@ public:
         m_interface_provided->AddCommandReadState(m_state_table, m_measured_js, "measured_js");
         m_interface_provided->AddCommandReadState(m_state_table, m_live_measured_js, "live/measured_js");
         m_interface_provided->AddCommandReadState(m_state_table, m_configuration_js, "configuration_js");
+        // set position is only for simulation, allows both servo and move
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJSiArmData::servo_jp,
+                                              this, "servo_jp");
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJSiArmData::servo_jp,
+                                              this, "move_jp");
         m_interface_provided->AddCommandReadState(m_state_table, m_measured_cp,
                                                   "measured_cp");
         m_interface_provided->AddCommandReadState(m_state_table, m_local_measured_cp,
@@ -250,6 +257,20 @@ public:
             m_waiting_for_live = true;
             m_interface_provided->SendStatus(m_name + " SUJ: not clutched");
         }
+    }
+
+
+    inline void servo_jp(const prmPositionJointSet & newPosition)
+    {
+        if (!m_simulated) {
+            m_interface_provided->SendWarning(m_name + " SUJ: servo_jp can't be used unless the SUJs are in simulated mode");
+            return;
+        }
+        // save the desired position
+        m_measured_js.Position().Assign(newPosition.Goal());
+        m_measured_js.SetValid(true);
+        m_measured_js.SetTimestamp(newPosition.Timestamp());
+        m_need_update_forward_kinemactics = true;
     }
 
 
@@ -317,6 +338,9 @@ public:
     std::string m_name;
     // serial number
     std::string m_serial_number;
+
+    // simulated or not
+    bool m_simulated;
 
     // number of joints for this arm
     size_t m_nb_joints;
@@ -481,13 +505,15 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
         CMN_LOG_CLASS_INIT_WARNING << "Configure: \"reference-arm\" is user defined.  This should only happen if you are using a PSM to hold a camera.  Most users shouldn't define \"reference-arm\".  If undefined, all arm cartesian positions will be defined with respect to the ECM" << std::endl;
     }
 
-    // base arduino used for SUJ prismatic joints
-    if (!jsonConfig["base-arduino-mac"]) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure: \"base-arduino-mac\" is missing" << std::endl;
-        exit(EXIT_FAILURE);
+    if (!m_simulated) {
+        // base arduino used for SUJ prismatic joints
+        if (!jsonConfig["base-arduino-mac"]) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: \"base-arduino-mac\" is missing" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        const std::string mac = jsonConfig["base-arduino-mac"].asString();
+        m_base_arduino = new mtsIntuitiveResearchKitSUJSiArduino(mac, "column");
     }
-    const std::string mac = jsonConfig["base-arduino-mac"].asString();
-    m_base_arduino = new mtsIntuitiveResearchKitSUJSiArduino(mac, "column");
 
     // find all arms, there should be 4 of them
     const Json::Value jsonArms = jsonConfig["arms"];
@@ -507,19 +533,24 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
             exit(EXIT_FAILURE);
         }
 
-        if (!jsonArm["arduino-mac"]) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: \"arduino-mac\" is missing for SUJ \""
-                                     << name << "\"" << std::endl;
-            exit(EXIT_FAILURE);
+        const size_t nb_joints = NB_JOINTS.at(name);
+
+        std::string mac = "00:00:00:00:00:00";
+        if (!m_simulated) {
+            if (!jsonArm["arduino-mac"]) {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: \"arduino-mac\" is missing for SUJ \""
+                                         << name << "\"" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            mac = jsonArm["arduino-mac"].asString();
         }
-        const std::string mac = jsonArm["arduino-mac"].asString();
 
         // add interfaces, one is provided so users can find the SUJ
         // info, the other is required to the SUJ can get position of
         // ECM and change base frame on attached arms
         mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided(name);
         mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
-        auto sarm = new mtsIntuitiveResearchKitSUJSiArmData(name, mac,
+        auto sarm = new mtsIntuitiveResearchKitSUJSiArmData(name, mac, m_simulated,
                                                             interfaceProvided,
                                                             interfaceRequired);
         m_sarms[index] = sarm;
@@ -547,30 +578,50 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
             exit(EXIT_FAILURE);
         }
 
-        // find serial number
-        sarm->m_serial_number = jsonArm["serial-number"].asString();
+        if (!m_simulated) {
+            // find serial number
+            sarm->m_serial_number = jsonArm["serial-number"].asString();
 
-        // read pot settings
-        sarm->m_state_table_configuration.Start();
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[0], jsonArm["primary-offsets"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[1], jsonArm["secondary-offsets"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[0], jsonArm["primary-scales"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[1], jsonArm["secondary-scales"]);
-        const size_t nb_joints = NB_JOINTS.at(name);
-        for (auto vec : sarm->m_voltage_to_position_offsets) {
-            if (vec.size() != nb_joints) {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect number of voltage to position offsets for \""
-                                         << name << "\", expected " << nb_joints
-                                         << " but found " << vec.size() << " elements" << std::endl;
-                exit(EXIT_FAILURE);
+            // read pot settings
+            sarm->m_state_table_configuration.Start();
+            cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[0], jsonArm["primary-offsets"]);
+            cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[1], jsonArm["secondary-offsets"]);
+            cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[0], jsonArm["primary-scales"]);
+            cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[1], jsonArm["secondary-scales"]);
+            for (auto vec : sarm->m_voltage_to_position_offsets) {
+                if (vec.size() != nb_joints) {
+                    CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect number of voltage to position offsets for \""
+                                             << name << "\", expected " << nb_joints
+                                             << " but found " << vec.size() << " elements" << std::endl;
+                    exit(EXIT_FAILURE);
+                }
             }
-        }
-        for (auto vec : sarm->m_voltage_to_position_scales) {
-            if (vec.size() != nb_joints) {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect number of voltage to position scales for \""
-                                         << name << "\", expected " << nb_joints
-                                         << " but found " << vec.size() << " elements" << std::endl;
-                exit(EXIT_FAILURE);
+            for (auto vec : sarm->m_voltage_to_position_scales) {
+                if (vec.size() != nb_joints) {
+                    CMN_LOG_CLASS_INIT_ERROR << "Configure: incorrect number of voltage to position scales for \""
+                                             << name << "\", expected " << nb_joints
+                                             << " but found " << vec.size() << " elements" << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
+        } else {
+            // look for hard coded position if available - users can always push new joint values using ROS
+            Json::Value jsonPosition = jsonArm["simulated-position"];
+            if (!jsonPosition.empty()) {
+                vctDoubleVec position;
+                cmnDataJSON<vctDoubleVec>::DeSerializeText(position, jsonPosition);
+                if (position.size() == nb_joints) {
+                    sarm->m_measured_js.Position().Assign(position);
+                    sarm->m_measured_js.SetValid(true);
+                    sarm->m_need_update_forward_kinemactics = true;
+                } else {
+                    CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to load \"position-simulated\" for \""
+                                             << name << "\", expected vector size is "
+                                             << nb_joints << " but vector in configuration file has "
+                                             << position.size() << " element(s)"
+                                             << std::endl;
+                    exit(EXIT_FAILURE);
+                }
             }
         }
         sarm->m_state_table_configuration.Advance();
@@ -684,12 +735,22 @@ void mtsIntuitiveResearchKitSUJSi::Cleanup(void)
 
 void mtsIntuitiveResearchKitSUJSi::set_simulated(void)
 {
-    dispatch_error("simulated mode not supported on SUJ Si");
+    m_simulated = true;
+    // set all arms simulated
+    for (auto sarm : m_sarms) {
+        if (sarm != nullptr) {
+            sarm->m_simulated = true;
+        }
+    }
 }
 
 
 void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
 {
+    if (m_simulated) {
+        return;
+    }
+
     // update pot values from base arduino
     if (m_base_arduino) {
         m_base_arduino->update_raw_pots();

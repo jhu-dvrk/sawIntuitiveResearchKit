@@ -506,6 +506,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType arm_type,
 
     // for Si patient side, connect the SUJ brakes to buttons on arm
     if ((armPSMOrDerived || armECMOrDerived)
+        && (m_simulation == SIMULATION_NONE)
         && (generation() == mtsIntuitiveResearchKitArm::GENERATION_Si)) {
         std::vector<std::string> itfs = {"SUJClutch", "SUJClutch2", "SUJBrake"};
         for (const auto & itf : itfs) {

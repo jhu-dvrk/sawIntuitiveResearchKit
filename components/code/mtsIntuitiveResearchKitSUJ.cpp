@@ -56,13 +56,13 @@ public:
     inline mtsIntuitiveResearchKitSUJArmData(const std::string & name,
                                              const SujType type,
                                              const unsigned int plugNumber,
-                                             const bool isSimulated,
+                                             const bool simulated,
                                              mtsInterfaceProvided * interfaceProvided,
                                              mtsInterfaceRequired * interfaceRequired):
         m_name(name),
         m_type(type),
         m_plug_number(plugNumber),
-        m_simulated(isSimulated),
+        m_simulated(simulated),
         m_state_table(500, name),
         m_state_table_configuration(100, name + "Configuration"),
         m_state_table_brake_current(100, name + "BrakeCurrent")
@@ -140,10 +140,10 @@ public:
         m_interface_provided->AddCommandReadState(m_state_table, m_measured_js, "measured_js");
         m_interface_provided->AddCommandReadState(m_state_table, m_configuration_js, "configuration_js");
         // set position is only for simulation, allows both servo and move
-        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::local_servo_jp,
-                                              this, "local/servo_jp");
-        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::local_servo_jp,
-                                              this, "local/move_jp");
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::servo_jp,
+                                              this, "servo_jp");
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::servo_jp,
+                                              this, "move_jp");
         m_interface_provided->AddCommandReadState(m_state_table, m_measured_cp,
                                                   "measured_cp");
         m_interface_provided->AddCommandReadState(m_state_table, m_local_measured_cp,
@@ -199,10 +199,10 @@ public:
     }
 
 
-    inline void local_servo_jp(const prmPositionJointSet & newPosition)
+    inline void servo_jp(const prmPositionJointSet & newPosition)
     {
         if (!m_simulated) {
-            m_interface_provided->SendWarning(m_name + " SUJ: local/servo_jp can't be used unless the SUJs are in simulated mode");
+            m_interface_provided->SendWarning(m_name + " SUJ: servo_jp can't be used unless the SUJs are in simulated mode");
             return;
         }
         // save the desired position
@@ -433,7 +433,6 @@ void mtsIntuitiveResearchKitSUJ::init(void)
     StateTable.AddData(m_operating_state, "operating_state");
 
     // default values
-    m_simulated = false;
     m_mux_timer = 0.0;
     m_mux_state.SetSize(4);
     m_voltages.SetSize(4);

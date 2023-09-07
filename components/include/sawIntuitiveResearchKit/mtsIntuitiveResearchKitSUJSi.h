@@ -99,6 +99,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
     vctFixedSizeVector<mtsIntuitiveResearchKitSUJSiArmData *, 4> m_sarms;
     size_t m_reference_arm_index; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
 
+    // Flag to determine if this is connected to actual IO/hardware or simulated
+    bool m_simulated = false;
+
     void dispatch_error(const std::string & message);
     void dispatch_warning(const std::string & message);
     void dispatch_status(const std::string & message);
