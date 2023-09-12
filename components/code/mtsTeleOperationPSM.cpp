@@ -381,6 +381,13 @@ void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
     if (!jsonValue.empty()) {
         m_align_mtm = jsonValue.asBool();
     }
+
+    // use MTM cv and send to PSM
+    mMTM.use_measured_cv = true; // better by default
+    jsonValue = jsonConfig["use-mtm-velocity"];
+    if (!jsonValue.empty()) {
+        mMTM.use_measured_cv = jsonValue.asBool();
+    }
 }
 
 void mtsTeleOperationPSM::Startup(void)
@@ -401,12 +408,11 @@ void mtsTeleOperationPSM::Startup(void)
         }
     }
 
-    // check if MTM has measured_cv
-    std::cerr << "------------------- " << CMN_LOG_DETAILS << "  we should add a config flag so users can use position only" << std::endl;
-    if (mMTM.measured_cv.IsValid()) {
-        mMTM.use_measured_cv = true;
-    } else {
+    // check if MTM has measured_cv as needed
+    if (mMTM.use_measured_cv &&
+        !mMTM.measured_cv.IsValid()) {
         mMTM.use_measured_cv = false;
+        mInterface->SendWarning(this->GetName() + ": MTM doesn't provide measured_cv, you can avoid this warning by setting \"use-mtm-velocity\" to false");
     }
 }
 
