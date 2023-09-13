@@ -44,11 +44,13 @@ def remove_files(files, what):
         elif answer == 'q':
             return
 
-
-
+# logs
 files = glob.glob('./**/cisstLog.txt', recursive = True) \
     + glob.glob('./**/cisstLog-20*-*.txt', recursive = True)
 remove_files(files, 'log')
 
-files = glob.glob('./**/sawRobotIO*.xml-backup*', recursive = True)
+# backups and extra files from calibration steps
+files = glob.glob('./**/sawRobotIO*.xml-backup*', recursive = True) \
+   + glob.glob('./**/pot_calib_offsets_*.csv', recursive = True) \
+   + glob.glob('./**/pot_calib_scales_*.csv', recursive = True)
 remove_files(files, 'backup')
