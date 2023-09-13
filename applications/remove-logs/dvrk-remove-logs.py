@@ -37,10 +37,10 @@ def remove_files(files, what):
                 stats = os.stat(file)
                 print(f'{file}   {readable_size(stats.st_size)}')
         elif answer == 'd':
-            return
             for file in files:
                 print(f'Removing {file}')
                 os.remove(file)
+            return
         elif answer == 'q':
             return
 
