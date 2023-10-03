@@ -1193,10 +1193,11 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     }
     this->AddFootpedalInterfaces();
 
-    // search for SUJs
+    // search for SUJs, real, not Fixed
     bool hasSUJ = false;
     for (auto iter = mArms.begin(); iter != end; ++iter) {
-        if (iter->second->suj()) {
+        if ((iter->second->m_type == Arm::ARM_SUJ_Classic)
+            || (iter->second->m_type == Arm::ARM_SUJ_Si)) {
             hasSUJ = true;
         }
     }
