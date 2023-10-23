@@ -4,6 +4,8 @@
 	    "index": 0,
 	    "name": "outer_yaw",
 	    "type": 2,
+            "position_min": -2.964,
+            "position_max":  2.964,
 	    "p_gain": 600.0,
 	    "d_gain": 30.0,
 	    "i_gain": 0.0,
@@ -16,6 +18,8 @@
 	    "index": 1,
 	    "name": "outer_pitch",
 	    "type": 2,
+            "position_min": -1.265,
+            "position_max":  1.301,
 	    "p_gain": 600.0,
 	    "d_gain": 30.0,
 	    "i_gain": 0.0,
@@ -28,6 +32,8 @@
 	    "index": 2,
 	    "name": "outer_insertion",
 	    "type": 1,
+            "position_min": 0.0,
+            "position_max": 0.29,  // 290 mm
 	    "p_gain": 6000.0,
 	    "d_gain": 200.0,
 	    "i_gain": 0.0,
@@ -38,8 +44,10 @@
 	,
 	{
 	    "index": 3,
-	    "name": "outer_roll",
+	    "name": "disc_1",
 	    "type": 2,
+            "position_min": -2.985, // -171 degrees
+            "position_max":  2.985,
 	    "p_gain": 6.0,
 	    "d_gain": 0.08,
 	    "i_gain": 0.0,
@@ -50,8 +58,10 @@
 	,
 	{
 	    "index": 4,
-	    "name": "outer_wrist_pitch",
+	    "name": "disc_2",
 	    "type": 2,
+            "position_min": -2.985, // -171 degrees
+            "position_max":  2.985,
 	    "p_gain": 6.0,
 	    "d_gain": 0.08,
 	    "i_gain": 0.0,
@@ -62,8 +72,10 @@
 	,
 	{
 	    "index": 5,
-	    "name": "outer_wrist_yaw",
+	    "name": "disc_3",
 	    "type": 2,
+            "position_min": -2.985, // -171 degrees
+            "position_max":  2.985,
 	    "p_gain": 6.0,
 	    "d_gain": 0.08,
 	    "i_gain": 0.0,
@@ -74,8 +86,10 @@
 	,
 	{
 	    "index": 6,
-	    "name": "jaw",
+	    "name": "disc_4",
 	    "type": 2,
+            "position_min": -2.985, // -171 degrees
+            "position_max":  2.985,
 	    "p_gain": 6.0,
 	    "d_gain": 0.08,
 	    "i_gain": 0.0,
