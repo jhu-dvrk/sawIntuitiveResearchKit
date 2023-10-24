@@ -817,8 +817,8 @@ void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(void)
     Manipulator->GetJointLimits(min_tmp, max_tmp);
     m_configuration_js.PositionMin().Ref(3, 0).Assign(min_tmp.Ref(3, 0));
     m_configuration_js.PositionMax().Ref(3, 0).Assign(max_tmp.Ref(3, 0));
-    m_configuration_js.PositionMin().Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
-    m_configuration_js.PositionMax().Ref(4, 3).SetAll( mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
+    m_configuration_js.PositionMin().Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterActuatorLimit);
+    m_configuration_js.PositionMax().Ref(4, 3).SetAll( mtsIntuitiveResearchKit::PSM::AdapterActuatorLimit);
     // efforts
     m_configuration_js.EffortMin().SetSize(number_of_joints());
     m_configuration_js.EffortMax().SetSize(number_of_joints());
@@ -833,6 +833,10 @@ void mtsIntuitiveResearchKitPSM::update_configuration_js(void)
     mStateTableConfiguration.Start();
     if (m_tool_present && m_tool_configured) {
         mtsIntuitiveResearchKitArm::update_configuration_js();
+        m_configuration_js.PositionMin().resize(7);
+        m_configuration_js.PositionMax().resize(7);
+        m_configuration_js.PositionMin().at(6) = m_jaw_configuration_js.PositionMin().at(0);
+        m_configuration_js.PositionMax().at(6) = m_jaw_configuration_js.PositionMax().at(0);
     } else {
         update_configuration_js_no_tool();
     }
@@ -1186,15 +1190,7 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
 
     // force trajectory re-evaluation with new goal for last joint
     control_move_jp_on_start();
-    // clip for limits
     m_jaw_servo_jp = jawPosition.Goal().at(0);
-    const double jaw_max = m_jaw_configuration_js.PositionMax().at(0);
-    const double jaw_min = m_jaw_configuration_js.PositionMin().at(0);
-    if (m_jaw_servo_jp > jaw_max) {
-        m_jaw_servo_jp = jaw_max;
-    } else if (m_jaw_servo_jp < jaw_min) {
-        m_jaw_servo_jp = jaw_min;
-    }
     m_trajectory_j.goal[6] = m_jaw_servo_jp;
 }
 
@@ -1215,14 +1211,6 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
     m_servo_jp_param.Velocity().SetSize(7);
     if (jv_size != 0) {
         ToJointsPID(jv, m_servo_jp_param.Velocity());
-    }
-    // clip and add jaws - current code has velocity goal set to 0
-    const double jaw_max = m_jaw_configuration_js.PositionMax().at(0);
-    const double jaw_min = m_jaw_configuration_js.PositionMin().at(0);
-    if (m_jaw_servo_jp > jaw_max) {
-        m_jaw_servo_jp = jaw_max;
-    } else if (m_jaw_servo_jp < jaw_min) {
-        m_jaw_servo_jp = jaw_min;
     }
     m_servo_jp_param.Goal().at(6) = m_jaw_servo_jp;
     if (jv_size != 0) {

@@ -1440,12 +1440,8 @@ void mtsIntuitiveResearchKitArm::clip_jp(vctDoubleVec & jp) const
     for (; desired != end; ++desired, ++upper, ++lower) {
         if (*desired > *upper) {
             *desired = *upper;
-            std::cerr << "[+]";
-            std::cerr << *desired << std::endl;
         } else if (*desired < *lower) {
             *desired = *lower;
-            std::cerr << "[-]";
-            std::cerr << *desired << std::endl;
         }
     }
 }

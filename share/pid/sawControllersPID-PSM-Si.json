@@ -46,8 +46,8 @@
 	    "index": 3,
 	    "name": "disc_1",
 	    "type": 2,
-            "position_min": -2.985, // -171 degrees
-            "position_max":  2.985,
+            "position_min": -3.002, // -172 degrees
+            "position_max":  3.002,
 	    "p_gain": 6.0,
 	    "d_gain": 0.08,
 	    "i_gain": 0.0,
@@ -60,8 +60,8 @@
 	    "index": 4,
 	    "name": "disc_2",
 	    "type": 2,
-            "position_min": -2.985, // -171 degrees
-            "position_max":  2.985,
+            "position_min": -3.002, // -172 degrees
+            "position_max":  3.002,
 	    "p_gain": 6.0,
 	    "d_gain": 0.08,
 	    "i_gain": 0.0,
@@ -74,8 +74,8 @@
 	    "index": 5,
 	    "name": "disc_3",
 	    "type": 2,
-            "position_min": -2.985, // -171 degrees
-            "position_max":  2.985,
+            "position_min": -3.002, // -172 degrees
+            "position_max":  3.002,
 	    "p_gain": 6.0,
 	    "d_gain": 0.08,
 	    "i_gain": 0.0,
@@ -88,8 +88,8 @@
 	    "index": 6,
 	    "name": "disc_4",
 	    "type": 2,
-            "position_min": -2.985, // -171 degrees
-            "position_max":  2.985,
+            "position_min": -3.002, // -172 degrees
+            "position_max":  3.002,
 	    "p_gain": 6.0,
 	    "d_gain": 0.08,
 	    "i_gain": 0.0,
