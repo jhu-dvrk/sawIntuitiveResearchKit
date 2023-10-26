@@ -1312,6 +1312,11 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & butt
         break;
     case prmEventButton::RELEASED:
         set_adapter_present(false);
+        // detect if adapeter is removed while engaging
+        if (mArmState.CurrentState() == "ENGAGING_ADAPTER") {
+            mArmState.SetCurrentState("HOMED");
+        }
+        break;
         break;
     default:
         break;
