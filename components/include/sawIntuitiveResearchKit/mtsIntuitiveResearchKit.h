@@ -92,6 +92,21 @@ namespace mtsIntuitiveResearchKit {
         const double JawRateBackFromClutch =  0.2 * cmnPI * cmn_s; // 36.0 d/s
         const double ToleranceBackFromClutch =  2.0 * cmnPI_180; // in radians
     }
+
+    // setup logger settings for the dVRK, turn on logs for some
+    // classes and create a new log per run with timestamp
+    class Logger {
+    public:
+        Logger(void);
+        inline ~Logger() {
+            if (m_log_file_stream) {
+                Stop();
+            }
+        }
+        void Stop(void);
+    private:
+        std::ofstream * m_log_file_stream;
+    };
 };
 
 #endif // _mtsIntuitiveResearchKitArm_h

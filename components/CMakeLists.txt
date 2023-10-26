@@ -149,6 +149,7 @@ if (cisst_FOUND)
 
     set (SOURCE_FILES
          code/mtsStateMachine.cpp
+         code/mtsIntuitiveResearchKit.cpp
          code/mtsIntuitiveResearchKitArm.cpp
          code/mtsIntuitiveResearchKitMTM.cpp
          code/mtsIntuitiveResearchKitPSM.cpp
