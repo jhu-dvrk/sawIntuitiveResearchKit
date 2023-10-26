@@ -60,6 +60,23 @@ class Conversion(Serializable):
             dict["Unit"] = self.units
         return dict
 
+# Represents limits
+class Limits(Serializable):
+    def __init__(self, lower, upper, units=None):
+        self.lower = lower
+        self.upper = upper
+        self.units = units
+
+    def toDict(self):
+        dict = {}
+        if self.lower != None:
+            dict["Lower"] = self.lower
+        if self.upper != None:
+            dict["Upper"] = self.upper
+        if self.units != None:
+            dict["Unit"] = self.units
+        return dict
+
 
 # Dimensioned value
 class UnitValue(Serializable):
@@ -214,7 +231,11 @@ class Robot(Serializable):
             gearRatio = self.gearRatio(index)
             pitch = self.pitch(index)
             velocitySource = self.velocitySource(index)
-            yield Encoder(units, direction, encoderCPT, gearRatio, pitch, velocitySource)
+            positionLimitsSoftLower = self.positionLimitsSoftLower(index)
+            positionLimitsSoftUpper = self.positionLimitsSoftUpper(index)
+            positionLimitsSoftUnits = self.positionLimitsSoftUnits(index)
+            yield Encoder(units, direction, encoderCPT, gearRatio, pitch, velocitySource,
+                          positionLimitsSoftLower, positionLimitsSoftUpper, positionLimitsSoftUnits)
 
     def generateAnalogIns(self):
         for index in range(self.numberOfActuators):
@@ -319,6 +340,9 @@ class SiPSM(Robot):
         self.gearRatio = lambda index: [83.3333, 85.000, 965.91, 13.813, 13.813, 13.813, 13.813][index]
         self.pitch = lambda index: [1, 1, 17.4533, 1, 1, 1, 1][index]
         self.velocitySource = lambda index: 'SOFTWARE' if index < 3 else 'FIRMWARE'
+        self.positionLimitsSoftLower = lambda index: [-170.0, -73.0,   0.0, -172.0, -172.0, -172.0, -172.0][index]
+        self.positionLimitsSoftUpper = lambda index: [ 170.0,  75.0, 290.0,  172.0,  172.0,  172.0,  172.0][index]
+        self.positionLimitsSoftUnits =  lambda index: "deg" if index != 2 else "mm"
         self.motorMaxCurrent = lambda index: [3.4, 3.4, 1.1, 1.1, 1.1, 1.1, 1.1][index]
         self.motorTorque = lambda index: [0.0603, 0.0603, 0.0385, 0.0385, 0.0385, 0.0385, 0.0385][index]
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
@@ -774,17 +798,22 @@ class AnalogBrake(Serializable):
 
 class Encoder(Serializable):
     def __init__(
-            self, potentiometerUnits, direction, CPT, gearRatio, pitch, velocitySource
+            self, potentiometerUnits, direction, CPT, gearRatio, pitch, velocitySource,
+            positionLimitsSoftLower, positionLimitsSoftUpper, positionLimitsSoftUnit
     ):
         encoderPos = direction * (360 / CPT) * (pitch / gearRatio)
         encoderPos = "{:10.15f}".format(encoderPos)
         self.bitsToPosSI = Conversion(encoderPos, None, potentiometerUnits)
         self.velocitySource = velocitySource
+        self.positionLimitsSoft = Limits(positionLimitsSoftLower,
+                                         positionLimitsSoftUpper,
+                                         positionLimitsSoftUnit)
 
     def toDict(self):
         return {
             "BitsToPosSI": self.bitsToPosSI,
             "VelocitySource": self.velocitySource,
+            "PositionLimitsSoft": self.positionLimitsSoft,
         }
 
 
