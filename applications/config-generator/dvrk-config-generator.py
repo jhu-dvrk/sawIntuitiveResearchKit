@@ -519,6 +519,9 @@ class SiECM(Robot):
         self.gearRatio = lambda index: [83.3333, 168.3333, 2748.6, 300.2][index]
         self.pitch = lambda index: [1, 1, -17.4533, 1][index]
         self.velocitySource = lambda index: 'SOFTWARE'
+        self.positionLimitsSoftLower = lambda index: [-170.0, -64.0,   0.0, -89.0][index]
+        self.positionLimitsSoftUpper = lambda index: [ 170.0,  60.0, 260.0,  89.0][index]
+        self.positionLimitsSoftUnits =  lambda index: "deg" if index != 2 else "mm"
         self.motorMaxCurrent = lambda index: [3.4, 3.4, 0.670, 0.590][index]
         self.motorTorque = lambda index: [0.0603, 0.0603, 0.0385, 0.0385][index]
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
@@ -621,8 +624,12 @@ class MTM(Robot):
     def __init__(self, calData, robotTypeName, hardwareVersionName, serialNumber):
         if robotTypeName.startswith("MTML"):
             driveDirections = [-1, 1, 1, 1, -1, 1, -1]
+            positionLimitsSoftLower = [-65.0, -18.0, -15.0, -120.0, -95.0, -45.0, -475.0]
+            positionLimitsSoftUpper = [ 40.0,  65.0,  42.0,  240.0, 185.0,  45.0,  445.0]
         elif robotTypeName.startswith("MTMR"):
             driveDirections = [-1, 1, 1, 1, 1, 1, -1]
+            positionLimitsSoftLower = [-65.0, -18.0, -15.0, -120.0, -95.0, -45.0, -475.0]
+            positionLimitsSoftUpper = [ 40.0,  65.0,  42.0,  240.0, 185.0,  45.0,  445.0]
         else:
             raise ValueError("Unsupported MTM type: {}".format(robotTypeName))
 
@@ -631,6 +638,10 @@ class MTM(Robot):
         self.gearRatio = lambda index: [63.41, 49.88, 59.73, 10.53, 33.16, 33.16, 16.58][index]
         self.pitch = lambda index: 1
         self.velocitySource = lambda index: 'FIRMWARE'
+        self.positionLimitsSoftLower = lambda index: positionLimitsSoftLower[index]
+        self.positionLimitsSoftUpper = lambda index: positionLimitsSoftUpper[index]
+        self.positionLimitsSoftUnits =  lambda index: "deg"
+
         self.motorMaxCurrent = lambda index: [0.67, 0.67, 0.67, 0.67, 0.59, 0.59, 0.407][index]
         self.motorTorque = lambda index: [0.0438, 0.0438, 0.0438, 0.0438, 0.00495, 0.00495, 0.00339][index]
         self.actuatorType = lambda index: "Revolute"
@@ -664,6 +675,9 @@ class MTMGripper(Robot):
         self.gearRatio = lambda index: 63.41
         self.pitch = lambda index: 1
         self.velocitySource = lambda index: 'SOFTWARE'
+        self.positionLimitsSoftLower = lambda index: 0.0
+        self.positionLimitsSoftUpper = lambda index: 0.0
+        self.positionLimitsSoftUnits = lambda index: "deg"
         self.motorMaxCurrent = lambda index: 0.0
         self.motorTorque = lambda index: 0.0438
         self.actuatorType = lambda index: "Revolute"
@@ -1208,6 +1222,8 @@ def generateArmConfig(robotTypeName, hardwareVersionName, serialNumber, generati
             f.write('    // , "endoscope": "SD_UP"\n')
             f.write('    // , "endoscope": "SD_DOWN"\n')
             f.write('    , "endoscope": "HD_STRAIGHT"\n')
+        if robotTypeName.startswith("MTM"):
+            f.write('    // , "gravity-compensation": "gc-' + robotTypeName + '-' + serialNumber + '.json"\n')
         f.write("}\n")
 
     print('Generated arm config file {}'.format(fileName))
