@@ -10,7 +10,7 @@
                 "type": "revolute",
                 "mode": "active",
                 "offset":  -1.5708,
-                "qmin": -1.13446,  // -65   - manual says -1.277 but we can't reach that far 
+                "qmin": -1.13446,  // -65   - manual says -1.277 but we can go further
                 "qmax":  0.698132, //  40.0 - manual says 0.783 but we can't reach that far
                 "ftmax": 1.86082986
             },
