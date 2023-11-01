@@ -634,12 +634,12 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                          << ": \"generation\" must be either \"Classic\" or \"Si\", found: "
-                                         << generation << std::endl;
+                                         << generation << " in " << filename << std::endl;
                 exit(EXIT_FAILURE);
             }
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": missing \"generation\"" << std::endl;
+                                     << ": missing \"generation\"" << " in " << filename << std::endl;
             exit(EXIT_FAILURE);
         }
 
@@ -681,7 +681,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
         if (!nmrIsOrthonormal(Manipulator->Rtw0.Rotation())) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
                                      << ": the base offset rotation doesn't seem to be orthonormal"
-                                     << std::endl;
+                                     << " in " << filename << std::endl;
             exit(EXIT_FAILURE);
         }
     }
