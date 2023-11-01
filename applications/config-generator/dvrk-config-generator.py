@@ -293,6 +293,9 @@ class ClassicPSM(Robot):
         self.gearRatio = lambda index: [56.50, 56.50, 336.6, 11.71, 11.71, 11.71, 11.71][index]
         self.pitch = lambda index: [1, 1, 17.4533, 1, 1, 1, 1][index]
         self.velocitySource = lambda index: 'FIRMWARE'
+        self.positionLimitsSoftLower = lambda index: [-91.0, -53.0,   0.0, -174.0, -174.0, -174.0, -174.0][index]
+        self.positionLimitsSoftUpper = lambda index: [ 91.0,  53.0, 240.0,  174.0,  174.0,  174.0,  174.0][index]
+        self.positionLimitsSoftUnits =  lambda index: "deg" if index != 2 else "mm"
         self.motorMaxCurrent = lambda index: [1.34, 1.34, 0.67, 0.67, 0.67, 0.67, 0.670][index]
         self.motorTorque = lambda index: [0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438][index]
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
@@ -624,8 +627,8 @@ class MTM(Robot):
     def __init__(self, calData, robotTypeName, hardwareVersionName, serialNumber):
         if robotTypeName.startswith("MTML"):
             driveDirections = [-1, 1, 1, 1, -1, 1, -1]
-            positionLimitsSoftLower = [-65.0, -18.0, -15.0, -120.0, -95.0, -45.0, -475.0]
-            positionLimitsSoftUpper = [ 40.0,  65.0,  42.0,  240.0, 185.0,  45.0,  445.0]
+            positionLimitsSoftLower = [-40.0, -18.0, -15.0, -240.0, -95.0, -45.0, -475.0]
+            positionLimitsSoftUpper = [ 65.0,  65.0,  42.0,  120.0, 185.0,  45.0,  445.0]
         elif robotTypeName.startswith("MTMR"):
             driveDirections = [-1, 1, 1, 1, 1, 1, -1]
             positionLimitsSoftLower = [-65.0, -18.0, -15.0, -120.0, -95.0, -45.0, -475.0]
