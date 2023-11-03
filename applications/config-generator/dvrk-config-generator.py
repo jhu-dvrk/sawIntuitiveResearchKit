@@ -453,6 +453,9 @@ class ClassicECM(Robot):
         self.gearRatio = lambda index: [240, 240, 2748.55, 300.15][index]
         self.pitch = lambda index: [1, 1, 17.4533, 1][index]
         self.velocitySource = lambda index: 'FIRMWARE'
+        self.positionLimitsSoftLower = lambda index: [-90.0, -45.0,   0.0, -89.0][index]
+        self.positionLimitsSoftUpper = lambda index: [ 90.0,  64.0, 255.0,  89.0][index]
+        self.positionLimitsSoftUnits =  lambda index: "deg" if index != 2 else "mm"
         self.motorMaxCurrent = lambda index: [0.943, 0.943, 0.67, 0.59][index]
         self.motorTorque = lambda index: [0.1190, 0.1190, 0.0438, 0.00495][index]
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
