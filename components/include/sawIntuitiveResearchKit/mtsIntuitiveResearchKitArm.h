@@ -70,6 +70,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     void Run(void) override;
     void Cleanup(void) override;
 
+    inline void crtk_version(std::string & placeholder) const {
+        placeholder = mtsIntuitiveResearchKit::crtk_version;
+    }
     virtual void set_simulated(void);
     virtual inline void set_calibration_mode(const bool mode) {
         m_calibration_mode = mode;

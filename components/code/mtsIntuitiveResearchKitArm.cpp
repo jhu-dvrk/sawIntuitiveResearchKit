@@ -350,6 +350,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         m_arm_interface->AddMessageEvents();
 
         // Get
+        m_arm_interface->AddCommandRead(&mtsIntuitiveResearchKitArm::crtk_version, this, "crtk_version");
         m_arm_interface->AddCommandReadState(this->mStateTableConfiguration, m_configuration_js, "configuration_js");
         m_arm_interface->AddCommandReadState(this->StateTable, m_kin_measured_js, "measured_js");
         m_arm_interface->AddCommandReadState(this->StateTable, m_kin_setpoint_js, "setpoint_js");
