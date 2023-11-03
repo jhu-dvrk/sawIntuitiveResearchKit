@@ -38,7 +38,7 @@
 	,
 	{
 	    "index": 3,
-	    "name": "outer_roll",
+	    "name": "disc_1",
 	    "type": 2,
 	    "p_gain": 6.0,
 	    "d_gain": 0.08,
@@ -50,7 +50,7 @@
 	,
 	{
 	    "index": 4,
-	    "name": "outer_wrist_pitch",
+	    "name": "disc_2",
 	    "type": 2,
 	    "p_gain": 6.0,
 	    "d_gain": 0.08,
@@ -62,7 +62,7 @@
 	,
 	{
 	    "index": 5,
-	    "name": "outer_wrist_yaw",
+	    "name": "disc_3",
 	    "type": 2,
 	    "p_gain": 6.0,
 	    "d_gain": 0.08,
@@ -74,7 +74,7 @@
 	,
 	{
 	    "index": 6,
-	    "name": "jaw",
+	    "name": "disc_4",
 	    "type": 2,
 	    "p_gain": 6.0,
 	    "d_gain": 0.08,

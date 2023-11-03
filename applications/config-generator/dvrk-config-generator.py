@@ -60,6 +60,23 @@ class Conversion(Serializable):
             dict["Unit"] = self.units
         return dict
 
+# Represents limits
+class Limits(Serializable):
+    def __init__(self, lower, upper, units=None):
+        self.lower = lower
+        self.upper = upper
+        self.units = units
+
+    def toDict(self):
+        dict = {}
+        if self.lower != None:
+            dict["Lower"] = self.lower
+        if self.upper != None:
+            dict["Upper"] = self.upper
+        if self.units != None:
+            dict["Unit"] = self.units
+        return dict
+
 
 # Dimensioned value
 class UnitValue(Serializable):
@@ -214,7 +231,11 @@ class Robot(Serializable):
             gearRatio = self.gearRatio(index)
             pitch = self.pitch(index)
             velocitySource = self.velocitySource(index)
-            yield Encoder(units, direction, encoderCPT, gearRatio, pitch, velocitySource)
+            positionLimitsSoftLower = self.positionLimitsSoftLower(index)
+            positionLimitsSoftUpper = self.positionLimitsSoftUpper(index)
+            positionLimitsSoftUnits = self.positionLimitsSoftUnits(index)
+            yield Encoder(units, direction, encoderCPT, gearRatio, pitch, velocitySource,
+                          positionLimitsSoftLower, positionLimitsSoftUpper, positionLimitsSoftUnits)
 
     def generateAnalogIns(self):
         for index in range(self.numberOfActuators):
@@ -272,6 +293,9 @@ class ClassicPSM(Robot):
         self.gearRatio = lambda index: [56.50, 56.50, 336.6, 11.71, 11.71, 11.71, 11.71][index]
         self.pitch = lambda index: [1, 1, 17.4533, 1, 1, 1, 1][index]
         self.velocitySource = lambda index: 'FIRMWARE'
+        self.positionLimitsSoftLower = lambda index: [-91.0, -53.0,   0.0, -174.0, -174.0, -174.0, -174.0][index]
+        self.positionLimitsSoftUpper = lambda index: [ 91.0,  53.0, 240.0,  174.0,  174.0,  174.0,  174.0][index]
+        self.positionLimitsSoftUnits =  lambda index: "deg" if index != 2 else "mm"
         self.motorMaxCurrent = lambda index: [1.34, 1.34, 0.67, 0.67, 0.67, 0.67, 0.670][index]
         self.motorTorque = lambda index: [0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438, 0.0438][index]
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
@@ -319,6 +343,9 @@ class SiPSM(Robot):
         self.gearRatio = lambda index: [83.3333, 85.000, 965.91, 13.813, 13.813, 13.813, 13.813][index]
         self.pitch = lambda index: [1, 1, 17.4533, 1, 1, 1, 1][index]
         self.velocitySource = lambda index: 'SOFTWARE' if index < 3 else 'FIRMWARE'
+        self.positionLimitsSoftLower = lambda index: [-170.0, -73.0,   0.0, -172.0, -172.0, -172.0, -172.0][index]
+        self.positionLimitsSoftUpper = lambda index: [ 170.0,  75.0, 290.0,  172.0,  172.0,  172.0,  172.0][index]
+        self.positionLimitsSoftUnits =  lambda index: "deg" if index != 2 else "mm"
         self.motorMaxCurrent = lambda index: [3.4, 3.4, 1.1, 1.1, 1.1, 1.1, 1.1][index]
         self.motorTorque = lambda index: [0.0603, 0.0603, 0.0385, 0.0385, 0.0385, 0.0385, 0.0385][index]
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
@@ -426,6 +453,9 @@ class ClassicECM(Robot):
         self.gearRatio = lambda index: [240, 240, 2748.55, 300.15][index]
         self.pitch = lambda index: [1, 1, 17.4533, 1][index]
         self.velocitySource = lambda index: 'FIRMWARE'
+        self.positionLimitsSoftLower = lambda index: [-90.0, -45.0,   0.0, -89.0][index]
+        self.positionLimitsSoftUpper = lambda index: [ 90.0,  64.0, 255.0,  89.0][index]
+        self.positionLimitsSoftUnits =  lambda index: "deg" if index != 2 else "mm"
         self.motorMaxCurrent = lambda index: [0.943, 0.943, 0.67, 0.59][index]
         self.motorTorque = lambda index: [0.1190, 0.1190, 0.0438, 0.00495][index]
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
@@ -495,6 +525,9 @@ class SiECM(Robot):
         self.gearRatio = lambda index: [83.3333, 168.3333, 2748.6, 300.2][index]
         self.pitch = lambda index: [1, 1, -17.4533, 1][index]
         self.velocitySource = lambda index: 'SOFTWARE'
+        self.positionLimitsSoftLower = lambda index: [-170.0, -64.0,   0.0, -89.0][index]
+        self.positionLimitsSoftUpper = lambda index: [ 170.0,  60.0, 260.0,  89.0][index]
+        self.positionLimitsSoftUnits =  lambda index: "deg" if index != 2 else "mm"
         self.motorMaxCurrent = lambda index: [3.4, 3.4, 0.670, 0.590][index]
         self.motorTorque = lambda index: [0.0603, 0.0603, 0.0385, 0.0385][index]
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
@@ -597,8 +630,12 @@ class MTM(Robot):
     def __init__(self, calData, robotTypeName, hardwareVersionName, serialNumber):
         if robotTypeName.startswith("MTML"):
             driveDirections = [-1, 1, 1, 1, -1, 1, -1]
+            positionLimitsSoftLower = [-40.0, -18.0, -15.0, -240.0, -95.0, -45.0, -475.0]
+            positionLimitsSoftUpper = [ 65.0,  65.0,  42.0,  120.0, 185.0,  45.0,  445.0]
         elif robotTypeName.startswith("MTMR"):
             driveDirections = [-1, 1, 1, 1, 1, 1, -1]
+            positionLimitsSoftLower = [-65.0, -18.0, -15.0, -120.0, -95.0, -45.0, -475.0]
+            positionLimitsSoftUpper = [ 40.0,  65.0,  42.0,  240.0, 185.0,  45.0,  445.0]
         else:
             raise ValueError("Unsupported MTM type: {}".format(robotTypeName))
 
@@ -607,6 +644,10 @@ class MTM(Robot):
         self.gearRatio = lambda index: [63.41, 49.88, 59.73, 10.53, 33.16, 33.16, 16.58][index]
         self.pitch = lambda index: 1
         self.velocitySource = lambda index: 'FIRMWARE'
+        self.positionLimitsSoftLower = lambda index: positionLimitsSoftLower[index]
+        self.positionLimitsSoftUpper = lambda index: positionLimitsSoftUpper[index]
+        self.positionLimitsSoftUnits =  lambda index: "deg"
+
         self.motorMaxCurrent = lambda index: [0.67, 0.67, 0.67, 0.67, 0.59, 0.59, 0.407][index]
         self.motorTorque = lambda index: [0.0438, 0.0438, 0.0438, 0.0438, 0.00495, 0.00495, 0.00339][index]
         self.actuatorType = lambda index: "Revolute"
@@ -640,6 +681,9 @@ class MTMGripper(Robot):
         self.gearRatio = lambda index: 63.41
         self.pitch = lambda index: 1
         self.velocitySource = lambda index: 'SOFTWARE'
+        self.positionLimitsSoftLower = lambda index: 0.0
+        self.positionLimitsSoftUpper = lambda index: 0.0
+        self.positionLimitsSoftUnits = lambda index: "deg"
         self.motorMaxCurrent = lambda index: 0.0
         self.motorTorque = lambda index: 0.0438
         self.actuatorType = lambda index: "Revolute"
@@ -774,17 +818,22 @@ class AnalogBrake(Serializable):
 
 class Encoder(Serializable):
     def __init__(
-            self, potentiometerUnits, direction, CPT, gearRatio, pitch, velocitySource
+            self, potentiometerUnits, direction, CPT, gearRatio, pitch, velocitySource,
+            positionLimitsSoftLower, positionLimitsSoftUpper, positionLimitsSoftUnit
     ):
         encoderPos = direction * (360 / CPT) * (pitch / gearRatio)
         encoderPos = "{:10.15f}".format(encoderPos)
         self.bitsToPosSI = Conversion(encoderPos, None, potentiometerUnits)
         self.velocitySource = velocitySource
+        self.positionLimitsSoft = Limits(positionLimitsSoftLower,
+                                         positionLimitsSoftUpper,
+                                         positionLimitsSoftUnit)
 
     def toDict(self):
         return {
             "BitsToPosSI": self.bitsToPosSI,
             "VelocitySource": self.velocitySource,
+            "PositionLimitsSoft": self.positionLimitsSoft,
         }
 
 
@@ -1179,6 +1228,8 @@ def generateArmConfig(robotTypeName, hardwareVersionName, serialNumber, generati
             f.write('    // , "endoscope": "SD_UP"\n')
             f.write('    // , "endoscope": "SD_DOWN"\n')
             f.write('    , "endoscope": "HD_STRAIGHT"\n')
+        if robotTypeName.startswith("MTM"):
+            f.write('    // , "gravity-compensation": "gc-' + robotTypeName + '-' + serialNumber + '.json"\n')
         f.write("}\n")
 
     print('Generated arm config file {}'.format(fileName))

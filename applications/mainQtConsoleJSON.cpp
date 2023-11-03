@@ -25,7 +25,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstCommon/cmnGetChar.h>
 #include <cisstCommon/cmnQt.h>
-#include <cisstOSAbstraction/osaGetTime.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
 #include <cisstMultiTask/mtsCollectorFactory.h>
 #include <cisstMultiTask/mtsCollectorQtFactory.h>
@@ -63,17 +62,7 @@ int main(int argc, char ** argv)
     std::setlocale(LC_ALL, "C");
 
     // log configuration
-    cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
-    cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
-    cmnLogger::SetMaskFunction(CMN_LOG_ALLOW_ALL);
-    cmnLogger::SetMaskClassMatching("mtsIntuitiveResearchKit", CMN_LOG_ALLOW_ALL);
-    cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
-    // add log file with date so logs don't get overwritten
-    std::string currentDateTime;
-    osaGetDateTimeString(currentDateTime);
-    std::ofstream logFileStream(std::string("cisstLog-" + currentDateTime + ".txt").c_str());
-    cmnLogger::AddChannel(logFileStream);
-    cmnLogger::HaltDefaultLog(); // stop log to default cisstLog.txt
+    mtsIntuitiveResearchKit::Logger logger; 
 
     // parse options
     cmnCommandLineOptions options;
@@ -166,14 +155,16 @@ int main(int argc, char ** argv)
         componentManager->AddComponent(collectorFactory);
         collectorFactory->Connect();
 
-        mtsCollectorQtWidget * collectorQtWidget = new mtsCollectorQtWidget();
-        consoleQt->addTab(collectorQtWidget, "Collection");
+        if (hasQt) {
+            mtsCollectorQtWidget * collectorQtWidget = new mtsCollectorQtWidget();
+            consoleQt->addTab(collectorQtWidget, "Collection");
 
-        mtsCollectorQtFactory * collectorQtFactory = new mtsCollectorQtFactory("collectorsQt");
-        collectorQtFactory->SetFactory("collectors");
-        componentManager->AddComponent(collectorQtFactory);
-        collectorQtFactory->Connect();
-        collectorQtFactory->ConnectToWidget(collectorQtWidget);
+            mtsCollectorQtFactory * collectorQtFactory = new mtsCollectorQtFactory("collectorsQt");
+            collectorQtFactory->SetFactory("collectors");
+            componentManager->AddComponent(collectorQtFactory);
+            collectorQtFactory->Connect();
+            collectorQtFactory->ConnectToWidget(collectorQtWidget);
+        }
     }
 
     // custom user component
@@ -204,8 +195,7 @@ int main(int argc, char ** argv)
     componentManager->Cleanup();
 
     // stop all logs
-    cmnLogger::Kill();
-    cmnLogger::RemoveChannel(logFileStream);
+    logger.Stop();
 
     delete console;
     if (hasQt) {

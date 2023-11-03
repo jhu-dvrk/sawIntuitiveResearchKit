@@ -187,8 +187,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     mStateTableState.SetAutomaticAdvance(false);
 
     // state table for configuration
-    mStateTableConfiguration.AddData(m_kin_configuration_js, "kin/configuration_js");
-    mStateTableConfiguration.AddData(m_pid_configuration_js, "pid/configuration_js");
+    mStateTableConfiguration.AddData(m_configuration_js, "configuration_js");
     AddStateTable(&mStateTableConfiguration);
     mStateTableConfiguration.SetAutomaticAdvance(false);
 
@@ -319,8 +318,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("servo_jp", PID.servo_jp);
         PIDInterface->AddFunction("feed_forward_jf", PID.feed_forward_jf);
         PIDInterface->AddFunction("enforce_position_limits", PID.enforce_position_limits);
-        PIDInterface->AddFunction("configuration_js", PID.configuration_js);
-        PIDInterface->AddFunction("configure_js", PID.configure_js);
         PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
         PIDInterface->AddFunction("servo_jf", PID.servo_jf);
         PIDInterface->AddFunction("EnableTrackingError", PID.EnableTrackingError);
@@ -353,7 +350,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         m_arm_interface->AddMessageEvents();
 
         // Get
-        m_arm_interface->AddCommandReadState(this->mStateTableConfiguration, m_kin_configuration_js, "configuration_js");
+        m_arm_interface->AddCommandReadState(this->mStateTableConfiguration, m_configuration_js, "configuration_js");
         m_arm_interface->AddCommandReadState(this->StateTable, m_kin_measured_js, "measured_js");
         m_arm_interface->AddCommandReadState(this->StateTable, m_kin_setpoint_js, "setpoint_js");
         m_arm_interface->AddCommandReadState(this->StateTable, m_gravity_compensation_setpoint_js, "gravity_compensation/setpoint_js");
@@ -522,30 +519,14 @@ void mtsIntuitiveResearchKitArm::state_command(const std::string & command)
     }
 }
 
-void mtsIntuitiveResearchKitArm::update_kin_configuration_js(void)
+void mtsIntuitiveResearchKitArm::update_configuration_js(void)
 {
     // get names, types and joint limits for kinematics config from the manipulator
     // name and types need conversion
     mStateTableConfiguration.Start();
     prmConfigurationJointFromManipulator(*(this->Manipulator),
                                          number_of_joints_kinematics(),
-                                         m_kin_configuration_js);
-    mStateTableConfiguration.Advance();
-}
-
-void mtsIntuitiveResearchKitArm::update_pid_configuration_js(void)
-{
-    // by default, we assume all joints are used for kinematics.  This
-    // method needs to be overloaded for a PSM!
-    prmConfigurationJointFromManipulator(*(this->Manipulator),
-                                         number_of_joints_kinematics(),
-                                         m_pid_configuration_js);
-    if (m_has_coupling) {
-        m_pid_configuration_js.PositionMin() = m_coupling.JointToActuatorPosition() * m_pid_configuration_js.PositionMin();
-        m_pid_configuration_js.PositionMax() = m_coupling.JointToActuatorPosition() * m_pid_configuration_js.PositionMax();
-        m_pid_configuration_js.EffortMin() = m_coupling.JointToActuatorEffort() * m_pid_configuration_js.EffortMin();
-        m_pid_configuration_js.EffortMax() = m_coupling.JointToActuatorEffort() * m_pid_configuration_js.EffortMax();
-    }
+                                         m_configuration_js);
     mStateTableConfiguration.Advance();
 }
 
@@ -653,12 +634,12 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                          << ": \"generation\" must be either \"Classic\" or \"Si\", found: "
-                                         << generation << std::endl;
+                                         << generation << " in " << filename << std::endl;
                 exit(EXIT_FAILURE);
             }
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": missing \"generation\"" << std::endl;
+                                     << ": missing \"generation\"" << " in " << filename << std::endl;
             exit(EXIT_FAILURE);
         }
 
@@ -700,7 +681,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
         if (!nmrIsOrthonormal(Manipulator->Rtw0.Rotation())) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureDH " << this->GetName()
                                      << ": the base offset rotation doesn't seem to be orthonormal"
-                                     << std::endl;
+                                     << " in " << filename << std::endl;
             exit(EXIT_FAILURE);
         }
     }
@@ -735,7 +716,7 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
     }
 
     // update configuration joint from manipulator
-    update_kin_configuration_js();
+    update_configuration_js();
 
     // resize data members using kinematics (jacobians and effort vectors)
     ResizeKinematicsData();
@@ -760,9 +741,6 @@ void mtsIntuitiveResearchKitArm::ConfigureDH(const Json::Value & jsonConfig,
             }
         }
     }
-
-    // PID configuration is coupling dependant so we need to do this after loading the coupling
-    update_pid_configuration_js();
 }
 
 void mtsIntuitiveResearchKitArm::ConfigureDH(const std::string & filename)
@@ -1142,7 +1120,6 @@ void mtsIntuitiveResearchKitArm::EnterDisabled(void)
     IO.SetActuatorCurrent(vctDoubleVec(number_of_joints(), 0.0));
     IO.PowerOffSequence(false); // do not open safety relays
     PID.Enable(false);
-    PID.configure_js(m_pid_configuration_js);
     PID.enforce_position_limits(true);
     m_powered = false;
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
@@ -1325,8 +1302,6 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
 
-    // set joint configuration
-    PID.configure_js(m_pid_configuration_js);
     // disable joint limits, arm might start outside them
     PID.enforce_position_limits(false);
     // enable tracking errors
@@ -1454,6 +1429,21 @@ void mtsIntuitiveResearchKitArm::EnterFault(void)
 {
     IO.PowerOffSequence(false);
     UpdateOperatingStateAndBusy(prmOperatingState::FAULT, false);
+}
+
+void mtsIntuitiveResearchKitArm::clip_jp(vctDoubleVec & jp) const
+{
+    auto upper = m_configuration_js.PositionMax().cbegin();
+    auto lower = m_configuration_js.PositionMin().cbegin();
+    auto desired = jp.begin();
+    const auto end = jp.end();
+    for (; desired != end; ++desired, ++upper, ++lower) {
+        if (*desired > *upper) {
+            *desired = *upper;
+        } else if (*desired < *lower) {
+            *desired = *lower;
+        }
+    }
 }
 
 void mtsIntuitiveResearchKitArm::control_servo_jp(void)
@@ -1913,11 +1903,15 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
     // feed forward
     if (use_feed_forward()) {
         update_feed_forward(m_pid_feed_forward_servo_jf.ForceTorque());
+
     }
     PID.feed_forward_jf(m_pid_feed_forward_servo_jf);
 
-    // position and velocity
+    // assign positions and check limits
     m_servo_jp_param.Goal().Assign(jp);
+    clip_jp(m_servo_jp_param.Goal());
+
+    // assign velocities
     m_servo_jp_param.Velocity().ForceAssign(jv);
     m_servo_jp_param.SetTimestamp(StateTable.GetTic());
     if (m_has_coupling) {
@@ -2004,7 +1998,9 @@ void mtsIntuitiveResearchKitArm::move_jp(const prmPositionJointSet & jp)
     // make sure trajectory is reset
     control_move_jp_on_start();
     // new goal
-    ToJointsPID(jp.Goal(), m_trajectory_j.goal);
+    vctDoubleVec new_jp(jp.Goal());
+    clip_jp(new_jp);
+    ToJointsPID(new_jp, m_trajectory_j.goal);
     m_trajectory_j.goal_v.Zeros();
 }
 
@@ -2082,6 +2078,7 @@ void mtsIntuitiveResearchKitArm::move_cp(const prmPositionCartesianSet & cp)
         // make sure trajectory is reset
         control_move_jp_on_start();
         // new goal
+        clip_jp(jp);
         ToJointsPID(jp, m_trajectory_j.goal);
         m_trajectory_j.goal_v.Zeros();
     } else {

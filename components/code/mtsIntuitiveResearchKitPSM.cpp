@@ -301,7 +301,7 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureTool " << this->GetName()
                                    << ": loaded kinematics" << std::endl << dhResult.str() << std::endl;
         // update ConfigurationJointKinematic from manipulator
-        update_kin_configuration_js();
+        update_configuration_js();
         // resize data members using kinematics (jacobians and effort vectors)
         ResizeKinematicsData();
 
@@ -607,10 +607,10 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     // initialize trajectory data, last 4 tweaked for engage procedures
     m_trajectory_j.v_max.Ref(2, 0).SetAll(90.0 * cmnPI_180); // degrees per second
     m_trajectory_j.v_max.Element(2) = 0.2; // m per second
-    m_trajectory_j.v_max.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
+    m_trajectory_j.v_max.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
     m_trajectory_j.a_max.Ref(2, 0).SetAll(90.0 * cmnPI_180);
-    m_trajectory_j.a_max.Element(2) = 0.2; // m per second
-    m_trajectory_j.a_max.Ref(4, 3).SetAll(3.0 * 360.0 * cmnPI_180);
+    m_trajectory_j.a_max.Element(2) = 0.2; // m per second ^ 2
+    m_trajectory_j.a_max.Ref(4, 3).SetAll(2.0 * 360.0 * cmnPI_180);
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
 
     // default PID tracking errors
@@ -786,7 +786,7 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
     }
 }
 
-void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(prmConfigurationJoint & configuration_js)
+void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(void)
 {
     // all vectors used to get data from Manipulator must match the
     // manipulator size, potentially 3, 6 or 8 (snake).  we can then
@@ -794,140 +794,51 @@ void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(prmConfiguratio
 
     // names
     const size_t manipulator_size = Manipulator->links.size();
-    configuration_js.Name().SetSize(number_of_joints());
+    m_configuration_js.Name().SetSize(number_of_joints());
     std::vector<std::string> name_tmp(manipulator_size);
     Manipulator->GetJointNames(name_tmp);
     // copy first 3 names to config vector
     for (size_t i = 0; i < 3; ++i) {
-        configuration_js.Name().at(i) = name_tmp.at(i);
+        m_configuration_js.Name().at(i) = name_tmp.at(i);
     }
     // overwrite last 4
     for (size_t i = 3; i < 7; ++i) {
-        configuration_js.Name().at(i) = "disc_" + std::to_string(i - 2);
+        m_configuration_js.Name().at(i) = "disc_" + std::to_string(i - 2);
     }
     // for type, we can even ignore values loaded from config file
-    configuration_js.Type().SetSize(number_of_joints());
-    configuration_js.Type().SetAll(PRM_JOINT_REVOLUTE);
-    configuration_js.Type().at(2) = PRM_JOINT_PRISMATIC;
+    m_configuration_js.Type().SetSize(number_of_joints());
+    m_configuration_js.Type().SetAll(PRM_JOINT_REVOLUTE);
+    m_configuration_js.Type().at(2) = PRM_JOINT_PRISMATIC;
     // position limits
-    configuration_js.PositionMin().SetSize(number_of_joints());
-    configuration_js.PositionMax().SetSize(number_of_joints());
+    m_configuration_js.PositionMin().SetSize(number_of_joints());
+    m_configuration_js.PositionMax().SetSize(number_of_joints());
     vctDoubleVec min_tmp(manipulator_size);
     vctDoubleVec max_tmp(manipulator_size);
     Manipulator->GetJointLimits(min_tmp, max_tmp);
-    configuration_js.PositionMin().Ref(3, 0).Assign(min_tmp.Ref(3, 0));
-    configuration_js.PositionMax().Ref(3, 0).Assign(max_tmp.Ref(3, 0));
-    configuration_js.PositionMin().Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
-    configuration_js.PositionMax().Ref(4, 3).SetAll( mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
+    m_configuration_js.PositionMin().Ref(3, 0).Assign(min_tmp.Ref(3, 0));
+    m_configuration_js.PositionMax().Ref(3, 0).Assign(max_tmp.Ref(3, 0));
+    m_configuration_js.PositionMin().Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterActuatorLimit);
+    m_configuration_js.PositionMax().Ref(4, 3).SetAll( mtsIntuitiveResearchKit::PSM::AdapterActuatorLimit);
     // efforts
-    configuration_js.EffortMin().SetSize(number_of_joints());
-    configuration_js.EffortMax().SetSize(number_of_joints());
+    m_configuration_js.EffortMin().SetSize(number_of_joints());
+    m_configuration_js.EffortMax().SetSize(number_of_joints());
     Manipulator->GetFTMaximums(max_tmp);
-    configuration_js.EffortMax().Ref(3, 0).Assign(max_tmp.Ref(3, 0));
-    configuration_js.EffortMax().Ref(4, 3).SetAll(mtsIntuitiveResearchKit::PSM::DiskMaxTorque);
-    configuration_js.EffortMin().Assign(-configuration_js.EffortMax());
+    m_configuration_js.EffortMax().Ref(3, 0).Assign(max_tmp.Ref(3, 0));
+    m_configuration_js.EffortMax().Ref(4, 3).SetAll(mtsIntuitiveResearchKit::PSM::DiskMaxTorque);
+    m_configuration_js.EffortMin().Assign(-m_configuration_js.EffortMax());
 }
 
-void mtsIntuitiveResearchKitPSM::update_kin_configuration_js(void)
+void mtsIntuitiveResearchKitPSM::update_configuration_js(void)
 {
     mStateTableConfiguration.Start();
     if (m_tool_present && m_tool_configured) {
-        mtsIntuitiveResearchKitArm::update_kin_configuration_js();
+        mtsIntuitiveResearchKitArm::update_configuration_js();
+        m_configuration_js.PositionMin().resize(7);
+        m_configuration_js.PositionMax().resize(7);
+        m_configuration_js.PositionMin().at(6) = m_jaw_configuration_js.PositionMin().at(0);
+        m_configuration_js.PositionMax().at(6) = m_jaw_configuration_js.PositionMax().at(0);
     } else {
-        update_configuration_js_no_tool(m_kin_configuration_js);
-    }
-    mStateTableConfiguration.Advance();
-}
-
-void mtsIntuitiveResearchKitPSM::update_pid_configuration_js(void)
-{
-    mStateTableConfiguration.Start();
-
-    if (m_tool_present && m_tool_configured) {
-        // just to be absolutely totally sure
-        CMN_ASSERT(number_of_joints() == 7);
-
-        // at most we use 6 joints from kinematics, 7th is always the
-        // jaws.  PID is always 6+1, kinematics is usually 6 (most ISI
-        // tools) except 8 for 5mm tools (snake like).  User defined
-        // kinematics might be less than 6.
-        const size_t jawIndex = 6;
-        const size_t nbJointsFromKinematics = std::min(number_of_joints_kinematics(),
-                                                       static_cast<size_t>(6));
-
-        // get names, types and joint limits for kinematics config from the manipulator
-        // name and types need conversion
-        m_pid_configuration_js.Name().SetSize(number_of_joints());
-        m_pid_configuration_js.Type().SetSize(number_of_joints());
-        std::vector<std::string> names(number_of_joints_kinematics());
-        std::vector<robJoint::Type> types(number_of_joints_kinematics());
-        this->Manipulator->GetJointNames(names);
-        this->Manipulator->GetJointTypes(types);
-        for (size_t index = 0; index < nbJointsFromKinematics; ++index) {
-            m_pid_configuration_js.Name().at(index) = names.at(index);
-            switch (types.at(index)) {
-            case robJoint::HINGE:
-                m_pid_configuration_js.Type().at(index) = PRM_JOINT_REVOLUTE;
-                break;
-            case robJoint::SLIDER:
-                m_pid_configuration_js.Type().at(index) = PRM_JOINT_PRISMATIC;
-                break;
-            default:
-                m_pid_configuration_js.Type().at(index) = PRM_JOINT_UNDEFINED;
-                break;
-            }
-        }
-
-        // limits need to take into account snake case
-        vctDoubleVec lowerFromKinematics(number_of_joints_kinematics());
-        vctDoubleVec upperFromKinematics(number_of_joints_kinematics());
-        m_pid_configuration_js.PositionMin().SetSize(number_of_joints());
-        m_pid_configuration_js.PositionMax().SetSize(number_of_joints());
-        m_pid_configuration_js.EffortMin().SetSize(number_of_joints());
-        m_pid_configuration_js.EffortMax().SetSize(number_of_joints());
-
-        // position limits
-        Manipulator->GetJointLimits(lowerFromKinematics,
-                                    upperFromKinematics);
-        // use kinematic joints... all but last
-        m_pid_configuration_js.PositionMin().Ref(nbJointsFromKinematics).Assign(lowerFromKinematics.Ref(nbJointsFromKinematics));
-        m_pid_configuration_js.PositionMax().Ref(nbJointsFromKinematics).Assign(upperFromKinematics.Ref(nbJointsFromKinematics));
-        if (m_snake_like) {
-            // add kinematic joint limits
-            m_pid_configuration_js.PositionMin().at(4) += lowerFromKinematics.at(7);
-            m_pid_configuration_js.PositionMin().at(5) += lowerFromKinematics.at(6);
-            m_pid_configuration_js.PositionMax().at(4) += upperFromKinematics.at(7);
-            m_pid_configuration_js.PositionMax().at(5) += upperFromKinematics.at(6);
-        }
-        // ...and jaw
-        m_pid_configuration_js.PositionMin().at(jawIndex) = m_jaw_configuration_js.PositionMin().at(0);
-        m_pid_configuration_js.PositionMax().at(jawIndex) = m_jaw_configuration_js.PositionMax().at(0);
-
-        // force torque
-        Manipulator->GetFTMaximums(upperFromKinematics);
-        // use kinematic joints... all but last
-        m_pid_configuration_js.EffortMax().Ref(nbJointsFromKinematics).Assign(upperFromKinematics.Ref(nbJointsFromKinematics));
-        if (m_snake_like) {
-            // add kinematic joint limits
-            m_pid_configuration_js.EffortMax().at(4) += upperFromKinematics.at(7);
-            m_pid_configuration_js.EffortMax().at(5) += upperFromKinematics.at(6);
-        }
-        // ...and jaw
-        m_pid_configuration_js.EffortMax().at(jawIndex) = m_jaw_configuration_js.EffortMax().at(0);
-        m_pid_configuration_js.EffortMin().ProductOf(-1.0, m_pid_configuration_js.EffortMax()); // manipulator assumes symmetry
-
-        // and finally apply coupling
-        auto coupling = m_coupling.JointToActuatorPosition();
-        coupling.AbsSelf();
-        m_pid_configuration_js.PositionMin() = coupling * m_pid_configuration_js.PositionMin();
-        m_pid_configuration_js.PositionMax() = coupling * m_pid_configuration_js.PositionMax();
-        coupling = m_coupling.JointToActuatorEffort();
-        coupling.AbsSelf();
-        m_pid_configuration_js.EffortMin() = coupling * m_pid_configuration_js.EffortMin();
-        m_pid_configuration_js.EffortMax() = coupling * m_pid_configuration_js.EffortMax();
-
-    } else {
-        update_configuration_js_no_tool(m_pid_configuration_js);
+        update_configuration_js_no_tool();
     }
     mStateTableConfiguration.Advance();
 }
@@ -990,7 +901,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
 
         // make sure we start from current state
         m_servo_jp.Assign(m_pid_setpoint_js.Position());
-        m_servo_jv.Assign(m_pid_measured_js.Velocity());
+        m_servo_jv.Assign(m_pid_setpoint_js.Velocity());
 
         // keep first two joint values as is
         m_trajectory_j.goal.Ref(2, 0).Assign(m_pid_setpoint_js.Position().Ref(2, 0));
@@ -1096,7 +1007,7 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
 
         // make sure we start from current state
         m_servo_jp.Assign(m_pid_setpoint_js.Position());
-        m_servo_jv.Assign(m_pid_measured_js.Velocity());
+        m_servo_jv.Assign(m_pid_setpoint_js.Velocity());
 
         // check if the tool in outside the cannula, measured_cp is
         // not yet computed by get_robot_data so we need to compute
@@ -1129,7 +1040,6 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
                                       m_trajectory_j.goal,
                                       m_trajectory_j.goal_v);
     servo_jp_internal(m_servo_jp, m_servo_jv);
-
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
 
@@ -1184,11 +1094,11 @@ void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
     // restore default PID tracking error
     PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
     // resize kinematics vectors
-    m_kin_measured_js.Name().ForceAssign(m_kin_configuration_js.Name());
+    m_kin_measured_js.Name().ForceAssign(m_configuration_js.Name());
     m_kin_measured_js.Position().SetSize(number_of_joints_kinematics());
     m_kin_measured_js.Velocity().SetSize(number_of_joints_kinematics());
     m_kin_measured_js.Effort().SetSize(number_of_joints_kinematics());
-    m_kin_setpoint_js.Name().ForceAssign(m_kin_configuration_js.Name());
+    m_kin_setpoint_js.Name().ForceAssign(m_configuration_js.Name());
     m_kin_setpoint_js.Position().SetSize(number_of_joints_kinematics());
     m_kin_setpoint_js.Velocity().SetSize(number_of_joints_kinematics());
     m_kin_setpoint_js.Effort().SetSize(number_of_joints_kinematics());
@@ -1280,11 +1190,8 @@ void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosi
 
     // force trajectory re-evaluation with new goal for last joint
     control_move_jp_on_start();
-    m_trajectory_j.goal[6] = jawPosition.Goal().at(0);
-
-    // save position jaw goal, this might lead to jump if the user
-    // interupts the jaw trajectory
     m_jaw_servo_jp = jawPosition.Goal().at(0);
+    m_trajectory_j.goal[6] = m_jaw_servo_jp;
 }
 
 void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
@@ -1295,15 +1202,16 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
         return;
     }
     CMN_ASSERT(m_servo_jp_param.Goal().size() == 7);
-    // first 6 joints
-    ToJointsPID(jp, m_servo_jp_param.Goal());
+    // first 6 joints, assign positions and check limits
+    vctDoubleVec jp_clipped(jp);
+    clip_jp(jp_clipped);
+    ToJointsPID(jp_clipped, m_servo_jp_param.Goal());
     // velocity - current code only support jaw_servo_jv if servo_jp has a velocity goal
     const size_t jv_size = jv.size();
     m_servo_jp_param.Velocity().SetSize(7);
     if (jv_size != 0) {
         ToJointsPID(jv, m_servo_jp_param.Velocity());
     }
-    // add jaws - current code has velocity goal set to 0
     m_servo_jp_param.Goal().at(6) = m_jaw_servo_jp;
     if (jv_size != 0) {
         m_servo_jp_param.Velocity().at(6) = 0.0;
@@ -1404,6 +1312,11 @@ void mtsIntuitiveResearchKitPSM::EventHandlerAdapter(const prmEventButton & butt
         break;
     case prmEventButton::RELEASED:
         set_adapter_present(false);
+        // detect if adapeter is removed while engaging
+        if (mArmState.CurrentState() == "ENGAGING_ADAPTER") {
+            mArmState.SetCurrentState("HOMED");
+        }
+        break;
         break;
     default:
         break;
@@ -1442,10 +1355,7 @@ void mtsIntuitiveResearchKitPSM::set_tool_present_and_configured(const bool & pr
         }
     }
     // update for users
-    update_kin_configuration_js();
-    // update down to PID
-    update_pid_configuration_js();
-    PID.configure_js(m_pid_configuration_js);
+    update_configuration_js();
     // refresh data to take coupling into account
     get_robot_data();
 
