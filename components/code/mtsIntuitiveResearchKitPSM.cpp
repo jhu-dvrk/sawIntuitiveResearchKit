@@ -1014,11 +1014,19 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         // the FK ourselves.  This is fine for instruments with 6 dofs
         // but is not perfect for a snake-like instrument since we don't have 8 joint values
         vctFrm4x4 _measured_cp = Manipulator->ForwardKinematics(m_pid_measured_js.Position(), 6);
-        double distanceToRCM = _measured_cp.Translation().Norm();
-        if (distanceToRCM >= mtsIntuitiveResearchKit::PSM::EngageDepthCannula) {
+        const double distanceToRCM = _measured_cp.Translation().Norm();
+        double depth;
+        if (m_snake_like) {
+            depth = mtsIntuitiveResearchKit::PSM::EngageDepthCannulaSnake;
+        } else {
+            depth = mtsIntuitiveResearchKit::PSM::EngageDepthCannula;
+        }
+        if (distanceToRCM >= depth) {
             std::string message = this->GetName();
             message.append(": tool tip is outside the cannula, assuming it doesn't need to \"engage\".");
             message.append("  If the tool is not engaged properly, move the sterile adapter all the way up and re-insert the tool.");
+            CMN_LOG_CLASS_INIT_VERBOSE << "RunEngagingTool: distance to RCM is " << distanceToRCM
+                                       << ", depth threshold is " << depth << std::endl;
             m_arm_interface->SendStatus(message);
             mArmState.SetCurrentState("TOOL_ENGAGED");
         }

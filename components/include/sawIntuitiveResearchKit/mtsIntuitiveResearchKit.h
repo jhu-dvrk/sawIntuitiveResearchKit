@@ -53,6 +53,7 @@ namespace mtsIntuitiveResearchKit {
     namespace PSM {
         // distance in joint space for insertion
         const double EngageDepthCannula = 25.0 * cmn_mm; // approximative depth from cannula tip to RCM
+        const double EngageDepthCannulaSnake = 27.0 * cmn_mm; // for snake like instruments (5mm)
 
         // distance for RCM in cartesian space for first joint at end of instrument's shaft
         const double SafeDistanceFromRCM = 45.0 * cmn_mm;
