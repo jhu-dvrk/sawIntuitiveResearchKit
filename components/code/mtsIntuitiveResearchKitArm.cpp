@@ -1910,7 +1910,9 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
 
     // assign positions and check limits
     m_servo_jp_param.Goal().Assign(jp);
-    clip_jp(m_servo_jp_param.Goal());
+    if (is_homed()) {
+        clip_jp(m_servo_jp_param.Goal());
+    }
 
     // assign velocities
     m_servo_jp_param.Velocity().ForceAssign(jv);
