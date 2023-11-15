@@ -34,6 +34,14 @@
         }
         ,
         {
+            "model": "400007",
+            "names": ["ROUND_TIP_SCISSORS"],
+            "description": "Round Tip Scissors",
+            "generation": "Classic",
+            "file": "ROUND_TIP_SCISSORS_400007.json"
+        }
+        ,
+        {
             "model": "400033",
             "names": ["MICRO_FORCEPS"],
             "description": "Micro Forceps",
@@ -203,6 +211,14 @@
         ,
         // S/Si
         {
+            "model": "420001",
+            "names": ["POTTS_SCISSORS"],
+            "description": "Potts Scissors",
+            "generation": "S",
+            "file": "POTTS_SCISSORS_420001.json"
+        }
+        ,
+        {
             "model": "420006",
             "version_max": 11,
             "names": ["LARGE_NEEDLE_DRIVER"],
@@ -218,6 +234,14 @@
             "description": "Large Needle Driver (Geared)",
             "generation": "S",
             "file": "LARGE_NEEDLE_DRIVER_420006_GEARED.json"
+        }
+        ,
+        {
+            "model": "420007",
+            "names": ["ROUND_TIP_SCISSORS"],
+            "description": "Round Tip Scissors",
+            "generation": "S",
+            "file": "ROUND_TIP_SCISSORS_420007.json"
         }
         ,
         {
