@@ -97,9 +97,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void TransitionHomed(void); // for adapter/tool detection
 
     // methods used in change coupling/engaging
-    void update_configuration_js_no_tool(prmConfigurationJoint & configuration_js);
-    void update_kin_configuration_js(void) override;
-    void update_pid_configuration_js(void) override;
+    void update_configuration_js_no_tool(void);
+    void update_configuration_js(void) override;
 
     // engaging adapter
     void EnterEngagingAdapter(void);

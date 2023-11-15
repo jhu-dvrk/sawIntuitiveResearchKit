@@ -63,7 +63,12 @@ for json_file in args.files:
   with open(json_file) as f:
     # remove comments
     file_no_comments = jsmin.jsmin(f.read())
-    file = json.loads(file_no_comments)
+    try:
+      file = json.loads(file_no_comments)
+    except Exception as err:
+      print("Unexpected {}".format(err))
+      print(file_no_comments)
+      raise
     validator.validate(file)
 
 print ('All good')

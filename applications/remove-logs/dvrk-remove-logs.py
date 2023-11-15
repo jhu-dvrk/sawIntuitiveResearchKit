@@ -51,6 +51,7 @@ remove_files(files, 'log')
 
 # backups and extra files from calibration steps
 files = glob.glob('./**/sawRobotIO*.xml-backup*', recursive = True) \
+   + glob.glob('./**/*.json-backup-20*', recursive = True) \
    + glob.glob('./**/pot_calib_offsets_*.csv', recursive = True) \
    + glob.glob('./**/pot_calib_scales_*.csv', recursive = True)
 remove_files(files, 'backup')

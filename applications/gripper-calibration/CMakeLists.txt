@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2009-2021 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2023 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -44,14 +44,20 @@ if (cisst_FOUND_AS_REQUIRED)
 
     # main program used to calibrate the MTM gripper
     add_executable (sawIntuitiveResearchKitGripperCalibration GripperCalibration.cpp)
-    set_property (TARGET sawIntuitiveResearchKitGripperCalibration PROPERTY FOLDER "sawIntuitiveResearchKit")
-
+    set_target_properties (sawIntuitiveResearchKitGripperCalibration PROPERTIES
+                           COMPONENT sawIntuitiveResearchKit-Applications
+                           FOLDER "sawIntuitiveResearchKit")
     # link against non cisst libraries and cisst components
     target_link_libraries (sawIntuitiveResearchKitGripperCalibration
                            ${sawRobotIO1394_LIBRARIES})
-
     # link against cisst libraries (and dependencies)
     cisst_target_link_libraries (sawIntuitiveResearchKitGripperCalibration ${REQUIRED_CISST_LIBRARIES})
+
+    install (TARGETS sawIntuitiveResearchKitGripperCalibration
+             COMPONENT sawIntuitiveResearchKit-Applications
+             RUNTIME DESTINATION bin
+             LIBRARY DESTINATION lib
+             ARCHIVE DESTINATION lib)
 
   endif () # components found
 

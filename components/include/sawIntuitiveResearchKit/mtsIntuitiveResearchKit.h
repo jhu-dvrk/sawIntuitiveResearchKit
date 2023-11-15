@@ -28,6 +28,8 @@ namespace mtsIntuitiveResearchKit {
     const std::string DefaultInstallationDirectory = "/usr/share/sawIntuitiveResearchKit/share";
     const std::string FireWireProtocol = "sequential-read-broadcast-write";
 
+    const std::string crtk_version = "1.0.0";
+
     const double PeriodDelay = 0.06 * cmn_ms; // fixed delay
     const double IOPeriod = cmnHzToPeriod(1500.0) - PeriodDelay;
     const double ArmPeriod = cmnHzToPeriod(1500.0) - PeriodDelay;
@@ -51,6 +53,7 @@ namespace mtsIntuitiveResearchKit {
     namespace PSM {
         // distance in joint space for insertion
         const double EngageDepthCannula = 25.0 * cmn_mm; // approximative depth from cannula tip to RCM
+        const double EngageDepthCannulaSnake = 27.0 * cmn_mm; // for snake like instruments (5mm)
 
         // distance for RCM in cartesian space for first joint at end of instrument's shaft
         const double SafeDistanceFromRCM = 45.0 * cmn_mm;
@@ -59,6 +62,9 @@ namespace mtsIntuitiveResearchKit {
 
         // range of motion used for 4 last actuators to engage the sterile adapter
         const double AdapterEngageRange = 171.0 * cmnPI_180;
+
+        // maximum range for last 4 actuators when no tool is present
+        const double AdapterActuatorLimit = 172.0 * cmnPI_180;
 
         // disk max torque for engage procedures
         const double DiskMaxTorque = 0.343642;
@@ -89,6 +95,21 @@ namespace mtsIntuitiveResearchKit {
         const double JawRateBackFromClutch =  0.2 * cmnPI * cmn_s; // 36.0 d/s
         const double ToleranceBackFromClutch =  2.0 * cmnPI_180; // in radians
     }
+
+    // setup logger settings for the dVRK, turn on logs for some
+    // classes and create a new log per run with timestamp
+    class Logger {
+    public:
+        Logger(void);
+        inline ~Logger() {
+            if (m_log_file_stream) {
+                Stop();
+            }
+        }
+        void Stop(void);
+    private:
+        std::ofstream * m_log_file_stream;
+    };
 };
 
 #endif // _mtsIntuitiveResearchKitArm_h
