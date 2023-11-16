@@ -1,6 +1,45 @@
 Change log
 ==========
 
+2.2.0 (2023-11-30)
+==================
+
+* API changes:
+  * Configuration files specific to each system/group shouldn't be stored in `share` directory anymore.  We created https://github.com/dvrk-config to host repositories of configuration files.  e.g. for JHU https://github.com/dvrk-config/dvrk_config_jhu
+  * More CRTK and snake_case renaming
+  * PID config file is now using JSON, see sawControllers CHANGELOG
+* Deprecated features:
+  * Ubuntu 16.04 is not supported anymore
+  * Ubuntu 18.04 requires using clang as compiler (see documentation)
+  * Matlab based configuration generator.  Use `dvrk-config-generator.py` instead
+  * `base-frame` for SUJ, wasn't used
+* New features:
+  * Support for ROS2 and ROS1 on Ubuntu 20.04 (Galactic/Noetic) and ROS2 on Ubuntu 22.04 (Humble)
+  * Initial support for Si PSMs and ECM
+    * IO, PID and kinematics and tool detection working, missing gravity compensation
+    * New potentiometer calibration program specific to Si arms
+    * Added support for Si SUJ, calibration remains tricky
+  * SUJ:
+    * Refactor of SUJ Classic code
+    * Added Fixed SUJ for groups using custom frame to mount their PSMs and ECM
+    * Option to set any arm as reference arm.  By default all arm cartesian poses are wrt ECM but this can be changed to any PSM for groups using PSM-held camera
+  * New ROS features:
+    * Publisher `arm/local/measured_cv`
+    * Services `arm/forward_kinematics` and `arm/inverse_kinematics`
+    * Add `ral` (ROS Abstraction Layer) for CRTK Python client so Python scripts can be used with either ROS1 or ROS2  
+  * Better PID control using actuator space (was using joint space)
+  * New sawRobotIO1394 config generator (Python based), also generates a simple arm and console JSON configuration file
+  * More instrument definitions
+  * Added `dvrk-remove-log.py` to cleanup old cisstLog files
+  * CMake:
+    * Updated install targets and debian packages generation
+    * Works with ROS2/colcon
+* Bug fixes:
+  * daVinci head sensor: fixed bit Id so all four sensors are used
+  * Engage procedures are stopped when adapter/instrument is removed
+  * Fixed some transitions for PSM jaw control (`move` to/from `servo`)
+  * Fixed emulate adapter/tool
+
 2.1.0 (2021-08-11)
 ==================
 
