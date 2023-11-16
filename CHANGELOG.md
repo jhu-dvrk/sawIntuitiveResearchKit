@@ -1,6 +1,60 @@
 Change log
 ==========
 
+2.2.0 (2023-11-30)
+==================
+
+* API changes:
+  * Configuration files specific to each system/group shouldn't be stored in `share` directory anymore.  We created https://github.com/dvrk-config to host repositories of configuration files.  e.g. for JHU https://github.com/dvrk-config/dvrk_config_jhu
+  * More CRTK and snake_case renaming
+  * PID config file is now using JSON
+* Deprecated features:
+  * Ubuntu 16.04 is not supported anymore
+  * Ubuntu 18.04 requires using clang as compiler (see documentation)
+  * Matlab based configuration generator.  Use `dvrk-config-generator.py` instead
+  * `base-frame` for SUJ, wasn't used
+  * `rotation` configuration parameter for PSM teleoperation, Use the `base-frame` in console JSON configuration file instead.
+  * `mainQtArm` application, should use `sawIntuitiveResearchKitQtConsole` instead
+* New features:
+  * Support for ROS2 and ROS1 on Ubuntu 20.04 (Galactic/Noetic) and ROS2 on Ubuntu 22.04 (Humble)
+  * Support for Si PSMs and ECM
+    * IO, PID and kinematics and tool detection working, missing gravity compensation
+    * New potentiometer calibration program specific to Si arms
+    * Added support for Si SUJ, calibration remains tricky
+  * Support for new Classic controllers with a single FPGAv3 (DQLA vs QLA1)
+  * Control:
+    * PID (see also sawControllers CHANGELOG):
+      * Control using actuator space (was using joint space)
+      * Removed non-linear gains, fixed deadband transitions
+      * Use reference velocity
+    * PSM teleoperation:
+      * Use MTM pose and twist to control PSM, PSM PID now uses reference actuator positions and velocities
+  * SUJ:
+    * Refactor of SUJ Classic code
+    * Added Fixed SUJ for groups using custom frame to mount their PSMs and ECM
+    * Option to set any arm as reference arm.  By default all arm cartesian poses are wrt ECM but this can be changed to any PSM for groups using PSM-held camera
+  * New ROS features:
+    * Publisher `arm/local/measured_cv`
+    * Publisher `arm/gravity_compensation/setpoint_js` provides torques used for gravity compensation
+    * Services `arm/forward_kinematics` and `arm/inverse_kinematics`
+    * Publisher `arm/crtk_version` (i.e. 1.1.0)
+    * Subscribers `arm/free` and `arm/hold`
+    * Subscriber `arm/pid_feed_forward/servo_jf` to allow user to add their own feed forward
+    * Subscriber `teleop_PSM/following/mtm/body/servo_cf` to add haptic only when teleop is active
+    * Add `ral` (ROS Abstraction Layer) for CRTK Python client so Python scripts can be used with either ROS1 or ROS2  
+  * New sawRobotIO1394 config generator (Python based), also generates a simple arm and console JSON configuration file
+  * More instrument definitions
+  * Added `dvrk-sd-card-updater.py` to update firmwares for SD cards using in new controllers (Classic with DQLA/FPGAv3 and Si with dRA1/FPGAv3) and Si ESPM 
+  * Added `dvrk-remove-log.py` to cleanup old cisstLog files
+  * CMake:
+    * Updated install targets and debian packages generation
+    * Works with ROS2/colcon
+* Bug fixes:
+  * daVinci head sensor: fixed bit Id so all four sensors are used
+  * Engage procedures are stopped when adapter/instrument is removed
+  * Fixed some transitions for PSM jaw control (`move` to/from `servo`)
+  * Fixed emulate adapter/tool
+
 2.1.0 (2021-08-11)
 ==================
 
