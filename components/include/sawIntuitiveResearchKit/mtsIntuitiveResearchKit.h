@@ -28,7 +28,7 @@ namespace mtsIntuitiveResearchKit {
     const std::string DefaultInstallationDirectory = "/usr/share/sawIntuitiveResearchKit/share";
     const std::string FireWireProtocol = "sequential-read-broadcast-write";
 
-    const std::string crtk_version = "1.0.0";
+    const std::string crtk_version = "1.1.0";
 
     const double PeriodDelay = 0.06 * cmn_ms; // fixed delay
     const double IOPeriod = cmnHzToPeriod(1500.0) - PeriodDelay;
