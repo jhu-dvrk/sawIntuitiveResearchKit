@@ -1,7 +1,7 @@
 Change log
 ==========
 
-2.2.0 (2023-11-30)
+2.2.0 (2023-11-xx)
 ==================
 
 * API changes:
@@ -41,10 +41,10 @@ Change log
     * Subscribers `arm/free` and `arm/hold`
     * Subscriber `arm/pid_feed_forward/servo_jf` to allow user to add their own feed forward
     * Subscriber `teleop_PSM/following/mtm/body/servo_cf` to add haptic only when teleop is active
-    * Add `ral` (ROS Abstraction Layer) for CRTK Python client so Python scripts can be used with either ROS1 or ROS2  
+    * Add `ral` (ROS Abstraction Layer) for CRTK Python client so Python scripts can be used with either ROS1 or ROS2
   * New sawRobotIO1394 config generator (Python based), also generates a simple arm and console JSON configuration file
   * More instrument definitions
-  * Added `dvrk-sd-card-updater.py` to update firmwares for SD cards using in new controllers (Classic with DQLA/FPGAv3 and Si with dRA1/FPGAv3) and Si ESPM 
+  * Added `dvrk-sd-card-updater.py` to update firmwares for SD cards using in new controllers (Classic with DQLA/FPGAv3 and Si with dRA1/FPGAv3) and Si ESPM
   * Added `dvrk-remove-log.py` to cleanup old cisstLog files
   * CMake:
     * Updated install targets and debian packages generation

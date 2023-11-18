@@ -1223,12 +1223,12 @@ def generateArmConfig(robotTypeName, hardwareVersionName, serialNumber, generati
             f.write('    // , "tool-detection": "MANUAL"\n')
             f.write('    // , "tool-detection": "FIXED"\n')
             f.write('    , "tool-detection": "AUTOMATIC"\n')
-        if robotTypeName.startswith("ECM"):
+        elif robotTypeName.startswith("ECM"):
             f.write('    // , "endoscope": "SD_STRAIGHT"\n')
             f.write('    // , "endoscope": "SD_UP"\n')
             f.write('    // , "endoscope": "SD_DOWN"\n')
             f.write('    , "endoscope": "HD_STRAIGHT"\n')
-        if robotTypeName.startswith("MTM"):
+        elif robotTypeName.startswith("MTM"):
             f.write('    // , "gravity-compensation": "gc-' + robotTypeName + '-' + serialNumber + '.json"\n')
         f.write("}\n")
 
@@ -1305,7 +1305,7 @@ def main():
     parser.add_argument(
         "-s",
         "--serial",
-        type = int,
+        type = str,
         help = "serial number (for Si arms)",
         default = None
     )
