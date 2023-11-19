@@ -20,7 +20,7 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstParameterTypes)
 
 # find cisst and make sure the required libraries have been compiled
-find_package (cisst 1.1.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.2.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -34,7 +34,7 @@ if (cisst_FOUND_AS_REQUIRED)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
-  find_package (sawRobotIO1394 2.1.0 REQUIRED)
+  find_package (sawRobotIO1394 2.2.0 REQUIRED)
 
   if (sawRobotIO1394_FOUND)
 

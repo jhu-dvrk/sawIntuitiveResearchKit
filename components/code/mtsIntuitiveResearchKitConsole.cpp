@@ -1239,7 +1239,7 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
     message.append(" started, dVRK ");
     message.append(sawIntuitiveResearchKit_VERSION);
     message.append(" / cisst ");
-    message.append(CISST_VERSION);
+    message.append(cisst_VERSION);
     mInterface->SendStatus(message);
 
     // emit events for active PSM teleop pairs
