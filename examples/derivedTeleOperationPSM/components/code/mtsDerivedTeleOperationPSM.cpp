@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2017-08-09
 
-  (C) Copyright 2017-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2017-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -19,9 +19,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <mtsDerivedTeleOperationPSM.h>
 
 #include <cisstMultiTask/mtsInterfaceRequired.h>
-#include <cisstParameterTypes/prmForceCartesianGet.h>
-#include <cisstParameterTypes/prmVelocityCartesianGet.h>
-#include <cisstParameterTypes/prmForceCartesianSet.h>
 
 #include <cmath>
 
@@ -42,10 +39,11 @@ mtsDerivedTeleOperationPSM::mtsDerivedTeleOperationPSM(const mtsTaskPeriodicCons
 
 // Configure is a virtual method, we can redefine it and have our own
 // configuration
-void mtsDerivedTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filename))
+void mtsDerivedTeleOperationPSM::Configure(const std::string & filename)
 {
-    // Call the base class configure, it will do most of the work
-    BaseType::Configure();
+    // Call the base class Configure so we don't loose the
+    // configuration part of the base class
+    BaseType::Configure(filename);
 
     // We want to replace the method called when the MTM is actually
     // driving the PSM
@@ -57,66 +55,66 @@ void mtsDerivedTeleOperationPSM::Configure(const std::string & CMN_UNUSED(filena
                                 this);
 
     // We need to add a method to retrieve estimated wrench from the
-    // PSM
+    // PSM so we first try to retrieve the existing interfaces
     mtsInterfaceRequired * interfacePSM = GetInterfaceRequired("PSM");
     // That interface should exist, abort otherwise
     CMN_ASSERT(interfacePSM);
-    // Add a required function
+    // Add some required functions
     interfacePSM->AddFunction("body/measured_cf",
-                              PSMGetWrenchBody);
+                              PSMExtra.body_measured_cf);
     interfacePSM->AddFunction("body/set_cf_orientation_absolute",
-                              PSMSetWrenchBodyOrientationAbsolute);
+                              PSMExtra.body_set_cf_orientation_absolute);
     interfacePSM->AddFunction("measured_cv",
-                              PSMGetVelocityCartesian);
+                              PSMExtra.measured_cv);
 
     // Same for MTM
     mtsInterfaceRequired * interfaceMTM = GetInterfaceRequired("MTM");
     CMN_ASSERT(interfaceMTM);
     interfaceMTM->AddFunction("body/set_cf_orientation_absolute",
-                              MTMSetWrenchBodyOrientationAbsolute,
+                              MTMExtra.body_set_cf_orientation_absolute,
                               MTS_OPTIONAL);
 }
 
 void mtsDerivedTeleOperationPSM::EnterEnabled(void)
 {
+    // Always remember to call the base class method to make sure we
+    // don't loose any of the existing functionalities
     BaseType::EnterEnabled();
-    PSMSetWrenchBodyOrientationAbsolute(true);
-    // function body/set_cf_orientation_absolute is optional on MTM, only call if available
-    if (MTMSetWrenchBodyOrientationAbsolute.IsValid()) {
-        MTMSetWrenchBodyOrientationAbsolute(true);
+
+    // Then perform actions specific to the derived behavior
+    PSMExtra.body_set_cf_orientation_absolute(true);
+    // Function body/set_cf_orientation_absolute is optional on MTM,
+    // only call if available
+    if (MTMExtra.body_set_cf_orientation_absolute.IsValid()) {
+        MTMExtra.body_set_cf_orientation_absolute(true);
     }
 }
 
 void mtsDerivedTeleOperationPSM::RunEnabled(void)
 {
-    // We call the base class method for enabled state, it'll handle most of the work
+    // We call the base class method for enabled state, it'll handle
+    // most of the work, i.e. position control
     BaseType::RunEnabled();
 
     // Only if the PSM is following
     if (m_following) {
-        prmForceCartesianGet wrenchPSM;
-        prmVelocityCartesianGet velocityPSM;
-        prmForceCartesianSet wrenchMTM;
-
         // Get estimated wrench and velocity from PSM
-        PSMGetWrenchBody(wrenchPSM);
-        PSMGetVelocityCartesian(velocityPSM);
+        PSMExtra.body_measured_cf(PSMExtra.m_measured_cf);
+        PSMExtra.measured_cv(PSMExtra.m_measured_cv);
 
         // Extract only position data, ignore orientation
-        const vct3 velocity = velocityPSM.VelocityLinear();
-        vct3 force = wrenchPSM.Force().Ref<3>(0);
+        vct3 force = PSMExtra.m_measured_cf.Force().Ref<3>(0);
+        const vct3 velocity = PSMExtra.m_measured_cv.VelocityLinear();
 
         // Scale force based on velocity, i.e. at high velocity apply less forces
         for (size_t i = 0; i < 3; i++) {
             double velocityDumping = 1.0 / (20.0 * std::fabs(velocity[i]) + 1.0);
             // Compute force in opposite direction and scale back on master
-            force[i] = -0.3 * velocityDumping * force[i];
+            force[i] = -0.25 * velocityDumping * force[i];
         }
 
-        // Re-orient based on rotation between MTM and PSM
-        force = m_registration_rotation.Inverse() * force;
         // Set wrench for MTM
-        wrenchMTM.Force().Ref<3>(0) = force;
-        mMTM.servo_cf_body(wrenchMTM);
+        MTMExtra.m_setpoint_cf.Force().Ref<3>(0) = force;
+        mMTM.body_servo_cf(MTMExtra.m_setpoint_cf);
     }
 }

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-07-13
 
-  (C) Copyright 2015-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -129,14 +129,11 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED:
             // PID widget
             size_t numberOfJoints;
-            if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM) ||
-                (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED)) {
+            if (armIter->second->native_or_derived_psm()) {
                 numberOfJoints = 7;
-            } else if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM) ||
-                       (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED)) {
+            } else if (armIter->second->native_or_derived_mtm()) {
                 numberOfJoints = 7;
-            } else if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM) ||
-                       (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED)) {
+            } else if (armIter->second->native_or_derived_ecm()) {
                 numberOfJoints = 4;
             } else {
                 numberOfJoints = 0; // can't happen but prevents compiler warning
@@ -149,14 +146,11 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             pidTabWidget->addTab(pidGUI, (name + " PID").c_str());
 
             // Arm widget
-            if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM)
-                || (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED)) {
+            if (armIter->second->native_or_derived_psm()) {
                 armGUI = new mtsIntuitiveResearchKitPSMQtWidget(name + "-GUI");
-            } else if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM)
-                       || (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED)) {
+            } else if (armIter->second->native_or_derived_mtm()) {
                 armGUI = new mtsIntuitiveResearchKitMTMQtWidget(name + "-GUI");
-            } else if ((armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM)
-                       || (armIter->second->m_type == mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED)) {
+            } else if (armIter->second->native_or_derived_ecm()) {
                 armGUI = new mtsIntuitiveResearchKitECMQtWidget(name + "-GUI");
             } else {
                 armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");
@@ -182,7 +176,9 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
 
             break;
 
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ_Classic:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ_Si:
+        case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ_Fixed:
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1-SUJ");
             componentManager->AddComponent(sujGUI);

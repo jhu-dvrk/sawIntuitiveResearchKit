@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2013-2019 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -52,9 +52,6 @@ if (cisst_FOUND_AS_REQUIRED)
                        ${CMAKE_CURRENT_SOURCE_DIR}/logo.qrc)
   endif (CISST_HAS_QT4)
 
-  # make sure the new library is known by the parent folder to add to the config file
-  set (sawIntuitiveResearchKitQt_LIBRARIES sawIntuitiveResearchKitQt PARENT_SCOPE)
-
   add_library (sawIntuitiveResearchKitQt
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQt.h
                mtsIntuitiveResearchKitConsoleQt.cpp
@@ -81,7 +78,9 @@ if (cisst_FOUND_AS_REQUIRED)
                ${sawIntuitiveResearchKit_QT_WRAP_CPP}
                ${sawIntuitiveResearchKit_QT_RESOURCES}
                )
-  set_property (TARGET sawIntuitiveResearchKitQt PROPERTY FOLDER "sawIntuitiveResearchKit")
+  set_target_properties (sawIntuitiveResearchKitQt PROPERTIES
+                         VERSION ${sawIntuitiveResearchKit_VERSION}
+                         FOLDER "sawIntuitiveResearchKit")
   cisst_target_link_libraries (sawIntuitiveResearchKitQt ${REQUIRED_CISST_LIBRARIES})
   target_link_libraries (sawIntuitiveResearchKitQt
                          ${sawIntuitiveResearchKit_LIBRARIES})
@@ -89,7 +88,7 @@ if (cisst_FOUND_AS_REQUIRED)
   # make sure the new library is known by the parent folder to add to the config file
   set (sawIntuitiveResearchKitQt_LIBRARIES sawIntuitiveResearchKitQt PARENT_SCOPE)
 
-  install (TARGETS sawIntuitiveResearchKitQt
+  install (TARGETS sawIntuitiveResearchKitQt COMPONENT sawIntuitiveResearchKit-Qt
            RUNTIME DESTINATION bin
            LIBRARY DESTINATION lib
            ARCHIVE DESTINATION lib)

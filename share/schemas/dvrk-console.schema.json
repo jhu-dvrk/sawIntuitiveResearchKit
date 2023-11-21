@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-console.schema.json",
-    "title": "dVRK console 2.1",
+    "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.2/dvrk-console.schema.json",
+    "title": "dVRK console 2.2",
     "type": "object",
     "description": "Configuration file format for the dVRK console.  See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).<ul><li>This format is used by the application `sawIntuitiveResearchKitQtConsoleJSON` and the ROS application `dvrk_robot dvrk_console_json`<li>For details of implementation, see code under `sawIntuitiveResearchKit/components/code/mtsIntuitiveResearchKitConsole.cpp`<li>[Schema file](dvrk-console.schema.json)</ul>",
     "additionalProperties": false,
@@ -179,8 +179,8 @@
                         "enum": ["MTM", "PSM", "ECM",
                                  "MTM_DERIVED", "PSM_DERIVED", "ECM_DERIVED",
                                  "MTM_GENERIC", "PSM_GENERIC", "ECM_GENERIC",
-                                 "PSM_SOCKET", "SUJ", "FOCUS_CONTROLLER"],
-                        "description": "Type of arm.  This determines which class should be used to instantiate the arm.<ul><li>`MTM`, `PSM` and `ECM` correspond to the default classes provided for the dVRK arms.  These are the most common ones.<li>`xxx_DERIVED` corresponds to classes derived from the base classes provided in the dVRK stack.  Users can derive the base arm classes to alter their behavior.  In this case, the console knows that the derived class has all the features from the base class so the connections to the PID, IO, Qt widget and ROS bridge are the same as those for the base class.<li>`xxx_GENERIC` corresponds to classes not derived from the dVRK base classes.  The console will not create any IO, PID components for this arm.  The console will use a generic Qt Widget and add ROS topics if and only if the provided interface has CRTK compatible commands and events.  Examples include Force Dimension devices ([sawForceDimensionSDK](https://github.com/jhu-saw/sawForceDimensionSDK)) and the Sensable Omni ([sawSensablePhantom](https://github.com/jhu-saw/sawSensablePhantom)).<li>`PSM_SOCKET` is a special case used for simple tele-operation between two processes (likely between two computers).  One dVRK console will have to instantiate a PSM server and the other a PSM client.<li>`SUJ` is for the [Setup Joints](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/SUJ)</ul>For `xxx_DERIVED` and `xxx_GENERIC`, the console has no way to automatically create the component, so the user has to provide the proper `component-manager` configuration to first create the component for the arm.",
+                                 "PSM_SOCKET", "SUJ_Classic", "SUJ_Si", "SUJ_Fixed", "FOCUS_CONTROLLER"],
+                        "description": "Type of arm.  This determines which class should be used to instantiate the arm.<ul><li>`MTM`, `PSM` and `ECM` correspond to the default classes provided for the dVRK arms.  These are the most common ones.<li>`xxx_DERIVED` corresponds to classes derived from the base classes provided in the dVRK stack.  Users can derive the base arm classes to alter their behavior.  In this case, the console knows that the derived class has all the features from the base class so the connections to the PID, IO, Qt widget and ROS bridge are the same as those for the base class.<li>`xxx_GENERIC` corresponds to classes not derived from the dVRK base classes.  The console will not create any IO, PID components for this arm.  The console will use a generic Qt Widget and add ROS topics if and only if the provided interface has CRTK compatible commands and events.  Examples include Force Dimension devices ([sawForceDimensionSDK](https://github.com/jhu-saw/sawForceDimensionSDK)) and the Sensable Omni ([sawSensablePhantom](https://github.com/jhu-saw/sawSensablePhantom)).<li>`PSM_SOCKET` is a special case used for simple tele-operation between two processes (likely between two computers).  One dVRK console will have to instantiate a PSM server and the other a PSM client.<li>`SUJ_Classic` and `SUJ_Si` are for the clinical systems [Setup Joints](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/SUJ)<li>`SUJ_Fixed` is for arms on a custom mount</ul>For `xxx_DERIVED` and `xxx_GENERIC`, the console has no way to automatically create the component, so the user has to provide the proper `component-manager` configuration to first create the component for the arm.",
                         "examples": [
                             {
                                 "arms":
@@ -250,7 +250,7 @@
                             {
                                 "base-frame": {
                                     "component": "ECM",
-                                    "interface": "Robot"
+                                    "interface": "Arm"
                                 }
                             }
                         ],
@@ -419,7 +419,7 @@
                                 "psm": "PSM1",
                                 "psm-base-frame": {
                                     "component": "ECM",
-                                    "interface": "Robot"
+                                    "interface": "Arm"
                                 }
                             }
                         ]

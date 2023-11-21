@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -34,7 +34,12 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
-#include <cisstParameterTypes/prmCartesianImpedanceGains.h>
+#include <cisstParameterTypes/prmCartesianImpedance.h>
+#include <cisstParameterTypes/prmActuatorJointCoupling.h>
+#include <cisstParameterTypes/prmInverseKinematicsRequest.h>
+#include <cisstParameterTypes/prmInverseKinematicsResponse.h>
+#include <cisstParameterTypes/prmForwardKinematicsRequest.h>
+#include <cisstParameterTypes/prmForwardKinematicsResponse.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
@@ -65,9 +70,17 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     void Run(void) override;
     void Cleanup(void) override;
 
+    inline void crtk_version(std::string & placeholder) const {
+        placeholder = mtsIntuitiveResearchKit::crtk_version;
+    }
     virtual void set_simulated(void);
     virtual inline void set_calibration_mode(const bool mode) {
         m_calibration_mode = mode;
+    }
+
+    typedef enum {GENERATION_UNDEFINED, GENERATION_Classic, GENERATION_Si} GenerationType;
+    virtual inline GenerationType generation(void) const {
+        return m_generation;
     }
 
  protected:
@@ -76,7 +89,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     typedef enum {WRENCH_UNDEFINED, WRENCH_SPATIAL, WRENCH_BODY} WrenchType;
 
     /*! Load m_base_frame and DH parameters from JSON */
-    void ConfigureDH(const Json::Value & jsonConfig, const std::string & filename);
+    void ConfigureDH(const Json::Value & jsonConfig, const std::string & filename, const bool ignoreCoupling = false);
     void ConfigureDH(const std::string & filename);
 
     /*! Arm specific configuration for derived classes PSM,
@@ -87,13 +100,18 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     inline virtual void PostConfigure(const Json::Value & CMN_UNUSED(jsonConfig),
                                       const cmnPath & CMN_UNUSED(configPath),
                                       const std::string & CMN_UNUSED(filename)) {};
+    inline virtual void set_generation(const GenerationType generation) {
+        m_generation = generation;
+    }
 
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
     virtual void CreateManipulator(void);
     virtual void Init(void);
 
-    void UpdateConfigurationJointKinematic(void);
+    virtual void update_configuration_js(void);
+    void actuator_to_joint_position(const vctDoubleVec & actuator, vctDoubleVec & joint) const;
+
     void ResizeKinematicsData(void);
 
     /*! Verify that the state transition is possible, initialize
@@ -106,12 +124,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void state_command(const std::string & command);
 
     /*! Get data from the PID level based on current state. */
-    virtual void GetRobotData(void);
+    virtual void get_robot_data(void);
     virtual void UpdateStateJointKinematics(void);
     virtual void ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID);
-
-    // state machine
-    std::string m_resume_current_state, m_resume_desired_state;
 
     void UpdateOperatingStateAndBusy(const prmOperatingState::StateType & state,
                                      const bool isBusy);
@@ -149,6 +164,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void EnterPaused(void);
     virtual void EnterFault(void);
 
+    virtual void clip_jp(vctDoubleVec & jp) const;
+
     // Arm state machine
     mtsStateMachine mArmState;
     // Just to have read commands to retrieve states
@@ -156,31 +173,36 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     mtsStdString mStateTableStateCurrent;
     mtsStdString mStateTableStateDesired;
     prmOperatingState m_operating_state; // crtk operating state
+    // state machine
+    std::string m_resume_current_state, m_resume_desired_state;
 
     // state table for configuration parameters
     mtsStateTable mStateTableConfiguration;
 
     /*! Wrapper to convert vector of joint values to prmPositionJointSet and send to PID */
-    virtual void servo_jp_internal(const vctDoubleVec & newPosition);
-    virtual void servo_jf_internal(const vctDoubleVec & newEffort);
+    virtual void servo_jp_internal(const vctDoubleVec & jp,
+                                   const vctDoubleVec & jv);
+    virtual void servo_jf_internal(const vctDoubleVec & jf);
     inline virtual void update_feed_forward(vctDoubleVec & CMN_UNUSED(feedForward)) {};
 
     /*! Methods used for commands */
-    virtual void Freeze(void);
-    virtual void servo_jp(const prmPositionJointSet & newPosition);
+    virtual void hold(void);
+    virtual void free(void);
+    virtual void servo_jp(const prmPositionJointSet & jp);
     virtual void servo_jr(const prmPositionJointSet & difference);
-    virtual void move_jp(const prmPositionJointSet & newPosition);
-    virtual void move_jr(const prmPositionJointSet & newPosition);
-    virtual void servo_cp(const prmPositionCartesianSet & newPosition);
+    virtual void move_jp(const prmPositionJointSet & jp);
+    virtual void move_jr(const prmPositionJointSet & jp);
+    virtual void servo_cp(const prmPositionCartesianSet & cp);
     virtual void servo_cr(const prmPositionCartesianSet & difference);
-    virtual void move_cp(const prmPositionCartesianSet & newPosition);
-    virtual void servo_jf(const prmForceTorqueJointSet & newEffort);
-    virtual void spatial_servo_cf(const prmForceCartesianSet & newForce);
-    virtual void body_servo_cf(const prmForceCartesianSet & newForce);
+    virtual void move_cp(const prmPositionCartesianSet & cp);
+    virtual void servo_jf(const prmForceTorqueJointSet & jf);
+    virtual void pid_feed_forward_servo_jf(const prmForceTorqueJointSet & jf);
+    virtual void spatial_servo_cf(const prmForceCartesianSet & cf);
+    virtual void body_servo_cf(const prmForceCartesianSet & cf);
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
     virtual void body_set_cf_orientation_absolute(const bool & absolute);
     virtual void use_gravity_compensation(const bool & gravityCompensation);
-    virtual void set_cartesian_impedance_gains(const prmCartesianImpedanceGains & gains);
+    virtual void servo_ci(const prmCartesianImpedance & gains);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
     virtual void set_base_frame(const prmPositionCartesianSet & newBaseFrame);
@@ -195,14 +217,14 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     void BiasEncoderEventHandler(const int & nbSamples);
 
     /*! Configuration methods specific to derived classes. */
-    virtual size_t NumberOfJoints(void) const = 0;         // used PID: ECM 4, PSM 7, MTM 7
-    virtual size_t NumberOfJointsKinematics(void) const = 0; // ECM 4, MTM 7, PSM 6 or 8 (snake like tools)
-    virtual size_t NumberOfBrakes(void) const = 0;         // ECM 3, PSM 0, MTM 0
-    inline bool HasBrakes(void) const {
-        return (NumberOfBrakes() > 0);
+    virtual size_t number_of_joints(void) const = 0;         // used PID: ECM 4, PSM 7, MTM 7
+    virtual size_t number_of_joints_kinematics(void) const = 0; // ECM 4, MTM 7, PSM 6 or 8 (snake like tools)
+    virtual size_t number_of_brakes(void) const = 0;         // ECM 3, PSM 0, MTM 0
+    inline bool has_brakes(void) const {
+        return (number_of_brakes() > 0);
     }
 
-    inline virtual bool UsePIDTrackingError(void) const {
+    inline virtual bool use_PID_tracking_error(void) const {
         return true;
     }
 
@@ -212,40 +234,43 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     /*! Inverse kinematics must be redefined for each arm type. */
     virtual robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                                    const vctFrm4x4 & cartesianGoal) = 0;
+                                                    const vctFrm4x4 & cartesianGoal) const = 0;
+
+    /*! Alternate signature for ROS services. */
+    void inverse_kinematics(const prmInverseKinematicsRequest & request,
+                            prmInverseKinematicsResponse & response) const ;
 
     /*! Forward kinematic queries using joint values provided by user.
       The number of joints (size of the vector) determines up to which
       ling the forward kinematic is computed.  If the number of joint
-      is invalid, i.e. greater than the number of links, the result is
-      identity. */
+      is invalid, i.e. greater than the number of links, the
+      response.result is set to false. */
     //@{{
-    virtual void query_cp(const vctDoubleVec & jointValues,
-                          vctFrm4x4 & pose) const;
-    virtual void local_query_cp(const vctDoubleVec & jointValues,
-                                vctFrm4x4 & pose) const;
+    virtual void forward_kinematics(const prmForwardKinematicsRequest & request,
+                                    prmForwardKinematicsResponse & response) const;
+    virtual void local_forward_kinematics(const prmForwardKinematicsRequest & request,
+                                          prmForwardKinematicsResponse & response) const;
     //@}
 
     /*! Each arm has a different homing procedure. */
-    virtual bool IsHomed(void) const = 0;
-    virtual void UnHome(void) = 0;
-    virtual bool IsJointReady(void) const = 0;
-    virtual bool IsCartesianReady(void) const = 0;
+    virtual bool is_homed(void) const = 0;
+    virtual void unhome(void) = 0;
+    virtual bool is_joint_ready(void) const = 0;
+    virtual bool is_cartesian_ready(void) const = 0;
 
     /*! Each arm must provide a way to check if the arm is ready to be
       used in cartesian mode.  PSM and ECM need to make sure the
       tool or endoscope is away from the RCM point. */
-    virtual bool IsSafeForCartesianControl(void) const = 0;
+    virtual bool is_safe_for_cartesian_control(void) const = 0;
 
     /*! Counter to total number of consecutive times the user is
       trying to switch to cartesian control space when it's not
       safe.  Used to throttle error messages. */
-    size_t mSafeForCartesianControlCounter;
+    size_t m_safe_for_cartesian_control_counter = 0;
 
     // Interface to PID component
     mtsInterfaceRequired * PIDInterface;
     struct {
-        mtsFunctionWrite SetCoupling;
         mtsFunctionWrite Enable;
         mtsFunctionWrite EnableJoints;
         mtsFunctionRead  Enabled;
@@ -253,9 +278,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionRead  setpoint_js;
         mtsFunctionWrite servo_jp;
         mtsFunctionWrite feed_forward_jf;
-        mtsFunctionWrite SetCheckPositionLimit;
-        mtsFunctionRead  configuration_js;
-        mtsFunctionWrite configure_js;
+        mtsFunctionWrite enforce_position_limits;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite servo_jf;
         mtsFunctionWrite EnableTrackingError;
@@ -290,12 +313,14 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionWrite operating_state;
     } state_events;
 
-    robManipulator * Manipulator;
+    robManipulator * Manipulator = nullptr;
     std::string mConfigurationFile;
+    bool m_has_coupling = false;
+    prmActuatorJointCoupling m_coupling;
 
     // cache cartesian goal position and increment
-    bool m_new_pid_goal;
-    prmPositionCartesianSet CartesianSetParam;
+    bool m_pid_new_goal = false;
+    prmPositionCartesianSet m_servo_cp;
     vctFrm3 mCartesianRelative;
 
     // internal kinematics
@@ -314,39 +339,47 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmPositionJointSet m_servo_jp_param;
     vctDoubleVec m_servo_jp;
     vctDoubleVec m_servo_jv;
-    prmForceTorqueJointSet m_feed_forward_jf;
-    prmStateJoint m_pid_measured_js, m_pid_setpoint_js, m_kin_measured_js, m_kin_setpoint_js;
-    prmConfigurationJoint m_pid_configuration_js, m_kin_configuration_js;
+    prmForceTorqueJointSet m_pid_feed_forward_servo_jf;
+    prmStateJoint
+        m_pid_measured_js,
+        m_pid_setpoint_js,
+        m_kin_measured_js,
+        m_kin_setpoint_js,
+        m_gravity_compensation_setpoint_js;
+    prmConfigurationJoint m_configuration_js;
 
     // efforts
     vctDoubleMat m_body_jacobian, m_body_jacobian_transpose, m_spatial_jacobian, m_spatial_jacobian_transpose;
-    WrenchType m_cf_type;
-    prmForceCartesianSet m_cf_set;
-    bool m_body_cf_orientation_absolute;
+    WrenchType m_servo_cf_type;
+    prmForceCartesianSet m_servo_cf;
+    bool m_body_cf_orientation_absolute = false;
     prmForceTorqueJointSet
-        mTorqueSetParam, // number of joints PID, used in servo_jf_internal
-        mEffortJointSet; // number of joints for kinematics
-    vctDoubleVec mEffortJoint; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
+        m_servo_jf_param, // number of joints PID, used in servo_jf_internal
+        m_servo_jf; // number of joints for kinematics
+    vctDoubleVec m_servo_jf_vector; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
-    nmrPInverseDynamicData mJacobianPInverseData;
+    nmrPInverseDynamicData
+        m_jacobian_pinverse_data,
+        m_jacobian_transpose_pinverse_data;
     prmForceCartesianGet m_body_measured_cf, m_spatial_measured_cf;
 
     // cartesian impendance controller
     osaCartesianImpedanceController * mCartesianImpedanceController;
-    bool m_cartesian_impedance;
+    bool m_cartesian_impedance = false;
 
     // used by MTM only
-    bool m_effort_orientation_locked;
+    bool m_effort_orientation_locked = false;
     vctDoubleVec mEffortOrientationJoint;
     vctMatRot3 mEffortOrientation;
-    // gravity compensation
-    bool m_gravity_compensation;
-    virtual void control_add_gravity_compensation(vctDoubleVec & efforts);
-    // add custom efforts for derived classes
-    inline virtual void control_add_jf(vctDoubleVec & CMN_UNUSED(efforts)) {};
+    // use gravity compensation or not
+    bool m_gravity_compensation = false;
+    // compute effort for gravity compensation based on current state, called in get_robot_data
+    virtual void gravity_compensation(vctDoubleVec & efforts);
 
     // Velocities
-    prmVelocityCartesianGet m_measured_cv;
+    prmVelocityCartesianGet
+        m_local_measured_cv, m_measured_cv,
+        m_local_setpoint_cv, m_setpoint_cv;
     vctFrm4x4 CartesianPositionFrm;
 
     // Base frame
@@ -484,15 +517,18 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     bool m_encoders_biased_from_pots = false; // encoders biased from pots
     bool m_encoders_biased = false; // encoder might have to be biased on joint limits (MTM roll)
     bool m_re_home = false; // force re-biasing encoder even if values are found on FPGA
-    bool m_homing_goes_to_zero;
-    bool mHomingBiasEncoderRequested;
-    double mHomingTimer;
+    bool m_homing_goes_to_zero = false;
+    bool m_homing_bias_encoder_requested = false;
+    double m_homing_timer;
+
+    // generation
+    GenerationType m_generation = GENERATION_UNDEFINED;
 
     // flag to determine if this is connected to actual IO/hardware or simulated
-    bool m_simulated;
+    bool m_simulated = false;
 
     // flag to determine if the arm is running in calibration mode, i.e. turn off checks using potentiometers
-    bool m_calibration_mode;
+    bool m_calibration_mode = false;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitArm);

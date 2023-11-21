@@ -5,7 +5,7 @@ import shutil
 import sys
 import argparse
 import json
-from json_schema_for_humans.generate import generate_from_schema, GenerationConfiguration, copy_css_and_js_to_target
+from json_schema_for_humans.generate import generate_from_schema, generate_from_filename, GenerationConfiguration
 
 # parse arguments
 parser = argparse.ArgumentParser(description = 'generate-html')
@@ -49,6 +49,9 @@ config = GenerationConfiguration(copy_css = True,
                                  expand_buttons = True,
                                  collapse_long_descriptions = False)
 
+# dummy generate to get a copy of css and js
+generate_from_filename(schema_file_name = schema_files[0], result_file_name = 'dummy.html')
+
 for schema_file in schema_files:
   html = generate_from_schema(schema_file = schema_file, loaded_schemas = schema_store, config = config)
   # file name with version and without .schema.json
@@ -60,6 +63,5 @@ for schema_file in schema_files:
   shutil.copy(schema_file, args.version)
 
 # copy css and js files to directory with all files
-copy_css_and_js_to_target(config = config, result_file_path = args.version)
 shutil.copy('schema_doc.css', args.version)
 shutil.copy('schema_doc.min.js', args.version)

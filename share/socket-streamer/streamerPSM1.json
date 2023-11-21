@@ -2,7 +2,7 @@
 {
     "ip": "127.0.0.1",
     "port": "48051",
-    "data": [
+    "read-commands": [
         {
             "name": "measured_js",
             "type": "prmStateJoint"
@@ -12,5 +12,26 @@
             "name": "jaw/measured_js",
             "type": "prmStateJoint"
         }
+        ,
+        {
+            "name": "setpoint_cp",
+            "type": "prmPositionCartesianGet"
+        }
+        ,
+        {
+            "name": "jaw/setpoint_js",
+            "type": "prmStateJoint"
+        }
     ]
+    ,
+    "void-commands": ["hold"]
+    ,
+    "write-commands": [
+        {
+            "name": "servo_jp",
+            "type": "prmPositionJointSet"
+        }
+    ]
+    ,
+    "write-events": ["operating_state"]
 }

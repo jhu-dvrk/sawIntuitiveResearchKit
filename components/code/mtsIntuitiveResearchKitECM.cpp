@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -46,8 +46,38 @@ void mtsIntuitiveResearchKitECM::set_simulated(void)
     mtsIntuitiveResearchKitArm::set_simulated();
     // in simulation mode, we don't need clutch IO
     RemoveInterfaceRequired("ManipClutch");
+    // for Si systems, remove a few more interfaces
+    if (m_generation == GENERATION_Si) {
+        RemoveInterfaceRequired("SUJClutch");
+        RemoveInterfaceRequired("SUJClutch2");
+        RemoveInterfaceRequired("SUJBrake");
+    }
 }
 
+void mtsIntuitiveResearchKitECM::set_generation(const GenerationType generation)
+{
+    mtsIntuitiveResearchKitArm::set_generation(generation);
+    // for S/si, add SUJClutch interface
+    if ((generation == GENERATION_Si)
+        && !m_simulated) {
+        auto interfaceRequired = AddInterfaceRequired("SUJClutch");
+        if (interfaceRequired) {
+            interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitECM::EventHandlerSUJClutch, this, "Button");
+        }
+        interfaceRequired = AddInterfaceRequired("SUJClutch2");
+        if (interfaceRequired) {
+            interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitECM::EventHandlerSUJClutch, this, "Button");
+        }
+        interfaceRequired = AddInterfaceRequired("SUJBrake");
+        if (interfaceRequired) {
+            interfaceRequired->AddFunction("SetValue", SUJClutch.Brake);
+        }
+    } else {
+        if (GetInterfaceProvided("SUJClutch")) {
+            RemoveInterfaceRequired("SUJClutch");
+        }
+    }
+}
 
 void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
                                                const cmnPath & CMN_UNUSED(configPath),
@@ -70,25 +100,28 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
         exit(EXIT_FAILURE);
     }
 
-    // check that Rtw0 is not set
-    if (Manipulator->Rtw0 != vctFrm4x4::Identity()) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": you can't define the base-offset for the ECM, it is hard coded so gravity compensation works properly.  We always assume the ECM is mounted at 45 degrees! (from file \""
-                                 << filename << "\")" << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    // this is used for GC on classic systems only
+    if (m_generation == GENERATION_Classic) {
+        // check that Rtw0 is not set
+        if (Manipulator->Rtw0 != vctFrm4x4::Identity()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": you can't define the base-offset for the ECM, it is hard coded so gravity compensation works properly.  We always assume the ECM is mounted at 45 degrees! (from file \""
+                                     << filename << "\")" << std::endl;
+            exit(EXIT_FAILURE);
+        }
 
-    // 45 degrees rotation to make sure Z points up, this helps with
-    // cisstRobot::robManipulator gravity compensation
-    vctFrame4x4<double> Rt(vctMatRot3(1.0,            0.0,            0.0,
-                                      0.0,  sqrt(2.0)/2.0,  sqrt(2.0)/2.0,
-                                      0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
-                           vct3(0.0, 0.0, 0.0));
-    Manipulator->Rtw0 = Rt;
+        // 45 degrees rotation to make sure Z points up, this helps with
+        // cisstRobot::robManipulator gravity compensation
+        vctFrame4x4<double> Rt(vctMatRot3(1.0,            0.0,            0.0,
+                                          0.0,  sqrt(2.0)/2.0,  sqrt(2.0)/2.0,
+                                          0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
+                               vct3(0.0, 0.0, 0.0));
+        Manipulator->Rtw0 = Rt;
+    }
 }
 
 robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec & jointSet,
-                                                                    const vctFrm4x4 & cartesianGoal)
+                                                                    const vctFrm4x4 & cartesianGoal) const
 {
     // solve IK
     if (Manipulator->InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
@@ -127,9 +160,6 @@ void mtsIntuitiveResearchKitECM::Init(void)
 
     ToolOffset = 0;
 
-    // set gravity compensation by default
-    m_gravity_compensation = true;
-
     // state machine specific to ECM, see base class for other states
     mArmState.AddState("MANUAL");
 
@@ -162,7 +192,7 @@ void mtsIntuitiveResearchKitECM::Init(void)
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI / 180.0); // hard coded to 3 degrees
 
     // default PID tracking errors
-    PID.DefaultTrackingErrorTolerance.SetSize(NumberOfJoints());
+    PID.DefaultTrackingErrorTolerance.SetSize(number_of_joints());
     PID.DefaultTrackingErrorTolerance.SetAll(7.0 * cmnPI_180); // 7 degrees on angles
     PID.DefaultTrackingErrorTolerance.Element(2) = 10.0 * cmn_mm; // 10 mm
 
@@ -183,22 +213,22 @@ void mtsIntuitiveResearchKitECM::Init(void)
     }
 }
 
-bool mtsIntuitiveResearchKitECM::IsHomed(void) const
+bool mtsIntuitiveResearchKitECM::is_homed(void) const
 {
     return m_powered && m_encoders_biased_from_pots;
 }
 
-void mtsIntuitiveResearchKitECM::UnHome(void)
+void mtsIntuitiveResearchKitECM::unhome(void)
 {
     m_encoders_biased_from_pots = false;
 }
 
-bool mtsIntuitiveResearchKitECM::IsJointReady(void) const
+bool mtsIntuitiveResearchKitECM::is_joint_ready(void) const
 {
     return m_powered && m_encoders_biased_from_pots;
 }
 
-bool mtsIntuitiveResearchKitECM::IsCartesianReady(void) const
+bool mtsIntuitiveResearchKitECM::is_cartesian_ready(void) const
 {
     return m_powered && m_encoders_biased_from_pots;
 }
@@ -217,19 +247,22 @@ void mtsIntuitiveResearchKitECM::SetGoalHomingArm(void)
     PID.EnableTrackingError(true);
 
     // compute joint goal position
-    m_trajectory_j.goal.SetSize(NumberOfJoints());
+    m_trajectory_j.goal.SetSize(number_of_joints());
     if (m_homing_goes_to_zero) {
         // move to zero position
         m_trajectory_j.goal.SetAll(0.0);
     } else {
         // stay at current position by default
-        m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position(), NumberOfJoints());
+        m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position(), number_of_joints());
     }
 }
 
 void mtsIntuitiveResearchKitECM::EnterHomed(void)
 {
     mtsIntuitiveResearchKitArm::EnterHomed();
+
+    // set gravity compensation based on generation
+    m_gravity_compensation = (generation() == GENERATION_Classic);
 
     // event to propagate endoscope type based on configuration file
     EndoscopeEvents.endoscope_type(mtsIntuitiveResearchKitEndoscopeTypes::TypeToString(m_endoscope_type));
@@ -245,17 +278,17 @@ void mtsIntuitiveResearchKitECM::EnterManual(void)
 void mtsIntuitiveResearchKitECM::RunManual(void)
 {
     // zero efforts
-    mEffortJoint.SetAll(0.0);
+    m_servo_jf_vector.SetAll(0.0);
     if (m_gravity_compensation) {
-        control_add_gravity_compensation(mEffortJoint);
+        m_servo_jf_vector.Add(m_gravity_compensation_setpoint_js.Effort());
     }
-    servo_jf_internal(mEffortJoint);
+    servo_jf_internal(m_servo_jf_vector);
 }
 
 void mtsIntuitiveResearchKitECM::LeaveManual(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
-    Freeze();
+    hold();
 }
 
 void mtsIntuitiveResearchKitECM::EventHandlerTrackingError(void)
@@ -272,7 +305,7 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
     // Start manual mode but save the previous state
     switch (button.Type()) {
     case prmEventButton::PRESSED:
-        if (IsJointReady()) {
+        if (is_joint_ready()) {
             ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
             mArmState.SetCurrentState("MANUAL");
         } else {
@@ -290,18 +323,29 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
     }
 }
 
+void mtsIntuitiveResearchKitECM::EventHandlerSUJClutch(const prmEventButton & button)
+{
+    bool value = (button.Type() == prmEventButton::PRESSED);
+    if (value
+        && (m_operating_state.State() != prmOperatingState::ENABLED)) {
+        m_arm_interface->SendWarning(this->GetName() + ": arm needs to be enabled to release the SUJ brakes");
+    } else {
+        SUJClutch.Brake(value);
+    }
+}
+
 void mtsIntuitiveResearchKitECM::update_feed_forward(vctDoubleVec & feedForward)
 {
     feedForward.SetAll(0.0);
     if (!m_simulated) {
-        control_add_gravity_compensation(feedForward);
+        feedForward.Add(m_gravity_compensation_setpoint_js.Effort());
     }
 }
 
-void mtsIntuitiveResearchKitECM::control_add_gravity_compensation(vctDoubleVec & efforts)
+void mtsIntuitiveResearchKitECM::gravity_compensation(vctDoubleVec & efforts)
 {
-    vctDoubleVec qd(this->NumberOfJointsKinematics(), 0.0);
-    efforts.Add(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, 9.81));
+    vctDoubleVec qd(this->number_of_joints_kinematics(), 0.0);
+    efforts.ForceAssign(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, 9.81));
 }
 
 void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscopeType)
@@ -357,15 +401,15 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     case mtsIntuitiveResearchKitEndoscopeTypes::SD_STRAIGHT:
     case mtsIntuitiveResearchKitEndoscopeTypes::SD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::SD_DOWN:
-        mass = 1.5;
+        mass = mtsIntuitiveResearchKit::ECM::SDMass;
         break;
     case mtsIntuitiveResearchKitEndoscopeTypes::HD_STRAIGHT:
     case mtsIntuitiveResearchKitEndoscopeTypes::HD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::HD_DOWN:
-        mass = 2.5;
+        mass = mtsIntuitiveResearchKit::ECM::HDMass;
         break;
     default:
-        mass = 0.0;
+        mass = mtsIntuitiveResearchKit::ECM::EmptyMass;
         break;
     }
 

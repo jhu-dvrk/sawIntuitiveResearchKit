@@ -1,0 +1,264 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "arms":
+    [
+        {
+            "name": "ECM",
+            "simulated-position": [0.1111, 0.5782, -1.2662, 3.7818],
+            "DH": {
+                "links": [
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.0000, "theta": 0.0000, "D": 0.1471,
+                        "type": "prismatic",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.0000, "theta": 0.0000, "D": 0.5861,
+                        "type": "revolute",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.3302, "theta": 0.0000, "D": 0.1397,
+                        "type": "revolute",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.3302, "theta": 0.0000, "D": 0.0549,
+                        "type": "revolute",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 1.5708, "A": 0.1352, "theta":-1.2217, "D": 0.0000, // -70 degrees = -1.2217 rad
+                        "type": "revolute",
+                        "mode": "passive",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha":-1.5708, "A": 0.0000, "theta": 0.0000, "D": 0.0000,
+                        "type": "revolute",
+                        "mode": "passive",
+                        "offset": 0.0
+                    }
+                ]
+            },
+            "world-origin-to-suj": {
+                "Translation": [0.0 , 0.1262, 0.0],
+                "Rotation" : [[ 0.0, -1.0,  0.0],
+                              [ 1.0,  0.0,  0.0],
+                              [ 0.0,  0.0,  1.0]]
+            },
+            "suj-tip-to-tool-origin": {
+                "Translation": [0.8343, 0.0, 0.0],
+                "Rotation" : [[ 0.0,  1.0,  0.0],
+                              [-1.0,  0.0,  0.0],
+                              [ 0.0,  0.0,  1.0]]
+            }
+        }
+        ,
+        {
+            "name": "PSM1",
+            "simulated-position": [0.2222, 0.5782, -1.2662, 3.7818],
+            "DH": {
+                "links": [
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.0000, "theta": 0.0000, "D": 0.1471,
+                        "type": "prismatic",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.0000, "theta": 0.0000, "D": 0.6654,
+                        "type": "revolute",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.4572, "theta": 0.0000, "D": 0.1397,
+                        "type": "revolute",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.4572, "theta": 0.0000, "D":-0.1301,
+                        "type": "revolute",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 1.5708, "A": 0.0490, "theta":-0.7854, "D": 0.0000, // -45 degrees = -0.7854 rad
+                        "type": "revolute",
+                        "mode": "passive",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha":-1.5708, "A": 0.0000, "theta": 0.0000, "D": 0.0000,
+                        "type": "revolute",
+                        "mode": "passive",
+                        "offset": 0.0
+                    }
+                ]
+            },
+            "world-origin-to-suj": {
+                "Translation": [-0.2019 , -0.0757, 0.0],
+                "Rotation" : [[-1.0,  0.0,  0.0],
+                              [ 0.0, -1.0,  0.0],
+                              [ 0.0,  0.0,  1.0]]
+            },
+            "suj-tip-to-tool-origin": {
+                "Translation": [0.8343, 0.0, 0.0],
+                "Rotation" : [[ 0.0,  1.0,  0.0],
+                              [-1.0,  0.0,  0.0],
+                              [ 0.0,  0.0,  1.0]]
+            }
+        }
+        ,
+        {
+            "name": "PSM2",
+            "simulated-position": [0.3333, 0.5782, -1.2662, 3.7818],
+            "DH": {
+                "links": [
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.0000, "theta": 0.0000, "D": 0.1471,
+                        "type": "prismatic",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.0000, "theta": 0.0000, "D": 0.6654,
+                        "type": "revolute",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.4572, "theta": 0.0000, "D": 0.1397,
+                        "type": "revolute",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.4572, "theta": 0.0000, "D":-0.1301,
+                        "type": "revolute",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 1.5708, "A": 0.0490, "theta":-0.7854, "D": 0.0000, // -45 degrees = -0.7854 rad
+                        "type": "revolute",
+                        "mode": "passive",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha":-1.5708, "A": 0.0000, "theta": 0.0000, "D": 0.0000,
+                        "type": "revolute",
+                        "mode": "passive",
+                        "offset": 0.0
+                    }
+                ]
+            },
+            "world-origin-to-suj": {
+                "Translation": [0.2019 , -0.0757, 0.0],
+                "Rotation" : [[ 1.0,  0.0,  0.0],
+                              [ 0.0,  1.0,  0.0],
+                              [ 0.0,  0.0,  1.0]]
+            },
+            "suj-tip-to-tool-origin": {
+                "Translation": [0.8343, 0.0, 0.0],
+                "Rotation" : [[ 0.0,  1.0,  0.0],
+                              [-1.0,  0.0,  0.0],
+                              [ 0.0,  0.0,  1.0]]
+            }
+        }
+        ,
+        {
+            "name": "PSM3",
+            "simulated-position": [0.4444, 0.5782, -1.2662, 3.7818, 1.0],
+            "DH": {
+                "links": [
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.0000, "theta": 0.0000, "D": 0.0455,
+                        "type": "prismatic",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.0000, "theta": 0.0000, "D": 0.5887,
+                        "type": "revolute",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.3429, "theta": 0.0000, "D":-0.2667,
+                        "type": "revolute",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.4572, "theta": 0.0000, "D": 0.1397,
+                        "type": "revolute",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 0.0000, "A": 0.4572, "theta": 0.0000, "D":-0.1864,
+                        "type": "revolute",
+                        "mode": "active",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha": 1.5708, "A": 0.0483, "theta":-0.2618, "D": 0.0000, // -15 degrees = -0.2618 rad
+                        "type": "revolute",
+                        "mode": "passive",
+                        "offset": 0.0
+                    },
+                    {
+                        "convention": "modified",
+                        "alpha":-1.5708, "A": 0.0000, "theta": 0.0000, "D": 0.0000,
+                        "type": "revolute",
+                        "mode": "passive",
+                        "offset": 0.0
+                    }
+                ]
+            },
+            "world-origin-to-suj": {
+                "Translation": [0.0 , -0.2776, 0.0],
+                "Rotation" : [[ 0.0,  1.0,  0.0],
+                              [-1.0,  0.0,  0.0],
+                              [ 0.0,  0.0,  1.0]]
+            },
+            "suj-tip-to-tool-origin": {
+                "Translation": [0.8343, 0.0, 0.0],
+                "Rotation" : [[ 0.0,  1.0,  0.0],
+                              [-1.0,  0.0,  0.0],
+                              [ 0.0,  0.0,  1.0]]
+            }
+        }
+    ]
+}

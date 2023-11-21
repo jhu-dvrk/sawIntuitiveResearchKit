@@ -25,18 +25,18 @@ mtsSocketClientPSM::mtsSocketClientPSM(const std::string & componentName, const 
                                        const std::string & ip, const unsigned int port) :
     mtsSocketBasePSM(componentName, periodInSeconds, ip, port, false)
 {
-    this->StateTable.AddData(m_measured_cp, "m_measured_cp");
-    m_jaw_measured_js.Position().resize(1);
-    this->StateTable.AddData(m_jaw_measured_js, "m_jaw_measured_js");
+    this->StateTable.AddData(m_setpoint_cp, "m_setpoint_cp");
+    m_jaw_setpoint_js.Position().resize(1);
+    this->StateTable.AddData(m_jaw_setpoint_js, "m_jaw_setpoint_js");
     this->StateTable.AddData(m_operating_state, "m_operating_state");
     mtsInterfaceProvided * interfaceProvided = AddInterfaceProvided("Arm");
     if (interfaceProvided) {
         interfaceProvided->AddMessageEvents();
-        interfaceProvided->AddCommandReadState(this->StateTable, m_measured_cp, "measured_cp");
-        interfaceProvided->AddCommandReadState(this->StateTable, m_jaw_measured_js, "jaw/measured_js");
+        interfaceProvided->AddCommandReadState(this->StateTable, m_setpoint_cp, "setpoint_cp");
+        interfaceProvided->AddCommandReadState(this->StateTable, m_jaw_setpoint_js, "jaw/setpoint_js");
         interfaceProvided->AddCommandReadState(this->StateTable, m_operating_state, "operating_state");
-        interfaceProvided->AddCommandVoid(&mtsSocketClientPSM::Freeze,
-                                          this, "Freeze");
+        interfaceProvided->AddCommandVoid(&mtsSocketClientPSM::hold,
+                                          this, "hold");
         interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::servo_cp,
                                            this , "servo_cp");
         interfaceProvided->AddCommandWrite(&mtsSocketClientPSM::jaw_servo_jp,
@@ -92,13 +92,13 @@ void mtsSocketClientPSM::UpdateApplication(void)
         }
         operating_state_event(m_operating_state);
     }
-    m_measured_cp.Valid() = (CurrentState >= socketMessages::SCK_HOMED);
-    m_measured_cp.Position().FromNormalized(State.Data.CurrentPose);
-    m_jaw_measured_js.Position().at(0) = State.Data.CurrentJaw;
+    m_setpoint_cp.Valid() = (CurrentState >= socketMessages::SCK_HOMED);
+    m_setpoint_cp.Position().FromNormalized(State.Data.CurrentPose);
+    m_jaw_setpoint_js.Position().at(0) = State.Data.CurrentJaw;
     
 }
 
-void mtsSocketClientPSM::Freeze(void)
+void mtsSocketClientPSM::hold(void)
 {
     DesiredState = socketMessages::SCK_CART_POS;
     Command.Data.GoalPose.From(State.Data.CurrentPose);

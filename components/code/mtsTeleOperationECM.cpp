@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsTeleOperationECM.h>
 
 #include <cisstCommon/cmnUnits.h>
+#include <cisstVector/vctBoundingBox3.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmOperatingState.h>
@@ -412,6 +413,26 @@ void mtsTeleOperationECM::TransitionSettingArmsState(void)
     if ((ecmState.State() == prmOperatingState::ENABLED) && ecmState.IsHomed()
         && (mtmlState.State() == prmOperatingState::ENABLED) && mtmlState.IsHomed()
         && (mtmrState.State() == prmOperatingState::ENABLED) && mtmrState.IsHomed()) {
+        // make sure the coordinate systems make sense, i.e. did the
+        // user set a base-frame that matches ISI coordinate system
+        // for the console side
+        vctBoundingBox3 workArea(vct3(-400.0 * cmn_mm,
+                                      -200.0 * cmn_mm,
+                                        10.0 * cmn_mm),
+                                 vct3( 400.0 * cmn_mm,
+                                       200.0 * cmn_mm,
+                                       800.0 * cmn_mm));
+        if (!workArea.Includes(mMTML.m_measured_cp.Position().Translation())) {
+            mInterface->SendError(this->GetName() + ": MTML position doesn't seem to be in the work area.  Make sure your \"base-frame\" is set correctly in your console JSON configuration file.");
+            mTeleopState.SetDesiredState("DISABLED");
+            return;
+        }
+        if (!workArea.Includes(mMTMR.m_measured_cp.Position().Translation())) {
+            mInterface->SendError(this->GetName() + ": MTMR position doesn't seem to be in the work area.  Make sure your \"base-frame\" is set correctly in your console JSON configuration file.");
+            mTeleopState.SetDesiredState("DISABLED");
+            return;
+        }
+        // we should be good to go
         mTeleopState.SetCurrentState("ENABLED");
         return;
     }

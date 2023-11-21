@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -25,7 +25,6 @@
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmOperatingState.h>
-#include <cisstParameterTypes/prmForceCartesianSet.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsTeleOperationPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -103,6 +102,7 @@ void mtsTeleOperationPSM::Init(void)
     mPSM.m_jaw_servo_jp.Goal().SetSize(1);
 
     this->StateTable.AddData(mMTM.m_measured_cp, "MTM/measured_cp");
+    this->StateTable.AddData(mMTM.m_measured_cv, "MTM/measured_cv");
     this->StateTable.AddData(mMTM.m_setpoint_cp, "MTM/setpoint_cp");
     this->StateTable.AddData(mPSM.m_setpoint_cp, "PSM/setpoint_cp");
     this->StateTable.AddData(m_alignment_offset, "alignment_offset");
@@ -111,7 +111,6 @@ void mtsTeleOperationPSM::Init(void)
     mConfigurationStateTable->SetAutomaticAdvance(false);
     this->AddStateTable(mConfigurationStateTable);
     mConfigurationStateTable->AddData(m_scale, "scale");
-    mConfigurationStateTable->AddData(m_registration_rotation, "registration_rotation");
     mConfigurationStateTable->AddData(m_rotation_locked, "rotation_locked");
     mConfigurationStateTable->AddData(m_translation_locked, "translation_locked");
     mConfigurationStateTable->AddData(m_align_mtm, "align_mtm");
@@ -120,12 +119,13 @@ void mtsTeleOperationPSM::Init(void)
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MTM");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("measured_cp", mMTM.measured_cp);
+        interfaceRequired->AddFunction("measured_cv", mMTM.measured_cv, MTS_OPTIONAL);
         interfaceRequired->AddFunction("setpoint_cp", mMTM.setpoint_cp);
         interfaceRequired->AddFunction("move_cp", mMTM.move_cp);
-        interfaceRequired->AddFunction("gripper/measured_js", mMTM.gripper_measured_js);
+        interfaceRequired->AddFunction("gripper/measured_js", mMTM.gripper_measured_js, MTS_OPTIONAL);
         interfaceRequired->AddFunction("lock_orientation", mMTM.lock_orientation, MTS_OPTIONAL);
         interfaceRequired->AddFunction("unlock_orientation", mMTM.unlock_orientation, MTS_OPTIONAL);
-        interfaceRequired->AddFunction("body/servo_cf", mMTM.servo_cf_body);
+        interfaceRequired->AddFunction("body/servo_cf", mMTM.body_servo_cf);
         interfaceRequired->AddFunction("use_gravity_compensation", mMTM.use_gravity_compensation);
         interfaceRequired->AddFunction("operating_state", mMTM.operating_state);
         interfaceRequired->AddFunction("state_command", mMTM.state_command);
@@ -137,7 +137,7 @@ void mtsTeleOperationPSM::Init(void)
     if (interfaceRequired) {
         interfaceRequired->AddFunction("setpoint_cp", mPSM.setpoint_cp);
         interfaceRequired->AddFunction("servo_cp", mPSM.servo_cp);
-        interfaceRequired->AddFunction("Freeze", mPSM.Freeze);
+        interfaceRequired->AddFunction("hold", mPSM.hold);
         interfaceRequired->AddFunction("jaw/setpoint_js", mPSM.jaw_setpoint_js, MTS_OPTIONAL);
         interfaceRequired->AddFunction("jaw/configuration_js", mPSM.jaw_configuration_js, MTS_OPTIONAL);
         interfaceRequired->AddFunction("jaw/servo_jp", mPSM.jaw_servo_jp, MTS_OPTIONAL);
@@ -169,20 +169,17 @@ void mtsTeleOperationPSM::Init(void)
                                     "state_command", std::string());
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::set_scale, this,
                                     "set_scale", m_scale);
-        mInterface->AddCommandWrite(&mtsTeleOperationPSM::set_registration_rotation, this,
-                                    "set_registration_rotation", vctMatRot3());
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::lock_rotation, this,
                                     "lock_rotation", m_rotation_locked);
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::lock_translation, this,
                                     "lock_translation", m_translation_locked);
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::set_align_mtm, this,
                                     "set_align_mtm", m_align_mtm);
+        mInterface->AddCommandWrite(&mtsTeleOperationPSM::following_mtm_body_servo_cf, this,
+                                    "following/mtm/body/servo_cf");
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
                                         m_scale,
                                         "scale");
-        mInterface->AddCommandReadState(*(mConfigurationStateTable),
-                                        m_registration_rotation,
-                                        "registration_rotation");
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
                                         m_rotation_locked, "rotation_locked");
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
@@ -192,6 +189,9 @@ void mtsTeleOperationPSM::Init(void)
         mInterface->AddCommandReadState(this->StateTable,
                                         mMTM.m_measured_cp,
                                         "MTM/measured_cp");
+        mInterface->AddCommandReadState(this->StateTable,
+                                        mMTM.m_measured_cv,
+                                        "MTM/measured_cv");
         mInterface->AddCommandReadState(this->StateTable,
                                         mPSM.m_setpoint_cp,
                                         "PSM/setpoint_cp");
@@ -274,9 +274,9 @@ void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
     // read orientation if present
     jsonValue = jsonConfig["rotation"];
     if (!jsonValue.empty()) {
-        vctMatRot3 orientation; // identity by default
-        cmnDataJSON<vctMatRot3>::DeSerializeText(orientation, jsonConfig["rotation"]);
-        set_registration_rotation(orientation);
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": \"rotation\" is deprecated"<< std::endl;
+        exit(EXIT_FAILURE);
     }
 
     // rotation locked
@@ -381,6 +381,13 @@ void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
     if (!jsonValue.empty()) {
         m_align_mtm = jsonValue.asBool();
     }
+
+    // use MTM cv and send to PSM
+    mMTM.use_measured_cv = true; // better by default
+    jsonValue = jsonConfig["use-mtm-velocity"];
+    if (!jsonValue.empty()) {
+        mMTM.use_measured_cv = jsonValue.asBool();
+    }
 }
 
 void mtsTeleOperationPSM::Startup(void)
@@ -399,6 +406,13 @@ void mtsTeleOperationPSM::Startup(void)
             mInterface->SendError(this->GetName() + ": optional functions \"jaw/servo_jp\" and \"jaw/setpoint_js\" are not connected, setting \"ignore-jaw\" to true");
             m_jaw.ignore = true;
         }
+    }
+
+    // check if MTM has measured_cv as needed
+    if (mMTM.use_measured_cv &&
+        !mMTM.measured_cv.IsValid()) {
+        mMTM.use_measured_cv = false;
+        mInterface->SendWarning(this->GetName() + ": MTM doesn't provide measured_cv, you can avoid this warning by setting \"use-mtm-velocity\" to false");
     }
 }
 
@@ -460,18 +474,21 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
 
         // no force applied but gravity and locked orientation
         prmForceCartesianSet wrench;
-        mMTM.servo_cf_body(wrench);
+        mMTM.body_servo_cf(wrench);
         mMTM.use_gravity_compensation(true);
-        if (m_align_mtm || m_rotation_locked) {
+        if ((m_align_mtm || m_rotation_locked)
+            && mMTM.lock_orientation.IsValid()) {
             // lock in current position
             mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
         } else {
             // make sure it is freed
-            mMTM.unlock_orientation();
+            if (mMTM.unlock_orientation.IsValid()) {
+                mMTM.unlock_orientation();
+            }
         }
 
         // make sure PSM stops moving
-        mPSM.Freeze();
+        mPSM.hold();
     } else {
         mInterface->SendStatus(this->GetName() + ": console clutch released");
         mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
@@ -526,9 +543,7 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
 
 vctMatRot3 mtsTeleOperationPSM::UpdateAlignOffset(void)
 {
-    vctMatRot3 desiredOrientation;
-    m_registration_rotation.ApplyInverseTo(mPSM.m_setpoint_cp.Position().Rotation(),
-                                           desiredOrientation);
+    vctMatRot3 desiredOrientation = mPSM.m_setpoint_cp.Position().Rotation();
     mMTM.m_measured_cp.Position().Rotation().ApplyInverseTo(desiredOrientation, m_alignment_offset);
     return desiredOrientation;
 }
@@ -556,13 +571,6 @@ void mtsTeleOperationPSM::set_scale(const double & scale)
     UpdateInitialState();
 }
 
-void mtsTeleOperationPSM::set_registration_rotation(const vctMatRot3 & rotation)
-{
-    mConfigurationStateTable->Start();
-    m_registration_rotation = rotation;
-    mConfigurationStateTable->Advance();
-}
-
 void mtsTeleOperationPSM::lock_rotation(const bool & lock)
 {
     mConfigurationStateTable->Start();
@@ -578,7 +586,8 @@ void mtsTeleOperationPSM::lock_rotation(const bool & lock)
         // update MTM/PSM previous position
         UpdateInitialState();
         // lock orientation if the arm is running
-        if (mTeleopState.CurrentState() == "ENABLED") {
+        if ((mTeleopState.CurrentState() == "ENABLED")
+            && mMTM.lock_orientation.IsValid()) {
             mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
         }
     }
@@ -615,6 +624,11 @@ void mtsTeleOperationPSM::set_align_mtm(const bool & alignMTM)
     }
 }
 
+void mtsTeleOperationPSM::following_mtm_body_servo_cf(const prmForceCartesianSet & wrench)
+{
+    m_following_mtm_body_servo_cf = wrench;
+}
+
 void mtsTeleOperationPSM::StateChanged(void)
 {
     const std::string newState = mTeleopState.CurrentState();
@@ -634,6 +648,16 @@ void mtsTeleOperationPSM::RunAllStates(void)
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTM");
         mTeleopState.SetDesiredState("DISABLED");
     }
+    if (mMTM.use_measured_cv) {
+        executionResult = mMTM.measured_cv(mMTM.m_measured_cv);
+        if (!executionResult.IsOK()) {
+            CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.measured_cv failed \""
+                                    << executionResult << "\"" << std::endl;
+            mInterface->SendError(this->GetName() + ": unable to get cartesian velocity from MTM");
+            mTeleopState.SetDesiredState("DISABLED");
+        }
+    }
+
     executionResult = mMTM.setpoint_cp(mMTM.m_setpoint_cp);
     if (!executionResult.IsOK()) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.setpoint_cp failed \""
@@ -788,9 +812,7 @@ void mtsTeleOperationPSM::RunAligningMTM(void)
         // Orientate MTM with PSM
         vctFrm4x4 mtmCartesianGoal;
         mtmCartesianGoal.Translation().Assign(mMTM.m_setpoint_cp.Position().Translation());
-        vctMatRot3 mtmRotation;
-        mtmRotation = m_registration_rotation.Inverse() * mPSM.m_setpoint_cp.Position().Rotation();
-        mtmCartesianGoal.Rotation().FromNormalized(mtmRotation);
+        mtmCartesianGoal.Rotation().FromNormalized(mPSM.m_setpoint_cp.Position().Rotation());
         // convert to prm type
         mMTM.m_move_cp.Goal().From(mtmCartesianGoal);
         mMTM.move_cp(mMTM.m_move_cp);
@@ -816,14 +838,17 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     // if not active, use gripper and/or roll to detect if the user is ready
     if (!m_operator.is_active) {
         // update gripper values
-        mMTM.gripper_measured_js(mMTM.m_gripper_measured_js);
-        const double gripper = mMTM.m_gripper_measured_js.Position()[0];
-        if (gripper > m_operator.gripper_max) {
-            m_operator.gripper_max = gripper;
-        } else if (gripper < m_operator.gripper_min) {
-            m_operator.gripper_min = gripper;
+        double gripperRange = 0.0;
+        if (mMTM.gripper_measured_js.IsValid()) {
+            mMTM.gripper_measured_js(mMTM.m_gripper_measured_js);
+            const double gripper = mMTM.m_gripper_measured_js.Position()[0];
+            if (gripper > m_operator.gripper_max) {
+                m_operator.gripper_max = gripper;
+            } else if (gripper < m_operator.gripper_min) {
+                m_operator.gripper_min = gripper;
+            }
+            gripperRange = m_operator.gripper_max - m_operator.gripper_min;
         }
-        const double gripperRange = m_operator.gripper_max - m_operator.gripper_min;
 
         // checking roll
         const double roll = acos(vctDotProduct(desiredOrientation.Column(1),
@@ -879,6 +904,10 @@ void mtsTeleOperationPSM::EnterEnabled(void)
         m_jaw_caught_up_after_clutch = false;
         // gripper ghost
         mPSM.jaw_setpoint_js(mPSM.m_jaw_setpoint_js);
+        if (mPSM.m_jaw_setpoint_js.Position().size() != 1) {
+            mInterface->SendWarning(this->GetName() + ": unable to get jaw position.  Make sure there is an instrument on the PSM");
+            mTeleopState.SetDesiredState("DISABLE");
+        }
         double currentJaw = mPSM.m_jaw_setpoint_js.Position()[0];
         m_gripper_ghost = JawToGripper(currentJaw);
     }
@@ -887,11 +916,18 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     mMTM.use_gravity_compensation(true);
     // set forces to zero and lock/unlock orientation as needed
     prmForceCartesianSet wrench;
-    mMTM.servo_cf_body(wrench);
-    if (m_rotation_locked) {
+    mMTM.body_servo_cf(wrench);
+    // reset user wrench
+    m_following_mtm_body_servo_cf = wrench;
+
+    // orientation locked or not
+    if (m_rotation_locked
+        && mMTM.lock_orientation.IsValid()) {
         mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
     } else {
-        mMTM.unlock_orientation();
+        if (mMTM.unlock_orientation.IsValid()) {
+            mMTM.unlock_orientation();
+        }
     }
     // check if by any chance the clutch pedal is pressed
     if (m_clutched) {
@@ -907,6 +943,12 @@ void mtsTeleOperationPSM::RunEnabled(void)
         && mPSM.m_setpoint_cp.Valid()) {
         // follow mode
         if (!m_clutched) {
+
+            // on MTM, just apply user provided effort
+            if (m_following_mtm_body_servo_cf.Valid()) {
+                mMTM.body_servo_cf(m_following_mtm_body_servo_cf);
+            }
+
             // compute mtm Cartesian motion
             vctFrm4x4 mtmPosition(mMTM.m_measured_cp.Position());
 
@@ -918,14 +960,14 @@ void mtsTeleOperationPSM::RunEnabled(void)
             } else {
                 mtmTranslation = (mtmPosition.Translation() - mMTM.CartesianInitial.Translation());
                 psmTranslation = mtmTranslation * m_scale;
-                psmTranslation = m_registration_rotation * psmTranslation + mPSM.CartesianInitial.Translation();
+                psmTranslation = psmTranslation + mPSM.CartesianInitial.Translation();
             }
             // rotation
             vctMatRot3 psmRotation;
             if (m_rotation_locked) {
                 psmRotation.From(mPSM.CartesianInitial.Rotation());
             } else {
-                psmRotation = m_registration_rotation * mtmPosition.Rotation() * m_alignment_offset_initial;
+                psmRotation = mtmPosition.Rotation() * m_alignment_offset_initial;
             }
 
             // compute desired psm position
@@ -943,8 +985,20 @@ void mtsTeleOperationPSM::RunEnabled(void)
                 mtmPosition.Rotation().ApplyInverseTo(psmCartesianGoal.Rotation(), m_alignment_offset);
             }
 
-            // PSM go this cartesian position
+            // PSM go this cartesian position -> m_servo_cp
             mPSM.m_servo_cp.Goal().FromNormalized(psmCartesianGoal);
+
+            // Add desired velocity if needed
+            if (mMTM.use_measured_cv) {
+                // linear is scaled and re-oriented
+                mPSM.m_servo_cp.Velocity() = m_scale * mMTM.m_measured_cv.VelocityLinear();
+                // angular is not scaled
+                mPSM.m_servo_cp.VelocityAngular() = mMTM.m_measured_cv.VelocityAngular();
+            } else {
+                mPSM.m_servo_cp.Velocity().Assign(vct3(0));
+                mPSM.m_servo_cp.VelocityAngular().Assign(vct3(0));
+            }
+
             mPSM.servo_cp(mPSM.m_servo_cp);
 
             if (!m_jaw.ignore) {
@@ -1034,4 +1088,6 @@ void mtsTeleOperationPSM::set_following(const bool following)
 {
     MessageEvents.following(following);
     m_following = following;
+    // reset user servo_cf at each transition
+    m_following_mtm_body_servo_cf.SetValid(false);
 }

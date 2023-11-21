@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -22,7 +22,9 @@
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <cisstParameterTypes/prmVelocityCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
+#include <cisstParameterTypes/prmForceCartesianSet.h>
 #include <cisstParameterTypes/prmStateJoint.h>
 #include <cisstParameterTypes/prmConfigurationJoint.h>
 #include <cisstParameterTypes/prmPositionJointSet.h>
@@ -49,10 +51,10 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void Cleanup(void);
 
     void set_scale(const double & scale);
-    void set_registration_rotation(const vctMatRot3 & rotation);
     void lock_rotation(const bool & lock);
     void lock_translation(const bool & lock);
     void set_align_mtm(const bool & alignMTM);
+    void following_mtm_body_servo_cf(const prmForceCartesianSet & wrench);
 
  protected:
 
@@ -100,12 +102,13 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 
     struct {
         mtsFunctionRead  measured_cp;
+        mtsFunctionRead  measured_cv;
         mtsFunctionRead  setpoint_cp;
         mtsFunctionWrite move_cp;
         mtsFunctionRead  gripper_measured_js;
         mtsFunctionWrite lock_orientation;
         mtsFunctionVoid  unlock_orientation;
-        mtsFunctionWrite servo_cf_body;
+        mtsFunctionWrite body_servo_cf;
         mtsFunctionWrite use_gravity_compensation;
 
         mtsFunctionRead  operating_state;
@@ -113,15 +116,17 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 
         prmStateJoint m_gripper_measured_js;
         prmPositionCartesianGet m_measured_cp;
+        prmVelocityCartesianGet m_measured_cv;
         prmPositionCartesianGet m_setpoint_cp;
         prmPositionCartesianSet m_move_cp;
+        bool use_measured_cv = false;
         vctFrm4x4 CartesianInitial;
     } mMTM;
 
     struct {
         mtsFunctionRead  setpoint_cp;
         mtsFunctionWrite servo_cp;
-        mtsFunctionVoid  Freeze;
+        mtsFunctionVoid  hold;
         mtsFunctionRead  jaw_setpoint_js;
         mtsFunctionRead  jaw_configuration_js;
         mtsFunctionWrite jaw_servo_jp;
@@ -144,7 +149,6 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     } mBaseFrame;
 
     double m_scale = mtsIntuitiveResearchKit::TeleOperationPSM::Scale;
-    vctMatRot3 m_registration_rotation; // optional registration between PSM and MTM orientation
     vctMatRot3 m_alignment_offset,
         m_alignment_offset_initial; // rotation offset between MTM and PSM when tele-operation goes in follow mode
 
@@ -194,6 +198,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     bool m_rotation_locked = false;
     bool m_translation_locked = false;
     bool m_align_mtm = true; // default on da Vinci
+    prmForceCartesianSet m_following_mtm_body_servo_cf;
 
     vctMatRot3 mMTMClutchedOrientation;
     mtsStateTable * mConfigurationStateTable;

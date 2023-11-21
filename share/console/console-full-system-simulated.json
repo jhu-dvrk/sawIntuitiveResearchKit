@@ -36,13 +36,9 @@
         ,
         {
             "name": "SUJ",
-            "type": "SUJ",
+            "type": "SUJ_Classic",
             "simulation": "KINEMATIC",
-            "kinematic": "arm/suj-simulated.json",
-            "base-frame": {
-                "component": "ECM",
-                "interface": "Robot"
-            }
+            "kinematic": "arm/suj-simulated.json"
         }
         ,
         {

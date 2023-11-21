@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitConsole_h
 #define _mtsIntuitiveResearchKitConsole_h
 
+#include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsTaskFromSignal.h>
 #include <cisstMultiTask/mtsDelayedConnections.h>
 #include <cisstParameterTypes/prmOperatingState.h>
@@ -29,6 +30,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianSet.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+
+// Always include last!
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 // for ROS console
@@ -52,7 +56,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     class CISST_EXPORT Arm {
     public:
         typedef enum {ARM_UNDEFINED,
-                      ARM_MTM, ARM_PSM, ARM_ECM, ARM_SUJ,
+                      ARM_MTM, ARM_PSM, ARM_ECM,
+                      ARM_SUJ_Classic, ARM_SUJ_Si, ARM_SUJ_Fixed,
                       ARM_MTM_GENERIC, ARM_PSM_GENERIC, ARM_ECM_GENERIC,
                       ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_ECM_DERIVED,
                       ARM_PSM_SOCKET,
@@ -65,6 +70,20 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         friend class mtsIntuitiveResearchKitConsole;
         friend class mtsIntuitiveResearchKitConsoleQt;
         friend class dvrk::console;
+
+        bool generic(void) const;
+        bool psm(void) const;
+        bool mtm(void) const;
+        bool ecm(void) const;
+        bool suj(void) const;
+        bool native_or_derived(void) const;
+        bool native_or_derived_mtm(void) const;
+        bool native_or_derived_psm(void) const;
+        bool native_or_derived_ecm(void) const;
+        void set_generation(const mtsIntuitiveResearchKitArm::GenerationType generation);
+        mtsIntuitiveResearchKitArm::GenerationType generation(void) const;
+        bool expects_PID(void) const;
+        bool expects_IO(void) const;
 
         Arm(mtsIntuitiveResearchKitConsole * console,
             const std::string & name,
@@ -100,10 +119,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         mtsIntuitiveResearchKitConsole * m_console = nullptr;
         std::string m_name;
         ArmType m_type;
-        bool m_native_or_derived;
+        mtsIntuitiveResearchKitArm::GenerationType m_generation = mtsIntuitiveResearchKitArm::GENERATION_UNDEFINED;
         std::string m_serial;
         SimulationType m_simulation;
-        bool m_calibration_mode;
+        bool m_calibration_mode = false;
+        cmnPath m_config_path;
 
         // low level
         std::string m_IO_component_name;
@@ -122,8 +142,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         int m_port;
         bool m_socket_server;
         std::string m_socket_component_name;
-        // generic arm
-        bool m_generic;
+        // add ROS bridge
         bool m_skip_ROS_bridge;
 
         // base frame
@@ -133,15 +152,16 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         std::string m_base_frame_interface_name;
 
         mtsFunctionWrite state_command;
-        mtsFunctionVoid Freeze;
-        mtsInterfaceRequired * IOInterfaceRequired;
-        mtsInterfaceRequired * IODallasInterfaceRequired;
-        mtsInterfaceRequired * PIDInterfaceRequired;
-        mtsInterfaceRequired * ArmInterfaceRequired;
+        mtsFunctionVoid hold;
+        mtsInterfaceRequired * IOInterfaceRequired = nullptr;
+        mtsInterfaceRequired * IODallasInterfaceRequired = nullptr;
+        mtsInterfaceRequired * PIDInterfaceRequired = nullptr;
+        mtsInterfaceRequired * ArmInterfaceRequired = nullptr;
 
         // this is used only by PSMs and ECM
-        mtsInterfaceRequired * SUJInterfaceRequiredFromIO;
-        mtsInterfaceRequired * SUJInterfaceRequiredToSUJ;
+        mtsInterfaceRequired * SUJInterfaceRequiredFromIO = nullptr;
+        mtsInterfaceRequired * SUJInterfaceRequiredFromIO2 = nullptr; // for Si second clutch button
+        mtsInterfaceRequired * SUJInterfaceRequiredToSUJ = nullptr;
         mtsFunctionWrite SUJClutch;
         bool mSUJClutched;
 
@@ -254,8 +274,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     bool Connect(void);
 
+    std::string locate_file(const std::string & filename);
+
  protected:
-    bool mConfigured;
+    bool m_configured;
+    cmnPath m_config_path;
     mtsDelayedConnections mConnections;
 
     double mTimeOfLastErrorBeep;
@@ -297,8 +320,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     /*! Find all arm data from JSON configuration. */
     bool ConfigureArmJSON(const Json::Value & jsonArm,
-                          const std::string & ioComponentName,
-                          const cmnPath & configPath);
+                          const std::string & ioComponentName);
     bool AddArmInterfaces(Arm * arm);
 
     // these two methods have exact same implementation.it would be

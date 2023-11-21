@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -54,28 +54,28 @@ protected:
                       const std::string & filename) override;
 
     /*! Configuration methods */
-    inline size_t NumberOfJoints(void) const override {
+    inline size_t number_of_joints(void) const override {
         return 7;
     }
 
-    inline size_t NumberOfJointsKinematics(void) const override {
+    inline size_t number_of_joints_kinematics(void) const override {
         return 7;
     }
 
-    inline size_t NumberOfBrakes(void) const override {
+    inline size_t number_of_brakes(void) const override {
         return 0;
     }
 
-    inline bool UsePIDTrackingError(void) const override {
+    inline bool use_PID_tracking_error(void) const override {
         return false;
     }
 
     void ConfigureGC(const std::string & filename);
 
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                            const vctFrm4x4 & cartesianGoal) override;
+                                            const vctFrm4x4 & cartesianGoal) const override;
 
-    inline bool IsSafeForCartesianControl(void) const override {
+    inline bool is_safe_for_cartesian_control(void) const override {
         return true;
     };
 
@@ -87,10 +87,10 @@ protected:
     virtual void CreateManipulator(void) override;
     virtual void Init(void) override;
 
-    bool IsHomed(void) const override;
-    void UnHome(void) override;
-    bool IsJointReady(void) const override;
-    bool IsCartesianReady(void) const override;
+    bool is_homed(void) const override;
+    void unhome(void) override;
+    bool is_joint_ready(void) const override;
+    bool is_cartesian_ready(void) const override;
 
     // state related methods
     void SetGoalHomingArm(void) override;
@@ -104,7 +104,7 @@ protected:
 
     /*! Get data specific to the MTM (gripper angle using analog inputs) after
       calling mtsIntuitiveResearchKitArm::GetRobotData. */
-    void GetRobotData(void) override;
+    void get_robot_data(void) override;
 
     // see base class
     void control_servo_cf_orientation_locked(void) override;
@@ -116,7 +116,7 @@ protected:
     virtual void lock_orientation(const vctMatRot3 & orientation);
     virtual void unlock_orientation(void);
 
-    void control_add_gravity_compensation(vctDoubleVec & efforts) override;
+    void gravity_compensation(vctDoubleVec & efforts) override;
 
     // Functions for events
     struct {
@@ -126,17 +126,21 @@ protected:
     struct {
         mtsFunctionVoid pinch;
         mtsFunctionWrite closed;
+        double zero_angle = 0.0; // in radians
+        bool is_closed = false;
+        double debounce_threshold = 0.2; // in seconds
+        bool debounce_ended;
+        double debounce_start;
     } gripper_events;
 
     mtsInterfaceRequired * GripperIOInterface;
     struct {
-        mtsFunctionRead GetAnalogInputPosSI;
+        mtsFunctionRead pot_measured_js;
     } GripperIO;
 
     //! Gripper angle
     prmStateJoint m_gripper_measured_js;
     prmConfigurationJoint m_gripper_configuration_js;
-    bool m_gripper_closed;
 
     robGravityCompensationMTM * GravityCompensationMTM = 0;
 

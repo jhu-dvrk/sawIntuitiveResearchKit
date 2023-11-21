@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,7 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>
-#include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
+#include <cisstMultiTask/mtsIntervalStatisticsQtWidget.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmPositionCartesianGetQtWidget.h>
 
@@ -99,7 +99,6 @@ protected:
         mtsFunctionRead PSM_setpoint_cp;
         mtsFunctionRead align_mtm;
         mtsFunctionRead alignment_offset;
-        mtsFunctionRead registration_rotation;
         mtsFunctionRead period_statistics;
     } TeleOperation;
 
@@ -117,11 +116,10 @@ private:
     prmPositionCartesianGetQtWidget * QCPGPSMWidget;
     vctMatRot3 m_alignment_offset;
     vctQtWidgetRotationDoubleRead * QVRAlignOffset;
-    vctMatRot3 m_registration_rotation;
 
     // timing
     mtsIntervalStatistics m_interval_statistics;
-    mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
+    mtsIntervalStatisticsQtWidget * QMIntervalStatistics;
 
     // messages
     bool LogEnabled;

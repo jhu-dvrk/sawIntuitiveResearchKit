@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-12-20
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnXMLPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstOSAbstraction/osaSleep.h>
+#include <cisstOSAbstraction/osaGetTime.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawRobotIO1394/mtsRobot1394.h>
 
@@ -44,10 +45,8 @@ int main(int argc, char * argv[])
     options.AddOptionOneValue("p", "port",
                               "firewire port number(s)",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &portName);
-    std::string errorMessage;
-    if (!options.Parse(argc, argv, errorMessage)) {
-        std::cerr << "Error: " << errorMessage << std::endl;
-        options.PrintUsage(std::cerr);
+
+    if (!options.Parse(argc, argv, std::cerr)) {
         return -1;
     }
 
@@ -73,7 +72,7 @@ int main(int argc, char * argv[])
     port->Configure(configFile);
 
     std::cout << "Creating robot ..." << std::endl;
-    int numberOfRobots;
+    size_t numberOfRobots;
     port->GetNumberOfRobots(numberOfRobots);
     if (numberOfRobots == 0) {
         std::cerr << "Error: the config file doesn't define a robot." << std::endl;
@@ -180,11 +179,14 @@ int main(int argc, char * argv[])
             const char * context = "Config";
             xmlConfig.SetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Offset", newOffset);
             xmlConfig.SetXMLValue(context, "Robot[1]/Actuator[1]/AnalogIn/VoltsToPosSI/@Scale", newScale);
-            std::string newConfigFile = configFile + "-new";
-            xmlConfig.SaveAs(newConfigFile);
-            std::cout << "Status: new config file is \"" << newConfigFile << "\"" << std::endl
-                      << "You can copy the new file over the old one using:\n  cp -i "
-                      << newConfigFile << " " << configFile << std::endl;
+            // rename old file and save in place
+            std::string currentDateTime;
+            osaGetDateTimeString(currentDateTime);
+            std::string newName = configFile + "-backup-" + currentDateTime;
+            cmnPath::RenameFile(configFile, newName);
+            std::cout << "Existing IO config file has been renamed " << newName << std::endl;
+            xmlConfig.SaveAs(configFile);
+            std::cout << "Results saved in IO config file " << configFile << std::endl;
         } else {
             std::cout << "Status: user didn't want to save new offsets." << std::endl;
         }

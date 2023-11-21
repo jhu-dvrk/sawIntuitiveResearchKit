@@ -5,7 +5,7 @@
   Author(s):  Pretham Chalasani, Anton Deguet
   Created on: 2016-11-04
 
-  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2021 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -56,7 +56,7 @@ void mtsSocketBaseQtWidget::Configure(const std::string &filename)
 void mtsSocketBaseQtWidget::Startup(void)
 {
     setupUi();
-    startTimer(TimerPeriodInMilliseconds); // ms    
+    startTimer(TimerPeriodInMilliseconds); // ms
     if (!parent()) {
         show();
     }
@@ -149,7 +149,7 @@ void mtsSocketBaseQtWidget::setupUi(void)
     socketlayout->addStretch();
 
     // timing
-    QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
+    QMIntervalStatistics = new mtsIntervalStatisticsQtWidget();
     mainLayout->addWidget(QMIntervalStatistics);
     mainLayout->addStretch();
 }

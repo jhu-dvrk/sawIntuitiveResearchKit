@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2021 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2023 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -9,9 +9,8 @@
 #
 # --- end cisst license ---
 
-project (sawIntuitiveResearchKitDerivedTeleOperationPSM)
-
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required (VERSION 3.10)
+project (sawIntuitiveResearchKitDerivedTeleOperationPSM VERSION 2.2.0)
 
 set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -33,14 +32,14 @@ if (cisst_FOUND)
   include (${CISST_USE_FILE})
 
   # catkin/ROS paths
-  cisst_is_catkin_build (sawIntuitiveResearchKitDerivedTeleOperationPSM_IS_CATKIN_BUILT)
-  if (sawIntuitiveResearchKitDerivedTeleOperationPSM_IS_CATKIN_BUILT)
-    set (LIBRARY_OUTPUT_PATH "${CATKIN_DEVEL_PREFIX}/lib")
-  endif ()
+  cisst_set_output_path ()
 
   # sawIntuitiveResearchKit has been compiled within cisst, we should
   # find it automatically
-  find_package(sawIntuitiveResearchKit 2.1.0 REQUIRED)
+  find_package (sawTextToSpeech        1.4.0 REQUIRED)
+  find_package (sawRobotIO1394         2.2.0 REQUIRED)
+  find_package (sawControllers         2.1.0 REQUIRED)
+  find_package(sawIntuitiveResearchKit 2.2.0 REQUIRED)
 
   if (sawIntuitiveResearchKit_FOUND)
 
@@ -49,7 +48,10 @@ if (cisst_FOUND)
       ${sawIntuitiveResearchKit_INCLUDE_DIR})
 
     link_directories (
-      ${sawIntuitiveResearchKit_LIBRARY_DIR})
+      ${sawIntuitiveResearchKit_LIBRARY_DIR}
+      ${sawTextToSpeech_LIBRARY_DIR}
+      ${sawRobotIO1394_LIBRARY_DIR}
+      ${sawControllers_LIBRARY_DIR})
 
     set (sawIntuitiveResearchKitDerivedTeleOperationPSM_INCLUDE_DIR
          "${sawIntuitiveResearchKitDerivedTeleOperationPSM_SOURCE_DIR}/include")

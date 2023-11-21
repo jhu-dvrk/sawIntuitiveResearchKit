@@ -1,0 +1,95 @@
+{
+    "pid": [
+	{
+	    "index": 0,
+	    "name": "outer_yaw",
+	    "type": 2,
+	    "p_gain": 100.0,
+	    "d_gain": 10.0,
+	    "i_gain": 0.0,
+	    "i_forget_rate": 0.99,
+	    "i_limit": 0.0,
+	    "use_disturbance_observer": true,
+	    "nominal_mass": 0.001,
+	    "disturbance_cutoff": 10.0
+	}
+	,
+	{
+	    "index": 1,
+	    "name": "shoulder_pitch",
+	    "type": 2,
+	    "p_gain": 80.0,
+	    "d_gain": 5.0,
+	    "i_gain": 0.0,
+	    "i_forget_rate": 0.99,
+	    "i_limit": 0.0,
+	    "use_disturbance_observer": true,
+	    "nominal_mass": 0.001,
+	    "disturbance_cutoff": 10.0
+	}
+	,
+	{
+	    "index": 2,
+	    "name": "elbow_pitch",
+	    "type": 2,
+	    "p_gain": 80.0,
+	    "d_gain": 5.0,
+	    "i_gain": 0.0,
+	    "i_forget_rate": 0.99,
+	    "i_limit": 0.0,
+	    "use_disturbance_observer": true,
+	    "nominal_mass": 0.001,
+	    "disturbance_cutoff": 10.0
+	}
+	,
+	{
+	    "index": 3,
+	    "name": "wrist_platform",
+	    "type": 2,
+	    "p_gain": 3.0,
+	    "d_gain": 0.35,
+	    "i_gain": 0.0,
+	    "i_forget_rate": 0.99,
+	    "i_limit": 0.0,
+	    "use_disturbance_observer": true,
+	    "nominal_mass": 0.001,
+	    "disturbance_cutoff": 15.0
+	}
+	,
+	{
+	    "index": 4,
+	    "name": "wrist_pitch",
+	    "type": 2,
+	    "p_gain": 2.0,
+	    "d_gain": 0.07,
+	    "i_gain": 0.0,
+	    "i_forget_rate": 0.99,
+	    "i_limit": 0.0,
+	    "p_deadband": 0.008
+	}
+	,
+	{
+	    "index": 5,
+	    "name": "wrist_yaw",
+	    "type": 2,
+	    "p_gain": 0.4,
+	    "d_gain": 0.015,
+	    "i_gain": 0.0,
+	    "i_forget_rate": 0.99,
+	    "i_limit": 0.0,
+	    "p_deadband": 0.015
+	}
+	,
+	{
+	    "index": 6,
+	    "name": "wrist_roll",
+	    "type": 2,
+	    "p_gain": 0.15,
+	    "d_gain": 0.005,
+	    "i_gain": 0.0,
+	    "i_forget_rate": 0.99,
+	    "i_limit": 0.0,
+	    "p_deadband": 0.02
+	}
+    ]
+}

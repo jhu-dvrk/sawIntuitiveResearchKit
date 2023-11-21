@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -38,21 +38,21 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     void set_simulated(void) override;
 
  protected:
-
+    void set_generation(const GenerationType generation) override;
     void PostConfigure(const Json::Value & jsonConfig,
                        const cmnPath & configPath,
                        const std::string & filename) override;
 
     /*! Configuration methods */
-    inline size_t NumberOfJoints(void) const override {
+    inline size_t number_of_joints(void) const override {
         return 4;
     }
 
-    inline size_t NumberOfJointsKinematics(void) const override {
+    inline size_t number_of_joints_kinematics(void) const override {
         return 4;
     }
 
-    inline size_t NumberOfBrakes(void) const override {
+    inline size_t number_of_brakes(void) const override {
         return 3;
     }
 
@@ -61,20 +61,20 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     }
 
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                            const vctFrm4x4 & cartesianGoal) override;
+                                            const vctFrm4x4 & cartesianGoal) const override;
 
     // see base class
-    inline bool IsSafeForCartesianControl(void) const override {
+    inline bool is_safe_for_cartesian_control(void) const override {
         return (m_kin_measured_js.Position().at(2) > 50.0 * cmn_mm);
     }
 
     void CreateManipulator(void) override;
     void Init(void) override;
 
-    bool IsHomed(void) const override;
-    void UnHome(void) override;
-    bool IsJointReady(void) const override;
-    bool IsCartesianReady(void) const override;
+    bool is_homed(void) const override;
+    void unhome(void) override;
+    bool is_joint_ready(void) const override;
+    bool is_cartesian_ready(void) const override;
 
     // state related methods
     void SetGoalHomingArm(void) override;
@@ -85,9 +85,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
 
     void EventHandlerTrackingError(void);
     void EventHandlerManipClutch(const prmEventButton & button);
+    void EventHandlerSUJClutch(const prmEventButton & button);
 
     void update_feed_forward(vctDoubleVec & feedForward) override;
-    void control_add_gravity_compensation(vctDoubleVec & efforts) override;
+    void gravity_compensation(vctDoubleVec & efforts) override;
 
     struct {
         mtsFunctionRead GetButton;
@@ -99,6 +100,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
         mtsFunctionWrite ManipClutch;
         std::string ManipClutchPreviousState;
     } ClutchEvents;
+
+    struct {
+        mtsFunctionWrite Brake;
+    } SUJClutch;
 
     /*! Set endoscope type.  Uses string as defined in
       mtsIntuitiveResearchKitEndoscopeTypes.cdg, upper case with separating
