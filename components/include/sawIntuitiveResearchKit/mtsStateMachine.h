@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-05
 
-  (C) Copyright 2016-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mtsStateMachine_h
 
 #include <cisstMultiTask/mtsCallableVoidMethod.h>
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 /*
   \todo
@@ -31,7 +32,7 @@ http://www.cisst.org/cisst/license.txt.
  */
 
 
-class mtsStateMachine
+class CISST_EXPORT mtsStateMachine
 {
 public:
     typedef std::string StateType;
