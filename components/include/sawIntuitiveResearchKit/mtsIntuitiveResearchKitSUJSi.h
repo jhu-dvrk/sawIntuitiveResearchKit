@@ -19,6 +19,10 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitSUJSi_h
 #define _mtsIntuitiveResearchKitSUJSi_h
 
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
+
+#if sawIntuitiveResearchKit_HAS_SUJ_Si
+
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
@@ -109,5 +113,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJSi);
+
+#endif // sawIntuitiveResearchKit_HAS_SUJ_Si
 
 #endif // _mtsIntuitiveResearchKitSUJSi_h

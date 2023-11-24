@@ -385,12 +385,18 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType arm_type,
         break;
     case ARM_SUJ_Si:
         {
+#if sawIntuitiveResearchKit_HAS_SUJ_Si
             mtsIntuitiveResearchKitSUJSi * suj = new mtsIntuitiveResearchKitSUJSi(Name(), periodInSeconds);
             if (m_simulation == SIMULATION_KINEMATIC) {
                 suj->set_simulated();
             }
             suj->Configure(m_arm_configuration_file);
             componentManager->AddComponent(suj);
+#else
+            CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: can't create an arm of type SUJ_Si because sawIntuitiveResearchKit_HAS_SUJ_Si is set to OFF in CMake"
+                               << std::endl;
+            exit(EXIT_FAILURE);
+#endif
         }
         break;
     case ARM_SUJ_Fixed:
