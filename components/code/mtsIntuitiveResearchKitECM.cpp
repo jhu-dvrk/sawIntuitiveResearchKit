@@ -375,14 +375,14 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     vctFrm4x4 tip;
     tip.Translation().Assign(vct3(0.0, 0.0, 0.0));
     switch (m_endoscope_type) {
-    case mtsIntuitiveResearchKitEndoscopeTypes::SD_UP:
-    case mtsIntuitiveResearchKitEndoscopeTypes::HD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_UP:
         // -30 degree rotation along X axis
         tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), -30.0 * cmnPI_180));
         ToolOffsetTransformation = ToolOffsetTransformation * tip;
         break;
-    case mtsIntuitiveResearchKitEndoscopeTypes::SD_DOWN:
-    case mtsIntuitiveResearchKitEndoscopeTypes::HD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_DOWN:
         // 30 degree rotation along X axis
         tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), 30.0 * cmnPI_180));
         ToolOffsetTransformation = ToolOffsetTransformation * tip;
@@ -398,14 +398,14 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     // update estimated mass for gravity compensation
     double mass;
     switch (m_endoscope_type) {
-    case mtsIntuitiveResearchKitEndoscopeTypes::SD_STRAIGHT:
-    case mtsIntuitiveResearchKitEndoscopeTypes::SD_UP:
-    case mtsIntuitiveResearchKitEndoscopeTypes::SD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_DOWN:
         mass = mtsIntuitiveResearchKit::ECM::SDMass;
         break;
-    case mtsIntuitiveResearchKitEndoscopeTypes::HD_STRAIGHT:
-    case mtsIntuitiveResearchKitEndoscopeTypes::HD_UP:
-    case mtsIntuitiveResearchKitEndoscopeTypes::HD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_DOWN:
         mass = mtsIntuitiveResearchKit::ECM::HDMass;
         break;
     default:

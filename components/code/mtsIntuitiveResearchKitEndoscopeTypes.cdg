@@ -3,6 +3,7 @@ class {
 
     enum {
         name Type;
+        prefix SCOPE_;
         enum-value {
             name ERROR;
             description Error;
