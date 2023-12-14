@@ -209,6 +209,14 @@
             "file": "LRG_SUTURECUT_NEEDLE_DRIVER_400296.json"
         }
         ,
+        {
+            "model": "400309",
+            "names": ["MEGA_SUTURECUT_NEEDLE_DRIVER"],
+            "description": "Mega Suturecut Needle Driver",
+            "generation": "Classic",
+            "file": "MEGA_SUTURECUT_NEEDLE_DRIVER_400309.json"
+        }
+        ,
         // S/Si
         {
             "model": "420001",
@@ -362,6 +370,14 @@
             "description": "Large Suturecut Needle Driver",
             "generation": "S",
             "file": "LARGE_SUTURECUT_NEEDLEDRIVER_420296.json"
+        }
+        ,
+        {
+            "model": "420309",
+            "names": ["MEGA_SUTURECUT_NEEDLE_DRIVER"],
+            "description": "Mega Suturecut Needle Driver",
+            "generation": "S",
+            "file": "MEGA_SUTURECUT_NEEDLE_DRIVER_420309.json"
         }
     ]
 }
