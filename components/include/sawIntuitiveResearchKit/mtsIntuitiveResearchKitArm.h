@@ -292,6 +292,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionRead  GetSerialNumber;
         mtsFunctionVoid  PowerOnSequence;
         mtsFunctionWrite PowerOffSequence;
+        mtsFunctionVoid  Explain;
         mtsFunctionRead  GetActuatorAmpStatus;
         mtsFunctionRead  GetBrakeAmpStatus;
         mtsFunctionWrite BiasEncoder;
