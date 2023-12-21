@@ -1265,6 +1265,10 @@ def generateConsoleConfig(robotTypeName, hardwareVersion, serialNumber, generati
     with open(fileName, "w") as f:
         f.write('{\n')
         f.write('    // see https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Configuration-File-Formats\n')
+        f.write('    "io": {\n')
+        f.write('        // "close-all-relays": true  // uncomment to avoid calling qlacommand -c close-relays\n')
+        f.write('    }\n')
+        f.write('    ,\n')
         f.write('    "arms":\n')
         f.write('    [\n')
         f.write('        {\n')
