@@ -710,8 +710,8 @@ class MTMGripper(Robot):
             * (self.pitch(0) / self.gearRatio(0))
         )
 
-        self.voltsToPosSIScale = -23.1788
-        self.voltsToPosSIOffset = 91.4238
+        self.voltsToPosSIScale = -100.0
+        self.voltsToPosSIOffset = 300.0
         super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 1)
 
     def generateAnalogIns(self):
