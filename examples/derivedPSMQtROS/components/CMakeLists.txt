@@ -9,8 +9,8 @@
 #
 # --- end cisst license ---
 
-cmake_minimum_required(VERSION 3.1)
-project (saw_intuitive_research_kit_example_psm_derived VERSION 2.2.0)
+cmake_minimum_required(VERSION 3.10)
+project (saw_intuitive_research_kit_example_psm_derived VERSION 2.2.1)
 
 set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)

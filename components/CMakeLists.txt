@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (sawIntuitiveResearchKit VERSION 2.2.0)
+project (sawIntuitiveResearchKit VERSION 2.2.1)
 
 set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)

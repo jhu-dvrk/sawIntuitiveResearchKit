@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required(VERSION 3.10)
-project (sawIntuitiveResearchKitAll VERSION 2.2.0)
+project (sawIntuitiveResearchKitAll VERSION 2.2.1)
 
 find_package (cisst REQUIRED)
 include (${CISST_USE_FILE})
