@@ -112,38 +112,38 @@ def getBoardIDs(robotTypeName):
         raise ValueError("Unrecognized robot type: {}".format(robotTypeName))
 
 
-def getActuatorsPerBoard(hardwareVersionName):
-    if hardwareVersionName == "QLA1":
+def getActuatorsPerBoard(hardwareVersion):
+    if hardwareVersion == "QLA1":
         return 4
-    elif hardwareVersionName == "DQLA":
+    elif hardwareVersion == "DQLA":
         return 8
-    elif hardwareVersionName == "dRA1":
+    elif hardwareVersion == "dRA1":
         return 10
     else:
-        raise ValueError("Unrecognized controller type: {}".format(hardwareVersionName))
+        raise ValueError("Unrecognized controller type: {}".format(hardwareVersion))
 
 
 # Root config object
 class Config(Serializable):
-    def __init__(self, calData, versionID, robotTypeName, hardwareVersionName, serialNumber, robotGenerationName):
+    def __init__(self, calData, versionID, robotTypeName, hardwareVersion, serialNumber, robotGenerationName):
         self.versionID = versionID
 
         robotType = RobotType.fromTypeName(robotTypeName)
         isClassic = robotGenerationName == "Classic"
         if robotType == RobotType.PSM:
             if isClassic:
-                self.robot = ClassicPSM(calData, robotTypeName, hardwareVersionName, serialNumber)
+                self.robot = ClassicPSM(calData, robotTypeName, hardwareVersion, serialNumber)
             else:
-                self.robot = SiPSM(calData, robotTypeName, hardwareVersionName, serialNumber)
+                self.robot = SiPSM(calData, robotTypeName, hardwareVersion, serialNumber)
         elif robotType == RobotType.ECM:
             if isClassic:
-                self.robot = ClassicECM(calData, robotTypeName, hardwareVersionName, serialNumber)
+                self.robot = ClassicECM(calData, robotTypeName, hardwareVersion, serialNumber)
             else:
-                self.robot = SiECM(calData, robotTypeName, hardwareVersionName, serialNumber)
+                self.robot = SiECM(calData, robotTypeName, hardwareVersion, serialNumber)
         elif robotType == RobotType.MTM:
-            self.robot = MTM(calData, robotTypeName, hardwareVersionName, serialNumber)
+            self.robot = MTM(calData, robotTypeName, hardwareVersion, serialNumber)
         else:
-            self.robot = MTMGripper(calData, robotTypeName, hardwareVersionName, serialNumber)
+            self.robot = MTMGripper(calData, robotTypeName, hardwareVersion, serialNumber)
 
         self.digitalInputs = list(self.robot.generateDigitalInputs())
         self.digitalOutputs = list(self.robot.generateDigitalOutputs())
@@ -168,15 +168,15 @@ class Config(Serializable):
 
 
 class Robot(Serializable):
-    def __init__(self, robotTypeName, hardwareVersionName, serialNumber, calData, numberOfActuators):
+    def __init__(self, robotTypeName, hardwareVersion, serialNumber, calData, numberOfActuators):
         self.name = robotTypeName
         self.type = RobotType.fromTypeName(robotTypeName)
         self.serialNumber = serialNumber
-        self.hardwareVersion = hardwareVersionName
+        self.hardwareVersion = hardwareVersion
         self.calData = calData
         self.boardIDs = getBoardIDs(robotTypeName)
         self.numberOfActuators = numberOfActuators
-        self.actuatorsPerBoard = getActuatorsPerBoard(hardwareVersionName)
+        self.actuatorsPerBoard = getActuatorsPerBoard(hardwareVersion)
         self.actuators = list(self.generateActuators())
 
     def driveDirection(self, index: int) -> int:
@@ -287,7 +287,7 @@ class Robot(Serializable):
 
 
 class ClassicPSM(Robot):
-    def __init__(self, calData, robotTypeName, hardwareVersionName, serialNumber):
+    def __init__(self, calData, robotTypeName, hardwareVersion, serialNumber):
         self.driveDirection = lambda index: [-1, -1, 1, -1, -1, 1, 1][index]
         self.encoderCPT = lambda index: [14400, 14400, 14400, 4000, 4000, 4000, 4000][index]
         self.gearRatio = lambda index: [56.50, 56.50, 336.6, 11.71, 11.71, 11.71, 11.71][index]
@@ -303,7 +303,7 @@ class ClassicPSM(Robot):
         self.potentiometerLatency = lambda index: 0.01
         self.potentiometerDistance = lambda index: 5.0
 
-        super().__init__(robotTypeName, hardwareVersionName, serialNumber, calData, 7)
+        super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 7)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         self.potentiometers = Potentiometers(potentiometerTolerances)
@@ -316,18 +316,29 @@ class ClassicPSM(Robot):
             yield PotentiometerTolerance(index, units, latency, distance)
 
     def generateDigitalInputs(self):
-        digitalInputBitIDs = [
-            (self.boardIDs[0], 0, "SUJClutch", 0.2),
-            (self.boardIDs[0], 2, "ManipClutch", 0.2),
-            (self.boardIDs[1], 7, "Tool", 0.2),
-            (self.boardIDs[1], 10, "Adapter", 0.2),
-        ]
+        if self.hardwareVersion == "QLA1":
+            digitalInputBitIDs = [
+                (self.boardIDs[0], 0, "SUJClutch", 0.2),
+                (self.boardIDs[0], 2, "ManipClutch", 0.2),
+                (self.boardIDs[1], 7, "Tool", 0.2),
+                (self.boardIDs[1], 10, "Adapter", 0.2),
+            ]
+        else: # DQLA, add 16 for second board
+            digitalInputBitIDs = [
+                (self.boardIDs[0], 0, "SUJClutch", 0.2),
+                (self.boardIDs[0], 2, "ManipClutch", 0.2),
+                (self.boardIDs[0], 23, "Tool", 0.2),
+                (self.boardIDs[0], 26, "Adapter", 0.2),
+            ]
 
         for boardID, bitID, inputType, debounceTime in digitalInputBitIDs:
             yield DigitalInput(self.name, inputType, bitID, boardID, 1, debounceTime)
 
     def generateDallasChip(self):
-        return DallasChip(self.boardIDs[1], self.name)
+        if self.hardwareVersion == "QLA1":
+            return DallasChip(self.boardIDs[1], self.name)
+        else:
+            return DallasChip(self.boardIDs[0], self.name)
 
     def toDict(self):
         dict = super().toDict()
@@ -336,7 +347,7 @@ class ClassicPSM(Robot):
 
 
 class SiPSM(Robot):
-    def __init__(self, calData, robotTypeName, hardwareVersionName, serialNumber):
+    def __init__(self, calData, robotTypeName, hardwareVersion, serialNumber):
         self.driveDirection = lambda index: [-1, 1, 1, 1, 1, -1, -1][index]
         self.encoderDirection = lambda index: -self.driveDirection(index)
         self.encoderCPT = lambda index: [81920, 81920, 50000, 4000, 4000, 4000, 4000][index]
@@ -364,7 +375,7 @@ class SiPSM(Robot):
         self.brakeEngagedCurrent = lambda index: 0.0
         self.brakeLinearAmpCurrent = lambda index: 2.048 # 2^11/10^3
 
-        super().__init__(robotTypeName, hardwareVersionName, serialNumber, calData, 7)
+        super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 7)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         lookupTable = "sawRobotIO1394-{}-{}-PotentiometerLookupTable.json".format(robotTypeName, serialNumber)
@@ -447,7 +458,7 @@ class SiPSM(Robot):
 
 
 class ClassicECM(Robot):
-    def __init__(self, calData, robotTypeName, hardwareVersionName, serialNumber):
+    def __init__(self, calData, robotTypeName, hardwareVersion, serialNumber):
         self.driveDirection = lambda index: [1, 1, -1, 1][index]
         self.encoderCPT = lambda index: [4000, 4000, 640, 64][index]
         self.gearRatio = lambda index: [240, 240, 2748.55, 300.15][index]
@@ -469,7 +480,7 @@ class ClassicECM(Robot):
         self.brakeReleasedCurrent = lambda index: [0.08, 0.07, 0.20][index]
         self.brakeEngagedCurrent = lambda index: 0.0
 
-        super().__init__(robotTypeName, hardwareVersionName, serialNumber, calData, 4)
+        super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 4)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         self.potentiometers = Potentiometers(potentiometerTolerances)
@@ -490,8 +501,8 @@ class ClassicECM(Robot):
                 releasedCurrent = self.brakeReleasedCurrent(index)
                 engagedCurrent = self.brakeEngagedCurrent(index)
                 yield AnalogBrake(
-                    index,
-                    self.boardIDs[1],
+                    (index + 4) % self.actuatorsPerBoard,
+                    self.boardIDs[(index + 4) // self.actuatorsPerBoard],
                     1,
                     maxCurrent,
                     releaseCurrent,
@@ -518,7 +529,7 @@ class ClassicECM(Robot):
 
 
 class SiECM(Robot):
-    def __init__(self, calData, robotTypeName, hardwareVersionName, serialNumber):
+    def __init__(self, calData, robotTypeName, hardwareVersion, serialNumber):
         self.driveDirection = lambda index: [-1, 1, 1, -1][index]
         self.encoderDirection = lambda index: [1, -1, -1, -1][index]
         self.encoderCPT = lambda index: [81920, 81920, 640, 64][index]
@@ -546,7 +557,7 @@ class SiECM(Robot):
         self.brakeEngagedCurrent = lambda index: 0.0
         self.brakeLinearAmpCurrent = lambda index: 2.048 # 2^11/10^3
 
-        super().__init__(robotTypeName, hardwareVersionName, serialNumber, calData, 4)
+        super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 4)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         lookupTable = "sawRobotIO1394-{}-{}-PotentiometerLookupTable.json".format(robotTypeName, serialNumber)
@@ -627,7 +638,7 @@ class SiECM(Robot):
 
 
 class MTM(Robot):
-    def __init__(self, calData, robotTypeName, hardwareVersionName, serialNumber):
+    def __init__(self, calData, robotTypeName, hardwareVersion, serialNumber):
         if robotTypeName.startswith("MTML"):
             driveDirections = [-1, 1, 1, 1, -1, 1, -1]
             positionLimitsSoftLower = [-40.0, -18.0, -15.0, -240.0, -95.0, -45.0, -475.0]
@@ -655,7 +666,7 @@ class MTM(Robot):
         self.potentiometerLatency = lambda index: 0.01 if index <= 5 else 0.0
         self.potentiometerDistance = lambda index: 5.0 if index <= 5 else 0.0
 
-        super().__init__(robotTypeName, hardwareVersionName, serialNumber, calData, 7)
+        super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 7)
 
         potentiometerTolerances = list(self.generatePotentiometerTolerances())
         self.potentiometers = Potentiometers(potentiometerTolerances, couplingMatrix=MTMCoupling())
@@ -674,7 +685,7 @@ class MTM(Robot):
 
 
 class MTMGripper(Robot):
-    def __init__(self, calData, robotTypeName, hardwareVersionName, serialNumber):
+    def __init__(self, calData, robotTypeName, hardwareVersion, serialNumber):
         self.ioType = "io-only"
         self.driveDirection = lambda index: -1
         self.encoderCPT = lambda index: 4000
@@ -699,9 +710,9 @@ class MTMGripper(Robot):
             * (self.pitch(0) / self.gearRatio(0))
         )
 
-        self.voltsToPosSIScale = -23.1788
-        self.voltsToPosSIOffset = 91.4238
-        super().__init__(robotTypeName, hardwareVersionName, serialNumber, calData, 1)
+        self.voltsToPosSIScale = -100.0
+        self.voltsToPosSIOffset = 300.0
+        super().__init__(robotTypeName, hardwareVersion, serialNumber, calData, 1)
 
     def generateAnalogIns(self):
         for index in range(self.numberOfActuators):
@@ -1142,7 +1153,7 @@ def saveConfigFile(fileName, config, format):
     print("Generated IO config file {}".format(fileName))
 
 
-def generateConfig(calFileName, robotTypeName, hardwareVersionName, serialNumber, generationName, outputFormat):
+def generateConfig(calFileName, robotTypeName, hardwareVersion, serialNumber, generation, outputFormat):
     # Array index/dimension constants that .cal file parser needs to know
     constants = {
         "UPPER_LIMIT": 1,
@@ -1168,7 +1179,7 @@ def generateConfig(calFileName, robotTypeName, hardwareVersionName, serialNumber
     }
 
     parser = calParser.CalParser(constants)
-    calData = parser.parseFile(calFileName) if generationName == "Classic" else None
+    calData = parser.parseFile(calFileName) if generation == "Classic" else None
 
     # sanity check robot type matches cal file
     if calData is not None:
@@ -1178,7 +1189,7 @@ def generateConfig(calFileName, robotTypeName, hardwareVersionName, serialNumber
 
     version = 5
     serialNumber = str(serialNumber or calData["serial_number"])
-    config = Config(calData, version, robotTypeName, hardwareVersionName, serialNumber, generationName)
+    config = Config(calData, version, robotTypeName, hardwareVersion, serialNumber, generation)
 
     outputFileName = "sawRobotIO1394-" + robotTypeName + "-" + serialNumber
     saveConfigFile(outputFileName, config, outputFormat)
@@ -1187,13 +1198,13 @@ def generateConfig(calFileName, robotTypeName, hardwareVersionName, serialNumber
         gripperConfigFileName = (
             "sawRobotIO1394-" + robotTypeName + "-gripper-" + serialNumber
         )
-        gripperConfig = Config(calData, version, robotTypeName + "-Gripper", hardwareVersionName, serialNumber, generationName)
+        gripperConfig = Config(calData, version, robotTypeName + "-Gripper", hardwareVersion, serialNumber, generation)
         saveConfigFile(gripperConfigFileName, gripperConfig, outputFormat)
 
     return serialNumber
 
 
-def generateArmConfig(robotTypeName, hardwareVersionName, serialNumber, generationName):
+def generateArmConfig(robotTypeName, hardwareVersion, serialNumber, generation):
     fileName = "{}-{}.json".format(robotTypeName, serialNumber)
     if os.path.exists(fileName):
         backup =  fileName + datetime.datetime.now().strftime("-backup-%Y-%m-%d_%H:%M:%S")
@@ -1210,7 +1221,7 @@ def generateArmConfig(robotTypeName, hardwareVersionName, serialNumber, generati
         kinematic += 'ecm'
     else:
         raise ValueError('Unrecognized robot type: {}'.format(robotTypeName))
-    if generationName == 'Si':
+    if generation == 'Si':
         kinematic += '-si'
     kinematic += '.json"\n'
 
@@ -1218,7 +1229,7 @@ def generateArmConfig(robotTypeName, hardwareVersionName, serialNumber, generati
         f.write('{\n')
         f.write('    // see https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Configuration-File-Formats\n')
         f.write(kinematic)
-        f.write('    , "generation": "' + generationName + '"\n')
+        f.write('    , "generation": "' + generation + '"\n')
         if robotTypeName.startswith("PSM"):
             f.write('    // , "tool-detection": "MANUAL"\n')
             f.write('    // , "tool-detection": "FIXED"\n')
@@ -1235,7 +1246,7 @@ def generateArmConfig(robotTypeName, hardwareVersionName, serialNumber, generati
     print('Generated arm config file {}'.format(fileName))
 
 
-def generateConsoleConfig(robotTypeName, hardwareVersionName, serialNumber, generationName):
+def generateConsoleConfig(robotTypeName, hardwareVersion, serialNumber, generation):
     fileName = "console-{}.json".format(robotTypeName)
     if os.path.exists(fileName):
         backup =  fileName + datetime.datetime.now().strftime("-backup-%Y-%m-%d_%H:%M:%S")
@@ -1254,6 +1265,10 @@ def generateConsoleConfig(robotTypeName, hardwareVersionName, serialNumber, gene
     with open(fileName, "w") as f:
         f.write('{\n')
         f.write('    // see https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Configuration-File-Formats\n')
+        f.write('    "io": {\n')
+        f.write('        // "close-all-relays": true  // uncomment to avoid calling qlacommand -c close-relays\n')
+        f.write('    }\n')
+        f.write('    ,\n')
         f.write('    "arms":\n')
         f.write('    [\n')
         f.write('        {\n')

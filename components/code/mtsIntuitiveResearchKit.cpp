@@ -47,6 +47,4 @@ mtsIntuitiveResearchKit::Logger::Logger(void)
 void mtsIntuitiveResearchKit::Logger::Stop(void)
 {
   cmnLogger::Kill();
-  cmnLogger::RemoveChannel(*m_log_file_stream);
-  delete m_log_file_stream;
 }

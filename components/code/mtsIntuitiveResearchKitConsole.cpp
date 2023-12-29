@@ -385,12 +385,18 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType arm_type,
         break;
     case ARM_SUJ_Si:
         {
+#if sawIntuitiveResearchKit_HAS_SUJ_Si
             mtsIntuitiveResearchKitSUJSi * suj = new mtsIntuitiveResearchKitSUJSi(Name(), periodInSeconds);
             if (m_simulation == SIMULATION_KINEMATIC) {
                 suj->set_simulated();
             }
             suj->Configure(m_arm_configuration_file);
             componentManager->AddComponent(suj);
+#else
+            CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: can't create an arm of type SUJ_Si because sawIntuitiveResearchKit_HAS_SUJ_Si is set to OFF in CMake"
+                               << std::endl;
+            exit(EXIT_FAILURE);
+#endif
         }
         break;
     case ARM_SUJ_Fixed:
@@ -1009,6 +1015,11 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 mDInputSources["Head"] = InterfaceComponentType(m_IO_component_name, "Head");
                 io->Configure(configFile);
             }
+            // check if user wants to close all relays
+            Json::Value close_all_relays = jsonValue["close-all-relays"];
+            if (!close_all_relays.empty()) {
+                m_close_all_relays_from_config = close_all_relays.asBool();
+            }
         }
         // configure for operator present
         jsonValue = jsonConfig["operator-present"];
@@ -1045,7 +1056,23 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             }
         }
         // and add the io component!
+        m_IO_interface = AddInterfaceRequired("IO");
+        if (m_IO_interface) {
+            m_IO_interface->AddFunction("close_all_relays", IO.close_all_relays);
+            m_IO_interface->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
+                                                 this, "error");
+            m_IO_interface->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
+                                                 this, "warning");
+            m_IO_interface->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
+                                                 this, "status");
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to create IO required interface" << std::endl;
+        }
         mtsComponentManager::GetInstance()->AddComponent(io);
+        if (m_IO_interface) {
+            mConnections.Add(this->GetName(), "IO",
+                             io->GetName(), "Configuration");
+        }
     }
 
     // now can configure PID and Arms
@@ -1241,6 +1268,11 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
     message.append(" / cisst ");
     message.append(cisst_VERSION);
     mInterface->SendStatus(message);
+
+    // close all relays if needed
+    if (m_close_all_relays_from_config) {
+        IO.close_all_relays();
+    }
 
     // emit events for active PSM teleop pairs
     EventSelectedTeleopPSMs();

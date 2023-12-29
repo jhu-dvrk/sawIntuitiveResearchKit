@@ -36,6 +36,12 @@
                     "default": "sequential-read-broadcast-write"
                 },
 
+                "close-all-relays": {
+                    "type": "boolean",
+                    "description": "Close all the e-stop safety relays on all the controllers found on the current port (FireWire or Ethernet).  This allows the user to skip the terminal based command: `qlacommand -c close-relays`.",
+                    "default": false
+                },
+
                 "footpedals": {
                     "type": "string",
                     "description": "IO configuration file used to define inputs from the foot pedals.  See files `sawRobotIO1394-*-foot-pedals.xml` in directory `share/io`.  The console use a search path that includes the `sawIntuitiveResearchKit/share` directory so you can specify any relative path from the `share` directory.",
@@ -246,7 +252,8 @@
                                                   [  0.0,  0.5,         -0.866025404,  0.475],
                                                   [  0.0,  0.0,          0.0,          1.0]]
                                 }
-                            },
+                            }
+			    ,
                             {
                                 "base-frame": {
                                     "component": "ECM",

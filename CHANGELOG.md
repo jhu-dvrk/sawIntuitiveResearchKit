@@ -1,6 +1,30 @@
 Change log
 ==========
 
+2.2.1 (2023-12-29)
+==================
+
+* API changes:
+  * None
+* Deprecated features:
+  * None
+* New features:
+  * Shared files:
+    * Added `tool` mega suturecut needle drivers 400309 and 420309
+    * Added `console` for simulated PSM Si and ECM Si
+    * Added `io` for MTML on DQLA
+  * Console JSON: added configuration option "close-all-relays"
+  * Display explanation when powering fails on Si controllers
+  * Added CMake option to compile without Bluetooth for SUJ Si in simulated mode
+  * `dvrk-remove-logs.py`: added `-f` option to skip confirmation prompt
+* Bug fixes:
+  * Fixes for Windows compilation
+  * Fixed crash on exit
+  * Fixed crash on PSM GUI direct control
+  * `dvrk-configuration-generator.py`
+    * Fixed boards IDs for PSMs and ECMs using DQLA controllers
+    * Better default for gripper
+
 2.2.0 (2023-11-21)
 ==================
 

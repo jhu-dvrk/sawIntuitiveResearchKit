@@ -22,6 +22,9 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJSi.h>
+
+#if sawIntuitiveResearchKit_HAS_SUJ_Si
+
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
@@ -1026,3 +1029,5 @@ void mtsIntuitiveResearchKitSUJSi::dispatch_operating_state(void)
         sarm->state_events.desired_state(m_state_machine.DesiredState());
     }
 }
+
+#endif // sawIntuitiveResearchKit_HAS_SUJ_Si

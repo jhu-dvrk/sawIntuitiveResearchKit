@@ -377,7 +377,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     typedef std::map<std::string, InterfaceComponentType> DInputSourceType;
     DInputSourceType mDInputSources;
 
-    mtsInterfaceProvided * mInterface;
+    mtsInterfaceRequired * m_IO_interface = nullptr;
+    struct {
+        mtsFunctionVoid close_all_relays;
+    } IO;
+    bool m_close_all_relays_from_config = false;
+
+    mtsInterfaceProvided * mInterface = nullptr;
     struct {
         mtsFunctionWrite ArmCurrentState;
         mtsFunctionWrite scale;

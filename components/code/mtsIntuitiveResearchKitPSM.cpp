@@ -833,10 +833,6 @@ void mtsIntuitiveResearchKitPSM::update_configuration_js(void)
     mStateTableConfiguration.Start();
     if (m_tool_present && m_tool_configured) {
         mtsIntuitiveResearchKitArm::update_configuration_js();
-        m_configuration_js.PositionMin().resize(7);
-        m_configuration_js.PositionMax().resize(7);
-        m_configuration_js.PositionMin().at(6) = m_jaw_configuration_js.PositionMin().at(0);
-        m_configuration_js.PositionMax().at(6) = m_jaw_configuration_js.PositionMax().at(0);
     } else {
         update_configuration_js_no_tool();
     }

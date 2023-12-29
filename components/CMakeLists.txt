@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (sawIntuitiveResearchKit VERSION 2.2.0)
+project (sawIntuitiveResearchKit VERSION 2.2.1)
 
 set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -51,37 +51,47 @@ if (cisst_FOUND)
     # catkin/ROS paths
     cisst_set_output_path ()
 
-    # external project for gattlib
-    include (ExternalProject)
+    # gattlib is not available on Windows
+    if (WIN32)
+      option (sawIntuitiveResearchKit_HAS_SUJ_Si "Compile code to support the SI SUJ over bluetooth (requires gattlib)" OFF)
+    else ()
+      option (sawIntuitiveResearchKit_HAS_SUJ_Si "Compile code to support the SI SUJ over bluetooth (requires gattlib)" ON)
+    endif ()
 
-    set (SAW_GATTLIB_GIT_REPOSITORY https://github.com/jhu-cisst-external/gattlib)
-    ExternalProject_Add (gattlibExternal
-                         PREFIX gattlib
-                         GIT_REPOSITORY    ${SAW_GATTLIB_GIT_REPOSITORY}
-                         CMAKE_CACHE_ARGS -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
-                                          -DGATTLIB_BUILD_EXAMPLES:BOOL=OFF
-                                          -DGATTLIB_BUILD_DOCS:BOOL=OFF
-                                          -DGATTLIB_PYTHON_INTERFACE:BOOL=OFF
-                                          -DGATTLIB_BUILD_EXAMPLES:BOOL=OFF
-                                          -DGATTLIB_SHARED_LIB:BOOL=ON
-                                          -DCMAKE_INSTALL_PREFIX:FILEPATH=${CMAKE_INSTALL_PREFIX}
-                         UPDATE_COMMAND ""
-                         INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-                         )
-    set (gattlib_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
-    set (gattlib_LIBRARY_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-    set (gattlib_LIBRARIES gattlib)
+    # external project for gattlib
+    if (sawIntuitiveResearchKit_HAS_SUJ_Si)
+      include (ExternalProject)
+
+      set (SAW_GATTLIB_GIT_REPOSITORY https://github.com/jhu-cisst-external/gattlib)
+      ExternalProject_Add (gattlibExternal
+                           PREFIX gattlib
+                           GIT_REPOSITORY    ${SAW_GATTLIB_GIT_REPOSITORY}
+                           CMAKE_CACHE_ARGS -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+                                            -DGATTLIB_BUILD_EXAMPLES:BOOL=OFF
+                                            -DGATTLIB_BUILD_DOCS:BOOL=OFF
+                                            -DGATTLIB_PYTHON_INTERFACE:BOOL=OFF
+                                            -DGATTLIB_BUILD_EXAMPLES:BOOL=OFF
+                                            -DGATTLIB_SHARED_LIB:BOOL=ON
+                                            -DCMAKE_INSTALL_PREFIX:FILEPATH=${CMAKE_INSTALL_PREFIX}
+                           UPDATE_COMMAND ""
+                           INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+                           )
+      set (gattlib_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
+      set (gattlib_LIBRARY_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+      set (gattlib_LIBRARIES gattlib)
+
+      include_directories (${gattlib_INCLUDE_DIR})
+      link_directories (${gattlib_LIBRARY_DIR})
+    endif ()
 
     # saw components configuration
     include_directories (${sawTextToSpeech_INCLUDE_DIR}
                          ${sawRobotIO1394_INCLUDE_DIR}
-                         ${sawControllers_INCLUDE_DIR}
-                         ${gattlib_INCLUDE_DIR})
+                         ${sawControllers_INCLUDE_DIR})
 
     link_directories (${sawTextToSpeech_LIBRARY_DIR}
                       ${sawRobotIO1394_LIBRARY_DIR}
-                      ${sawControllers_LIBRARY_DIR}
-                      ${gattlib_LIBRARY_DIR})
+                      ${sawControllers_LIBRARY_DIR})
 
     # create/configure file for find_package (sawIntuitiveResearchKit)
     set (sawIntuitiveResearchKit_INCLUDE_DIR
@@ -90,8 +100,13 @@ if (cisst_FOUND)
     set (sawIntuitiveResearchKit_HEADER_DIR
          "${sawIntuitiveResearchKit_SOURCE_DIR}/include/sawIntuitiveResearchKit")
     set (sawIntuitiveResearchKit_LIBRARY_DIR
-         "${LIBRARY_OUTPUT_PATH}"
-         "${gattlib_LIBRARY_DIR}")
+      "${LIBRARY_OUTPUT_PATH}")
+
+    if (sawIntuitiveResearchKit_HAS_SUJ_Si)
+      set (sawIntuitiveResearchKit_LIBRARY_DIR
+        ${sawIntuitiveResearchKit_LIBRARY_DIR}
+        "${gattlib_LIBRARY_DIR}")
+    endif ()
 
     set (sawIntuitiveResearchKit_LIBRARIES sawIntuitiveResearchKit)
 
@@ -185,14 +200,22 @@ if (cisst_FOUND)
     set_target_properties (sawIntuitiveResearchKit PROPERTIES
                            VERSION ${sawIntuitiveResearchKit_VERSION}
                            FOLDER "sawIntuitiveResearchKit")
-    add_dependencies (sawIntuitiveResearchKit gattlibExternal)
+    if (sawIntuitiveResearchKit_HAS_SUJ_Si)
+      add_dependencies (sawIntuitiveResearchKit gattlibExternal)
+    endif ()
 
     # link against non cisst libraries and cisst components
-    target_link_libraries (sawIntuitiveResearchKit
-                           ${sawTextToSpeech_LIBRARIES}
-                           ${sawRobotIO1394_LIBRARIES}
-                           ${sawControllers_LIBRARIES}
-                           ${gattlib_LIBRARIES})
+    target_link_libraries (
+      sawIntuitiveResearchKit
+      ${sawTextToSpeech_LIBRARIES}
+      ${sawRobotIO1394_LIBRARIES}
+      ${sawControllers_LIBRARIES})
+
+    if (sawIntuitiveResearchKit_HAS_SUJ_Si)
+      target_link_libraries (
+        sawIntuitiveResearchKit
+        ${gattlib_LIBRARIES})
+    endif ()
 
     # Install targets for headers and library
     install (DIRECTORY

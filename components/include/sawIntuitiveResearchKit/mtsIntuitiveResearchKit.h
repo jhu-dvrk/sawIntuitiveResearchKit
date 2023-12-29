@@ -98,7 +98,7 @@ namespace mtsIntuitiveResearchKit {
 
     // setup logger settings for the dVRK, turn on logs for some
     // classes and create a new log per run with timestamp
-    class Logger {
+    class CISST_EXPORT Logger {
     public:
         Logger(void);
         inline ~Logger() {

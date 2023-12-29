@@ -332,6 +332,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         IOInterface->AddFunction("GetSerialNumber", IO.GetSerialNumber);
         IOInterface->AddFunction("PowerOnSequence", IO.PowerOnSequence);
         IOInterface->AddFunction("PowerOffSequence", IO.PowerOffSequence);
+        IOInterface->AddFunction("Explain", IO.Explain);
         IOInterface->AddFunction("GetActuatorAmpStatus", IO.GetActuatorAmpStatus);
         IOInterface->AddFunction("GetBrakeAmpStatus", IO.GetBrakeAmpStatus);
         IOInterface->AddFunction("BiasEncoder", IO.BiasEncoder);
@@ -1428,6 +1429,7 @@ void mtsIntuitiveResearchKitArm::EnterPaused(void)
 
 void mtsIntuitiveResearchKitArm::EnterFault(void)
 {
+    IO.Explain();
     IO.PowerOffSequence(false);
     UpdateOperatingStateAndBusy(prmOperatingState::FAULT, false);
 }
