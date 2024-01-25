@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -42,6 +42,7 @@ namespace dvrk {
 
 class mtsTextToSpeech;
 class mtsDaVinciHeadSensor;
+class mtsGoovisHeadSensor;
 class mtsDaVinciEndoscopeFocus;
 class mtsIntuitiveResearchKitArm;
 
@@ -310,10 +311,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     std::string mTeleopMTMToCycle;
 
     /*! Single ECM bimanual teleoperation */
-    TeleopECM * mTeleopECM;
+    TeleopECM * mTeleopECM = nullptr;
 
-    /*! daVinci Head Sensor */
-    mtsDaVinciHeadSensor * mDaVinciHeadSensor;
+    /*! daVinci head sensor */
+    mtsDaVinciHeadSensor * mDaVinciHeadSensor = nullptr;
+
+    /*! Goovis head sensor */
+    mtsGoovisHeadSensor * mGoovisHeadSensor = nullptr;
 
     /*! daVinci Endoscope Focus */
     mtsDaVinciEndoscopeFocus * mDaVinciEndoscopeFocus;

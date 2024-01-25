@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -48,6 +48,10 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
+
+#if sawIntuitiveResearchKit_HAS_HID_Goovis
+#include <sawIntuitiveResearchKit/mtsGoovisHeadSensor.h>
+#endif
 
 #include <json/json.h>
 
@@ -951,12 +955,18 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             physicalFootpedalsRequired = footpedalsRequired.asBool();
         }
     }
+    // just check for IO and make sure we don't have io and hid, will be configured later
     jsonValue = jsonConfig["operator-present"];
     if (!jsonValue.empty()) {
         // check if operator present uses IO
         Json::Value jsonConfigFile = jsonValue["io"];
         if (!jsonConfigFile.empty()) {
             mHasIO = true;
+            jsonConfigFile = jsonValue["hid"];
+            if (!jsonConfigFile.empty()) {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: operator-present can't have both io and hid" << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
     }
     // create IO if needed and configure IO
@@ -1021,7 +1031,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 m_close_all_relays_from_config = close_all_relays.asBool();
             }
         }
-        // configure for operator present
+        // configure IO for operator present
         jsonValue = jsonConfig["operator-present"];
         if (!jsonValue.empty()) {
             // check if operator present uses IO
@@ -1036,6 +1046,8 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring operator present using \""
                                            << configFile << "\"" << std::endl;
                 io->Configure(configFile);
+            } else {
+                jsonConfigFile = jsonValue["hid"];
             }
         }
         // configure for endoscope focus
@@ -1067,6 +1079,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                                                  this, "status");
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to create IO required interface" << std::endl;
+            exit(EXIT_FAILURE);
         }
         mtsComponentManager::GetInstance()->AddComponent(io);
         if (m_IO_interface) {
@@ -1138,28 +1151,42 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // load operator-present settings, this will over write older settings
     const Json::Value operatorPresent = jsonConfig["operator-present"];
     if (!operatorPresent.empty()) {
-        const std::string headSensorName = "daVinciHeadSensor";
-        mDaVinciHeadSensor = new mtsDaVinciHeadSensor(headSensorName);
-        mtsComponentManager::GetInstance()->AddComponent(mDaVinciHeadSensor);
-        // main DInput is OperatorPresent comming from the newly added component
-        mDInputSources["OperatorPresent"] = InterfaceComponentType(headSensorName, "OperatorPresent");
-        // also expose the digital inputs from RobotIO (e.g. ROS topics)
-        mDInputSources["HeadSensor1"] = InterfaceComponentType(m_IO_component_name, "HeadSensor1");
-        mDInputSources["HeadSensor2"] = InterfaceComponentType(m_IO_component_name, "HeadSensor2");
-        mDInputSources["HeadSensor3"] = InterfaceComponentType(m_IO_component_name, "HeadSensor3");
-        mDInputSources["HeadSensor4"] = InterfaceComponentType(m_IO_component_name, "HeadSensor4");
-        // schedule connections
-        mConnections.Add(headSensorName, "HeadSensorTurnOff",
-                         m_IO_component_name, "HeadSensorTurnOff");
-        mConnections.Add(headSensorName, "HeadSensor1",
-                         m_IO_component_name, "HeadSensor1");
-        mConnections.Add(headSensorName, "HeadSensor2",
-                         m_IO_component_name, "HeadSensor2");
-        mConnections.Add(headSensorName, "HeadSensor3",
-                         m_IO_component_name, "HeadSensor3");
-        mConnections.Add(headSensorName, "HeadSensor4",
-                         m_IO_component_name, "HeadSensor4");
-
+        // first case, using io to communicate with daVinci original head sensore
+        Json::Value operatorPresentType = operatorPresent["io"];
+        if (!operatorPresentType.empty()) {
+            const std::string headSensorName = "daVinciHeadSensor";
+            mDaVinciHeadSensor = new mtsDaVinciHeadSensor(headSensorName);
+            mtsComponentManager::GetInstance()->AddComponent(mDaVinciHeadSensor);
+            // main DInput is OperatorPresent comming from the newly added component
+            mDInputSources["OperatorPresent"] = InterfaceComponentType(headSensorName, "OperatorPresent");
+            // also expose the digital inputs from RobotIO (e.g. ROS topics)
+            mDInputSources["HeadSensor1"] = InterfaceComponentType(m_IO_component_name, "HeadSensor1");
+            mDInputSources["HeadSensor2"] = InterfaceComponentType(m_IO_component_name, "HeadSensor2");
+            mDInputSources["HeadSensor3"] = InterfaceComponentType(m_IO_component_name, "HeadSensor3");
+            mDInputSources["HeadSensor4"] = InterfaceComponentType(m_IO_component_name, "HeadSensor4");
+            // schedule connections
+            mConnections.Add(headSensorName, "HeadSensorTurnOff",
+                             m_IO_component_name, "HeadSensorTurnOff");
+            mConnections.Add(headSensorName, "HeadSensor1",
+                             m_IO_component_name, "HeadSensor1");
+            mConnections.Add(headSensorName, "HeadSensor2",
+                             m_IO_component_name, "HeadSensor2");
+            mConnections.Add(headSensorName, "HeadSensor3",
+                             m_IO_component_name, "HeadSensor3");
+            mConnections.Add(headSensorName, "HeadSensor4",
+                             m_IO_component_name, "HeadSensor4");
+        } else {
+            // second case, using hid config for goovis head sensor
+            operatorPresentType = operatorPresent["hid"];
+            if (!operatorPresentType.empty()) {
+                CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring hid head sensor with \""
+                                           << operatorPresentType << "\"" << std::endl;
+                const std::string headSensorName = "hidHeadSensor";
+                mGoovisHeadSensor = new mtsGoovisHeadSensor(headSensorName);
+                mGoovisHeadSensor->Configure(operatorPresentType.asString());
+                mtsComponentManager::GetInstance()->AddComponent(mGoovisHeadSensor);
+            }
+        }
     }
 
     // message re. footpedals are likely missing but user can override this requirement

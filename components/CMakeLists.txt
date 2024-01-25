@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2023 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2024 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -11,10 +11,6 @@
 
 cmake_minimum_required (VERSION 3.10)
 project (sawIntuitiveResearchKit VERSION 2.2.1)
-
-set (CMAKE_CXX_STANDARD 14)
-set (CMAKE_CXX_STANDARD_REQUIRED ON)
-set (CMAKE_CXX_EXTENSIONS OFF)
 
 set (REQUIRED_CISST_LIBRARIES
      cisstCommon
@@ -56,6 +52,24 @@ if (cisst_FOUND)
       option (sawIntuitiveResearchKit_HAS_SUJ_Si "Compile code to support the SI SUJ over bluetooth (requires gattlib)" OFF)
     else ()
       option (sawIntuitiveResearchKit_HAS_SUJ_Si "Compile code to support the SI SUJ over bluetooth (requires gattlib)" ON)
+    endif ()
+
+    if (WIN32)
+      option (sawIntuitiveResearchKit_HAS_HID_Goovis "Compile code to support the HID Goovis head sensor (requires hidapi-hidraw" OFF)
+    else ()
+      option (sawIntuitiveResearchKit_HAS_HID_Goovis "Compile code to support the HID Goovis head sensor (requires hidapi-hidraw" ON)
+    endif ()
+
+    if (sawIntuitiveResearchKit_HAS_HID_Goovis)
+      # there must be a more standard way to find a unix lib...
+      find_file (hidapi_HEADER_FILE
+	hidapi/hidapi.h
+	HINTS /usr/include)
+      if (hidapi_HEADER_FILE)
+	string (REPLACE "/hidapi/hidapi.h" "" hidapi_INCLUDE_DIR ${hidapi_HEADER_FILE})
+	include_directories (${hidapi_INCLUDE_DIR})
+	set (hidapi_LIBRARIES "hidapi-hidraw")
+      endif ()
     endif ()
 
     # external project for gattlib
@@ -192,6 +206,15 @@ if (cisst_FOUND)
          code/robGravityCompensationMTM.h
          )
 
+    if (sawIntuitiveResearchKit_HAS_HID_Goovis)
+      set (HEADER_FILES
+	${HEADER_FILES}
+	${sawIntuitiveResearchKit_HEADER_DIR}/mtsGoovisHeadSensor.h)
+      set (SOURCE_FILES
+	${SOURCE_FILES}
+	code/mtsGoovisHeadSensor.cpp)
+    endif (sawIntuitiveResearchKit_HAS_HID_Goovis)
+
     add_library (sawIntuitiveResearchKit
                  ${HEADER_FILES} ${SOURCE_FILES}
                  ${sawIntuitiveResearchKit_CISST_DG_SRCS}
@@ -217,13 +240,18 @@ if (cisst_FOUND)
         ${gattlib_LIBRARIES})
     endif ()
 
+    if (sawIntuitiveResearchKit_HAS_HID_Goovis)
+      target_link_libraries (
+        sawIntuitiveResearchKit
+        ${hidapi_LIBRARIES})
+    endif ()
+
     # Install targets for headers and library
     install (DIRECTORY
              ${sawIntuitiveResearchKit_SOURCE_DIR}/include/sawIntuitiveResearchKit
              ${sawIntuitiveResearchKit_BINARY_DIR}/include/sawIntuitiveResearchKit
              DESTINATION include
-             COMPONENT sawIntuitiveResearchKit-dev
-             PATTERN .svn EXCLUDE)
+             COMPONENT sawIntuitiveResearchKit-dev)
 
     install (TARGETS sawIntuitiveResearchKit COMPONENT sawIntuitiveResearchKit
              RUNTIME DESTINATION bin
