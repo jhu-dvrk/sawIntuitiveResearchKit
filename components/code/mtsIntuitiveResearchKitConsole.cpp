@@ -44,14 +44,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsSocketClientPSM.h>
 #include <sawIntuitiveResearchKit/mtsSocketServerPSM.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciHeadSensor.h>
+#if sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR
+#include <sawIntuitiveResearchKit/mtsHIDHeadSensor.h>
+#endif
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
-
-#if sawIntuitiveResearchKit_HAS_HID_Goovis
-#include <sawIntuitiveResearchKit/mtsGoovisHeadSensor.h>
-#endif
 
 #include <json/json.h>
 
@@ -705,8 +704,6 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mTimeOfLastErrorBeep(0.0),
     mTeleopMTMToCycle(""),
     mTeleopECM(0),
-    mDaVinciHeadSensor(0),
-    mDaVinciEndoscopeFocus(0),
     mOperatorPresent(false),
     mCameraPressed(false),
     m_IO_component_name("io")
@@ -1152,11 +1149,11 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     const Json::Value operatorPresent = jsonConfig["operator-present"];
     if (!operatorPresent.empty()) {
         // first case, using io to communicate with daVinci original head sensore
-        Json::Value operatorPresentType = operatorPresent["io"];
-        if (!operatorPresentType.empty()) {
+        Json::Value operatorPresentConfiguration = operatorPresent["io"];
+        if (!operatorPresentConfiguration.empty()) {
             const std::string headSensorName = "daVinciHeadSensor";
-            mDaVinciHeadSensor = new mtsDaVinciHeadSensor(headSensorName);
-            mtsComponentManager::GetInstance()->AddComponent(mDaVinciHeadSensor);
+            mHeadSensor = new mtsDaVinciHeadSensor(headSensorName);
+            mtsComponentManager::GetInstance()->AddComponent(mHeadSensor);
             // main DInput is OperatorPresent comming from the newly added component
             mDInputSources["OperatorPresent"] = InterfaceComponentType(headSensorName, "OperatorPresent");
             // also expose the digital inputs from RobotIO (e.g. ROS topics)
@@ -1177,14 +1174,30 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                              m_IO_component_name, "HeadSensor4");
         } else {
             // second case, using hid config for goovis head sensor
-            operatorPresentType = operatorPresent["hid"];
-            if (!operatorPresentType.empty()) {
+            operatorPresentConfiguration = operatorPresent["hid"];
+            if (!operatorPresentConfiguration.empty()) {
+#if sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR
+                std::string relativeConfigFile = operatorPresentConfiguration.asString();
                 CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring hid head sensor with \""
-                                           << operatorPresentType << "\"" << std::endl;
-                const std::string headSensorName = "hidHeadSensor";
-                mGoovisHeadSensor = new mtsGoovisHeadSensor(headSensorName);
-                mGoovisHeadSensor->Configure(operatorPresentType.asString());
-                mtsComponentManager::GetInstance()->AddComponent(mGoovisHeadSensor);
+                                           << relativeConfigFile << "\"" << std::endl;
+                const std::string configFile = m_config_path.Find(relativeConfigFile);
+                if (configFile == "") {
+                    CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
+                                             << relativeConfigFile << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                const std::string headSensorName = "HIDHeadSensor";
+                mHeadSensor = new mtsHIDHeadSensor(headSensorName);
+                mHeadSensor->Configure(configFile);
+                mtsComponentManager::GetInstance()->AddComponent(mHeadSensor);
+                // main DInput is OperatorPresent comming from the newly added component
+                mDInputSources["OperatorPresent"] = InterfaceComponentType(headSensorName, "OperatorPresent");
+#else
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: can't use HID head sensor." << std::endl
+                                         << "The code has been compiled with sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR OFF." << std::endl
+                                         << "Re-run CMake, re-compile and try again." << std::endl;
+                exit(EXIT_FAILURE);
+#endif
             }
         }
     }

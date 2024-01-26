@@ -48,19 +48,21 @@ if (cisst_FOUND)
     cisst_set_output_path ()
 
     # gattlib is not available on Windows
+    set (OPT_MSG "Compile code to support the SI SUJ over bluetooth (requires gattlib)")
     if (WIN32)
-      option (sawIntuitiveResearchKit_HAS_SUJ_Si "Compile code to support the SI SUJ over bluetooth (requires gattlib)" OFF)
+      option (sawIntuitiveResearchKit_HAS_SUJ_Si ${OPT_MSG} OFF)
     else ()
-      option (sawIntuitiveResearchKit_HAS_SUJ_Si "Compile code to support the SI SUJ over bluetooth (requires gattlib)" ON)
+      option (sawIntuitiveResearchKit_HAS_SUJ_Si ${OPT_MSG} ON)
     endif ()
 
+    set (OPT_MSG "Compile code to support the HID head sensor like Goovis HD (requires hidapi-hidraw)")
     if (WIN32)
-      option (sawIntuitiveResearchKit_HAS_HID_Goovis "Compile code to support the HID Goovis head sensor (requires hidapi-hidraw" OFF)
+      option (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR ${OPT_MSG} OFF)
     else ()
-      option (sawIntuitiveResearchKit_HAS_HID_Goovis "Compile code to support the HID Goovis head sensor (requires hidapi-hidraw" ON)
+      option (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR ${OPT_MSG} ON)
     endif ()
 
-    if (sawIntuitiveResearchKit_HAS_HID_Goovis)
+    if (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)
       # there must be a more standard way to find a unix lib...
       find_file (hidapi_HEADER_FILE
 	hidapi/hidapi.h
@@ -138,16 +140,6 @@ if (cisst_FOUND)
     configure_file ("${sawIntuitiveResearchKit_SOURCE_DIR}/code/sawIntuitiveResearchKitConfig.h.in"
                     "${sawIntuitiveResearchKit_BINARY_DIR}/include/sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h")
 
-    # create data type using the data generator
-    cisst_data_generator (sawIntuitiveResearchKit
-                          "${sawIntuitiveResearchKit_BINARY_DIR}/include" # where to save the file
-                          "sawIntuitiveResearchKit/"    # sub directory for include
-                          code/mtsIntuitiveResearchKitArmTypes.cdg
-                          code/mtsIntuitiveResearchKitToolTypes.cdg
-                          code/mtsIntuitiveResearchKitEndoscopeTypes.cdg
-                          code/socketMessages.cdg)
-
-
     set (HEADER_FILES
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsStateMachine.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKit.h
@@ -206,14 +198,29 @@ if (cisst_FOUND)
          code/robGravityCompensationMTM.h
          )
 
-    if (sawIntuitiveResearchKit_HAS_HID_Goovis)
+    set (CDG_FILES
+      code/mtsIntuitiveResearchKitArmTypes.cdg
+      code/mtsIntuitiveResearchKitToolTypes.cdg
+      code/mtsIntuitiveResearchKitEndoscopeTypes.cdg
+      code/socketMessages.cdg)
+
+    if (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)
       set (HEADER_FILES
 	${HEADER_FILES}
-	${sawIntuitiveResearchKit_HEADER_DIR}/mtsGoovisHeadSensor.h)
+	${sawIntuitiveResearchKit_HEADER_DIR}/mtsHIDHeadSensor.h)
       set (SOURCE_FILES
 	${SOURCE_FILES}
-	code/mtsGoovisHeadSensor.cpp)
-    endif (sawIntuitiveResearchKit_HAS_HID_Goovis)
+	code/mtsHIDHeadSensor.cpp)
+      set (CDG_FILES
+	${CDG_FILES}
+	code/mtsHIDHeadSensorConfiguration.cdg)
+    endif (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)
+
+    # create data type using the data generator
+    cisst_data_generator (sawIntuitiveResearchKit
+                          "${sawIntuitiveResearchKit_BINARY_DIR}/include" # where to save the file
+                          "sawIntuitiveResearchKit/"    # sub directory for include
+			  ${CDG_FILES})
 
     add_library (sawIntuitiveResearchKit
                  ${HEADER_FILES} ${SOURCE_FILES}
@@ -240,7 +247,7 @@ if (cisst_FOUND)
         ${gattlib_LIBRARIES})
     endif ()
 
-    if (sawIntuitiveResearchKit_HAS_HID_Goovis)
+    if (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)
       target_link_libraries (
         sawIntuitiveResearchKit
         ${hidapi_LIBRARIES})

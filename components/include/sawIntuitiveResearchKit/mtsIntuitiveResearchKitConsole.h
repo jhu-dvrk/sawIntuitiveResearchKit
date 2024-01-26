@@ -41,8 +41,6 @@ namespace dvrk {
 }
 
 class mtsTextToSpeech;
-class mtsDaVinciHeadSensor;
-class mtsGoovisHeadSensor;
 class mtsDaVinciEndoscopeFocus;
 class mtsIntuitiveResearchKitArm;
 
@@ -313,14 +311,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     /*! Single ECM bimanual teleoperation */
     TeleopECM * mTeleopECM = nullptr;
 
-    /*! daVinci head sensor */
-    mtsDaVinciHeadSensor * mDaVinciHeadSensor = nullptr;
-
-    /*! Goovis head sensor */
-    mtsGoovisHeadSensor * mGoovisHeadSensor = nullptr;
+    /*! Head sensor */
+    mtsComponent * mHeadSensor = nullptr;
 
     /*! daVinci Endoscope Focus */
-    mtsDaVinciEndoscopeFocus * mDaVinciEndoscopeFocus;
+    mtsDaVinciEndoscopeFocus * mDaVinciEndoscopeFocus = nullptr;
 
     /*! Find all arm data from JSON configuration. */
     bool ConfigureArmJSON(const Json::Value & jsonArm,

@@ -27,6 +27,6 @@ http://www.cisst.org/cisst/license.txt.
 
 #cmakedefine01 sawIntuitiveResearchKit_HAS_SUJ_Si
 
-#cmakedefine01 sawIntuitiveResearchKit_HAS_HID_Goovis
+#cmakedefine01 sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR
 
 #endif // _sawIntuitiveResearchKitConfig_h

@@ -16,25 +16,25 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef _mtsGoovisHeadSensor_h
-#define _mtsGoovisHeadSensor_h
+#ifndef _mtsHIDHeadSensor_h
+#define _mtsHIDHeadSensor_h
 
-#include <cisstVector/vctFixedSizeVectorTypes.h>
 #include <cisstMultiTask/mtsTaskContinuous.h>
 #include <cisstParameterTypes/prmEventButton.h>
+#include <sawIntuitiveResearchKit/mtsHIDHeadSensorConfiguration.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 // forward declarations for hidapi
-class mtsGoovisHeadSensorData;
+class mtsHIDHeadSensorData;
 
-class CISST_EXPORT mtsGoovisHeadSensor: public mtsTaskContinuous
+class CISST_EXPORT mtsHIDHeadSensor: public mtsTaskContinuous
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsGoovisHeadSensor(const std::string & componentName);
-    mtsGoovisHeadSensor(const mtsTaskContinuousConstructorArg & arg);
-    inline ~mtsGoovisHeadSensor() {}
+    mtsHIDHeadSensor(const std::string & componentName);
+    mtsHIDHeadSensor(const mtsTaskContinuousConstructorArg & arg);
+    inline ~mtsHIDHeadSensor() {}
 
     void Configure(const std::string & filename) override;
     void Startup(void) override;
@@ -44,16 +44,18 @@ public:
 protected:
 
     void Init(void);
-
+    void EnumerateDevices(void) const;
+    
     // Functions for events
     struct {
-        mtsFunctionWrite OperatorPresent;
-    } MessageEvents;
+        mtsFunctionWrite operator_present;
+    } m_events;
     mtsInterfaceProvided * m_interface;
-
-    mtsGoovisHeadSensorData * m_data;
+    bool m_operating_present = false;
+    mtsHIDHeadSensorData * m_data;
+    mtsHIDHeadSensorConfiguration m_configuration;
 };
 
-CMN_DECLARE_SERVICES_INSTANTIATION(mtsGoovisHeadSensor);
+CMN_DECLARE_SERVICES_INSTANTIATION(mtsHIDHeadSensor);
 
-#endif // _mtsGoovisHeadSensor_h
+#endif // _mtsHIDHeadSensor_h
