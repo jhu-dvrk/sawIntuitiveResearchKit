@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2017-12-18
 
-  (C) Copyright 2017-2018 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2017-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -33,10 +33,10 @@ public:
     mtsDaVinciHeadSensor(const mtsTaskConstructorArg & arg);
     inline ~mtsDaVinciHeadSensor() {}
 
-    void Configure(const std::string & filename);
-    void Startup(void);
-    void Run(void);
-    void Cleanup(void);
+    void Configure(const std::string & filename) override;
+    void Startup(void) override;
+    void Run(void) override;
+    void Cleanup(void) override;
 
 protected:
 
@@ -46,7 +46,7 @@ protected:
     struct {
         mtsFunctionWrite TurnOff;
     } RobotIO;
-    
+
     // Functions for events
     struct {
         mtsFunctionWrite OperatorPresent;

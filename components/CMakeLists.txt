@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2023 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2024 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -11,10 +11,6 @@
 
 cmake_minimum_required (VERSION 3.10)
 project (sawIntuitiveResearchKit VERSION 2.2.1)
-
-set (CMAKE_CXX_STANDARD 14)
-set (CMAKE_CXX_STANDARD_REQUIRED ON)
-set (CMAKE_CXX_EXTENSIONS OFF)
 
 set (REQUIRED_CISST_LIBRARIES
      cisstCommon
@@ -52,10 +48,30 @@ if (cisst_FOUND)
     cisst_set_output_path ()
 
     # gattlib is not available on Windows
+    set (OPT_MSG "Compile code to support the SI SUJ over bluetooth (requires gattlib)")
     if (WIN32)
-      option (sawIntuitiveResearchKit_HAS_SUJ_Si "Compile code to support the SI SUJ over bluetooth (requires gattlib)" OFF)
+      option (sawIntuitiveResearchKit_HAS_SUJ_Si ${OPT_MSG} OFF)
     else ()
-      option (sawIntuitiveResearchKit_HAS_SUJ_Si "Compile code to support the SI SUJ over bluetooth (requires gattlib)" ON)
+      option (sawIntuitiveResearchKit_HAS_SUJ_Si ${OPT_MSG} ON)
+    endif ()
+
+    set (OPT_MSG "Compile code to support the HID head sensor like Goovis HD (requires hidapi-hidraw)")
+    if (WIN32)
+      option (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR ${OPT_MSG} OFF)
+    else ()
+      option (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR ${OPT_MSG} ON)
+    endif ()
+
+    if (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)
+      # there must be a more standard way to find a unix lib...
+      find_file (hidapi_HEADER_FILE
+	hidapi/hidapi.h
+	HINTS /usr/include)
+      if (hidapi_HEADER_FILE)
+	string (REPLACE "/hidapi/hidapi.h" "" hidapi_INCLUDE_DIR ${hidapi_HEADER_FILE})
+	include_directories (${hidapi_INCLUDE_DIR})
+	set (hidapi_LIBRARIES "hidapi-hidraw")
+      endif ()
     endif ()
 
     # external project for gattlib
@@ -124,16 +140,6 @@ if (cisst_FOUND)
     configure_file ("${sawIntuitiveResearchKit_SOURCE_DIR}/code/sawIntuitiveResearchKitConfig.h.in"
                     "${sawIntuitiveResearchKit_BINARY_DIR}/include/sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h")
 
-    # create data type using the data generator
-    cisst_data_generator (sawIntuitiveResearchKit
-                          "${sawIntuitiveResearchKit_BINARY_DIR}/include" # where to save the file
-                          "sawIntuitiveResearchKit/"    # sub directory for include
-                          code/mtsIntuitiveResearchKitArmTypes.cdg
-                          code/mtsIntuitiveResearchKitToolTypes.cdg
-                          code/mtsIntuitiveResearchKitEndoscopeTypes.cdg
-                          code/socketMessages.cdg)
-
-
     set (HEADER_FILES
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsStateMachine.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKit.h
@@ -192,6 +198,30 @@ if (cisst_FOUND)
          code/robGravityCompensationMTM.h
          )
 
+    set (CDG_FILES
+      code/mtsIntuitiveResearchKitArmTypes.cdg
+      code/mtsIntuitiveResearchKitToolTypes.cdg
+      code/mtsIntuitiveResearchKitEndoscopeTypes.cdg
+      code/socketMessages.cdg)
+
+    if (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)
+      set (HEADER_FILES
+	${HEADER_FILES}
+	${sawIntuitiveResearchKit_HEADER_DIR}/mtsHIDHeadSensor.h)
+      set (SOURCE_FILES
+	${SOURCE_FILES}
+	code/mtsHIDHeadSensor.cpp)
+      set (CDG_FILES
+	${CDG_FILES}
+	code/mtsHIDHeadSensorConfiguration.cdg)
+    endif (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)
+
+    # create data type using the data generator
+    cisst_data_generator (sawIntuitiveResearchKit
+                          "${sawIntuitiveResearchKit_BINARY_DIR}/include" # where to save the file
+                          "sawIntuitiveResearchKit/"    # sub directory for include
+			  ${CDG_FILES})
+
     add_library (sawIntuitiveResearchKit
                  ${HEADER_FILES} ${SOURCE_FILES}
                  ${sawIntuitiveResearchKit_CISST_DG_SRCS}
@@ -217,13 +247,18 @@ if (cisst_FOUND)
         ${gattlib_LIBRARIES})
     endif ()
 
+    if (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)
+      target_link_libraries (
+        sawIntuitiveResearchKit
+        ${hidapi_LIBRARIES})
+    endif ()
+
     # Install targets for headers and library
     install (DIRECTORY
              ${sawIntuitiveResearchKit_SOURCE_DIR}/include/sawIntuitiveResearchKit
              ${sawIntuitiveResearchKit_BINARY_DIR}/include/sawIntuitiveResearchKit
              DESTINATION include
-             COMPONENT sawIntuitiveResearchKit-dev
-             PATTERN .svn EXCLUDE)
+             COMPONENT sawIntuitiveResearchKit-dev)
 
     install (TARGETS sawIntuitiveResearchKit COMPONENT sawIntuitiveResearchKit
              RUNTIME DESTINATION bin

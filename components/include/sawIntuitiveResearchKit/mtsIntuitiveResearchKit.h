@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -91,7 +91,7 @@ namespace mtsIntuitiveResearchKit {
         const double OrientationTolerance = 5.0 * cmnPI_180; // in radians
         const double GripperThreshold = 5.0 * cmnPI_180; // in radians
         const double RollThreshold = 3.0 * cmnPI_180; // in radians
-        const double JawRate =  2.0 * cmnPI * cmn_s; // 360 d/s
+        const double JawRate =  4.0 * cmnPI * cmn_s; // 720 d/s
         const double JawRateBackFromClutch =  0.2 * cmnPI * cmn_s; // 36.0 d/s
         const double ToleranceBackFromClutch =  2.0 * cmnPI_180; // in radians
     }
