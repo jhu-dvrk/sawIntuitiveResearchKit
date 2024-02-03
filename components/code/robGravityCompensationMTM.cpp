@@ -297,7 +297,7 @@ robGravityCompensationMTM::Create(const Json::Value & jsonConfig)
         return std::make_tuple(jarray, false, std::string(""));
     };
 
-    auto isEmpty = [](const auto &paramTuple) {
+    auto isEmpty = [](const std::tuple<Json::Value, bool, std::string> &paramTuple) {
         return std::get<1>(paramTuple);
     };
 
