@@ -301,7 +301,7 @@ robGravityCompensationMTM::Create(const Json::Value & jsonConfig)
         return std::get<1>(paramTuple);
     };
 
-    auto createReturnValue = [](const auto &paramTuple) {
+    auto createReturnValue = [](const std::tuple<Json::Value, bool, std::string> &paramTuple) {
         return robGravityCompensationMTM::CreationResult({nullptr, std::get<2>(paramTuple)});
     };
 
