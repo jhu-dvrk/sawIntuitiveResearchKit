@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2021-02-07
 
-  (C) Copyright 2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2021-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -88,9 +88,10 @@ bool mtsToolList::Load(const cmnPath & path,
             }
             // make sure generation is S or Classic
             if ((description->generation != "Classic")
-                && (description->generation != "S")) {
+                && (description->generation != "S")
+                && (description->generation != "Si")) {
                 CMN_LOG_CLASS_INIT_ERROR  << "ToolList::Load: error found in file \""
-                                          << fullFilename << "\": generation must be either \"Classic\" or \"S\", not \""
+                                          << fullFilename << "\": generation must be either \"Classic\", \"S\" or \"Si\", not \""
                                           << description->generation << "\"" << std::endl;
                 delete description;
                 return false;
@@ -110,7 +111,15 @@ bool mtsToolList::Load(const cmnPath & path,
                                                 << "\" starts with 42 so it's generation should be \"S\", not \""
                                                 << description->generation << "\"" << std::endl;
                 }
+            } else if (description->model.substr(0, 2) == "41") {
+                if (description->generation != "Si") {
+                    CMN_LOG_CLASS_INIT_WARNING  << "ToolList::Load: issue found in file \""
+                                                << fullFilename << "\": tool model \"" << description->model
+                                                << "\" starts with 41 so it's generation should be \"Si\", not \""
+                                                << description->generation << "\"" << std::endl;
+                }
             }
+                
             // make sure file name contains one of the names
             bool nameFound = false;
             for (auto & name : description->names) {

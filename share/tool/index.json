@@ -219,6 +219,14 @@
         ,
         // S/Si
         {
+            "model": "410298",
+            "names": ["STAPLER_45"],
+            "description": "Stapler 45",
+            "generation": "Si",
+            "file": "STAPLER_45_410298.json"
+        }
+        ,
+        {
             "model": "420001",
             "names": ["POTTS_SCISSORS"],
             "description": "Potts Scissors",
