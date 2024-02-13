@@ -59,9 +59,9 @@
     ,
     // angles used to engage the tool, in radians
     // make sure these are within the range of motion IN the cannula
-    // max range on roll, 3, 3, 5 degrees
+    // max range on roll, 2, 2, 2 degrees
     "tool-engage-position" : {
-        "lower" : [-4.5378, -0.0523, -0.0523, 0.0],
-        "upper" : [ 4.5378,  0.0523,  0.0523, 0.0872]
+        "lower" : [-4.5378, -0.034, -0.034, 0.0],
+        "upper" : [ 4.5378,  0.034,  0.034, 0.034]
     }
 }
