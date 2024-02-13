@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required(VERSION 3.10)
-project (sawIntuitiveResearchKitAll VERSION 2.2.1)
+project (sawIntuitiveResearchKitCore VERSION 2.2.1)
 
 find_package (cisst REQUIRED)
 include (${CISST_USE_FILE})
@@ -20,7 +20,7 @@ cisst_cpack_settings (
 
 add_subdirectory (components)
 
-set (sawIntuitiveResearchKit_DIR "${sawIntuitiveResearchKitAll_BINARY_DIR}/components")
+set (sawIntuitiveResearchKit_DIR "${sawIntuitiveResearchKitCore_BINARY_DIR}/components")
 add_subdirectory (applications)
 add_subdirectory (examples)
 add_subdirectory (share)
