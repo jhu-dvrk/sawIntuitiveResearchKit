@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2021-11-03
 
-  (C) Copyright 2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2021-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -26,7 +26,7 @@ class mtsDerivedPSMROSBridge: public mts_ros_crtk_bridge_provided
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 public:
     mtsDerivedPSMROSBridge(const std::string & _component_name,
-                           ros::NodeHandle * _node_handle,
+                           cisst_ral::node_ptr_t _node_handle,
                            const double _period_in_seconds = 5.0 * cmn_ms);
     mtsDerivedPSMROSBridge(const mtsTaskPeriodicConstructorArg & arg);
 
