@@ -23,7 +23,7 @@ find_package (catkin QUIET
 if (catkin_FOUND)
   set (ROS_VERSION 1)
   catkin_package (
-    INCLUDE_DIRS include "${CATKIN_DEVEL_PREFIX}/include"
+    INCLUDE_DIRS include
     LIBRARIES dvrk_utilities
     CATKIN_DEPENDS ${ROS1_depends})
   include_directories (${catkin_INCLUDE_DIRS})
@@ -71,7 +71,7 @@ if (cisst_FOUND_AS_REQUIRED)
 
   # load cisst configuration
   include (${CISST_USE_FILE})
-  
+
   # set paths
   cisst_set_output_path ()
 
@@ -123,7 +123,7 @@ if (cisst_FOUND_AS_REQUIRED)
     RUNTIME DESTINATION lib/${PROJECT_NAME}
     LIBRARY DESTINATION lib
     INCLUDES DESTINATION include)
-  
+
   if (ROS_VERSION EQUAL 2)
     ament_target_dependencies (
       dvrk_utilities
