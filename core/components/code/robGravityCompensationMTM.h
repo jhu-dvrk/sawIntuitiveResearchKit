@@ -5,7 +5,7 @@
   Author(s):
   Created on: 2018
 
-  (C) Copyright 2018, Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2018-2024, Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -29,6 +29,10 @@ class CISST_EXPORT robGravityCompensationMTM
 {
 public:
     struct CreationResult {
+        inline CreationResult(robGravityCompensationMTM * ptr, const std::string & msg):
+            Pointer(ptr),
+            ErrorMessage(msg) {}
+
         robGravityCompensationMTM * Pointer = nullptr;
         std::string ErrorMessage = "";
     };
