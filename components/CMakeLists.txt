@@ -49,14 +49,14 @@ if (cisst_FOUND)
 
     # gattlib is not available on Windows
     set (OPT_MSG "Compile code to support the SI SUJ over bluetooth (requires gattlib)")
-    if (WIN32)
+    if (WIN32 OR APPLE)
       option (sawIntuitiveResearchKit_HAS_SUJ_Si ${OPT_MSG} OFF)
     else ()
       option (sawIntuitiveResearchKit_HAS_SUJ_Si ${OPT_MSG} ON)
     endif ()
 
     set (OPT_MSG "Compile code to support the HID head sensor like Goovis HD (requires hidapi-hidraw)")
-    if (WIN32)
+    if (WIN32 OR APPLE)
       option (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR ${OPT_MSG} OFF)
     else ()
       option (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR ${OPT_MSG} ON)
