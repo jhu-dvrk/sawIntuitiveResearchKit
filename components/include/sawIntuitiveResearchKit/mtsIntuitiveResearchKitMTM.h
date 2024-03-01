@@ -122,7 +122,7 @@ protected:
 
     void gravity_compensation(vctDoubleVec & efforts) override;
 
-    double closest_equivalent_roll(double current_angle, double target_angle);
+    double closest_equivalent_roll(double current_angle, double target_angle) const;
     int m_wrist_roll_virtual_offset = 0;
 
     // Functions for events

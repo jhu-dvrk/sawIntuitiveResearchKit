@@ -297,7 +297,7 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
     const double current_wrist_roll = m_pid_measured_js.Position()[JNT_WRIST_ROLL];
     const double target_roll = jointSet[JNT_WRIST_ROLL];
     const double closest = closest_equivalent_roll(current_wrist_roll, target_roll);
-    m_wrist_roll_virtual_offset = std::round((target_roll - closest)/cmnPI);
+    //m_wrist_roll_virtual_offset = std::round((target_roll - closest)/cmnPI);
 
     return robManipulator::ESUCCESS;
 }
@@ -741,7 +741,7 @@ void mtsIntuitiveResearchKitMTM::gravity_compensation(vctDoubleVec & efforts)
     }
 }
 
-double mtsIntuitiveResearchKitMTM::closest_equivalent_roll(double current_angle, double target_angle)
+double mtsIntuitiveResearchKitMTM::closest_equivalent_roll(double current_angle, double target_angle) const
 {
     // find target angle, mod PI from current angle to minimize unnecessary rotations
     const double delta = std::remainder(target_angle - current_angle, cmnPI);
