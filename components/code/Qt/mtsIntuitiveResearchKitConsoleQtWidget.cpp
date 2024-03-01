@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -442,7 +442,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     std::string title = "dVRK ";
     title.append(sawIntuitiveResearchKit_VERSION);
     title.append(" / cisst ");
-    title.append(CISST_VERSION);
+    title.append(cisst_VERSION);
     setWindowTitle(title.c_str());
     resize(sizeHint());
 

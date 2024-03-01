@@ -1,8 +1,15 @@
+inline-header {
+// Always include last
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+}
+
 class {
     name mtsIntuitiveResearchKitEndoscopeTypes;
+    attribute CISST_EXPORT;
 
     enum {
         name Type;
+        prefix SCOPE_;
         enum-value {
             name ERROR;
             description Error;

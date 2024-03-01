@@ -5,8 +5,11 @@
 	    "name": "outer_yaw",
 	    "type": 2,
 	    "p_gain": 600.0,
-	    "d_gain": 20.0,
-	    "i_gain": 0.0
+	    "d_gain": 30.0,
+	    "i_gain": 0.0,
+	    "use_disturbance_observer": true,
+	    "nominal_mass": 0.01,
+	    "disturbance_cutoff": 50.0
 	}
 	,
 	{
@@ -14,8 +17,11 @@
 	    "name": "outer_pitch",
 	    "type": 2,
 	    "p_gain": 600.0,
-	    "d_gain": 20.0,
-	    "i_gain": 0.0
+	    "d_gain": 30.0,
+	    "i_gain": 0.0,
+	    "use_disturbance_observer": true,
+	    "nominal_mass": 0.01,
+	    "disturbance_cutoff": 50.0
 	}
 	,
 	{

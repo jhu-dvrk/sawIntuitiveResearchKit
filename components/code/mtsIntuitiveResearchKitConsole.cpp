@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -40,9 +40,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJSi.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJFixed.h>
 #include <sawIntuitiveResearchKit/mtsSocketClientPSM.h>
 #include <sawIntuitiveResearchKit/mtsSocketServerPSM.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciHeadSensor.h>
+#if sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR
+#include <sawIntuitiveResearchKit/mtsHIDHeadSensor.h>
+#endif
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationECM.h>
@@ -63,6 +67,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived(void) const
     case ARM_ECM_DERIVED:
     case ARM_SUJ_Classic:
     case ARM_SUJ_Si:
+    case ARM_SUJ_Fixed:
     case FOCUS_CONTROLLER:
         return true;
         break;
@@ -211,6 +216,7 @@ bool mtsIntuitiveResearchKitConsole::Arm::expects_IO(void) const
     return (native_or_derived()
             && (m_type != Arm::ARM_PSM_SOCKET)
             && (m_type != Arm::ARM_SUJ_Si)
+            && (m_type != Arm::ARM_SUJ_Fixed)
             && (m_simulation == Arm::SIMULATION_NONE));
 }
 
@@ -221,11 +227,6 @@ mtsIntuitiveResearchKitConsole::Arm::Arm(mtsIntuitiveResearchKitConsole * consol
     m_name(name),
     m_IO_component_name(ioComponentName),
     m_arm_period(mtsIntuitiveResearchKit::ArmPeriod),
-    IOInterfaceRequired(0),
-    PIDInterfaceRequired(0),
-    ArmInterfaceRequired(0),
-    SUJInterfaceRequiredFromIO(0),
-    SUJInterfaceRequiredToSUJ(0),
     mSUJClutched(false)
 {}
 
@@ -387,10 +388,23 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType arm_type,
         break;
     case ARM_SUJ_Si:
         {
+#if sawIntuitiveResearchKit_HAS_SUJ_Si
             mtsIntuitiveResearchKitSUJSi * suj = new mtsIntuitiveResearchKitSUJSi(Name(), periodInSeconds);
             if (m_simulation == SIMULATION_KINEMATIC) {
                 suj->set_simulated();
             }
+            suj->Configure(m_arm_configuration_file);
+            componentManager->AddComponent(suj);
+#else
+            CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::ConfigureArm: can't create an arm of type SUJ_Si because sawIntuitiveResearchKit_HAS_SUJ_Si is set to OFF in CMake"
+                               << std::endl;
+            exit(EXIT_FAILURE);
+#endif
+        }
+        break;
+    case ARM_SUJ_Fixed:
+        {
+            mtsIntuitiveResearchKitSUJFixed * suj = new mtsIntuitiveResearchKitSUJFixed(Name(), periodInSeconds);
             suj->Configure(m_arm_configuration_file);
             componentManager->AddComponent(suj);
         }
@@ -501,6 +515,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType arm_type,
 
     // for Si patient side, connect the SUJ brakes to buttons on arm
     if ((armPSMOrDerived || armECMOrDerived)
+        && (m_simulation == SIMULATION_NONE)
         && (generation() == mtsIntuitiveResearchKitArm::GENERATION_Si)) {
         std::vector<std::string> itfs = {"SUJClutch", "SUJClutch2", "SUJBrake"};
         for (const auto & itf : itfs) {
@@ -689,8 +704,6 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     mTimeOfLastErrorBeep(0.0),
     mTeleopMTMToCycle(""),
     mTeleopECM(0),
-    mDaVinciHeadSensor(0),
-    mDaVinciEndoscopeFocus(0),
     mOperatorPresent(false),
     mCameraPressed(false),
     m_IO_component_name("io")
@@ -939,12 +952,18 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             physicalFootpedalsRequired = footpedalsRequired.asBool();
         }
     }
+    // just check for IO and make sure we don't have io and hid, will be configured later
     jsonValue = jsonConfig["operator-present"];
     if (!jsonValue.empty()) {
         // check if operator present uses IO
         Json::Value jsonConfigFile = jsonValue["io"];
         if (!jsonConfigFile.empty()) {
             mHasIO = true;
+            jsonConfigFile = jsonValue["hid"];
+            if (!jsonConfigFile.empty()) {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: operator-present can't have both io and hid" << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
     }
     // create IO if needed and configure IO
@@ -1003,8 +1022,13 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 mDInputSources["Head"] = InterfaceComponentType(m_IO_component_name, "Head");
                 io->Configure(configFile);
             }
+            // check if user wants to close all relays
+            Json::Value close_all_relays = jsonValue["close-all-relays"];
+            if (!close_all_relays.empty()) {
+                m_close_all_relays_from_config = close_all_relays.asBool();
+            }
         }
-        // configure for operator present
+        // configure IO for operator present
         jsonValue = jsonConfig["operator-present"];
         if (!jsonValue.empty()) {
             // check if operator present uses IO
@@ -1019,6 +1043,8 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring operator present using \""
                                            << configFile << "\"" << std::endl;
                 io->Configure(configFile);
+            } else {
+                jsonConfigFile = jsonValue["hid"];
             }
         }
         // configure for endoscope focus
@@ -1039,7 +1065,24 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             }
         }
         // and add the io component!
+        m_IO_interface = AddInterfaceRequired("IO");
+        if (m_IO_interface) {
+            m_IO_interface->AddFunction("close_all_relays", IO.close_all_relays);
+            m_IO_interface->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
+                                                 this, "error");
+            m_IO_interface->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
+                                                 this, "warning");
+            m_IO_interface->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
+                                                 this, "status");
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to create IO required interface" << std::endl;
+            exit(EXIT_FAILURE);
+        }
         mtsComponentManager::GetInstance()->AddComponent(io);
+        if (m_IO_interface) {
+            mConnections.Add(this->GetName(), "IO",
+                             io->GetName(), "Configuration");
+        }
     }
 
     // now can configure PID and Arms
@@ -1105,28 +1148,58 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     // load operator-present settings, this will over write older settings
     const Json::Value operatorPresent = jsonConfig["operator-present"];
     if (!operatorPresent.empty()) {
-        const std::string headSensorName = "daVinciHeadSensor";
-        mDaVinciHeadSensor = new mtsDaVinciHeadSensor(headSensorName);
-        mtsComponentManager::GetInstance()->AddComponent(mDaVinciHeadSensor);
-        // main DInput is OperatorPresent comming from the newly added component
-        mDInputSources["OperatorPresent"] = InterfaceComponentType(headSensorName, "OperatorPresent");
-        // also expose the digital inputs from RobotIO (e.g. ROS topics)
-        mDInputSources["HeadSensor1"] = InterfaceComponentType(m_IO_component_name, "HeadSensor1");
-        mDInputSources["HeadSensor2"] = InterfaceComponentType(m_IO_component_name, "HeadSensor2");
-        mDInputSources["HeadSensor3"] = InterfaceComponentType(m_IO_component_name, "HeadSensor3");
-        mDInputSources["HeadSensor4"] = InterfaceComponentType(m_IO_component_name, "HeadSensor4");
-        // schedule connections
-        mConnections.Add(headSensorName, "HeadSensorTurnOff",
-                         m_IO_component_name, "HeadSensorTurnOff");
-        mConnections.Add(headSensorName, "HeadSensor1",
-                         m_IO_component_name, "HeadSensor1");
-        mConnections.Add(headSensorName, "HeadSensor2",
-                         m_IO_component_name, "HeadSensor2");
-        mConnections.Add(headSensorName, "HeadSensor3",
-                         m_IO_component_name, "HeadSensor3");
-        mConnections.Add(headSensorName, "HeadSensor4",
-                         m_IO_component_name, "HeadSensor4");
-
+        // first case, using io to communicate with daVinci original head sensore
+        Json::Value operatorPresentConfiguration = operatorPresent["io"];
+        if (!operatorPresentConfiguration.empty()) {
+            const std::string headSensorName = "daVinciHeadSensor";
+            mHeadSensor = new mtsDaVinciHeadSensor(headSensorName);
+            mtsComponentManager::GetInstance()->AddComponent(mHeadSensor);
+            // main DInput is OperatorPresent comming from the newly added component
+            mDInputSources["OperatorPresent"] = InterfaceComponentType(headSensorName, "OperatorPresent");
+            // also expose the digital inputs from RobotIO (e.g. ROS topics)
+            mDInputSources["HeadSensor1"] = InterfaceComponentType(m_IO_component_name, "HeadSensor1");
+            mDInputSources["HeadSensor2"] = InterfaceComponentType(m_IO_component_name, "HeadSensor2");
+            mDInputSources["HeadSensor3"] = InterfaceComponentType(m_IO_component_name, "HeadSensor3");
+            mDInputSources["HeadSensor4"] = InterfaceComponentType(m_IO_component_name, "HeadSensor4");
+            // schedule connections
+            mConnections.Add(headSensorName, "HeadSensorTurnOff",
+                             m_IO_component_name, "HeadSensorTurnOff");
+            mConnections.Add(headSensorName, "HeadSensor1",
+                             m_IO_component_name, "HeadSensor1");
+            mConnections.Add(headSensorName, "HeadSensor2",
+                             m_IO_component_name, "HeadSensor2");
+            mConnections.Add(headSensorName, "HeadSensor3",
+                             m_IO_component_name, "HeadSensor3");
+            mConnections.Add(headSensorName, "HeadSensor4",
+                             m_IO_component_name, "HeadSensor4");
+        } else {
+            // second case, using hid config for goovis head sensor
+            operatorPresentConfiguration = operatorPresent["hid"];
+            if (!operatorPresentConfiguration.empty()) {
+#if sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR
+                std::string relativeConfigFile = operatorPresentConfiguration.asString();
+                CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring hid head sensor with \""
+                                           << relativeConfigFile << "\"" << std::endl;
+                const std::string configFile = m_config_path.Find(relativeConfigFile);
+                if (configFile == "") {
+                    CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
+                                             << relativeConfigFile << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                const std::string headSensorName = "HIDHeadSensor";
+                mHeadSensor = new mtsHIDHeadSensor(headSensorName);
+                mHeadSensor->Configure(configFile);
+                mtsComponentManager::GetInstance()->AddComponent(mHeadSensor);
+                // main DInput is OperatorPresent comming from the newly added component
+                mDInputSources["OperatorPresent"] = InterfaceComponentType(headSensorName, "OperatorPresent");
+#else
+                CMN_LOG_CLASS_INIT_ERROR << "Configure: can't use HID head sensor." << std::endl
+                                         << "The code has been compiled with sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR OFF." << std::endl
+                                         << "Re-run CMake, re-compile and try again." << std::endl;
+                exit(EXIT_FAILURE);
+#endif
+            }
+        }
     }
 
     // message re. footpedals are likely missing but user can override this requirement
@@ -1188,10 +1261,11 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     }
     this->AddFootpedalInterfaces();
 
-    // search for SUJs
+    // search for SUJs, real, not Fixed
     bool hasSUJ = false;
     for (auto iter = mArms.begin(); iter != end; ++iter) {
-        if (iter->second->suj()) {
+        if ((iter->second->m_type == Arm::ARM_SUJ_Classic)
+            || (iter->second->m_type == Arm::ARM_SUJ_Si)) {
             hasSUJ = true;
         }
     }
@@ -1206,13 +1280,14 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                  || (arm->m_type == Arm::ARM_PSM_DERIVED)
                  )
                 && (arm->m_simulation == Arm::SIMULATION_NONE)) {
-                arm->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJ-" + arm->Name() + "-IO");
+                arm->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJClutch-" + arm->Name() + "-IO");
                 arm->SUJInterfaceRequiredFromIO->AddEventHandlerWrite(&Arm::SUJClutchEventHandlerFromIO, arm, "Button");
-                arm->SUJInterfaceRequiredToSUJ = this->AddInterfaceRequired("SUJ-" + arm->Name());
+                if (arm->m_generation == mtsIntuitiveResearchKitArm::GENERATION_Si) {
+                    arm->SUJInterfaceRequiredFromIO2 = this->AddInterfaceRequired("SUJClutchBack-" + arm->Name() + "-IO");
+                    arm->SUJInterfaceRequiredFromIO2->AddEventHandlerWrite(&Arm::SUJClutchEventHandlerFromIO, arm, "Button");
+                }
+                arm->SUJInterfaceRequiredToSUJ = this->AddInterfaceRequired("SUJClutch-" + arm->Name());
                 arm->SUJInterfaceRequiredToSUJ->AddFunction("Clutch", arm->SUJClutch);
-            } else {
-                arm->SUJInterfaceRequiredFromIO = 0;
-                arm->SUJInterfaceRequiredToSUJ = 0;
             }
         }
     }
@@ -1231,8 +1306,13 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
     message.append(" started, dVRK ");
     message.append(sawIntuitiveResearchKit_VERSION);
     message.append(" / cisst ");
-    message.append(CISST_VERSION);
+    message.append(cisst_VERSION);
     mInterface->SendStatus(message);
+
+    // close all relays if needed
+    if (m_close_all_relays_from_config) {
+        IO.close_all_relays();
+    }
 
     // emit events for active PSM teleop pairs
     EventSelectedTeleopPSMs();
@@ -1469,9 +1549,11 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             arm_pointer->m_type = Arm::ARM_SUJ_Classic;
         } else if (typeString == "SUJ_Si") {
             arm_pointer->m_type = Arm::ARM_SUJ_Si;
+        } else if (typeString == "SUJ_Fixed") {
+            arm_pointer->m_type = Arm::ARM_SUJ_Fixed;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: arm " << arm_name << ": invalid type \""
-                                     << typeString << "\", needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC} or SUJ_{Classic,Si}" << std::endl;
+                                     << typeString << "\", needs to be one of {MTM,PSM,ECM}{,_DERIVED,_GENERIC} or SUJ_{Classic,Si,Fixed}" << std::endl;
             return false;
         }
     } else {
@@ -1642,7 +1724,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             } else {
                 arm_pointer->m_arm_configuration_file = arm_pointer->m_config_path.Find(jsonValue.asString());
                 if (arm_pointer->m_arm_configuration_file == "") {
-                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find kinematic file " << jsonValue.asString() << std::endl;
+                    CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find arm configuration file " << jsonValue.asString() << std::endl;
                     return false;
                 }
             }
@@ -2046,7 +2128,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
                 mConnections.Add(this->GetName(), interfaceNameIODallas,
                                  arm->IOComponentName(), arm->Name() + "-Dallas");
             } else {
-                CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO Dallase interface for arm \""
+                CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO Dallas interface for arm \""
                                          << arm->Name() << "\"" << std::endl;
                 return false;
             }
@@ -2078,7 +2160,7 @@ bool mtsIntuitiveResearchKitConsole::AddArmInterfaces(Arm * arm)
     arm->ArmInterfaceRequired = AddInterfaceRequired(interfaceNameArm);
     if (arm->ArmInterfaceRequired) {
         arm->ArmInterfaceRequired->AddFunction("state_command", arm->state_command);
-        if (arm->m_type != Arm::ARM_SUJ_Classic) {
+        if (!arm->suj()) {
             arm->ArmInterfaceRequired->AddFunction("hold", arm->hold, MTS_OPTIONAL);
         }
         arm->ArmInterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
@@ -2114,11 +2196,17 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
         // arm specific interfaces
         arm->Connect();
         // connect to SUJ if needed
-        if (arm->SUJInterfaceRequiredFromIO && arm->SUJInterfaceRequiredToSUJ) {
-            componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredToSUJ->GetName(),
-                                      "SUJ", arm->Name());
+        if (arm->SUJInterfaceRequiredFromIO) {
             componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredFromIO->GetName(),
                                       arm->IOComponentName(), arm->Name() + "-SUJClutch");
+        }
+        if (arm->SUJInterfaceRequiredFromIO2) {
+            componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredFromIO2->GetName(),
+                                      arm->IOComponentName(), arm->Name() + "-SUJClutch2");
+        }
+        if (arm->SUJInterfaceRequiredToSUJ) {
+            componentManager->Connect(this->GetName(), arm->SUJInterfaceRequiredToSUJ->GetName(),
+                                      "SUJ", arm->Name());
         }
     }
 

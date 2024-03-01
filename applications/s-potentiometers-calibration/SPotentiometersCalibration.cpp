@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2022-06-20
 
-  (C) Copyright 2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2022-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -37,6 +37,14 @@ using namespace sawRobotIO1394;
 
 int main(int argc, char * argv[])
 {
+    cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
+    cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
+    cmnLogger::SetMaskFunction(CMN_LOG_ALLOW_ALL);
+    cmnLogger::SetMaskClassMatching("mtsDigital", CMN_LOG_ALLOW_ALL);
+    cmnLogger::SetMaskClassMatching("mtsDallasChip", CMN_LOG_ALLOW_ALL);
+    cmnLogger::SetMaskClassMatching("mtsRobot", CMN_LOG_ALLOW_ALL);
+    cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
+
     cmnCommandLineOptions options;
     std::string portName = mtsRobotIO1394::DefaultPort();
     std::string configFile;
@@ -230,12 +238,14 @@ int main(int argc, char * argv[])
         // check that power is on
         if (!robot->PowerStatus()) {
             std::cerr << "Error: unable to power on controllers, make sure E-Stop is ok." << std::endl;
+            robot->Explain();
             return -1;
         }
         if (!robot->BrakeAmpStatus().All()) {
             std::cerr << "Error: failed to turn on brake amplifiers:" << std::endl
                       << " - status:  " << robot->BrakeAmpStatus() << std::endl
                       << " - desired: " << robot->BrakeAmpEnable() << std::endl;
+            robot->Explain();
             return -1;
         }
 

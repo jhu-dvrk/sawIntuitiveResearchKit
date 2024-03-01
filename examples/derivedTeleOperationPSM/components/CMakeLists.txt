@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2021 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2023 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (sawIntuitiveResearchKitDerivedTeleOperationPSM VERSION 2.1.0)
+project (sawIntuitiveResearchKitDerivedTeleOperationPSM VERSION 2.2.1)
 
 set (CMAKE_CXX_STANDARD 14)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -36,10 +36,10 @@ if (cisst_FOUND)
 
   # sawIntuitiveResearchKit has been compiled within cisst, we should
   # find it automatically
-  find_package (sawTextToSpeech        1.3.0 REQUIRED)
-  find_package (sawRobotIO1394         2.1.0 REQUIRED)
-  find_package (sawControllers         2.0.0 REQUIRED)
-  find_package(sawIntuitiveResearchKit 2.1.0 REQUIRED)
+  find_package (sawTextToSpeech        1.4.0 REQUIRED)
+  find_package (sawRobotIO1394         2.2.0 REQUIRED)
+  find_package (sawControllers         2.1.0 REQUIRED)
+  find_package(sawIntuitiveResearchKit 2.2.0 REQUIRED)
 
   if (sawIntuitiveResearchKit_FOUND)
 

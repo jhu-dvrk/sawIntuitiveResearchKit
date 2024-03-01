@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2009-2021 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2023 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required(VERSION 3.10)
-project (sawIntuitiveResearchKitAll VERSION 2.1.0)
+project (sawIntuitiveResearchKitAll VERSION 2.2.1)
 
 find_package (cisst REQUIRED)
 include (${CISST_USE_FILE})

@@ -5,7 +5,7 @@
   Author(s): Vincent Hui
   Created on: 2018
 
-  (C) Copyright 2018-2019, Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2018-2023, Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -277,7 +277,7 @@ void robGravityCompensationMTM::ComputeBetaVel(const vctVec & q_dot)
         if (*qd < -(*betaVelAmp)) {
             *beta = 0.0;
         } else {
-            *beta = 0.5 + sin(*qd * M_PI / (2.0 * (*betaVelAmp))) / 2.0;
+            *beta = 0.5 + sin(*qd * cmnPI / (2.0 * (*betaVelAmp))) / 2.0;
         }
     }
 }
@@ -297,11 +297,11 @@ robGravityCompensationMTM::Create(const Json::Value & jsonConfig)
         return std::make_tuple(jarray, false, std::string(""));
     };
 
-    auto isEmpty = [](const auto &paramTuple) {
+    auto isEmpty = [](const std::tuple<Json::Value, bool, std::string> &paramTuple) {
         return std::get<1>(paramTuple);
     };
 
-    auto createReturnValue = [](const auto &paramTuple) {
+    auto createReturnValue = [](const std::tuple<Json::Value, bool, std::string> &paramTuple) {
         return robGravityCompensationMTM::CreationResult({nullptr, std::get<2>(paramTuple)});
     };
 

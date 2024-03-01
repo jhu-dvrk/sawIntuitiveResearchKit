@@ -19,6 +19,10 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitSUJSi_h
 #define _mtsIntuitiveResearchKitSUJSi_h
 
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
+
+#if sawIntuitiveResearchKit_HAS_SUJ_Si
+
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
@@ -58,9 +62,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
     /*! Get data from the PID level based on current state. */
     void get_robot_data(void);
 
-    /*! Logic used to read the potentiometer values and updated the
-      appropriate joint values based on the mux state. */
-    void get_and_convert_potentiometers(void);
+    /*! Update the forward kinematics for all arms. */
+    void update_forward_kinematics(void);
 
     void update_operating_state_and_busy(const prmOperatingState::StateType & state,
                                          const bool isBusy);
@@ -71,7 +74,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
     virtual void transition_DISABLED(void);
 
     virtual void enter_ENABLED(void);
-    virtual void run_ENABLED(void);
     virtual void transition_ENABLED(void);
 
     /*! Verify that the state transition is possible, initialize
@@ -83,40 +85,35 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJSi: public mtsTaskPeriodic
       "disable". */
     virtual void state_command(const std::string & command);
 
-    // Arm state machine
-    mtsStateMachine m_state_machine;
-
-    // Just to have read commands to retrieve states
-    mtsStateTable m_state_table_operating_state;
-    mtsStdString m_state_table_state_current;
-    mtsStdString m_state_table_state_desired;
-    prmOperatingState m_operating_state; // crtk operating state
-
+    /*! internal method used by state_command. */
     void set_homed(const bool homed);
+
+    // state machine
+    mtsStateMachine m_state_machine;
+    prmOperatingState m_operating_state;
 
     // Functions for events
     struct {
-        mtsFunctionWrite desired_state;
-        mtsFunctionWrite current_state;
         mtsFunctionWrite operating_state;
     } state_events;
     mtsInterfaceProvided * m_interface;
 
     mtsIntuitiveResearchKitSUJSiArduino * m_base_arduino = nullptr;
-    vctFixedSizeVector<mtsIntuitiveResearchKitSUJSiArmData *, 4> m_arms;
+    // SUJ arms
+    vctFixedSizeVector<mtsIntuitiveResearchKitSUJSiArmData *, 4> m_sarms;
     size_t m_reference_arm_index; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
 
     // Flag to determine if this is connected to actual IO/hardware or simulated
-    bool m_simulated;
-    double m_simulated_timer;
+    bool m_simulated = false;
 
     void dispatch_error(const std::string & message);
     void dispatch_warning(const std::string & message);
     void dispatch_status(const std::string & message);
-    void dispatch_state(void);
     void dispatch_operating_state(void);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJSi);
+
+#endif // sawIntuitiveResearchKit_HAS_SUJ_Si
 
 #endif // _mtsIntuitiveResearchKitSUJSi_h

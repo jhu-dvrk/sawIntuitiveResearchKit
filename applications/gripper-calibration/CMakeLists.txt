@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2009-2021 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2023 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -9,7 +9,7 @@
 #
 # --- end cisst license ---
 
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.10)
 
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES cisstCommon
@@ -20,7 +20,7 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstParameterTypes)
 
 # find cisst and make sure the required libraries have been compiled
-find_package (cisst 1.1.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.2.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -34,7 +34,7 @@ if (cisst_FOUND_AS_REQUIRED)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
-  find_package (sawRobotIO1394 2.1.0 REQUIRED)
+  find_package (sawRobotIO1394 2.2.0 REQUIRED)
 
   if (sawRobotIO1394_FOUND)
 
@@ -44,14 +44,20 @@ if (cisst_FOUND_AS_REQUIRED)
 
     # main program used to calibrate the MTM gripper
     add_executable (sawIntuitiveResearchKitGripperCalibration GripperCalibration.cpp)
-    set_property (TARGET sawIntuitiveResearchKitGripperCalibration PROPERTY FOLDER "sawIntuitiveResearchKit")
-
+    set_target_properties (sawIntuitiveResearchKitGripperCalibration PROPERTIES
+                           COMPONENT sawIntuitiveResearchKit-Applications
+                           FOLDER "sawIntuitiveResearchKit")
     # link against non cisst libraries and cisst components
     target_link_libraries (sawIntuitiveResearchKitGripperCalibration
                            ${sawRobotIO1394_LIBRARIES})
-
     # link against cisst libraries (and dependencies)
     cisst_target_link_libraries (sawIntuitiveResearchKitGripperCalibration ${REQUIRED_CISST_LIBRARIES})
+
+    install (TARGETS sawIntuitiveResearchKitGripperCalibration
+             COMPONENT sawIntuitiveResearchKit-Applications
+             RUNTIME DESTINATION bin
+             LIBRARY DESTINATION lib
+             ARCHIVE DESTINATION lib)
 
   endif () # components found
 

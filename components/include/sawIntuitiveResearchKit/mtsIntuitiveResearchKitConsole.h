@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -41,7 +41,6 @@ namespace dvrk {
 }
 
 class mtsTextToSpeech;
-class mtsDaVinciHeadSensor;
 class mtsDaVinciEndoscopeFocus;
 class mtsIntuitiveResearchKitArm;
 
@@ -153,14 +152,15 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
         mtsFunctionWrite state_command;
         mtsFunctionVoid hold;
-        mtsInterfaceRequired * IOInterfaceRequired;
-        mtsInterfaceRequired * IODallasInterfaceRequired;
-        mtsInterfaceRequired * PIDInterfaceRequired;
-        mtsInterfaceRequired * ArmInterfaceRequired;
+        mtsInterfaceRequired * IOInterfaceRequired = nullptr;
+        mtsInterfaceRequired * IODallasInterfaceRequired = nullptr;
+        mtsInterfaceRequired * PIDInterfaceRequired = nullptr;
+        mtsInterfaceRequired * ArmInterfaceRequired = nullptr;
 
         // this is used only by PSMs and ECM
-        mtsInterfaceRequired * SUJInterfaceRequiredFromIO;
-        mtsInterfaceRequired * SUJInterfaceRequiredToSUJ;
+        mtsInterfaceRequired * SUJInterfaceRequiredFromIO = nullptr;
+        mtsInterfaceRequired * SUJInterfaceRequiredFromIO2 = nullptr; // for Si second clutch button
+        mtsInterfaceRequired * SUJInterfaceRequiredToSUJ = nullptr;
         mtsFunctionWrite SUJClutch;
         bool mSUJClutched;
 
@@ -309,13 +309,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     std::string mTeleopMTMToCycle;
 
     /*! Single ECM bimanual teleoperation */
-    TeleopECM * mTeleopECM;
+    TeleopECM * mTeleopECM = nullptr;
 
-    /*! daVinci Head Sensor */
-    mtsDaVinciHeadSensor * mDaVinciHeadSensor;
+    /*! Head sensor */
+    mtsComponent * mHeadSensor = nullptr;
 
     /*! daVinci Endoscope Focus */
-    mtsDaVinciEndoscopeFocus * mDaVinciEndoscopeFocus;
+    mtsDaVinciEndoscopeFocus * mDaVinciEndoscopeFocus = nullptr;
 
     /*! Find all arm data from JSON configuration. */
     bool ConfigureArmJSON(const Json::Value & jsonArm,
@@ -376,7 +376,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     typedef std::map<std::string, InterfaceComponentType> DInputSourceType;
     DInputSourceType mDInputSources;
 
-    mtsInterfaceProvided * mInterface;
+    mtsInterfaceRequired * m_IO_interface = nullptr;
+    struct {
+        mtsFunctionVoid close_all_relays;
+    } IO;
+    bool m_close_all_relays_from_config = false;
+
+    mtsInterfaceProvided * mInterface = nullptr;
     struct {
         mtsFunctionWrite ArmCurrentState;
         mtsFunctionWrite scale;

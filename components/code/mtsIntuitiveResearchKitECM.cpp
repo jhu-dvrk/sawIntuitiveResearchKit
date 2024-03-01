@@ -46,13 +46,20 @@ void mtsIntuitiveResearchKitECM::set_simulated(void)
     mtsIntuitiveResearchKitArm::set_simulated();
     // in simulation mode, we don't need clutch IO
     RemoveInterfaceRequired("ManipClutch");
+    // for Si systems, remove a few more interfaces
+    if (m_generation == GENERATION_Si) {
+        RemoveInterfaceRequired("SUJClutch");
+        RemoveInterfaceRequired("SUJClutch2");
+        RemoveInterfaceRequired("SUJBrake");
+    }
 }
 
 void mtsIntuitiveResearchKitECM::set_generation(const GenerationType generation)
 {
     mtsIntuitiveResearchKitArm::set_generation(generation);
     // for S/si, add SUJClutch interface
-    if (generation == GENERATION_Si) {
+    if ((generation == GENERATION_Si)
+        && !m_simulated) {
         auto interfaceRequired = AddInterfaceRequired("SUJClutch");
         if (interfaceRequired) {
             interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitECM::EventHandlerSUJClutch, this, "Button");
@@ -93,21 +100,24 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
         exit(EXIT_FAILURE);
     }
 
-    // check that Rtw0 is not set
-    if (Manipulator->Rtw0 != vctFrm4x4::Identity()) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": you can't define the base-offset for the ECM, it is hard coded so gravity compensation works properly.  We always assume the ECM is mounted at 45 degrees! (from file \""
-                                 << filename << "\")" << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    // this is used for GC on classic systems only
+    if (m_generation == GENERATION_Classic) {
+        // check that Rtw0 is not set
+        if (Manipulator->Rtw0 != vctFrm4x4::Identity()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": you can't define the base-offset for the ECM, it is hard coded so gravity compensation works properly.  We always assume the ECM is mounted at 45 degrees! (from file \""
+                                     << filename << "\")" << std::endl;
+            exit(EXIT_FAILURE);
+        }
 
-    // 45 degrees rotation to make sure Z points up, this helps with
-    // cisstRobot::robManipulator gravity compensation
-    vctFrame4x4<double> Rt(vctMatRot3(1.0,            0.0,            0.0,
-                                      0.0,  sqrt(2.0)/2.0,  sqrt(2.0)/2.0,
-                                      0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
-                           vct3(0.0, 0.0, 0.0));
-    Manipulator->Rtw0 = Rt;
+        // 45 degrees rotation to make sure Z points up, this helps with
+        // cisstRobot::robManipulator gravity compensation
+        vctFrame4x4<double> Rt(vctMatRot3(1.0,            0.0,            0.0,
+                                          0.0,  sqrt(2.0)/2.0,  sqrt(2.0)/2.0,
+                                          0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
+                               vct3(0.0, 0.0, 0.0));
+        Manipulator->Rtw0 = Rt;
+    }
 }
 
 robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec & jointSet,
@@ -365,14 +375,14 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     vctFrm4x4 tip;
     tip.Translation().Assign(vct3(0.0, 0.0, 0.0));
     switch (m_endoscope_type) {
-    case mtsIntuitiveResearchKitEndoscopeTypes::SD_UP:
-    case mtsIntuitiveResearchKitEndoscopeTypes::HD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_UP:
         // -30 degree rotation along X axis
         tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), -30.0 * cmnPI_180));
         ToolOffsetTransformation = ToolOffsetTransformation * tip;
         break;
-    case mtsIntuitiveResearchKitEndoscopeTypes::SD_DOWN:
-    case mtsIntuitiveResearchKitEndoscopeTypes::HD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_DOWN:
         // 30 degree rotation along X axis
         tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), 30.0 * cmnPI_180));
         ToolOffsetTransformation = ToolOffsetTransformation * tip;
@@ -388,14 +398,14 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     // update estimated mass for gravity compensation
     double mass;
     switch (m_endoscope_type) {
-    case mtsIntuitiveResearchKitEndoscopeTypes::SD_STRAIGHT:
-    case mtsIntuitiveResearchKitEndoscopeTypes::SD_UP:
-    case mtsIntuitiveResearchKitEndoscopeTypes::SD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_DOWN:
         mass = mtsIntuitiveResearchKit::ECM::SDMass;
         break;
-    case mtsIntuitiveResearchKitEndoscopeTypes::HD_STRAIGHT:
-    case mtsIntuitiveResearchKitEndoscopeTypes::HD_UP:
-    case mtsIntuitiveResearchKitEndoscopeTypes::HD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_DOWN:
         mass = mtsIntuitiveResearchKit::ECM::HDMass;
         break;
     default:

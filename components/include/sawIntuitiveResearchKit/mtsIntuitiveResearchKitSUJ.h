@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -35,7 +35,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitSUJ: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
-public:
+ public:
     static const size_t NumberOfJoints = 4;
     static const size_t NumberOfBrakes = 3;
 
@@ -50,64 +50,62 @@ public:
 
     void set_simulated(void);
 
-protected:
+ protected:
 
-    void Init(void);
+    void init(void);
 
     /*! Get data from the PID level based on current state. */
-    void GetRobotData(void);
+    void get_robot_data(void);
 
     /*! Logic used to read the potentiometer values and updated the
       appropriate joint values based on the mux state. */
-    void GetAndConvertPotentiometerValues(void);
+    void get_and_convert_potentiometers(void);
 
-    void UpdateOperatingStateAndBusy(const prmOperatingState::StateType & state,
-                                     const bool isBusy);
-    void StateChanged(void);
-    void RunAllStates(void); // this should happen for all states
+    /*! Update the forward kinematics for all arms. */
+    void update_forward_kinematics(void);
 
-    virtual void EnterDisabled(void);
-    virtual void TransitionDisabled(void);
+    void update_operating_state_and_busy(const prmOperatingState::StateType & state,
+                                         const bool isBusy);
+    void state_changed(void);
+    void run_all_states(void); // this should happen for all states
 
-    virtual void EnterPowering(void);
-    virtual void TransitionPowering(void);
+    virtual void enter_DISABLED(void);
+    virtual void transition_DISABLED(void);
 
-    virtual void EnterEnabled(void);
-    virtual void RunEnabled(void);
-    virtual void TransitionEnabled(void);
+    virtual void enter_POWERING(void);
+    virtual void transition_POWERING(void);
+
+    virtual void enter_ENABLED(void);
+    virtual void run_ENABLED(void);
+    virtual void transition_ENABLED(void);
 
     /*! Verify that the state transition is possible, initialize
       global variables for the desired state and finally set the
       state. */
-    void SetDesiredState(const std::string & state);
+    void set_desired_state(const std::string & state);
 
     /*! crtk operating state command.  Currently supports "enable" and
       "disable". */
     virtual void state_command(const std::string & command);
 
     // Arm state machine
-    mtsStateMachine mArmState;
+    mtsStateMachine m_state_machine;
     bool m_powered = false;
+    prmOperatingState m_operating_state;
 
-    // Just to have read commands to retrieve states
-    mtsStateTable mStateTableState;
-    mtsStdString mStateTableStateCurrent;
-    mtsStdString mStateTableStateDesired;
-    prmOperatingState m_operating_state; // crtk operating state
-
-    void SetHomed(const bool homed);
+    void set_homed(const bool homed);
 
     /*! Set velocity for motorized PSM lift. normalized between -1.0 and 1.0. */
-    void SetLiftVelocity(const double & velocity);
+    void set_lift_velocity(const double & velocity);
 
     /*! Event handler for PID errors. */
-    void ErrorEventHandler(const mtsMessage & message);
+    void error_event_handler(const mtsMessage & message);
 
     /*! Motor down button. */
-    void MotorDownEventHandler(const prmEventButton & button);
+    void motor_down_event_handler(const prmEventButton & button);
 
     /*! Motor up button. */
-    void MotorUpEventHandler(const prmEventButton & button);
+    void motor_up_event_handler(const prmEventButton & button);
 
     // Required interface
     struct {
@@ -122,27 +120,25 @@ protected:
 
     // Functions for events
     struct {
-        mtsFunctionWrite desired_state;
-        mtsFunctionWrite current_state;
         mtsFunctionWrite operating_state;
     } state_events;
-    mtsInterfaceProvided * mInterface;
+    mtsInterfaceProvided * m_interface;
 
     // Functions to control MUX
     struct {
         mtsFunctionRead GetValue;
         mtsFunctionWrite SetValue;
-    } NoMuxReset;
+    } no_mux_reset;
 
     struct {
         mtsFunctionRead GetValue;
         mtsFunctionWrite SetValue;
-    } MuxIncrement;
+    } mux_increment;
 
-    void ResetMux(void);
-    double mMuxTimer;
-    vctBoolVec mMuxState;
-    size_t mMuxIndex, mMuxIndexExpected;
+    void reset_mux(void);
+    double m_mux_timer;
+    vctBoolVec m_mux_state;
+    size_t m_mux_index, m_mux_index_expected;
 
     // Functions to control motor on SUJ3
     struct {
@@ -153,29 +149,26 @@ protected:
     // mtsIntuitiveResearchKitArmTypes::RobotStateType mRobotState;
 
     // Home Action
-    double mHomingTimer;
-    bool mHomingPowerRequested;
+    double m_homing_timer;
 
     // Clutch / brake timer
-    double mPreviousTic;
-    vctDoubleVec mBrakeCurrents;
+    double m_previous_tic;
+    vctDoubleVec m_brake_currents;
 
-    vctDynamicVector<vctDoubleVec> mVoltageSamples;
-    const size_t mVoltageSamplesNumber;
-    size_t mVoltageSamplesCounter;
-    vctDoubleVec mVoltages;
-    vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> Arms;
-    size_t BaseFrameArmIndex; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
+    vctDynamicVector<vctDoubleVec> m_voltage_samples;
+    const size_t m_voltage_samples_number;
+    size_t m_voltage_samples_counter;
+    vctDoubleVec m_voltages;
+    vctFixedSizeVector<mtsIntuitiveResearchKitSUJArmData *, 4> m_sarms;
+    size_t m_reference_arm_index; // arm used to provide base frame to all other SUJ arms, traditionally the ECM
 
     // Flag to determine if this is connected to actual IO/hardware or simulated
-    bool m_simulated;
-    double mSimulatedTimer;
+    bool m_simulated = false;
 
-    void DispatchError(const std::string & message);
-    void DispatchWarning(const std::string & message);
-    void DispatchStatus(const std::string & message);
-    void DispatchState(void);
-    void DispatchOperatingState(void);
+    void dispatch_error(const std::string & message);
+    void dispatch_warning(const std::string & message);
+    void dispatch_status(const std::string & message);
+    void dispatch_operating_state(void);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitSUJ);

@@ -34,6 +34,14 @@
         }
         ,
         {
+            "model": "400007",
+            "names": ["ROUND_TIP_SCISSORS"],
+            "description": "Round Tip Scissors",
+            "generation": "Classic",
+            "file": "ROUND_TIP_SCISSORS_400007.json"
+        }
+        ,
+        {
             "model": "400033",
             "names": ["MICRO_FORCEPS"],
             "description": "Micro Forceps",
@@ -201,7 +209,31 @@
             "file": "LRG_SUTURECUT_NEEDLE_DRIVER_400296.json"
         }
         ,
+        {
+            "model": "400309",
+            "names": ["MEGA_SUTURECUT_NEEDLE_DRIVER"],
+            "description": "Mega Suturecut Needle Driver",
+            "generation": "Classic",
+            "file": "MEGA_SUTURECUT_NEEDLE_DRIVER_400309.json"
+        }
+        ,
         // S/Si
+        {
+            "model": "410298",
+            "names": ["STAPLER_45"],
+            "description": "Stapler 45",
+            "generation": "Si",
+            "file": "STAPLER_45_410298.json"
+        }
+        ,
+        {
+            "model": "420001",
+            "names": ["POTTS_SCISSORS"],
+            "description": "Potts Scissors",
+            "generation": "S",
+            "file": "POTTS_SCISSORS_420001.json"
+        }
+        ,
         {
             "model": "420006",
             "version_max": 11,
@@ -218,6 +250,14 @@
             "description": "Large Needle Driver (Geared)",
             "generation": "S",
             "file": "LARGE_NEEDLE_DRIVER_420006_GEARED.json"
+        }
+        ,
+        {
+            "model": "420007",
+            "names": ["ROUND_TIP_SCISSORS"],
+            "description": "Round Tip Scissors",
+            "generation": "S",
+            "file": "ROUND_TIP_SCISSORS_420007.json"
         }
         ,
         {
@@ -338,6 +378,14 @@
             "description": "Large Suturecut Needle Driver",
             "generation": "S",
             "file": "LARGE_SUTURECUT_NEEDLEDRIVER_420296.json"
+        }
+        ,
+        {
+            "model": "420309",
+            "names": ["MEGA_SUTURECUT_NEEDLE_DRIVER"],
+            "description": "Mega Suturecut Needle Driver",
+            "generation": "S",
+            "file": "MEGA_SUTURECUT_NEEDLE_DRIVER_420309.json"
         }
     ]
 }

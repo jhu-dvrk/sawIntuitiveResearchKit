@@ -10,10 +10,10 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (sawIntuitiveResearchKitConfigGenerator VERSION 2.1.0)
+project (sawIntuitiveResearchKitConfigGenerator VERSION 2.2.1)
 
 # find cisst and make sure the required libraries have been compiled
-find_package (cisst 1.1.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.2.1 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 

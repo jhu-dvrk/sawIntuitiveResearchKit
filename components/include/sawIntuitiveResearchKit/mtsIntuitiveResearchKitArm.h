@@ -70,6 +70,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     void Run(void) override;
     void Cleanup(void) override;
 
+    inline void crtk_version(std::string & placeholder) const {
+        placeholder = mtsIntuitiveResearchKit::crtk_version;
+    }
     virtual void set_simulated(void);
     virtual inline void set_calibration_mode(const bool mode) {
         m_calibration_mode = mode;
@@ -106,8 +109,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void CreateManipulator(void);
     virtual void Init(void);
 
-    virtual void update_kin_configuration_js(void);
-    virtual void update_pid_configuration_js(void);
+    virtual void update_configuration_js(void);
     void actuator_to_joint_position(const vctDoubleVec & actuator, vctDoubleVec & joint) const;
 
     void ResizeKinematicsData(void);
@@ -161,6 +163,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     virtual void EnterPaused(void);
     virtual void EnterFault(void);
+
+    virtual void clip_jp(vctDoubleVec & jp) const;
 
     // Arm state machine
     mtsStateMachine mArmState;
@@ -275,8 +279,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionWrite servo_jp;
         mtsFunctionWrite feed_forward_jf;
         mtsFunctionWrite enforce_position_limits;
-        mtsFunctionRead  configuration_js;
-        mtsFunctionWrite configure_js;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite servo_jf;
         mtsFunctionWrite EnableTrackingError;
@@ -290,6 +292,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionRead  GetSerialNumber;
         mtsFunctionVoid  PowerOnSequence;
         mtsFunctionWrite PowerOffSequence;
+        mtsFunctionVoid  Explain;
         mtsFunctionRead  GetActuatorAmpStatus;
         mtsFunctionRead  GetBrakeAmpStatus;
         mtsFunctionWrite BiasEncoder;
@@ -344,7 +347,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         m_kin_measured_js,
         m_kin_setpoint_js,
         m_gravity_compensation_setpoint_js;
-    prmConfigurationJoint m_pid_configuration_js, m_kin_configuration_js;
+    prmConfigurationJoint m_configuration_js;
 
     // efforts
     vctDoubleMat m_body_jacobian, m_body_jacobian_transpose, m_spatial_jacobian, m_spatial_jacobian_transpose;

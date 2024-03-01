@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -44,6 +44,7 @@ const size_t ANALOG_SAMPLE_NUMBER = 60;
 // QLA/dSIB are properly grounded.
 const size_t NUMBER_OF_MUX_CYCLE_BEFORE_STABLE = 3;
 
+
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitSUJ, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
 
 class mtsIntuitiveResearchKitSUJArmData
@@ -55,56 +56,41 @@ public:
     inline mtsIntuitiveResearchKitSUJArmData(const std::string & name,
                                              const SujType type,
                                              const unsigned int plugNumber,
-                                             const bool isSimulated,
+                                             const bool simulated,
                                              mtsInterfaceProvided * interfaceProvided,
                                              mtsInterfaceRequired * interfaceRequired):
-        mName(name),
-        mType(type),
-        mPlugNumber(plugNumber),
-        m_simulated(isSimulated),
-        mInterfaceProvided(0),
-        mInterfaceRequired(0),
-        mStateTable(500, name),
-        mStateTableConfiguration(100, name + "Configuration"),
-        mStateTableBrakeCurrent(100, name + "BrakeCurrent")
+        m_name(name),
+        m_type(type),
+        m_plug_number(plugNumber),
+        m_simulated(simulated),
+        m_state_table(500, name),
+        m_state_table_configuration(100, name + "Configuration"),
+        m_state_table_brake_current(100, name + "BrakeCurrent")
     {
-        // brake info
-        mClutched = 0;
-        mBrakeDesiredCurrent = 0.0;
-
-        // emit an event the first time we have a valid position
-        mNumberOfMuxCyclesBeforeStable = 0;
-
-        // base frame
-        mBaseFrameValid = true;
-
         // recalibration matrix
-        mRecalibrationMatrix.SetSize(6,6);
-        mRecalibrationMatrix.Zeros();
-        mNewJointScales[0].SetSize(6);
-        mNewJointScales[0].Zeros();
-        mNewJointScales[1].SetSize(6);
-        mNewJointScales[1].Zeros();
+        m_recalibration_matrix.SetSize(6, 6);
+        m_recalibration_matrix.Zeros();
+        m_new_joint_scales[0].SetSize(6);
+        m_new_joint_scales[0].Zeros();
+        m_new_joint_scales[1].SetSize(6);
+        m_new_joint_scales[1].Zeros();
 
-        mNewJointOffsets[0].SetSize(6);
-        mNewJointOffsets[0].Zeros();
-        mNewJointOffsets[1].SetSize(6);
-        mNewJointOffsets[1].Zeros();
+        m_new_joint_offsets[0].SetSize(6);
+        m_new_joint_offsets[0].Zeros();
+        m_new_joint_offsets[1].SetSize(6);
+        m_new_joint_offsets[1].Zeros();
 
-        // state table doesn't always advance, only when pots are stable
-        mStateTable.SetAutomaticAdvance(false);
-        mStateTableConfiguration.SetAutomaticAdvance(false);
-        mStateTableBrakeCurrent.SetAutomaticAdvance(false);
+        // state table doesn't always advance, only when values are changed
+        m_state_table_configuration.SetAutomaticAdvance(false);
 
         for (size_t potArray = 0; potArray < 2; ++potArray) {
-            mVoltages[potArray].SetSize(MUX_ARRAY_SIZE);
-            mPositions[potArray].SetSize(MUX_ARRAY_SIZE);
-            mVoltageToPositionScales[potArray].SetSize(MUX_ARRAY_SIZE);
-            mVoltageToPositionOffsets[potArray].SetSize(MUX_ARRAY_SIZE);
+            m_voltages[potArray].SetSize(MUX_ARRAY_SIZE);
+            m_positions[potArray].SetSize(MUX_ARRAY_SIZE);
+            m_voltage_to_position_scales[potArray].SetSize(MUX_ARRAY_SIZE);
+            m_voltage_to_position_offsets[potArray].SetSize(MUX_ARRAY_SIZE);
         }
-        mPositionDifference.SetSize(MUX_ARRAY_SIZE);
-        mPotsAgree = true;
-        mVoltagesExtra.SetSize(MUX_MAX_INDEX - 2 * MUX_ARRAY_SIZE + 1);
+        m_delta_measured_js.SetSize(MUX_ARRAY_SIZE);
+        m_voltages_extra.SetSize(MUX_MAX_INDEX - 2 * MUX_ARRAY_SIZE + 1);
 
         m_measured_js.Position().SetSize(MUX_ARRAY_SIZE);
         m_measured_js.Name().SetSize(MUX_ARRAY_SIZE);
@@ -129,122 +115,118 @@ public:
         m_configuration_js.PositionMin().at(0) = -2.0 * cmn_m;
         m_configuration_js.PositionMax().at(0) =  2.0 * cmn_m;
 
-        mStateTable.AddData(mVoltages[0], "PrimaryVoltage");
-        mStateTable.AddData(mVoltages[1], "SecondaryVoltage");
-        mStateTable.AddData(mVoltagesExtra, "VoltagesExtra");
-        mStateTable.AddData(m_measured_js, "measured_js");
-        mStateTable.AddData(m_configuration_js, "configuration_js");
+        m_state_table.AddData(m_voltages[0], "PrimaryVoltage");
+        m_state_table.AddData(m_voltages[1], "SecondaryVoltage");
+        m_state_table.AddData(m_voltages_extra, "VoltagesExtra");
+        m_state_table.AddData(m_measured_js, "measured_js");
+        m_state_table.AddData(m_configuration_js, "configuration_js");
 
         m_measured_cp.SetReferenceFrame("Cart");
         m_measured_cp.SetMovingFrame(name + "_base");
-        mStateTable.AddData(m_measured_cp, "measured_cp");
+        m_state_table.AddData(m_measured_cp, "measured_cp");
 
         m_local_measured_cp.SetReferenceFrame("Cart");
         m_local_measured_cp.SetMovingFrame(name + "_base");
-        mStateTable.AddData(m_local_measured_cp, "local/measured_cp");
+        m_state_table.AddData(m_local_measured_cp, "local/measured_cp");
 
-        mStateTable.AddData(mBaseFrame, "base_frame");
-        mStateTableConfiguration.AddData(mName, "name");
-        mStateTableConfiguration.AddData(mSerialNumber, "serial_number");
-        mStateTableConfiguration.AddData(mPlugNumber, "plug_number");
-        mStateTableConfiguration.AddData(mVoltageToPositionOffsets[0], "PrimaryJointOffset");
-        mStateTableConfiguration.AddData(mVoltageToPositionOffsets[1], "SecondaryJointOffset");
-        mStateTableBrakeCurrent.AddData(mBrakeDesiredCurrent, "BrakeCurrent");
+        m_state_table_configuration.AddData(m_name, "name");
+        m_state_table_configuration.AddData(m_serial_number, "serial_number");
+        m_state_table_configuration.AddData(m_plug_number, "plug_number");
+        m_state_table_brake_current.AddData(m_brake_desired_current, "BrakeCurrent");
 
         CMN_ASSERT(interfaceProvided);
-        mInterfaceProvided = interfaceProvided;
+        m_interface_provided = interfaceProvided;
         // read commands
-        mInterfaceProvided->AddCommandReadState(mStateTable, m_measured_js, "measured_js");
-        mInterfaceProvided->AddCommandReadState(mStateTable, m_configuration_js, "configuration_js");
+        m_interface_provided->AddCommandReadState(m_state_table, m_measured_js, "measured_js");
+        m_interface_provided->AddCommandReadState(m_state_table, m_configuration_js, "configuration_js");
         // set position is only for simulation, allows both servo and move
-        mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::servo_jp,
-                                            this, "servo_jp");
-        mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::servo_jp,
-                                            this, "move_jp");
-        mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[0],
-                                                "GetPrimaryJointOffset");
-        mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mVoltageToPositionOffsets[1],
-                                                "GetSecondaryJointOffset");
-        mInterfaceProvided->AddCommandReadState(mStateTable, m_measured_cp,
-                                                "measured_cp");
-        mInterfaceProvided->AddCommandReadState(mStateTable, m_local_measured_cp,
-                                                "local/measured_cp");
-        mInterfaceProvided->AddCommandReadState(mStateTable, mBaseFrame, "base_frame");
-        mInterfaceProvided->AddCommandReadState(mStateTable, mVoltages[0], "GetVoltagesPrimary");
-        mInterfaceProvided->AddCommandReadState(mStateTable, mVoltages[1], "GetVoltagesSecondary");
-        mInterfaceProvided->AddCommandReadState(mStateTable, mVoltagesExtra, "GetVoltagesExtra");
-        mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mName, "GetName");
-        mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mSerialNumber, "GetSerialNumber");
-        mInterfaceProvided->AddCommandReadState(mStateTableConfiguration, mPlugNumber, "GetPlugNumber");
-        mInterfaceProvided->AddCommandReadState(mStateTableBrakeCurrent, mBrakeDesiredCurrent, "GetBrakeCurrent");
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::servo_jp,
+                                              this, "servo_jp");
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::servo_jp,
+                                              this, "move_jp");
+        m_interface_provided->AddCommandReadState(m_state_table, m_measured_cp,
+                                                  "measured_cp");
+        m_interface_provided->AddCommandReadState(m_state_table, m_local_measured_cp,
+                                                  "local/measured_cp");
+        m_interface_provided->AddCommandReadState(m_state_table, m_voltages[0], "GetVoltagesPrimary");
+        m_interface_provided->AddCommandReadState(m_state_table, m_voltages[1], "GetVoltagesSecondary");
+        m_interface_provided->AddCommandReadState(m_state_table, m_voltages_extra, "GetVoltagesExtra");
+        m_interface_provided->AddCommandReadState(m_state_table_configuration, m_name, "GetName");
+        m_interface_provided->AddCommandReadState(m_state_table_configuration, m_serial_number, "GetSerialNumber");
+        m_interface_provided->AddCommandReadState(m_state_table_configuration, m_plug_number, "GetPlugNumber");
+        m_interface_provided->AddCommandReadState(m_state_table_brake_current, m_brake_desired_current, "GetBrakeCurrent");
 
         // write commands
-        mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCommand, this,
-                                            "Clutch", false);
-        mInterfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::CalibratePotentiometers, this,
-                                            "SetRecalibrationMatrix", mRecalibrationMatrix);
-
-        // cartesian position events
-        // m_base_frame is send everytime the mux has found all joint values
-        mInterfaceProvided->AddEventWrite(EventPositionCartesian, "PositionCartesian", prmPositionCartesianGet());
-        mInterfaceProvided->AddEventWrite(EventPositionCartesianLocal, "PositionCartesianLocal", prmPositionCartesianGet());
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::clutch_command, this,
+                                              "Clutch", false);
+        m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::calibrate_potentiometers, this,
+                                              "SetRecalibrationMatrix", m_recalibration_matrix);
 
         // Events
-        mInterfaceProvided->AddEventWrite(state_events.current_state, "current_state", std::string(""));
-        mInterfaceProvided->AddEventWrite(state_events.desired_state, "desired_state", std::string(""));
-        mInterfaceProvided->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
-        mInterfaceProvided->AddMessageEvents();
+        m_interface_provided->AddEventWrite(state_events.current_state, "current_state", std::string(""));
+        m_interface_provided->AddEventWrite(state_events.desired_state, "desired_state", std::string(""));
+        m_interface_provided->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
+        m_interface_provided->AddMessageEvents();
         // Stats
-        mInterfaceProvided->AddCommandReadState(mStateTable, mStateTable.PeriodStats,
-                                        "period_statistics");
+        m_interface_provided->AddCommandReadState(m_state_table, m_state_table.PeriodStats,
+                                                  "period_statistics");
 
         CMN_ASSERT(interfaceRequired);
-        mInterfaceRequired = interfaceRequired;
-        mInterfaceRequired->AddFunction("set_base_frame", mSetArmBaseFrame);
-        mInterfaceRequired->AddFunction("local/measured_cp", mGetArmPositionCartesianLocal);
+        m_interface_required = interfaceRequired;
+        m_interface_required->AddFunction("set_base_frame", m_arm_set_base_frame);
+        m_interface_required->AddFunction("local/measured_cp", m_get_local_measured_cp);
     }
 
-    inline void ClutchCallback(const prmEventButton & button) {
+
+    inline void clutch_callback(const prmEventButton & button) {
         if (button.Type() == prmEventButton::PRESSED) {
-            mClutched += 1;
-            if (mClutched == 1) {
+            m_clutched += 1;
+            if (m_clutched == 1) {
                 // clutch is pressed, arm is moving around and we know the pots are slow, we mark position as invalid
-                mInterfaceProvided->SendStatus(mName + ": SUJ clutched");
+                m_interface_provided->SendStatus(m_name + " SUJ: clutched");
+                m_measured_js.SetValid(false);
                 m_measured_cp.SetTimestamp(m_measured_js.Timestamp());
                 m_measured_cp.SetValid(false);
-                EventPositionCartesian(m_measured_cp);
                 m_local_measured_cp.SetTimestamp(m_measured_js.Timestamp());
                 m_local_measured_cp.SetValid(false);
-                EventPositionCartesianLocal(m_local_measured_cp);
             }
         } else {
             // first event to release (physical button or GUI) forces release
-            mClutched = 0;
-            mInterfaceProvided->SendStatus(mName + ": SUJ not clutched");
+            m_clutched = 0;
+            m_waiting_for_live = true;
+            m_interface_provided->SendStatus(m_name + " SUJ: not clutched");
         }
     }
 
-    inline void servo_jp(const prmPositionJointSet & newPosition) {
+
+    inline void servo_jp(const prmPositionJointSet & newPosition)
+    {
         if (!m_simulated) {
-            mInterfaceProvided->SendWarning(mName + ": servo_jp can't be used unless the SUJs are in simulated mode");
+            m_interface_provided->SendWarning(m_name + " SUJ: servo_jp can't be used unless the SUJs are in simulated mode");
             return;
         }
         // save the desired position
         m_measured_js.Position().Assign(newPosition.Goal());
-        m_measured_js.Timestamp() = newPosition.Timestamp();
+        m_measured_js.SetValid(true);
+        m_measured_js.SetTimestamp(newPosition.Timestamp());
+        m_need_update_forward_kinemactics = true;
     }
 
-    inline void ClutchCommand(const bool & clutch) {
+
+    inline void clutch_command(const bool & clutch)
+    {
         prmEventButton button;
         if (clutch) {
             button.SetType(prmEventButton::PRESSED);
         } else {
             button.SetType(prmEventButton::RELEASED);
         }
-        ClutchCallback(button);
+        clutch_callback(button);
     }
 
-    inline void CalibratePotentiometers(const vctMat & mat) {
+
+    inline void calibrate_potentiometers(const vctMat & mat)
+    {
         for (size_t col = 0; col < 6; col++) {
             // IF:                                      Pi = Offset + Vi * Scale
             // Given P1 / V1 & P2 / V2, THEN:           Scale = (P1 - P2) / (V1 - V2)
@@ -259,115 +241,112 @@ public:
             const double deltaSecondaryVoltage = mat.Element(2, col) - mat.Element(5, col);
 
             // Scale = Delta_P / Delta_V
-            mNewJointScales[0][col] = deltaJointPosition / deltaPrimaryVoltage;
-            mNewJointScales[1][col] = deltaJointPosition / deltaSecondaryVoltage;
+            m_new_joint_scales[0][col] = deltaJointPosition / deltaPrimaryVoltage;
+            m_new_joint_scales[1][col] = deltaJointPosition / deltaSecondaryVoltage;
 
-            mNewJointOffsets[0][col] = mat.Element(0, col) - mat.Element(1, col) * mNewJointScales[0][col];
-            mNewJointOffsets[1][col] = mat.Element(0, col) - mat.Element(2, col) * mNewJointScales[1][col];
+            m_new_joint_offsets[0][col] = mat.Element(0, col) - mat.Element(1, col) * m_new_joint_scales[0][col];
+            m_new_joint_offsets[1][col] = mat.Element(0, col) - mat.Element(2, col) * m_new_joint_scales[1][col];
         }
 
-
-        std::cerr << "SUJ scales and offsets for arm: " << mName << std::endl
+        std::cerr << "SUJ scales and offsets for arm: " << m_name << std::endl
                   << "Please update your suj.json file using these values" << std::endl
                   << "\"primary-offsets\": [ "
-                  << mNewJointOffsets[0][0] << ", "
-                  << mNewJointOffsets[0][1] << ", "
-                  << mNewJointOffsets[0][2] << ", "
-                  << mNewJointOffsets[0][3] << ", "
-                  << mNewJointOffsets[0][4] << ", "
-                  << mNewJointOffsets[0][5] << "],"  << std::endl
+                  << m_new_joint_offsets[0][0] << ", "
+                  << m_new_joint_offsets[0][1] << ", "
+                  << m_new_joint_offsets[0][2] << ", "
+                  << m_new_joint_offsets[0][3] << ", "
+                  << m_new_joint_offsets[0][4] << ", "
+                  << m_new_joint_offsets[0][5] << "],"  << std::endl
                   << "\"primary-scales\": [ "
-                  << mNewJointScales[0][0] << ", "
-                  << mNewJointScales[0][1] << ", "
-                  << mNewJointScales[0][2] << ", "
-                  << mNewJointScales[0][3] << ", "
-                  << mNewJointScales[0][4] << ", "
-                  << mNewJointScales[0][5] << "],"  << std::endl
+                  << m_new_joint_scales[0][0] << ", "
+                  << m_new_joint_scales[0][1] << ", "
+                  << m_new_joint_scales[0][2] << ", "
+                  << m_new_joint_scales[0][3] << ", "
+                  << m_new_joint_scales[0][4] << ", "
+                  << m_new_joint_scales[0][5] << "],"  << std::endl
                   << "\"secondary-offsets\": [ "
-                  << mNewJointOffsets[1][0] << ", "
-                  << mNewJointOffsets[1][1] << ", "
-                  << mNewJointOffsets[1][2] << ", "
-                  << mNewJointOffsets[1][3] << ", "
-                  << mNewJointOffsets[1][4] << ", "
-                  << mNewJointOffsets[1][5] << "]," << std::endl
+                  << m_new_joint_offsets[1][0] << ", "
+                  << m_new_joint_offsets[1][1] << ", "
+                  << m_new_joint_offsets[1][2] << ", "
+                  << m_new_joint_offsets[1][3] << ", "
+                  << m_new_joint_offsets[1][4] << ", "
+                  << m_new_joint_offsets[1][5] << "]," << std::endl
                   << "\"secondary-scales\": [ "
-                  << mNewJointScales[1][0] << ", "
-                  << mNewJointScales[1][1] << ", "
-                  << mNewJointScales[1][2] << ", "
-                  << mNewJointScales[1][3] << ", "
-                  << mNewJointScales[1][4] << ", "
-                  << mNewJointScales[1][5] << "],"  << std::endl;
+                  << m_new_joint_scales[1][0] << ", "
+                  << m_new_joint_scales[1][1] << ", "
+                  << m_new_joint_scales[1][2] << ", "
+                  << m_new_joint_scales[1][3] << ", "
+                  << m_new_joint_scales[1][4] << ", "
+                  << m_new_joint_scales[1][5] << "],"  << std::endl;
     }
 
+
     // name of this SUJ arm (ECM, PSM1, ...)
-    std::string mName;
+    std::string m_name;
     // suj type
-    SujType mType;
+    SujType m_type;
     // serial number
-    std::string mSerialNumber;
+    std::string m_serial_number;
     // plug on back of controller, 1 to 4
-    unsigned int mPlugNumber;
+    unsigned int m_plug_number;
 
     // simulated or not
     bool m_simulated;
 
     // interfaces
-    mtsInterfaceProvided * mInterfaceProvided;
-    mtsInterfaceRequired * mInterfaceRequired;
+    mtsInterfaceProvided * m_interface_provided = nullptr;
+    mtsInterfaceRequired * m_interface_required = nullptr;
 
     // state of this SUJ arm
-    mtsStateTable mStateTable; // for positions, fairly slow, i.e 12 * delay for a2d
-    mtsStateTable mStateTableConfiguration; // changes only at config and if recalibrate
-    mtsStateTable mStateTableBrakeCurrent; // changes when requested current changes
+    mtsStateTable m_state_table; // for positions, fairly slow, i.e 12 * delay for a2d
+    mtsStateTable m_state_table_configuration; // changes only at config and if recalibrate
+    mtsStateTable m_state_table_brake_current; // changes when requested current changes
 
     // 2 arrays, one for each set of potentiometers
-    vctDoubleVec mVoltages[2];
-    vctDoubleVec mPositions[2];
-    vctDoubleVec mPositionDifference;
-    bool mPotsAgree;
+    vctDoubleVec m_voltages[2];
+    vctDoubleVec m_positions[2];
+    vctDoubleVec m_delta_measured_js;
+    bool m_pots_agree = false;
+    bool m_waiting_for_live = true;
 
-    vctDoubleVec mVoltageToPositionScales[2];
-    vctDoubleVec mVoltageToPositionOffsets[2];
+    vctDoubleVec m_voltage_to_position_scales[2];
+    vctDoubleVec m_voltage_to_position_offsets[2];
     prmStateJoint m_measured_js;
     prmConfigurationJoint m_configuration_js;
-     // 0 is no, 1 tells we need to send, 2 is for first full mux cycle has started
-    unsigned int mNumberOfMuxCyclesBeforeStable;
-    vctFrm4x4 mPositionCartesianLocal;
+    // 0 is no, 1 tells we need to send, 2 is for first full mux cycle has started
+    unsigned int m_number_of_mux_cycles = 0;
+
+    // kinematics
+    bool m_need_update_forward_kinemactics = false;
     prmPositionCartesianGet m_measured_cp;
     prmPositionCartesianGet m_local_measured_cp;
 
     // exta analog feedback
     // plugs 1-3:  spare1, spare2, brake-voltage, gnd
     // plug 4: I_MOT+, I_MOT-, VA_BIAS, brake-voltage
-    vctDoubleVec mVoltagesExtra;
+    vctDoubleVec m_voltages_extra;
 
     // kinematics
-    robManipulator mManipulator;
-    vctMat mRecalibrationMatrix;
-    vctDoubleVec mNewJointScales[2];
-    vctDoubleVec mNewJointOffsets[2];
+    robManipulator m_manipulator;
+    vctMat m_recalibration_matrix;
+    vctDoubleVec m_new_joint_scales[2];
+    vctDoubleVec m_new_joint_offsets[2];
 
     // setup transformations from json file
-    vctFrame4x4<double> mWorldToSUJ;
-    vctFrame4x4<double> mSUJToArmBase;
+    vctFrame4x4<double> m_world_to_SUJ;
+    vctFrame4x4<double> m_SUJ_to_arm_base;
 
     // base frame
-    mtsFunctionWrite mSetArmBaseFrame;
-    vctFrame4x4<double> mBaseFrame;
-    bool mBaseFrameValid;
-    // for ECM only, get current position
-    mtsFunctionRead mGetArmPositionCartesianLocal;
+    mtsFunctionWrite m_arm_set_base_frame;
+    // for reference arm only, get current position
+    mtsFunctionRead m_get_local_measured_cp;
 
     // clutch data
-    unsigned int mClutched;
-    double mBrakeDesiredCurrent;
-    double mBrakeReleaseCurrent;
-    double mBrakeEngagedCurrent;
-    double mBrakeDirectionCurrent;
-
-    // functions for events
-    mtsFunctionWrite EventPositionCartesian;
-    mtsFunctionWrite EventPositionCartesianLocal;
+    unsigned int m_clutched = 0;
+    double m_brake_desired_current = 0.0;
+    double m_brake_release_current = 0.0;
+    double m_brake_engaged_current = 0.0;
+    double m_brake_direction_current;
 
     struct {
         mtsFunctionWrite current_state;
@@ -376,94 +355,90 @@ public:
     } state_events;
 };
 
+
 mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const std::string & componentName, const double periodInSeconds):
     mtsTaskPeriodic(componentName, periodInSeconds),
-    mArmState(componentName, "DISABLED"),
-    mStateTableState(100, "State"),
-    mVoltageSamplesNumber(ANALOG_SAMPLE_NUMBER)
+    m_state_machine(componentName, "DISABLED"),
+    m_voltage_samples_number(ANALOG_SAMPLE_NUMBER)
 {
-    Init();
+    init();
 }
+
 
 mtsIntuitiveResearchKitSUJ::mtsIntuitiveResearchKitSUJ(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg),
-    mArmState(arg.Name, "DISABLED"),
-    mStateTableState(100, "State"),
-    mVoltageSamplesNumber(ANALOG_SAMPLE_NUMBER)
+    m_state_machine(arg.Name, "DISABLED"),
+    m_voltage_samples_number(ANALOG_SAMPLE_NUMBER)
 {
-    Init();
+    init();
 }
 
-void mtsIntuitiveResearchKitSUJ::Init(void)
-{
-    mSimulatedTimer = 0.0;
 
+void mtsIntuitiveResearchKitSUJ::init(void)
+{
     // initialize arm pointers
-    Arms.SetAll(nullptr);
+    m_sarms.SetAll(nullptr);
 
     // configure state machine common to all arms (ECM/MTM/PSM)
     // possible states
-    mArmState.AddState("POWERING");
-    mArmState.AddState("ENABLED");
+    m_state_machine.AddState("POWERING");
+    m_state_machine.AddState("ENABLED");
 
     // possible desired states
-    mArmState.AddAllowedDesiredState("DISABLED");
-    mArmState.AddAllowedDesiredState("ENABLED");
+    m_state_machine.AddAllowedDesiredState("DISABLED");
+    m_state_machine.AddAllowedDesiredState("ENABLED");
 
     // state change, to convert to string events for users (Qt, ROS)
-    mArmState.SetStateChangedCallback(&mtsIntuitiveResearchKitSUJ::StateChanged,
-                                      this);
+    m_state_machine.SetStateChangedCallback(&mtsIntuitiveResearchKitSUJ::state_changed,
+                                            this);
 
     // run for all states
-    mArmState.SetRunCallback(&mtsIntuitiveResearchKitSUJ::RunAllStates,
-                             this);
+    m_state_machine.SetRunCallback(&mtsIntuitiveResearchKitSUJ::run_all_states,
+                                   this);
 
     // disabled
-    mArmState.SetEnterCallback("DISABLED",
-                               &mtsIntuitiveResearchKitSUJ::EnterDisabled,
-                               this);
+    m_state_machine.SetEnterCallback("DISABLED",
+                                     &mtsIntuitiveResearchKitSUJ::enter_DISABLED,
+                                     this);
 
-    mArmState.SetTransitionCallback("DISABLED",
-                                    &mtsIntuitiveResearchKitSUJ::TransitionDisabled,
-                                    this);
+    m_state_machine.SetTransitionCallback("DISABLED",
+                                          &mtsIntuitiveResearchKitSUJ::transition_DISABLED,
+                                          this);
 
     // power
-    mArmState.SetEnterCallback("POWERING",
-                               &mtsIntuitiveResearchKitSUJ::EnterPowering,
-                               this);
+    m_state_machine.SetEnterCallback("POWERING",
+                                     &mtsIntuitiveResearchKitSUJ::enter_POWERING,
+                                     this);
 
-    mArmState.SetTransitionCallback("POWERING",
-                                    &mtsIntuitiveResearchKitSUJ::TransitionPowering,
-                                    this);
+    m_state_machine.SetTransitionCallback("POWERING",
+                                          &mtsIntuitiveResearchKitSUJ::transition_POWERING,
+                                          this);
 
     // powered
-    mArmState.SetEnterCallback("ENABLED",
-                               &mtsIntuitiveResearchKitSUJ::EnterEnabled,
-                               this);
+    m_state_machine.SetEnterCallback("ENABLED",
+                                     &mtsIntuitiveResearchKitSUJ::enter_ENABLED,
+                                     this);
 
-    mArmState.SetRunCallback("ENABLED",
-                             &mtsIntuitiveResearchKitSUJ::RunEnabled,
-                             this);
+    m_state_machine.SetRunCallback("ENABLED",
+                                   &mtsIntuitiveResearchKitSUJ::run_ENABLED,
+                                   this);
 
-    mArmState.SetTransitionCallback("ENABLED",
-                                    &mtsIntuitiveResearchKitSUJ::TransitionEnabled,
-                                    this);
+    m_state_machine.SetTransitionCallback("ENABLED",
+                                          &mtsIntuitiveResearchKitSUJ::transition_ENABLED,
+                                          this);
 
-    // state table to maintain state :-)
-    mStateTableState.AddData(mStateTableStateDesired, "desired_state");
     m_operating_state.SetValid(true);
-    mStateTableState.AddData(m_operating_state, "operating_state");
-    AddStateTable(&mStateTableState);
-    mStateTableState.SetAutomaticAdvance(false);
+    m_operating_state.SetState(prmOperatingState::DISABLED);
+    m_operating_state.SetIsHomed(true);
+    StateTable.AddData(m_operating_state, "operating_state");
 
     // default values
-    m_simulated = false;
-    mMuxTimer = 0.0;
-    mMuxState.SetSize(4);
-    mVoltages.SetSize(4);
-    mBrakeCurrents.SetSize(4);
-    mVoltageSamples.SetSize(mVoltageSamplesNumber);
-    mVoltageSamplesCounter = 0;
+    m_mux_timer = 0.0;
+    m_mux_state.SetSize(4);
+    m_voltages.SetSize(4);
+    m_brake_currents.SetSize(4);
+    m_voltage_samples.SetSize(m_voltage_samples_number);
+    m_voltage_samples_counter = 0;
 
     // Arm IO
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("RobotIO");
@@ -474,17 +449,17 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
         interfaceRequired->AddFunction("GetActuatorAmpStatus", RobotIO.GetActuatorAmpStatus);
         interfaceRequired->AddFunction("SetActuatorCurrent", RobotIO.SetActuatorCurrent);
         interfaceRequired->AddFunction("GetAnalogInputVolts", RobotIO.GetAnalogInputVolts);
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::ErrorEventHandler, this, "error");
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::error_event_handler, this, "error");
     }
     interfaceRequired = AddInterfaceRequired("NoMuxReset");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("GetValue", NoMuxReset.GetValue);
-        interfaceRequired->AddFunction("SetValue", NoMuxReset.SetValue);
+        interfaceRequired->AddFunction("GetValue", no_mux_reset.GetValue);
+        interfaceRequired->AddFunction("SetValue", no_mux_reset.SetValue);
     }
     interfaceRequired = AddInterfaceRequired("MuxIncrement");
     if (interfaceRequired) {
-        interfaceRequired->AddFunction("GetValue", MuxIncrement.GetValue);
-        interfaceRequired->AddFunction("SetValue", MuxIncrement.SetValue);
+        interfaceRequired->AddFunction("GetValue", mux_increment.GetValue);
+        interfaceRequired->AddFunction("SetValue", mux_increment.SetValue);
     }
     interfaceRequired = AddInterfaceRequired("ControlPWM");
     if (interfaceRequired) {
@@ -496,28 +471,26 @@ void mtsIntuitiveResearchKitSUJ::Init(void)
     }
     interfaceRequired = AddInterfaceRequired("MotorUp");
     if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::MotorUpEventHandler, this, "Button");
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::motor_up_event_handler, this, "Button");
     }
     interfaceRequired = AddInterfaceRequired("MotorDown");
     if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::MotorDownEventHandler, this, "Button");
+        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJ::motor_down_event_handler, this, "Button");
     }
 
-    mInterface = AddInterfaceProvided("Arm");
-    if (mInterface) {
+    m_interface = AddInterfaceProvided("Arm");
+    if (m_interface) {
         // Arm State
-        mInterface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::state_command,
-                                    this, "state_command", std::string(""));
-        mInterface->AddCommandReadState(mStateTableState,
-                                        m_operating_state, "operating_state");
+        m_interface->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::state_command,
+                                     this, "state_command", std::string(""));
+        m_interface->AddCommandReadState(StateTable,
+                                         m_operating_state, "operating_state");
         // Events
-        mInterface->AddMessageEvents();
-        mInterface->AddEventWrite(state_events.desired_state, "desired_state", std::string(""));
-        mInterface->AddEventWrite(state_events.current_state, "current_state", std::string(""));
-        mInterface->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
+        m_interface->AddMessageEvents();
+        m_interface->AddEventWrite(state_events.operating_state, "operating_state", prmOperatingState());
         // Stats
-        mInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
-                                        "period_statistics");
+        m_interface->AddCommandReadState(StateTable, StateTable.PeriodStats,
+                                         "period_statistics");
     }
 }
 
@@ -548,10 +521,10 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
 
     // get the reference arm if defined.  By default ECM and should be
     // used only and only if user want to use a PSM to hold a camera
-    std::string referenceArmName = "ECM";
+    std::string reference_sarm_name = "ECM";
     const Json::Value jsonReferenceArm = jsonConfig["reference-arm"];
     if (!jsonReferenceArm.isNull()) {
-        referenceArmName = jsonReferenceArm.asString();
+        reference_sarm_name = jsonReferenceArm.asString();
         CMN_LOG_CLASS_INIT_WARNING << "Configure: \"reference-arm\" is user defined.  This should only happen if you are using a PSM to hold a camera.  Most users shouldn't define \"reference-arm\".  If undefined, all arm cartesian positions will be defined with respect to the ECM" << std::endl;
     }
 
@@ -562,7 +535,6 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         exit(EXIT_FAILURE);
     }
 
-    mtsIntuitiveResearchKitSUJArmData * arm;
     for (unsigned int index = 0; index < jsonArms.size(); ++index) {
         // name
         Json::Value jsonArm = jsonArms[index];
@@ -605,13 +577,15 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         // ECM and change base frame on attached arms
         mtsInterfaceProvided * interfaceProvided = this->AddInterfaceProvided(name);
         mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
-        arm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, m_simulated,
-                                                    interfaceProvided, interfaceRequired);
-        Arms[armIndex] = arm;
+        auto sarm = new mtsIntuitiveResearchKitSUJArmData(name, type, plugNumber, m_simulated,
+                                                          interfaceProvided, interfaceRequired);
+        m_sarms[armIndex] = sarm;
+        AddStateTable(&(sarm->m_state_table));
+        AddStateTable(&(sarm->m_state_table_brake_current));
 
         // save which arm is the Reference Arm
-        if (name == referenceArmName) {
-            BaseFrameArmIndex = armIndex;
+        if (name == reference_sarm_name) {
+            m_reference_arm_index = armIndex;
         }
 
         // Arm State so GUI widget for each arm can set/get state
@@ -620,8 +594,8 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
 
         // Add motor up/down for the motorized arm
         if (type == mtsIntuitiveResearchKitSUJArmData::SUJ_MOTORIZED_PSM) {
-            interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::SetLiftVelocity, this,
-                                               "SetLiftVelocity", 0.0);
+            interfaceProvided->AddCommandWrite(&mtsIntuitiveResearchKitSUJ::set_lift_velocity, this,
+                                               "set_lift_velocity", 0.0);
         }
 
         // create a required interface for each arm to handle clutch button
@@ -630,7 +604,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
             interfaceName << "SUJ-Clutch-" << plugNumber;
             mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
             if (requiredInterface) {
-                requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::ClutchCallback, arm,
+                requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::clutch_callback, sarm,
                                                         "Button");
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure: can't add required interface for SUJ \""
@@ -645,12 +619,14 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
             if (!jsonPosition.empty()) {
                 vctDoubleVec position;
                 cmnDataJSON<vctDoubleVec>::DeSerializeText(position, jsonPosition);
-                if (position.size() == arm->m_measured_js.Position().size()) {
-                    arm->m_measured_js.Position().Assign(position);
+                if (position.size() == sarm->m_measured_js.Position().size()) {
+                    sarm->m_measured_js.Position().Assign(position);
+                    sarm->m_measured_js.SetValid(true);
+                    sarm->m_need_update_forward_kinemactics = true;
                 } else {
                     CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to load \"position-simulated\" for \""
                                              << name << "\", expected vector size is "
-                                             << arm->m_measured_js.Position().size() << " but vector in configuration file has "
+                                             << sarm->m_measured_js.Position().size() << " but vector in configuration file has "
                                              << position.size() << " element(s)"
                                              << std::endl;
                     exit(EXIT_FAILURE);
@@ -659,87 +635,85 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         }
 
         // find serial number
-        arm->mSerialNumber = jsonArm["serial-number"].asString();
+        sarm->m_serial_number = jsonArm["serial-number"].asString();
 
         // read brake current configuration
         // all math for ramping up/down current is done on positive values
         // negate only when applying
         double brakeCurrent = jsonArm["brake-release-current"].asFloat();
         if (brakeCurrent > 0.0) {
-            arm->mBrakeReleaseCurrent = brakeCurrent;
-            arm->mBrakeDirectionCurrent = 1.0;
+            sarm->m_brake_release_current = brakeCurrent;
+            sarm->m_brake_direction_current = 1.0;
         } else {
-            arm->mBrakeReleaseCurrent = -brakeCurrent;
-            arm->mBrakeDirectionCurrent = -1.0;
+            sarm->m_brake_release_current = -brakeCurrent;
+            sarm->m_brake_direction_current = -1.0;
         }
 
         brakeCurrent = 0.0;
         if (!jsonArm["brake-engaged-current"].isNull()) {
             brakeCurrent = jsonArm["brake-engaged-current"].asFloat();
         }
-        arm->mBrakeEngagedCurrent = brakeCurrent;
+        sarm->m_brake_engaged_current = brakeCurrent;
 
         // read pot settings
-        arm->mStateTableConfiguration.Start();
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionOffsets[0], jsonArm["primary-offsets"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionOffsets[1], jsonArm["secondary-offsets"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionScales[0], jsonArm["primary-scales"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(arm->mVoltageToPositionScales[1], jsonArm["secondary-scales"]);
-        arm->mStateTableConfiguration.Advance();
+        sarm->m_state_table_configuration.Start();
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[0], jsonArm["primary-offsets"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[1], jsonArm["secondary-offsets"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[0], jsonArm["primary-scales"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[1], jsonArm["secondary-scales"]);
+        sarm->m_state_table_configuration.Advance();
 
         // look for DH
-        arm->mManipulator.LoadRobot(jsonArm["DH"]);
+        sarm->m_manipulator.LoadRobot(jsonArm["DH"]);
 
         // Read setup transforms
         vctFrm3 transform;
         cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["world-origin-to-suj"]);
-        arm->mWorldToSUJ.From(transform);
+        sarm->m_world_to_SUJ.From(transform);
         cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["suj-tip-to-tool-origin"]);
-        arm->mSUJToArmBase.From(transform);
+        sarm->m_SUJ_to_arm_base.From(transform);
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::UpdateOperatingStateAndBusy(const prmOperatingState::StateType & state,
-                                                             const bool isBusy)
+
+void mtsIntuitiveResearchKitSUJ::update_operating_state_and_busy(const prmOperatingState::StateType & state,
+                                                                 const bool isBusy)
 {
-    mStateTableState.Start();
     m_operating_state.State() = state;
     m_operating_state.IsBusy() = isBusy;
-    mStateTableState.Advance();
-    // push only operating_state since it's the only one changing
-    DispatchOperatingState();
+    dispatch_operating_state();
 }
 
-void mtsIntuitiveResearchKitSUJ::StateChanged(void)
+
+void mtsIntuitiveResearchKitSUJ::state_changed(void)
 {
-    const std::string newState = mArmState.CurrentState();
-    // update state table
-    mStateTableState.Start();
-    mStateTableStateCurrent = newState;
-    mStateTableState.Advance();
-    // event
-    DispatchStatus(this->GetName() + ": current state " + newState);
-    DispatchState();
+    dispatch_status("current state " + m_state_machine.CurrentState());
+    dispatch_operating_state();
 }
 
-void mtsIntuitiveResearchKitSUJ::RunAllStates(void)
+
+void mtsIntuitiveResearchKitSUJ::run_all_states(void)
 {
     // get robot data, i.e. process mux/pots
-    GetRobotData();
+    get_robot_data();
+    // update all forward kinematics
+    update_forward_kinematics();
 }
 
-void mtsIntuitiveResearchKitSUJ::ResetMux(void)
+
+void mtsIntuitiveResearchKitSUJ::reset_mux(void)
 {
-    mMuxTimer = this->StateTable.GetTic();
-    MuxIncrement.SetValue(false);
-    NoMuxReset.SetValue(false);
+    m_mux_timer = this->StateTable.GetTic();
+    mux_increment.SetValue(false);
+    no_mux_reset.SetValue(false);
     Sleep(30.0 * cmn_ms);
-    mMuxIndexExpected = 0;
+    m_mux_index_expected = 0;
 }
 
-void mtsIntuitiveResearchKitSUJ::EnterDisabled(void)
+
+void mtsIntuitiveResearchKitSUJ::enter_DISABLED(void)
 {
-    UpdateOperatingStateAndBusy(prmOperatingState::DISABLED, false);
+    update_operating_state_and_busy(prmOperatingState::DISABLED, false);
 
     // power off brakes
     RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
@@ -748,24 +722,26 @@ void mtsIntuitiveResearchKitSUJ::EnterDisabled(void)
     // disable power on PWM
     PWM.DisablePWM(true);
     // set lift velocity
-    SetLiftVelocity(0.0);
+    set_lift_velocity(0.0);
 
     // reset mux
-    ResetMux();
+    reset_mux();
 
     m_powered = false;
 }
 
-void mtsIntuitiveResearchKitSUJ::TransitionDisabled(void)
+
+void mtsIntuitiveResearchKitSUJ::transition_DISABLED(void)
 {
-    if (mArmState.DesiredStateIsNotCurrent()) {
-        mArmState.SetCurrentState("POWERING");
+    if (m_state_machine.DesiredStateIsNotCurrent()) {
+        m_state_machine.SetCurrentState("POWERING");
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
+
+void mtsIntuitiveResearchKitSUJ::enter_POWERING(void)
 {
-    UpdateOperatingStateAndBusy(prmOperatingState::DISABLED, true);
+    update_operating_state_and_busy(prmOperatingState::DISABLED, true);
     m_powered = false;
 
     if (m_simulated) {
@@ -774,52 +750,48 @@ void mtsIntuitiveResearchKitSUJ::EnterPowering(void)
     }
 
     const double currentTime = this->StateTable.GetTic();
-    mHomingTimer = currentTime;
+    m_homing_timer = currentTime;
     // pre-load the boards with zero current
     RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
     // enable power and set a flags to move to next step
     RobotIO.PowerOnSequence();
 
-    DispatchStatus(this->GetName() + ": power requested");
+    dispatch_status("power requested");
 }
 
-void mtsIntuitiveResearchKitSUJ::TransitionPowering(void)
+
+void mtsIntuitiveResearchKitSUJ::transition_POWERING(void)
 {
     if (m_simulated) {
-        mArmState.SetCurrentState("ENABLED");
+        m_state_machine.SetCurrentState("ENABLED");
         return;
     }
 
     const double currentTime = this->StateTable.GetTic();
 
     // check status
-    if ((currentTime - mHomingTimer) > mtsIntuitiveResearchKit::TimeToPower) {
+    if ((currentTime - m_homing_timer) > mtsIntuitiveResearchKit::TimeToPower) {
         // check power status
         vctBoolVec actuatorAmplifiersStatus(4);
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         if (actuatorAmplifiersStatus.All()) {
-            DispatchStatus(this->GetName() + ": power on");
+            dispatch_status("power on");
             m_powered = true;
-            mArmState.SetCurrentState("ENABLED");
+            m_state_machine.SetCurrentState("ENABLED");
         } else {
-            DispatchError(this->GetName() + ": failed to enable power");
-            SetDesiredState("DISABLED");
+            dispatch_error("failed to enable power");
+            set_desired_state("DISABLED");
         }
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::EnterEnabled(void)
+
+void mtsIntuitiveResearchKitSUJ::enter_ENABLED(void)
 {
-    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
+    update_operating_state_and_busy(prmOperatingState::ENABLED, false);
 
     if (m_simulated) {
-        // set all data to be valid
-        for (auto arm : Arms) {
-            arm->m_measured_js.Valid() = true;
-            arm->m_measured_cp.Valid() = true;
-            arm->m_local_measured_cp.Valid() = true;
-        }
-        SetHomed(true);
+        set_homed(true);
         return;
     }
 
@@ -830,95 +802,50 @@ void mtsIntuitiveResearchKitSUJ::EnterEnabled(void)
     RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
 
     // when returning from manual mode, make sure brakes are not released
-    for (auto arm : Arms) {
-        arm->mClutched = 0;
-        arm->mBrakeDesiredCurrent = 0.0;
-        mPreviousTic = 0.0;
+    for (auto sarm : m_sarms) {
+        sarm->m_clutched = 0;
+        sarm->m_brake_desired_current = 0.0;
+        m_previous_tic = 0.0;
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::TransitionEnabled(void)
+
+void mtsIntuitiveResearchKitSUJ::transition_ENABLED(void)
 {
     // move to next stage if desired state is different
-    if (mArmState.DesiredStateIsNotCurrent()) {
-        mArmState.SetCurrentState(mArmState.DesiredState());
+    if (m_state_machine.DesiredStateIsNotCurrent()) {
+        m_state_machine.SetCurrentState(m_state_machine.DesiredState());
     }
 }
+
 
 void mtsIntuitiveResearchKitSUJ::Startup(void)
 {
-    SetDesiredState("DISABLED");
+    set_desired_state("DISABLED");
 }
+
 
 void mtsIntuitiveResearchKitSUJ::Run(void)
 {
     // collect data from required interfaces
     ProcessQueuedEvents();
     try {
-        mArmState.Run();
+        m_state_machine.Run();
     } catch (std::exception & e) {
-        DispatchError(this->GetName() + ": in state " + mArmState.CurrentState()
-                      + ", caught exception \"" + e.what() + "\"");
-        SetDesiredState("DISABLED");
+        dispatch_error("in state " + m_state_machine.CurrentState()
+                       + ", caught exception \"" + e.what() + "\"");
+        set_desired_state("DISABLED");
     }
     // trigger ExecOut event
     RunEvent();
     ProcessQueuedCommands();
-
-    // update all base frame kinematics
-    // first see if there's an BaseFrameArm connected
-    prmPositionCartesianGet baseFrameArmPositionParam;
-    prmPositionCartesianGet baseFrameArmTipToSUJBase;
-
-    mtsIntuitiveResearchKitSUJArmData * arm = Arms[BaseFrameArmIndex];
-    if (! (Arms[BaseFrameArmIndex]->mGetArmPositionCartesianLocal(baseFrameArmPositionParam))) {
-        // interface not connected, reporting wrt cart
-        baseFrameArmTipToSUJBase.SetValid(true);
-        baseFrameArmTipToSUJBase.SetReferenceFrame("Cart");
-    } else {
-        // get position from BaseFrameArm and convert to useful type
-        vctFrm3 sujBaseToSUJTip = arm->m_local_measured_cp.Position() * baseFrameArmPositionParam.Position();
-        // compute and send new base frame for all SUJs (SUJ will handle BaseFrameArm differently)
-        baseFrameArmTipToSUJBase.Position().From(sujBaseToSUJTip.Inverse());
-        // it's an inverse, swap moving and reference frames
-        baseFrameArmTipToSUJBase.SetReferenceFrame(baseFrameArmPositionParam.MovingFrame());
-        baseFrameArmTipToSUJBase.SetMovingFrame(arm->m_local_measured_cp.ReferenceFrame());
-        // valid only if both are valid
-        baseFrameArmTipToSUJBase.SetValid(arm->m_local_measured_cp.Valid()
-                                          && baseFrameArmPositionParam.Valid());
-        baseFrameArmTipToSUJBase.SetTimestamp(baseFrameArmPositionParam.Timestamp());
-    }
-
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        arm = Arms[armIndex];
-        // update positions with base frame, local positions are only
-        // updated from FK when joints are ready
-        if (armIndex != BaseFrameArmIndex) {
-            arm->mBaseFrame.From(baseFrameArmTipToSUJBase.Position());
-            arm->mBaseFrameValid = baseFrameArmTipToSUJBase.Valid();
-            arm->m_measured_cp.SetReferenceFrame(baseFrameArmTipToSUJBase.ReferenceFrame());
-        }
-        vctFrm4x4 armLocal(arm->m_local_measured_cp.Position());
-        vctFrm4x4 armBase = arm->mBaseFrame * armLocal;
-        // - with base frame
-        arm->m_measured_cp.Position().From(armBase);
-        arm->m_measured_cp.SetTimestamp(arm->m_measured_js.Timestamp());
-        arm->EventPositionCartesian(arm->m_measured_cp);
-        // - set base frame for the arm
-        prmPositionCartesianSet positionSet;
-        positionSet.Goal().Assign(arm->m_measured_cp.Position());
-        positionSet.Valid() = arm->m_measured_cp.Valid();
-        positionSet.Timestamp() = arm->m_measured_cp.Timestamp();
-        positionSet.ReferenceFrame() = arm->m_measured_cp.ReferenceFrame();
-        positionSet.MovingFrame() = arm->m_measured_cp.MovingFrame();
-        arm->mSetArmBaseFrame(positionSet);
-    }
 }
+
 
 void mtsIntuitiveResearchKitSUJ::Cleanup(void)
 {
     // Disable PWM
-    SetLiftVelocity(0.0);
+    set_lift_velocity(0.0);
     PWM.DisablePWM(true);
     // make sure requested current is back to 0
     RobotIO.SetActuatorCurrent(vctDoubleVec(4, 0.0));
@@ -926,13 +853,14 @@ void mtsIntuitiveResearchKitSUJ::Cleanup(void)
     RobotIO.PowerOffSequence(true); // also opens safety relays
 }
 
+
 void mtsIntuitiveResearchKitSUJ::set_simulated(void)
 {
     m_simulated = true;
     // set all arms simulated
-    for (auto arm : Arms) {
-        if (arm != nullptr) {
-            arm->m_simulated = true;
+    for (auto sarm : m_sarms) {
+        if (sarm != nullptr) {
+            sarm->m_simulated = true;
         }
     }
     // in simulation mode, we don't need IOs
@@ -945,7 +873,8 @@ void mtsIntuitiveResearchKitSUJ::set_simulated(void)
     RemoveInterfaceRequired("MotorDown");
 }
 
-void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
+
+void mtsIntuitiveResearchKitSUJ::get_robot_data(void)
 {
     if (m_simulated) {
         return;
@@ -957,8 +886,8 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
         RobotIO.GetActuatorAmpStatus(actuatorAmplifiersStatus);
         if (!actuatorAmplifiersStatus.All()) {
             m_powered = false;
-            DispatchError(this->GetName() + ": detected power loss");
-            SetDesiredState("DISABLED");
+            dispatch_error("detected power loss");
+            set_desired_state("DISABLED");
             return;
         }
     }
@@ -970,200 +899,275 @@ void mtsIntuitiveResearchKitSUJ::GetRobotData(void)
     const double currentTime = this->StateTable.GetTic();
 
     // we assume the analog in is now stable
-    if (currentTime > mMuxTimer) {
+    if (currentTime > m_mux_timer) {
         // pot values should be stable by now, get pots values
-        GetAndConvertPotentiometerValues();
+        get_and_convert_potentiometers();
 
         // time to toggle
-        if (mVoltageSamplesCounter == mVoltageSamplesNumber) {
+        if (m_voltage_samples_counter == m_voltage_samples_number) {
             // toggle mux
-            mMuxTimer = currentTime + muxCycle;
-            if (mMuxIndexExpected == MUX_MAX_INDEX) {
-                NoMuxReset.SetValue(false);
-                mMuxIndexExpected = 0;
+            m_mux_timer = currentTime + muxCycle;
+            if (m_mux_index_expected == MUX_MAX_INDEX) {
+                no_mux_reset.SetValue(false);
+                m_mux_index_expected = 0;
             } else {
-                MuxIncrement.SetValue(true);
-                mMuxIndexExpected += 1;
+                mux_increment.SetValue(true);
+                m_mux_index_expected += 1;
             }
             // reset sample counter
-            mVoltageSamplesCounter = 0;
+            m_voltage_samples_counter = 0;
         }
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::GetAndConvertPotentiometerValues(void)
-{
-    mtsIntuitiveResearchKitSUJArmData * arm;
 
+void mtsIntuitiveResearchKitSUJ::get_and_convert_potentiometers(void)
+{
     // read encoder channel A to get the mux state
-    mtsExecutionResult executionResult = RobotIO.GetEncoderChannelA(mMuxState);
+    mtsExecutionResult executionResult = RobotIO.GetEncoderChannelA(m_mux_state);
     // compute pot index
-    mMuxIndex = (mMuxState[0]?1:0) + (mMuxState[1]?2:0) + (mMuxState[2]?4:0) + (mMuxState[3]?8:0);
-    if (mMuxIndex != mMuxIndexExpected) {
-        DispatchWarning(this->GetName() + ": unexpected multiplexer value.");
-        CMN_LOG_CLASS_RUN_ERROR << "GetAndConvertPotentiometerValues: mux from IO board, actual: " << mMuxIndex << ", expected: " << mMuxIndexExpected << std::endl;
-        ResetMux();
-        SetHomed(false);
+    m_mux_index = (m_mux_state[0]?1:0) + (m_mux_state[1]?2:0) + (m_mux_state[2]?4:0) + (m_mux_state[3]?8:0);
+    if (m_mux_index != m_mux_index_expected) {
+        dispatch_warning("unexpected multiplexer value");
+        CMN_LOG_CLASS_RUN_ERROR << "get_and_convert_potentiometers: mux from IO board, actual: " << m_mux_index << ", expected: " << m_mux_index_expected << std::endl;
+        reset_mux();
+        set_homed(false);
         return;
     }
-    SetHomed(true);
+    set_homed(true);
 
     // array index, 0 or 1, primary or secondary pots
-    const size_t arrayIndex = mMuxIndex / MUX_ARRAY_SIZE; // 0 or 1: mux index 0 to 5 goes to first array of data, 6 to 11 goes to second array
-                                                          // 12 to 15 goes to third array (misc. voltages)
-    const size_t indexInArray = mMuxIndex % MUX_ARRAY_SIZE; // pot index in array, 0 to 5 (0 to 3 for third array)
+    const size_t arrayIndex = m_mux_index / MUX_ARRAY_SIZE; // 0 or 1: mux index 0 to 5 goes to first array of data, 6 to 11 goes to second array
+    // 12 to 15 goes to third array (misc. voltages)
+    const size_t indexInArray = m_mux_index % MUX_ARRAY_SIZE; // pot index in array, 0 to 5 (0 to 3 for third array)
 
-    executionResult = RobotIO.GetAnalogInputVolts(mVoltages);
-    mVoltageSamples[mVoltageSamplesCounter].ForceAssign(mVoltages);
-    mVoltageSamplesCounter++;
+    executionResult = RobotIO.GetAnalogInputVolts(m_voltages);
+    m_voltage_samples[m_voltage_samples_counter].ForceAssign(m_voltages);
+    m_voltage_samples_counter++;
 
     // if we have enough samples
-    if (mVoltageSamplesCounter == mVoltageSamplesNumber) {
-        // use mVoltages to store average
-        mVoltages.Zeros();
+    if (m_voltage_samples_counter == m_voltage_samples_number) {
+        // use m_voltages to store average
+        m_voltages.Zeros();
         for (size_t index = 0;
-             index < mVoltageSamplesNumber;
+             index < m_voltage_samples_number;
              ++index) {
-            mVoltages.Add(mVoltageSamples[index]);
+            m_voltages.Add(m_voltage_samples[index]);
         }
-        mVoltages.Divide(mVoltageSamplesNumber);
+        m_voltages.Divide(m_voltage_samples_number);
         // for each arm, i.e. SUJ1, SUJ2, SUJ3, ...
-        for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-            arm = Arms[armIndex];
+        for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
+            auto * sarm = m_sarms[arm_index];
             // start stable when reading 1st joint on all arms
-            if (mMuxIndex == 0) {
-                arm->mStateTable.Start();
+            if (m_mux_index == 0) {
+                sarm->m_state_table.Start();
             }
             // all 4 analog inputs are sent to all 4 arm data structures
             if (arrayIndex < 2) {
-                arm->mVoltages[arrayIndex][indexInArray] = mVoltages[armIndex];
+                sarm->m_voltages[arrayIndex][indexInArray] = m_voltages[arm_index];
             } else {
                 if (indexInArray == 2) {
-                    if ((armIndex == 0) || (armIndex == 1) || (armIndex == 2)) {
-                        Arms[3 - armIndex]->mVoltagesExtra[indexInArray] = mVoltages[armIndex];
-                    } else if (armIndex == 3) {
+                    if ((arm_index == 0) || (arm_index == 1) || (arm_index == 2)) {
+                        m_sarms[3 - arm_index]->m_voltages_extra[indexInArray] = m_voltages[arm_index];
+                    } else if (arm_index == 3) {
 
                     }
-                } else if ((indexInArray == 3) && (armIndex == 3)) {
-                    Arms[0 /* 3 - armIndex */]->mVoltagesExtra[2] = mVoltages[armIndex];
+                } else if ((indexInArray == 3) && (arm_index == 3)) {
+                    m_sarms[0 /* 3 - arm_index */]->m_voltages_extra[2] = m_voltages[arm_index];
                 } else {
                     // normal case
-                    arm->mVoltagesExtra[indexInArray] = mVoltages[armIndex];
+                    sarm->m_voltages_extra[indexInArray] = m_voltages[arm_index];
                 }
             }
             // advance state table when all joints have been read
-            if (mMuxIndex == MUX_MAX_INDEX) {
-                arm->mPositions[0].Assign(arm->mVoltageToPositionOffsets[0]);
-                arm->mPositions[0].AddElementwiseProductOf(arm->mVoltageToPositionScales[0], arm->mVoltages[0]);
-                arm->mPositions[1].Assign(arm->mVoltageToPositionOffsets[1]);
-                arm->mPositions[1].AddElementwiseProductOf(arm->mVoltageToPositionScales[1], arm->mVoltages[1]);
+            if (m_mux_index == MUX_MAX_INDEX) {
+                sarm->m_positions[0].Assign(sarm->m_voltage_to_position_offsets[0]);
+                sarm->m_positions[0].AddElementwiseProductOf(sarm->m_voltage_to_position_scales[0], sarm->m_voltages[0]);
+                sarm->m_positions[1].Assign(sarm->m_voltage_to_position_offsets[1]);
+                sarm->m_positions[1].AddElementwiseProductOf(sarm->m_voltage_to_position_scales[1], sarm->m_voltages[1]);
 
                 // ignore values on ECM arm
-                if (arm->mType == mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
+                if (sarm->m_type == mtsIntuitiveResearchKitSUJArmData::SUJ_ECM) {
                     // ECM has only 4 joints
-                    arm->mPositions[0][4] = 0.0;
-                    arm->mPositions[0][5] = 0.0;
-                    arm->mPositions[1][4] = 0.0;
-                    arm->mPositions[1][5] = 0.0;
+                    sarm->m_positions[0][4] = 0.0;
+                    sarm->m_positions[0][5] = 0.0;
+                    sarm->m_positions[1][4] = 0.0;
+                    sarm->m_positions[1][5] = 0.0;
                 }
 
                 // if the arm is clutched, we keep resetting mux counter
-                if (arm->mClutched > 0) {
-                    arm->mNumberOfMuxCyclesBeforeStable = 0;
+                if (sarm->m_clutched > 0) {
+                    sarm->m_number_of_mux_cycles = 0;
                 }
 
                 // check pots when the SUJ is not clutch and if the
                 // counter for update cartesian desired position is
                 // back to zero (pot values should now be stable).
-                if ((arm->mClutched == 0) && (arm->mNumberOfMuxCyclesBeforeStable >= NUMBER_OF_MUX_CYCLE_BEFORE_STABLE)) {
+                if ((sarm->m_clutched == 0) && (sarm->m_number_of_mux_cycles >= NUMBER_OF_MUX_CYCLE_BEFORE_STABLE)) {
                     // compare primary and secondary pots when arm is not clutched
                     const double angleTolerance = 1.0 * cmnPI / 180.0;
                     const double distanceTolerance = 2.0 * cmn_mm;
-                    arm->mPositionDifference.DifferenceOf(arm->mPositions[0], arm->mPositions[1]);
-                    if ((arm->mPositionDifference[0] > distanceTolerance) ||
-                        (arm->mPositionDifference.Ref(5, 1).MaxAbsElement() > angleTolerance)) {
+                    sarm->m_delta_measured_js.DifferenceOf(sarm->m_positions[0], sarm->m_positions[1]);
+                    if ((sarm->m_delta_measured_js[0] > distanceTolerance) ||
+                        (sarm->m_delta_measured_js.Ref(5, 1).MaxAbsElement() > angleTolerance)) {
                         // send messages if this is new
-                        if (arm->mPotsAgree) {
-                            mInterface->SendWarning(this->GetName() + ": " + arm->mName + " primary and secondary potentiometers don't seem to agree.");
-                            CMN_LOG_CLASS_RUN_WARNING << "GetAndConvertPotentiometerValues, error: " << std::endl
-                                                      << " - " << this->GetName() << ": " << arm->mName << std::endl
-                                                      << " - primary:   " << arm->mPositions[0] << std::endl
-                                                      << " - secondary: " << arm->mPositions[1] << std::endl;
-                            arm->mPotsAgree = false;
+                        if (sarm->m_pots_agree) {
+                            dispatch_warning(sarm->m_name + " primary and secondary potentiometers don't seem to agree");
+                            CMN_LOG_CLASS_RUN_WARNING << "get_and_convert_potentiometers, error: " << std::endl
+                                                      << " - " << this->GetName() << ": " << sarm->m_name << std::endl
+                                                      << " - primary:   " << sarm->m_positions[0] << std::endl
+                                                      << " - secondary: " << sarm->m_positions[1] << std::endl;
+                            sarm->m_pots_agree = false;
                         }
                     } else {
-                        if (!arm->mPotsAgree) {
-                            mInterface->SendStatus(this->GetName() + ": " + arm->mName + " primary and secondary potentiometers agree.");
-                            CMN_LOG_CLASS_RUN_VERBOSE << "GetAndConvertPotentiometerValues recovery" << std::endl
-                                                      << " - " << this->GetName() << ": " << arm->mName << std::endl;
-                            arm->mPotsAgree = true;
+                        if (!sarm->m_pots_agree) {
+                            dispatch_status(sarm->m_name + " primary and secondary potentiometers agree");
+                            CMN_LOG_CLASS_RUN_VERBOSE << "get_and_convert_potentiometers recovery" << std::endl
+                                                      << " - " << this->GetName() << ": " << sarm->m_name << std::endl;
+                            sarm->m_pots_agree = true;
                         }
                     }
                 }
 
-                // use average of positions reported by potentiometers
-                arm->m_measured_js.Position().SumOf(arm->mPositions[0],
-                                                  arm->mPositions[1]);
-                arm->m_measured_js.Position().Divide(2.0);
-                arm->m_measured_js.SetValid(true);
-
                 // this mux cycle might have started before brakes where engaged so we can set the valid flag
-                if (arm->mNumberOfMuxCyclesBeforeStable < NUMBER_OF_MUX_CYCLE_BEFORE_STABLE) {
-                    arm->mNumberOfMuxCyclesBeforeStable++;
+                if (sarm->m_number_of_mux_cycles < NUMBER_OF_MUX_CYCLE_BEFORE_STABLE) {
+                    sarm->m_number_of_mux_cycles++;
                 } else {
                     // at that point we know there has been a full mux cycle with brakes engaged
                     // so we treat this as a fixed transformation until the SUJ move again (user clutch)
-                    arm->m_local_measured_cp.SetValid(true);
+                    // use average of positions reported by potentiometers
+                    sarm->m_measured_js.Position().SumOf(sarm->m_positions[0],
+                                                         sarm->m_positions[1]);
+                    sarm->m_measured_js.Position().Divide(2.0);
+                    sarm->m_measured_js.SetValid(true);
+                    if (sarm->m_waiting_for_live) {
+                        sarm->m_waiting_for_live = false;
+                        sarm->m_need_update_forward_kinemactics = true;
+                    }
                 }
-
-                // always update the global position valid flag to take into account base frame valid
-                arm->m_measured_cp.SetValid(arm->mBaseFrameValid && arm->m_local_measured_cp.Valid());
-
-                // forward kinematic
-                vctFrm4x4 suj = arm->mManipulator.ForwardKinematics(arm->m_measured_js.Position(), 6);
-                // pre and post transformations loaded from JSON file, base frame updated using events
-                arm->mPositionCartesianLocal = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
-                // update local only
-                arm->m_local_measured_cp.Position().From(arm->mPositionCartesianLocal);
-                arm->m_local_measured_cp.SetTimestamp(arm->m_measured_js.Timestamp());
-                arm->EventPositionCartesianLocal(arm->m_local_measured_cp);
-
-                // advance this arm state table
-                arm->mStateTable.Advance();
             }
         }
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::SetDesiredState(const std::string & state)
+
+void mtsIntuitiveResearchKitSUJ::update_forward_kinematics(void)
+{
+    // for real robots first update all the local_measured_cp if all arms are ready
+    for (auto sarm : m_sarms) {
+        if (sarm != nullptr) {
+            if (sarm->m_measured_js.Valid()) {
+                if (sarm->m_need_update_forward_kinemactics) {
+                    sarm->m_need_update_forward_kinemactics = false;
+                    // forward kinematic
+                    vctDoubleVec jp(sarm->m_manipulator.links.size(), 0.0);
+                    jp.Ref(sarm->m_measured_js.Position().size()).Assign(sarm->m_measured_js.Position());
+                    vctFrm4x4 dh_cp = sarm->m_manipulator.ForwardKinematics(jp);
+                    // pre and post transformations loaded from JSON file, base frame updated using events
+                    vctFrm4x4 local_cp = sarm->m_world_to_SUJ * dh_cp * sarm->m_SUJ_to_arm_base;
+                    // update local only
+                    sarm->m_local_measured_cp.Position().From(local_cp);
+                    sarm->m_local_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
+                    sarm->m_local_measured_cp.SetValid(true);
+                    sarm->m_interface_provided->SendStatus(sarm->m_name + " SUJ: measured_cp updated");
+                }
+            } else {
+                sarm->m_local_measured_cp.SetValid(false);
+                sarm->m_measured_cp.SetValid(false);
+            }
+        }
+    }
+
+    // find the reference arm (usually ECM)
+    prmPositionCartesianGet reference_arm_local_cp;
+    prmPositionCartesianGet reference_arm_to_cart_cp;
+
+    auto * reference_sarm = m_sarms[m_reference_arm_index];
+    if (! (reference_sarm->m_get_local_measured_cp(reference_arm_local_cp))) {
+        // interface not connected, reporting wrt cart
+        reference_arm_to_cart_cp.Position().Assign(vctFrm3::Identity());
+        reference_arm_to_cart_cp.SetValid(true);
+        reference_arm_to_cart_cp.SetReferenceFrame("Cart");
+    } else {
+        // get position from reference arm and convert to useful type
+        vctFrm3 cart_to_reference_arm_cp = reference_sarm->m_local_measured_cp.Position() * reference_arm_local_cp.Position();
+        // compute and send new base frame for all SUJs (SUJ will handle BaseFrameArm differently)
+        reference_arm_to_cart_cp.Position().From(cart_to_reference_arm_cp.Inverse());
+        // it's an inverse, swap moving and reference frames
+        reference_arm_to_cart_cp.SetReferenceFrame(reference_arm_local_cp.MovingFrame());
+        reference_arm_to_cart_cp.SetMovingFrame(reference_sarm->m_local_measured_cp.ReferenceFrame());
+        // valid only if both are valid
+        reference_arm_to_cart_cp.SetValid(reference_sarm->m_local_measured_cp.Valid()
+                                          && reference_arm_local_cp.Valid());
+        // take most recent timestamp
+        reference_arm_to_cart_cp.SetTimestamp(std::max(reference_sarm->m_local_measured_cp.Timestamp(),
+                                                       reference_arm_local_cp.Timestamp()));
+    }
+    // reference sarm measured_cp is always with respect to cart, same as local
+    reference_sarm->m_measured_cp.Position().Assign(reference_sarm->m_local_measured_cp.Position());
+    reference_sarm->m_measured_cp.SetValid(reference_sarm->m_local_measured_cp.Valid());
+    reference_sarm->m_measured_cp.SetTimestamp(reference_sarm->m_local_measured_cp.Timestamp());
+
+    // update other arms
+    vctFrm4x4 reference_frame(reference_arm_to_cart_cp.Position());
+    vctFrm4x4 local_cp, cp;
+    for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
+        auto * sarm = m_sarms[arm_index];
+        // update positions with base frame, local positions are only
+        // updated from FK when joints are ready
+        if (arm_index != m_reference_arm_index) {
+            sarm->m_measured_cp.SetReferenceFrame(reference_arm_to_cart_cp.ReferenceFrame());
+            local_cp.From(sarm->m_local_measured_cp.Position());
+            cp = reference_frame * local_cp;
+            // - with base frame
+            sarm->m_measured_cp.Position().From(cp);
+            sarm->m_measured_cp.SetValid(sarm->m_local_measured_cp.Valid()
+                                         && reference_arm_to_cart_cp.Valid());
+            sarm->m_measured_cp.SetTimestamp(std::max(sarm->m_local_measured_cp.Timestamp(),
+                                                      reference_arm_to_cart_cp.Timestamp()));
+        } else {
+            // for reference arm, measured_cp is local_measured_cp
+            sarm->m_measured_cp = sarm->m_local_measured_cp;
+        }
+        // convert from prmPositionCartesianGet to prmPositionCartesianSet
+        prmPositionCartesianSet base_frame;
+        base_frame.Goal().Assign(sarm->m_measured_cp.Position());
+        base_frame.SetValid(sarm->m_measured_cp.Valid());
+        base_frame.SetTimestamp(sarm->m_measured_cp.Timestamp());
+        base_frame.SetReferenceFrame(sarm->m_measured_cp.ReferenceFrame());
+        base_frame.SetMovingFrame(sarm->m_measured_cp.MovingFrame());
+        // and finally set the base frame
+        sarm->m_arm_set_base_frame(base_frame);
+    }
+}
+
+
+void mtsIntuitiveResearchKitSUJ::set_desired_state(const std::string & state)
 {
     // setting desired state triggers a new event so user nows which state is current
-    DispatchState();
+    dispatch_operating_state();
     // try to find the state in state machine
-    if (!mArmState.StateExists(state)) {
-        DispatchError(this->GetName() + ": unsupported state " + state);
+    if (!m_state_machine.StateExists(state)) {
+        dispatch_error(this->GetName() + ": unsupported state " + state);
         return;
     }
     // try to set the desired state
     try {
-        mArmState.SetDesiredState(state);
+        m_state_machine.SetDesiredState(state);
     } catch (...) {
-        DispatchError(this->GetName() + ": " + state + " is not an allowed desired state");
+        dispatch_error(state + " is not an allowed desired state");
         return;
     }
-    // update state table
-    mStateTableState.Start();
-    mStateTableStateDesired = state;
-    mStateTableState.Advance();
 
-    DispatchState();
-    DispatchStatus(this->GetName() + ": desired state " + state);
+    dispatch_operating_state();
+    dispatch_status("desired state " + state);
 
     // state transitions with direct transitions
     if (state == "DISABLED") {
-        mArmState.SetCurrentState(state);
+        m_state_machine.SetCurrentState(state);
     }
 }
+
 
 void mtsIntuitiveResearchKitSUJ::state_command(const std::string & command)
 {
@@ -1173,20 +1177,20 @@ void mtsIntuitiveResearchKitSUJ::state_command(const std::string & command)
         if (m_operating_state.ValidCommand(prmOperatingState::CommandTypeFromString(command),
                                            newOperatingState, humanReadableMessage)) {
             if (command == "enable") {
-                SetDesiredState("ENABLED");
+                set_desired_state("ENABLED");
                 return;
             }
             if (command == "disable") {
-                SetDesiredState("DISABLED");
+                set_desired_state("DISABLED");
                 return;
             }
             if (command == "home") {
-                SetDesiredState("ENABLED");
-                SetHomed(true);
+                set_desired_state("ENABLED");
+                set_homed(true);
                 return;
             }
             if (command == "unhome") {
-                SetHomed(false);
+                set_homed(false);
                 return;
             }
             if (command == "pause") {
@@ -1198,97 +1202,64 @@ void mtsIntuitiveResearchKitSUJ::state_command(const std::string & command)
                 return;
             }
         } else {
-            DispatchWarning(this->GetName() + ": " + humanReadableMessage);
+            dispatch_warning(humanReadableMessage);
         }
     } catch (std::runtime_error & e) {
-        DispatchWarning(this->GetName() + ": " + command + " doesn't seem to be a valid state_command (" + e.what() + ")");
+        dispatch_warning(command + " doesn't seem to be a valid state_command (" + e.what() + ")");
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::RunEnabled(void)
-{
-    if (m_simulated) {
-        const double currentTime = this->StateTable.GetTic();
-        if (currentTime - mSimulatedTimer > 1.0 * cmn_s) {
-            mSimulatedTimer = currentTime;
-            for (auto arm : Arms) {
-                arm->mStateTable.Start();
-                // forward kinematic
-                vctFrm4x4 suj = arm->mManipulator.ForwardKinematics(arm->m_measured_js.Position(), 6);
-                // pre and post transformations loaded from JSON file, base frame updated using events
-                vctFrm4x4 armLocal = arm->mWorldToSUJ * suj * arm->mSUJToArmBase;
-                // apply base frame
-                vctFrm4x4 armBase = arm->mBaseFrame * armLocal;
-                // emit events for continuous positions
-                // - joint state
-                arm->m_measured_js.SetValid(true);
-                // - with base
-                arm->m_measured_cp.Position().From(armBase);
-                arm->m_measured_cp.SetTimestamp(arm->m_measured_js.Timestamp());
-                arm->m_measured_cp.SetValid(arm->mBaseFrameValid);
-                arm->EventPositionCartesian(arm->m_measured_cp);
-                // - local
-                arm->m_local_measured_cp.Position().From(armLocal);
-                arm->m_local_measured_cp.SetTimestamp(arm->m_measured_js.Timestamp());
-                arm->m_local_measured_cp.SetValid(arm->mBaseFrameValid);
-                arm->EventPositionCartesianLocal(arm->m_local_measured_cp);
-                arm->mStateTable.Advance();
-            }
-        }
-        return;
-    }
 
+void mtsIntuitiveResearchKitSUJ::run_ENABLED(void)
+{
     double currentTic = this->StateTable.GetTic();
-    const double timeDelta = currentTic - mPreviousTic;
+    const double timeDelta = currentTic - m_previous_tic;
 
     const double brakeCurrentRate = 8.0; // rate = 8 A/s, about 1/4 second to get up/down
 
-    mtsIntuitiveResearchKitSUJArmData * arm;
-    for (size_t armIndex = 0; armIndex < 4; ++armIndex) {
-        arm = Arms[armIndex];
+    for (size_t arm_index = 0; arm_index < 4; ++arm_index) {
+        auto sarm = m_sarms[arm_index];
         // brakes
         // increase current for brakes
-        if (arm->mClutched > 0) {
-            arm->mStateTableBrakeCurrent.Start();
-            if (((brakeCurrentRate * timeDelta) + arm->mBrakeDesiredCurrent) < arm->mBrakeReleaseCurrent) {
-                arm->mBrakeDesiredCurrent += brakeCurrentRate * timeDelta;
+        if (sarm->m_clutched > 0) {
+            if (((brakeCurrentRate * timeDelta) + sarm->m_brake_desired_current) < sarm->m_brake_release_current) {
+                sarm->m_brake_desired_current += brakeCurrentRate * timeDelta;
             } else {
-                arm->mBrakeDesiredCurrent = arm->mBrakeReleaseCurrent;
+                sarm->m_brake_desired_current = sarm->m_brake_release_current;
             }
-            arm->mStateTableBrakeCurrent.Advance();
         }
         // decrease current for brakes
         else {
-            if (arm->mBrakeDesiredCurrent != arm->mBrakeEngagedCurrent) {
-                arm->mStateTableBrakeCurrent.Start();
-                if ((arm->mBrakeDesiredCurrent - (brakeCurrentRate * timeDelta)) >= arm->mBrakeEngagedCurrent) {
-                    arm->mBrakeDesiredCurrent -= brakeCurrentRate * timeDelta;
-                    // if by any luck we have reached arm->mBrakeEngagedCurrent, need to update cartesian desired
-                    if (arm->mBrakeDesiredCurrent == arm->mBrakeEngagedCurrent) {
-                        arm->mNumberOfMuxCyclesBeforeStable = 0;
+            if (sarm->m_brake_desired_current != sarm->m_brake_engaged_current) {
+                if ((sarm->m_brake_desired_current - (brakeCurrentRate * timeDelta)) >= sarm->m_brake_engaged_current) {
+                    sarm->m_brake_desired_current -= brakeCurrentRate * timeDelta;
+                    // if by any luck we have reached arm->m_brake_engaged_current, need to update cartesian desired
+                    if (sarm->m_brake_desired_current == sarm->m_brake_engaged_current) {
+                        sarm->m_number_of_mux_cycles = 0;
                     }
                 } else {
-                    arm->mBrakeDesiredCurrent = arm->mBrakeEngagedCurrent;
-                    arm->mNumberOfMuxCyclesBeforeStable = 0;
+                    sarm->m_brake_desired_current = sarm->m_brake_engaged_current;
+                    sarm->m_number_of_mux_cycles = 0;
                 }
-                arm->mStateTableBrakeCurrent.Advance();
             }
         }
-        mBrakeCurrents[armIndex] = arm->mBrakeDirectionCurrent * arm->mBrakeDesiredCurrent;
+        m_brake_currents[arm_index] = sarm->m_brake_direction_current * sarm->m_brake_desired_current;
     }
-    RobotIO.SetActuatorCurrent(mBrakeCurrents);
-    mPreviousTic = currentTic;
+    RobotIO.SetActuatorCurrent(m_brake_currents);
+    m_previous_tic = currentTic;
 }
 
-void mtsIntuitiveResearchKitSUJ::SetHomed(const bool homed)
+
+void mtsIntuitiveResearchKitSUJ::set_homed(const bool homed)
 {
     if (homed != m_operating_state.IsHomed()) {
         m_operating_state.IsHomed() = homed;
-        DispatchOperatingState();
+        dispatch_operating_state();
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::SetLiftVelocity(const double & velocity)
+
+void mtsIntuitiveResearchKitSUJ::set_lift_velocity(const double & velocity)
 {
     if ((velocity >= -1.0) && (velocity <= 1.0)) {
         const double dutyCyle = 0.5 + velocity * 0.1;  // 0.1 determines max velocity
@@ -1298,72 +1269,67 @@ void mtsIntuitiveResearchKitSUJ::SetLiftVelocity(const double & velocity)
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::MotorDownEventHandler(const prmEventButton & button)
+
+void mtsIntuitiveResearchKitSUJ::motor_down_event_handler(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
-        SetLiftVelocity(-1.0);
+        set_lift_velocity(-1.0);
     } else {
-        SetLiftVelocity(0.0);
+        set_lift_velocity(0.0);
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::MotorUpEventHandler(const prmEventButton & button)
+void mtsIntuitiveResearchKitSUJ::motor_up_event_handler(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
-        SetLiftVelocity(1.0);
+        set_lift_velocity(1.0);
     } else {
-        SetLiftVelocity(0.0);
+        set_lift_velocity(0.0);
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::ErrorEventHandler(const mtsMessage & message)
+
+void mtsIntuitiveResearchKitSUJ::error_event_handler(const mtsMessage & message)
 {
     RobotIO.PowerOffSequence(false);
-    DispatchError(this->GetName() + ": received [" + message.Message + "]");
-    SetDesiredState("DISABLED");
+    dispatch_error("received [" + message.Message + "]");
+    set_desired_state("DISABLED");
 }
 
-void mtsIntuitiveResearchKitSUJ::DispatchError(const std::string & message)
+
+void mtsIntuitiveResearchKitSUJ::dispatch_error(const std::string & message)
 {
-    mInterface->SendError(message);
-    for (auto arm : Arms) {
-        arm->mInterfaceProvided->SendError(arm->mName + " " + message);
+    m_interface->SendError(this->GetName() + ": " + message);
+    for (auto sarm : m_sarms) {
+        sarm->m_interface_provided->SendError(sarm->m_name + " SUJ: " + message);
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::DispatchWarning(const std::string & message)
+
+void mtsIntuitiveResearchKitSUJ::dispatch_warning(const std::string & message)
 {
-    mInterface->SendWarning(message);
-    for (auto arm : Arms) {
-        arm->mInterfaceProvided->SendWarning(arm->mName + " " + message);
+    m_interface->SendWarning(this->GetName() + ": " + message);
+    for (auto sarm : m_sarms) {
+        sarm->m_interface_provided->SendWarning(sarm->m_name + " SUJ: " + message);
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::DispatchStatus(const std::string & message)
+
+void mtsIntuitiveResearchKitSUJ::dispatch_status(const std::string & message)
 {
-    mInterface->SendStatus(message);
-    for (auto arm : Arms) {
-        arm->mInterfaceProvided->SendStatus(arm->mName + " " + message);
+    m_interface->SendStatus(this->GetName() + ": " + message);
+    for (auto sarm : m_sarms) {
+        sarm->m_interface_provided->SendStatus(sarm->m_name + " SUJ: " + message);
     }
 }
 
-void mtsIntuitiveResearchKitSUJ::DispatchState(void)
-{
-    state_events.current_state(mArmState.CurrentState());
-    for (auto arm : Arms) {
-        arm->state_events.current_state(mArmState.CurrentState());
-    }
-    state_events.desired_state(mArmState.DesiredState());
-    for (auto arm : Arms) {
-        arm->state_events.desired_state(mArmState.DesiredState());
-    }
-    DispatchOperatingState();
-}
 
-void mtsIntuitiveResearchKitSUJ::DispatchOperatingState(void)
+void mtsIntuitiveResearchKitSUJ::dispatch_operating_state(void)
 {
     state_events.operating_state(m_operating_state);
-    for (auto arm : Arms) {
-        arm->state_events.operating_state(m_operating_state);
+    for (auto sarm : m_sarms) {
+        sarm->state_events.operating_state(m_operating_state);
+        sarm->state_events.current_state(m_state_machine.CurrentState());
+        sarm->state_events.desired_state(m_state_machine.DesiredState());
     }
 }

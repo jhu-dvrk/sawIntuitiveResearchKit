@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-05-26
 
-  (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -24,5 +24,9 @@ http://www.cisst.org/cisst/license.txt.
 #define _sawIntuitiveResearchKitConfig_h
 
 #define sawIntuitiveResearchKit_SOURCE_DIR "@sawIntuitiveResearchKit_SOURCE_DIR@"
+
+#cmakedefine01 sawIntuitiveResearchKit_HAS_SUJ_Si
+
+#cmakedefine01 sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR
 
 #endif // _sawIntuitiveResearchKitConfig_h
