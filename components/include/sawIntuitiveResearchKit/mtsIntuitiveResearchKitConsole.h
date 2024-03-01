@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKitConsole_h
 #define _mtsIntuitiveResearchKitConsole_h
 
+#include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsTaskFromSignal.h>
 #include <cisstMultiTask/mtsDelayedConnections.h>
 #include <cisstParameterTypes/prmOperatingState.h>
@@ -55,9 +56,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     class CISST_EXPORT Arm {
     public:
         typedef enum {ARM_UNDEFINED,
-                      ARM_MTM, ARM_PSM, ARM_PSM_Si, ARM_ECM, ARM_ECM_Si, ARM_SUJ, ARM_SUJ_Si,
+                      ARM_MTM, ARM_PSM, ARM_ECM,
+                      ARM_SUJ_Classic, ARM_SUJ_Si, ARM_SUJ_Fixed,
                       ARM_MTM_GENERIC, ARM_PSM_GENERIC, ARM_ECM_GENERIC,
-                      ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_PSM_Si_DERIVED, ARM_ECM_DERIVED, ARM_ECM_Si_DERIVED,
+                      ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_ECM_DERIVED,
                       ARM_PSM_SOCKET,
                       FOCUS_CONTROLLER} ArmType;
 
@@ -78,6 +80,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         bool native_or_derived_mtm(void) const;
         bool native_or_derived_psm(void) const;
         bool native_or_derived_ecm(void) const;
+        void set_generation(const mtsIntuitiveResearchKitArm::GenerationType generation);
         mtsIntuitiveResearchKitArm::GenerationType generation(void) const;
         bool expects_PID(void) const;
         bool expects_IO(void) const;
@@ -116,9 +119,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         mtsIntuitiveResearchKitConsole * m_console = nullptr;
         std::string m_name;
         ArmType m_type;
+        mtsIntuitiveResearchKitArm::GenerationType m_generation = mtsIntuitiveResearchKitArm::GENERATION_UNDEFINED;
         std::string m_serial;
         SimulationType m_simulation;
         bool m_calibration_mode = false;
+        cmnPath m_config_path;
 
         // low level
         std::string m_IO_component_name;
@@ -268,8 +273,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     bool Connect(void);
 
+    std::string locate_file(const std::string & filename);
+
  protected:
-    bool mConfigured;
+    bool m_configured;
+    cmnPath m_config_path;
     mtsDelayedConnections mConnections;
 
     double mTimeOfLastErrorBeep;
@@ -311,8 +319,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     /*! Find all arm data from JSON configuration. */
     bool ConfigureArmJSON(const Json::Value & jsonArm,
-                          const std::string & ioComponentName,
-                          const cmnPath & configPath);
+                          const std::string & ioComponentName);
     bool AddArmInterfaces(Arm * arm);
 
     // these two methods have exact same implementation.it would be

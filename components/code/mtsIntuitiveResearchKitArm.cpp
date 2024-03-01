@@ -238,7 +238,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     this->StateTable.AddData(m_spatial_jacobian, "spatial_jacobian");
 
     // efforts for kinematics
-    m_servo_jf.SetSize(number_of_joints_kinematics());
+    m_servo_jf.ForceTorque().SetSize(number_of_joints_kinematics());
     m_servo_jf.ForceTorque().Zeros();
     m_body_measured_cf.SetValid(false);
     m_spatial_measured_cf.SetValid(false);
@@ -377,6 +377,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                          this, "set_base_frame");
         m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitArm::hold,
                                         this, "hold");
+        m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitArm::free,
+                                        this, "free");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jp,
                                          this, "servo_jp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jr,
@@ -405,11 +407,19 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                          this, "use_gravity_compensation");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_ci,
                                          this, "servo_ci");
+
+        // Actuator conversion
+        m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::actuator_to_joint_position, this,
+                                                 "actuator_to_joint_position", vctDoubleVec(), vctDoubleVec());
+
         // Kinematic queries
-        m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::query_cp,
-                                                 this, "query_cp");
-        m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::local_query_cp,
-                                                 this, "local/query_cp");
+        m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::forward_kinematics,
+                                                 this, "forward_kinematics");
+        m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::local_forward_kinematics,
+                                                 this, "local/forward_kinematics");
+        m_arm_interface->AddCommandQualifiedRead(&mtsIntuitiveResearchKitArm::inverse_kinematics,
+                                                 this, "inverse_kinematics");
+
         // Trajectory
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::trajectory_j_set_ratio_v,
                                          this, "trajectory_j/set_ratio_v");
@@ -539,6 +549,16 @@ void mtsIntuitiveResearchKitArm::update_pid_configuration_js(void)
     mStateTableConfiguration.Advance();
 }
 
+void mtsIntuitiveResearchKitArm::actuator_to_joint_position(const vctDoubleVec & actuator,
+                                                            vctDoubleVec & joint) const
+{
+    if (m_has_coupling) {
+        joint = m_coupling.ActuatorToJointPosition() * actuator;
+    } else {
+        joint.ForceAssign(actuator);
+    }
+}
+
 void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
 {
     // jacobians
@@ -550,7 +570,7 @@ void mtsIntuitiveResearchKitArm::ResizeKinematicsData(void)
     m_spatial_jacobian_transpose.ForceAssign(m_spatial_jacobian.Transpose());
     m_jacobian_transpose_pinverse_data.Allocate(m_body_jacobian_transpose);
     // servo
-    m_servo_jf.SetSize(number_of_joints_kinematics());
+    m_servo_jf.ForceTorque().SetSize(number_of_joints_kinematics());
     m_servo_jf.ForceTorque().Zeros();
     m_servo_jf_vector.SetSize(number_of_joints_kinematics());
     m_servo_jf_vector.Zeros();
@@ -583,46 +603,62 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
 
         // detect if we're using 1.8 and up with two fields, kinematic and tool-detection
         const auto jsonKinematic = jsonConfig["kinematic"];
-        if (!jsonKinematic.isNull()) {
-            // extract path of main json config file to search other files relative to it
-            cmnPath configPath(cmnPath::GetWorkingDirectory());
-            std::string fullname = configPath.Find(filename);
-            std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
-            // for user files first
-            configPath.Add(configDir, cmnPath::TAIL);
-            // for standard files using io/xyz.json, arm/xyz.json
-            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
-            // for tool definition files
-            configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
-
-            // arm specific configuration
-            PreConfigure(jsonConfig, configPath, filename);
-
-            // kinematic
-            const auto fileKinematic = configPath.Find(jsonKinematic.asString());
-            if (fileKinematic == "") {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                         << " using file \"" << filename << "\" can't find kinematic file \""
-                                         << jsonKinematic.asString() << "\"" << std::endl;
-                exit(EXIT_FAILURE);
-            } else {
-                ConfigureDH(fileKinematic);
-            }
-
-            // arm specific configuration
-            PostConfigure(jsonConfig, configPath, filename);
-
-        } else {
+        if (jsonKinematic.isNull()) {
             std::stringstream message;
             message << "Configure " << this->GetName() << ":" << std::endl
                     << "----------------------------------------------------" << std::endl
                     << " ERROR:" << std::endl
                     << "   You should have a \"arm\" file for each arm in the console" << std::endl
-                    << "   file.  The arm file should contain the fields" << std::endl
+                    << "   file.  The arm file should contain the field" << std::endl
                     << "   \"kinematic\" and options specific to each arm type." << std::endl
                     << "----------------------------------------------------";
             std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
             CMN_LOG_CLASS_INIT_ERROR << message.str() << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        // extract path of main json config file to search other files relative to it
+        cmnPath configPath(cmnPath::GetWorkingDirectory());
+        std::string fullname = configPath.Find(filename);
+        std::string configDir = fullname.substr(0, fullname.find_last_of('/'));
+        // for user files first
+        configPath.Add(configDir, cmnPath::TAIL);
+        // for standard files using io/xyz.json, arm/xyz.json
+        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
+        // for tool definition files
+        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
+
+        // arm specific configuration
+        PreConfigure(jsonConfig, configPath, filename);
+
+        // kinematic
+        const auto fileKinematic = configPath.Find(jsonKinematic.asString());
+        if (fileKinematic == "") {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                     << " using file \"" << filename << "\" can't find kinematic file \""
+                                     << jsonKinematic.asString() << "\"" << std::endl;
+            exit(EXIT_FAILURE);
+        } else {
+            ConfigureDH(fileKinematic);
+        }
+
+        // detect generation
+        const auto jsonGeneration = jsonConfig["generation"];
+        if (!jsonGeneration.isNull()) {
+            const auto generation = jsonGeneration.asString();
+            if (generation == "Classic") {
+                set_generation(GENERATION_Classic);
+            } else if (generation == "Si") {
+                set_generation(GENERATION_Si);
+            } else {
+                CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                         << ": \"generation\" must be either \"Classic\" or \"Si\", found: "
+                                         << generation << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": missing \"generation\"" << std::endl;
             exit(EXIT_FAILURE);
         }
 
@@ -637,6 +673,9 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         if (!jsonAlwaysHome.isNull()) {
             m_re_home = jsonAlwaysHome.asBool();
         }
+
+        // arm specific configuration
+        PostConfigure(jsonConfig, configPath, filename);
 
     } catch (std::exception & e) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName() << ": parsing file \""
@@ -1221,7 +1260,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
     // for Si, always calibrate from pot
     if (m_encoders_biased_from_pots
         && !m_calibration_mode
-        && (m_generation == GENERATION_CLASSIC)) {
+        && (m_generation == GENERATION_Classic)) {
         m_arm_interface->SendStatus(this->GetName() + ": encoders have already been calibrated, skipping");
         return;
     }
@@ -1266,7 +1305,7 @@ void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
     // use pots for redundancy when not in calibration mode and always
     // for the Si
     if (m_calibration_mode
-        && (m_generation == GENERATION_CLASSIC)) {
+        && (m_generation == GENERATION_Classic)) {
         IO.UsePotsForSafetyCheck(false);
     } else {
         IO.UsePotsForSafetyCheck(true);
@@ -1656,6 +1695,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             m_pid_new_goal = false;
             mCartesianRelative = vctFrm3::Identity();
             m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
+            m_servo_jv.Zeros();
             m_effort_orientation_locked = false;
             break;
         case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
@@ -1876,9 +1916,9 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
     }
     PID.feed_forward_jf(m_pid_feed_forward_servo_jf);
 
-    // position
-    m_servo_jp_param.Goal().Assign(jp); // , number_of_joints());
-    m_servo_jp_param.Velocity().ForceAssign(jv); // , number_of_joints());
+    // position and velocity
+    m_servo_jp_param.Goal().Assign(jp);
+    m_servo_jp_param.Velocity().ForceAssign(jv);
     m_servo_jp_param.SetTimestamp(StateTable.GetTic());
     if (m_has_coupling) {
         m_servo_jp_param.Goal() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Goal();
@@ -1903,6 +1943,23 @@ void mtsIntuitiveResearchKitArm::hold(void)
     m_pid_new_goal = true;
 }
 
+void mtsIntuitiveResearchKitArm::free(void)
+{
+    if (!ArmIsReady("free", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+        return;
+    }
+
+    // turn gravity compensation on
+    this->use_gravity_compensation(true);
+    // request zero effort in joint space
+    prmForceTorqueJointSet jf;
+    jf.ForceTorque().SetSize(number_of_joints_kinematics());
+    jf.ForceTorque().Zeros();
+    this->servo_jf(jf);
+    // for MTMs
+    m_effort_orientation_locked = false;
+}
+
 void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & jp)
 {
     if (!ArmIsReady("servo_jp", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
@@ -1914,6 +1971,7 @@ void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & jp)
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
     m_servo_jp.Assign(jp.Goal(), number_of_joints_kinematics());
+    m_servo_jv.Assign(jp.Velocity(), jp.Velocity().size());
     m_pid_new_goal = true;
 }
 
@@ -2091,24 +2149,47 @@ void mtsIntuitiveResearchKitArm::BiasEncoderEventHandler(const int & nbSamples)
     }
 }
 
-void mtsIntuitiveResearchKitArm::query_cp(const vctDoubleVec & jointValues,
-                                          vctFrm4x4 & pose) const
+void mtsIntuitiveResearchKitArm::inverse_kinematics(const prmInverseKinematicsRequest & request,
+                                                    prmInverseKinematicsResponse & response) const
 {
-    size_t nbJoints = jointValues.size();
-    if (nbJoints > this->number_of_joints_kinematics()) {
-        nbJoints = this->number_of_joints_kinematics();
+    if (request.jp().size() != number_of_joints_kinematics()) {
+        response.result() = false;
+        response.message() = "incorrect number of joints";
+        return;
     }
-    pose = m_base_frame * Manipulator->ForwardKinematics(jointValues, nbJoints);
+    response.jp().ForceAssign(request.jp());
+    if (this->InverseKinematics(response.jp(), request.cp()) == robManipulator::ESUCCESS) {
+        response.result() = true;
+    } else {
+        response.result() = false;
+        response.message() = "inverse kinematics failed";
+    }
 }
 
-void mtsIntuitiveResearchKitArm::local_query_cp(const vctDoubleVec & jointValues,
-                                                vctFrm4x4 & pose) const
+void mtsIntuitiveResearchKitArm::forward_kinematics(const prmForwardKinematicsRequest & request,
+                                                    prmForwardKinematicsResponse & response) const
 {
-    size_t nbJoints = jointValues.size();
-    if (nbJoints > this->number_of_joints_kinematics()) {
-        nbJoints = this->number_of_joints_kinematics();
+    size_t nb_joints = request.jp().size();
+    if (nb_joints > this->number_of_joints_kinematics()) {
+        response.result() = false;
+        response.message() = "too many joints";
+        return;
     }
-    pose = Manipulator->ForwardKinematics(jointValues, nbJoints);
+    response.cp() = m_base_frame * Manipulator->ForwardKinematics(request.jp(), nb_joints);
+    response.result() = true;
+}
+
+void mtsIntuitiveResearchKitArm::local_forward_kinematics(const prmForwardKinematicsRequest & request,
+                                                          prmForwardKinematicsResponse & response) const
+{
+    size_t nb_joints = request.jp().size();
+    if (nb_joints > this->number_of_joints_kinematics()) {
+        response.result() = false;
+        response.message() = "too many joints";
+        return;
+    }
+    response.cp() = Manipulator->ForwardKinematics(request.jp(), nb_joints);
+    response.result() = true;
 }
 
 void mtsIntuitiveResearchKitArm::servo_jf(const prmForceTorqueJointSet & effort)
@@ -2185,7 +2266,7 @@ void mtsIntuitiveResearchKitArm::gravity_compensation(vctDoubleVec & efforts)
     efforts.ForceAssign(Manipulator->CCG(m_kin_measured_js.Position(), qd));  // should this take joint velocities?
 }
 
-void mtsIntuitiveResearchKitArm::servo_ci(const prmCartesianImpedanceGains & gains)
+void mtsIntuitiveResearchKitArm::servo_ci(const prmCartesianImpedance & goal)
 {
     if (!ArmIsReady("servo_cf_body", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
         return;
@@ -2198,7 +2279,7 @@ void mtsIntuitiveResearchKitArm::servo_ci(const prmCartesianImpedanceGains & gai
     // set new wrench
     m_cartesian_impedance = true;
     m_body_cf_orientation_absolute = true;
-    mCartesianImpedanceController->SetGains(gains);
+    mCartesianImpedanceController->SetGoal(goal);
     if (m_servo_cf_type != WRENCH_BODY) {
         m_servo_cf_type = WRENCH_BODY;
         m_arm_interface->SendStatus(this->GetName() + ": effort cartesian WRENCH_BODY");

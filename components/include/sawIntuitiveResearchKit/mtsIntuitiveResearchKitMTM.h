@@ -73,7 +73,7 @@ protected:
     void ConfigureGC(const std::string & filename);
 
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                            const vctFrm4x4 & cartesianGoal) override;
+                                            const vctFrm4x4 & cartesianGoal) const override;
 
     inline bool is_safe_for_cartesian_control(void) const override {
         return true;

@@ -111,7 +111,6 @@ void mtsTeleOperationPSM::Init(void)
     mConfigurationStateTable->SetAutomaticAdvance(false);
     this->AddStateTable(mConfigurationStateTable);
     mConfigurationStateTable->AddData(m_scale, "scale");
-    mConfigurationStateTable->AddData(m_registration_rotation, "registration_rotation");
     mConfigurationStateTable->AddData(m_rotation_locked, "rotation_locked");
     mConfigurationStateTable->AddData(m_translation_locked, "translation_locked");
     mConfigurationStateTable->AddData(m_align_mtm, "align_mtm");
@@ -170,8 +169,6 @@ void mtsTeleOperationPSM::Init(void)
                                     "state_command", std::string());
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::set_scale, this,
                                     "set_scale", m_scale);
-        mInterface->AddCommandWrite(&mtsTeleOperationPSM::set_registration_rotation, this,
-                                    "set_registration_rotation", vctMatRot3());
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::lock_rotation, this,
                                     "lock_rotation", m_rotation_locked);
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::lock_translation, this,
@@ -183,9 +180,6 @@ void mtsTeleOperationPSM::Init(void)
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
                                         m_scale,
                                         "scale");
-        mInterface->AddCommandReadState(*(mConfigurationStateTable),
-                                        m_registration_rotation,
-                                        "registration_rotation");
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
                                         m_rotation_locked, "rotation_locked");
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
@@ -280,9 +274,9 @@ void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
     // read orientation if present
     jsonValue = jsonConfig["rotation"];
     if (!jsonValue.empty()) {
-        vctMatRot3 orientation; // identity by default
-        cmnDataJSON<vctMatRot3>::DeSerializeText(orientation, jsonConfig["rotation"]);
-        set_registration_rotation(orientation);
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": \"rotation\" is deprecated"<< std::endl;
+        exit(EXIT_FAILURE);
     }
 
     // rotation locked
@@ -543,9 +537,7 @@ void mtsTeleOperationPSM::SetDesiredState(const std::string & state)
 
 vctMatRot3 mtsTeleOperationPSM::UpdateAlignOffset(void)
 {
-    vctMatRot3 desiredOrientation;
-    m_registration_rotation.ApplyInverseTo(mPSM.m_setpoint_cp.Position().Rotation(),
-                                           desiredOrientation);
+    vctMatRot3 desiredOrientation = mPSM.m_setpoint_cp.Position().Rotation();
     mMTM.m_measured_cp.Position().Rotation().ApplyInverseTo(desiredOrientation, m_alignment_offset);
     return desiredOrientation;
 }
@@ -571,13 +563,6 @@ void mtsTeleOperationPSM::set_scale(const double & scale)
 
     // update MTM/PSM previous position to prevent jumps
     UpdateInitialState();
-}
-
-void mtsTeleOperationPSM::set_registration_rotation(const vctMatRot3 & rotation)
-{
-    mConfigurationStateTable->Start();
-    m_registration_rotation = rotation;
-    mConfigurationStateTable->Advance();
 }
 
 void mtsTeleOperationPSM::lock_rotation(const bool & lock)
@@ -821,9 +806,7 @@ void mtsTeleOperationPSM::RunAligningMTM(void)
         // Orientate MTM with PSM
         vctFrm4x4 mtmCartesianGoal;
         mtmCartesianGoal.Translation().Assign(mMTM.m_setpoint_cp.Position().Translation());
-        vctMatRot3 mtmRotation;
-        mtmRotation = m_registration_rotation.Inverse() * mPSM.m_setpoint_cp.Position().Rotation();
-        mtmCartesianGoal.Rotation().FromNormalized(mtmRotation);
+        mtmCartesianGoal.Rotation().FromNormalized(mPSM.m_setpoint_cp.Position().Rotation());
         // convert to prm type
         mMTM.m_move_cp.Goal().From(mtmCartesianGoal);
         mMTM.move_cp(mMTM.m_move_cp);
@@ -971,14 +954,14 @@ void mtsTeleOperationPSM::RunEnabled(void)
             } else {
                 mtmTranslation = (mtmPosition.Translation() - mMTM.CartesianInitial.Translation());
                 psmTranslation = mtmTranslation * m_scale;
-                psmTranslation = m_registration_rotation * psmTranslation + mPSM.CartesianInitial.Translation();
+                psmTranslation = psmTranslation + mPSM.CartesianInitial.Translation();
             }
             // rotation
             vctMatRot3 psmRotation;
             if (m_rotation_locked) {
                 psmRotation.From(mPSM.CartesianInitial.Rotation());
             } else {
-                psmRotation = m_registration_rotation * mtmPosition.Rotation() * m_alignment_offset_initial;
+                psmRotation = mtmPosition.Rotation() * m_alignment_offset_initial;
             }
 
             // compute desired psm position
@@ -1002,9 +985,9 @@ void mtsTeleOperationPSM::RunEnabled(void)
             // Add desired velocity if needed
             if (mMTM.use_measured_cv) {
                 // linear is scaled and re-oriented
-                mPSM.m_servo_cp.Velocity() = m_scale * (m_registration_rotation * mMTM.m_measured_cv.VelocityLinear());
-                // angular is re-oriented, not scaled
-                mPSM.m_servo_cp.VelocityAngular() = m_registration_rotation * mMTM.m_measured_cv.VelocityAngular();
+                mPSM.m_servo_cp.Velocity() = m_scale * mMTM.m_measured_cv.VelocityLinear();
+                // angular is not scaled
+                mPSM.m_servo_cp.VelocityAngular() = mMTM.m_measured_cv.VelocityAngular();
             } else {
                 mPSM.m_servo_cp.Velocity().Assign(vct3(0));
                 mPSM.m_servo_cp.VelocityAngular().Assign(vct3(0));

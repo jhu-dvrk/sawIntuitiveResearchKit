@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -63,7 +63,6 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
         interfaceRequired->AddFunction("PSM/setpoint_cp", TeleOperation.PSM_setpoint_cp);
         interfaceRequired->AddFunction("align_mtm", TeleOperation.align_mtm);
         interfaceRequired->AddFunction("alignment_offset", TeleOperation.alignment_offset);
-        interfaceRequired->AddFunction("registration_rotation", TeleOperation.registration_rotation);
         interfaceRequired->AddFunction("period_statistics", TeleOperation.period_statistics);
         // events
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::DesiredStateEventHandler,
@@ -137,21 +136,7 @@ void mtsTeleOperationPSMQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 
     // for PSM, check if the registration rotation is needed
     TeleOperation.PSM_setpoint_cp(m_PSM_setpoint_cp);
-    TeleOperation.registration_rotation(m_registration_rotation);
-    if (m_registration_rotation.Equal(vctMatRot3::Identity())) {
-        QCPGPSMWidget->SetValue(m_PSM_setpoint_cp);
-    } else {
-        prmPositionCartesianGet registeredPSM;
-        registeredPSM.Valid() = m_PSM_setpoint_cp.Valid();
-        registeredPSM.Timestamp() = m_PSM_setpoint_cp.Timestamp();
-        registeredPSM.MovingFrame() = m_PSM_setpoint_cp.MovingFrame();
-        registeredPSM.ReferenceFrame() = "rot * " + m_PSM_setpoint_cp.ReferenceFrame();
-        m_registration_rotation.ApplyInverseTo(m_PSM_setpoint_cp.Position().Rotation(),
-                                               registeredPSM.Position().Rotation());
-        m_registration_rotation.ApplyInverseTo(m_PSM_setpoint_cp.Position().Translation(),
-                                               registeredPSM.Position().Translation());
-        QCPGPSMWidget->SetValue(registeredPSM);
-    }
+    QCPGPSMWidget->SetValue(m_PSM_setpoint_cp);
 
     // alignment offset
     TeleOperation.alignment_offset(m_alignment_offset);

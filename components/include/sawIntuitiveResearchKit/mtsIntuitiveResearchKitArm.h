@@ -34,8 +34,12 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceCartesianSet.h>
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
-#include <cisstParameterTypes/prmCartesianImpedanceGains.h>
+#include <cisstParameterTypes/prmCartesianImpedance.h>
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
+#include <cisstParameterTypes/prmInverseKinematicsRequest.h>
+#include <cisstParameterTypes/prmInverseKinematicsResponse.h>
+#include <cisstParameterTypes/prmForwardKinematicsRequest.h>
+#include <cisstParameterTypes/prmForwardKinematicsResponse.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
@@ -71,9 +75,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         m_calibration_mode = mode;
     }
 
-    typedef enum {GENERATION_UNDEFINED, GENERATION_CLASSIC, GENERATION_Si} GenerationType;
-    virtual inline void set_generation(const GenerationType generation) {
-        m_generation = generation;
+    typedef enum {GENERATION_UNDEFINED, GENERATION_Classic, GENERATION_Si} GenerationType;
+    virtual inline GenerationType generation(void) const {
+        return m_generation;
     }
 
  protected:
@@ -93,6 +97,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     inline virtual void PostConfigure(const Json::Value & CMN_UNUSED(jsonConfig),
                                       const cmnPath & CMN_UNUSED(configPath),
                                       const std::string & CMN_UNUSED(filename)) {};
+    inline virtual void set_generation(const GenerationType generation) {
+        m_generation = generation;
+    }
 
     /*! Initialization, including resizing data members and setting up
       cisst/SAW interfaces */
@@ -101,6 +108,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     virtual void update_kin_configuration_js(void);
     virtual void update_pid_configuration_js(void);
+    void actuator_to_joint_position(const vctDoubleVec & actuator, vctDoubleVec & joint) const;
 
     void ResizeKinematicsData(void);
 
@@ -175,6 +183,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     /*! Methods used for commands */
     virtual void hold(void);
+    virtual void free(void);
     virtual void servo_jp(const prmPositionJointSet & jp);
     virtual void servo_jr(const prmPositionJointSet & difference);
     virtual void move_jp(const prmPositionJointSet & jp);
@@ -189,7 +198,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
     virtual void body_set_cf_orientation_absolute(const bool & absolute);
     virtual void use_gravity_compensation(const bool & gravityCompensation);
-    virtual void servo_ci(const prmCartesianImpedanceGains & gains);
+    virtual void servo_ci(const prmCartesianImpedance & gains);
 
     /*! Set base coordinate frame, this will be added to the kinematics */
     virtual void set_base_frame(const prmPositionCartesianSet & newBaseFrame);
@@ -221,18 +230,22 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     /*! Inverse kinematics must be redefined for each arm type. */
     virtual robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                                    const vctFrm4x4 & cartesianGoal) = 0;
+                                                    const vctFrm4x4 & cartesianGoal) const = 0;
+
+    /*! Alternate signature for ROS services. */
+    void inverse_kinematics(const prmInverseKinematicsRequest & request,
+                            prmInverseKinematicsResponse & response) const ;
 
     /*! Forward kinematic queries using joint values provided by user.
       The number of joints (size of the vector) determines up to which
       ling the forward kinematic is computed.  If the number of joint
-      is invalid, i.e. greater than the number of links, the result is
-      identity. */
+      is invalid, i.e. greater than the number of links, the
+      response.result is set to false. */
     //@{{
-    virtual void query_cp(const vctDoubleVec & jointValues,
-                          vctFrm4x4 & pose) const;
-    virtual void local_query_cp(const vctDoubleVec & jointValues,
-                                vctFrm4x4 & pose) const;
+    virtual void forward_kinematics(const prmForwardKinematicsRequest & request,
+                                    prmForwardKinematicsResponse & response) const;
+    virtual void local_forward_kinematics(const prmForwardKinematicsRequest & request,
+                                          prmForwardKinematicsResponse & response) const;
     //@}
 
     /*! Each arm has a different homing procedure. */

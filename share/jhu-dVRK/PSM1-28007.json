@@ -1,8 +1,0 @@
-/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-{
-    "kinematic": "kinematic/psm.json",
-    // "tool-detection": "AUTOMATIC"
-    "tool-detection": "MANUAL"
-    // "tool-detection": "FIXED",
-    // "tool": "LARGE_NEEDLE_DRIVER:420006[12]"
-}

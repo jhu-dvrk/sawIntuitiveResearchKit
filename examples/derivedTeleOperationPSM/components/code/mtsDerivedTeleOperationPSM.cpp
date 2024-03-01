@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2017-08-09
 
-  (C) Copyright 2017-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2017-2023 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -113,8 +113,6 @@ void mtsDerivedTeleOperationPSM::RunEnabled(void)
             force[i] = -0.25 * velocityDumping * force[i];
         }
 
-        // Re-orient based on rotation between MTM and PSM
-        force = m_registration_rotation.Inverse() * force;
         // Set wrench for MTM
         MTMExtra.m_setpoint_cf.Force().Ref<3>(0) = force;
         mMTM.body_servo_cf(MTMExtra.m_setpoint_cf);

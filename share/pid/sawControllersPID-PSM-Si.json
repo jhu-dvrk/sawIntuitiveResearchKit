@@ -4,63 +4,84 @@
 	    "index": 0,
 	    "name": "outer_yaw",
 	    "type": 2,
-	    "p_gain": 300.0,
-	    "d_gain": 10.0,
-	    "i_gain": 0.0
+	    "p_gain": 600.0,
+	    "d_gain": 30.0,
+	    "i_gain": 0.0,
+            "use_disturbance_observer": true,
+	    "nominal_mass": 0.01,
+	    "disturbance_cutoff": 50.0
 	}
 	,
 	{
 	    "index": 1,
 	    "name": "outer_pitch",
 	    "type": 2,
-	    "p_gain": 300.0,
-	    "d_gain": 10.0,
-	    "i_gain": 0.0
+	    "p_gain": 600.0,
+	    "d_gain": 30.0,
+	    "i_gain": 0.0,
+            "use_disturbance_observer": true,
+	    "nominal_mass": 0.01,
+	    "disturbance_cutoff": 50.0
 	}
 	,
 	{
 	    "index": 2,
 	    "name": "outer_insertion",
 	    "type": 1,
-	    "p_gain": 3000.0,
-	    "d_gain": 100.0,
-	    "i_gain": 0.0
+	    "p_gain": 6000.0,
+	    "d_gain": 200.0,
+	    "i_gain": 0.0,
+            "use_disturbance_observer": true,
+	    "nominal_mass": 0.005,
+	    "disturbance_cutoff": 20.0
 	}
 	,
 	{
 	    "index": 3,
 	    "name": "outer_roll",
 	    "type": 2,
-	    "p_gain": 1.0,
-	    "d_gain": 0.01,
-	    "i_gain": 0.0
+	    "p_gain": 6.0,
+	    "d_gain": 0.08,
+	    "i_gain": 0.0,
+            "use_disturbance_observer": true,
+	    "nominal_mass": 0.0005,
+	    "disturbance_cutoff": 10.0
 	}
 	,
 	{
 	    "index": 4,
 	    "name": "outer_wrist_pitch",
 	    "type": 2,
-	    "p_gain": 1.0,
-	    "d_gain": 0.01,
-	    "i_gain": 0.0
+	    "p_gain": 6.0,
+	    "d_gain": 0.08,
+	    "i_gain": 0.0,
+            "use_disturbance_observer": true,
+	    "nominal_mass": 0.0005,
+	    "disturbance_cutoff": 10.0
 	}
 	,
 	{
 	    "index": 5,
 	    "name": "outer_wrist_yaw",
 	    "type": 2,
-	    "p_gain": 1.0,
-	    "d_gain": 0.01,
-	    "i_gain": 0.0
+	    "p_gain": 6.0,
+	    "d_gain": 0.08,
+	    "i_gain": 0.0,
+            "use_disturbance_observer": true,
+	    "nominal_mass": 0.0005,
+	    "disturbance_cutoff": 10.0
 	}
 	,
 	{
 	    "index": 6,
 	    "name": "jaw",
 	    "type": 2,
-	    "p_gain": 1.0,
-	    "d_gain": 0.01,
-	    "i_gain": 0.0
+	    "p_gain": 6.0,
+	    "d_gain": 0.08,
+	    "i_gain": 0.0,
+            "use_disturbance_observer": true,
+	    "nominal_mass": 0.0005,
+	    "disturbance_cutoff": 10.0
 	}
     ]
 }

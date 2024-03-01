@@ -51,7 +51,6 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void Cleanup(void);
 
     void set_scale(const double & scale);
-    void set_registration_rotation(const vctMatRot3 & rotation);
     void lock_rotation(const bool & lock);
     void lock_translation(const bool & lock);
     void set_align_mtm(const bool & alignMTM);
@@ -150,7 +149,6 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     } mBaseFrame;
 
     double m_scale = mtsIntuitiveResearchKit::TeleOperationPSM::Scale;
-    vctMatRot3 m_registration_rotation; // optional registration between PSM and MTM orientation
     vctMatRot3 m_alignment_offset,
         m_alignment_offset_initial; // rotation offset between MTM and PSM when tele-operation goes in follow mode
 

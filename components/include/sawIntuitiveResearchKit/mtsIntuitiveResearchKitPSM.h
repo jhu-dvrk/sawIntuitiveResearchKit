@@ -37,10 +37,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
     inline ~mtsIntuitiveResearchKitPSM() override {};
     void set_simulated(void) override;
-    void set_generation(const GenerationType generation) override;
 
  protected:
-
+    void set_generation(const GenerationType generation) override;
     void load_tool_list(const cmnPath & path,
                         const std::string & indexFile = "tool/index.json");
 
@@ -64,7 +63,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     inline size_t number_of_brakes(void) const override {
         switch (m_generation) {
-        case mtsIntuitiveResearchKitArm::GENERATION_CLASSIC:
+        case mtsIntuitiveResearchKitArm::GENERATION_Classic:
             return 0;
             break;
         case mtsIntuitiveResearchKitArm::GENERATION_Si:
@@ -81,7 +80,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
 
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
-                                            const vctFrm4x4 & cartesianGoal) override;
+                                            const vctFrm4x4 & cartesianGoal) const override;
 
     bool is_safe_for_cartesian_control(void) const override;
 

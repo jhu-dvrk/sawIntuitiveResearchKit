@@ -14,7 +14,6 @@ no warranty.  The complete license can be found in license.txt and
 http://www.cisst.org/cisst/license.txt.
 
 --- end cisst license ---
-
 */
 
 // system
@@ -41,18 +40,22 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <clocale>
 
-void fileExists(const std::string & description, const std::string & filename)
+void fileExists(const std::string & description, std::string & filename,
+                mtsIntuitiveResearchKitConsole * console)
 {
     if (!cmnPath::Exists(filename)) {
-        std::cerr << "File not found: " << description
-                  << "; " << filename << std::endl;
-        exit(-1);
-    } else {
-        std::cout << "File found: " << description
-                  << "; " << filename << std::endl;
+        const std::string fileInPath = console->locate_file(filename);
+        if (fileInPath == "") {
+            std::cerr << "File not found: " << description
+                      << ": " << filename << std::endl;
+            exit(-1);
+        } else {
+            filename = fileInPath;
+        }
     }
+    std::cout << "Using file: " << description
+              << ": " << filename << std::endl;
 }
-
 
 int main(int argc, char ** argv)
 {
@@ -75,7 +78,6 @@ int main(int argc, char ** argv)
     // parse options
     cmnCommandLineOptions options;
     std::string jsonMainConfigFile;
-    std::list<std::string> jsonIOConfigFiles;
     std::string jsonCollectionConfigFile;
     std::list<std::string> managerConfig;
     std::string qtStyle;
@@ -83,10 +85,6 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
-
-    options.AddOptionMultipleValues("i", "ros-io-config",
-                                    "json config file to configure ROS bridges to collect low level data (IO)",
-                                    cmnCommandLineOptions::OPTIONAL_OPTION, &jsonIOConfigFiles);
 
     options.AddOptionNoValue("t", "text-only",
                              "text only interface, do not create Qt widgets");
@@ -125,7 +123,7 @@ int main(int argc, char ** argv)
     // console
     mtsIntuitiveResearchKitConsole * console = new mtsIntuitiveResearchKitConsole("console");
     console->set_calibration_mode(options.IsSet("calibration-mode"));
-    fileExists("console JSON configuration file", jsonMainConfigFile);
+    fileExists("console JSON configuration file", jsonMainConfigFile, console);
     console->Configure(jsonMainConfigFile);
     componentManager->AddComponent(console);
     console->Connect();
@@ -156,7 +154,7 @@ int main(int argc, char ** argv)
     // configure data collection if needed
     if (options.IsSet("collection-config")) {
         // make sure the json config file exists
-        fileExists("JSON data collection configuration", jsonCollectionConfigFile);
+        fileExists("JSON data collection configuration", jsonCollectionConfigFile, console);
 
         mtsCollectorFactory * collectorFactory = new mtsCollectorFactory("collectors");
         collectorFactory->Configure(jsonCollectionConfigFile);

@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnXMLPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstOSAbstraction/osaSleep.h>
+#include <cisstOSAbstraction/osaGetTime.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawRobotIO1394/mtsRobot1394.h>
 #include <sawRobotIO1394/mtsDigitalInput1394.h>
@@ -49,6 +50,9 @@ int main(int argc, char * argv[])
     options.AddOptionOneValue("d", "debug-data",
                               "run using data previously saved (for debug only)",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &savedData);
+    options.AddOptionNoValue("s", "save-data",
+                             "save raw data to re-use later (with -d option)",
+                              cmnCommandLineOptions::OPTIONAL_OPTION);
 
     std::string errorMessage;
     if (!options.Parse(argc, argv, std::cerr)) {
@@ -111,14 +115,15 @@ int main(int argc, char * argv[])
     std::vector<double> toh = {cmn180_PI, cmn180_PI, 1000.0, cmn180_PI, cmn180_PI, cmn180_PI, cmn180_PI};
 
     directionEncoder.SetSize(nbAxis, 1.0);
-    if (nbActuators == 7) {
+    if (nbAxis == 7) {
         // PSM specific
         directionEncoder.at(1) = -1.0;
         directionEncoder.at(3) = -1.0;
         directionEncoder.at(4) = -1.0;
         directionEncoder.at(5) = -1.0;
-    } else if (nbActuators == 4) {
-
+    } else if (nbAxis == 4) {
+        directionEncoder.at(1) = -1.0;
+        directionEncoder.at(3) = -1.0;
     }
 
     minEncoder.SetSize(nbAxis);
@@ -190,8 +195,8 @@ int main(int argc, char * argv[])
                   << "Press any key to power brakes and start collecting data." << std::endl;
         cmnGetChar();
 
-        // set watchdog to a reasonable default
-        robot->SetWatchdogPeriod(30.0 * cmn_ms);
+        // set watchdog to very high value
+        robot->SetWatchdogPeriod(300.0 * cmn_ms);
 
         // make sure we reset the encoders to 0
         robot->SetEncoderPosition(vctDoubleVec(nbAxis, 0.0));
@@ -202,21 +207,25 @@ int main(int argc, char * argv[])
         // enable power and brakes
         vctDoubleVec brakeCurrent(3, 0.0);
         robot->SetBrakeCurrent(brakeCurrent);
-        vctDoubleVec actuatorVoltageRatio(nbAxis, 0.0);
-        robot->SetActuatorVoltageRatio(actuatorVoltageRatio);
+        // vctDoubleVec actuatorVoltageRatio(nbAxis, 0.0);
+        // robot->SetActuatorVoltageRatio(actuatorVoltageRatio);
         port->Write();
         robot->WriteSafetyRelay(true);
         robot->WritePowerEnable(true);
         robot->SetBrakeAmpEnable(true);
-        robot->SetActuatorAmpEnable(true);
+        // robot->SetActuatorAmpEnable(true);
         port->Write();
 
-        // wait a bit to make sure current stabilizes, 100 * 10 ms = 1 second
-        for (size_t i = 0; i < 100; ++i) {
-            osaSleep(10.0 * cmn_ms);
+        // wait a bit to make sure current stabilizes, 1 second
+        for (size_t i = 0; i < 1000; ++i) {
+            if ((i % 20) == 0) {
+                std::cout << "." << std::flush;
+            }
+            osaSleep(1.0 * cmn_ms);
             port->Read();
             port->Write();
         }
+        std::cout << std::endl;
 
         // check that power is on
         if (!robot->PowerStatus()) {
@@ -283,21 +292,24 @@ int main(int argc, char * argv[])
         delete port;
 
         // record the raw data (for debugging purposes)
-        std::ofstream rawFile;
-        std::string rawFileName = "sawRobotIO1394-" + armName + "-" + serialNumber + "-PotentiometerLookupTable-Raw.json";
-        rawFile.open(rawFileName);
-        Json::Value jsonValue;
-        cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue);
-        writer->write(jsonValue, &rawFile);
-        rawFile.close();
-        std::cout << std::endl << "Raw data saved to " << rawFileName << std::endl
-                  << "You can plot the data in python using:" << std::endl
-                  << "import matplotlib.pyplot as plt" << std::endl
-                  << "import json, sys" << std::endl
-                  << "data = json.load(open('" << rawFileName << "'))" << std::endl
-                  << "data = [[(a if a < 31.0 else 0) for a in row] for row in data]" << std::endl
-                  << "plt.plot(data[0]) # or whatever axis index you need" << std::endl
-                  << "plt.show()" << std::endl << std::endl;
+        if (options.IsSet("save-data")) {
+            std::ofstream rawFile;
+            std::string rawFileName = "sawRobotIO1394-" + armName + "-" + serialNumber + "-PotentiometerLookupTable-Raw.json";
+            rawFile.open(rawFileName);
+            Json::Value jsonValue;
+            jsonValue["serial"] = serialNumber;
+            cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue["lookup"]);
+            writer->write(jsonValue, &rawFile);
+            rawFile.close();
+            std::cout << std::endl << "Raw data saved to " << rawFileName << std::endl
+                      << "You can plot the data in python using:" << std::endl
+                      << "import matplotlib.pyplot as plt" << std::endl
+                      << "import json, sys" << std::endl
+                      << "data = json.load(open('" << rawFileName << "'))" << std::endl
+                      << "data = [[(a if a < 31.0 else 0) for a in row] for row in data]" << std::endl
+                      << "plt.plot(data[0]) # or whatever axis index you need" << std::endl
+                      << "plt.show()" << std::endl << std::endl;
+        }
     }
     // using recorded data
     else {
@@ -316,7 +328,7 @@ int main(int argc, char * argv[])
                       << jsonReader.getFormattedErrorMessages();
             return false;
         }
-        cmnDataJSON<vctDoubleMat>::DeSerializeText(potToEncoder, jsonValue);
+        cmnDataJSON<vctDoubleMat>::DeSerializeText(potToEncoder, jsonValue["lookup"]);
     }
 
     // finding the deadzone(s)
@@ -406,7 +418,7 @@ int main(int argc, char * argv[])
     }
 
     vctDoubleVec minEncoderExpected, maxEncoderExpected;
-    if (nbActuators == 7) {
+    if (nbAxis == 7) {
         // this is for a PSM.  We don't have the exact numbers but we have 3
         // calibration files.  Ranges differ between arms but the midpoint
         // is always the same.  Values are from jhu-dVRK-Si/cal-files 292409 586288 334809
@@ -428,7 +440,7 @@ int main(int argc, char * argv[])
         maxEncoderExpected.at(5) = ( 3.0350 +  3.0303 +  3.0294) / 3.0;
         minEncoderExpected.at(6) = (-3.0378 + -3.03   + -3.0268) / 3.0;
         maxEncoderExpected.at(6) = ( 3.0378 +  3.03   +  3.0268) / 3.0;
-    } else if (nbActuators == 4) {
+    } else if (nbAxis == 4) {
         // this is for an ECM, using 267579 438610
         minEncoderExpected.SetSize(4);
         maxEncoderExpected.SetSize(4);
@@ -491,7 +503,7 @@ int main(int argc, char * argv[])
 
         // padding
         bool previousValueIsMissing = mtsRobot1394::IsMissingPotValue(potToEncoder(axis, 0));
-        const size_t paddingWidth = 30;
+        const size_t paddingWidth = 50;
         for (size_t index = 1;
              index < potRange;
              ++index) {
@@ -519,18 +531,23 @@ int main(int argc, char * argv[])
     }
 
     // record the pot to encoder file
+    std::cout << std::endl;
     std::ofstream potToEncoderFile;
     std::string potToEncoderFileName = "sawRobotIO1394-" + armName + "-" + serialNumber + "-PotentiometerLookupTable.json";
-    std::string potToEncoderFileNameNew = potToEncoderFileName + "-new";
-    potToEncoderFile.open(potToEncoderFileNameNew);
+    if (cmnPath::Exists(potToEncoderFileName)) {
+        std::string currentDateTime;
+        osaGetDateTimeString(currentDateTime);
+        std::string newName = potToEncoderFileName + "-backup-" + currentDateTime;
+        std::cout << "Existing IO config file has been renamed " << newName << std::endl;
+        cmnPath::RenameFile(potToEncoderFileName, newName);
+    }
+    potToEncoderFile.open(potToEncoderFileName);
     Json::Value jsonValue;
-    cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue);
+    jsonValue["serial"] = serialNumber;
+    cmnDataJSON<vctDoubleMat>::SerializeText(potToEncoder, jsonValue["lookup"]);
     writer->write(jsonValue, &potToEncoderFile);
     potToEncoderFile.close();
 
-    std::cout << std::endl
-              << "Results saved in " << potToEncoderFileNameNew << std::endl
-              << "You can move the new file over the existing one using:" << std::endl
-              << "mv -i " << potToEncoderFileNameNew << " " << potToEncoderFileName << std::endl;
+    std::cout << "Results saved in IO config file " << potToEncoderFileName << std::endl;
     return 0;
 }
