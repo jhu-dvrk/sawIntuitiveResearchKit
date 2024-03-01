@@ -288,14 +288,18 @@ robManipulator::Errno mtsIntuitiveResearchKitMTM::InverseKinematics(vctDoubleVec
         }
     }
 
-    if (Manipulator->InverseKinematics(jointSet, cartesianGoal) == robManipulator::ESUCCESS) {
-        // find closest solution mod 2 pi
-        const double difference = m_kin_measured_js.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
-        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
-        return robManipulator::ESUCCESS;
+    robManipulator::Errno err = Manipulator->InverseKinematics(jointSet, cartesianGoal);
+    if (err != robManipulator::ESUCCESS) {
+        return err;
     }
-    return robManipulator::EFAILURE;
+
+    // find closest position mod PI, and well within joint limits
+    const double current_wrist_roll = m_pid_measured_js.Position()[JNT_WRIST_ROLL];
+    const double target_roll = jointSet[JNT_WRIST_ROLL];
+    const double closest = closest_equivalent_roll(current_wrist_roll, target_roll);
+    //m_wrist_roll_virtual_offset = std::round((target_roll - closest)/cmnPI);
+
+    return robManipulator::ESUCCESS;
 }
 
 void mtsIntuitiveResearchKitMTM::CreateManipulator(void)
@@ -333,6 +337,28 @@ bool mtsIntuitiveResearchKitMTM::is_joint_ready(void) const
 bool mtsIntuitiveResearchKitMTM::is_cartesian_ready(void) const
 {
     return m_powered && m_encoders_biased;
+}
+
+void mtsIntuitiveResearchKitMTM::UpdateStateJointKinematics(void)
+{
+    m_kin_measured_js = m_pid_measured_js;
+    m_kin_measured_js.Position()[JNT_WRIST_ROLL] += m_wrist_roll_virtual_offset*cmnPI;
+    m_kin_setpoint_js = m_pid_setpoint_js;
+    m_kin_setpoint_js.Position()[JNT_WRIST_ROLL] += m_wrist_roll_virtual_offset*cmnPI;
+}
+
+void mtsIntuitiveResearchKitMTM::ToJointsPID(const vctDoubleVec & jointsKinematics, vctDoubleVec & jointsPID)
+{
+    jointsPID.Assign(jointsKinematics);
+    jointsPID[JNT_WRIST_ROLL] -= m_wrist_roll_virtual_offset*cmnPI;
+}
+
+void mtsIntuitiveResearchKitMTM::servo_jp_internal(const vctDoubleVec & jp, const vctDoubleVec & jv)
+{
+    vctDoubleVec jointsPID;
+    jointsPID.SetSize(jp.size());
+    ToJointsPID(jp, jointsPID);
+    mtsIntuitiveResearchKitArm::servo_jp_internal(jointsPID, jv);
 }
 
 void mtsIntuitiveResearchKitMTM::SetGoalHomingArm(void)
@@ -580,11 +606,13 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
     CartesianPositionFrm.Rotation().From(mEffortOrientation);
     // important note, lock uses numerical IK as it finds a solution close to current position
     if (Manipulator->InverseKinematics(jointSet, CartesianPositionFrm) == robManipulator::ESUCCESS) {
-        // find closest solution mod 2 pi
-        const double difference = m_pid_measured_js.Position()[JNT_WRIST_ROLL] - jointSet[JNT_WRIST_ROLL];
-        const double differenceInTurns = nearbyint(difference / (2.0 * cmnPI));
-        jointSet[JNT_WRIST_ROLL] = jointSet[JNT_WRIST_ROLL] + differenceInTurns * 2.0 * cmnPI;
-        // initialize trajectory
+        // find closest solution mod PI, and well within joint limits
+	const double current_wrist_roll = m_pid_measured_js.Position()[JNT_WRIST_ROLL];
+        const double target_roll = jointSet[JNT_WRIST_ROLL];
+        const double closest = closest_equivalent_roll(current_wrist_roll, target_roll);
+        m_wrist_roll_virtual_offset = std::round((target_roll - closest)/cmnPI);
+
+	// initialize trajectory
         m_trajectory_j.goal.Ref(number_of_joints_kinematics()).Assign(jointSet);
         m_trajectory_j.Reflexxes.Evaluate(m_servo_jp,
                                           m_servo_jv,
@@ -676,8 +704,8 @@ void mtsIntuitiveResearchKitMTM::lock_orientation(const vctMatRot3 & orientation
         m_effort_orientation_locked = true;
         SetControlEffortActiveJoints();
         // initialize trajectory
-        m_servo_jp.Assign(m_pid_measured_js.Position(), number_of_joints());
-        m_servo_jv.Assign(m_pid_measured_js.Velocity(), number_of_joints());
+        m_servo_jp.Assign(m_kin_measured_js.Position(), number_of_joints());
+        m_servo_jv.Assign(m_kin_measured_js.Velocity(), number_of_joints());
         m_trajectory_j.Reflexxes.Set(m_trajectory_j.v,
                                      m_trajectory_j.a,
                                      StateTable.PeriodStats.PeriodAvg(),
@@ -711,4 +739,30 @@ void mtsIntuitiveResearchKitMTM::gravity_compensation(vctDoubleVec & efforts)
                                                               m_kin_measured_js.Velocity(),
                                                               efforts);
     }
+}
+
+double mtsIntuitiveResearchKitMTM::closest_equivalent_roll(double current_angle, double target_angle) const
+{
+    // find target angle, mod PI from current angle to minimize unnecessary rotations
+    const double delta = std::remainder(target_angle - current_angle, cmnPI);
+    double closest = current_angle + delta;
+
+    // ensure we are within (min + PI, max - PI) range both to respect joint limits
+    // and to ensure we have +/-PI range of motion around us
+    const double roll_max = Manipulator->links[6].PositionMax() - cmnPI;
+    const double roll_min = Manipulator->links[6].PositionMin() + cmnPI;
+
+    if (closest > roll_max) {
+        const double turns = (closest - roll_max)/cmnPI;
+        const double f_part = turns - std::trunc(turns);
+	const double offset = f_part > 1e-5 ? (1 - f_part)*cmnPI : 0.0;
+        closest = roll_max - offset;
+    } else if (closest < roll_min) {
+        const double turns = (roll_min - closest)/cmnPI;
+        const double f_part = turns - std::trunc(turns);
+	const double offset = f_part > 1e-5 ? (1 - f_part)*cmnPI : 0.0;
+        closest = roll_min + offset;
+    }
+
+    return closest;
 }
