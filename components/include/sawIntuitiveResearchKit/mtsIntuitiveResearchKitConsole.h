@@ -349,6 +349,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
+    void TeleopScaleChangedEventHandler(const double & scale);
 
     bool m_calibration_mode = false;
 
