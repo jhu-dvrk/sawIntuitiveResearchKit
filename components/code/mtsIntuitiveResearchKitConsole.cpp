@@ -1440,6 +1440,7 @@ bool mtsIntuitiveResearchKitConsole::AddTeleopPSMInterfaces(TeleopPSM * teleop)
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "error");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "warning");
         teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "status");
+        teleop->InterfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::TeleopScaleChangedEventHandler, this, "scale");
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "AddTeleopPSMInterfaces: failed to add Main interface for teleop \""
                                  << teleop->Name() << "\"" << std::endl;
@@ -2711,6 +2712,11 @@ void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventB
     }
     UpdateTeleopState();
     console_events.operator_present(button);
+}
+
+void mtsIntuitiveResearchKitConsole::TeleopScaleChangedEventHandler(const double & scale)
+{
+    ConfigurationEvents.scale(scale);
 }
 
 void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & message)
