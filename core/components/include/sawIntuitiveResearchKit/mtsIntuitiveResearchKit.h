@@ -96,6 +96,13 @@ namespace mtsIntuitiveResearchKit {
         const double ToleranceBackFromClutch =  2.0 * cmnPI_180; // in radians
     }
 
+    // colors for Si LEDs
+    // 200 -> C8
+    const uint32_t Red200 = 0xC80000;
+    const uint32_t Green200 = 0x00C800;
+    const uint32_t Blue200 = 0x0000C8;
+    const uint32_t Off = 0x000000;
+
     // setup logger settings for the dVRK, turn on logs for some
     // classes and create a new log per run with timestamp
     class CISST_EXPORT Logger {

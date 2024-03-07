@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -308,12 +308,18 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
         if (is_joint_ready()) {
             ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
             mArmState.SetCurrentState("MANUAL");
+            set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
+                            mtsIntuitiveResearchKit::Green200,
+                            true, false);
         } else {
             m_arm_interface->SendWarning(this->GetName() + ": arm not ready yet, manipulator clutch ignored");
         }
         break;
     case prmEventButton::RELEASED:
         if (mArmState.CurrentState() == "MANUAL") {
+            set_LED_pattern(mtsIntuitiveResearchKit::Green200,
+                            mtsIntuitiveResearchKit::Green200,
+                            false, false);
             // go back to state before clutching
             mArmState.SetCurrentState(ClutchEvents.ManipClutchPreviousState);
         }

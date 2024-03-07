@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnClassRegister.h>
 #include <cisstCommon/cmnRandomSequence.h>
 #include <cisstOSAbstraction/osaDynamicLoader.h>
+#include <cisstOSAbstraction/osaSleep.h>
 
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
@@ -1351,6 +1352,7 @@ void mtsIntuitiveResearchKitConsole::Startup(void)
         prompts.push_back("It's about time");
         prompts.push_back("When did you last commit your changes?");
         prompts.push_back("Some documentation would be nice");
+        prompts.push_back("ROS 2!");
         int index;
         cmnRandomSequence & randomSequence = cmnRandomSequence::GetInstance();
         cmnRandomSequence::SeedType seed
@@ -2237,6 +2239,21 @@ void mtsIntuitiveResearchKitConsole::power_on(void)
 void mtsIntuitiveResearchKitConsole::home(void)
 {
     DisableFaultyArms();
+    bool allArmsEnabled = true;
+    // enable all arms that need it
+    for (auto & arm : mArms) {
+        auto armState = ArmStates.find(arm.first);
+        if (// search if we already have a state
+            (armState != ArmStates.end())
+            // and the arm is disabled
+            && (armState->second.State() == prmOperatingState::DISABLED) ) {
+            arm.second->state_command(std::string("enable"));
+            allArmsEnabled = false;
+        }
+    }
+    if (!allArmsEnabled) {
+        osaSleep(1.0 * cmn_s);
+    }
     for (auto & arm : mArms) {
         arm.second->state_command(std::string("home"));
     }

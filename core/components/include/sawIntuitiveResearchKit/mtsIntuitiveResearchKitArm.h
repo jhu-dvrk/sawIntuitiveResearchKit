@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -164,6 +164,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void EnterPaused(void);
     virtual void EnterFault(void);
 
+    void set_LED_pattern(uint32_t color1, uint32_t color2, bool blink1, bool blink2);
     virtual void clip_jp(vctDoubleVec & jp) const;
 
     // Arm state machine
@@ -293,6 +294,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionVoid  PowerOnSequence;
         mtsFunctionWrite PowerOffSequence;
         mtsFunctionVoid  Explain;
+        mtsFunctionWrite set_LED_pattern;
         mtsFunctionRead  GetActuatorAmpStatus;
         mtsFunctionRead  GetBrakeAmpStatus;
         mtsFunctionWrite BiasEncoder;

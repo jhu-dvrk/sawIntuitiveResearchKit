@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -867,6 +867,9 @@ void mtsIntuitiveResearchKitPSM::EnterEngagingAdapter(void)
     // other case, initialize variables for adapter engage
     EngagingStage = 1;
     LastEngagingStage = 5;
+    set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
+                    mtsIntuitiveResearchKit::Green200,
+                    false, true);
 }
 
 void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
@@ -937,6 +940,9 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
             if (EngagingStage > LastEngagingStage) {
                 Adapter.NeedEngage = false;
                 Adapter.IsEngaged = true;
+                set_LED_pattern(mtsIntuitiveResearchKit::Green200,
+                                mtsIntuitiveResearchKit::Green200,
+                                false, false);
                 control_move_jp_on_stop(true); // goal reached
                 mArmState.SetCurrentState("HOMED");
             } else {
@@ -975,6 +981,9 @@ void mtsIntuitiveResearchKitPSM::EnterEngagingTool(void)
     // other case, initialize variables for tool engage
     EngagingStage = 1;
     LastEngagingStage = 4;
+    set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
+                    mtsIntuitiveResearchKit::Green200,
+                    false, true);
 }
 
 void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
@@ -1095,6 +1104,10 @@ void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
     Tool.IsEngaged = true;
+    set_LED_pattern(mtsIntuitiveResearchKit::Green200,
+                    mtsIntuitiveResearchKit::Green200,
+                    false, false);
+
     // restore default PID tracking error
     PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
     // resize kinematics vectors
@@ -1459,6 +1472,9 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
         ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
         PID.Enabled(ClutchEvents.PIDEnabledPreviousState);
         mArmState.SetCurrentState("MANUAL");
+        set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
+                        mtsIntuitiveResearchKit::Green200,
+                        true, false);
         break;
     case prmEventButton::RELEASED:
         if (mArmState.CurrentState() == "MANUAL") {

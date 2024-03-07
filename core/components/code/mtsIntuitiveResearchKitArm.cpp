@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
+#include <cisstParameterTypes/prmInputData.h>
 #include <sawControllers/osaCartesianImpedanceController.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
@@ -333,6 +334,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         IOInterface->AddFunction("PowerOnSequence", IO.PowerOnSequence);
         IOInterface->AddFunction("PowerOffSequence", IO.PowerOffSequence);
         IOInterface->AddFunction("Explain", IO.Explain);
+        IOInterface->AddFunction("set_LED_pattern", IO.set_LED_pattern);
         IOInterface->AddFunction("GetActuatorAmpStatus", IO.GetActuatorAmpStatus);
         IOInterface->AddFunction("GetBrakeAmpStatus", IO.GetBrakeAmpStatus);
         IOInterface->AddFunction("BiasEncoder", IO.BiasEncoder);
@@ -818,6 +820,11 @@ void mtsIntuitiveResearchKitArm::Cleanup(void)
         values.Zeros();
         IO.SetEncoderPosition(values);
     }
+    // leave the arm blinking
+    set_LED_pattern(mtsIntuitiveResearchKit::Red200,
+                    mtsIntuitiveResearchKit::Green200,
+                    false, true);
+
     CMN_LOG_CLASS_INIT_VERBOSE << GetName() << ": Cleanup" << std::endl;
 }
 
@@ -1124,6 +1131,9 @@ void mtsIntuitiveResearchKitArm::EnterDisabled(void)
     PID.Enable(false);
     PID.enforce_position_limits(true);
     m_powered = false;
+    set_LED_pattern(mtsIntuitiveResearchKit::Red200,
+                    mtsIntuitiveResearchKit::Red200,
+                    false, false);
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
 }
@@ -1205,6 +1215,9 @@ void mtsIntuitiveResearchKitArm::EnterEnabled(void)
     }
 
     m_powered = true;
+    set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
+                    mtsIntuitiveResearchKit::Blue200,
+                    false, false);
 
     // disable PID for fallback
     IO.SetActuatorCurrent(vctDoubleVec(number_of_joints(), 0.0));
@@ -1388,6 +1401,9 @@ void mtsIntuitiveResearchKitArm::RunHoming(void)
 void mtsIntuitiveResearchKitArm::EnterHomed(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
+    set_LED_pattern(mtsIntuitiveResearchKit::Green200,
+                    mtsIntuitiveResearchKit::Green200,
+                    false, false);
 
     // no control mode defined
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
@@ -1429,9 +1445,25 @@ void mtsIntuitiveResearchKitArm::EnterPaused(void)
 
 void mtsIntuitiveResearchKitArm::EnterFault(void)
 {
+    set_LED_pattern(mtsIntuitiveResearchKit::Red200,
+                    mtsIntuitiveResearchKit::Off,
+                    true, false);
     IO.Explain();
     IO.PowerOffSequence(false);
     UpdateOperatingStateAndBusy(prmOperatingState::FAULT, false);
+}
+
+void mtsIntuitiveResearchKitArm::set_LED_pattern(uint32_t color1, uint32_t color2,
+                                                 bool blink1, bool blink2)
+{
+    prmInputData pattern;
+    pattern.AnalogInputs().SetSize(2);
+    pattern.DigitalInputs().SetSize(2);
+    pattern.AnalogInputs().at(0) = color1;
+    pattern.AnalogInputs().at(1) = color2;
+    pattern.DigitalInputs().at(0) = blink1;
+    pattern.DigitalInputs().at(1) = blink2;
+    IO.set_LED_pattern(pattern);
 }
 
 void mtsIntuitiveResearchKitArm::clip_jp(vctDoubleVec & jp) const
