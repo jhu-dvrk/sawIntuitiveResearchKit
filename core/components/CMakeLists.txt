@@ -82,6 +82,7 @@ if (cisst_FOUND)
       ExternalProject_Add (gattlibExternal
                            PREFIX gattlib
                            GIT_REPOSITORY    ${SAW_GATTLIB_GIT_REPOSITORY}
+			   GIT_TAG          "dvrk-2.2"
                            CMAKE_CACHE_ARGS -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
                                             -DGATTLIB_BUILD_EXAMPLES:BOOL=OFF
                                             -DGATTLIB_BUILD_DOCS:BOOL=OFF
