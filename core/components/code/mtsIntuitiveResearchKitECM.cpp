@@ -99,25 +99,6 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
     if (!m_endoscope_configured) {
         exit(EXIT_FAILURE);
     }
-
-    // this is used for GC on classic systems only
-    if (m_generation == GENERATION_Classic) {
-        // check that Rtw0 is not set
-        if (Manipulator->Rtw0 != vctFrm4x4::Identity()) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                     << ": you can't define the base-offset for the ECM, it is hard coded so gravity compensation works properly.  We always assume the ECM is mounted at 45 degrees! (from file \""
-                                     << filename << "\")" << std::endl;
-            exit(EXIT_FAILURE);
-        }
-
-        // 45 degrees rotation to make sure Z points up, this helps with
-        // cisstRobot::robManipulator gravity compensation
-        vctFrame4x4<double> Rt(vctMatRot3(1.0,            0.0,            0.0,
-                                          0.0,  sqrt(2.0)/2.0,  sqrt(2.0)/2.0,
-                                          0.0, -sqrt(2.0)/2.0,  sqrt(2.0)/2.0),
-                               vct3(0.0, 0.0, 0.0));
-        Manipulator->Rtw0 = Rt;
-    }
 }
 
 robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec & jointSet,
@@ -351,7 +332,10 @@ void mtsIntuitiveResearchKitECM::update_feed_forward(vctDoubleVec & feedForward)
 void mtsIntuitiveResearchKitECM::gravity_compensation(vctDoubleVec & efforts)
 {
     vctDoubleVec qd(this->number_of_joints_kinematics(), 0.0);
-    efforts.ForceAssign(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, 9.81));
+    vct3 vg(0.0, -1.0, 1.0);
+    vg.NormalizedSelf();
+    vg.Multiply(9.81);
+    efforts.ForceAssign(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, vg));
 }
 
 void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscopeType)
