@@ -653,6 +653,12 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
             m_homing_goes_to_zero = jsonHomingGoesToZero.asBool();
         }
 
+        // gravity tilt in radians!, default assumes angles match SUJ (e.g. ECM Classic is -45, ECM Si is -70). 
+        const Json::Value jsonGravityTilt = jsonConfig["gravity-tilt"];
+        if (!jsonGravityTilt.isNull()) {
+            m_gravity_tilt = jsonGravityTilt.asDouble();
+        }
+
         // should ignore preloaded encoders and force homing
         const Json::Value jsonAlwaysHome = jsonConfig["re-home"];
         if (!jsonAlwaysHome.isNull()) {

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -130,6 +130,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void EventHandlerTool(const prmEventButton & button);
     void EventHandlerManipClutch(const prmEventButton & button);
     void EventHandlerSUJClutch(const prmEventButton & button);
+
+    void update_feed_forward(vctDoubleVec & feedForward) override;
+    void gravity_compensation(vctDoubleVec & efforts) override;
 
     void jaw_servo_jp(const prmPositionJointSet & jp);
     void jaw_move_jp(const prmPositionJointSet & jp);

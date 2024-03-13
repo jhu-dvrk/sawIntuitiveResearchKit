@@ -1499,6 +1499,21 @@ void mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch(const prmEventButton & bu
     }
 }
 
+void mtsIntuitiveResearchKitPSM::update_feed_forward(vctDoubleVec & feedForward)
+{
+    feedForward.SetAll(0.0);
+    if (!m_simulated) {
+        feedForward.Add(m_gravity_compensation_setpoint_js.Effort());
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::gravity_compensation(vctDoubleVec & efforts)
+{
+    vctDoubleVec qd(this->number_of_joints_kinematics(), 0.0);
+    vct3 vg(0.0, sin(m_gravity_tilt) * 9.81, cos(m_gravity_tilt) * 9.81);
+    efforts.ForceAssign(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, vg));
+}
+
 void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolType)
 {
     m_arm_interface->SendStatus(this->GetName() + ": setting up for tool type \"" + toolType + "\"");
