@@ -10,9 +10,9 @@
             "properties": {
                 "required": ["endoscope"],
                 "endoscope": {
-                    "description": "Set the endoscope type.  Possible values are defined in `sawIntuitiveResearchKit/components/code/mtsIntuitiveResearchKitEndoscopeTypes.cdg`.  `NONE`, `HD` and `SD` are used to determine the approximative mass of the endscope camera head used for gravity compensation.  `STRAIGHT`, `UP` or `DOWN` indicates the direction of the endoscope tip.  The direction of the endoscope tip is used to define the tool tip transformation added to the ECM kinematic chain.  The tool tip transformation is used for both forward and inverse kinematic computations.  This can be overwritten at runtime using the GUI or ROS topics.",
+                    "description": "Set the endoscope type.  Possible values are defined in `sawIntuitiveResearchKit/components/code/mtsIntuitiveResearchKitEndoscopeTypes.cdg`.  `Classic` and `Si` determine the generation of endoscopic cameras.  `Classic` is for the Standard/Classic (first generation) as well as S systems.  `Si` is for the 3rd generation.  The Si cameras have Si HD written on them.  `NONE`, `HD` and `SD` are used to determine the approximative mass of the endscope camera head used for gravity compensation.  `STRAIGHT`, `UP` or `DOWN` indicates the direction of the endoscope tip.  The direction of the endoscope tip is used to define the tool tip transformation added to the ECM kinematic chain.  The tool tip transformation is used for both forward and inverse kinematic computations.  This can be overwritten at runtime using the GUI or ROS topics.",
                     "type": "string",
-                    "enum": ["NONE", "SD_STRAIGHT", "SD_DOWN", "SD_UP", "HD_STRAIGHT", "HD_DOWN", "HD_UP"]
+                    "enum": ["NONE", "Classic_SD_STRAIGHT", "Classic_SD_DOWN", "Classic_SD_UP", "Classic_HD_STRAIGHT", "Classic_HD_DOWN", "Classic_HD_UP", "Si_HD_STRAIGHT", "Si_HD_DOWN", "Si_HD_UP"]
                 }
             }
         }
