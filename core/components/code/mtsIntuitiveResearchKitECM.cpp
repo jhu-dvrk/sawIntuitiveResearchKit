@@ -100,21 +100,19 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
         exit(EXIT_FAILURE);
     }
 
-    // set default tilt if not already set
+    // ask to set tilt if not already defined
     if (m_gravity_tilt > std::numeric_limits<double>::max()) {
         if (generation() == GENERATION_Classic) {
             m_gravity_tilt = -45.0 * cmnPI_180;
         } else {
             m_gravity_tilt = -70.0 * cmnPI_180;
         }
-        std::string msg = "  " + this->GetName() + ": gravity-tilt was not defined in the arm configuration file\n."
-            + "  We will assume the ECM is mounted on the SUJ\n  and tilted by "
-            + std::to_string(m_gravity_tilt) + " (" + std::to_string(m_gravity_tilt * cmn180_PI) + " radians)";
-        std::cout << "---------------------------------------------" << std::endl
-                  << " Warning:" << std::endl
-                  << msg << std::endl
-                  << "---------------------------------------------" << std::endl;
-        m_arm_interface->SendWarning(msg);
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName() << std::endl
+                                 << "\"gravity-tilt\" was not defined in \"" << filename << "\"" << std::endl 
+                                 << "If your ECM is mounted on the SUJ you should set it to: "
+                                 << "   " << std::to_string(m_gravity_tilt)
+                                 << " (" << std::to_string(m_gravity_tilt * cmn180_PI) << " radians)" << std::endl;
+        exit(EXIT_FAILURE);
     }
 }
 
