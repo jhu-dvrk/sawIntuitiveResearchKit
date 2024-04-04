@@ -131,9 +131,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void EventHandlerManipClutch(const prmEventButton & button);
     void EventHandlerSUJClutch(const prmEventButton & button);
 
-    void update_feed_forward(vctDoubleVec & feedForward) override;
-    void gravity_compensation(vctDoubleVec & efforts) override;
-
     void jaw_servo_jp(const prmPositionJointSet & jp);
     void jaw_move_jp(const prmPositionJointSet & jp);
     void jaw_servo_jf(const prmForceTorqueJointSet & jf);

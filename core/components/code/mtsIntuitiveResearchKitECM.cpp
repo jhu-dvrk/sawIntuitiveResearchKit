@@ -108,8 +108,8 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
             m_gravity_tilt = -70.0 * cmnPI_180;
         }
         CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName() << std::endl
-                                 << "\"gravity-tilt\" was not defined in \"" << filename << "\"" << std::endl 
-                                 << "If your ECM is mounted on the SUJ you should set it to: "
+                                 << "\"gravity-tilt\" was not defined in \"" << filename << "\"" << std::endl
+                                 << "If your ECM is mounted on the SUJ you should likely set it to: "
                                  << "   " << std::to_string(m_gravity_tilt)
                                  << " (" << std::to_string(m_gravity_tilt * cmn180_PI) << " radians)" << std::endl;
         exit(EXIT_FAILURE);
@@ -163,15 +163,12 @@ void mtsIntuitiveResearchKitECM::Init(void)
     mArmState.SetEnterCallback("HOMED",
                                &mtsIntuitiveResearchKitECM::EnterHomed,
                                this);
-
     mArmState.SetEnterCallback("MANUAL",
                                &mtsIntuitiveResearchKitECM::EnterManual,
                                this);
-
     mArmState.SetRunCallback("MANUAL",
                              &mtsIntuitiveResearchKitECM::RunManual,
                              this);
-
     mArmState.SetLeaveCallback("MANUAL",
                                &mtsIntuitiveResearchKitECM::LeaveManual,
                                this);
@@ -424,8 +421,8 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     }
 
     // make sure we have enough joints in the kinematic chain
-    CMN_ASSERT(Manipulator->links.size() == 4);
-    Manipulator->links.at(3).MassData().Mass() = mass;
+    CMN_ASSERT(Manipulator->links.size() >= 3);
+    Manipulator->links.at(2).MassData().Mass() = mass;
 
     // set configured flag
     m_endoscope_configured = true;
