@@ -109,9 +109,9 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
         }
         CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName() << std::endl
                                  << "\"gravity-tilt\" was not defined in \"" << filename << "\"" << std::endl
-                                 << "If your ECM is mounted on the SUJ you should likely set it to: "
-                                 << "   " << std::to_string(m_gravity_tilt)
-                                 << " (" << std::to_string(m_gravity_tilt * cmn180_PI) << " radians)" << std::endl;
+                                 << "If your ECM is mounted on the SUJ you should likely add it using: "
+                                 << " \"gravity-tilt\": " << std::to_string(m_gravity_tilt)
+                                 << " // " << std::to_string(m_gravity_tilt * cmn180_PI) << " degrees" << std::endl;
         exit(EXIT_FAILURE);
     }
 }
