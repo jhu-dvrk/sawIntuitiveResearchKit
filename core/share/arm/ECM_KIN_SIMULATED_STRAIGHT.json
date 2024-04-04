@@ -2,5 +2,6 @@
 {
     "kinematic": "kinematic/ecm.json",
     "generation": "Classic",
-    "endoscope": "SD_STRAIGHT"
+    "gravity-tilt": -0.785398, // -45 degrees
+    "endoscope": "Classic_SD_STRAIGHT"
 }

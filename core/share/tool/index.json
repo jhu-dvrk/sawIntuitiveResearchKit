@@ -202,6 +202,14 @@
         }
         ,
         {
+            "model": "400230",
+            "names": ["LARGE_CLIP_APPLIER"],
+            "description": "Large Clip Applier",
+            "generation": "Classic",
+            "file": "LARGE_CLIP_APPLIER_400230.json"
+        }
+        ,
+        {
             "model": "400296",
             "names": ["LRG_SUTURECUT_NEEDLE_DRIVER"],
             "description": "Large Suturecut Needle Driver",
@@ -373,6 +381,14 @@
         }
         ,
         {
+            "model": "420230",
+            "names": ["LARGE_CLIP_APPLIER"],
+            "description": "Large Clip Applier",
+            "generation": "S",
+            "file": "LARGE_CLIP_APPLIER_420230.json"
+        }
+        ,
+        {
             "model": "420296",
             "names": ["LARGE_SUTURECUT_NEEDLEDRIVER"],
             "description": "Large Suturecut Needle Driver",
@@ -386,6 +402,14 @@
             "description": "Mega Suturecut Needle Driver",
             "generation": "S",
             "file": "MEGA_SUTURECUT_NEEDLE_DRIVER_420309.json"
+        }
+        ,
+        {
+            "model": "420327",
+            "names": ["MEDIUM-LARGE_CLIP_APPLIER"],
+            "description": "Medium-large Clip Applier",
+            "generation": "S",
+            "file": "MEDIUM-LARGE_CLIP_APPLIER_420327.json"
         }
     ]
 }

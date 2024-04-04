@@ -99,6 +99,21 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
     if (!m_endoscope_configured) {
         exit(EXIT_FAILURE);
     }
+
+    // ask to set tilt if not already defined
+    if (m_gravity_tilt > std::numeric_limits<double>::max()) {
+        if (generation() == GENERATION_Classic) {
+            m_gravity_tilt = -45.0 * cmnPI_180;
+        } else {
+            m_gravity_tilt = -70.0 * cmnPI_180;
+        }
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName() << std::endl
+                                 << "\"gravity-tilt\" was not defined in \"" << filename << "\"" << std::endl
+                                 << "If your ECM is mounted on the SUJ you should likely add it using: "
+                                 << " \"gravity-tilt\": " << std::to_string(m_gravity_tilt)
+                                 << " // " << std::to_string(m_gravity_tilt * cmn180_PI) << " degrees" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec & jointSet,
@@ -148,15 +163,12 @@ void mtsIntuitiveResearchKitECM::Init(void)
     mArmState.SetEnterCallback("HOMED",
                                &mtsIntuitiveResearchKitECM::EnterHomed,
                                this);
-
     mArmState.SetEnterCallback("MANUAL",
                                &mtsIntuitiveResearchKitECM::EnterManual,
                                this);
-
     mArmState.SetRunCallback("MANUAL",
                              &mtsIntuitiveResearchKitECM::RunManual,
                              this);
-
     mArmState.SetLeaveCallback("MANUAL",
                                &mtsIntuitiveResearchKitECM::LeaveManual,
                                this);
@@ -242,8 +254,8 @@ void mtsIntuitiveResearchKitECM::EnterHomed(void)
 {
     mtsIntuitiveResearchKitArm::EnterHomed();
 
-    // set gravity compensation based on generation
-    m_gravity_compensation = (generation() == GENERATION_Classic);
+    // set gravity compensation
+    m_gravity_compensation = true;
 
     // event to propagate endoscope type based on configuration file
     EndoscopeEvents.endoscope_type(mtsIntuitiveResearchKitEndoscopeTypes::TypeToString(m_endoscope_type));
@@ -332,9 +344,7 @@ void mtsIntuitiveResearchKitECM::update_feed_forward(vctDoubleVec & feedForward)
 void mtsIntuitiveResearchKitECM::gravity_compensation(vctDoubleVec & efforts)
 {
     vctDoubleVec qd(this->number_of_joints_kinematics(), 0.0);
-    vct3 vg(0.0, -1.0, 1.0);
-    vg.NormalizedSelf();
-    vg.Multiply(9.81);
+    vct3 vg(0.0, sin(m_gravity_tilt) * 9.81, cos(m_gravity_tilt) * 9.81);
     efforts.ForceAssign(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, vg));
 }
 
@@ -365,14 +375,16 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     vctFrm4x4 tip;
     tip.Translation().Assign(vct3(0.0, 0.0, 0.0));
     switch (m_endoscope_type) {
-    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_UP:
-    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_SD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_HD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_UP:
         // -30 degree rotation along X axis
         tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), -30.0 * cmnPI_180));
         ToolOffsetTransformation = ToolOffsetTransformation * tip;
         break;
-    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_DOWN:
-    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_SD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_HD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_DOWN:
         // 30 degree rotation along X axis
         tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), 30.0 * cmnPI_180));
         ToolOffsetTransformation = ToolOffsetTransformation * tip;
@@ -388,15 +400,20 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     // update estimated mass for gravity compensation
     double mass;
     switch (m_endoscope_type) {
-    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_STRAIGHT:
-    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_UP:
-    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_SD_DOWN:
-        mass = mtsIntuitiveResearchKit::ECM::SDMass;
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_SD_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_SD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_SD_DOWN:
+        mass = mtsIntuitiveResearchKit::ECM::ClassicSDMass;
         break;
-    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_STRAIGHT:
-    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_UP:
-    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_HD_DOWN:
-        mass = mtsIntuitiveResearchKit::ECM::HDMass;
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_HD_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_HD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_HD_DOWN:
+        mass = mtsIntuitiveResearchKit::ECM::ClassicHDMass;
+        break;
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_DOWN:
+        mass = mtsIntuitiveResearchKit::ECM::SiHDMass;
         break;
     default:
         mass = mtsIntuitiveResearchKit::ECM::EmptyMass;
@@ -404,8 +421,8 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     }
 
     // make sure we have enough joints in the kinematic chain
-    CMN_ASSERT(Manipulator->links.size() == 4);
-    Manipulator->links.at(3).MassData().Mass() = mass;
+    CMN_ASSERT(Manipulator->links.size() >= 3);
+    Manipulator->links.at(2).MassData().Mass() = mass;
 
     // set configured flag
     m_endoscope_configured = true;

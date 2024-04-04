@@ -1,0 +1,68 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    // see dVRK user guide
+    "DH": {
+        "convention": "modified",
+        "joints": [
+            {
+                "name": "outer_roll",
+                "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4670,
+                "type": "revolute",
+                "mode": "active",
+                "offset":  0.0000,
+                "qmin": -4.4506, // -255 degrees
+                "qmax":  4.4506, //  255 degrees
+                "ftmax": 0.33
+            },
+            {
+                "name": "outer_wrist_pitch",
+                "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset": -1.5708,
+                "qmin": -1.2217, // -70 degrees
+                "qmax":  1.2217, //  70 degrees
+                "ftmax": 0.25
+            },
+            {
+                "name": "outer_wrist_yaw",
+                "alpha": -1.5708, "A":  0.0107, "theta":  0.0000, "D":  0.0000,
+                "type": "revolute",
+                "mode": "active",
+                "offset": -1.5708,
+                "qmin": -1.27409, // -73 degrees
+                "qmax":  1.27409, //  73 degrees
+                "ftmax": 0.20
+            }
+        ]
+    }
+    ,
+    "jaw" : {
+        // for last joint, manual says [0, 30] but we need -20 to allow stronger torque, 80 to open wide
+        "qmin": -0.349066, // -20 degrees - overriding ISI values
+        "qmax":  0.785398,  //  from ISI
+        "ftmax": 0.7
+    }
+    ,
+    // rotation to match ISI convention (for read-only research API on commercial da Vinci)
+    "tooltip-offset" : [[ 0.0, -1.0,  0.0,  0.0],
+                        [ 0.0,  0.0,  1.0,  0.0],
+                        [-1.0,  0.0,  0.0,  0.0],
+                        [ 0.0,  0.0,  0.0,  1.0]]
+    ,
+    // values from the dVRK user guide, see tool appendix C, ISI numbers rounded to 6 digits
+    "coupling" : {
+        "ActuatorToJointPosition" : [[ -1.563131,  0.000000,  0.000000,  0.000000],
+                                     [  0.000000,  1.000000,  0.000000,  0.000000],
+                                     [  0.000000, -0.506756,  0.513513,  0.513513],
+                                     [  0.000000,  0.000000,  0.527898,  -0.52789]]
+    }
+    ,
+    // angles used to engage the tool, in radians
+    // make sure these are within the range of motion IN the cannula
+    // max range on roll, 5, 5, 0 degrees
+    "tool-engage-position" : {
+        "lower" : [-4.5378, -0.087266, -0.087266, 0.0],
+        "upper" : [ 4.5378,  0.087266,  0.087266, 0.0]
+    }
+}

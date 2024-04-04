@@ -20,28 +20,40 @@ class {
             description No endoscope (zero weight);
         }
         enum-value {
-            name SD_STRAIGHT;
-            description SD Straight;
+            name Classic_SD_STRAIGHT;
+            description Classic SD Straight;
         }
         enum-value {
-            name SD_UP;
-            description SD Up;
+            name Classic_SD_UP;
+            description Classic SD Up;
         }
         enum-value {
-            name SD_DOWN;
-            description SD Down;
+            name Classic_SD_DOWN;
+            description Classic SD Down;
         }
         enum-value {
-            name HD_STRAIGHT;
-            description HD Straight;
+            name Classic_HD_STRAIGHT;
+            description Classic HD Straight;
         }
         enum-value {
-            name HD_UP;
-            description HD Up;
+            name Classic_HD_UP;
+            description Classic HD Up;
         }
         enum-value {
-            name HD_DOWN;
-            description HD Down;
+            name Classic_HD_DOWN;
+            description Classic HD Down;
+        }
+        enum-value {
+            name Si_HD_STRAIGHT;
+            description Si HD Straight;
+        }
+        enum-value {
+            name Si_HD_UP;
+            description Si HD Up;
+        }
+        enum-value {
+            name Si_HD_DOWN;
+            description Si HD Down;
         }
     }
 }

@@ -376,6 +376,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctMatRot3 mEffortOrientation;
     // use gravity compensation or not
     bool m_gravity_compensation = false;
+    double m_gravity_tilt = std::numeric_limits<double>::infinity(); // used for ECMs Classic and Si as well as PSMs Si
     // compute effort for gravity compensation based on current state, called in get_robot_data
     virtual void gravity_compensation(vctDoubleVec & efforts);
 

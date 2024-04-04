@@ -80,8 +80,9 @@ namespace mtsIntuitiveResearchKit {
 
     // ECM constants
     namespace ECM {
-        const double SDMass = 1.5;
-        const double HDMass = 2.5;
+        const double ClassicSDMass = 1.5;
+        const double ClassicHDMass = 2.5;
+        const double SiHDMass = 0.9;
         const double EmptyMass = 0.05;
     }
 
