@@ -2,7 +2,7 @@
     "pid": [
 	{
 	    "index": 0,
-	    "name": "outer_yaw",
+	    "name": "yaw",
 	    "type": "REVOLUTE",
 	    "p_gain": 600.0,
 	    "d_gain": 30.0,
@@ -14,7 +14,7 @@
 	,
 	{
 	    "index": 1,
-	    "name": "outer_pitch",
+	    "name": "pitch",
 	    "type": "REVOLUTE",
 	    "p_gain": 600.0,
 	    "d_gain": 30.0,
@@ -26,7 +26,7 @@
 	,
 	{
 	    "index": 2,
-	    "name": "outer_insertion",
+	    "name": "insertion",
 	    "type": "PRISMATIC",
 	    "p_gain": 6000.0,
 	    "d_gain": 200.0,

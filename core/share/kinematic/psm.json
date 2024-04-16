@@ -5,7 +5,7 @@
         "convention": "modified",
         "joints": [
             {
-                "name": "outer_yaw",
+                "name": "yaw",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -15,7 +15,7 @@
                 "ftmax": 3.316101
             },
             {
-                "name": "outer_pitch",
+                "name": "pitch",
                 "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -25,7 +25,7 @@
                 "ftmax": 3.316101
             },
             {
-                "name": "outer_insertion",
+                "name": "insertion",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "prismatic",
                 "mode": "active",

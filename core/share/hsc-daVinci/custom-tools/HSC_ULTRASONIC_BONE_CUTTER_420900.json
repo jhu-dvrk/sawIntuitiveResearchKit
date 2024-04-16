@@ -6,7 +6,7 @@
         "joints": [
             {
                 /* for HSC, length of shaft is different.  On LND, distance from plate to axis 5 is 43cm.  On HSC it's 30cm.   So we substract 13cm from LND "D": 0.4670 - 0.015 = 0.445*/
-                "name": "outer_roll",
+                "name": "roll",
                 "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.4450,
                 "type": "revolute",
                 "mode": "active",
@@ -16,7 +16,7 @@
                 "ftmax": 0.33
             },
             {
-                "name": "outer_wrist_pitch",
+                "name": "wrist_pitch",
                 "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -26,7 +26,7 @@
                 "ftmax": 0.25
             },
             {
-                "name": "outer_wrist_yaw",
+                "name": "wrist_yaw",
                 "alpha": -1.5708, "A":  0.0091, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
