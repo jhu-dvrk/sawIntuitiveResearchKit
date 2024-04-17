@@ -106,7 +106,7 @@ dvrk::console::console(const std::string & name,
     if (m_console->mTeleopECM) {
         const auto teleopName = m_console->mTeleopECM->Name();
         bridge_interface_provided(teleopName, "Setting", teleopName,
-                                  publish_rate_in_seconds, tf_rate_in_seconds);
+                                  publish_rate_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0
         add_topics_teleop_ecm(teleopName);
     }
 
@@ -114,7 +114,7 @@ dvrk::console::console(const std::string & name,
     for (auto const & teleop : m_console->mTeleopsPSM) {
         const auto teleopName = teleop.first;
         bridge_interface_provided(teleopName, "Setting", teleopName,
-                                  publish_rate_in_seconds, tf_rate_in_seconds);
+                                  publish_rate_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0
         add_topics_teleop_psm(teleopName);
     }
 
