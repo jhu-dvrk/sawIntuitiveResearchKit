@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2023-01-05
 
-  (C) Copyright 2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2023-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -26,22 +26,12 @@ void prmConfigurationJointFromManipulator(const robManipulator & manipulator,
     configuration_js.Type().SetSize(configuration_js_size);
     const size_t manipulator_size = manipulator.links.size();
     std::vector<std::string> names(manipulator_size);
-    std::vector<robJoint::Type> types(manipulator_size);
+    std::vector<cmnJointType> types(manipulator_size);
     manipulator.GetJointNames(names);
     manipulator.GetJointTypes(types);
     for (size_t index = 0; index < manipulator_size; ++index) {
         configuration_js.Name().at(index) = names.at(index);
-        switch (types.at(index)) {
-        case robJoint::HINGE:
-            configuration_js.Type().at(index) = PRM_JOINT_REVOLUTE;
-            break;
-        case robJoint::SLIDER:
-            configuration_js.Type().at(index) = PRM_JOINT_PRISMATIC;
-            break;
-        default:
-            configuration_js.Type().at(index) = PRM_JOINT_UNDEFINED;
-            break;
-        }
+        configuration_js.Type().at(index) = types.at(index);
     }
     // position limits can be read as is
     configuration_js.PositionMin().SetSize(configuration_js_size, 0.0);

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Youri Tan
   Created on: 2014-11-07
 
-  (C) Copyright 2014-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -104,8 +104,8 @@ public:
         }
 
         m_configuration_js.Type().SetSize(MUX_ARRAY_SIZE);
-        m_configuration_js.Type().SetAll(PRM_JOINT_REVOLUTE);
-        m_configuration_js.Type().at(0) = PRM_JOINT_PRISMATIC;
+        m_configuration_js.Type().SetAll(CMN_JOINT_REVOLUTE);
+        m_configuration_js.Type().at(0) = CMN_JOINT_PRISMATIC;
         // joint limits are only used in simulation mode to we can set
         // arbitrarily wide limits
         m_configuration_js.PositionMin().SetSize(MUX_ARRAY_SIZE);

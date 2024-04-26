@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Rishibrata Biswas, Adnan Munawar
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -107,7 +107,7 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     m_gripper_configuration_js.Name().SetSize(1);
     m_gripper_configuration_js.Name().at(0) = "gripper";
     m_gripper_configuration_js.Type().SetSize(1);
-    m_gripper_configuration_js.Type().at(0) = PRM_JOINT_REVOLUTE;
+    m_gripper_configuration_js.Type().at(0) = CMN_JOINT_REVOLUTE;
     m_gripper_configuration_js.PositionMin().SetSize(1);
     m_gripper_configuration_js.PositionMin().at(0) = 0.0 * cmnPI_180;
     m_gripper_configuration_js.PositionMax().SetSize(1);

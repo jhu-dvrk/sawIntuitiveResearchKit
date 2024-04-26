@@ -367,7 +367,7 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         m_jaw_configuration_js.Name().SetSize(1);
         m_jaw_configuration_js.Name().at(0) = "jaw";
         m_jaw_configuration_js.Type().SetSize(1);
-        m_jaw_configuration_js.Type().at(0) = PRM_JOINT_REVOLUTE;
+        m_jaw_configuration_js.Type().at(0) = CMN_JOINT_REVOLUTE;
 
         // load lower/upper position used to engage the tool(required)
         const Json::Value jsonEngagePosition = jsonConfig["tool-engage-position"];
@@ -807,8 +807,8 @@ void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(void)
     }
     // for type, we can even ignore values loaded from config file
     m_configuration_js.Type().SetSize(number_of_joints());
-    m_configuration_js.Type().SetAll(PRM_JOINT_REVOLUTE);
-    m_configuration_js.Type().at(2) = PRM_JOINT_PRISMATIC;
+    m_configuration_js.Type().SetAll(CMN_JOINT_REVOLUTE);
+    m_configuration_js.Type().at(2) = CMN_JOINT_PRISMATIC;
     // position limits
     m_configuration_js.PositionMin().SetSize(number_of_joints());
     m_configuration_js.PositionMax().SetSize(number_of_joints());

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2022-07-27
 
-  (C) Copyright 2022-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2022-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -176,8 +176,8 @@ public:
         m_live_measured_js.Name().ForceAssign(m_measured_js.Name());
 
         m_configuration_js.Type().SetSize(m_nb_joints);
-        m_configuration_js.Type().SetAll(PRM_JOINT_REVOLUTE);
-        m_configuration_js.Type().at(0) = PRM_JOINT_PRISMATIC;
+        m_configuration_js.Type().SetAll(CMN_JOINT_REVOLUTE);
+        m_configuration_js.Type().at(0) = CMN_JOINT_PRISMATIC;
         // joint limits are only used in simulation mode so we can set
         // arbitrarily wide limits
         m_configuration_js.PositionMin().SetSize(m_nb_joints);
