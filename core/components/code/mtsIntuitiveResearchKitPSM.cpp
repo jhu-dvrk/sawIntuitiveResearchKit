@@ -156,12 +156,6 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
                                              << "Supported tool types are:\n" << mToolList.PossibleNames("\n") << std::endl;
                     exit(EXIT_FAILURE);
                 }
-                // now look for the file to configure the tool
-                bool tool_configured = ConfigureTool(mToolList.File(mToolIndex));
-                if (!tool_configured) {
-                    exit(EXIT_FAILURE);
-                }
-                set_tool_present_and_configured(m_tool_present, tool_configured);
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "PostConfigure: " << this->GetName()
                                          << " can't find field \"tool\" in file \""
@@ -1429,9 +1423,17 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
             m_arm_interface->SendWarning(this->GetName() + ": tool type requested from user");
             break;
         case mtsIntuitiveResearchKitToolTypes::FIXED:
-            // for fixed, m_tool_configured should always be true anyway
-            set_tool_present_and_configured(true, m_tool_configured);
-            m_arm_interface->SendStatus(this->GetName() + ": using fixed tool type \"" + mToolList.Name(mToolIndex) + "\"");
+            {
+                const std::string toolFile = mToolList.File(mToolIndex);
+                m_arm_interface->SendStatus(this->GetName() + ": using tool file \"" + toolFile
+                                            + "\" for fixed tool: " + mToolList.FullDescription(mToolIndex));
+                bool tool_configured = ConfigureTool(toolFile);
+                if (!tool_configured) {
+                    m_arm_interface->SendError(this->GetName() + ": failed to configure fixed tool, check terminal output and cisstLog file");
+                    ToolEvents.tool_type(std::string("ERROR"));
+                }
+                set_tool_present_and_configured(true, tool_configured);
+            }
             break;
         default:
             break;
@@ -1441,12 +1443,9 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         switch (mToolDetection) {
         case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
         case mtsIntuitiveResearchKitToolTypes::MANUAL:
+        case mtsIntuitiveResearchKitToolTypes::FIXED:
             Manipulator->Truncate(3);
             set_tool_present_and_configured(false, false);
-            break;
-        case mtsIntuitiveResearchKitToolTypes::FIXED:
-            // for fixed, m_tool_configured should always be true anyway
-            set_tool_present_and_configured(false, m_tool_configured);
             break;
         default:
             break;
