@@ -50,9 +50,11 @@ class mtsIntuitiveResearchKitSUJSiArduino
 {
 public:
     inline mtsIntuitiveResearchKitSUJSiArduino(const std::string & arduinoMAC,
-                                               const std::string & name):
+                                               const std::string & name,
+                                               mtsInterfaceProvided * interfaceMessage):
         m_MAC(arduinoMAC),
-        m_name(name)
+        m_name(name),
+        m_interface_message(interfaceMessage)
     {
         gattlib_string_to_uuid(ATTRIB_POTS, strlen(ATTRIB_POTS) + 1, &m_g_uuid);
     }
@@ -60,7 +62,13 @@ public:
 
     inline bool check_connection(void)
     {
+        if (m_fault) {
+            return false;
+        }
+
         if (m_MAC.empty()) {
+            m_fault = true;
+            m_interface_message->SendWarning("SUJ: BlueTooth MAC adress for " + m_name + " is empty, dropping this SUJ");
             return false;
         }
 
@@ -71,10 +79,11 @@ public:
             if (m_connection != nullptr) {
                 m_connected = true;
             } else {
-                std::cerr << CMN_LOG_DETAILS << " -- " << m_name << " -- BT connection issue " << std::endl;
-                gattlib_disconnect(m_connection);
+                m_interface_message->SendWarning("SUJ: BlueTooth connection for " + m_name + " failed, dropping this SUJ");
+                // gattlib_disconnect(m_connection);
                 m_connected = false;
                 m_connection = nullptr;
+                m_fault = true;
             }
         }
         return m_connected;
@@ -109,6 +118,7 @@ public:
     // arduino/gatt
     std::string m_MAC;
     std::string m_name;
+    bool m_fault = false;
     bool m_connected = false;
     gatt_connection_t * m_connection = nullptr;
     uuid_t m_g_uuid;
@@ -117,6 +127,9 @@ public:
     Json::Reader m_json_reader;
     Json::Value m_json_value;
     vctDoubleMat m_raw_pots;
+
+    // for messages
+    mtsInterfaceProvided * m_interface_message = nullptr;
 };
 
 
@@ -130,8 +143,9 @@ public:
                                                const std::string & arduinoMAC,
                                                const bool simulated,
                                                mtsInterfaceProvided * interfaceProvided,
-                                               mtsInterfaceRequired * interfaceRequired):
-        mtsIntuitiveResearchKitSUJSiArduino(arduinoMAC, name),
+                                               mtsInterfaceRequired * interfaceRequired,
+                                               mtsInterfaceProvided * interfaceMessage):
+        mtsIntuitiveResearchKitSUJSiArduino(arduinoMAC, name, interfaceMessage),
         m_name(name),
         m_simulated(simulated),
         m_nb_joints(NB_JOINTS.at(name)),
@@ -250,7 +264,7 @@ public:
     {
         if (button.Type() == prmEventButton::PRESSED) {
             // clutch is pressed, arm is moving around and we know the pots are slow, we mark position as invalid
-            m_interface_provided->SendStatus(m_name + " SUJ: clutched");
+            m_interface_message->SendStatus(m_name + " SUJ: clutched");
             m_measured_js.SetValid(false);
             m_measured_cp.SetTimestamp(m_measured_js.Timestamp());
             m_measured_cp.SetValid(false);
@@ -258,7 +272,7 @@ public:
             m_local_measured_cp.SetValid(false);
         } else if (button.Type() == prmEventButton::RELEASED) {
             m_waiting_for_live = true;
-            m_interface_provided->SendStatus(m_name + " SUJ: not clutched");
+            m_interface_message->SendStatus(m_name + " SUJ: not clutched");
         }
     }
 
@@ -266,7 +280,7 @@ public:
     inline void servo_jp(const prmPositionJointSet & newPosition)
     {
         if (!m_simulated) {
-            m_interface_provided->SendWarning(m_name + " SUJ: servo_jp can't be used unless the SUJs are in simulated mode");
+            m_interface_message->SendWarning(m_name + " SUJ: servo_jp can't be used unless the SUJs are in simulated mode");
             return;
         }
         // save the desired position
@@ -515,7 +529,7 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
             exit(EXIT_FAILURE);
         }
         const std::string mac = jsonConfig["base-arduino-mac"].asString();
-        m_base_arduino = new mtsIntuitiveResearchKitSUJSiArduino(mac, "column");
+        m_base_arduino = new mtsIntuitiveResearchKitSUJSiArduino(mac, "column", m_interface);
     }
 
     // find all arms, there should be 4 of them
@@ -555,7 +569,8 @@ void mtsIntuitiveResearchKitSUJSi::Configure(const std::string & filename)
         mtsInterfaceRequired * interfaceRequired = this->AddInterfaceRequired(name, MTS_OPTIONAL);
         auto sarm = new mtsIntuitiveResearchKitSUJSiArmData(name, mac, m_simulated,
                                                             interfaceProvided,
-                                                            interfaceRequired);
+                                                            interfaceRequired,
+                                                            m_interface);
         m_sarms[index] = sarm;
         AddStateTable(&(sarm->m_state_table));
 
@@ -843,7 +858,7 @@ void mtsIntuitiveResearchKitSUJSi::update_forward_kinematics(void)
                     sarm->m_local_measured_cp.Position().From(local_cp);
                     sarm->m_local_measured_cp.SetTimestamp(sarm->m_measured_js.Timestamp());
                     sarm->m_local_measured_cp.SetValid(true);
-                    sarm->m_interface_provided->SendStatus(sarm->m_name + " SUJ: measured_cp updated");
+                    sarm->m_interface_message->SendStatus(sarm->m_name + " SUJ: measured_cp updated");
                 }
             } else {
                 sarm->m_local_measured_cp.SetValid(false);
