@@ -175,7 +175,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         }
 
         void CurrentStateEventHandler(const prmOperatingState & currentState);
-        prmOperatingState m_operating_state;
     };
 
     class CISST_EXPORT TeleopECM {
@@ -345,7 +344,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     void set_volume(const double & volume);
     void beep(const vctDoubleVec & values); // duration, frequency, volume
     void string_to_speech(const std::string & text);
-    bool mHasIO;
+    bool mHasIO = false;
+    Arm * m_SUJ = nullptr;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);

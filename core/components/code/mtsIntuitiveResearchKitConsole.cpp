@@ -1263,15 +1263,14 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
     this->AddFootpedalInterfaces();
 
     // search for SUJs, real, not Fixed
-    bool hasSUJ = false;
     for (auto iter = mArms.begin(); iter != end; ++iter) {
         if ((iter->second->m_type == Arm::ARM_SUJ_Classic)
             || (iter->second->m_type == Arm::ARM_SUJ_Si)) {
-            hasSUJ = true;
+            m_SUJ = iter->second;
         }
     }
 
-    if (hasSUJ) {
+    if (m_SUJ) {
         for (auto iter = mArms.begin(); iter != end; ++iter) {
             Arm * arm = iter->second;
             // only for PSM and ECM when not simulated
@@ -2275,6 +2274,14 @@ void mtsIntuitiveResearchKitConsole::DisableFaultyArms(void)
 void mtsIntuitiveResearchKitConsole::teleop_enable(const bool & enable)
 {
     mTeleopEnabled = enable;
+    // if we have an SUJ, make sure it's ready
+    if (enable && m_SUJ) {
+        const auto sujState = ArmStates.find("SUJ");
+        if ((sujState == ArmStates.end())
+            || (sujState->second.State() != prmOperatingState::ENABLED)) {
+            mTeleopEnabled = false;
+        }
+    }
     mTeleopDesired = enable;
     // event
     console_events.teleop_enabled(mTeleopEnabled);
@@ -2759,28 +2766,8 @@ void mtsIntuitiveResearchKitConsole::StatusEventHandler(const mtsMessage & messa
 void mtsIntuitiveResearchKitConsole::SetArmCurrentState(const std::string & arm_name,
                                                         const prmOperatingState & currentState)
 {
-    if (mTeleopDesired) {
-        auto armState = ArmStates.find(arm_name);
-        bool newArm = (armState == ArmStates.end());
-        if (newArm) {
-            teleop_enable(true);
-        } else {
-            // for all arms update the state if it was not enabled and the new
-            // state is enabled, home and not busy
-            if (((armState->second.State() != prmOperatingState::ENABLED)
-                 && currentState.IsEnabledHomedAndNotBusy())) {
-                teleop_enable(true);
-            } else {
-                // special case for PSMs when coming back from busy state
-                // (e.g. engaging adapter or instrument)
-                const auto count = mTeleopsPSMByPSM.count(arm_name);
-                if (count != 0) {
-                    if (!armState->second.IsBusy() && currentState.IsEnabledHomedAndNotBusy()) {
-                        teleop_enable(true);
-                    }
-                }
-            }
-        }
+    if (mTeleopDesired && !mTeleopEnabled) {
+        teleop_enable(true);
     }
 
     // save state
