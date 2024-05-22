@@ -30,6 +30,15 @@ python3 example.py
     ```
   This can occur if the Python wrappers were compiled for Python 3 but you're using Python 2.  You can either change your Python interpreter or recompile the wrappers for Python 2.  To do so, run CMake in the cisst build tree (`ccmake ~/catkin_ws/build/cisst` and change all the references to Python 3 to Python 2).  Then re-compile your catkin workspace with `catkin build`.
 
+* Check the return value of `LoadRobot`.
+    ```python
+    r = cisstRobotPython.robManipulator()
+    result = r.LoadRobot('/home/cstar/catkin_ws/src/cisst-saw/sawIntuitiveResearchKit/share/deprecated/dvpsm.rob')
+    # result should be 0 if successfully loaded
+    # one can also make sure the number of links is correct
+    print(r.links.size())
+    ```
+
 * To modify the base frame, assign a 4x4 matrix to `r.Rtw0`
 
 * To add a tool tip transform, create a dummy manipulator and attach it to the existing manipulator:
@@ -45,4 +54,12 @@ python3 example.py
     k2 = l2.GetKinematics()
     k2offset = k2.PositionOffset()
     k2.SetPositionOffset(k2offset + some_noise)
+    ```
+
+* Calculating the Jacobian:
+    ```python
+    jp = np.zeros(6) # joint angles
+    J_body = np.zeros(shape=(6,6), dtype=np.double) # placeholder
+    r.JacobianBody(jp, J_body)
+    print(J_body)
     ```
