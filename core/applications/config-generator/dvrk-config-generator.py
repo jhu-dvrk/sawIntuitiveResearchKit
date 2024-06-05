@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 
+# Author(s):  Brendan Burkhart, Anton Deguet
+#
+# (C) Copyright 2023-2024 Johns Hopkins University (JHU), All Rights Reserved.
+#
+# --- begin cisst license - do not edit ---
+#
+# This software is provided "as is" under an open source license, with
+# no warranty.  The complete license can be found in license.txt and
+# http://www.cisst.org/cisst/license.txt.
+#
+# --- end cisst license ---
+
 import argparse
 import os
 import datetime
@@ -1225,6 +1237,7 @@ def generateArmConfig(robotTypeName, hardwareVersion, serialNumber, generation):
         kinematic += '-si'
     kinematic += '.json"\n'
 
+    mounting_pitch = 0.0
     with open(fileName, "w") as f:
         f.write('{\n')
         f.write('    // see https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Configuration-File-Formats\n')
@@ -1234,13 +1247,25 @@ def generateArmConfig(robotTypeName, hardwareVersion, serialNumber, generation):
             f.write('    // , "tool-detection": "MANUAL"\n')
             f.write('    // , "tool-detection": "FIXED"\n')
             f.write('    , "tool-detection": "AUTOMATIC"\n')
+            if generation == 'Si':
+                if robotTypeName == 'PSM3':
+                    mounting_pitch = -15.0
+                else:
+                    mounting_pitch = -45
         elif robotTypeName.startswith("ECM"):
-            f.write('    // , "endoscope": "SD_STRAIGHT"\n')
-            f.write('    // , "endoscope": "SD_UP"\n')
-            f.write('    // , "endoscope": "SD_DOWN"\n')
-            f.write('    , "endoscope": "HD_STRAIGHT"\n')
+            f.write('    // , "endoscope": "Classic_SD_STRAIGHT"\n')
+            f.write('    // , "endoscope": "Classic_SD_UP"\n')
+            f.write('    // , "endoscope": "Classic_SD_DOWN"\n')
+            if generation == "Si":
+                f.write('    , "endoscope": "Si_HD_STRAIGHT" // or UP or DOWN\n')
+                mounting_pitch = -70.0
+            else:
+                f.write('    , "endoscope": "Classic_HD_STRAIGHT" // or UP or DOWN\n')
+                mounting_pitch = -45
         elif robotTypeName.startswith("MTM"):
             f.write('    // , "gravity-compensation": "gc-' + robotTypeName + '-' + serialNumber + '.json"\n')
+        if mounting_pitch != 0.0:
+            f.write(f'    // , "mounting_pitch": {(mounting_pitch * math.pi / 180.0):.5f} // {mounting_pitch} for {generation} {robotTypeName} on SUJ\n')
         f.write("}\n")
 
     print('Generated arm config file {}'.format(fileName))
