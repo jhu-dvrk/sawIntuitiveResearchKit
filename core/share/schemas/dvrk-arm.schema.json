@@ -23,8 +23,8 @@
             "default": false
         },
 
-	"gravity-tilt": {
-            "description": "Angle representing how tilted the arm is.  This number is in radians.  This is used to figure out the direction of gravity depending on how the arm is mounted.  For example, the Classic ECM, when mounted on the SUJ is tilted by -45.0 degrees.  For the Si system, PSM1 and PSM2 are tilted 45 degrees down (-45.0) and the ECM is tilted 70 degrees down.  This parameter is NOT used for MTMs as we assume they are always straight.  It is not used on the Classic PSMs since we don't compute any gravity compensation for these arms.",
+	"mounting-pitch": {
+            "description": "Angle representing how pitched the arm is when mounted.  This number is in radians.  This is used to figure out the direction of gravity depending on how the arm is mounted.  For example, the Classic ECM, when mounted on the SUJ is pitched by -45.0 degrees.  For the Si system, PSM1 and PSM2 are pitched 45 degrees down (-45.0) and the ECM is pitched 70 degrees down.  This parameter is NOT used for MTMs as we assume they are always straight.  It is not used on the Classic PSMs since we don't compute any gravity compensation for these arms.",
             "type": "number",
             "default": 0.0
 	},
