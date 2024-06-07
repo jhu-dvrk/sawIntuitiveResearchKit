@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package>
+<package format="3">
   <name>dvrk_config</name>
   <version>2.2.1</version>
   <description>dVRK config files</description>
@@ -9,8 +9,10 @@
   <license>cisst</license>
   <url>https://github.com/jhu-saw/sawIntuitiveResearchKit</url>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
 
   <export>
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
   </export>
 </package>
