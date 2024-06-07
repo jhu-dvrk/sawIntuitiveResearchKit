@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2019-11-11
 
-  (C) Copyright 2019-2020 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2019-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -113,7 +113,7 @@ void robManipulatorTest::SetupTestData(ManipulatorTestData & data,
 {
     // find the file
     cmnPath path;
-    path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/kinematic", cmnPath::TAIL);
+    path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR) + "/kinematic", cmnPath::TAIL);
     const std::string configFile = path.Find(filename);
     CPPUNIT_ASSERT_MESSAGE("Can't find full path for " + filename,
                            configFile != std::string(""));

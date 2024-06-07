@@ -179,9 +179,9 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         // construct path using working directory and share/arm
         cmnPath path(cmnPath::GetWorkingDirectory());
         // find the file in tool
-        path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
+        path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR) + "/tool", cmnPath::TAIL);
         // find file if specified as share/<system>/...
-        path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
+        path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR), cmnPath::TAIL);
         // finally, default installation directory
         path.Add(mtsIntuitiveResearchKit::DefaultInstallationDirectory + "/tool", cmnPath::TAIL);
 
