@@ -100,18 +100,18 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
         exit(EXIT_FAILURE);
     }
 
-    // ask to set tilt if not already defined
-    if (m_gravity_tilt > std::numeric_limits<double>::max()) {
+    // ask to set pitch if not already defined
+    if (m_mounting_pitch > std::numeric_limits<double>::max()) {
         if (generation() == GENERATION_Classic) {
-            m_gravity_tilt = -45.0 * cmnPI_180;
+            m_mounting_pitch = -45.0 * cmnPI_180;
         } else {
-            m_gravity_tilt = -70.0 * cmnPI_180;
+            m_mounting_pitch = -70.0 * cmnPI_180;
         }
         CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName() << std::endl
-                                 << "\"gravity-tilt\" was not defined in \"" << filename << "\"" << std::endl
+                                 << "\"mounting-pitch\" was not defined in \"" << filename << "\"" << std::endl
                                  << "If your ECM is mounted on the SUJ you should likely add it using: "
-                                 << " \"gravity-tilt\": " << std::to_string(m_gravity_tilt)
-                                 << " // " << std::to_string(m_gravity_tilt * cmn180_PI) << " degrees" << std::endl;
+                                 << " \"mounting-pitch\": " << std::to_string(m_mounting_pitch)
+                                 << " // " << std::to_string(m_mounting_pitch * cmn180_PI) << " degrees" << std::endl;
         exit(EXIT_FAILURE);
     }
 }
@@ -344,7 +344,7 @@ void mtsIntuitiveResearchKitECM::update_feed_forward(vctDoubleVec & feedForward)
 void mtsIntuitiveResearchKitECM::gravity_compensation(vctDoubleVec & efforts)
 {
     vctDoubleVec qd(this->number_of_joints_kinematics(), 0.0);
-    vct3 vg(0.0, sin(m_gravity_tilt) * 9.81, cos(m_gravity_tilt) * 9.81);
+    vct3 vg(0.0, sin(m_mounting_pitch) * 9.81, cos(m_mounting_pitch) * 9.81);
     efforts.ForceAssign(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, vg));
 }
 
