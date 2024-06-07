@@ -25,6 +25,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #define sawIntuitiveResearchKit_SOURCE_DIR "@sawIntuitiveResearchKit_SOURCE_DIR@"
 
+#define sawIntuitiveResearchKit_SOURCE_CONFIG_DIR "@sawIntuitiveResearchKit_SOURCE_CONFIG_DIR@"
+
 #cmakedefine01 sawIntuitiveResearchKit_HAS_SUJ_Si
 
 #cmakedefine01 sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR

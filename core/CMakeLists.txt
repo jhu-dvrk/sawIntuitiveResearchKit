@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2009-2023 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2024 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -23,13 +23,10 @@ add_subdirectory (components)
 set (sawIntuitiveResearchKit_DIR "${sawIntuitiveResearchKitCore_BINARY_DIR}/components")
 add_subdirectory (applications)
 add_subdirectory (examples)
-add_subdirectory (share)
 
 include (CPack)
 cpack_add_component (sawIntuitiveResearchKit)
 cpack_add_component (sawIntuitiveResearchKit-dev
-                     DEPENDS sawIntuitiveResearchKit)
-cpack_add_component (sawIntuitiveResearchKit-Share
                      DEPENDS sawIntuitiveResearchKit)
 cpack_add_component (sawIntuitiveResearchKit-Qt
                      DEPENDS sawIntuitiveResearchKit)

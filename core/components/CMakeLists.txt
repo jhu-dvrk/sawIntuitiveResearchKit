@@ -138,6 +138,7 @@ if (cisst_FOUND)
     cisst_add_config_files (sawIntuitiveResearchKit)
 
     # Generate sawIntuitiveResearchKitConfig.h
+    set (sawIntuitiveResearchKit_SOURCE_CONFIG_DIR "${sawIntuitiveResearchKit_SOURCE_DIR}/../../share")
     configure_file ("${sawIntuitiveResearchKit_SOURCE_DIR}/code/sawIntuitiveResearchKitConfig.h.in"
                     "${sawIntuitiveResearchKit_BINARY_DIR}/include/sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h")
 

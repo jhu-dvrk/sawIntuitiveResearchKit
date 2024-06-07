@@ -714,7 +714,7 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     // add path to source/share directory to find common files.  This
     // will work as long as this component is located in the same
     // parent directory as the "shared" directory.
-    m_config_path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
+    m_config_path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR), cmnPath::TAIL);
     // default installation directory
     m_config_path.Add(mtsIntuitiveResearchKit::DefaultInstallationDirectory, cmnPath::TAIL);
 
@@ -1514,9 +1514,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
     arm_pointer->m_config_path = m_config_path;
     jsonValue = jsonArm["system"];
     if (!jsonValue.empty()) {
-        arm_pointer->m_config_path.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR)
-                                       + "/../share/"
-                                       + jsonValue.asString() + "/",
+        arm_pointer->m_config_path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR)
+                                       + "/" + jsonValue.asString() + "/",
                                        cmnPath::TAIL);
     }
 

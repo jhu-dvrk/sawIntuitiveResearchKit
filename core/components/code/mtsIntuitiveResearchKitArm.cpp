@@ -609,9 +609,9 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         // for user files first
         configPath.Add(configDir, cmnPath::TAIL);
         // for standard files using io/xyz.json, arm/xyz.json
-        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share", cmnPath::TAIL);
+        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR), cmnPath::TAIL);
         // for tool definition files
-        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_DIR) + "/../share/tool", cmnPath::TAIL);
+        configPath.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR) + "/tool", cmnPath::TAIL);
 
         // arm specific configuration
         PreConfigure(jsonConfig, configPath, filename);
