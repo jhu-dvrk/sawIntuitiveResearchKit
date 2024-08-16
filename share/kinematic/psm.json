@@ -9,7 +9,7 @@
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
-                "offset":  1.5708,
+                "offset":  1.5708, // "D" + 90
                 "qmin": -1.588, // -91
                 "qmax":  1.588, //  91
                 "ftmax": 3.316101
