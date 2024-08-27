@@ -54,6 +54,7 @@ public:
                                                mtsInterfaceProvided * interfaceMessage):
         m_MAC(arduinoMAC),
         m_name(name),
+        m_timestamp(0),
         m_interface_message(interfaceMessage)
     {
         gattlib_string_to_uuid(ATTRIB_POTS, strlen(ATTRIB_POTS) + 1, &m_g_uuid);
@@ -105,6 +106,8 @@ public:
         if (ret == GATTLIB_SUCCESS) {
             // fill last 4 elements from dESSJ over BLE
             m_json_reader.parse(std::string(buffer, len), m_json_value);
+            Json::Value jsonStamp = m_json_value["timestamp"];
+            m_timestamp = jsonStamp.asUInt();
             Json::Value jsonPots = m_json_value["pots"];
             cmnDataJSON<vctDoubleMat>::DeSerializeText(m_raw_pots, jsonPots);
             gattlib_characteristic_free_value(buffer);
@@ -118,6 +121,7 @@ public:
     // arduino/gatt
     std::string m_MAC;
     std::string m_name;
+    size_t m_timestamp;
     bool m_fault = false;
     bool m_connected = false;
     gatt_connection_t * m_connection = nullptr;
@@ -780,7 +784,7 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
             if (sarm->update_raw_pots()) {
 
                 // first joint comes from base arduino
-                if (m_base_arduino && m_base_arduino->m_connected) {
+                if (m_base_arduino) {
                     sarm->m_voltages[0].at(0) = m_base_arduino->m_raw_pots.Row(0).at(sarm->m_base_arduino_pot_index);
                     sarm->m_voltages[1].at(0) = m_base_arduino->m_raw_pots.Row(1).at(sarm->m_base_arduino_pot_index);
                 }
