@@ -445,7 +445,7 @@ class SiPSM(Robot):
             (self.boardIDs[0], 1, "SUJClutch2", 0.01),
             (self.boardIDs[0], 4, "SUJClutch", 0.01),
             (self.boardIDs[0], 9, "Tool", 1.5),
-            (self.boardIDs[0], 10, "Adapter", 0.5),
+            (self.boardIDs[0], 10, "Adapter", 1.6), # At least as high as tool so adapter is not detected before tool
             (self.boardIDs[0], 13, "ManipClutch", 0.01),
         ]
 
