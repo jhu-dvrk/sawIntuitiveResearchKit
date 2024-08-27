@@ -374,7 +374,7 @@ class SiPSM(Robot):
         self.actuatorType = lambda index: "Revolute" if index != 2 else "Prismatic"
         self.potentiometerUnits = lambda index: "deg" if index != 2 else "mm"
         self.potentiometerLatency = lambda index: 0.01
-        self.potentiometerDistance = lambda index: 1.0
+        self.potentiometerDistance =  lambda index: [1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 3.0][index]
 
         # # 2^13/10^3 or 2^11/10^3
         i_high = 65536 / 4800 / 2
