@@ -1,0 +1,23 @@
+<package>
+  <name>saw_intuitive_research_kit_tests</name>
+  <version>2.3.0</version>
+  <description>
+  sawIntuitiveResearchKit Tests
+  </description>
+  <maintainer email="anton.deguet@jhu.edu">Anton Deguet</maintainer>
+  <license>cisst</license>
+  <url>https://github.com/jhu-saw/sawIntuitiveResearchKit</url>
+
+  <build_depend>cisst_netlib</build_depend>
+  <build_depend>cisst</build_depend>
+  <build_depend>saw_intuitive_research_kit</build_depend>
+
+  <run_depend>cisst_netlib</run_depend>
+  <run_depend>cisst</run_depend>
+  <run_depend>saw_intuitive_research_kit</run_depend>
+
+  <export>
+    <build_type>catkin</build_type>
+  </export>
+
+</package>

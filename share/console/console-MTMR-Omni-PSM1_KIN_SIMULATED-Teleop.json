@@ -40,7 +40,14 @@
             "name": "PSM1",
             "type": "PSM",
             "simulation": "KINEMATIC",
-            "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json"
+            "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
+            "base-frame":  {
+                "reference-frame": "Omni",
+                "transform": [[ -1.0,  0.0,  0.0,  0.0],
+                              [  0.0,  0.0,  1.0,  0.0 ],
+                              [  0.0,  1.0,  0.0,  0.0 ],
+                              [  0.0,  0.0,  0.0,  1.0 ]]
+            }
         }
     ]
     ,
@@ -51,10 +58,7 @@
             "psm": "PSM1",
             "configure-parameter": {
                 "ignore-jaw": true,
-                "align-mtm": false,
-                "rotation" : [[ 0.0000, -1.0000,  0.0000],
-                              [ 1.0000,  0.0000,  0.0000],
-                              [ 0.0000,  0.0000,  1.0000]]
+                "align-mtm": false
             }
         }
     ]

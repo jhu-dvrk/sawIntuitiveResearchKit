@@ -1,0 +1,59 @@
+inline-header {
+// Always include last
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+}
+
+class {
+    name mtsIntuitiveResearchKitEndoscopeTypes;
+    attribute CISST_EXPORT;
+
+    enum {
+        name Type;
+        prefix SCOPE_;
+        enum-value {
+            name ERROR;
+            description Error;
+            value 0;
+        }
+        enum-value {
+            name NONE;
+            description No endoscope (zero weight);
+        }
+        enum-value {
+            name Classic_SD_STRAIGHT;
+            description Classic SD Straight;
+        }
+        enum-value {
+            name Classic_SD_UP;
+            description Classic SD Up;
+        }
+        enum-value {
+            name Classic_SD_DOWN;
+            description Classic SD Down;
+        }
+        enum-value {
+            name Classic_HD_STRAIGHT;
+            description Classic HD Straight;
+        }
+        enum-value {
+            name Classic_HD_UP;
+            description Classic HD Up;
+        }
+        enum-value {
+            name Classic_HD_DOWN;
+            description Classic HD Down;
+        }
+        enum-value {
+            name Si_HD_STRAIGHT;
+            description Si HD Straight;
+        }
+        enum-value {
+            name Si_HD_UP;
+            description Si HD Up;
+        }
+        enum-value {
+            name Si_HD_DOWN;
+            description Si HD Down;
+        }
+    }
+}

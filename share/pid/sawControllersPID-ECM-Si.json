@@ -2,8 +2,8 @@
     "pid": [
 	{
 	    "index": 0,
-	    "name": "outer_yaw",
-	    "type": 2,
+	    "name": "yaw",
+	    "type": "REVOLUTE",
 	    "p_gain": 600.0,
 	    "d_gain": 30.0,
 	    "i_gain": 0.0,
@@ -14,8 +14,8 @@
 	,
 	{
 	    "index": 1,
-	    "name": "outer_pitch",
-	    "type": 2,
+	    "name": "pitch",
+	    "type": "REVOLUTE",
 	    "p_gain": 600.0,
 	    "d_gain": 30.0,
 	    "i_gain": 0.0,
@@ -26,8 +26,8 @@
 	,
 	{
 	    "index": 2,
-	    "name": "outer_insertion",
-	    "type": 1,
+	    "name": "insertion",
+	    "type": "PRISMATIC",
 	    "p_gain": 15000.0,
 	    "d_gain": 500.0,
 	    "i_gain": 0.0
@@ -35,8 +35,8 @@
 	,
 	{
 	    "index": 3,
-	    "name": "outer_roll",
-	    "type": 2,
+	    "name": "roll",
+	    "type": "REVOLUTE",
 	    "p_gain": 100.0,
 	    "d_gain": 3.0,
 	    "i_gain": 0.0

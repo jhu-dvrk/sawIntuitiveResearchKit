@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>dvrk_robot</name>
+  <version>2.3.0</version>
+  <description>The dvrk_robot package</description>
+  <maintainer email="anton.deguet@jhu.edu">Anton Deguet</maintainer>
+  <license>cisst</license>
+
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+
+  <build_depend condition="$ROS_VERSION == 1">saw_intuitive_research_kit</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">cisst_ros_crtk</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">roscpp</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">roslib</build_depend>
+
+  <exec_depend condition="$ROS_VERSION == 1">saw_intuitive_research_kit</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">cisst_ros_crtk</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">roscpp</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">roslib</exec_depend>
+
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+  <depend condition="$ROS_VERSION == 2">rclcpp</depend>
+  <depend condition="$ROS_VERSION == 2">cisst_ros2_crtk</depend>
+
+  <export>
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
+  </export>
+
+</package>

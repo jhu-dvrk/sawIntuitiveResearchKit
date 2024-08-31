@@ -7,8 +7,8 @@
     "DH": {
         "convention": "modified",
         "joints": [
-            {
-                "name": "outer_yaw",
+            { // 1
+                "name": "yaw",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -17,8 +17,8 @@
                 "qmax":  2.964,
                 "ftmax": 17.0845 // maxA / Nm_to_A from sawRobotIO
             },
-            {
-                "name": "outer_pitch",
+            { // 2 
+                "name": "pitch",
                 "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -27,15 +27,22 @@
                 "qmax":  1.301,
                 "ftmax": 17.0845 // maxA / Nm_to_A from sawRobotIO
             },
-            {
-                "name": "outer_insertion",
+            { // 3
+                "name": "insertion",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "prismatic",
                 "mode": "active",
                 "offset": -0.4826, // based on Classic -0.4318 + offset estimated from instrument shaft lenght difference
                 "qmin": 0.0,
                 "qmax": 0.29,  // 290 mm
-                "ftmax": 40.9063 // maxA / Nm_to_A from sawRobotIO
+                "ftmax": 40.9063, // maxA / Nm_to_A from sawRobotIO
+                "mass": 0.1, // about 100 grams
+                "cx":   0.0000, "cy":   0.0000, "cz":  -0.0100, // approximative position of endoscope center of gravity
+                "Ixx":  0.0001, "Iyy":  0.0001, "Izz":  0.0001,
+                "x1":   1.0000, "x2":   0.0000, "x3":   0.0000,
+                "y1":   0.0000, "y2":   1.0000, "y3":   0.0000,
+                "z1":   0.0000, "z2":   0.0000, "z3":   1.0000
+
             }
         ]
     }

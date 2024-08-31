@@ -2,5 +2,6 @@
 {
     "kinematic": "kinematic/ecm-si.json",
     "generation": "Si",
-    "endoscope": "SD_STRAIGHT"
+    "mounting-pitch": -1.221730, // -70.0 degrees
+    "endoscope": "Classic_SD_STRAIGHT"
 }
