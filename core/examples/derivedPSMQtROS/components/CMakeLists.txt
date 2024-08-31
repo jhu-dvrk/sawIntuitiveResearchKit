@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2011-2023 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2011-2024 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -10,21 +10,17 @@
 # --- end cisst license ---
 
 cmake_minimum_required(VERSION 3.10)
-project (saw_intuitive_research_kit_example_psm_derived VERSION 2.2.1)
-
-set (CMAKE_CXX_STANDARD 14)
-set (CMAKE_CXX_STANDARD_REQUIRED ON)
-set (CMAKE_CXX_EXTENSIONS OFF)
+project (saw_intuitive_research_kit_example_psm_derived VERSION 2.3.0)
 
 set (REQUIRED_CISST_LIBRARIES
-     cisstCommon
-     cisstVector
-     cisstOSAbstraction
-     cisstMultiTask
-     cisstParameterTypes
-     cisstRobot
-     cisstNumerical
-     cisstQt)
+  cisstCommon
+  cisstVector
+  cisstOSAbstraction
+  cisstMultiTask
+  cisstParameterTypes
+  cisstRobot
+  cisstNumerical
+  cisstQt)
 
 find_package (catkin REQUIRED
               COMPONENTS
@@ -47,7 +43,7 @@ if (cisst_FOUND)
 
   # sawIntuitiveResearchKit has been compiled within cisst, we should
   # find it automatically
-  find_package(sawIntuitiveResearchKit 2.2.0 REQUIRED)
+  find_package(sawIntuitiveResearchKit 2.3.0 REQUIRED)
 
   if (sawIntuitiveResearchKit_FOUND)
 

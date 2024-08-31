@@ -101,21 +101,21 @@ bool mtsToolList::Load(const cmnPath & path,
                 if (description->generation != "Classic") {
                     CMN_LOG_CLASS_INIT_WARNING  << "ToolList::Load: issue found in file \""
                                                 << fullFilename << "\": tool model \"" << description->model
-                                                << "\" starts with 40 so it's generation should be \"Classic\", not \""
+                                                << "\" starts with 40 so its generation should be \"Classic\", not \""
                                                 << description->generation << "\"" << std::endl;
                 }
             } else if (description->model.substr(0, 2) == "42") {
                 if (description->generation != "S") {
                     CMN_LOG_CLASS_INIT_WARNING  << "ToolList::Load: issue found in file \""
                                                 << fullFilename << "\": tool model \"" << description->model
-                                                << "\" starts with 42 so it's generation should be \"S\", not \""
+                                                << "\" starts with 42 so its generation should be \"S\", not \""
                                                 << description->generation << "\"" << std::endl;
                 }
             } else if (description->model.substr(0, 2) == "41") {
                 if (description->generation != "Si") {
                     CMN_LOG_CLASS_INIT_WARNING  << "ToolList::Load: issue found in file \""
                                                 << fullFilename << "\": tool model \"" << description->model
-                                                << "\" starts with 41 so it's generation should be \"Si\", not \""
+                                                << "\" starts with 41 so its generation should be \"Si\", not \""
                                                 << description->generation << "\"" << std::endl;
                 }
             }

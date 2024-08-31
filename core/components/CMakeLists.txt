@@ -10,19 +10,19 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (sawIntuitiveResearchKit VERSION 2.2.1)
+project (sawIntuitiveResearchKit VERSION 2.3.0)
 
 set (REQUIRED_CISST_LIBRARIES
-     cisstCommon
-     cisstCommonXML
-     cisstVector
-     cisstOSAbstraction
-     cisstMultiTask
-     cisstParameterTypes
-     cisstRobot
-     cisstNumerical)
+  cisstCommon
+  cisstCommonXML
+  cisstVector
+  cisstOSAbstraction
+  cisstMultiTask
+  cisstParameterTypes
+  cisstRobot
+  cisstNumerical)
 
-find_package (cisst 1.2.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.3.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND)
 
@@ -39,8 +39,8 @@ if (cisst_FOUND)
 
   # saw components have been compiled within cisst, we should find them automatically
   find_package (sawTextToSpeech         1.4.0 REQUIRED)
-  find_package (sawRobotIO1394          2.2.0 REQUIRED)
-  find_package (sawControllers          2.1.0 REQUIRED)
+  find_package (sawRobotIO1394          2.3.0 REQUIRED)
+  find_package (sawControllers          2.2.0 REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND)
 

@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -10,20 +10,20 @@
 # --- end cisst license ---
 
 set (REQUIRED_CISST_LIBRARIES
-     cisstCommon
-     cisstCommonXML
-     cisstVector
-     cisstVectorQt
-     cisstNumerical
-     cisstOSAbstraction
-     cisstMultiTask
-     cisstMultiTaskQt
-     cisstParameterTypes
-     cisstParameterTypesQt
-     cisstQt)
+  cisstCommon
+  cisstCommonXML
+  cisstVector
+  cisstVectorQt
+  cisstNumerical
+  cisstOSAbstraction
+  cisstMultiTask
+  cisstMultiTaskQt
+  cisstParameterTypes
+  cisstParameterTypesQt
+  cisstQt)
 
 # cisst
-find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.3.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -32,25 +32,9 @@ if (cisst_FOUND_AS_REQUIRED)
 
   # for Qt generated header files
   include_directories (${CMAKE_CURRENT_BINARY_DIR})
-  if (CISST_HAS_QT4)
-    qt4_wrap_cpp (sawIntuitiveResearchKit_QT_WRAP_CPP
-                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h
-                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArmQtWidget.h
-                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitECMMQtWidget.h
-                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSMQtWidget.h
-                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJQtWidget.h
-                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECMQtWidget.h
-                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationMTMQtWidget.h
-                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h
-                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciEndoscopeFocusQtWidget.h
-                  ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBaseQtWidget.h)
-    qt4_add_resources (sawIntuitiveResearchKit_QT_RESOURCES
-                       ${CMAKE_CURRENT_SOURCE_DIR}/logo.qrc)
-  else (CISST_HAS_QT4)
-    set (CMAKE_AUTOMOC ON)
-    qt5_add_resources (sawIntuitiveResearchKit_QT_RESOURCES
-                       ${CMAKE_CURRENT_SOURCE_DIR}/logo.qrc)
-  endif (CISST_HAS_QT4)
+  set (CMAKE_AUTOMOC ON)
+  qt5_add_resources (sawIntuitiveResearchKit_QT_RESOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/logo.qrc)
 
   add_library (sawIntuitiveResearchKitQt
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQt.h

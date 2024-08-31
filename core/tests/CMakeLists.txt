@@ -12,21 +12,18 @@
 # --- end cisst license ---
 
 cmake_minimum_required(VERSION 3.10)
-project (sawIntuitiveResearchKitTests VERSION 2.2.1)
-
-set (CMAKE_CXX_STANDARD 14)
-set (CMAKE_CXX_STANDARD_REQUIRED ON)
-set (CMAKE_CXX_EXTENSIONS OFF)
+project (sawIntuitiveResearchKitTests VERSION 2.3.0)
 
 # create a list of required cisst libraries
-set (REQUIRED_CISST_LIBRARIES cisstCommon
-                              cisstVector
-                              cisstNumerical
-                              cisstOSAbstraction
-                              cisstMultiTask
-                              cisstParameterTypes
-                              cisstRobot
-                              cisstTestsDriver)
+set (REQUIRED_CISST_LIBRARIES
+  cisstCommon
+  cisstVector
+  cisstNumerical
+  cisstOSAbstraction
+  cisstMultiTask
+  cisstParameterTypes
+  cisstRobot
+  cisstTestsDriver)
 
 # find cisst and make sure the required libraries have been compiled
 find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})

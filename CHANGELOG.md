@@ -1,6 +1,29 @@
 Change log
 ==========
 
+2.3.0 (2024-08-30)
+==================
+
+* API changes:
+  * Supports firmware 9
+  * Reorganized files so C++ based ROS nodes are included in this repository and can be compiled for both ROS1 and ROS2. `components` and `examples` are now under `core`.  The directory `ros` contains all the ROS dependent applications (i.e. `dvrk_robot`, `dvrk_arms_from_ros`, `dvrk_hrsv_widget`)
+  * The old `dvrk-ros` repository, specific to ROS1 has been spit in multiple repositories: `dvrk_python`, `dvrk_video`, `dvrk_model`...  All the new repositories are compatible with ROS1 and ROS2
+* Deprecated features:
+  * None
+* New features:
+  * Support for Goovis HMD (https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Goovis)
+  * Control Si LEDs
+  * Basic gravity compensation for ECM Si (only applies to endoscope weight)
+  * PID files use strings for joint types
+  * Shared files:
+    * Added instruments 400230, 410298, 420230 and 420327
+  * New consoles simulated for surgeon console and patient cart (Classic and Si)
+* Bug fixes:
+  * Faster jaw velocity in teleoperation
+  * #203 coupling matrix for `FIXED` instrument type
+  * SUJSi can be used without all 5 dESSJ (bluetooth)
+
+
 2.2.1 (2023-12-29)
 ==================
 

@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.10)
-project (dvrk_hrsv_widget VERSION 2.2.1)
+project (dvrk_hrsv_widget VERSION 2.3.0)
 
 # first test for ROS1
 set (ROS1_depends roscpp std_msgs diagnostic_msgs sensor_msgs)

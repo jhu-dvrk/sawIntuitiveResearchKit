@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2009-2023 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2024 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -10,11 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (sawIntuitiveResearchKitApplications VERSION 2.2.1)
-
-set (CMAKE_CXX_STANDARD 14)
-set (CMAKE_CXX_STANDARD_REQUIRED ON)
-set (CMAKE_CXX_EXTENSIONS OFF)
+project (sawIntuitiveResearchKitApplications VERSION 2.3.0)
 
 project (sawIntuitiveResearchKitApplications)
 
@@ -26,22 +22,23 @@ add_subdirectory (sd-card-updater)
 add_subdirectory (remove-logs)
 
 # create a list of required cisst libraries
-set (REQUIRED_CISST_LIBRARIES cisstCommon
-                              cisstCommonXML
-                              cisstCommonQt
-                              cisstVector
-                              cisstVectorQt
-                              cisstNumerical
-                              cisstRobot
-                              cisstOSAbstraction
-                              cisstMultiTask
-                              cisstMultiTaskQt
-                              cisstParameterTypes
-                              cisstParameterTypesQt
-                              cisstQt)
+set (REQUIRED_CISST_LIBRARIES
+  cisstCommon
+  cisstCommonXML
+  cisstCommonQt
+  cisstVector
+  cisstVectorQt
+  cisstNumerical
+  cisstRobot
+  cisstOSAbstraction
+  cisstMultiTask
+  cisstMultiTaskQt
+  cisstParameterTypes
+  cisstParameterTypesQt
+  cisstQt)
 
 # find cisst and make sure the required libraries have been compiled
-find_package (cisst 1.2.1 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.3.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -55,9 +52,9 @@ if (cisst_FOUND_AS_REQUIRED)
   endif ()
 
   # saw components have been compiled within cisst, we should find them automatically
-  find_package (sawRobotIO1394          2.2.1 REQUIRED)
-  find_package (sawControllers          2.1.0 REQUIRED)
-  find_package (sawIntuitiveResearchKit 2.2.1 REQUIRED)
+  find_package (sawRobotIO1394          2.3.0 REQUIRED)
+  find_package (sawControllers          2.2.0 REQUIRED)
+  find_package (sawIntuitiveResearchKit 2.3.0 REQUIRED)
   find_package (sawTextToSpeech         1.4.0 REQUIRED)
 
   if (sawRobotIO1394_FOUND AND sawControllers_FOUND

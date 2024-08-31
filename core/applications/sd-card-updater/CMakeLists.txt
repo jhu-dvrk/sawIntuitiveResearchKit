@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2023 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2023-2024 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -10,10 +10,10 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (sawIntuitiveResearchKitSDCardUpdater VERSION 2.2.1)
+project (sawIntuitiveResearchKitSDCardUpdater VERSION 2.3.0)
 
 # find cisst and make sure the required libraries have been compiled
-find_package (cisst 1.2.1 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.3.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
