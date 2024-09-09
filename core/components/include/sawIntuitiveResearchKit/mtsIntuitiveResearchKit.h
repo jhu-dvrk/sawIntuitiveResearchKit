@@ -19,6 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsIntuitiveResearchKit_h
 #define _mtsIntuitiveResearchKit_h
 
+#include <cstdint>
 #include <cisstCommon/cmnUnits.h>
 #include <cisstCommon/cmnConstants.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>

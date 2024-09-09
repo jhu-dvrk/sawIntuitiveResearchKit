@@ -19,6 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 // system
 #include <iostream>
 #include <limits>
+#include <memory>
 
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
