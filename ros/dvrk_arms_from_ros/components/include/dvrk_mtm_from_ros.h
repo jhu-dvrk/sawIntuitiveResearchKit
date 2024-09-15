@@ -16,30 +16,29 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef _dvrk_arm_from_ros_h
-#define _dvrk_arm_from_ros_h
+#ifndef _dvrk_mtm_from_ros_h
+#define _dvrk_mtm_from_ros_h
 
-#include <cisst_ros_crtk/mts_ros_crtk_bridge_required.h>
+#include <dvrk_arm_from_ros.h>
 
-class dvrk_arm_from_ros: public mts_ros_crtk_bridge_required
+class dvrk_mtm_from_ros: public dvrk_arm_from_ros
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
     typedef mtsROSBridge BaseType;
 
-    dvrk_arm_from_ros(const std::string & componentName,
+    dvrk_mtm_from_ros(const std::string & componentName,
                       cisst_ral::node_ptr_t _node_handle,
                       const double periodInSeconds);
-    dvrk_arm_from_ros(const mtsTaskPeriodicConstructorArg & arg);
-    ~dvrk_arm_from_ros(){}
+    dvrk_mtm_from_ros(const mtsTaskPeriodicConstructorArg & arg);
+    ~dvrk_mtm_from_ros() {}
 
-    virtual void Init(void);
-    void Configure(const std::string & CMN_UNUSED(filename)) override;
+    void InitMTM(void);
 
 protected:
 };
 
-CMN_DECLARE_SERVICES_INSTANTIATION(dvrk_arm_from_ros);
+CMN_DECLARE_SERVICES_INSTANTIATION(dvrk_mtm_from_ros);
 
-#endif // _dvrk_arm_from_ros_h
+#endif // _dvrk_mtm_from_ros_h
