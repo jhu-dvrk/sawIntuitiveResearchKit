@@ -1,5 +1,0 @@
-/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-{
-    "kinematic": "kinematic/mtmr.json",
-    "gravity-compensation": "gc-MTMR-36370.json"
-}

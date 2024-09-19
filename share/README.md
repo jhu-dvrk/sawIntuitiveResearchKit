@@ -1,22 +1,15 @@
 dVRK configuration files
 ========================
 
-The console class which loads a `console-XYZ.json` file has a search path that include this `share` directory.   You should always use a relative path when using the configuration files from this directory and subdirectories.
+The console class which loads a `console-XYZ.json` file has a search
+path that include this `share` directory.  You should always use a
+relative path when using the configuration files from this directory
+and subdirectories.
 
 # Directories per system
 
-Directories are used to store system specific files.  Directory names start with the institution name
-(e.g. jhu for Johns Hopkins, isi for Intuitive Surgical) and should contain the system name (e.g. JHU has two systems,
-a research kit: `jhu-dVRK`, and a full da Vinci: `jhu-daVinci`).
-
-We strongly encourage each dVRK site to clone this repository, add your system specific configuration files and then
-either issue a pull request or send us (JHU) your configuration files.
-
-Each directory should contain:
-  * your IO configuration files, `sawRobotIO1394-xxxxx.xml`, for each arm identified by its
-number.  You might also want to store the original `.cal` files provided by Intuitive Surgical since they are needed to re-generate the IO XML files.
-  * your arms configuration files
-  * your console configuration files since these refer to your system specific IO configuration files
+Configuration that are specific to each site should be saved using the
+site's repository under https://github.com/dvrk-config
 
 # Shared files
 
