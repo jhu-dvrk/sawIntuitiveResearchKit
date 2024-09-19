@@ -1,0 +1,113 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "component-manager": {
+        "components":
+        [
+            // this is to use the dvrk_{arm,psm,mtm}_from_ros classes
+            {
+                "shared-library": "dvrk_arm_from_ros",
+                "class-name": "dvrk_psm_from_ros",
+                "constructor-arg": {
+                    "Name": "PSM1",
+                    "Period": 0.001
+                }
+            }
+            ,
+            {
+                "shared-library": "dvrk_arm_from_ros",
+                "class-name": "dvrk_psm_from_ros",
+                "constructor-arg": {
+                    "Name": "PSM2",
+                    "Period": 0.001
+                }
+            }
+            ,
+            {
+                "shared-library": "dvrk_arm_from_ros",
+                "class-name": "dvrk_psm_from_ros",
+                "constructor-arg": {
+                    "Name": "PSM3",
+                    "Period": 0.001
+                }
+            }
+            ,
+            {
+                "shared-library": "dvrk_arm_from_ros",
+                "class-name": "dvrk_arm_from_ros",
+                "constructor-arg": {
+                    "Name": "ECM",
+                    "Period": 0.001
+                }
+            }
+            ,
+            {
+                "shared-library": "dvrk_arm_from_ros",
+                "class-name": "dvrk_mtm_from_ros",
+                "constructor-arg": {
+                    "Name": "MTML",
+                    "Period": 0.001
+                }
+            }
+            ,
+            {
+                "shared-library": "dvrk_arm_from_ros",
+                "class-name": "dvrk_mtm_from_ros",
+                "constructor-arg": {
+                    "Name": "MTMR",
+                    "Period": 0.001
+                }
+            }
+        ]
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "PSM1",  // created previously using custom components
+            "type": "PSM_GENERIC",
+            "component": "PSM1",
+            "interface": "PSM1",
+            "skip-ros-bridge": true
+        }
+        ,
+        {
+            "name": "PSM2",  // created previously using custom components
+            "type": "PSM_GENERIC",
+            "component": "PSM2",
+            "interface": "PSM2",
+            "skip-ros-bridge": true
+        }
+        ,
+        {
+            "name": "PSM3",  // created previously using custom components
+            "type": "PSM_GENERIC",
+            "component": "PSM3",
+            "interface": "PSM3",
+            "skip-ros-bridge": true
+        }
+        ,
+        {
+            "name": "ECM",  // created previously using custom components
+            "type": "ECM_GENERIC",
+            "component": "ECM",
+            "interface": "ECM",
+            "skip-ros-bridge": true
+        }
+        ,
+        {
+            "name": "MTML",  // created previously using custom components
+            "type": "MTM_GENERIC",
+            "component": "MTML",
+            "interface": "MTML",
+            "skip-ros-bridge": true
+        }
+        ,
+        {
+            "name": "MTMR",  // created previously using custom components
+            "type": "MTM_GENERIC",
+            "component": "MTMR",
+            "interface": "MTMR",
+            "skip-ros-bridge": true
+        }
+    ]
+}

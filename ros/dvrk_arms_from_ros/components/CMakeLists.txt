@@ -77,8 +77,10 @@ if (cisst_FOUND_AS_REQUIRED)
   add_library (dvrk_arm_from_ros
     include/dvrk_arm_from_ros.h
     include/dvrk_psm_from_ros.h
+    include/dvrk_mtm_from_ros.h
     src/dvrk_arm_from_ros.cpp
-    src/dvrk_psm_from_ros.cpp)
+    src/dvrk_psm_from_ros.cpp
+    src/dvrk_mtm_from_ros.cpp)
 
   # target_link_libraries (
   #  dvrk_arm_from_ros
