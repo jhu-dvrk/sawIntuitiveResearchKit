@@ -1,16 +1,16 @@
+#!/usr/bin/env python3
+
+#
+# Script used to disconnect and reconnect the SUJ Si Arduino BLE
+#
+
 import os
-import sys
 import re
 import json
 import subprocess
 import time
 import argparse
 from argparse import Namespace
-
-dynamic_path = os.path.abspath(__file__+"/../../../../../../")
-# dynamic_path = os.path.abspath(__file__+"/../../")  # Phase 2 folder
-# print(dynamic_path)
-sys.path.append(dynamic_path)
 
 def load_json_dvrk(file_path:str)->dict:
     '''
@@ -42,22 +42,24 @@ def suj_bluetooth_reset(args: Namespace)->None:
     for i_arm in range(num_arms):
         address_list.append(data['arms'][i_arm]['arduino-mac'])
 
-    for i in range(len(address_list)):
-        res_disconnect = subprocess.run(['bluetoothctl', 'disconnect', address_list[i]], capture_output=True, text=True)
+    for addr in address_list:
+        print(f"Disconnecting and reconnecting {addr}, timeout is 30 seconds")
+        res_disconnect = subprocess.run(['bluetoothctl', 'disconnect', addr],
+                                         capture_output = True, text = True,
+                                         timeout = 30)
         print(res_disconnect.stdout)
         time.sleep(1.0)
-        res_connect = subprocess.run(['bluetoothctl', 'connect', address_list[i]], capture_output=True, text=True)
+        res_connect = subprocess.run(['bluetoothctl', 'connect', addr],
+                                      capture_output = True, text = True,
+                                      timeout = 30)
         print(res_connect.stdout)
 
 
 
 if __name__ == '__main__':
-    dvrk_config_folder = os.path.join(dynamic_path, 'dvrk', 'dvrk_config_jhu', 'jhu-daVinci-Si')
-    dvrk_suj_file = os.path.join(dvrk_config_folder, 'suj-si.json')
-
     parser = argparse.ArgumentParser()
-    parser.add_argument('-f', '--file_path', default=dvrk_suj_file,
-                        help='path to dvrk SUJ config file')
+    parser.add_argument('-f', '--file_path', required = True,
+                        help = 'path to dvrk SUJ Si JSON config file')
 
     args = parser.parse_args()
     suj_bluetooth_reset(args)
