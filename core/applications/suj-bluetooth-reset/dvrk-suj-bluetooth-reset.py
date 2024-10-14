@@ -44,15 +44,22 @@ def suj_bluetooth_reset(args: Namespace)->None:
 
     for addr in address_list:
         print(f"Disconnecting and reconnecting {addr}, timeout is 30 seconds")
-        res_disconnect = subprocess.run(['bluetoothctl', 'disconnect', addr],
+        try:
+            res_disconnect = subprocess.run(['bluetoothctl', 'disconnect', addr],
+                                            capture_output = True, text = True,
+                                            timeout = 30)
+            print(res_disconnect.stdout)
+        except subprocess.TimeoutExpired:
+            print('Disconnect failed, timeout')
+
+        time.sleep(1.0)
+        try:
+            res_connect = subprocess.run(['bluetoothctl', 'connect', addr],
                                          capture_output = True, text = True,
                                          timeout = 30)
-        print(res_disconnect.stdout)
-        time.sleep(1.0)
-        res_connect = subprocess.run(['bluetoothctl', 'connect', addr],
-                                      capture_output = True, text = True,
-                                      timeout = 30)
-        print(res_connect.stdout)
+            print(res_connect.stdout)
+        except subprocess.TimeoutExpired:
+            print('Connect failed, timeout')
 
 
 
