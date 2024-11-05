@@ -380,7 +380,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     struct {
         mtsFunctionVoid close_all_relays;
     } IO;
-    bool m_close_all_relays_from_config = false;
+    bool m_close_all_relays_from_config = true;
 
     mtsInterfaceProvided * mInterface = nullptr;
     struct {
