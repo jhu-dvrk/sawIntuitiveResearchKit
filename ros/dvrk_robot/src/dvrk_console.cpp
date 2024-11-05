@@ -137,8 +137,8 @@ dvrk::console::console(const std::string & name,
         events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
             (requiredInterfaceName, "Button",
              footPedalsNameSpace + lowerName);
-        componentManager->Connect(events_bridge().GetName(), requiredInterfaceName,
-                                  input.second.first, input.second.second);
+        m_connections.Add(events_bridge().GetName(), requiredInterfaceName,
+                          input.second.first, input.second.second);
 
     }
 
@@ -473,7 +473,7 @@ void dvrk::console::add_topics_pid(void)
         const auto name = armPair.first;
         const auto arm = *(armPair.second);
         if (arm.expects_PID()) {
-            const auto pid_component_name = name + "-PID";
+            const std::string pid_component_name = name + "-PID";
             bridge_interface_provided(pid_component_name,
                                       "Monitoring",
                                       name + "/pid",
