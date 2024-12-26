@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-07-18
 
-  (C) Copyright 2015-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2024 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -65,31 +65,31 @@ dvrk::console::console(const std::string & name,
 
     // arm topics
     for (auto armPair : m_console->mArms) {
-        auto arm = *(armPair.second);
-        if (!arm.m_skip_ROS_bridge) {
+        auto arm = armPair.second;
+        if (!arm->m_skip_ROS_bridge) {
             const std::string name = armPair.first;
-            if (arm.native_or_derived_mtm()) {
+            if (arm->native_or_derived_mtm()) {
                 bridge_interface_provided_mtm(name, "Arm",
                                               publish_rate_in_seconds, tf_rate_in_seconds);
-            } else if (arm.native_or_derived_ecm()) {
+            } else if (arm->native_or_derived_ecm()) {
                 bridge_interface_provided_ecm(name, "Arm",
                                               publish_rate_in_seconds, tf_rate_in_seconds);
-                if (arm.m_simulation
+                if (arm->m_simulation
                     == mtsIntuitiveResearchKitConsole::Arm::SIMULATION_NONE) {
-                    add_topics_ecm_io(name, arm.m_IO_component_name);
+                    add_topics_ecm_io(name, arm->m_IO_component_name);
                 }
-            } else if (arm.native_or_derived_psm()) {
+            } else if (arm->native_or_derived_psm()) {
                 bridge_interface_provided_psm(name, "Arm",
                                               publish_rate_in_seconds, tf_rate_in_seconds);
-                if (arm.m_simulation
+                if (arm->m_simulation
                     == mtsIntuitiveResearchKitConsole::Arm::SIMULATION_NONE) {
-                    add_topics_psm_io(name, arm.m_IO_component_name);
+                    add_topics_psm_io(name, arm->m_IO_component_name);
                 }
-            } else if (arm.generic()) {
-                bridge_interface_provided(arm.ComponentName(),
-                                          arm.InterfaceName(),
+            } else if (arm->generic()) {
+                bridge_interface_provided(arm->ComponentName(),
+                                          arm->InterfaceName(),
                                           publish_rate_in_seconds, tf_rate_in_seconds);
-            } else if (arm.suj()) {
+            } else if (arm->suj()) {
                 const auto _sujs = std::list<std::string>({"PSM1", "PSM2", "PSM3", "ECM"});
                 for (auto const & _suj : _sujs) {
                     bridge_interface_provided(name,
@@ -471,13 +471,13 @@ void dvrk::console::add_topics_pid(void)
 {
     for (auto armPair : m_console->mArms) {
         const auto name = armPair.first;
-        const auto arm = *(armPair.second);
-        if (arm.expects_PID()) {
+        const auto arm = armPair.second;
+        if (arm->expects_PID()) {
             const std::string pid_component_name = name + "-PID";
             bridge_interface_provided(pid_component_name,
                                       "Monitoring",
                                       name + "/pid",
-                                      m_publish_rate, m_tf_rate);
+                                      m_publish_rate, 0.0 /* disable tf */);
         }
     }
 }

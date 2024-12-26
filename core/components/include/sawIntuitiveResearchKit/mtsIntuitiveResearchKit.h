@@ -24,6 +24,14 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnConstants.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
+#define NOT_COPYABLE(TypeName)                          \
+    TypeName (TypeName const &) = delete;               \
+    TypeName & operator = (TypeName const &) = delete;
+
+#define NOT_MOVEABLE( TypeName )                    \
+    TypeName (TypeName &&) = delete;                \
+    TypeName & operator = (TypeName &&) = delete;
+
 namespace mtsIntuitiveResearchKit {
 
     const std::string DefaultInstallationDirectory = "/usr/share/sawIntuitiveResearchKit/share";
