@@ -1531,6 +1531,8 @@ void mtsIntuitiveResearchKitArm::control_move_jp(void)
 
 void mtsIntuitiveResearchKitArm::control_servo_cp(void)
 {
+    // std::cerr << "-";
+    
     if (m_pid_new_goal) {
         // copy current position
         vctDoubleVec jp(m_kin_measured_js.Position());
@@ -1946,6 +1948,7 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
         update_feed_forward(m_pid_feed_forward_servo_jf.ForceTorque());
 
     }
+    // std::cerr << "---- Arm" << m_pid_feed_forward_servo_jf << std::endl;
     PID.feed_forward_jf(m_pid_feed_forward_servo_jf);
 
     // assign positions and check limits

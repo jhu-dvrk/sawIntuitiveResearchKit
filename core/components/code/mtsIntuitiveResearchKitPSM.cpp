@@ -1212,6 +1212,12 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
         mtsIntuitiveResearchKitArm::servo_jp_internal(jp, jv);
         return;
     }
+
+    if (use_feed_forward()) {
+        update_feed_forward(m_pid_feed_forward_servo_jf.ForceTorque());
+    }
+    PID.feed_forward_jf(m_pid_feed_forward_servo_jf);
+
     CMN_ASSERT(m_servo_jp_param.Goal().size() == 7);
     // first 6 joints, assign positions and check limits
     vctDoubleVec jp_clipped(jp);
