@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2020-2024 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2020-2025 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (dvrk_arms_from_ros VERSION 2.3.0)
+project (dvrk_arms_from_ros VERSION 2.3.1)
 
 
 # first test for ROS1
@@ -59,7 +59,7 @@ set (REQUIRED_CISST_LIBRARIES
   cisstParameterTypes
   )
 
-find_package (cisst 1.3.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.3.1 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -77,8 +77,10 @@ if (cisst_FOUND_AS_REQUIRED)
   add_library (dvrk_arm_from_ros
     include/dvrk_arm_from_ros.h
     include/dvrk_psm_from_ros.h
+    include/dvrk_mtm_from_ros.h
     src/dvrk_arm_from_ros.cpp
-    src/dvrk_psm_from_ros.cpp)
+    src/dvrk_psm_from_ros.cpp
+    src/dvrk_mtm_from_ros.cpp)
 
   # target_link_libraries (
   #  dvrk_arm_from_ros

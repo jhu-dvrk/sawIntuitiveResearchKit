@@ -88,6 +88,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
             const std::string & name,
             const std::string & ioComponentName);
 
+        NOT_COPYABLE(Arm);
+        NOT_MOVEABLE(Arm);
+
         /*! Create a new PID component and connect it to the proper RobotIO
           interface.  If the period in seconds is zero, the PID will be tied to
           IO using the ExecIn/ExecOut interfaces. */
@@ -186,6 +189,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
         TeleopECM(const std::string & name);
 
+        NOT_COPYABLE(TeleopECM);
+        NOT_MOVEABLE(TeleopECM);
+
         /*! Create and configure the robot arm. */
         void ConfigureTeleop(const TeleopECMType type,
                              const double & periodInSeconds,
@@ -211,6 +217,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         TeleopPSM(const std::string & name,
                   const std::string & nameMTM,
                   const std::string & namePSM);
+
+        NOT_COPYABLE(TeleopPSM);
+        NOT_MOVEABLE(TeleopPSM);
 
         /*! Create and configure the robot arm. */
         void ConfigureTeleop(const TeleopPSMType type,
@@ -380,7 +389,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     struct {
         mtsFunctionVoid close_all_relays;
     } IO;
-    bool m_close_all_relays_from_config = false;
+    bool m_close_all_relays_from_config = true;
 
     mtsInterfaceProvided * mInterface = nullptr;
     struct {

@@ -1,6 +1,22 @@
 Change log
 ==========
 
+2.3.1 (2025-01-17)
+==================
+
+* API changes:
+  * The dvrk_console_json will close all the relays for the user. You shouldn't need to use `qlacommand -c close-relays` anymore!  This can be overriden in the console JSON config.
+  * All arms are re-homed and the encoder preload on the controllers are ignored. It's a bit slower but prevents some issues with potentiometer drift. This can be overriden in the console JSON config.
+* Deprecated features:
+  * All site specific directories under `share` have been removed. Repositories with the existing files have been created under https://github.com/orgs/dvrk-config/repositories.  Let Anton know if you need access to your site's repository.
+* New features:
+  * Added more arm_from_ros
+  * Added script to reconnect all bluetooth for SUJ Si
+* Bug fixes:
+  * Added missing include for Ubuntu 24.04
+  * Fixed bug when using -I
+
+
 2.3.0 (2024-08-30)
 ==================
 

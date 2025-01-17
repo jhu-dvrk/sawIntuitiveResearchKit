@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstCommon/cmnGetChar.h>
 #include <cisstCommon/cmnQt.h>
+#include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
 #include <cisstMultiTask/mtsCollectorFactory.h>
 #include <cisstMultiTask/mtsCollectorQtFactory.h>
@@ -210,16 +211,18 @@ int main(int argc, char ** argv)
         consoleROS->Configure(*iter);
     }
 
-    if (options.IsSet("suj-voltages")) {
-        consoleROS->add_topics_suj_voltages();
-    }
-
-    if (options.IsSet("pid-topics")) {
-        consoleROS->add_topics_pid();
-    }
-
     componentManager->AddComponent(consoleROS);
     consoleROS->Connect();
+
+    if (options.IsSet("suj-voltages")) {
+        consoleROS->add_topics_suj_voltages();
+        consoleROS->Connect();
+    }
+    
+    if (options.IsSet("pid-topics")) {
+        consoleROS->add_topics_pid();
+        consoleROS->Connect();
+    }
 
     // custom user component
     if (!componentManager->ConfigureJSON(managerConfig)) {

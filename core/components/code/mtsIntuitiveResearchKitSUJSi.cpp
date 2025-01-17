@@ -784,11 +784,13 @@ void mtsIntuitiveResearchKitSUJSi::get_robot_data(void)
             if (sarm->update_raw_pots()) {
 
                 // first joint comes from base arduino
-                if (m_base_arduino) {
+                if (m_base_arduino && m_base_arduino->m_connected) {
                     sarm->m_voltages[0].at(0) = m_base_arduino->m_raw_pots.Row(0).at(sarm->m_base_arduino_pot_index);
                     sarm->m_voltages[1].at(0) = m_base_arduino->m_raw_pots.Row(1).at(sarm->m_base_arduino_pot_index);
+                } else {
+                    sarm->m_voltages[0].at(0) = 0.0;
+                    sarm->m_voltages[1].at(0) = 0.0;
                 }
-
                 // last 3 to 4 joints come from this arm's arduino
                 size_t joints_to_copy = sarm->m_nb_joints - 1;
                 sarm->m_voltages[0].Ref(joints_to_copy, 1) = sarm->m_raw_pots.Row(0).Ref(joints_to_copy);

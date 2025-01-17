@@ -19,28 +19,29 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisst_ros_crtk/mtsCISSTToROS.h>
 #include <cisst_ros_crtk/mtsROSToCISST.h>
 
-#include <dvrk_arm_from_ros.h>
+#include <dvrk_mtm_from_ros.h>
 
-CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(dvrk_arm_from_ros,
-                                      mts_ros_crtk_bridge_required,
+CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(dvrk_mtm_from_ros,
+                                      dvrk_arm_from_ros,
                                       mtsTaskPeriodicConstructorArg);
 
-dvrk_arm_from_ros::dvrk_arm_from_ros(const std::string & componentName,
+dvrk_mtm_from_ros::dvrk_mtm_from_ros(const std::string & componentName,
                                      cisst_ral::node_ptr_t _node_handle,
                                      const double periodInSeconds)
-    : mts_ros_crtk_bridge_required(componentName, _node_handle, periodInSeconds)
+    : dvrk_arm_from_ros(componentName, _node_handle, periodInSeconds)
 {
-    Init();
+    InitMTM();
 }
 
-dvrk_arm_from_ros::dvrk_arm_from_ros(const mtsTaskPeriodicConstructorArg & arg)
-    : mts_ros_crtk_bridge_required(arg)
+dvrk_mtm_from_ros::dvrk_mtm_from_ros(const mtsTaskPeriodicConstructorArg & arg)
+    : dvrk_arm_from_ros(arg)
 {
-    Init();
+    InitMTM();
 }
 
-void dvrk_arm_from_ros::Init(void)
+void dvrk_mtm_from_ros::InitMTM(void)
 {
+
     const auto ros_namespace = this->GetName();
     const auto interface_provided = this->GetName();
 
@@ -48,19 +49,15 @@ void dvrk_arm_from_ros::Init(void)
     populate_interface_provided(interface_provided,
                                 ros_namespace,
                                 // void commands
-                                Commands({"hold", "free"}),
+                                Commands({"unlock_orientation"}),
                                 // write commands
-                                Commands({"state_command", "servo_cp", "servo_jp", "body/servo_cf", "use_gravity_compensation"}),
+                                Commands(),
                                 // read commands
-                                Commands({"operating_state", "period_statistics",
-                                          "setpoint_js", "measured_js", "setpoint_cp", "measured_cp", "measured_cv"}),
+                                Commands({"gripper/measured_js"}),
                                 // write events
-                                Commands({"operating_state", "error", "warning", "status"}));
-}
-
-// Configure is a virtual method, we can redefine it and have our own
-// configuration
-void dvrk_arm_from_ros::Configure(const std::string & CMN_UNUSED(filename))
-{
-
+                                Commands());
+    // non CRTK commands
+    this->AddPublisherFromCommandWrite<vctMatRot3, CISST_RAL_MSG(geometry_msgs, Quaternion)>
+        (interface_provided, "lock_orientation",
+         ros_namespace + "/lock_orientation");
 }
