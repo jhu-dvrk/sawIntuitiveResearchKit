@@ -5,91 +5,63 @@
     // DH parameters from Jack's code
     // unit: rad and m
 
-
     "DH": {
         "convention": "modified",
         "joints": [
-            { // 1, add q1 to theta
+            { // add q1 to theta
                 "name": "yaw",
-                "alpha":  1.5708, "A":  0.0000, "theta":  1.5708, "D":  0.0000,
+                "alpha": 1.570796327, "A": 0.0000, "theta": 1.570796327, "D": 0.0000,
                 "type": "revolute",
                 "mode": "active"
             },
-            { // 2
+            // link offset to pitch1 is (-0.0712, 0, -0.2913), can't express with one DH transform
+            {
                 "name": "intermediate yaw",
-                "alpha":  -1.5708, "A":  -0.0712, "theta":  1.5708, "D":  0.0000,
+                "alpha": -1.570796327, "A": -0.0712, "theta": 1.570796327, "D": 0.0000,
                 "type": "revolute",
-                "mode": "virtual"
+                "mode": "passive"
             },
-            { // 3, add q2 to theta
+
+            // In intermediate yaw frame (but w/ origin at pitch1), parallelogram vertices when q=0 are
+            // 1 ( 0,        0,      0)
+            // 2 (-0.0922,  -0.1810, 0)
+            // 3 ( 0.24652, -0.2522, 0) = (-0.0922, -0.1810, 0) + ( 0.33872, -0.0712, 0)
+
+            { // add q2 to theta - first angle in parallelogram
+              // new x-axis points at second parallelogram vertex, so angle is atan2(-0.922, -0.1810) = -2.04193... rads
                 "name": "pitch1",
-                "alpha": 0.0000, "A":  0.2913, "theta":  -1.5708, "D":  0.0000,
+                "alpha": 0.0000, "A": 0.2913, "theta": -2.04193, "D": 0.0000,
                 "type": "revolute",
                 "mode": "active"
             },
-            { // 4
-                "name": "intermediate pitch 1",
-                "alpha": 1.5708, "A":  0.1810, "theta":  0.0000, "D":  0.0922,
-                "type": "revolute",
-                "mode": "virtual"
-            },
-            { // 5, add -q2 to theta
+            { // add -q2 to theta - second angle in parallelogram
+              // Euclidean length of link offset (-0.0922, -0.1810, 0) is 0.203130...
+              // new x-axis points at 3rd vertex, so angle from pitch1 is atan2(-0.0712, 0.33872) = -0.207187...
+              // so relative angle is 2.04193 - 0.207187 = 1.83474
                 "name": "pitch2",
-                "alpha": -1.5708, "A":  0.0000, "theta":  1.5708, "D":  0.0000,
+                "alpha": 0, "A":  0.203130, "theta": 1.83474, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active"
             },
-            { // 6
-                "name": "intermediate pitch 3",
-                "alpha": 1.5708, "A":  0.33872, "theta":  0.0000, "D":  0.0712,
-                "type": "revolute",
-                "mode": "virtual"
-            },
-            { // 7, add q2 to theta
-                "name": "pitch4",
-                "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
+            { // add q2 to theta - third angle in parallelogram
+              // Euclidean length of link offset (0.33872, -0.0712, 0) is 0.346122...
+                "name": "pitch3",
+                "alpha": 0, "A":  0.346122, "theta": 0.207187, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active"
             },
-            { // 8, add q3 to D
+            { // add q3/2 to D
                 "name": "insertion1",
-                "alpha": -1.5708, "A":  0.0922, "theta":  0.0000, "D":  -0.3015,
+                "alpha": -1.570796327, "A":  0.0602, "theta":  3.14159625, "D":  -0.1800,
                 "type": "prismatic",
                 "mode": "active"
             },
-            { // 9, add -q3/2 to D
-                "name": "insertion2", // the mid board
-                "alpha":  0.0000, "A":  -0.032, "theta":  0.0000, "D":  0.1800,
+            { // add q3/2 to D
+                "name": "insertion2",
+                "alpha":  0.0000, "A":  -0.0320, "theta":  0.0000, "D":  -0.1215,
                 "type": "prismatic",
                 "mode": "active"
             }
-            /*
-            ,
-            { // 10, add q4 to theta, NOTE **: this one attached to joint 8
-                "name": "tool roll",
-                "alpha": 0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
-                "type": "revolute",
-                "mode": "active"
-            }
-            { // 11, add q5 to theta
-                "name": "tool pitch",
-                "alpha": 1.5708, "A":  0.0000, "theta":  1.5708, "D":  0.0000,
-                "type": "revolute",
-                "mode": "active"
-            },
-            { // 12, add q6 to theta
-                "name": "tool pitch",
-                "alpha": -1.5708, "A":  0.0091, "theta":  1.5708, "D":  0.0000,
-                "type": "revolute",
-                "mode": "active"
-            },
-            { // 13, add q7 to theta, NOTE **: this one attached to joint 11
-                "name": "tool pitch",
-                "alpha": -1.5708, "A":  0.0091, "theta":  1.5708, "D":  0.0000,
-                "type": "revolute",
-                "mode": "active"
-            }
-            */
         ]
     }
 }
