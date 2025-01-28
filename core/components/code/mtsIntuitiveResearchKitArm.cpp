@@ -244,7 +244,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     m_spatial_measured_cf.SetValid(false);
 
     // efforts computed by gravity compensation
-    m_gravity_compensation_setpoint_js.SetSize(number_of_joints_kinematics());
+    m_gravity_compensation_setpoint_js.Effort().SetSize(number_of_joints_kinematics());
     m_gravity_compensation_setpoint_js.Effort().Zeros();
     m_gravity_compensation_setpoint_js.SetAutomaticTimestamp(false);
     m_gravity_compensation_setpoint_js.SetValid(false);
@@ -531,6 +531,7 @@ void mtsIntuitiveResearchKitArm::update_configuration_js(void)
     prmConfigurationJointFromManipulator(*(this->Manipulator),
                                          number_of_joints_kinematics(),
                                          m_configuration_js);
+    m_gravity_compensation_setpoint_js.Name().ForceAssign(m_configuration_js.Name());
     mStateTableConfiguration.Advance();
 }
 
@@ -653,7 +654,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
             m_homing_goes_to_zero = jsonHomingGoesToZero.asBool();
         }
 
-        // mount pitch in radians!, default assumes angles match SUJ (e.g. ECM Classic is -45, ECM Si is -70). 
+        // mount pitch in radians!, default assumes angles match SUJ (e.g. ECM Classic is -45, ECM Si is -70).
         const Json::Value jsonMountingPitch = jsonConfig["mounting-pitch"];
         if (!jsonMountingPitch.isNull()) {
             m_mounting_pitch = jsonMountingPitch.asDouble();

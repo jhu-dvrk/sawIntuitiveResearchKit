@@ -5,6 +5,7 @@
         "convention": "modified",
         "links": [
             { // 1
+                "name": "yaw",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -14,6 +15,7 @@
                 "ftmax": 26.93208
             },
             { // 2
+                "name": "pitch",
                 "alpha": -1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
@@ -23,6 +25,7 @@
                 "ftmax": 26.93208
             },
             { // 3
+                "name": "insertion",
                 "alpha":  1.5708, "A":  0.0000, "theta":  0.0000, "D":  0.0000,
                 "type": "prismatic",
                 "mode": "active",
@@ -31,13 +34,14 @@
                 "qmax": 0.255, // meters
                 "ftmax": 80.6589483,
                 "mass": 0.0000, // mass is set in code, depending on endoscope type
-                "cx":   0.0000, "cy":   0.0000, "cz":   -0.010, // approximative position of endoscope center of gravity
+                "cx":   0.0000, "cy":   0.0000, "cz":  -0.1000, // approximative position of endoscope center of gravity
                 "Ixx":  0.0001, "Iyy":  0.0001, "Izz":  0.0001,
                 "x1":   1.0000, "x2":   0.0000, "x3":   0.0000,
                 "y1":   0.0000, "y2":   1.0000, "y3":   0.0000,
                 "z1":   0.0000, "z2":   0.0000, "z3":   1.0000
             },
             { // 4
+                "name": "roll",
                 "alpha":  0.0000, "A":  0.0000, "theta":  0.0000, "D":  0.3829,
                 "type": "revolute",
                 "mode": "active",
