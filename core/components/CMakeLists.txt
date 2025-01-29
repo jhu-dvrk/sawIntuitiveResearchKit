@@ -154,6 +154,7 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJFixed.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECM.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsBilateralTeleOperationPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciHeadSensor.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciEndoscopeFocus.h
@@ -182,6 +183,7 @@ if (cisst_FOUND)
          code/mtsIntuitiveResearchKitSUJFixed.cpp
          code/mtsTeleOperationPSM.cpp
          code/mtsTeleOperationECM.cpp
+         code/mtsBilateralTeleOperationPSM.cpp
          code/mtsIntuitiveResearchKitConsole.cpp
          code/mtsDaVinciHeadSensor.cpp
          code/mtsDaVinciEndoscopeFocus.cpp
