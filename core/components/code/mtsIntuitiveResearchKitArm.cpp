@@ -276,6 +276,11 @@ void mtsIntuitiveResearchKitArm::Init(void)
 
     this->StateTable.AddData(m_base_frame, "base_frame");
 
+    m_measured_cs.SetAutomaticTimestamp(false); // based on PID timestamp
+    m_measured_cs.SetReferenceFrame(GetName() + "_base");
+    m_measured_cs.SetMovingFrame(GetName());
+    this->StateTable.AddData(m_measured_cs, "measured_cs");
+
     m_local_measured_cv.SetAutomaticTimestamp(false); // keep PID timestamp
     m_local_measured_cv.SetMovingFrame(GetName());
     m_local_measured_cv.SetReferenceFrame(GetName() + "_base");
@@ -363,6 +368,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         m_arm_interface->AddCommandReadState(this->StateTable, m_measured_cp, "measured_cp");
         m_arm_interface->AddCommandReadState(this->StateTable, m_setpoint_cp, "setpoint_cp");
         m_arm_interface->AddCommandReadState(this->StateTable, m_base_frame, "base_frame");
+        m_arm_interface->AddCommandReadState(this->StateTable, m_measured_cs, "measured_cs");
         m_arm_interface->AddCommandReadState(this->StateTable, m_local_measured_cv, "local/measured_cv");
         m_arm_interface->AddCommandReadState(this->StateTable, m_local_setpoint_cv, "local/setpoint_cv");
         m_arm_interface->AddCommandReadState(this->StateTable, m_measured_cv, "measured_cv");
@@ -392,6 +398,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                          this, "servo_cp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_cr,
                                          this, "servo_cr_not_working_yet");
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_cpvf,
+                                         this, "servo_cpvf");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::move_cp,
                                          this, "move_cp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jf,
@@ -936,6 +944,11 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         m_measured_cp.SetTimestamp(m_kin_measured_js.Timestamp());
         m_measured_cp.SetValid(m_base_frame_valid);
 
+        m_measured_cs.Position().From(m_measured_cp_frame);
+        m_measured_cs.SetTimestamp(m_kin_measured_js.Timestamp());
+        m_measured_cs.SetValid(m_base_frame_valid);
+        m_measured_cs.PositionIsValid() = true;
+
         // update jacobians
         Manipulator->JacobianSpatial(m_kin_measured_js.Position(), m_spatial_jacobian);
         Manipulator->JacobianBody(m_kin_measured_js.Position(), m_body_jacobian);
@@ -961,23 +974,33 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         m_measured_cv.SetValid(true);
         m_measured_cv.SetTimestamp(m_kin_measured_js.Timestamp());
 
+        m_measured_cs.Velocity().Ref<3>(0) = m_measured_cv.VelocityLinear();
+        m_measured_cs.Velocity().Ref<3>(3) = m_measured_cv.VelocityAngular();
+        m_measured_cs.VelocityIsValid() = true;
+
         // update wrench based on measured joint current efforts
         m_body_jacobian_transpose.Assign(m_body_jacobian.Transpose());
         nmrPInverse(m_body_jacobian_transpose, m_jacobian_transpose_pinverse_data);
         vctDoubleVec wrench(6);
         wrench.ProductOf(m_jacobian_transpose_pinverse_data.PInverse(), m_kin_measured_js.Effort());
+
+        vct6 absolute_wrench;
+        relative.Assign(wrench.Ref(3, 0));
+        m_measured_cp_frame.Rotation().ApplyTo(relative, absolute); // forces
+        absolute_wrench.Ref<3>(0) = absolute;
+        relative.Assign(wrench.Ref(3, 3));
+        m_measured_cp_frame.Rotation().ApplyTo(relative, absolute); // torques
+        absolute_wrench.Ref<3>(3) = absolute;
+
+        m_measured_cs.Force() = absolute_wrench;
+        m_measured_cs.ForceIsValid() = true;
+
         if (m_body_cf_orientation_absolute) {
-            // forces
-            relative.Assign(wrench.Ref(3, 0));
-            m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
-            m_body_measured_cf.Force().Ref<3>(0).Assign(absolute);
-            // torques
-            relative.Assign(wrench.Ref(3, 3));
-            m_measured_cp_frame.Rotation().ApplyTo(relative, absolute);
-            m_body_measured_cf.Force().Ref<3>(3).Assign(absolute);
+            m_body_measured_cf.Force().Assign(absolute_wrench);
         } else {
             m_body_measured_cf.Force().Assign(wrench);
         }
+
         // valid/timestamp
         m_body_measured_cf.SetValid(true);
         m_body_measured_cf.SetTimestamp(m_kin_measured_js.Timestamp());
@@ -1050,6 +1073,8 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         // velocities and wrench
         m_local_setpoint_cv.SetValid(false);
         m_setpoint_cv.SetValid(false);
+        // composite cartesian state
+        m_measured_cs.SetValid(false);
         // estimated gravity compensation
         m_gravity_compensation_setpoint_js.SetValid(false);
     }
@@ -1530,36 +1555,23 @@ void mtsIntuitiveResearchKitArm::control_move_jp(void)
     }
 }
 
-void mtsIntuitiveResearchKitArm::control_servo_cp(void)
+void mtsIntuitiveResearchKitArm::control_servo_cs(void)
 {
-    if (m_pid_new_goal) {
-        // copy current position
-        vctDoubleVec jp(m_kin_measured_js.Position());
+    if (!m_pid_new_goal) {
+        return;
+    }
 
+    // reset flag
+    m_pid_new_goal = false;
+
+    // position
+    vctDoubleVec jp(m_kin_measured_js.Position());
+    if (m_servo_cpvf.PositionIsValid()) {
         // compute desired arm position
-        CartesianPositionFrm.From(m_servo_cp.Goal());
-        if (this->InverseKinematics(jp, m_base_frame.Inverse() * CartesianPositionFrm) == robManipulator::ESUCCESS) {
-            // also compute velocities
-            vctDoubleVec jv(number_of_joints_kinematics());
-            if (m_servo_cp.Velocity().Any() || m_servo_cp.VelocityAngular().Any()) {
-                vctDoubleVec cv(6);
-                // make relative
-                vct3 relative;
-                // linear
-                m_measured_cp_frame.Rotation().ApplyInverseTo(m_servo_cp.Velocity(), relative);
-                cv.Ref(3).Assign(relative);
-                // angular
-                m_measured_cp_frame.Rotation().ApplyInverseTo(m_servo_cp.VelocityAngular(), relative);
-                cv.Ref(3, 3).Assign(relative);
-                // update the body jacobian pseudo inverse
-                nmrPInverse(m_body_jacobian, m_jacobian_pinverse_data);
-                jv.ProductOf(m_jacobian_pinverse_data.PInverse(), cv);
-            } else {
-                jv.Zeros();
-            }
-            // finally send new joint values
-            servo_jp_internal(jp, jv);
-        } else {
+        CartesianPositionFrm.From(m_servo_cpvf.Position());
+
+        auto ik_errno = this->InverseKinematics(jp, m_base_frame.Inverse() * CartesianPositionFrm);
+        if (ik_errno != robManipulator::ESUCCESS) {
             // shows robManipulator error if used
             if (this->Manipulator) {
                 m_arm_interface->SendError(this->GetName()
@@ -1568,10 +1580,57 @@ void mtsIntuitiveResearchKitArm::control_servo_cp(void)
             } else {
                 m_arm_interface->SendError(this->GetName() + ": unable to solve inverse kinematics");
             }
+            return;
         }
-        // reset flag
-        m_pid_new_goal = false;
+    } else if (m_servo_cpvf.VelocityIsValid()) {
+        jp = m_kin_measured_js.Position();
+    } else {
+        jp = vctDoubleVec(0);
     }
+
+    // velocity
+    vctDoubleVec jv(number_of_joints_kinematics(), 0.0);
+    if (m_servo_cpvf.VelocityIsValid()) {
+        auto transform = m_measured_cp.Position().Rotation();
+
+        vctDouble6 body_velocity;
+        body_velocity.Ref<3>(0) = transform.ApplyInverseTo(m_servo_cpvf.Velocity().Ref<3>(0));
+        body_velocity.Ref<3>(3) = transform.ApplyInverseTo(m_servo_cpvf.Velocity().Ref<3>(3));
+
+        // compute the jacobian pseudo inverse
+        vctDoubleMat jacobian_copy(m_body_jacobian.rows(), m_body_jacobian.cols());
+        jacobian_copy.Assign(m_body_jacobian);
+        nmrPInverse(jacobian_copy, m_jacobian_pinverse_data);
+
+        // compute joint velocities
+        vctDoubleVec v(6);
+        v.Assign(body_velocity);
+        jv.ProductOf(m_jacobian_pinverse_data.PInverse(), v);
+    } else {
+        jv = vctDoubleVec(0);
+    }
+
+    // effort
+    vctDoubleVec jf(number_of_joints_kinematics(), 0.0);
+    if (m_servo_cpvf.ForceIsValid()) {
+        auto transform = m_measured_cp.Position().Rotation();
+
+        vctDoubleVec local_force(6);
+        local_force.Ref(3, 0).Assign(transform.ApplyInverseTo(m_servo_cpvf.Force().Ref<3>(0)));
+        local_force.Ref(3, 3).Assign(transform.ApplyInverseTo(m_servo_cpvf.Force().Ref<3>(3)));
+
+        vctDoubleVec jf(number_of_joints_kinematics());
+        jf.ProductOf(m_body_jacobian.Transpose(), local_force);
+    } else {
+        jf = vctDoubleVec(0);
+    }
+
+    prmStateJoint js;
+    js.Position() = jp;
+    js.Velocity() = jv;
+    js.Effort() = jf;
+
+    servo_js_internal(js);
 }
 
 void mtsIntuitiveResearchKitArm::control_move_cp(void)
@@ -1772,7 +1831,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             SetControlCallback(&mtsIntuitiveResearchKitArm::control_servo_jp, this);
             break;
         case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-            SetControlCallback(&mtsIntuitiveResearchKitArm::control_servo_cp, this);
+            SetControlCallback(&mtsIntuitiveResearchKitArm::control_servo_cs, this);
             break;
         default:
             break;
@@ -1967,6 +2026,32 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
     PID.servo_jp(m_servo_jp_param);
 }
 
+void mtsIntuitiveResearchKitArm::servo_js_internal(const prmStateJoint & js)
+{
+    if (js.Position().size() > 0) {
+        servo_jp_internal(js.Position(), js.Velocity());
+        feed_forward_jf_internal(js.Effort());
+    } else {
+        servo_jf_internal(js.Effort());
+    }
+}
+
+void mtsIntuitiveResearchKitArm::feed_forward_jf_internal(const vctDoubleVec & jf)
+{
+    m_pid_feed_forward_servo_jf.ForceTorque().Zeros();
+    if (use_feed_forward()) {
+        update_feed_forward(m_pid_feed_forward_servo_jf.ForceTorque());
+    }
+
+    if (m_has_coupling && jf.size() > 0) {
+        vctDoubleVec actuator_efforts = m_coupling.JointToActuatorEffort() * jf;
+        m_pid_feed_forward_servo_jf.ForceTorque().Add(actuator_efforts);
+    }
+
+    m_pid_feed_forward_servo_jf.SetTimestamp(StateTable.GetTic());
+    PID.feed_forward_jf(m_pid_feed_forward_servo_jf);
+}
+
 void mtsIntuitiveResearchKitArm::hold(void)
 {
     if (!ArmIsReady("hold", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
@@ -1979,6 +2064,9 @@ void mtsIntuitiveResearchKitArm::hold(void)
     // set goal
     m_servo_jp.Assign(m_kin_setpoint_js.Position(), number_of_joints_kinematics());
     m_pid_new_goal = true;
+
+    // turn off feedfoward in case it is set
+    m_pid_feed_forward_servo_jf.ForceTorque().Zeros();
 }
 
 void mtsIntuitiveResearchKitArm::free(void)
@@ -2084,7 +2172,13 @@ void mtsIntuitiveResearchKitArm::servo_cp(const prmPositionCartesianSet & cp)
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
-    m_servo_cp = cp;
+    m_servo_cpvf.Position() = cp.Goal();
+    m_servo_cpvf.PositionIsValid() = true;
+    m_servo_cpvf.Velocity().Ref<3>(0) = cp.Velocity();
+    m_servo_cpvf.Velocity().Ref<3>(3) = cp.VelocityAngular();
+    m_servo_cpvf.VelocityIsValid() = cp.Velocity().Any() && cp.VelocityAngular().Any();
+    m_servo_cpvf.ForceIsValid() = false;
+
     m_pid_new_goal = true;
 }
 
@@ -2099,6 +2193,27 @@ void mtsIntuitiveResearchKitArm::servo_cr(const prmPositionCartesianSet & differ
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal --- not sure of this math, move relative to base or tool?
     mCartesianRelative = mCartesianRelative * difference.Goal();
+    m_pid_new_goal = true;
+}
+
+void mtsIntuitiveResearchKitArm::servo_cpvf(const prmStateCartesian & cs)
+{
+    if (!ArmIsReady("servo_cpvf", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+        return;
+    }
+
+    if (!cs.PositionIsValid() && !cs.VelocityIsValid() && !cs.ForceIsValid()) {
+        m_servo_cf.Force().Zeros();
+        body_servo_cf(m_servo_cf);
+        return;
+    }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+
+    // set goal --- not sure of this math, move relative to base or tool?
+    m_servo_cpvf = cs;
     m_pid_new_goal = true;
 }
 
@@ -2146,6 +2261,7 @@ void mtsIntuitiveResearchKitArm::set_base_frame(const prmPositionCartesianSet & 
         this->m_base_frame_valid = true;
         this->m_measured_cp.SetReferenceFrame(newBaseFrame.ReferenceFrame());
         this->m_setpoint_cp.SetReferenceFrame(newBaseFrame.ReferenceFrame());
+        this->m_measured_cs.SetReferenceFrame(newBaseFrame.ReferenceFrame());
     } else {
         this->m_base_frame_valid = false;
     }
