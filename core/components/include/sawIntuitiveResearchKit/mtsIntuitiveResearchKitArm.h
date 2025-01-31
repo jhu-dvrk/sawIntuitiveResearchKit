@@ -197,7 +197,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void servo_cr(const prmPositionCartesianSet & difference);
     virtual void move_cp(const prmPositionCartesianSet & cp);
     virtual void servo_jf(const prmForceTorqueJointSet & jf);
-    virtual void pid_feed_forward_servo_jf(const prmForceTorqueJointSet & jf);
     virtual void spatial_servo_cf(const prmForceCartesianSet & cf);
     virtual void body_servo_cf(const prmForceCartesianSet & cf);
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
@@ -278,7 +277,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionRead  measured_js;
         mtsFunctionRead  setpoint_js;
         mtsFunctionWrite servo_jp;
-        mtsFunctionWrite feed_forward_jf;
+        mtsFunctionWrite feed_forward_servo_jf;
         mtsFunctionWrite enforce_position_limits;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite servo_jf;

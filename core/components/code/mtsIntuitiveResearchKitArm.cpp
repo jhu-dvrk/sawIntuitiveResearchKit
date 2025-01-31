@@ -317,7 +317,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("measured_js", PID.measured_js);
         PIDInterface->AddFunction("setpoint_js", PID.setpoint_js);
         PIDInterface->AddFunction("servo_jp", PID.servo_jp);
-        PIDInterface->AddFunction("feed_forward_jf", PID.feed_forward_jf);
+        PIDInterface->AddFunction("feed_forward/servo_jf", PID.feed_forward_servo_jf);
         PIDInterface->AddFunction("enforce_position_limits", PID.enforce_position_limits);
         PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
         PIDInterface->AddFunction("servo_jf", PID.servo_jf);
@@ -396,8 +396,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                          this, "move_cp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_jf,
                                          this, "servo_jf");
-        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::pid_feed_forward_servo_jf,
-                                         this, "pid_feed_forward/servo_jf");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::body_servo_cf,
                                          this, "body/servo_cf");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::body_set_cf_orientation_absolute,
@@ -1947,7 +1945,7 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
         update_feed_forward(m_pid_feed_forward_servo_jf.ForceTorque());
 
     }
-    PID.feed_forward_jf(m_pid_feed_forward_servo_jf);
+    PID.feed_forward_servo_jf(m_pid_feed_forward_servo_jf);
 
     // assign positions and check limits
     m_servo_jp_param.Goal().Assign(jp);
@@ -2245,12 +2243,6 @@ void mtsIntuitiveResearchKitArm::servo_jf(const prmForceTorqueJointSet & effort)
 
     // set new effort
     m_servo_jf.ForceTorque().Assign(effort.ForceTorque());
-}
-
-void mtsIntuitiveResearchKitArm::pid_feed_forward_servo_jf(const prmForceTorqueJointSet & effort)
-{
-    m_pid_feed_forward_servo_jf.ForceTorque().Assign(effort.ForceTorque());
-    m_pid_new_goal = true;
 }
 
 void mtsIntuitiveResearchKitArm::body_servo_cf(const prmForceCartesianSet & cf)

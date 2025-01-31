@@ -1216,7 +1216,7 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
     if (use_feed_forward()) {
         update_feed_forward(m_pid_feed_forward_servo_jf.ForceTorque());
     }
-    PID.feed_forward_jf(m_pid_feed_forward_servo_jf);
+    PID.feed_forward_servo_jf(m_pid_feed_forward_servo_jf);
 
     CMN_ASSERT(m_servo_jp_param.Goal().size() == 7);
     // first 6 joints, assign positions and check limits
