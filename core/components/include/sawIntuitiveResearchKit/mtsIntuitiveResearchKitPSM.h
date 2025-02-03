@@ -50,6 +50,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void PostConfigure(const Json::Value & jsonConfig,
                        const cmnPath & configPath,
                        const std::string & filename) override;
+    void ConfigureGC(const Json::Value & jsonConfig,
+                       const cmnPath & configPath,
+                       const std::string & filename) override;
     virtual bool ConfigureTool(const std::string & filename);
 
     /*! Configuration methods */
@@ -112,6 +115,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     // manual mode
     void EnterManual(void);
+    void RunManual(void);
+    void LeaveManual(void);
+
     void EventHandlerAdapter(const prmEventButton & button);
 
     /*! This should be called to set either m_tool_present or m_tool_configured. */

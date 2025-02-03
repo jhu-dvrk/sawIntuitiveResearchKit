@@ -663,6 +663,9 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
             m_re_home = jsonAlwaysHome.asBool();
         }
 
+        // arm specific configuration for gravity compensation
+        ConfigureGC(jsonConfig, configPath, filename);
+
         // arm specific configuration
         PostConfigure(jsonConfig, configPath, filename);
 
@@ -903,6 +906,16 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         // update joint states used for kinematics
         UpdateStateJointKinematics();
 
+        // updated joint efforts for gravity compensation
+        if (m_gravity_compensation && gravity_compensation) {
+            double pitch = (m_mounting_pitch < std::numeric_limits<double>::max()) ? m_mounting_pitch : 0.0;
+            vct3 gravity(0.0, sin(pitch) * 9.81, cos(pitch) * 9.81);
+            m_gravity_compensation_setpoint_js.Effort() = gravity_compensation->compute(m_kin_measured_js, gravity);
+        } else {
+            m_gravity_compensation_setpoint_js.Effort().Zeros();
+        }
+        m_gravity_compensation_setpoint_js.SetTimestamp(m_kin_measured_js.Timestamp());
+        m_gravity_compensation_setpoint_js.SetValid(true);
     } else {
         // set joint to zeros
         m_pid_measured_js.Position().Zeros();
@@ -914,6 +927,8 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         m_kin_measured_js.Velocity().Zeros();
         m_kin_measured_js.Effort().Zeros();
         m_kin_measured_js.SetValid(false);
+
+        m_gravity_compensation_setpoint_js.SetValid(false);
     }
 
     // when the robot is ready, we can compute cartesian position
@@ -1019,15 +1034,6 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         m_local_setpoint_cv.SetTimestamp(m_kin_setpoint_js.Timestamp());
         m_setpoint_cv.SetValid(true);
         m_setpoint_cv.SetTimestamp(m_kin_setpoint_js.Timestamp());
-
-        // updated joint efforts for gravity compensation
-        if (m_gravity_compensation) {
-            gravity_compensation(m_gravity_compensation_setpoint_js.Effort());
-        } else {
-            m_gravity_compensation_setpoint_js.Effort().Zeros();
-        }
-        m_gravity_compensation_setpoint_js.SetTimestamp(m_kin_setpoint_js.Timestamp());
-        m_gravity_compensation_setpoint_js.SetValid(true);
     } else {
         // set cartesian data to "zero"
         m_local_measured_cp_frame.Assign(vctFrm4x4::Identity());
@@ -1047,8 +1053,6 @@ void mtsIntuitiveResearchKitArm::get_robot_data(void)
         // velocities and wrench
         m_local_setpoint_cv.SetValid(false);
         m_setpoint_cv.SetValid(false);
-        // estimated gravity compensation
-        m_gravity_compensation_setpoint_js.SetValid(false);
     }
 }
 
@@ -1854,7 +1858,7 @@ void mtsIntuitiveResearchKitArm::control_servo_jf(void)
     m_servo_jf_vector.Assign(m_servo_jf.ForceTorque());
 
     // add gravity compensation if needed
-    if (m_gravity_compensation) {
+    if (m_gravity_compensation && m_gravity_compensation_setpoint_js.Valid()) {
         m_servo_jf_vector.Add(m_gravity_compensation_setpoint_js.Effort());
     }
 
@@ -1910,7 +1914,7 @@ void mtsIntuitiveResearchKitArm::control_servo_cf(void)
     }
 
     // add gravity compensation if needed
-    if (m_gravity_compensation) {
+    if (m_gravity_compensation && m_gravity_compensation_setpoint_js.Valid()) {
         m_servo_jf_vector.Add(m_gravity_compensation_setpoint_js.Effort());
     }
 
@@ -2281,12 +2285,6 @@ void mtsIntuitiveResearchKitArm::body_set_cf_orientation_absolute(const bool & a
 void mtsIntuitiveResearchKitArm::use_gravity_compensation(const bool & gravityCompensation)
 {
     m_gravity_compensation = gravityCompensation;
-}
-
-void mtsIntuitiveResearchKitArm::gravity_compensation(vctDoubleVec & efforts)
-{
-    vctDoubleVec qd(this->number_of_joints_kinematics(), 0.0);
-    efforts.ForceAssign(Manipulator->CCG(m_kin_measured_js.Position(), qd));  // should this take joint velocities?
 }
 
 void mtsIntuitiveResearchKitArm::servo_ci(const prmCartesianImpedance & goal)

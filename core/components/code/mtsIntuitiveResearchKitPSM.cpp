@@ -33,6 +33,34 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
 
+class GravityCompensationPSM : public robGravityCompensation {
+public:
+    GravityCompensationPSM(std::string physical_dh);
+    vctVec compute(const prmStateJoint& state, vct3 gravity) override;
+private:
+    robManipulator physical_model;
+};
+
+GravityCompensationPSM::GravityCompensationPSM(std::string physical_dh)
+{
+    physical_model.LoadRobot(physical_dh);
+}
+
+vctVec GravityCompensationPSM::compute(const prmStateJoint& state, vct3 gravity)
+{
+    vctDoubleVec qd(7, 0.0);
+    auto j = state.Position();
+    // convert virtual joint positions to physical
+    vctDoubleVec q(7, j[0], 0.0, j[1], -j[1], j[1], 0.5*j[2], 0.5*j[2]);
+    vctDoubleVec predicted_efforts = physical_model.CCG_MDH(q, qd, gravity);
+    vctDoubleVec efforts(state.Position().size(), 0.0);
+    efforts[0] = predicted_efforts[0];
+    efforts[1] = predicted_efforts[2] - predicted_efforts[3] + predicted_efforts[4];
+    efforts[2] = predicted_efforts[6];
+
+    return efforts;
+}
+
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
 mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds):
@@ -166,6 +194,34 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
     } else {
         mToolDetection = mtsIntuitiveResearchKitToolTypes::AUTOMATIC;
     }
+}
+
+void mtsIntuitiveResearchKitPSM::ConfigureGC(const Json::Value & jsonConfig,
+                                               const cmnPath & configPath,
+                                               const std::string & filename)
+{
+    std::string physical_dh_name;
+    const auto jsonPhysicalDH = jsonConfig["physical-dh"];
+    bool defined_as_empty = jsonPhysicalDH.isString() && jsonPhysicalDH.asString() == "";
+    if (!jsonPhysicalDH.isNull() && !defined_as_empty) {
+        physical_dh_name = jsonPhysicalDH.asString();
+    } else if (m_generation == GENERATION_Si && !defined_as_empty) {
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no physical DH specified, using default for PSM Si" << std::endl;
+        physical_dh_name = "kinematic/psm-si-physical.json";
+    } else {
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no physical DH specified, so gravity compensation is not available" << std::endl;
+        return;
+    }
+
+    const auto physical_dh = configPath.Find(physical_dh_name);
+    if (physical_dh == "") {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                 << " using file \"" << filename << "\", can't find physical DH file \""
+                                 << physical_dh << "\"" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    gravity_compensation = std::make_unique<GravityCompensationPSM>(physical_dh);
 }
 
 bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
@@ -597,6 +653,12 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mArmState.SetEnterCallback("MANUAL",
                                &mtsIntuitiveResearchKitPSM::EnterManual,
                                this);
+    mArmState.SetRunCallback("MANUAL",
+                             &mtsIntuitiveResearchKitPSM::RunManual,
+                             this);
+    mArmState.SetLeaveCallback("MANUAL",
+                               &mtsIntuitiveResearchKitPSM::LeaveManual,
+                               this);
 
     // initialize trajectory data, last 4 tweaked for engage procedures
     m_trajectory_j.v_max.Ref(2, 0).SetAll(90.0 * cmnPI_180); // degrees per second
@@ -626,6 +688,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
 
     m_jaw_setpoint_js.SetAutomaticTimestamp(false);
     StateTable.AddData(m_jaw_setpoint_js, "jaw/setpoint_js");
+
+    m_jaw_servo_jf = 0.0;
 
     // state table for configuration
     mStateTableConfiguration.AddData(m_jaw_configuration_js, "jaw/configuration_js");
@@ -1135,7 +1199,28 @@ void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
 void mtsIntuitiveResearchKitPSM::EnterManual(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
-    PID.Enable(false);
+    PID.EnableTrackingError(false);
+    SetControlEffortActiveJoints();
+    this->use_gravity_compensation(true);
+    m_servo_jf_vector.SetSize(number_of_joints_kinematics());
+    m_servo_jf_vector.Zeros();
+    m_jaw_servo_jf = 0.0;
+}
+
+void mtsIntuitiveResearchKitPSM::RunManual(void)
+{
+    // zero efforts
+    m_servo_jf_vector.SetAll(0.0);
+    if (m_gravity_compensation && m_gravity_compensation_setpoint_js.Valid()) {
+        m_servo_jf_vector.Ref(number_of_joints_kinematics()).Add(m_gravity_compensation_setpoint_js.Effort());
+    }
+    servo_jf_internal(m_servo_jf_vector);
+}
+
+void mtsIntuitiveResearchKitPSM::LeaveManual(void)
+{
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
+    hold();
 }
 
 void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPosition)

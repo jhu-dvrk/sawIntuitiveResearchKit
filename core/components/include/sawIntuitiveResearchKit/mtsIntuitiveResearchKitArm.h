@@ -47,6 +47,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
+#include <sawIntuitiveResearchKit/robGravityCompensation.h>
 
 // forward declarations
 class osaCartesianImpedanceController;
@@ -84,6 +85,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     }
 
  protected:
+    virtual void ConfigureGC(const Json::Value & CMN_UNUSED(armConfig),
+                     const cmnPath & CMN_UNUSED(configPath),
+                     const std::string & CMN_UNUSED(filename)) {};
 
     /*! Define wrench reference frame */
     typedef enum {WRENCH_UNDEFINED, WRENCH_SPATIAL, WRENCH_BODY} WrenchType;
@@ -371,7 +375,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     bool m_gravity_compensation = false;
     double m_mounting_pitch = std::numeric_limits<double>::infinity(); // used for ECMs Classic and Si as well as PSMs Si
     // compute effort for gravity compensation based on current state, called in get_robot_data
-    virtual void gravity_compensation(vctDoubleVec & efforts);
+    std::unique_ptr<robGravityCompensation> gravity_compensation;
 
     // Velocities
     prmVelocityCartesianGet

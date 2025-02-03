@@ -27,6 +27,30 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/robManipulatorECM.h>
 
+// ECM-specific GC - accesses ECM's Manipulator so knows current endoscope mass
+class GravityCompensationECM : public robGravityCompensation {
+public:
+    GravityCompensationECM(mtsIntuitiveResearchKitECM* arm);
+    vctVec compute(const prmStateJoint& state, vct3 gravity) override;
+private:
+    mtsIntuitiveResearchKitECM* arm;
+};
+
+GravityCompensationECM::GravityCompensationECM(mtsIntuitiveResearchKitECM* arm) : arm(arm) {}
+
+vctVec GravityCompensationECM::compute(const prmStateJoint& state, vct3 gravity)
+{
+    size_t num_joints = state.Position().size();
+    vctVec efforts(num_joints, 0.0);
+    vctVec qd(num_joints, 0.0);
+
+    if (arm->Manipulator != nullptr) {
+        efforts = arm->Manipulator->CCG_MDH(state.Position(), qd, gravity);
+    }
+
+    return efforts;
+}
+
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitECM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
 mtsIntuitiveResearchKitECM::mtsIntuitiveResearchKitECM(const std::string & componentName, const double periodInSeconds):
@@ -114,6 +138,13 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
                                  << " // " << std::to_string(m_mounting_pitch * cmn180_PI) << " degrees" << std::endl;
         exit(EXIT_FAILURE);
     }
+}
+
+void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & CMN_UNUSED(jsonConfig),
+                                               const cmnPath & CMN_UNUSED(configPath),
+                                               const std::string & CMN_UNUSED(filename))
+{
+    gravity_compensation = std::make_unique<GravityCompensationECM>(this);
 }
 
 robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec & jointSet,
@@ -331,13 +362,6 @@ void mtsIntuitiveResearchKitECM::EventHandlerSUJClutch(const prmEventButton & bu
     } else {
         SUJClutch.Brake(value);
     }
-}
-
-void mtsIntuitiveResearchKitECM::gravity_compensation(vctDoubleVec & efforts)
-{
-    vctDoubleVec qd(this->number_of_joints_kinematics(), 0.0);
-    vct3 vg(0.0, sin(m_mounting_pitch) * 9.81, cos(m_mounting_pitch) * 9.81);
-    efforts.ForceAssign(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, vg));
 }
 
 void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscopeType)

@@ -180,10 +180,11 @@ void robGravityCompensationMTM::AssignRegressor(const vctVec & q, vctMat & regre
     regressor.Element(5, 39) = q6 * q6 * q6 * q6;
 }
 
-void robGravityCompensationMTM::AddGravityCompensationEfforts(const vctVec & q,
-                                                              const vctVec & q_dot,
-                                                              vctVec & totalEfforts)
+vctVec robGravityCompensationMTM::compute(const prmStateJoint& state, vct3 CMN_UNUSED(gravity))
 {
+    vctVec q = state.Position();
+    vctVec q_dot = state.Velocity();
+
     AssignRegressor(q, mRegressor);
     if ( 1 == mVersion ) {
         ComputeBetaVel(q_dot);
@@ -207,7 +208,8 @@ void robGravityCompensationMTM::AddGravityCompensationEfforts(const vctVec & q,
     mGravityEfforts.Add(mTauPos);
     mGravityEfforts.Add(mTauNeg);
     LimitEfforts(mGravityEfforts);
-    totalEfforts.Add(mGravityEfforts);
+
+    return mGravityEfforts;
 }
 
 void robGravityCompensationMTM::LimitEfforts(vctVec & efforts) const
