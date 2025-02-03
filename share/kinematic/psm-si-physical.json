@@ -12,7 +12,8 @@
                 "name": "yaw",
                 "alpha": 1.570796327, "A": 0.0000, "theta": 1.570796327, "D": 0.0000,
                 "type": "revolute",
-                "mode": "active"
+                "mode": "active",
+                "mass": 1.000, "cx":   0.506, "cy":   0.040, "cz":   0.000
             },
             // link offset to pitch1 is (-0.0712, 0, -0.2913), can't express with one DH transform
             {
@@ -32,7 +33,8 @@
                 "name": "pitch1",
                 "alpha": 0.0000, "A": 0.2913, "theta": -2.04193, "D": 0.0000,
                 "type": "revolute",
-                "mode": "active"
+                "mode": "active",
+                "mass": 4.007, "cx":  -0.160, "cy":   0.000, "cz":   0.000
             },
             { // add -q2 to theta - second angle in parallelogram
               // Euclidean length of link offset (-0.0922, -0.1810, 0) is 0.203130...
@@ -41,26 +43,30 @@
                 "name": "pitch2",
                 "alpha": 0, "A":  0.203130, "theta": 1.83474, "D":  0.0000,
                 "type": "revolute",
-                "mode": "active"
+                "mode": "active",
+                "mass": 3.600, "cx":  -0.145, "cy":   0.038, "cz":   0.000
             },
             { // add q2 to theta - third angle in parallelogram
               // Euclidean length of link offset (0.33872, -0.0712, 0) is 0.346122...
                 "name": "pitch3",
                 "alpha": 0, "A":  0.346122, "theta": 0.207187, "D":  0.0000,
                 "type": "revolute",
-                "mode": "active"
+                "mode": "active",
+                "mass": 1.511, "cx":  -0.150, "cy":   0.000, "cz":   0.000
             },
             { // add q3/2 to D
                 "name": "insertion1",
                 "alpha": -1.570796327, "A":  0.0602, "theta":  3.14159625, "D":  -0.1800,
                 "type": "prismatic",
-                "mode": "active"
+                "mode": "active",
+                "mass": 0.0
             },
             { // add q3/2 to D
                 "name": "insertion2",
                 "alpha":  0.0000, "A":  -0.0320, "theta":  0.0000, "D":  -0.1215,
                 "type": "prismatic",
-                "mode": "active"
+                "mode": "active",
+                "mass": 0.650, "cx":   0.000, "cy":   0.058, "cz":  -0.467
             }
         ]
     }
