@@ -203,7 +203,6 @@ void mtsIntuitiveResearchKitArm::Init(void)
     m_servo_jp.SetSize(number_of_joints());
     m_servo_jv.SetSize(number_of_joints());
     m_servo_jp_param.Goal().SetSize(number_of_joints());
-    m_pid_feed_forward_servo_jf.ForceTorque().SetSize(number_of_joints(), 0.0);
     m_trajectory_j.v_max.SetSize(number_of_joints());
     m_trajectory_j.v.SetSize(number_of_joints());
     m_trajectory_j.a_max.SetSize(number_of_joints());
@@ -1721,7 +1720,6 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             // configure PID
             PID.EnableTrackingError(use_PID_tracking_error());
             PID.EnableTorqueMode(vctBoolVec(number_of_joints(), false));
-            m_pid_feed_forward_servo_jf.ForceTorque().Zeros();
             m_pid_new_goal = false;
             mCartesianRelative = vctFrm3::Identity();
             m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
@@ -1732,7 +1730,6 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             // configure PID
             PID.EnableTrackingError(use_PID_tracking_error());
             PID.EnableTorqueMode(vctBoolVec(number_of_joints(), false));
-            m_pid_feed_forward_servo_jf.ForceTorque().Zeros();
             m_effort_orientation_locked = false;
             // initialize trajectory
             m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
@@ -1940,13 +1937,6 @@ void mtsIntuitiveResearchKitArm::servo_jf_internal(const vctDoubleVec & jf)
 void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
                                                    const vctDoubleVec & jv)
 {
-    // feed forward
-    if (use_feed_forward()) {
-        update_feed_forward(m_pid_feed_forward_servo_jf.ForceTorque());
-
-    }
-    PID.feed_forward_servo_jf(m_pid_feed_forward_servo_jf);
-
     // assign positions and check limits
     m_servo_jp_param.Goal().Assign(jp);
     if (is_homed()) {

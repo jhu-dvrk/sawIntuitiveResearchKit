@@ -333,14 +333,6 @@ void mtsIntuitiveResearchKitECM::EventHandlerSUJClutch(const prmEventButton & bu
     }
 }
 
-void mtsIntuitiveResearchKitECM::update_feed_forward(vctDoubleVec & feedForward)
-{
-    feedForward.SetAll(0.0);
-    if (!m_simulated) {
-        feedForward.Add(m_gravity_compensation_setpoint_js.Effort());
-    }
-}
-
 void mtsIntuitiveResearchKitECM::gravity_compensation(vctDoubleVec & efforts)
 {
     vctDoubleVec qd(this->number_of_joints_kinematics(), 0.0);

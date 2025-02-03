@@ -56,10 +56,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
         return 3;
     }
 
-    inline bool use_feed_forward(void) const override {
-        return true;
-    }
-
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal) const override;
 
@@ -87,7 +83,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     void EventHandlerManipClutch(const prmEventButton & button);
     void EventHandlerSUJClutch(const prmEventButton & button);
 
-    void update_feed_forward(vctDoubleVec & feedForward) override;
     void gravity_compensation(vctDoubleVec & efforts) override;
 
     struct {
