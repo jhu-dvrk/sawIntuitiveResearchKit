@@ -627,6 +627,8 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     m_jaw_setpoint_js.SetAutomaticTimestamp(false);
     StateTable.AddData(m_jaw_setpoint_js, "jaw/setpoint_js");
 
+    m_jaw_servo_jf = 0.0;
+
     // state table for configuration
     mStateTableConfiguration.AddData(m_jaw_configuration_js, "jaw/configuration_js");
 

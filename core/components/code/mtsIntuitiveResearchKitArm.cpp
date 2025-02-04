@@ -1585,7 +1585,7 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
     } else if (m_servo_cpvf.VelocityIsValid()) {
         jp = m_kin_measured_js.Position();
     } else {
-        jp = vctDoubleVec(0);
+        jp.Zeros();
     }
 
     // velocity
@@ -1607,7 +1607,7 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
         v.Assign(body_velocity);
         jv.ProductOf(m_jacobian_pinverse_data.PInverse(), v);
     } else {
-        jv = vctDoubleVec(0);
+        jv.Zeros();
     }
 
     // effort
@@ -1622,7 +1622,7 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
         vctDoubleVec jf(number_of_joints_kinematics());
         jf.ProductOf(m_body_jacobian.Transpose(), local_force);
     } else {
-        jf = vctDoubleVec(0);
+        jf.Zeros();
     }
 
     prmStateJoint js;
@@ -2028,12 +2028,8 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
 
 void mtsIntuitiveResearchKitArm::servo_js_internal(const prmStateJoint & js)
 {
-    if (js.Position().size() > 0) {
-        servo_jp_internal(js.Position(), js.Velocity());
-        feed_forward_jf_internal(js.Effort());
-    } else {
-        servo_jf_internal(js.Effort());
-    }
+    servo_jp_internal(js.Position(), js.Velocity());
+    feed_forward_jf_internal(js.Effort());
 }
 
 void mtsIntuitiveResearchKitArm::feed_forward_jf_internal(const vctDoubleVec & jf)

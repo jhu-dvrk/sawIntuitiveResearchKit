@@ -38,13 +38,24 @@ public:
 
     void Configure(const Json::Value & jsonConfig) override;
 
+    void set_bilateral_enabled(const bool & enabled);
+
 protected:
+    class ForceSource {
+    public:
+        void Configure(mtsBilateralTeleOperationPSM* teleop, const Json::Value & jsonConfig);
+
+        mtsFunctionRead measured_cf;
+        prmForceCartesianGet m_measured_cf;
+    };
+
     class Arm {
     public:
         Arm(mtsBilateralTeleOperationPSM* teleop) : teleop(teleop) {}
         virtual ~Arm() {};
         
         virtual void populateInterface(mtsInterfaceRequired* interface);
+        virtual void add_force_source(std::unique_ptr<ForceSource> source) { force_source = std::move(source); }
 
         virtual prmStateCartesian computeGoal(Arm* target, double scale);
 
@@ -55,6 +66,7 @@ protected:
 
     protected:
         mtsBilateralTeleOperationPSM* teleop;
+        std::unique_ptr<ForceSource> force_source;
 
         mtsFunctionWrite servo_cpvf;
         mtsFunctionRead measured_cs;
@@ -93,7 +105,8 @@ protected:
     ArmMTM mArmMTM;
     ArmPSM mArmPSM;
 
-    bool m_bilateral_mode;
+    bool m_bilateral_enabled;
+    mtsFunctionWrite bilateral_enabled_event;
 
     void Init() override;
 

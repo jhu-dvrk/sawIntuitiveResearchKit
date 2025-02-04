@@ -19,14 +19,45 @@
 // header
 #include <sawIntuitiveResearchKit/mtsBilateralTeleOperationPSM.h>
 
-// system includes
-// TODO: remove temp include
-#include <iostream>
-
+// cisst includes
+#include <cisstMultiTask/mtsManagerLocal.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsBilateralTeleOperationPSM,
                                       mtsTeleOperationPSM,
                                       mtsTaskPeriodicConstructorArg);
+
+void mtsBilateralTeleOperationPSM::ForceSource::Configure(mtsBilateralTeleOperationPSM* teleop, const Json::Value & jsonConfig) {
+    std::string component_name;
+    std::string provided_interface_name;
+    std::string function_name;
+
+    Json::Value value;
+
+    value = jsonConfig["component"];
+    if (!value.empty()) {
+        component_name = value.asString();
+    }
+
+    value = jsonConfig["interface"];
+    if (!value.empty()) {
+        provided_interface_name = value.asString();
+    }
+
+    value = jsonConfig["function"];
+    if (!value.empty()) {
+        function_name = value.asString();
+    }
+
+    std::string required_interface_name = provided_interface_name + "-force-source";
+    mtsInterfaceRequired* interface = teleop->AddInterfaceRequired(required_interface_name);
+    if (interface) {
+        interface->AddFunction(function_name, measured_cf);
+    }
+
+    mtsManagerLocal* manager = mtsComponentManager::GetInstance();
+    manager->Connect(component_name, provided_interface_name,
+                     teleop->GetName(), required_interface_name);
+}
 
 void mtsBilateralTeleOperationPSM::Arm::populateInterface(mtsInterfaceRequired* interface)
 {
@@ -69,6 +100,13 @@ prmStateCartesian mtsBilateralTeleOperationPSM::Arm::state()
 {
     prmStateCartesian measured_state;
     measured_cs(measured_state);
+
+    if (force_source) {
+        force_source->measured_cf(force_source->m_measured_cf);
+        measured_state.Force() = force_source->m_measured_cf.Force();
+        measured_state.ForceIsValid() = force_source->m_measured_cf.Valid();
+    }
+
     return measured_state;
 }
 
@@ -136,9 +174,11 @@ prmStateCartesian mtsBilateralTeleOperationPSM::ArmPSM::state()
     // measured_cs not available, fall back to measured_cp/measured_cv
     
     prmStateCartesian state;
+    teleop->mArmPSM.measured_cp(teleop->mArmPSM.m_measured_cp);
     state.Position() = teleop->mArmPSM.m_measured_cp.Position();
     state.PositionIsValid() = teleop->mArmPSM.m_measured_cp.Valid();
 
+    teleop->mArmPSM.measured_cv(teleop->mArmPSM.m_measured_cv);
     auto psm_velocity = teleop->mArmPSM.m_measured_cv;
     state.Velocity().Ref<3>(0) = psm_velocity.VelocityLinear();
     state.Velocity().Ref<3>(3) = psm_velocity.VelocityAngular();
@@ -178,9 +218,9 @@ mtsBilateralTeleOperationPSM::mtsBilateralTeleOperationPSM(const mtsTaskPeriodic
     mtsTeleOperationPSM(arg), mArmMTM(this), mArmPSM(this) { Init(); }
 
 void mtsBilateralTeleOperationPSM::Init() {
-    m_bilateral_mode = true;
+    m_bilateral_enabled = true;
 
-    mtsInterfaceRequired * interface;
+    mtsInterfaceRequired* interface;
 
     interface = GetInterfaceRequired("MTM");
     if (interface) {
@@ -194,18 +234,51 @@ void mtsBilateralTeleOperationPSM::Init() {
         mArmPSM.populateInterface(interface);
     }
 
-    // TODO: add bilateral mode flag + event
+    mConfigurationStateTable->AddData(m_bilateral_enabled, "bilateral_enabled");
+
+    mtsInterfaceProvided* setting_interface = GetInterfaceProvided("Setting");
+    if (setting_interface) {
+        setting_interface->AddCommandWrite(&mtsBilateralTeleOperationPSM::set_bilateral_enabled, this,
+                                        "set_bilateral_enabled", m_bilateral_enabled);
+        setting_interface->AddCommandReadState(*(mConfigurationStateTable),
+                                        m_bilateral_enabled, "bilateral_enabled");
+        setting_interface->AddEventWrite(bilateral_enabled_event,
+                                    "bilateral_enabled", m_bilateral_enabled);
+    }
 }
 
 void mtsBilateralTeleOperationPSM::Configure(const Json::Value & jsonConfig)
 {
     mtsTeleOperationPSM::Configure(jsonConfig);
+    Json::Value jsonValue;
+
+    jsonValue = jsonConfig["psm_force_source"];
+    if (!jsonValue.empty()) {
+        auto source = std::make_unique<ForceSource>();
+        source->Configure(this, jsonValue);
+        mArmPSM.add_force_source(std::move(source));
+    }
+
+    jsonValue = jsonConfig["mtm_force_source"];
+    if (!jsonValue.empty()) {
+        auto source = std::make_unique<ForceSource>();
+        source->Configure(this, jsonValue);
+        mArmMTM.add_force_source(std::move(source));
+    }
+}
+
+void mtsBilateralTeleOperationPSM::set_bilateral_enabled(const bool & enabled)
+{
+    mConfigurationStateTable->Start();
+    m_bilateral_enabled = enabled;
+    mConfigurationStateTable->Advance();
+    bilateral_enabled_event(m_bilateral_enabled);
 }
 
 void mtsBilateralTeleOperationPSM::RunCartesianTeleop()
 {
     // fall back to default behavior when in unilateral mode
-    if (!m_bilateral_mode) {
+    if (!m_bilateral_enabled) {
         mtsTeleOperationPSM::RunCartesianTeleop();
         return;
     }
@@ -213,10 +286,6 @@ void mtsBilateralTeleOperationPSM::RunCartesianTeleop()
     if (m_clutched) {
         return;
     }
-
-    // fetch extra data not provided by base class
-    mArmPSM.measured_cp(mArmPSM.m_measured_cp);
-    mArmPSM.measured_cv(mArmPSM.m_measured_cv);
 
     auto psm_goal = mArmPSM.computeGoal(&mArmMTM, m_scale);
     mArmPSM.servo(psm_goal);
