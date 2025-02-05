@@ -35,15 +35,23 @@ http://www.cisst.org/cisst/license.txt.
 
 class GravityCompensationPSM : public robGravityCompensation {
 public:
-    GravityCompensationPSM(std::string physical_dh);
+    bool configure(std::string physical_dh_file);
+    std::string error();
+
     vctVec compute(const prmStateJoint& state, vct3 gravity) override;
 private:
     robManipulator physical_model;
 };
 
-GravityCompensationPSM::GravityCompensationPSM(std::string physical_dh)
+bool GravityCompensationPSM::configure(std::string physical_dh_file)
 {
-    physical_model.LoadRobot(physical_dh);
+    robManipulator::Errno err = physical_model.LoadRobot(physical_dh_file);
+    return err == robManipulator::ESUCCESS;
+}
+
+std::string GravityCompensationPSM::error()
+{
+    return physical_model.mLastError;
 }
 
 vctVec GravityCompensationPSM::compute(const prmStateJoint& state, vct3 gravity)
@@ -76,6 +84,9 @@ mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicCons
 {
     Init();
 }
+
+// need to define destructor after definition of GravityCompensationPSM is available
+mtsIntuitiveResearchKitPSM::~mtsIntuitiveResearchKitPSM() = default;
 
 void mtsIntuitiveResearchKitPSM::set_simulated(void)
 {
@@ -206,22 +217,31 @@ void mtsIntuitiveResearchKitPSM::ConfigureGC(const Json::Value & jsonConfig,
     if (!jsonPhysicalDH.isNull() && !defined_as_empty) {
         physical_dh_name = jsonPhysicalDH.asString();
     } else if (m_generation == GENERATION_Si && !defined_as_empty) {
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no physical DH specified, using default for PSM Si" << std::endl;
+        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << GetName() << ": no physical DH specified, using default for PSM Si" << std::endl;
         physical_dh_name = "kinematic/psm-si-physical.json";
     } else {
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no physical DH specified, so gravity compensation is not available" << std::endl;
+        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << GetName() << ": no physical DH specified, so gravity compensation is not available" << std::endl;
         return;
     }
 
     const auto physical_dh = configPath.Find(physical_dh_name);
     if (physical_dh == "") {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
                                  << " using file \"" << filename << "\", can't find physical DH file \""
                                  << physical_dh << "\"" << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    gravity_compensation = std::make_unique<GravityCompensationPSM>(physical_dh);
+    m_gc_instance = std::make_unique<GravityCompensationPSM>();
+    bool ok = m_gc_instance->configure(physical_dh);
+    if (ok) {
+        gravity_compensation = m_gc_instance.get();
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
+                                 << " using physical DH file \"" << physical_dh << "\", got error \""
+                                 << m_gc_instance->error() << "\"" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)

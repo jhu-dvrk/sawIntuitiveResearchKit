@@ -374,8 +374,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     // use gravity compensation or not
     bool m_gravity_compensation = false;
     double m_mounting_pitch = std::numeric_limits<double>::infinity(); // used for ECMs Classic and Si as well as PSMs Si
-    // compute effort for gravity compensation based on current state, called in get_robot_data
-    std::unique_ptr<robGravityCompensation> gravity_compensation;
+    // used in get_robot_data to compute gravity compensation setpoint
+    // ! Note: non-owning pointer - subclass should own actual instance
+    robGravityCompensation* gravity_compensation = nullptr;
 
     // Velocities
     prmVelocityCartesianGet

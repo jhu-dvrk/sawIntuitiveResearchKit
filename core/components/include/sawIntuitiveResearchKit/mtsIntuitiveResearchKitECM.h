@@ -36,11 +36,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
  public:
     mtsIntuitiveResearchKitECM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitECM(const mtsTaskPeriodicConstructorArg & arg);
-    inline ~mtsIntuitiveResearchKitECM() {}
+    ~mtsIntuitiveResearchKitECM();
 
     void set_simulated(void) override;
-
-    friend GravityCompensationECM; // allow GC access to Manipulator
 
  protected:
     void set_generation(const GenerationType generation) override;
@@ -120,6 +118,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     // tooltip, used for up/down endoscopes
     robManipulator * ToolOffset;
     vctFrm4x4 ToolOffsetTransformation;
+
+    std::unique_ptr<GravityCompensationECM> m_gc_instance;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitECM);

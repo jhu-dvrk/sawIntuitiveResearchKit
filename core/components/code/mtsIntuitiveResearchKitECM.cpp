@@ -21,32 +21,54 @@ http://www.cisst.org/cisst/license.txt.
 #include <time.h>
 
 // cisst
+#include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
+
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/robManipulatorECM.h>
 
 // ECM-specific GC - accesses ECM's Manipulator so knows current endoscope mass
 class GravityCompensationECM : public robGravityCompensation {
 public:
-    GravityCompensationECM(mtsIntuitiveResearchKitECM* arm);
+    bool configure(std::string physical_dh_file);
+    std::string error();
+
+    void setEndoscopeMass(double mass);
     vctVec compute(const prmStateJoint& state, vct3 gravity) override;
 private:
-    mtsIntuitiveResearchKitECM* arm;
+    robManipulator physical_model;
 };
 
-GravityCompensationECM::GravityCompensationECM(mtsIntuitiveResearchKitECM* arm) : arm(arm) {}
+bool GravityCompensationECM::configure(std::string physical_dh_file)
+{
+    robManipulator::Errno err = physical_model.LoadRobot(physical_dh_file);
+    return err == robManipulator::ESUCCESS;
+}
+
+std::string GravityCompensationECM::error()
+{
+    return physical_model.mLastError;
+}
+
+void GravityCompensationECM::setEndoscopeMass(double mass)
+{
+    CMN_ASSERT(physical_model.links.size() >= 6);
+    physical_model.links.at(5).MassData().Mass() = mass;
+}
 
 vctVec GravityCompensationECM::compute(const prmStateJoint& state, vct3 gravity)
 {
-    size_t num_joints = state.Position().size();
-    vctVec efforts(num_joints, 0.0);
-    vctVec qd(num_joints, 0.0);
-
-    if (arm->Manipulator != nullptr) {
-        efforts = arm->Manipulator->CCG_MDH(state.Position(), qd, gravity);
-    }
+    vctDoubleVec qd(6, 0.0);
+    auto j = state.Position();
+    // convert virtual joint positions to physical
+    vctDoubleVec q(6, j[0], 0.0, j[1], -j[1], j[1], j[2]);
+    vctDoubleVec predicted_efforts = physical_model.CCG_MDH(q, qd, gravity);
+    vctDoubleVec efforts(state.Position().size(), 0.0);
+    efforts[0] = predicted_efforts[0];
+    efforts[1] = predicted_efforts[2] - predicted_efforts[3] + predicted_efforts[4];
+    efforts[2] = predicted_efforts[5];
 
     return efforts;
 }
@@ -64,6 +86,9 @@ mtsIntuitiveResearchKitECM::mtsIntuitiveResearchKitECM(const mtsTaskPeriodicCons
 {
     Init();
 }
+
+// need to define destructor after definition of GravityCompensationECM is available
+mtsIntuitiveResearchKitECM::~mtsIntuitiveResearchKitECM() = default;
 
 void mtsIntuitiveResearchKitECM::set_simulated(void)
 {
@@ -140,11 +165,41 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
     }
 }
 
-void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & CMN_UNUSED(jsonConfig),
-                                               const cmnPath & CMN_UNUSED(configPath),
-                                               const std::string & CMN_UNUSED(filename))
+void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
+                                               const cmnPath & configPath,
+                                               const std::string & filename)
 {
-    gravity_compensation = std::make_unique<GravityCompensationECM>(this);
+    std::string physical_dh_name;
+    const auto jsonPhysicalDH = jsonConfig["physical-dh"];
+    bool defined_as_empty = jsonPhysicalDH.isString() && jsonPhysicalDH.asString() == "";
+    if (!jsonPhysicalDH.isNull() && !defined_as_empty) {
+        physical_dh_name = jsonPhysicalDH.asString();
+    } else if (m_generation == GENERATION_Si && !defined_as_empty) {
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no physical DH specified, using default for ECM Si" << std::endl;
+        physical_dh_name = "kinematic/ecm-si-physical.json";
+    } else {
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no physical DH specified, so gravity compensation is not available" << std::endl;
+        return;
+    }
+
+    const auto physical_dh = configPath.Find(physical_dh_name);
+    if (physical_dh == "") {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                 << " using file \"" << filename << "\", can't find physical DH file \""
+                                 << physical_dh << "\"" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    m_gc_instance = std::make_unique<GravityCompensationECM>();
+    bool ok = m_gc_instance->configure(physical_dh);
+    if (ok) {
+        gravity_compensation = m_gc_instance.get();
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
+                                 << " using physical DH file \"" << physical_dh << "\", got error \""
+                                 << m_gc_instance->error() << "\"" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 robManipulator::Errno mtsIntuitiveResearchKitECM::InverseKinematics(vctDoubleVec & jointSet,
@@ -436,9 +491,7 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
         break;
     }
 
-    // make sure we have enough joints in the kinematic chain
-    CMN_ASSERT(Manipulator->links.size() >= 3);
-    Manipulator->links.at(2).MassData().Mass() = mass;
+    m_gc_instance->setEndoscopeMass(mass);
 
     // set configured flag
     m_endoscope_configured = true;

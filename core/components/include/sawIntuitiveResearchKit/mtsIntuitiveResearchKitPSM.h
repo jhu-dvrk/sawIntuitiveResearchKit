@@ -27,6 +27,8 @@ http://www.cisst.org/cisst/license.txt.
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
+// forward declaration, definition in mtsIntuitiveResearchKitPSM.cpp
+class GravityCompensationPSM;
 
 class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 {
@@ -35,7 +37,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
  public:
     mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
-    inline ~mtsIntuitiveResearchKitPSM() override {};
+    ~mtsIntuitiveResearchKitPSM();
+    
     void set_simulated(void) override;
 
  protected:
@@ -217,6 +220,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     vctDoubleVec m_tool_engage_lower_position,
         m_tool_engage_upper_position;
+
+    std::unique_ptr<GravityCompensationPSM> m_gc_instance;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitPSM);

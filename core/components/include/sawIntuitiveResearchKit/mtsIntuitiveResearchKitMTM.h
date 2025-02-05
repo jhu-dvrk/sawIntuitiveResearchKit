@@ -34,7 +34,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitMTM: public mtsIntuitiveResearchKitArm
 public:
     mtsIntuitiveResearchKitMTM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
-    ~mtsIntuitiveResearchKitMTM() override;
+    ~mtsIntuitiveResearchKitMTM();
+
     void set_simulated(void) override;
 
 protected:
@@ -141,6 +142,8 @@ protected:
     prmConfigurationJoint m_gripper_configuration_js;
 
     double m_platform_gain = mtsIntuitiveResearchKit::MTMPlatform::Gain;
+
+    std::unique_ptr<robGravityCompensationMTM> m_gc_instance;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);

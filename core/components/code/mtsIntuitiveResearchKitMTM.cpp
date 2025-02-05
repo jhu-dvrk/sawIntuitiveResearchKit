@@ -47,7 +47,7 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
     Init();
 }
 
-mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM() { }
+mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM() = default;
 
 void mtsIntuitiveResearchKitMTM::set_simulated(void)
 {
@@ -145,8 +145,8 @@ void mtsIntuitiveResearchKitMTM::Init(void)
 }
 
 void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
-                                              const cmnPath & configPath,
-                                              const std::string & filename)
+                                              const cmnPath & CMN_UNUSED(configPath),
+                                              const std::string & CMN_UNUSED(filename))
 {
     // platform gain
     const auto jsonPlatformGain = jsonConfig["platform-gain"];
@@ -254,7 +254,8 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const Json::Value & armConfig,
                 exit(EXIT_FAILURE);
             }
 
-            gravity_compensation = std::unique_ptr<robGravityCompensation>(result.Pointer);
+            m_gc_instance = std::unique_ptr<robGravityCompensationMTM>(result.Pointer);
+            gravity_compensation = m_gc_instance.get();
             if (!result.ErrorMessage.empty()) {
                 CMN_LOG_CLASS_INIT_WARNING << "ConfigureGC " << this->GetName()
                                            << ": robGravityCompensationMTM created from file \""
