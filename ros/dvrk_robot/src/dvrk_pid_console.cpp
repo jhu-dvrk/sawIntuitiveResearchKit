@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
+#include <cisstCommon/cmnQt.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
@@ -29,6 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawControllers/mtsPIDQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 
+#include <saw_robot_io_1394_ros/mts_ros_crtk_robot_io_bridge.h>
 #include <saw_controllers_ros/mts_ros_crtk_controllers_pid_bridge.h>
 
 #include <QApplication>
@@ -47,11 +49,16 @@ int main(int argc, char ** argv)
     cmnLogger::SetMaskClassMatching("mtsIntuitiveResearchKit", CMN_LOG_ALLOW_ALL);
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
+    // create ROS node handle
+    cisst_ral::ral ral(argc, argv, "dvrk");
+    auto rosNode = ral.node();
+
     // parse options
     cmnCommandLineOptions options;
     std::string portName = mtsRobotIO1394::DefaultPort();
     std::string ioConfigFile, pidConfigFile;
     std::string robotName;
+    double publishPeriod = 10.0 * cmn_ms;
 
     options.AddOptionOneValue("i", "io",
                               "configuration file for robot IO (see sawRobotIO1394)",
@@ -65,10 +72,17 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("n", "robot-name",
                               "robot name (i.e. PSM1, PSM2, MTML or MTMR) as defined in the sawRobotIO1394 file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &robotName);
+    options.AddOptionOneValue("p", "ros-period",
+                              "period in seconds to read all arms/teleop components and publish (default 0.01, 10 ms, 100Hz).  There is no point to have a period higher than the arm component's period",
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &publishPeriod);
 
-    if (!options.Parse(argc, argv, std::cerr)) {
+    // check that all required options have been provided
+    if (!options.Parse(ral.stripped_arguments(), std::cerr)) {
         return -1;
     }
+    std::string arguments;
+    options.PrintParsedArguments(arguments);
+    std::cout << "Options provided:" << std::endl << arguments;
 
     if (!cmnPath::Exists(ioConfigFile)) {
         std::cerr << "File not found: " << ioConfigFile << std::endl;
@@ -104,6 +118,7 @@ int main(int argc, char ** argv)
     // create a Qt user interface
     QApplication application(argc, argv);
     application.setWindowIcon(QIcon(":/dVRK.png"));
+    cmnQt::QApplicationExitsOnCtrlC();
 
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
@@ -144,10 +159,13 @@ int main(int argc, char ** argv)
     // tie pid execution to io
     componentManager->Connect("pid", "ExecIn", "io", "ExecOut");
     // connect pid to io
-    componentManager->Connect("pid", "RobotJointTorqueInterface", "io", robotName);  // see const std::string defined before main()
+    componentManager->Connect("pid", "RobotJointTorqueInterface", "io", robotName);
 
-    mts_ros_crtk_controllers_pid_bridge * pid_bridge = new mts_ros_crtk_controllers_pid_bridge("", nullptr, 0.0, 0.0);
-    pid_bridge->Configure("");
+    mts_ros_crtk_robot_io_bridge * io_bridge = new mts_ros_crtk_robot_io_bridge("io-bridge", rosNode, publishPeriod, 0.0);
+    componentManager->AddComponent(io_bridge);
+    componentManager->Connect("io-bridge", "RobotConfiguration",
+                              "io", "Configuration");
+    io_bridge->Configure();
 
     //-------------- create the components ------------------
     componentManager->CreateAll();
@@ -163,14 +181,11 @@ int main(int argc, char ** argv)
     componentManager->KillAllAndWait(5.0 * cmn_s);
     componentManager->Cleanup();
 
-    // delete dvgc robot
-    delete pid;
-    delete pidGUI;
-    delete io;
-    delete robotWidgetFactory;
-
     // stop all logs
     cmnLogger::Kill();
+
+    // stop ROS node
+    cisst_ral::shutdown();
 
     return 0;
 }

@@ -13,7 +13,7 @@ cmake_minimum_required (VERSION 3.10)
 project (dvrk_robot VERSION 2.3.0)
 
 # first test for ROS1
-set (ROS1_depends cisst_ros_crtk saw_controllers_ros roscpp roslib)
+set (ROS1_depends cisst_ros_crtk saw_robot_io_1394_ros saw_controllers_ros roscpp roslib)
 
 find_package (catkin QUIET
   COMPONENTS
@@ -38,7 +38,8 @@ else (catkin_FOUND)
       geometry_msgs sensor_msgs diagnostic_msgs
       tf2_ros tf2_msgs
       cisst_msgs crtk_msgs
-      cisst_ros_bridge cisst_ros_crtk saw_controllers_ros
+      cisst_ros_bridge cisst_ros_crtk
+      saw_robot_io_1394_ros saw_controllers_ros
       )
     foreach (_dep ${ROS2_depends})
       find_package (${_dep} REQUIRED)
