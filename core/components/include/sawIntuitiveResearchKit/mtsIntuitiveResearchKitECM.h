@@ -26,6 +26,9 @@ http://www.cisst.org/cisst/license.txt.
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
+// forward declaration, definition in mtsIntuitiveResearchKitECM.cpp
+class GravityCompensationECM;
+
 class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -37,9 +40,14 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
 
     void set_simulated(void) override;
 
+    friend GravityCompensationECM; // allow GC access to Manipulator
+
  protected:
     void set_generation(const GenerationType generation) override;
     void PostConfigure(const Json::Value & jsonConfig,
+                       const cmnPath & configPath,
+                       const std::string & filename) override;
+    void ConfigureGC(const Json::Value & jsonConfig,
                        const cmnPath & configPath,
                        const std::string & filename) override;
 
@@ -54,10 +62,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
 
     inline size_t number_of_brakes(void) const override {
         return 3;
-    }
-
-    inline bool use_feed_forward(void) const override {
-        return true;
     }
 
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
@@ -86,9 +90,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     void EventHandlerTrackingError(void);
     void EventHandlerManipClutch(const prmEventButton & button);
     void EventHandlerSUJClutch(const prmEventButton & button);
-
-    void update_feed_forward(vctDoubleVec & feedForward) override;
-    void gravity_compensation(vctDoubleVec & efforts) override;
 
     struct {
         mtsFunctionRead GetButton;

@@ -47,10 +47,7 @@ mtsIntuitiveResearchKitMTM::mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicCons
     Init();
 }
 
-mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM()
-{
-    delete GravityCompensationMTM;
-}
+mtsIntuitiveResearchKitMTM::~mtsIntuitiveResearchKitMTM() { }
 
 void mtsIntuitiveResearchKitMTM::set_simulated(void)
 {
@@ -151,21 +148,6 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
                                               const cmnPath & configPath,
                                               const std::string & filename)
 {
-    // gravity compensation
-    const auto jsonGC = jsonConfig["gravity-compensation"];
-    if (!jsonGC.isNull()) {
-        const auto fileGC = configPath.Find(jsonGC.asString());
-        if (fileGC == "") {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                     << " can't find gravity-compensation file \""
-                                     << jsonGC.asString() << "\" defined in \""
-                                     << filename << "\"" << std::endl;
-            exit(EXIT_FAILURE);
-        } else {
-            ConfigureGC(fileGC);
-        }
-    }
-
     // platform gain
     const auto jsonPlatformGain = jsonConfig["platform-gain"];
     if (!jsonPlatformGain.isNull()) {
@@ -225,24 +207,40 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
     }
 }
 
-void mtsIntuitiveResearchKitMTM::ConfigureGC(const std::string & filename)
+void mtsIntuitiveResearchKitMTM::ConfigureGC(const Json::Value & armConfig,
+                                             const cmnPath & configPath,
+                                             const std::string & filename)
 {
+    const auto jsonGC = armConfig["gravity-compensation"];
+    if (jsonGC.isNull()) {
+        return;
+    }
+
+    const auto fileGC = configPath.Find(jsonGC.asString());
+    if (fileGC == "") {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                    << " can't find gravity-compensation file \""
+                                    << jsonGC.asString() << "\" defined in \""
+                                    << filename << "\"" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     try {
         std::ifstream jsonStream;
         Json::Value jsonConfig;
         Json::Reader jsonReader;
 
-        jsonStream.open(filename.c_str());
+        jsonStream.open(fileGC.c_str());
         if (!jsonReader.parse(jsonStream, jsonConfig)) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC " << this->GetName()
                                      << ": failed to parse gravity compensation (GC) configuration file \""
-                                     << filename << "\"\n"
+                                     << fileGC << "\"\n"
                                      << jsonReader.getFormattedErrorMessages();
             return;
         }
 
         CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << this->GetName()
-                                   << " using file \"" << filename << "\"" << std::endl
+                                   << " using file \"" << fileGC << "\"" << std::endl
                                    << "----> content of gravity compensation (GC) configuration file: " << std::endl
                                    << jsonConfig << std::endl
                                    << "<----" << std::endl;
@@ -252,19 +250,20 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const std::string & filename)
             if (!result.Pointer) {
                 CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC " << this->GetName()
                                          << ": failed to create an instance of robGravityCompensationMTM with \""
-                                         << filename << "\" because " << result.ErrorMessage << std::endl;
+                                         << fileGC << "\" because " << result.ErrorMessage << std::endl;
                 exit(EXIT_FAILURE);
             }
-            GravityCompensationMTM = result.Pointer;
+
+            gravity_compensation = std::unique_ptr<robGravityCompensation>(result.Pointer);
             if (!result.ErrorMessage.empty()) {
                 CMN_LOG_CLASS_INIT_WARNING << "ConfigureGC " << this->GetName()
                                            << ": robGravityCompensationMTM created from file \""
-                                           << filename << "\" warns " << result.ErrorMessage << std::endl;
+                                           << fileGC << "\" warns " << result.ErrorMessage << std::endl;
             }
         }
     } catch (...) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC " << this->GetName() << ": make sure the file \""
-                                 << filename << "\" is in JSON format" << std::endl;
+                                 << fileGC << "\" is in JSON format" << std::endl;
     }
 }
 
@@ -700,15 +699,4 @@ void mtsIntuitiveResearchKitMTM::unlock_orientation(void)
     }
     // emit event
     mtm_events.orientation_locked(m_effort_orientation_locked);
-}
-
-
-void mtsIntuitiveResearchKitMTM::gravity_compensation(vctDoubleVec & efforts)
-{
-    efforts.SetAll(0.0);
-    if (GravityCompensationMTM) {
-        GravityCompensationMTM->AddGravityCompensationEfforts(m_kin_measured_js.Position(),
-                                                              m_kin_measured_js.Velocity(),
-                                                              efforts);
-    }
 }

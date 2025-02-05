@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2009-2024 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2009-2025 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -16,7 +16,7 @@ project (sawIntuitiveResearchKitApplications)
 
 # applications in separate directories
 add_subdirectory (gripper-calibration)
-add_subdirectory (s-potentiometers-calibration)
+add_subdirectory (si-potentiometers-calibration)
 add_subdirectory (config-generator)
 add_subdirectory (sd-card-updater)
 add_subdirectory (remove-logs)

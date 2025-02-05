@@ -47,6 +47,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
+#include <sawIntuitiveResearchKit/robGravityCompensation.h>
 
 // forward declarations
 class osaCartesianImpedanceController;
@@ -84,6 +85,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     }
 
  protected:
+    virtual void ConfigureGC(const Json::Value & CMN_UNUSED(armConfig),
+                     const cmnPath & CMN_UNUSED(configPath),
+                     const std::string & CMN_UNUSED(filename)) {};
 
     /*! Define wrench reference frame */
     typedef enum {WRENCH_UNDEFINED, WRENCH_SPATIAL, WRENCH_BODY} WrenchType;
@@ -184,7 +188,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void servo_jp_internal(const vctDoubleVec & jp,
                                    const vctDoubleVec & jv);
     virtual void servo_jf_internal(const vctDoubleVec & jf);
-    inline virtual void update_feed_forward(vctDoubleVec & CMN_UNUSED(feedForward)) {};
 
     /*! Methods used for commands */
     virtual void hold(void);
@@ -226,10 +229,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     inline virtual bool use_PID_tracking_error(void) const {
         return true;
-    }
-
-    inline virtual bool use_feed_forward(void) const {
-        return false;
     }
 
     /*! Inverse kinematics must be redefined for each arm type. */
@@ -341,7 +340,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmPositionJointSet m_servo_jp_param;
     vctDoubleVec m_servo_jp;
     vctDoubleVec m_servo_jv;
-    prmForceTorqueJointSet m_pid_feed_forward_servo_jf;
     prmStateJoint
         m_pid_measured_js,
         m_pid_setpoint_js,
@@ -377,7 +375,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     bool m_gravity_compensation = false;
     double m_mounting_pitch = std::numeric_limits<double>::infinity(); // used for ECMs Classic and Si as well as PSMs Si
     // compute effort for gravity compensation based on current state, called in get_robot_data
-    virtual void gravity_compensation(vctDoubleVec & efforts);
+    std::unique_ptr<robGravityCompensation> gravity_compensation;
 
     // Velocities
     prmVelocityCartesianGet
