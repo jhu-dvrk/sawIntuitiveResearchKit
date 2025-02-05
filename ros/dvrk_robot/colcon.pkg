@@ -1,4 +1,4 @@
 {
   "name": "dvrk_robot",
-  "dependencies": ["cisst_ros_crtk", "sawIntuitiveResearchKitCore"]
+  "dependencies": ["cisst_ros_crtk", "saw_controllers_ros", "sawIntuitiveResearchKitCore"]
 }
