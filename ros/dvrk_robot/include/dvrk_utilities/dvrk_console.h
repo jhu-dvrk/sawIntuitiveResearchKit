@@ -63,7 +63,7 @@ namespace dvrk {
         // IO timing
         void add_topics_io(void);
         // add monitoring topics for all PIDs
-        void add_topics_pid(void);
+        void add_topics_pid(const bool read_write);
         // low level IO for a given arm if requested by user
         void add_topics_arm_io(mtsROSBridge * _pub_bridge,
                                const std::string & _arm_name,

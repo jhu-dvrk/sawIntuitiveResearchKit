@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-07-18
 
-  (C) Copyright 2015-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -103,6 +103,9 @@ int main(int argc, char ** argv)
 
     options.AddOptionNoValue("I", "pid-topics",
                              "add some extra publishers to monitor PID state");
+
+    options.AddOptionNoValue("J", "pid-topics-read-write",
+                             "add all PID topics (dangerous!)");
 
     options.AddOptionNoValue("t", "text-only",
                              "text only interface, do not create Qt widgets");
@@ -218,9 +221,12 @@ int main(int argc, char ** argv)
         consoleROS->add_topics_suj_voltages();
         consoleROS->Connect();
     }
-    
-    if (options.IsSet("pid-topics")) {
-        consoleROS->add_topics_pid();
+
+    if (options.IsSet("pid-topics-read-write")) {
+        consoleROS->add_topics_pid(true);
+        consoleROS->Connect();
+    } else if (options.IsSet("pid-topics")) {
+        consoleROS->add_topics_pid(false);
         consoleROS->Connect();
     }
 

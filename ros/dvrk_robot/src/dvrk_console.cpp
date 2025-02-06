@@ -467,7 +467,7 @@ void dvrk::console::add_topics_io(void)
                       m_console->m_IO_component_name, "Configuration");
 }
 
-void dvrk::console::add_topics_pid(void)
+void dvrk::console::add_topics_pid(const bool read_write)
 {
     for (auto armPair : m_console->mArms) {
         const auto name = armPair.first;
@@ -475,9 +475,9 @@ void dvrk::console::add_topics_pid(void)
         if (arm->expects_PID()) {
             const std::string pid_component_name = name + "-PID";
             bridge_interface_provided(pid_component_name,
-                                      "Monitoring",
+                                      "Controller",
                                       name + "/pid",
-                                      m_publish_rate, 0.0 /* disable tf */);
+                                      m_publish_rate, /*tf*/ 0.0, read_write);
         }
     }
 }
