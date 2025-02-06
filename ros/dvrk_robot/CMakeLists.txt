@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2015-2024 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2015-2025 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (dvrk_robot VERSION 2.3.0)
+project (dvrk_robot VERSION 2.3.1)
 
 # first test for ROS1
 set (ROS1_depends cisst_ros_crtk roscpp roslib)
@@ -65,7 +65,7 @@ set (
   cisstQt
   )
 
-find_package (cisst 1.3.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.3.1 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -78,7 +78,7 @@ if (cisst_FOUND_AS_REQUIRED)
   # sawRobotIO1394 has been compiled within cisst, we should find it automatically
   find_package (sawRobotIO1394          2.3.0 REQUIRED)
   find_package (sawControllers          2.2.0 REQUIRED)
-  find_package (sawIntuitiveResearchKit 2.3.0 REQUIRED)
+  find_package (sawIntuitiveResearchKit 2.3.1 REQUIRED)
 
   include_directories (
     ${dvrk_robot_SOURCE_DIR}/include
