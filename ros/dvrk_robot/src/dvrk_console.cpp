@@ -27,6 +27,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h>
 
+#include <saw_robot_io_1394_ros/mts_ros_crtk_robot_io_bridge.h>
+
 #include <json/json.h>
 
 const std::string bridgeNamePrefix = "dVRKIOBridge_";
@@ -467,6 +469,22 @@ void dvrk::console::add_topics_io(void)
                       m_console->m_IO_component_name, "Configuration");
 }
 
+void dvrk::console::add_topics_io(const double _publish_period_in_seconds,
+                                  const bool _read_write)
+{
+    if (!m_io_bridge) {
+        mtsManagerLocal * _component_manager = mtsManagerLocal::GetInstance();
+
+        m_io_bridge = new mts_ros_crtk_robot_io_bridge("io-bridge", m_node_handle_ptr,
+                                                       "io/", _publish_period_in_seconds,
+                                                       /*tf*/ 0.0, _read_write);
+        _component_manager->AddComponent(m_io_bridge);
+        _component_manager->Connect("io-bridge", "RobotConfiguration",
+                                  "io", "Configuration");
+        m_io_bridge->Configure();
+    }
+}
+
 void dvrk::console::add_topics_pid(const bool read_write)
 {
     for (auto armPair : m_console->mArms) {
@@ -476,7 +494,7 @@ void dvrk::console::add_topics_pid(const bool read_write)
             const std::string pid_component_name = name + "-PID";
             bridge_interface_provided(pid_component_name,
                                       "Controller",
-                                      name + "/pid",
+                                      "pid/" + name,
                                       m_publish_rate, /*tf*/ 0.0, read_write);
         }
     }

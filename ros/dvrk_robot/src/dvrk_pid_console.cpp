@@ -63,7 +63,7 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("i", "io",
                               "configuration file for robot IO (see sawRobotIO1394)",
                               cmnCommandLineOptions::REQUIRED_OPTION, &ioConfigFile);
-    options.AddOptionOneValue("p", "pid",
+    options.AddOptionOneValue("g", "pid",
                               "configuration file for PID controller (see sawControllers, mtsPID)",
                               cmnCommandLineOptions::REQUIRED_OPTION, &pidConfigFile);
     options.AddOptionOneValue("P", "port",
@@ -162,7 +162,7 @@ int main(int argc, char ** argv)
     componentManager->Connect("pid", "RobotJointTorqueInterface", "io", robotName);
 
     // io bridge uses a factory
-    mts_ros_crtk_robot_io_bridge * io_bridge = new mts_ros_crtk_robot_io_bridge("io-bridge", rosNode, publishPeriod);
+    mts_ros_crtk_robot_io_bridge * io_bridge = new mts_ros_crtk_robot_io_bridge("io-bridge", rosNode, "io/", publishPeriod);
     componentManager->AddComponent(io_bridge);
     componentManager->Connect("io-bridge", "RobotConfiguration",
                               "io", "Configuration");
@@ -170,8 +170,8 @@ int main(int argc, char ** argv)
 
     // controller pid bridge is just derived from crtk bridge
     mts_ros_crtk_controllers_pid_bridge * pid_bridge = new mts_ros_crtk_controllers_pid_bridge("pid-bridge", rosNode);
-    pid_bridge->bridge_interface_provided("pid", "Controller", "/pid", publishPeriod);
-    componentManager->AddComponent(io_bridge);
+    pid_bridge->bridge_interface_provided("pid", "Controller", "pid/" + robotName, publishPeriod);
+    componentManager->AddComponent(pid_bridge);
     pid_bridge->Connect();
 
     //-------------- create the components ------------------

@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -54,7 +54,7 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("i", "io",
                               "configuration file for robot IO (see sawRobotIO1394)",
                               cmnCommandLineOptions::REQUIRED_OPTION, &ioConfigFile);
-    options.AddOptionOneValue("p", "pid",
+    options.AddOptionOneValue("g", "pid",
                               "configuration file for PID controller (see sawControllers, mtsPID)",
                               cmnCommandLineOptions::REQUIRED_OPTION, &pidConfigFile);
     options.AddOptionOneValue("P", "port",

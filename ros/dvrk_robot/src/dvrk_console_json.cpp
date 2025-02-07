@@ -82,6 +82,7 @@ int main(int argc, char ** argv)
     std::list<std::string> managerConfig;
     std::string qtStyle;
 
+    // options show up in order they're added
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &jsonMainConfigFile);
@@ -94,28 +95,19 @@ int main(int argc, char ** argv)
                               "period in seconds to read all components and broadcast tf2 (default 0.02, 20 ms, 50Hz).  There is no point to have a period higher than the arm component's period",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &tfPeriod);
 
-    options.AddOptionMultipleValues("i", "ros-io-config",
-                                    "json config file to configure ROS bridges to collect low level data (IO)",
-                                    cmnCommandLineOptions::OPTIONAL_OPTION, &jsonIOConfigFiles);
-
-    options.AddOptionNoValue("s", "suj-voltages",
-                             "add ROS topics for SUJ voltages");
-
-    options.AddOptionNoValue("I", "pid-topics",
+    options.AddOptionNoValue("C", "calibration-mode",
+                             "run in calibration mode, doesn't use potentiometers to monitor encoder values and always force re-homing.  This mode should only be used when calibrating your potentiometers");
+    options.AddOptionNoValue("I", "pid-topics-read-only",
                              "add some extra publishers to monitor PID state");
 
     options.AddOptionNoValue("J", "pid-topics-read-write",
-                             "add all PID topics (dangerous!)");
+                             "add all PID topics (use with caution!)");
 
-    options.AddOptionNoValue("t", "text-only",
-                             "text only interface, do not create Qt widgets");
+    options.AddOptionNoValue("K", "io-topics-read-only",
+                             "add some extra publishers to monitor IO state");
 
-    options.AddOptionOneValue("c", "collection-config",
-                              "json configuration file for data collection using cisstMultiTask state table collector",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &jsonCollectionConfigFile);
-
-    options.AddOptionNoValue("C", "calibration-mode",
-                             "run in calibration mode, doesn't use potentiometers to monitor encoder values and always force re-homing.  This mode should only be used when calibrating your potentiometers");
+    options.AddOptionNoValue("L", "io-topics-read-write",
+                             "add all IO topics (use with caution!)");
 
     options.AddOptionMultipleValues("m", "component-manager",
                                     "JSON files to configure component manager",
@@ -127,6 +119,20 @@ int main(int argc, char ** argv)
 
     options.AddOptionNoValue("D", "dark-mode",
                              "replaces the default Qt palette with darker colors");
+
+    options.AddOptionNoValue("t", "text-only",
+                             "text only interface, do not create Qt widgets");
+
+    options.AddOptionMultipleValues("i", "ros-io-config",
+                                    "(DEPRECATED, use ) json config file to configure ROS bridges to collect low level data (IO)",
+                                    cmnCommandLineOptions::OPTIONAL_OPTION, &jsonIOConfigFiles);
+
+    options.AddOptionNoValue("s", "suj-voltages",
+                             "add ROS topics for SUJ voltages");
+
+    options.AddOptionOneValue("c", "collection-config",
+                              "json configuration file for data collection using cisstMultiTask state table collector",
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &jsonCollectionConfigFile);
 
     // check that all required options have been provided
     if (!options.Parse(ral.stripped_arguments(), std::cerr)) {
@@ -215,21 +221,26 @@ int main(int argc, char ** argv)
     }
 
     componentManager->AddComponent(consoleROS);
-    consoleROS->Connect();
 
     if (options.IsSet("suj-voltages")) {
         consoleROS->add_topics_suj_voltages();
-        consoleROS->Connect();
+    }
+
+    if (options.IsSet("io-topics-read-write")) {
+        consoleROS->add_topics_io(publishPeriod, true);
+    } else if (options.IsSet("io-topics-read-only")) {
+        consoleROS->add_topics_io(publishPeriod, false);
     }
 
     if (options.IsSet("pid-topics-read-write")) {
         consoleROS->add_topics_pid(true);
-        consoleROS->Connect();
-    } else if (options.IsSet("pid-topics")) {
+    } else if (options.IsSet("pid-topics-read-only")) {
         consoleROS->add_topics_pid(false);
-        consoleROS->Connect();
     }
 
+    // connect everything
+    consoleROS->Connect();
+    
     // custom user component
     if (!componentManager->ConfigureJSON(managerConfig)) {
         CMN_LOG_INIT_ERROR << "Configure: failed to configure component-manager, check cisstLog for error messages" << std::endl;
