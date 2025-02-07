@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.10)
-project (dvrk_config VERSION 2.3.0)
+project (dvrk_config VERSION 2.3.1)
 
 # ROS 1
 find_package (catkin QUIET)
