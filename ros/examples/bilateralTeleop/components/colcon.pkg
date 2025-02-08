@@ -1,4 +1,4 @@
 {
   "name": "saw_intuitive_research_kit_example_bilateral_teleop",
-  "dependencies": ["cisst_ros_crtk", "sawIntuitiveResearchKitCore", "sawATIForceSensorCore"]
+  "dependencies": ["cisst_ros_crtk", "sawIntuitiveResearchKitCore"]
 }

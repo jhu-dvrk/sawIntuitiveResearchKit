@@ -72,7 +72,6 @@ if (cisst_FOUND_AS_REQUIRED)
   # sawIntuitiveResearchKit has been compiled within cisst, we should
   # find it automatically
   find_package(sawIntuitiveResearchKit 2.3.0 REQUIRED)
-  find_package(sawATIForceSensor REQUIRED)
 
   if (sawIntuitiveResearchKit_FOUND)
 
@@ -102,7 +101,6 @@ if (cisst_FOUND_AS_REQUIRED)
     # link against non cisst libraries and cisst components
     target_link_libraries (sawIntuitiveResearchKitBilateralTeleop
       ${sawIntuitiveResearchKit_LIBRARIES}
-      ${sawATIForceSensor_LIBRARIES}
       ${catkin_LIBRARIES}
       )
 
