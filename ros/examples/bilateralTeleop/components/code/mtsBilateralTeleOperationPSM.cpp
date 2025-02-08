@@ -17,7 +17,7 @@
 */
 
 // header
-#include <sawIntuitiveResearchKit/mtsBilateralTeleOperationPSM.h>
+#include "mtsBilateralTeleOperationPSM.h"
 
 // cisst includes
 #include <cisstMultiTask/mtsManagerLocal.h>
@@ -103,7 +103,7 @@ prmStateCartesian mtsBilateralTeleOperationPSM::Arm::state()
 
     if (force_source) {
         force_source->measured_cf(force_source->m_measured_cf);
-        measured_state.Force() = -force_source->m_measured_cf.Force();
+        measured_state.Force() = force_source->m_measured_cf.Force();
         measured_state.ForceIsValid() = force_source->m_measured_cf.Valid();
     }
 
