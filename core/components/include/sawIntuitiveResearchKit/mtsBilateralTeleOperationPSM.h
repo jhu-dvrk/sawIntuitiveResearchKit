@@ -108,6 +108,8 @@ protected:
     bool m_bilateral_enabled;
     mtsFunctionWrite bilateral_enabled_event;
 
+    double m_mtm_torque_gain = 0.2;
+
     void Init() override;
 
     void RunCartesianTeleop() override;

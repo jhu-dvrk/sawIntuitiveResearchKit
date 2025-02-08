@@ -103,7 +103,7 @@ prmStateCartesian mtsBilateralTeleOperationPSM::Arm::state()
 
     if (force_source) {
         force_source->measured_cf(force_source->m_measured_cf);
-        measured_state.Force() = force_source->m_measured_cf.Force();
+        measured_state.Force() = -force_source->m_measured_cf.Force();
         measured_state.ForceIsValid() = force_source->m_measured_cf.Valid();
     }
 
@@ -265,6 +265,11 @@ void mtsBilateralTeleOperationPSM::Configure(const Json::Value & jsonConfig)
         source->Configure(this, jsonValue);
         mArmMTM.add_force_source(std::move(source));
     }
+
+    jsonValue = jsonConfig["mtm_torque_gain"];
+    if (!jsonValue.empty()) {
+        m_mtm_torque_gain = jsonValue.asDouble();
+    }
 }
 
 void mtsBilateralTeleOperationPSM::set_bilateral_enabled(const bool & enabled)
@@ -291,5 +296,7 @@ void mtsBilateralTeleOperationPSM::RunCartesianTeleop()
     mArmPSM.servo(psm_goal);
 
     auto mtm_goal = mArmMTM.computeGoal(&mArmPSM, 1.0 / m_scale);
+    // scale MTM torque goal to reduce oscillations
+    mtm_goal.Force().Ref<3>(3) = m_mtm_torque_gain * mtm_goal.Force().Ref<3>(3);
     mArmMTM.servo(mtm_goal);
 }
