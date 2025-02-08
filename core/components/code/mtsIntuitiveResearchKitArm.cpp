@@ -1619,7 +1619,6 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
         local_force.Ref(3, 0).Assign(transform.ApplyInverseTo(m_servo_cpvf.Force().Ref<3>(0)));
         local_force.Ref(3, 3).Assign(transform.ApplyInverseTo(m_servo_cpvf.Force().Ref<3>(3)));
 
-        vctDoubleVec jf(number_of_joints_kinematics());
         jf.ProductOf(m_body_jacobian.Transpose(), local_force);
     } else {
         jf.Zeros();
