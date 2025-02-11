@@ -78,15 +78,23 @@ void GravityCompensationECM::setEndoscopeMass(double mass)
 
 vctVec GravityCompensationECM::compute(const prmStateJoint& state, vct3 gravity)
 {
-    vctDoubleVec qd(6, 0.0);
+    size_t n_joints = physical_model.links.size();
     auto j = state.Position();
-    // convert virtual joint positions to physical
-    vctDoubleVec q(6, j[0], 0.0, j[1], -j[1], j[1], j[2]);
-    vctDoubleVec predicted_efforts = physical_model.CCG_MDH(q, qd, gravity);
+
+    vctDoubleVec qd(n_joints, 0.0);
     vctDoubleVec efforts(state.Position().size(), 0.0);
-    efforts[0] = predicted_efforts[0];
-    efforts[1] = predicted_efforts[2] - predicted_efforts[3] + predicted_efforts[4];
-    efforts[2] = predicted_efforts[5];
+
+    if (n_joints == 6) {
+        // convert virtual joint positions to physical
+        vctDoubleVec q(6, j[0], 0.0, j[1], -j[1], j[1], j[2]);
+        vctDoubleVec predicted_efforts = physical_model.CCG_MDH(q, qd, gravity);
+        efforts[0] = predicted_efforts[0];
+        efforts[1] = predicted_efforts[2] - predicted_efforts[3] + predicted_efforts[4];
+        efforts[2] = predicted_efforts[5];
+    } else if (n_joints == 4) {
+        vctDoubleVec q(4, j[0], j[1], j[2], 0.0);
+        efforts = physical_model.CCG_MDH(j, qd, gravity);
+    }
 
     return efforts;
 }
