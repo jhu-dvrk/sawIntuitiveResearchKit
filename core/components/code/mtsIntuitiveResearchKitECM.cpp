@@ -195,6 +195,9 @@ void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
     } else if (m_generation == GENERATION_Si && !defined_as_empty) {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no physical DH specified, using default for ECM Si" << std::endl;
         physical_dh_name = "kinematic/ecm-si-physical.json";
+    } else if (m_generation == GENERATION_Classic && !defined_as_empty) {
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no physical DH specified, using default for ECM Classic" << std::endl;
+        physical_dh_name = "kinematic/ecm.json";
     } else {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no physical DH specified, so gravity compensation is not available" << std::endl;
         return;
