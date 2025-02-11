@@ -39,23 +39,41 @@ public:
     vctVec compute(const prmStateJoint& state, vct3 gravity) override;
 private:
     robManipulator physical_model;
+    std::string error_message;
 };
 
 bool GravityCompensationECM::configure(std::string physical_dh_file)
 {
     robManipulator::Errno err = physical_model.LoadRobot(physical_dh_file);
-    return err == robManipulator::ESUCCESS;
+    if (err != robManipulator::ESUCCESS) {
+        error_message = physical_model.mLastError;
+        return false;
+    }
+
+    // make sure we have expected number of links so we know which link
+    // to put the variable endoscope/camera mass
+    if (physical_model.links.size() == 6) {
+        return true; // 6 links, ECM Si physical DH
+    } else if (physical_model.links.size() == 4) {
+        return true; // 4 links, ECM Classic virtual DH used as physical DH
+    } else {
+        error_message = "ECM physical DH does not match Classic or Si number of links";
+        return false; // unknown physical DH
+    }
 }
 
 std::string GravityCompensationECM::error()
 {
-    return physical_model.mLastError;
+    return error_message;
 }
 
 void GravityCompensationECM::setEndoscopeMass(double mass)
 {
-    CMN_ASSERT(physical_model.links.size() >= 6);
-    physical_model.links.at(5).MassData().Mass() = mass;
+    if (physical_model.links.size() == 6) {
+        physical_model.links.at(5).MassData().Mass() = mass;
+    } else {
+        physical_model.links.at(2).MassData().Mass() = mass;
+    }
 }
 
 vctVec GravityCompensationECM::compute(const prmStateJoint& state, vct3 gravity)
