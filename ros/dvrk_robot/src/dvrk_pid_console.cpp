@@ -2,10 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Zihan Chen, Anton Deguet
-  Created on: 2013-02-07
+  Author(s):  Anton Deguet
+  Created on: 2025-02-04
 
-  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
+#include <cisstCommon/cmnQt.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsManagerLocal.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
@@ -28,6 +29,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawControllers/mtsPID.h>
 #include <sawControllers/mtsPIDQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
+
+#include <saw_robot_io_1394_ros/mts_ros_crtk_robot_io_bridge.h>
+#include <saw_controllers_ros/mts_ros_crtk_controllers_pid_bridge.h>
 
 #include <QApplication>
 #include <QMainWindow>
@@ -45,11 +49,16 @@ int main(int argc, char ** argv)
     cmnLogger::SetMaskClassMatching("mtsIntuitiveResearchKit", CMN_LOG_ALLOW_ALL);
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
+    // create ROS node handle
+    cisst_ral::ral ral(argc, argv, "dvrk");
+    auto rosNode = ral.node();
+
     // parse options
     cmnCommandLineOptions options;
     std::string portName = mtsRobotIO1394::DefaultPort();
     std::string ioConfigFile, pidConfigFile;
     std::string robotName;
+    double publishPeriod = 10.0 * cmn_ms;
 
     options.AddOptionOneValue("i", "io",
                               "configuration file for robot IO (see sawRobotIO1394)",
@@ -63,10 +72,17 @@ int main(int argc, char ** argv)
     options.AddOptionOneValue("n", "robot-name",
                               "robot name (i.e. PSM1, PSM2, MTML or MTMR) as defined in the sawRobotIO1394 file",
                               cmnCommandLineOptions::REQUIRED_OPTION, &robotName);
+    options.AddOptionOneValue("p", "ros-period",
+                              "period in seconds to read all arms/teleop components and publish (default 0.01, 10 ms, 100Hz).  There is no point to have a period higher than the arm component's period",
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &publishPeriod);
 
-    if (!options.Parse(argc, argv, std::cerr)) {
+    // check that all required options have been provided
+    if (!options.Parse(ral.stripped_arguments(), std::cerr)) {
         return -1;
     }
+    std::string arguments;
+    options.PrintParsedArguments(arguments);
+    std::cout << "Options provided:" << std::endl << arguments;
 
     if (!cmnPath::Exists(ioConfigFile)) {
         std::cerr << "File not found: " << ioConfigFile << std::endl;
@@ -102,6 +118,7 @@ int main(int argc, char ** argv)
     // create a Qt user interface
     QApplication application(argc, argv);
     application.setWindowIcon(QIcon(":/dVRK.png"));
+    cmnQt::QApplicationExitsOnCtrlC();
 
     // organize all widgets in a tab widget
     QTabWidget * tabWidget = new QTabWidget;
@@ -142,7 +159,20 @@ int main(int argc, char ** argv)
     // tie pid execution to io
     componentManager->Connect("pid", "ExecIn", "io", "ExecOut");
     // connect pid to io
-    componentManager->Connect("pid", "RobotJointTorqueInterface", "io", robotName);  // see const std::string defined before main()
+    componentManager->Connect("pid", "RobotJointTorqueInterface", "io", robotName);
+
+    // io bridge uses a factory
+    mts_ros_crtk_robot_io_bridge * io_bridge = new mts_ros_crtk_robot_io_bridge("io-bridge", rosNode, "io/", publishPeriod);
+    componentManager->AddComponent(io_bridge);
+    componentManager->Connect("io-bridge", "RobotConfiguration",
+                              "io", "Configuration");
+    io_bridge->Configure();
+
+    // controller pid bridge is just derived from crtk bridge
+    mts_ros_crtk_controllers_pid_bridge * pid_bridge = new mts_ros_crtk_controllers_pid_bridge("pid-bridge", rosNode);
+    pid_bridge->bridge_interface_provided("pid", "Controller", "pid/" + robotName, publishPeriod);
+    componentManager->AddComponent(pid_bridge);
+    pid_bridge->Connect();
 
     //-------------- create the components ------------------
     componentManager->CreateAll();
@@ -158,14 +188,11 @@ int main(int argc, char ** argv)
     componentManager->KillAllAndWait(5.0 * cmn_s);
     componentManager->Cleanup();
 
-    // delete dvgc robot
-    delete pid;
-    delete pidGUI;
-    delete io;
-    delete robotWidgetFactory;
-
     // stop all logs
     cmnLogger::Kill();
+
+    // stop ROS node
+    cisst_ral::shutdown();
 
     return 0;
 }
