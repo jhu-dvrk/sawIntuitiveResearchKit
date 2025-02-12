@@ -595,7 +595,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
                         << "----------------------------------------------------\n"
                         << " DEPRECATED:\n"
                         << "   \"kinematic\" is deprecated, please instead use \"virtual-dh\"\n"
-                        << "   to specific kinematic DH file in arm config.\n"
+                        << "   to specify kinematic DH file in arm config.\n"
                         << "----------------------------------------------------\n";
                 CMN_LOG_CLASS_INIT_WARNING << message.str() << std::endl;
             }
