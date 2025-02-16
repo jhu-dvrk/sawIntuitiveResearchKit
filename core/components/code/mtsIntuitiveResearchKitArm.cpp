@@ -587,21 +587,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         mtsComponent::ConfigureJSON(jsonConfig);
 
         // detect if we're using 1.8 and up with two fields, kinematic and tool-detection
-        // prefer "virtual-dh", if not found then fall back to deprecated "kinematic"
-        auto jsonKinematic = jsonConfig["virtual-dh"];
-        if (jsonKinematic.isNull()) {
-            jsonKinematic = jsonConfig["kinematic"];
-            if (!jsonKinematic.isNull()) {
-                std::stringstream message;
-                message << "Configure " << this->GetName() << ":\n"
-                        << "----------------------------------------------------\n"
-                        << " DEPRECATED:\n"
-                        << "   \"kinematic\" is deprecated, please instead use \"virtual-dh\"\n"
-                        << "   to specify kinematic DH file in arm config.\n"
-                        << "----------------------------------------------------\n";
-                CMN_LOG_CLASS_INIT_WARNING << message.str() << std::endl;
-            }
-        }
+        auto jsonKinematic = jsonConfig["kinematic"];
         if (jsonKinematic.isNull()) {
             std::stringstream message;
             message << "Configure " << this->GetName() << ":" << std::endl
@@ -609,7 +595,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
                     << " ERROR:" << std::endl
                     << "   You should have a \"arm\" file for each arm in the console" << std::endl
                     << "   file.  The arm file should contain the field" << std::endl
-                    << "   \"virtual-dh\" and options specific to each arm type." << std::endl
+                    << "   \"kinematic\" and options specific to each arm type." << std::endl
                     << "----------------------------------------------------";
             std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
             CMN_LOG_CLASS_INIT_ERROR << message.str() << std::endl;
@@ -634,7 +620,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         const auto fileKinematic = configPath.Find(jsonKinematic.asString());
         if (fileKinematic == "") {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                     << " using file \"" << filename << "\" can't find virtual-dh kinematic file \""
+                                     << " using file \"" << filename << "\" can't find kinematic file \""
                                      << jsonKinematic.asString() << "\"" << std::endl;
             exit(EXIT_FAILURE);
         } else {

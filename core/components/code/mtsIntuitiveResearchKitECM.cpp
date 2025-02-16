@@ -57,7 +57,7 @@ bool GravityCompensationECM::configure(std::string physical_dh_file)
     } else if (physical_model.links.size() == 4) {
         return true; // 4 links, ECM Classic virtual DH used as physical DH
     } else {
-        error_message = "ECM physical DH does not match Classic or Si number of links";
+        error_message = "ECM GC kinematics does not match Classic or Si number of links";
         return false; // unknown physical DH
     }
 }
@@ -196,25 +196,25 @@ void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
                                                const std::string & filename)
 {
     std::string physical_dh_name;
-    const auto jsonPhysicalDH = jsonConfig["physical-dh"];
+    const auto jsonPhysicalDH = jsonConfig["kinematic-gc"];
     bool defined_as_empty = jsonPhysicalDH.isString() && jsonPhysicalDH.asString() == "";
     if (!jsonPhysicalDH.isNull() && !defined_as_empty) {
         physical_dh_name = jsonPhysicalDH.asString();
     } else if (m_generation == GENERATION_Si && !defined_as_empty) {
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no physical DH specified, using default for ECM Si" << std::endl;
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Si" << std::endl;
         physical_dh_name = "kinematic/ecm-si-physical.json";
     } else if (m_generation == GENERATION_Classic && !defined_as_empty) {
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no physical DH specified, using default for ECM Classic" << std::endl;
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Classic" << std::endl;
         physical_dh_name = "kinematic/ecm.json";
     } else {
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no physical DH specified, so gravity compensation is not available" << std::endl;
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, so gravity compensation is not available" << std::endl;
         return;
     }
 
     const auto physical_dh = configPath.Find(physical_dh_name);
     if (physical_dh == "") {
         CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                 << " using file \"" << filename << "\", can't find physical DH file \""
+                                 << " using file \"" << filename << "\", can't find GC kinematics file \""
                                  << physical_dh << "\"" << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -225,7 +225,7 @@ void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
         gravity_compensation = m_gc_instance.get();
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
-                                 << " using physical DH file \"" << physical_dh << "\", got error \""
+                                 << " using GC kinematics file \"" << physical_dh << "\", got error \""
                                  << m_gc_instance->error() << "\"" << std::endl;
         exit(EXIT_FAILURE);
     }

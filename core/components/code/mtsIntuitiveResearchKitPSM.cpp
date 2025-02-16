@@ -41,17 +41,29 @@ public:
     vctVec compute(const prmStateJoint& state, vct3 gravity) override;
 private:
     robManipulator physical_model;
+    std::string error_message;
 };
 
 bool GravityCompensationPSM::configure(std::string physical_dh_file)
 {
     robManipulator::Errno err = physical_model.LoadRobot(physical_dh_file);
-    return err == robManipulator::ESUCCESS;
+    if (err != robManipulator::ESUCCESS) {
+        error_message = physical_model.mLastError;
+        return false;
+    }
+
+    // make sure we have expected number of links
+    if (physical_model.links.size() == 7) {
+        return true;
+    } else {
+        error_message = "PSM GC kinematics does not match expected number of links for Si";
+        return false;
+    }
 }
 
 std::string GravityCompensationPSM::error()
 {
-    return physical_model.mLastError;
+    return error_message;
 }
 
 vctVec GravityCompensationPSM::compute(const prmStateJoint& state, vct3 gravity)
@@ -212,22 +224,22 @@ void mtsIntuitiveResearchKitPSM::ConfigureGC(const Json::Value & jsonConfig,
                                                const std::string & filename)
 {
     std::string physical_dh_name;
-    const auto jsonPhysicalDH = jsonConfig["physical-dh"];
+    const auto jsonPhysicalDH = jsonConfig["kinematic-gc"];
     bool defined_as_empty = jsonPhysicalDH.isString() && jsonPhysicalDH.asString() == "";
     if (!jsonPhysicalDH.isNull() && !defined_as_empty) {
         physical_dh_name = jsonPhysicalDH.asString();
     } else if (m_generation == GENERATION_Si && !defined_as_empty) {
-        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << GetName() << ": no physical DH specified, using default for PSM Si" << std::endl;
+        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << GetName() << ": no GC kinematics specified, using default for PSM Si" << std::endl;
         physical_dh_name = "kinematic/psm-si-physical.json";
     } else {
-        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << GetName() << ": no physical DH specified, so gravity compensation is not available" << std::endl;
+        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << GetName() << ": no GC kinematics specified, so gravity compensation is not available" << std::endl;
         return;
     }
 
     const auto physical_dh = configPath.Find(physical_dh_name);
     if (physical_dh == "") {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
-                                 << " using file \"" << filename << "\", can't find physical DH file \""
+                                 << " using file \"" << filename << "\", can't find GC kinematics file \""
                                  << physical_dh << "\"" << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -238,7 +250,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureGC(const Json::Value & jsonConfig,
         gravity_compensation = m_gc_instance.get();
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
-                                 << " using physical DH file \"" << physical_dh << "\", got error \""
+                                 << " using GC kinematics file \"" << physical_dh << "\", got error \""
                                  << m_gc_instance->error() << "\"" << std::endl;
         exit(EXIT_FAILURE);
     }
