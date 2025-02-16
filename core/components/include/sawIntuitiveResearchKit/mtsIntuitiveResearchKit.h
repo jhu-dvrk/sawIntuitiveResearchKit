@@ -92,7 +92,7 @@ namespace mtsIntuitiveResearchKit {
         const double ClassicSDMass = 1.5;
         const double ClassicHDMass = 2.5;
         const double SiHDMass = 1.8;
-        const double EmptyMass = 0.05;
+        const double EmptyMass = 0.1;
     }
 
     // teleoperation constants

@@ -243,6 +243,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     m_spatial_measured_cf.SetValid(false);
 
     // efforts computed by gravity compensation
+    m_feed_forward_jf_param.ForceTorque().SetSize(number_of_joints());
+    m_feed_forward_jf_param.ForceTorque().Zeros();
     m_gravity_compensation_setpoint_js.Effort().SetSize(number_of_joints_kinematics());
     m_gravity_compensation_setpoint_js.Effort().Zeros();
     m_gravity_compensation_setpoint_js.SetAutomaticTimestamp(false);
@@ -1870,12 +1872,6 @@ void mtsIntuitiveResearchKitArm::control_servo_jf(void)
 {
     // effort required
     m_servo_jf_vector.Assign(m_servo_jf.ForceTorque());
-
-    // add gravity compensation if needed
-    if (m_gravity_compensation && m_gravity_compensation_setpoint_js.Valid()) {
-        m_servo_jf_vector.Add(m_gravity_compensation_setpoint_js.Effort());
-    }
-
     // convert to cisstParameterTypes
     servo_jf_internal(m_servo_jf_vector);
 }
@@ -1927,11 +1923,6 @@ void mtsIntuitiveResearchKitArm::control_servo_cf(void)
         m_servo_jf_vector.Add(effortPreload);
     }
 
-    // add gravity compensation if needed
-    if (m_gravity_compensation && m_gravity_compensation_setpoint_js.Valid()) {
-        m_servo_jf_vector.Add(m_gravity_compensation_setpoint_js.Effort());
-    }
-
     // send to PID
     servo_jf_internal(m_servo_jf_vector);
 
@@ -1950,6 +1941,8 @@ void mtsIntuitiveResearchKitArm::servo_jf_internal(const vctDoubleVec & jf)
         m_servo_jf_param.ForceTorque() = m_coupling.JointToActuatorEffort() * m_servo_jf_param.ForceTorque();
     }
     PID.servo_jf(m_servo_jf_param);
+
+    apply_feed_forward();
 }
 
 void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
@@ -1971,6 +1964,29 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
         }
     }
     PID.servo_jp(m_servo_jp_param);
+
+    apply_feed_forward();
+}
+
+vctDoubleVec mtsIntuitiveResearchKitArm::compute_feed_forward(void)
+{
+    if (m_gravity_compensation && m_gravity_compensation_setpoint_js.Valid()) {
+        return m_gravity_compensation_setpoint_js.Effort();
+    } else {
+        return vctDoubleVec(number_of_joints_kinematics(), 0.0);
+    }
+}
+
+void mtsIntuitiveResearchKitArm::apply_feed_forward()
+{
+    auto& jf = m_feed_forward_jf_param.ForceTorque();
+    auto ff = compute_feed_forward();
+    jf.Zeros(); // reset feed forward
+    jf.Ref(ff.size()).Assign(ff);
+
+    if (m_has_coupling) { jf = m_coupling.JointToActuatorEffort() * jf; }
+    m_feed_forward_jf_param.SetTimestamp(StateTable.GetTic());
+    PID.feed_forward_servo_jf(m_feed_forward_jf_param);
 }
 
 void mtsIntuitiveResearchKitArm::hold(void)
@@ -1993,8 +2009,6 @@ void mtsIntuitiveResearchKitArm::free(void)
         return;
     }
 
-    // turn gravity compensation on
-    this->use_gravity_compensation(true);
     // request zero effort in joint space
     prmForceTorqueJointSet jf;
     jf.ForceTorque().SetSize(number_of_joints_kinematics());

@@ -144,6 +144,7 @@ protected:
     double m_platform_gain = mtsIntuitiveResearchKit::MTMPlatform::Gain;
 
     std::unique_ptr<robGravityCompensationMTM> m_gc_instance;
+    vctDoubleVec compute_feed_forward(void) override;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);

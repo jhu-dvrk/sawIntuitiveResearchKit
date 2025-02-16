@@ -188,6 +188,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void servo_jp_internal(const vctDoubleVec & jp,
                                    const vctDoubleVec & jv);
     virtual void servo_jf_internal(const vctDoubleVec & jf);
+    // compute a joint-space feed forward to send to PID
+    virtual vctDoubleVec compute_feed_forward(void);
+    // compute and apply effort feed forward (e.g. gravity compensation)
+    virtual void apply_feed_forward();
 
     /*! Methods used for commands */
     virtual void hold(void);
@@ -356,6 +360,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmForceTorqueJointSet
         m_servo_jf_param, // number of joints PID, used in servo_jf_internal
         m_servo_jf; // number of joints for kinematics
+    prmForceTorqueJointSet m_feed_forward_jf_param;
     vctDoubleVec m_servo_jf_vector; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData
@@ -372,7 +377,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctDoubleVec mEffortOrientationJoint;
     vctMatRot3 mEffortOrientation;
     // use gravity compensation or not
-    bool m_gravity_compensation = false;
+    bool m_gravity_compensation = true; // on by default if arm has GC
     double m_mounting_pitch = std::numeric_limits<double>::infinity(); // used for ECMs Classic and Si as well as PSMs Si
     // used in get_robot_data to compute gravity compensation setpoint
     // ! Note: non-owning pointer - subclass should own actual instance

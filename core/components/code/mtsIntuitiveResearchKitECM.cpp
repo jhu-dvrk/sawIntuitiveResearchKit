@@ -369,9 +369,6 @@ void mtsIntuitiveResearchKitECM::EnterHomed(void)
 {
     mtsIntuitiveResearchKitArm::EnterHomed();
 
-    // set gravity compensation
-    m_gravity_compensation = true;
-
     // event to propagate endoscope type based on configuration file
     EndoscopeEvents.endoscope_type(mtsIntuitiveResearchKitEndoscopeTypes::TypeToString(m_endoscope_type));
 }
@@ -379,18 +376,14 @@ void mtsIntuitiveResearchKitECM::EnterHomed(void)
 void mtsIntuitiveResearchKitECM::EnterManual(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
-    PID.EnableTrackingError(false);
-    SetControlEffortActiveJoints();
+    free();
 }
 
 void mtsIntuitiveResearchKitECM::RunManual(void)
 {
-    // zero efforts
-    m_servo_jf_vector.SetAll(0.0);
-    if (m_gravity_compensation) {
-        m_servo_jf_vector.Add(m_gravity_compensation_setpoint_js.Effort());
+    if (mControlCallback) {
+        mControlCallback->Execute();
     }
-    servo_jf_internal(m_servo_jf_vector);
 }
 
 void mtsIntuitiveResearchKitECM::LeaveManual(void)

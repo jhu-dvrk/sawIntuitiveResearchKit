@@ -1219,22 +1219,15 @@ void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
 void mtsIntuitiveResearchKitPSM::EnterManual(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
-    PID.EnableTrackingError(false);
-    SetControlEffortActiveJoints();
-    this->use_gravity_compensation(true);
-    m_servo_jf_vector.SetSize(number_of_joints_kinematics());
-    m_servo_jf_vector.Zeros();
     m_jaw_servo_jf = 0.0;
+    free();
 }
 
 void mtsIntuitiveResearchKitPSM::RunManual(void)
 {
-    // zero efforts
-    m_servo_jf_vector.SetAll(0.0);
-    if (m_gravity_compensation && m_gravity_compensation_setpoint_js.Valid()) {
-        m_servo_jf_vector.Ref(number_of_joints_kinematics()).Add(m_gravity_compensation_setpoint_js.Effort());
+    if (mControlCallback) {
+        mControlCallback->Execute();
     }
-    servo_jf_internal(m_servo_jf_vector);
 }
 
 void mtsIntuitiveResearchKitPSM::LeaveManual(void)
@@ -1341,6 +1334,8 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
         }
     }
     PID.servo_jp(m_servo_jp_param);
+
+    apply_feed_forward();
 }
 
 void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & effort)
@@ -1374,10 +1369,6 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
 
 void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffort)
 {
-    if (!is_cartesian_ready()) {
-        mtsIntuitiveResearchKitArm::servo_jf_internal(newEffort);
-        return;
-    }
 
     // pad array for PID
     vctDoubleVec torqueDesired(number_of_joints(), 0.0); // for PID
@@ -1389,6 +1380,11 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffor
     // add torque for jaws
     torqueDesired.at(6) = m_jaw_servo_jf;
 
+    if (!is_cartesian_ready()) {
+        // set all tool joints to have zero effort
+        torqueDesired.Ref(torqueDesired.size() - 3, 3).Zeros();
+    }
+
     // convert to cisstParameterTypes
     m_servo_jf_param.SetForceTorque(torqueDesired);
     m_servo_jf_param.SetTimestamp(StateTable.GetTic());
@@ -1396,6 +1392,8 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffor
         m_servo_jf_param.ForceTorque() = m_coupling.JointToActuatorEffort() * m_servo_jf_param.ForceTorque();
     }
     PID.servo_jf(m_servo_jf_param);
+
+    apply_feed_forward();
 }
 
 void mtsIntuitiveResearchKitPSM::control_move_jp_on_stop(const bool goal_reached)

@@ -701,3 +701,15 @@ void mtsIntuitiveResearchKitMTM::unlock_orientation(void)
     // emit event
     mtm_events.orientation_locked(m_effort_orientation_locked);
 }
+
+vctDoubleVec mtsIntuitiveResearchKitMTM::compute_feed_forward(void)
+{
+    bool enable_gc = m_gravity_compensation &&
+                     m_control_mode != mtsIntuitiveResearchKitArmTypes::POSITION_MODE &&
+                     m_gravity_compensation_setpoint_js.Valid();
+    if (enable_gc) {
+        return m_gravity_compensation_setpoint_js.Effort();
+    } else {
+        return vctDoubleVec(number_of_joints_kinematics(), 0.0);
+    }
+}

@@ -59,9 +59,10 @@
                 "alpha": -1.570796327, "A":  0.0922, "theta":  3.14159625, "D":  -0.2012,
                 "type": "prismatic",
                 "mode": "active",
-                "mass": 1.8, "cx":   0.000, "cy":   0.000, "cz":  -0.144
-                //"mass": 0.0, // mass is set in code, depending on endoscope type
+                // mass is set in code, depending on endoscope type
+                "mass": 0.0,
                 // approximative position of endoscope center of gravity
+                "cx":   0.000, "cy":   0.000, "cz":  -0.144
             }
         ]
     }
