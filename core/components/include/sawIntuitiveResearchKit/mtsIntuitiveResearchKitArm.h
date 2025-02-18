@@ -86,8 +86,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
  protected:
     virtual void ConfigureGC(const Json::Value & CMN_UNUSED(armConfig),
-                     const cmnPath & CMN_UNUSED(configPath),
-                     const std::string & CMN_UNUSED(filename)) {};
+                             const cmnPath & CMN_UNUSED(configPath),
+                             const std::string & CMN_UNUSED(filename)) {};
 
     /*! Define wrench reference frame */
     typedef enum {WRENCH_UNDEFINED, WRENCH_SPATIAL, WRENCH_BODY} WrenchType;
