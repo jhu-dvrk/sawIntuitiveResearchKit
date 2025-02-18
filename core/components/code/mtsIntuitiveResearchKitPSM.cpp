@@ -244,14 +244,14 @@ void mtsIntuitiveResearchKitPSM::ConfigureGC(const Json::Value & jsonConfig,
         exit(EXIT_FAILURE);
     }
 
-    m_gc_instance = std::make_unique<GravityCompensationPSM>();
-    bool ok = m_gc_instance->configure(physical_dh);
+    m_gc = std::make_unique<GravityCompensationPSM>();
+    bool ok = m_gc->configure(physical_dh);
     if (ok) {
-        gravity_compensation = m_gc_instance.get();
+        gravity_compensation = m_gc.get();
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
                                  << " using GC kinematics file \"" << physical_dh << "\", got error \""
-                                 << m_gc_instance->error() << "\"" << std::endl;
+                                 << m_gc->error() << "\"" << std::endl;
         exit(EXIT_FAILURE);
     }
 }
@@ -1584,12 +1584,16 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
     // Start manual mode but save the previous state
     switch (button.Type()) {
     case prmEventButton::PRESSED:
-        ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
-        PID.Enabled(ClutchEvents.PIDEnabledPreviousState);
-        mArmState.SetCurrentState("MANUAL");
-        set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
-                        mtsIntuitiveResearchKit::Green200,
-                        true, false);
+        if (ArmIsReady("Clutch", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+            ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
+            PID.Enabled(ClutchEvents.PIDEnabledPreviousState);
+            mArmState.SetCurrentState("MANUAL");
+            set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
+                            mtsIntuitiveResearchKit::Green200,
+                            true, false);
+        } else {
+            m_arm_interface->SendWarning(this->GetName() + ": arm not ready yet, manipulator clutch ignored");
+        }
         break;
     case prmEventButton::RELEASED:
         if (mArmState.CurrentState() == "MANUAL") {

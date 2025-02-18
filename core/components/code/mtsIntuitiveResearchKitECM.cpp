@@ -219,14 +219,14 @@ void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
         exit(EXIT_FAILURE);
     }
 
-    m_gc_instance = std::make_unique<GravityCompensationECM>();
-    bool ok = m_gc_instance->configure(physical_dh);
+    m_gc = std::make_unique<GravityCompensationECM>();
+    bool ok = m_gc->configure(physical_dh);
     if (ok) {
-        gravity_compensation = m_gc_instance.get();
+        gravity_compensation = m_gc.get();
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
                                  << " using GC kinematics file \"" << physical_dh << "\", got error \""
-                                 << m_gc_instance->error() << "\"" << std::endl;
+                                 << m_gc->error() << "\"" << std::endl;
         exit(EXIT_FAILURE);
     }
 }
@@ -406,7 +406,7 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
     // Start manual mode but save the previous state
     switch (button.Type()) {
     case prmEventButton::PRESSED:
-        if (is_joint_ready()) {
+        if (ArmIsReady("Clutch", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
             ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
             mArmState.SetCurrentState("MANUAL");
             set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
@@ -513,7 +513,7 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
         break;
     }
 
-    m_gc_instance->setEndoscopeMass(mass);
+    m_gc->setEndoscopeMass(mass);
 
     // set configured flag
     m_endoscope_configured = true;

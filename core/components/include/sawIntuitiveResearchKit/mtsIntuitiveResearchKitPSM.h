@@ -221,7 +221,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     vctDoubleVec m_tool_engage_lower_position,
         m_tool_engage_upper_position;
 
-    std::unique_ptr<GravityCompensationPSM> m_gc_instance;
+    std::unique_ptr<GravityCompensationPSM> m_gc;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitPSM);

@@ -587,7 +587,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         mtsComponent::ConfigureJSON(jsonConfig);
 
         // detect if we're using 1.8 and up with two fields, kinematic and tool-detection
-        auto jsonKinematic = jsonConfig["kinematic"];
+        const auto jsonKinematic = jsonConfig["kinematic"];
         if (jsonKinematic.isNull()) {
             std::stringstream message;
             message << "Configure " << this->GetName() << ":" << std::endl
@@ -1954,21 +1954,19 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
     apply_feed_forward();
 }
 
-vctDoubleVec mtsIntuitiveResearchKitArm::compute_feed_forward(void)
+bool mtsIntuitiveResearchKitArm::should_use_feed_forward(void)
 {
-    if (m_gravity_compensation && m_gravity_compensation_setpoint_js.Valid()) {
-        return m_gravity_compensation_setpoint_js.Effort();
-    } else {
-        return vctDoubleVec(number_of_joints_kinematics(), 0.0);
-    }
+    return m_gravity_compensation && m_gravity_compensation_setpoint_js.Valid();
 }
 
 void mtsIntuitiveResearchKitArm::apply_feed_forward()
 {
     auto& jf = m_feed_forward_jf_param.ForceTorque();
-    auto ff = compute_feed_forward();
     jf.Zeros(); // reset feed forward
-    jf.Ref(ff.size()).Assign(ff);
+    if (should_use_feed_forward()) {
+        const auto& gc_jf = m_gravity_compensation_setpoint_js.Effort();
+        jf.Ref(gc_jf.size()).Assign(gc_jf);
+    }
 
     if (m_has_coupling) { jf = m_coupling.JointToActuatorEffort() * jf; }
     m_feed_forward_jf_param.SetTimestamp(StateTable.GetTic());

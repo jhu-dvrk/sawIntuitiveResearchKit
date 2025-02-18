@@ -119,7 +119,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     robManipulator * ToolOffset;
     vctFrm4x4 ToolOffsetTransformation;
 
-    std::unique_ptr<GravityCompensationECM> m_gc_instance;
+    std::unique_ptr<GravityCompensationECM> m_gc;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitECM);

@@ -182,18 +182,15 @@ void robGravityCompensationMTM::AssignRegressor(const vctVec & q, vctMat & regre
 
 vctVec robGravityCompensationMTM::compute(const prmStateJoint& state, vct3 CMN_UNUSED(gravity))
 {
-    vctVec q = state.Position();
-    vctVec q_dot = state.Velocity();
-
-    AssignRegressor(q, mRegressor);
+    AssignRegressor(state.Position(), mRegressor);
     if ( 1 == mVersion ) {
-        ComputeBetaVel(q_dot);
+        ComputeBetaVel(state.Velocity());
         mOnes.SetAll(1.0);
         mOneMinusBeta = mOnes.Subtract(mBeta);
         mTauPos.ProductOf(mRegressor, mParameters.Pos).ElementwiseMultiply(mBeta);
         mTauNeg.ProductOf(mRegressor, mParameters.Neg).ElementwiseMultiply(mOneMinusBeta);
     } else if ( 2 == mVersion ) {
-        ComputeAlphaVel(q_dot);
+        ComputeAlphaVel(state.Velocity());
         mOnes.SetAll(1.0);
         mOneMinusAlpha = mOnes.Subtract(mAlpha);
         mTauPos.ProductOf(mRegressor, mParameters.Pos).ElementwiseMultiply(mAlpha);
