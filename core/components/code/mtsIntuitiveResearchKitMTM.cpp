@@ -702,7 +702,7 @@ void mtsIntuitiveResearchKitMTM::unlock_orientation(void)
     mtm_events.orientation_locked(m_effort_orientation_locked);
 }
 
-bool mtsIntuitiveResearchKitMTM::should_use_feed_forward(void)
+bool mtsIntuitiveResearchKitMTM::should_use_gravity_compensation(void)
 {
     return m_gravity_compensation &&
            m_control_mode != mtsIntuitiveResearchKitArmTypes::POSITION_MODE &&

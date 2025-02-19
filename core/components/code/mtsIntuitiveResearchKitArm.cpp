@@ -1954,7 +1954,7 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
     apply_feed_forward();
 }
 
-bool mtsIntuitiveResearchKitArm::should_use_feed_forward(void)
+bool mtsIntuitiveResearchKitArm::should_use_gravity_compensation(void)
 {
     return m_gravity_compensation && m_gravity_compensation_setpoint_js.Valid();
 }
@@ -1963,12 +1963,15 @@ void mtsIntuitiveResearchKitArm::apply_feed_forward()
 {
     auto& jf = m_feed_forward_jf_param.ForceTorque();
     jf.Zeros(); // reset feed forward
-    if (should_use_feed_forward()) {
+    if (should_use_gravity_compensation()) {
         const auto& gc_jf = m_gravity_compensation_setpoint_js.Effort();
         jf.Ref(gc_jf.size()).Assign(gc_jf);
     }
 
-    if (m_has_coupling) { jf = m_coupling.JointToActuatorEffort() * jf; }
+    if (m_has_coupling) {
+        jf = m_coupling.JointToActuatorEffort() * jf;
+    }
+
     m_feed_forward_jf_param.SetTimestamp(StateTable.GetTic());
     PID.feed_forward_servo_jf(m_feed_forward_jf_param);
 }

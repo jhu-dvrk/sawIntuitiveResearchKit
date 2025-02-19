@@ -189,7 +189,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
                                    const vctDoubleVec & jv);
     virtual void servo_jf_internal(const vctDoubleVec & jf);
     // compute a joint-space feed forward to send to PID
-    virtual bool should_use_feed_forward(void);
+    virtual bool should_use_gravity_compensation(void);
     // compute and apply effort feed forward (e.g. gravity compensation)
     virtual void apply_feed_forward();
 
