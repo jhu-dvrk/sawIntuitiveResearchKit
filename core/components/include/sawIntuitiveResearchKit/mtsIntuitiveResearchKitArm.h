@@ -47,6 +47,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
+#include <sawIntuitiveResearchKit/robGravityCompensation.h>
 
 // forward declarations
 class osaCartesianImpedanceController;
@@ -84,6 +85,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     }
 
  protected:
+    virtual void ConfigureGC(const Json::Value & CMN_UNUSED(armConfig),
+                             const cmnPath & CMN_UNUSED(configPath),
+                             const std::string & CMN_UNUSED(filename)) {};
 
     /*! Define wrench reference frame */
     typedef enum {WRENCH_UNDEFINED, WRENCH_SPATIAL, WRENCH_BODY} WrenchType;
@@ -184,7 +188,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void servo_jp_internal(const vctDoubleVec & jp,
                                    const vctDoubleVec & jv);
     virtual void servo_jf_internal(const vctDoubleVec & jf);
-    inline virtual void update_feed_forward(vctDoubleVec & CMN_UNUSED(feedForward)) {};
+    // compute a joint-space feed forward to send to PID
+    virtual bool should_use_gravity_compensation(void);
+    // compute and apply effort feed forward (e.g. gravity compensation)
+    virtual void apply_feed_forward();
 
     /*! Methods used for commands */
     virtual void hold(void);
@@ -197,7 +204,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void servo_cr(const prmPositionCartesianSet & difference);
     virtual void move_cp(const prmPositionCartesianSet & cp);
     virtual void servo_jf(const prmForceTorqueJointSet & jf);
-    virtual void pid_feed_forward_servo_jf(const prmForceTorqueJointSet & jf);
     virtual void spatial_servo_cf(const prmForceCartesianSet & cf);
     virtual void body_servo_cf(const prmForceCartesianSet & cf);
     /*! Apply the wrench relative to the body or to reference frame (i.e. absolute). */
@@ -227,10 +233,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     inline virtual bool use_PID_tracking_error(void) const {
         return true;
-    }
-
-    inline virtual bool use_feed_forward(void) const {
-        return false;
     }
 
     /*! Inverse kinematics must be redefined for each arm type. */
@@ -278,7 +280,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionRead  measured_js;
         mtsFunctionRead  setpoint_js;
         mtsFunctionWrite servo_jp;
-        mtsFunctionWrite feed_forward_jf;
+        mtsFunctionWrite feed_forward_servo_jf;
         mtsFunctionWrite enforce_position_limits;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite servo_jf;
@@ -342,7 +344,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmPositionJointSet m_servo_jp_param;
     vctDoubleVec m_servo_jp;
     vctDoubleVec m_servo_jv;
-    prmForceTorqueJointSet m_pid_feed_forward_servo_jf;
     prmStateJoint
         m_pid_measured_js,
         m_pid_setpoint_js,
@@ -359,6 +360,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmForceTorqueJointSet
         m_servo_jf_param, // number of joints PID, used in servo_jf_internal
         m_servo_jf; // number of joints for kinematics
+    prmForceTorqueJointSet m_feed_forward_jf_param;
     vctDoubleVec m_servo_jf_vector; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData
@@ -375,10 +377,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctDoubleVec mEffortOrientationJoint;
     vctMatRot3 mEffortOrientation;
     // use gravity compensation or not
-    bool m_gravity_compensation = false;
+    bool m_gravity_compensation = true; // on by default if arm has GC
     double m_mounting_pitch = std::numeric_limits<double>::infinity(); // used for ECMs Classic and Si as well as PSMs Si
-    // compute effort for gravity compensation based on current state, called in get_robot_data
-    virtual void gravity_compensation(vctDoubleVec & efforts);
+    // used in get_robot_data to compute gravity compensation setpoint
+    // ! Note: non-owning pointer - subclass should own actual instance
+    robGravityCompensation* gravity_compensation = nullptr;
 
     // Velocities
     prmVelocityCartesianGet

@@ -2,8 +2,8 @@
 {
     // see dVRK user guide
 
-    // DH parameters from Jack's code
-    // unit: rad and m
+    // yaw+pitch links based on PSM Si physical DH,
+    // with insertion link constructed to match ECM virtual DH
 
     "DH": {
         "convention": "modified",
@@ -13,7 +13,7 @@
                 "alpha": 1.570796327, "A": 0.0000, "theta": 1.570796327, "D": 0.0000,
                 "type": "revolute",
                 "mode": "active",
-                "mass": 0.994, "cx":  -0.094, "cy":   0.082, "cz":   0.000
+                "mass": 1.003, "cx":  -0.117, "cy":   0.068, "cz":   0.000
             },
             // link offset to pitch1 is (-0.0712, 0, -0.2913), can't express with one DH transform
             {
@@ -22,7 +22,6 @@
                 "type": "revolute",
                 "mode": "passive"
             },
-
             // In intermediate yaw frame (but w/ origin at pitch1), parallelogram vertices when q=0 are
             // 1 ( 0,        0,      0)
             // 2 (-0.0922,  -0.1810, 0)
@@ -34,7 +33,7 @@
                 "alpha": 0.0000, "A": 0.2913, "theta": -2.04193, "D": 0.0000,
                 "type": "revolute",
                 "mode": "active",
-                "mass": 1.005, "cx":   0.011, "cy":  -0.056, "cz":   0.000
+                "mass": 1.391, "cx":   0.200, "cy":  -0.100, "cz":   0.000
             },
             { // add -q2 to theta - second angle in parallelogram
               // Euclidean length of link offset (-0.0922, -0.1810, 0) is 0.203130...
@@ -44,7 +43,7 @@
                 "alpha": 0, "A":  0.203130, "theta": 1.83474, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
-                "mass": 2.060, "cx":   0.004, "cy":  -0.020, "cz":   0.000
+                "mass": 1.792, "cx":   0.000, "cy":  -0.000, "cz":   0.000
             },
             { // add q2 to theta - third angle in parallelogram
               // Euclidean length of link offset (0.33872, -0.0712, 0) is 0.346122...
@@ -52,21 +51,18 @@
                 "alpha": 0, "A":  0.346122, "theta": 0.207187, "D":  0.0000,
                 "type": "revolute",
                 "mode": "active",
-                "mass": 2.041, "cx":   0.019, "cy":   0.013, "cz":   0.000
-            },
-            { // add q3/2 to D
-                "name": "insertion1",
-                "alpha": -1.570796327, "A":  0.0602, "theta":  3.14159625, "D":  -0.1800,
+                "mass": 1.845, "cx":   0.000, "cy":  -0.080, "cz":   0.000
+            }
+            ,
+            { // add q3 to D
+                "name": "insertion",
+                "alpha": -1.570796327, "A":  0.0922, "theta":  3.14159625, "D":  -0.2012,
                 "type": "prismatic",
                 "mode": "active",
-                "mass": 0.0
-            },
-            { // add q3/2 to D
-                "name": "insertion2",
-                "alpha":  0.0000, "A":  -0.0320, "theta":  0.0000, "D":  -0.1215,
-                "type": "prismatic",
-                "mode": "active",
-                "mass": 0.637, "cx":   0.018, "cy":   0.000, "cz":   0.060
+                // mass is set in code, depending on endoscope type
+                "mass": 0.0,
+                // approximative position of endoscope center of gravity
+                "cx":   0.000, "cy":   0.000, "cz":  -0.144
             }
         ]
     }

@@ -168,6 +168,7 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsPSMCompensation.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/prmActuatorJointCouplingCheck.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/prmConfigurationJointFromManipulator.h
+         ${sawIntuitiveResearchKit_HEADER_DIR}/robGravityCompensation.h
         )
 
     set (SOURCE_FILES

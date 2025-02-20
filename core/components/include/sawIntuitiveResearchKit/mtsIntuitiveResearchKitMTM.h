@@ -34,7 +34,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitMTM: public mtsIntuitiveResearchKitArm
 public:
     mtsIntuitiveResearchKitMTM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitMTM(const mtsTaskPeriodicConstructorArg & arg);
-    ~mtsIntuitiveResearchKitMTM() override;
+    ~mtsIntuitiveResearchKitMTM();
+
     void set_simulated(void) override;
 
 protected:
@@ -70,7 +71,7 @@ protected:
         return false;
     }
 
-    void ConfigureGC(const std::string & filename);
+    void ConfigureGC(const Json::Value & armConfig, const cmnPath & configPath, const std::string & filename) override;
 
     robManipulator::Errno InverseKinematics(vctDoubleVec & jointSet,
                                             const vctFrm4x4 & cartesianGoal) const override;
@@ -116,8 +117,6 @@ protected:
     virtual void lock_orientation(const vctMatRot3 & orientation);
     virtual void unlock_orientation(void);
 
-    void gravity_compensation(vctDoubleVec & efforts) override;
-
     // Functions for events
     struct {
         mtsFunctionWrite orientation_locked;
@@ -142,9 +141,10 @@ protected:
     prmStateJoint m_gripper_measured_js;
     prmConfigurationJoint m_gripper_configuration_js;
 
-    robGravityCompensationMTM * GravityCompensationMTM = 0;
-
     double m_platform_gain = mtsIntuitiveResearchKit::MTMPlatform::Gain;
+
+    std::unique_ptr<robGravityCompensationMTM> m_gc_instance;
+    bool should_use_gravity_compensation(void) override;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitMTM);

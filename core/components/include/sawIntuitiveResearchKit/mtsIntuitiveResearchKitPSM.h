@@ -27,6 +27,8 @@ http://www.cisst.org/cisst/license.txt.
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
+// forward declaration, definition in mtsIntuitiveResearchKitPSM.cpp
+class GravityCompensationPSM;
 
 class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 {
@@ -35,7 +37,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
  public:
     mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds);
     mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg);
-    inline ~mtsIntuitiveResearchKitPSM() override {};
+    ~mtsIntuitiveResearchKitPSM();
+    
     void set_simulated(void) override;
 
  protected:
@@ -48,6 +51,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void tool_full_description(const size_t & index, std::string & description) const;
 
     void PostConfigure(const Json::Value & jsonConfig,
+                       const cmnPath & configPath,
+                       const std::string & filename) override;
+    void ConfigureGC(const Json::Value & jsonConfig,
                        const cmnPath & configPath,
                        const std::string & filename) override;
     virtual bool ConfigureTool(const std::string & filename);
@@ -112,6 +118,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     // manual mode
     void EnterManual(void);
+    void RunManual(void);
+    void LeaveManual(void);
+
     void EventHandlerAdapter(const prmEventButton & button);
 
     /*! This should be called to set either m_tool_present or m_tool_configured. */
@@ -211,6 +220,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     vctDoubleVec m_tool_engage_lower_position,
         m_tool_engage_upper_position;
+
+    std::unique_ptr<GravityCompensationPSM> m_gc;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitPSM);
