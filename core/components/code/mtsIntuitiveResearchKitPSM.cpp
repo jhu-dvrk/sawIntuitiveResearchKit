@@ -1289,6 +1289,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
 
     // save goal
     m_jaw_servo_jp = jawPosition.Goal().at(0);
+    m_servo_jp.at(6) = m_jaw_servo_jp;
     m_pid_new_goal = true;
 }
 
