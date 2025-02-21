@@ -1248,6 +1248,17 @@ void mtsIntuitiveResearchKitPSM::LeaveManual(void)
     hold();
 }
 
+double mtsIntuitiveResearchKitPSM::clip_jaw_jp(double jp)
+{
+    if (jp > m_jaw_configuration_js.PositionMax().at(0)) {
+        jp = m_jaw_configuration_js.PositionMax().at(0);
+    } else if (jp < m_jaw_configuration_js.PositionMin().at(0)) {
+        jp = m_jaw_configuration_js.PositionMin().at(0);
+    }
+
+    return jp;
+}
+
 void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPosition)
 {
     // we need to need to at least ready to control in cartesian space
@@ -1278,6 +1289,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
 
     // save goal
     m_jaw_servo_jp = jawPosition.Goal().at(0);
+    m_servo_jp.at(6) = m_jaw_servo_jp;
     m_pid_new_goal = true;
 }
 
@@ -1325,9 +1337,14 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
 
     CMN_ASSERT(m_servo_jp_param.Goal().size() == 7);
     // first 6 joints, assign positions and check limits
-    vctDoubleVec jp_clipped(jp);
+    vctDoubleVec jp_clipped(jp.Ref(number_of_joints_kinematics()));
     clip_jp(jp_clipped);
     ToJointsPID(jp_clipped, m_servo_jp_param.Goal());
+
+    if (jp.size() == 7) {
+        m_jaw_servo_jp = clip_jaw_jp(jp.at(6));
+    }
+
     // velocity - current code only support jaw_servo_jv if servo_jp has a velocity goal
     const size_t jv_size = jv.size();
     m_servo_jp_param.Velocity().SetSize(7);

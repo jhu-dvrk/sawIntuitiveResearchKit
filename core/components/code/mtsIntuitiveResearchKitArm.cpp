@@ -1511,7 +1511,7 @@ void mtsIntuitiveResearchKitArm::control_move_jp(void)
                                       m_servo_jv,
                                       m_trajectory_j.goal,
                                       m_trajectory_j.goal_v);
-    mtsIntuitiveResearchKitArm::servo_jp_internal(m_servo_jp, m_servo_jv);
+    servo_jp_internal(m_servo_jp, m_servo_jv);
 
     const robReflexxes::ResultType trajectoryResult = m_trajectory_j.Reflexxes.ResultValue();
     const double currentTime = this->StateTable.GetTic();
@@ -1986,7 +1986,7 @@ void mtsIntuitiveResearchKitArm::hold(void)
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
-    m_servo_jp.Assign(m_kin_setpoint_js.Position(), number_of_joints_kinematics());
+    m_servo_jp.Assign(m_kin_setpoint_js.Position(), number_of_joints());
     m_pid_new_goal = true;
 }
 
