@@ -198,7 +198,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void move_jr(const prmPositionJointSet & jp);
     virtual void servo_cp(const prmPositionCartesianSet & cp);
     virtual void servo_cr(const prmPositionCartesianSet & difference);
-    virtual void servo_cpvf(const prmStateCartesian & cs);
+    virtual void servo_cs(const prmStateCartesian & cs);
     virtual void move_cp(const prmPositionCartesianSet & cp);
     virtual void servo_jf(const prmForceTorqueJointSet & jf);
     virtual void pid_feed_forward_servo_jf(const prmForceTorqueJointSet & jf);
@@ -327,7 +327,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     // cache cartesian goal position and increment
     bool m_pid_new_goal = false;
-    prmStateCartesian m_servo_cpvf;
+    prmStateCartesian m_servo_cs;
     vctFrm3 mCartesianRelative;
 
     // internal kinematics
