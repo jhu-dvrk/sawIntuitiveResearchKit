@@ -1986,7 +1986,7 @@ void mtsIntuitiveResearchKitArm::hold(void)
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal
-    m_servo_jp.Assign(m_kin_setpoint_js.Position(), number_of_joints());
+    m_servo_jp.Assign(m_pid_setpoint_js.Position());
     m_pid_new_goal = true;
 }
 
