@@ -33,9 +33,9 @@ http://www.cisst.org/cisst/license.txt.
 class GravityCompensationECM : public robGravityCompensation {
 public:
     bool configure(std::string physical_dh_file);
-    std::string error();
+    std::string error(void);
 
-    void setEndoscopeMass(double mass);
+    void set_endoscope_mass(double mass);
     vctVec compute(const prmStateJoint& state, vct3 gravity) override;
 private:
     robManipulator physical_model;
@@ -62,12 +62,12 @@ bool GravityCompensationECM::configure(std::string physical_dh_file)
     }
 }
 
-std::string GravityCompensationECM::error()
+std::string GravityCompensationECM::error(void)
 {
     return error_message;
 }
 
-void GravityCompensationECM::setEndoscopeMass(double mass)
+void GravityCompensationECM::set_endoscope_mass(double mass)
 {
     if (physical_model.links.size() == 6) {
         physical_model.links.at(5).MassData().Mass() = mass;
@@ -197,13 +197,12 @@ void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
 {
     std::string physical_dh_name;
     const auto jsonPhysicalDH = jsonConfig["kinematic-gc"];
-    bool defined_as_empty = jsonPhysicalDH.isString() && jsonPhysicalDH.asString() == "";
-    if (!jsonPhysicalDH.isNull() && !defined_as_empty) {
+    if (!jsonPhysicalDH.isNull()) {
         physical_dh_name = jsonPhysicalDH.asString();
-    } else if (m_generation == GENERATION_Si && !defined_as_empty) {
+    } else if (m_generation == GENERATION_Si) {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Si" << std::endl;
         physical_dh_name = "kinematic/ecm-si-physical.json";
-    } else if (m_generation == GENERATION_Classic && !defined_as_empty) {
+    } else if (m_generation == GENERATION_Classic) {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Classic" << std::endl;
         physical_dh_name = "kinematic/ecm.json";
     } else {
@@ -513,7 +512,7 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
         break;
     }
 
-    m_gc->setEndoscopeMass(mass);
+    m_gc->set_endoscope_mass(mass);
 
     // set configured flag
     m_endoscope_configured = true;

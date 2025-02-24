@@ -36,7 +36,7 @@ http://www.cisst.org/cisst/license.txt.
 class GravityCompensationPSM : public robGravityCompensation {
 public:
     bool configure(std::string physical_dh_file);
-    std::string error();
+    std::string error(void);
 
     vctVec compute(const prmStateJoint& state, vct3 gravity) override;
 private:
@@ -61,7 +61,7 @@ bool GravityCompensationPSM::configure(std::string physical_dh_file)
     }
 }
 
-std::string GravityCompensationPSM::error()
+std::string GravityCompensationPSM::error(void)
 {
     return error_message;
 }
@@ -225,10 +225,9 @@ void mtsIntuitiveResearchKitPSM::ConfigureGC(const Json::Value & jsonConfig,
 {
     std::string physical_dh_name;
     const auto jsonPhysicalDH = jsonConfig["kinematic-gc"];
-    bool defined_as_empty = jsonPhysicalDH.isString() && jsonPhysicalDH.asString() == "";
-    if (!jsonPhysicalDH.isNull() && !defined_as_empty) {
+    if (!jsonPhysicalDH.isNull()) {
         physical_dh_name = jsonPhysicalDH.asString();
-    } else if (m_generation == GENERATION_Si && !defined_as_empty) {
+    } else if (m_generation == GENERATION_Si) {
         CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << GetName() << ": no GC kinematics specified, using default for PSM Si" << std::endl;
         physical_dh_name = "kinematic/psm-si-physical.json";
     } else {
