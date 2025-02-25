@@ -322,7 +322,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("measured_js", PID.measured_js);
         PIDInterface->AddFunction("setpoint_js", PID.setpoint_js);
         PIDInterface->AddFunction("servo_jp", PID.servo_jp);
-        PIDInterface->AddFunction("feed_forward_jf", PID.feed_forward_jf);
+        PIDInterface->AddFunction("feed_forward/servo_jf", PID.feed_forward_jf);
         PIDInterface->AddFunction("enforce_position_limits", PID.enforce_position_limits);
         PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
         PIDInterface->AddFunction("servo_jf", PID.servo_jf);
