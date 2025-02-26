@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.2/dvrk-mtm.schema.json",
-    "title": "dVRK mtm 2.2",
+    "title": "dVRK mtm",
     "description": "Configuration file format for the dVRK MTM arm component.  Some of the properties are inherited from the See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).<ul><li>MTM schema extends [arm schema](dvrk-arm.html)<li>For details of implementation, see code under `sawIntuitiveResearchKit/components/code/mtsIntuitiveResearchKitMTM.cpp`<li>[Schema file](dvrk-mtm.schema.json)</ul>",
     "allOf": [
         { "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-arm.schema.json#/" },
