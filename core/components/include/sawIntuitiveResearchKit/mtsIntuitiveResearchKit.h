@@ -92,6 +92,7 @@ namespace mtsIntuitiveResearchKit {
         const double ClassicSDMass = 1.5;
         const double ClassicHDMass = 2.5;
         const double SiHDMass = 1.8;
+        const double CustomMass = 0.8;
         const double EmptyMass = 0.1;
     }
 

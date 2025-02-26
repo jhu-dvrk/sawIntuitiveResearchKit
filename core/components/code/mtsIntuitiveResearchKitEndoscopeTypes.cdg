@@ -55,5 +55,17 @@ class {
             name Si_HD_DOWN;
             description Si HD Down;
         }
+        enum-value {
+            name Custom_STRAIGHT;
+            description Custom Straight;
+        }
+        enum-value {
+            name Custom_UP;
+            description Custom Up;
+        }
+        enum-value {
+            name Custom_DOWN;
+            description Custom Down;
+        }
     }
 }

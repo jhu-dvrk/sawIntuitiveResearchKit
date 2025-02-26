@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -461,16 +461,30 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     m_endoscope_type = mtsIntuitiveResearchKitEndoscopeTypes::TypeFromString(endoscopeType);
 
     // update tool tip offset
-    ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
-                                    -1.0,  0.0,  0.0,  0.0,
-                                     0.0,  0.0,  1.0,  0.0,
-                                     0.0,  0.0,  0.0,  1.0);
+    switch (m_endoscope_type) {
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_DOWN:
+        ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
+                                         -1.0,  0.0,  0.0, 0.0,
+                                         0.0,  0.0,  1.0,  0.18,
+                                         0.0,  0.0,  0.0,  1.0);
+        break;
+    default:
+        ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
+                                         -1.0,  0.0,  0.0,  0.0,
+                                         0.0,  0.0,  1.0,  0.0,
+                                         0.0,  0.0,  0.0,  1.0);
+        break;
+    }
+
     vctFrm4x4 tip;
     tip.Translation().Assign(vct3(0.0, 0.0, 0.0));
     switch (m_endoscope_type) {
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_SD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_HD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_UP:
         // -30 degree rotation along X axis
         tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), -30.0 * cmnPI_180));
         ToolOffsetTransformation = ToolOffsetTransformation * tip;
@@ -478,6 +492,7 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_SD_DOWN:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_HD_DOWN:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_DOWN:
         // 30 degree rotation along X axis
         tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), 30.0 * cmnPI_180));
         ToolOffsetTransformation = ToolOffsetTransformation * tip;
@@ -507,6 +522,11 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_DOWN:
         mass = mtsIntuitiveResearchKit::ECM::SiHDMass;
+        break;
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_DOWN:
+        mass = mtsIntuitiveResearchKit::ECM::CustomMass;
         break;
     default:
         mass = mtsIntuitiveResearchKit::ECM::EmptyMass;
