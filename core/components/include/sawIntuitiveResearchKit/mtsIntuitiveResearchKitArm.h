@@ -191,7 +191,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     // compute a joint-space feed forward to send to PID
     virtual bool should_use_gravity_compensation(void);
     // compute and apply effort feed forward (e.g. gravity compensation)
-    virtual void apply_feed_forward();
+    virtual void apply_feed_forward(void);
 
     /*! Methods used for commands */
     virtual void hold(void);

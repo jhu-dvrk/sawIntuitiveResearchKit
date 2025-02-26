@@ -1959,7 +1959,7 @@ bool mtsIntuitiveResearchKitArm::should_use_gravity_compensation(void)
     return m_gravity_compensation && m_gravity_compensation_setpoint_js.Valid();
 }
 
-void mtsIntuitiveResearchKitArm::apply_feed_forward()
+void mtsIntuitiveResearchKitArm::apply_feed_forward(void)
 {
     auto& jf = m_feed_forward_jf_param.ForceTorque();
     jf.Zeros(); // reset feed forward

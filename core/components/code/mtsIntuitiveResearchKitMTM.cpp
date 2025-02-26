@@ -254,8 +254,8 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const Json::Value & armConfig,
                 exit(EXIT_FAILURE);
             }
 
-            m_gc_instance = std::unique_ptr<robGravityCompensationMTM>(result.Pointer);
-            gravity_compensation = m_gc_instance.get();
+            m_gc = std::unique_ptr<robGravityCompensationMTM>(result.Pointer);
+            gravity_compensation = m_gc.get();
             if (!result.ErrorMessage.empty()) {
                 CMN_LOG_CLASS_INIT_WARNING << "ConfigureGC " << this->GetName()
                                            << ": robGravityCompensationMTM created from file \""
