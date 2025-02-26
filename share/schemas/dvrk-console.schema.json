@@ -30,9 +30,9 @@
                     "type": "string",
                     "description": "Protocol used for all FireWire communications.  This applies wether the controllers are connected to the computer using FireWired or Ethernet (UDP with Link-Local).  This is an advanced setting and most users should avoid defining it.<ul><li>`sequential-read-write`: the PC reads data from each board (2 FPGA/QLA per controller), performs its computations (conversions, safety checks, PID, ...) and then writes sequentially to each board (N reads, N writes). This is the only protocol supported on older firmware (3 and below).<li>`sequential-read-broadcast-write`: the PC reads sequentially but performs a single write for all the boards. The write message is an array of values sent to the boards, each board access the data it needs by index (N reads, 1 write). This is the default protocol for the dVRK controllers with firmware 4 and above.<li>`broadcast-query-read-write`: the PC sends a single query/synchronization to all boards, read values are aggregated in single packet over the bus and there's a single write (1 query, 1 read, 1 write). This is the fastest protocol available but some FireWire cards seem to have trouble synchronizing the read packets. You will have to test it on your hardware to see if it supports this protocol or not.  `broadcast-read-write` is the older name for this protocol and is provided for backward compatibility.</ul>",
                     "enum": ["sequential-read-write", "srw",
-			     "sequential-read-broadcast-write", "srbw",
-			     "broadcast-query-read-write", "bqrw",
-			     "broadcast-read-write", "brw"],
+                 "sequential-read-broadcast-write", "srbw",
+                 "broadcast-query-read-write", "bqrw",
+                 "broadcast-read-write", "brw"],
                     "default": "sequential-read-broadcast-write"
                 },
 
@@ -102,15 +102,15 @@
             "properties": {
                 "operator-present": {
                     "description": "Alternate source for the \"operator-present\" sensor event",
-                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-interface-button.schema.json#/properties"
+                    "$ref": "dvrk-interface-button.schema.json"
                 },
                 "clutch": {
                     "description": "Alternate source for the \"clutch\" pedal event",
-                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-interface-button.schema.json#/properties"
+                    "$ref": "dvrk-interface-button.schema.json"
                 },
                 "camera": {
                     "description": "Alternate source for the \"camera\" pedal event",
-                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-interface-button.schema.json#/properties"
+                    "$ref": "dvrk-interface-button.schema.json"
                 }
             }
         },
@@ -157,7 +157,7 @@
 
         "component-manager": {
             "description": "See *cisstMultiTask* [component manager](cisst-component-manager.html)",
-            "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/cisst-component-manager.schema.json#/properties/component-manager"
+            "$ref": "cisst-component-manager.schema.json"
         },
 
         "arms": {
@@ -253,7 +253,7 @@
                                                   [  0.0,  0.0,          0.0,          1.0]]
                                 }
                             }
-			    ,
+                            ,
                             {
                                 "base-frame": {
                                     "component": "ECM",
@@ -269,7 +269,7 @@
                         "properties": {
 
                             "transform": {
-                                "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/cisst-matrices.schema.json#/properties/matrix4x4"
+                                "$ref": "cisst-matrices.schema.json#/definitions/matrix4x4"
                             },
 
                             "reference-frame": {
@@ -347,7 +347,6 @@
             }
         },
 
-
         "ecm-teleop": {
             "type": "object",
             "description": "Configuration for the ECM tele-operation component",
@@ -372,7 +371,7 @@
 
                 "configure-parameter": {
                     "description": "See *cisstMultiTask* [component manager](cisst-component-manager.html)",
-                    "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-teleop-ecm.schema.json#/properties"
+                    "$ref": "dvrk-teleop-ecm.schema.json"
                 },
 
                 "period": {
@@ -441,7 +440,7 @@
 
                     "configure-parameter": {
                         "description": "See *cisstMultiTask* [component manager](dvrk-teleop-psm.html)",
-                        "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-teleop-psm.schema.json#/"
+                        "$ref": "dvrk-teleop-psm.schema.json"
                     },
 
                     "period": {

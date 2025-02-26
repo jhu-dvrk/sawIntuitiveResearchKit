@@ -26,7 +26,7 @@
                         "description": "Name(s) of the instrument.  This field is compared to the value reported by the instrument's Dallas chip and might vary.  You can provide multiple names.",
                         "items": {
                             "type": "string",
-                            "description": "Name of the instrument.  By convention, use all caps with underscores.  For example \"LARGE_NEEDLE_DRIVER\".  The full name of the instrument is also including the required model and optional version, for example \"LARGE_NEEDLE_DRIVER:420006[12]"
+                            "description": "Name of the instrument.  By convention, use all caps with underscores.  For example \"LARGE\\_NEEDLE\\_DRIVER\".  The full name of the instrument is also including the required model and optional version, for example \"LARGE\\_NEEDLE\\_DRIVER:420006[12]"
                         }
                     }
                     ,
@@ -39,7 +39,7 @@
                     "version_max": {
                         "type": "integer",
                         "minimum": 0,
-                        "description": "Maximum version supported.  This is optional but if provided, one must make sure the ranges for a single instrument \"name:model\" don't overlap.  If \"version_min\" is provided but not \"version_max\", any instrument with a version higher than \"version_min\" will be using this instrument's \"file\"."
+                        "description": "Maximum version supported.  This is optional but if provided, one must make sure the ranges for a single instrument \"name:model\" don't overlap.  If \"version\\_min\" is provided but not \"version\\_max\", any instrument with a version higher than \"version_min\" will be using this instrument's \"file\"."
                     }
                     ,
                     "description": {
@@ -55,7 +55,7 @@
                     ,
                     "file": {
                         "type": "string",
-                        "description": "File with the tool DH and other parameters.  You should use a path relative to `sawIntuitiveResearchKit/share`.  The file name should match the \"name\"_\"model\""
+                        "description": "File with the tool DH and other parameters.  You should use a path relative to `sawIntuitiveResearchKit/share`.  The file name should match \"<name>\\_<model>.json\", e.g. \"LARGE\\_NEEDLE\\_DRIVER\\_400006.json\""
                     }
                 }
             }

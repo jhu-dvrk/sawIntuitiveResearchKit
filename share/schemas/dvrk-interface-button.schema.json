@@ -22,7 +22,8 @@
                 "component": "ForceDimensionSDK",
                 "interface": "MTMR-Center"
             }
-            ,
+        },
+        {
             "clutch": {
                 "component": "ForceDimensionSDK",
                 "interface": "MTMR-Top"

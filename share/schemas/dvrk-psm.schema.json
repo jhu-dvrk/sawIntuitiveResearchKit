@@ -4,7 +4,7 @@
     "title": "dVRK psm",
     "description": "Configuration file format for the dVRK PSM arm component.  Some of the properties are inherited from the See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).<ul><li>PSM schema extends [arm schema](dvrk-arm.html)<li>For details of implementation, see code under `sawIntuitiveResearchKit/components/code/mtsIntuitiveResearchKitPSM.cpp`<li>[Schema file](dvrk-psm.schema.json)</ul>",
     "allOf": [
-        { "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-arm.schema.json#/" },
+        { "$ref": "dvrk-arm.schema.json" },
 
         {
             "properties": {
@@ -21,7 +21,7 @@
                 }
                 ,
                 "tool": {
-                    "description": "Tool type (e.g. \"LARGE_NEEDLE_DRIVER:400006\" or \"LARGE_NEEDLE_DRIVER:420006[12]\" if the version is needed).   This is required if the \"tool-detection\" is set to \"FIXED\" and ignored otherwise.  This emulates the behavior of the dVRK 1.x and should only be used if the tool is never changed.",
+                    "description": "Tool type (e.g. \"LARGE\\_NEEDLE\\_DRIVER:400006\" or \"LARGE\\_NEEDLE\\_DRIVER:420006[12]\" if the version is needed).   This is required if the \"tool-detection\" is set to \"FIXED\" and ignored otherwise.  This emulates the behavior of the dVRK 1.x and should only be used if the tool is never changed.",
                     "type": "string"
                 }
             }

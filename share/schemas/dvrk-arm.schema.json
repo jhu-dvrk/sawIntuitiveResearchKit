@@ -11,10 +11,15 @@
             "type": "string"
         },
 
-	"generation": {
-            "description": "Arm generation, either a Standard (aka Classic) or Si.",
-            "type": "string",
-	    "enum": ["Classic", "Si"]
+        "kinematic-gc": {
+            "description": "Gravity compensation configuration file, i.e. DH parameters (with mass and center of mass) for `robManipulator`.",
+            "type": "string"
+        },
+
+        "generation": {
+                "description": "Arm generation, either a Standard (aka Classic) or Si.",
+                "type": "string",
+                "enum": ["Classic", "Si"]
         },
 
         "re-home": {
@@ -23,12 +28,12 @@
             "default": false
         },
 
-	"mounting-pitch": {
-            "description": "Angle representing how pitched the arm is when mounted.  This number is in radians.  This is used to figure out the direction of gravity depending on how the arm is mounted.  For example, the Classic ECM, when mounted on the SUJ is pitched by -45.0 degrees.  For the Si system, PSM1 and PSM2 are pitched 45 degrees down (-45.0) and the ECM is pitched 70 degrees down.  This parameter is NOT used for MTMs as we assume they are always straight.  It is not used on the Classic PSMs since we don't compute any gravity compensation for these arms.",
-            "type": "number",
-            "default": 0.0
-	},
-	
+        "mounting-pitch": {
+                "description": "Angle representing how pitched the arm is when mounted.  This number is in radians.  This is used to figure out the direction of gravity depending on how the arm is mounted.  For example, the Classic ECM, when mounted on the SUJ is pitched by -45.0 degrees.  For the Si system, PSM1 and PSM2 are pitched 45 degrees down (-45.0) and the ECM is pitched 70 degrees down.  This parameter is NOT used for MTMs as we assume they are always straight.  It is not used on the Classic PSMs since we don't compute any gravity compensation for these arms.",
+                "type": "number",
+                "default": 0.0
+        },
+
         "homing-zero-position": {
             "description": "Indicates if the arm should go to zero position in joint space during homing procedure.  This is true by default for MTMs and false for other arms (PSM and ECM).  For MTMs, it makes sense to go the zero position when homing so the arms are conveniently placed for the operator to get started.  Furthermore, going to zero during homing will position each joint away from the joint limit.  This is particularly useful for the MTM roll.  For all arms on the patient side, it is safe to assume that the arms shouldn't move on their own.  This is obvious for the real da Vinci system with actual patients.  For research applications, moving automatically to zero can also damage equipement around the arms or mounted on the tools (e.g. strain gages).  Finally, the PSM will only move to zero position during the homing procedure if there is no tool detected, i.e. the arm will never move if a tool is present.  Most users should steer away from this setting.",
             "type": "boolean"

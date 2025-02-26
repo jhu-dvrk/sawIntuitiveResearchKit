@@ -18,7 +18,7 @@ To allow testing offline, we provide two python scripts that will load all the s
 * Usage:
   Assuming your working directory is the *dVRK* `share/schemas`:
     ```sh
-  ./json-schema.py -s console.schema.json <files-to-test>
+  ./json-schema.py -s dvrk-console.schema.json <files-to-test>
   ```
   To test console files in multiple directories, for example all JHU console files:
     ```sh
