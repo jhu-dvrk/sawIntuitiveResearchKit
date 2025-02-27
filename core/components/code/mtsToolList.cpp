@@ -97,29 +97,23 @@ bool mtsToolList::Load(const cmnPath & path,
                 return false;
             }
             // make sure model number starts with 40 for Classic and 42 for S
-            if (description->model.substr(0, 2) == "40") {
+            const std::string model_prefix = description->model.substr(0, 2);
+            if (model_prefix == "40") {
                 if (description->generation != "Classic") {
                     CMN_LOG_CLASS_INIT_WARNING  << "ToolList::Load: issue found in file \""
                                                 << fullFilename << "\": tool model \"" << description->model
                                                 << "\" starts with 40 so its generation should be \"Classic\", not \""
                                                 << description->generation << "\"" << std::endl;
                 }
-            } else if (description->model.substr(0, 2) == "42") {
+            } else if (model_prefix == "41" || model_prefix == "42") {
                 if (description->generation != "S") {
                     CMN_LOG_CLASS_INIT_WARNING  << "ToolList::Load: issue found in file \""
                                                 << fullFilename << "\": tool model \"" << description->model
-                                                << "\" starts with 42 so its generation should be \"S\", not \""
-                                                << description->generation << "\"" << std::endl;
-                }
-            } else if (description->model.substr(0, 2) == "41") {
-                if (description->generation != "Si") {
-                    CMN_LOG_CLASS_INIT_WARNING  << "ToolList::Load: issue found in file \""
-                                                << fullFilename << "\": tool model \"" << description->model
-                                                << "\" starts with 41 so its generation should be \"Si\", not \""
+                                                << "\" starts with 41/42 so its generation should be \"S\", not \""
                                                 << description->generation << "\"" << std::endl;
                 }
             }
-                
+
             // make sure file name contains one of the names
             bool nameFound = false;
             for (auto & name : description->names) {

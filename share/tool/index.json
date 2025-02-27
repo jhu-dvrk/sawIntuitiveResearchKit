@@ -225,12 +225,11 @@
             "file": "MEGA_SUTURECUT_NEEDLE_DRIVER_400309.json"
         }
         ,
-        // S/Si
         {
             "model": "410298",
             "names": ["STAPLER_45"],
             "description": "Stapler 45",
-            "generation": "Si",
+            "generation": "S",
             "file": "STAPLER_45_410298.json"
         }
         ,

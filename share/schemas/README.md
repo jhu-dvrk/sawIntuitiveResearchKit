@@ -11,14 +11,14 @@ To allow testing offline, we provide two python scripts that will load all the s
 # Check JSON dVRK configuration files
 
 * Installation:
-    ```sh
-  pip3 install jsonschema jsmin
+  ```sh
+  pip3 install -r requirements.txt
   ```
 
 * Usage:
   Assuming your working directory is the *dVRK* `share/schemas`:
     ```sh
-  ./json-schema.py -s console.schema.json <files-to-test>
+  ./json-schema.py -s dvrk-console.schema.json <files-to-test>
   ```
   To test console files in multiple directories, for example all JHU console files:
     ```sh
@@ -40,7 +40,7 @@ To allow testing offline, we provide two python scripts that will load all the s
 
 # Generate html documentation from schemas
 
-This section is for the dVRK maintainers.  Most users should use the online documentation: https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Configuration-File-Formats
+This section is for the dVRK maintainers.  Most users should use the online documentation: https://dvrk.readthedocs.io/
 
 * Installation:
     ```sh
