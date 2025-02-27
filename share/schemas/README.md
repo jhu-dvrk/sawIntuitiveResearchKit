@@ -11,8 +11,8 @@ To allow testing offline, we provide two python scripts that will load all the s
 # Check JSON dVRK configuration files
 
 * Installation:
-    ```sh
-  pip3 install jsonschema referencing jsmin
+  ```sh
+  pip3 install -r requirements.txt
   ```
 
 * Usage:

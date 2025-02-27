@@ -5,7 +5,6 @@
 # since it will first check the JSON syntax of both files.  we also
 # use jsmin to remove comments from configuration file.
 
-import os
 import sys
 import argparse
 import jsmin
