@@ -139,7 +139,7 @@
                     "required": ["hid"],
                     "properties": {
                         "hid": {
-                            "description": "HID head sensor configuration file, for example for an HMD (head mounted display) such as the Goovis.",
+                            "description": "HID head sensor configuration file, for example for an HMD (head mounted display) such as the Goovis.\nSee also [HID config file](dvrk-hid.schema.json).",
                             "type": "string",
                             "examples": [
                                 {
