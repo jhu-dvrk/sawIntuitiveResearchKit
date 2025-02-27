@@ -2,7 +2,7 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "$id": "dvrk-ecm.schema.json",
     "title": "dVRK ecm",
-    "description": "Configuration file format for the dVRK ECM arm component.  Some of the properties are inherited from the See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).<ul><li>ECM schema extends [arm schema](dvrk-arm.html)<li>For details of implementation, see code under `sawIntuitiveResearchKit/components/code/mtsIntuitiveResearchKitECM.cpp`<li>[Schema file](dvrk-ecm.schema.json)</ul>",
+    "description": "Configuration file format for the dVRK ECM arm component.  Some of the properties are inherited from the See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).\n\n - ECM schema extends [arm schema](dvrk-arm.html)\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitECM.cpp`\n - [Schema file](dvrk-ecm.schema.json)",
     "allOf": [
         { "$ref": "dvrk-arm.schema.json" },
 
@@ -10,7 +10,7 @@
             "required": [ "endoscope" ],
             "properties": {
                 "endoscope": {
-                    "description": "Set the endoscope type.  Possible values are defined in `sawIntuitiveResearchKit/components/code/mtsIntuitiveResearchKitEndoscopeTypes.cdg`.  `Classic` and `Si` determine the generation of endoscopic cameras.  `Classic` is for the Standard/Classic (first generation) as well as S systems.  `Si` is for the 3rd generation.  The Si cameras have Si HD written on them.  `NONE`, `HD` and `SD` are used to determine the approximative mass of the endscope camera head used for gravity compensation.  `STRAIGHT`, `UP` or `DOWN` indicates the direction of the endoscope tip.  The direction of the endoscope tip is used to define the tool tip transformation added to the ECM kinematic chain.  The tool tip transformation is used for both forward and inverse kinematic computations.  This can be overwritten at runtime using the GUI or ROS topics.",
+                    "description": "Set the endoscope type.  Possible values are defined in `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitEndoscopeTypes.cdg`.  `Classic` and `Si` determine the generation of endoscopic cameras.  `Classic` is for the Standard/Classic (first generation) as well as S systems.  `Si` is for the 3rd generation.  The Si cameras have Si HD written on them.  `NONE`, `HD` and `SD` are used to determine the approximative mass of the endscope camera head used for gravity compensation.  `STRAIGHT`, `UP` or `DOWN` indicates the direction of the endoscope tip.  The direction of the endoscope tip is used to define the tool tip transformation added to the ECM kinematic chain.  The tool tip transformation is used for both forward and inverse kinematic computations.  This can be overwritten at runtime using the GUI or ROS topics.",
                     "type": "string",
                     "enum": [
                         "NONE",
