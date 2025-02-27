@@ -71,13 +71,13 @@ be used with the `dvrk-ros`/`dvrk_robot` ROS package to start RViz
 with the proper CAD models.  All shared console configuration files
 are in `console`.
 
-## ROS IO
-
-These files can be used to configure the `dvrk_robot`/`dvrk_console_json` ROS application to publish the IO data of one or more arms.  See the `dvrk-ros`/`dvrk_robot` package.
-
 ## sawSocketStreamer and sawOpenIGTLink
 
-Some examples of configuration files and instructions for *sawSocketStreamer* (streaming out dVRK data over UDP in JSON format) and *sawOpenIGTLink* (*cisst/SAW* bridge for OpenIGTLink/igtl) can be find in the directory `socket-streamer` and `igtl`.  These can be used as middleware between the dVRK console and user applications.
+Some examples of configuration files and instructions for
+*sawSocketStreamer* (streaming out dVRK data over UDP in JSON format)
+and *sawOpenIGTLink* (*cisst/SAW* bridge for OpenIGTLink/igtl) can be
+find in the directory `socket-streamer` and `igtl`.  These can be used
+as middleware between the dVRK console and user applications.
 
 ## Obsolete files
 

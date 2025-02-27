@@ -77,7 +77,6 @@ int main(int argc, char ** argv)
     std::string jsonMainConfigFile;
     double publishPeriod = 10.0 * cmn_ms;
     double tfPeriod = 20.0 * cmn_ms;
-    std::list<std::string> jsonIOConfigFiles;
     std::string jsonCollectionConfigFile;
     std::list<std::string> managerConfig;
     std::string qtStyle;
@@ -122,10 +121,6 @@ int main(int argc, char ** argv)
 
     options.AddOptionNoValue("t", "text-only",
                              "text only interface, do not create Qt widgets");
-
-    options.AddOptionMultipleValues("i", "ros-io-config",
-                                    "(DEPRECATED, use ) json config file to configure ROS bridges to collect low level data (IO)",
-                                    cmnCommandLineOptions::OPTIONAL_OPTION, &jsonIOConfigFiles);
 
     options.AddOptionNoValue("s", "suj-voltages",
                              "add ROS topics for SUJ voltages");
@@ -210,16 +205,6 @@ int main(int argc, char ** argv)
                                                    rosNode,
                                                    publishPeriod, tfPeriod,
                                                    console);
-    // IOs
-    const std::list<std::string>::iterator end = jsonIOConfigFiles.end();
-    std::list<std::string>::iterator iter;
-    for (iter = jsonIOConfigFiles.begin();
-         iter != end;
-         iter++) {
-        fileExists("ROS IO JSON configuration file", *iter, console);
-        consoleROS->Configure(*iter);
-    }
-
     componentManager->AddComponent(consoleROS);
 
     if (options.IsSet("suj-voltages")) {

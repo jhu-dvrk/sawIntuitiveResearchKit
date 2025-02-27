@@ -35,7 +35,6 @@ namespace dvrk {
                 const double & publish_rate_in_seconds,
                 const double & tf_rate_in_seconds,
                 mtsIntuitiveResearchKitConsole * mts_console);
-        void Configure(const std::string & jsonFile);
 
         // methods using CRTK bridge_interface_provided method
         void bridge_interface_provided_arm(const std::string & _component_name,
@@ -68,10 +67,7 @@ namespace dvrk {
                            const bool read_write);
         // add topics for all PIDs
         void add_topics_pid(const bool read_write);
-        // low level IO for a given arm if requested by user
-        void add_topics_arm_io(mtsROSBridge * _pub_bridge,
-                               const std::string & _arm_name,
-                               const std::string & _io_component_name);
+
         // buttons on ECM
         void add_topics_ecm_io(const std::string & _arm_name,
                                const std::string & _io_component_name);
