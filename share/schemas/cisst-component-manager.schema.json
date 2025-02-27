@@ -3,7 +3,7 @@
     "$id": "cisst-component-manager.schema.json",
     "title": "cisstMultiTask component manager",
     "type": "object",
-    "description": "Configuration file format for the component manager.  See [cisst wiki](https://github.com/jhu-cisst/cisst/wiki/cisstMultiTask-concepts)",
+    "description": "Configuration file format for the component manager.  See the [cisst wiki](https://github.com/jhu-cisst/cisst/wiki/cisstMultiTask-concepts).",
     "additionalProperties": false,
     "properties":  {
 

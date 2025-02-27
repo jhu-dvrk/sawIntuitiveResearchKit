@@ -3,7 +3,7 @@
     "$id": "dvrk-teleop-psm.schema.json",
     "title": "dVRK teleop psm",
     "type": "object",
-    "description": "Configuration file format for the dVRK PSM tele-operation component.  See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).  This schema is used for the [dVRK console configuration](dvrk-console.html).\n\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsTeleOperationPSM.cpp`\n - [Schema file](dvrk-teleop-psm.schema.json)",
+    "description": "Configuration file format for the dVRK PSM tele-operation component.  See the [dVRK wiki](https://dvrk.readthedocs.io).  This schema is used for the [dVRK console configuration](dvrk-console.html).\n\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsTeleOperationPSM.cpp`\n - [Schema file](dvrk-teleop-psm.schema.json)",
     "additionalProperties": false,
     "properties": {
 
@@ -69,7 +69,7 @@
         },
 
         "gripper-scaling": {
-            "description": "Scaling applied to the MTM gripper angle.  This angle is then used to control the PSM jaw angle.  By default, the tele-operation component assumes that the MTM gripper maximum angle is 60 degrees (as defined in the [gripper calibration](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Calibration)) and the angle 0 corresponds to the PSM jaws being closed.  When closed (angle set to 0), the PSM jaws don't apply any significant torque (just enough for the PID control to maintain a zero angle) so to apply a stonger grip, the tele-operation component sends a negative jaw angle to the PSM.  Since the jaws can't have a negative angle, this will lead to a higher tracking error and by direct consequence, the PID will apply a strong torque.  The \"gripper-scaling\" parameters are used to linearly interpolate the MTM gripper angles to the default convention, i.e. [0, 60] for positive range and some room for negative angles. For example, if your MTM has an effective range of [0, 30], set the \"max\" to 30 and the \"zero\" to 5.  This way the values between 5 and 30 will be mapped to [0, 60] and values below 5 will generate negative angles for the PSM jaws (i.e. applying extra torque)",
+            "description": "Scaling applied to the MTM gripper angle.  This angle is then used to control the PSM jaw angle.  By default, the tele-operation component assumes that the MTM gripper maximum angle is 60 degrees (as defined in the [gripper calibration](https://dvrk.readthedocs.io)) and the angle 0 corresponds to the PSM jaws being closed.  When closed (angle set to 0), the PSM jaws don't apply any significant torque (just enough for the PID control to maintain a zero angle) so to apply a stonger grip, the tele-operation component sends a negative jaw angle to the PSM.  Since the jaws can't have a negative angle, this will lead to a higher tracking error and by direct consequence, the PID will apply a strong torque.  The \"gripper-scaling\" parameters are used to linearly interpolate the MTM gripper angles to the default convention, i.e. [0, 60] for positive range and some room for negative angles. For example, if your MTM has an effective range of [0, 30], set the \"max\" to 30 and the \"zero\" to 5.  This way the values between 5 and 30 will be mapped to [0, 60] and values below 5 will generate negative angles for the PSM jaws (i.e. applying extra torque)",
             "type": "object",
             "additionalProperties": false,
             "properties": {

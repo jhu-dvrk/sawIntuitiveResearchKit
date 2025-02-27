@@ -3,7 +3,7 @@
     "$id": "dvrk-arm.schema.json",
     "title": "dVRK arm",
     "type": "object",
-    "description": "Configuration file format for the dVRK arm component.  See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).  This schema is not used directly, it is extended for each arm type: [ECM](dvrk-ecm.html), [MTM](dvrk-mtm.html) and [PSM](dvrk-psm.html).\n\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitArm.cpp`\n - [Schema file](dvrk-arm.schema.json)",
+    "description": "Configuration file format for the dVRK arm component.  See the [dVRK wiki](https://dvrk.readthedocs.io).  This schema is not used directly, it is extended for each arm type: [ECM](dvrk-ecm.html), [MTM](dvrk-mtm.html) and [PSM](dvrk-psm.html).\n\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitArm.cpp`\n - [Schema file](dvrk-arm.schema.json)",
     "required": ["kinematic", "generation"],
     "properties": {
         "kinematic": {
