@@ -2,7 +2,7 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "$id": "dvrk-mtm.schema.json",
     "title": "dVRK mtm",
-    "description": "Configuration file format for the dVRK MTM arm component.  Some of the properties are inherited from the See the [dVRK wiki](https://dvrk.readthedocs.io).\n\n - MTM schema extends [arm schema](dvrk-arm.html)\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitMTM.cpp`\n - [Schema file](dvrk-mtm.schema.json)",
+    "description": "Configuration file format for the dVRK MTM arm component. See the [dVRK wiki](https://dvrk.readthedocs.io).\n\n - MTM schema extends [arm schema](dvrk-arm.html)\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitMTM.cpp`\n - [Schema file](dvrk-mtm.schema.json)",
     "allOf": [
         { "$ref": "dvrk-arm.schema.json" },
 
