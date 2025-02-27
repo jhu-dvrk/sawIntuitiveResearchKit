@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "dvrk-hid.schema.json",
+    "title": "dVRK hid",
+    "type": "object",
+    "description": "Button input from HID (human interface device)",
+    "additionalProperties": false,
+    "required": [ "id_vendor", "id_product", "index_data"],
+    "properties": {
+        "id_vendor": {
+            "description": "Device vendor ID",
+            "type": "string"
+        },
+        "id_product": {
+            "description": "Device product ID",
+            "type": "string"
+        },    
+        "index_data": {
+            "description": "Button index",
+            "type": "integer"
+        }
+    },
+    "examples": [
+        {
+            "id_vendor": "880a",
+            "id_product": "3501",
+            "index_data": 17
+        }
+    ]
+}

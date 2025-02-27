@@ -118,21 +118,38 @@
         "operator-present": {
             "description": "Configuration required to use the built-in da Vinci surgeon's console head sensor",
             "type": "object",
-            "additionalProperties": false,
-            "required": ["io"],
-            "properties": {
-                "io": {
-                    "description": "IO configuration file used to define inputs for the da Vinci head sensor.  This requires a custom cable and will only work with a full da Vinci system.  The head sensor component was introduced in version 1.6.  See [dVRK wiki](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/HeadSensor).",
-                    "type": "string",
-                    "examples": [
-                        {
-                            "operator-present": {
-                                "io": "io/sawRobotIO1394-MTMR-dv-head-sensor.xml"
-                            }
+            "oneOf": [
+                {
+                    "additionalProperties": false,
+                    "required": ["io"],
+                    "properties": {
+                        "io": {
+                            "description": "IO configuration file used to define inputs for the da Vinci head sensor.  This requires a custom cable and will only work with a full da Vinci system.  The head sensor component was introduced in version 1.6.  See [dVRK wiki](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/HeadSensor).",
+                            "type": "string",
+                            "examples": [
+                                {
+                                    "io": "io/sawRobotIO1394-MTMR-dv-head-sensor.xml"
+                                }
+                            ]
                         }
-                    ]
+                    }
+                },
+                {
+                    "additionalProperties": false,
+                    "required": ["hid"],
+                    "properties": {
+                        "hid": {
+                            "description": "HID head sensor configuration file, for example for an HMD (head mounted display) such as the Goovis.",
+                            "type": "string",
+                            "examples": [
+                                {
+                                    "hid": "hid/goovis-hd.json"
+                                }
+                            ]
+                        }
+                    }
                 }
-            }
+            ]
         },
 
         "endoscope-focus": {
