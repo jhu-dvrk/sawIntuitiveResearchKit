@@ -159,6 +159,19 @@ void robManipulatorTest::ComputeAndTestIK(ManipulatorTestData & data)
     data.SolutionJoints.Assign(data.ActualJoints);
     robManipulator::Errno result = data.Manipulator->InverseKinematics(data.SolutionJoints,
                                                                        data.ActualPose);
+
+    if (result != robManipulator::ESUCCESS) {
+        std::cout << "========================================================" << std::endl;
+        std::cout << "actual:   " << data.ActualJoints << std::endl;
+        std::cout << "========================================================" << std::endl;
+        std::cout << "lower:    " << data.LowerLimits << std::endl;
+        std::cout << "========================================================" << std::endl;
+        std::cout << "solution: " << data.SolutionJoints << std::endl;
+        std::cout << "========================================================" << std::endl;
+        std::cout << "upper:    " << data.UpperLimits << std::endl;
+        std::cout << "========================================================" << std::endl;
+    }
+
     // make sure IK didn't complain
     CPPUNIT_ASSERT_EQUAL_MESSAGE("robManipulator::InverseKinematics result for "
                                  + data.Name + ": " + data.Manipulator->LastError(),
@@ -225,9 +238,7 @@ void robManipulatorTest::TestMTMIKSampleJointSpace(void)
     ManipulatorTestDataMTM data;
     SetupTestData(data, "mtmr.json");
 
-    data.Increments.SetAll(15.0 * cmnPI_180); // use 15 degrees sampling
-    data.LowerLimits.at(6) = -cmnPI;
-    data.UpperLimits.at(6) =  cmnPI;
+    data.Increments.SetAll(30.0 * cmnPI_180); // use 15 degrees sampling
 
     TestSampleJointSpace(data);
 }

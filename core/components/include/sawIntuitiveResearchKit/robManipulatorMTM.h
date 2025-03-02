@@ -20,7 +20,6 @@
 #define _robManipulatorMTM_h
 
 #include <cisstRobot/robManipulator.h>
-#include <cisstNumerical/nmrLSEISolver.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
@@ -38,6 +37,10 @@ public:
 
     ~robManipulatorMTM() {}
 
+#if CISST_HAS_JSON
+    robManipulator::Errno LoadRobot(const Json::Value & config) override;
+#endif
+
     robManipulator::Errno
     InverseKinematics(vctDynamicVector<double> & q,
                       const vctFrame4x4<double> & Rts,
@@ -45,10 +48,27 @@ public:
                       size_t Niterations = 1000,
                       double LAMBDA = 0.001);
 
-    double FindOptimalPlatformAngle(const vctDynamicVector<double> & q,
-                                    const vctFrame4x4<double> & Rt07) const;
+private:
+    // length from shoulder to elbow
+    double upper_arm_length;
+    // angle formed by gimbal-elbow-forearm
+    double elbow_to_gimbal_angle;
+    // length from elbow to gimbal center of rotation
+    double elbow_to_gimbal_length;
 
-    double ComputeGimbalIK(vctDynamicVector<double> & q, const vctFrame4x4<double> & Rt07) const;
+    // rotation to align zero-position of frame 7 with frame 4
+    static const vctRot3 rotation_78;
+
+    // allowed (absolute) tolerance when enforcing joint limits
+    static constexpr double joint_limit_tolerance = 1e-5;
+
+    static double SolveTriangleInteriorAngle(double side_a, double side_b, double side_c);
+    static double ClosestAngleToJointRange(double angle, double modulus, double min, double max);
+
+    double ChoosePlatformYaw(const vctRot3& rotation_47) const;
+
+    vct3 ShoulderElbowIK(const vct3& position_07) const;
+    vct3 WristGimbalIK(const vctRot3& rotation_47) const;
 };
 
 #endif // _robManipulatorMTM_h
