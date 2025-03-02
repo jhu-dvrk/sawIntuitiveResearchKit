@@ -121,52 +121,15 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double>& q,
     vctFrm4x4 Rt04 = ForwardKinematics(q, 4);
     vctFrm4x4 Rt47 = Rt04.Inverse() * Rt07;
 
+    // choose platform angle based on minimal movement necessary to solve gimbal IK
+    q[3] = ChoosePlatformAngle(q[3], vctRot3(Rt47.Rotation()));
+    // recompute FK to base of gimbal with new platform angle
+    Rt04 = ForwardKinematics(q, 4);
+    Rt47 = Rt04.Inverse() * Rt07;
+
     // given platform angle, wrist/gimbal IK is uniquely determined by
     // the remaining portion of the desired overall transformation
     vct3 gimbal_ik = WristGimbalIK(vctRot3(Rt47.Rotation()));
-    gimbal_ik[0] = std::max(links.at(4).PositionMin(), std::min(links.at(4).PositionMax(), q[4]));
-    gimbal_ik[1] = std::max(links.at(5).PositionMin(), std::min(links.at(5).PositionMax(), q[5]));
-    gimbal_ik[2] = std::max(links.at(6).PositionMin(), std::min(links.at(6).PositionMax(), q[6]));
-    q.Ref(3, 4).Assign(gimbal_ik);
-
-    // error = 4_7 * 7'_0 * 0_4
-    vctRot3 error = vctRot3(Rt47.Rotation() * ForwardKinematics(q, 7).Rotation().Inverse() * ForwardKinematics(q, 4).Rotation());
-    vct3 error_x = error.Column(0);
-    double theta = std::atan2(error_x.X(), error_x.Z());
-    theta = std::remainder(theta - cmnPI_2, 2 * cmnPI);
-    q[3] += theta;
-
-    Rt04 = ForwardKinematics(q, 4);
-    Rt47 = Rt04.Inverse() * Rt07;
-    gimbal_ik = WristGimbalIK(vctRot3(Rt47.Rotation()));
-    gimbal_ik[0] = std::max(links.at(4).PositionMin(), std::min(links.at(4).PositionMax(), q[4]));
-    gimbal_ik[1] = std::max(links.at(5).PositionMin(), std::min(links.at(5).PositionMax(), q[5]));
-    gimbal_ik[2] = std::max(links.at(6).PositionMin(), std::min(links.at(6).PositionMax(), q[6]));
-    q.Ref(3, 4).Assign(gimbal_ik);
-
-    error = vctRot3(Rt47.Rotation() * ForwardKinematics(q, 7).Rotation().Inverse() * ForwardKinematics(q, 4).Rotation());
-    vct3 error_y = error.Column(1);
-    double alpha = std::acos(error_y.Y());
-    if (alpha > 1e-3) {
-        const vctRot3 r_48 = vctRot3(Rt47.Rotation()) * rotation_78;
-        vct3 r_48_x = r_48.Column(0);
-        double x_proj_angle = std::atan2(r_48_x.X(), r_48_x.Z());
-        theta = std::remainder(x_proj_angle - cmnPI_2, 2 * cmnPI);
-        double range = links.at(5).PositionMin() + links.at(5).PositionMax();
-        double low = ClosestAngleToJointRange(theta - 0.5 * range, 2.0 * cmnPI, links.at(3).PositionMin(), links.at(3).PositionMax());
-        double high = ClosestAngleToJointRange(theta + 0.5 * range, 2.0 * cmnPI, links.at(3).PositionMin(), links.at(3).PositionMax());
-        if (std::abs(q[3] - low) < std::abs(q[3] - high)) {
-            q[3] = low;
-        } else {
-            q[3] = high;
-        }
-    }
-
-    // recompute gimbal ik for new q[3]
-    q[3] = std::max(links.at(3).PositionMin(), std::min(links.at(3).PositionMax(), q[3]));
-    Rt04 = ForwardKinematics(q, 4);
-    Rt47 = Rt04.Inverse() * Rt07;
-    gimbal_ik = WristGimbalIK(vctRot3(Rt47.Rotation()));
     q.Ref(3, 4).Assign(gimbal_ik);
 
     // copy prevents ODR-use, which in pre-C++17 requires a definition in addition to declaration
@@ -249,7 +212,53 @@ double robManipulatorMTM::ClosestAngleToJointRange(
     return std::remainder(angle - range_center, modulus) + range_center;
 }
 
-double robManipulatorMTM::ChoosePlatformYaw(const vctRot3& rotation_47) const
+double robManipulatorMTM::ChoosePlatformAngle(double current_platform, const vctRot3& rotation_47) const
 {
-    return 0.0;
+    // Add virtual frame 8 to align frame 7 with frame 4
+    const vctRot3 rotation_48 = rotation_47 * rotation_78;
+
+    // decompose rotation from frame 4 to frame 8 into Euler angles,
+    const vctEulerZYXRotation3 euler_rotation_decomposition(rotation_48);
+
+    // alignment of frame 4 means pitch/yaw/roll are Z/Y/X rotations
+    // roll joint axis is negative of frame's x axis
+    const double raw_wrist_pitch = euler_rotation_decomposition.alpha();
+    const double raw_wrist_yaw = euler_rotation_decomposition.beta();
+
+    // finds equivalent angle inside joint limits when possible,
+    // however does not actually clamp to joint limits
+    const double wrist_pitch = ClosestAngleToJointRange(raw_wrist_pitch, 2 * cmnPI, links[4].PositionMin(), links[4].PositionMax());
+    const double wrist_yaw =   ClosestAngleToJointRange(raw_wrist_yaw,   2 * cmnPI, links[5].PositionMin(), links[5].PositionMax());
+
+    const bool pitch_ok = links[4].PositionMin() <= wrist_pitch && wrist_pitch <= links[4].PositionMax();
+    const bool yaw_ok   = links[5].PositionMin() <= wrist_yaw   && wrist_yaw   <= links[5].PositionMax();
+
+    if (pitch_ok && yaw_ok) {
+        return current_platform;
+    }
+
+    // gripper roll axis is x-axis in frame 8
+    const vct3 gripper_axis = rotation_48 * vct3(1.0, 0.0, 0.0);
+
+    // atan2 has our Z axis as zero, but zero yaw is at our X axis, need -pi/2 rotation to align
+    const double theta = std::atan2(gripper_axis.X(), gripper_axis.Z()) - cmnPI_2;
+    
+    const double platform_min = links.at(3).PositionMin();
+    const double platform_max = links.at(3).PositionMax();
+    const double j6_range = links.at(5).PositionMax() - links.at(5).PositionMin();
+
+    const double yaw_middle = ClosestAngleToJointRange(current_platform + theta,     2 * cmnPI, platform_min, platform_max);
+    const double yaw_low    = ClosestAngleToJointRange(yaw_middle - 0.45 * j6_range, 2 * cmnPI, platform_min, platform_max);
+    const double yaw_high   = ClosestAngleToJointRange(yaw_middle + 0.45 * j6_range, 2 * cmnPI, platform_min, platform_max);
+
+    const bool yaw_low_in_range = platform_min <= yaw_low && yaw_low <= platform_max;
+    const bool yaw_high_in_range = platform_min <= yaw_high && yaw_high <= platform_max;
+    const bool low_closer = std::abs(yaw_low - current_platform) < std::abs(yaw_high - current_platform);
+    if (yaw_low_in_range && low_closer) {
+        return yaw_low;
+    } else if (yaw_high_in_range) {
+        return yaw_high;
+    } else {
+        return std::max(platform_min, std::min(platform_max, yaw_low));
+    }
 }

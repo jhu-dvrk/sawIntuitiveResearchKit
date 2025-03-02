@@ -65,7 +65,7 @@ private:
     static double SolveTriangleInteriorAngle(double side_a, double side_b, double side_c);
     static double ClosestAngleToJointRange(double angle, double modulus, double min, double max);
 
-    double ChoosePlatformYaw(const vctRot3& rotation_47) const;
+    double ChoosePlatformAngle(double current_platform, const vctRot3& rotation_47) const;
 
     vct3 ShoulderElbowIK(const vct3& position_07) const;
     vct3 WristGimbalIK(const vctRot3& rotation_47) const;
