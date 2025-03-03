@@ -64,6 +64,7 @@ private:
 
     static double SolveTriangleInteriorAngle(double side_a, double side_b, double side_c);
     static double ClosestAngleToJointRange(double angle, double modulus, double min, double max);
+    static double ClosestEquivalentAngle(double angle, double target, double min, double max);
 
     // Given desired orientation of end effector relative to joint 4 frame,
     // computes minimum yaw (platform) movement to make rotation achievable

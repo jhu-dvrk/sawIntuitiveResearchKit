@@ -130,8 +130,10 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double>& q,
 
     // given platform angle, wrist/gimbal IK is uniquely determined by
     // the remaining portion of the desired overall transformation
+    const double current_wrist_roll = q[6];
     vct3 gimbal_ik = WristGimbalIK(vctRot3(Rt47.Rotation()));
     q.Ref(3, 4).Assign(gimbal_ik);
+    q[6] = ClosestEquivalentAngle(q[6], current_wrist_roll, links.at(6).PositionMin(), links.at(6).PositionMax());
 
     // copy prevents ODR-use, which in pre-C++17 requires a definition in addition to declaration
     constexpr double tolerance = joint_limit_tolerance;
@@ -211,6 +213,20 @@ double robManipulatorMTM::ClosestAngleToJointRange(
 {
     const double range_center = 0.5*(min + max);
     return std::remainder(angle - range_center, modulus) + range_center;
+}
+
+double robManipulatorMTM::ClosestEquivalentAngle(
+    double angle, double target, double min, double max
+)
+{
+    const double value = std::remainder(angle - target, 2 * cmnPI) + target;
+    if (min <= value && value <= max) {
+        return value;
+    } else if (value < min) {
+        return value + 2 * cmnPI;
+    } else {
+        return value - 2 * cmnPI;
+    }
 }
 
 double robManipulatorMTM::ChoosePlatformAngle(const double current_platform, const vct3& gripper_axis) const
