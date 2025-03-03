@@ -122,7 +122,8 @@ robManipulatorMTM::InverseKinematics(vctDynamicVector<double>& q,
     vctFrm4x4 Rt47 = Rt04.Inverse() * Rt07;
 
     // choose platform angle based on minimal movement necessary to solve gimbal IK
-    q[3] = ChoosePlatformAngle(q[3], vctRot3(Rt47.Rotation()));
+    vct3 gripper_axis = -vctRot3(Rt47.Rotation()).Column(2); // negative z-axis points in gripper direction
+    q[3] = ChoosePlatformAngle(q[3], gripper_axis);
     // recompute FK to base of gimbal with new platform angle
     Rt04 = ForwardKinematics(q, 4);
     Rt47 = Rt04.Inverse() * Rt07;
@@ -212,53 +213,70 @@ double robManipulatorMTM::ClosestAngleToJointRange(
     return std::remainder(angle - range_center, modulus) + range_center;
 }
 
-double robManipulatorMTM::ChoosePlatformAngle(double current_platform, const vctRot3& rotation_47) const
+double robManipulatorMTM::ChoosePlatformAngle(const double current_platform, const vct3& gripper_axis) const
 {
-    // Add virtual frame 8 to align frame 7 with frame 4
-    const vctRot3 rotation_48 = rotation_47 * rotation_78;
+    const double z_min = std::sin(links.at(5).PositionMin());
+    const double z_max = std::sin(links.at(5).PositionMax());
 
-    // decompose rotation from frame 4 to frame 8 into Euler angles,
-    const vctEulerZYXRotation3 euler_rotation_decomposition(rotation_48);
+    const double alpha_min = links.at(4).PositionMin();
+    const double alpha_max = links.at(4).PositionMax();
 
-    // alignment of frame 4 means pitch/yaw/roll are Z/Y/X rotations
-    // roll joint axis is negative of frame's x axis
-    const double raw_wrist_pitch = euler_rotation_decomposition.alpha();
-    const double raw_wrist_yaw = euler_rotation_decomposition.beta();
-
-    // finds equivalent angle inside joint limits when possible,
-    // however does not actually clamp to joint limits
-    const double wrist_pitch = ClosestAngleToJointRange(raw_wrist_pitch, 2 * cmnPI, links[4].PositionMin(), links[4].PositionMax());
-    const double wrist_yaw =   ClosestAngleToJointRange(raw_wrist_yaw,   2 * cmnPI, links[5].PositionMin(), links[5].PositionMax());
-
-    const bool pitch_ok = links[4].PositionMin() <= wrist_pitch && wrist_pitch <= links[4].PositionMax();
-    const bool yaw_ok   = links[5].PositionMin() <= wrist_yaw   && wrist_yaw   <= links[5].PositionMax();
-
-    if (pitch_ok && yaw_ok) {
+    const double raw_alpha = std::atan2(gripper_axis.Y(), gripper_axis.X());
+    const double alpha = ClosestAngleToJointRange(raw_alpha, 2 * cmnPI, alpha_min, alpha_max);
+    if (z_min <= gripper_axis.Z() && gripper_axis.Z() <= z_max && alpha_min <= alpha && alpha <= alpha_max) {
         return current_platform;
     }
 
-    // gripper roll axis is x-axis in frame 8
-    const vct3 gripper_axis = rotation_48 * vct3(1.0, 0.0, 0.0);
+    std::vector<double> x_options, z_options;
 
-    // atan2 has our Z axis as zero, but zero yaw is at our X axis, need -pi/2 rotation to align
-    const double theta = std::atan2(gripper_axis.X(), gripper_axis.Z()) - cmnPI_2;
-    
-    const double platform_min = links.at(3).PositionMin();
-    const double platform_max = links.at(3).PositionMax();
-    const double j6_range = links.at(5).PositionMax() - links.at(5).PositionMin();
-
-    const double yaw_middle = ClosestAngleToJointRange(current_platform + theta,     2 * cmnPI, platform_min, platform_max);
-    const double yaw_low    = ClosestAngleToJointRange(yaw_middle - 0.45 * j6_range, 2 * cmnPI, platform_min, platform_max);
-    const double yaw_high   = ClosestAngleToJointRange(yaw_middle + 0.45 * j6_range, 2 * cmnPI, platform_min, platform_max);
-
-    const bool yaw_low_in_range = platform_min <= yaw_low && yaw_low <= platform_max;
-    const bool yaw_high_in_range = platform_min <= yaw_high && yaw_high <= platform_max;
-    const bool low_closer = std::abs(yaw_low - current_platform) < std::abs(yaw_high - current_platform);
-    if (yaw_low_in_range && low_closer) {
-        return yaw_low;
-    } else if (yaw_high_in_range) {
-        return yaw_high;
+    double radius2 = gripper_axis.Y()*gripper_axis.Y() + z_min*z_min;
+    if (radius2 <= 1.0) {
+        x_options.push_back( std::sqrt(1.0 - radius2));
+        x_options.push_back(-std::sqrt(1.0 - radius2));
+        z_options.push_back(z_min);
+        z_options.push_back(z_min);
     } else {
-        return std::max(platform_min, std::min(platform_max, yaw_low));
+        const double x = std::cos(alpha_min) * gripper_axis.Y() / std::sin(alpha_min);
+        x_options.push_back(x);
+        z_options.push_back(-std::sqrt(1.0 - gripper_axis.Y()*gripper_axis.Y() - x*x));
     }
+
+    radius2 = gripper_axis.Y()*gripper_axis.Y() + z_max*z_max;
+    if (radius2 <= 1.0) {
+        x_options.push_back( std::sqrt(1.0 - radius2));
+        x_options.push_back(-std::sqrt(1.0 - radius2));
+        z_options.push_back(z_max);
+        z_options.push_back(z_max);
+    } else {
+        const double x = std::cos(alpha_min) * gripper_axis.Y() / std::sin(alpha_min);
+        x_options.push_back(x);
+        z_options.push_back(std::sqrt(1.0 - gripper_axis.Y()*gripper_axis.Y() - x*x));
+    }
+
+    double best_distance = 2 * cmnPI;
+    double best_platform = 0.0;
+    for (size_t i = 0; i < x_options.size(); i++) {
+        const double x = x_options[i];
+        const double y = gripper_axis.Y();
+        const double z = z_options[i];
+
+        const double raw_alpha = std::atan2(y, x);
+        const double alpha = ClosestAngleToJointRange(raw_alpha, 2 * cmnPI, alpha_min, alpha_max);
+        if (alpha < alpha_min || alpha_max < alpha) {
+            continue;
+        }
+
+        const double phi = std::atan2(gripper_axis.X(), gripper_axis.Z());
+        const double psi = std::atan2(x, z);
+        const double delta = phi - psi;
+        const double platform = ClosestAngleToJointRange(current_platform + delta, 2 * cmnPI, links.at(3).PositionMin(), links.at(3).PositionMax());
+        const double movement_distance = std::abs(platform - current_platform);
+        const bool feasible_platform = links.at(3).PositionMin() <= platform && platform <= links.at(3).PositionMax();
+        if (feasible_platform && movement_distance < best_distance) {
+            best_distance = movement_distance;
+            best_platform = platform;
+        }
+    }
+
+    return best_platform;
 }

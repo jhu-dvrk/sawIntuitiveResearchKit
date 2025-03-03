@@ -65,7 +65,10 @@ private:
     static double SolveTriangleInteriorAngle(double side_a, double side_b, double side_c);
     static double ClosestAngleToJointRange(double angle, double modulus, double min, double max);
 
-    double ChoosePlatformAngle(double current_platform, const vctRot3& rotation_47) const;
+    // Given desired orientation of end effector relative to joint 4 frame,
+    // computes minimum yaw (platform) movement to make rotation achievable
+    // within the joint limits of joints 5, 6, 7
+    double ChoosePlatformAngle(const double current_platform, const vct3& gripper_axis) const;
 
     vct3 ShoulderElbowIK(const vct3& position_07) const;
     vct3 WristGimbalIK(const vctRot3& rotation_47) const;
