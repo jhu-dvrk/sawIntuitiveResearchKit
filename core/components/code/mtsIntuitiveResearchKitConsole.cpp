@@ -1793,24 +1793,9 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
 
 bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & jsonTeleop)
 {
-    std::string mtmLeftName = jsonTeleop["mtm-left"].asString();
-    // for backward compatibility
-    if (mtmLeftName == "") {
-        mtmLeftName = jsonTeleop["master-left"].asString();
-        CMN_LOG_CLASS_INIT_WARNING << "ConfigureECMTeleopJSON: keyword \"master-left\" is deprecated, use \"mtm-left\" instead" << std::endl;
-    }
-    std::string mtmRightName = jsonTeleop["mtm-right"].asString();
-    // for backward compatibility
-    if (mtmRightName == "") {
-        mtmRightName = jsonTeleop["master-right"].asString();
-        CMN_LOG_CLASS_INIT_WARNING << "ConfigureECMTeleopJSON: keyword \"master-right\" is deprecated, use \"mtm-right\" instead" << std::endl;
-    }
-    std::string ecmName = jsonTeleop["ecm"].asString();
-    // for backward compatibility
-    if (ecmName == "") {
-        ecmName = jsonTeleop["slave"].asString();
-        CMN_LOG_CLASS_INIT_WARNING << "ConfigureECMTeleopJSON: keyword \"slave\" is deprecated, use \"ecm\" instead" << std::endl;
-    }
+    const std::string mtmLeftName = jsonTeleop["mtm-left"].asString();
+    const std::string mtmRightName = jsonTeleop["mtm-right"].asString();
+    const std::string ecmName = jsonTeleop["ecm"].asString();
     // all must be provided
     if ((mtmLeftName == "") || (mtmRightName == "") || (ecmName == "")) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: \"mtm-left\", \"mtm-right\" and \"ecm\" must be provided as strings" << std::endl;
@@ -1929,18 +1914,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & 
 
 bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop)
 {
-    std::string mtmName = jsonTeleop["mtm"].asString();
-    // for backward compatibility
-    if (mtmName == "") {
-        mtmName = jsonTeleop["master"].asString();
-        CMN_LOG_CLASS_INIT_WARNING << "ConfigurePSMTeleopJSON: keyword \"master\" is deprecated, use \"mtm\" instead" << std::endl;
-    }
-    std::string psmName = jsonTeleop["psm"].asString();
-    // for backward compatibility
-    if (psmName == "") {
-        psmName = jsonTeleop["slave"].asString();
-        CMN_LOG_CLASS_INIT_WARNING << "ConfigurePSMTeleopJSON: keyword \"slave\" is deprecated, use \"psm\" instead" << std::endl;
-    }
+    const std::string mtmName = jsonTeleop["mtm"].asString();
+    const std::string psmName = jsonTeleop["psm"].asString();
     // both are required
     if ((mtmName == "") || (psmName == "")) {
         CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: both \"mtm\" and \"psm\" must be provided as strings" << std::endl;
@@ -2079,12 +2054,6 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
     jsonValue = jsonTeleop["period"];
     if (!jsonValue.empty()) {
         period = jsonValue.asFloat();
-    }
-    // for backward compatibility, send warning
-    jsonValue = jsonTeleop["rotation"];
-    if (!jsonValue.empty()) {
-        CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: teleop " << name << ": \"rotation\" must now be defined under \"configure-parameter\" or in a separate configuration file" << std::endl;
-        return false;
     }
     const Json::Value jsonTeleopConfig = jsonTeleop["configure-parameter"];
     teleopPointer->ConfigureTeleop(teleopPointer->m_type, period, jsonTeleopConfig);
