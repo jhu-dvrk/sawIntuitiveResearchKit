@@ -207,6 +207,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void move_jr(const prmPositionJointSet & jp);
     virtual void servo_cp(const prmPositionCartesianSet & cp);
     virtual void servo_cr(const prmPositionCartesianSet & difference);
+    virtual void servo_cv(const prmVelocityCartesianSet & cv);
     virtual void servo_cs(const prmStateCartesian & cs);
     virtual void move_cp(const prmPositionCartesianSet & cp);
     virtual void servo_jf(const prmForceTorqueJointSet & jf);

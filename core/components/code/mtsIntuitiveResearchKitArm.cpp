@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
 #include <cisstParameterTypes/prmInputData.h>
+#include <cisstParameterTypes/prmVelocityCartesianSet.h>
 #include <sawControllers/osaCartesianImpedanceController.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
@@ -399,6 +400,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
                                          this, "servo_cp");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_cr,
                                          this, "servo_cr_not_working_yet");
+        m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_cv,
+                                         this, "servo_cv");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::servo_cs,
                                          this, "servo_cs");
         m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitArm::move_cp,
@@ -1637,6 +1640,10 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
     js.Position() = jp;
     js.Velocity() = jv;
     js.Effort() = jf;
+
+    add_feed_forward(js.Effort());
+    mode = mode | prmJointCommandMode::PRM_JOINT_MODE_EFFORT;
+
     js.Mode().SetSize(number_of_joints_kinematics());
     js.Mode().SetAll(mode);
 
@@ -2183,6 +2190,26 @@ void mtsIntuitiveResearchKitArm::servo_cr(const prmPositionCartesianSet & differ
                            mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
     // set goal --- not sure of this math, move relative to base or tool?
     mCartesianRelative = mCartesianRelative * difference.Goal();
+    m_pid_new_goal = true;
+}
+
+void mtsIntuitiveResearchKitArm::servo_cv(const prmVelocityCartesianSet & cv)
+{
+    if (!ArmIsReady("servo_cv", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+        return;
+    }
+
+    // set control mode
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+
+    // set goal --- not sure of this math, move relative to base or tool?
+    m_servo_cs.PositionIsValid() = false;
+    m_servo_cs.VelocityIsValid() = true;
+    m_servo_cs.ForceIsValid() = false;
+    m_servo_cs.Velocity().Ref<3>(0) = cv.GetVelocity();
+    m_servo_cs.Velocity().Ref<3>(3) = cv.GetAngularVelocity();
+
     m_pid_new_goal = true;
 }
 
