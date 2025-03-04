@@ -41,6 +41,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForwardKinematicsRequest.h>
 #include <cisstParameterTypes/prmForwardKinematicsResponse.h>
 #include <cisstParameterTypes/prmStateCartesian.h>
+#include <cisstParameterTypes/prmJointCommand.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
@@ -189,12 +190,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void servo_jp_internal(const vctDoubleVec & jp,
                                    const vctDoubleVec & jv);
     virtual void servo_jf_internal(const vctDoubleVec & jf);
-    virtual void servo_js_internal(const prmStateJoint & js);
-    virtual void feed_forward_jf_internal(const vctDoubleVec & jf);
-    // compute a joint-space feed forward to send to PID
+    virtual void servo_js_internal(const prmJointCommand & js);
+    virtual void servo_command_internal(const prmJointCommand & js);
+  
+    // whether to apply gravity compensation to controller
     virtual bool should_use_gravity_compensation(void);
-    // compute and apply effort feed forward (e.g. gravity compensation)
-    virtual void apply_feed_forward(void);
+    // compute and add effort feed forward (e.g. gravity compensation or MTM platform preload)
+    virtual void add_feed_forward(vctDoubleVec& jf);
 
     /*! Methods used for commands */
     virtual void hold(void);
@@ -283,11 +285,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionRead  Enabled;
         mtsFunctionRead  measured_js;
         mtsFunctionRead  setpoint_js;
-        mtsFunctionWrite servo_jp;
-        mtsFunctionWrite feed_forward_servo_jf;
+        mtsFunctionWrite servo_js;
         mtsFunctionWrite enforce_position_limits;
-        mtsFunctionWrite EnableTorqueMode;
-        mtsFunctionWrite servo_jf;
         mtsFunctionWrite EnableTrackingError;
         mtsFunctionWrite SetTrackingErrorTolerance;
         vctDoubleVec DefaultTrackingErrorTolerance;
@@ -347,7 +346,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmStateCartesian m_measured_cs;
 
     // joints
-    prmPositionJointSet m_servo_jp_param;
+    prmJointCommand m_servo_js_param;
     vctDoubleVec m_servo_jp;
     vctDoubleVec m_servo_jv;
     prmStateJoint
@@ -364,9 +363,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmForceCartesianSet m_servo_cf;
     bool m_body_cf_orientation_absolute = false;
     prmForceTorqueJointSet
-        m_servo_jf_param, // number of joints PID, used in servo_jf_internal
         m_servo_jf; // number of joints for kinematics
-    prmForceTorqueJointSet m_feed_forward_jf_param;
     vctDoubleVec m_servo_jf_vector; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData
@@ -491,10 +488,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     /*! Compute forces/position for PID when orientation is locked in
       effort cartesian mode or gravity compensation. */
     virtual void control_servo_cf_orientation_locked(void);
-
-    /*! Determine which joints should be in effort mode.  MTM will
-      redefine this so one can lock orientation using position PID. */
-    virtual void SetControlEffortActiveJoints(void);
 
     /*! Used for derived arms to apply arm specific efforts (joint
       space).  E.g. MTM to control platform orientation.  Derived

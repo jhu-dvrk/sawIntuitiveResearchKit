@@ -1337,11 +1337,11 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
         return;
     }
 
-    CMN_ASSERT(m_servo_jp_param.Goal().size() == 7);
+    CMN_ASSERT(m_servo_js_param.Position().size() == 7);
     // first 6 joints, assign positions and check limits
     vctDoubleVec jp_clipped(jp.Ref(number_of_joints_kinematics()));
     clip_jp(jp_clipped);
-    ToJointsPID(jp_clipped, m_servo_jp_param.Goal());
+    ToJointsPID(jp_clipped, m_servo_js_param.Position());
 
     if (jp.size() == 7) {
         m_jaw_servo_jp = clip_jaw_jp(jp.at(6));
@@ -1349,24 +1349,23 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
 
     // velocity - current code only support jaw_servo_jv if servo_jp has a velocity goal
     const size_t jv_size = jv.size();
-    m_servo_jp_param.Velocity().SetSize(7);
+    CMN_ASSERT(m_servo_js_param.Velocity().size() == 7);
     if (jv_size != 0) {
-        ToJointsPID(jv, m_servo_jp_param.Velocity());
+        ToJointsPID(jv, m_servo_js_param.Velocity());
     }
-    m_servo_jp_param.Goal().at(6) = m_jaw_servo_jp;
-    if (jv_size != 0) {
-        m_servo_jp_param.Velocity().at(6) = 0.0;
-    }
-    m_servo_jp_param.SetTimestamp(StateTable.GetTic());
-    if (m_has_coupling) {
-        m_servo_jp_param.Goal() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Goal();
-        if (jv_size != 0) {
-            m_servo_jp_param.Velocity() = m_coupling.JointToActuatorPosition() * m_servo_jp_param.Velocity();
-        }
-    }
-    PID.servo_jp(m_servo_jp_param);
 
-    apply_feed_forward();
+    m_servo_js_param.Position().at(6) = m_jaw_servo_jp;
+    if (jv_size != 0) {
+        m_servo_js_param.Velocity().at(6) = 0.0;
+    }
+
+    auto mode_all = prmJointCommandMode::PRM_JOINT_MODE_POSITION | prmJointCommandMode::PRM_JOINT_MODE_VELOCITY | PRM_JOINT_MODE_EFFORT;
+    m_servo_js_param.Mode().SetAll(mode_all);
+
+    m_servo_js_param.Effort().Zeros();
+    add_feed_forward(m_servo_js_param.Effort());
+
+    servo_command_internal(m_servo_js_param);
 }
 
 void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & effort)
@@ -1400,70 +1399,79 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
 
 void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffort)
 {
-
     // pad array for PID
-    vctDoubleVec torqueDesired(number_of_joints(), 0.0); // for PID
+    vctDoubleVec torque_desired(number_of_joints(), 0.0); // for PID
     if (m_snake_like) {
         std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for force control" << std::endl;
     } else {
-        torqueDesired.Assign(newEffort, number_of_joints_kinematics());
+        torque_desired.Assign(newEffort, number_of_joints_kinematics());
     }
     // add torque for jaws
-    torqueDesired.at(6) = m_jaw_servo_jf;
+    torque_desired.at(6) = m_jaw_servo_jf;
 
     if (!is_cartesian_ready()) {
         // set all tool joints to have zero effort
-        torqueDesired.Ref(torqueDesired.size() - 3, 3).Zeros();
+        torque_desired.Ref(torque_desired.size() - 3, 3).Zeros();
     }
 
-    // convert to cisstParameterTypes
-    m_servo_jf_param.SetForceTorque(torqueDesired);
-    m_servo_jf_param.SetTimestamp(StateTable.GetTic());
-    if (m_has_coupling) {
-        m_servo_jf_param.ForceTorque() = m_coupling.JointToActuatorEffort() * m_servo_jf_param.ForceTorque();
-    }
-    PID.servo_jf(m_servo_jf_param);
+    m_servo_js_param.Mode().SetAll(prmJointCommandMode::PRM_JOINT_MODE_EFFORT);
+    m_servo_js_param.Effort().Assign(torque_desired);
+    add_feed_forward(m_servo_js_param.Effort());
 
-    apply_feed_forward();
+    servo_command_internal(m_servo_js_param);
 }
 
-void mtsIntuitiveResearchKitPSM::feed_forward_jf_internal(const vctDoubleVec & jf)
+void mtsIntuitiveResearchKitPSM::servo_js_internal(const prmJointCommand& js)
 {
     if (!is_cartesian_ready()) {
-        mtsIntuitiveResearchKitArm::feed_forward_jf_internal(jf);
+        mtsIntuitiveResearchKitArm::servo_command_internal(js);
         return;
     }
 
-    // pad array for PID
-    vctDoubleVec joint_efforts(number_of_joints(), 0.0); // for PID
-    joint_efforts.at(6) = m_jaw_servo_jf;
+    CMN_ASSERT(m_servo_js_param.Position().size() == 7);
+    // first 6 joints, assign positions and check limits
+    vctDoubleVec jp_clipped(js.Position().Ref(number_of_joints_kinematics()));
+    clip_jp(jp_clipped);
+    ToJointsPID(jp_clipped, m_servo_js_param.Position());
 
-    if (m_snake_like) {
-        std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for force control" << std::endl;
-    } else if (jf.size() > 0) {
-        joint_efforts.Ref(number_of_joints_kinematics()).Assign(jf);
+    if (js.Position().size() == 7) {
+        m_jaw_servo_jp = clip_jaw_jp(js.Position().at(6));
     }
 
-    m_feed_forward_jf_param.ForceTorque().Zeros();
-
-    if (m_has_coupling) {
-        m_feed_forward_jf_param.ForceTorque().Add(m_coupling.JointToActuatorEffort() * joint_efforts);
-    } else {
-        m_feed_forward_jf_param.ForceTorque().Add(joint_efforts);
+    // velocity - current code only support jaw_servo_jv if servo_jp has a velocity goal
+    const size_t jv_size = js.Velocity().size();
+    CMN_ASSERT(m_servo_js_param.Velocity().size() == 7);
+    if (jv_size != 0) {
+        ToJointsPID(js.Velocity(), m_servo_js_param.Velocity());
     }
 
-    // convert to cisstParameterTypes
-    m_servo_jf_param.SetForceTorque(m_feed_forward_jf_param.ForceTorque());
-    m_servo_jf_param.SetTimestamp(StateTable.GetTic());
-    m_feed_forward_jf_param.SetTimestamp(StateTable.GetTic());
-    PID.feed_forward_servo_jf(m_feed_forward_jf_param);
+    m_servo_js_param.Position().at(6) = m_jaw_servo_jp;
+    if (jv_size != 0) {
+        m_servo_js_param.Velocity().at(6) = 0.0;
+    }
+
+    m_servo_js_param.Effort().Zeros();
+    m_servo_js_param.Effort().at(6) = m_jaw_servo_jf;
+    add_feed_forward(m_servo_js_param.Effort());
+
+    if (!is_cartesian_ready()) {
+        // set all tool joints to have zero effort
+        m_servo_js_param.Effort().Ref(m_servo_js_param.Effort().size() - 3, 3).Zeros();
+    }
+
+    m_servo_js_param.Mode().SetAll(prmJointCommandMode::PRM_JOINT_MODE_NONE);
+    m_servo_js_param.Mode().Ref(js.Mode().size()).Assign(js.Mode());
+    // need to propagate joint command modes to actuator space somehow
+    m_servo_js_param.Mode().at(6) = m_servo_js_param.Mode().at(5);
+
+    servo_command_internal(m_servo_js_param);
 }
 
 void mtsIntuitiveResearchKitPSM::control_move_jp_on_stop(const bool goal_reached)
 {
     if (is_cartesian_ready()) {
         // save end position as starting servo for jaws
-        m_jaw_servo_jp = m_servo_jp_param.Goal().at(6);
+        m_jaw_servo_jp = m_servo_js_param.Position().at(6); // TODO: should be unneeded now, but need to verify
     }
     mtsIntuitiveResearchKitArm::control_move_jp_on_stop(goal_reached);
 }

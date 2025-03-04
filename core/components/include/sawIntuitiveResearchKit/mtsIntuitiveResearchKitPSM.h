@@ -148,7 +148,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void servo_jp_internal(const vctDoubleVec & jp,
                            const vctDoubleVec & jv) override;
     void servo_jf_internal(const vctDoubleVec & jf) override;
-    void feed_forward_jf_internal(const vctDoubleVec & jf) override;
+    void servo_js_internal(const prmJointCommand & js) override;
 
     void control_move_jp_on_stop(const bool reached) override;
 

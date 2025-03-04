@@ -76,7 +76,7 @@ void mtsDerivedPSM::RunHomed(void)
                 // set all joints in PID mode except 3rd one (translation)
                 vctBoolVec _torqueMode(number_of_joints(), false);
                 _torqueMode[2] = true;
-                PID.EnableTorqueMode(_torqueMode);
+                // TODO: update example!! PID.EnableTorqueMode(_torqueMode);
             }
             // apply viscosity on 3rd joint, replace this logic with whatever algorithm you want!
             vctDoubleVec _servo_jf(number_of_joints(), 0.0);

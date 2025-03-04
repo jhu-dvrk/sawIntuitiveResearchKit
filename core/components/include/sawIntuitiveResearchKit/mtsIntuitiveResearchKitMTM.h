@@ -109,7 +109,6 @@ protected:
 
     // see base class
     void control_servo_cf_orientation_locked(void) override;
-    void SetControlEffortActiveJoints(void) override;
     void control_servo_cf_preload(vctDoubleVec & effortPreload,
                                   vctDoubleVec & wrenchPreload) override;
 

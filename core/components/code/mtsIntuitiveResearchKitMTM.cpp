@@ -590,26 +590,19 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
                                           m_servo_jv,
                                           m_trajectory_j.goal,
                                           m_trajectory_j.goal_v);
-        servo_jp_internal(m_servo_jp, m_servo_jv);
+        prmJointCommand js;
+        js.Position() = m_servo_jp;
+        js.Velocity() = m_servo_jv;
+        js.Effort() = m_servo_jf_vector;
+        auto mode_all = prmJointCommandMode::PRM_JOINT_MODE_POSITION | prmJointCommandMode::PRM_JOINT_MODE_VELOCITY | prmJointCommandMode::PRM_JOINT_MODE_EFFORT;
+        js.Mode().SetSize(m_servo_jp.size());
+        js.Mode().Ref(3, 0).SetAll(prmJointCommandMode::PRM_JOINT_MODE_EFFORT);
+        js.Mode().Ref(4, 3).SetAll(mode_all);
+        
+        servo_js_internal(js);
     } else {
         m_arm_interface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in control_servo_cf_orientation_locked");
     }
-}
-
-void mtsIntuitiveResearchKitMTM::SetControlEffortActiveJoints(void)
-{
-    vctBoolVec torqueMode(number_of_joints());
-    // if orientation is locked
-    if (m_effort_orientation_locked) {
-        // first 3 joints in torque mode
-        torqueMode.Ref(3, 0).SetAll(true);
-        // last 4 in PID mode
-        torqueMode.Ref(4, 3).SetAll(false);
-    } else {
-        // all joints in effort mode
-        torqueMode.SetAll(true);
-    }
-    PID.EnableTorqueMode(torqueMode);
 }
 
 void mtsIntuitiveResearchKitMTM::control_servo_cf_preload(vctDoubleVec & effortPreload,
@@ -674,7 +667,6 @@ void mtsIntuitiveResearchKitMTM::lock_orientation(const vctMatRot3 & orientation
     // if we just started lock
     if (!m_effort_orientation_locked) {
         m_effort_orientation_locked = true;
-        SetControlEffortActiveJoints();
         // initialize trajectory
         m_servo_jp.Assign(m_pid_measured_js.Position(), number_of_joints());
         m_servo_jv.Assign(m_pid_measured_js.Velocity(), number_of_joints());
@@ -696,7 +688,6 @@ void mtsIntuitiveResearchKitMTM::unlock_orientation(void)
     // only unlock if needed
     if (m_effort_orientation_locked) {
         m_effort_orientation_locked = false;
-        SetControlEffortActiveJoints();
     }
     // emit event
     mtm_events.orientation_locked(m_effort_orientation_locked);
