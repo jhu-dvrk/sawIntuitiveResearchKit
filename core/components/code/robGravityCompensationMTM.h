@@ -5,7 +5,7 @@
   Author(s):
   Created on: 2018
 
-  (C) Copyright 2018-2024, Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2018-2025, Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -23,9 +23,11 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstVector/vctDynamicVectorTypes.h>
 #include <json/json.h>
 
+#include <sawIntuitiveResearchKit/robGravityCompensation.h>
+
 // always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
-class CISST_EXPORT robGravityCompensationMTM
+class CISST_EXPORT robGravityCompensationMTM : public robGravityCompensation
 {
 public:
     struct CreationResult {
@@ -58,8 +60,7 @@ public:
 
     static CreationResult Create(const Json::Value & jsonConfig);
     robGravityCompensationMTM(const Parameters & parameters,int version);
-    void AddGravityCompensationEfforts(const vctVec & q, const vctVec & q_dot,
-                                       vctVec & totalEfforts);
+    vctVec compute(const prmStateJoint& state, vct3 CMN_UNUSED(gravity)) override;
 
 private:
     static void AssignRegressor(const vctVec & q, vctMat & regressor);

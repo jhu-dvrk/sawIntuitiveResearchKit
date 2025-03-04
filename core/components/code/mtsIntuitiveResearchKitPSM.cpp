@@ -33,6 +33,54 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <sawIntuitiveResearchKit/prmActuatorJointCouplingCheck.h>
 
+class GravityCompensationPSM : public robGravityCompensation {
+public:
+    bool configure(std::string physical_dh_file);
+    std::string error(void);
+
+    vctVec compute(const prmStateJoint& state, vct3 gravity) override;
+private:
+    robManipulator physical_model;
+    std::string error_message;
+};
+
+bool GravityCompensationPSM::configure(std::string physical_dh_file)
+{
+    robManipulator::Errno err = physical_model.LoadRobot(physical_dh_file);
+    if (err != robManipulator::ESUCCESS) {
+        error_message = physical_model.mLastError;
+        return false;
+    }
+
+    // make sure we have expected number of links
+    if (physical_model.links.size() == 7) {
+        return true;
+    } else {
+        error_message = "PSM GC kinematics does not match expected number of links for Si";
+        return false;
+    }
+}
+
+std::string GravityCompensationPSM::error(void)
+{
+    return error_message;
+}
+
+vctVec GravityCompensationPSM::compute(const prmStateJoint& state, vct3 gravity)
+{
+    vctDoubleVec qd(7, 0.0);
+    auto j = state.Position();
+    // convert virtual joint positions to physical
+    vctDoubleVec q(7, j[0], 0.0, j[1], -j[1], j[1], 0.5*j[2], 0.5*j[2]);
+    vctDoubleVec predicted_efforts = physical_model.CCG_MDH(q, qd, gravity);
+    vctDoubleVec efforts(state.Position().size(), 0.0);
+    efforts[0] = predicted_efforts[0];
+    efforts[1] = predicted_efforts[2] - predicted_efforts[3] + predicted_efforts[4];
+    efforts[2] = predicted_efforts[6];
+
+    return efforts;
+}
+
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitPSM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
 mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds):
@@ -48,6 +96,9 @@ mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicCons
 {
     Init();
 }
+
+// need to define destructor after definition of GravityCompensationPSM is available
+mtsIntuitiveResearchKitPSM::~mtsIntuitiveResearchKitPSM() = default;
 
 void mtsIntuitiveResearchKitPSM::set_simulated(void)
 {
@@ -165,6 +216,42 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
         }
     } else {
         mToolDetection = mtsIntuitiveResearchKitToolTypes::AUTOMATIC;
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::ConfigureGC(const Json::Value & jsonConfig,
+                                               const cmnPath & configPath,
+                                               const std::string & filename)
+{
+    std::string physical_dh_name;
+    const auto jsonPhysicalDH = jsonConfig["kinematic-gc"];
+    if (!jsonPhysicalDH.isNull()) {
+        physical_dh_name = jsonPhysicalDH.asString();
+    } else if (m_generation == GENERATION_Si) {
+        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << GetName() << ": no GC kinematics specified, using default for PSM Si" << std::endl;
+        physical_dh_name = "kinematic/psm-si-physical.json";
+    } else {
+        CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << GetName() << ": no GC kinematics specified, so gravity compensation is not available" << std::endl;
+        return;
+    }
+
+    const auto physical_dh = configPath.Find(physical_dh_name);
+    if (physical_dh == "") {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
+                                 << " using file \"" << filename << "\", can't find GC kinematics file \""
+                                 << physical_dh << "\"" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    m_gc = std::make_unique<GravityCompensationPSM>();
+    bool ok = m_gc->configure(physical_dh);
+    if (ok) {
+        gravity_compensation = m_gc.get();
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
+                                 << " using GC kinematics file \"" << physical_dh << "\", got error \""
+                                 << m_gc->error() << "\"" << std::endl;
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -596,6 +683,12 @@ void mtsIntuitiveResearchKitPSM::Init(void)
                                     this);
     mArmState.SetEnterCallback("MANUAL",
                                &mtsIntuitiveResearchKitPSM::EnterManual,
+                               this);
+    mArmState.SetRunCallback("MANUAL",
+                             &mtsIntuitiveResearchKitPSM::RunManual,
+                             this);
+    mArmState.SetLeaveCallback("MANUAL",
+                               &mtsIntuitiveResearchKitPSM::LeaveManual,
                                this);
 
     // initialize trajectory data, last 4 tweaked for engage procedures
@@ -1137,7 +1230,32 @@ void mtsIntuitiveResearchKitPSM::TransitionToolEngaged(void)
 void mtsIntuitiveResearchKitPSM::EnterManual(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
-    PID.Enable(false);
+    m_jaw_servo_jf = 0.0;
+    free();
+}
+
+void mtsIntuitiveResearchKitPSM::RunManual(void)
+{
+    if (mControlCallback) {
+        mControlCallback->Execute();
+    }
+}
+
+void mtsIntuitiveResearchKitPSM::LeaveManual(void)
+{
+    UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, false);
+    hold();
+}
+
+double mtsIntuitiveResearchKitPSM::clip_jaw_jp(double jp)
+{
+    if (jp > m_jaw_configuration_js.PositionMax().at(0)) {
+        jp = m_jaw_configuration_js.PositionMax().at(0);
+    } else if (jp < m_jaw_configuration_js.PositionMin().at(0)) {
+        jp = m_jaw_configuration_js.PositionMin().at(0);
+    }
+
+    return jp;
 }
 
 void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPosition)
@@ -1173,6 +1291,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
 
     // save goal
     m_jaw_servo_jp = jawPosition.Goal().at(0);
+    m_servo_jp.at(6) = m_jaw_servo_jp;
     m_pid_new_goal = true;
 }
 
@@ -1218,16 +1337,16 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
         return;
     }
 
-    if (use_feed_forward()) {
-        update_feed_forward(m_pid_feed_forward_servo_jf.ForceTorque());
-    }
-    PID.feed_forward_jf(m_pid_feed_forward_servo_jf);
-
     CMN_ASSERT(m_servo_jp_param.Goal().size() == 7);
     // first 6 joints, assign positions and check limits
-    vctDoubleVec jp_clipped(jp);
+    vctDoubleVec jp_clipped(jp.Ref(number_of_joints_kinematics()));
     clip_jp(jp_clipped);
     ToJointsPID(jp_clipped, m_servo_jp_param.Goal());
+
+    if (jp.size() == 7) {
+        m_jaw_servo_jp = clip_jaw_jp(jp.at(6));
+    }
+
     // velocity - current code only support jaw_servo_jv if servo_jp has a velocity goal
     const size_t jv_size = jv.size();
     m_servo_jp_param.Velocity().SetSize(7);
@@ -1246,6 +1365,8 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
         }
     }
     PID.servo_jp(m_servo_jp_param);
+
+    apply_feed_forward();
 }
 
 void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & effort)
@@ -1279,10 +1400,6 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
 
 void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffort)
 {
-    if (!is_cartesian_ready()) {
-        mtsIntuitiveResearchKitArm::servo_jf_internal(newEffort);
-        return;
-    }
 
     // pad array for PID
     vctDoubleVec torqueDesired(number_of_joints(), 0.0); // for PID
@@ -1294,6 +1411,11 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffor
     // add torque for jaws
     torqueDesired.at(6) = m_jaw_servo_jf;
 
+    if (!is_cartesian_ready()) {
+        // set all tool joints to have zero effort
+        torqueDesired.Ref(torqueDesired.size() - 3, 3).Zeros();
+    }
+
     // convert to cisstParameterTypes
     m_servo_jf_param.SetForceTorque(torqueDesired);
     m_servo_jf_param.SetTimestamp(StateTable.GetTic());
@@ -1301,6 +1423,8 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffor
         m_servo_jf_param.ForceTorque() = m_coupling.JointToActuatorEffort() * m_servo_jf_param.ForceTorque();
     }
     PID.servo_jf(m_servo_jf_param);
+
+    apply_feed_forward();
 }
 
 void mtsIntuitiveResearchKitPSM::feed_forward_jf_internal(const vctDoubleVec & jf)
@@ -1320,21 +1444,19 @@ void mtsIntuitiveResearchKitPSM::feed_forward_jf_internal(const vctDoubleVec & j
         joint_efforts.Ref(number_of_joints_kinematics()).Assign(jf);
     }
 
-    m_pid_feed_forward_servo_jf.ForceTorque().Zeros();
-    if (use_feed_forward()) {
-        update_feed_forward(m_pid_feed_forward_servo_jf.ForceTorque());
-    }
+    m_feed_forward_jf_param.ForceTorque().Zeros();
 
     if (m_has_coupling) {
-        m_pid_feed_forward_servo_jf.ForceTorque().Add(m_coupling.JointToActuatorEffort() * joint_efforts);
+        m_feed_forward_jf_param.ForceTorque().Add(m_coupling.JointToActuatorEffort() * joint_efforts);
     } else {
-        m_pid_feed_forward_servo_jf.ForceTorque().Add(joint_efforts);
+        m_feed_forward_jf_param.ForceTorque().Add(joint_efforts);
     }
 
     // convert to cisstParameterTypes
-    m_servo_jf_param.SetForceTorque(m_pid_feed_forward_servo_jf.ForceTorque());
+    m_servo_jf_param.SetForceTorque(m_feed_forward_jf_param.ForceTorque());
     m_servo_jf_param.SetTimestamp(StateTable.GetTic());
-    PID.feed_forward_jf(m_pid_feed_forward_servo_jf);
+    m_feed_forward_jf_param.SetTimestamp(StateTable.GetTic());
+    PID.feed_forward_servo_jf(m_feed_forward_jf_param);
 }
 
 void mtsIntuitiveResearchKitPSM::control_move_jp_on_stop(const bool goal_reached)
@@ -1513,12 +1635,16 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
     // Start manual mode but save the previous state
     switch (button.Type()) {
     case prmEventButton::PRESSED:
-        ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
-        PID.Enabled(ClutchEvents.PIDEnabledPreviousState);
-        mArmState.SetCurrentState("MANUAL");
-        set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
-                        mtsIntuitiveResearchKit::Green200,
-                        true, false);
+        if (ArmIsReady("Clutch", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+            ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
+            PID.Enabled(ClutchEvents.PIDEnabledPreviousState);
+            mArmState.SetCurrentState("MANUAL");
+            set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
+                            mtsIntuitiveResearchKit::Green200,
+                            true, false);
+        } else {
+            m_arm_interface->SendWarning(this->GetName() + ": arm not ready yet, manipulator clutch ignored");
+        }
         break;
     case prmEventButton::RELEASED:
         if (mArmState.CurrentState() == "MANUAL") {

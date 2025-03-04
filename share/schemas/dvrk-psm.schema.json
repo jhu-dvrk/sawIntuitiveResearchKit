@@ -1,27 +1,27 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.2/dvrk-psm.schema.json",
-    "title": "dVRK psm 2.2",
-    "description": "Configuration file format for the dVRK PSM arm component.  Some of the properties are inherited from the See [dVRK wiki](https://github.com/jhu-dVRK/sawIntuitiveResearchKit/wiki).<ul><li>PSM schema extends [arm schema](dvrk-arm.html)<li>For details of implementation, see code under `sawIntuitiveResearchKit/components/code/mtsIntuitiveResearchKitPSM.cpp`<li>[Schema file](dvrk-psm.schema.json)</ul>",
+    "$id": "dvrk-psm.schema.json",
+    "title": "dVRK psm",
+    "description": "Configuration file format for the dVRK PSM arm component. See the [dVRK wiki](https://dvrk.readthedocs.io).\n\n - PSM schema extends [arm schema](dvrk-arm.html)\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitPSM.cpp`\n - [Schema file](dvrk-psm.schema.json)",
     "allOf": [
-        { "$ref": "https://dvrk.lcsr.jhu.edu/documentation/schemas/v2.1/dvrk-arm.schema.json#/" },
+        { "$ref": "dvrk-arm.schema.json" },
 
         {
             "properties": {
                 "custom-tool-index": {
-                    "description": "Extra instrument list loaded for this arm.  By default, the supported instruments are defined in the file `share/tool/index.html` but one might need some new instruments.  This can be to support custom instruments or standard ISI instruments not yet supported by the dVRK (see [dVRK wiki](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Custom-Instruments)).  The filename can be absolute or relative to `sawIntuitiveResearchKit/share`.  For example \"jhu-dVRK/custom-tool/custom-tool-index.json\"",
+                    "description": "Extra instrument list loaded for this arm.  By default, the supported instruments are defined in the file `share/tool/index.html` but one might need some new instruments.  This can be to support custom instruments or standard ISI instruments not yet supported by the dVRK (See the [dVRK wiki](https://dvrk.readthedocs.io)).  The filename can be absolute or relative to `sawIntuitiveResearchKit/share`.  For example \"jhu-dVRK/custom-tool/custom-tool-index.json\"",
                     "type": "string"
                 }
                 ,
                 "tool-detection": {
-                    "description": "Set the tool detection method.  Possible values are defined in `sawIntuitiveResearchKit/components/code/mtsIntuitiveResearchKitToolTypes.cdg`.  For more details regarding tool detection see the [dVRK wiki](https://github.com/jhu-dvrk/sawIntuitiveResearchKit/wiki/Tool-Detection).",
+                    "description": "Set the tool detection method.  Possible values are defined in `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitToolTypes.cdg`.  For more details regarding tool detection see the [dVRK wiki](https://dvrk.readthedocs.io).",
                     "type": "string",
                     "enum": ["AUTOMATIC", "MANUAL", "FIXED"],
                     "default": "AUTOMATIC"
                 }
                 ,
                 "tool": {
-                    "description": "Tool type (e.g. \"LARGE_NEEDLE_DRIVER:400006\" or \"LARGE_NEEDLE_DRIVER:420006[12]\" if the version is needed).   This is required if the \"tool-detection\" is set to \"FIXED\" and ignored otherwise.  This emulates the behavior of the dVRK 1.x and should only be used if the tool is never changed.",
+                    "description": "Tool type (e.g. \"LARGE\\_NEEDLE\\_DRIVER:400006\" or \"LARGE\\_NEEDLE\\_DRIVER:420006[12]\" if the version is needed).   This is required if the \"tool-detection\" is set to \"FIXED\" and ignored otherwise.  This emulates the behavior of the dVRK 1.x and should only be used if the tool is never changed.",
                     "type": "string"
                 }
             }

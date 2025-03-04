@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-05-23
 
-  (C) Copyright 2015-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisst_ros_crtk/mts_ros_crtk_bridge_provided.h>
 
 class mtsIntuitiveResearchKitConsole;
+class mts_ros_crtk_robot_io_bridge;
 
 namespace dvrk {
     class console: public mts_ros_crtk_bridge_provided
@@ -34,7 +35,6 @@ namespace dvrk {
                 const double & publish_rate_in_seconds,
                 const double & tf_rate_in_seconds,
                 mtsIntuitiveResearchKitConsole * mts_console);
-        void Configure(const std::string & jsonFile);
 
         // methods using CRTK bridge_interface_provided method
         void bridge_interface_provided_arm(const std::string & _component_name,
@@ -60,14 +60,14 @@ namespace dvrk {
         // dVRK specific topics
         void add_topics_console(void);
         void add_topics_endoscope_focus(void);
-        // IO timing
+        // IO timing (to be deprecated)
         void add_topics_io(void);
-        // add monitoring topics for all PIDs
-        void add_topics_pid(void);
-        // low level IO for a given arm if requested by user
-        void add_topics_arm_io(mtsROSBridge * _pub_bridge,
-                               const std::string & _arm_name,
-                               const std::string & _io_component_name);
+        // add topics for IO
+        void add_topics_io(const double _publish_period_in_seconds,
+                           const bool read_write);
+        // add topics for all PIDs
+        void add_topics_pid(const bool read_write);
+
         // buttons on ECM
         void add_topics_ecm_io(const std::string & _arm_name,
                                const std::string & _io_component_name);
@@ -82,6 +82,7 @@ namespace dvrk {
         mtsROSBridge * m_pub_bridge;
         double m_publish_rate, m_tf_rate;
         mtsIntuitiveResearchKitConsole * m_console;
+        mts_ros_crtk_robot_io_bridge * m_io_bridge = nullptr;
     };
 }
 

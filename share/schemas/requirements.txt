@@ -1,0 +1,4 @@
+jsonschema
+referencing
+jsmin
+json-schema-for-humans

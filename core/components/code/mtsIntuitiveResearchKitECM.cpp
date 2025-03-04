@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,11 +21,83 @@ http://www.cisst.org/cisst/license.txt.
 #include <time.h>
 
 // cisst
+#include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstParameterTypes/prmEventButton.h>
+
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/robManipulatorECM.h>
+
+// ECM-specific GC - accesses ECM's Manipulator so knows current endoscope mass
+class GravityCompensationECM : public robGravityCompensation {
+public:
+    bool configure(std::string physical_dh_file);
+    std::string error(void);
+
+    void set_endoscope_mass(double mass);
+    vctVec compute(const prmStateJoint& state, vct3 gravity) override;
+private:
+    robManipulator physical_model;
+    std::string error_message;
+};
+
+bool GravityCompensationECM::configure(std::string physical_dh_file)
+{
+    robManipulator::Errno err = physical_model.LoadRobot(physical_dh_file);
+    if (err != robManipulator::ESUCCESS) {
+        error_message = physical_model.mLastError;
+        return false;
+    }
+
+    // make sure we have expected number of links so we know which link
+    // to put the variable endoscope/camera mass
+    if (physical_model.links.size() == 6) {
+        return true; // 6 links, ECM Si physical DH
+    } else if (physical_model.links.size() == 4) {
+        return true; // 4 links, ECM Classic virtual DH used as physical DH
+    } else {
+        error_message = "ECM GC kinematics does not match Classic or Si number of links";
+        return false; // unknown physical DH
+    }
+}
+
+std::string GravityCompensationECM::error(void)
+{
+    return error_message;
+}
+
+void GravityCompensationECM::set_endoscope_mass(double mass)
+{
+    if (physical_model.links.size() == 6) {
+        physical_model.links.at(5).MassData().Mass() = mass;
+    } else {
+        physical_model.links.at(2).MassData().Mass() = mass;
+    }
+}
+
+vctVec GravityCompensationECM::compute(const prmStateJoint& state, vct3 gravity)
+{
+    size_t n_joints = physical_model.links.size();
+    auto j = state.Position();
+
+    vctDoubleVec qd(n_joints, 0.0);
+    vctDoubleVec efforts(state.Position().size(), 0.0);
+
+    if (n_joints == 6) {
+        // convert virtual joint positions to physical
+        vctDoubleVec q(6, j[0], 0.0, j[1], -j[1], j[1], j[2]);
+        vctDoubleVec predicted_efforts = physical_model.CCG_MDH(q, qd, gravity);
+        efforts[0] = predicted_efforts[0];
+        efforts[1] = predicted_efforts[2] - predicted_efforts[3] + predicted_efforts[4];
+        efforts[2] = predicted_efforts[5];
+    } else if (n_joints == 4) {
+        vctDoubleVec q(4, j[0], j[1], j[2], 0.0);
+        efforts = physical_model.CCG_MDH(j, qd, gravity);
+    }
+
+    return efforts;
+}
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitECM, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
 
@@ -40,6 +112,9 @@ mtsIntuitiveResearchKitECM::mtsIntuitiveResearchKitECM(const mtsTaskPeriodicCons
 {
     Init();
 }
+
+// need to define destructor after definition of GravityCompensationECM is available
+mtsIntuitiveResearchKitECM::~mtsIntuitiveResearchKitECM() = default;
 
 void mtsIntuitiveResearchKitECM::set_simulated(void)
 {
@@ -112,6 +187,45 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
                                  << "If your ECM is mounted on the SUJ you should likely add it using: "
                                  << " \"mounting-pitch\": " << std::to_string(m_mounting_pitch)
                                  << " // " << std::to_string(m_mounting_pitch * cmn180_PI) << " degrees" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
+                                               const cmnPath & configPath,
+                                               const std::string & filename)
+{
+    std::string physical_dh_name;
+    const auto jsonPhysicalDH = jsonConfig["kinematic-gc"];
+    if (!jsonPhysicalDH.isNull()) {
+        physical_dh_name = jsonPhysicalDH.asString();
+    } else if (m_generation == GENERATION_Si) {
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Si" << std::endl;
+        physical_dh_name = "kinematic/ecm-si-physical.json";
+    } else if (m_generation == GENERATION_Classic) {
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Classic" << std::endl;
+        physical_dh_name = "kinematic/ecm.json";
+    } else {
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, so gravity compensation is not available" << std::endl;
+        return;
+    }
+
+    const auto physical_dh = configPath.Find(physical_dh_name);
+    if (physical_dh == "") {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
+                                 << " using file \"" << filename << "\", can't find GC kinematics file \""
+                                 << physical_dh << "\"" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    m_gc = std::make_unique<GravityCompensationECM>();
+    bool ok = m_gc->configure(physical_dh);
+    if (ok) {
+        gravity_compensation = m_gc.get();
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureGC: " << this->GetName()
+                                 << " using GC kinematics file \"" << physical_dh << "\", got error \""
+                                 << m_gc->error() << "\"" << std::endl;
         exit(EXIT_FAILURE);
     }
 }
@@ -254,9 +368,6 @@ void mtsIntuitiveResearchKitECM::EnterHomed(void)
 {
     mtsIntuitiveResearchKitArm::EnterHomed();
 
-    // set gravity compensation
-    m_gravity_compensation = true;
-
     // event to propagate endoscope type based on configuration file
     EndoscopeEvents.endoscope_type(mtsIntuitiveResearchKitEndoscopeTypes::TypeToString(m_endoscope_type));
 }
@@ -264,18 +375,14 @@ void mtsIntuitiveResearchKitECM::EnterHomed(void)
 void mtsIntuitiveResearchKitECM::EnterManual(void)
 {
     UpdateOperatingStateAndBusy(prmOperatingState::ENABLED, true);
-    PID.EnableTrackingError(false);
-    SetControlEffortActiveJoints();
+    free();
 }
 
 void mtsIntuitiveResearchKitECM::RunManual(void)
 {
-    // zero efforts
-    m_servo_jf_vector.SetAll(0.0);
-    if (m_gravity_compensation) {
-        m_servo_jf_vector.Add(m_gravity_compensation_setpoint_js.Effort());
+    if (mControlCallback) {
+        mControlCallback->Execute();
     }
-    servo_jf_internal(m_servo_jf_vector);
 }
 
 void mtsIntuitiveResearchKitECM::LeaveManual(void)
@@ -298,7 +405,7 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
     // Start manual mode but save the previous state
     switch (button.Type()) {
     case prmEventButton::PRESSED:
-        if (is_joint_ready()) {
+        if (ArmIsReady("Clutch", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
             ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
             mArmState.SetCurrentState("MANUAL");
             set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
@@ -333,21 +440,6 @@ void mtsIntuitiveResearchKitECM::EventHandlerSUJClutch(const prmEventButton & bu
     }
 }
 
-void mtsIntuitiveResearchKitECM::update_feed_forward(vctDoubleVec & feedForward)
-{
-    feedForward.SetAll(0.0);
-    if (!m_simulated) {
-        feedForward.Add(m_gravity_compensation_setpoint_js.Effort());
-    }
-}
-
-void mtsIntuitiveResearchKitECM::gravity_compensation(vctDoubleVec & efforts)
-{
-    vctDoubleVec qd(this->number_of_joints_kinematics(), 0.0);
-    vct3 vg(0.0, sin(m_mounting_pitch) * 9.81, cos(m_mounting_pitch) * 9.81);
-    efforts.ForceAssign(Manipulator->CCG_MDH(m_kin_measured_js.Position(), qd, vg));
-}
-
 void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscopeType)
 {
     // initialize configured flag
@@ -368,16 +460,30 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     m_endoscope_type = mtsIntuitiveResearchKitEndoscopeTypes::TypeFromString(endoscopeType);
 
     // update tool tip offset
-    ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
-                                    -1.0,  0.0,  0.0,  0.0,
-                                     0.0,  0.0,  1.0,  0.0,
-                                     0.0,  0.0,  0.0,  1.0);
+    switch (m_endoscope_type) {
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_DOWN:
+        ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
+                                         -1.0,  0.0,  0.0, 0.0,
+                                         0.0,  0.0,  1.0,  0.18,
+                                         0.0,  0.0,  0.0,  1.0);
+        break;
+    default:
+        ToolOffsetTransformation.Assign( 0.0,  1.0,  0.0,  0.0,
+                                         -1.0,  0.0,  0.0,  0.0,
+                                         0.0,  0.0,  1.0,  0.0,
+                                         0.0,  0.0,  0.0,  1.0);
+        break;
+    }
+
     vctFrm4x4 tip;
     tip.Translation().Assign(vct3(0.0, 0.0, 0.0));
     switch (m_endoscope_type) {
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_SD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_HD_UP:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_UP:
         // -30 degree rotation along X axis
         tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), -30.0 * cmnPI_180));
         ToolOffsetTransformation = ToolOffsetTransformation * tip;
@@ -385,6 +491,7 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_SD_DOWN:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Classic_HD_DOWN:
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_DOWN:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_DOWN:
         // 30 degree rotation along X axis
         tip.Rotation().From(vctAxAnRot3(vct3(1.0, 0.0, 0.0), 30.0 * cmnPI_180));
         ToolOffsetTransformation = ToolOffsetTransformation * tip;
@@ -415,14 +522,17 @@ void mtsIntuitiveResearchKitECM::set_endoscope_type(const std::string & endoscop
     case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Si_HD_DOWN:
         mass = mtsIntuitiveResearchKit::ECM::SiHDMass;
         break;
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_STRAIGHT:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_UP:
+    case mtsIntuitiveResearchKitEndoscopeTypes::SCOPE_Custom_DOWN:
+        mass = mtsIntuitiveResearchKit::ECM::CustomMass;
+        break;
     default:
         mass = mtsIntuitiveResearchKit::ECM::EmptyMass;
         break;
     }
 
-    // make sure we have enough joints in the kinematic chain
-    CMN_ASSERT(Manipulator->links.size() >= 3);
-    Manipulator->links.at(2).MassData().Mass() = mass;
+    m_gc->set_endoscope_mass(mass);
 
     // set configured flag
     m_endoscope_configured = true;

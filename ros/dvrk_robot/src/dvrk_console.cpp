@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-07-18
 
-  (C) Copyright 2015-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -26,6 +26,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnStrings.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h>
+
+#include <saw_robot_io_1394_ros/mts_ros_crtk_robot_io_bridge.h>
 
 #include <json/json.h>
 
@@ -144,41 +146,6 @@ dvrk::console::console(const std::string & name,
 
     // console
     add_topics_console();
-}
-
-void dvrk::console::Configure(const std::string & jsonFile)
-{
-    std::ifstream jsonStream;
-    jsonStream.open(jsonFile.c_str());
-
-    Json::Value jsonConfig, jsonValue;
-    Json::Reader jsonReader;
-    if (!jsonReader.parse(jsonStream, jsonConfig)) {
-        std::cerr << "Configure: failed to parse configuration\n"
-                  << jsonReader.getFormattedErrorMessages();
-        return;
-    }
-
-    mtsManagerLocal * _component_manager = mtsManagerLocal::GetInstance();
-
-    // look for io-interfaces
-    const Json::Value interfaces = jsonConfig["io-interfaces"];
-    for (unsigned int index = 0; index < interfaces.size(); ++index) {
-        const std::string _name = interfaces[index]["name"].asString();
-        const double _period = interfaces[index]["period"].asFloat();
-        const std::string _io_component_name = m_console->GetArmIOComponentName(_name);
-        if (_io_component_name == "") {
-            std::cerr << "Warning: the arm \"" << _name << "\" doesn't seem to exist" << std::endl
-                      << "or it doesn't have an IO component, no ROS bridge connected" << std::endl
-                      << "for this IO." << std::endl;
-        } else {
-            const std::string _bridgeName = bridgeNamePrefix + _name;
-            mtsROSBridge * _rosIOBridge = new mtsROSBridge(bridgeNamePrefix + _name, _period,
-                                                           node_handle_ptr());
-            _component_manager->AddComponent(_rosIOBridge);
-            add_topics_arm_io(_rosIOBridge, _name, _io_component_name);
-        }
-    }
 }
 
 void dvrk::console::bridge_interface_provided_arm(const std::string & _arm_name,
@@ -467,7 +434,23 @@ void dvrk::console::add_topics_io(void)
                       m_console->m_IO_component_name, "Configuration");
 }
 
-void dvrk::console::add_topics_pid(void)
+void dvrk::console::add_topics_io(const double _publish_period_in_seconds,
+                                  const bool _read_write)
+{
+    if (!m_io_bridge) {
+        mtsManagerLocal * _component_manager = mtsManagerLocal::GetInstance();
+
+        m_io_bridge = new mts_ros_crtk_robot_io_bridge("io-bridge", m_node_handle_ptr,
+                                                       "io/", _publish_period_in_seconds,
+                                                       /*tf*/ 0.0, _read_write, /* spin */ false);
+        _component_manager->AddComponent(m_io_bridge);
+        _component_manager->Connect("io-bridge", "RobotConfiguration",
+                                    "io", "Configuration");
+        m_io_bridge->Configure();
+    }
+}
+
+void dvrk::console::add_topics_pid(const bool read_write)
 {
     for (auto armPair : m_console->mArms) {
         const auto name = armPair.first;
@@ -475,44 +458,13 @@ void dvrk::console::add_topics_pid(void)
         if (arm->expects_PID()) {
             const std::string pid_component_name = name + "-PID";
             bridge_interface_provided(pid_component_name,
-                                      "Monitoring",
-                                      name + "/pid",
-                                      m_publish_rate, 0.0 /* disable tf */);
+                                      "Controller",
+                                      "pid/" + name,
+                                      m_publish_rate, /*tf*/ 0.0, read_write);
         }
     }
 }
 
-void dvrk::console::add_topics_arm_io(mtsROSBridge * _pub_bridge,
-                                      const std::string & _arm_name,
-                                      const std::string & _io_component_name)
-{
-    const std::string _ros_namespace = _arm_name + "/io/";
-    const std::string _interface_name = _arm_name + "-io";
-    _pub_bridge->AddPublisherFromCommandRead<prmStateJoint, CISST_RAL_MSG(sensor_msgs, JointState)>
-        (_interface_name, "pot/measured_js",
-         _ros_namespace + "pot/measured_js");
-    _pub_bridge->AddPublisherFromCommandRead<prmStateJoint, CISST_RAL_MSG(sensor_msgs, JointState)>
-        (_interface_name, "measured_js",
-         _ros_namespace + "actuator/measured_js");
-    _pub_bridge->AddPublisherFromCommandRead<prmStateJoint, CISST_RAL_MSG(sensor_msgs, JointState)>
-        (_interface_name, "software/measured_js",
-         _ros_namespace + "software/measured_js");
-    _pub_bridge->AddPublisherFromCommandRead<prmStateJoint, CISST_RAL_MSG(sensor_msgs, JointState)>
-        (_interface_name, "firmware/measured_js",
-         _ros_namespace + "firmware/measured_js");
-    _pub_bridge->AddPublisherFromCommandRead<vctDoubleVec, CISST_RAL_MSG(sensor_msgs, JointState)>
-        (_interface_name, "GetActuatorFeedbackCurrent",
-         _ros_namespace + "actuator/measured_current");
-    _pub_bridge->AddPublisherFromCommandRead<vctDoubleVec, CISST_RAL_MSG(sensor_msgs, JointState)>
-        (_interface_name, "GetActuatorRequestedCurrent",
-         _ros_namespace + "actuator/servo_current");
-    _pub_bridge->AddPublisherFromCommandRead<vctDoubleVec, CISST_RAL_MSG(sensor_msgs, JointState)>
-        (_interface_name, "GetActuatorTimestamp",
-         _ros_namespace + "timestamp");
-
-    m_connections.Add(_pub_bridge->GetName(), _interface_name,
-                      _io_component_name, _arm_name);
-}
 
 void dvrk::console::add_topics_ecm_io(const std::string & _arm_name,
                                       const std::string & _io_component_name)
