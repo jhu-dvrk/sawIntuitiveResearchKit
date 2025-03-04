@@ -1573,7 +1573,7 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
     prmJointCommandMode mode = prmJointCommandMode::PRM_JOINT_MODE_NONE;
 
     // position
-    vctDoubleVec jp(m_kin_measured_js.Position());
+    vctDoubleVec jp(m_pid_setpoint_js.Position());
     if (m_servo_cs.PositionIsValid()) {
         mode = mode | prmJointCommandMode::PRM_JOINT_MODE_POSITION;
 
@@ -1593,7 +1593,7 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
             return;
         }
     } else {
-        jp = m_kin_measured_js.Position();
+        jp = m_pid_setpoint_js.Position();
     }
 
     // velocity
