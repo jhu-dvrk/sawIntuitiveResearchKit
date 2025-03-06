@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -216,6 +216,22 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
         }
     } else {
         mToolDetection = mtsIntuitiveResearchKitToolTypes::AUTOMATIC;
+    }
+
+    // ask to set pitch if not already defined
+    if ((generation() == GENERATION_Si)
+        && (m_mounting_pitch > std::numeric_limits<double>::max())
+        ) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName() << std::endl
+                                 << "\"mounting-pitch\" was not defined in \"" << filename << "\"" << std::endl
+                                 << "If your PSM is mounted on the SUJ you should add it using: " << std::endl
+                                 << " \"mounting-pitch\": " << std::to_string(-45.0)
+                                 << " // " << std::to_string(-45.0 * cmn180_PI) << " degrees for PSM1 and PSM2"
+                                 << "Or:"
+                                 << " \"mounting-pitch\": " << std::to_string(-15.0)
+                                 << " // " << std::to_string(-15.0 * cmn180_PI) << " degrees for PSM3"
+                                 << std::endl;
+        exit(EXIT_FAILURE);
     }
 }
 

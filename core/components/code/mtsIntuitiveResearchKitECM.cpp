@@ -184,7 +184,7 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
         }
         CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName() << std::endl
                                  << "\"mounting-pitch\" was not defined in \"" << filename << "\"" << std::endl
-                                 << "If your ECM is mounted on the SUJ you should likely add it using: "
+                                 << "If your ECM is mounted on the SUJ you should add it using: " << std::endl
                                  << " \"mounting-pitch\": " << std::to_string(m_mounting_pitch)
                                  << " // " << std::to_string(m_mounting_pitch * cmn180_PI) << " degrees" << std::endl;
         exit(EXIT_FAILURE);
