@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -231,7 +231,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         return (number_of_brakes() > 0);
     }
 
-    inline virtual bool use_PID_tracking_error(void) const {
+    inline virtual bool should_use_measured_setpoint_check(void) const {
         return true;
     }
 
@@ -274,9 +274,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     // Interface to PID component
     mtsInterfaceRequired * PIDInterface;
     struct {
-        mtsFunctionWrite Enable;
-        mtsFunctionWrite EnableJoints;
-        mtsFunctionRead  Enabled;
+        mtsFunctionWrite enable;
+        mtsFunctionWrite enable_joints;
+        mtsFunctionRead  enabled;
         mtsFunctionRead  measured_js;
         mtsFunctionRead  setpoint_js;
         mtsFunctionWrite servo_jp;
@@ -284,9 +284,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         mtsFunctionWrite enforce_position_limits;
         mtsFunctionWrite EnableTorqueMode;
         mtsFunctionWrite servo_jf;
-        mtsFunctionWrite EnableTrackingError;
-        mtsFunctionWrite SetTrackingErrorTolerance;
-        vctDoubleVec DefaultTrackingErrorTolerance;
+        mtsFunctionWrite enable_measured_setpoint_check;
+        mtsFunctionWrite set_measured_setpoint_tolerance;
+        vctDoubleVec measured_setpoint_tolerance;
     } PID;
 
     // Interface to IO component
