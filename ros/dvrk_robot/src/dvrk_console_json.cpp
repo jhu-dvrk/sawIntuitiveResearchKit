@@ -218,9 +218,9 @@ int main(int argc, char ** argv)
     }
 
     if (options.IsSet("pid-topics-read-write")) {
-        consoleROS->add_topics_pid(true);
+        consoleROS->add_topics_pid(publishPeriod, true);
     } else if (options.IsSet("pid-topics-read-only")) {
-        consoleROS->add_topics_pid(false);
+        consoleROS->add_topics_pid(publishPeriod, false);
     }
 
     // connect everything
