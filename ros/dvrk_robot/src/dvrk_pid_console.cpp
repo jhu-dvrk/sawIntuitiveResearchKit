@@ -162,15 +162,22 @@ int main(int argc, char ** argv)
     componentManager->Connect("pid", "RobotJointTorqueInterface", "io", robotName);
 
     // io bridge uses a factory
-    mts_ros_crtk_robot_io_bridge * io_bridge = new mts_ros_crtk_robot_io_bridge("io-bridge", rosNode, "io/", publishPeriod);
+    mts_ros_crtk_robot_io_bridge * io_bridge = new mts_ros_crtk_robot_io_bridge("io-bridge", rosNode, "io/",
+                                                                                publishPeriod, /* tf */ 0.0,
+                                                                                /* rw */ true,
+                                                                                /* spin */ true);
     componentManager->AddComponent(io_bridge);
     componentManager->Connect("io-bridge", "RobotConfiguration",
                               "io", "Configuration");
     io_bridge->Configure();
 
     // controller pid bridge is just derived from crtk bridge
-    mts_ros_crtk_controllers_pid_bridge * pid_bridge = new mts_ros_crtk_controllers_pid_bridge("pid-bridge", rosNode);
-    pid_bridge->bridge_interface_provided("pid", "Controller", "pid/" + robotName, publishPeriod);
+    mts_ros_crtk_controllers_pid_bridge * pid_bridge = new mts_ros_crtk_controllers_pid_bridge("pid-bridge", rosNode,
+                                                                                               5.0 * cmn_ms,
+                                                                                               /* spin */ false);
+    pid_bridge->bridge_interface_provided("pid", "Controller", "pid/" + robotName,
+                                          publishPeriod, /* tf */ 0.0,
+                                          /* rw */ true);
     componentManager->AddComponent(pid_bridge);
     pid_bridge->Connect();
 

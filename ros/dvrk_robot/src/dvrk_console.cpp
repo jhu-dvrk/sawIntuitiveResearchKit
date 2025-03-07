@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h>
 
 #include <saw_robot_io_1394_ros/mts_ros_crtk_robot_io_bridge.h>
+#include <saw_controllers_ros/mts_ros_crtk_controllers_pid_bridge.h>
 
 #include <json/json.h>
 
@@ -66,7 +67,7 @@ dvrk::console::console(const std::string & name,
     }
 
     // arm topics
-    for (auto armPair : m_console->mArms) {
+    for (const auto & armPair : m_console->mArms) {
         auto arm = armPair.second;
         if (!arm->m_skip_ROS_bridge) {
             const std::string name = armPair.first;
@@ -438,29 +439,37 @@ void dvrk::console::add_topics_io(const double _publish_period_in_seconds,
                                   const bool _read_write)
 {
     if (!m_io_bridge) {
-        mtsManagerLocal * _component_manager = mtsManagerLocal::GetInstance();
-
+        mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
+        // io bridge uses an object factory based on list of interfaces provided by the IO component
         m_io_bridge = new mts_ros_crtk_robot_io_bridge("io-bridge", m_node_handle_ptr,
                                                        "io/", _publish_period_in_seconds,
                                                        /*tf*/ 0.0, _read_write, /* spin */ false);
-        _component_manager->AddComponent(m_io_bridge);
-        _component_manager->Connect("io-bridge", "RobotConfiguration",
-                                    "io", "Configuration");
+        component_manager->AddComponent(m_io_bridge);
+        component_manager->Connect("io-bridge", "RobotConfiguration",
+                                   "io", "Configuration");
         m_io_bridge->Configure();
     }
 }
 
-void dvrk::console::add_topics_pid(const bool read_write)
+void dvrk::console::add_topics_pid(const double _publish_period_in_seconds,
+                                   const bool _read_write)
 {
-    for (auto armPair : m_console->mArms) {
+    mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
+    for (auto & armPair : m_console->mArms) {
         const auto name = armPair.first;
         const auto arm = armPair.second;
         if (arm->expects_PID()) {
+            // we need to create on PID bridge per PID component
             const std::string pid_component_name = name + "-PID";
-            bridge_interface_provided(pid_component_name,
-                                      "Controller",
-                                      "pid/" + name,
-                                      m_publish_rate, /*tf*/ 0.0, read_write);
+            const std::string pid_bridge_name = "pid-bridge-" + name;
+            mts_ros_crtk_controllers_pid_bridge * bridge
+                = new mts_ros_crtk_controllers_pid_bridge(pid_bridge_name, m_node_handle_ptr,
+                                                          5.0 * cmn_ms, /* spin */ false);
+            bridge->bridge_interface_provided(pid_component_name, "Controller", "pid/" + name,
+                                              _publish_period_in_seconds, /* tf */ 0.0,
+                                              /* rw */ _read_write);
+            component_manager->AddComponent(bridge);
+            bridge->Connect();
         }
     }
 }

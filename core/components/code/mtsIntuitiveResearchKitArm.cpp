@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Zerui Wang
   Created on: 2016-02-24
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -312,9 +312,9 @@ void mtsIntuitiveResearchKitArm::Init(void)
     // PID
     PIDInterface = AddInterfaceRequired("PID");
     if (PIDInterface) {
-        PIDInterface->AddFunction("Enable", PID.Enable);
-        PIDInterface->AddFunction("EnableJoints", PID.EnableJoints);
-        PIDInterface->AddFunction("Enabled", PID.Enabled);
+        PIDInterface->AddFunction("enable", PID.enable);
+        PIDInterface->AddFunction("enable_joints", PID.enable_joints);
+        PIDInterface->AddFunction("enabled", PID.enabled);
         PIDInterface->AddFunction("measured_js", PID.measured_js);
         PIDInterface->AddFunction("setpoint_js", PID.setpoint_js);
         PIDInterface->AddFunction("servo_jp", PID.servo_jp);
@@ -322,8 +322,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
         PIDInterface->AddFunction("enforce_position_limits", PID.enforce_position_limits);
         PIDInterface->AddFunction("EnableTorqueMode", PID.EnableTorqueMode);
         PIDInterface->AddFunction("servo_jf", PID.servo_jf);
-        PIDInterface->AddFunction("EnableTrackingError", PID.EnableTrackingError);
-        PIDInterface->AddFunction("SetTrackingErrorTolerances", PID.SetTrackingErrorTolerance);
+        PIDInterface->AddFunction("enable_measured_setpoint_check", PID.enable_measured_setpoint_check);
+        PIDInterface->AddFunction("set_measured_setpoint_tolerance", PID.set_measured_setpoint_tolerance);
         PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::PositionLimitEventHandler, this, "PositionLimit");
         PIDInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitArm::ErrorEventHandler, this, "error");
     }
@@ -1138,7 +1138,7 @@ void mtsIntuitiveResearchKitArm::EnterDisabled(void)
     IO.UsePotsForSafetyCheck(false);
     IO.SetActuatorCurrent(vctDoubleVec(number_of_joints(), 0.0));
     IO.PowerOffSequence(false); // do not open safety relays
-    PID.Enable(false);
+    PID.enable(false);
     PID.enforce_position_limits(true);
     m_powered = false;
     set_LED_pattern(mtsIntuitiveResearchKit::Red200,
@@ -1162,9 +1162,9 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
     m_powered = false;
 
     if (m_simulated) {
-        PID.EnableTrackingError(false);
-        PID.Enable(true);
-        PID.EnableJoints(vctBoolVec(number_of_joints(), true));
+        PID.enable_measured_setpoint_check(false);
+        PID.enable(true);
+        PID.enable_joints(vctBoolVec(number_of_joints(), true));
         vctDoubleVec goal(number_of_joints());
         goal.Zeros();
         mtsIntuitiveResearchKitArm::servo_jp_internal(goal, vctDoubleVec());
@@ -1180,7 +1180,7 @@ void mtsIntuitiveResearchKitArm::EnterPowering(void)
 
     m_homing_timer = currentTime;
     // make sure the PID is not sending currents
-    PID.Enable(false);
+    PID.enable(false);
     // pre-load the boards with zero current
     IO.SetActuatorCurrent(vctDoubleVec(number_of_joints(), 0.0));
     // enable power
@@ -1231,7 +1231,7 @@ void mtsIntuitiveResearchKitArm::EnterEnabled(void)
 
     // disable PID for fallback
     IO.SetActuatorCurrent(vctDoubleVec(number_of_joints(), 0.0));
-    PID.Enable(false);
+    PID.enable(false);
     SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
                            mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
 
@@ -1330,7 +1330,7 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
     // disable joint limits, arm might start outside them
     PID.enforce_position_limits(false);
     // enable tracking errors
-    PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
+    PID.set_measured_setpoint_tolerance(PID.measured_setpoint_tolerance);
 
     // release brakes if any
     if ((has_brakes()) && !m_simulated) {
@@ -1353,8 +1353,8 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
 
     // enable PID on all joints
     mtsIntuitiveResearchKitArm::servo_jp_internal(m_servo_jp, vctDoubleVec());
-    PID.Enable(true);
-    PID.EnableJoints(vctBoolVec(number_of_joints(), true));
+    PID.enable(true);
+    PID.enable_joints(vctBoolVec(number_of_joints(), true));
 }
 
 void mtsIntuitiveResearchKitArm::RunHoming(void)
@@ -1425,11 +1425,10 @@ void mtsIntuitiveResearchKitArm::EnterHomed(void)
 
     // enable PID and start from current position
     mtsIntuitiveResearchKitArm::servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
-    PID.EnableTrackingError(use_PID_tracking_error());
-    PID.EnableJoints(vctBoolVec(number_of_joints(), true));
+    PID.enable_measured_setpoint_check(should_use_measured_setpoint_check());
+    PID.enable_joints(vctBoolVec(number_of_joints(), true));
     PID.enforce_position_limits(true);
-    PID.Enable(true);
-    PID.EnableJoints(vctBoolVec(number_of_joints(), true));
+    PID.enable(true);
 }
 
 void mtsIntuitiveResearchKitArm::LeaveHomed(void)
@@ -1724,7 +1723,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
         switch (mode) {
         case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
             // configure PID
-            PID.EnableTrackingError(use_PID_tracking_error());
+            PID.enable_measured_setpoint_check(should_use_measured_setpoint_check());
             PID.EnableTorqueMode(vctBoolVec(number_of_joints(), false));
             m_pid_new_goal = false;
             mCartesianRelative = vctFrm3::Identity();
@@ -1734,7 +1733,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             break;
         case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
             // configure PID
-            PID.EnableTrackingError(use_PID_tracking_error());
+            PID.enable_measured_setpoint_check(should_use_measured_setpoint_check());
             PID.EnableTorqueMode(vctBoolVec(number_of_joints(), false));
             m_effort_orientation_locked = false;
             // initialize trajectory
@@ -1753,7 +1752,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             break;
         case mtsIntuitiveResearchKitArmTypes::EFFORT_MODE:
             // configure PID
-            PID.EnableTrackingError(false);
+            PID.enable_measured_setpoint_check(false);
             m_servo_jf_vector.Assign(vctDoubleVec(number_of_joints_kinematics(), 0.0));
             SetControlEffortActiveJoints();
             break;

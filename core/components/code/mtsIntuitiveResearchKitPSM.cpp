@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -216,6 +216,22 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
         }
     } else {
         mToolDetection = mtsIntuitiveResearchKitToolTypes::AUTOMATIC;
+    }
+
+    // ask to set pitch if not already defined
+    if ((generation() == GENERATION_Si)
+        && (m_mounting_pitch > std::numeric_limits<double>::max())
+        ) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName() << std::endl
+                                 << "\"mounting-pitch\" was not defined in \"" << filename << "\"" << std::endl
+                                 << "If your PSM is mounted on the SUJ you should add it using: " << std::endl
+                                 << " \"mounting-pitch\": " << std::to_string(-45.0)
+                                 << " // " << std::to_string(-45.0 * cmn180_PI) << " degrees for PSM1 and PSM2"
+                                 << "Or:"
+                                 << " \"mounting-pitch\": " << std::to_string(-15.0)
+                                 << " // " << std::to_string(-15.0 * cmn180_PI) << " degrees for PSM3"
+                                 << std::endl;
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -701,15 +717,15 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     m_trajectory_j.goal_tolerance.SetAll(3.0 * cmnPI_180); // hard coded to 3 degrees
 
     // default PID tracking errors
-    PID.DefaultTrackingErrorTolerance.SetSize(number_of_joints());
+    PID.measured_setpoint_tolerance.SetSize(number_of_joints());
     // first two rotations
-    PID.DefaultTrackingErrorTolerance.Ref(2, 0).SetAll(20.0 * cmnPI_180); // 2 elements starting at 0 -> 0 1
+    PID.measured_setpoint_tolerance.Ref(2, 0).SetAll(20.0 * cmnPI_180); // 2 elements starting at 0 -> 0 1
     // translation
-    PID.DefaultTrackingErrorTolerance.Element(2) = 20.0 * cmn_mm; // 20 mm -> 2
+    PID.measured_setpoint_tolerance.Element(2) = 20.0 * cmn_mm; // 20 mm -> 2
     // shaft rotation and tool orientation
-    PID.DefaultTrackingErrorTolerance.Ref(3, 3).SetAll(35.0 * cmnPI_180); // 3 elements starting at 3 -> 3, 4, 5
+    PID.measured_setpoint_tolerance.Ref(3, 3).SetAll(35.0 * cmnPI_180); // 3 elements starting at 3 -> 3, 4, 5
     // jaws, allow more since we use PID large errors to apply large torques
-    PID.DefaultTrackingErrorTolerance.Element(6) = 90.0 * cmnPI_180;
+    PID.measured_setpoint_tolerance.Element(6) = 90.0 * cmnPI_180;
     mtsInterfaceRequired * interfaceRequired;
 
     // Main interface should have been created by base class init
@@ -981,11 +997,11 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
         // tool/adapter gears should have little resistance?
         tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
-        PID.SetTrackingErrorTolerance(tolerances);
+        PID.set_measured_setpoint_tolerance(tolerances);
         servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
         // turn on PID
-        PID.EnableJoints(vctBoolVec(number_of_joints(), true));
-        PID.EnableTrackingError(true);
+        PID.enable_joints(vctBoolVec(number_of_joints(), true));
+        PID.enable_measured_setpoint_check(true);
 
         // make sure we start from current state
         m_servo_jp.Assign(m_pid_setpoint_js.Position());
@@ -1093,11 +1109,11 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         tolerances.Element(2) = 10.0 * cmn_mm; // 10 mm
         // tool/adapter gears should have little resistance?
         tolerances.Ref(4, 3).SetAll(45.0 * cmnPI_180);
-        PID.SetTrackingErrorTolerance(tolerances);
+        PID.set_measured_setpoint_tolerance(tolerances);
         servo_jp_internal(m_pid_setpoint_js.Position(), vctDoubleVec());
         // turn on PID
-        PID.EnableJoints(vctBoolVec(number_of_joints(), true));
-        PID.EnableTrackingError(true);
+        PID.enable_joints(vctBoolVec(number_of_joints(), true));
+        PID.enable_measured_setpoint_check(true);
 
         // make sure we start from current state
         m_servo_jp.Assign(m_pid_setpoint_js.Position());
@@ -1198,7 +1214,7 @@ void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
                     false, false);
 
     // restore default PID tracking error
-    PID.SetTrackingErrorTolerance(PID.DefaultTrackingErrorTolerance);
+    PID.set_measured_setpoint_tolerance(PID.measured_setpoint_tolerance);
     // resize kinematics vectors
     m_kin_measured_js.Name().ForceAssign(m_configuration_js.Name());
     m_kin_measured_js.Position().SetSize(number_of_joints_kinematics());
@@ -1602,7 +1618,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
     case prmEventButton::PRESSED:
         if (ArmIsReady("Clutch", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
             ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
-            PID.Enabled(ClutchEvents.PIDEnabledPreviousState);
+            PID.enabled(ClutchEvents.PIDEnabledPreviousState);
             mArmState.SetCurrentState("MANUAL");
             set_LED_pattern(mtsIntuitiveResearchKit::Blue200,
                             mtsIntuitiveResearchKit::Green200,
@@ -1615,7 +1631,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
         if (mArmState.CurrentState() == "MANUAL") {
             // go back to state before clutching
             mArmState.SetCurrentState(ClutchEvents.ManipClutchPreviousState);
-            PID.Enable(ClutchEvents.PIDEnabledPreviousState);
+            PID.enable(ClutchEvents.PIDEnabledPreviousState);
         }
         break;
     default:
