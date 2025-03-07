@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen, Rishibrata Biswas, Adnan Munawar
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -119,10 +119,10 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     m_trajectory_j.goal_tolerance.at(JNT_WRIST_ROLL) = 6.0 * cmnPI_180; // roll has low encoder resolution
 
     // default PID tracking errors, defaults are used for homing
-    PID.DefaultTrackingErrorTolerance.SetSize(number_of_joints());
-    PID.DefaultTrackingErrorTolerance.SetAll(10.0 * cmnPI_180);
+    PID.measured_setpoint_tolerance.SetSize(number_of_joints());
+    PID.measured_setpoint_tolerance.SetAll(10.0 * cmnPI_180);
     // last 3 joints tend to be weaker
-    PID.DefaultTrackingErrorTolerance.Ref(3, 4) = 30.0 * cmnPI_180;
+    PID.measured_setpoint_tolerance.Ref(3, 4) = 30.0 * cmnPI_180;
 
     this->StateTable.AddData(m_gripper_measured_js, "gripper/measured_js");
 
@@ -382,13 +382,13 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
 
     // disable safety features so we can look for physical joint limit
     PID.enforce_position_limits(false);
-    PID.EnableTrackingError(false);
+    PID.enable_measured_setpoint_check(false);
     // enable PID for roll only
     vctBoolVec enableJoints(number_of_joints());
     enableJoints.SetAll(false);
     enableJoints.at(JNT_WRIST_ROLL) = true;
-    PID.EnableJoints(enableJoints);
-    PID.Enable(true);
+    PID.enable_joints(enableJoints);
+    PID.enable(true);
 
     m_arm_interface->SendStatus(this->GetName() + ": looking for roll lower limit");
 }
@@ -429,7 +429,7 @@ void mtsIntuitiveResearchKitMTM::RunCalibratingRoll(void)
         trackingError = std::abs(m_pid_measured_js.Position().at(JNT_WRIST_ROLL) - m_servo_jp.at(JNT_WRIST_ROLL));
         if (trackingError > maxTrackingError) {
             // disable PID
-            PID.Enable(false);
+            PID.enable(false);
             m_arm_interface->SendStatus(this->GetName() + ": found roll lower limit");
             mArmState.SetCurrentState("ROLL_CALIBRATED");
         } else {
