@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -42,8 +42,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJSi.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJFixed.h>
-#include <sawIntuitiveResearchKit/mtsSocketClientPSM.h>
-#include <sawIntuitiveResearchKit/mtsSocketServerPSM.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciHeadSensor.h>
 #if sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR
 #include <sawIntuitiveResearchKit/mtsHIDHeadSensor.h>
@@ -85,7 +83,6 @@ bool mtsIntuitiveResearchKitConsole::Arm::psm(void) const
     case ARM_PSM:
     case ARM_PSM_DERIVED:
     case ARM_PSM_GENERIC:
-    case ARM_PSM_SOCKET:
         return true;
         break;
     default:
@@ -215,7 +212,6 @@ bool mtsIntuitiveResearchKitConsole::Arm::expects_PID(void) const
 bool mtsIntuitiveResearchKitConsole::Arm::expects_IO(void) const
 {
     return (native_or_derived()
-            && (m_type != Arm::ARM_PSM_SOCKET)
             && (m_type != Arm::ARM_SUJ_Si)
             && (m_type != Arm::ARM_SUJ_Fixed)
             && (m_simulation == Arm::SIMULATION_NONE));
@@ -325,21 +321,6 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType arm_type,
             m_generation = psm->generation();
             SetBaseFrameIfNeeded(psm);
             componentManager->AddComponent(psm);
-
-            if (m_socket_server) {
-                mtsSocketServerPSM * serverPSM = new mtsSocketServerPSM(SocketComponentName(), periodInSeconds, m_IP, m_port);
-                serverPSM->Configure();
-                componentManager->AddComponent(serverPSM);
-                m_console->mConnections.Add(SocketComponentName(), "PSM",
-                                            ComponentName(), InterfaceName());
-            }
-        }
-        break;
-    case ARM_PSM_SOCKET:
-        {
-            mtsSocketClientPSM * clientPSM = new mtsSocketClientPSM(Name(), periodInSeconds, m_IP, m_port);
-            clientPSM->Configure();
-            componentManager->AddComponent(clientPSM);
         }
         break;
     case ARM_ECM:
@@ -574,10 +555,6 @@ const std::string & mtsIntuitiveResearchKitConsole::Arm::ComponentName(void) con
 
 const std::string & mtsIntuitiveResearchKitConsole::Arm::InterfaceName(void) const {
     return m_arm_interface_name;
-}
-
-const std::string & mtsIntuitiveResearchKitConsole::Arm::SocketComponentName(void) const {
-    return m_socket_component_name;
 }
 
 const std::string & mtsIntuitiveResearchKitConsole::Arm::IOComponentName(void) const {
@@ -1091,8 +1068,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         auto arm_name = iter->first;
         auto arm_pointer = iter->second;
         // for generic arms, nothing to do
-        if (arm_pointer->native_or_derived()
-            || (arm_pointer->m_type == Arm::ARM_PSM_SOCKET)) {
+        if (arm_pointer->native_or_derived()) {
             const std::string armConfig = arm_pointer->m_arm_configuration_file;
             arm_pointer->ConfigureArm(arm_pointer->m_type, armConfig,
                                       arm_pointer->m_arm_period);
@@ -1390,23 +1366,6 @@ bool mtsIntuitiveResearchKitConsole::AddArm(Arm * newArm)
     return false;
 }
 
-bool mtsIntuitiveResearchKitConsole::AddArm(mtsComponent * genericArm, const mtsIntuitiveResearchKitConsole::Arm::ArmType CMN_UNUSED(arm_type))
-{
-    // create new required interfaces to communicate with the components we created
-    Arm * newArm = new Arm(this, genericArm->GetName(), "");
-    if (AddArmInterfaces(newArm)) {
-        auto armIterator = mArms.find(newArm->m_name);
-        if (armIterator != mArms.end()) {
-            mArms[newArm->m_name] = newArm;
-            return true;
-        }
-    }
-    CMN_LOG_CLASS_INIT_ERROR << GetName() << ": AddArm, unable to add new arm.  Are you adding two arms with the same name? "
-                             << newArm->Name() << std::endl;
-    delete newArm;
-    return false;
-}
-
 std::string mtsIntuitiveResearchKitConsole::GetArmIOComponentName(const std::string & arm_name)
 {
     auto armIterator = mArms.find(arm_name);
@@ -1541,8 +1500,6 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
             arm_pointer->m_type = Arm::ARM_PSM_GENERIC;
         } else if (typeString == "ECM_GENERIC") {
             arm_pointer->m_type = Arm::ARM_ECM_GENERIC;
-        } else if (typeString == "PSM_SOCKET") {
-            arm_pointer->m_type = Arm::ARM_PSM_SOCKET;
         } else if (typeString == "FOCUS_CONTROLLER") {
             arm_pointer->m_type = Arm::FOCUS_CONTROLLER;
         } else if (typeString == "SUJ_Classic") {
@@ -1608,35 +1565,7 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         arm_pointer->m_arm_interface_name = jsonValue.asString();
     }
 
-    // check if we need to create a socket server attached to this arm
-    arm_pointer->m_socket_server = false;
-    jsonValue = jsonArm["socket-server"];
-    if (!jsonValue.empty()) {
-        arm_pointer->m_socket_server = jsonValue.asBool();
-    }
-
-    // for socket client or server, look for remote IP / port
-    if (arm_pointer->m_type == Arm::ARM_PSM_SOCKET || arm_pointer->m_socket_server) {
-        arm_pointer->m_socket_component_name = arm_pointer->m_name + "-SocketServer";
-        jsonValue = jsonArm["remote-ip"];
-        if(!jsonValue.empty()){
-            arm_pointer->m_IP = jsonValue.asString();
-        } else {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"server-ip\" for arm \""
-                                     << arm_name << "\"" << std::endl;
-            return false;
-        }
-        jsonValue = jsonArm["port"];
-        if (!jsonValue.empty()) {
-            arm_pointer->m_port = jsonValue.asInt();
-        } else {
-            CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find \"port\" for arm \""
-                                     << arm_name << "\"" << std::endl;
-            return false;
-        }
-    }
-
-    // IO for anything not simulated or socket client or Si SUJ
+    // IO if expected
     if (arm_pointer->expects_IO()) {
         jsonValue = jsonArm["io"];
         if (!jsonValue.empty()) {
@@ -1703,9 +1632,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigureArmJSON(const Json::Value & jsonAr
         }
     }
 
-    // only configure kinematics if not arm socket client
-    if ((arm_pointer->m_type != Arm::ARM_PSM_SOCKET)
-        && (arm_pointer->native_or_derived())) {
+    // only configure kinematics native or derived
+    if (arm_pointer->native_or_derived()) {
         // renamed "kinematic" to "arm" so we can have a more complex configuration file for the arm class
         jsonValue = jsonArm["arm"];
         if (!jsonValue.empty()) {

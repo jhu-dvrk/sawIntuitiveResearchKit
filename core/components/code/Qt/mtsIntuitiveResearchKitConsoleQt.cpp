@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-07-13
 
-  (C) Copyright 2015-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -37,7 +37,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSMQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationECMQtWidget.h>
-#include <sawIntuitiveResearchKit/mtsSocketBaseQtWidget.h>
 
 #include <QTabWidget>
 
@@ -116,7 +115,6 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         mtsIntuitiveResearchKitArmQtWidget * armGUI;
         mtsIntuitiveResearchKitSUJQtWidget * sujGUI;
         mtsPIDQtWidget * pidGUI;
-        mtsSocketBaseQtWidget * socketGUI;
 
         const std::string name = armIter->first;
 
@@ -163,17 +161,6 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             armGUI->setObjectName(name.c_str());
             armTabWidget->addTab(armGUI, name.c_str());
 
-            // PSM server
-            if (armIter->second->m_socket_server) {
-                socketGUI = new mtsSocketBaseQtWidget(name + "-Server-GUI");
-                socketGUI->Configure();
-                componentManager->AddComponent(socketGUI);
-                Connections.Add(socketGUI->GetName(), "SocketBase",
-                                armIter->second->m_socket_component_name, "System");
-                armTabWidget->addTab(socketGUI, (name + "-Server").c_str());
-                break;
-            }
-
             break;
 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ_Classic:
@@ -200,17 +187,6 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM3");
             armTabWidget->addTab(sujGUI, "PSM3 SUJ");
 
-            break;
-
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_SOCKET:
-
-            socketGUI = new mtsSocketBaseQtWidget(name + "-GUI");
-            socketGUI->setObjectName(name.c_str());
-            socketGUI->Configure();
-            componentManager->AddComponent(socketGUI);
-            Connections.Add(socketGUI->GetName(), "SocketBase",
-                            armIter->second->m_name, "System");
-            armTabWidget->addTab(socketGUI, name.c_str());
             break;
 
         case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_GENERIC:
