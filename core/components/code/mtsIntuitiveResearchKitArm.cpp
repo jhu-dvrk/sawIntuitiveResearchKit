@@ -207,7 +207,7 @@ void mtsIntuitiveResearchKitArm::Init(void)
     m_servo_js_param.Position().SetSize(number_of_joints());
     m_servo_js_param.Velocity().SetSize(number_of_joints(), 0.0);
     m_servo_js_param.Effort().SetSize(number_of_joints(), 0.0);
-    m_servo_js_param.Mode().SetSize(number_of_joints(), prmJointCommandMode::PRM_JOINT_MODE_NONE);
+    m_servo_js_param.Mode().SetSize(number_of_joints(), prmSetpointMode::NONE);
 
     m_trajectory_j.v_max.SetSize(number_of_joints());
     m_trajectory_j.v.SetSize(number_of_joints());
@@ -1570,12 +1570,12 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
     // reset flag
     m_pid_new_goal = false;
 
-    prmJointCommandMode mode = prmJointCommandMode::PRM_JOINT_MODE_NONE;
+    prmSetpointMode mode = prmSetpointMode::NONE;
 
     // position
     vctDoubleVec jp(m_pid_setpoint_js.Position());
     if (m_servo_cs.PositionIsValid()) {
-        mode = mode | prmJointCommandMode::PRM_JOINT_MODE_POSITION;
+        mode = mode | prmSetpointMode::POSITION;
 
         // compute desired arm position
         CartesianPositionFrm.From(m_servo_cs.Position());
@@ -1599,7 +1599,7 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
     // velocity
     vctDoubleVec jv(number_of_joints_kinematics(), 0.0);
     if (m_servo_cs.VelocityIsValid()) {
-        mode = mode | prmJointCommandMode::PRM_JOINT_MODE_VELOCITY;
+        mode = mode | prmSetpointMode::VELOCITY;
 
         auto transform = m_measured_cp.Position().Rotation();
 
@@ -1623,7 +1623,7 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
     // effort
     vctDoubleVec jf(number_of_joints_kinematics(), 0.0);
     if (m_servo_cs.ForceIsValid()) {
-        mode = mode | prmJointCommandMode::PRM_JOINT_MODE_EFFORT;
+        mode = mode | prmSetpointMode::EFFORT;
 
         auto transform = m_measured_cp.Position().Rotation();
 
@@ -1636,13 +1636,13 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
         jf.Zeros();
     }
 
-    prmJointCommand js;
+    prmServoJoint js;
     js.Position() = jp;
     js.Velocity() = jv;
     js.Effort() = jf;
 
     add_feed_forward(js.Effort());
-    mode = mode | prmJointCommandMode::PRM_JOINT_MODE_EFFORT;
+    mode = mode | prmSetpointMode::EFFORT;
 
     js.Mode().SetSize(number_of_joints_kinematics());
     js.Mode().SetAll(mode);
@@ -1983,7 +1983,7 @@ void mtsIntuitiveResearchKitArm::control_servo_cf(void)
     }
 }
 
-void mtsIntuitiveResearchKitArm::servo_command_internal(const prmJointCommand & js)
+void mtsIntuitiveResearchKitArm::servo_command_internal(const prmServoJoint & js)
 {
     m_servo_js_param.SetTimestamp(StateTable.GetTic());
     m_servo_js_param.Mode().Assign(js.Mode());
@@ -2005,7 +2005,7 @@ void mtsIntuitiveResearchKitArm::servo_command_internal(const prmJointCommand & 
 
 void mtsIntuitiveResearchKitArm::servo_jf_internal(const vctDoubleVec & jf)
 {
-    m_servo_js_param.Mode().SetAll(prmJointCommandMode::PRM_JOINT_MODE_EFFORT);
+    m_servo_js_param.Mode().SetAll(prmSetpointMode::EFFORT);
 
     m_servo_js_param.Effort().Assign(jf);
     add_feed_forward(m_servo_js_param.Effort());
@@ -2030,13 +2030,13 @@ void mtsIntuitiveResearchKitArm::servo_jp_internal(const vctDoubleVec & jp,
     m_servo_js_param.Effort().Zeros();
     add_feed_forward(m_servo_js_param.Effort());
 
-    auto mode_all = prmJointCommandMode::PRM_JOINT_MODE_POSITION | prmJointCommandMode::PRM_JOINT_MODE_VELOCITY | PRM_JOINT_MODE_EFFORT;
+    auto mode_all = prmSetpointMode::POSITION | prmSetpointMode::VELOCITY | prmSetpointMode::EFFORT;
     m_servo_js_param.Mode().SetAll(mode_all);
 
     servo_command_internal(m_servo_js_param);
 }
 
-void mtsIntuitiveResearchKitArm::servo_js_internal(const prmJointCommand & js)
+void mtsIntuitiveResearchKitArm::servo_js_internal(const prmServoJoint & js)
 {
     servo_command_internal(js);
 }

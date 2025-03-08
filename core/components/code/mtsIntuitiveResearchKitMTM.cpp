@@ -590,13 +590,13 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
                                           m_servo_jv,
                                           m_trajectory_j.goal,
                                           m_trajectory_j.goal_v);
-        prmJointCommand js;
+        prmServoJoint js;
         js.Position() = m_servo_jp;
         js.Velocity() = m_servo_jv;
         js.Effort() = m_servo_jf_vector;
-        auto mode_all = prmJointCommandMode::PRM_JOINT_MODE_POSITION | prmJointCommandMode::PRM_JOINT_MODE_VELOCITY | prmJointCommandMode::PRM_JOINT_MODE_EFFORT;
+        auto mode_all = prmSetpointMode::POSITION | prmSetpointMode::VELOCITY | prmSetpointMode::EFFORT;
         js.Mode().SetSize(m_servo_jp.size());
-        js.Mode().Ref(3, 0).SetAll(prmJointCommandMode::PRM_JOINT_MODE_EFFORT);
+        js.Mode().Ref(3, 0).SetAll(prmSetpointMode::EFFORT);
         js.Mode().Ref(4, 3).SetAll(mode_all);
         
         servo_js_internal(js);

@@ -36,12 +36,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 #include <cisstParameterTypes/prmCartesianImpedance.h>
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
+#include <cisstParameterTypes/prmStateCartesian.h>
+#include <cisstParameterTypes/prmServoCartesian.h>
+#include <cisstParameterTypes/prmServoJoint.h>
 #include <cisstParameterTypes/prmInverseKinematicsRequest.h>
 #include <cisstParameterTypes/prmInverseKinematicsResponse.h>
 #include <cisstParameterTypes/prmForwardKinematicsRequest.h>
 #include <cisstParameterTypes/prmForwardKinematicsResponse.h>
-#include <cisstParameterTypes/prmStateCartesian.h>
-#include <cisstParameterTypes/prmJointCommand.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
@@ -190,8 +191,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void servo_jp_internal(const vctDoubleVec & jp,
                                    const vctDoubleVec & jv);
     virtual void servo_jf_internal(const vctDoubleVec & jf);
-    virtual void servo_js_internal(const prmJointCommand & js);
-    virtual void servo_command_internal(const prmJointCommand & js);
+    virtual void servo_js_internal(const prmServoJoint & js);
+    virtual void servo_command_internal(const prmServoJoint & js);
   
     // whether to apply gravity compensation to controller
     virtual bool should_use_gravity_compensation(void);
@@ -347,7 +348,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmStateCartesian m_measured_cs;
 
     // joints
-    prmJointCommand m_servo_js_param;
+    prmServoJoint m_servo_js_param;
     vctDoubleVec m_servo_jp;
     vctDoubleVec m_servo_jv;
     prmStateJoint

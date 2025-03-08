@@ -1359,7 +1359,7 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
         m_servo_js_param.Velocity().at(6) = 0.0;
     }
 
-    auto mode_all = prmJointCommandMode::PRM_JOINT_MODE_POSITION | prmJointCommandMode::PRM_JOINT_MODE_VELOCITY | PRM_JOINT_MODE_EFFORT;
+    auto mode_all = prmSetpointMode::POSITION | prmSetpointMode::VELOCITY | prmSetpointMode::EFFORT;
     m_servo_js_param.Mode().SetAll(mode_all);
 
     m_servo_js_param.Effort().Zeros();
@@ -1414,14 +1414,14 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffor
         torque_desired.Ref(torque_desired.size() - 3, 3).Zeros();
     }
 
-    m_servo_js_param.Mode().SetAll(prmJointCommandMode::PRM_JOINT_MODE_EFFORT);
+    m_servo_js_param.Mode().SetAll(prmSetpointMode::EFFORT);
     m_servo_js_param.Effort().Assign(torque_desired);
     add_feed_forward(m_servo_js_param.Effort());
 
     servo_command_internal(m_servo_js_param);
 }
 
-void mtsIntuitiveResearchKitPSM::servo_js_internal(const prmJointCommand& js)
+void mtsIntuitiveResearchKitPSM::servo_js_internal(const prmServoJoint& js)
 {
     if (!is_cartesian_ready()) {
         mtsIntuitiveResearchKitArm::servo_command_internal(js);
@@ -1459,7 +1459,7 @@ void mtsIntuitiveResearchKitPSM::servo_js_internal(const prmJointCommand& js)
         m_servo_js_param.Effort().Ref(m_servo_js_param.Effort().size() - 3, 3).Zeros();
     }
 
-    m_servo_js_param.Mode().SetAll(prmJointCommandMode::PRM_JOINT_MODE_NONE);
+    m_servo_js_param.Mode().SetAll(prmSetpointMode::NONE);
     m_servo_js_param.Mode().Ref(js.Mode().size()).Assign(js.Mode());
     // need to propagate joint command modes to actuator space somehow
     m_servo_js_param.Mode().at(6) = m_servo_js_param.Mode().at(5);
