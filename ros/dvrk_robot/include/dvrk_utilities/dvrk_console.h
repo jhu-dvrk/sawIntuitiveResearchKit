@@ -64,10 +64,10 @@ namespace dvrk {
         void add_topics_io(void);
         // add topics for IO
         void add_topics_io(const double _publish_period_in_seconds,
-                           const bool read_write);
+                           const bool _read_write);
         // add topics for all PIDs
-        void add_topics_pid(const bool read_write);
-
+        void add_topics_pid(const double _publish_period_in_seconds,
+                            const bool _read_write);
         // buttons on ECM
         void add_topics_ecm_io(const std::string & _arm_name,
                                const std::string & _io_component_name);
