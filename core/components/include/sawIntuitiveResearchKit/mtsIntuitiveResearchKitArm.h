@@ -209,7 +209,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void servo_cp(const prmPositionCartesianSet & cp);
     virtual void servo_cr(const prmPositionCartesianSet & difference);
     virtual void servo_cv(const prmVelocityCartesianSet & cv);
-    virtual void servo_cs(const prmStateCartesian & cs);
+    virtual void servo_cs(const prmServoCartesian & cs);
     virtual void move_cp(const prmPositionCartesianSet & cp);
     virtual void servo_jf(const prmForceTorqueJointSet & jf);
     virtual void spatial_servo_cf(const prmForceCartesianSet & cf);
@@ -330,8 +330,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     // cache cartesian goal position and increment
     bool m_pid_new_goal = false;
-    prmStateCartesian m_servo_cs;
     vctFrm3 mCartesianRelative;
+
+    prmServoCartesian m_servo_cs;
+    vctFixedSizeMatrix<double, 6, 6> m_cartesian_projection;
 
     // internal kinematics
     prmPositionCartesianGet m_local_measured_cp;
@@ -348,9 +350,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     prmStateCartesian m_measured_cs;
 
     // joints
-    prmServoJoint m_servo_js_param;
     vctDoubleVec m_servo_jp;
     vctDoubleVec m_servo_jv;
+    vctDoubleVec m_servo_jf;
+    prmServoJoint m_servo_js_kin;
+    prmServoJoint m_servo_js_param;
     prmStateJoint
         m_pid_measured_js,
         m_pid_setpoint_js,
@@ -364,9 +368,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     WrenchType m_servo_cf_type;
     prmForceCartesianSet m_servo_cf;
     bool m_body_cf_orientation_absolute = false;
-    prmForceTorqueJointSet
-        m_servo_jf; // number of joints for kinematics
-    vctDoubleVec m_servo_jf_vector; // number of joints for kinematics, more convenient type than prmForceTorqueJointSet
     // to estimate wrench from joint efforts
     nmrPInverseDynamicData
         m_jacobian_pinverse_data,

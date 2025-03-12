@@ -1290,9 +1290,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
             // make sure all other joints have a reasonable cartesian
             // goal for all other joints
             m_servo_cs.Position().Assign(m_setpoint_cp.Position());
-            m_servo_cs.PositionIsValid() = true;
-            m_servo_cs.VelocityIsValid() = false;
-            m_servo_cs.ForceIsValid() = false;
+            m_servo_cs.AxisMode().SetAll(prmSetpointMode::POSITION);
         }
         break;
     default:
@@ -1362,6 +1360,7 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
     if (jp.size() == 7) {
         m_jaw_servo_jp = clip_jaw_jp(jp.at(6));
     }
+    m_jaw_servo_jf = 0.0;
 
     // velocity - current code only support jaw_servo_jv if servo_jp has a velocity goal
     const size_t jv_size = jv.size();
@@ -1398,7 +1397,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
                                    mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
             // make sure all other joints have a reasonable cartesian
             // goal
-            m_servo_cf.Force().SetAll(0.0);
+            m_servo_cf.Force().Zeros();
         }
         break;
     default:
@@ -1406,7 +1405,7 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
         SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
                                mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
         // make sure all other joints have a reasonable goal
-        m_servo_jf.ForceTorque().SetAll(0.0);
+        m_servo_jf.Zeros();
     }
 
     // save the desired effort
@@ -1424,6 +1423,7 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffor
     }
     // add torque for jaws
     torque_desired.at(6) = m_jaw_servo_jf;
+    m_jaw_servo_jp = m_pid_setpoint_js.Position().at(6);
 
     if (!is_cartesian_ready()) {
         // set all tool joints to have zero effort
@@ -1459,13 +1459,17 @@ void mtsIntuitiveResearchKitPSM::servo_js_internal(const prmServoJoint& js)
     CMN_ASSERT(m_servo_js_param.Velocity().size() == 7);
     if (jv_size != 0) {
         ToJointsPID(js.Velocity(), m_servo_js_param.Velocity());
+    } else {
+        m_servo_js_param.Velocity().Zeros();
     }
 
     m_servo_js_param.Position().at(6) = m_jaw_servo_jp;
-    if (jv_size != 0) {
-        m_servo_js_param.Velocity().at(6) = 0.0;
-    }
-
+    m_servo_js_param.Velocity().at(6) = 0.0;
+    m_servo_js_param.Mode().at(6) = prmSetpointMode::POSITION | prmSetpointMode::VELOCITY | prmSetpointMode::EFFORT;
+    m_servo_js_param.PositionProjection().Row(6).SetAll(0.0);
+    m_servo_js_param.PositionProjection().Column(6).SetAll(0.0);
+    m_servo_js_param.PositionProjection()(6, 6) = 1.0;
+    
     m_servo_js_param.Effort().Zeros();
     m_servo_js_param.Effort().at(6) = m_jaw_servo_jf;
     add_feed_forward(m_servo_js_param.Effort());
@@ -1474,11 +1478,10 @@ void mtsIntuitiveResearchKitPSM::servo_js_internal(const prmServoJoint& js)
         // set all tool joints to have zero effort
         m_servo_js_param.Effort().Ref(m_servo_js_param.Effort().size() - 3, 3).Zeros();
     }
+    std::cout << (GetName() + ": " + std::to_string(js.Mode().size()) + ", " + std::to_string(m_servo_js_param.Mode().size()) + "\n");
 
-    m_servo_js_param.Mode().SetAll(prmSetpointMode::NONE);
-    m_servo_js_param.Mode().Ref(js.Mode().size()).Assign(js.Mode());
-    // need to propagate joint command modes to actuator space somehow
-    m_servo_js_param.Mode().at(6) = m_servo_js_param.Mode().at(5);
+    m_servo_js_param.Mode().Assign(js.Mode(), 6);
+    m_servo_js_param.PositionProjection().Ref(6, 6, 0, 0).Assign(js.PositionProjection());
 
     servo_command_internal(m_servo_js_param);
 }

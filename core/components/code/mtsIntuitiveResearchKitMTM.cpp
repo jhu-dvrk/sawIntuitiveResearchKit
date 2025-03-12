@@ -593,12 +593,17 @@ void mtsIntuitiveResearchKitMTM::control_servo_cf_orientation_locked(void)
         prmServoJoint js;
         js.Position() = m_servo_jp;
         js.Velocity() = m_servo_jv;
-        js.Effort() = m_servo_jf_vector;
+        js.Effort() = m_servo_jf;
         auto mode_all = prmSetpointMode::POSITION | prmSetpointMode::VELOCITY | prmSetpointMode::EFFORT;
         js.Mode().SetSize(m_servo_jp.size());
         js.Mode().Ref(3, 0).SetAll(prmSetpointMode::EFFORT);
         js.Mode().Ref(4, 3).SetAll(mode_all);
-        
+        js.PositionProjection().SetSize(number_of_joints(), number_of_joints());
+        js.PositionProjection().Zeros();
+
+        // enable position control on joints 4-7
+        js.PositionProjection().Diagonal().Ref(4, 3).SetAll(1.0);
+
         servo_js_internal(js);
     } else {
         m_arm_interface->SendWarning(this->GetName() + ": unable to solve inverse kinematics in control_servo_cf_orientation_locked");
