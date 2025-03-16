@@ -1565,25 +1565,18 @@ void mtsIntuitiveResearchKitArm::control_move_jp(void)
 
 void mtsIntuitiveResearchKitArm::control_servo_cs(void)
 {
-    if (!m_pid_new_goal) {
-        return;
-    }
-
-    // reset flag
-    m_pid_new_goal = false;
-
     m_servo_js_kin.Position() = m_kin_setpoint_js.Position();
     m_servo_js_kin.Velocity().Zeros();
     m_servo_js_kin.Effort().Zeros();
 
     // target = current + projection(target - current)
     vct6 position_offset;
-    position_offset.Ref<3>(0) = m_servo_cs.Position().Translation() - m_setpoint_cp.Position().Translation();
-    vctRot3 rot_offset = m_setpoint_cp.Position().Rotation().ApplyInverseTo(m_servo_cs.Position().Rotation());
+    position_offset.Ref<3>(0) = m_servo_cs.Position().Translation() - m_measured_cp.Position().Translation();
+    vctRot3 rot_offset = m_measured_cp.Position().Rotation().ApplyInverseTo(m_servo_cs.Position().Rotation());
     position_offset.Ref<3>(3) = vctRodRot3(rot_offset);
     position_offset = m_cartesian_projection * position_offset;
-    m_servo_cs.Position().Translation() = m_setpoint_cp.Position().Translation() + position_offset.Ref<3>(0);
-    m_servo_cs.Position().Rotation() = m_setpoint_cp.Position().Rotation() * vctRot3(vctRodRot3(position_offset.Ref<3>(3)));
+    m_servo_cs.Position().Translation() = m_measured_cp.Position().Translation() + position_offset.Ref<3>(0);
+    m_servo_cs.Position().Rotation() = m_measured_cp.Position().Rotation() * vctRot3(vctRodRot3(position_offset.Ref<3>(3)));
 
     // compute desired arm position
     CartesianPositionFrm.From(m_servo_cs.Position());
@@ -1603,8 +1596,6 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
         }
         return;
     }
-
-    const size_t n_kin = number_of_joints_kinematics();
 
     // velocity
     const auto& transform = m_measured_cp.Position().Rotation();
@@ -1645,7 +1636,8 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
     vctDoubleMat kinematic_projection(m_cartesian_projection);
     kinematic_projection = kinematic_projection * m_body_jacobian;
     kinematic_projection = m_jacobian_pinverse_data.PInverse() * kinematic_projection;
-    m_servo_js_kin.PositionProjection().Assign(kinematic_projection);
+    //m_servo_js_kin.PositionProjection().Assign(kinematic_projection);
+    m_servo_js_kin.PositionProjection().Assign(vctDoubleMat::Eye(number_of_joints_kinematics()));
     m_servo_js_kin.Mode().SetAll(prmSetpointMode::POSITION | prmSetpointMode::VELOCITY | prmSetpointMode::EFFORT);
 
     servo_js_internal(m_servo_js_kin);

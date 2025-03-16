@@ -1469,7 +1469,7 @@ void mtsIntuitiveResearchKitPSM::servo_js_internal(const prmServoJoint& js)
     m_servo_js_param.PositionProjection().Row(6).SetAll(0.0);
     m_servo_js_param.PositionProjection().Column(6).SetAll(0.0);
     m_servo_js_param.PositionProjection()(6, 6) = 1.0;
-    
+
     m_servo_js_param.Effort().Zeros();
     m_servo_js_param.Effort().at(6) = m_jaw_servo_jf;
     add_feed_forward(m_servo_js_param.Effort());
@@ -1478,7 +1478,6 @@ void mtsIntuitiveResearchKitPSM::servo_js_internal(const prmServoJoint& js)
         // set all tool joints to have zero effort
         m_servo_js_param.Effort().Ref(m_servo_js_param.Effort().size() - 3, 3).Zeros();
     }
-    std::cout << (GetName() + ": " + std::to_string(js.Mode().size()) + ", " + std::to_string(m_servo_js_param.Mode().size()) + "\n");
 
     m_servo_js_param.Mode().Assign(js.Mode(), 6);
     m_servo_js_param.PositionProjection().Ref(6, 6, 0, 0).Assign(js.PositionProjection());

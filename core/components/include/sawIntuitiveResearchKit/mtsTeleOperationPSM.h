@@ -65,7 +65,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void PSMErrorEventHandler(const mtsMessage & message);
 
     void ClutchEventHandler(const prmEventButton & button);
-    void Clutch(const bool & clutch);
+    virtual void Clutch(const bool & clutch);
 
     // Functions for events
     struct {

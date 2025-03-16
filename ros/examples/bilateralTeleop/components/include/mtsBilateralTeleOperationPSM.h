@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstParameterTypes/prmForceCartesianGet.h>
 #include <cisstParameterTypes/prmStateCartesian.h>
+#include <cisstParameterTypes/prmServoCartesian.h>
 
 class CISST_EXPORT mtsBilateralTeleOperationPSM: public mtsTeleOperationPSM
 {
@@ -57,18 +58,18 @@ protected:
         virtual void populateInterface(mtsInterfaceRequired* interface);
         virtual void add_force_source(std::unique_ptr<ForceSource> source) { force_source = std::move(source); }
 
-        virtual prmStateCartesian computeGoal(Arm* target, double scale);
+        virtual prmServoCartesian computeGoal(Arm* target, double scale);
 
         virtual vctFrm4x4& ClutchOrigin() = 0;
 
         virtual prmStateCartesian state();
-        virtual void servo(prmStateCartesian goal);
+        virtual void servo(prmServoCartesian goal);
 
     protected:
         mtsBilateralTeleOperationPSM* teleop;
         std::unique_ptr<ForceSource> force_source;
 
-        mtsFunctionWrite servo_cpvf;
+        mtsFunctionWrite servo_cs;
         mtsFunctionRead measured_cs;
     };
 
@@ -80,7 +81,7 @@ protected:
         vctFrm4x4& ClutchOrigin() override;
         
         prmStateCartesian state() override;
-        void servo(prmStateCartesian goal) override;
+        void servo(prmServoCartesian goal) override;
 
         mtsFunctionWrite servo_cp;
         prmPositionCartesianSet m_servo_cp;
@@ -94,7 +95,7 @@ protected:
         vctFrm4x4& ClutchOrigin() override;
         
         prmStateCartesian state() override;
-        void servo(prmStateCartesian goal) override;
+        void servo(prmServoCartesian goal) override;
 
         mtsFunctionRead  measured_cp;
         mtsFunctionRead  measured_cv;
@@ -112,6 +113,7 @@ protected:
 
     void Init() override;
 
+    void Clutch(const bool & clutch) override;
     void RunCartesianTeleop() override;
 };
 
