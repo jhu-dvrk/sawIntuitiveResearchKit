@@ -1636,8 +1636,8 @@ void mtsIntuitiveResearchKitArm::control_servo_cs(void)
     vctDoubleMat kinematic_projection(m_cartesian_projection);
     kinematic_projection = kinematic_projection * m_body_jacobian;
     kinematic_projection = m_jacobian_pinverse_data.PInverse() * kinematic_projection;
-    //m_servo_js_kin.PositionProjection().Assign(kinematic_projection);
-    m_servo_js_kin.PositionProjection().Assign(vctDoubleMat::Eye(number_of_joints_kinematics()));
+    vctDoubleMat kinematic_kernel = vctDoubleMat::Eye(number_of_joints_kinematics()) - m_jacobian_pinverse_data.PInverse() * m_body_jacobian;
+    m_servo_js_kin.PositionProjection().Assign(kinematic_projection + kinematic_kernel);
     m_servo_js_kin.Mode().SetAll(prmSetpointMode::POSITION | prmSetpointMode::VELOCITY | prmSetpointMode::EFFORT);
 
     servo_js_internal(m_servo_js_kin);
@@ -2039,6 +2039,7 @@ void mtsIntuitiveResearchKitArm::servo_js_internal(const prmServoJoint & js)
     m_servo_js_param.Velocity().Assign(js.Velocity());
     m_servo_js_param.Effort().Assign(js.Effort());
     m_servo_js_param.Mode().Assign(js.Mode());
+    m_servo_js_param.PositionProjection().Assign(vctDoubleMat::Eye(number_of_joints()));
     m_servo_js_param.PositionProjection().Assign(js.PositionProjection());
 
     add_feed_forward(m_servo_js_param.Effort());
@@ -2241,6 +2242,17 @@ void mtsIntuitiveResearchKitArm::servo_cs(const prmServoCartesian & cs)
             m_cartesian_projection(i, i) = 1.0;
         }
     }
+
+    vctFixedSizeMatrix<double, 6, 6> adjoint(0.0);
+    adjoint.Row(0).Ref<3>(0) = m_servo_cs.TaskFrame().Rotation().Row(0);
+    adjoint.Row(1).Ref<3>(0) = m_servo_cs.TaskFrame().Rotation().Row(1);
+    adjoint.Row(2).Ref<3>(0) = m_servo_cs.TaskFrame().Rotation().Row(2);
+
+    adjoint.Row(3).Ref<3>(3) = m_servo_cs.TaskFrame().Rotation().Row(0);
+    adjoint.Row(4).Ref<3>(3) = m_servo_cs.TaskFrame().Rotation().Row(1);
+    adjoint.Row(5).Ref<3>(3) = m_servo_cs.TaskFrame().Rotation().Row(2);
+
+    m_cartesian_projection = adjoint * m_cartesian_projection * adjoint.Transpose();
 
     m_pid_new_goal = true;
 }
