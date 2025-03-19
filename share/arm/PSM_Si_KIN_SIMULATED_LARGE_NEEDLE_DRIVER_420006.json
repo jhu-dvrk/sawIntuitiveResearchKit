@@ -3,5 +3,6 @@
     "kinematic": "kinematic/psm-si.json",
     "generation": "Si",
     "tool-detection": "FIXED",
-    "tool": "LARGE_NEEDLE_DRIVER:420006[1]"
+    "tool": "LARGE_NEEDLE_DRIVER:420006[1]",
+    "mounting-pitch": 0.0
 }
