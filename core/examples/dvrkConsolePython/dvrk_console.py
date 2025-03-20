@@ -43,16 +43,26 @@ if dvrkServer:
     print('Connecting internal required interfaces')
     console.connect()
 
-LCM.CreateAllAndWait(2.0)
-LCM.StartAllAndWait(2.0)
+print('Console ready. Type dir(console) to see available commands.')
 
 # Now, look for arms
+dvrkClient = LCM.GetComponent('dvrkClient')
 components = LCM.GetNamesOfComponents()
 for comp in components:
   if comp.startswith('MTM') or comp.startswith('PSM') or comp.startswith('ECM'):
      print('Found ' + comp)
      obj = LCM.GetComponent(comp)
-     comp_no_dash = comp.replace('-', '_')
-     exec(f"{comp_no_dash} = obj")
+     provInterfaces = obj.GetNamesOfInterfacesProvided()
+     for prov in provInterfaces:
+         if (prov == 'Controller') or (prov == 'Arm'):
+             comp_no_dash = comp.replace('-', '_')
+             interface = cisstMultiTask.mtsCreateClientInterface(comp_no_dash+'Client', comp, prov)
+             exec(f"{comp_no_dash} = interface")
+             print('Type dir(' + comp_no_dash + ') to see available commands.')
+             print('Use getattr(' + comp_no_dash + ', \'one/two\')() to run command that has namespace (/).')
+             break
 
-print('System ready. Type dir(console) to see available commands.')
+LCM.CreateAllAndWait(2.0)
+LCM.StartAllAndWait(2.0)
+
+print('System ready.')
