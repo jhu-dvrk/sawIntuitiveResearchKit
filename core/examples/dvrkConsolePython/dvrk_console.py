@@ -29,6 +29,11 @@ import numpy
 # are lower-case.
 dvrk = dict()
 
+def dvrk_list(prefix = ''):
+   for key in dvrk.keys():
+      if not prefix or key.startswith(prefix):
+         print(key)
+
 LCM = cisstMultiTask.mtsManagerLocal.GetInstance()
 LCM.CreateAll()
 LCM.StartAll()
