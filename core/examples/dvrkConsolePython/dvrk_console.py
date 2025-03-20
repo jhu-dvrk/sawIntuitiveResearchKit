@@ -24,6 +24,11 @@ import cisstMultiTaskPython as cisstMultiTask
 import cisstParameterTypesPython as cisstParameterTypes
 import numpy
 
+# Create a dictionary for useful dVRK commands.
+# It takes advantage of that fact that currently, most or all useful commands
+# are lower-case.
+dvrk = dict()
+
 LCM = cisstMultiTask.mtsManagerLocal.GetInstance()
 LCM.CreateAll()
 LCM.StartAll()
@@ -42,6 +47,9 @@ if dvrkServer:
     console = cisstMultiTask.mtsCreateClientInterface('dvrkClient', 'dvrkServer', 'Main')
     print('Connecting internal required interfaces')
     console.connect()
+    for command in dir(console):
+       if command.islower() and not command.startswith('_') and not command.startswith('this'):
+          dvrk['console/'+command] = getattr(console, command)
 
 print('Console ready. Type dir(console) to see available commands.')
 
@@ -59,10 +67,12 @@ for comp in components:
              interface = cisstMultiTask.mtsCreateClientInterface(comp_no_dash+'Client', comp, prov)
              exec(f"{comp_no_dash} = interface")
              print('Type dir(' + comp_no_dash + ') to see available commands.')
-             print('Use getattr(' + comp_no_dash + ', \'one/two\')() to run command that has namespace (/).')
+             for command in dir(interface):
+                 if command.islower() and not command.startswith('_') and not command.startswith('this'):
+                     dvrk[comp+'/'+command] = getattr(interface, command)
              break
 
 LCM.CreateAllAndWait(2.0)
 LCM.StartAllAndWait(2.0)
 
-print('System ready.')
+print('System ready. See dvrk dict.')
