@@ -202,8 +202,8 @@
                         "enum": ["MTM", "PSM", "ECM",
                                  "MTM_DERIVED", "PSM_DERIVED", "ECM_DERIVED",
                                  "MTM_GENERIC", "PSM_GENERIC", "ECM_GENERIC",
-                                 "PSM_SOCKET", "SUJ_Classic", "SUJ_Si", "SUJ_Fixed", "FOCUS_CONTROLLER"],
-                        "description": "Type of arm.  This determines which class should be used to instantiate the arm.\n\n - `MTM`, `PSM` and `ECM` correspond to the default classes provided for the dVRK arms.  These are the most common ones.\n - `xxx_DERIVED` corresponds to classes derived from the base classes provided in the dVRK stack.  Users can derive the base arm classes to alter their behavior.  In this case, the console knows that the derived class has all the features from the base class so the connections to the PID, IO, Qt widget and ROS bridge are the same as those for the base class.\n - `xxx_GENERIC` corresponds to classes not derived from the dVRK base classes.  The console will not create any IO, PID components for this arm.  The console will use a generic Qt Widget and add ROS topics if and only if the provided interface has CRTK compatible commands and events.  Examples include Force Dimension devices ([sawForceDimensionSDK](https://github.com/jhu-saw/sawForceDimensionSDK)) and the Sensable Omni ([sawSensablePhantom](https://github.com/jhu-saw/sawSensablePhantom)).\n - `PSM_SOCKET` is a special case used for simple tele-operation between two processes (likely between two computers).  One dVRK console will have to instantiate a PSM server and the other a PSM client.\n - `SUJ_Classic` and `SUJ_Si` are for the clinical systems [Setup Joints](https://dvrk.readthedocs.io)\n - `SUJ_Fixed` is for arms on a custom mountFor `xxx_DERIVED` and `xxx_GENERIC`, the console has no way to automatically create the component, so the user has to provide the proper `component-manager` configuration to first create the component for the arm.",
+                                 "SUJ_Classic", "SUJ_Si", "SUJ_Fixed", "FOCUS_CONTROLLER"],
+                        "description": "Type of arm.  This determines which class should be used to instantiate the arm.\n\n - `MTM`, `PSM` and `ECM` correspond to the default classes provided for the dVRK arms.  These are the most common ones.\n - `xxx_DERIVED` corresponds to classes derived from the base classes provided in the dVRK stack.  Users can derive the base arm classes to alter their behavior.  In this case, the console knows that the derived class has all the features from the base class so the connections to the PID, IO, Qt widget and ROS bridge are the same as those for the base class.\n - `xxx_GENERIC` corresponds to classes not derived from the dVRK base classes.  The console will not create any IO, PID components for this arm.  The console will use a generic Qt Widget and add ROS topics if and only if the provided interface has CRTK compatible commands and events.  Examples include Force Dimension devices ([sawForceDimensionSDK](https://github.com/jhu-saw/sawForceDimensionSDK)) and the Sensable Omni ([sawSensablePhantom](https://github.com/jhu-saw/sawSensablePhantom)).\n - `SUJ_Classic` and `SUJ_Si` are for the clinical systems [Setup Joints](https://dvrk.readthedocs.io)\n - `SUJ_Fixed` is for arms on a custom mountFor `xxx_DERIVED` and `xxx_GENERIC`, the console has no way to automatically create the component, so the user has to provide the proper `component-manager` configuration to first create the component for the arm.",
                         "examples": [
                             {
                                 "arms":
@@ -342,24 +342,7 @@
                         "description": "Tell the component manager to not expose the arm commands to ROS.  By default, the component manager will expose the arm to ROS using the cisst ROS CRTK bridge",
                         "type": "boolean",
                         "default": false
-                    },
-
-                    "socket-server": {
-                        "description": "Only works for PSMs.  Indicates that a PSM socket server should be created.  This can be used to communicate with another dVRK console process with a PSM of type `PSM_SOCKET` and create a tele-operation between two sites.",
-                        "type": "boolean",
-                        "default": false
-                    },
-
-                    "remote-ip": {
-                        "description": "Only works with PSM of type `PSM_SOCKET` or if \"socket-server\" is set to `true`.  Used to create a UDP socket to remotely access a PSM",
-                        "type": "string"
-                    },
-
-                    "port": {
-                        "description": "Only works with PSM of type `PSM_SOCKET` or if \"socket-server\" is set to `true`.  Used to create a UDP socket to remotely access a PSM",
-                        "type": "number"
                     }
-
                 }
             }
         },

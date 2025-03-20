@@ -157,7 +157,6 @@ if (cisst_FOUND)
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciHeadSensor.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciEndoscopeFocus.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitUDPStreamer.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBasePSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketClientPSM.h
          ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketServerPSM.h
@@ -186,7 +185,6 @@ if (cisst_FOUND)
          code/mtsIntuitiveResearchKitConsole.cpp
          code/mtsDaVinciHeadSensor.cpp
          code/mtsDaVinciEndoscopeFocus.cpp
-         code/mtsIntuitiveResearchKitUDPStreamer.cpp
          code/mtsSocketBasePSM.cpp
          code/mtsSocketClientPSM.cpp
          code/mtsSocketServerPSM.cpp

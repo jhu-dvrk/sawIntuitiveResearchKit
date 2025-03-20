@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -59,7 +59,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
                       ARM_SUJ_Classic, ARM_SUJ_Si, ARM_SUJ_Fixed,
                       ARM_MTM_GENERIC, ARM_PSM_GENERIC, ARM_ECM_GENERIC,
                       ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_ECM_DERIVED,
-                      ARM_PSM_SOCKET,
                       FOCUS_CONTROLLER} ArmType;
 
         typedef enum {SIMULATION_NONE,
@@ -111,7 +110,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
         /*! Accessors */
         const std::string & Name(void) const;
-        const std::string & SocketComponentName(void) const;
         const std::string & ComponentName(void) const;
         const std::string & InterfaceName(void) const;
         const std::string & IOComponentName(void) const;
@@ -139,11 +137,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         std::string m_arm_interface_name;
         std::string m_arm_configuration_file;
         double m_arm_period;
-        // socket
-        std::string m_IP;
-        int m_port;
-        bool m_socket_server;
-        std::string m_socket_component_name;
         // add ROS bridge
         bool m_skip_ROS_bridge;
 
@@ -274,7 +267,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     void Cleanup(void);
 
     bool AddArm(Arm * newArm);
-    bool AddArm(mtsComponent * genericArm, const Arm::ArmType armType);
+
     std::string GetArmIOComponentName(const std::string & armName);
 
     void AddFootpedalInterfaces(void);
