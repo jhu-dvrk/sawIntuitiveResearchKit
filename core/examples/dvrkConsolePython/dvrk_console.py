@@ -24,15 +24,53 @@ import cisstMultiTaskPython as cisstMultiTask
 import cisstParameterTypesPython as cisstParameterTypes
 import numpy
 
-# Create a dictionary for useful dVRK commands.
-# It takes advantage of that fact that currently, most or all useful commands
-# are lower-case.
+# Create a dictionary for dVRK commands, organized by interfaces
+# (i.e., this is a dictionary of dictionaries)
 dvrk = dict()
 
-def dvrk_list(prefix = ''):
-   for key in dvrk.keys():
-      if not prefix or key.startswith(prefix):
-         print(key)
+def dvrk_list(req_key = ''):
+    for key, value in dvrk.items():
+        if not req_key or (key == req_key):
+            if isinstance(value, dict):
+                print(key+':')
+                for new_key in value:
+                    print('  '+new_key)
+            else:
+                print(key)
+
+# Set up the console interface and add commands to the dvrk dictionary
+def SetupConsole(serverName):
+    console = cisstMultiTask.mtsCreateClientInterface('dvrkClient', serverName, 'Main')
+    print('Connecting internal required interfaces')
+    console.connect()
+    console_dict = dict()
+    for command in dir(console):
+       # Ignore commands that start with '_' or 'this'
+       if not command.startswith('_') and not command.startswith('this'):
+          console_dict[command] = getattr(console, command)
+    dvrk['console'] = console_dict
+    return console
+
+# Find arm components, add interfaces, and add commands to dvrk dictionary
+def SetupArms(components):
+    for comp in components:
+        if comp.startswith('MTM') or comp.startswith('PSM') or comp.startswith('ECM'):
+            print('Found ' + comp)
+            obj = LCM.GetComponent(comp)
+            provInterfaces = obj.GetNamesOfInterfacesProvided()
+            for prov in provInterfaces:
+                if (prov == 'Controller') or (prov == 'Arm'):
+                    comp_no_dash = comp.replace('-', '_')
+                    interface = cisstMultiTask.mtsCreateClientInterface(comp_no_dash+'Client', comp, prov)
+                    setattr(sys.modules[__name__], comp_no_dash, interface)
+                    print('Type dir(' + comp_no_dash + ') to see available commands.')
+                    arm_dict = dict()
+                    for command in dir(interface):
+                        # Ignore commands that start with '_' or 'this'
+                        if not command.startswith('_') and not command.startswith('this'):
+                            arm_dict[command] = getattr(interface, command)
+                    dvrk[comp] = arm_dict
+                    break
 
 LCM = cisstMultiTask.mtsManagerLocal.GetInstance()
 LCM.CreateAll()
@@ -49,33 +87,11 @@ if dvrkServer:
     except NameError:
         configFile = input('Enter config filename (JSON): ')
     dvrkServer.Configure(configFile)
-    console = cisstMultiTask.mtsCreateClientInterface('dvrkClient', 'dvrkServer', 'Main')
-    print('Connecting internal required interfaces')
-    console.connect()
-    for command in dir(console):
-       if command.islower() and not command.startswith('_') and not command.startswith('this'):
-          dvrk['console/'+command] = getattr(console, command)
-
-print('Console ready. Type dir(console) to see available commands.')
-
-# Now, look for arms
-dvrkClient = LCM.GetComponent('dvrkClient')
-components = LCM.GetNamesOfComponents()
-for comp in components:
-  if comp.startswith('MTM') or comp.startswith('PSM') or comp.startswith('ECM'):
-     print('Found ' + comp)
-     obj = LCM.GetComponent(comp)
-     provInterfaces = obj.GetNamesOfInterfacesProvided()
-     for prov in provInterfaces:
-         if (prov == 'Controller') or (prov == 'Arm'):
-             comp_no_dash = comp.replace('-', '_')
-             interface = cisstMultiTask.mtsCreateClientInterface(comp_no_dash+'Client', comp, prov)
-             exec(f"{comp_no_dash} = interface")
-             print('Type dir(' + comp_no_dash + ') to see available commands.')
-             for command in dir(interface):
-                 if command.islower() and not command.startswith('_') and not command.startswith('this'):
-                     dvrk[comp+'/'+command] = getattr(interface, command)
-             break
+    # Setup up console component, which will create other components,
+    # including the arms (MTM, PSM, ECM)
+    console = SetupConsole('dvrkServer')
+    # Now, look for the arm components (MTM, PSM, ECM)
+    SetupArms(LCM.GetNamesOfComponents())
 
 LCM.CreateAllAndWait(2.0)
 LCM.StartAllAndWait(2.0)
