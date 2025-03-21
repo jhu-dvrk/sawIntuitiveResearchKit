@@ -29,14 +29,18 @@ import numpy
 dvrk = dict()
 
 def dvrk_list(req_key = ''):
-    for key, value in dvrk.items():
-        if not req_key or (key == req_key):
-            if isinstance(value, dict):
-                print(key+':')
-                for new_key in value:
-                    print('  '+new_key)
-            else:
-                print(key)
+    def dvrk_list_inner(cur_dict, indent, req_key=''):
+        for key, value in cur_dict.items():
+            if not req_key or (key == req_key):
+                if isinstance(value, dict):
+                    print(indent+key+'/')
+                    dvrk_list_inner(value, indent+'    ', '')
+                elif isinstance(value, cisstMultiTask.mtsInterfaceRequiredPython):
+                    print(indent+key+'/')
+                    dvrk_list_inner(value.__dict__, indent+'    ', '')
+                else:
+                    print(indent+key)
+    dvrk_list_inner(dvrk, '', req_key)
 
 # Set up the console interface and add commands to the dvrk dictionary
 def SetupConsole(serverName):
