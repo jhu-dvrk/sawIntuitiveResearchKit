@@ -53,7 +53,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <json/json.h>
 
-CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsole);
+CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitConsole, mtsTaskFromSignal, std::string);
 
 bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived(void) const
 {
@@ -742,6 +742,10 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
         // misc.
         mInterface->AddCommandRead(&mtsIntuitiveResearchKitConsole::calibration_mode, this,
                                    "calibration_mode", false);
+        // Following is Read instead of VoidReturn because it is called before the component
+        // is created (i.e., thread not yet running)
+        mInterface->AddCommandRead(&mtsIntuitiveResearchKitConsole::ConnectInternal, this,
+                                   "connect", false);
     }
 }
 
@@ -2108,6 +2112,13 @@ bool mtsIntuitiveResearchKitConsole::Connect(void)
     }
 
     return true;
+}
+
+// ConnectInternal is called before the thread is running, and therefore we force it (by using const_cast)
+// to have the signature of a CommandRead, so that it can be executed in the caller's thread.
+void mtsIntuitiveResearchKitConsole::ConnectInternal(bool &ret) const
+{
+    ret = const_cast<mtsIntuitiveResearchKitConsole *>(this)->Connect();
 }
 
 std::string mtsIntuitiveResearchKitConsole::locate_file(const std::string & filename)
