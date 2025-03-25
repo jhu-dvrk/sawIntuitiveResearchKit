@@ -55,213 +55,52 @@ http://www.cisst.org/cisst/license.txt.
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitConsole, mtsTaskFromSignal, std::string);
 
-bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived(void) const
-{
-    switch (m_type) {
-    case ARM_MTM:
-    case ARM_PSM:
-    case ARM_ECM:
-    case ARM_MTM_DERIVED:
-    case ARM_PSM_DERIVED:
-    case ARM_ECM_DERIVED:
-    case ARM_SUJ_Classic:
-    case ARM_SUJ_Si:
-    case ARM_SUJ_Fixed:
-    case FOCUS_CONTROLLER:
-        return true;
-        break;
-    default:
-        return false;
-        break;
-    }
-    return false;
-}
-
-bool mtsIntuitiveResearchKitConsole::Arm::psm(void) const
-{
-    switch (m_type) {
-    case ARM_PSM:
-    case ARM_PSM_DERIVED:
-    case ARM_PSM_GENERIC:
-        return true;
-        break;
-    default:
-        return false;
-        break;
-    }
-    return false;
-}
-
-bool mtsIntuitiveResearchKitConsole::Arm::mtm(void) const
-{
-    switch (m_type) {
-    case ARM_MTM:
-    case ARM_MTM_DERIVED:
-    case ARM_MTM_GENERIC:
-        return true;
-        break;
-    default:
-        return false;
-        break;
-    }
-    return false;
-}
-
-bool mtsIntuitiveResearchKitConsole::Arm::ecm(void) const
-{
-    switch (m_type) {
-    case ARM_ECM:
-    case ARM_ECM_DERIVED:
-        return true;
-        break;
-    default:
-        return false;
-        break;
-    }
-    return false;
-}
-
-bool mtsIntuitiveResearchKitConsole::Arm::suj(void) const
-{
-    switch (m_type) {
-    case ARM_SUJ_Classic:
-    case ARM_SUJ_Si:
-    case ARM_SUJ_Fixed :
-        return true;
-        break;
-    default:
-        return false;
-        break;
-    }
-    return false;
-}
-
-bool mtsIntuitiveResearchKitConsole::Arm::generic(void) const
-{
-    switch (m_type) {
-    case ARM_MTM_GENERIC:
-    case ARM_PSM_GENERIC:
-    case ARM_ECM_GENERIC:
-        return true;
-        break;
-    default:
-        return false;
-        break;
-    }
-    return false;
-}
-
-bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_mtm(void) const
-{
-    switch (m_type) {
-    case ARM_MTM:
-    case ARM_MTM_DERIVED:
-        return true;
-        break;
-    default:
-        return false;
-        break;
-    }
-    return false;
-}
-
-bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_psm(void) const
-{
-    switch (m_type) {
-    case ARM_PSM:
-    case ARM_PSM_DERIVED:
-        return true;
-        break;
-    default:
-        return false;
-        break;
-    }
-    return false;
-}
-
-bool mtsIntuitiveResearchKitConsole::Arm::native_or_derived_ecm(void) const
-{
-    switch (m_type) {
-    case ARM_ECM:
-    case ARM_ECM_DERIVED:
-        return true;
-        break;
-    default:
-        return false;
-        break;
-    }
-    return false;
-}
-
-mtsIntuitiveResearchKitArm::GenerationType mtsIntuitiveResearchKitConsole::Arm::generation(void) const
-{
-    if (m_generation == mtsIntuitiveResearchKitArm::GENERATION_UNDEFINED) {
-        CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::Arm::generation: trying to access generation before it is set"
-                           << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    return m_generation;
-}
-
-bool mtsIntuitiveResearchKitConsole::Arm::expects_PID(void) const
-{
-    return (native_or_derived()
-            && !suj());
-}
-
-bool mtsIntuitiveResearchKitConsole::Arm::expects_IO(void) const
-{
-    return (native_or_derived()
-            && (m_type != Arm::ARM_SUJ_Si)
-            && (m_type != Arm::ARM_SUJ_Fixed)
-            && (m_simulation == Arm::SIMULATION_NONE));
-}
-
 mtsIntuitiveResearchKitConsole::Arm::Arm(mtsIntuitiveResearchKitConsole * console,
                                          const std::string & name,
                                          const std::string & ioComponentName):
     m_console(console),
-    m_name(name),
     m_IO_component_name(ioComponentName),
     m_arm_period(mtsIntuitiveResearchKit::ArmPeriod),
     mSUJClutched(false)
-{}
+{
+    m_config.name = name;
+}
 
 void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & pid_config_,
                                                        const double & periodInSeconds)
 {
     std::string pid_config = pid_config_;
     // not user defined, try to find the default
-    if (pid_config == "") {
-        if (native_or_derived_mtm()) {
-            pid_config = "pid/sawControllersPID-MTM.json";
-        } else if (native_or_derived_psm()) {
-            if (generation() == mtsIntuitiveResearchKitArm::GENERATION_Classic) {
-                pid_config = "pid/sawControllersPID-PSM.json";
+    if (m_config.pid == "") {
+        if (m_config.native_or_derived_mtm()) {
+            m_config.pid = "pid/sawControllersPID-MTM.json";
+        } else if (m_config.native_or_derived_psm()) {
+            if (m_config.generation() == dvrk::arm_configuration_t::Classic) {
+                m_config.pid = "pid/sawControllersPID-PSM.json";
             } else {
-                pid_config = "pid/sawControllersPID-PSM-Si.json";
+                m_config.pid = "pid/sawControllersPID-PSM-Si.json";
             }
-        } else if (native_or_derived_ecm()) {
-            if (generation() == mtsIntuitiveResearchKitArm::GENERATION_Classic) {
-                pid_config = "pid/sawControllersPID-ECM.json";
+        } else if (m_config.native_or_derived_ecm()) {
+            if (m_config.generation() == dvrk::arm_configuration_t::Classic) {
+                m_config.pid = "pid/sawControllersPID-ECM.json";
             } else  {
-                pid_config = "pid/sawControllersPID-ECM-Si.json";
+                m_config.pid = "pid/sawControllersPID-ECM-Si.json";
             }
         } else {
-            pid_config = "pid/sawControllersPID-" + m_name + ".json";
+            m_config.pid = "pid/sawControllersPID-" + m_name + ".json";
         }
         CMN_LOG_INIT_VERBOSE << "ConfigurePID: can't find \"pid\" setting for arm \""
-                             << m_name << "\", using default: \""
-                             << pid_config << "\"" << std::endl;
+                             << m_config.name << "\", using default: \""
+                             << m_config.pid << "\"" << std::endl;
     }
 
-    m_PID_configuration_file = m_config_path.Find(pid_config);
+    m_PID_configuration_file = m_config_path.Find(m_config.pid);
     if (m_PID_configuration_file == "") {
-        CMN_LOG_INIT_ERROR << "ConfigurePID: can't find PID file " << pid_config << std::endl;
+        CMN_LOG_INIT_ERROR << "ConfigurePID: can't find PID file " << m_config.pid << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    m_PID_component_name = m_name + "-PID";
+    m_PID_component_name = m_config.name + "-PID";
 
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
     mtsPID * pid = new mtsPID(m_PID_component_name,
@@ -283,7 +122,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigurePID(const std::string & pid_c
     }
 }
 
-void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType arm_type,
+void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const dvrk::arm_configuration_t::arm_t arm_type,
                                                        const std::string & kinematicsConfigFile,
                                                        const double & periodInSeconds)
 {
@@ -296,7 +135,7 @@ void mtsIntuitiveResearchKitConsole::Arm::ConfigureArm(const ArmType arm_type,
     // for research kit arms, create, add to manager and connect to
     // extra IO, PID, etc.  For generic arms, do nothing.
     switch (arm_type) {
-    case ARM_MTM:
+    case MTM:
         {
             mtsIntuitiveResearchKitMTM * mtm = new mtsIntuitiveResearchKitMTM(Name(), periodInSeconds);
             if (m_simulation == SIMULATION_KINEMATIC) {

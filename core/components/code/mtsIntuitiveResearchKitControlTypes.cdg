@@ -1,5 +1,5 @@
 class {
-    name mtsIntuitiveResearchKitArmTypes;
+    name mtsIntuitiveResearchKitControlTypes;
 
     enum {
         name ControlSpace;

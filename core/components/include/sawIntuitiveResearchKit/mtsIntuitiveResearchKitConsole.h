@@ -31,6 +31,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConfiguration.h>
 
 // Always include last!
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -54,34 +55,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     class CISST_EXPORT Arm {
     public:
-        typedef enum {ARM_UNDEFINED,
-                      ARM_MTM, ARM_PSM, ARM_ECM,
-                      ARM_SUJ_Classic, ARM_SUJ_Si, ARM_SUJ_Fixed,
-                      ARM_MTM_GENERIC, ARM_PSM_GENERIC, ARM_ECM_GENERIC,
-                      ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_ECM_DERIVED,
-                      FOCUS_CONTROLLER} ArmType;
-
-        typedef enum {SIMULATION_NONE,
-                      SIMULATION_KINEMATIC,
-                      SIMULATION_DYNAMIC} SimulationType;
 
         friend class mtsIntuitiveResearchKitConsole;
         friend class mtsIntuitiveResearchKitConsoleQt;
         friend class dvrk::console;
 
-        bool generic(void) const;
-        bool psm(void) const;
-        bool mtm(void) const;
-        bool ecm(void) const;
-        bool suj(void) const;
-        bool native_or_derived(void) const;
-        bool native_or_derived_mtm(void) const;
-        bool native_or_derived_psm(void) const;
-        bool native_or_derived_ecm(void) const;
-        void set_generation(const mtsIntuitiveResearchKitArm::GenerationType generation);
-        mtsIntuitiveResearchKitArm::GenerationType generation(void) const;
-        bool expects_PID(void) const;
-        bool expects_IO(void) const;
+        dvrk::arm_configuration_t m_config;
 
         Arm(mtsIntuitiveResearchKitConsole * console,
             const std::string & name,
@@ -97,7 +76,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
                           const double & periodInSeconds = 0.0 * cmn_ms);
 
         /*! Create and configure the robot arm. */
-        void ConfigureArm(const ArmType armType,
+        void ConfigureArm(const dvrk::arm_configuration_t::arm_t armType,
                           const std::string & kinematicsConfigFile,
                           const double & periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
 
@@ -117,25 +96,19 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     protected:
         mtsIntuitiveResearchKitConsole * m_console = nullptr;
-        std::string m_name;
-        ArmType m_type;
-        mtsIntuitiveResearchKitArm::GenerationType m_generation = mtsIntuitiveResearchKitArm::GENERATION_UNDEFINED;
         std::string m_serial;
-        SimulationType m_simulation;
         bool m_calibration_mode = false;
         cmnPath m_config_path;
 
         // low level
         std::string m_IO_component_name;
-        std::string m_IO_configuration_file;
         std::string m_IO_gripper_configuration_file; // for MTMs only
         // PID
         std::string m_PID_component_name;
-        std::string m_PID_configuration_file;
         // arm
         std::string m_arm_component_name;
         std::string m_arm_interface_name;
-        std::string m_arm_configuration_file;
+
         double m_arm_period;
         // add ROS bridge
         bool m_skip_ROS_bridge;
