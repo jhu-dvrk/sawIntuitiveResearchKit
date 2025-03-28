@@ -97,11 +97,11 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     mEffortOrientationJoint.SetSize(number_of_joints());
 
     // initialize gripper state
-    m_gripper_measured_js.Name().SetSize(1);
+    m_gripper_measured_js.Name().resize(1);
     m_gripper_measured_js.Name().at(0) = "gripper";
     m_gripper_measured_js.Position().SetSize(1);
 
-    m_gripper_configuration_js.Name().SetSize(1);
+    m_gripper_configuration_js.Name().resize(1);
     m_gripper_configuration_js.Name().at(0) = "gripper";
     m_gripper_configuration_js.Type().SetSize(1);
     m_gripper_configuration_js.Type().at(0) = CMN_JOINT_REVOLUTE;

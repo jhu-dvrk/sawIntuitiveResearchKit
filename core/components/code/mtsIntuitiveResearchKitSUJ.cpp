@@ -93,8 +93,8 @@ public:
         m_voltages_extra.SetSize(MUX_MAX_INDEX - 2 * MUX_ARRAY_SIZE + 1);
 
         m_measured_js.Position().SetSize(MUX_ARRAY_SIZE);
-        m_measured_js.Name().SetSize(MUX_ARRAY_SIZE);
-        m_configuration_js.Name().SetSize(MUX_ARRAY_SIZE);
+        m_measured_js.Name().resize(MUX_ARRAY_SIZE);
+        m_configuration_js.Name().resize(MUX_ARRAY_SIZE);
         std::stringstream jointName;
         for (size_t index = 0; index < MUX_ARRAY_SIZE; ++index) {
             jointName.str("");

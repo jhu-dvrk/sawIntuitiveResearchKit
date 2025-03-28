@@ -461,7 +461,7 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
             m_jaw_configuration_js.EffortMin().at(0) = -jsonJawFTMax.asDouble();
         }
 
-        m_jaw_configuration_js.Name().SetSize(1);
+        m_jaw_configuration_js.Name().resize(1);
         m_jaw_configuration_js.Name().at(0) = "jaw";
         m_jaw_configuration_js.Type().SetSize(1);
         m_jaw_configuration_js.Type().at(0) = CMN_JOINT_REVOLUTE;
@@ -899,7 +899,7 @@ void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(void)
 
     // names
     const size_t manipulator_size = Manipulator->links.size();
-    m_configuration_js.Name().SetSize(number_of_joints());
+    m_configuration_js.Name().resize(number_of_joints());
     std::vector<std::string> name_tmp(manipulator_size);
     Manipulator->GetJointNames(name_tmp);
     // copy first 3 names to config vector
@@ -1216,20 +1216,20 @@ void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
     // restore default PID tracking error
     PID.set_measured_setpoint_tolerance(PID.measured_setpoint_tolerance);
     // resize kinematics vectors
-    m_kin_measured_js.Name().ForceAssign(m_configuration_js.Name());
+    cmnDataCopy(m_kin_measured_js.Name(), m_configuration_js.Name());
     m_kin_measured_js.Position().SetSize(number_of_joints_kinematics());
     m_kin_measured_js.Velocity().SetSize(number_of_joints_kinematics());
     m_kin_measured_js.Effort().SetSize(number_of_joints_kinematics());
-    m_kin_setpoint_js.Name().ForceAssign(m_configuration_js.Name());
+    cmnDataCopy(m_kin_setpoint_js.Name(), m_configuration_js.Name());
     m_kin_setpoint_js.Position().SetSize(number_of_joints_kinematics());
     m_kin_setpoint_js.Velocity().SetSize(number_of_joints_kinematics());
     m_kin_setpoint_js.Effort().SetSize(number_of_joints_kinematics());
     // jaw
-    m_jaw_measured_js.Name().ForceAssign(m_jaw_configuration_js.Name());
+    cmnDataCopy(m_jaw_measured_js.Name(), m_jaw_configuration_js.Name());
     m_jaw_measured_js.Position().SetSize(1);
     m_jaw_measured_js.Velocity().SetSize(1);
     m_jaw_measured_js.Effort().SetSize(1);
-    m_jaw_setpoint_js.Name().ForceAssign(m_jaw_configuration_js.Name());
+    cmnDataCopy(m_jaw_setpoint_js.Name(), m_jaw_configuration_js.Name());
     m_jaw_setpoint_js.Position().SetSize(1);
     m_jaw_setpoint_js.Velocity().SetSize(0);
     m_jaw_setpoint_js.Effort().SetSize(1);

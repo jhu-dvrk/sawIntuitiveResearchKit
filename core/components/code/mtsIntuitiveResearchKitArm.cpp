@@ -530,7 +530,8 @@ void mtsIntuitiveResearchKitArm::update_configuration_js(void)
     prmConfigurationJointFromManipulator(*(this->Manipulator),
                                          number_of_joints_kinematics(),
                                          m_configuration_js);
-    m_gravity_compensation_setpoint_js.Name().ForceAssign(m_configuration_js.Name());
+    cmnDataCopy(m_gravity_compensation_setpoint_js.Name(),
+                m_configuration_js.Name());
     mStateTableConfiguration.Advance();
 }
 
