@@ -181,8 +181,8 @@ public:
         m_delta_measured_js.SetSize(m_nb_joints);
 
         m_measured_js.Position().SetSize(m_nb_joints, 0.0);
-        m_measured_js.Name().SetSize(m_nb_joints);
-        m_configuration_js.Name().SetSize(m_nb_joints);
+        m_measured_js.Name().resize(m_nb_joints);
+        m_configuration_js.Name().resize(m_nb_joints);
         std::stringstream jointName;
         for (size_t index = 0; index < m_nb_joints; ++index) {
             jointName.str("");
@@ -191,7 +191,7 @@ public:
             m_configuration_js.Name().at(index) = jointName.str();
         }
         m_live_measured_js.Position().ForceAssign(m_measured_js.Position());
-        m_live_measured_js.Name().ForceAssign(m_measured_js.Name());
+        cmnDataCopy(m_live_measured_js.Name(), m_measured_js.Name());
 
         m_configuration_js.Type().SetSize(m_nb_joints);
         m_configuration_js.Type().SetAll(CMN_JOINT_REVOLUTE);

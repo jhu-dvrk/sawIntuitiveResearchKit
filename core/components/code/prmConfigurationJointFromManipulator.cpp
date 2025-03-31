@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2023-01-05
 
-  (C) Copyright 2023-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2023-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -22,8 +22,8 @@ void prmConfigurationJointFromManipulator(const robManipulator & manipulator,
                                           const size_t configuration_js_size,
                                           prmConfigurationJoint & configuration_js)
 {
-    configuration_js.Name().SetSize(configuration_js_size);
-    configuration_js.Type().SetSize(configuration_js_size);
+    configuration_js.Name().resize(configuration_js_size);
+    configuration_js.Type().resize(configuration_js_size);
     const size_t manipulator_size = manipulator.links.size();
     std::vector<std::string> names(manipulator_size);
     std::vector<cmnJointType> types(manipulator_size);

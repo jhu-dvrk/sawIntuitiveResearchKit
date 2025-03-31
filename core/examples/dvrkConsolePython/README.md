@@ -4,6 +4,9 @@
 
 From Python prompt, type: `from dvrk_console import *`
 
+Note: If Python fails to find the cisst Python libraries, make sure the `PYTHONPATH` environment
+variable is set up correctly, e.g., using `cisstvars.sh` (Linux) or `cisstvars.bat` (Windows).
+
 ## Finding Commands
 
 All commands are available via (required) interfaces that are automatically created for
