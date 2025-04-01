@@ -9,7 +9,7 @@
 #
 # --- end cisst license ---
 
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.16)
 project (dvrk_arms_from_ros VERSION 2.3.1)
 
 

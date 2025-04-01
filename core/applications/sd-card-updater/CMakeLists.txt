@@ -9,7 +9,7 @@
 #
 # --- end cisst license ---
 
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.16)
 project (sawIntuitiveResearchKitSDCardUpdater VERSION 2.3.0)
 
 # find cisst and make sure the required libraries have been compiled

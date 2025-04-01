@@ -9,7 +9,7 @@
 #
 # --- end cisst license ---
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 project (saw_intuitive_research_kit_example_psm_derived VERSION 2.3.0)
 
 # first test for ROS1
