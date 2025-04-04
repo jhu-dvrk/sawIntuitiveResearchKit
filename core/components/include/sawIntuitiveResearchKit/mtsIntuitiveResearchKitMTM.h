@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2022 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -19,6 +19,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #ifndef _mtsIntuitiveResearchKitMTM_h
 #define _mtsIntuitiveResearchKitMTM_h
+
+#include <memory>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 
@@ -67,7 +69,7 @@ protected:
         return 0;
     }
 
-    inline bool use_PID_tracking_error(void) const override {
+    inline bool should_use_measured_setpoint_check(void) const override {
         return false;
     }
 
@@ -115,6 +117,9 @@ protected:
 
     /*! Lock master orientation when in cartesian effort mode */
     virtual void lock_orientation(const vctMatRot3 & orientation);
+    // lock_orientation_python provided because vctMatRot3 not properly wrapped
+    // for Python (using Swig). Can be removed when vctMatRot3 wrapped.
+    virtual void lock_orientation_python(const vctDoubleMat & orientation);
     virtual void unlock_orientation(void);
 
     // Functions for events

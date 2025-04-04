@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst
 #include <cisstBuildType.h>
+#include <cisstRevision.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsComponentViewer.h>
@@ -441,8 +442,8 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 
     std::string title = "dVRK ";
     title.append(sawIntuitiveResearchKit_VERSION);
-    title.append(" / cisst ");
-    title.append(cisst_VERSION);
+    title.append(" / ");
+    title.append(CISST_FULL_REVISION);
     setWindowTitle(title.c_str());
     resize(sizeHint());
 
