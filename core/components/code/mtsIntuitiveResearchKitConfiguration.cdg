@@ -1,13 +1,81 @@
 // -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
 // ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
 
+inline-header {
+
+    #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
+
+}
+
 class {
     name arm_configuration_t;
     namespace dvrk;
     attribute CISST_EXPORT;
 
     enum {
-        name arm_t;
+        name generation_t;
+        enum-value {
+            name GENERATION_UNDEFINED;
+            description Undefined;
+            value 0;
+        }
+        enum-value {
+            name Classic;
+            description Classic;
+        }
+        enum-value {
+            name Si;
+            description Si;
+        }
+    }
+
+    member {
+        name _generation;
+        type dvrk::arm_configuration_t::generation_t;
+        visibility private;
+        accessors none;
+    }
+
+    member {
+        name kinematic;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name mounting_pitch;
+        type double;
+        visibility public;
+        default 0.0;
+    }
+
+    inline-header {
+
+    public:
+
+        inline void set_generation(const dvrk::arm_configuration_t::generation_t generation) {
+            m_generation = generation;
+        }
+
+        inline dvrk::arm_configuration_t::generation_t generation(void) const {
+            if (m_generation == dvrk::arm_configuration_t::GENERATION_UNDEFINED) {
+                CMN_LOG_INIT_ERROR << "dvrk::arm_configuration_t::generation: trying to access generation before it is set"
+                                   << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            return m_generation;
+        }
+    }
+}
+
+
+class {
+    name arm_proxy_configuration_t;
+    namespace dvrk;
+    attribute CISST_EXPORT;
+
+    enum {
+        name arm_type_t;
         enum-value {
             name ARM_UNDEFINED;
             description Undefined;
@@ -73,28 +141,11 @@ class {
     }
 
     enum {
-        name generation_t;
-        enum-value {
-            name GENERATION_UNDEFINED;
-            description Undefined;
-            value 0;
-        }
-        enum-value {
-            name Classic;
-            description Classic;
-        }
-        enum-value {
-            name Si;
-            description Si;
-        }
-    }
-
-    enum {
         name simulation_t;
         prefix SIMULATION_;
         enum-value {
             name NONE;
-            description Undefined;
+            description Not simulated;
             value 0;
         }
         enum-value {
@@ -115,27 +166,29 @@ class {
 
     member {
         name type;
-        type dvrk::arm_configuration_t::arm_t;
+        type dvrk::arm_proxy_configuration_t::arm_type_t;
         visibility public;
     }
 
     member {
-        name _generation;
-        type dvrk::arm_configuration_t::generation_t;
-        visibility private;
-        accessors none;
+        name serial;
+        type std::string;
+        visibility public;
+        default "";
     }
 
     member {
         name simulation;
-        type dvrk::arm_configuration_t::simulation_t;
+        type dvrk::arm_proxy_configuration_t::simulation_t;
         visibility public;
+        default dvrk::arm_proxy_configuration_t::SIMULATION_NONE;
     }
 
     member {
-        name kinematic;
+        name arm;
         type std::string;
         visibility public;
+        default "";
     }
 
     member {
@@ -152,9 +205,52 @@ class {
         default "";
     }
 
+    member {
+        name period;
+        type double;
+        visibility public;
+        default mtsIntuitiveResearchKit::ArmPeriod;
+    }
+
+    member {
+        name pid_period;
+        type double;
+        visibility public;
+        default 0.0;
+        description Period to use for the PID component, 0.0 is used to run the PID using the IO thread;
+    }
+
+    member {
+        name skip_ros_bridge;
+        type bool;
+        visibility public;
+        default false;
+    }
+
+    member {
+        name component;
+        type std::string;
+        visibility public;
+        default "";
+        description Name of component to use for generic or derived classes;
+    }
+
+    member {
+        name interface;
+        type std::string;
+        visibility public;
+        default "";
+        description Name of interface to use for generic or derived classes;
+    }
+
+
     inline-header {
 
     public:
+
+        inline bool simulated(void) const {
+            return this->simulation != SIMULATION_NONE;
+        }
 
         inline bool generic(void) const {
             switch (this->type) {
@@ -259,19 +355,6 @@ class {
             return native_or_derived() && ecm();
         }
 
-        inline void set_generation(const dvrk::arm_configuration_t::generation_t generation) {
-            m_generation = generation;
-        }
-
-        inline dvrk::arm_configuration_t::generation_t generation(void) const {
-            if (m_generation == dvrk::arm_configuration_t::GENERATION_UNDEFINED) {
-                CMN_LOG_INIT_ERROR << "dvrk::arm_configuration_t::generation: trying to access generation before it is set"
-                                   << std::endl;
-                exit(EXIT_FAILURE);
-            }
-            return m_generation;
-        }
-
         inline bool expects_PID(void) const {
             return (native_or_derived()
                     && !suj());
@@ -293,7 +376,7 @@ class {
 
     member {
         name arms;
-        type std::vector<dvrk::arm_configuration_t>;
+        type std::vector<dvrk::arm_proxy_configuration_t>;
         visibility public;
     }
 }
