@@ -117,9 +117,6 @@ protected:
 
     /*! Lock master orientation when in cartesian effort mode */
     virtual void lock_orientation(const vctMatRot3 & orientation);
-    // lock_orientation_python provided because vctMatRot3 not properly wrapped
-    // for Python (using Swig). Can be removed when vctMatRot3 wrapped.
-    virtual void lock_orientation_python(const vctDoubleMat & orientation);
     virtual void unlock_orientation(void);
 
     // Functions for events
