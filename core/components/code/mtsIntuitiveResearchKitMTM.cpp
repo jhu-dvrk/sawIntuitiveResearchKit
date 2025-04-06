@@ -135,7 +135,6 @@ void mtsIntuitiveResearchKitMTM::Init(void)
     // Main interface should have been created by base class init
     CMN_ASSERT(m_arm_interface);
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::lock_orientation, this, "lock_orientation");
-    m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitMTM::lock_orientation_python, this, "lock_orientation_python");
     m_arm_interface->AddCommandVoid(&mtsIntuitiveResearchKitMTM::unlock_orientation, this, "unlock_orientation");
     m_arm_interface->AddEventWrite(mtm_events.orientation_locked, "orientation_locked", false);
 
@@ -690,15 +689,6 @@ void mtsIntuitiveResearchKitMTM::lock_orientation(const vctMatRot3 & orientation
     mEffortOrientationJoint.Assign(m_pid_measured_js.Position());
     // emit event
     mtm_events.orientation_locked(m_effort_orientation_locked);
-}
-
-// lock_orientation_python provided because vctMatRot3 not properly wrapped
-// for Python (using Swig). Can be removed when vctMatRot3 wrapped.
-void mtsIntuitiveResearchKitMTM::lock_orientation_python(const vctDoubleMat & orientation)
-{
-    vctMatRot3 orientRot;
-    orientRot.Assign(orientation);
-    lock_orientation(orientRot);
 }
 
 void mtsIntuitiveResearchKitMTM::unlock_orientation(void)
