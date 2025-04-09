@@ -1,0 +1,243 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+inline-header {
+#include <sawIntuitiveResearchKit/arm_type_t.h>
+#include <sawIntuitiveResearchKit/simulation_t.h>
+}
+
+inline-code {
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
+}
+
+class {
+    name arm_proxy_configuration_t;
+    namespace dvrk;
+    attribute CISST_EXPORT;
+
+    member {
+        name name;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name type;
+        type dvrk::arm_type_t;
+        visibility public;
+    }
+
+    member {
+        name serial;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name simulation;
+        type dvrk::simulation_t;
+        visibility public;
+        default dvrk::SIMULATION_NONE;
+    }
+
+    member {
+        name arm;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name PID;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name IO;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name period;
+        type double;
+        visibility public;
+        default mtsIntuitiveResearchKit::ArmPeriod;
+    }
+
+    member {
+        name PID_period;
+        type double;
+        visibility public;
+        default 0.0;
+        description Period to use for the PID component, 0.0 is used to run the PID using the IO thread;
+    }
+
+    member {
+        name skip_ROS_bridge;
+        type bool;
+        visibility public;
+        default false;
+    }
+
+    member {
+        name component;
+        type std::string;
+        visibility public;
+        default "";
+        description Name of component to use for generic or derived classes;
+    }
+
+    member {
+        name interface;
+        type std::string;
+        visibility public;
+        default "";
+        description Name of interface to use for generic or derived classes;
+    }
+
+
+    inline-header {
+
+    public:
+
+        inline bool simulated(void) const {
+            return this->simulation != SIMULATION_NONE;
+        }
+
+        inline bool native(void) const {
+            switch (this->type) {
+	        case MTM:
+            case PSM:
+            case ECM:
+            case FOCUS_CONTROLLER:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool derived(void) const {
+            switch (this->type) {
+            case MTM_DERIVED:
+            case PSM_DERIVED:
+            case ECM_DERIVED:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool generic(void) const {
+            switch (this->type) {
+            case MTM_GENERIC:
+            case PSM_GENERIC:
+            case ECM_GENERIC:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool native_or_derived(void) const {
+            return native() || derived();
+        }
+
+        inline bool generic_or_derived(void) const {
+            return generic() || derived();
+        }
+
+        inline bool psm(void) const {
+            switch (this->type) {
+            case PSM:
+            case PSM_DERIVED:
+            case PSM_GENERIC:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool mtm(void) const {
+            switch (this->type) {
+            case MTM:
+            case MTM_DERIVED:
+            case MTM_GENERIC:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool ecm(void) const {
+            switch (this->type) {
+            case ECM:
+            case ECM_DERIVED:
+            case ECM_GENERIC:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool suj(void) const {
+            switch (this->type) {
+            case SUJ_Classic:
+            case SUJ_Si:
+            case SUJ_Fixed:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool native_or_derived_mtm(void) const {
+            return native_or_derived() && mtm();
+        }
+
+        inline bool native_or_derived_psm(void) const {
+            return native_or_derived() && psm();
+        }
+
+        inline bool native_or_derived_ecm(void) const {
+            return native_or_derived() && ecm();
+        }
+
+        inline bool expects_PID(void) const {
+            return (native_or_derived()
+                    && !suj());
+        }
+
+        inline bool expects_IO(void) const {
+            return (native_or_derived()
+                    && (this->type != SUJ_Si)
+                    && (this->type != SUJ_Fixed)
+                    && (this->simulation == SIMULATION_NONE));
+        }
+    }
+}

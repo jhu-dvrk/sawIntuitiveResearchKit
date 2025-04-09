@@ -44,7 +44,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void set_simulated(void) override;
 
  protected:
-    void set_generation(const GenerationType generation) override;
+    void set_generation(const dvrk::generation_t generation) override;
     void load_tool_list(const cmnPath & path,
                         const std::string & indexFile = "tool/index.json");
 
@@ -71,10 +71,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     inline size_t number_of_brakes(void) const override {
         switch (m_generation) {
-        case mtsIntuitiveResearchKitArm::GENERATION_Classic:
+        case dvrk::generation_t::Classic:
             return 0;
             break;
-        case mtsIntuitiveResearchKitArm::GENERATION_Si:
+        case dvrk::generation_t::Si:
             return 3;
             break;
         default:

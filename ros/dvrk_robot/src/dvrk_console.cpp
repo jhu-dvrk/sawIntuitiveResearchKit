@@ -67,32 +67,32 @@ dvrk::console::console(const std::string & name,
     }
 
     // arm topics
-    for (const auto & armPair : m_console->mArms) {
-        auto arm = armPair.second;
-        if (!arm->m_skip_ROS_bridge) {
-            const std::string name = armPair.first;
-            if (arm->native_or_derived_mtm()) {
+    for (const auto & iter : m_console->m_arm_proxies) {
+        const std::string & name = iter.first;
+        const dvrk::arm_proxy_configuration_t & config = iter.second->m_config;
+        if (!config.skip_ROS_bridge) {
+            if (config.native_or_derived_mtm()) {
                 bridge_interface_provided_mtm(name, "Arm",
                                               publish_rate_in_seconds, tf_rate_in_seconds);
-            } else if (arm->native_or_derived_ecm()) {
+            } else if (config.native_or_derived_ecm()) {
                 bridge_interface_provided_ecm(name, "Arm",
                                               publish_rate_in_seconds, tf_rate_in_seconds);
-                if (arm->m_simulation
-                    == mtsIntuitiveResearchKitConsole::Arm::SIMULATION_NONE) {
-                    add_topics_ecm_io(name, arm->m_IO_component_name);
+                if (config.simulation
+                    == dvrk::simulation_t::SIMULATION_NONE) {
+                    add_topics_ecm_io(name, iter.second->m_IO_component_name);
                 }
-            } else if (arm->native_or_derived_psm()) {
+            } else if (config.native_or_derived_psm()) {
                 bridge_interface_provided_psm(name, "Arm",
                                               publish_rate_in_seconds, tf_rate_in_seconds);
-                if (arm->m_simulation
-                    == mtsIntuitiveResearchKitConsole::Arm::SIMULATION_NONE) {
-                    add_topics_psm_io(name, arm->m_IO_component_name);
+                if (config.simulation
+                    == dvrk::simulation_t::SIMULATION_NONE) {
+                    add_topics_psm_io(name, iter.second->m_IO_component_name);
                 }
-            } else if (arm->generic()) {
-                bridge_interface_provided(arm->ComponentName(),
-                                          arm->InterfaceName(),
+            } else if (config.generic()) {
+                bridge_interface_provided(config.component,
+                                          config.interface,
                                           publish_rate_in_seconds, tf_rate_in_seconds);
-            } else if (arm->suj()) {
+            } else if (config.suj()) {
                 const auto _sujs = std::list<std::string>({"PSM1", "PSM2", "PSM3", "ECM"});
                 for (auto const & _suj : _sujs) {
                     bridge_interface_provided(name,
@@ -455,10 +455,10 @@ void dvrk::console::add_topics_pid(const double _publish_period_in_seconds,
                                    const bool _read_write)
 {
     mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
-    for (auto & armPair : m_console->mArms) {
-        const auto name = armPair.first;
-        const auto arm = armPair.second;
-        if (arm->expects_PID()) {
+    for (const auto & iter : m_console->m_arm_proxies) {
+        const std::string & name = iter.first;
+        const dvrk::arm_proxy_configuration_t & config = iter.second->m_config;
+        if (config.expects_PID()) {
             // we need to create on PID bridge per PID component
             const std::string pid_component_name = name + "-PID";
             const std::string pid_bridge_name = "pid-bridge-" + name;

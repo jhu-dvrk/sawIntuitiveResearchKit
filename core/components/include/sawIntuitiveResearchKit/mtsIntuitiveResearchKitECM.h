@@ -43,7 +43,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     void set_simulated(void) override;
 
  protected:
-    void set_generation(const GenerationType generation) override;
+    void set_generation(const dvrk::generation_t generation) override;
     void PostConfigure(const Json::Value & jsonConfig,
                        const cmnPath & configPath,
                        const std::string & filename) override;

@@ -31,7 +31,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConfiguration.h>
+#include <sawIntuitiveResearchKit/console_configuration_t.h>
 
 // Always include last!
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -62,7 +62,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     
         dvrk::arm_proxy_configuration_t m_config;
     
-        arm_proxy_t(const std::string & name);
+        arm_proxy_t(const std::string & name, mtsIntuitiveResearchKitConsole * console);
     
         NOT_COPYABLE(arm_proxy_t);
         NOT_MOVEABLE(arm_proxy_t);
@@ -88,21 +88,14 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         bool Connect(void);
 
         /*! Accessors */
-        const std::string & Name(void) const;
-        const std::string & ComponentName(void) const;
-        const std::string & InterfaceName(void) const;
-        const std::string & IOComponentName(void) const;
-        const std::string & PIDComponentName(void) const;
 
-        dvrk::arm_configuration_t::generation_t Generation(void) const;
+        dvrk::generation_t generation(void) const;
         
-     protected:
-        std::shared_ptr<mtsIntuitiveResearchKitConsole> m_console = nullptr;
+        mtsIntuitiveResearchKitConsole * m_console = nullptr;
         std::shared_ptr<mtsIntuitiveResearchKitArm> m_arm = nullptr;
         
         std::string m_serial;
         bool m_calibration_mode = false;
-        cmnPath m_config_path;
 
         // low level
         std::string m_IO_component_name;
@@ -120,6 +113,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         // add ROS bridge
         bool m_skip_ROS_bridge;
 
+    protected:
         // base frame
         // (name and frame) OR (component and interface)
         prmPositionCartesianSet m_base_frame;
@@ -246,15 +240,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     void Run(void);
     void Cleanup(void);
 
-    bool AddArm(arm_proxy_t * arm_proxy);
-
     std::string GetArmIOComponentName(const std::string & arm_name);
 
     void AddFootpedalInterfaces(void);
 
     bool Connect(void);
 
-    std::string locate_file(const std::string & filename);
+    std::string find_file(const std::string & filename) const;
 
  protected:
     bool m_configured;
@@ -268,7 +260,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     bool mTeleopECMRunning = false;
     bool mTeleopEnabledBeforeCamera;
 
-    typedef std::map<std::string, std::unique_ptr<arm_proxy_t>> arm_proxies_t;
+    typedef std::map<std::string, std::shared_ptr<arm_proxy_t>> arm_proxies_t;
     arm_proxies_t m_arm_proxies;
 
     /*! Pointer to mtsTextToSpeech component */
@@ -301,7 +293,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     /*! Find all arm data from JSON configuration. */
     bool ConfigureArmJSON(const Json::Value & jsonArm,
                           const std::string & ioComponentName);
-    bool AddArmInterfaces(arm_proxies_t & arm_proxy);
+    bool add_arm_interfaces(std::shared_ptr<arm_proxy_t> & arm_proxy);
 
     // these two methods have exact same implementation.it would be
     // nice to have a base class, or template this

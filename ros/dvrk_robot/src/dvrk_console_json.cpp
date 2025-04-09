@@ -47,7 +47,7 @@ void fileExists(const std::string & description, std::string & filename,
                 mtsIntuitiveResearchKitConsole * console)
 {
     if (!cmnPath::Exists(filename)) {
-        const std::string fileInPath = console->locate_file(filename);
+        const std::string fileInPath = console->find_file(filename);
         if (fileInPath == "") {
             std::cerr << "File not found: " << description
                       << ": " << filename << std::endl;

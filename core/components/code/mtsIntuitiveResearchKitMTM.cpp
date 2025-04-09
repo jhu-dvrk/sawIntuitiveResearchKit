@@ -377,8 +377,8 @@ void mtsIntuitiveResearchKitMTM::EnterCalibratingRoll(void)
     m_trajectory_j.goal.at(JNT_WRIST_ROLL) = currentRoll - maxRollRange;
     m_trajectory_j.goal_v.SetAll(0.0);
     m_trajectory_j.end_time = 0.0;
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
 
     // disable safety features so we can look for physical joint limit
     PID.enforce_position_limits(false);
@@ -705,6 +705,6 @@ void mtsIntuitiveResearchKitMTM::unlock_orientation(void)
 bool mtsIntuitiveResearchKitMTM::should_use_gravity_compensation(void)
 {
     return m_gravity_compensation &&
-           m_control_mode != mtsIntuitiveResearchKitArmTypes::POSITION_MODE &&
+           m_control_mode != mtsIntuitiveResearchKitControlTypes::POSITION_MODE &&
            m_gravity_compensation_setpoint_js.Valid();
 }

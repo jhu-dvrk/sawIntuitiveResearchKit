@@ -200,10 +200,15 @@ if (cisst_FOUND)
          )
 
     set (CDG_FILES
+      code/arm_configuration_t.cdg
+      code/arm_proxy_configuration_t.cdg
+      code/arm_type_t.cdg
+      code/console_configuration_t.cdg
+      code/generation_t.cdg
+      code/simulation_t.cdg
       code/mtsIntuitiveResearchKitControlTypes.cdg
       code/mtsIntuitiveResearchKitToolTypes.cdg
       code/mtsIntuitiveResearchKitEndoscopeTypes.cdg
-      code/mtsIntuitiveResearchKitConfiguration.cdg
       code/socketMessages.cdg)
 
     if (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)

@@ -97,7 +97,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     // Arm and PID widgets
     QTabWidget * pidTabWidget;
     QTabWidget * armTabWidget;
-    if (console->mArms.size() > 1) {
+    if (console->m_arm_proxies.size() > 1) {
         pidTabWidget = new QTabWidget();
         pidTabWidget->setObjectName(QString("PIDs"));
         TabWidget->addTab(pidTabWidget, "PIDs");
@@ -109,29 +109,28 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         armTabWidget = TabWidget; // use current tab widget
     }
 
-    const mtsIntuitiveResearchKitConsole::ArmList::iterator armsEnd = console->mArms.end();
-    mtsIntuitiveResearchKitConsole::ArmList::iterator armIter;
-    for (armIter = console->mArms.begin(); armIter != armsEnd; ++armIter) {
+    for (const auto & iter : console->m_arm_proxies) {
         mtsIntuitiveResearchKitArmQtWidget * armGUI;
         mtsIntuitiveResearchKitSUJQtWidget * sujGUI;
         mtsPIDQtWidget * pidGUI;
 
-        const std::string name = armIter->first;
+        const std::string & name = iter.first;
+        const dvrk::arm_proxy_configuration_t & config = iter.second->m_config;
 
-        switch (armIter->second->m_type) {
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_DERIVED:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_DERIVED:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_DERIVED:
+        switch (config.type) {
+        case dvrk::arm_type_t::MTM:
+        case dvrk::arm_type_t::MTM_DERIVED:
+        case dvrk::arm_type_t::PSM:
+        case dvrk::arm_type_t::PSM_DERIVED:
+        case dvrk::arm_type_t::ECM:
+        case dvrk::arm_type_t::ECM_DERIVED:
             // PID widget
             size_t numberOfJoints;
-            if (armIter->second->native_or_derived_psm()) {
+            if (config.native_or_derived_psm()) {
                 numberOfJoints = 7;
-            } else if (armIter->second->native_or_derived_mtm()) {
+            } else if (config.native_or_derived_mtm()) {
                 numberOfJoints = 7;
-            } else if (armIter->second->native_or_derived_ecm()) {
+            } else if (config.native_or_derived_ecm()) {
                 numberOfJoints = 4;
             } else {
                 numberOfJoints = 0; // can't happen but prevents compiler warning
@@ -140,15 +139,15 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             pidGUI->Configure();
             componentManager->AddComponent(pidGUI);
             Connections.Add(pidGUI->GetName(), "Controller",
-                            armIter->second->PIDComponentName(), "Controller");
+                            iter.second->m_PID_component_name, "Controller");
             pidTabWidget->addTab(pidGUI, (name + " PID").c_str());
 
             // Arm widget
-            if (armIter->second->native_or_derived_psm()) {
+            if (config.native_or_derived_psm()) {
                 armGUI = new mtsIntuitiveResearchKitPSMQtWidget(name + "-GUI");
-            } else if (armIter->second->native_or_derived_mtm()) {
+            } else if (config.native_or_derived_mtm()) {
                 armGUI = new mtsIntuitiveResearchKitMTMQtWidget(name + "-GUI");
-            } else if (armIter->second->native_or_derived_ecm()) {
+            } else if (config.native_or_derived_ecm()) {
                 armGUI = new mtsIntuitiveResearchKitECMQtWidget(name + "-GUI");
             } else {
                 armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");
@@ -156,16 +155,16 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             armGUI->Configure();
             componentManager->AddComponent(armGUI);
             Connections.Add(armGUI->GetName(), "Manipulator",
-                            armIter->second->ComponentName(),
-                            armIter->second->InterfaceName());
+                            iter.second->m_arm_component_name,
+                            iter.second->m_arm_interface_name);
             armGUI->setObjectName(name.c_str());
             armTabWidget->addTab(armGUI, name.c_str());
 
             break;
 
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ_Classic:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ_Si:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_SUJ_Fixed:
+        case dvrk::arm_type_t::SUJ_Classic:
+        case dvrk::arm_type_t::SUJ_Si:
+        case dvrk::arm_type_t::SUJ_Fixed:
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1-SUJ");
             componentManager->AddComponent(sujGUI);
@@ -189,9 +188,9 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
 
             break;
 
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_ECM_GENERIC:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_MTM_GENERIC:
-        case mtsIntuitiveResearchKitConsole::Arm::ARM_PSM_GENERIC:
+        case dvrk::arm_type_t::ECM_GENERIC:
+        case dvrk::arm_type_t::MTM_GENERIC:
+        case dvrk::arm_type_t::PSM_GENERIC:
             {
                 // Arm widget
                 QWidget * genericComponentGUI = new QWidget();
@@ -202,15 +201,15 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
                 componentManager->AddComponent(messageGUI);
                 genericComponentLayout->addWidget(messageGUI);
                 Connections.Add(messageGUI->GetName(), "Component",
-                                armIter->second->ComponentName(),
-                                armIter->second->InterfaceName());
+                                iter.second->m_arm_component_name,
+                                iter.second->m_arm_interface_name);
                 mtsIntervalStatisticsQtWidgetComponent * timingGUI
                     = new mtsIntervalStatisticsQtWidgetComponent(name + "-Timing-GUI");
                 componentManager->AddComponent(timingGUI);
                 genericComponentLayout->addWidget(timingGUI);
                 Connections.Add(timingGUI->GetName(), "Component",
-                                armIter->second->ComponentName(),
-                                armIter->second->InterfaceName());
+                                iter.second->m_arm_component_name,
+                                iter.second->m_arm_interface_name);
                 armTabWidget->addTab(genericComponentGUI, name.c_str());
             }
             break;

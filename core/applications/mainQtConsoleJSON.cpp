@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-07
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -43,7 +43,7 @@ void fileExists(const std::string & description, std::string & filename,
                 mtsIntuitiveResearchKitConsole * console)
 {
     if (!cmnPath::Exists(filename)) {
-        const std::string fileInPath = console->locate_file(filename);
+        const std::string fileInPath = console->find_file(filename);
         if (fileInPath == "") {
             std::cerr << "File not found: " << description
                       << ": " << filename << std::endl;
