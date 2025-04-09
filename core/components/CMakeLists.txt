@@ -203,6 +203,7 @@ if (cisst_FOUND)
       code/arm_configuration_t.cdg
       code/arm_proxy_configuration_t.cdg
       code/arm_type_t.cdg
+      code/base_frame_t.cdg
       code/console_configuration_t.cdg
       code/generation_t.cdg
       code/simulation_t.cdg

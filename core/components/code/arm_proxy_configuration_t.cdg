@@ -4,7 +4,7 @@
 inline-header {
 #include <sawIntuitiveResearchKit/arm_type_t.h>
 #include <sawIntuitiveResearchKit/simulation_t.h>
-}
+#include <sawIntuitiveResearchKit/base_frame_t.h>}
 
 inline-code {
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
@@ -100,6 +100,13 @@ class {
         description Name of interface to use for generic or derived classes;
     }
 
+    member {
+        name base_frame;
+        type dvrk::base_frame_t;
+        visibility public;
+        default dvrk::base_frame_t();
+        description Base frame, defined as a reference frame name and fixed transformation or a component/interface;
+    }
 
     inline-header {
 

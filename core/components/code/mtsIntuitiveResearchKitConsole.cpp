@@ -70,10 +70,10 @@ void mtsIntuitiveResearchKitConsole::arm_proxy_t::configure(const Json::Value & 
 {
     // Json parse and load values, will complain if a field with no
     // default is not provided (e.g. "name")
-    cmnDataJSON<dvrk::arm_proxy_configuration_t>::DeSerializeText(m_config, json_config);
+    cmnDataDeSerializeTextJSON(m_config, json_config);
     CMN_LOG_INIT_VERBOSE << "arm_proxy_t::configure, loaded:" << std::endl
                          << "------>" << std::endl
-                         << m_config << std::endl
+                         << cmnDataSerializeTextJSON(m_config) << std::endl
                          << "<------" << std::endl;
     // for generic and derived arms, component name must be provided
     if (m_config.generic_or_derived()) {
@@ -387,12 +387,25 @@ void mtsIntuitiveResearchKitConsole::arm_proxy_t::create_PID(void)
 
 void mtsIntuitiveResearchKitConsole::arm_proxy_t::set_base_frame_if_needed(void)
 {
-    if (m_base_frame.ReferenceFrame() != "") {
+    if (m_config.base_frame.reference_frame != "") {
+        if (m_config.base_frame.transform == vctFrm4x4::Identity()) {
+            CMN_LOG_INIT_ERROR << "arm_proxy_t: base_frame:transform is not set" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        m_base_frame.Goal().From(m_config.base_frame.transform);
+        m_base_frame.ReferenceFrame() = m_config.base_frame.reference_frame;
+        m_base_frame.Valid() = true;
+        
         if (m_arm == nullptr) {
             CMN_LOG_INIT_ERROR << "arm_proxy_t::set_base_frame_if_needed failed, arm needs to be configured first" << std::endl;
             exit(EXIT_FAILURE);
         }
         m_arm->set_base_frame(m_base_frame);
+        if ((m_config.base_frame.component != "")
+            || (m_config.base_frame.interface != "")) {
+            CMN_LOG_INIT_ERROR << "arm_proxy_t::set_base_frame_if_needed, choose either base_frame:reference_frame and transform OR base_frame:component and interface" << std::endl;
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -793,13 +806,6 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             exit(EXIT_FAILURE);
         }
     }
-
-    //     xxxxx
-    //     if (!ConfigureArmJSON(arms[index], m_IO_component_name)) {
-    //         CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure arms[" << index << "]" << std::endl;
-    //         exit(EXIT_FAILURE);
-    //     }
-    // }
 
     // loop over all arms to check if IO is needed, also check if some IO configuration files are listed in "io"
     mHasIO = false;
@@ -1398,58 +1404,8 @@ void mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
 //         }
 //     }
 
-//     // PID only required for MTM, PSM and ECM (and derived)
-//     if (arm_pointer->expects_PID()) {
-//         jsonValue = jsonArm["pid"];
-//         if (!jsonValue.empty()) {
-//             arm_pointer->m_PID_configuration_file = find_file(jsonValue.asString());
-//             if (arm_pointer->m_PID_configuration_file == "") {
-//                 CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: can't find PID file " << jsonValue.asString() << std::endl;
-//                 return false;
-//             }
-//         }
-//     }
 
 
-//         jsonValue = jsonArm["base-frame"];
-//         if (!jsonValue.empty()) {
-//             Json::Value fixedJson = jsonValue["transform"];
-//             if (!fixedJson.empty()) {
-//                 std::string reference = jsonValue["reference-frame"].asString();
-//                 if (reference.empty()) {
-//                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: both \"transform\" (4x4) and \"reference-frame\" (name) must be provided with \"base-frame\" for arm \""
-//                                              << arm_name << "\"" << std::endl;
-//                     return false;
-//                 }
-//                 vctFrm4x4 frame;
-//                 cmnDataJSON<vctFrm4x4>::DeSerializeText(frame, fixedJson);
-//                 arm_pointer->m_base_frame.Goal().From(frame);
-//                 arm_pointer->m_base_frame.ReferenceFrame() = reference;
-//                 arm_pointer->m_base_frame.Valid() = true;
-//             } else {
-//                 arm_pointer->m_base_frame_component_name = jsonValue.get("component", "").asString();
-//                 arm_pointer->m_base_frame_interface_name = jsonValue.get("interface", "").asString();
-//                 if ((arm_pointer->m_base_frame_component_name == "")
-//                     || (arm_pointer->m_base_frame_interface_name == "")) {
-//                     CMN_LOG_CLASS_INIT_ERROR << "ConfigureArmJSON: both \"component\" and \"interface\" OR \"transform\" (4x4) and \"reference-frame\" (name) must be provided with \"base-frame\" for arm \""
-//                                              << arm_name << "\"" << std::endl;
-//                     return false;
-//                 }
-//             }
-//         }
-//     }
-
-//     // read period if present
-//     jsonValue = jsonArm["period"];
-//     if (!jsonValue.empty()) {
-//         arm_pointer->m_arm_period = jsonValue.asFloat();
-//     }
-
-//     // add the arm if it's a new one
-//     if (armIterator == m_arm_proxies.end()) {
-//         AddArm(arm_pointer);
-//     }
-//     return true;
 // }
 
 bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & jsonTeleop)
