@@ -3,6 +3,7 @@
 
 inline-header {
 #include <sawIntuitiveResearchKit/arm_proxy_configuration_t.h>
+#include <sawIntuitiveResearchKit/teleop_proxy_configuration_t.h>
 }
 
 class {
@@ -13,6 +14,12 @@ class {
     member {
         name arms;
         type std::vector<dvrk::arm_proxy_configuration_t>;
+        visibility public;
+    }
+
+    member {
+        name psm_teleops;
+        type std::vector<dvrk::teleop_psm_proxy_configuration_t>;
         visibility public;
     }
 }

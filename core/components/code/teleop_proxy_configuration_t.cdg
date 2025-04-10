@@ -1,0 +1,83 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+inline-header {
+#include <json/json.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
+#include <sawIntuitiveResearchKit/teleop_type_t.h>
+}
+
+class {
+    name teleop_psm_proxy_configuration_t;
+    namespace dvrk;
+    attribute CISST_EXPORT;
+
+    member {
+        name type;
+        type dvrk::teleop_psm_type_t;
+        visibility public;
+        default dvrk::teleop_psm_type_t::TELEOP_PSM;
+    }
+
+    member {
+        name mtm;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name psm;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name configure_parameter;
+        type Json::Value;
+        visibility public;
+    }
+
+    member {
+        name period;
+        type double;
+        visibility public;
+        default mtsIntuitiveResearchKit::TeleopPeriod;
+    }
+}
+
+class {
+    name teleop_ecm_proxy_configuration_t;
+    namespace dvrk;
+    attribute CISST_EXPORT;
+
+    member {
+        name type;
+        type dvrk::teleop_ecm_type_t;
+        visibility public;
+    }
+
+    member {
+        name mtm_left;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name mtm_right;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name ecm;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name period;
+        type double;
+        visibility public;
+        default mtsIntuitiveResearchKit::TeleopPeriod;
+    }
+}

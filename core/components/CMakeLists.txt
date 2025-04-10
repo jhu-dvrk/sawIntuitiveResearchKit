@@ -207,6 +207,8 @@ if (cisst_FOUND)
       code/console_configuration_t.cdg
       code/generation_t.cdg
       code/simulation_t.cdg
+      code/teleop_proxy_configuration_t.cdg
+      code/teleop_type_t.cdg
       code/mtsIntuitiveResearchKitControlTypes.cdg
       code/mtsIntuitiveResearchKitToolTypes.cdg
       code/mtsIntuitiveResearchKitEndoscopeTypes.cdg

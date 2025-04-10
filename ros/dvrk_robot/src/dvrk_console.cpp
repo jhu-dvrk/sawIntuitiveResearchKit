@@ -107,14 +107,15 @@ dvrk::console::console(const std::string & name,
 
     // ECM teleop
     if (m_console->mTeleopECM) {
-        const auto teleopName = m_console->mTeleopECM->Name();
-        bridge_interface_provided(teleopName, "Setting", teleopName,
-                                  publish_rate_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0
-        add_topics_teleop_ecm(teleopName);
+        std::cerr << CMN_LOG_DETAILS << " todo" << std::endl;
+        // const auto teleopName = m_console->mTeleopECM->m_config.name;
+        // bridge_interface_provided(teleopName, "Setting", teleopName,
+        //                           publish_rate_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0
+        // add_topics_teleop_ecm(teleopName);
     }
 
     // PSM teleops
-    for (auto const & teleop : m_console->mTeleopsPSM) {
+    for (auto const & teleop : m_console->m_teleop_psm_proxies) {
         const auto teleopName = teleop.first;
         bridge_interface_provided(teleopName, "Setting", teleopName,
                                   publish_rate_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0

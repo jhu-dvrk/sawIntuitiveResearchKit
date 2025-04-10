@@ -1,7 +1,7 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
     "io": {
-        "physical-footpedals-required": false
+        "physical_footpedals_required": false
     }
     ,
     "arms":
@@ -11,8 +11,8 @@
             "type": "MTM",
             "simulation": "KINEMATIC",
             "arm": "arm/MTML_KIN_SIMULATED.json",
-            "base-frame": {
-                "reference-frame": "HRSV",
+            "base_frame": {
+                "reference_frame": "HRSV",
                 "transform": [[ -1.0,  0.0,          0.0,          0.180],
                               [  0.0,  0.866025404,  0.5,          0.400],
                               [  0.0,  0.5,         -0.866025404,  0.475],
@@ -25,8 +25,8 @@
             "type": "MTM",
             "simulation": "KINEMATIC",
             "arm": "arm/MTMR_KIN_SIMULATED.json",
-            "base-frame": {
-                "reference-frame": "HRSV",
+            "base_frame": {
+                "reference_frame": "HRSV",
                 "transform": [[ -1.0,  0.0,          0.0,         -0.180],
                               [  0.0,  0.866025404,  0.5,          0.400],
                               [  0.0,  0.5,         -0.866025404,  0.475],
@@ -38,7 +38,7 @@
             "name": "SUJ",
             "type": "SUJ_Classic",
             "simulation": "KINEMATIC",
-            "kinematic": "arm/suj-simulated.json"
+            "arm": "arm/suj-simulated.json"
         }
         ,
         {
@@ -46,7 +46,7 @@
             "type": "PSM",
             "simulation": "KINEMATIC",
             "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
-            "base-frame": {
+            "base_frame": {
                 "component": "SUJ",
                 "interface": "PSM1"
             }
@@ -57,7 +57,7 @@
             "type": "PSM",
             "simulation": "KINEMATIC",
             "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
-            "base-frame": {
+            "base_frame": {
                 "component": "SUJ",
                 "interface": "PSM2"
             }
@@ -68,7 +68,7 @@
             "type": "PSM",
             "simulation": "KINEMATIC",
             "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
-            "base-frame": {
+            "base_frame": {
                 "component": "SUJ",
                 "interface": "PSM3"
             }
@@ -79,44 +79,44 @@
             "type": "ECM",
             "simulation": "KINEMATIC",
             "arm": "arm/ECM_KIN_SIMULATED_STRAIGHT.json",
-            "base-frame": {
+            "base_frame": {
                 "component": "SUJ",
                 "interface": "ECM"
             }
         }
     ]
     ,
-    "psm-teleops":
+    "psm_teleops":
     [
         {
             "mtm": "MTMR",
             "psm": "PSM1",
-            "configure-parameter": {
-                "start-gripper-threshold": 0.0 // to start automatically when operator is present
+            "configure_parameter": {
+                "start_gripper_threshold": 0.0 // to start automatically when operator is present
             }
         }
         ,
         {
             "mtm": "MTML",
             "psm": "PSM2",
-            "configure-parameter": {
-                "start-gripper-threshold": 0.0 // to start automatically when operator is present
+            "configure_parameter": {
+                "start_gripper_threshold": 0.0 // to start automatically when operator is present
             }
         }
         ,
         {
             "mtm": "MTML",
             "psm": "PSM3",
-            "configure-parameter": {
-                "start-gripper-threshold": 0.0 // to start automatically when operator is present
+            "configure_parameter": {
+                "start_gripper_threshold": 0.0 // to start automatically when operator is present
             }
         }
     ]
     ,
-    "ecm-teleop":
+    "ecm_teleop":
     {
-        "mtm-left": "MTML",
-        "mtm-right": "MTMR",
+        "mtm_left": "MTML",
+        "mtm_right": "MTMR",
         "ecm": "ECM"
     }
 }
