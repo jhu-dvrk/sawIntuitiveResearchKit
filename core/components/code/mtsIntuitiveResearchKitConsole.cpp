@@ -75,6 +75,19 @@ void mtsIntuitiveResearchKitConsole::arm_proxy_t::configure(const Json::Value & 
                          << "------>" << std::endl
                          << cmnDataSerializeTextJSON(m_config) << std::endl
                          << "<------" << std::endl;
+
+    // deprecated values 2.3 -> 2.4
+    if (!json_config["kinematic"].empty()) {
+            CMN_LOG_INIT_ERROR << "arm_proxy_t::configure: \"kinematic\" is deprecated, use \"arm\" for: "
+                               << m_config.name << std::endl;
+            exit(EXIT_FAILURE);
+    }
+    if (!json_config["base-frame"].empty()) {
+            CMN_LOG_INIT_ERROR << "arm_proxy_t::configure: \"base-frame\" is deprecated, use \"base_frame\" for: "
+                               << m_config.name << std::endl;
+            exit(EXIT_FAILURE);
+    }
+
     // for generic and derived arms, component name must be provided
     if (m_config.generic_or_derived()) {
         if ((m_config.component != "") && (m_config.interface != "")) {
@@ -83,6 +96,19 @@ void mtsIntuitiveResearchKitConsole::arm_proxy_t::configure(const Json::Value & 
         } else {
             CMN_LOG_INIT_ERROR << "arm_proxy_t::configure: \"component\" and \"interface\" must be provided for generic or derived arm: "
                                << m_config.name << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // check base frame settings
+    if (!m_config.base_frame.valid()) {
+        CMN_LOG_INIT_ERROR << "arm_proxy_t::configure, base_frame must be defined by either \"reference_frame\" name and \"transform\" OR \"component\" and \"interface\" for "
+                           << m_config.name << std::endl;
+            exit(EXIT_FAILURE);
+    } else {
+        if ((m_config.base_frame.component != "") && (m_config.base_frame.interface != "")) {
+            m_base_frame_component_name = m_config.base_frame.component;
+            m_base_frame_interface_name = m_config.base_frame.interface;
         }
     }
 }
@@ -387,11 +413,8 @@ void mtsIntuitiveResearchKitConsole::arm_proxy_t::create_PID(void)
 
 void mtsIntuitiveResearchKitConsole::arm_proxy_t::set_base_frame_if_needed(void)
 {
+    // use reference_name to determine if we're using a fixed base frame
     if (m_config.base_frame.reference_frame != "") {
-        if (m_config.base_frame.transform == vctFrm4x4::Identity()) {
-            CMN_LOG_INIT_ERROR << "arm_proxy_t: base_frame:transform is not set" << std::endl;
-            exit(EXIT_FAILURE);
-        }
         m_base_frame.Goal().From(m_config.base_frame.transform);
         m_base_frame.ReferenceFrame() = m_config.base_frame.reference_frame;
         m_base_frame.Valid() = true;
@@ -401,11 +424,6 @@ void mtsIntuitiveResearchKitConsole::arm_proxy_t::set_base_frame_if_needed(void)
             exit(EXIT_FAILURE);
         }
         m_arm->set_base_frame(m_base_frame);
-        if ((m_config.base_frame.component != "")
-            || (m_config.base_frame.interface != "")) {
-            CMN_LOG_INIT_ERROR << "arm_proxy_t::set_base_frame_if_needed, choose either base_frame:reference_frame and transform OR base_frame:component and interface" << std::endl;
-            exit(EXIT_FAILURE);
-        }
     }
 }
 

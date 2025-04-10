@@ -121,6 +121,9 @@ class {
 	        case MTM:
             case PSM:
             case ECM:
+            case SUJ_Classic:
+            case SUJ_Si:
+            case SUJ_Fixed:
             case FOCUS_CONTROLLER:
                 return true;
                 break;
