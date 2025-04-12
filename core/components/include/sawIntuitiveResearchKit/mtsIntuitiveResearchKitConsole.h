@@ -58,8 +58,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
         friend class mtsIntuitiveResearchKitConsole;
 
-        dvrk::arm_proxy_configuration_t m_config;
-
         arm_proxy_t(const std::string & name, mtsIntuitiveResearchKitConsole * console);
 
         NOT_COPYABLE(arm_proxy_t);
@@ -89,7 +87,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
         dvrk::generation_t generation(void) const;
 
+        std::string m_name;
         mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        dvrk::arm_proxy_configuration_t m_config;
+
         std::shared_ptr<mtsIntuitiveResearchKitArm> m_arm = nullptr;
 
         std::string m_serial;
@@ -171,18 +172,19 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         mtsInterfaceRequired * InterfaceRequired;
     };
 
-    class CISST_EXPORT teleop_psm_proxy_t {
+    class CISST_EXPORT teleop_PSM_proxy_t {
     public:
 
         friend class mtsIntuitiveResearchKitConsole;
 
-        dvrk::teleop_psm_proxy_configuration_t m_config;
         std::string m_name;
+        mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        dvrk::teleop_PSM_proxy_configuration_t m_config;
 
-        teleop_psm_proxy_t(const std::string & name);
+        teleop_PSM_proxy_t(const std::string & name, mtsIntuitiveResearchKitConsole * console);
 
-        NOT_COPYABLE(teleop_psm_proxy_t);
-        NOT_MOVEABLE(teleop_psm_proxy_t);
+        NOT_COPYABLE(teleop_PSM_proxy_t);
+        NOT_MOVEABLE(teleop_PSM_proxy_t);
 
         /*! Create and configure the robot arm. */
         void configure(const Json::Value & json_config);
@@ -260,13 +262,13 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     std::shared_ptr<mtsTextToSpeech> m_text_to_speech;
 
     /*! List to manage multiple PSM teleoperations */
-    typedef std::map<std::string, std::shared_ptr<teleop_psm_proxy_t>> teleop_psm_proxies_t;
-    teleop_psm_proxies_t m_teleop_psm_proxies;
+    typedef std::map<std::string, std::shared_ptr<teleop_PSM_proxy_t>> teleop_PSM_proxies_t;
+    teleop_PSM_proxies_t m_teleop_PSM_proxies;
 
     /*! List to manage the teleopPSM components for each PSM and MTM */
-    typedef std::multimap<std::string, std::shared_ptr<teleop_psm_proxy_t>> teleop_psm_proxies_by_arm_t;
-    teleop_psm_proxies_by_arm_t m_teleop_psm_proxies_by_psm;
-    teleop_psm_proxies_by_arm_t m_teleop_psm_proxies_by_mtm;
+    typedef std::multimap<std::string, std::shared_ptr<teleop_PSM_proxy_t>> teleop_PSM_proxies_by_arm_t;
+    teleop_PSM_proxies_by_arm_t m_teleop_PSM_proxies_by_psm;
+    teleop_PSM_proxies_by_arm_t m_teleop_PSM_proxies_by_MTM;
 
     /*! Name of default MTM to cycle teleops if no name is provided */
     std::string mTeleopMTMToCycle;
@@ -285,7 +287,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     // these two methods have exact same implementation.it would be
     // nice to have a base class, or template this
     bool AddTeleopECMInterfaces(TeleopECM * teleop);
-    bool add_teleop_psm_interfaces(std::shared_ptr<teleop_psm_proxy_t> teleop_proxy);
+    bool add_teleop_PSM_interfaces(std::shared_ptr<teleop_PSM_proxy_t> teleop_proxy);
 
     bool ConfigureECMTeleopJSON(const Json::Value & jsonTeleop);
     bool ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop);
@@ -295,8 +297,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     void home(void);
     void DisableFaultyArms(void);
     void teleop_enable(const bool & enable);
-    void cycle_teleop_psm_by_mtm(const std::string & mtmName);
-    void select_teleop_psm(const prmKeyValue & mtmPsm);
+    void cycle_teleop_PSM_by_MTM(const std::string & mtmName);
+    void select_teleop_PSM(const prmKeyValue & mtmPsm);
     bool GetPSMSelectedForMTM(const std::string & mtmName, std::string & psmName) const;
     bool GetMTMSelectedForPSM(const std::string & psmName, std::string & mtmName) const;
     void EventSelectedTeleopPSMs(void) const;
@@ -349,8 +351,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     struct {
         mtsFunctionWrite ArmCurrentState;
         mtsFunctionWrite scale;
-        mtsFunctionWrite teleop_psm_selected;
-        mtsFunctionWrite teleop_psm_unselected;
+        mtsFunctionWrite teleop_PSM_selected;
+        mtsFunctionWrite teleop_PSM_unselected;
     } ConfigurationEvents;
 
     void ErrorEventHandler(const mtsMessage & message);

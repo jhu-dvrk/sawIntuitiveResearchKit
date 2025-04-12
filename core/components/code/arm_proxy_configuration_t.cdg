@@ -118,13 +118,13 @@ class {
 
         inline bool native(void) const {
             switch (this->type) {
-	        case MTM:
-            case PSM:
-            case ECM:
-            case SUJ_Classic:
-            case SUJ_Si:
-            case SUJ_Fixed:
-            case FOCUS_CONTROLLER:
+	        case dvrk::arm_type_t::MTM:
+            case dvrk::arm_type_t::PSM:
+            case dvrk::arm_type_t::ECM:
+            case dvrk::arm_type_t::SUJ_Classic:
+            case dvrk::arm_type_t::SUJ_Si:
+            case dvrk::arm_type_t::SUJ_Fixed:
+            case dvrk::arm_type_t::FOCUS_CONTROLLER:
                 return true;
                 break;
             default:
@@ -136,9 +136,9 @@ class {
 
         inline bool derived(void) const {
             switch (this->type) {
-            case MTM_DERIVED:
-            case PSM_DERIVED:
-            case ECM_DERIVED:
+            case dvrk::arm_type_t::MTM_DERIVED:
+            case dvrk::arm_type_t::PSM_DERIVED:
+            case dvrk::arm_type_t::ECM_DERIVED:
                 return true;
                 break;
             default:
@@ -150,9 +150,9 @@ class {
 
         inline bool generic(void) const {
             switch (this->type) {
-            case MTM_GENERIC:
-            case PSM_GENERIC:
-            case ECM_GENERIC:
+            case dvrk::arm_type_t::MTM_GENERIC:
+            case dvrk::arm_type_t::PSM_GENERIC:
+            case dvrk::arm_type_t::ECM_GENERIC:
                 return true;
                 break;
             default:
@@ -170,11 +170,11 @@ class {
             return generic() || derived();
         }
 
-        inline bool psm(void) const {
+        inline bool PSM(void) const {
             switch (this->type) {
-            case PSM:
-            case PSM_DERIVED:
-            case PSM_GENERIC:
+            case dvrk::arm_type_t::PSM:
+            case dvrk::arm_type_t::PSM_DERIVED:
+            case dvrk::arm_type_t::PSM_GENERIC:
                 return true;
                 break;
             default:
@@ -184,11 +184,11 @@ class {
             return false;
         }
 
-        inline bool mtm(void) const {
+        inline bool MTM(void) const {
             switch (this->type) {
-            case MTM:
-            case MTM_DERIVED:
-            case MTM_GENERIC:
+            case dvrk::arm_type_t::MTM:
+            case dvrk::arm_type_t::MTM_DERIVED:
+            case dvrk::arm_type_t::MTM_GENERIC:
                 return true;
                 break;
             default:
@@ -198,11 +198,11 @@ class {
             return false;
         }
 
-        inline bool ecm(void) const {
+        inline bool ECM(void) const {
             switch (this->type) {
-            case ECM:
-            case ECM_DERIVED:
-            case ECM_GENERIC:
+            case dvrk::arm_type_t::ECM:
+            case dvrk::arm_type_t::ECM_DERIVED:
+            case dvrk::arm_type_t::ECM_GENERIC:
                 return true;
                 break;
             default:
@@ -212,11 +212,11 @@ class {
             return false;
         }
 
-        inline bool suj(void) const {
+        inline bool SUJ(void) const {
             switch (this->type) {
-            case SUJ_Classic:
-            case SUJ_Si:
-            case SUJ_Fixed:
+            case dvrk::arm_type_t::SUJ_Classic:
+            case dvrk::arm_type_t::SUJ_Si:
+            case dvrk::arm_type_t::SUJ_Fixed:
                 return true;
                 break;
             default:
@@ -226,27 +226,27 @@ class {
             return false;
         }
 
-        inline bool native_or_derived_mtm(void) const {
-            return native_or_derived() && mtm();
+        inline bool native_or_derived_MTM(void) const {
+            return native_or_derived() && MTM();
         }
 
-        inline bool native_or_derived_psm(void) const {
-            return native_or_derived() && psm();
+        inline bool native_or_derived_PSM(void) const {
+            return native_or_derived() && PSM();
         }
 
-        inline bool native_or_derived_ecm(void) const {
-            return native_or_derived() && ecm();
+        inline bool native_or_derived_ECM(void) const {
+            return native_or_derived() && ECM();
         }
 
         inline bool expects_PID(void) const {
             return (native_or_derived()
-                    && !suj());
+                    && !SUJ());
         }
 
         inline bool expects_IO(void) const {
             return (native_or_derived()
-                    && (this->type != SUJ_Si)
-                    && (this->type != SUJ_Fixed)
+                    && (this->type != dvrk::arm_type_t::SUJ_Si)
+                    && (this->type != dvrk::arm_type_t::SUJ_Fixed)
                     && (this->simulation == SIMULATION_NONE));
         }
     }

@@ -126,16 +126,16 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         case dvrk::arm_type_t::ECM_DERIVED:
             // PID widget
             size_t numberOfJoints;
-            if (config.native_or_derived_psm()) {
+            if (config.native_or_derived_PSM()) {
                 numberOfJoints = 7;
-            } else if (config.native_or_derived_mtm()) {
+            } else if (config.native_or_derived_MTM()) {
                 numberOfJoints = 7;
-            } else if (config.native_or_derived_ecm()) {
+            } else if (config.native_or_derived_ECM()) {
                 numberOfJoints = 4;
             } else {
                 numberOfJoints = 0; // can't happen but prevents compiler warning
             }
-            pidGUI = new mtsPIDQtWidget(name + "-PID-GUI", numberOfJoints);
+            pidGUI = new mtsPIDQtWidget(name + "_PID_GUI", numberOfJoints);
             pidGUI->Configure();
             componentManager->AddComponent(pidGUI);
             Connections.Add(pidGUI->GetName(), "Controller",
@@ -143,14 +143,14 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             pidTabWidget->addTab(pidGUI, (name + " PID").c_str());
 
             // Arm widget
-            if (config.native_or_derived_psm()) {
-                armGUI = new mtsIntuitiveResearchKitPSMQtWidget(name + "-GUI");
-            } else if (config.native_or_derived_mtm()) {
-                armGUI = new mtsIntuitiveResearchKitMTMQtWidget(name + "-GUI");
-            } else if (config.native_or_derived_ecm()) {
-                armGUI = new mtsIntuitiveResearchKitECMQtWidget(name + "-GUI");
+            if (config.native_or_derived_PSM()) {
+                armGUI = new mtsIntuitiveResearchKitPSMQtWidget(name + "_GUI");
+            } else if (config.native_or_derived_MTM()) {
+                armGUI = new mtsIntuitiveResearchKitMTMQtWidget(name + "_GUI");
+            } else if (config.native_or_derived_ECM()) {
+                armGUI = new mtsIntuitiveResearchKitECMQtWidget(name + "_GUI");
             } else {
-                armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "-GUI");
+                armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "_GUI");
             }
             armGUI->Configure();
             componentManager->AddComponent(armGUI);
@@ -166,22 +166,22 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         case dvrk::arm_type_t::SUJ_Si:
         case dvrk::arm_type_t::SUJ_Fixed:
 
-            sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1-SUJ");
+            sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1_SUJ");
             componentManager->AddComponent(sujGUI);
             Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM1");
             armTabWidget->addTab(sujGUI, "PSM1 SUJ");
 
-            sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("ECM-SUJ");
+            sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("ECM_SUJ");
             componentManager->AddComponent(sujGUI);
             Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "ECM");
             armTabWidget->addTab(sujGUI, "ECM SUJ");
 
-            sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM2-SUJ");
+            sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM2_SUJ");
             componentManager->AddComponent(sujGUI);
             Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM2");
             armTabWidget->addTab(sujGUI, "PSM2 SUJ");
 
-            sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM3-SUJ");
+            sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM3_SUJ");
             componentManager->AddComponent(sujGUI);
             Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM3");
             armTabWidget->addTab(sujGUI, "PSM3 SUJ");
@@ -197,14 +197,14 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
                 QHBoxLayout * genericComponentLayout = new QHBoxLayout();
                 genericComponentGUI->setLayout(genericComponentLayout);
                 mtsMessageQtWidgetComponent * messageGUI
-                    = new mtsMessageQtWidgetComponent(name + "-Message-GUI");
+                    = new mtsMessageQtWidgetComponent(name + "_Message_GUI");
                 componentManager->AddComponent(messageGUI);
                 genericComponentLayout->addWidget(messageGUI);
                 Connections.Add(messageGUI->GetName(), "Component",
                                 iter.second->m_arm_component_name,
                                 iter.second->m_arm_interface_name);
                 mtsIntervalStatisticsQtWidgetComponent * timingGUI
-                    = new mtsIntervalStatisticsQtWidgetComponent(name + "-Timing-GUI");
+                    = new mtsIntervalStatisticsQtWidgetComponent(name + "_Timing_GUI");
                 componentManager->AddComponent(timingGUI);
                 genericComponentLayout->addWidget(timingGUI);
                 Connections.Add(timingGUI->GetName(), "Component",
@@ -226,7 +226,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     bool hasTeleOp = false;
 
     QTabWidget * teleopTabWidget;
-    if (console->m_teleop_psm_proxies.size() > 1) {
+    if (console->m_teleop_PSM_proxies.size() > 1) {
         teleopTabWidget = new QTabWidget();
         teleopTabWidget->setObjectName(QString("Teleops"));
         TabWidget->addTab(teleopTabWidget, "Teleops");
@@ -234,10 +234,10 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         teleopTabWidget = TabWidget; // use current tab widget
     }
 
-    for (const auto & iter : console->m_teleop_psm_proxies) {
+    for (const auto & iter : console->m_teleop_PSM_proxies) {
         hasTeleOp = true;
         const std::string name = iter.first;
-        mtsTeleOperationPSMQtWidget * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "-GUI");
+        mtsTeleOperationPSMQtWidget * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "_GUI");
         teleopGUI->setObjectName(name.c_str());
         teleopGUI->Configure();
         componentManager->AddComponent(teleopGUI);
@@ -249,7 +249,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     // if (console->mTeleopECM) {
     //     hasTeleOp = true;
     //     const std::string name = console->mTeleopECM->Name();
-    //     mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "-GUI");
+    //     mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "_GUI");
     //     teleopGUI->Configure();
     //     componentManager->AddComponent(teleopGUI);
     //     Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
@@ -259,7 +259,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     // add endoscope focus widget
     if (console->mDaVinciEndoscopeFocus) {
         const std::string name = console->mDaVinciEndoscopeFocus->GetName();
-        mtsDaVinciEndoscopeFocusQtWidget * endoscopeGUI = new mtsDaVinciEndoscopeFocusQtWidget(name + "-GUI");
+        mtsDaVinciEndoscopeFocusQtWidget * endoscopeGUI = new mtsDaVinciEndoscopeFocusQtWidget(name + "_GUI");
         endoscopeGUI->Configure();
         componentManager->AddComponent(endoscopeGUI);
         Connections.Add(endoscopeGUI->GetName(), "Endoscope", name, "Control");

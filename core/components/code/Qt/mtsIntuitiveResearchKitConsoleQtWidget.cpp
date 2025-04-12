@@ -67,11 +67,11 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequired->AddFunction("teleop_enable", Console.teleop_enable);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopEnabledEventHandler,
                                                 this, "teleop_enabled");
-        interfaceRequired->AddFunction("select_teleop_psm", Console.select_teleop_psm);
+        interfaceRequired->AddFunction("select_teleop_PSM", Console.select_teleop_PSM);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMSelectedEventHandler,
-                                                this, "teleop_psm_selected");
+                                                this, "teleop_PSM_selected");
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMUnselectedEventHandler,
-                                                this, "teleop_psm_unselected");
+                                                this, "teleop_PSM_unselected");
         interfaceRequired->AddFunction("set_scale", Console.set_scale);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
                                                 this, "scale");
@@ -685,14 +685,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::FocusTeleopButton(const QString & t
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SelectTeleopCheck(const PairStringType & pair)
 {
-    Console.select_teleop_psm(prmKeyValue(pair.first.toStdString(),
-                                        pair.second.toStdString()));
+    Console.select_teleop_PSM(prmKeyValue(pair.first.toStdString(),
+                                          pair.second.toStdString()));
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::UnselectTeleopCheck(const PairStringType & pair)
 {
-    Console.select_teleop_psm(prmKeyValue(pair.first.toStdString(),
-                                        std::string()));
+    Console.select_teleop_PSM(prmKeyValue(pair.first.toStdString(),
+                                          std::string()));
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler(const prmEventButton & button)

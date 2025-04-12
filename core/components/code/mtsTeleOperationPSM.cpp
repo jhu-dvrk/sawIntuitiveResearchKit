@@ -153,7 +153,7 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::ClutchEventHandler, this, "Button");
     }
 
-    interfaceRequired = AddInterfaceRequired("PSM-base-frame", MTS_OPTIONAL);
+    interfaceRequired = AddInterfaceRequired("PSM_base_frame", MTS_OPTIONAL);
     if (interfaceRequired) {
         interfaceRequired->AddFunction("measured_cp", mBaseFrame.measured_cp);
     }

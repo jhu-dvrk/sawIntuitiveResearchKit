@@ -8,25 +8,25 @@ inline-header {
 }
 
 class {
-    name teleop_psm_proxy_configuration_t;
+    name teleop_PSM_proxy_configuration_t;
     namespace dvrk;
     attribute CISST_EXPORT;
 
     member {
         name type;
-        type dvrk::teleop_psm_type_t;
+        type dvrk::teleop_PSM_type_t;
         visibility public;
-        default dvrk::teleop_psm_type_t::TELEOP_PSM;
+        default dvrk::teleop_PSM_type_t::TELEOP_PSM;
     }
 
     member {
-        name mtm;
+        name MTM;
         type std::string;
         visibility public;
     }
 
     member {
-        name psm;
+        name PSM;
         type std::string;
         visibility public;
     }
@@ -46,32 +46,36 @@ class {
 }
 
 class {
-    name teleop_ecm_proxy_configuration_t;
+    name teleop_ECM_proxy_configuration_t;
     namespace dvrk;
     attribute CISST_EXPORT;
 
     member {
         name type;
-        type dvrk::teleop_ecm_type_t;
+        type dvrk::teleop_ECM_type_t;
         visibility public;
+        default dvrk::teleop_ECM_type_t::TELEOP_ECM;
     }
 
     member {
-        name mtm_left;
+        name MTML;
         type std::string;
         visibility public;
+        default "";
     }
 
     member {
-        name mtm_right;
+        name MTMR;
         type std::string;
         visibility public;
+        default "";
     }
 
     member {
-        name ecm;
+        name ECM;
         type std::string;
         visibility public;
+        default "";
     }
 
     member {

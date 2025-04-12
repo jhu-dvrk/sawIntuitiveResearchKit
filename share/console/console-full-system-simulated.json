@@ -86,37 +86,37 @@
         }
     ]
     ,
-    "psm_teleops":
+    "PSM_teleops":
     [
         {
-            "mtm": "MTMR",
-            "psm": "PSM1",
+            "MTM": "MTMR",
+            "PSM": "PSM1",
             "configure_parameter": {
                 "start_gripper_threshold": 0.0 // to start automatically when operator is present
             }
         }
         ,
         {
-            "mtm": "MTML",
-            "psm": "PSM2",
+            "MTM": "MTML",
+            "PSM": "PSM2",
             "configure_parameter": {
                 "start_gripper_threshold": 0.0 // to start automatically when operator is present
             }
         }
         ,
         {
-            "mtm": "MTML",
-            "psm": "PSM3",
+            "MTM": "MTML",
+            "PSM": "PSM3",
             "configure_parameter": {
                 "start_gripper_threshold": 0.0 // to start automatically when operator is present
             }
         }
     ]
     ,
-    "ecm_teleop":
+    "ECM_teleop":
     {
-        "mtm_left": "MTML",
-        "mtm_right": "MTMR",
-        "ecm": "ECM"
+        "MTML": "MTML",
+        "MTMR": "PSM1",
+        "ECM": "ECM"
     }
 }

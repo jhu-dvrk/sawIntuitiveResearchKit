@@ -208,7 +208,7 @@ int main(int argc, char ** argv)
     componentManager->AddComponent(consoleROS);
 
     if (options.IsSet("suj-voltages")) {
-        consoleROS->add_topics_suj_voltages();
+        consoleROS->add_topics_SUJ_voltages();
     }
 
     if (options.IsSet("io-topics-read-write")) {

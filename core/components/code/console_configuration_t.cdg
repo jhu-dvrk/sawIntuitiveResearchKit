@@ -18,8 +18,8 @@ class {
     }
 
     member {
-        name psm_teleops;
-        type std::vector<dvrk::teleop_psm_proxy_configuration_t>;
+        name PSM_teleops;
+        type std::vector<dvrk::teleop_PSM_proxy_configuration_t>;
         visibility public;
     }
 }

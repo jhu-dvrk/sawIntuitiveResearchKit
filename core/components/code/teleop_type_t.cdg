@@ -2,7 +2,7 @@
 // ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
 
 enum {
-    name teleop_psm_type_t;
+    name teleop_PSM_type_t;
     namespace dvrk;
     enum-value {
         name TELEOP_PSM_UNDEFINED;
@@ -24,7 +24,7 @@ enum {
 }
 
 enum {
-    name teleop_ecm_type_t;
+    name teleop_ECM_type_t;
     namespace dvrk;
     enum-value {
         name TELEOP_ECM_UNDEFINED;
