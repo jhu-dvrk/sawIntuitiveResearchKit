@@ -390,10 +390,10 @@ void mtsIntuitiveResearchKitConsole::arm_proxy_t::create_PID(void)
     componentManager->AddComponent(pid);
     if (hasIO) {
         m_console->m_connections.Add(m_PID_component_name, "RobotJointTorqueInterface",
-                                    m_IO_component_name, m_name);
+                                     m_IO_component_name, m_name);
         if (m_config.PID_period == 0.0) {
             m_console->m_connections.Add(m_PID_component_name, "ExecIn",
-                                        m_IO_component_name, "ExecOut");
+                                         m_IO_component_name, "ExecOut");
         }
     }
 }
@@ -465,53 +465,138 @@ void mtsIntuitiveResearchKitConsole::arm_proxy_t::CurrentStateEventHandler(const
 }
 
 
-mtsIntuitiveResearchKitConsole::TeleopECM::TeleopECM(const std::string & name):
-    m_name(name)
+
+
+mtsIntuitiveResearchKitConsole::teleop_ECM_proxy_t::teleop_ECM_proxy_t(const std::string & name,
+                                                                       mtsIntuitiveResearchKitConsole * console):
+    m_name(name),
+    m_console(console)
 {
 }
 
 
-void mtsIntuitiveResearchKitConsole::TeleopECM::ConfigureTeleop(const TeleopECMType type,
-                                                                const double & period_in_seconds,
-                                                                const Json::Value & jsonConfig)
+void mtsIntuitiveResearchKitConsole::teleop_ECM_proxy_t::configure(const Json::Value & json_config)
 {
+    // Json parse and load values, will complain if a field with no
+    // default is not provided (e.g. "name")
+    cmnDataDeSerializeTextJSON(m_config, json_config);
+    CMN_LOG_INIT_VERBOSE << "teleop_ECM_proxy_t::configure, loaded:" << std::endl
+                         << "------>" << std::endl
+                         << cmnDataSerializeTextJSON(m_config) << std::endl
+                         << "<------" << std::endl;
+}
 
-    // m_type = type;
-    // mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
-    // switch (type) {
-    // case TELEOP_ECM:
-    //     {
-    //         mtsTeleOperationECM * teleop = new mtsTeleOperationECM(m_name, period_in_seconds);
-    //         teleop->Configure(jsonConfig);
-    //         componentManager->AddComponent(teleop);
-    //     }
-    //     break;
-    // case TELEOP_ECM_DERIVED:
-    //     {
-    //         mtsComponent * component;
-    //         component = componentManager->GetComponent(m_name);
-    //         if (component) {
-    //             mtsTeleOperationECM * teleop = dynamic_cast<mtsTeleOperationECM *>(component);
-    //             if (teleop) {
-    //                 teleop->Configure(jsonConfig);
-    //             } else {
-    //                 CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::ConfigureTeleop: component \""
-    //                                    << m_name << "\" doesn't seem to be derived from mtsTeleOperationECM."
-    //                                    << std::endl;
-    //             }
-    //         } else {
-    //             CMN_LOG_INIT_ERROR << "mtsIntuitiveResearchKitConsole::ConfigureTeleop: component \""
-    //                                << m_name << "\" not found."
-    //                                << std::endl;
-    //         }
-    //     }
-    //     break;
-    // default:
-    //     break;
+void mtsIntuitiveResearchKitConsole::teleop_ECM_proxy_t::create_teleop(void)
+{
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
+    switch (m_config.type) {
+    case dvrk::teleop_ECM_type_t::TELEOP_ECM:
+        {
+            mtsTeleOperationECM * teleop = new mtsTeleOperationECM(m_name, m_config.period);
+            teleop->Configure(m_config.configure_parameter);
+            componentManager->AddComponent(teleop);
+        }
+        break;
+    case dvrk::teleop_ECM_type_t::TELEOP_ECM_DERIVED:
+        {
+            mtsComponent * component;
+            component = componentManager->GetComponent(m_name);
+            if (component) {
+                mtsTeleOperationECM * teleop = dynamic_cast<mtsTeleOperationECM *>(component);
+                if (teleop) {
+                    teleop->Configure(m_config.configure_parameter);
+                } else {
+                    CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: component \""
+                                       << m_name << "\" doesn't seem to be derived from mtsTeleOperationECM."
+                                       << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+            } else {
+                CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: component \""
+                                   << m_name << "\" not found."
+                                   << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        break;
+    default:
+        break;
+    }
+
+    // find the names for the MTM and ECM components as well as their provided interfaces
+    std::string
+        mtml_component, mtml_interface,
+        mtmr_component, mtmr_interface,
+        ecm_component, ecm_interface;
+    // check that all arms have been defined and have correct type
+    // MTML
+    auto iter = m_console->m_arm_proxies.find(m_config.MTML);
+    if (iter == m_console->m_arm_proxies.end()) {
+        CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: MTML \""
+                           << m_config.MTML << "\" is not defined in \"arms\"" << std::endl;
+        exit(EXIT_FAILURE);
+    } else {
+        auto arm_proxy = iter->second;
+        if (!arm_proxy->m_config.MTM()) {
+            CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: MTML \""
+                               << m_config.MTML << "\" type must be some type of MTM" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        mtml_component = arm_proxy->m_arm_component_name;
+        mtml_interface = arm_proxy->m_arm_interface_name;
+    }
+    // MTMR
+    iter = m_console->m_arm_proxies.find(m_config.MTMR);
+    if (iter == m_console->m_arm_proxies.end()) {
+        CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: MTMR \""
+                           << m_config.MTMR << "\" is not defined in \"arms\"" << std::endl;
+        exit(EXIT_FAILURE);
+    } else {
+        auto arm_proxy = iter->second;
+        if (!arm_proxy->m_config.MTM()) {
+            CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: MTMR \""
+                               << m_config.MTMR << "\" type must be some type of MTM" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        mtmr_component = arm_proxy->m_arm_component_name;
+        mtmr_interface = arm_proxy->m_arm_interface_name;
+    }
+
+    // ECM
+    iter = m_console->m_arm_proxies.find(m_config.ECM);
+    if (iter == m_console->m_arm_proxies.end()) {
+        CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: ECM \""
+                           << m_config.ECM << "\" is not defined in \"arms\"" << std::endl;
+        exit(EXIT_FAILURE);
+    } else {
+        auto arm_proxy = iter->second;
+        if (!arm_proxy->m_config.ECM()) {
+            CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: ECM \""
+                               << m_config.ECM << "\" type must be some type of ECM" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        ecm_component = arm_proxy->m_arm_component_name;
+        ecm_interface = arm_proxy->m_arm_interface_name;
+    }
+
+    // schedule connections
+    m_console->m_connections.Add(m_name, "MTML",
+                                 mtml_component, mtml_interface);
+    m_console->m_connections.Add(m_name, "MTMR",
+                                 mtmr_component, mtmr_interface);
+    m_console->m_connections.Add(m_name, "ECM",
+                                 ecm_component, ecm_interface);
+    m_console->m_connections.Add(m_name, "Clutch",
+                                 m_console->GetName(), "Clutch"); // clutch from console
+    m_console->m_connections.Add(m_console->GetName(), m_name,
+                                 m_name, "Setting");
+    // if ((baseFrameComponent != "")
+    //     && (baseFrameInterface != "")) {
+    //     m_connections.Add(name, "ECM_base_frame",
+    //                       baseFrameComponent, baseFrameInterface);
     // }
 }
-
 
 
 
@@ -528,7 +613,7 @@ void mtsIntuitiveResearchKitConsole::teleop_PSM_proxy_t::configure(const Json::V
     // Json parse and load values, will complain if a field with no
     // default is not provided (e.g. "name")
     cmnDataDeSerializeTextJSON(m_config, json_config);
-    CMN_LOG_INIT_VERBOSE << "teleop_PSM__proxy_t::configure, loaded:" << std::endl
+    CMN_LOG_INIT_VERBOSE << "teleop_PSM_proxy_t::configure, loaded:" << std::endl
                          << "------>" << std::endl
                          << cmnDataSerializeTextJSON(m_config) << std::endl
                          << "<------" << std::endl;
@@ -632,7 +717,7 @@ mtsIntuitiveResearchKitConsole::mtsIntuitiveResearchKitConsole(const std::string
     m_configured(false),
     mTimeOfLastErrorBeep(0.0),
     mTeleopMTMToCycle(""),
-    mTeleopECM(0),
+    //    mTeleopECM(0),
     mOperatorPresent(false),
     mCameraPressed(false),
     m_IO_component_name("io")
@@ -1035,16 +1120,39 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
         add_arm_interfaces(arm_proxy);
     }
 
-    // look for ECM teleop
-    const Json::Value ecmTeleop = jsonConfig["ecm-teleop"];
-    if (!ecmTeleop.isNull()) {
-        if (!ConfigureECMTeleopJSON(ecmTeleop)) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure ecm-teleop" << std::endl;
+    // ECM teleops
+    const auto json_teleop_ecms = jsonConfig["teleop_ECMs"];
+    for (unsigned int index = 0; index < json_teleop_ecms.size(); ++index) {
+        const auto json_teleop_ecm = json_teleop_ecms[index];
+        std::string teleop_ecm_name;
+        if (!json_teleop_ecm["name"].empty()) {
+            teleop_ecm_name = json_teleop_ecm["name"].asString();
+        } else {
+            const auto teleop_ecm_mtml_name = json_teleop_ecm["MTML"].asString();
+            const auto teleop_ecm_mtmr_name = json_teleop_ecm["MTMR"].asString();
+            const auto teleop_ecm_ecm_name = json_teleop_ecm["ECM"].asString();
+            teleop_ecm_name = teleop_ecm_mtml_name + "_" + teleop_ecm_mtmr_name + "_" + teleop_ecm_ecm_name;
+        }
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: name for teleop_ECMs["
+                                   << index << "] is: " << teleop_ecm_name << std::endl;
+        const auto iter = m_teleop_ECM_proxies.find(teleop_ecm_name);
+        if (iter == m_teleop_ECM_proxies.end()) {
+            // create a new teleop_ecm proxy if needed
+            auto teleop_ECM_proxy = std::make_shared<teleop_ECM_proxy_t>(teleop_ecm_name, this);
+            teleop_ECM_proxy->configure(json_teleop_ecm);
+            m_teleop_ECM_proxies[teleop_ecm_name] = teleop_ECM_proxy;
+            teleop_ECM_proxy->create_teleop();
+            add_teleop_ECM_interfaces(teleop_ECM_proxy);
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure teleop_ECMs["
+                                     << index << "], teleop_ECM "
+                                     << teleop_ecm_name << " already exists" << std::endl;
             exit(EXIT_FAILURE);
         }
     }
 
-    const auto json_teleop_psms = jsonConfig["PSM_teleops"];
+    // PSM teleops
+    const auto json_teleop_psms = jsonConfig["teleop_PSMs"];
     for (unsigned int index = 0; index < json_teleop_psms.size(); ++index) {
         const auto json_teleop_psm = json_teleop_psms[index];
         std::string teleop_psm_name;
@@ -1055,7 +1163,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             const auto teleop_psm_psm_name = json_teleop_psm["PSM"].asString();
             teleop_psm_name = teleop_psm_mtm_name + "_" + teleop_psm_psm_name;
         }
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: name for PSM_teleops["
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: name for teleop_PSMs["
                                    << index << "] is: " << teleop_psm_name << std::endl;
         const auto iter = m_teleop_PSM_proxies.find(teleop_psm_name);
         if (iter == m_teleop_PSM_proxies.end()) {
@@ -1066,7 +1174,7 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
             teleop_PSM_proxy->create_teleop();
             add_teleop_PSM_interfaces(teleop_PSM_proxy);
         } else {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure PSM_teleops["
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure teleop_PSMs["
                                      << index << "], teleop_PSM "
                                      << teleop_psm_name << " already exists" << std::endl;
             exit(EXIT_FAILURE);
@@ -1203,13 +1311,13 @@ void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
                 exit(EXIT_FAILURE);
             }
         }
-        if (mTeleopECM) {
-            if (!foundCamera || !foundOperatorPresent) {
-                CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Camera\" and \"OperatorPresent\" need to be defined since there's an ECM tele-operation component.  "
-                                         << footpedalMessage << std::endl;
-                exit(EXIT_FAILURE);
-            }
-        }
+        // if (mTeleopECM) {
+        //     if (!foundCamera || !foundOperatorPresent) {
+        //         CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Camera\" and \"OperatorPresent\" need to be defined since there's an ECM tele-operation component.  "
+        //                                  << footpedalMessage << std::endl;
+        //         exit(EXIT_FAILURE);
+        //     }
+        // }
     }
     this->AddFootpedalInterfaces();
 
@@ -1333,21 +1441,23 @@ std::string mtsIntuitiveResearchKitConsole::GetArmIOComponentName(const std::str
     return "";
 }
 
-//bool mtsIntuitiveResearchKitConsole::AddTeleopECMInterfaces(TeleopECM * teleop)
-//{
-    // teleop->m_interface_required = this->AddInterfaceRequired(teleop->m_name);
-    // if (teleop->m_interface_required) {
-    //     teleop->m_interface_required->AddFunction("state_command", teleop->state_command);
-    //     teleop->m_interface_required->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "error");
-    //     teleop->m_interface_required->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "warning");
-    //     teleop->m_interface_required->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "status");
-    // } else {
-    //     CMN_LOG_CLASS_INIT_ERROR << "AddTeleopECMInterfaces: failed to add Main interface for teleop \""
-    //                              << teleop->m_name << "\"" << std::endl;
-    //     return false;
-    // }
-//    return true;
-//}
+bool mtsIntuitiveResearchKitConsole::add_teleop_ECM_interfaces(std::shared_ptr<teleop_ECM_proxy_t> teleop_proxy)
+{
+    teleop_proxy->m_interface_required = this->AddInterfaceRequired(teleop_proxy->m_name);
+    if (teleop_proxy->m_interface_required) {
+        teleop_proxy->m_interface_required->AddFunction("state_command", teleop_proxy->state_command);
+        teleop_proxy->m_interface_required->AddFunction("set_scale", teleop_proxy->set_scale);
+        teleop_proxy->m_interface_required->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler, this, "error");
+        teleop_proxy->m_interface_required->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler, this, "warning");
+        teleop_proxy->m_interface_required->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler, this, "status");
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "add_teleop_ECM_interfaces: failed to add main interface for teleop \""
+                                 << teleop_proxy->m_name << "\"" << std::endl;
+        return false;
+    }
+    return true;
+}
+
 
 bool mtsIntuitiveResearchKitConsole::add_teleop_PSM_interfaces(std::shared_ptr<teleop_PSM_proxy_t> teleop_proxy)
 {
@@ -1487,129 +1597,21 @@ void mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
 
 // }
 
-bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & jsonTeleop)
-{
-    // const std::string mtmLeftName = jsonTeleop["mtm-left"].asString();
-    // const std::string mtmRightName = jsonTeleop["mtm-right"].asString();
-    // const std::string ecmName = jsonTeleop["ecm"].asString();
-    // // all must be provided
-    // if ((mtmLeftName == "") || (mtmRightName == "") || (ecmName == "")) {
-    //     CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: \"mtm-left\", \"mtm-right\" and \"ecm\" must be provided as strings" << std::endl;
-    //     return false;
-    // }
-
+// bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & jsonTeleop)
+// {
     // if (mtmLeftName == mtmRightName) {
     //     CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: \"mtm-left\" and \"mtm-right\" must be different" << std::endl;
     //     return false;
     // }
-    // std::string
-    //     mtmLeftComponent, mtmLeftInterface,
-    //     mtmRightComponent, mtmRightInterface,
-    //     ecmComponent, ecmInterface;
-    // // check that both arms have been defined and have correct type
-    // Arm * arm_pointer;
-    // auto armIterator = m_arm_proxies.find(mtmLeftName);
-    // if (armIterator == m_arm_proxies.end()) {
-    //     CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm left\""
-    //                              << mtmLeftName << "\" is not defined in \"arms\"" << std::endl;
-    //     return false;
-    // } else {
-    //     arm_pointer = armIterator->second;
-    //     if (!arm_pointer->mtm()) {
-    //         CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm left\""
-    //                                  << mtmLeftName << "\" type must be some kind of MTM" << std::endl;
-    //         return false;
-    //     }
-    //     mtmLeftComponent = arm_pointer->ComponentName();
-    //     mtmLeftInterface = arm_pointer->InterfaceName();
     // }
-    // armIterator = m_arm_proxies.find(mtmRightName);
-    // if (armIterator == m_arm_proxies.end()) {
-    //     CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm right\""
-    //                              << mtmRightName << "\" is not defined in \"arms\"" << std::endl;
-    //     return false;
-    // } else {
-    //     arm_pointer = armIterator->second;
-    //     if (!arm_pointer->mtm()) {
-    //         CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: mtm right\""
-    //                                  << mtmRightName << "\" type must be some kind of MTM" << std::endl;
-    //         return false;
-    //     }
-    //     mtmRightComponent = arm_pointer->ComponentName();
-    //     mtmRightInterface = arm_pointer->InterfaceName();
-    // }
-    // armIterator = m_arm_proxies.find(ecmName);
-    // if (armIterator == m_arm_proxies.end()) {
-    //     CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: ecm \""
-    //                              << ecmName << "\" is not defined in \"arms\"" << std::endl;
-    //     return false;
-    // } else {
-    //     arm_pointer = armIterator->second;
-    //     if (!arm_pointer->ecm()) {
-    //         CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: ecm \""
-    //                                  << ecmName << "\" type must be some kind of ECM" << std::endl;
-    //         return false;
-    //     }
-    //     ecmComponent = arm_pointer->ComponentName();
-    //     ecmInterface = arm_pointer->InterfaceName();
-    // }
-
-    // // check if pair already exist and then add
-    // const std::string name = mtmLeftName + "_" + mtmRightName + "_" + ecmName;
-    // if (mTeleopECM == 0) {
-    //     // create a new teleop if needed
-    //     mTeleopECM = new TeleopECM(name);
-    //     // schedule connections
-    //     m_connections.Add(name, "MTML", mtmLeftComponent, mtmLeftInterface);
-    //     m_connections.Add(name, "MTMR", mtmRightComponent, mtmRightInterface);
-    //     m_connections.Add(name, "ECM", ecmComponent, ecmInterface);
-    //     m_connections.Add(name, "Clutch", this->GetName(), "Clutch"); // console clutch
-    //     m_connections.Add(this->GetName(), name, name, "Setting");
-    // } else {
-    //     CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: there is already an ECM teleop" << std::endl;
-    //     return false;
-    // }
-
-    // Json::Value jsonValue;
-    // jsonValue = jsonTeleop["type"];
-    // if (!jsonValue.empty()) {
-    //     std::string typeString = jsonValue.asString();
-    //     if (typeString == "TELEOP_ECM") {
-    //         mTeleopECM->m_type = TeleopECM::TELEOP_ECM;
-    //     } else if (typeString == "TELEOP_ECM_DERIVED") {
-    //         mTeleopECM->m_type = TeleopECM::TELEOP_ECM_DERIVED;
-    //     } else if (typeString == "TELEOP_ECM_GENERIC") {
-    //         mTeleopECM->m_type = TeleopECM::TELEOP_ECM_GENERIC;
-    //     } else {
-    //         CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: teleop " << name << ": invalid type \""
-    //                                  << typeString << "\", needs to be TELEOP_ECM, TELEOP_ECM_DERIVED or TELEOP_ECM_GENERIC" << std::endl;
-    //         return false;
-    //     }
-    // } else {
     //     // default value
     //     mTeleopECM->m_type = TeleopECM::TELEOP_ECM;
     // }
+//     return true;
+// }
 
-    // // read period if present
-    // double period = mtsIntuitiveResearchKit::TeleopPeriod;
-    // jsonValue = jsonTeleop["period"];
-    // if (!jsonValue.empty()) {
-    //     period = jsonValue.asFloat();
-    // }
-    // // for backward compatibility, send warning
-    // jsonValue = jsonTeleop["rotation"];
-    // if (!jsonValue.empty()) {
-    //     CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: teleop " << name << ": \"rotation\" must now be defined under \"configure-parameter\" or in a separate configuration file" << std::endl;
-    //     return false;
-    // }
-    // const Json::Value jsonTeleopConfig = jsonTeleop["configure-parameter"];
-    // mTeleopECM->ConfigureTeleop(mTeleopECM->m_type, period, jsonTeleopConfig);
-    // AddTeleopECMInterfaces(mTeleopECM);
-    return true;
-}
-
-bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop)
-{
+// bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop)
+// {
 
     // Json::Value jsonValue = jsonTeleop["PSM_base_frame"];
     // std::string baseFrameComponent, baseFrameInterface;
@@ -1624,7 +1626,6 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
     // }
 
     // // check if pair already exist and then add
-    // const std::string name = mtmName + "_" + psmName;
     // const auto teleopIterator = m_teleop_PSM_proxies.find(name);
     // TeleopPSM * teleopPointer = 0;
     // if (teleopIterator == m_teleop_PSM_proxies.end()) {
@@ -1674,9 +1675,8 @@ bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & 
 
     // const Json::Value jsonTeleopConfig = jsonTeleop["configure-parameter"];
     // teleopPointer->ConfigureTeleop(teleopPointer->m_type, period, jsonTeleopConfig);
-    // add_teleop_PSM_interfaces(teleopPointer);
-    return true;
-}
+//     return true;
+// }
 
 bool mtsIntuitiveResearchKitConsole::add_arm_interfaces(std::shared_ptr<arm_proxy_t> arm)
 {
@@ -2092,13 +2092,13 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
             mTeleopPSMRunning = false;
         }
 
-        if (mTeleopECM) {
-            mTeleopECM->state_command(std::string("disable"));
-            if (mTeleopECMRunning) {
-                holdNeeded = true;
-            }
-            mTeleopECMRunning = false;
-        }
+        // if (mTeleopECM) {
+        //     mTeleopECM->state_command(std::string("disable"));
+        //     if (mTeleopECMRunning) {
+        //         holdNeeded = true;
+        //     }
+        //     mTeleopECMRunning = false;
+        // }
 
         // hold arms if we stopped any teleop
         if (holdNeeded) {
@@ -2143,11 +2143,11 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
         }
         mTeleopPSMRunning = false;
 
-        // stop ECM if needed
-        if (mTeleopECMRunning) {
-            mTeleopECM->state_command(std::string("disable"));
-            mTeleopECMRunning = false;
-        }
+        // // stop ECM if needed
+        // if (mTeleopECMRunning) {
+        //     mTeleopECM->state_command(std::string("disable"));
+        //     mTeleopECMRunning = false;
+        // }
         return;
     }
 
@@ -2162,19 +2162,19 @@ void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
                 mTeleopPSMRunning = false;
             }
             // ECM wasn't running, let's start it
-            if (mTeleopECM) {
-                mTeleopECM->state_command(std::string("enable"));
-                mTeleopECMRunning = true;
-            }
+            // if (mTeleopECM) {
+            //     mTeleopECM->state_command(std::string("enable"));
+            //     mTeleopECMRunning = true;
+            // }
         }
     } else {
         // we must teleop PSM
         if (!mTeleopPSMRunning) {
             // if ECM was running so we need to stop it
-            if (mTeleopECMRunning) {
-                mTeleopECM->state_command(std::string("disable"));
-                mTeleopECMRunning = false;
-            }
+            // if (mTeleopECMRunning) {
+            //     mTeleopECM->state_command(std::string("disable"));
+            //     mTeleopECMRunning = false;
+            // }
             // PSM wasn't running, let's start it
             for (auto & iterTeleopPSM : m_teleop_PSM_proxies) {
                 if (iterTeleopPSM.second->selected()) {

@@ -261,7 +261,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::GetTeleopButtonCheck(const PairStri
                                                                   QPushButton * & button,
                                                                   QCheckBox * & check)
 {
-    const QString teleop = pair.first + "-" + pair.second;
+    const QString teleop = pair.first + "_" + pair.second;
     auto iter = TeleopButtons.find(teleop);
     // insert new teleop if needed
     if (iter == TeleopButtons.end()) {

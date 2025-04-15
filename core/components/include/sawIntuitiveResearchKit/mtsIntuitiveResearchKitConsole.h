@@ -148,28 +148,29 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         void CurrentStateEventHandler(const prmOperatingState & currentState);
     };
 
-    class CISST_EXPORT TeleopECM {
+    class CISST_EXPORT teleop_ECM_proxy_t {
     public:
-        typedef enum {TELEOP_ECM, TELEOP_ECM_DERIVED, TELEOP_ECM_GENERIC} TeleopECMType;
         friend class mtsIntuitiveResearchKitConsole;
-        friend class mtsIntuitiveResearchKitConsoleQt;
-        friend class dvrk::console;
 
-        TeleopECM(const std::string & name);
+        std::string m_name;
+        mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        dvrk::teleop_ECM_proxy_configuration_t m_config;
 
-        NOT_COPYABLE(TeleopECM);
-        NOT_MOVEABLE(TeleopECM);
+        teleop_ECM_proxy_t(const std::string & name, mtsIntuitiveResearchKitConsole * console);
 
-        /*! Create and configure the robot arm. */
-        void ConfigureTeleop(const TeleopECMType type,
-                             const double & period_in_seconds,
-                             const Json::Value & jsonConfig);
+        NOT_COPYABLE(teleop_ECM_proxy_t);
+        NOT_MOVEABLE(teleop_ECM_proxy_t);
+
+        /*! Configure, i.e. load json and validate. */
+        void configure(const Json::Value & json_config);
+
+        /*! Create and configure the teleoperation component. */
+        void create_teleop(void);
 
     protected:
-        std::string m_name;
-        TeleopECMType m_type;
         mtsFunctionWrite state_command;
-        mtsInterfaceRequired * InterfaceRequired;
+        mtsFunctionWrite set_scale;
+        mtsInterfaceRequired * m_interface_required;
     };
 
     class CISST_EXPORT teleop_PSM_proxy_t {
@@ -186,7 +187,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         NOT_COPYABLE(teleop_PSM_proxy_t);
         NOT_MOVEABLE(teleop_PSM_proxy_t);
 
-        /*! Create and configure the robot arm. */
+        /*! Configure, i.e. load json and validate. */
         void configure(const Json::Value & json_config);
 
         /*! Create and configure the teleoperation component. */
@@ -273,8 +274,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     /*! Name of default MTM to cycle teleops if no name is provided */
     std::string mTeleopMTMToCycle;
 
-    /*! Single ECM bimanual teleoperation */
-    TeleopECM * mTeleopECM = nullptr;
+    /*! List to manage multiple ECM teleoperations */
+    typedef std::map<std::string, std::shared_ptr<teleop_ECM_proxy_t>> teleop_ECM_proxies_t;
+    teleop_ECM_proxies_t m_teleop_ECM_proxies;
 
     /*! Head sensor */
     mtsComponent * mHeadSensor = nullptr;
@@ -286,11 +288,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     // these two methods have exact same implementation.it would be
     // nice to have a base class, or template this
-    bool AddTeleopECMInterfaces(TeleopECM * teleop);
+    bool add_teleop_ECM_interfaces(std::shared_ptr<teleop_ECM_proxy_t> teleop_proxy);
     bool add_teleop_PSM_interfaces(std::shared_ptr<teleop_PSM_proxy_t> teleop_proxy);
-
-    bool ConfigureECMTeleopJSON(const Json::Value & jsonTeleop);
-    bool ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop);
 
     void power_off(void);
     void power_on(void);

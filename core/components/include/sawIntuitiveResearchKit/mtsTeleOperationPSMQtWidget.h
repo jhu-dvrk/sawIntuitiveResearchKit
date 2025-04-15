@@ -94,10 +94,10 @@ protected:
         mtsFunctionWrite set_scale;
         mtsFunctionWrite lock_rotation;
         mtsFunctionWrite lock_translation;
-        mtsFunctionWrite set_align_mtm;
+        mtsFunctionWrite set_align_MTM;
         mtsFunctionRead MTM_measured_cp;
         mtsFunctionRead PSM_setpoint_cp;
-        mtsFunctionRead align_mtm;
+        mtsFunctionRead align_MTM;
         mtsFunctionRead alignment_offset;
         mtsFunctionRead period_statistics;
     } TeleOperation;

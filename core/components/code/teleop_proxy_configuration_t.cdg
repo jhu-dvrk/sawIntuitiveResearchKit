@@ -35,6 +35,7 @@ class {
         name configure_parameter;
         type Json::Value;
         visibility public;
+        default Json::Value();
     }
 
     member {
@@ -76,6 +77,13 @@ class {
         type std::string;
         visibility public;
         default "";
+    }
+
+    member {
+        name configure_parameter;
+        type Json::Value;
+        visibility public;
+        default Json::Value();
     }
 
     member {

@@ -113,7 +113,7 @@ void mtsTeleOperationPSM::Init(void)
     mConfigurationStateTable->AddData(m_scale, "scale");
     mConfigurationStateTable->AddData(m_rotation_locked, "rotation_locked");
     mConfigurationStateTable->AddData(m_translation_locked, "translation_locked");
-    mConfigurationStateTable->AddData(m_align_mtm, "align_mtm");
+    mConfigurationStateTable->AddData(m_align_MTM, "align_MTM");
 
     // setup cisst interfaces
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MTM");
@@ -173,8 +173,8 @@ void mtsTeleOperationPSM::Init(void)
                                     "lock_rotation", m_rotation_locked);
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::lock_translation, this,
                                     "lock_translation", m_translation_locked);
-        mInterface->AddCommandWrite(&mtsTeleOperationPSM::set_align_mtm, this,
-                                    "set_align_mtm", m_align_mtm);
+        mInterface->AddCommandWrite(&mtsTeleOperationPSM::set_align_MTM, this,
+                                    "set_align_MTM", m_align_MTM);
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::following_mtm_body_servo_cf, this,
                                     "following/mtm/body/servo_cf");
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
@@ -185,7 +185,7 @@ void mtsTeleOperationPSM::Init(void)
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
                                         m_translation_locked, "translation_locked");
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
-                                        m_align_mtm, "align_mtm");
+                                        m_align_MTM, "align_MTM");
         mInterface->AddCommandReadState(this->StateTable,
                                         mMTM.m_measured_cp,
                                         "MTM/measured_cp");
@@ -212,8 +212,8 @@ void mtsTeleOperationPSM::Init(void)
                                   "rotation_locked", m_rotation_locked);
         mInterface->AddEventWrite(ConfigurationEvents.translation_locked,
                                   "translation_locked", m_translation_locked);
-        mInterface->AddEventWrite(ConfigurationEvents.align_mtm,
-                                  "align_mtm", m_align_mtm);
+        mInterface->AddEventWrite(ConfigurationEvents.align_MTM,
+                                  "align_MTM", m_align_MTM);
     }
 
     // so sent commands can be used with ros-bridge
@@ -377,9 +377,9 @@ void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
     }
 
     // align MTM if needed
-    jsonValue = jsonConfig["align-mtm"];
+    jsonValue = jsonConfig["align_MTM"];
     if (!jsonValue.empty()) {
-        m_align_mtm = jsonValue.asBool();
+        m_align_MTM = jsonValue.asBool();
     }
 
     // use MTM cv and send to PSM
@@ -397,7 +397,7 @@ void mtsTeleOperationPSM::Startup(void)
     set_following(false);
     lock_rotation(m_rotation_locked);
     lock_translation(m_translation_locked);
-    set_align_mtm(m_align_mtm);
+    set_align_MTM(m_align_MTM);
 
     // check if functions for jaw are connected
     if (!m_jaw.ignore) {
@@ -476,7 +476,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         prmForceCartesianSet wrench;
         mMTM.body_servo_cf(wrench);
         mMTM.use_gravity_compensation(true);
-        if ((m_align_mtm || m_rotation_locked)
+        if ((m_align_MTM || m_rotation_locked)
             && mMTM.lock_orientation.IsValid()) {
             // lock in current position
             mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
@@ -508,7 +508,7 @@ void mtsTeleOperationPSM::state_command(const std::string & command)
         SetDesiredState("DISABLED");
         return;
     }
-    if (command == "align_mtm") {
+    if (command == "align_MTM") {
         SetDesiredState("ALIGNING_MTM");
         return;
     }
@@ -603,21 +603,21 @@ void mtsTeleOperationPSM::lock_translation(const bool & lock)
     UpdateInitialState();
 }
 
-void mtsTeleOperationPSM::set_align_mtm(const bool & alignMTM)
+void mtsTeleOperationPSM::set_align_MTM(const bool & alignMTM)
 {
     mConfigurationStateTable->Start();
     // make sure we have access to lock/unlock
     if ((mMTM.lock_orientation.IsValid()
          && mMTM.unlock_orientation.IsValid())) {
-        m_align_mtm = alignMTM;
+        m_align_MTM = alignMTM;
     } else {
         if (alignMTM) {
             mInterface->SendWarning(this->GetName() + ": unable to force MTM alignment, the device doesn't provide commands to lock/unlock orientation");
         }
-        m_align_mtm = false;
+        m_align_MTM = false;
     }
     mConfigurationStateTable->Advance();
-    ConfigurationEvents.align_mtm(m_align_mtm);
+    ConfigurationEvents.align_MTM(m_align_MTM);
     // force re-align if the teleop is already enabled
     if (mTeleopState.CurrentState() == "ENABLED") {
         mTeleopState.SetCurrentState("DISABLED");
@@ -775,7 +775,7 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
     mTimeSinceLastAlign = 0.0;
 
     // if we don't align MTM, just stay in same position
-    if (!m_align_mtm) {
+    if (!m_align_MTM) {
         // convert to prm type
         mMTM.m_move_cp.Goal().Assign(mMTM.m_setpoint_cp.Position());
         mMTM.move_cp(mMTM.m_move_cp);
@@ -801,7 +801,7 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 void mtsTeleOperationPSM::RunAligningMTM(void)
 {
     // if clutched or align not needed, do nothing
-    if (m_clutched || !m_align_mtm) {
+    if (m_clutched || !m_align_MTM) {
         return;
     }
 
@@ -831,7 +831,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     vctAxAnRot3 axisAngle(m_alignment_offset, VCT_NORMALIZE);
     double orientationError = 0.0;
     // set error only if we need to align MTM to PSM
-    if (m_align_mtm) {
+    if (m_align_MTM) {
         orientationError = axisAngle.Angle();
     }
 

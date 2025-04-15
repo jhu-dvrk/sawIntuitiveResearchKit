@@ -226,7 +226,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     bool hasTeleOp = false;
 
     QTabWidget * teleopTabWidget;
-    if (console->m_teleop_PSM_proxies.size() > 1) {
+    if ((console->m_teleop_PSM_proxies.size() + console->m_teleop_ECM_proxies.size()) > 1) {
         teleopTabWidget = new QTabWidget();
         teleopTabWidget->setObjectName(QString("Teleops"));
         TabWidget->addTab(teleopTabWidget, "Teleops");
@@ -245,16 +245,16 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         teleopTabWidget->addTab(teleopGUI, name.c_str());
     }
 
-    // add teleop ECM widget
-    // if (console->mTeleopECM) {
-    //     hasTeleOp = true;
-    //     const std::string name = console->mTeleopECM->Name();
-    //     mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "_GUI");
-    //     teleopGUI->Configure();
-    //     componentManager->AddComponent(teleopGUI);
-    //     Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
-    //     TabWidget->addTab(teleopGUI, name.c_str());
-    // }
+    for (const auto & iter : console->m_teleop_ECM_proxies) {
+        hasTeleOp = true;
+        const std::string name = iter.first;
+        mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "_GUI");
+        teleopGUI->setObjectName(name.c_str());
+        teleopGUI->Configure();
+        componentManager->AddComponent(teleopGUI);
+        Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
+        teleopTabWidget->addTab(teleopGUI, name.c_str());
+    }
 
     // add endoscope focus widget
     if (console->mDaVinciEndoscopeFocus) {
