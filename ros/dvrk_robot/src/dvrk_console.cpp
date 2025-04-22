@@ -62,14 +62,14 @@ dvrk::console::console(const std::string & name,
     stats_bridge().AddIntervalStatisticsPublisher("publishers", m_pub_bridge->GetName());
 
     // IO topics
-    if (m_console->mHasIO) {
-        add_topics_io();
-    }
+    // if (m_console->mHasIO) {
+    //     add_topics_io();
+    // }
 
     // arm topics
     for (const auto & iter : m_console->m_arm_proxies) {
         const std::string & name = iter.first;
-        const dvrk::arm_proxy_configuration_t & config = iter.second->m_config;
+        const dvrk::arm_proxy_configuration_t & config = *(iter.second->m_config);
         if (!config.skip_ROS_bridge) {
             if (config.native_or_derived_MTM()) {
                 bridge_interface_provided_MTM(name, "Arm",
@@ -431,8 +431,8 @@ void dvrk::console::add_topics_io(void)
         ("io", "period_statistics_write",
          _ros_namespace + "period_statistics_write");
 
-    m_connections.Add(m_pub_bridge->GetName(), "io",
-                      m_console->m_IO_component_name, "Configuration");
+    // m_connections.Add(m_pub_bridge->GetName(), "io",
+    //                   m_console->m_IO_component_name, "Configuration");
 }
 
 void dvrk::console::add_topics_io(const double _publish_period_in_seconds,
@@ -457,7 +457,7 @@ void dvrk::console::add_topics_pid(const double _publish_period_in_seconds,
     mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
     for (const auto & iter : m_console->m_arm_proxies) {
         const std::string & name = iter.first;
-        const dvrk::arm_proxy_configuration_t & config = iter.second->m_config;
+        const dvrk::arm_proxy_configuration_t & config = *(iter.second->m_config);
         if (config.expects_PID()) {
             // we need to create on PID bridge per PID component
             const std::string pid_component_name = name + "_PID";

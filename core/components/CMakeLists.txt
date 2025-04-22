@@ -206,6 +206,7 @@ if (cisst_FOUND)
       code/base_frame_t.cdg
       code/console_configuration_t.cdg
       code/generation_t.cdg
+      code/IO_proxy_configuration_t.cdg
       code/simulation_t.cdg
       code/teleop_proxy_configuration_t.cdg
       code/teleop_type_t.cdg

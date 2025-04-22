@@ -28,6 +28,13 @@ class {
     }
 
     member {
+        name IO_component;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
         name serial;
         type std::string;
         visibility public;

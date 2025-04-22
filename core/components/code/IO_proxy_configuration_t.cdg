@@ -1,0 +1,59 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+inline-header {
+    #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
+}
+
+class {
+    name IO_proxy_configuration_t;
+    namespace dvrk;
+    attribute CISST_EXPORT;
+
+    member {
+        name name;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name port;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name period;
+        type double;
+        visibility public;
+        default mtsIntuitiveResearchKit::IOPeriod;
+    }
+
+    member {
+        name watchdog_timeout;
+        type double;
+        visibility public;
+        default mtsIntuitiveResearchKit::WatchdogTimeout;
+    }
+
+    member {
+        name protocol;
+        type std::string;
+        visibility public;
+        default "broadcast-query-read-write";
+    }
+
+    member {
+        name close_all_relays;
+        type bool;
+        visibility public;
+        default true;
+    }
+
+    member {
+        name configuration_files;
+        type std::vector<std::string>;
+        visibility public;
+        default std::vector<std::string>();
+    }
+}

@@ -53,18 +53,49 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     friend class mtsIntuitiveResearchKitConsoleQt;
     friend class dvrk::console;
 
+
+    class CISST_EXPORT IO_proxy_t {
+    public:
+
+        friend class mtsIntuitiveResearchKitConsole;
+
+        std::string m_name;
+        mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        dvrk::IO_proxy_configuration_t * m_config = nullptr;
+
+        IO_proxy_t(const std::string & name,
+                   mtsIntuitiveResearchKitConsole * console,
+                   dvrk::IO_proxy_configuration_t * config);
+
+        NOT_COPYABLE(IO_proxy_t);
+        NOT_MOVEABLE(IO_proxy_t);
+
+        /*! Configure, i.e. load json and validate. */
+        void post_configure(void);
+
+        /*! Create and configure IO component. */
+        void create_IO(void);
+
+    protected:
+        mtsFunctionVoid close_all_relays;
+        mtsInterfaceRequired * m_interface_required;
+    };
+
+
     class CISST_EXPORT arm_proxy_t {
      public:
 
         friend class mtsIntuitiveResearchKitConsole;
 
-        arm_proxy_t(const std::string & name, mtsIntuitiveResearchKitConsole * console);
+        arm_proxy_t(const std::string & name,
+                    mtsIntuitiveResearchKitConsole * console,
+                    dvrk::arm_proxy_configuration_t * config);
 
         NOT_COPYABLE(arm_proxy_t);
         NOT_MOVEABLE(arm_proxy_t);
 
         /*! Load and validate configuration from json */
-        void configure(const Json::Value & json_config);
+        void post_configure(void);
 
         /*! Create and configure the robot arm. */
         void create_arm(void);
@@ -89,7 +120,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
         std::string m_name;
         mtsIntuitiveResearchKitConsole * m_console = nullptr;
-        dvrk::arm_proxy_configuration_t m_config;
+        dvrk::arm_proxy_configuration_t * m_config = nullptr;
 
         std::shared_ptr<mtsIntuitiveResearchKitArm> m_arm = nullptr;
 
@@ -148,30 +179,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         void CurrentStateEventHandler(const prmOperatingState & currentState);
     };
 
-    class CISST_EXPORT teleop_ECM_proxy_t {
-    public:
-        friend class mtsIntuitiveResearchKitConsole;
-
-        std::string m_name;
-        mtsIntuitiveResearchKitConsole * m_console = nullptr;
-        dvrk::teleop_ECM_proxy_configuration_t m_config;
-
-        teleop_ECM_proxy_t(const std::string & name, mtsIntuitiveResearchKitConsole * console);
-
-        NOT_COPYABLE(teleop_ECM_proxy_t);
-        NOT_MOVEABLE(teleop_ECM_proxy_t);
-
-        /*! Configure, i.e. load json and validate. */
-        void configure(const Json::Value & json_config);
-
-        /*! Create and configure the teleoperation component. */
-        void create_teleop(void);
-
-    protected:
-        mtsFunctionWrite state_command;
-        mtsFunctionWrite set_scale;
-        mtsInterfaceRequired * m_interface_required;
-    };
 
     class CISST_EXPORT teleop_PSM_proxy_t {
     public:
@@ -180,15 +187,17 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
         std::string m_name;
         mtsIntuitiveResearchKitConsole * m_console = nullptr;
-        dvrk::teleop_PSM_proxy_configuration_t m_config;
+        dvrk::teleop_PSM_proxy_configuration_t * m_config = nullptr;
 
-        teleop_PSM_proxy_t(const std::string & name, mtsIntuitiveResearchKitConsole * console);
+        teleop_PSM_proxy_t(const std::string & name,
+                           mtsIntuitiveResearchKitConsole * console,
+                           dvrk::teleop_PSM_proxy_configuration_t * config);
 
         NOT_COPYABLE(teleop_PSM_proxy_t);
         NOT_MOVEABLE(teleop_PSM_proxy_t);
 
         /*! Configure, i.e. load json and validate. */
-        void configure(const Json::Value & json_config);
+        void post_configure(void);
 
         /*! Create and configure the teleoperation component. */
         void create_teleop(void);
@@ -209,8 +218,34 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     };
 
 
+    class CISST_EXPORT teleop_ECM_proxy_t {
+    public:
+        friend class mtsIntuitiveResearchKitConsole;
 
-    
+        std::string m_name;
+        mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        dvrk::teleop_ECM_proxy_configuration_t * m_config = nullptr;
+
+        teleop_ECM_proxy_t(const std::string & name,
+                           mtsIntuitiveResearchKitConsole * console,
+                           dvrk::teleop_ECM_proxy_configuration_t * config);
+
+        NOT_COPYABLE(teleop_ECM_proxy_t);
+        NOT_MOVEABLE(teleop_ECM_proxy_t);
+
+        void post_configure(void);
+
+        /*! Create and configure the teleoperation component. */
+        void create_teleop(void);
+
+    protected:
+        mtsFunctionWrite state_command;
+        mtsFunctionWrite set_scale;
+        mtsInterfaceRequired * m_interface_required;
+    };
+
+
+
     mtsIntuitiveResearchKitConsole(const std::string & componentName);
     inline virtual ~mtsIntuitiveResearchKitConsole() {}
 
@@ -245,6 +280,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     std::string find_file(const std::string & filename) const;
 
  protected:
+    dvrk::console_configuration_t m_config;
     bool m_configured;
     cmnPath m_config_path;
     mtsDelayedConnections m_connections;
@@ -256,17 +292,23 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     bool mTeleopECMRunning = false;
     bool mTeleopEnabledBeforeCamera;
 
-    typedef std::map<std::string, std::shared_ptr<arm_proxy_t>> arm_proxies_t;
-    arm_proxies_t m_arm_proxies;
 
     /*! Pointer to mtsTextToSpeech component */
     std::shared_ptr<mtsTextToSpeech> m_text_to_speech;
 
-    /*! List to manage multiple PSM teleoperations */
+    typedef std::map<std::string, std::shared_ptr<IO_proxy_t>> IO_proxies_t;
+    IO_proxies_t m_IO_proxies;
+
+    typedef std::map<std::string, std::shared_ptr<arm_proxy_t>> arm_proxies_t;
+    arm_proxies_t m_arm_proxies;
+
     typedef std::map<std::string, std::shared_ptr<teleop_PSM_proxy_t>> teleop_PSM_proxies_t;
     teleop_PSM_proxies_t m_teleop_PSM_proxies;
 
-    /*! List to manage the teleopPSM components for each PSM and MTM */
+    typedef std::map<std::string, std::shared_ptr<teleop_ECM_proxy_t>> teleop_ECM_proxies_t;
+    teleop_ECM_proxies_t m_teleop_ECM_proxies;
+
+
     typedef std::multimap<std::string, std::shared_ptr<teleop_PSM_proxy_t>> teleop_PSM_proxies_by_arm_t;
     teleop_PSM_proxies_by_arm_t m_teleop_PSM_proxies_by_psm;
     teleop_PSM_proxies_by_arm_t m_teleop_PSM_proxies_by_MTM;
@@ -275,8 +317,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     std::string mTeleopMTMToCycle;
 
     /*! List to manage multiple ECM teleoperations */
-    typedef std::map<std::string, std::shared_ptr<teleop_ECM_proxy_t>> teleop_ECM_proxies_t;
-    teleop_ECM_proxies_t m_teleop_ECM_proxies;
 
     /*! Head sensor */
     mtsComponent * mHeadSensor = nullptr;
@@ -288,8 +328,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
     // these two methods have exact same implementation.it would be
     // nice to have a base class, or template this
-    bool add_teleop_ECM_interfaces(std::shared_ptr<teleop_ECM_proxy_t> teleop_proxy);
     bool add_teleop_PSM_interfaces(std::shared_ptr<teleop_PSM_proxy_t> teleop_proxy);
+    bool add_teleop_ECM_interfaces(std::shared_ptr<teleop_ECM_proxy_t> teleop_proxy);
 
     void power_off(void);
     void power_on(void);
@@ -306,7 +346,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     void set_volume(const double & volume);
     void beep(const vctDoubleVec & values); // duration, frequency, volume
     void string_to_speech(const std::string & text);
-    bool mHasIO = false;
     std::unique_ptr<arm_proxy_t> m_SUJ = nullptr;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
@@ -322,7 +361,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         mtsFunctionWrite volume; // event
     } audio;
     double m_audio_volume;
-    bool mChatty;
 
     struct {
         mtsFunctionWrite clutch;
@@ -333,18 +371,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     bool mOperatorPresent;
     bool mCameraPressed;
 
-    std::string m_IO_component_name; // for actuator IOs
-
     // components used for events (digital inputs)
     typedef std::pair<std::string, std::string> InterfaceComponentType;
     typedef std::map<std::string, InterfaceComponentType> DInputSourceType;
     DInputSourceType mDInputSources;
-
-    mtsInterfaceRequired * m_IO_interface = nullptr;
-    struct {
-        mtsFunctionVoid close_all_relays;
-    } IO;
-    bool m_close_all_relays_from_config = true;
 
     mtsInterfaceProvided * mInterface = nullptr;
     struct {

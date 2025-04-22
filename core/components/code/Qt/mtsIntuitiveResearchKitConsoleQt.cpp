@@ -67,32 +67,32 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     TabWidget = consoleGUI->GetTabWidget();
 
     // IOs
-    if (console->mHasIO) {
-        // connect ioGUIMaster to io
-        mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");
-        componentManager->AddComponent(robotWidgetFactory);
-        // this connect needs to happen now so the factory can figure out the io interfaces
-        componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "io", "Configuration");
-        robotWidgetFactory->Configure();
+    // if (console->mHasIO) {
+    //     // connect ioGUIMaster to io
+    //     mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");
+    //     componentManager->AddComponent(robotWidgetFactory);
+    //     // this connect needs to happen now so the factory can figure out the io interfaces
+    //     componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "io", "Configuration");
+    //     robotWidgetFactory->Configure();
 
-        // add all IO GUI to tab
-        QTabWidget * ioTabWidget;
-        if (robotWidgetFactory->Widgets().size() > 1) {
-            ioTabWidget = new QTabWidget();
-            TabWidget->addTab(ioTabWidget, "IOs");
-        } else {
-            ioTabWidget = TabWidget; // use current tab widget
-        }
-        mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
-        for (iterator = robotWidgetFactory->Widgets().begin();
-             iterator != robotWidgetFactory->Widgets().end();
-             ++iterator) {
-            ioTabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
-        }
-        if (robotWidgetFactory->ButtonsWidget()) {
-            ioTabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
-        }
-    }
+    //     // add all IO GUI to tab
+    //     QTabWidget * ioTabWidget;
+    //     if (robotWidgetFactory->Widgets().size() > 1) {
+    //         ioTabWidget = new QTabWidget();
+    //         TabWidget->addTab(ioTabWidget, "IOs");
+    //     } else {
+    //         ioTabWidget = TabWidget; // use current tab widget
+    //     }
+    //     mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
+    //     for (iterator = robotWidgetFactory->Widgets().begin();
+    //          iterator != robotWidgetFactory->Widgets().end();
+    //          ++iterator) {
+    //         ioTabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
+    //     }
+    //     if (robotWidgetFactory->ButtonsWidget()) {
+    //         ioTabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
+    //     }
+    // }
 
     // Arm and PID widgets
     QTabWidget * pidTabWidget;
@@ -115,7 +115,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         mtsPIDQtWidget * pidGUI;
 
         const std::string & name = iter.first;
-        const dvrk::arm_proxy_configuration_t & config = iter.second->m_config;
+        const dvrk::arm_proxy_configuration_t & config = *(iter.second->m_config);
 
         switch (config.type) {
         case dvrk::arm_type_t::MTM:
