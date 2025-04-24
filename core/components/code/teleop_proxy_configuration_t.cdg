@@ -62,21 +62,18 @@ class {
         name MTML;
         type std::string;
         visibility public;
-        default "";
     }
 
     member {
         name MTMR;
         type std::string;
         visibility public;
-        default "";
     }
 
     member {
         name ECM;
         type std::string;
         visibility public;
-        default "";
     }
 
     member {

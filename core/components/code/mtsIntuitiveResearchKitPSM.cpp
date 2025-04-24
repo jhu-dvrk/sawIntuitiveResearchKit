@@ -223,12 +223,12 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
         && (m_mounting_pitch > std::numeric_limits<double>::max())
         ) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName() << std::endl
-                                 << "\"mounting-pitch\" was not defined in \"" << filename << "\"" << std::endl
+                                 << "\"mounting_pitch\" was not defined in \"" << filename << "\"" << std::endl
                                  << "If your PSM is mounted on the SUJ you should add it using: " << std::endl
-                                 << " \"mounting-pitch\": " << std::to_string(-45.0)
+                                 << " \"mounting_pitch\": " << std::to_string(-45.0)
                                  << " // " << std::to_string(-45.0 * cmn180_PI) << " degrees for PSM1 and PSM2"
                                  << "Or:"
-                                 << " \"mounting-pitch\": " << std::to_string(-15.0)
+                                 << " \"mounting_pitch\": " << std::to_string(-15.0)
                                  << " // " << std::to_string(-15.0 * cmn180_PI) << " degrees for PSM3"
                                  << std::endl;
         exit(EXIT_FAILURE);

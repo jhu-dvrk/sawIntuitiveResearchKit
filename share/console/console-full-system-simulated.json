@@ -1,16 +1,12 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "io": {
-        "physical_footpedals_required": false
-    }
-    ,
     "arms":
     [
         {
             "name": "MTML",
             "type": "MTM",
             "simulation": "KINEMATIC",
-            "arm": "arm/MTML_KIN_SIMULATED.json",
+            "arm_file": "arm/MTML_KIN_SIMULATED.json",
             "base_frame": {
                 "reference_frame": "HRSV",
                 "transform": [[ -1.0,  0.0,          0.0,          0.180],
@@ -24,7 +20,7 @@
             "name": "MTMR",
             "type": "MTM",
             "simulation": "KINEMATIC",
-            "arm": "arm/MTMR_KIN_SIMULATED.json",
+            "arm_file": "arm/MTMR_KIN_SIMULATED.json",
             "base_frame": {
                 "reference_frame": "HRSV",
                 "transform": [[ -1.0,  0.0,          0.0,         -0.180],
@@ -38,14 +34,14 @@
             "name": "SUJ",
             "type": "SUJ_Classic",
             "simulation": "KINEMATIC",
-            "arm": "arm/suj-simulated.json"
+            "arm_file": "arm/suj-simulated.json"
         }
         ,
         {
             "name": "PSM1",
             "type": "PSM",
             "simulation": "KINEMATIC",
-            "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
+            "arm_file": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
             "base_frame": {
                 "component": "SUJ",
                 "interface": "PSM1"
@@ -56,7 +52,7 @@
             "name": "PSM2",
             "type": "PSM",
             "simulation": "KINEMATIC",
-            "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
+            "arm_file": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
             "base_frame": {
                 "component": "SUJ",
                 "interface": "PSM2"
@@ -67,7 +63,7 @@
             "name": "PSM3",
             "type": "PSM",
             "simulation": "KINEMATIC",
-            "arm": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
+            "arm_file": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
             "base_frame": {
                 "component": "SUJ",
                 "interface": "PSM3"
@@ -78,7 +74,7 @@
             "name": "ECM",
             "type": "ECM",
             "simulation": "KINEMATIC",
-            "arm": "arm/ECM_KIN_SIMULATED_STRAIGHT.json",
+            "arm_file": "arm/ECM_KIN_SIMULATED_STRAIGHT.json",
             "base_frame": {
                 "component": "SUJ",
                 "interface": "ECM"

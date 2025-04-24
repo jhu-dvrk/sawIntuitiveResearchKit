@@ -28,7 +28,7 @@ class {
     }
 
     member {
-        name IO_component;
+        name IO;
         type std::string;
         visibility public;
         default "";
@@ -49,21 +49,21 @@ class {
     }
 
     member {
-        name arm;
+        name arm_file;
         type std::string;
         visibility public;
         default "";
     }
 
     member {
-        name PID;
+        name PID_file;
         type std::string;
         visibility public;
         default "";
     }
 
     member {
-        name IO;
+        name IO_file;
         type std::string;
         visibility public;
         default "";

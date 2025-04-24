@@ -655,7 +655,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         }
 
         // mount pitch in radians!, default assumes angles match SUJ (e.g. ECM Classic is -45, ECM Si is -70).
-        const Json::Value jsonMountingPitch = jsonConfig["mounting-pitch"];
+        const Json::Value jsonMountingPitch = jsonConfig["mounting_pitch"];
         if (!jsonMountingPitch.isNull()) {
             m_mounting_pitch = jsonMountingPitch.asDouble();
         }

@@ -41,6 +41,7 @@ namespace dvrk {
     class console;
 }
 
+class mtsRobotIO1394;
 class mtsTextToSpeech;
 class mtsDaVinciEndoscopeFocus;
 class mtsIntuitiveResearchKitArm;
@@ -77,6 +78,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         void create_IO(void);
 
     protected:
+        std::shared_ptr<mtsRobotIO1394> m_IO = nullptr;
         mtsFunctionVoid close_all_relays;
         mtsInterfaceRequired * m_interface_required;
     };
@@ -104,18 +106,16 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
           interface.  If the period in seconds is zero, the PID will be tied to
           IO using the ExecIn/ExecOut interfaces. */
         void create_PID(void);
-
-        void create_IO(void);
+        void configure_IO(void);
 
         /*! Check if mBaseFrame has a valid name and if it does
           set_base_frame on the arm. */
         void set_base_frame_if_needed(void);
 
         /*! Connect all interfaces specific to this arm. */
-        bool Connect(void);
+        bool connect(void);
 
         /*! Accessors */
-
         dvrk::generation_t generation(void) const;
 
         std::string m_name;
@@ -129,6 +129,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
         // low level
         std::string m_IO_component_name;
+        std::string m_IO_interface_name;
         std::string m_IO_configuration_file;
         std::string m_IO_gripper_configuration_file; // for MTMs only
         // PID
@@ -324,6 +325,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     /*! daVinci Endoscope Focus */
     mtsDaVinciEndoscopeFocus * mDaVinciEndoscopeFocus = nullptr;
 
+    bool add_IO_interfaces(std::shared_ptr<IO_proxy_t> IO_proxy);
     bool add_arm_interfaces(std::shared_ptr<arm_proxy_t> arm_proxy);
 
     // these two methods have exact same implementation.it would be
