@@ -59,11 +59,11 @@ def SetupConsole(serverName):
 def SetupArms(components):
     for comp in components:
         if comp.startswith('MTM') or comp.startswith('PSM') or comp.startswith('ECM'):
-            print('Found ' + comp)
             obj = LCM.GetComponent(comp)
             provInterfaces = obj.GetNamesOfInterfacesProvided()
             for prov in provInterfaces:
                 if (prov == 'Controller') or (prov == 'Arm'):
+                    print('Found ' + comp)
                     comp_no_dash = comp.replace('-', '_')
                     interface = cisstMultiTask.mtsCreateClientInterface(comp_no_dash+'Client', comp, prov)
                     setattr(sys.modules[__name__], comp_no_dash, interface)
@@ -77,27 +77,40 @@ def SetupArms(components):
                     break
 
 LCM = cisstMultiTask.mtsManagerLocal.GetInstance()
-LCM.CreateAll()
-LCM.StartAll()
 
-dvrkServer = cisstMultiTask.mtsLoadAndCreateServer('sawIntuitiveResearchKit',
-                                                   'mtsIntuitiveResearchKitConsole',
-                                                   'dvrkServer', '')
+isEmbedded = False
+if LCM.GetComponent('IRE'):
+   print('Embedded Python configuration')
+   isEmbedded = True
+
+if isEmbedded:
+   dvrkServer = LCM.GetComponent('console')
+else:
+    LCM.CreateAll()
+    LCM.StartAll()
+
+    dvrkServer = cisstMultiTask.mtsLoadAndCreateServer('sawIntuitiveResearchKit',
+                                                       'mtsIntuitiveResearchKitConsole',
+                                                       'dvrkServer', '')
+
+    if dvrkServer:
+        print('Configuring dVRK server.')
+        # Python2 uses raw_input and Python3 uses input
+        try:
+            configFile = raw_input('Enter config filename (JSON): ')
+        except NameError:
+            configFile = input('Enter config filename (JSON): ')
+        dvrkServer.Configure(configFile)
+
 if dvrkServer:
-    print('Configuring dVRK server.')
-    # Python2 uses raw_input and Python3 uses input
-    try:
-        configFile = raw_input('Enter config filename (JSON): ')
-    except NameError:
-        configFile = input('Enter config filename (JSON): ')
-    dvrkServer.Configure(configFile)
     # Setup up console component, which will create other components,
     # including the arms (MTM, PSM, ECM)
-    console = SetupConsole('dvrkServer')
+    console = SetupConsole(dvrkServer.GetName())
     # Now, look for the arm components (MTM, PSM, ECM)
     SetupArms(LCM.GetNamesOfComponents())
 
-LCM.CreateAllAndWait(2.0)
-LCM.StartAllAndWait(2.0)
+if not isEmbedded:
+    LCM.CreateAllAndWait(2.0)
+    LCM.StartAllAndWait(2.0)
 
 print('System ready. See dvrk dict.')
