@@ -40,6 +40,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmInverseKinematicsResponse.h>
 #include <cisstParameterTypes/prmForwardKinematicsRequest.h>
 #include <cisstParameterTypes/prmForwardKinematicsResponse.h>
+#include <cisstParameterTypes/prmStateCartesian.h>
 
 #include <cisstRobot/robManipulator.h>
 #include <cisstRobot/robReflexxes.h>
@@ -188,6 +189,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void servo_jp_internal(const vctDoubleVec & jp,
                                    const vctDoubleVec & jv);
     virtual void servo_jf_internal(const vctDoubleVec & jf);
+    virtual void servo_js_internal(const prmStateJoint & js);
+    virtual void feed_forward_jf_internal(const vctDoubleVec & jf);
     // compute a joint-space feed forward to send to PID
     virtual bool should_use_gravity_compensation(void);
     // compute and apply effort feed forward (e.g. gravity compensation)
@@ -202,6 +205,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void move_jr(const prmPositionJointSet & jp);
     virtual void servo_cp(const prmPositionCartesianSet & cp);
     virtual void servo_cr(const prmPositionCartesianSet & difference);
+    virtual void servo_cs(const prmStateCartesian & cs);
     virtual void move_cp(const prmPositionCartesianSet & cp);
     virtual void servo_jf(const prmForceTorqueJointSet & jf);
     virtual void spatial_servo_cf(const prmForceCartesianSet & cf);
@@ -325,7 +329,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     // cache cartesian goal position and increment
     bool m_pid_new_goal = false;
-    prmPositionCartesianSet m_servo_cp;
+    prmStateCartesian m_servo_cs;
     vctFrm3 mCartesianRelative;
 
     // internal kinematics
@@ -339,6 +343,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     vctFrm4x4 m_measured_cp_frame;
     prmPositionCartesianGet m_setpoint_cp;
     vctFrm4x4 m_setpoint_cp_frame;
+
+    prmStateCartesian m_measured_cs;
 
     // joints
     prmPositionJointSet m_servo_jp_param;
@@ -472,7 +478,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     virtual void control_servo_jp(void);
     virtual void control_move_jp(void);
-    virtual void control_servo_cp(void);
+    virtual void control_servo_cs(void);
     virtual void control_move_cp(void);
     virtual void control_servo_jf(void);
     virtual void control_servo_cf(void);

@@ -1,0 +1,15 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "components":
+    [
+        {
+            "shared-library": "sawIntuitiveResearchKitBilateralTeleop",
+            "class-name": "mtsBilateralTeleOperationPSMROSBridge",
+            "constructor-arg": {
+                "Name": "MTML_PSM2_Bilateral_Bridge",
+                "Period": 0.02
+            },
+            "configure-parameter": "MTML-PSM2" // name of teleop component to bridge, make sure this matches
+        }
+    ]
+}
