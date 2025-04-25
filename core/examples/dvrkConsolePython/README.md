@@ -53,6 +53,9 @@ variable is set up correctly, e.g., using `cisstvars.sh` (Linux) or `cisstvars.b
   - If `dvrk_console.py` is not found, either specify the full path when importing the file,
 or copy it to one of the directories in `PYTHONPATH`.
 
+  - Currently, `dvrk_console.py` determines that it running in an embedded Python interpreter
+if it finds a component named `IRE`. Make sure to use that name in your JSON file, as in the example above.
+
 ## Finding Commands
 
 All commands are available via (required) interfaces that are automatically created for
