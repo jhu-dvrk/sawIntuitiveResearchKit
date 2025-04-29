@@ -144,6 +144,8 @@ void mtsIntuitiveResearchKitConsole::arm_proxy_t::post_configure(void)
         }
         m_IO_component_name = m_config->IO;
         m_IO_interface_name = m_config->name;
+
+
     }
 
     // for generic and derived arms, component name must be provided
@@ -426,13 +428,38 @@ void mtsIntuitiveResearchKitConsole::arm_proxy_t::configure_IO(void)
     }
 
     // search for the IO component
-    auto iter = m_console->m_IO_proxies.find(m_config->IO);
+    auto iter_IO = m_console->m_IO_proxies.find(m_config->IO);
     CMN_LOG_INIT_VERBOSE << "arm_proxy_t::configure_IO: configuring IO \""
                          << m_config->IO << "\" for arm " << m_name
                          << " using configuration file: " << m_IO_configuration_file << std::endl;
     // configure_IO should only happen if IO is valid
-    CMN_ASSERT(iter != m_console->m_IO_proxies.end());
-    iter->second->m_IO->Configure(m_IO_configuration_file);
+    CMN_ASSERT(iter_IO != m_console->m_IO_proxies.end());
+    iter_IO->second->m_IO->Configure(m_IO_configuration_file);
+
+
+    // search for the gripper config file
+    if (m_config->MTM()) {
+        std::string config_file;
+        if (m_config->IO_gripper_file != "") {
+            config_file = m_config->IO_gripper_file;
+        } else {
+            if (m_config->serial != "") {
+                config_file = "sawRobotIO1394-" + m_name + "-gripper-" + m_config->serial + ".xml";
+            } else {
+                CMN_LOG_INIT_ERROR << "arm_proxy_t::configure_IO: can't find \"serial\" nor \"IO_gripper_file\" setting for arm \""
+                                   << m_name << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        m_IO_gripper_configuration_file = m_console->find_file(config_file);
+        if (m_IO_gripper_configuration_file == "") {
+            CMN_LOG_INIT_ERROR << "arm_proxy_t::configure_IO: can't find IO gripper file " << config_file << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        // re-use IO component
+        iter_IO->second->m_IO->Configure(m_IO_gripper_configuration_file);
+    }
 }
 
 

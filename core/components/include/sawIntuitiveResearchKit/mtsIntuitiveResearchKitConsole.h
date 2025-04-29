@@ -131,7 +131,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         std::string m_IO_component_name;
         std::string m_IO_interface_name;
         std::string m_IO_configuration_file;
-        std::string m_IO_gripper_configuration_file; // for MTMs only
+        // for MTMs only
+        std::string m_IO_gripper_interface_name;
+        std::string m_IO_gripper_configuration_file;
         // PID
         std::string m_PID_component_name;
         std::string m_PID_configuration_file; // actual file

@@ -70,6 +70,13 @@ class {
     }
 
     member {
+        name IO_gripper_file;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
         name period;
         type double;
         visibility public;
