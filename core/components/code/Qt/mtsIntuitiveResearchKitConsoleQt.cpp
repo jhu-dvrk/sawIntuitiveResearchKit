@@ -68,7 +68,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
 
     // IOs
     QTabWidget * ioTabWidget;
-    if (console->m_IO_proxies.size() > 1) {
+    if (console->m_arm_proxies.size() > 1) {
         ioTabWidget = new QTabWidget();
         ioTabWidget->setObjectName(QString("IOs"));
         TabWidget->addTab(ioTabWidget, "IOSs");
@@ -79,7 +79,6 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     for (const auto & iter : console->m_IO_proxies) {
         const std::string & name = iter.first;
         const std::string factory_name = "io_widget_factory_for_" + name;
-        //        const dvrk::IO_proxy_configuration_t & config = *(iter.second->m_config);
 
         mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory(factory_name);
         component_manager->AddComponent(robotWidgetFactory);
@@ -87,12 +86,12 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         component_manager->Connect(factory_name, "RobotConfiguration", name, "Configuration");
         robotWidgetFactory->Configure();
 
-        // create all 
+        // create all
         mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
         for (iterator = robotWidgetFactory->Widgets().begin();
              iterator != robotWidgetFactory->Widgets().end();
              ++iterator) {
-            ioTabWidget->addTab(*iterator, ((*iterator)->GetName() + " / " + name).c_str());
+            ioTabWidget->addTab(*iterator, ((*iterator)->GetName()).c_str());
         }
         if (robotWidgetFactory->ButtonsWidget()) {
             ioTabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");

@@ -108,6 +108,14 @@ void mtsIntuitiveResearchKitConsole::IO_proxy_t::create_IO(void)
     m_IO = std::make_unique<mtsRobotIO1394>(m_name, m_config->period, m_config->port);
     m_IO->SetProtocol(m_config->protocol);
     m_IO->SetWatchdogPeriod(m_config->watchdog_timeout);
+    for (const auto & config_file : m_config->configuration_files) {
+        std::string file = m_console->find_file(config_file);
+        if (file == "") {
+            CMN_LOG_INIT_ERROR << "IO_proxy_t::create_IO: can't find IO file " << config_file << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        m_IO->Configure(file);
+    }
     mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
     component_manager->AddComponent(m_IO.get());
 }
