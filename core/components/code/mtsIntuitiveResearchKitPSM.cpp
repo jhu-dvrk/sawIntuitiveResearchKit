@@ -104,15 +104,15 @@ void mtsIntuitiveResearchKitPSM::set_simulated(void)
 {
     mtsIntuitiveResearchKitArm::set_simulated();
     // in simulation mode, we don't need clutch, adapter, tool IO nor Dallas
-    RemoveInterfaceRequired("ManipClutch");
-    RemoveInterfaceRequired("Adapter");
-    RemoveInterfaceRequired("Tool");
-    RemoveInterfaceRequired("Dallas");
+    RemoveInterfaceRequired("arm_clutch");
+    RemoveInterfaceRequired("adapter");
+    RemoveInterfaceRequired("tool");
+    RemoveInterfaceRequired("dallas");
     // for Si systems, remove a few more interfaces
     if (m_generation == dvrk::generation_t::Si) {
-        RemoveInterfaceRequired("SUJClutch");
-        RemoveInterfaceRequired("SUJClutch2");
-        RemoveInterfaceRequired("SUJBrake");
+        RemoveInterfaceRequired("SUJ_clutch");
+        RemoveInterfaceRequired("SUJ_clutch2");
+        RemoveInterfaceRequired("SUJ_brake");
     }
 }
 
@@ -122,21 +122,21 @@ void mtsIntuitiveResearchKitPSM::set_generation(const dvrk::generation_t generat
     // for S/si, add SUJClutch interface
     if ((generation == dvrk::generation_t::Si)
         && !m_simulated) {
-        auto interfaceRequired = AddInterfaceRequired("SUJClutch");
+        auto interfaceRequired = AddInterfaceRequired("SUJ_clutch");
         if (interfaceRequired) {
             interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch, this, "Button");
         }
-        interfaceRequired = AddInterfaceRequired("SUJClutch2");
+        interfaceRequired = AddInterfaceRequired("SUJ_clutch2");
         if (interfaceRequired) {
             interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch, this, "Button");
         }
-        interfaceRequired = AddInterfaceRequired("SUJBrake");
+        interfaceRequired = AddInterfaceRequired("SUJ_brake");
         if (interfaceRequired) {
             interfaceRequired->AddFunction("SetValue", SUJClutch.Brake);
         }
     } else {
-        if (GetInterfaceProvided("SUJClutch")) {
-            RemoveInterfaceRequired("SUJClutch");
+        if (GetInterfaceProvided("SUJ_clutch")) {
+            RemoveInterfaceRequired("SUJ_clutch");
         }
     }
 }
@@ -764,27 +764,27 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     m_arm_interface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
 
     // Event Adapter engage: digital input button event from PSM
-    interfaceRequired = AddInterfaceRequired("Adapter");
+    interfaceRequired = AddInterfaceRequired("adapter");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetButton", Adapter.GetButton);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerAdapter, this, "Button");
     }
 
     // Event Tool engage: digital input button event from PSM
-    interfaceRequired = AddInterfaceRequired("Tool");
+    interfaceRequired = AddInterfaceRequired("tool");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetButton", Tool.GetButton);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerTool, this, "Button");
     }
 
     // ManipClutch: digital input button event from PSM
-    interfaceRequired = AddInterfaceRequired("ManipClutch");
+    interfaceRequired = AddInterfaceRequired("arm_clutch");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerManipClutch, this, "Button");
     }
 
     // Dallas: read tool type from Dallas Chip
-    interfaceRequired = AddInterfaceRequired("Dallas");
+    interfaceRequired = AddInterfaceRequired("dallas");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("TriggerRead", Dallas.TriggerRead);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerToolType, this, "ToolType");
@@ -869,9 +869,19 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
     }
     if (Adapter.IsEngaged && !Tool.IsEngaged) {
         if (!m_simulated) {
-            if ((Tool.IsPresent || Tool.IsEmulated) && m_tool_configured) {
-                set_tool_present_and_configured(true, m_tool_configured);
-                mArmState.SetCurrentState("ENGAGING_TOOL");
+            if ((Tool.IsPresent || Tool.IsEmulated)) {
+                // tool should be configured if automatic or fixed
+                if (m_tool_configured) {
+                    set_tool_present_and_configured(true, m_tool_configured);
+                    mArmState.SetCurrentState("ENGAGING_TOOL");
+                } else if ((mToolDetection == mtsIntuitiveResearchKitToolTypes::MANUAL)
+                           && !m_tool_type_requested) {
+                    // manual is not sent until robot is ready
+                    set_tool_present_and_configured(true, false);
+                    m_tool_type_requested = true;
+                    ToolEvents.tool_type_request();
+                    m_arm_interface->SendWarning(this->GetName() + ": tool type requested from user");
+                }
             }
         } else {
             // simulated case
@@ -1566,9 +1576,11 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
             break;
         case mtsIntuitiveResearchKitToolTypes::MANUAL:
             set_tool_present_and_configured(true, false);
-            m_tool_type_requested = true;
-            ToolEvents.tool_type_request();
-            m_arm_interface->SendWarning(this->GetName() + ": tool type requested from user");
+            if (is_joint_ready()) {
+                m_tool_type_requested = true;
+                ToolEvents.tool_type_request();
+                m_arm_interface->SendWarning(this->GetName() + ": tool type requested from user");
+            }
             break;
         case mtsIntuitiveResearchKitToolTypes::FIXED:
             {

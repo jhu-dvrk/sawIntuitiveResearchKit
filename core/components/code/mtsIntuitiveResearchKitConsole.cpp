@@ -374,7 +374,7 @@ void mtsIntuitiveResearchKitConsole::arm_proxy_t::create_arm(void)
         if (m_config->simulation == dvrk::simulation_t::SIMULATION_NONE) {
 
             if (m_config->PSM()) {
-                std::vector<std::string> itfs = {"Adapter", "Tool", "ManipClutch", "Dallas"};
+                std::vector<std::string> itfs = {"adapter", "tool", "arm_clutch", "dallas"};
                 for (const auto & itf : itfs) {
                     m_console->m_connections.Add(m_name, itf,
                                                  m_IO_component_name, m_name + "_" + itf);
@@ -382,14 +382,14 @@ void mtsIntuitiveResearchKitConsole::arm_proxy_t::create_arm(void)
             }
 
             if (m_config->ECM()) {
-                m_console->m_connections.Add(m_name, "ManipClutch",
-                                             m_IO_component_name, m_name + "-ManipClutch");
+                m_console->m_connections.Add(m_name, "arm_clutch",
+                                             m_IO_component_name, m_name + "_arm_clutch");
             }
 
             // for Si patient side, connect the SUJ brakes to buttons on arm
             if ((m_config->PSM() || m_config->ECM())
                 && (m_arm->generation() == dvrk::generation_t::Si)) {
-                std::vector<std::string> itfs = {"SUJClutch", "SUJClutch2", "SUJBrake"};
+                std::vector<std::string> itfs = {"SUJ_clutch", "SUJ_clutch2", "SUJ_brake"};
                 for (const auto & itf : itfs) {
                     m_console->m_connections.Add(m_name, itf,
                                                  m_IO_component_name, m_name + "_" + itf);
@@ -536,7 +536,7 @@ bool mtsIntuitiveResearchKitConsole::arm_proxy_t::connect(void)
         if (m_config->native_or_derived_MTM()
             && !m_config->simulated()) {
             component_manager->Connect(m_name, "GripperIO",
-                                       m_IO_component_name, m_name + "-Gripper");
+                                       m_IO_component_name, m_name + "_gripper");
         }
         // connect PID
         if (m_config->expects_PID()) {
@@ -1710,6 +1710,8 @@ bool mtsIntuitiveResearchKitConsole::add_IO_interfaces(std::shared_ptr<IO_proxy_
                                                        this, "warning");
         IO->m_interface_required->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
                                                        this, "status");
+        m_connections.Add(this->GetName(), IO->m_name,
+                          IO->m_name, "Configuration");
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "add_IO_interfaces: failed to create IO required interface" << std::endl;
         return false;
@@ -1741,7 +1743,7 @@ bool mtsIntuitiveResearchKitConsole::add_arm_interfaces(std::shared_ptr<arm_prox
         // is the arm is a PSM, since it has an IO, it also has a
         // Dallas chip interface and we want to see the messages
         if (arm->m_config->native_or_derived_PSM()) {
-            const std::string interfaceNameIODallas = "IO-Dallas-" + arm->m_name;
+            const std::string interfaceNameIODallas = "IO_dallas-" + arm->m_name;
             arm->m_IO_dallas_interface_required = AddInterfaceRequired(interfaceNameIODallas);
             if (arm->m_IO_dallas_interface_required) {
                 arm->m_IO_dallas_interface_required->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
@@ -1751,7 +1753,7 @@ bool mtsIntuitiveResearchKitConsole::add_arm_interfaces(std::shared_ptr<arm_prox
                 arm->m_IO_dallas_interface_required->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
                                                                           this, "status");
                 m_connections.Add(this->GetName(), interfaceNameIODallas,
-                                  arm->m_IO_component_name, arm->m_name + "-Dallas");
+                                  arm->m_IO_component_name, arm->m_name + "_dallas");
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO Dallas interface for arm \""
                                          << arm->m_name << "\"" << std::endl;
@@ -1808,32 +1810,33 @@ bool mtsIntuitiveResearchKitConsole::add_arm_interfaces(std::shared_ptr<arm_prox
 
 bool mtsIntuitiveResearchKitConsole::Connect(void)
 {
-    m_connections.Connect();
-
     mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
 
     // connect console for audio feedback
     component_manager->Connect(this->GetName(), "TextToSpeech",
                                m_text_to_speech->GetName(), "Commands");
 
-    for (auto & iter : m_arm_proxies) {
+    // arms
+    for (const auto & iter : m_arm_proxies) {
         std::shared_ptr<arm_proxy_t> arm = iter.second;
         // arm specific interfaces
         arm->connect();
         // connect to SUJ if needed
         if (arm->SUJInterfaceRequiredFromIO) {
             component_manager->Connect(this->GetName(), arm->SUJInterfaceRequiredFromIO->GetName(),
-                                       arm->m_IO_component_name, arm->m_name + "-SUJClutch");
+                                       arm->m_IO_component_name, arm->m_name + "_SUJ_clutch");
         }
         if (arm->SUJInterfaceRequiredFromIO2) {
             component_manager->Connect(this->GetName(), arm->SUJInterfaceRequiredFromIO2->GetName(),
-                                       arm->m_IO_component_name, arm->m_name + "-SUJClutch2");
+                                       arm->m_IO_component_name, arm->m_name + "_SUJ_clutch2");
         }
         if (arm->SUJInterfaceRequiredToSUJ) {
             component_manager->Connect(this->GetName(), arm->SUJInterfaceRequiredToSUJ->GetName(),
                                        "SUJ", arm->m_name);
         }
     }
+
+    m_connections.Connect();
 
     return true;
 }

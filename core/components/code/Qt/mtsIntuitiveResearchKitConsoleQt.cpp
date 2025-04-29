@@ -48,10 +48,10 @@ mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(void)
 
 void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole * console)
 {
-    mtsComponentManager * componentManager = mtsComponentManager::GetInstance();
+    mtsComponentManager * component_manager = mtsComponentManager::GetInstance();
 
     mtsIntuitiveResearchKitConsoleQtWidget * consoleGUI = new mtsIntuitiveResearchKitConsoleQtWidget("consoleGUI");
-    componentManager->AddComponent(consoleGUI);
+    component_manager->AddComponent(consoleGUI);
     // connect consoleGUI to console
     Connections.Add("consoleGUI", "Main", "console", "Main");
     if (console->GetInterfaceRequired("Clutch")) {
@@ -67,32 +67,37 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     TabWidget = consoleGUI->GetTabWidget();
 
     // IOs
-    // if (console->mHasIO) {
-    //     // connect ioGUIMaster to io
-    //     mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");
-    //     componentManager->AddComponent(robotWidgetFactory);
-    //     // this connect needs to happen now so the factory can figure out the io interfaces
-    //     componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "io", "Configuration");
-    //     robotWidgetFactory->Configure();
+    QTabWidget * ioTabWidget;
+    if (console->m_IO_proxies.size() > 1) {
+        ioTabWidget = new QTabWidget();
+        ioTabWidget->setObjectName(QString("IOs"));
+        TabWidget->addTab(ioTabWidget, "IOSs");
+    } else {
+        ioTabWidget = TabWidget;
+    }
 
-    //     // add all IO GUI to tab
-    //     QTabWidget * ioTabWidget;
-    //     if (robotWidgetFactory->Widgets().size() > 1) {
-    //         ioTabWidget = new QTabWidget();
-    //         TabWidget->addTab(ioTabWidget, "IOs");
-    //     } else {
-    //         ioTabWidget = TabWidget; // use current tab widget
-    //     }
-    //     mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
-    //     for (iterator = robotWidgetFactory->Widgets().begin();
-    //          iterator != robotWidgetFactory->Widgets().end();
-    //          ++iterator) {
-    //         ioTabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
-    //     }
-    //     if (robotWidgetFactory->ButtonsWidget()) {
-    //         ioTabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
-    //     }
-    // }
+    for (const auto & iter : console->m_IO_proxies) {
+        const std::string & name = iter.first;
+        const std::string factory_name = "io_widget_factory_for_" + name;
+        //        const dvrk::IO_proxy_configuration_t & config = *(iter.second->m_config);
+
+        mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory(factory_name);
+        component_manager->AddComponent(robotWidgetFactory);
+        // this connect needs to happen now so the factory can figure out the io interfaces
+        component_manager->Connect(factory_name, "RobotConfiguration", name, "Configuration");
+        robotWidgetFactory->Configure();
+
+        // create all 
+        mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
+        for (iterator = robotWidgetFactory->Widgets().begin();
+             iterator != robotWidgetFactory->Widgets().end();
+             ++iterator) {
+            ioTabWidget->addTab(*iterator, ((*iterator)->GetName() + " / " + name).c_str());
+        }
+        if (robotWidgetFactory->ButtonsWidget()) {
+            ioTabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
+        }
+    }
 
     // Arm and PID widgets
     QTabWidget * pidTabWidget;
@@ -106,7 +111,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         TabWidget->addTab(armTabWidget, "Arms");
     } else {
         pidTabWidget = TabWidget; // use current tab widget
-        armTabWidget = TabWidget; // use current tab widget
+        armTabWidget = TabWidget;
     }
 
     for (const auto & iter : console->m_arm_proxies) {
@@ -137,7 +142,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
             }
             pidGUI = new mtsPIDQtWidget(name + "_PID_GUI", numberOfJoints);
             pidGUI->Configure();
-            componentManager->AddComponent(pidGUI);
+            component_manager->AddComponent(pidGUI);
             Connections.Add(pidGUI->GetName(), "Controller",
                             iter.second->m_PID_component_name, "Controller");
             pidTabWidget->addTab(pidGUI, (name + " PID").c_str());
@@ -153,7 +158,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
                 armGUI = new mtsIntuitiveResearchKitArmQtWidget(name + "_GUI");
             }
             armGUI->Configure();
-            componentManager->AddComponent(armGUI);
+            component_manager->AddComponent(armGUI);
             Connections.Add(armGUI->GetName(), "Manipulator",
                             iter.second->m_arm_component_name,
                             iter.second->m_arm_interface_name);
@@ -167,22 +172,22 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         case dvrk::arm_type_t::SUJ_Fixed:
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1_SUJ");
-            componentManager->AddComponent(sujGUI);
+            component_manager->AddComponent(sujGUI);
             Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM1");
             armTabWidget->addTab(sujGUI, "PSM1 SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("ECM_SUJ");
-            componentManager->AddComponent(sujGUI);
+            component_manager->AddComponent(sujGUI);
             Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "ECM");
             armTabWidget->addTab(sujGUI, "ECM SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM2_SUJ");
-            componentManager->AddComponent(sujGUI);
+            component_manager->AddComponent(sujGUI);
             Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM2");
             armTabWidget->addTab(sujGUI, "PSM2 SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM3_SUJ");
-            componentManager->AddComponent(sujGUI);
+            component_manager->AddComponent(sujGUI);
             Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM3");
             armTabWidget->addTab(sujGUI, "PSM3 SUJ");
 
@@ -198,14 +203,14 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
                 genericComponentGUI->setLayout(genericComponentLayout);
                 mtsMessageQtWidgetComponent * messageGUI
                     = new mtsMessageQtWidgetComponent(name + "_Message_GUI");
-                componentManager->AddComponent(messageGUI);
+                component_manager->AddComponent(messageGUI);
                 genericComponentLayout->addWidget(messageGUI);
                 Connections.Add(messageGUI->GetName(), "Component",
                                 iter.second->m_arm_component_name,
                                 iter.second->m_arm_interface_name);
                 mtsIntervalStatisticsQtWidgetComponent * timingGUI
                     = new mtsIntervalStatisticsQtWidgetComponent(name + "_Timing_GUI");
-                componentManager->AddComponent(timingGUI);
+                component_manager->AddComponent(timingGUI);
                 genericComponentLayout->addWidget(timingGUI);
                 Connections.Add(timingGUI->GetName(), "Component",
                                 iter.second->m_arm_component_name,
@@ -240,7 +245,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         mtsTeleOperationPSMQtWidget * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "_GUI");
         teleopGUI->setObjectName(name.c_str());
         teleopGUI->Configure();
-        componentManager->AddComponent(teleopGUI);
+        component_manager->AddComponent(teleopGUI);
         Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
         teleopTabWidget->addTab(teleopGUI, name.c_str());
     }
@@ -251,7 +256,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "_GUI");
         teleopGUI->setObjectName(name.c_str());
         teleopGUI->Configure();
-        componentManager->AddComponent(teleopGUI);
+        component_manager->AddComponent(teleopGUI);
         Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
         teleopTabWidget->addTab(teleopGUI, name.c_str());
     }
@@ -261,7 +266,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         const std::string name = console->mDaVinciEndoscopeFocus->GetName();
         mtsDaVinciEndoscopeFocusQtWidget * endoscopeGUI = new mtsDaVinciEndoscopeFocusQtWidget(name + "_GUI");
         endoscopeGUI->Configure();
-        componentManager->AddComponent(endoscopeGUI);
+        component_manager->AddComponent(endoscopeGUI);
         Connections.Add(endoscopeGUI->GetName(), "Endoscope", name, "Control");
         TabWidget->addTab(endoscopeGUI, "Focus");
     }
