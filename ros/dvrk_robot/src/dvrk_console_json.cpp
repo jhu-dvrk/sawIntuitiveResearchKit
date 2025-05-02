@@ -201,10 +201,10 @@ int main(int argc, char ** argv)
     //
     // this also adds a mtsROSBridge that performs the ros::spinOnce
     // in a separate thread as fast possible
-    dvrk::console * consoleROS = new dvrk::console("dvrk_robot",
-                                                   rosNode,
-                                                   publishPeriod, tfPeriod,
-                                                   console);
+    dvrk_ros::console * consoleROS = new dvrk_ros::console("dvrk_robot",
+                                                           rosNode,
+                                                           publishPeriod, tfPeriod,
+                                                           console);
     componentManager->AddComponent(consoleROS);
 
     if (options.IsSet("suj-voltages")) {

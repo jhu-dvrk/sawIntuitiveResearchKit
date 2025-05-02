@@ -2,7 +2,7 @@
 // ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
 
 enum {
-    name simulation_t;
+    name simulation;
     namespace dvrk;
     prefix SIMULATION_;
     enum-value {

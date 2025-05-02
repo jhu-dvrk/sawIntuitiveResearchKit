@@ -26,9 +26,10 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
 #include <sawControllers/mtsPIDQtWidget.h>
 
-#include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h>
-#include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocusQtWidget.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
+#include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h> // should have a proxy
 
+#include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocusQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECMQtWidget.h>
@@ -37,6 +38,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSMQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationECMQtWidget.h>
+
+#include <sawIntuitiveResearchKit/arm_proxy.h>
 
 #include <QTabWidget>
 
@@ -119,15 +122,15 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         mtsPIDQtWidget * pidGUI;
 
         const std::string & name = iter.first;
-        const dvrk::arm_proxy_configuration_t & config = *(iter.second->m_config);
+        const dvrk::arm_proxy_configuration & config = *(iter.second->m_config);
 
         switch (config.type) {
-        case dvrk::arm_type_t::MTM:
-        case dvrk::arm_type_t::MTM_DERIVED:
-        case dvrk::arm_type_t::PSM:
-        case dvrk::arm_type_t::PSM_DERIVED:
-        case dvrk::arm_type_t::ECM:
-        case dvrk::arm_type_t::ECM_DERIVED:
+        case dvrk::arm_type::MTM:
+        case dvrk::arm_type::MTM_DERIVED:
+        case dvrk::arm_type::PSM:
+        case dvrk::arm_type::PSM_DERIVED:
+        case dvrk::arm_type::ECM:
+        case dvrk::arm_type::ECM_DERIVED:
             // PID widget
             size_t numberOfJoints;
             if (config.native_or_derived_PSM()) {
@@ -166,9 +169,9 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
 
             break;
 
-        case dvrk::arm_type_t::SUJ_Classic:
-        case dvrk::arm_type_t::SUJ_Si:
-        case dvrk::arm_type_t::SUJ_Fixed:
+        case dvrk::arm_type::SUJ_Classic:
+        case dvrk::arm_type::SUJ_Si:
+        case dvrk::arm_type::SUJ_Fixed:
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1_SUJ");
             component_manager->AddComponent(sujGUI);
@@ -192,9 +195,9 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
 
             break;
 
-        case dvrk::arm_type_t::ECM_GENERIC:
-        case dvrk::arm_type_t::MTM_GENERIC:
-        case dvrk::arm_type_t::PSM_GENERIC:
+        case dvrk::arm_type::ECM_GENERIC:
+        case dvrk::arm_type::MTM_GENERIC:
+        case dvrk::arm_type::PSM_GENERIC:
             {
                 // Arm widget
                 QWidget * genericComponentGUI = new QWidget();
@@ -230,35 +233,35 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     bool hasTeleOp = false;
 
     QTabWidget * teleopTabWidget;
-    if ((console->m_teleop_PSM_proxies.size() + console->m_teleop_ECM_proxies.size()) > 1) {
-        teleopTabWidget = new QTabWidget();
-        teleopTabWidget->setObjectName(QString("Teleops"));
-        TabWidget->addTab(teleopTabWidget, "Teleops");
-    } else {
-        teleopTabWidget = TabWidget; // use current tab widget
-    }
+    // if ((console->m_teleop_PSM_proxies.size() + console->m_teleop_ECM_proxies.size()) > 1) {
+    //     teleopTabWidget = new QTabWidget();
+    //     teleopTabWidget->setObjectName(QString("Teleops"));
+    //     TabWidget->addTab(teleopTabWidget, "Teleops");
+    // } else {
+    //     teleopTabWidget = TabWidget; // use current tab widget
+    // }
 
-    for (const auto & iter : console->m_teleop_PSM_proxies) {
-        hasTeleOp = true;
-        const std::string name = iter.first;
-        mtsTeleOperationPSMQtWidget * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "_GUI");
-        teleopGUI->setObjectName(name.c_str());
-        teleopGUI->Configure();
-        component_manager->AddComponent(teleopGUI);
-        Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
-        teleopTabWidget->addTab(teleopGUI, name.c_str());
-    }
+    // for (const auto & iter : console->m_teleop_PSM_proxies) {
+    //     hasTeleOp = true;
+    //     const std::string name = iter.first;
+    //     mtsTeleOperationPSMQtWidget * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "_GUI");
+    //     teleopGUI->setObjectName(name.c_str());
+    //     teleopGUI->Configure();
+    //     component_manager->AddComponent(teleopGUI);
+    //     Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
+    //     teleopTabWidget->addTab(teleopGUI, name.c_str());
+    // }
 
-    for (const auto & iter : console->m_teleop_ECM_proxies) {
-        hasTeleOp = true;
-        const std::string name = iter.first;
-        mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "_GUI");
-        teleopGUI->setObjectName(name.c_str());
-        teleopGUI->Configure();
-        component_manager->AddComponent(teleopGUI);
-        Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
-        teleopTabWidget->addTab(teleopGUI, name.c_str());
-    }
+    // for (const auto & iter : console->m_teleop_ECM_proxies) {
+    //     hasTeleOp = true;
+    //     const std::string name = iter.first;
+    //     mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "_GUI");
+    //     teleopGUI->setObjectName(name.c_str());
+    //     teleopGUI->Configure();
+    //     component_manager->AddComponent(teleopGUI);
+    //     Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
+    //     teleopTabWidget->addTab(teleopGUI, name.c_str());
+    // }
 
     // add endoscope focus widget
     if (console->mDaVinciEndoscopeFocus) {

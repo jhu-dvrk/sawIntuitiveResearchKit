@@ -6,7 +6,7 @@ inline-header {
 }
 
 class {
-    name IO_proxy_configuration_t;
+    name IO_proxy_configuration;
     namespace dvrk;
     attribute CISST_EXPORT;
 

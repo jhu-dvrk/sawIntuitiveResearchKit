@@ -109,18 +109,18 @@ void mtsIntuitiveResearchKitPSM::set_simulated(void)
     RemoveInterfaceRequired("tool");
     RemoveInterfaceRequired("dallas");
     // for Si systems, remove a few more interfaces
-    if (m_generation == dvrk::generation_t::Si) {
+    if (m_generation == dvrk::generation::Si) {
         RemoveInterfaceRequired("SUJ_clutch");
         RemoveInterfaceRequired("SUJ_clutch2");
         RemoveInterfaceRequired("SUJ_brake");
     }
 }
 
-void mtsIntuitiveResearchKitPSM::set_generation(const dvrk::generation_t generation)
+void mtsIntuitiveResearchKitPSM::set_generation(const dvrk::generation generation)
 {
     mtsIntuitiveResearchKitArm::set_generation(generation);
     // for S/si, add SUJClutch interface
-    if ((generation == dvrk::generation_t::Si)
+    if ((generation == dvrk::generation::Si)
         && !m_simulated) {
         auto interfaceRequired = AddInterfaceRequired("SUJ_clutch");
         if (interfaceRequired) {
@@ -219,7 +219,7 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
     }
 
     // ask to set pitch if not already defined
-    if ((generation() == dvrk::generation_t::Si)
+    if ((generation() == dvrk::generation::Si)
         && (m_mounting_pitch > std::numeric_limits<double>::max())
         ) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName() << std::endl
@@ -243,7 +243,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureGC(const Json::Value & jsonConfig,
     const auto jsonPhysicalDH = jsonConfig["kinematic-gc"];
     if (!jsonPhysicalDH.isNull()) {
         physical_dh_name = jsonPhysicalDH.asString();
-    } else if (m_generation == dvrk::generation_t::Si) {
+    } else if (m_generation == dvrk::generation::Si) {
         CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << GetName() << ": no GC kinematics specified, using default for PSM Si" << std::endl;
         physical_dh_name = "kinematic/psm-si-physical.json";
     } else {

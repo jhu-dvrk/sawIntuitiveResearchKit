@@ -4,19 +4,19 @@
 inline-header {
 #include <json/json.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
-#include <sawIntuitiveResearchKit/teleop_type_t.h>
+#include <sawIntuitiveResearchKit/teleop_type.h>
 }
 
 class {
-    name teleop_PSM_proxy_configuration_t;
+    name teleop_PSM_proxy_configuration;
     namespace dvrk;
     attribute CISST_EXPORT;
 
     member {
         name type;
-        type dvrk::teleop_PSM_type_t;
+        type dvrk::teleop_PSM_type;
         visibility public;
-        default dvrk::teleop_PSM_type_t::TELEOP_PSM;
+        default dvrk::teleop_PSM_type::TELEOP_PSM;
     }
 
     member {
@@ -47,15 +47,15 @@ class {
 }
 
 class {
-    name teleop_ECM_proxy_configuration_t;
+    name teleop_ECM_proxy_configuration;
     namespace dvrk;
     attribute CISST_EXPORT;
 
     member {
         name type;
-        type dvrk::teleop_ECM_type_t;
+        type dvrk::teleop_ECM_type;
         visibility public;
-        default dvrk::teleop_ECM_type_t::TELEOP_ECM;
+        default dvrk::teleop_ECM_type::TELEOP_ECM;
     }
 
     member {

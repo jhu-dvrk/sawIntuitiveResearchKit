@@ -6,7 +6,7 @@ inline-header {
 }
 
 class {
-    name base_frame_t;
+    name base_frame;
     namespace dvrk;
     attribute CISST_EXPORT;
 

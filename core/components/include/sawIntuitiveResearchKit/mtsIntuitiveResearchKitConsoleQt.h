@@ -22,12 +22,13 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstCommon/cmnGenericObject.h>
 #include <cisstMultiTask/mtsDelayedConnections.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
 
+// Always include last!
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
 
 class QTabWidget;
 class QWidget;
+class mtsIntuitiveResearchKitConsole;
 
 class CISST_EXPORT mtsIntuitiveResearchKitConsoleQt: public cmnGenericObject
 {

@@ -46,7 +46,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitControlTypes.h>
-#include <sawIntuitiveResearchKit/arm_configuration_t.h>
+#include <sawIntuitiveResearchKit/arm_configuration.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/robGravityCompensation.h>
 
@@ -59,8 +59,6 @@ class osaCartesianImpedanceController;
 class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
-
-    friend class mtsIntuitiveResearchKitConsole;
 
  public:
     mtsIntuitiveResearchKitArm(const std::string & componentName, const double periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
@@ -80,9 +78,11 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         m_calibration_mode = mode;
     }
 
-    virtual inline dvrk::generation_t generation(void) const {
+    virtual inline dvrk::generation generation(void) const {
         return m_generation;
     }
+
+    virtual void set_base_frame(const prmPositionCartesianSet & newBaseFrame);
 
  protected:
     virtual void ConfigureGC(const Json::Value & CMN_UNUSED(armConfig),
@@ -104,7 +104,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     inline virtual void PostConfigure(const Json::Value & CMN_UNUSED(jsonConfig),
                                       const cmnPath & CMN_UNUSED(configPath),
                                       const std::string & CMN_UNUSED(filename)) {};
-    inline virtual void set_generation(const dvrk::generation_t generation) {
+    inline virtual void set_generation(const dvrk::generation generation) {
         m_generation = generation;
     }
 
@@ -210,9 +210,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     virtual void body_set_cf_orientation_absolute(const bool & absolute);
     virtual void use_gravity_compensation(const bool & gravityCompensation);
     virtual void servo_ci(const prmCartesianImpedance & gains);
-
-    /*! Set base coordinate frame, this will be added to the kinematics */
-    virtual void set_base_frame(const prmPositionCartesianSet & newBaseFrame);
 
     /*! Event handler for PID position limit. */
     virtual void PositionLimitEventHandler(const vctBoolVec & flags);
@@ -529,8 +526,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     double m_homing_timer;
 
     // generation
-    dvrk::generation_t m_generation
-        = dvrk::generation_t::GENERATION_UNDEFINED;
+    dvrk::generation m_generation
+        = dvrk::generation::GENERATION_UNDEFINED;
 
     // flag to determine if this is connected to actual IO/hardware or simulated
     bool m_simulated = false;

@@ -32,15 +32,15 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <json/json.h>
 
-const std::string bridgeNamePrefix = "dVRKIOBridge_";
+const std::string bridgeNamePrefix = "dVRK_IO_bridge_";
 
-CMN_IMPLEMENT_SERVICES(dvrk_console);
+CMN_IMPLEMENT_SERVICES(dvrk_ros_console);
 
-dvrk::console::console(const std::string & name,
-                       cisst_ral::node_ptr_t node_handle,
-                       const double & publish_rate_in_seconds,
-                       const double & tf_rate_in_seconds,
-                       mtsIntuitiveResearchKitConsole * mts_console):
+dvrk_ros::console::console(const std::string & name,
+                           cisst_ral::node_ptr_t node_handle,
+                           const double & publish_rate_in_seconds,
+                           const double & tf_rate_in_seconds,
+                           mtsIntuitiveResearchKitConsole * mts_console):
     mts_ros_crtk_bridge_provided(name, node_handle),
     m_publish_rate(publish_rate_in_seconds),
     m_tf_rate(tf_rate_in_seconds),
@@ -106,20 +106,20 @@ dvrk::console::console(const std::string & name,
     }
 
     // ECM teleops
-    for (auto const & teleop : m_console->m_teleop_ECM_proxies) {
-        const auto teleopName = teleop.first;
-        bridge_interface_provided(teleopName, "Setting", teleopName,
-                                  publish_rate_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0
-        add_topics_teleop_ECM(teleopName);
-    }
+    // for (auto const & teleop : m_console->m_teleop_ECM_proxies) {
+    //     const auto teleopName = teleop.first;
+    //     bridge_interface_provided(teleopName, "Setting", teleopName,
+    //                               publish_rate_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0
+    //     add_topics_teleop_ECM(teleopName);
+    // }
 
-    // PSM teleops
-    for (auto const & teleop : m_console->m_teleop_PSM_proxies) {
-        const auto teleopName = teleop.first;
-        bridge_interface_provided(teleopName, "Setting", teleopName,
-                                  publish_rate_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0
-        add_topics_teleop_PSM(teleopName);
-    }
+    // // PSM teleops
+    // for (auto const & teleop : m_console->m_teleop_PSM_proxies) {
+    //     const auto teleopName = teleop.first;
+    //     bridge_interface_provided(teleopName, "Setting", teleopName,
+    //                               publish_rate_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0
+    //     add_topics_teleop_PSM(teleopName);
+    // }
 
     // Endoscope focus
     if (m_console->mDaVinciEndoscopeFocus) {
@@ -149,10 +149,10 @@ dvrk::console::console(const std::string & name,
     add_topics_console();
 }
 
-void dvrk::console::bridge_interface_provided_arm(const std::string & _arm_name,
-                                                  const std::string & _interface_name,
-                                                  const double _publish_period_in_seconds,
-                                                  const double _tf_period_in_seconds)
+void dvrk_ros::console::bridge_interface_provided_arm(const std::string & _arm_name,
+                                                      const std::string & _interface_name,
+                                                      const double _publish_period_in_seconds,
+                                                      const double _tf_period_in_seconds)
 {
     // first call the base class method for all CRTK topics
     bridge_interface_provided(_arm_name, _interface_name, _arm_name,
@@ -201,7 +201,7 @@ void dvrk::console::bridge_interface_provided_arm(const std::string & _arm_name,
          _arm_name + "/trajectory_j/ratio_a");
 }
 
-void dvrk::console::bridge_interface_provided_ECM(const std::string & _arm_name,
+void dvrk_ros::console::bridge_interface_provided_ECM(const std::string & _arm_name,
                                                   const std::string & _interface_name,
                                                   const double _publish_period_in_seconds,
                                                   const double _tf_period_in_seconds)
@@ -229,7 +229,7 @@ void dvrk::console::bridge_interface_provided_ECM(const std::string & _arm_name,
          _arm_name + "/manip_clutch");
 }
 
-void dvrk::console::bridge_interface_provided_MTM(const std::string & _arm_name,
+void dvrk_ros::console::bridge_interface_provided_MTM(const std::string & _arm_name,
                                                   const std::string & _interface_name,
                                                   const double _publish_period_in_seconds,
                                                   const double _tf_period_in_seconds)
@@ -263,7 +263,7 @@ void dvrk::console::bridge_interface_provided_MTM(const std::string & _arm_name,
          _arm_name + "/gripper/closed");
 }
 
-void dvrk::console::bridge_interface_provided_PSM(const std::string & _arm_name,
+void dvrk_ros::console::bridge_interface_provided_PSM(const std::string & _arm_name,
                                                   const std::string & _interface_name,
                                                   const double _publish_period_in_seconds,
                                                   const double _tf_period_in_seconds)
@@ -300,7 +300,7 @@ void dvrk::console::bridge_interface_provided_PSM(const std::string & _arm_name,
          _arm_name + "/tool_type");
 }
 
-void dvrk::console::add_topics_console(void)
+void dvrk_ros::console::add_topics_console(void)
 {
     const std::string _ros_namespace = "console/";
 
@@ -385,7 +385,7 @@ void dvrk::console::add_topics_console(void)
                       m_console->GetName(), "Main");
 }
 
-void dvrk::console::add_topics_endoscope_focus(void)
+void dvrk_ros::console::add_topics_endoscope_focus(void)
 {
     const std::string _ros_namespace = "endoscope_focus/";
     const std::string _focus_component_name = m_console->mDaVinciEndoscopeFocus->GetName();
@@ -418,7 +418,7 @@ void dvrk::console::add_topics_endoscope_focus(void)
                       _focus_component_name, "Control");
 }
 
-void dvrk::console::add_topics_io(void)
+void dvrk_ros::console::add_topics_io(void)
 {
     const std::string _ros_namespace = "stats/io/";
     m_pub_bridge->AddPublisherFromCommandRead<mtsIntervalStatistics, CISST_RAL_MSG(cisst_msgs, IntervalStatistics)>
@@ -435,7 +435,7 @@ void dvrk::console::add_topics_io(void)
     //                   m_console->m_IO_component_name, "Configuration");
 }
 
-void dvrk::console::add_topics_io(const double _publish_period_in_seconds,
+void dvrk_ros::console::add_topics_io(const double _publish_period_in_seconds,
                                   const bool _read_write)
 {
     if (!m_io_bridge) {
@@ -451,7 +451,7 @@ void dvrk::console::add_topics_io(const double _publish_period_in_seconds,
     }
 }
 
-void dvrk::console::add_topics_pid(const double _publish_period_in_seconds,
+void dvrk_ros::console::add_topics_pid(const double _publish_period_in_seconds,
                                    const bool _read_write)
 {
     mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
@@ -475,7 +475,7 @@ void dvrk::console::add_topics_pid(const double _publish_period_in_seconds,
 }
 
 
-void dvrk::console::add_topics_ECM_io(const std::string & _arm_name,
+void dvrk_ros::console::add_topics_ECM_io(const std::string & _arm_name,
                                       const std::string & _io_component_name)
 {
     // known events and corresponding ros topic
@@ -491,7 +491,7 @@ void dvrk::console::add_topics_ECM_io(const std::string & _arm_name,
     }
 }
 
-void dvrk::console::add_topics_PSM_io(const std::string & _arm_name,
+void dvrk_ros::console::add_topics_PSM_io(const std::string & _arm_name,
                                       const std::string & _io_component_name)
 {
     // known events and corresponding ros topic
@@ -509,7 +509,7 @@ void dvrk::console::add_topics_PSM_io(const std::string & _arm_name,
     }
 }
 
-void dvrk::console::add_topics_SUJ_voltages(void)
+void dvrk_ros::console::add_topics_SUJ_voltages(void)
 {
     mtsManagerLocal * _component_manager = mtsManagerLocal::GetInstance();
     mtsComponent * _suj = _component_manager->GetComponent("SUJ");
@@ -533,7 +533,7 @@ void dvrk::console::add_topics_SUJ_voltages(void)
     _component_manager->AddComponent(_pub_bridge);
 }
 
-void dvrk::console::add_topics_teleop_ECM(const std::string & _name)
+void dvrk_ros::console::add_topics_teleop_ECM(const std::string & _name)
 {
     std::string _ros_namespace = _name;
     cisst_ral::clean_namespace(_ros_namespace);
@@ -575,7 +575,7 @@ void dvrk::console::add_topics_teleop_ECM(const std::string & _name)
                       _name, "Setting");
 }
 
-void dvrk::console::add_topics_teleop_PSM(const std::string & _name)
+void dvrk_ros::console::add_topics_teleop_PSM(const std::string & _name)
 {
     std::string _ros_namespace = _name;
     cisst_ral::clean_namespace(_ros_namespace);

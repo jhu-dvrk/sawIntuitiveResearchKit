@@ -24,7 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 class mtsIntuitiveResearchKitConsole;
 class mts_ros_crtk_robot_io_bridge;
 
-namespace dvrk {
+namespace dvrk_ros {
     class console: public mts_ros_crtk_bridge_provided
     {
         CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
@@ -86,7 +86,7 @@ namespace dvrk {
     };
 }
 
-typedef dvrk::console dvrk_console;
-CMN_DECLARE_SERVICES_INSTANTIATION(dvrk_console);
+typedef dvrk_ros::console dvrk_ros_console;
+CMN_DECLARE_SERVICES_INSTANTIATION(dvrk_ros_console);
 
 #endif // _dvrk_console_h
