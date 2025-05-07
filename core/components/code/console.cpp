@@ -18,10 +18,78 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/console.h>
 
+#include <sawIntuitiveResearchKit/console_configuration.h>
+#include <sawIntuitiveResearchKit/system.h>
+#include <sawIntuitiveResearchKit/teleop_ECM_proxy.h>
+#include <sawIntuitiveResearchKit/teleop_PSM_proxy.h>
+
 #include <sawIntuitiveResearchKit/mtsDaVinciHeadSensor.h>
 #if sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR
 #include <sawIntuitiveResearchKit/mtsHIDHeadSensor.h>
 #endif
+
+dvrk::console::console(const std::string & name,
+                           dvrk::system * system,
+                           dvrk::console_configuration * config):
+    m_name(name),
+    m_system(system),
+    m_config(config)
+{
+}
+
+
+void dvrk::console::post_configure(void)
+{
+    // ECM teleops
+    for (auto & proxy_config : m_config->teleop_ECMs) {
+        const std::string name = proxy_config.MTML + "_" + proxy_config.MTMR + "_" + proxy_config.ECM;
+        auto iter = m_teleop_ECM_proxies.find(name);
+        if (iter == m_teleop_ECM_proxies.end()) {
+            // create a new teleop_ecm proxy if needed
+            auto teleop_proxy = std::make_shared<teleop_ECM_proxy>(name, this->m_system,
+                                                                   this, &proxy_config);
+            teleop_proxy->post_configure();
+            m_teleop_ECM_proxies[name] = teleop_proxy;
+        } else {
+            CMN_LOG_INIT_ERROR << "post: failed to configure teleop_ECMs, "
+                               << name << " already exists" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // PSM teleops
+    for (auto & proxy_config : m_config->teleop_PSMs) {
+        const std::string name = proxy_config.MTM + "_" + proxy_config.PSM;
+        auto iter = m_teleop_PSM_proxies.find(name);
+        if (iter == m_teleop_PSM_proxies.end()) {
+            // create a new teleop_ecm proxy if needed
+            auto teleop_proxy = std::make_shared<teleop_PSM_proxy>(name, this->m_system,
+                                                                   this, &proxy_config);
+            teleop_proxy->post_configure();
+            m_teleop_PSM_proxies[name] = teleop_proxy;
+        } else {
+            CMN_LOG_INIT_ERROR << "post: failed to configure teleop_PSMs, "
+                               << name << " already exists" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
+
+void dvrk::console::create_components(void)
+{
+    // ECM teleops
+    for (auto & proxy : m_teleop_ECM_proxies) {
+        proxy.second->create_teleop();
+        m_system->add_teleop_ECM_interfaces(proxy.second);
+    }
+
+    // PSM teleops
+    for (auto & proxy : m_teleop_PSM_proxies) {
+        proxy.second->create_teleop();
+        m_system->add_teleop_PSM_interfaces(proxy.second);
+    }
+}
 
 
 
@@ -236,66 +304,6 @@ http://www.cisst.org/cisst/license.txt.
 //     // }
 
 
-//     // ECM teleops
-//     // const auto json_teleop_ecms = jsonConfig["teleop_ECMs"];
-//     // for (unsigned int index = 0; index < json_teleop_ecms.size(); ++index) {
-//     //     const auto json_teleop_ecm = json_teleop_ecms[index];
-//     //     std::string teleop_ecm_name;
-//     //     if (!json_teleop_ecm["name"].empty()) {
-//     //         teleop_ecm_name = json_teleop_ecm["name"].asString();
-//     //     } else {
-//     //         const auto teleop_ecm_mtml_name = json_teleop_ecm["MTML"].asString();
-//     //         const auto teleop_ecm_mtmr_name = json_teleop_ecm["MTMR"].asString();
-//     //         const auto teleop_ecm_ecm_name = json_teleop_ecm["ECM"].asString();
-//     //         teleop_ecm_name = teleop_ecm_mtml_name + "_" + teleop_ecm_mtmr_name + "_" + teleop_ecm_ecm_name;
-//     //     }
-//     //     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: name for teleop_ECMs["
-//     //                                << index << "] is: " << teleop_ecm_name << std::endl;
-//     //     const auto iter = m_teleop_ECM_proxies.find(teleop_ecm_name);
-//     //     if (iter == m_teleop_ECM_proxies.end()) {
-//     //         // create a new teleop_ecm proxy if needed
-//     //         auto teleop_ECM_proxy = std::make_shared<teleop_ECM_proxy_t>(teleop_ecm_name, this);
-//     //         teleop_ECM_proxy->configure(json_teleop_ecm);
-//     //         m_teleop_ECM_proxies[teleop_ecm_name] = teleop_ECM_proxy;
-//     //         teleop_ECM_proxy->create_teleop();
-//     //         add_teleop_ECM_interfaces(teleop_ECM_proxy);
-//     //     } else {
-//     //         CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure teleop_ECMs["
-//     //                                  << index << "], teleop_ECM "
-//     //                                  << teleop_ecm_name << " already exists" << std::endl;
-//     //         exit(EXIT_FAILURE);
-//     //     }
-//     // }
-
-//     // // PSM teleops
-//     // const auto json_teleop_psms = jsonConfig["teleop_PSMs"];
-//     // for (unsigned int index = 0; index < json_teleop_psms.size(); ++index) {
-//     //     const auto json_teleop_psm = json_teleop_psms[index];
-//     //     std::string teleop_psm_name;
-//     //     if (!json_teleop_psm["name"].empty()) {
-//     //         teleop_psm_name = json_teleop_psm["name"].asString();
-//     //     } else {
-//     //         const auto teleop_psm_mtm_name = json_teleop_psm["MTM"].asString();
-//     //         const auto teleop_psm_psm_name = json_teleop_psm["PSM"].asString();
-//     //         teleop_psm_name = teleop_psm_mtm_name + "_" + teleop_psm_psm_name;
-//     //     }
-//     //     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: name for teleop_PSMs["
-//     //                                << index << "] is: " << teleop_psm_name << std::endl;
-//     //     const auto iter = m_teleop_PSM_proxies.find(teleop_psm_name);
-//     //     if (iter == m_teleop_PSM_proxies.end()) {
-//     //         // create a new teleop_psm proxy if needed
-//     //         auto teleop_PSM_proxy = std::make_shared<teleop_PSM_proxy_t>(teleop_psm_name, this);
-//     //         teleop_PSM_proxy->configure(json_teleop_psm);
-//     //         m_teleop_PSM_proxies[teleop_psm_name] = teleop_PSM_proxy;
-//     //         teleop_PSM_proxy->create_teleop();
-//     //         add_teleop_PSM_interfaces(teleop_PSM_proxy);
-//     //     } else {
-//     //         CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure teleop_PSMs["
-//     //                                  << index << "], teleop_PSM "
-//     //                                  << teleop_psm_name << " already exists" << std::endl;
-//     //         exit(EXIT_FAILURE);
-//     //     }
-//     // }
 
 //     // // see which event is used for operator present
 //     // // find name of button event used to detect if operator is present

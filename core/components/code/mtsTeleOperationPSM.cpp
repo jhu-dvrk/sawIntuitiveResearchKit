@@ -148,7 +148,7 @@ void mtsTeleOperationPSM::Init(void)
     }
 
     // footpedal events
-    interfaceRequired = AddInterfaceRequired("Clutch");
+    interfaceRequired = AddInterfaceRequired("clutch");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::ClutchEventHandler, this, "Button");
     }

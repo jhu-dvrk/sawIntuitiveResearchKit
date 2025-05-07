@@ -20,9 +20,11 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsManagerLocal.h>
 
-#include <sawIntuitiveResearchKit/arm_proxy.h>
 #include <sawIntuitiveResearchKit/system.h>
+#include <sawIntuitiveResearchKit/arm_proxy.h>
+#include <sawIntuitiveResearchKit/console.h>
 #include <sawIntuitiveResearchKit/teleop_proxy_configuration.h>
+
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 
 dvrk::teleop_PSM_proxy::teleop_PSM_proxy(const std::string & name,
@@ -41,31 +43,35 @@ void dvrk::teleop_PSM_proxy::post_configure(void)
 {
     auto iter = m_system->m_arm_proxies.find(m_config->MTM);
     if (iter == m_system->m_arm_proxies.end()) {
-        CMN_LOG_INIT_ERROR << "teleop_PSM_proxy_t::post_configure: MTM \""
+        CMN_LOG_INIT_ERROR << "teleop_PSM_proxy::post_configure: MTM \""
                            << m_config->MTM << "\" is not defined in \"arms\"" << std::endl;
         exit(EXIT_FAILURE);
     } else {
         auto arm_proxy = iter->second;
         if (!arm_proxy->m_config->MTM()) {
-            CMN_LOG_INIT_ERROR << "teleop_PSM_proxy_t::post_configure: MTM \""
+            CMN_LOG_INIT_ERROR << "teleop_PSM_proxy::post_configure: MTM \""
                                << m_config->MTM << "\" type must be some type of MTM" << std::endl;
             exit(EXIT_FAILURE);
         }
+        m_MTM_component_name = arm_proxy->m_arm_component_name;
+        m_MTM_interface_name = arm_proxy->m_arm_interface_name;
     }
     iter = m_system->m_arm_proxies.find(m_config->PSM);
     if (iter == m_system->m_arm_proxies.end()) {
-        CMN_LOG_INIT_ERROR << "teleop_PSM_proxy_t::post_configure: PSM \""
+        CMN_LOG_INIT_ERROR << "teleop_PSM_proxy::post_configure: PSM \""
                            << m_config->PSM << "\" is not defined in \"arms\"" << std::endl;
         exit(EXIT_FAILURE);
     } else {
         auto arm_proxy = iter->second;
         if (!arm_proxy->m_config->PSM()) {
-            CMN_LOG_INIT_ERROR << "teleop_PSM_proxy_t::post_configure: PSM \""
+            CMN_LOG_INIT_ERROR << "teleop_PSM_proxy::post_configure: PSM \""
                                << m_config->PSM << "\" type must be some type of PSM" << std::endl;
             exit(EXIT_FAILURE);
         }
+        m_PSM_component_name = arm_proxy->m_arm_component_name;
+        m_PSM_interface_name = arm_proxy->m_arm_interface_name;
     }
-
+    std::cerr << CMN_LOG_DETAILS << "add checks re. scale is valid" << std::endl;
 }
 
 
@@ -107,20 +113,14 @@ void dvrk::teleop_PSM_proxy::create_teleop(void)
     }
 
     // schedule connections
-    auto iter_MTM = m_system->m_arm_proxies.find(m_config->MTM);
-    CMN_ASSERT(iter_MTM != m_system->m_arm_proxies.end());
     m_system->m_connections.Add(m_name, "MTM",
-                                 iter_MTM->second->m_arm_component_name,
-                                 iter_MTM->second->m_arm_interface_name);
-    auto iter_PSM = m_system->m_arm_proxies.find(m_config->PSM);
-    CMN_ASSERT(iter_PSM != m_system->m_arm_proxies.end());
+                                m_MTM_component_name, m_MTM_interface_name);
     m_system->m_connections.Add(m_name, "PSM",
-                                 iter_PSM->second->m_arm_component_name,
-                                 iter_PSM->second->m_arm_interface_name);
-    m_system->m_connections.Add(m_name, "Clutch",
-                                 m_system->GetName(), "Clutch"); // clutch from console
+                                m_PSM_component_name, m_PSM_interface_name);
+    m_system->m_connections.Add(m_name, "clutch",
+                                m_system->GetName(), m_console->m_name + "/clutch"); // clutch from console
     m_system->m_connections.Add(m_system->GetName(), m_name,
-                                 m_name, "Setting");
+                                m_name, "Setting");
     // if ((baseFrameComponent != "")
     //     && (baseFrameInterface != "")) {
     //     m_connections.Add(name, "PSM_base_frame",

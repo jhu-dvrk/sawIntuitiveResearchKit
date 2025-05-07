@@ -85,7 +85,7 @@
     "consoles":
     [
         {
-            "name": "main",
+            "name": "console",
             "input_type": "SIMULATED",
             "teleop_PSMs":
             [

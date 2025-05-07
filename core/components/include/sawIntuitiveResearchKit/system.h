@@ -53,6 +53,7 @@ namespace dvrk {
         
     public:
         friend class ::mtsIntuitiveResearchKitConsoleQt;
+        friend class dvrk::console;
         friend class dvrk::arm_proxy;
         friend class dvrk::teleop_ECM_proxy;
         friend class dvrk::teleop_PSM_proxy;
@@ -104,6 +105,9 @@ namespace dvrk {
         
         typedef std::map<std::string, std::shared_ptr<dvrk::arm_proxy>> arm_proxies;
         arm_proxies m_arm_proxies;
+
+        typedef std::map<std::string, std::shared_ptr<dvrk::console>> consoles;
+        consoles m_consoles;
         
         // /*! Head sensor */
         // mtsComponent * mHeadSensor = nullptr;
@@ -113,6 +117,7 @@ namespace dvrk {
         
         bool add_IO_interfaces(std::shared_ptr<dvrk::IO_proxy> IO_proxy);
         bool add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> arm_proxy);
+        bool add_console_interfaces(std::shared_ptr<dvrk::console> console);
         
         // these two methods have exact same implementation.it would be
         // nice to have a base class, or template this

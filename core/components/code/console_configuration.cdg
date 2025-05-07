@@ -46,6 +46,12 @@ class {
     attribute CISST_EXPORT;
 
     member {
+        name name;
+        type std::string;
+        visibility public;
+    }
+
+    member {
         name input_type;
         type dvrk::console_input_type;
         visibility public;

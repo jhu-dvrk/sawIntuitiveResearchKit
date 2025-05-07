@@ -31,6 +31,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
 #include <sawIntuitiveResearchKit/IO_proxy.h>
 #include <sawIntuitiveResearchKit/arm_proxy.h>
+#include <sawIntuitiveResearchKit/console.h>
 #include <sawIntuitiveResearchKit/teleop_PSM_proxy.h>
 #include <sawIntuitiveResearchKit/teleop_ECM_proxy.h>
 
@@ -173,30 +174,46 @@ void dvrk::system::Configure(const std::string & filename)
     m_audio_volume = 0.5;
 
     // find all IOs
-    for (auto & IO : m_config.IOs) {
-        const auto iter = m_IO_proxies.find(IO.name);
+    for (auto & IO_config : m_config.IOs) {
+        const auto iter = m_IO_proxies.find(IO_config.name);
         if (iter == m_IO_proxies.end()) {
             // create a new IO proxy if needed
-            auto IO_proxy = std::make_shared<dvrk::IO_proxy>(IO.name, this, &IO);
+            auto IO_proxy = std::make_shared<dvrk::IO_proxy>(IO_config.name, this, &IO_config);
             IO_proxy->post_configure();
-            m_IO_proxies[IO.name] = IO_proxy;
+            m_IO_proxies[IO_config.name] = IO_proxy;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure IO "
-                                     << IO.name << ", IO already exists" << std::endl;
+                                     << IO_config.name << ", IO already exists" << std::endl;
             exit(EXIT_FAILURE);
         }
     }
 
-    for (auto & arm : m_config.arms) {
-        const auto iter = m_arm_proxies.find(arm.name);
+    // find all arms
+    for (auto & arm_config : m_config.arms) {
+        const auto iter = m_arm_proxies.find(arm_config.name);
         if (iter == m_arm_proxies.end()) {
             // create a new arm proxy if needed
-            auto arm_proxy = std::make_shared<dvrk::arm_proxy>(arm.name, this, &arm);
+            auto arm_proxy = std::make_shared<dvrk::arm_proxy>(arm_config.name, this, &arm_config);
             arm_proxy->post_configure();
-            m_arm_proxies[arm.name] = arm_proxy;
+            m_arm_proxies[arm_config.name] = arm_proxy;
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure arm "
-                                     << arm.name << ", arm already exists" << std::endl;
+                                     << arm_config.name << ", arm already exists" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // find all consoles
+    for (auto & console_config : m_config.consoles) {
+        const auto iter = m_consoles.find(console_config.name);
+        if (iter == m_consoles.end()) {
+            // create a new console if needed
+            auto console = std::make_shared<dvrk::console>(console_config.name, this, &console_config);
+            console->post_configure();
+            m_consoles[console_config.name] = console;
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure console "
+                                     << console_config.name << ", console already exists" << std::endl;
             exit(EXIT_FAILURE);
         }
     }
@@ -217,6 +234,19 @@ void dvrk::system::Configure(const std::string & filename)
         arm_proxy->create_PID();
         add_arm_interfaces(arm_proxy);
     }
+
+    // load consoles if any
+    for (auto iter : m_consoles) {
+        auto & console = iter.second;
+        console->create_components();
+        add_console_interfaces(console);
+
+
+        // arm_proxy->configure_IO();
+        // arm_proxy->create_PID();
+        // add_arm_interfaces(arm_proxy);
+    }
+    
 
     // }
     // this->AddFootpedalInterfaces();
@@ -479,6 +509,21 @@ bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> arm)
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "add_arm_interfaces: failed to add Main interface for arm \""
                                  << arm->m_name << "\"" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+
+bool dvrk::system::add_console_interfaces(std::shared_ptr<dvrk::console> console)
+{
+    console->m_clutch_interface_provided = this->AddInterfaceProvided(console->m_name + "/clutch");
+    if (console->m_clutch_interface_provided) {
+        console->m_clutch_propagate =
+            console->m_clutch_interface_provided->AddEventWrite("Button", prmEventButton());
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add clutch for console \""
+                                 << console->m_name << "\"" << std::endl;
         return false;
     }
     return true;

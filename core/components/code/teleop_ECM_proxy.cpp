@@ -20,9 +20,11 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsManagerLocal.h>
 
-#include <sawIntuitiveResearchKit/arm_proxy.h>
 #include <sawIntuitiveResearchKit/system.h>
+#include <sawIntuitiveResearchKit/arm_proxy.h>
+#include <sawIntuitiveResearchKit/console.h>
 #include <sawIntuitiveResearchKit/teleop_proxy_configuration.h>
+
 #include <sawIntuitiveResearchKit/mtsTeleOperationECM.h>
 
 dvrk::teleop_ECM_proxy::teleop_ECM_proxy(const std::string & name,
@@ -39,6 +41,56 @@ dvrk::teleop_ECM_proxy::teleop_ECM_proxy(const std::string & name,
 
 void dvrk::teleop_ECM_proxy::post_configure(void)
 {
+    // check that all arms have been defined and have correct type
+    // MTML
+    auto iter = m_system->m_arm_proxies.find(m_config->MTML);
+    if (iter == m_system->m_arm_proxies.end()) {
+        CMN_LOG_INIT_ERROR << "teleop_ECM_proxy::post_configure: MTML \""
+                           << m_config->MTML << "\" is not defined in \"arms\"" << std::endl;
+        exit(EXIT_FAILURE);
+    } else {
+        auto arm_proxy = iter->second;
+        if (!arm_proxy->m_config->MTM()) {
+            CMN_LOG_INIT_ERROR << "teleop_ECM_proxy::post_configure: MTML \""
+                               << m_config->MTML << "\" type must be some type of MTM" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        m_MTML_component_name = arm_proxy->m_arm_component_name;
+        m_MTML_interface_name = arm_proxy->m_arm_interface_name;
+    }
+    // MTMR
+    iter = m_system->m_arm_proxies.find(m_config->MTMR);
+    if (iter == m_system->m_arm_proxies.end()) {
+        CMN_LOG_INIT_ERROR << "teleop_ECM_proxy::post_configure: MTMR \""
+                           << m_config->MTMR << "\" is not defined in \"arms\"" << std::endl;
+        exit(EXIT_FAILURE);
+    } else {
+        auto arm_proxy = iter->second;
+        if (!arm_proxy->m_config->MTM()) {
+            CMN_LOG_INIT_ERROR << "teleop_ECM_proxy::post_configure: MTMR \""
+                               << m_config->MTMR << "\" type must be some type of MTM" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        m_MTMR_component_name = arm_proxy->m_arm_component_name;
+        m_MTMR_interface_name = arm_proxy->m_arm_interface_name;
+    }
+
+    // ECM
+    iter = m_system->m_arm_proxies.find(m_config->ECM);
+    if (iter == m_system->m_arm_proxies.end()) {
+        CMN_LOG_INIT_ERROR << "teleop_ECM_proxy::post_configure: ECM \""
+                           << m_config->ECM << "\" is not defined in \"arms\"" << std::endl;
+        exit(EXIT_FAILURE);
+    } else {
+        auto arm_proxy = iter->second;
+        if (!arm_proxy->m_config->ECM()) {
+            CMN_LOG_INIT_ERROR << "teleop_ECM_proxy::post_configure: ECM \""
+                               << m_config->ECM << "\" type must be some type of ECM" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        m_ECM_component_name = arm_proxy->m_arm_component_name;
+        m_ECM_interface_name = arm_proxy->m_arm_interface_name;
+    }
     std::cerr << CMN_LOG_DETAILS << "add checks re. scale is valid, different MTMs" << std::endl;
 }
 
@@ -80,72 +132,15 @@ void dvrk::teleop_ECM_proxy::create_teleop(void)
         break;
     }
 
-    std::cerr << CMN_LOG_DETAILS << " move this check to post_configure and save component/interface names in proxy " << std::endl;
-    // find the names for the MTM and ECM components as well as their provided interfaces
-    std::string
-        mtml_component, mtml_interface,
-        mtmr_component, mtmr_interface,
-        ecm_component, ecm_interface;
-    // check that all arms have been defined and have correct type
-    // MTML
-    auto iter = m_system->m_arm_proxies.find(m_config->MTML);
-    if (iter == m_system->m_arm_proxies.end()) {
-        CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: MTML \""
-                           << m_config->MTML << "\" is not defined in \"arms\"" << std::endl;
-        exit(EXIT_FAILURE);
-    } else {
-        auto arm_proxy = iter->second;
-        if (!arm_proxy->m_config->MTM()) {
-            CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: MTML \""
-                               << m_config->MTML << "\" type must be some type of MTM" << std::endl;
-            exit(EXIT_FAILURE);
-        }
-        mtml_component = arm_proxy->m_arm_component_name;
-        mtml_interface = arm_proxy->m_arm_interface_name;
-    }
-    // MTMR
-    iter = m_system->m_arm_proxies.find(m_config->MTMR);
-    if (iter == m_system->m_arm_proxies.end()) {
-        CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: MTMR \""
-                           << m_config->MTMR << "\" is not defined in \"arms\"" << std::endl;
-        exit(EXIT_FAILURE);
-    } else {
-        auto arm_proxy = iter->second;
-        if (!arm_proxy->m_config->MTM()) {
-            CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: MTMR \""
-                               << m_config->MTMR << "\" type must be some type of MTM" << std::endl;
-            exit(EXIT_FAILURE);
-        }
-        mtmr_component = arm_proxy->m_arm_component_name;
-        mtmr_interface = arm_proxy->m_arm_interface_name;
-    }
-
-    // ECM
-    iter = m_system->m_arm_proxies.find(m_config->ECM);
-    if (iter == m_system->m_arm_proxies.end()) {
-        CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: ECM \""
-                           << m_config->ECM << "\" is not defined in \"arms\"" << std::endl;
-        exit(EXIT_FAILURE);
-    } else {
-        auto arm_proxy = iter->second;
-        if (!arm_proxy->m_config->ECM()) {
-            CMN_LOG_INIT_ERROR << "teleop_ECM_proxy_t::create_teleop: ECM \""
-                               << m_config->ECM << "\" type must be some type of ECM" << std::endl;
-            exit(EXIT_FAILURE);
-        }
-        ecm_component = arm_proxy->m_arm_component_name;
-        ecm_interface = arm_proxy->m_arm_interface_name;
-    }
-
     // schedule connections
     m_system->m_connections.Add(m_name, "MTML",
-                                 mtml_component, mtml_interface);
+                                m_MTML_component_name, m_MTML_interface_name);
     m_system->m_connections.Add(m_name, "MTMR",
-                                 mtmr_component, mtmr_interface);
+                                m_MTMR_component_name, m_MTMR_interface_name);
     m_system->m_connections.Add(m_name, "ECM",
-                                 ecm_component, ecm_interface);
-    m_system->m_connections.Add(m_name, "Clutch",
-                                 m_system->GetName(), "Clutch"); // clutch from console
+                                m_ECM_component_name, m_ECM_interface_name);
+    m_system->m_connections.Add(m_name, "clutch",
+                                 m_system->GetName(), m_console->m_name + "/clutch"); // clutch from console
     m_system->m_connections.Add(m_system->GetName(), m_name,
                                  m_name, "Setting");
     // if ((baseFrameComponent != "")

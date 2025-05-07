@@ -58,6 +58,9 @@ namespace dvrk {
         mtsFunctionWrite state_command;
         mtsFunctionWrite set_scale;
         mtsInterfaceRequired * m_interface_required;
+
+        std::string m_MTM_component_name, m_MTM_interface_name,
+        m_PSM_component_name, m_PSM_interface_name;
     };
 
 }

@@ -24,8 +24,12 @@ http://www.cisst.org/cisst/license.txt.
 #include <map>
 #include <memory>
 
+#include <cisstMultiTask/mtsFunctionWrite.h>
+
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+
+class mtsInterfaceProvided;
 
 namespace dvrk {
 
@@ -34,10 +38,12 @@ namespace dvrk {
     class teleop_PSM_proxy;
     class teleop_ECM_proxy;
 
-    class CISST_EXPORT console {
+    class CISST_EXPORT console: std::enable_shared_from_this<dvrk::console>  {
 
     public:
 
+        friend class system;
+    
         std::string m_name;
         dvrk::system * m_system = nullptr;
         dvrk::console_configuration * m_config = nullptr;
@@ -63,6 +69,9 @@ namespace dvrk {
 
     protected:
 
+        // to send clutch to teleop components
+        mtsInterfaceProvided * m_clutch_interface_provided;
+        mtsFunctionWrite m_clutch_propagate;
 
     };
 }
