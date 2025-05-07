@@ -28,33 +28,35 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 class mtsRobotIO1394;
-class mtsIntuitiveResearchKitConsole;
 
 namespace dvrk {
-    
+
+    class system;
+    class arm_proxy;
+
     class CISST_EXPORT IO_proxy {
      public:
-    
-        friend class ::mtsIntuitiveResearchKitConsole;
-        friend class arm_proxy;
-    
+
+        friend class dvrk::system;
+        friend class dvrk::arm_proxy;
+
         std::string m_name;
-        mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        dvrk::system * m_system = nullptr;
         dvrk::IO_proxy_configuration * m_config = nullptr;
-        
+
         IO_proxy(const std::string & name,
-                 mtsIntuitiveResearchKitConsole * console,
+                 dvrk::system * console,
                  dvrk::IO_proxy_configuration * config);
-        
-        NOT_COPYABLE(IO_proxy);
-        NOT_MOVEABLE(IO_proxy);
-    
+
+        // NOT_COPYABLE(IO_proxy);
+        // NOT_MOVEABLE(IO_proxy);
+
         /*! Configure, i.e. load json and validate. */
         void post_configure(void);
-        
+
         /*! Create and configure IO component. */
         void create_IO(void);
-         
+
      protected:
         std::shared_ptr<mtsRobotIO1394> m_IO = nullptr;
         mtsFunctionVoid close_all_relays;

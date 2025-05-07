@@ -26,7 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
 #include <sawControllers/mtsPIDQtWidget.h>
 
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
+#include <sawIntuitiveResearchKit/system.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h> // should have a proxy
 
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocusQtWidget.h>
@@ -49,29 +49,29 @@ mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(void)
 {
 }
 
-void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole * console)
+void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
 {
     mtsComponentManager * component_manager = mtsComponentManager::GetInstance();
 
     mtsIntuitiveResearchKitConsoleQtWidget * consoleGUI = new mtsIntuitiveResearchKitConsoleQtWidget("consoleGUI");
     component_manager->AddComponent(consoleGUI);
-    // connect consoleGUI to console
-    Connections.Add("consoleGUI", "Main", "console", "Main");
-    if (console->GetInterfaceRequired("Clutch")) {
-        Connections.Add("consoleGUI", "Clutch", "console", "Clutch");
+    // connect consoleGUI to system
+    Connections.Add("consoleGUI", "Main", system->GetName(), "Main");
+    if (system->GetInterfaceRequired("Clutch")) {
+        Connections.Add("consoleGUI", "Clutch", system->GetName(), "Clutch");
     }
-    if (console->GetInterfaceRequired("OperatorPresent")) {
-        Connections.Add("consoleGUI", "OperatorPresent", "console", "OperatorPresent");
+    if (system->GetInterfaceRequired("OperatorPresent")) {
+        Connections.Add("consoleGUI", "OperatorPresent", system->GetName(), "OperatorPresent");
     }
-    if (console->GetInterfaceRequired("Camera")) {
-        Connections.Add("consoleGUI", "Camera", "console", "Camera");
+    if (system->GetInterfaceRequired("Camera")) {
+        Connections.Add("consoleGUI", "Camera", system->GetName(), "Camera");
     }
 
     TabWidget = consoleGUI->GetTabWidget();
 
     // IOs
     QTabWidget * ioTabWidget;
-    if (console->m_arm_proxies.size() > 1) {
+    if (system->m_arm_proxies.size() > 1) {
         ioTabWidget = new QTabWidget();
         ioTabWidget->setObjectName(QString("IOs"));
         TabWidget->addTab(ioTabWidget, "IOSs");
@@ -79,7 +79,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         ioTabWidget = TabWidget;
     }
 
-    for (const auto & iter : console->m_IO_proxies) {
+    for (const auto & iter : system->m_IO_proxies) {
         const std::string & name = iter.first;
         const std::string factory_name = "io_widget_factory_for_" + name;
 
@@ -104,7 +104,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     // Arm and PID widgets
     QTabWidget * pidTabWidget;
     QTabWidget * armTabWidget;
-    if (console->m_arm_proxies.size() > 1) {
+    if (system->m_arm_proxies.size() > 1) {
         pidTabWidget = new QTabWidget();
         pidTabWidget->setObjectName(QString("PIDs"));
         TabWidget->addTab(pidTabWidget, "PIDs");
@@ -116,7 +116,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
         armTabWidget = TabWidget;
     }
 
-    for (const auto & iter : console->m_arm_proxies) {
+    for (const auto & iter : system->m_arm_proxies) {
         mtsIntuitiveResearchKitArmQtWidget * armGUI;
         mtsIntuitiveResearchKitSUJQtWidget * sujGUI;
         mtsPIDQtWidget * pidGUI;
@@ -230,10 +230,10 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     }
 
     // add teleop PSM widgets
-    bool hasTeleOp = false;
+    // bool hasTeleOp = false;
 
-    QTabWidget * teleopTabWidget;
-    // if ((console->m_teleop_PSM_proxies.size() + console->m_teleop_ECM_proxies.size()) > 1) {
+    // QTabWidget * teleopTabWidget;
+    // if ((system->m_teleop_PSM_proxies.size() + system->m_teleop_ECM_proxies.size()) > 1) {
     //     teleopTabWidget = new QTabWidget();
     //     teleopTabWidget->setObjectName(QString("Teleops"));
     //     TabWidget->addTab(teleopTabWidget, "Teleops");
@@ -241,7 +241,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     //     teleopTabWidget = TabWidget; // use current tab widget
     // }
 
-    // for (const auto & iter : console->m_teleop_PSM_proxies) {
+    // for (const auto & iter : system->m_teleop_PSM_proxies) {
     //     hasTeleOp = true;
     //     const std::string name = iter.first;
     //     mtsTeleOperationPSMQtWidget * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "_GUI");
@@ -252,7 +252,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     //     teleopTabWidget->addTab(teleopGUI, name.c_str());
     // }
 
-    // for (const auto & iter : console->m_teleop_ECM_proxies) {
+    // for (const auto & iter : system->m_teleop_ECM_proxies) {
     //     hasTeleOp = true;
     //     const std::string name = iter.first;
     //     mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "_GUI");
@@ -264,16 +264,16 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(mtsIntuitiveResearchKitConsole 
     // }
 
     // add endoscope focus widget
-    if (console->mDaVinciEndoscopeFocus) {
-        const std::string name = console->mDaVinciEndoscopeFocus->GetName();
-        mtsDaVinciEndoscopeFocusQtWidget * endoscopeGUI = new mtsDaVinciEndoscopeFocusQtWidget(name + "_GUI");
-        endoscopeGUI->Configure();
-        component_manager->AddComponent(endoscopeGUI);
-        Connections.Add(endoscopeGUI->GetName(), "Endoscope", name, "Control");
-        TabWidget->addTab(endoscopeGUI, "Focus");
-    }
+    // if (system->mDaVinciEndoscopeFocus) {
+    //     const std::string name = system->mDaVinciEndoscopeFocus->GetName();
+    //     mtsDaVinciEndoscopeFocusQtWidget * endoscopeGUI = new mtsDaVinciEndoscopeFocusQtWidget(name + "_GUI");
+    //     endoscopeGUI->Configure();
+    //     component_manager->AddComponent(endoscopeGUI);
+    //     Connections.Add(endoscopeGUI->GetName(), "Endoscope", name, "Control");
+    //     TabWidget->addTab(endoscopeGUI, "Focus");
+    // }
 
-    consoleGUI->HasTeleOp(hasTeleOp);
+    // consoleGUI->HasTeleOp(hasTeleOp);
 
     // show all widgets
     TabWidget->show();

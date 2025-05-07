@@ -598,7 +598,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
                     << "   file.  The arm file should contain the field" << std::endl
                     << "   \"kinematic\" and options specific to each arm type." << std::endl
                     << "----------------------------------------------------";
-            std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
+            std::cerr << "mtsIntuitiveResearchKitArm::" << message.str() << std::endl;
             CMN_LOG_CLASS_INIT_ERROR << message.str() << std::endl;
             exit(EXIT_FAILURE);
         }

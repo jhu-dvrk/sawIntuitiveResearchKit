@@ -64,40 +64,40 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequired->AddFunction("home", Console.home);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler,
                                                 this, "ArmCurrentState");
-        interfaceRequired->AddFunction("teleop_enable", Console.teleop_enable);
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopEnabledEventHandler,
-                                                this, "teleop_enabled");
-        interfaceRequired->AddFunction("select_teleop_PSM", Console.select_teleop_PSM);
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMSelectedEventHandler,
-                                                this, "teleop_PSM_selected");
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMUnselectedEventHandler,
-                                                this, "teleop_PSM_unselected");
-        interfaceRequired->AddFunction("set_scale", Console.set_scale);
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
-                                                this, "scale");
+        // interfaceRequired->AddFunction("teleop_enable", Console.teleop_enable);
+        // interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopEnabledEventHandler,
+        //                                         this, "teleop_enabled");
+        // interfaceRequired->AddFunction("select_teleop_PSM", Console.select_teleop_PSM);
+        // interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMSelectedEventHandler,
+        //                                         this, "teleop_PSM_selected");
+        // interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMUnselectedEventHandler,
+        //                                         this, "teleop_PSM_unselected");
+        // interfaceRequired->AddFunction("set_scale", Console.set_scale);
+        // interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
+        //                                         this, "scale");
         interfaceRequired->AddFunction("set_volume", Console.set_volume);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::VolumeEventHandler,
                                                 this, "volume");
-        interfaceRequired->AddFunction("emulate_operator_present", Console.emulate_operator_present);
-        interfaceRequired->AddFunction("emulate_clutch", Console.emulate_clutch);
-        interfaceRequired->AddFunction("emulate_camera", Console.emulate_camera);
-        interfaceRequired->AddFunction("calibration_mode", Console.calibration_mode);
+        // interfaceRequired->AddFunction("emulate_operator_present", Console.emulate_operator_present);
+        // interfaceRequired->AddFunction("emulate_clutch", Console.emulate_clutch);
+        // interfaceRequired->AddFunction("emulate_camera", Console.emulate_camera);
+        // interfaceRequired->AddFunction("calibration_mode", Console.calibration_mode);
     }
-    interfaceRequired = AddInterfaceRequired("OperatorPresent");
-    if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler,
-                                                this, "Button");
-    }
-    interfaceRequired = AddInterfaceRequired("Clutch");
-    if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler,
-                                                this, "Button");
-    }
-    interfaceRequired = AddInterfaceRequired("Camera");
-    if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler,
-                                                this, "Button");
-    }
+    // interfaceRequired = AddInterfaceRequired("OperatorPresent");
+    // if (interfaceRequired) {
+    //     interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler,
+    //                                             this, "Button");
+    // }
+    // interfaceRequired = AddInterfaceRequired("Clutch");
+    // if (interfaceRequired) {
+    //     interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler,
+    //                                             this, "Button");
+    // }
+    // interfaceRequired = AddInterfaceRequired("Camera");
+    // if (interfaceRequired) {
+    //     interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler,
+    //                                             this, "Button");
+    // }
     setupUi();
 }
 

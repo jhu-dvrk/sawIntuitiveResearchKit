@@ -21,7 +21,10 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisst_ros_crtk/mts_ros_crtk_bridge_provided.h>
 
-class mtsIntuitiveResearchKitConsole;
+namespace dvrk {
+    class system;
+}
+
 class mts_ros_crtk_robot_io_bridge;
 
 namespace dvrk_ros {
@@ -34,7 +37,7 @@ namespace dvrk_ros {
                 cisst_ral::node_ptr_t node_handle,
                 const double & publish_rate_in_seconds,
                 const double & tf_rate_in_seconds,
-                mtsIntuitiveResearchKitConsole * mts_console);
+                dvrk::system * dVRK_system);
 
         // methods using CRTK bridge_interface_provided method
         void bridge_interface_provided_arm(const std::string & _component_name,
@@ -61,19 +64,19 @@ namespace dvrk_ros {
         void add_topics_console(void);
         void add_topics_endoscope_focus(void);
         // IO timing (to be deprecated)
-        void add_topics_io(void);
+        void add_topics_IO(void);
         // add topics for IO
-        void add_topics_io(const double _publish_period_in_seconds,
+        void add_topics_IO(const double _publish_period_in_seconds,
                            const bool _read_write);
         // add topics for all PIDs
-        void add_topics_pid(const double _publish_period_in_seconds,
+        void add_topics_PID(const double _publish_period_in_seconds,
                             const bool _read_write);
         // buttons on ECM
-        void add_topics_ECM_io(const std::string & _arm_name,
-                               const std::string & _io_component_name);
+        void add_topics_ECM_IO(const std::string & _arm_name,
+                               const std::string & _IO_component_name);
         // buttons on PSM
-        void add_topics_PSM_io(const std::string & _arm_name,
-                               const std::string & _io_component_name);
+        void add_topics_PSM_IO(const std::string & _arm_name,
+                               const std::string & _IO_component_name);
         void add_topics_SUJ_voltages(void);
         void add_topics_teleop_ECM(const std::string & _name);
         void add_topics_teleop_PSM(const std::string & _name);
@@ -81,8 +84,7 @@ namespace dvrk_ros {
     protected:
         mtsROSBridge * m_pub_bridge;
         double m_publish_rate, m_tf_rate;
-        mtsIntuitiveResearchKitConsole * m_console;
-        mts_ros_crtk_robot_io_bridge * m_io_bridge = nullptr;
+        dvrk::system * m_system;
     };
 }
 

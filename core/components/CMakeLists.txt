@@ -154,7 +154,6 @@ if (cisst_FOUND)
       mtsIntuitiveResearchKitSUJFixed.h
       mtsTeleOperationPSM.h
       mtsTeleOperationECM.h
-      mtsIntuitiveResearchKitConsole.h
       mtsDaVinciHeadSensor.h
       mtsDaVinciEndoscopeFocus.h
       mtsSocketBasePSM.h
@@ -172,6 +171,7 @@ if (cisst_FOUND)
       arm_proxy.h
       console.h
       IO_proxy.h
+      system.h
       teleop_ECM_proxy.h
       teleop_PSM_proxy.h
     )
@@ -188,7 +188,6 @@ if (cisst_FOUND)
       mtsIntuitiveResearchKitSUJFixed.cpp
       mtsTeleOperationPSM.cpp
       mtsTeleOperationECM.cpp
-      mtsIntuitiveResearchKitConsole.cpp
       mtsDaVinciHeadSensor.cpp
       mtsDaVinciEndoscopeFocus.cpp
       mtsSocketBasePSM.cpp
@@ -205,7 +204,11 @@ if (cisst_FOUND)
       robGravityCompensationMTM.h
 
       arm_proxy.cpp
+      console.cpp
       IO_proxy.cpp
+      system.cpp
+      teleop_ECM_proxy.cpp
+      teleop_PSM_proxy.cpp
     )
 
     set (_CDG_FILES

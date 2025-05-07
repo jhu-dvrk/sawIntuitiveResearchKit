@@ -30,7 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsCollectorQtFactory.h>
 #include <cisstMultiTask/mtsCollectorQtWidget.h>
 
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
+#include <sawIntuitiveResearchKit/system.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQt.h>
 
 #include <QApplication>
@@ -39,11 +39,11 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <clocale>
 
-void fileExists(const std::string & description, std::string & filename,
-                mtsIntuitiveResearchKitConsole * console)
+void file_exists(const std::string & description, std::string & filename,
+                 dvrk::system * system)
 {
     if (!cmnPath::Exists(filename)) {
-        const std::string fileInPath = console->find_file(filename);
+        const std::string fileInPath = system->find_file(filename);
         if (fileInPath == "") {
             std::cerr << "File not found: " << description
                       << ": " << filename << std::endl;
@@ -115,12 +115,12 @@ int main(int argc, char ** argv)
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
     // console
-    mtsIntuitiveResearchKitConsole * console = new mtsIntuitiveResearchKitConsole("console");
-    console->set_calibration_mode(options.IsSet("calibration-mode"));
-    fileExists("console JSON configuration file", jsonMainConfigFile, console);
-    console->Configure(jsonMainConfigFile);
-    componentManager->AddComponent(console);
-    console->Connect();
+    dvrk::system * system = new dvrk::system("dVRK_system");
+    system->set_calibration_mode(options.IsSet("calibration-mode"));
+    file_exists("dVRK system JSON configuration file", jsonMainConfigFile, system);
+    system->Configure(jsonMainConfigFile);
+    componentManager->AddComponent(system);
+    system->Connect();
 
     QApplication * application;
     mtsIntuitiveResearchKitConsoleQt * consoleQt = 0;
@@ -141,14 +141,14 @@ int main(int argc, char ** argv)
             cmnQt::SetDarkMode();
         }
         consoleQt = new mtsIntuitiveResearchKitConsoleQt();
-        consoleQt->Configure(console);
+        consoleQt->Configure(system);
         consoleQt->Connect();
     }
 
     // configure data collection if needed
     if (options.IsSet("collection-config")) {
         // make sure the json config file exists
-        fileExists("JSON data collection configuration", jsonCollectionConfigFile, console);
+        file_exists("JSON data collection configuration", jsonCollectionConfigFile, system);
 
         mtsCollectorFactory * collectorFactory = new mtsCollectorFactory("collectors");
         collectorFactory->Configure(jsonCollectionConfigFile);
@@ -197,7 +197,7 @@ int main(int argc, char ** argv)
     // stop all logs
     logger.Stop();
 
-    delete console;
+    delete system;
     if (hasQt) {
         delete consoleQt;
     }

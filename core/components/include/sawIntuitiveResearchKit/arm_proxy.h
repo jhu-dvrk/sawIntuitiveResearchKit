@@ -32,22 +32,23 @@ http://www.cisst.org/cisst/license.txt.
 // Always include last!
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
-class mtsIntuitiveResearchKitConsole;
 class mtsIntuitiveResearchKitArm;
 
 namespace dvrk {
 
+    class system;
+    
     class CISST_EXPORT arm_proxy {
      public:
 
-        friend class ::mtsIntuitiveResearchKitConsole;
+        friend class dvrk::system;
 
         arm_proxy(const std::string & name,
-                  mtsIntuitiveResearchKitConsole * console,
+                  dvrk::system * system,
                   dvrk::arm_proxy_configuration * config);
 
-        NOT_COPYABLE(arm_proxy);
-        NOT_MOVEABLE(arm_proxy);
+        // NOT_COPYABLE(arm_proxy);
+        // NOT_MOVEABLE(arm_proxy);
 
         /*! Load and validate configuration from json */
         void post_configure(void);
@@ -72,7 +73,7 @@ namespace dvrk {
         dvrk::generation generation(void) const;
 
         std::string m_name;
-        mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        dvrk::system * m_system = nullptr;
         dvrk::arm_proxy_configuration * m_config = nullptr;
 
         std::shared_ptr<mtsIntuitiveResearchKitArm> m_arm = nullptr;

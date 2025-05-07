@@ -25,40 +25,36 @@ http://www.cisst.org/cisst/license.txt.
 // Always include last!
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
-class mtsIntuitiveResearchKitConsole;
-
 namespace dvrk {
 
+    class system;
+    class console;
+    class teleop_PSM_proxy_configuration;
+
     class CISST_EXPORT teleop_PSM_proxy {
-     public:
-        friend class ::mtsIntuitiveResearchKitConsole;
+    public:
+    
+        friend class dvrk::system;
     
         std::string m_name;
-        mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        dvrk::system * m_system = nullptr;
+        dvrk::console * m_console = nullptr;
         dvrk::teleop_PSM_proxy_configuration * m_config = nullptr;
         
         teleop_PSM_proxy(const std::string & name,
-                         mtsIntuitiveResearchKitConsole * console,
+                         dvrk::system * system,
+                         dvrk::console * console,
                          dvrk::teleop_PSM_proxy_configuration * config);
         
-        NOT_COPYABLE(teleop_PSM_proxy);
-        NOT_MOVEABLE(teleop_PSM_proxy);
+        // NOT_COPYABLE(teleop_PSM_proxy);
+        // NOT_MOVEABLE(teleop_PSM_proxy);
         
         void post_configure(void);
         
         /*! Create and configure the teleoperation component. */
         void create_teleop(void);
 
-        /*! Turn on/off selected */
-        inline const bool & selected(void) const {
-            return m_selected;
-        }
-        inline void set_selected(const bool select) {
-            m_selected = select;
-        }
-
      protected:
-        bool m_selected;
         mtsFunctionWrite state_command;
         mtsFunctionWrite set_scale;
         mtsInterfaceRequired * m_interface_required;

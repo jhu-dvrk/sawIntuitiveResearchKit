@@ -28,7 +28,10 @@ http://www.cisst.org/cisst/license.txt.
 
 class QTabWidget;
 class QWidget;
-class mtsIntuitiveResearchKitConsole;
+
+namespace dvrk {
+    class system;
+}
 
 class CISST_EXPORT mtsIntuitiveResearchKitConsoleQt: public cmnGenericObject
 {
@@ -37,7 +40,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsoleQt: public cmnGenericObject
 public:
     mtsIntuitiveResearchKitConsoleQt(void);
 
-    void Configure(mtsIntuitiveResearchKitConsole * console);
+    void Configure(dvrk::system * system);
 
     inline void Connect(void) {
         Connections.Connect();

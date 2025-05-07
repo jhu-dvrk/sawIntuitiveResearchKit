@@ -21,13 +21,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsManagerLocal.h>
 
 #include <sawRobotIO1394/mtsRobotIO1394.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
+#include <sawIntuitiveResearchKit/system.h>
 
 dvrk::IO_proxy::IO_proxy(const std::string & name,
-                         mtsIntuitiveResearchKitConsole * console,
+                         dvrk::system * system,
                          dvrk::IO_proxy_configuration * config):
     m_name(name),
-    m_console(console),
+    m_system(system),
     m_config(config)
 {
 }
@@ -76,7 +76,7 @@ void dvrk::IO_proxy::create_IO(void)
     m_IO->SetProtocol(m_config->protocol);
     m_IO->SetWatchdogPeriod(m_config->watchdog_timeout);
     for (const auto & config_file : m_config->configuration_files) {
-        std::string file = m_console->find_file(config_file);
+        std::string file = m_system->find_file(config_file);
         if (file == "") {
             CMN_LOG_INIT_ERROR << "IO_proxy::create_IO: can't find IO file " << config_file << std::endl;
             exit(EXIT_FAILURE);

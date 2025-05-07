@@ -25,26 +25,29 @@ http://www.cisst.org/cisst/license.txt.
 // Always include last!
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
-class mtsIntuitiveResearchKitConsole;
-
 namespace dvrk {
 
+    class system;
+    class console;
     class teleop_ECM_proxy_configuration;
 
     class CISST_EXPORT teleop_ECM_proxy {
-     public:
-        friend class ::mtsIntuitiveResearchKitConsole;
+    public:
+
+        friend class dvrk::system;
 
         std::string m_name;
-        mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        dvrk::system * m_system = nullptr;
+        dvrk::console * m_console = nullptr;
         teleop_ECM_proxy_configuration * m_config = nullptr;
 
         teleop_ECM_proxy(const std::string & name,
-                         mtsIntuitiveResearchKitConsole * console,
+                         dvrk::system * system,
+                         dvrk::console * console,
                          dvrk::teleop_ECM_proxy_configuration * config);
 
-        NOT_COPYABLE(teleop_ECM_proxy);
-        NOT_MOVEABLE(teleop_ECM_proxy);
+        // NOT_COPYABLE(teleop_ECM_proxy);
+        // NOT_MOVEABLE(teleop_ECM_proxy);
 
         void post_configure(void);
 

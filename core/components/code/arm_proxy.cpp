@@ -29,15 +29,15 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJFixed.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsole.h>
+#include <sawIntuitiveResearchKit/system.h>
 
 #include <sawIntuitiveResearchKit/IO_proxy.h>
 
 dvrk::arm_proxy::arm_proxy(const std::string & name,
-                           mtsIntuitiveResearchKitConsole * console,
+                           dvrk::system * system,
                            dvrk::arm_proxy_configuration * config):
     m_name(name),
-    m_console(console),
+    m_system(system),
     m_config(config),
     m_arm_component_name(name),
     m_arm_interface_name("Arm")
@@ -56,8 +56,8 @@ void dvrk::arm_proxy::post_configure(void)
             exit(EXIT_FAILURE);
         }
         // registered in component manager?
-        auto iter = m_console->m_IO_proxies.find(m_config->IO);
-        if (iter == m_console->m_IO_proxies.end()) {
+        auto iter = m_system->m_IO_proxies.find(m_config->IO);
+        if (iter == m_system->m_IO_proxies.end()) {
             CMN_LOG_INIT_ERROR << "arm_proxy::post_configure: IO \""
                                << m_config->IO << "\" is not defined in \"IOs\"" << std::endl;
             exit(EXIT_FAILURE);
@@ -103,7 +103,7 @@ void dvrk::arm_proxy::create_arm(void)
     // infer arm configuration file
     // -1- provided by user
     if (m_config->arm_file != "") {
-        m_arm_configuration_file = m_console->find_file(m_config->arm_file);
+        m_arm_configuration_file = m_system->find_file(m_config->arm_file);
         if (m_arm_configuration_file == "") {
             CMN_LOG_INIT_ERROR << "arm_proxy::create_arm: can't find configuration file " << m_config->arm_file
                                << " for arm " << m_name << std::endl;
@@ -118,7 +118,7 @@ void dvrk::arm_proxy::create_arm(void)
                 exit(EXIT_FAILURE);
             }
             const auto default_file = m_name + "-" + m_config->serial + ".json";
-            m_arm_configuration_file = m_console->find_file(default_file);
+            m_arm_configuration_file = m_system->find_file(default_file);
             if (m_arm_configuration_file == "") {
                 CMN_LOG_INIT_ERROR << "arm_proxy::create_arm: can't find \"arm\" setting for arm "
                                    << m_name << ". \"arm\" is not set and the default file "
@@ -158,26 +158,26 @@ void dvrk::arm_proxy::create_arm(void)
             if (m_config->simulation == dvrk::simulation::SIMULATION_KINEMATIC) {
                 suj->set_simulated();
             } else if (m_config->simulation == dvrk::simulation::SIMULATION_NONE) {
-                m_console->m_connections.Add(m_name, "NoMuxReset",
-                                             m_IO_component_name, "NoMuxReset");
-                m_console->m_connections.Add(m_name, "MuxIncrement",
-                                             m_IO_component_name, "MuxIncrement");
-                m_console->m_connections.Add(m_name, "ControlPWM",
-                                             m_IO_component_name, "ControlPWM");
-                m_console->m_connections.Add(m_name, "DisablePWM",
-                                             m_IO_component_name, "DisablePWM");
-                m_console->m_connections.Add(m_name, "MotorUp",
-                                             m_IO_component_name, "MotorUp");
-                m_console->m_connections.Add(m_name, "MotorDown",
-                                             m_IO_component_name, "MotorDown");
-                m_console->m_connections.Add(m_name, "SUJ-Clutch-1",
-                                             m_IO_component_name, "SUJ-Clutch-1");
-                m_console->m_connections.Add(m_name, "SUJ-Clutch-2",
-                                             m_IO_component_name, "SUJ-Clutch-2");
-                m_console->m_connections.Add(m_name, "SUJ-Clutch-3",
-                                             m_IO_component_name, "SUJ-Clutch-3");
-                m_console->m_connections.Add(m_name, "SUJ-Clutch-4",
-                                             m_IO_component_name, "SUJ-Clutch-4");
+                m_system->m_connections.Add(m_name, "NoMuxReset",
+                                            m_IO_component_name, "NoMuxReset");
+                m_system->m_connections.Add(m_name, "MuxIncrement",
+                                            m_IO_component_name, "MuxIncrement");
+                m_system->m_connections.Add(m_name, "ControlPWM",
+                                            m_IO_component_name, "ControlPWM");
+                m_system->m_connections.Add(m_name, "DisablePWM",
+                                            m_IO_component_name, "DisablePWM");
+                m_system->m_connections.Add(m_name, "MotorUp",
+                                            m_IO_component_name, "MotorUp");
+                m_system->m_connections.Add(m_name, "MotorDown",
+                                            m_IO_component_name, "MotorDown");
+                m_system->m_connections.Add(m_name, "SUJ-Clutch-1",
+                                            m_IO_component_name, "SUJ-Clutch-1");
+                m_system->m_connections.Add(m_name, "SUJ-Clutch-2",
+                                            m_IO_component_name, "SUJ-Clutch-2");
+                m_system->m_connections.Add(m_name, "SUJ-Clutch-3",
+                                            m_IO_component_name, "SUJ-Clutch-3");
+                m_system->m_connections.Add(m_name, "SUJ-Clutch-4",
+                                            m_IO_component_name, "SUJ-Clutch-4");
             }
             suj->Configure(m_arm_configuration_file);
             component_manager->AddComponent(suj);
@@ -298,14 +298,14 @@ void dvrk::arm_proxy::create_arm(void)
             if (m_config->PSM()) {
                 std::vector<std::string> itfs = {"adapter", "tool", "arm_clutch", "dallas"};
                 for (const auto & itf : itfs) {
-                    m_console->m_connections.Add(m_name, itf,
-                                                 m_IO_component_name, m_name + "_" + itf);
+                    m_system->m_connections.Add(m_name, itf,
+                                                m_IO_component_name, m_name + "_" + itf);
                 }
             }
 
             if (m_config->ECM()) {
-                m_console->m_connections.Add(m_name, "arm_clutch",
-                                             m_IO_component_name, m_name + "_arm_clutch");
+                m_system->m_connections.Add(m_name, "arm_clutch",
+                                            m_IO_component_name, m_name + "_arm_clutch");
             }
 
             // for Si patient side, connect the SUJ brakes to buttons on arm
@@ -313,8 +313,8 @@ void dvrk::arm_proxy::create_arm(void)
                 && (m_arm->generation() == dvrk::generation::Si)) {
                 std::vector<std::string> itfs = {"SUJ_clutch", "SUJ_clutch2", "SUJ_brake"};
                 for (const auto & itf : itfs) {
-                    m_console->m_connections.Add(m_name, itf,
-                                                 m_IO_component_name, m_name + "_" + itf);
+                    m_system->m_connections.Add(m_name, itf,
+                                                m_IO_component_name, m_name + "_" + itf);
                 }
             }
         }
@@ -341,19 +341,19 @@ void dvrk::arm_proxy::configure_IO(void)
             exit(EXIT_FAILURE);
         }
     }
-    m_IO_configuration_file = m_console->find_file(config_file);
+    m_IO_configuration_file = m_system->find_file(config_file);
     if (m_IO_configuration_file == "") {
         CMN_LOG_INIT_ERROR << "arm_proxy::configure_IO: can't find IO file " << config_file << std::endl;
         exit(EXIT_FAILURE);
     }
 
     // search for the IO component
-    auto iter_IO = m_console->m_IO_proxies.find(m_config->IO);
+    auto iter_IO = m_system->m_IO_proxies.find(m_config->IO);
     CMN_LOG_INIT_VERBOSE << "arm_proxy::configure_IO: configuring IO \""
                          << m_config->IO << "\" for arm " << m_name
                          << " using configuration file: " << m_IO_configuration_file << std::endl;
     // configure_IO should only happen if IO is valid
-    CMN_ASSERT(iter_IO != m_console->m_IO_proxies.end());
+    CMN_ASSERT(iter_IO != m_system->m_IO_proxies.end());
     iter_IO->second->m_IO->Configure(m_IO_configuration_file);
 
 
@@ -371,7 +371,7 @@ void dvrk::arm_proxy::configure_IO(void)
                 exit(EXIT_FAILURE);
             }
         }
-        m_IO_gripper_configuration_file = m_console->find_file(config_file);
+        m_IO_gripper_configuration_file = m_system->find_file(config_file);
         if (m_IO_gripper_configuration_file == "") {
             CMN_LOG_INIT_ERROR << "arm_proxy::configure_IO: can't find IO gripper file " << config_file << std::endl;
             exit(EXIT_FAILURE);
@@ -421,7 +421,7 @@ void dvrk::arm_proxy::create_PID(void)
                              << m_PID_configuration_file << "\"" << std::endl;
     }
 
-    auto configuration_file = m_console->find_file(m_PID_configuration_file);
+    auto configuration_file = m_system->find_file(m_PID_configuration_file);
     if (configuration_file == "") {
         CMN_LOG_INIT_ERROR << "configure_PID: can't find PID file " << m_PID_configuration_file << std::endl;
         exit(EXIT_FAILURE);
@@ -442,11 +442,11 @@ void dvrk::arm_proxy::create_PID(void)
     }
     component_manager->AddComponent(pid);
     if (hasIO) {
-        m_console->m_connections.Add(m_PID_component_name, "RobotJointTorqueInterface",
-                                     m_IO_component_name, m_IO_interface_name);
+        m_system->m_connections.Add(m_PID_component_name, "RobotJointTorqueInterface",
+                                    m_IO_component_name, m_IO_interface_name);
         if (m_config->PID_period == 0.0) {
-            m_console->m_connections.Add(m_PID_component_name, "ExecIn",
-                                         m_IO_component_name, "ExecOut");
+            m_system->m_connections.Add(m_PID_component_name, "ExecIn",
+                                        m_IO_component_name, "ExecOut");
         }
     }
 }
@@ -514,5 +514,5 @@ dvrk::generation dvrk::arm_proxy::generation(void) const
 
 void dvrk::arm_proxy::CurrentStateEventHandler(const prmOperatingState & currentState)
 {
-    m_console->SetArmCurrentState(m_name, currentState);
+    m_system->SetArmCurrentState(m_name, currentState);
 }
