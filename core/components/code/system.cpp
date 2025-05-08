@@ -517,12 +517,23 @@ bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> arm)
 
 bool dvrk::system::add_console_interfaces(std::shared_ptr<dvrk::console> console)
 {
+    // main interface
+    console->m_interface_provided = this->AddInterfaceProvided(console->m_name);
+    if (console->m_interface_provided) {
+        console->m_interface_provided->AddCommandWrite(&console::teleop_enable, console.get(),
+                                                       "teleop_enable", false);
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add interface for console \""
+                                 << console->m_name << "\"" << std::endl;
+        return false;
+    }
+    // clutch
     console->m_clutch_interface_provided = this->AddInterfaceProvided(console->m_name + "/clutch");
     if (console->m_clutch_interface_provided) {
         console->m_clutch_propagate =
             console->m_clutch_interface_provided->AddEventWrite("Button", prmEventButton());
     } else {
-        CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add clutch for console \""
+        CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add clutch interface for console \""
                                  << console->m_name << "\"" << std::endl;
         return false;
     }
@@ -580,7 +591,9 @@ std::string dvrk::system::find_file(const std::string & filename) const
 
 void dvrk::system::power_off(void)
 {
-    // teleop_enable(false);
+    for (auto & console : m_consoles) {
+        console.second->teleop_enable(false);
+    }
     for (auto & arm : m_arm_proxies) {
         arm.second->state_command(std::string("disable"));
     }

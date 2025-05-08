@@ -597,22 +597,34 @@ void dvrk::console::create_components(void)
 // }
 
 
-// // void mtsIntuitiveResearchKitConsole::teleop_enable(const bool & enable)
-// // {
-// //     mTeleopEnabled = enable;
-// //     // if we have an SUJ, make sure it's ready
-// //     if (enable && m_SUJ) {
-// //         const auto sujState = ArmStates.find("SUJ");
-// //         if ((sujState == ArmStates.end())
-// //             || (sujState->second.State() != prmOperatingState::ENABLED)) {
-// //             mTeleopEnabled = false;
-// //         }
-// //     }
-// //     mTeleopDesired = enable;
-// //     // event
-// //     console_events.teleop_enabled(mTeleopEnabled);
-// //     UpdateTeleopState();
-// // }
+void dvrk::console::teleop_enable(const bool & enable)
+{
+    const std::string command = enable ? "enable" : "disable";
+    // ECM teleops
+    for (auto & proxy : m_teleop_ECM_proxies) {
+        proxy.second->state_command(command);
+    }
+
+    // PSM teleops
+    for (auto & proxy : m_teleop_PSM_proxies) {
+        proxy.second->state_command(command);
+    }
+
+    // //     mTeleopEnabled = enable;
+    // //     // if we have an SUJ, make sure it's ready
+    // //     if (enable && m_SUJ) {
+    // //         const auto sujState = ArmStates.find("SUJ");
+    // //         if ((sujState == ArmStates.end())
+    // //             || (sujState->second.State() != prmOperatingState::ENABLED)) {
+    // //             mTeleopEnabled = false;
+    // //         }
+    // //     }
+    // //     mTeleopDesired = enable;
+    // //     // event
+    // //    console_events.teleop_enabled(mTeleopEnabled);
+    // //     UpdateTeleopState();
+}
+
 
 // // void mtsIntuitiveResearchKitConsole::cycle_teleop_PSM_by_MTM(const std::string & mtmName)
 // // {

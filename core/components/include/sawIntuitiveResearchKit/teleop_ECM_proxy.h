@@ -35,6 +35,7 @@ namespace dvrk {
     public:
 
         friend class dvrk::system;
+        friend class dvrk::console;
 
         std::string m_name;
         dvrk::system * m_system = nullptr;

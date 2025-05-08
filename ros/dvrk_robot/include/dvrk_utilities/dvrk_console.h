@@ -16,8 +16,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef _dvrk_console_h
-#define _dvrk_console_h
+#ifndef _dvrk_ros_console_h
+#define _dvrk_ros_console_h
 
 #include <cisst_ros_crtk/mts_ros_crtk_bridge_provided.h>
 
@@ -61,11 +61,14 @@ namespace dvrk_ros {
                                            const double _tf_period_in_seconds);
 
         // dVRK specific topics
-        void add_topics_console(void);
         void add_topics_endoscope_focus(void);
+
+        // system topics (on/off)
+        void add_topics_system(const std::string & _system_name);
+
         // IO timing (to be deprecated)
-        void add_topics_IO(void);
-        // add topics for IO
+        void add_topics_IO_stats(void);
+        // add topics for all IOs if requested
         void add_topics_IO(const double _publish_period_in_seconds,
                            const bool _read_write);
         // add topics for all PIDs
@@ -77,7 +80,12 @@ namespace dvrk_ros {
         // buttons on PSM
         void add_topics_PSM_IO(const std::string & _arm_name,
                                const std::string & _IO_component_name);
+        // console topics (teleop enable...)
+        void add_topics_console(const std::string & _console_name);
+        // SUJ voltages, if requested
         void add_topics_SUJ_voltages(void);
+
+        // teleop
         void add_topics_teleop_ECM(const std::string & _name);
         void add_topics_teleop_PSM(const std::string & _name);
 
@@ -91,4 +99,4 @@ namespace dvrk_ros {
 typedef dvrk_ros::console dvrk_ros_console;
 CMN_DECLARE_SERVICES_INSTANTIATION(dvrk_ros_console);
 
-#endif // _dvrk_console_h
+#endif // _dvrk_ros_console_h

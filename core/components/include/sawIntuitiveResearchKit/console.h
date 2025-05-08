@@ -68,11 +68,15 @@ namespace dvrk {
         void create_components(void);
 
     protected:
-
+        // main interface for ROS and Qt
+        mtsInterfaceProvided * m_interface_provided;
+        
         // to send clutch to teleop components
         mtsInterfaceProvided * m_clutch_interface_provided;
         mtsFunctionWrite m_clutch_propagate;
 
+        // commands
+        void teleop_enable(const bool &);
     };
 }
 
