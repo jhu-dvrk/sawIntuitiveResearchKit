@@ -331,7 +331,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     boxLayout->setContentsMargins(0, 0, 0, 0);
     buttonsWidget->setLayout(boxLayout);
 
-    QGroupBox * armsBox = new QGroupBox("Arms");
+    QGroupBox * armsBox = new QGroupBox("System");
     boxLayout->addWidget(armsBox);
     QVBoxLayout * armsLayout = new QVBoxLayout();
     armsLayout->setContentsMargins(2, 2, 2, 2);

@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <memory>
 
 #include <cisstMultiTask/mtsFunctionWrite.h>
+#include <cisstParameterTypes/prmEventButton.h>
 
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -43,7 +44,7 @@ namespace dvrk {
     public:
 
         friend class system;
-    
+
         std::string m_name;
         dvrk::system * m_system = nullptr;
         dvrk::console_configuration * m_config = nullptr;
@@ -70,26 +71,45 @@ namespace dvrk {
     protected:
         // main interface for ROS and Qt
         mtsInterfaceProvided * m_interface_provided;
-        
+
         // to send clutch to teleop components
         mtsInterfaceProvided * m_clutch_interface_provided;
         mtsFunctionWrite m_clutch_propagate;
 
         // commands
         void teleop_enable(const bool &);
+        void set_scale(const double & scale);
+
+        void clutch_event_handler(const prmEventButton & button);
+        void camera_event_handler(const prmEventButton & button);
+        void operator_present_event_handler(const prmEventButton & button);
+
+        // events
+        struct {
+            mtsFunctionWrite clutch;
+            mtsFunctionWrite camera;
+            mtsFunctionWrite operator_present;
+            mtsFunctionWrite teleop_enabled;
+            mtsFunctionWrite scale;
+        } events;
+
+        // internal methods to manage active teleops
+        void update_teleop_state(void);
+
+        // status
+        bool m_operator_present = false;
+        bool m_camera = false;
     };
 }
 
 #endif // _dvrk_console_h
 
 
-// void teleop_enable(const bool & enable);
         // void cycle_teleop_PSM_by_MTM(const std::string & mtmName);
         // void select_teleop_PSM(const prmKeyValue & mtmPsm);
         // bool GetPSMSelectedForMTM(const std::string & mtmName, std::string & psmName) const;
         // bool GetMTMSelectedForPSM(const std::string & psmName, std::string & mtmName) const;
         // void EventSelectedTeleopPSMs(void) const;
-        // void UpdateTeleopState(void);
 
 //         typedef std::multimap<std::string, std::shared_ptr<teleop_PSM_proxy_t>> teleop_PSM_proxies_by_arm_t;
 //         teleop_PSM_proxies_by_arm_t m_teleop_PSM_proxies_by_psm;
@@ -103,9 +123,6 @@ namespace dvrk {
 //         bool mTeleopPSMRunning = false;
 //         bool mTeleopECMRunning = false;
 //         bool mTeleopEnabledBeforeCamera;
-//         bool mOperatorPresent;
-//         bool mCameraPressed;
-
 
 //     };
 
@@ -114,31 +131,13 @@ namespace dvrk {
 //     void AddFootpedalInterfaces(void);
 //     double mTimeOfLastErrorBeep;
 
-//     /*! Pointer to mtsTextToSpeech component */
-//     std::shared_ptr<mtsTextToSpeech> m_text_to_speech;
-
 //     /*! Head sensor */
 //     mtsComponent * mHeadSensor = nullptr;
 
 //     /*! daVinci Endoscope Focus */
 //     mtsDaVinciEndoscopeFocus * mDaVinciEndoscopeFocus = nullptr;
 
-//     // these two methods have exact same implementation.it would be
-//     // nice to have a base class, or template this
-//     bool add_teleop_PSM_interfaces(std::shared_ptr<teleop_PSM_proxy_t> teleop_proxy);
-//     bool add_teleop_ECM_interfaces(std::shared_ptr<teleop_ECM_proxy_t> teleop_proxy);
 
-//     void set_scale(const double & scale);
-//     // void ClutchEventHandler(const prmEventButton & button);
-//     // void CameraEventHandler(const prmEventButton & button);
-//     // void OperatorPresentEventHandler(const prmEventButton & button);
-
-//     // struct {
-//     //     mtsFunctionWrite clutch;
-//     //     mtsFunctionWrite camera;
-//     //     mtsFunctionWrite operator_present;
-//     //     mtsFunctionWrite teleop_enabled;
-//     // } console_events;
 
 //     // components used for events (digital inputs)
 //     typedef std::pair<std::string, std::string> InterfaceComponentType;

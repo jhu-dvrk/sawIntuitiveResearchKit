@@ -111,9 +111,7 @@ dvrk_ros::console::console(const std::string & name,
     // console topics
     for (const auto & console : m_system->m_consoles) {
         const std::string & name = console.first;
-        const dvrk::console_configuration & config = *(console.second->m_config);
         add_topics_console(name);
-
         // ECM teleops
         for (auto const & teleop : console.second->m_teleop_ECM_proxies) {
             const auto teleopName = teleop.first;
@@ -121,7 +119,6 @@ dvrk_ros::console::console(const std::string & name,
                                       publish_rate_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0
             add_topics_teleop_ECM(teleopName);
         }
-
         // PSM teleops
         for (auto const & teleop : console.second->m_teleop_PSM_proxies) {
             const auto teleopName = teleop.first;
@@ -343,18 +340,16 @@ void dvrk_ros::console::add_topics_system(const std::string & _name)
 void dvrk_ros::console::add_topics_console(const std::string & _name)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_console called for " << _name << std::endl;
-    for (const auto & iter : m_system->m_consoles) {
-        const std::string & name = iter.first;
-        const std::string & interface_name = name;
-        const std::string ros_namespace = name + "/";
+    const std::string & interface_name = _name;
+    const std::string ros_namespace = _name + "/";
 
-        subscribers_bridge().AddSubscriberToCommandWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
-            (interface_name, "teleop_enable",
-             ros_namespace + "teleop/enable");
+    subscribers_bridge().AddSubscriberToCommandWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
+        (interface_name, "teleop_enable",
+         ros_namespace + "teleop/enable");
 
-    // events_bridge().AddPublisherFromEventWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
-    //     ("Console", "teleop_enabled",
-    //      _ros_namespace + "teleop/enabled");
+    events_bridge().AddPublisherFromEventWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
+        (interface_name, "teleop_enabled",
+         ros_namespace + "teleop/enabled");
 
     // subscribers_bridge().AddSubscriberToCommandWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
     //     ("Console", "cycle_teleop_PSM_by_MTM",
@@ -362,52 +357,35 @@ void dvrk_ros::console::add_topics_console(const std::string & _name)
     // subscribers_bridge().AddSubscriberToCommandWrite<prmKeyValue, CISST_RAL_MSG(diagnostic_msgs, KeyValue)>
     //     ("Console", "select_teleop_PSM",
     //      _ros_namespace + "teleop/select_teleop_PSM");
-    // subscribers_bridge().AddSubscriberToCommandWrite<double, CISST_RAL_MSG(std_msgs, Float64)>
-    //     ("Console", "set_scale",
-    //      _ros_namespace + "teleop/set_scale");
-
-    // events_bridge().AddPublisherFromEventWrite<double, CISST_RAL_MSG(std_msgs, Float64)>
-    //     ("Console", "scale",
-    //      _ros_namespace + "teleop/scale");
+    subscribers_bridge().AddSubscriberToCommandWrite<double, CISST_RAL_MSG(std_msgs, Float64)>
+        (interface_name, "set_scale",
+         ros_namespace + "teleop/set_scale");
+    events_bridge().AddPublisherFromEventWrite<double, CISST_RAL_MSG(std_msgs, Float64)>
+        (interface_name, "scale",
+         ros_namespace + "teleop/scale");
     // events_bridge().AddPublisherFromEventWrite<prmKeyValue, CISST_RAL_MSG(diagnostic_msgs, KeyValue)>
     //     ("Console", "teleop_PSM_selected",
     //      _ros_namespace + "teleop/teleop_PSM_selected");
     // events_bridge().AddPublisherFromEventWrite<prmKeyValue, CISST_RAL_MSG(diagnostic_msgs, KeyValue)>
     //     ("Console", "teleop_PSM_unselected",
     //      _ros_namespace + "teleop/teleop_PSM_unselected");
-    // events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
-    //     ("ConsoleOperatorPresent", "Button",
-    //      _ros_namespace + "operator_present");
-    // m_connections.Add(events_bridge().GetName(), "ConsoleOperatorPresent",
-    //                   m_system->GetName(), "OperatorPresent");
-    // events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
-    //     ("ConsoleClutch", "Button",
-    //      _ros_namespace + "clutch");
-    // m_connections.Add(events_bridge().GetName(), "ConsoleClutch",
-    //                   m_system->GetName(), "Clutch");
-    // events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
-    //     ("ConsoleCamera", "Button",
-    //      _ros_namespace + "camera");
-    // m_connections.Add(events_bridge().GetName(), "ConsoleCamera",
-    //                   m_system->GetName(), "Camera");
-
-    // subscribers_bridge().AddSubscriberToCommandWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
-    //     ("Console", "emulate_operator_present",
-    //      _ros_namespace + "emulate_operator_present");
-    // subscribers_bridge().AddSubscriberToCommandWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
-    //     ("Console", "emulate_clutch",
-    //      _ros_namespace + "emulate_clutch");
-    // subscribers_bridge().AddSubscriberToCommandWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
-    //     ("Console", "emulate_camera",
-    //      _ros_namespace + "emulate_camera");
-
-        m_connections.Add(subscribers_bridge().GetName(), interface_name,
-                          iter.second->m_system->GetName(), name);
-
-        // m_connections.Add(events_bridge().GetName(), "Console",
-        //                  name, "Main");
-
+    const auto events = std::list<std::string>({"operator_present", "clutch", "camera"});
+    for (const auto & event : events) {
+        events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
+            (_name + "_" + event, "Button",
+             ros_namespace + event);
+        m_connections.Add(events_bridge().GetName(), _name + "_" + event,
+                          m_system->GetName(), _name);
+        // emulate subscribers
+        subscribers_bridge().AddSubscriberToCommandWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
+            (interface_name, "emulate_" + event,
+             ros_namespace + "emulate_" + event);
     }
+
+    m_connections.Add(subscribers_bridge().GetName(), interface_name,
+                      m_system->GetName(), _name);
+    m_connections.Add(events_bridge().GetName(), interface_name,
+                      m_system->GetName(), _name);
 }
 
 
@@ -524,7 +502,7 @@ void dvrk_ros::console::add_topics_ECM_IO(const std::string & _arm_name,
     const auto events = std::list<std::pair<std::string, std::string> >({
             {"ManipClutch", "manip_clutch"},
             {"SUJClutch", "SUJ_clutch"}});
-    for (auto event : events) {
+    for (const auto & event : events) {
         std::string _interface_name = _arm_name + "-" + event.first;
         events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
             (_interface_name, "Button", _arm_name + "/IO/" + event.second);
@@ -543,7 +521,7 @@ void dvrk_ros::console::add_topics_PSM_IO(const std::string & _arm_name,
             {"SUJClutch", "SUJ_clutch"},
             {"Adapter", "adapter"},
             {"Tool", "tool"}});
-    for (auto event : events) {
+    for (const auto & event : events) {
         std::string interface_name = _arm_name + "-" + event.first;
         events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
             (interface_name, "Button", _arm_name + "/IO/" + event.second);

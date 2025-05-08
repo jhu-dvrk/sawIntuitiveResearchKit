@@ -27,6 +27,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawControllers/mtsPIDQtWidget.h>
 
 #include <sawIntuitiveResearchKit/system.h>
+#include <sawIntuitiveResearchKit/arm_proxy.h>
+#include <sawIntuitiveResearchKit/console.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h> // should have a proxy
 
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocusQtWidget.h>
@@ -38,8 +40,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSMQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsTeleOperationECMQtWidget.h>
-
-#include <sawIntuitiveResearchKit/arm_proxy.h>
 
 #include <QTabWidget>
 
@@ -74,7 +74,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
     if (system->m_arm_proxies.size() > 1) {
         ioTabWidget = new QTabWidget();
         ioTabWidget->setObjectName(QString("IOs"));
-        TabWidget->addTab(ioTabWidget, "IOSs");
+        TabWidget->addTab(ioTabWidget, "IOs");
     } else {
         ioTabWidget = TabWidget;
     }
@@ -229,39 +229,36 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
         }
     }
 
-    // add teleop PSM widgets
-    // bool hasTeleOp = false;
+    // add teleop widgets in console tabs
+    QTabWidget * teleopTabWidget = TabWidget; // use current tab by default
+    for (const auto & console : system->m_consoles) {
+        const std::string name = console.first;
+        if (system->m_consoles.size() > 1) {
+            teleopTabWidget = new QTabWidget();
+            teleopTabWidget->setObjectName(name.c_str());
+            TabWidget->addTab(teleopTabWidget, name.c_str());
+        }
 
-    // QTabWidget * teleopTabWidget;
-    // if ((system->m_teleop_PSM_proxies.size() + system->m_teleop_ECM_proxies.size()) > 1) {
-    //     teleopTabWidget = new QTabWidget();
-    //     teleopTabWidget->setObjectName(QString("Teleops"));
-    //     TabWidget->addTab(teleopTabWidget, "Teleops");
-    // } else {
-    //     teleopTabWidget = TabWidget; // use current tab widget
-    // }
+        for (const auto & teleop : console.second->m_teleop_PSM_proxies) {
+            const std::string name = teleop.first;
+            mtsTeleOperationPSMQtWidget * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "_GUI");
+            teleopGUI->setObjectName(name.c_str());
+            teleopGUI->Configure();
+            component_manager->AddComponent(teleopGUI);
+            Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
+            teleopTabWidget->addTab(teleopGUI, name.c_str());
+        }
 
-    // for (const auto & iter : system->m_teleop_PSM_proxies) {
-    //     hasTeleOp = true;
-    //     const std::string name = iter.first;
-    //     mtsTeleOperationPSMQtWidget * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "_GUI");
-    //     teleopGUI->setObjectName(name.c_str());
-    //     teleopGUI->Configure();
-    //     component_manager->AddComponent(teleopGUI);
-    //     Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
-    //     teleopTabWidget->addTab(teleopGUI, name.c_str());
-    // }
-
-    // for (const auto & iter : system->m_teleop_ECM_proxies) {
-    //     hasTeleOp = true;
-    //     const std::string name = iter.first;
-    //     mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "_GUI");
-    //     teleopGUI->setObjectName(name.c_str());
-    //     teleopGUI->Configure();
-    //     component_manager->AddComponent(teleopGUI);
-    //     Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
-    //     teleopTabWidget->addTab(teleopGUI, name.c_str());
-    // }
+        for (const auto & teleop : console.second->m_teleop_ECM_proxies) {
+            const std::string name = teleop.first;
+            mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "_GUI");
+            teleopGUI->setObjectName(name.c_str());
+            teleopGUI->Configure();
+            component_manager->AddComponent(teleopGUI);
+            Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
+            teleopTabWidget->addTab(teleopGUI, name.c_str());
+        }
+    }
 
     // add endoscope focus widget
     // if (system->mDaVinciEndoscopeFocus) {

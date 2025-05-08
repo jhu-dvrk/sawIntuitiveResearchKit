@@ -29,6 +29,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/IO_proxy.h>
 #include <sawIntuitiveResearchKit/arm_proxy.h>
 #include <sawIntuitiveResearchKit/console.h>
@@ -68,8 +69,8 @@ dvrk::system::system(const std::string & componentName):
                                     "power_on");
         m_interface->AddCommandVoid(&system::home, this,
                                     "home");
-        m_interface->AddEventWrite(ConfigurationEvents.ArmCurrentState,
-                                   "ArmCurrentState", prmKeyValue());
+        m_interface->AddEventWrite(events.arm_current_state,
+                                   "arm_current_state", prmKeyValue());
         // audio
         m_interface->AddCommandWrite(&system::set_volume, this,
                                      "set_volume", m_audio_volume);
@@ -81,7 +82,7 @@ dvrk::system::system(const std::string & componentName):
                                    "volume", m_audio_volume);
         // misc.
         m_interface->AddCommandRead(&system::calibration_mode, this,
-                                   "calibration_mode", false);
+                                    "calibration_mode", false);
         // Following is Read instead of VoidReturn because it is called before the component
         // is created (i.e., thread not yet running)
         m_interface->AddCommandRead(&system::ConnectInternal, this,
@@ -240,13 +241,8 @@ void dvrk::system::Configure(const std::string & filename)
         auto & console = iter.second;
         console->create_components();
         add_console_interfaces(console);
-
-
-        // arm_proxy->configure_IO();
-        // arm_proxy->create_PID();
-        // add_arm_interfaces(arm_proxy);
     }
-    
+
 
     // }
     // this->AddFootpedalInterfaces();
@@ -369,55 +365,55 @@ void dvrk::system::Cleanup(void)
 }
 
 
-bool dvrk::system::add_teleop_ECM_interfaces(std::shared_ptr<dvrk::teleop_ECM_proxy> teleop_proxy)
+bool dvrk::system::add_teleop_ECM_interfaces(std::shared_ptr<dvrk::teleop_ECM_proxy> _teleop_proxy)
 {
-    teleop_proxy->m_interface_required = this->AddInterfaceRequired(teleop_proxy->m_name);
-    if (teleop_proxy->m_interface_required) {
-        teleop_proxy->m_interface_required->AddFunction("state_command", teleop_proxy->state_command);
-        teleop_proxy->m_interface_required->AddFunction("set_scale", teleop_proxy->set_scale);
-        teleop_proxy->m_interface_required->AddEventHandlerWrite(&system::ErrorEventHandler, this, "error");
-        teleop_proxy->m_interface_required->AddEventHandlerWrite(&system::WarningEventHandler, this, "warning");
-        teleop_proxy->m_interface_required->AddEventHandlerWrite(&system::StatusEventHandler, this, "status");
+    _teleop_proxy->m_interface_required = this->AddInterfaceRequired(_teleop_proxy->m_name);
+    if (_teleop_proxy->m_interface_required) {
+        _teleop_proxy->m_interface_required->AddFunction("state_command", _teleop_proxy->state_command);
+        _teleop_proxy->m_interface_required->AddFunction("set_scale", _teleop_proxy->set_scale);
+        _teleop_proxy->m_interface_required->AddEventHandlerWrite(&system::error_event_handler, this, "error");
+        _teleop_proxy->m_interface_required->AddEventHandlerWrite(&system::warning_event_handler, this, "warning");
+        _teleop_proxy->m_interface_required->AddEventHandlerWrite(&system::status_event_handler, this, "status");
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "add_teleop_ECM_interfaces: failed to add main interface for teleop \""
-                                 << teleop_proxy->m_name << "\"" << std::endl;
+                                 << _teleop_proxy->m_name << "\"" << std::endl;
         return false;
     }
     return true;
 }
 
 
-bool dvrk::system::add_teleop_PSM_interfaces(std::shared_ptr<dvrk::teleop_PSM_proxy> teleop_proxy)
+bool dvrk::system::add_teleop_PSM_interfaces(std::shared_ptr<dvrk::teleop_PSM_proxy> _teleop_proxy)
 {
-    teleop_proxy->m_interface_required = this->AddInterfaceRequired(teleop_proxy->m_name);
-    if (teleop_proxy->m_interface_required) {
-        teleop_proxy->m_interface_required->AddFunction("state_command", teleop_proxy->state_command);
-        teleop_proxy->m_interface_required->AddFunction("set_scale", teleop_proxy->set_scale);
-        teleop_proxy->m_interface_required->AddEventHandlerWrite(&system::ErrorEventHandler, this, "error");
-        teleop_proxy->m_interface_required->AddEventHandlerWrite(&system::WarningEventHandler, this, "warning");
-        teleop_proxy->m_interface_required->AddEventHandlerWrite(&system::StatusEventHandler, this, "status");
+    _teleop_proxy->m_interface_required = this->AddInterfaceRequired(_teleop_proxy->m_name);
+    if (_teleop_proxy->m_interface_required) {
+        _teleop_proxy->m_interface_required->AddFunction("state_command", _teleop_proxy->state_command);
+        _teleop_proxy->m_interface_required->AddFunction("set_scale", _teleop_proxy->set_scale);
+        _teleop_proxy->m_interface_required->AddEventHandlerWrite(&system::error_event_handler, this, "error");
+        _teleop_proxy->m_interface_required->AddEventHandlerWrite(&system::warning_event_handler, this, "warning");
+        _teleop_proxy->m_interface_required->AddEventHandlerWrite(&system::status_event_handler, this, "status");
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "add_teleop_PSM_interfaces: failed to add main interface for teleop \""
-                                 << teleop_proxy->m_name << "\"" << std::endl;
+                                 << _teleop_proxy->m_name << "\"" << std::endl;
         return false;
     }
     return true;
 }
 
 
-bool dvrk::system::add_IO_interfaces(std::shared_ptr<dvrk::IO_proxy> IO)
+bool dvrk::system::add_IO_interfaces(std::shared_ptr<dvrk::IO_proxy> _IO)
 {
-    IO->m_interface_required = AddInterfaceRequired(IO->m_name);
-    if (IO->m_interface_required) {
-        IO->m_interface_required->AddFunction("close_all_relays", IO->close_all_relays);
-        IO->m_interface_required->AddEventHandlerWrite(&system::ErrorEventHandler,
-                                                       this, "error");
-        IO->m_interface_required->AddEventHandlerWrite(&system::WarningEventHandler,
-                                                       this, "warning");
-        IO->m_interface_required->AddEventHandlerWrite(&system::StatusEventHandler,
-                                                       this, "status");
-        m_connections.Add(this->GetName(), IO->m_name,
-                          IO->m_name, "Configuration");
+    _IO->m_interface_required = AddInterfaceRequired(_IO->m_name);
+    if (_IO->m_interface_required) {
+        _IO->m_interface_required->AddFunction("close_all_relays", _IO->close_all_relays);
+        _IO->m_interface_required->AddEventHandlerWrite(&system::error_event_handler,
+                                                        this, "error");
+        _IO->m_interface_required->AddEventHandlerWrite(&system::warning_event_handler,
+                                                        this, "warning");
+        _IO->m_interface_required->AddEventHandlerWrite(&system::status_event_handler,
+                                                        this, "status");
+        m_connections.Add(this->GetName(), _IO->m_name,
+                          _IO->m_name, "Configuration");
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "add_IO_interfaces: failed to create IO required interface" << std::endl;
         return false;
@@ -426,89 +422,89 @@ bool dvrk::system::add_IO_interfaces(std::shared_ptr<dvrk::IO_proxy> IO)
 }
 
 
-bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> arm)
+bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> _arm)
 {
     // IO
-    if (arm->m_config->expects_IO()) {
-        const std::string interfaceNameIO = "IO-" + arm->m_name;
-        arm->m_IO_interface_required = AddInterfaceRequired(interfaceNameIO);
-        if (arm->m_IO_interface_required) {
-            arm->m_IO_interface_required->AddEventHandlerWrite(&system::ErrorEventHandler,
-                                                               this, "error");
-            arm->m_IO_interface_required->AddEventHandlerWrite(&system::WarningEventHandler,
-                                                               this, "warning");
-            arm->m_IO_interface_required->AddEventHandlerWrite(&system::StatusEventHandler,
-                                                               this, "status");
+    if (_arm->m_config->expects_IO()) {
+        const std::string interfaceNameIO = "IO-" + _arm->m_name;
+        _arm->m_IO_interface_required = AddInterfaceRequired(interfaceNameIO);
+        if (_arm->m_IO_interface_required) {
+            _arm->m_IO_interface_required->AddEventHandlerWrite(&system::error_event_handler,
+                                                                this, "error");
+            _arm->m_IO_interface_required->AddEventHandlerWrite(&system::warning_event_handler,
+                                                                this, "warning");
+            _arm->m_IO_interface_required->AddEventHandlerWrite(&system::status_event_handler,
+                                                                this, "status");
             m_connections.Add(this->GetName(), interfaceNameIO,
-                              arm->m_IO_component_name, arm->m_name);
+                              _arm->m_IO_component_name, _arm->m_name);
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "add_arm_interfaces: failed to add IO interface for arm \""
-                                     << arm->m_name << "\"" << std::endl;
+                                     << _arm->m_name << "\"" << std::endl;
             return false;
         }
         // is the arm is a PSM, since it has an IO, it also has a
         // Dallas chip interface and we want to see the messages
-        if (arm->m_config->native_or_derived_PSM()) {
-            const std::string interfaceNameIODallas = "IO_dallas-" + arm->m_name;
-            arm->m_IO_dallas_interface_required = AddInterfaceRequired(interfaceNameIODallas);
-            if (arm->m_IO_dallas_interface_required) {
-                arm->m_IO_dallas_interface_required->AddEventHandlerWrite(&system::ErrorEventHandler,
-                                                                          this, "error");
-                arm->m_IO_dallas_interface_required->AddEventHandlerWrite(&system::WarningEventHandler,
-                                                                          this, "warning");
-                arm->m_IO_dallas_interface_required->AddEventHandlerWrite(&system::StatusEventHandler,
-                                                                          this, "status");
+        if (_arm->m_config->native_or_derived_PSM()) {
+            const std::string interfaceNameIODallas = "IO_dallas-" + _arm->m_name;
+            _arm->m_IO_dallas_interface_required = AddInterfaceRequired(interfaceNameIODallas);
+            if (_arm->m_IO_dallas_interface_required) {
+                _arm->m_IO_dallas_interface_required->AddEventHandlerWrite(&system::error_event_handler,
+                                                                           this, "error");
+                _arm->m_IO_dallas_interface_required->AddEventHandlerWrite(&system::warning_event_handler,
+                                                                           this, "warning");
+                _arm->m_IO_dallas_interface_required->AddEventHandlerWrite(&system::status_event_handler,
+                                                                           this, "status");
                 m_connections.Add(this->GetName(), interfaceNameIODallas,
-                                  arm->m_IO_component_name, arm->m_name + "_dallas");
+                                  _arm->m_IO_component_name, _arm->m_name + "_dallas");
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO Dallas interface for arm \""
-                                         << arm->m_name << "\"" << std::endl;
+                                         << _arm->m_name << "\"" << std::endl;
                 return false;
             }
         }
     }
 
     // PID
-    if (arm->m_config->expects_PID()) {
-        const std::string interfaceNamePID = "PID_" + arm->m_name;
-        arm->m_PID_interface_required = AddInterfaceRequired(interfaceNamePID);
-        if (arm->m_PID_interface_required) {
-            arm->m_PID_interface_required->AddEventHandlerWrite(&system::ErrorEventHandler,
-                                                                this, "error");
-            arm->m_PID_interface_required->AddEventHandlerWrite(&system::WarningEventHandler,
-                                                                this, "warning");
-            arm->m_PID_interface_required->AddEventHandlerWrite(&system::StatusEventHandler,
-                                                                this, "status");
+    if (_arm->m_config->expects_PID()) {
+        const std::string interfaceNamePID = "PID_" + _arm->m_name;
+        _arm->m_PID_interface_required = AddInterfaceRequired(interfaceNamePID);
+        if (_arm->m_PID_interface_required) {
+            _arm->m_PID_interface_required->AddEventHandlerWrite(&system::error_event_handler,
+                                                                 this, "error");
+            _arm->m_PID_interface_required->AddEventHandlerWrite(&system::warning_event_handler,
+                                                                 this, "warning");
+            _arm->m_PID_interface_required->AddEventHandlerWrite(&system::status_event_handler,
+                                                                 this, "status");
             m_connections.Add(this->GetName(), interfaceNamePID,
-                              arm->m_name + "_PID", "Controller");
+                              _arm->m_name + "_PID", "Controller");
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "add_arm_interfaces: failed to add PID interface for arm \""
-                                     << arm->m_name << "\"" << std::endl;
+                                     << _arm->m_name << "\"" << std::endl;
             return false;
         }
     }
 
     // arm interface
-    const std::string interfaceNameArm = arm->m_name;
-    arm->m_arm_interface_required = AddInterfaceRequired(interfaceNameArm);
-    if (arm->m_arm_interface_required) {
-        arm->m_arm_interface_required->AddFunction("state_command", arm->state_command);
-        if (!arm->m_config->SUJ()) {
-            arm->m_arm_interface_required->AddFunction("hold", arm->hold, MTS_OPTIONAL);
+    const std::string interfaceNameArm = _arm->m_name;
+    _arm->m_arm_interface_required = AddInterfaceRequired(interfaceNameArm);
+    if (_arm->m_arm_interface_required) {
+        _arm->m_arm_interface_required->AddFunction("state_command", _arm->state_command);
+        if (!_arm->m_config->SUJ()) {
+            _arm->m_arm_interface_required->AddFunction("hold", _arm->hold, MTS_OPTIONAL);
         }
-        arm->m_arm_interface_required->AddEventHandlerWrite(&system::ErrorEventHandler,
-                                                            this, "error");
-        arm->m_arm_interface_required->AddEventHandlerWrite(&system::WarningEventHandler,
-                                                            this, "warning");
-        arm->m_arm_interface_required->AddEventHandlerWrite(&system::StatusEventHandler,
-                                                            this, "status");
-        arm->m_arm_interface_required->AddEventHandlerWrite(&dvrk::arm_proxy::CurrentStateEventHandler,
-                                                            arm.get(), "operating_state");
+        _arm->m_arm_interface_required->AddEventHandlerWrite(&system::error_event_handler,
+                                                             this, "error");
+        _arm->m_arm_interface_required->AddEventHandlerWrite(&system::warning_event_handler,
+                                                             this, "warning");
+        _arm->m_arm_interface_required->AddEventHandlerWrite(&system::status_event_handler,
+                                                             this, "status");
+        _arm->m_arm_interface_required->AddEventHandlerWrite(&dvrk::arm_proxy::CurrentStateEventHandler,
+                                                             _arm.get(), "operating_state");
         m_connections.Add(this->GetName(), interfaceNameArm,
-                          arm->m_arm_component_name, arm->m_arm_interface_name);
+                          _arm->m_arm_component_name, _arm->m_arm_interface_name);
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "add_arm_interfaces: failed to add Main interface for arm \""
-                                 << arm->m_name << "\"" << std::endl;
+                                 << _arm->m_name << "\"" << std::endl;
         return false;
     }
     return true;
@@ -522,6 +518,19 @@ bool dvrk::system::add_console_interfaces(std::shared_ptr<dvrk::console> console
     if (console->m_interface_provided) {
         console->m_interface_provided->AddCommandWrite(&console::teleop_enable, console.get(),
                                                        "teleop_enable", false);
+        console->m_interface_provided->AddCommandWrite(&console::set_scale, console.get(),
+                                                       "set_scale",
+                                                       mtsIntuitiveResearchKit::TeleOperationPSM::Scale);
+        console->m_interface_provided->AddCommandWrite(&console::operator_present_event_handler, console.get(),
+                                                       "emulate_operator_present", prmEventButton());
+        console->m_interface_provided->AddCommandWrite(&console::clutch_event_handler, console.get(),
+                                                       "emulate_clutch", prmEventButton());
+        console->m_interface_provided->AddCommandWrite(&console::camera_event_handler, console.get(),
+                                                       "emulate_camera", prmEventButton());
+        console->m_interface_provided->AddEventWrite(console->events.scale,
+                                                     "scale", 0.5);
+        console->m_interface_provided->AddEventWrite(console->events.teleop_enabled,
+                                                     "teleop_enabled", false);
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add interface for console \""
                                  << console->m_name << "\"" << std::endl;
@@ -615,9 +624,9 @@ void dvrk::system::home(void)
     bool allArmsEnabled = true;
     // enable all arms that need it
     for (auto & arm : m_arm_proxies) {
-        auto armState = ArmStates.find(arm.first);
+        auto armState = m_arm_states.find(arm.first);
         if (// search if we already have a state
-            (armState != ArmStates.end())
+            (armState != m_arm_states.end())
             // and the arm is disabled
             && (armState->second.State() == prmOperatingState::DISABLED) ) {
             arm.second->state_command(std::string("enable"));
@@ -636,9 +645,9 @@ void dvrk::system::home(void)
 void dvrk::system::DisableFaultyArms(void)
 {
     for (auto & arm : m_arm_proxies) {
-        auto armState = ArmStates.find(arm.first);
+        auto armState = m_arm_states.find(arm.first);
         if (// search if we already have a state
-            (armState != ArmStates.end())
+            (armState != m_arm_states.end())
             // and the arm is faulty
             && (armState->second.State() == prmOperatingState::FAULT) ) {
             arm.second->state_command(std::string("disable"));
@@ -708,7 +717,7 @@ void dvrk::system::string_to_speech(const std::string & text)
 }
 
 
-void dvrk::system::ErrorEventHandler(const mtsMessage & message)
+void dvrk::system::error_event_handler(const mtsMessage & message)
 {
     m_interface->SendError(message.Message);
     // throttle error beeps
@@ -720,34 +729,34 @@ void dvrk::system::ErrorEventHandler(const mtsMessage & message)
 }
 
 
-void dvrk::system::WarningEventHandler(const mtsMessage & message)
+void dvrk::system::warning_event_handler(const mtsMessage & message)
 {
     m_interface->SendWarning(message.Message);
 }
 
 
-void dvrk::system::StatusEventHandler(const mtsMessage & message)
+void dvrk::system::status_event_handler(const mtsMessage & message)
 {
     m_interface->SendStatus(message.Message);
 }
 
 
-void dvrk::system::SetArmCurrentState(const std::string & arm_name,
-                                      const prmOperatingState & currentState)
+void dvrk::system::set_arm_current_state(const std::string & _arm_name,
+                                         const prmOperatingState & _current_state)
 {
     // if (mTeleopDesired && !mTeleopEnabled) {
     //     teleop_enable(true);
     // }
 
     // save state
-    ArmStates[arm_name] = currentState;
+    m_arm_states[_arm_name] = _current_state;
 
     // emit event (for Qt GUI)
     std::string payload = "";
-    if (currentState.IsEnabledAndHomed()) {
+    if (_current_state.IsEnabledAndHomed()) {
         payload = "ENABLED";
-    } else if (currentState.State() == prmOperatingState::FAULT) {
+    } else if (_current_state.State() == prmOperatingState::FAULT) {
         payload = "FAULT";
     }
-    ConfigurationEvents.ArmCurrentState(prmKeyValue(arm_name, payload));
+    events.arm_current_state(prmKeyValue(_arm_name, payload));
 }

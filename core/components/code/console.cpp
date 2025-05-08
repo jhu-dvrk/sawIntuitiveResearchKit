@@ -18,6 +18,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/console.h>
 
+#include <cisstMultiTask/mtsInterfaceProvided.h>
+
 #include <sawIntuitiveResearchKit/console_configuration.h>
 #include <sawIntuitiveResearchKit/system.h>
 #include <sawIntuitiveResearchKit/teleop_ECM_proxy.h>
@@ -109,48 +111,16 @@ void dvrk::console::create_components(void)
 
 //     mInterface = AddInterfaceProvided("Main");
 //     if (mInterface) {
-//         mInterface->AddMessageEvents();
-//         mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::power_off, this,
-//                                    "power_off");
-//         mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::power_on, this,
-//                                    "power_on");
-//         mInterface->AddCommandVoid(&mtsIntuitiveResearchKitConsole::home, this,
-//                                    "home");
-//         mInterface->AddEventWrite(ConfigurationEvents.ArmCurrentState,
-//                                   "ArmCurrentState", prmKeyValue());
-//         // mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::teleop_enable, this,
-//         //                             "teleop_enable", false);
-//         // mInterface->AddEventWrite(console_events.teleop_enabled,
-//         //                           "teleop_enabled", false);
 //         // // manage tele-op
 //         // mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::cycle_teleop_PSM_by_MTM, this,
 //         //                             "cycle_teleop_PSM_by_MTM", std::string(""));
 //         // mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::select_teleop_PSM, this,
 //         //                             "select_teleop_PSM", prmKeyValue("MTM", "PSM"));
-//         // mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::set_scale, this,
-//         //                             "set_scale", 0.5);
-//         // mInterface->AddEventWrite(ConfigurationEvents.scale,
-//         //                           "scale", 0.5);
 //         // mInterface->AddEventWrite(ConfigurationEvents.teleop_PSM_selected,
 //         //                           "teleop_PSM_selected", prmKeyValue("MTM", "PSM"));
 //         // mInterface->AddEventWrite(ConfigurationEvents.teleop_PSM_unselected,
 //         //                           "teleop_PSM_unselected", prmKeyValue("MTM", "PSM"));
-//         // audio
-//         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::set_volume, this,
-//                                     "set_volume", m_audio_volume);
-//         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::beep, this,
-//                                     "beep", vctDoubleVec());
-//         mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::string_to_speech, this,
-//                                     "string_to_speech", std::string());
-//         mInterface->AddEventWrite(audio.volume,
-//                                   "volume", m_audio_volume);
-//         // emulate foot pedal events
-//         // mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler, this,
-//         //                             "emulate_operator_present", prmEventButton());
-//         // mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::ClutchEventHandler, this,
-//         //                             "emulate_clutch", prmEventButton());
-//         // mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::CameraEventHandler, this,
-//         //                             "emulate_camera", prmEventButton());
+
 //         // misc.
 //         mInterface->AddCommandRead(&mtsIntuitiveResearchKitConsole::calibration_mode, this,
 //                                    "calibration_mode", false);
@@ -597,9 +567,9 @@ void dvrk::console::create_components(void)
 // }
 
 
-void dvrk::console::teleop_enable(const bool & enable)
+void dvrk::console::teleop_enable(const bool & _enable)
 {
-    const std::string command = enable ? "enable" : "disable";
+    const std::string command = _enable ? "enable" : "disable";
     // ECM teleops
     for (auto & proxy : m_teleop_ECM_proxies) {
         proxy.second->state_command(command);
@@ -623,6 +593,89 @@ void dvrk::console::teleop_enable(const bool & enable)
     // //     // event
     // //    console_events.teleop_enabled(mTeleopEnabled);
     // //     UpdateTeleopState();
+}
+
+
+void dvrk::console::set_scale(const double & _scale)
+{
+    // PSM teleops
+    for (auto & proxy : m_teleop_PSM_proxies) {
+        proxy.second->set_scale(_scale);
+    }
+    events.scale(_scale);
+}
+
+
+void dvrk::console::clutch_event_handler(const prmEventButton & button)
+{
+    switch (button.Type()) {
+    case prmEventButton::PRESSED:
+        m_interface_provided->SendStatus(m_name + ": clutch pressed");
+        m_system->audio.beep(vct3(0.1, 700.0, m_system->m_audio_volume));
+        break;
+    case prmEventButton::RELEASED:
+        m_interface_provided->SendStatus(m_name + ": clutch released");
+        m_system->audio.beep(vct3(0.1, 700.0, m_system->m_audio_volume));
+        break;
+    case prmEventButton::CLICKED:
+        m_interface_provided->SendStatus(m_name + ": clutch quick tap");
+        m_system->audio.beep(vct3(0.05, 2000.0, m_system->m_audio_volume));
+        m_system->audio.beep(vct3(0.05, 2000.0, m_system->m_audio_volume));
+        // if (mTeleopMTMToCycle != "") {
+        //     cycle_teleop_PSM_by_MTM(mTeleopMTMToCycle);
+        // }
+        break;
+    default:
+        break;
+    }
+    events.clutch(button);        
+}
+
+
+void dvrk::console::camera_event_handler(const prmEventButton & button)
+{
+    switch (button.Type()) {
+    case prmEventButton::PRESSED:
+        m_camera = true;
+        m_interface_provided->SendStatus(m_name + ": camera pressed");
+        m_system->audio.beep(vct3(0.1, 1000.0, m_system->m_audio_volume));
+        break;
+    case prmEventButton::RELEASED:
+        m_camera = false;
+        m_interface_provided->SendStatus(m_name + ": camera released");
+        m_system->audio.beep(vct3(0.1, 1000.0, m_system->m_audio_volume));
+        break;
+    case prmEventButton::CLICKED:
+        m_interface_provided->SendStatus(m_name + ": camera quick tap");
+        m_system->audio.beep(vct3(0.05, 2500.0, m_system->m_audio_volume));
+        m_system->audio.beep(vct3(0.05, 2500.0, m_system->m_audio_volume));
+        break;
+    default:
+        break;
+    }
+    update_teleop_state();
+    events.camera(button);
+}
+
+
+void dvrk::console::operator_present_event_handler(const prmEventButton & button)
+{
+    switch (button.Type()) {
+    case prmEventButton::PRESSED:
+        m_operator_present = true;
+        m_interface_provided->SendStatus(m_name + ": operator present");
+        m_system->audio.beep(vct3(0.3, 1500.0, m_system->m_audio_volume));
+        break;
+    case prmEventButton::RELEASED:
+        m_operator_present = false;
+        m_interface_provided->SendStatus(m_name + ": operator not present");
+        m_system->audio.beep(vct3(0.3, 1200.0, m_system->m_audio_volume));
+        break;
+    default:
+        break;
+    }
+    update_teleop_state();
+    events.operator_present(button);
 }
 
 
@@ -826,8 +879,8 @@ void dvrk::console::teleop_enable(const bool & enable)
 // //     }
 // // }
 
-// // void mtsIntuitiveResearchKitConsole::UpdateTeleopState(void)
-// // {
+void dvrk::console::update_teleop_state(void)
+{
 // //     // Check if teleop is enabled
 // //     if (!mTeleopEnabled) {
 // //         bool holdNeeded = false;
@@ -933,85 +986,7 @@ void dvrk::console::teleop_enable(const bool & enable)
 // //             }
 // //         }
 // //     }
-// // }
-
-// // void mtsIntuitiveResearchKitConsole::set_scale(const double & scale)
-// // {
-// //     for (auto & iter : m_teleop_PSM_proxies) {
-// //         iter.second->set_scale(scale);
-// //     }
-// //     ConfigurationEvents.scale(scale);
-// // }
-
-// // void mtsIntuitiveResearchKitConsole::ClutchEventHandler(const prmEventButton & button)
-// // {
-// //     switch (button.Type()) {
-// //     case prmEventButton::PRESSED:
-// //         mInterface->SendStatus(this->GetName() + ": clutch pressed");
-// //         audio.beep(vct3(0.1, 700.0, m_audio_volume));
-// //         break;
-// //     case prmEventButton::RELEASED:
-// //         mInterface->SendStatus(this->GetName() + ": clutch released");
-// //         audio.beep(vct3(0.1, 700.0, m_audio_volume));
-// //         break;
-// //     case prmEventButton::CLICKED:
-// //         mInterface->SendStatus(this->GetName() + ": clutch quick tap");
-// //         audio.beep(vct3(0.05, 2000.0, m_audio_volume));
-// //         audio.beep(vct3(0.05, 2000.0, m_audio_volume));
-// //         // if (mTeleopMTMToCycle != "") {
-// //         //     cycle_teleop_PSM_by_MTM(mTeleopMTMToCycle);
-// //         // }
-// //         break;
-// //     default:
-// //         break;
-// //     }
-// //     console_events.clutch(button);
-// // }
-
-// // void mtsIntuitiveResearchKitConsole::CameraEventHandler(const prmEventButton & button)
-// // {
-// //     switch (button.Type()) {
-// //     case prmEventButton::PRESSED:
-// //         // mCameraPressed = true;
-// //         mInterface->SendStatus(this->GetName() + ": camera pressed");
-// //         audio.beep(vct3(0.1, 1000.0, m_audio_volume));
-// //         break;
-// //     case prmEventButton::RELEASED:
-// //         mCameraPressed = false;
-// //         mInterface->SendStatus(this->GetName() + ": camera released");
-// //         audio.beep(vct3(0.1, 1000.0, m_audio_volume));
-// //         break;
-// //     case prmEventButton::CLICKED:
-// //         mInterface->SendStatus(this->GetName() + ": camera quick tap");
-// //         audio.beep(vct3(0.05, 2500.0, m_audio_volume));
-// //         audio.beep(vct3(0.05, 2500.0, m_audio_volume));
-// //         break;
-// //     default:
-// //         break;
-// //     }
-// //     UpdateTeleopState();
-// //     console_events.camera(button);
-// // }
-
-// // void mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler(const prmEventButton & button)
-// // {
-// //     switch (button.Type()) {
-// //     case prmEventButton::PRESSED:
-// //         mOperatorPresent = true;
-// //         mInterface->SendStatus(this->GetName() + ": operator present");
-// //         audio.beep(vct3(0.3, 1500.0, m_audio_volume));
-// //         break;
-// //     case prmEventButton::RELEASED:
-// //         mOperatorPresent = false;
-// //         mInterface->SendStatus(this->GetName() + ": operator not present");
-// //         audio.beep(vct3(0.3, 1200.0, m_audio_volume));
-// //         break;
-// //     default:
-// //         break;
-// //     }
-// //     UpdateTeleopState();
-// //     console_events.operator_present(button);
-// // }
+}
 
 // // void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & message)
 // // {
@@ -1019,12 +994,4 @@ void dvrk::console::teleop_enable(const bool & enable)
 // //     mTeleopEnabled = false;
 // //     console_events.teleop_enabled(mTeleopEnabled);
 // //     UpdateTeleopState();
-
-// //     mInterface->SendError(message.Message);
-// //     // throttle error beeps
-// //     double currentTime = mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime();
-// //     if ((currentTime - mTimeOfLastErrorBeep) > 2.0 * cmn_s) {
-// //         audio.beep(vct3(0.3, 3000.0, m_audio_volume));
-// //         mTimeOfLastErrorBeep = currentTime;
-// //     }
 // // }

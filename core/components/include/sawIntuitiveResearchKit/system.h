@@ -148,13 +148,6 @@ namespace dvrk {
         } audio;
         double m_audio_volume;
         
-        // struct {
-        //     mtsFunctionWrite clutch;
-        //     mtsFunctionWrite camera;
-        //     mtsFunctionWrite operator_present;
-        //     mtsFunctionWrite teleop_enabled;
-        // } console_events;
-
         // components used for events (digital inputs)
         typedef std::pair<std::string, std::string> InterfaceComponentType;
         typedef std::map<std::string, InterfaceComponentType> DInputSourceType;
@@ -162,21 +155,17 @@ namespace dvrk {
 
         mtsInterfaceProvided * m_interface = nullptr;
         struct {
-            mtsFunctionWrite ArmCurrentState;
-            // mtsFunctionWrite scale;
-            // mtsFunctionWrite teleop_PSM_selected;
-            // mtsFunctionWrite teleop_PSM_unselected;
-        } ConfigurationEvents;
+            mtsFunctionWrite arm_current_state;
+        } events;
 
-        void ErrorEventHandler(const mtsMessage & message);
-        void WarningEventHandler(const mtsMessage & message);
-        void StatusEventHandler(const mtsMessage & message);
+        void error_event_handler(const mtsMessage & message);
+        void warning_event_handler(const mtsMessage & message);
+        void status_event_handler(const mtsMessage & message);
 
-        std::map<std::string, prmOperatingState> ArmStates;
-        void SetArmCurrentState(const std::string & armName,
-                                const prmOperatingState & currentState);
+        std::map<std::string, prmOperatingState> m_arm_states;
+        void set_arm_current_state(const std::string & armName,
+                                   const prmOperatingState & currentState);
     };
-
 }
 
 CMN_DECLARE_SERVICES_INSTANTIATION(dvrk::system);
