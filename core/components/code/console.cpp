@@ -606,6 +606,42 @@ void dvrk::console::set_scale(const double & _scale)
 }
 
 
+void dvrk::console::select_teleop(const std::string & _teleop)
+{
+    // PSM teleops
+    auto iter_PSM = m_teleop_PSM_proxies.find(_teleop);
+    if (iter_PSM != m_teleop_PSM_proxies.end()) {
+        iter_PSM->second->m_selected = true;
+        return;
+    }
+    // ECM teleops
+    auto iter_ECM = m_teleop_ECM_proxies.find(_teleop);
+    if (iter_ECM != m_teleop_ECM_proxies.end()) {
+        iter_ECM->second->m_selected = true;
+        return;
+    }
+    m_interface_provided->SendStatus("console " + m_name + "::select_teleop can't find " + _teleop);
+}
+
+
+void dvrk::console::unselect_teleop(const std::string & _teleop)
+{
+    // PSM teleops
+    auto iter_PSM = m_teleop_PSM_proxies.find(_teleop);
+    if (iter_PSM != m_teleop_PSM_proxies.end()) {
+        iter_PSM->second->m_selected = false;
+        return;
+    }
+    // ECM teleops
+    auto iter_ECM = m_teleop_ECM_proxies.find(_teleop);
+    if (iter_ECM != m_teleop_ECM_proxies.end()) {
+        iter_ECM->second->m_selected = false;
+        return;
+    }
+    m_interface_provided->SendStatus("console " + m_name + "::unselect_teleop can't find " + _teleop);
+}
+
+
 void dvrk::console::clutch_event_handler(const prmEventButton & button)
 {
     switch (button.Type()) {

@@ -129,10 +129,11 @@ namespace dvrk {
         void set_volume(const double & volume);
         void beep(const vctDoubleVec & values); // duration, frequency, volume
         void string_to_speech(const std::string & text);
+
         std::shared_ptr<dvrk::arm_proxy> m_SUJ = nullptr;
-        // void ClutchEventHandler(const prmEventButton & button);
-        // void CameraEventHandler(const prmEventButton & button);
-        // void OperatorPresentEventHandler(const prmEventButton & button);
+
+        // force console to emit initial events for Startup
+        void emit_events_console(void);
 
         void ConnectInternal(bool &ret) const;
         

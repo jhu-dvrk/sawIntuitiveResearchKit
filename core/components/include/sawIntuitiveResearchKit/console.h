@@ -79,6 +79,8 @@ namespace dvrk {
         // commands
         void teleop_enable(const bool &);
         void set_scale(const double & scale);
+        void select_teleop(const std::string & selected);
+        void unselect_teleop(const std::string & unselected);
 
         void clutch_event_handler(const prmEventButton & button);
         void camera_event_handler(const prmEventButton & button);
@@ -91,6 +93,8 @@ namespace dvrk {
             mtsFunctionWrite operator_present;
             mtsFunctionWrite teleop_enabled;
             mtsFunctionWrite scale;
+            mtsFunctionWrite teleop_selected;
+            mtsFunctionWrite teleop_unselected;
         } events;
 
         // internal methods to manage active teleops
@@ -126,18 +130,8 @@ namespace dvrk {
 
 //     };
 
-
-
-//     void AddFootpedalInterfaces(void);
-//     double mTimeOfLastErrorBeep;
-
 //     /*! Head sensor */
 //     mtsComponent * mHeadSensor = nullptr;
-
-//     /*! daVinci Endoscope Focus */
-//     mtsDaVinciEndoscopeFocus * mDaVinciEndoscopeFocus = nullptr;
-
-
 
 //     // components used for events (digital inputs)
 //     typedef std::pair<std::string, std::string> InterfaceComponentType;
@@ -155,8 +149,3 @@ namespace dvrk {
 //     void ErrorEventHandler(const mtsMessage & message);
 //     void WarningEventHandler(const mtsMessage & message);
 //     void StatusEventHandler(const mtsMessage & message);
-
-//     std::map<std::string, prmOperatingState> ArmStates;
-//     void SetArmCurrentState(const std::string & armName,
-//                             const prmOperatingState & currentState);
-// };

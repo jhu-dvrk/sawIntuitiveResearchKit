@@ -41,6 +41,8 @@ if (cisst_FOUND_AS_REQUIRED)
                system_Qt.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/system_Qt_widget.h
                system_Qt_widget.cpp
+               ${sawIntuitiveResearchKit_HEADER_DIR}/console_Qt_widget.h
+               console_Qt_widget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h
                mtsTeleOperationPSMQtWidget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECMQtWidget.h

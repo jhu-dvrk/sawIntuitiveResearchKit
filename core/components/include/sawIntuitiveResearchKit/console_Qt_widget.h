@@ -17,8 +17,8 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 
-#ifndef _dvrk_system_Qt_widget_h
-#define _dvrk_system_Qt_widget_h
+#ifndef _dvrk_console_Qt_widget_h
+#define _dvrk_console_Qt_widget_h
 
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstMultiTask/mtsMessageQtWidget.h>
@@ -40,120 +40,89 @@ class QCheckBox;
 
 namespace dvrk {
     
-    class CISST_EXPORT system_Qt_widget: public QWidget, public mtsComponent
+    class CISST_EXPORT console_Qt_widget: public QWidget, public mtsComponent
     {
         Q_OBJECT;
         CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
-        typedef QPair<QString, QString> PairStringType;
     public:
-        system_Qt_widget(const std::string & componentName);
-        inline virtual ~system_Qt_widget() {}
+        console_Qt_widget(const std::string & componentName);
+        inline virtual ~console_Qt_widget() {}
         
         void Configure(const std::string & filename = "");
         void Startup(void);
         void Cleanup(void);
-        inline QTabWidget * get_tab_widget(void) {
-            return QTWidgets;
-        }
         void HasTeleOp(const bool & hasTeleOp);
         
     signals:
-        void SignalArmCurrentState(PairStringType armState);
-        void SignalTeleopPSMSelected(PairStringType selected);
-        void SignalTeleopPSMUnselected(PairStringType unselected);
+        void SignalTeleopSelected(std::string selected);
+        void SignalTeleopUnselected(std::string unselected);
         void SignalTeleopEnabled(bool toggle);
         void SignalScale(double scale);
         void SignalOperatorPresent(bool operatorPresent);
         void SignalClutch(bool clutch);
         void SignalCamera(bool camera);
-        void SignalVolume(double volume);
         
     protected:
-        void FocusArmButton(const QString & armName);
-        void GetTeleopButtonCheck(const PairStringType & pair, QPushButton * & button, QCheckBox * & check);
-        void FocusTeleopButton(const QString & teleop);
-        void SelectTeleopCheck(const PairStringType & pair);
-        void UnselectTeleopCheck(const PairStringType & pair);
+        void GetTeleopButtonCheck(const std::string & pair, QPushButton * & button, QCheckBox * & check);
+        void SelectTeleopCheck(const std::string & pair);
+        void UnselectTeleopCheck(const std::string & pair);
                                                              
     private slots:
-        void SlotPowerOff(void);
-        void SlotPowerOn(void);
-        void SlotHome(void);
-        void SlotArmCurrentStateEventHandler(PairStringType armState);
         void SlotTeleopEnable(bool toggle);
         void SlotTeleopToggle(void);
         void SlotTeleopStart(void);
         void SlotTeleopStop(void);
         void SlotTeleopEnabledEventHandler(bool enabled);
-        void SlotTeleopPSMSelectedEventHandler(PairStringType selected);
-        void SlotTeleopPSMUnselectedEventHandler(PairStringType unselected);
+        void SlotTeleopSelectedEventHandler(std::string selected);
+        void SlotTeleopUnselectedEventHandler(std::string unselected);
         void SlotSetScale(double scale);
         void SlotScaleEventHandler(double scale);
         void SlotOperatorPresentEventHandler(bool operatorPresent);
         void SlotClutchEventHandler(bool clutch);
         void SlotCameraEventHandler(bool camera);
-        void SlotSetVolume(void);
-        void SlotVolumeEventHandler(double volume);
         void SlotEnableDirectControl(bool toggle);
         void SlotEmulateOperatorPresent(bool toggle);
         void SlotEmulateClutch(bool toggle);
         void SlotEmulateCamera(bool toggle);
-        void SlotComponentViewer(void);
         
     protected:
-        void closeEvent(QCloseEvent * event);
 
         void setupUi(void);
 
         struct {
-            mtsFunctionVoid power_off;
-            mtsFunctionVoid power_on;
-            mtsFunctionVoid home;
-            // mtsFunctionWrite teleop_enable;
-            // mtsFunctionWrite select_teleop_PSM;
-            // mtsFunctionWrite set_scale;
-            // mtsFunctionWrite set_volume;
-            // mtsFunctionWrite emulate_operator_present;
-            // mtsFunctionWrite emulate_clutch;
-            // mtsFunctionWrite emulate_camera;
-            mtsFunctionRead calibration_mode;
-        } system;
+            mtsFunctionWrite teleop_enable;
+            mtsFunctionWrite select_teleop;
+            mtsFunctionWrite set_scale;
+            mtsFunctionWrite emulate_operator_present;
+            mtsFunctionWrite emulate_clutch;
+            mtsFunctionWrite emulate_camera;
+        } console;
         
-        void ArmCurrentStateEventHandler(const prmKeyValue & armState);
         void TeleopEnabledEventHandler(const bool & enabled);
-        void TeleopPSMSelectedEventHandler(const prmKeyValue & selected);
-        void TeleopPSMUnselectedEventHandler(const prmKeyValue & unselected);
+        void TeleopSelectedEventHandler(const std::string & selected);
+        void TeleopUnselectedEventHandler(const std::string & unselected);
         void ScaleEventHandler(const double & scale);
         void OperatorPresentEventHandler(const prmEventButton & button);
         void ClutchEventHandler(const prmEventButton & button);
         void CameraEventHandler(const prmEventButton & button);
-        void VolumeEventHandler(const double & volume);
-        
-        QVBoxLayout * QVBArms;
-        std::map<QString, QPushButton *> ArmButtons;
         
         QVBoxLayout * QVBTeleops;
-        std::map<QString, std::pair<QPushButton *, QCheckBox *> > TeleopButtons;
+        std::map<std::string, std::pair<QPushButton *, QCheckBox *>> TeleopButtons;
 
-        QPushButton * QPBPowerOff;
-        QPushButton * QPBPowerOn;
-        QPushButton * QPBHome;
         QPushButton * QPBTeleopEnable;
         QCheckBox * QCBTeleopEnable;
         QDoubleSpinBox * QSBScale;
         QRadioButton * QRBOperatorPresent;
         QRadioButton * QRBClutch;
         QRadioButton * QRBCamera;
-        QSlider * QSVolume;
         
         QCheckBox * QCBEnableDirectControl;
         QPushButton * QPBComponentViewer;
         QTabWidget * QTWidgets;
-        mtsMessageQtWidget * QMMessage;
     };
 }
 
-CMN_DECLARE_SERVICES_INSTANTIATION(dvrk::system_Qt_widget);
+CMN_DECLARE_SERVICES_INSTANTIATION(dvrk::console_Qt_widget);
 
-#endif // _dvrk_system_Qt_widget_h
+#endif // _dvrk_console_Qt_widget_h

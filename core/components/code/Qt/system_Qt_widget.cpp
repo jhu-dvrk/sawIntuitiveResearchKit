@@ -34,7 +34,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <QCloseEvent>
 #include <QCoreApplication>
 #include <QPushButton>
-#include <QScrollBar>
 #include <QGroupBox>
 #include <QTabWidget>
 #include <QSplitter>
@@ -43,11 +42,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <QLabel>
 #include <QPixmap>
 #include <QShortcut>
-#include <QDoubleSpinBox>
 #include <QSlider>
-#include <QRadioButton>
-#include <QCheckBox>
-#include <QApplication>
 
 typedef dvrk::system_Qt_widget dvrk_system_Qt_widget;
 CMN_IMPLEMENT_SERVICES(dvrk_system_Qt_widget);
@@ -173,13 +168,13 @@ void dvrk::system_Qt_widget::SlotHome(void)
 void dvrk::system_Qt_widget::SlotArmCurrentStateEventHandler(PairStringType armState)
 {
     const QString arm = armState.first;
-    auto iter = ArmButtons.find(arm);
+    auto iter = m_arm_buttons.find(arm);
     QPushButton * button;
     // insert new arm if needed
-    if (iter == ArmButtons.end()) {
+    if (iter == m_arm_buttons.end()) {
         button = new QPushButton(arm);
         QVBArms->addWidget(button);
-        ArmButtons[arm] = button;
+        m_arm_buttons[arm] = button;
         connect(button, &QPushButton::clicked,
                 [ = ] { FocusArmButton(armState.first); });
     } else {
@@ -234,6 +229,11 @@ void dvrk::system_Qt_widget::setupUi(void)
     QVBArms = new QVBoxLayout();
     armsLayout->addLayout(QVBArms);
 
+    QTConsoles = new QTabWidget();
+    boxLayout->addWidget(QTConsoles);
+
+    boxLayout->addStretch(100);
+
     QGroupBox * audioBox = new QGroupBox("Audio");
     boxLayout->addWidget(audioBox);
     QVBoxLayout * audioLayout = new QVBoxLayout();
@@ -244,7 +244,6 @@ void dvrk::system_Qt_widget::setupUi(void)
     QSVolume->setValue(50);
     audioLayout->addWidget(QSVolume);
 
-    boxLayout->addStretch(100);
     buttonsWidget->setFixedWidth(buttonsWidget->sizeHint().width());
     mainLayout->addWidget(buttonsWidget);
 
@@ -259,8 +258,8 @@ void dvrk::system_Qt_widget::setupUi(void)
     QSplitter * tabWidgetAndMessages = new QSplitter();
     tabWidgetAndMessages->setOrientation(Qt::Vertical);
 
-    QTWidgets = new QTabWidget();
-    tabWidgetAndMessages->addWidget(QTWidgets);
+    QTComponents = new QTabWidget();
+    tabWidgetAndMessages->addWidget(QTComponents);
 
     QMMessage->setupUi();
     tabWidgetAndMessages->addWidget(QMMessage);
@@ -336,11 +335,11 @@ void dvrk::system_Qt_widget::SlotComponentViewer(void)
 void dvrk::system_Qt_widget::FocusArmButton(const QString & armName)
 {
     // determine which tab to search
-    QTabWidget * subTab = QTWidgets->findChild<QTabWidget *>(QString("Arms"));
+    QTabWidget * subTab = QTComponents->findChild<QTabWidget *>(QString("Arms"));
     if (subTab) {
-        QTWidgets->setCurrentWidget(subTab);
+        QTComponents->setCurrentWidget(subTab);
     } else {
-        subTab = QTWidgets;
+        subTab = QTComponents;
     }
 
     // now find the arm widget

@@ -26,12 +26,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmKeyValue.h>
 
 class QPushButton;
-class QRadioButton;
 class QTabWidget;
-class QDoubleSpinBox;
 class QSlider;
 class QVBoxLayout;
-class QCheckBox;
 
 #include <QWidget>
 
@@ -39,6 +36,8 @@ class QCheckBox;
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
 
 namespace dvrk {
+
+    class console_Qt_widget;
     
     class CISST_EXPORT system_Qt_widget: public QWidget, public mtsComponent
     {
@@ -53,10 +52,15 @@ namespace dvrk {
         void Configure(const std::string & filename = "");
         void Startup(void);
         void Cleanup(void);
-        inline QTabWidget * get_tab_widget(void) {
-            return QTWidgets;
+
+        inline QTabWidget * get_components_tab(void) {
+            return QTComponents;
         }
-        
+
+        inline QTabWidget * get_consoles_tab(void) {
+            return QTConsoles;
+        }
+
     signals:
         void SignalArmCurrentState(PairStringType armState);
         void SignalVolume(double volume);
@@ -90,15 +94,19 @@ namespace dvrk {
         void volume_event_handler(const double & volume);
         
         QVBoxLayout * QVBArms;
-        std::map<QString, QPushButton *> ArmButtons;
+        std::map<QString, QPushButton *> m_arm_buttons;
         
         QPushButton * QPBPowerOff;
         QPushButton * QPBPowerOn;
         QPushButton * QPBHome;
         QSlider * QSVolume;
-        
+
+        QVBoxLayout * QVBConsole;
+        std::map<QString, dvrk::console_Qt_widget *> m_console_widgets;
+
         QPushButton * QPBComponentViewer;
-        QTabWidget * QTWidgets;
+        QTabWidget * QTComponents;
+        QTabWidget * QTConsoles;
         mtsMessageQtWidget * QMMessage;
     };
 }

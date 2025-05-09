@@ -302,10 +302,8 @@ void dvrk::system::Startup(void)
         }
     }
 
-    // emit events for active PSM teleop pairs
-    // EventSelectedTeleopPSMs();
-    // emit scale event
-    // ConfigurationEvents.scale(mtsIntuitiveResearchKit::TeleOperationPSM::Scale);
+    // emit events for consoles
+    emit_events_console();
     // emit volume event
     audio.volume(m_audio_volume);
 
@@ -520,16 +518,24 @@ bool dvrk::system::add_console_interfaces(std::shared_ptr<dvrk::console> console
         console->m_interface_provided->AddCommandWrite(&console::set_scale, console.get(),
                                                        "set_scale",
                                                        mtsIntuitiveResearchKit::TeleOperationPSM::Scale);
+        console->m_interface_provided->AddCommandWrite(&console::select_teleop, console.get(),
+                                                       "select_teleop", std::string());
+        console->m_interface_provided->AddCommandWrite(&console::unselect_teleop, console.get(),
+                                                       "unselect_teleop", std::string());
         console->m_interface_provided->AddCommandWrite(&console::operator_present_event_handler, console.get(),
                                                        "emulate_operator_present", prmEventButton());
         console->m_interface_provided->AddCommandWrite(&console::clutch_event_handler, console.get(),
                                                        "emulate_clutch", prmEventButton());
         console->m_interface_provided->AddCommandWrite(&console::camera_event_handler, console.get(),
                                                        "emulate_camera", prmEventButton());
-        console->m_interface_provided->AddEventWrite(console->events.scale,
-                                                     "scale", 0.5);
         console->m_interface_provided->AddEventWrite(console->events.teleop_enabled,
                                                      "teleop_enabled", false);
+        console->m_interface_provided->AddEventWrite(console->events.scale,
+                                                     "scale", 0.5);
+        console->m_interface_provided->AddEventWrite(console->events.teleop_selected,
+                                                     "teleop_selected", std::string());
+        console->m_interface_provided->AddEventWrite(console->events.teleop_unselected,
+                                                     "teleop_unselected", std::string());
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add interface for console \""
                                  << console->m_name << "\"" << std::endl;
@@ -713,6 +719,12 @@ void dvrk::system::beep(const vctDoubleVec & values)
 void dvrk::system::string_to_speech(const std::string & text)
 {
     audio.string_to_speech(text);
+}
+
+
+void dvrk::system::emit_events_console(void)
+{
+
 }
 
 

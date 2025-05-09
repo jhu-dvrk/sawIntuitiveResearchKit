@@ -33,6 +33,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocusQtWidget.h>
 #include <sawIntuitiveResearchKit/system_Qt_widget.h>
+#include <sawIntuitiveResearchKit/console_Qt_widget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECMQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTMQtWidget.h>
@@ -54,7 +55,7 @@ void dvrk::system_Qt::configure(dvrk::system * system)
 {
     mtsComponentManager * component_manager = mtsComponentManager::GetInstance();
 
-    dvrk::system_Qt_widget * consoleGUI = new dvrk::system_Qt_widget("consoleGUI");
+    auto * consoleGUI = new dvrk::system_Qt_widget("consoleGUI");
     component_manager->AddComponent(consoleGUI);
     // connect consoleGUI to system
     m_connections.Add("consoleGUI", "Main", system->GetName(), "Main");
@@ -68,7 +69,7 @@ void dvrk::system_Qt::configure(dvrk::system * system)
         m_connections.Add("consoleGUI", "Camera", system->GetName(), "Camera");
     }
 
-    m_tab_widget = consoleGUI->get_tab_widget();
+    m_tab_widget = consoleGUI->get_components_tab();
 
     // IOs
     QTabWidget * ioTabWidget;
@@ -84,7 +85,7 @@ void dvrk::system_Qt::configure(dvrk::system * system)
         const std::string & name = iter.first;
         const std::string factory_name = "io_widget_factory_for_" + name;
 
-        mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory(factory_name);
+        auto * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory(factory_name);
         component_manager->AddComponent(robotWidgetFactory);
         // this connect needs to happen now so the factory can figure out the io interfaces
         component_manager->Connect(factory_name, "RobotConfiguration", name, "Configuration");
@@ -201,18 +202,16 @@ void dvrk::system_Qt::configure(dvrk::system * system)
         case dvrk::arm_type::PSM_GENERIC:
             {
                 // Arm widget
-                QWidget * genericComponentGUI = new QWidget();
-                QHBoxLayout * genericComponentLayout = new QHBoxLayout();
+                auto * genericComponentGUI = new QWidget();
+                auto * genericComponentLayout = new QHBoxLayout();
                 genericComponentGUI->setLayout(genericComponentLayout);
-                mtsMessageQtWidgetComponent * messageGUI
-                    = new mtsMessageQtWidgetComponent(name + "_Message_GUI");
+                auto * messageGUI = new mtsMessageQtWidgetComponent(name + "_message_GUI");
                 component_manager->AddComponent(messageGUI);
                 genericComponentLayout->addWidget(messageGUI);
                 m_connections.Add(messageGUI->GetName(), "Component",
                                 iter.second->m_arm_component_name,
                                 iter.second->m_arm_interface_name);
-                mtsIntervalStatisticsQtWidgetComponent * timingGUI
-                    = new mtsIntervalStatisticsQtWidgetComponent(name + "_Timing_GUI");
+                auto * timingGUI = new mtsIntervalStatisticsQtWidgetComponent(name + "_timing_GUI");
                 component_manager->AddComponent(timingGUI);
                 genericComponentLayout->addWidget(timingGUI);
                 m_connections.Add(timingGUI->GetName(), "Component",
@@ -234,6 +233,14 @@ void dvrk::system_Qt::configure(dvrk::system * system)
     QTabWidget * teleopTabWidget = m_tab_widget; // use current tab by default
     for (const auto & console : system->m_consoles) {
         const std::string name = console.first;
+        // first create console widgets
+        auto * console_widget = new console_Qt_widget(name + "_widget");
+        component_manager->AddComponent(console_widget);
+        m_connections.Add(system->GetName(), name,
+                          console_widget->GetName(), "Main");
+        consoleGUI->get_consoles_tab()->addTab(console_widget, name.c_str());
+        
+        // second create the teleop widgets for the console
         if (system->m_consoles.size() > 1) {
             teleopTabWidget = new QTabWidget();
             teleopTabWidget->setObjectName(name.c_str());
@@ -242,7 +249,7 @@ void dvrk::system_Qt::configure(dvrk::system * system)
 
         for (const auto & teleop : console.second->m_teleop_PSM_proxies) {
             const std::string name = teleop.first;
-            mtsTeleOperationPSMQtWidget * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "_GUI");
+            auto * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "_GUI");
             teleopGUI->setObjectName(name.c_str());
             teleopGUI->Configure();
             component_manager->AddComponent(teleopGUI);
@@ -252,7 +259,7 @@ void dvrk::system_Qt::configure(dvrk::system * system)
 
         for (const auto & teleop : console.second->m_teleop_ECM_proxies) {
             const std::string name = teleop.first;
-            mtsTeleOperationECMQtWidget * teleopGUI = new mtsTeleOperationECMQtWidget(name + "_GUI");
+            auto * teleopGUI = new mtsTeleOperationECMQtWidget(name + "_GUI");
             teleopGUI->setObjectName(name.c_str());
             teleopGUI->Configure();
             component_manager->AddComponent(teleopGUI);
