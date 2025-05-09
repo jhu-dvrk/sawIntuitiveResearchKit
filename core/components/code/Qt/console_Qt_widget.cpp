@@ -28,7 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsManagerLocal.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
+#include <sawIntuitiveResearchKit/system_Qt_widget.h>
 
 #include <QMessageBox>
 #include <QCloseEvent>
@@ -49,34 +49,35 @@ http://www.cisst.org/cisst/license.txt.
 #include <QCheckBox>
 #include <QApplication>
 
-CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQtWidget);
+typedef dvrk::system_Qt_widget dvrk_system_Qt_widget;
+CMN_IMPLEMENT_SERVICES(dvrk_system_Qt_widget);
 
-mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(const std::string & componentName):
-    mtsComponent(componentName)
+dvrk::system_Qt_widget::system_Qt_widget(const std::string & _component_name):
+    mtsComponent(_component_name)
 {
     QMMessage = new mtsMessageQtWidget();
 
-    mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("Main");
-    if (interfaceRequired) {
-        QMMessage->SetInterfaceRequired(interfaceRequired);
-        interfaceRequired->AddFunction("power_off", Console.power_off);
-        interfaceRequired->AddFunction("power_on", Console.power_on);
-        interfaceRequired->AddFunction("home", Console.home);
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler,
-                                                this, "ArmCurrentState");
+    mtsInterfaceRequired * interface_required = AddInterfaceRequired("Main");
+    if (interface_required) {
+        QMMessage->SetInterfaceRequired(interface_required);
+        interface_required->AddFunction("power_off", system.power_off);
+        interface_required->AddFunction("power_on", system.power_on);
+        interface_required->AddFunction("home", system.home);
+        interface_required->AddEventHandlerWrite(&dvrk::system_Qt_widget::arm_current_state_event_handler,
+                                                 this, "ArmCurrentState");
         // interfaceRequired->AddFunction("teleop_enable", Console.teleop_enable);
-        // interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopEnabledEventHandler,
+        // interfaceRequired->AddEventHandlerWrite(&dvrk::system_Qt_widget::TeleopEnabledEventHandler,
         //                                         this, "teleop_enabled");
         // interfaceRequired->AddFunction("select_teleop_PSM", Console.select_teleop_PSM);
-        // interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMSelectedEventHandler,
+        // interfaceRequired->AddEventHandlerWrite(&dvrk::system_Qt_widget::TeleopPSMSelectedEventHandler,
         //                                         this, "teleop_PSM_selected");
-        // interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMUnselectedEventHandler,
+        // interfaceRequired->AddEventHandlerWrite(&dvrk::system_Qt_widget::TeleopPSMUnselectedEventHandler,
         //                                         this, "teleop_PSM_unselected");
         // interfaceRequired->AddFunction("set_scale", Console.set_scale);
-        // interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
+        // interfaceRequired->AddEventHandlerWrite(&dvrk::system_Qt_widget::ScaleEventHandler,
         //                                         this, "scale");
-        interfaceRequired->AddFunction("set_volume", Console.set_volume);
-        interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::VolumeEventHandler,
+        interfaceRequired->AddFunction("set_volume", system.set_volume);
+        interfaceRequired->AddEventHandlerWrite(&dvrk::system_Qt_widget::volume_event_handler,
                                                 this, "volume");
         // interfaceRequired->AddFunction("emulate_operator_present", Console.emulate_operator_present);
         // interfaceRequired->AddFunction("emulate_clutch", Console.emulate_clutch);
@@ -85,30 +86,32 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
     }
     // interfaceRequired = AddInterfaceRequired("OperatorPresent");
     // if (interfaceRequired) {
-    //     interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler,
+    //     interfaceRequired->AddEventHandlerWrite(&dvrk::system_Qt_widget::OperatorPresentEventHandler,
     //                                             this, "Button");
     // }
     // interfaceRequired = AddInterfaceRequired("Clutch");
     // if (interfaceRequired) {
-    //     interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler,
+    //     interfaceRequired->AddEventHandlerWrite(&dvrk::system_Qt_widget::ClutchEventHandler,
     //                                             this, "Button");
     // }
     // interfaceRequired = AddInterfaceRequired("Camera");
     // if (interfaceRequired) {
-    //     interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler,
+    //     interfaceRequired->AddEventHandlerWrite(&dvrk::system_Qt_widget::CameraEventHandler,
     //                                             this, "Button");
     // }
     setupUi();
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::Configure(const std::string & filename)
+
+void dvrk::system_Qt_widget::Configure(const std::string & filename)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << filename << std::endl;
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::Startup(void)
+
+void dvrk::system_Qt_widget::Startup(void)
 {
-    CMN_LOG_CLASS_INIT_VERBOSE << "mtsIntuitiveResearchKitConsoleQtWidget::Startup" << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
     if (!parent()) {
         show();
     }
@@ -151,21 +154,23 @@ void mtsIntuitiveResearchKitConsoleQtWidget::Startup(void)
     }
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::Cleanup(void)
+
+void dvrk::system_Qt_widget::Cleanup(void)
 {
     this->hide();
-    CMN_LOG_CLASS_INIT_VERBOSE << "mtsIntuitiveResearchKitConsoleQtWidget::Cleanup" << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::HasTeleOp(const bool & hasTeleOp)
+
+void dvrk::system_Qt_widget::HasTeleOp(const bool & hasTeleOp)
 {
     QCBTeleopEnable->setEnabled(hasTeleOp);
     QSBScale->setEnabled(hasTeleOp);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
+void dvrk::system_Qt_widget::closeEvent(QCloseEvent * event)
 {
-    int answer = QMessageBox::warning(this, tr("mtsIntuitiveResearchKitConsoleQtWidget"),
+    int answer = QMessageBox::warning(this, tr("dvrk::system_Qt_widget"),
                                       tr("Do you really want to quit this application?"),
                                       QMessageBox::No | QMessageBox::Yes, // options
                                       QMessageBox::Yes // default
@@ -174,7 +179,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
         event->accept();
         this->hide();
         // send clean power off message and wait a bit
-        Console.power_off();
+        system.power_off();
         osaSleep(1.0 * cmn_s);
         QCoreApplication::exit();
     } else {
@@ -182,22 +187,22 @@ void mtsIntuitiveResearchKitConsoleQtWidget::closeEvent(QCloseEvent * event)
     }
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotPowerOff(void)
+void dvrk::system_Qt_widget::SlotPowerOff(void)
 {
-    Console.power_off();
+    system.power_off();
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotPowerOn(void)
+void dvrk::system_Qt_widget::SlotPowerOn(void)
 {
-    Console.power_on();
+    system.power_on();
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotHome(void)
+void dvrk::system_Qt_widget::SlotHome(void)
 {
-    Console.home();
+    system.home();
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(PairStringType armState)
+void dvrk::system_Qt_widget::SlotArmCurrentStateEventHandler(PairStringType armState)
 {
     const QString arm = armState.first;
     auto iter = ArmButtons.find(arm);
@@ -223,27 +228,27 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotArmCurrentStateEventHandler(Pai
     }
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopEnable(bool toggle)
+void dvrk::system_Qt_widget::SlotTeleopEnable(bool toggle)
 {
     Console.teleop_enable(toggle);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopToggle(void)
+void dvrk::system_Qt_widget::SlotTeleopToggle(void)
 {
     Console.teleop_enable(!(QCBTeleopEnable->isChecked()));
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStart(void)
+void dvrk::system_Qt_widget::SlotTeleopStart(void)
 {
     Console.teleop_enable(true);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopStop(void)
+void dvrk::system_Qt_widget::SlotTeleopStop(void)
 {
     Console.teleop_enable(false);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopEnabledEventHandler(bool enabled)
+void dvrk::system_Qt_widget::SlotTeleopEnabledEventHandler(bool enabled)
 {
     if (enabled) {
         QPBTeleopEnable->setText("Enabled");
@@ -257,7 +262,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopEnabledEventHandler(bool 
     QCBTeleopEnable->blockSignals(false);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::GetTeleopButtonCheck(const PairStringType & pair,
+void dvrk::system_Qt_widget::GetTeleopButtonCheck(const PairStringType & pair,
                                                                   QPushButton * & button,
                                                                   QCheckBox * & check)
 {
@@ -289,7 +294,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::GetTeleopButtonCheck(const PairStri
     }
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopPSMSelectedEventHandler(PairStringType selected)
+void dvrk::system_Qt_widget::SlotTeleopPSMSelectedEventHandler(PairStringType selected)
 {
     QPushButton * button;
     QCheckBox * check;
@@ -300,7 +305,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopPSMSelectedEventHandler(P
     check->blockSignals(false);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopPSMUnselectedEventHandler(PairStringType unselected)
+void dvrk::system_Qt_widget::SlotTeleopPSMUnselectedEventHandler(PairStringType unselected)
 {
     QPushButton * button;
     QCheckBox * check;
@@ -311,18 +316,18 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotTeleopPSMUnselectedEventHandler
     check->blockSignals(false);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetScale(double scale)
+void dvrk::system_Qt_widget::SlotSetScale(double scale)
 {
     Console.set_scale(scale);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotSetVolume(void)
+void dvrk::system_Qt_widget::SlotSetVolume(void)
 {
     double volume01 = static_cast<double>(QSVolume->value()) / 100.0;
     Console.set_volume(volume01);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
+void dvrk::system_Qt_widget::setupUi(void)
 {
     QHBoxLayout * mainLayout = new QHBoxLayout;
 
@@ -495,7 +500,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q), this, SLOT(close()));
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler(const prmKeyValue & armState)
+void dvrk::system_Qt_widget::ArmCurrentStateEventHandler(const prmKeyValue & armState)
 {
     PairStringType currentState;
     currentState.first = armState.Key.c_str();
@@ -503,12 +508,12 @@ void mtsIntuitiveResearchKitConsoleQtWidget::ArmCurrentStateEventHandler(const p
     emit SignalArmCurrentState(currentState);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::TeleopEnabledEventHandler(const bool & enabled)
+void dvrk::system_Qt_widget::TeleopEnabledEventHandler(const bool & enabled)
 {
     emit SignalTeleopEnabled(enabled);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMSelectedEventHandler(const prmKeyValue & selected)
+void dvrk::system_Qt_widget::TeleopPSMSelectedEventHandler(const prmKeyValue & selected)
 {
     PairStringType currentSelected;
     currentSelected.first = selected.Key.c_str();
@@ -516,7 +521,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMSelectedEventHandler(const
     emit SignalTeleopPSMSelected(currentSelected);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMUnselectedEventHandler(const prmKeyValue & unselected)
+void dvrk::system_Qt_widget::TeleopPSMUnselectedEventHandler(const prmKeyValue & unselected)
 {
     PairStringType currentUnselected;
     currentUnselected.first = unselected.Key.c_str();
@@ -524,23 +529,23 @@ void mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMUnselectedEventHandler(con
     emit SignalTeleopPSMUnselected(currentUnselected);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotScaleEventHandler(double scale)
+void dvrk::system_Qt_widget::SlotScaleEventHandler(double scale)
 {
     QSBScale->setValue(scale);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler(const double & scale)
+void dvrk::system_Qt_widget::ScaleEventHandler(const double & scale)
 {
     emit SignalScale(scale);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotOperatorPresentEventHandler(bool operatorPresent)
+void dvrk::system_Qt_widget::SlotOperatorPresentEventHandler(bool operatorPresent)
 {
     QRBOperatorPresent->setChecked(operatorPresent);
     QApplication::beep();
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler(const prmEventButton & button)
+void dvrk::system_Qt_widget::OperatorPresentEventHandler(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
         emit SignalOperatorPresent(true);
@@ -549,12 +554,12 @@ void mtsIntuitiveResearchKitConsoleQtWidget::OperatorPresentEventHandler(const p
     }
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotClutchEventHandler(bool clutch)
+void dvrk::system_Qt_widget::SlotClutchEventHandler(bool clutch)
 {
     QRBClutch->setChecked(clutch);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler(const prmEventButton & button)
+void dvrk::system_Qt_widget::ClutchEventHandler(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
         emit SignalClutch(true);
@@ -563,25 +568,25 @@ void mtsIntuitiveResearchKitConsoleQtWidget::ClutchEventHandler(const prmEventBu
     }
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotCameraEventHandler(bool camera)
+void dvrk::system_Qt_widget::SlotCameraEventHandler(bool camera)
 {
     QRBCamera->setChecked(camera);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotVolumeEventHandler(double volume)
+void dvrk::system_Qt_widget::SlotVolumeEventHandler(double volume)
 {
     QSVolume->setValue(volume * 100.0);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::VolumeEventHandler(const double & volume)
+void dvrk::system_Qt_widget::VolumeEventHandler(const double & volume)
 {
     emit SignalVolume(volume);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotEnableDirectControl(bool toggle)
+void dvrk::system_Qt_widget::SlotEnableDirectControl(bool toggle)
 {
     if (toggle) {
-        int answer = QMessageBox::warning(this, tr("mtsIntuitiveResearchKitConsoleQtWidget"),
+        int answer = QMessageBox::warning(this, tr("dvrk::system_Qt_widget"),
                                           tr("Mixing real and emulated console events can lead to inconsistent states.\nAre you sure you want to continue?"),
                                           QMessageBox::No | QMessageBox::Yes, // options
                                           QMessageBox::No // default
@@ -595,7 +600,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotEnableDirectControl(bool toggle
     QRBCamera->setEnabled(toggle);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateOperatorPresent(bool toggle)
+void dvrk::system_Qt_widget::SlotEmulateOperatorPresent(bool toggle)
 {
     prmEventButton event;
     if (toggle) {
@@ -606,7 +611,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateOperatorPresent(bool tog
     Console.emulate_operator_present(event);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateClutch(bool toggle)
+void dvrk::system_Qt_widget::SlotEmulateClutch(bool toggle)
 {
     prmEventButton event;
     if (toggle) {
@@ -617,7 +622,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateClutch(bool toggle)
     Console.emulate_clutch(event);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateCamera(bool toggle)
+void dvrk::system_Qt_widget::SlotEmulateCamera(bool toggle)
 {
     prmEventButton event;
     if (toggle) {
@@ -628,7 +633,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotEmulateCamera(bool toggle)
     Console.emulate_camera(event);
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SlotComponentViewer(void)
+void dvrk::system_Qt_widget::SlotComponentViewer(void)
 {
     QPBComponentViewer->setEnabled(false);
     std::cerr << "Now trying to launch uDrawGraph." << std::endl
@@ -643,7 +648,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::SlotComponentViewer(void)
     componentViewer->Start();
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::FocusArmButton(const QString & armName)
+void dvrk::system_Qt_widget::FocusArmButton(const QString & armName)
 {
     // determine which tab to search
     QTabWidget * subTab = QTWidgets->findChild<QTabWidget *>(QString("Arms"));
@@ -663,7 +668,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::FocusArmButton(const QString & armN
     }
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::FocusTeleopButton(const QString & teleop)
+void dvrk::system_Qt_widget::FocusTeleopButton(const QString & teleop)
 {
     // determine which tab to search
     QTabWidget * subTab = QTWidgets->findChild<QTabWidget *>(QString("Teleops"));
@@ -683,19 +688,19 @@ void mtsIntuitiveResearchKitConsoleQtWidget::FocusTeleopButton(const QString & t
     }
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::SelectTeleopCheck(const PairStringType & pair)
+void dvrk::system_Qt_widget::SelectTeleopCheck(const PairStringType & pair)
 {
     Console.select_teleop_PSM(prmKeyValue(pair.first.toStdString(),
                                           pair.second.toStdString()));
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::UnselectTeleopCheck(const PairStringType & pair)
+void dvrk::system_Qt_widget::UnselectTeleopCheck(const PairStringType & pair)
 {
     Console.select_teleop_PSM(prmKeyValue(pair.first.toStdString(),
                                           std::string()));
 }
 
-void mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler(const prmEventButton & button)
+void dvrk::system_Qt_widget::CameraEventHandler(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
         emit SignalCamera(true);

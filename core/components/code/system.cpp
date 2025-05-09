@@ -43,7 +43,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <json/json.h>
 
 typedef dvrk::system dvrk_system;
-
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(dvrk_system, mtsTaskFromSignal, std::string);
 
 dvrk::system::system(const std::string & componentName):

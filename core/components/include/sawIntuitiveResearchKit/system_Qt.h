@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2015-07-13
 
-  (C) Copyright 2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2015-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -17,8 +17,8 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 
-#ifndef _mtsIntuitiveResearchKitConsoleQt_h
-#define _mtsIntuitiveResearchKitConsoleQt_h
+#ifndef _dvrk_system_Qt_h
+#define _dvrk_system_Qt_h
 
 #include <cisstCommon/cmnGenericObject.h>
 #include <cisstMultiTask/mtsDelayedConnections.h>
@@ -31,28 +31,28 @@ class QWidget;
 
 namespace dvrk {
     class system;
+
+    class CISST_EXPORT system_Qt: public cmnGenericObject
+    {
+        CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
+
+    public:
+        system_Qt(void);
+
+        void configure(dvrk::system * _system);
+
+        inline void connect(void) {
+            m_connections.Connect();
+        }
+
+        void add_tab(QWidget * _widget, const std::string & _name);
+
+    protected:
+        mtsDelayedConnections m_connections;
+        QTabWidget * m_tab_widget;
+    };
 }
 
-class CISST_EXPORT mtsIntuitiveResearchKitConsoleQt: public cmnGenericObject
-{
-    CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
+CMN_DECLARE_SERVICES_INSTANTIATION(dvrk::system_Qt);
 
-public:
-    mtsIntuitiveResearchKitConsoleQt(void);
-
-    void Configure(dvrk::system * system);
-
-    inline void Connect(void) {
-        Connections.Connect();
-    }
-
-    void addTab(QWidget * widget, const std::string & name);
-
-protected:
-    mtsDelayedConnections Connections;
-    QTabWidget * TabWidget;
-};
-
-CMN_DECLARE_SERVICES_INSTANTIATION(mtsIntuitiveResearchKitConsoleQt);
-
-#endif // _mtsIntuitiveResearchKitConsoleQt_h
+#endif // _dvrk_system_Qt_h

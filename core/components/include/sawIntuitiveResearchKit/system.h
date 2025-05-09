@@ -34,11 +34,6 @@ class mtsRobotIO1394;
 class mtsTextToSpeech;
 class mtsDaVinciEndoscopeFocus;
 class mtsIntuitiveResearchKitArm;
-class mtsIntuitiveResearchKitConsoleQt;
-
-namespace dvrk_ros {
-    class console;
-}
 
 namespace dvrk {
     class IO_proxy;
@@ -46,18 +41,20 @@ namespace dvrk {
     class console;
     class teleop_PSM_proxy;
     class teleop_ECM_proxy;
+    class system_Qt;
+    class system_ROS;
 
     class CISST_EXPORT system: public mtsTaskFromSignal
     {
         CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
         
     public:
-        friend class ::mtsIntuitiveResearchKitConsoleQt;
         friend class dvrk::console;
         friend class dvrk::arm_proxy;
         friend class dvrk::teleop_ECM_proxy;
         friend class dvrk::teleop_PSM_proxy;
-        friend class dvrk_ros::console;
+        friend class dvrk::system_Qt;
+        friend class dvrk::system_ROS;
         system(const std::string & componentName);
         inline virtual ~system() {}
 

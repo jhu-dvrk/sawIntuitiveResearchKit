@@ -31,7 +31,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsCollectorQtWidget.h>
 
 #include <sawIntuitiveResearchKit/system.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQt.h>
+#include <sawIntuitiveResearchKit/system_Qt.h>
 
 #include <QApplication>
 #include <QIcon>
@@ -114,8 +114,8 @@ int main(int argc, char ** argv)
     // start creating components
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
-    // console
-    dvrk::system * system = new dvrk::system("dVRK_system");
+    // system
+    auto * system = new dvrk::system("dVRK_system");
     system->set_calibration_mode(options.IsSet("calibration-mode"));
     file_exists("dVRK system JSON configuration file", jsonMainConfigFile, system);
     system->Configure(jsonMainConfigFile);
@@ -123,7 +123,7 @@ int main(int argc, char ** argv)
     system->Connect();
 
     QApplication * application;
-    mtsIntuitiveResearchKitConsoleQt * consoleQt = 0;
+    dvrk::system_Qt * system_Qt = nullptr;
     // add all Qt widgets if needed
     if (hasQt) {
         QLocale::setDefault(QLocale::English);
@@ -140,9 +140,9 @@ int main(int argc, char ** argv)
         if (options.IsSet("dark-mode")) {
             cmnQt::SetDarkMode();
         }
-        consoleQt = new mtsIntuitiveResearchKitConsoleQt();
-        consoleQt->Configure(system);
-        consoleQt->Connect();
+        system_Qt = new dvrk::system_Qt();
+        system_Qt->configure(system);
+        system_Qt->connect();
     }
 
     // configure data collection if needed
@@ -150,16 +150,16 @@ int main(int argc, char ** argv)
         // make sure the json config file exists
         file_exists("JSON data collection configuration", jsonCollectionConfigFile, system);
 
-        mtsCollectorFactory * collectorFactory = new mtsCollectorFactory("collectors");
+        auto * collectorFactory = new mtsCollectorFactory("collectors");
         collectorFactory->Configure(jsonCollectionConfigFile);
         componentManager->AddComponent(collectorFactory);
         collectorFactory->Connect();
 
         if (hasQt) {
-            mtsCollectorQtWidget * collectorQtWidget = new mtsCollectorQtWidget();
-            consoleQt->addTab(collectorQtWidget, "Collection");
+            auto * collectorQtWidget = new mtsCollectorQtWidget();
+            system_Qt->add_tab(collectorQtWidget, "Collection");
 
-            mtsCollectorQtFactory * collectorQtFactory = new mtsCollectorQtFactory("collectorsQt");
+            auto * collectorQtFactory = new mtsCollectorQtFactory("collectorsQt");
             collectorQtFactory->SetFactory("collectors");
             componentManager->AddComponent(collectorQtFactory);
             collectorQtFactory->Connect();
@@ -199,7 +199,7 @@ int main(int argc, char ** argv)
 
     delete system;
     if (hasQt) {
-        delete consoleQt;
+        delete system_Qt;
     }
 
     return 0;

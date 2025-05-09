@@ -21,23 +21,22 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisst_ros_crtk/mts_ros_crtk_bridge_provided.h>
 
-namespace dvrk {
-    class system;
-}
-
 class mts_ros_crtk_robot_io_bridge;
 
-namespace dvrk_ros {
-    class console: public mts_ros_crtk_bridge_provided
+namespace dvrk {
+
+    class system;
+
+    class system_ROS: public mts_ros_crtk_bridge_provided
     {
         CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
     public:
-        console(const std::string & name,
-                cisst_ral::node_ptr_t node_handle,
-                const double & publish_rate_in_seconds,
-                const double & tf_rate_in_seconds,
-                dvrk::system * dVRK_system);
+        system_ROS(const std::string & name,
+                   cisst_ral::node_ptr_t node_handle,
+                   const double & publish_rate_in_seconds,
+                   const double & tf_rate_in_seconds,
+                   dvrk::system * dVRK_system);
 
         // methods using CRTK bridge_interface_provided method
         void bridge_interface_provided_arm(const std::string & _component_name,
@@ -96,7 +95,6 @@ namespace dvrk_ros {
     };
 }
 
-typedef dvrk_ros::console dvrk_ros_console;
-CMN_DECLARE_SERVICES_INSTANTIATION(dvrk_ros_console);
+CMN_DECLARE_SERVICES_INSTANTIATION(dvrk::system_ROS);
 
 #endif // _dvrk_ros_console_h

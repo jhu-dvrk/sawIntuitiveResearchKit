@@ -19,7 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisst_ros_crtk/mtsCISSTToROS.h>
 #include <cisst_ros_crtk/mtsROSToCISST.h>
 
-#include <dvrk_utilities/dvrk_console.h>
+#include <dvrk_utilities/system_ROS.h>
 #include <cisst_ros_bridge/mtsROSBridge.h>
 #include <cisst_ros_crtk/cisst_ros_crtk.h>
 
@@ -36,13 +36,14 @@ http://www.cisst.org/cisst/license.txt.
 
 const std::string bridgeNamePrefix = "dVRK_IO_bridge_";
 
-CMN_IMPLEMENT_SERVICES(dvrk_ros_console);
+typedef dvrk::system_ROS dvrk_system_ROS;
+CMN_IMPLEMENT_SERVICES(dvrk_system_ROS);
 
-dvrk_ros::console::console(const std::string & name,
-                           cisst_ral::node_ptr_t node_handle,
-                           const double & publish_rate_in_seconds,
-                           const double & tf_rate_in_seconds,
-                           dvrk::system * dVRK_system):
+dvrk::system_ROS::system_ROS(const std::string & name,
+                             cisst_ral::node_ptr_t node_handle,
+                             const double & publish_rate_in_seconds,
+                             const double & tf_rate_in_seconds,
+                             dvrk::system * dVRK_system):
     mts_ros_crtk_bridge_provided(name, node_handle),
     m_publish_rate(publish_rate_in_seconds),
     m_tf_rate(tf_rate_in_seconds),
@@ -152,10 +153,10 @@ dvrk_ros::console::console(const std::string & name,
     }
 }
 
-void dvrk_ros::console::bridge_interface_provided_arm(const std::string & _arm_name,
-                                                      const std::string & _interface_name,
-                                                      const double _publish_period_in_seconds,
-                                                      const double _tf_period_in_seconds)
+void dvrk::system_ROS::bridge_interface_provided_arm(const std::string & _arm_name,
+                                                     const std::string & _interface_name,
+                                                     const double _publish_period_in_seconds,
+                                                     const double _tf_period_in_seconds)
 {
     // first call the base class method for all CRTK topics
     bridge_interface_provided(_arm_name, _interface_name, _arm_name,
@@ -204,10 +205,10 @@ void dvrk_ros::console::bridge_interface_provided_arm(const std::string & _arm_n
          _arm_name + "/trajectory_j/ratio_a");
 }
 
-void dvrk_ros::console::bridge_interface_provided_ECM(const std::string & _arm_name,
-                                                      const std::string & _interface_name,
-                                                      const double _publish_period_in_seconds,
-                                                      const double _tf_period_in_seconds)
+void dvrk::system_ROS::bridge_interface_provided_ECM(const std::string & _arm_name,
+                                                     const std::string & _interface_name,
+                                                     const double _publish_period_in_seconds,
+                                                     const double _tf_period_in_seconds)
 {
     // first call the base class method for all dVRK topics
     bridge_interface_provided_arm(_arm_name, _interface_name,
@@ -232,10 +233,10 @@ void dvrk_ros::console::bridge_interface_provided_ECM(const std::string & _arm_n
          _arm_name + "/manip_clutch");
 }
 
-void dvrk_ros::console::bridge_interface_provided_MTM(const std::string & _arm_name,
-                                                      const std::string & _interface_name,
-                                                      const double _publish_period_in_seconds,
-                                                      const double _tf_period_in_seconds)
+void dvrk::system_ROS::bridge_interface_provided_MTM(const std::string & _arm_name,
+                                                     const std::string & _interface_name,
+                                                     const double _publish_period_in_seconds,
+                                                     const double _tf_period_in_seconds)
 {
     // first call the base class method for all dVRK topics
     bridge_interface_provided_arm(_arm_name, _interface_name,
@@ -266,10 +267,10 @@ void dvrk_ros::console::bridge_interface_provided_MTM(const std::string & _arm_n
          _arm_name + "/gripper/closed");
 }
 
-void dvrk_ros::console::bridge_interface_provided_PSM(const std::string & _arm_name,
-                                                      const std::string & _interface_name,
-                                                      const double _publish_period_in_seconds,
-                                                      const double _tf_period_in_seconds)
+void dvrk::system_ROS::bridge_interface_provided_PSM(const std::string & _arm_name,
+                                                     const std::string & _interface_name,
+                                                     const double _publish_period_in_seconds,
+                                                     const double _tf_period_in_seconds)
 {
     // first call the base class method for all dVRK topics
     bridge_interface_provided_arm(_arm_name, _interface_name,
@@ -303,7 +304,7 @@ void dvrk_ros::console::bridge_interface_provided_PSM(const std::string & _arm_n
          _arm_name + "/tool_type");
 }
 
-void dvrk_ros::console::add_topics_system(const std::string & _name)
+void dvrk::system_ROS::add_topics_system(const std::string & _name)
 {
     const std::string ros_namespace = _name + "/";
     const std::string interface_name = _name;
@@ -337,7 +338,7 @@ void dvrk_ros::console::add_topics_system(const std::string & _name)
 }
 
 
-void dvrk_ros::console::add_topics_console(const std::string & _name)
+void dvrk::system_ROS::add_topics_console(const std::string & _name)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_console called for " << _name << std::endl;
     const std::string & interface_name = _name;
@@ -389,7 +390,7 @@ void dvrk_ros::console::add_topics_console(const std::string & _name)
 }
 
 
-void dvrk_ros::console::add_topics_endoscope_focus(void)
+void dvrk::system_ROS::add_topics_endoscope_focus(void)
 {
     const std::string _ros_namespace = "endoscope_focus/";
     // const std::string _focus_component_name = m_system->mDaVinciEndoscopeFocus->GetName();
@@ -422,7 +423,7 @@ void dvrk_ros::console::add_topics_endoscope_focus(void)
     //                   _focus_component_name, "Control");
 }
 
-void dvrk_ros::console::add_topics_IO_stats(void)
+void dvrk::system_ROS::add_topics_IO_stats(void)
 {
     std::cerr << CMN_LOG_DETAILS << " should be in add_topics IO " << std::endl;
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_IO called" << std::endl;
@@ -446,8 +447,8 @@ void dvrk_ros::console::add_topics_IO_stats(void)
 }
 
 
-void dvrk_ros::console::add_topics_IO(const double _publish_period_in_seconds,
-                                      const bool _read_write)
+void dvrk::system_ROS::add_topics_IO(const double _publish_period_in_seconds,
+                                     const bool _read_write)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_IO called" << std::endl;
     mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
@@ -469,8 +470,8 @@ void dvrk_ros::console::add_topics_IO(const double _publish_period_in_seconds,
 }
 
 
-void dvrk_ros::console::add_topics_PID(const double _publish_period_in_seconds,
-                                       const bool _read_write)
+void dvrk::system_ROS::add_topics_PID(const double _publish_period_in_seconds,
+                                      const bool _read_write)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_PID called" << std::endl;
     mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
@@ -494,8 +495,8 @@ void dvrk_ros::console::add_topics_PID(const double _publish_period_in_seconds,
 }
 
 
-void dvrk_ros::console::add_topics_ECM_IO(const std::string & _arm_name,
-                                          const std::string & _IO_component_name)
+void dvrk::system_ROS::add_topics_ECM_IO(const std::string & _arm_name,
+                                         const std::string & _IO_component_name)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_ECM_IO called for " << _arm_name << std::endl;
     // known events and corresponding ros topic
@@ -511,8 +512,8 @@ void dvrk_ros::console::add_topics_ECM_IO(const std::string & _arm_name,
     }
 }
 
-void dvrk_ros::console::add_topics_PSM_IO(const std::string & _arm_name,
-                                          const std::string & _IO_component_name)
+void dvrk::system_ROS::add_topics_PSM_IO(const std::string & _arm_name,
+                                         const std::string & _IO_component_name)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_PSM_IO called for " << _arm_name << std::endl;
     // known events and corresponding ros topic
@@ -531,7 +532,7 @@ void dvrk_ros::console::add_topics_PSM_IO(const std::string & _arm_name,
 }
 
 
-void dvrk_ros::console::add_topics_SUJ_voltages(void)
+void dvrk::system_ROS::add_topics_SUJ_voltages(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_SUJ_voltages called" << std::endl;
     mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
@@ -557,7 +558,7 @@ void dvrk_ros::console::add_topics_SUJ_voltages(void)
 }
 
 
-void dvrk_ros::console::add_topics_teleop_ECM(const std::string & _name)
+void dvrk::system_ROS::add_topics_teleop_ECM(const std::string & _name)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_teleop_ECM called for " << _name << std::endl;
     std::string ros_namespace = _name;
@@ -601,7 +602,7 @@ void dvrk_ros::console::add_topics_teleop_ECM(const std::string & _name)
 }
 
 
-void dvrk_ros::console::add_topics_teleop_PSM(const std::string & _name)
+void dvrk::system_ROS::add_topics_teleop_PSM(const std::string & _name)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_teleop_PSM for " << _name << " called" << std::endl;
     std::string ros_namespace = _name;

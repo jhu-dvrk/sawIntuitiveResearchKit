@@ -16,7 +16,7 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQt.h>
+#include <sawIntuitiveResearchKit/system_Qt.h>
 
 // cisst/saw
 #include <cisstMultiTask/mtsManagerLocal.h>
@@ -32,7 +32,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h> // should have a proxy
 
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocusQtWidget.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitConsoleQtWidget.h>
+#include <sawIntuitiveResearchKit/system_Qt_widget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECMQtWidget.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTMQtWidget.h>
@@ -43,40 +43,41 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QTabWidget>
 
-CMN_IMPLEMENT_SERVICES(mtsIntuitiveResearchKitConsoleQt);
+typedef dvrk::system_Qt dvrk_system_Qt;
+CMN_IMPLEMENT_SERVICES(dvrk_system_Qt);
 
-mtsIntuitiveResearchKitConsoleQt::mtsIntuitiveResearchKitConsoleQt(void)
+dvrk::system_Qt::system_Qt(void)
 {
 }
 
-void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
+void dvrk::system_Qt::configure(dvrk::system * system)
 {
     mtsComponentManager * component_manager = mtsComponentManager::GetInstance();
 
-    mtsIntuitiveResearchKitConsoleQtWidget * consoleGUI = new mtsIntuitiveResearchKitConsoleQtWidget("consoleGUI");
+    dvrk::system_Qt_widget * consoleGUI = new dvrk::system_Qt_widget("consoleGUI");
     component_manager->AddComponent(consoleGUI);
     // connect consoleGUI to system
-    Connections.Add("consoleGUI", "Main", system->GetName(), "Main");
+    m_connections.Add("consoleGUI", "Main", system->GetName(), "Main");
     if (system->GetInterfaceRequired("Clutch")) {
-        Connections.Add("consoleGUI", "Clutch", system->GetName(), "Clutch");
+        m_connections.Add("consoleGUI", "Clutch", system->GetName(), "Clutch");
     }
     if (system->GetInterfaceRequired("OperatorPresent")) {
-        Connections.Add("consoleGUI", "OperatorPresent", system->GetName(), "OperatorPresent");
+        m_connections.Add("consoleGUI", "OperatorPresent", system->GetName(), "OperatorPresent");
     }
     if (system->GetInterfaceRequired("Camera")) {
-        Connections.Add("consoleGUI", "Camera", system->GetName(), "Camera");
+        m_connections.Add("consoleGUI", "Camera", system->GetName(), "Camera");
     }
 
-    TabWidget = consoleGUI->GetTabWidget();
+    m_tab_widget = consoleGUI->get_tab_widget();
 
     // IOs
     QTabWidget * ioTabWidget;
     if (system->m_arm_proxies.size() > 1) {
         ioTabWidget = new QTabWidget();
         ioTabWidget->setObjectName(QString("IOs"));
-        TabWidget->addTab(ioTabWidget, "IOs");
+        m_tab_widget->addTab(ioTabWidget, "IOs");
     } else {
-        ioTabWidget = TabWidget;
+        ioTabWidget = m_tab_widget;
     }
 
     for (const auto & iter : system->m_IO_proxies) {
@@ -107,13 +108,13 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
     if (system->m_arm_proxies.size() > 1) {
         pidTabWidget = new QTabWidget();
         pidTabWidget->setObjectName(QString("PIDs"));
-        TabWidget->addTab(pidTabWidget, "PIDs");
+        m_tab_widget->addTab(pidTabWidget, "PIDs");
         armTabWidget = new QTabWidget();
         armTabWidget->setObjectName(QString("Arms"));
-        TabWidget->addTab(armTabWidget, "Arms");
+        m_tab_widget->addTab(armTabWidget, "Arms");
     } else {
-        pidTabWidget = TabWidget; // use current tab widget
-        armTabWidget = TabWidget;
+        pidTabWidget = m_tab_widget; // use current tab widget
+        armTabWidget = m_tab_widget;
     }
 
     for (const auto & iter : system->m_arm_proxies) {
@@ -145,7 +146,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
             pidGUI = new mtsPIDQtWidget(name + "_PID_GUI", numberOfJoints);
             pidGUI->Configure();
             component_manager->AddComponent(pidGUI);
-            Connections.Add(pidGUI->GetName(), "Controller",
+            m_connections.Add(pidGUI->GetName(), "Controller",
                             iter.second->m_PID_component_name, "Controller");
             pidTabWidget->addTab(pidGUI, (name + " PID").c_str());
 
@@ -161,7 +162,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
             }
             armGUI->Configure();
             component_manager->AddComponent(armGUI);
-            Connections.Add(armGUI->GetName(), "Manipulator",
+            m_connections.Add(armGUI->GetName(), "Manipulator",
                             iter.second->m_arm_component_name,
                             iter.second->m_arm_interface_name);
             armGUI->setObjectName(name.c_str());
@@ -175,22 +176,22 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM1_SUJ");
             component_manager->AddComponent(sujGUI);
-            Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM1");
+            m_connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM1");
             armTabWidget->addTab(sujGUI, "PSM1 SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("ECM_SUJ");
             component_manager->AddComponent(sujGUI);
-            Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "ECM");
+            m_connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "ECM");
             armTabWidget->addTab(sujGUI, "ECM SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM2_SUJ");
             component_manager->AddComponent(sujGUI);
-            Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM2");
+            m_connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM2");
             armTabWidget->addTab(sujGUI, "PSM2 SUJ");
 
             sujGUI = new mtsIntuitiveResearchKitSUJQtWidget("PSM3_SUJ");
             component_manager->AddComponent(sujGUI);
-            Connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM3");
+            m_connections.Add(sujGUI->GetName(), "Manipulator", "SUJ", "PSM3");
             armTabWidget->addTab(sujGUI, "PSM3 SUJ");
 
             break;
@@ -207,14 +208,14 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
                     = new mtsMessageQtWidgetComponent(name + "_Message_GUI");
                 component_manager->AddComponent(messageGUI);
                 genericComponentLayout->addWidget(messageGUI);
-                Connections.Add(messageGUI->GetName(), "Component",
+                m_connections.Add(messageGUI->GetName(), "Component",
                                 iter.second->m_arm_component_name,
                                 iter.second->m_arm_interface_name);
                 mtsIntervalStatisticsQtWidgetComponent * timingGUI
                     = new mtsIntervalStatisticsQtWidgetComponent(name + "_Timing_GUI");
                 component_manager->AddComponent(timingGUI);
                 genericComponentLayout->addWidget(timingGUI);
-                Connections.Add(timingGUI->GetName(), "Component",
+                m_connections.Add(timingGUI->GetName(), "Component",
                                 iter.second->m_arm_component_name,
                                 iter.second->m_arm_interface_name);
                 armTabWidget->addTab(genericComponentGUI, name.c_str());
@@ -222,7 +223,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
             break;
 
         default:
-            CMN_LOG_CLASS_INIT_ERROR << "mtsIntuitiveResearchKitConsoleQt: arm "
+            CMN_LOG_CLASS_INIT_ERROR << "dvrk::system_Qt: arm "
                                      << name
                                      << ": unable to create appropriate Qt widgets for arm of this type"
                                      << std::endl;
@@ -230,13 +231,13 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
     }
 
     // add teleop widgets in console tabs
-    QTabWidget * teleopTabWidget = TabWidget; // use current tab by default
+    QTabWidget * teleopTabWidget = m_tab_widget; // use current tab by default
     for (const auto & console : system->m_consoles) {
         const std::string name = console.first;
         if (system->m_consoles.size() > 1) {
             teleopTabWidget = new QTabWidget();
             teleopTabWidget->setObjectName(name.c_str());
-            TabWidget->addTab(teleopTabWidget, name.c_str());
+            m_tab_widget->addTab(teleopTabWidget, name.c_str());
         }
 
         for (const auto & teleop : console.second->m_teleop_PSM_proxies) {
@@ -245,7 +246,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
             teleopGUI->setObjectName(name.c_str());
             teleopGUI->Configure();
             component_manager->AddComponent(teleopGUI);
-            Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
+            m_connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
             teleopTabWidget->addTab(teleopGUI, name.c_str());
         }
 
@@ -255,7 +256,7 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
             teleopGUI->setObjectName(name.c_str());
             teleopGUI->Configure();
             component_manager->AddComponent(teleopGUI);
-            Connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
+            m_connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
             teleopTabWidget->addTab(teleopGUI, name.c_str());
         }
     }
@@ -266,17 +267,17 @@ void mtsIntuitiveResearchKitConsoleQt::Configure(dvrk::system * system)
     //     mtsDaVinciEndoscopeFocusQtWidget * endoscopeGUI = new mtsDaVinciEndoscopeFocusQtWidget(name + "_GUI");
     //     endoscopeGUI->Configure();
     //     component_manager->AddComponent(endoscopeGUI);
-    //     Connections.Add(endoscopeGUI->GetName(), "Endoscope", name, "Control");
-    //     TabWidget->addTab(endoscopeGUI, "Focus");
+    //     m_connections.Add(endoscopeGUI->GetName(), "Endoscope", name, "Control");
+    //     m_tab_widget->addTab(endoscopeGUI, "Focus");
     // }
 
     // consoleGUI->HasTeleOp(hasTeleOp);
 
     // show all widgets
-    TabWidget->show();
+    m_tab_widget->show();
 }
 
-void mtsIntuitiveResearchKitConsoleQt::addTab(QWidget * widget, const std::string & name)
+void dvrk::system_Qt::add_tab(QWidget * widget, const std::string & name)
 {
-    TabWidget->addTab(widget, name.c_str());
+    m_tab_widget->addTab(widget, name.c_str());
 }
