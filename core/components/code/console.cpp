@@ -78,7 +78,7 @@ void dvrk::console::post_configure(void)
 
     // operator present, clutch, camera pedals
     switch (m_config->input_type) {
-    case console_input_type::PEDALS:
+    case console_input_type::PEDALS_ONLY:
         {
             if (m_config->IO == "") {
                 CMN_LOG_INIT_ERROR << "console::post_configure: \"IO\" must be provided for native or derived arm: "

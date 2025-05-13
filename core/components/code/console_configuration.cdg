@@ -15,7 +15,7 @@ enum {
         value 0;
     }
     enum-value {
-        name PEDALS;
+        name PEDALS_ONLY;
         description Only use foot pedals, coag is used for operator_present;
     }
     enum-value {
