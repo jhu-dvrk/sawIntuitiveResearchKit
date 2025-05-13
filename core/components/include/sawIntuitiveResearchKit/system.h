@@ -39,8 +39,9 @@ namespace dvrk {
     class IO_proxy;
     class arm_proxy;
     class console;
-    class teleop_PSM_proxy;
+    class teleop_proxy;
     class teleop_ECM_proxy;
+    class teleop_PSM_proxy;
     class system_Qt;
     class system_ROS;
 
@@ -51,6 +52,7 @@ namespace dvrk {
     public:
         friend class dvrk::console;
         friend class dvrk::arm_proxy;
+        friend class dvrk::teleop_proxy;
         friend class dvrk::teleop_ECM_proxy;
         friend class dvrk::teleop_PSM_proxy;
         friend class dvrk::system_Qt;
@@ -116,10 +118,7 @@ namespace dvrk {
         bool add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> arm_proxy);
         bool add_console_interfaces(std::shared_ptr<dvrk::console> console);
         
-        // these two methods have exact same implementation.it would be
-        // nice to have a base class, or template this
-        bool add_teleop_PSM_interfaces(std::shared_ptr<dvrk::teleop_PSM_proxy> teleop_proxy);
-        bool add_teleop_ECM_interfaces(std::shared_ptr<dvrk::teleop_ECM_proxy> teleop_proxy);
+        bool add_teleop_interfaces(std::shared_ptr<dvrk::teleop_proxy> teleop_proxy);
         
         void power_off(void);
         void power_on(void);

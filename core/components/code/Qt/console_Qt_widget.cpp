@@ -72,19 +72,19 @@ dvrk::console_Qt_widget::console_Qt_widget(const std::string & _component_name):
         interface_required->AddFunction("emulate_clutch", console.emulate_clutch);
         interface_required->AddFunction("emulate_camera", console.emulate_camera);
     }
-    interface_required = AddInterfaceRequired("OperatorPresent");
+    interface_required = AddInterfaceRequired("operator_present");
     if (interface_required) {
         interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::OperatorPresentEventHandler,
                                                 this, "Button");
     }
-    interface_required = AddInterfaceRequired("Clutch");
+    interface_required = AddInterfaceRequired("clutch");
     if (interface_required) {
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::ClutchEventHandler,
-                                                this, "Button");
+        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::clutch_event_handler,
+                                                 this, "Button");
     }
-    interface_required = AddInterfaceRequired("Camera");
+    interface_required = AddInterfaceRequired("camera");
     if (interface_required) {
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::CameraEventHandler,
+        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::camera_event_handler,
                                                 this, "Button");
     }
     setupUi();
@@ -297,8 +297,8 @@ void dvrk::console_Qt_widget::setupUi(void)
             this, SLOT(SlotScaleEventHandler(double)));
     connect(this, SIGNAL(SignalOperatorPresent(bool)),
             this, SLOT(SlotOperatorPresentEventHandler(bool)));
-    connect(this, SIGNAL(SignalClutch(bool)),
-            this, SLOT(SlotClutchEventHandler(bool)));
+    connect(this, SIGNAL(signal_clutch(bool)),
+            this, SLOT(slot_clutched(bool)));
     connect(this, SIGNAL(SignalCamera(bool)),
             this, SLOT(SlotCameraEventHandler(bool)));
     connect(QCBEnableDirectControl, SIGNAL(toggled(bool)),
@@ -360,18 +360,19 @@ void dvrk::console_Qt_widget::OperatorPresentEventHandler(const prmEventButton &
 }
 
 
-void dvrk::console_Qt_widget::SlotClutchEventHandler(bool _clutch)
+void dvrk::console_Qt_widget::slot_clutched(bool _clutch)
 {
     QRBClutch->setChecked(_clutch);
 }
 
 
-void dvrk::console_Qt_widget::ClutchEventHandler(const prmEventButton & _button)
+void dvrk::console_Qt_widget::clutch_event_handler(const prmEventButton & _button)
 {
+    std::cerr << "clutch_event_handler " << _button << std::endl;
     if (_button.Type() == prmEventButton::PRESSED) {
-        emit SignalClutch(true);
+        emit signal_clutch(true);
     } else {
-        emit SignalClutch(false);
+        emit signal_clutch(false);
     }
 }
 
@@ -448,7 +449,7 @@ void dvrk::console_Qt_widget::UnselectTeleopCheck(const std::string & teleop)
 }
 
 
-void dvrk::console_Qt_widget::CameraEventHandler(const prmEventButton & button)
+void dvrk::console_Qt_widget::camera_event_handler(const prmEventButton & button)
 {
     if (button.Type() == prmEventButton::PRESSED) {
         emit SignalCamera(true);

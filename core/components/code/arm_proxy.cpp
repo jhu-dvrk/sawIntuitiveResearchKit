@@ -64,8 +64,6 @@ void dvrk::arm_proxy::post_configure(void)
         }
         m_IO_component_name = m_config->IO;
         m_IO_interface_name = m_config->name;
-
-
     }
 
     // for generic and derived arms, component name must be provided

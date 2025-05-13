@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnStrings.h>
 #include <sawIntuitiveResearchKit/system.h>
 #include <sawIntuitiveResearchKit/arm_proxy.h>
+#include <sawIntuitiveResearchKit/teleop_proxy.h>
 #include <sawIntuitiveResearchKit/console.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h>
 
@@ -113,19 +114,23 @@ dvrk::system_ROS::system_ROS(const std::string & name,
     for (const auto & console : m_system->m_consoles) {
         const std::string & name = console.first;
         add_topics_console(name);
-        // ECM teleops
-        for (auto const & teleop : console.second->m_teleop_ECM_proxies) {
-            const auto teleopName = teleop.first;
-            bridge_interface_provided(teleopName, "Setting", teleopName,
+        // teleops
+        for (auto const & teleop : console.second->m_teleop_proxies) {
+            const auto teleop_name = teleop.first;
+            bridge_interface_provided(teleop_name, "Setting", teleop_name,
                                       publish_rate_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0
-            add_topics_teleop_ECM(teleopName);
-        }
-        // PSM teleops
-        for (auto const & teleop : console.second->m_teleop_PSM_proxies) {
-            const auto teleopName = teleop.first;
-            bridge_interface_provided(teleopName, "Setting", teleopName,
-                                      publish_rate_in_seconds, 0.0); // do no republish info already provided by arm, set tf period to 0
-            add_topics_teleop_PSM(teleopName);
+            switch(teleop.second->type()) {
+            case teleop_proxy::PSM:
+                add_topics_teleop_PSM(teleop_name);
+                break;
+            case teleop_proxy::ECM:
+                add_topics_teleop_ECM(teleop_name);
+                break;
+            default:
+                CMN_LOG_CLASS_INIT_ERROR << " undefined teleop type" << std::endl;
+                exit(EXIT_FAILURE);
+                break;
+            }
         }
     }
     // Endoscope focus
@@ -229,7 +234,7 @@ void dvrk::system_ROS::bridge_interface_provided_ECM(const std::string & _arm_na
         (_required_interface_name, "endoscope_type",
          _arm_name + "/endoscope_type");
     events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
-        (_required_interface_name, "ManipClutch",
+        (_required_interface_name, "arm_clutch",
          _arm_name + "/manip_clutch");
 }
 
@@ -294,7 +299,7 @@ void dvrk::system_ROS::bridge_interface_provided_PSM(const std::string & _arm_na
          _arm_name + "/set_tool_type");
 
     events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
-        (required_interface_name, "ManipClutch",
+        (required_interface_name, "arm_clutch",
          _arm_name + "/manip_clutch");
     events_bridge().AddPublisherFromEventVoid
         (required_interface_name, "tool_type_request",
@@ -376,7 +381,7 @@ void dvrk::system_ROS::add_topics_console(const std::string & _name)
             (_name + "_" + event, "Button",
              ros_namespace + event);
         m_connections.Add(events_bridge().GetName(), _name + "_" + event,
-                          m_system->GetName(), _name);
+                          m_system->GetName(), _name + "/" + event);
         // emulate subscribers
         subscribers_bridge().AddSubscriberToCommandWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
             (interface_name, "emulate_" + event,
@@ -500,32 +505,27 @@ void dvrk::system_ROS::add_topics_ECM_IO(const std::string & _arm_name,
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_ECM_IO called for " << _arm_name << std::endl;
     // known events and corresponding ros topic
-    const auto events = std::list<std::pair<std::string, std::string> >({
-            {"ManipClutch", "manip_clutch"},
-            {"SUJClutch", "SUJ_clutch"}});
+    const auto events = std::list<std::string>({"manip_clutch", "SUJ_clutch"});
     for (const auto & event : events) {
-        std::string _interface_name = _arm_name + "-" + event.first;
+        std::string _interface_name = _arm_name + "_" + event;
         events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
-            (_interface_name, "Button", _arm_name + "/IO/" + event.second);
+            (_interface_name, "Button", _arm_name + "/IO/" + event);
         m_connections.Add(events_bridge().GetName(), _interface_name,
                           _IO_component_name, _interface_name);
     }
 }
+
 
 void dvrk::system_ROS::add_topics_PSM_IO(const std::string & _arm_name,
                                          const std::string & _IO_component_name)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_PSM_IO called for " << _arm_name << std::endl;
     // known events and corresponding ros topic
-    const auto events = std::list<std::pair<std::string, std::string> >({
-            {"ManipClutch", "manip_clutch"},
-            {"SUJClutch", "SUJ_clutch"},
-            {"Adapter", "adapter"},
-            {"Tool", "tool"}});
+    const auto events = std::list<std::string>({"arm_clutch", "SUJ_clutch", "adapter", "tool"});
     for (const auto & event : events) {
-        std::string interface_name = _arm_name + "-" + event.first;
+        std::string interface_name = _arm_name + "_" + event;
         events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
-            (interface_name, "Button", _arm_name + "/IO/" + event.second);
+            (interface_name, "Button", _arm_name + "/IO/" + event);
         m_connections.Add(events_bridge().GetName(), interface_name,
                           _IO_component_name, interface_name);
     }
@@ -566,14 +566,14 @@ void dvrk::system_ROS::add_topics_teleop_ECM(const std::string & _name)
     ros_namespace += "/";
 
     // messages
-    events_bridge().AddLogFromEventWrite(_name + "-log", "error",
+    events_bridge().AddLogFromEventWrite(_name + "_log", "error",
                                          mtsROSEventWriteLog::ROS_LOG_ERROR);
-    events_bridge().AddLogFromEventWrite(_name + "-log", "warning",
+    events_bridge().AddLogFromEventWrite(_name + "_log", "warning",
                                          mtsROSEventWriteLog::ROS_LOG_WARN);
-    events_bridge().AddLogFromEventWrite(_name + "-log", "status",
+    events_bridge().AddLogFromEventWrite(_name + "_log", "status",
                                          mtsROSEventWriteLog::ROS_LOG_INFO);
     // connect
-    m_connections.Add(events_bridge().GetName(), _name + "-log",
+    m_connections.Add(events_bridge().GetName(), _name + "_log",
                       _name, "Setting");
 
     // events
@@ -610,14 +610,14 @@ void dvrk::system_ROS::add_topics_teleop_PSM(const std::string & _name)
     ros_namespace += "/";
 
     // messages
-    events_bridge().AddLogFromEventWrite(_name + "-log", "error",
+    events_bridge().AddLogFromEventWrite(_name + "_log", "error",
                                          mtsROSEventWriteLog::ROS_LOG_ERROR);
-    events_bridge().AddLogFromEventWrite(_name + "-log", "warning",
+    events_bridge().AddLogFromEventWrite(_name + "_log", "warning",
                                          mtsROSEventWriteLog::ROS_LOG_WARN);
-    events_bridge().AddLogFromEventWrite(_name + "-log", "status",
+    events_bridge().AddLogFromEventWrite(_name + "_log", "status",
                                          mtsROSEventWriteLog::ROS_LOG_INFO);
     // connect
-    m_connections.Add(events_bridge().GetName(), _name + "-log",
+    m_connections.Add(events_bridge().GetName(), _name + "_log",
                       _name, "Setting");
 
     // publisher

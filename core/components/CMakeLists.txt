@@ -65,12 +65,12 @@ if (cisst_FOUND)
     if (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)
       # there must be a more standard way to find a unix lib...
       find_file (hidapi_HEADER_FILE
-	hidapi/hidapi.h
-	HINTS /usr/include)
+        hidapi/hidapi.h
+        HINTS /usr/include)
       if (hidapi_HEADER_FILE)
-	string (REPLACE "/hidapi/hidapi.h" "" hidapi_INCLUDE_DIR ${hidapi_HEADER_FILE})
-	include_directories (${hidapi_INCLUDE_DIR})
-	set (hidapi_LIBRARIES "hidapi-hidraw")
+        string (REPLACE "/hidapi/hidapi.h" "" hidapi_INCLUDE_DIR ${hidapi_HEADER_FILE})
+        include_directories (${hidapi_INCLUDE_DIR})
+        set (hidapi_LIBRARIES "hidapi-hidraw")
       endif ()
     endif ()
 
@@ -82,7 +82,7 @@ if (cisst_FOUND)
       ExternalProject_Add (gattlibExternal
                            PREFIX gattlib
                            GIT_REPOSITORY    ${SAW_GATTLIB_GIT_REPOSITORY}
-			   GIT_TAG          "dvrk-2.2"
+                           GIT_TAG          "dvrk-2.2"
                            CMAKE_CACHE_ARGS -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
                                             -DGATTLIB_BUILD_EXAMPLES:BOOL=OFF
                                             -DGATTLIB_BUILD_DOCS:BOOL=OFF
@@ -172,6 +172,7 @@ if (cisst_FOUND)
       console.h
       IO_proxy.h
       system.h
+      teleop_proxy.h
       teleop_ECM_proxy.h
       teleop_PSM_proxy.h
     )
@@ -207,6 +208,7 @@ if (cisst_FOUND)
       console.cpp
       IO_proxy.cpp
       system.cpp
+      teleop_proxy.cpp
       teleop_ECM_proxy.cpp
       teleop_PSM_proxy.cpp
     )
@@ -250,7 +252,7 @@ if (cisst_FOUND)
     cisst_data_generator (sawIntuitiveResearchKit
                           "${sawIntuitiveResearchKit_BINARY_DIR}/include" # where to save the file
                           "sawIntuitiveResearchKit/"    # sub directory for include
-			  ${CDG_FILES})
+                          ${CDG_FILES})
 
     add_library (sawIntuitiveResearchKit
                  ${HEADER_FILES} ${SOURCE_FILES}

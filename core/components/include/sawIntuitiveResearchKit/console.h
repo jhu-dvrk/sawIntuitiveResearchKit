@@ -36,8 +36,7 @@ namespace dvrk {
 
     class system;
     class console_configuration;
-    class teleop_PSM_proxy;
-    class teleop_ECM_proxy;
+    class teleop_proxy;
 
     class CISST_EXPORT console: std::enable_shared_from_this<dvrk::console>  {
 
@@ -49,11 +48,8 @@ namespace dvrk {
         dvrk::system * m_system = nullptr;
         dvrk::console_configuration * m_config = nullptr;
 
-        typedef std::map<std::string, std::shared_ptr<teleop_PSM_proxy>> teleop_PSM_proxies;
-        teleop_PSM_proxies m_teleop_PSM_proxies;
-
-        typedef std::map<std::string, std::shared_ptr<teleop_ECM_proxy>> teleop_ECM_proxies;
-        teleop_ECM_proxies m_teleop_ECM_proxies;
+        typedef std::map<std::string, std::shared_ptr<teleop_proxy>> teleop_proxies;
+        teleop_proxies m_teleop_proxies;
 
         console(const std::string & name,
                 dvrk::system * system,
@@ -72,10 +68,14 @@ namespace dvrk {
         // main interface for ROS and Qt
         mtsInterfaceProvided * m_interface_provided;
 
-        // to send clutch to teleop components
-        mtsInterfaceProvided * m_clutch_interface_provided;
-        mtsFunctionWrite m_clutch_propagate;
-
+        // interfaces to use to receive events
+        std::string m_clutch_component_name;
+        std::string m_clutch_interface_name;
+        std::string m_camera_component_name;
+        std::string m_camera_interface_name;
+        std::string m_operator_present_component_name;
+        std::string m_operator_present_interface_name;
+        
         // commands
         void teleop_enable(const bool &);
         void set_scale(const double & scale);

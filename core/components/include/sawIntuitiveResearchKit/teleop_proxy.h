@@ -16,51 +16,53 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef _dvrk_teleop_PSM_proxy_h
-#define _dvrk_teleop_PSM_proxy_h
+#ifndef _dvrk_teleop_proxy_h
+#define _dvrk_teleop_proxy_h
 
 #include <cisstMultiTask/mtsForwardDeclarations.h>
 #include <cisstMultiTask/mtsFunctionWrite.h>
-
-#include <sawIntuitiveResearchKit/teleop_proxy.h>
 
 // Always include last!
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 namespace dvrk {
 
-    class teleop_PSM_proxy_configuration;
+    class system;
+    class console;
 
-    class CISST_EXPORT teleop_PSM_proxy: public teleop_proxy {
+    class CISST_EXPORT teleop_proxy {
     public:
 
         friend class dvrk::system;
         friend class dvrk::console;
 
-        dvrk::teleop_PSM_proxy_configuration * m_config = nullptr;
+        typedef enum {UNDEFINED, PSM, ECM} teleop_type;
 
-        teleop_PSM_proxy(const std::string & name,
-                         dvrk::system * system,
-                         dvrk::console * console,
-                         dvrk::teleop_PSM_proxy_configuration * config);
+        std::string m_name;
+        dvrk::system * m_system = nullptr;
+        dvrk::console * m_console = nullptr;
+
+        teleop_proxy(const std::string & name,
+                     dvrk::system * system,
+                     dvrk::console * console);
 
         // NOT_COPYABLE(teleop_PSM_proxy);
         // NOT_MOVEABLE(teleop_PSM_proxy);
 
-        inline teleop_proxy::teleop_type type(void) const override {
-            return teleop_proxy::PSM;
-        }
+        virtual teleop_type type(void) const = 0;
 
-        void post_configure(void) override;
+        virtual void post_configure(void) = 0;
 
         /*! Create and configure the teleoperation component. */
-        void create_teleop(void) override;
+        virtual void create_teleop(void) = 0;
 
      protected:
-        std::string m_MTM_component_name, m_MTM_interface_name,
-        m_PSM_component_name, m_PSM_interface_name;
-    };
+        mtsFunctionWrite state_command;
+        mtsFunctionWrite set_scale;
+        mtsInterfaceRequired * m_interface_required;
 
+        bool m_selected = false;
+    };
 }
 
-#endif // _dvrk_teleop_PSM_proxy_h
+#endif // _dvrk_teleop_proxy_h

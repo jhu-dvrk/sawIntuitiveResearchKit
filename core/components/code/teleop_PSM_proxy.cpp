@@ -31,9 +31,7 @@ dvrk::teleop_PSM_proxy::teleop_PSM_proxy(const std::string & name,
                                          dvrk::system * system,
                                          dvrk::console * console,
                                          dvrk::teleop_PSM_proxy_configuration * config):
-    m_name(name),
-    m_system(system),
-    m_console(console),
+    teleop_proxy(name, system, console),
     m_config(config)
 {
 }

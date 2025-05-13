@@ -60,7 +60,7 @@ namespace dvrk {
         void SignalTeleopEnabled(bool toggle);
         void SignalScale(double scale);
         void SignalOperatorPresent(bool operatorPresent);
-        void SignalClutch(bool clutch);
+        void signal_clutch(bool clutch);
         void SignalCamera(bool camera);
         
     protected:
@@ -79,7 +79,7 @@ namespace dvrk {
         void SlotSetScale(double scale);
         void SlotScaleEventHandler(double scale);
         void SlotOperatorPresentEventHandler(bool operatorPresent);
-        void SlotClutchEventHandler(bool clutch);
+        void slot_clutched(bool clutch);
         void SlotCameraEventHandler(bool camera);
         void SlotEnableDirectControl(bool toggle);
         void SlotEmulateOperatorPresent(bool toggle);
@@ -104,8 +104,8 @@ namespace dvrk {
         void TeleopUnselectedEventHandler(const std::string & unselected);
         void ScaleEventHandler(const double & scale);
         void OperatorPresentEventHandler(const prmEventButton & button);
-        void ClutchEventHandler(const prmEventButton & button);
-        void CameraEventHandler(const prmEventButton & button);
+        void clutch_event_handler(const prmEventButton & button);
+        void camera_event_handler(const prmEventButton & button);
         
         QVBoxLayout * QVBTeleops;
         std::map<std::string, std::pair<QPushButton *, QCheckBox *>> TeleopButtons;

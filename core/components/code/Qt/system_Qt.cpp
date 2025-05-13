@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/system.h>
 #include <sawIntuitiveResearchKit/arm_proxy.h>
+#include <sawIntuitiveResearchKit/teleop_proxy.h>
 #include <sawIntuitiveResearchKit/console.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h> // should have a proxy
 
@@ -57,17 +58,6 @@ void dvrk::system_Qt::configure(dvrk::system * system)
 
     auto * consoleGUI = new dvrk::system_Qt_widget("consoleGUI");
     component_manager->AddComponent(consoleGUI);
-    // connect consoleGUI to system
-    m_connections.Add("consoleGUI", "Main", system->GetName(), "Main");
-    if (system->GetInterfaceRequired("Clutch")) {
-        m_connections.Add("consoleGUI", "Clutch", system->GetName(), "Clutch");
-    }
-    if (system->GetInterfaceRequired("OperatorPresent")) {
-        m_connections.Add("consoleGUI", "OperatorPresent", system->GetName(), "OperatorPresent");
-    }
-    if (system->GetInterfaceRequired("Camera")) {
-        m_connections.Add("consoleGUI", "Camera", system->GetName(), "Camera");
-    }
 
     m_tab_widget = consoleGUI->get_components_tab();
 
@@ -239,7 +229,13 @@ void dvrk::system_Qt::configure(dvrk::system * system)
         m_connections.Add(system->GetName(), name,
                           console_widget->GetName(), "Main");
         consoleGUI->get_consoles_tab()->addTab(console_widget, name.c_str());
-        
+        m_connections.Add(console_widget->GetName(), "clutch",
+                          system->GetName(), name + "/clutch");
+        m_connections.Add(console_widget->GetName(), "camera",
+                          system->GetName(), name + "/camera");
+        m_connections.Add(console_widget->GetName(), "operator_present",
+                          system->GetName(), name + "/operator_present");
+
         // second create the teleop widgets for the console
         if (system->m_consoles.size() > 1) {
             teleopTabWidget = new QTabWidget();
@@ -247,24 +243,35 @@ void dvrk::system_Qt::configure(dvrk::system * system)
             m_tab_widget->addTab(teleopTabWidget, name.c_str());
         }
 
-        for (const auto & teleop : console.second->m_teleop_PSM_proxies) {
+        for (const auto & teleop : console.second->m_teleop_proxies) {
             const std::string name = teleop.first;
-            auto * teleopGUI = new mtsTeleOperationPSMQtWidget(name + "_GUI");
-            teleopGUI->setObjectName(name.c_str());
-            teleopGUI->Configure();
-            component_manager->AddComponent(teleopGUI);
-            m_connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
-            teleopTabWidget->addTab(teleopGUI, name.c_str());
-        }
-
-        for (const auto & teleop : console.second->m_teleop_ECM_proxies) {
-            const std::string name = teleop.first;
-            auto * teleopGUI = new mtsTeleOperationECMQtWidget(name + "_GUI");
-            teleopGUI->setObjectName(name.c_str());
-            teleopGUI->Configure();
-            component_manager->AddComponent(teleopGUI);
-            m_connections.Add(teleopGUI->GetName(), "TeleOperation", name, "Setting");
-            teleopTabWidget->addTab(teleopGUI, name.c_str());
+            mtsComponent * teleop_widget_component;
+            QWidget * teleop_widget;
+            switch(teleop.second->type()) {
+            case teleop_proxy::PSM:
+                {
+                    auto * teleop_PSM_widget = new mtsTeleOperationPSMQtWidget(name + "_widget");
+                    teleop_widget_component = teleop_PSM_widget;
+                    teleop_widget = teleop_PSM_widget;
+                }
+                break;
+            case teleop_proxy::ECM:
+                {
+                    auto * teleop_ECM_widget = new mtsTeleOperationECMQtWidget(name + "_widget");
+                    teleop_widget_component = teleop_ECM_widget;
+                    teleop_widget = teleop_ECM_widget;
+                }
+                break;
+            default:
+                CMN_LOG_CLASS_INIT_ERROR << " undefined teleop type" << std::endl;
+                exit(EXIT_FAILURE);
+                break;
+            }
+            teleop_widget->setObjectName(name.c_str());
+            teleopTabWidget->addTab(teleop_widget, name.c_str());
+            teleop_widget_component->Configure();
+            component_manager->AddComponent(teleop_widget_component);
+            m_connections.Add(teleop_widget_component->GetName(), "TeleOperation", name, "Setting");
         }
     }
 

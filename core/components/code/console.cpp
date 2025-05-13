@@ -45,13 +45,13 @@ void dvrk::console::post_configure(void)
     // ECM teleops
     for (auto & proxy_config : m_config->teleop_ECMs) {
         const std::string name = proxy_config.MTML + "_" + proxy_config.MTMR + "_" + proxy_config.ECM;
-        auto iter = m_teleop_ECM_proxies.find(name);
-        if (iter == m_teleop_ECM_proxies.end()) {
+        auto iter = m_teleop_proxies.find(name);
+        if (iter == m_teleop_proxies.end()) {
             // create a new teleop_ecm proxy if needed
             auto teleop_proxy = std::make_shared<teleop_ECM_proxy>(name, this->m_system,
                                                                    this, &proxy_config);
             teleop_proxy->post_configure();
-            m_teleop_ECM_proxies[name] = teleop_proxy;
+            m_teleop_proxies[name] = teleop_proxy;
         } else {
             CMN_LOG_INIT_ERROR << "post: failed to configure teleop_ECMs, "
                                << name << " already exists" << std::endl;
@@ -62,34 +62,56 @@ void dvrk::console::post_configure(void)
     // PSM teleops
     for (auto & proxy_config : m_config->teleop_PSMs) {
         const std::string name = proxy_config.MTM + "_" + proxy_config.PSM;
-        auto iter = m_teleop_PSM_proxies.find(name);
-        if (iter == m_teleop_PSM_proxies.end()) {
+        auto iter = m_teleop_proxies.find(name);
+        if (iter == m_teleop_proxies.end()) {
             // create a new teleop_ecm proxy if needed
             auto teleop_proxy = std::make_shared<teleop_PSM_proxy>(name, this->m_system,
                                                                    this, &proxy_config);
             teleop_proxy->post_configure();
-            m_teleop_PSM_proxies[name] = teleop_proxy;
+            m_teleop_proxies[name] = teleop_proxy;
         } else {
             CMN_LOG_INIT_ERROR << "post: failed to configure teleop_PSMs, "
                                << name << " already exists" << std::endl;
             exit(EXIT_FAILURE);
         }
     }
+
+    // operator present, clutch, camera pedals
+    switch (m_config->input_type) {
+    case console_input_type::PEDALS:
+        {
+            if (m_config->IO == "") {
+                CMN_LOG_INIT_ERROR << "console::post_configure: \"IO\" must be provided for native or derived arm: "
+                                   << m_name << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            // registered in component manager?
+            auto iter = m_system->m_IO_proxies.find(m_config->IO);
+            if (iter == m_system->m_IO_proxies.end()) {
+                CMN_LOG_INIT_ERROR << "console::post_configure: IO \""
+                                   << m_config->IO << "\" is not defined in \"IOs\"" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            m_clutch_component_name = m_config->IO;
+            m_clutch_interface_name = "clutch";
+            m_camera_component_name = m_config->IO;
+            m_camera_interface_name = "camera";
+            m_operator_present_component_name = m_config->IO;
+            m_operator_present_interface_name = "coag";
+            break;
+        }
+    default:    
+        break;
+    }
 }
 
 
 void dvrk::console::create_components(void)
 {
-    // ECM teleops
-    for (auto & proxy : m_teleop_ECM_proxies) {
+    // teleops
+    for (auto & proxy : m_teleop_proxies) {
         proxy.second->create_teleop();
-        m_system->add_teleop_ECM_interfaces(proxy.second);
-    }
-
-    // PSM teleops
-    for (auto & proxy : m_teleop_PSM_proxies) {
-        proxy.second->create_teleop();
-        m_system->add_teleop_PSM_interfaces(proxy.second);
+        m_system->add_teleop_interfaces(proxy.second);
     }
 }
 
@@ -252,52 +274,12 @@ void dvrk::console::create_components(void)
 //     //             io->Configure(configFile);
 //     //         }
 //     //     }
-//     //     // and add the io component!
-//     //     m_IO_interface = AddInterfaceRequired("IO");
-//     //     if (m_IO_interface) {
-//     //         m_IO_interface->AddFunction("close_all_relays", IO.close_all_relays);
-//     //         m_IO_interface->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ErrorEventHandler,
-//     //                                              this, "error");
-//     //         m_IO_interface->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::WarningEventHandler,
-//     //                                              this, "warning");
-//     //         m_IO_interface->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::StatusEventHandler,
-//     //                                              this, "status");
-//     //     } else {
-//     //         CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to create IO required interface" << std::endl;
-//     //         exit(EXIT_FAILURE);
-//     //     }
-//     //     mtsComponentManager::GetInstance()->AddComponent(io);
-//     //     if (m_IO_interface) {
-//     //         m_connections.Add(this->GetName(), "IO",
-//     //                          io->GetName(), "Configuration");
-//     //     }
 //     // }
 
 
 
 //     // // see which event is used for operator present
 //     // // find name of button event used to detect if operator is present
-
-//     // // load from console inputs
-//     // const Json::Value consoleInputs = jsonConfig["console-inputs"];
-//     // if (!consoleInputs.empty()) {
-//     //     std::string component, interface;
-//     //     component = consoleInputs["operator-present"]["component"].asString();
-//     //     interface = consoleInputs["operator-present"]["interface"].asString();
-//     //     if ((component != "") && (interface != "")) {
-//     //         mDInputSources["OperatorPresent"] = InterfaceComponentType(component, interface);
-//     //     }
-//     //     component = consoleInputs["clutch"]["component"].asString();
-//     //     interface = consoleInputs["clutch"]["interface"].asString();
-//     //     if ((component != "") && (interface != "")) {
-//     //         mDInputSources["Clutch"] = InterfaceComponentType(component, interface);
-//     //     }
-//     //     component = consoleInputs["camera"]["component"].asString();
-//     //     interface = consoleInputs["camera"]["interface"].asString();
-//     //     if ((component != "") && (interface != "")) {
-//     //         mDInputSources["Camera"] = InterfaceComponentType(component, interface);
-//     //     }
-//     // }
 
 //     // load operator-present settings, this will over write older settings
 //     //     const Json::Value operatorPresent = jsonConfig["operator-present"];
@@ -390,32 +372,6 @@ void dvrk::console::create_components(void)
 //     //     //                  m_IO_component_name, "Cam-");
 //     // }
 
-//     // if we have any teleoperation component, we need to have the interfaces for the foot pedals
-//     // unless user explicitly says we can skip
-//     // if (physicalFootpedalsRequired) {
-//     //     const DInputSourceType::const_iterator endDInputs = mDInputSources.end();
-//     //     const bool foundClutch = (mDInputSources.find("Clutch") != endDInputs);
-//     //     const bool foundOperatorPresent = (mDInputSources.find("OperatorPresent") != endDInputs);
-//     //     const bool foundCamera = (mDInputSources.find("Camera") != endDInputs);
-
-//     //     if (m_teleop_PSM_proxies.size() > 0) {
-//     //         if (!foundClutch || !foundOperatorPresent) {
-//     //             CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Clutch\" and \"OperatorPresent\" need to be defined since there's at least one PSM tele-operation component.  "
-//     //                                      << footpedalMessage << std::endl;
-//     //             exit(EXIT_FAILURE);
-//     //         }
-//     //     }
-//     // if (mTeleopECM) {
-//     //     if (!foundCamera || !foundOperatorPresent) {
-//     //         CMN_LOG_CLASS_INIT_ERROR << "Configure: inputs for footpedals \"Camera\" and \"OperatorPresent\" need to be defined since there's an ECM tele-operation component.  "
-//     //                                  << footpedalMessage << std::endl;
-//     //         exit(EXIT_FAILURE);
-//     //     }
-//     // }
-//     // }
-//     // this->AddFootpedalInterfaces();
-
-//     m_configured = true;
 // }
 
 // const bool & mtsIntuitiveResearchKitConsole::Configured(void) const
@@ -430,47 +386,6 @@ void dvrk::console::create_components(void)
 //     ConfigurationEvents.scale(mtsIntuitiveResearchKit::TeleOperationPSM::Scale);
 // }
 
-// // void mtsIntuitiveResearchKitConsole::AddFootpedalInterfaces(void)
-// // {
-// //     const auto endDInputs = mDInputSources.end();
-
-// //     auto iter = mDInputSources.find("Clutch");
-// //     if (iter != endDInputs) {
-// //         mtsInterfaceRequired * clutchRequired = AddInterfaceRequired("Clutch");
-// //         if (clutchRequired) {
-// //             clutchRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::ClutchEventHandler, this, "Button");
-// //         }
-// //         m_connections.Add(this->GetName(), "Clutch",
-// //                           iter->second.first, iter->second.second);
-// //     }
-// //     mtsInterfaceProvided * clutchProvided = AddInterfaceProvided("Clutch");
-// //     if (clutchProvided) {
-// //         clutchProvided->AddEventWrite(console_events.clutch, "Button", prmEventButton());
-// //     }
-
-// //     iter = mDInputSources.find("Camera");
-// //     if (iter != endDInputs) {
-// //         mtsInterfaceRequired * cameraRequired = AddInterfaceRequired("Camera");
-// //         if (cameraRequired) {
-// //             cameraRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::CameraEventHandler, this, "Button");
-// //         }
-// //         m_connections.Add(this->GetName(), "Camera",
-// //                           iter->second.first, iter->second.second);
-// //     }
-// //     mtsInterfaceProvided * cameraProvided = AddInterfaceProvided("Camera");
-// //     if (cameraProvided) {
-// //         cameraProvided->AddEventWrite(console_events.camera, "Button", prmEventButton());
-// //     }
-
-// //     iter = mDInputSources.find("OperatorPresent");
-// //     if (iter != endDInputs) {
-// //         mtsInterfaceRequired * operatorRequired = AddInterfaceRequired("OperatorPresent");
-// //         if (operatorRequired) {
-// //             operatorRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsole::OperatorPresentEventHandler, this, "Button");
-// //         }
-// //         m_connections.Add(this->GetName(), "OperatorPresent",
-// //                           iter->second.first, iter->second.second);
-// //     }
 // //     mtsInterfaceProvided * operatorProvided = AddInterfaceProvided("OperatorPresent");
 // //     if (operatorProvided) {
 // //         operatorProvided->AddEventWrite(console_events.operator_present, "Button", prmEventButton());
@@ -570,16 +485,9 @@ void dvrk::console::create_components(void)
 void dvrk::console::teleop_enable(const bool & _enable)
 {
     const std::string command = _enable ? "enable" : "disable";
-    // ECM teleops
-    for (auto & proxy : m_teleop_ECM_proxies) {
+    for (auto & proxy : m_teleop_proxies) {
         proxy.second->state_command(command);
     }
-
-    // PSM teleops
-    for (auto & proxy : m_teleop_PSM_proxies) {
-        proxy.second->state_command(command);
-    }
-
     // //     mTeleopEnabled = enable;
     // //     // if we have an SUJ, make sure it's ready
     // //     if (enable && m_SUJ) {
@@ -599,7 +507,7 @@ void dvrk::console::teleop_enable(const bool & _enable)
 void dvrk::console::set_scale(const double & _scale)
 {
     // PSM teleops
-    for (auto & proxy : m_teleop_PSM_proxies) {
+    for (auto & proxy : m_teleop_proxies) {
         proxy.second->set_scale(_scale);
     }
     events.scale(_scale);
@@ -608,16 +516,9 @@ void dvrk::console::set_scale(const double & _scale)
 
 void dvrk::console::select_teleop(const std::string & _teleop)
 {
-    // PSM teleops
-    auto iter_PSM = m_teleop_PSM_proxies.find(_teleop);
-    if (iter_PSM != m_teleop_PSM_proxies.end()) {
-        iter_PSM->second->m_selected = true;
-        return;
-    }
-    // ECM teleops
-    auto iter_ECM = m_teleop_ECM_proxies.find(_teleop);
-    if (iter_ECM != m_teleop_ECM_proxies.end()) {
-        iter_ECM->second->m_selected = true;
+    auto iter = m_teleop_proxies.find(_teleop);
+    if (iter != m_teleop_proxies.end()) {
+        iter->second->m_selected = true;
         return;
     }
     m_interface_provided->SendStatus("console " + m_name + "::select_teleop can't find " + _teleop);
@@ -626,25 +527,18 @@ void dvrk::console::select_teleop(const std::string & _teleop)
 
 void dvrk::console::unselect_teleop(const std::string & _teleop)
 {
-    // PSM teleops
-    auto iter_PSM = m_teleop_PSM_proxies.find(_teleop);
-    if (iter_PSM != m_teleop_PSM_proxies.end()) {
-        iter_PSM->second->m_selected = false;
-        return;
-    }
-    // ECM teleops
-    auto iter_ECM = m_teleop_ECM_proxies.find(_teleop);
-    if (iter_ECM != m_teleop_ECM_proxies.end()) {
-        iter_ECM->second->m_selected = false;
+    auto iter = m_teleop_proxies.find(_teleop);
+    if (iter != m_teleop_proxies.end()) {
+        iter->second->m_selected = false;
         return;
     }
     m_interface_provided->SendStatus("console " + m_name + "::unselect_teleop can't find " + _teleop);
 }
 
 
-void dvrk::console::clutch_event_handler(const prmEventButton & button)
+void dvrk::console::clutch_event_handler(const prmEventButton & _button)
 {
-    switch (button.Type()) {
+    switch (_button.Type()) {
     case prmEventButton::PRESSED:
         m_interface_provided->SendStatus(m_name + ": clutch pressed");
         m_system->audio.beep(vct3(0.1, 700.0, m_system->m_audio_volume));
@@ -664,13 +558,13 @@ void dvrk::console::clutch_event_handler(const prmEventButton & button)
     default:
         break;
     }
-    events.clutch(button);        
+    events.clutch(_button);
 }
 
 
-void dvrk::console::camera_event_handler(const prmEventButton & button)
+void dvrk::console::camera_event_handler(const prmEventButton & _button)
 {
-    switch (button.Type()) {
+    switch (_button.Type()) {
     case prmEventButton::PRESSED:
         m_camera = true;
         m_interface_provided->SendStatus(m_name + ": camera pressed");
@@ -690,13 +584,13 @@ void dvrk::console::camera_event_handler(const prmEventButton & button)
         break;
     }
     update_teleop_state();
-    events.camera(button);
+    events.camera(_button);
 }
 
 
-void dvrk::console::operator_present_event_handler(const prmEventButton & button)
+void dvrk::console::operator_present_event_handler(const prmEventButton & _button)
 {
-    switch (button.Type()) {
+    switch (_button.Type()) {
     case prmEventButton::PRESSED:
         m_operator_present = true;
         m_interface_provided->SendStatus(m_name + ": operator present");
@@ -711,7 +605,7 @@ void dvrk::console::operator_present_event_handler(const prmEventButton & button
         break;
     }
     update_teleop_state();
-    events.operator_present(button);
+    events.operator_present(_button);
 }
 
 

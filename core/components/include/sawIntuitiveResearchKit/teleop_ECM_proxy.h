@@ -22,24 +22,21 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsForwardDeclarations.h>
 #include <cisstMultiTask/mtsFunctionWrite.h>
 
+#include <sawIntuitiveResearchKit/teleop_proxy.h>
+
 // Always include last!
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 
 namespace dvrk {
 
-    class system;
-    class console;
     class teleop_ECM_proxy_configuration;
 
-    class CISST_EXPORT teleop_ECM_proxy {
+    class CISST_EXPORT teleop_ECM_proxy: public teleop_proxy {
     public:
 
         friend class dvrk::system;
         friend class dvrk::console;
 
-        std::string m_name;
-        dvrk::system * m_system = nullptr;
-        dvrk::console * m_console = nullptr;
         teleop_ECM_proxy_configuration * m_config = nullptr;
 
         teleop_ECM_proxy(const std::string & name,
@@ -50,18 +47,16 @@ namespace dvrk {
         // NOT_COPYABLE(teleop_ECM_proxy);
         // NOT_MOVEABLE(teleop_ECM_proxy);
 
-        void post_configure(void);
+        inline teleop_proxy::teleop_type type(void) const override {
+            return teleop_proxy::ECM;
+        }
+
+        void post_configure(void) override;
 
         /*! Create and configure the teleoperation component. */
-        void create_teleop(void);
+        void create_teleop(void) override;
 
      protected:
-        mtsFunctionWrite state_command;
-        mtsFunctionWrite set_scale;
-        mtsInterfaceRequired * m_interface_required;
-
-        bool m_selected = false;
-
         std::string m_MTML_component_name, m_MTML_interface_name,
         m_MTMR_component_name, m_MTMR_interface_name,
         m_ECM_component_name, m_ECM_interface_name;
