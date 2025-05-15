@@ -58,7 +58,7 @@ dvrk::system_Qt_widget::system_Qt_widget(const std::string & _component_name):
         interface_required->AddFunction("power_off", system.power_off);
         interface_required->AddFunction("power_on", system.power_on);
         interface_required->AddFunction("home", system.home);
-        interface_required->AddEventHandlerWrite(&dvrk::system_Qt_widget::arm_current_state_event_handler,
+        interface_required->AddEventHandlerWrite(&system_Qt_widget::arm_current_state_event_handler,
                                                  this, "arm_current_state");
         interface_required->AddFunction("set_volume", system.set_volume);
         interface_required->AddEventHandlerWrite(&dvrk::system_Qt_widget::volume_event_handler,
@@ -165,9 +165,9 @@ void dvrk::system_Qt_widget::SlotHome(void)
 }
 
 
-void dvrk::system_Qt_widget::SlotArmCurrentStateEventHandler(PairStringType armState)
+void dvrk::system_Qt_widget::slot_arm_current_state_event_handler(PairStringType _arm_state)
 {
-    const QString arm = armState.first;
+    const QString arm = _arm_state.first;
     auto iter = m_arm_buttons.find(arm);
     QPushButton * button;
     // insert new arm if needed
@@ -176,12 +176,12 @@ void dvrk::system_Qt_widget::SlotArmCurrentStateEventHandler(PairStringType armS
         QVBArms->addWidget(button);
         m_arm_buttons[arm] = button;
         connect(button, &QPushButton::clicked,
-                [ = ] { FocusArmButton(armState.first); });
+                [ = ] { FocusArmButton(_arm_state.first); });
     } else {
         button = iter->second;
     }
     // color code state
-    QString state = armState.second;
+    QString state = _arm_state.second;
     if (state == "ENABLED") {
         button->setStyleSheet("QPushButton { background-color: rgb(50, 255, 50); border: none }");
     } else if (state == "FAULT") {
@@ -282,8 +282,8 @@ void dvrk::system_Qt_widget::setupUi(void)
     connect(QPBHome, SIGNAL(clicked()),
             this, SLOT(SlotHome()));
     qRegisterMetaType<PairStringType>("PairStringType");
-    connect(this, SIGNAL(SignalArmCurrentState(PairStringType)),
-            this, SLOT(SlotArmCurrentStateEventHandler(PairStringType)));
+    connect(this, SIGNAL(signal_arm_current_state(PairStringType)),
+            this, SLOT(slot_arm_current_state_event_handler(PairStringType)));
     connect(QSVolume, SIGNAL(sliderReleased()),
             this, SLOT(SlotSetVolume()));
     connect(this, SIGNAL(SignalVolume(double)),
@@ -295,12 +295,12 @@ void dvrk::system_Qt_widget::setupUi(void)
 }
 
 
-void dvrk::system_Qt_widget::arm_current_state_event_handler(const prmKeyValue & armState)
+void dvrk::system_Qt_widget::arm_current_state_event_handler(const prmKeyValue & _arm_state)
 {
-    PairStringType currentState;
-    currentState.first = armState.Key.c_str();
-    currentState.second = armState.Value.c_str();
-    emit SignalArmCurrentState(currentState);
+    PairStringType current_state;
+    current_state.first = _arm_state.Key.c_str();
+    current_state.second = _arm_state.Value.c_str();
+    emit signal_arm_current_state(current_state);
 }
 
 

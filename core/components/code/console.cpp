@@ -100,7 +100,7 @@ void dvrk::console::post_configure(void)
             m_operator_present_interface_name = "coag";
             break;
         }
-    default:    
+    default:
         break;
     }
 }
@@ -116,22 +116,30 @@ void dvrk::console::create_components(void)
 }
 
 
+void dvrk::console::Startup(void)
+{
+    // emit all events to initialize GUI and ROs
+    emit_teleop_state_events();
+    events.scale(mtsIntuitiveResearchKit::TeleOperationPSM::Scale);
+}
+
+
+void dvrk::console::emit_teleop_state_events(void)
+{
+    for (auto & iter : m_teleop_proxies) {
+        if (iter.second->m_selected) {
+            events.teleop_selected(iter.first);
+        } else {
+            events.teleop_unselected(iter.first);
+        }
+    }
+}
 
 // dvrk::console
 //     // mTeleopMTMToCycle(""),
 //     // mOperatorPresent(false),
 //     // mCameraPressed(false)
-// {
-//     // configure search path
-//     m_config_path.Add(cmnPath::GetWorkingDirectory());
-//     // add path to source/share directory to find common files.  This
-//     // will work as long as this component is located in the same
-//     // parent directory as the "shared" directory.
-//     m_config_path.Add(std::string(sawIntuitiveResearchKit_SOURCE_CONFIG_DIR), cmnPath::TAIL);
-//     // default installation directory
-//     m_config_path.Add(mtsIntuitiveResearchKit::DefaultInstallationDirectory, cmnPath::TAIL);
 
-//     mInterface = AddInterfaceProvided("Main");
 //     if (mInterface) {
 //         // // manage tele-op
 //         // mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::cycle_teleop_PSM_by_MTM, this,
@@ -153,135 +161,7 @@ void dvrk::console::create_components(void)
 //     }
 // }
 
-// void mtsIntuitiveResearchKitConsole::Configure(const std::string & filename)
-// {
 
-//     // loop over all arms to check if IO is needed, also check if some IO configuration files are listed in "io"
-//     // mHasIO = false;
-//     // for (auto iter = m_arm_proxies.begin(); iter != end; ++iter) {
-//     //     std::string ioConfig = iter->second->m_IO_configuration_file;
-//     //     if (!ioConfig.empty()) {
-//     //         mHasIO = true;
-//     //     }
-//     // }
-//     // bool physicalFootpedalsRequired = true;
-//     // jsonValue = jsonConfig["io"];
-//     // if (!jsonValue.empty()) {
-//     //     // generic files
-//     //     Json::Value configFiles = jsonValue["configuration-files"];
-//     //     if (!configFiles.empty()) {
-//     //         mHasIO = true;
-//     //     }
-//     //     // footpedals config
-//     //     configFiles = jsonValue["footpedals"];
-//     //     if (!configFiles.empty()) {
-//     //         mHasIO = true;
-//     //     }
-//     //     // see if user wants to force no foot pedals
-//     //     Json::Value footpedalsRequired = jsonValue["physical_footpedals_required"];
-//     //     if (!footpedalsRequired.empty()) {
-//     //         physicalFootpedalsRequired = footpedalsRequired.asBool();
-//     //     }
-//     // }
-//     // // just check for IO and make sure we don't have io and hid, will be configured later
-//     // jsonValue = jsonConfig["operator-present"];
-//     // if (!jsonValue.empty()) {
-//     //     // check if operator present uses IO
-//     //     Json::Value jsonConfigFile = jsonValue["io"];
-//     //     if (!jsonConfigFile.empty()) {
-//     //         mHasIO = true;
-//     //         jsonConfigFile = jsonValue["hid"];
-//     //         if (!jsonConfigFile.empty()) {
-//     //             CMN_LOG_CLASS_INIT_ERROR << "Configure: operator-present can't have both io and hid" << std::endl;
-//     //             exit(EXIT_FAILURE);
-//     //         }
-//     //     }
-//     // }
-//     // create IO if needed and configure IO
-//     // if (mHasIO) {
-//     //     mtsRobotIO1394 * io = new mtsRobotIO1394(m_IO_component_name, periodIO, port);
-//     //     io->SetProtocol(protocol);
-//     //     io->SetWatchdogPeriod(watchdogTimeout);
-//     //     // configure for each arm
-//     //     for (auto iter = m_arm_proxies.begin(); iter != end; ++iter) {
-//     //         std::string ioConfig = iter->second->m_IO_configuration_file;
-//     //         if (ioConfig != "") {
-//     //             CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO using \"" << ioConfig << "\"" << std::endl;
-//     //             io->Configure(ioConfig);
-//     //         }
-//     //         std::string ioGripperConfig = iter->second->m_IO_gripper_configuration_file;
-//     //         if (ioGripperConfig != "") {
-//     //             CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO gripper using \"" << ioGripperConfig << "\"" << std::endl;
-//     //             io->Configure(ioGripperConfig);
-//     //         }
-//     //     }
-//     //         }
-//     //         // footpedals, we assume these are the default one provided along the dVRK
-//     //         configFiles = jsonValue["footpedals"];
-//     //         if (!configFiles.empty()) {
-//     //             const std::string configFile = find_file(configFiles.asString());
-//     //             if (configFile == "") {
-//     //                 CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
-//     //                                          << configFiles.asString() << std::endl;
-//     //                 exit(EXIT_FAILURE);
-//     //             }
-//     //             CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring IO foot pedals using \"" << configFile << "\"" << std::endl;
-//     //             // these can be overwritten using console-inputs
-//     //             mDInputSources["Clutch"] = InterfaceComponentType(m_IO_component_name, "Clutch");
-//     //             mDInputSources["OperatorPresent"] = InterfaceComponentType(m_IO_component_name, "Coag");
-//     //             mDInputSources["Coag"] = InterfaceComponentType(m_IO_component_name, "Coag");
-//     //             mDInputSources["BiCoag"] = InterfaceComponentType(m_IO_component_name, "BiCoag");
-//     //             mDInputSources["Camera"] = InterfaceComponentType(m_IO_component_name, "Camera");
-//     //             mDInputSources["Cam-"] = InterfaceComponentType(m_IO_component_name, "Cam-");
-//     //             mDInputSources["Cam+"] = InterfaceComponentType(m_IO_component_name, "Cam+");
-//     //             mDInputSources["Head"] = InterfaceComponentType(m_IO_component_name, "Head");
-//     //             io->Configure(configFile);
-//     //         }
-//     //     }
-//     //     // configure IO for operator present
-//     //     jsonValue = jsonConfig["operator-present"];
-//     //     if (!jsonValue.empty()) {
-//     //         // check if operator present uses IO
-//     //         Json::Value jsonConfigFile = jsonValue["io"];
-//     //         if (!jsonConfigFile.empty()) {
-//     //             const std::string configFile = find_file(jsonConfigFile.asString());
-//     //             if (configFile == "") {
-//     //                 CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
-//     //                                          << jsonConfigFile.asString() << std::endl;
-//     //                 exit(EXIT_FAILURE);
-//     //             }
-//     //             CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring operator present using \""
-//     //                                        << configFile << "\"" << std::endl;
-//     //             io->Configure(configFile);
-//     //         } else {
-//     //             jsonConfigFile = jsonValue["hid"];
-//     //         }
-//     //     }
-//     //     // configure for endoscope focus
-//     //     jsonValue = jsonConfig["endoscope-focus"];
-//     //     if (!jsonValue.empty()) {
-//     //         // check if operator present uses IO
-//     //         Json::Value jsonConfigFile = jsonValue["io"];
-//     //         if (!jsonConfigFile.empty()) {
-//     //             const std::string configFile = find_file(jsonConfigFile.asString());
-//     //             if (configFile == "") {
-//     //                 CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
-//     //                                          << jsonConfigFile.asString() << std::endl;
-//     //                 exit(EXIT_FAILURE);
-//     //             }
-//     //             CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring endoscope focus using \""
-//     //                                        << configFile << "\"" << std::endl;
-//     //             io->Configure(configFile);
-//     //         }
-//     //     }
-//     // }
-
-
-
-//     // // see which event is used for operator present
-//     // // find name of button event used to detect if operator is present
-
-//     // load operator-present settings, this will over write older settings
 //     //     const Json::Value operatorPresent = jsonConfig["operator-present"];
 //     //     if (!operatorPresent.empty()) {
 //     //         // first case, using io to communicate with daVinci original head sensore
@@ -338,9 +218,6 @@ void dvrk::console::create_components(void)
 //     //         }
 //     //     }
 
-//     // message re. footpedals are likely missing but user can override this requirement
-//     // const std::string footpedalMessage = "Maybe you're missing \"io\":\"footpedals\" in your configuration file.  If you don't need physical footpedals, set \"physical_footpedals_required\" to false.";
-
 //     // load endoscope-focus settings
 //     // const Json::Value endoscopeFocus = jsonConfig["endoscope-focus"];
 //     // if (!endoscopeFocus.empty()) {
@@ -379,12 +256,6 @@ void dvrk::console::create_components(void)
 //     return m_configured;
 // }
 
-// void mtsIntuitiveResearchKitConsole::Startup(void)
-// {
-//     // EventSelectedTeleopPSMs();
-//     // emit scale event
-//     ConfigurationEvents.scale(mtsIntuitiveResearchKit::TeleOperationPSM::Scale);
-// }
 
 // //     mtsInterfaceProvided * operatorProvided = AddInterfaceProvided("OperatorPresent");
 // //     if (operatorProvided) {
@@ -484,23 +355,19 @@ void dvrk::console::create_components(void)
 
 void dvrk::console::teleop_enable(const bool & _enable)
 {
-    const std::string command = _enable ? "enable" : "disable";
-    for (auto & proxy : m_teleop_proxies) {
-        proxy.second->state_command(command);
-    }
-    // //     mTeleopEnabled = enable;
+    m_teleop_enabled = _enable;
     // //     // if we have an SUJ, make sure it's ready
     // //     if (enable && m_SUJ) {
     // //         const auto sujState = ArmStates.find("SUJ");
     // //         if ((sujState == ArmStates.end())
     // //             || (sujState->second.State() != prmOperatingState::ENABLED)) {
-    // //             mTeleopEnabled = false;
+    // //             m_teleop_enabled = false;
     // //         }
     // //     }
-    // //     mTeleopDesired = enable;
-    // //     // event
-    // //    console_events.teleop_enabled(mTeleopEnabled);
-    // //     UpdateTeleopState();
+    m_teleop_desired = _enable; // for recovery after errors
+    // event
+    events.teleop_enabled(m_teleop_enabled);
+    update_teleop_state();
 }
 
 
@@ -522,6 +389,7 @@ void dvrk::console::select_teleop(const std::string & _teleop)
         return;
     }
     m_interface_provided->SendStatus("console " + m_name + "::select_teleop can't find " + _teleop);
+    update_teleop_state();
 }
 
 
@@ -533,6 +401,7 @@ void dvrk::console::unselect_teleop(const std::string & _teleop)
         return;
     }
     m_interface_provided->SendStatus("console " + m_name + "::unselect_teleop can't find " + _teleop);
+    update_teleop_state();
 }
 
 
@@ -658,7 +527,7 @@ void dvrk::console::operator_present_event_handler(const prmEventButton & _butto
 // //                     iter->second->set_selected(false);
 // //                     nextTeleop->second->set_selected(true);
 // //                     // if teleop PSM is active, enable/disable components now
-// //                     if (mTeleopEnabled) {
+// //                     if (m_teleop_enabled) {
 // //                         iter->second->state_command(std::string("disable"));
 // //                         if (mTeleopPSMRunning) {
 // //                             nextTeleop->second->state_command(std::string("enable"));
@@ -699,7 +568,7 @@ void dvrk::console::operator_present_event_handler(const prmEventButton & _butto
 // //             if (iter->second->selected()) {
 // //                 iter->second->set_selected(false);
 // //                 // if teleop PSM is active, enable/disable components now
-// //                 if (mTeleopEnabled) {
+// //                 if (m_teleop_enabled) {
 // //                     iter->second->state_command(std::string("disable"));
 // //                 }
 // //                 // message
@@ -747,7 +616,7 @@ void dvrk::console::operator_present_event_handler(const prmEventButton & _butto
 // //     // now turn on the teleop
 // //     teleopIterator->second->set_selected(true);
 // //     // if teleop PSM is active, enable/disable components now
-// //     if (mTeleopEnabled) {
+// //     if (m_teleop_enabled) {
 // //         if (mTeleopPSMRunning) {
 // //             teleopIterator->second->state_command(std::string("enable"));
 // //         } else {
@@ -796,23 +665,19 @@ void dvrk::console::operator_present_event_handler(const prmEventButton & _butto
 // //     return psmFound;
 // // }
 
-// // void mtsIntuitiveResearchKitConsole::EventSelectedTeleopPSMs(void) const
-// // {
-// //     for (auto & iter : m_teleop_PSM_proxies) {
-// //         if (iter.second->selected()) {
-// //             ConfigurationEvents.teleop_PSM_selected(prmKeyValue(iter.second->m_config->MTM,
-// //                                                                 iter.second->m_config->PSM));
-// //         } else {
-// //             ConfigurationEvents.teleop_PSM_unselected(prmKeyValue(iter.second->m_config->MTM,
-// //                                                                   iter.second->m_config->PSM));
-// //         }
-// //     }
-// // }
 
 void dvrk::console::update_teleop_state(void)
 {
+    emit_teleop_state_events();
+
+
+    // const std::string command = _enable ? "enable" : "disable";
+    // for (auto & proxy : m_teleop_proxies) {
+    //     proxy.second->state_command(command);
+    // }
+
 // //     // Check if teleop is enabled
-// //     if (!mTeleopEnabled) {
+// //     if (!m_teleop_enabled) {
 // //         bool holdNeeded = false;
 // //         for (auto & iterTeleopPSM : m_teleop_PSM_proxies) {
 // //             iterTeleopPSM.second->state_command(std::string("disable"));
@@ -918,10 +783,10 @@ void dvrk::console::update_teleop_state(void)
 // //     }
 }
 
-// // void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & message)
-// // {
-// //     // similar to teleop_enable(false) except we don't change mTeleopDesired
-// //     mTeleopEnabled = false;
-// //     console_events.teleop_enabled(mTeleopEnabled);
-// //     UpdateTeleopState();
-// // }
+// void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & message)
+// {
+//     // similar to teleop_enable(false) except we don't change mTeleopDesired
+//     m_teleop_enabled = false;
+//     console_events.teleop_enabled(m_teleop_enabled);
+//     UpdateTeleopState();
+// }

@@ -64,6 +64,9 @@ namespace dvrk {
         /*! Create and configure IO component. */
         void create_components(void);
 
+        /*! Emulate Startup for mtsComponent. */
+        void Startup(void);
+
     protected:
         // main interface for ROS and Qt
         mtsInterfaceProvided * m_interface_provided;
@@ -75,7 +78,7 @@ namespace dvrk {
         std::string m_camera_interface_name;
         std::string m_operator_present_component_name;
         std::string m_operator_present_interface_name;
-        
+
         // commands
         void teleop_enable(const bool &);
         void set_scale(const double & scale);
@@ -99,10 +102,13 @@ namespace dvrk {
 
         // internal methods to manage active teleops
         void update_teleop_state(void);
+        void emit_teleop_state_events(void);
 
         // status
         bool m_operator_present = false;
         bool m_camera = false;
+        bool m_teleop_enabled = false;
+        bool m_teleop_desired = false;
     };
 }
 
@@ -122,8 +128,6 @@ namespace dvrk {
 //         /*! Name of default MTM to cycle teleops if no name is provided */
 //         std::string mTeleopMTMToCycle;
 
-//         bool mTeleopEnabled = false;
-//         bool mTeleopDesired = false;
 //         bool mTeleopPSMRunning = false;
 //         bool mTeleopECMRunning = false;
 //         bool mTeleopEnabledBeforeCamera;

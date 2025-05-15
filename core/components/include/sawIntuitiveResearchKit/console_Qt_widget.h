@@ -35,11 +35,11 @@ class QCheckBox;
 
 #include <QWidget>
 
-// Always include last! 
+// Always include last!
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
 
 namespace dvrk {
-    
+
     class CISST_EXPORT console_Qt_widget: public QWidget, public mtsComponent
     {
         Q_OBJECT;
@@ -48,34 +48,34 @@ namespace dvrk {
     public:
         console_Qt_widget(const std::string & componentName);
         inline virtual ~console_Qt_widget() {}
-        
+
         void Configure(const std::string & filename = "");
         void Startup(void);
         void Cleanup(void);
         void HasTeleOp(const bool & hasTeleOp);
-        
+
     signals:
-        void SignalTeleopSelected(std::string selected);
-        void SignalTeleopUnselected(std::string unselected);
+        void signal_teleop_selected(QString selected);
+        void signal_teleop_unselected(QString unselected);
         void SignalTeleopEnabled(bool toggle);
         void SignalScale(double scale);
         void SignalOperatorPresent(bool operatorPresent);
         void signal_clutch(bool clutch);
         void SignalCamera(bool camera);
-        
+
     protected:
-        void GetTeleopButtonCheck(const std::string & pair, QPushButton * & button, QCheckBox * & check);
-        void SelectTeleopCheck(const std::string & pair);
-        void UnselectTeleopCheck(const std::string & pair);
-                                                             
+        void get_teleop_button_check(const QString & pair, QPushButton * & button, QCheckBox * & check);
+        void select_teleop_check(const QString & pair);
+        void unselect_teleop_check(const QString & pair);
+
     private slots:
         void SlotTeleopEnable(bool toggle);
         void SlotTeleopToggle(void);
         void SlotTeleopStart(void);
         void SlotTeleopStop(void);
         void SlotTeleopEnabledEventHandler(bool enabled);
-        void SlotTeleopSelectedEventHandler(std::string selected);
-        void SlotTeleopUnselectedEventHandler(std::string unselected);
+        void slot_teleop_selected_event_handler(QString selected);
+        void slot_teleop_unselected_event_handler(QString unselected);
         void SlotSetScale(double scale);
         void SlotScaleEventHandler(double scale);
         void SlotOperatorPresentEventHandler(bool operatorPresent);
@@ -85,7 +85,7 @@ namespace dvrk {
         void SlotEmulateOperatorPresent(bool toggle);
         void SlotEmulateClutch(bool toggle);
         void SlotEmulateCamera(bool toggle);
-        
+
     protected:
 
         void setupUi(void);
@@ -93,22 +93,23 @@ namespace dvrk {
         struct {
             mtsFunctionWrite teleop_enable;
             mtsFunctionWrite select_teleop;
+            mtsFunctionWrite unselect_teleop;
             mtsFunctionWrite set_scale;
             mtsFunctionWrite emulate_operator_present;
             mtsFunctionWrite emulate_clutch;
             mtsFunctionWrite emulate_camera;
         } console;
-        
+
         void TeleopEnabledEventHandler(const bool & enabled);
-        void TeleopSelectedEventHandler(const std::string & selected);
-        void TeleopUnselectedEventHandler(const std::string & unselected);
+        void teleop_selected_event_handler(const std::string & selected);
+        void teleop_unselected_event_handler(const std::string & unselected);
         void ScaleEventHandler(const double & scale);
         void OperatorPresentEventHandler(const prmEventButton & button);
         void clutch_event_handler(const prmEventButton & button);
         void camera_event_handler(const prmEventButton & button);
-        
+
         QVBoxLayout * QVBTeleops;
-        std::map<std::string, std::pair<QPushButton *, QCheckBox *>> TeleopButtons;
+        std::map<QString, std::pair<QPushButton *, QCheckBox *>> m_teleop_buttons;
 
         QPushButton * QPBTeleopEnable;
         QCheckBox * QCBTeleopEnable;
@@ -116,7 +117,7 @@ namespace dvrk {
         QRadioButton * QRBOperatorPresent;
         QRadioButton * QRBClutch;
         QRadioButton * QRBCamera;
-        
+
         QCheckBox * QCBEnableDirectControl;
         QPushButton * QPBComponentViewer;
         QTabWidget * QTWidgets;

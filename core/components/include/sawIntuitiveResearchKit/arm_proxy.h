@@ -133,7 +133,7 @@ namespace dvrk {
             }
         }
 
-        void CurrentStateEventHandler(const prmOperatingState & currentState);
+        void current_state_event_handler(const prmOperatingState & _current_state);
     };
 }
 

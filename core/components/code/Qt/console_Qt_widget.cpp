@@ -61,9 +61,10 @@ dvrk::console_Qt_widget::console_Qt_widget(const std::string & _component_name):
         interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::TeleopEnabledEventHandler,
                                                 this, "teleop_enabled");
         interface_required->AddFunction("select_teleop", console.select_teleop);
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::TeleopSelectedEventHandler,
+        interface_required->AddFunction("unselect_teleop", console.unselect_teleop);
+        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::teleop_selected_event_handler,
                                                 this, "teleop_selected");
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::TeleopUnselectedEventHandler,
+        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::teleop_unselected_event_handler,
                                                 this, "teleop_unselected");
         interface_required->AddFunction("set_scale", console.set_scale);
         interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::ScaleEventHandler,
@@ -159,27 +160,27 @@ void dvrk::console_Qt_widget::SlotTeleopEnabledEventHandler(bool enabled)
 }
 
 
-void dvrk::console_Qt_widget::GetTeleopButtonCheck(const std::string & teleop,
-                                                   QPushButton * & button,
-                                                   QCheckBox * & check)
+void dvrk::console_Qt_widget::get_teleop_button_check(const QString & teleop,
+                                                      QPushButton * & button,
+                                                      QCheckBox * & check)
 {
-    auto iter = TeleopButtons.find(teleop);
+    auto iter = m_teleop_buttons.find(teleop);
     // insert new teleop if needed
-    if (iter == TeleopButtons.end()) {
+    if (iter == m_teleop_buttons.end()) {
         QHBoxLayout * buttonsLayout = new QHBoxLayout;
-        button = new QPushButton(teleop.c_str());
+        button = new QPushButton(teleop);
         buttonsLayout->addWidget(button);
         buttonsLayout->addStretch();
         check = new QCheckBox("");
         buttonsLayout->addWidget(check);
         QVBTeleops->addLayout(buttonsLayout);
-        TeleopButtons[teleop] = std::pair<QPushButton *, QCheckBox *>(button, check);
+        m_teleop_buttons[teleop] = std::pair<QPushButton *, QCheckBox *>(button, check);
         connect(check, &QCheckBox::toggled,
                 [ = ](bool checked) {
                     if (checked) {
-                        SelectTeleopCheck(teleop);
+                        select_teleop_check(teleop);
                     } else {
-                        UnselectTeleopCheck(teleop);
+                        unselect_teleop_check(teleop);
                     }
                 });
     } else {
@@ -189,11 +190,11 @@ void dvrk::console_Qt_widget::GetTeleopButtonCheck(const std::string & teleop,
 }
 
 
-void dvrk::console_Qt_widget::SlotTeleopSelectedEventHandler(std::string selected)
+void dvrk::console_Qt_widget::slot_teleop_selected_event_handler(QString selected)
 {
     QPushButton * button;
     QCheckBox * check;
-    GetTeleopButtonCheck(selected, button, check);
+    get_teleop_button_check(selected, button, check);
     button->setStyleSheet("QPushButton { border: none }");
     check->blockSignals(true);
     check->setChecked(true);
@@ -201,11 +202,11 @@ void dvrk::console_Qt_widget::SlotTeleopSelectedEventHandler(std::string selecte
 }
 
 
-void dvrk::console_Qt_widget::SlotTeleopUnselectedEventHandler(std::string unselected)
+void dvrk::console_Qt_widget::slot_teleop_unselected_event_handler(QString unselected)
 {
     QPushButton * button;
     QCheckBox * check;
-    GetTeleopButtonCheck(unselected, button, check);
+    get_teleop_button_check(unselected, button, check);
     button->setStyleSheet("QPushButton { border: none; color: palette(mid) }");
     check->blockSignals(true);
     check->setChecked(false);
@@ -280,17 +281,16 @@ void dvrk::console_Qt_widget::setupUi(void)
     mainLayout->addWidget(QCBEnableDirectControl);
 
     // buttons
-    // qRegisterMetaType<std::string>("std::string");
     connect(QPBTeleopEnable, SIGNAL(clicked()),
             this, SLOT(SlotTeleopToggle()));
     connect(QCBTeleopEnable, SIGNAL(toggled(bool)),
             this, SLOT(SlotTeleopEnable(bool)));
     connect(this, SIGNAL(SignalTeleopEnabled(bool)),
             this, SLOT(SlotTeleopEnabledEventHandler(bool)));
-    connect(this, SIGNAL(SignalTeleopSelected(std::string)),
-            this, SLOT(SlotTeleopSelectedEventHandler(std::string)));
-    connect(this, SIGNAL(SignalTeleopUnselected(std::string)),
-            this, SLOT(SlotTeleopUnselectedEventHandler(std::string)));
+    connect(this, SIGNAL(signal_teleop_selected(QString)),
+            this, SLOT(slot_teleop_selected_event_handler(QString)));
+    connect(this, SIGNAL(signal_teleop_unselected(QString)),
+            this, SLOT(slot_teleop_unselected_event_handler(QString)));
     connect(QSBScale, SIGNAL(valueChanged(double)),
             this, SLOT(SlotSetScale(double)));
     connect(this, SIGNAL(SignalScale(double)),
@@ -320,15 +320,15 @@ void dvrk::console_Qt_widget::TeleopEnabledEventHandler(const bool & _enabled)
 }
 
 
-void dvrk::console_Qt_widget::TeleopSelectedEventHandler(const std::string & _selected)
+void dvrk::console_Qt_widget::teleop_selected_event_handler(const std::string & _selected)
 {
-    emit SignalTeleopSelected(_selected);
+    emit signal_teleop_selected(_selected.c_str());
 }
 
 
-void dvrk::console_Qt_widget::TeleopUnselectedEventHandler(const std::string & _unselected)
+void dvrk::console_Qt_widget::teleop_unselected_event_handler(const std::string & _unselected)
 {
-    emit SignalTeleopUnselected(_unselected);
+    emit signal_teleop_unselected(_unselected.c_str());
 }
 
 
@@ -368,7 +368,6 @@ void dvrk::console_Qt_widget::slot_clutched(bool _clutch)
 
 void dvrk::console_Qt_widget::clutch_event_handler(const prmEventButton & _button)
 {
-    std::cerr << "clutch_event_handler " << _button << std::endl;
     if (_button.Type() == prmEventButton::PRESSED) {
         emit signal_clutch(true);
     } else {
@@ -437,15 +436,15 @@ void dvrk::console_Qt_widget::SlotEmulateCamera(bool toggle)
 }
 
 
-void dvrk::console_Qt_widget::SelectTeleopCheck(const std::string & teleop)
+void dvrk::console_Qt_widget::select_teleop_check(const QString & teleop)
 {
-    console.select_teleop(teleop);
+    console.select_teleop(teleop.toStdString());
 }
 
 
-void dvrk::console_Qt_widget::UnselectTeleopCheck(const std::string & teleop)
+void dvrk::console_Qt_widget::unselect_teleop_check(const QString & teleop)
 {
-    console.select_teleop(teleop);
+    console.unselect_teleop(teleop.toStdString());
 }
 
 

@@ -62,7 +62,7 @@ namespace dvrk {
         }
 
     signals:
-        void SignalArmCurrentState(PairStringType armState);
+        void signal_arm_current_state(PairStringType _arm_state);
         void SignalVolume(double volume);
         
     protected:
@@ -72,7 +72,7 @@ namespace dvrk {
         void SlotPowerOff(void);
         void SlotPowerOn(void);
         void SlotHome(void);
-        void SlotArmCurrentStateEventHandler(PairStringType armState);
+        void slot_arm_current_state_event_handler(PairStringType _arm_state);
         void SlotSetVolume(void);
         void SlotVolumeEventHandler(double volume);
         void SlotComponentViewer(void);
@@ -90,7 +90,7 @@ namespace dvrk {
             mtsFunctionRead calibration_mode;
         } system;
         
-        void arm_current_state_event_handler(const prmKeyValue & armState);
+        void arm_current_state_event_handler(const prmKeyValue & _arm_state);
         void volume_event_handler(const double & volume);
         
         QVBoxLayout * QVBArms;

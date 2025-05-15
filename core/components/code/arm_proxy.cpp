@@ -510,7 +510,7 @@ dvrk::generation dvrk::arm_proxy::generation(void) const
 }
 
 
-void dvrk::arm_proxy::CurrentStateEventHandler(const prmOperatingState & currentState)
+void dvrk::arm_proxy::current_state_event_handler(const prmOperatingState & _current_state)
 {
-    m_system->set_arm_current_state(m_name, currentState);
+    m_system->set_arm_current_state(m_name, _current_state);
 }

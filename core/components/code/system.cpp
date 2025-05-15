@@ -303,7 +303,11 @@ void dvrk::system::Startup(void)
     }
 
     // emit events for consoles
-    emit_events_console();
+    for (auto iter : m_consoles) {
+        auto & console = iter.second;
+        console->Startup();
+    }
+
     // emit volume event
     audio.volume(m_audio_volume);
 
@@ -477,7 +481,7 @@ bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> _arm)
                                                              this, "warning");
         _arm->m_arm_interface_required->AddEventHandlerWrite(&system::status_event_handler,
                                                              this, "status");
-        _arm->m_arm_interface_required->AddEventHandlerWrite(&dvrk::arm_proxy::CurrentStateEventHandler,
+        _arm->m_arm_interface_required->AddEventHandlerWrite(&arm_proxy::current_state_event_handler,
                                                              _arm.get(), "operating_state");
         m_connections.Add(this->GetName(), interfaceNameArm,
                           _arm->m_arm_component_name, _arm->m_arm_interface_name);
@@ -760,7 +764,6 @@ void dvrk::system::string_to_speech(const std::string & text)
 
 void dvrk::system::emit_events_console(void)
 {
-
 }
 
 

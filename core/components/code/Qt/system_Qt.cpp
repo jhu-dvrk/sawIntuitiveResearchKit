@@ -56,10 +56,11 @@ void dvrk::system_Qt::configure(dvrk::system * system)
 {
     mtsComponentManager * component_manager = mtsComponentManager::GetInstance();
 
-    auto * consoleGUI = new dvrk::system_Qt_widget("consoleGUI");
-    component_manager->AddComponent(consoleGUI);
-
-    m_tab_widget = consoleGUI->get_components_tab();
+    auto * system_widget = new dvrk::system_Qt_widget("system_widget");
+    component_manager->AddComponent(system_widget);
+    m_connections.Add(system_widget->GetName(), "Main",
+                      system->GetName(), "Main");
+    m_tab_widget = system_widget->get_components_tab();
 
     // IOs
     QTabWidget * ioTabWidget;
@@ -228,7 +229,7 @@ void dvrk::system_Qt::configure(dvrk::system * system)
         component_manager->AddComponent(console_widget);
         m_connections.Add(system->GetName(), name,
                           console_widget->GetName(), "Main");
-        consoleGUI->get_consoles_tab()->addTab(console_widget, name.c_str());
+        system_widget->get_consoles_tab()->addTab(console_widget, name.c_str());
         m_connections.Add(console_widget->GetName(), "clutch",
                           system->GetName(), name + "/clutch");
         m_connections.Add(console_widget->GetName(), "camera",
@@ -285,7 +286,7 @@ void dvrk::system_Qt::configure(dvrk::system * system)
     //     m_tab_widget->addTab(endoscopeGUI, "Focus");
     // }
 
-    // consoleGUI->HasTeleOp(hasTeleOp);
+    // system_widget->HasTeleOp(hasTeleOp);
 
     // show all widgets
     m_tab_widget->show();
