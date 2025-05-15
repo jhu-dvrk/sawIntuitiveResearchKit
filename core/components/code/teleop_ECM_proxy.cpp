@@ -90,6 +90,10 @@ void dvrk::teleop_ECM_proxy::post_configure(void)
         m_ECM_interface_name = arm_proxy->m_arm_interface_name;
     }
     std::cerr << CMN_LOG_DETAILS << "add checks re. scale is valid, different MTMs" << std::endl;
+
+    m_arms_used.push_back(m_config->MTML);
+    m_arms_used.push_back(m_config->MTMR);
+    m_arms_used.push_back(m_config->ECM);
 }
 
 

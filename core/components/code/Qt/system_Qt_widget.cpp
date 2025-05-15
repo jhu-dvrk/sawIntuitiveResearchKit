@@ -147,19 +147,19 @@ void dvrk::system_Qt_widget::closeEvent(QCloseEvent * event)
 }
 
 
-void dvrk::system_Qt_widget::SlotPowerOff(void)
+void dvrk::system_Qt_widget::slot_power_off(void)
 {
     system.power_off();
 }
 
 
-void dvrk::system_Qt_widget::SlotPowerOn(void)
+void dvrk::system_Qt_widget::slot_power_on(void)
 {
     system.power_on();
 }
 
 
-void dvrk::system_Qt_widget::SlotHome(void)
+void dvrk::system_Qt_widget::slot_home(void)
 {
     system.home();
 }
@@ -176,7 +176,7 @@ void dvrk::system_Qt_widget::slot_arm_current_state_event_handler(PairStringType
         QVBArms->addWidget(button);
         m_arm_buttons[arm] = button;
         connect(button, &QPushButton::clicked,
-                [ = ] { FocusArmButton(_arm_state.first); });
+                [ = ] { focus_arm_button(_arm_state.first); });
     } else {
         button = iter->second;
     }
@@ -192,7 +192,7 @@ void dvrk::system_Qt_widget::slot_arm_current_state_event_handler(PairStringType
 }
 
 
-void dvrk::system_Qt_widget::SlotSetVolume(void)
+void dvrk::system_Qt_widget::slot_set_volume(void)
 {
     double volume01 = static_cast<double>(QSVolume->value()) / 100.0;
     system.set_volume(volume01);
@@ -276,20 +276,20 @@ void dvrk::system_Qt_widget::setupUi(void)
 
     // buttons
     connect(QPBPowerOff, SIGNAL(clicked()),
-            this, SLOT(SlotPowerOff()));
+            this, SLOT(slot_power_off()));
     connect(QPBPowerOn, SIGNAL(clicked()),
-            this, SLOT(SlotPowerOn()));
+            this, SLOT(slot_power_on()));
     connect(QPBHome, SIGNAL(clicked()),
-            this, SLOT(SlotHome()));
+            this, SLOT(slot_home()));
     qRegisterMetaType<PairStringType>("PairStringType");
     connect(this, SIGNAL(signal_arm_current_state(PairStringType)),
             this, SLOT(slot_arm_current_state_event_handler(PairStringType)));
     connect(QSVolume, SIGNAL(sliderReleased()),
-            this, SLOT(SlotSetVolume()));
-    connect(this, SIGNAL(SignalVolume(double)),
-            this, SLOT(SlotVolumeEventHandler(double)));
+            this, SLOT(slot_set_volume()));
+    connect(this, SIGNAL(signal_volume(double)),
+            this, SLOT(slot_volume_event_handler(double)));
     connect(QPBComponentViewer, SIGNAL(clicked()),
-            this, SLOT(SlotComponentViewer()));
+            this, SLOT(slot_component_viewer()));
 
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q), this, SLOT(close()));
 }
@@ -304,19 +304,19 @@ void dvrk::system_Qt_widget::arm_current_state_event_handler(const prmKeyValue &
 }
 
 
-void dvrk::system_Qt_widget::SlotVolumeEventHandler(double volume)
+void dvrk::system_Qt_widget::slot_volume_event_handler(double _volume)
 {
-    QSVolume->setValue(volume * 100.0);
+    QSVolume->setValue(_volume * 100.0);
 }
 
 
-void dvrk::system_Qt_widget::volume_event_handler(const double & volume)
+void dvrk::system_Qt_widget::volume_event_handler(const double & _volume)
 {
-    emit SignalVolume(volume);
+    emit signal_volume(_volume);
 }
 
 
-void dvrk::system_Qt_widget::SlotComponentViewer(void)
+void dvrk::system_Qt_widget::slot_component_viewer(void)
 {
     QPBComponentViewer->setEnabled(false);
     std::cerr << "Now trying to launch uDrawGraph." << std::endl
@@ -332,7 +332,7 @@ void dvrk::system_Qt_widget::SlotComponentViewer(void)
 }
 
 
-void dvrk::system_Qt_widget::FocusArmButton(const QString & armName)
+void dvrk::system_Qt_widget::focus_arm_button(const QString & _arm_name)
 {
     // determine which tab to search
     QTabWidget * subTab = QTComponents->findChild<QTabWidget *>(QString("Arms"));
@@ -343,11 +343,11 @@ void dvrk::system_Qt_widget::FocusArmButton(const QString & armName)
     }
 
     // now find the arm widget
-    QWidget * child = subTab->findChild<QWidget *>(armName);
+    QWidget * child = subTab->findChild<QWidget *>(_arm_name);
     if (child) {
         subTab->setCurrentWidget(child);
     } else {
         std::cerr << CMN_LOG_DETAILS << " can't find arm nor Arms tab widget for \""
-                  << armName.toStdString() << "\", did you set the widget name with setObjectName?" << std::endl;
+                  << _arm_name.toStdString() << "\", did you set the widget name with setObjectName?" << std::endl;
     }
 }

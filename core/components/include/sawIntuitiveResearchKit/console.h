@@ -108,7 +108,7 @@ namespace dvrk {
         bool m_operator_present = false;
         bool m_camera = false;
         bool m_teleop_enabled = false;
-        bool m_teleop_desired = false;
+        bool m_teleop_wanted = false;
     };
 }
 

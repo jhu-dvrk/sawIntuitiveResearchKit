@@ -32,13 +32,13 @@ class QVBoxLayout;
 
 #include <QWidget>
 
-// Always include last! 
+// Always include last!
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitQtExport.h>
 
 namespace dvrk {
 
     class console_Qt_widget;
-    
+
     class CISST_EXPORT system_Qt_widget: public QWidget, public mtsComponent
     {
         Q_OBJECT;
@@ -48,7 +48,7 @@ namespace dvrk {
     public:
         system_Qt_widget(const std::string & componentName);
         inline virtual ~system_Qt_widget() {}
-        
+
         void Configure(const std::string & filename = "");
         void Startup(void);
         void Cleanup(void);
@@ -63,20 +63,20 @@ namespace dvrk {
 
     signals:
         void signal_arm_current_state(PairStringType _arm_state);
-        void SignalVolume(double volume);
-        
+        void signal_volume(double volume);
+
     protected:
-        void FocusArmButton(const QString & armName);
-                                                             
+        void focus_arm_button(const QString & _arm_name);
+
     private slots:
-        void SlotPowerOff(void);
-        void SlotPowerOn(void);
-        void SlotHome(void);
+        void slot_power_off(void);
+        void slot_power_on(void);
+        void slot_home(void);
         void slot_arm_current_state_event_handler(PairStringType _arm_state);
-        void SlotSetVolume(void);
-        void SlotVolumeEventHandler(double volume);
-        void SlotComponentViewer(void);
-        
+        void slot_set_volume(void);
+        void slot_volume_event_handler(double _volume);
+        void slot_component_viewer(void);
+
     protected:
         void closeEvent(QCloseEvent * event);
 
@@ -89,13 +89,13 @@ namespace dvrk {
             mtsFunctionWrite set_volume;
             mtsFunctionRead calibration_mode;
         } system;
-        
+
         void arm_current_state_event_handler(const prmKeyValue & _arm_state);
         void volume_event_handler(const double & volume);
-        
+
         QVBoxLayout * QVBArms;
         std::map<QString, QPushButton *> m_arm_buttons;
-        
+
         QPushButton * QPBPowerOff;
         QPushButton * QPBPowerOn;
         QPushButton * QPBHome;

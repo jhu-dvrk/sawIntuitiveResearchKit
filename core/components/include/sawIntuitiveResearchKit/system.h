@@ -107,6 +107,9 @@ namespace dvrk {
 
         typedef std::map<std::string, std::shared_ptr<dvrk::console>> consoles;
         consoles m_consoles;
+
+        typedef std::map<std::string, std::list<std::string>> teleop_using_arm;
+        teleop_using_arm m_teleops_using_arm;
         
         // /*! Head sensor */
         // mtsComponent * mHeadSensor = nullptr;
@@ -146,9 +149,9 @@ namespace dvrk {
         double m_audio_volume;
         
         // components used for events (digital inputs)
-        typedef std::pair<std::string, std::string> InterfaceComponentType;
-        typedef std::map<std::string, InterfaceComponentType> DInputSourceType;
-        DInputSourceType mDInputSources;
+        // typedef std::pair<std::string, std::string> InterfaceComponentType;
+        // typedef std::map<std::string, InterfaceComponentType> DInputSourceType;
+        // DInputSourceType mDInputSources;
 
         mtsInterfaceProvided * m_interface = nullptr;
         struct {

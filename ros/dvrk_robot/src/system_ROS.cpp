@@ -139,23 +139,23 @@ dvrk::system_ROS::system_ROS(const std::string & name,
     // }
 
     // digital inputs
-    const std::string footPedalsNameSpace = "footpedals/";
-    for (auto input : m_system->mDInputSources) {
-        std::string upperName = input.second.second;
-        std::string lowerName = input.first;
-        std::string requiredInterfaceName = upperName + "_" + lowerName;
-        // put everything lower case
-        std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), tolower);
-        // replace +/- by strings
-        cmnStringReplaceAll(lowerName, "-", "_minus");
-        cmnStringReplaceAll(lowerName, "+", "_plus");
-        events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
-            (requiredInterfaceName, "Button",
-             footPedalsNameSpace + lowerName);
-        m_connections.Add(events_bridge().GetName(), requiredInterfaceName,
-                          input.second.first, input.second.second);
+    // const std::string footPedalsNameSpace = "footpedals/";
+    // for (auto input : m_system->mDInputSources) {
+    //     std::string upperName = input.second.second;
+    //     std::string lowerName = input.first;
+    //     std::string requiredInterfaceName = upperName + "_" + lowerName;
+    //     // put everything lower case
+    //     std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), tolower);
+    //     // replace +/- by strings
+    //     cmnStringReplaceAll(lowerName, "-", "_minus");
+    //     cmnStringReplaceAll(lowerName, "+", "_plus");
+    //     events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
+    //         (requiredInterfaceName, "Button",
+    //          footPedalsNameSpace + lowerName);
+    //     m_connections.Add(events_bridge().GetName(), requiredInterfaceName,
+    //                       input.second.first, input.second.second);
 
-    }
+    // }
 }
 
 void dvrk::system_ROS::bridge_interface_provided_arm(const std::string & _arm_name,

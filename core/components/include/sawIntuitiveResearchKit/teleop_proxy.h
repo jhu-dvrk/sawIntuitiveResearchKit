@@ -61,7 +61,10 @@ namespace dvrk {
         mtsFunctionWrite set_scale;
         mtsInterfaceRequired * m_interface_required;
 
-        bool m_selected = false;
+        bool m_selected = false; // actually selected and in use
+        bool m_wanted = false; // user wants this
+
+        std::list<std::string> m_arms_used;
     };
 }
 

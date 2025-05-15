@@ -190,7 +190,7 @@ void dvrk::console_Qt_widget::get_teleop_button_check(const QString & teleop,
 }
 
 
-void dvrk::console_Qt_widget::slot_teleop_selected_event_handler(QString selected)
+void dvrk::console_Qt_widget::slot_teleop_selected_event_handler(const QString & selected)
 {
     QPushButton * button;
     QCheckBox * check;
@@ -202,7 +202,7 @@ void dvrk::console_Qt_widget::slot_teleop_selected_event_handler(QString selecte
 }
 
 
-void dvrk::console_Qt_widget::slot_teleop_unselected_event_handler(QString unselected)
+void dvrk::console_Qt_widget::slot_teleop_unselected_event_handler(const QString & unselected)
 {
     QPushButton * button;
     QCheckBox * check;
@@ -287,10 +287,10 @@ void dvrk::console_Qt_widget::setupUi(void)
             this, SLOT(SlotTeleopEnable(bool)));
     connect(this, SIGNAL(SignalTeleopEnabled(bool)),
             this, SLOT(SlotTeleopEnabledEventHandler(bool)));
-    connect(this, SIGNAL(signal_teleop_selected(QString)),
-            this, SLOT(slot_teleop_selected_event_handler(QString)));
-    connect(this, SIGNAL(signal_teleop_unselected(QString)),
-            this, SLOT(slot_teleop_unselected_event_handler(QString)));
+    connect(this, SIGNAL(signal_teleop_selected(const QString &)),
+            this, SLOT(slot_teleop_selected_event_handler(const QString &)));
+    connect(this, SIGNAL(signal_teleop_unselected(const QString &)),
+            this, SLOT(slot_teleop_unselected_event_handler(const QString &)));
     connect(QSBScale, SIGNAL(valueChanged(double)),
             this, SLOT(SlotSetScale(double)));
     connect(this, SIGNAL(SignalScale(double)),

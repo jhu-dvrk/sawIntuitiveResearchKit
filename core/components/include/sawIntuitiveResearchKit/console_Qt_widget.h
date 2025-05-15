@@ -55,8 +55,8 @@ namespace dvrk {
         void HasTeleOp(const bool & hasTeleOp);
 
     signals:
-        void signal_teleop_selected(QString selected);
-        void signal_teleop_unselected(QString unselected);
+        void signal_teleop_selected(const QString & selected);
+        void signal_teleop_unselected(const QString & unselected);
         void SignalTeleopEnabled(bool toggle);
         void SignalScale(double scale);
         void SignalOperatorPresent(bool operatorPresent);
@@ -74,8 +74,8 @@ namespace dvrk {
         void SlotTeleopStart(void);
         void SlotTeleopStop(void);
         void SlotTeleopEnabledEventHandler(bool enabled);
-        void slot_teleop_selected_event_handler(QString selected);
-        void slot_teleop_unselected_event_handler(QString unselected);
+        void slot_teleop_selected_event_handler(const QString & selected);
+        void slot_teleop_unselected_event_handler(const QString & unselected);
         void SlotSetScale(double scale);
         void SlotScaleEventHandler(double scale);
         void SlotOperatorPresentEventHandler(bool operatorPresent);

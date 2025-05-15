@@ -76,6 +76,13 @@ void dvrk::console::post_configure(void)
         }
     }
 
+    // update map of arms used by teleop
+    for (auto & teleop : m_teleop_proxies) {
+        for (auto & arm : teleop.second->m_arms_used) {
+            m_system->m_teleops_using_arm[arm].push_back(teleop.first);
+        }
+    }
+    
     // operator present, clutch, camera pedals
     switch (m_config->input_type) {
     case console_input_type::PEDALS_ONLY:
@@ -100,7 +107,7 @@ void dvrk::console::post_configure(void)
             m_operator_present_interface_name = "coag";
             break;
         }
-    default:
+    default:    
         break;
     }
 }
@@ -355,7 +362,7 @@ void dvrk::console::emit_teleop_state_events(void)
 
 void dvrk::console::teleop_enable(const bool & _enable)
 {
-    m_teleop_enabled = _enable;
+    // m_teleop_enabled = _enable;
     // //     // if we have an SUJ, make sure it's ready
     // //     if (enable && m_SUJ) {
     // //         const auto sujState = ArmStates.find("SUJ");
@@ -364,9 +371,8 @@ void dvrk::console::teleop_enable(const bool & _enable)
     // //             m_teleop_enabled = false;
     // //         }
     // //     }
-    m_teleop_desired = _enable; // for recovery after errors
+    m_teleop_wanted = _enable; // for recovery after errors
     // event
-    events.teleop_enabled(m_teleop_enabled);
     update_teleop_state();
 }
 
@@ -385,7 +391,7 @@ void dvrk::console::select_teleop(const std::string & _teleop)
 {
     auto iter = m_teleop_proxies.find(_teleop);
     if (iter != m_teleop_proxies.end()) {
-        iter->second->m_selected = true;
+        iter->second->m_wanted = true;
         return;
     }
     m_interface_provided->SendStatus("console " + m_name + "::select_teleop can't find " + _teleop);
@@ -397,7 +403,7 @@ void dvrk::console::unselect_teleop(const std::string & _teleop)
 {
     auto iter = m_teleop_proxies.find(_teleop);
     if (iter != m_teleop_proxies.end()) {
-        iter->second->m_selected = false;
+        iter->second->m_wanted = false;
         return;
     }
     m_interface_provided->SendStatus("console " + m_name + "::unselect_teleop can't find " + _teleop);
@@ -668,13 +674,25 @@ void dvrk::console::operator_present_event_handler(const prmEventButton & _butto
 
 void dvrk::console::update_teleop_state(void)
 {
+    if (m_teleop_wanted != m_teleop_enabled) {
+        m_teleop_enabled = m_teleop_wanted;
+        // event
+        events.teleop_enabled(m_teleop_enabled);
+        m_system->m_interface->SendStatus(m_name + ": tele operation "
+                                          + (m_teleop_enabled ? "enabled" : "disabled"));
+    }
+    for (auto & iter : m_teleop_proxies) {
+        auto & teleop_name = iter.first;
+        auto & teleop_proxy = iter.second;
+
+        if (teleop_proxy->m_wanted != teleop_proxy->m_selected) {
+            const std::string command = teleop_proxy->m_wanted ? "enable" : "disable";
+            teleop_proxy->state_command(command);
+            teleop_proxy->m_selected = teleop_proxy->m_wanted;
+        }
+    }
     emit_teleop_state_events();
-
-
-    // const std::string command = _enable ? "enable" : "disable";
-    // for (auto & proxy : m_teleop_proxies) {
-    //     proxy.second->state_command(command);
-    // }
+}
 
 // //     // Check if teleop is enabled
 // //     if (!m_teleop_enabled) {
@@ -781,7 +799,6 @@ void dvrk::console::update_teleop_state(void)
 // //             }
 // //         }
 // //     }
-}
 
 // void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & message)
 // {
