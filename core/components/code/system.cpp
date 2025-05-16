@@ -648,7 +648,7 @@ void dvrk::system::power_off(void)
 
 void dvrk::system::power_on(void)
 {
-    DisableFaultyArms();
+    disable_faulty_arms();
     for (auto & arm : m_arm_proxies) {
         arm.second->state_command(std::string("enable"));
     }
@@ -657,7 +657,7 @@ void dvrk::system::power_on(void)
 
 void dvrk::system::home(void)
 {
-    DisableFaultyArms();
+    disable_faulty_arms();
     bool allArmsEnabled = true;
     // enable all arms that need it
     for (auto & arm : m_arm_proxies) {
@@ -679,7 +679,7 @@ void dvrk::system::home(void)
 }
 
 
-void dvrk::system::DisableFaultyArms(void)
+void dvrk::system::disable_faulty_arms(void)
 {
     for (auto & arm : m_arm_proxies) {
         auto armState = m_arm_states.find(arm.first);
@@ -801,4 +801,12 @@ void dvrk::system::set_arm_current_state(const std::string & _arm_name,
         payload = "FAULT";
     }
     events.arm_current_state(prmKeyValue(_arm_name, payload));
+}
+
+
+void dvrk::system::unselect_conflicting_teleops(const std::string & _teleop_name)
+{
+    for (auto iter : m_consoles) {
+        iter.second->unselect_conflicting_teleops(_teleop_name);
+    }
 }

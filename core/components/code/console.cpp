@@ -373,6 +373,10 @@ void dvrk::console::teleop_enable(const bool & _enable)
     // //     }
     m_teleop_wanted = _enable; // for recovery after errors
     // event
+    events.teleop_enabled(m_teleop_wanted);
+    m_system->m_interface->SendStatus(m_name + ": tele operation "
+                                      + (m_teleop_enabled ? "enabled" : "disabled"));
+    // event
     update_teleop_state();
 }
 
@@ -391,11 +395,13 @@ void dvrk::console::select_teleop(const std::string & _teleop)
 {
     auto iter = m_teleop_proxies.find(_teleop);
     if (iter != m_teleop_proxies.end()) {
-        iter->second->m_wanted = true;
+        m_system->unselect_conflicting_teleops(_teleop);
+        iter->second->m_selected = true;
+        events.teleop_selected(_teleop);
+        update_teleop_state();
         return;
     }
     m_interface_provided->SendStatus("console " + m_name + "::select_teleop can't find " + _teleop);
-    update_teleop_state();
 }
 
 
@@ -403,11 +409,12 @@ void dvrk::console::unselect_teleop(const std::string & _teleop)
 {
     auto iter = m_teleop_proxies.find(_teleop);
     if (iter != m_teleop_proxies.end()) {
-        iter->second->m_wanted = false;
+        iter->second->m_selected = false;
+        events.teleop_unselected(_teleop);
+        update_teleop_state();
         return;
     }
     m_interface_provided->SendStatus("console " + m_name + "::unselect_teleop can't find " + _teleop);
-    update_teleop_state();
 }
 
 
@@ -676,22 +683,26 @@ void dvrk::console::update_teleop_state(void)
 {
     if (m_teleop_wanted != m_teleop_enabled) {
         m_teleop_enabled = m_teleop_wanted;
-        // event
-        events.teleop_enabled(m_teleop_enabled);
-        m_system->m_interface->SendStatus(m_name + ": tele operation "
-                                          + (m_teleop_enabled ? "enabled" : "disabled"));
     }
     for (auto & iter : m_teleop_proxies) {
-        auto & teleop_name = iter.first;
         auto & teleop_proxy = iter.second;
-
-        if (teleop_proxy->m_wanted != teleop_proxy->m_selected) {
-            const std::string command = teleop_proxy->m_wanted ? "enable" : "disable";
-            teleop_proxy->state_command(command);
-            teleop_proxy->m_selected = teleop_proxy->m_wanted;
+        if (m_teleop_enabled
+            && !teleop_proxy->m_enabled
+            && teleop_proxy->m_selected) {
+            if (m_operator_present) {
+                teleop_proxy->m_enabled = true;
+                teleop_proxy->state_command(std::string("enable"));
+            } else {
+                teleop_proxy->state_command(std::string("align_MTM"));
+            }
+        } else if (!m_operator_present
+                   || !m_teleop_enabled
+                   || (teleop_proxy->m_enabled &&
+                       !teleop_proxy->m_selected)) {
+            teleop_proxy->m_enabled = false;
+            teleop_proxy->state_command(std::string("disable"));
         }
     }
-    emit_teleop_state_events();
 }
 
 // //     // Check if teleop is enabled

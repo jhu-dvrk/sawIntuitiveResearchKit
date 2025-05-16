@@ -126,7 +126,7 @@ namespace dvrk {
         void power_off(void);
         void power_on(void);
         void home(void);
-        void DisableFaultyArms(void);
+        void disable_faulty_arms(void);
         // void set_scale(const double & scale);
         void set_volume(const double & volume);
         void beep(const vctDoubleVec & values); // duration, frequency, volume
@@ -165,6 +165,8 @@ namespace dvrk {
         std::map<std::string, prmOperatingState> m_arm_states;
         void set_arm_current_state(const std::string & armName,
                                    const prmOperatingState & currentState);
+
+        void unselect_conflicting_teleops(const std::string & _teleop_name);
     };
 }
 

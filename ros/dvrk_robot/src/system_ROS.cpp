@@ -360,21 +360,24 @@ void dvrk::system_ROS::add_topics_console(const std::string & _name)
     // subscribers_bridge().AddSubscriberToCommandWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
     //     ("Console", "cycle_teleop_PSM_by_MTM",
     //      _ros_namespace + "teleop/cycle_teleop_PSM_by_MTM");
-    // subscribers_bridge().AddSubscriberToCommandWrite<prmKeyValue, CISST_RAL_MSG(diagnostic_msgs, KeyValue)>
-    //     ("Console", "select_teleop_PSM",
-    //      _ros_namespace + "teleop/select_teleop_PSM");
+    subscribers_bridge().AddSubscriberToCommandWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
+        (interface_name, "select_teleop",
+         ros_namespace + "teleop/select_teleop");
+    subscribers_bridge().AddSubscriberToCommandWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
+        (interface_name, "unselect_teleop",
+         ros_namespace + "teleop/unselect_teleop");
     subscribers_bridge().AddSubscriberToCommandWrite<double, CISST_RAL_MSG(std_msgs, Float64)>
         (interface_name, "set_scale",
          ros_namespace + "teleop/set_scale");
     events_bridge().AddPublisherFromEventWrite<double, CISST_RAL_MSG(std_msgs, Float64)>
         (interface_name, "scale",
          ros_namespace + "teleop/scale");
-    // events_bridge().AddPublisherFromEventWrite<prmKeyValue, CISST_RAL_MSG(diagnostic_msgs, KeyValue)>
-    //     ("Console", "teleop_PSM_selected",
-    //      _ros_namespace + "teleop/teleop_PSM_selected");
-    // events_bridge().AddPublisherFromEventWrite<prmKeyValue, CISST_RAL_MSG(diagnostic_msgs, KeyValue)>
-    //     ("Console", "teleop_PSM_unselected",
-    //      _ros_namespace + "teleop/teleop_PSM_unselected");
+    events_bridge().AddPublisherFromEventWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
+        (interface_name, "teleop_selected",
+         ros_namespace + "teleop/teleop_selected");
+    events_bridge().AddPublisherFromEventWrite<std::string, CISST_RAL_MSG(std_msgs, String)>
+        (interface_name, "teleop_unselected",
+         ros_namespace + "teleop/teleop_PSM_unselected");
     const auto events = std::list<std::string>({"operator_present", "clutch", "camera"});
     for (const auto & event : events) {
         events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>

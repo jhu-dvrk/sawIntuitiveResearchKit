@@ -58,7 +58,7 @@ dvrk::console_Qt_widget::console_Qt_widget(const std::string & _component_name):
     mtsInterfaceRequired * interface_required = AddInterfaceRequired("Main");
     if (interface_required) {
         interface_required->AddFunction("teleop_enable", console.teleop_enable);
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::TeleopEnabledEventHandler,
+        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::teleop_enabled_event_handler,
                                                 this, "teleop_enabled");
         interface_required->AddFunction("select_teleop", console.select_teleop);
         interface_required->AddFunction("unselect_teleop", console.unselect_teleop);
@@ -67,7 +67,7 @@ dvrk::console_Qt_widget::console_Qt_widget(const std::string & _component_name):
         interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::teleop_unselected_event_handler,
                                                 this, "teleop_unselected");
         interface_required->AddFunction("set_scale", console.set_scale);
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::ScaleEventHandler,
+        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::scale_event_handler,
                                                 this, "scale");
         interface_required->AddFunction("emulate_operator_present", console.emulate_operator_present);
         interface_required->AddFunction("emulate_clutch", console.emulate_clutch);
@@ -75,7 +75,7 @@ dvrk::console_Qt_widget::console_Qt_widget(const std::string & _component_name):
     }
     interface_required = AddInterfaceRequired("operator_present");
     if (interface_required) {
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::OperatorPresentEventHandler,
+        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::operator_present_event_handler,
                                                 this, "Button");
     }
     interface_required = AddInterfaceRequired("clutch");
@@ -114,40 +114,33 @@ void dvrk::console_Qt_widget::Cleanup(void)
 }
 
 
-void dvrk::console_Qt_widget::HasTeleOp(const bool & hasTeleOp)
+void dvrk::console_Qt_widget::slot_teleop_enable(bool _toggle)
 {
-    QCBTeleopEnable->setEnabled(hasTeleOp);
-    QSBScale->setEnabled(hasTeleOp);
+    console.teleop_enable(_toggle);
 }
 
 
-void dvrk::console_Qt_widget::SlotTeleopEnable(bool toggle)
-{
-    console.teleop_enable(toggle);
-}
-
-
-void dvrk::console_Qt_widget::SlotTeleopToggle(void)
+void dvrk::console_Qt_widget::slot_teleop_toggle(void)
 {
     console.teleop_enable(!(QCBTeleopEnable->isChecked()));
 }
 
 
-void dvrk::console_Qt_widget::SlotTeleopStart(void)
+void dvrk::console_Qt_widget::slot_teleop_start(void)
 {
     console.teleop_enable(true);
 }
 
 
-void dvrk::console_Qt_widget::SlotTeleopStop(void)
+void dvrk::console_Qt_widget::slot_teleop_stop(void)
 {
     console.teleop_enable(false);
 }
 
 
-void dvrk::console_Qt_widget::SlotTeleopEnabledEventHandler(bool enabled)
+void dvrk::console_Qt_widget::slot_teleop_enabled_event_handler(bool _enabled)
 {
-    if (enabled) {
+    if (_enabled) {
         QPBTeleopEnable->setText("Enabled");
         QPBTeleopEnable->setStyleSheet("QPushButton { background-color: rgb(50, 255, 50); border: none }");
     } else {
@@ -155,7 +148,7 @@ void dvrk::console_Qt_widget::SlotTeleopEnabledEventHandler(bool enabled)
         QPBTeleopEnable->setStyleSheet("QPushButton { background-color: rgb(255, 100, 100); border: none }");
     }
     QCBTeleopEnable->blockSignals(true);
-    QCBTeleopEnable->setChecked(enabled);
+    QCBTeleopEnable->setChecked(_enabled);
     QCBTeleopEnable->blockSignals(false);
 }
 
@@ -190,11 +183,11 @@ void dvrk::console_Qt_widget::get_teleop_button_check(const QString & teleop,
 }
 
 
-void dvrk::console_Qt_widget::slot_teleop_selected_event_handler(const QString & selected)
+void dvrk::console_Qt_widget::slot_teleop_selected_event_handler(const QString & _selected)
 {
     QPushButton * button;
     QCheckBox * check;
-    get_teleop_button_check(selected, button, check);
+    get_teleop_button_check(_selected, button, check);
     button->setStyleSheet("QPushButton { border: none }");
     check->blockSignals(true);
     check->setChecked(true);
@@ -202,11 +195,11 @@ void dvrk::console_Qt_widget::slot_teleop_selected_event_handler(const QString &
 }
 
 
-void dvrk::console_Qt_widget::slot_teleop_unselected_event_handler(const QString & unselected)
+void dvrk::console_Qt_widget::slot_teleop_unselected_event_handler(const QString & _unselected)
 {
     QPushButton * button;
     QCheckBox * check;
-    get_teleop_button_check(unselected, button, check);
+    get_teleop_button_check(_unselected, button, check);
     button->setStyleSheet("QPushButton { border: none; color: palette(mid) }");
     check->blockSignals(true);
     check->setChecked(false);
@@ -214,9 +207,9 @@ void dvrk::console_Qt_widget::slot_teleop_unselected_event_handler(const QString
 }
 
 
-void dvrk::console_Qt_widget::SlotSetScale(double scale)
+void dvrk::console_Qt_widget::slot_set_scale(double _scale)
 {
-    console.set_scale(scale);
+    console.set_scale(_scale);
 }
 
 
@@ -239,10 +232,10 @@ void dvrk::console_Qt_widget::setupUi(void)
     QCBTeleopEnable = new QCheckBox("");
     QPBTeleopEnable->setToolTip("ctrl + T to start\nctrl + S to stop");
     QCBTeleopEnable->setToolTip("ctrl + T to start\nctrl + S to stop");
-    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_T), this, SLOT(SlotTeleopStart()));
-    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this, SLOT(SlotTeleopStop()));
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_T), this, SLOT(slot_teleop_start()));
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_S), this, SLOT(slot_teleop_stop()));
     // set default to false
-    SlotTeleopEnabledEventHandler(false);
+    slot_teleop_enabled_event_handler(false);
     teleopEnableLayout->addWidget(QCBTeleopEnable);
     teleopLayout->addLayout(teleopEnableLayout);
 
@@ -282,41 +275,41 @@ void dvrk::console_Qt_widget::setupUi(void)
 
     // buttons
     connect(QPBTeleopEnable, SIGNAL(clicked()),
-            this, SLOT(SlotTeleopToggle()));
+            this, SLOT(slot_teleop_toggle()));
     connect(QCBTeleopEnable, SIGNAL(toggled(bool)),
-            this, SLOT(SlotTeleopEnable(bool)));
-    connect(this, SIGNAL(SignalTeleopEnabled(bool)),
-            this, SLOT(SlotTeleopEnabledEventHandler(bool)));
+            this, SLOT(slot_teleop_enable(bool)));
+    connect(this, SIGNAL(signal_teleop_enabled(bool)),
+            this, SLOT(slot_teleop_enabled_event_handler(bool)));
     connect(this, SIGNAL(signal_teleop_selected(const QString &)),
             this, SLOT(slot_teleop_selected_event_handler(const QString &)));
     connect(this, SIGNAL(signal_teleop_unselected(const QString &)),
             this, SLOT(slot_teleop_unselected_event_handler(const QString &)));
     connect(QSBScale, SIGNAL(valueChanged(double)),
-            this, SLOT(SlotSetScale(double)));
-    connect(this, SIGNAL(SignalScale(double)),
-            this, SLOT(SlotScaleEventHandler(double)));
-    connect(this, SIGNAL(SignalOperatorPresent(bool)),
-            this, SLOT(SlotOperatorPresentEventHandler(bool)));
+            this, SLOT(slot_set_scale(double)));
+    connect(this, SIGNAL(signal_scale(double)),
+            this, SLOT(slot_scale_event_handler(double)));
+    connect(this, SIGNAL(signal_operator_present(bool)),
+            this, SLOT(slot_operator_present_event_handler(bool)));
     connect(this, SIGNAL(signal_clutch(bool)),
             this, SLOT(slot_clutched(bool)));
-    connect(this, SIGNAL(SignalCamera(bool)),
-            this, SLOT(SlotCameraEventHandler(bool)));
+    connect(this, SIGNAL(signal_camera(bool)),
+            this, SLOT(slot_camera_event_handler(bool)));
     connect(QCBEnableDirectControl, SIGNAL(toggled(bool)),
-            this, SLOT(SlotEnableDirectControl(bool)));
+            this, SLOT(slot_enable_direct_control(bool)));
     connect(QRBOperatorPresent, SIGNAL(clicked(bool)),
-            this, SLOT(SlotEmulateOperatorPresent(bool)));
+            this, SLOT(slot_emulate_operator_present(bool)));
     connect(QRBClutch, SIGNAL(clicked(bool)),
-            this, SLOT(SlotEmulateClutch(bool)));
+            this, SLOT(slot_emulate_clutch(bool)));
     connect(QRBCamera, SIGNAL(clicked(bool)),
-            this, SLOT(SlotEmulateCamera(bool)));
+            this, SLOT(slot_emulate_camera(bool)));
 
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q), this, SLOT(close()));
 }
 
 
-void dvrk::console_Qt_widget::TeleopEnabledEventHandler(const bool & _enabled)
+void dvrk::console_Qt_widget::teleop_enabled_event_handler(const bool & _enabled)
 {
-    emit SignalTeleopEnabled(_enabled);
+    emit signal_teleop_enabled(_enabled);
 }
 
 
@@ -332,30 +325,30 @@ void dvrk::console_Qt_widget::teleop_unselected_event_handler(const std::string 
 }
 
 
-void dvrk::console_Qt_widget::SlotScaleEventHandler(double _scale)
+void dvrk::console_Qt_widget::slot_scale_event_handler(double _scale)
 {
     QSBScale->setValue(_scale);
 }
 
 
-void dvrk::console_Qt_widget::ScaleEventHandler(const double & scale)
+void dvrk::console_Qt_widget::scale_event_handler(const double & _scale)
 {
-    emit SignalScale(scale);
+    emit signal_scale(_scale);
 }
 
 
-void dvrk::console_Qt_widget::SlotOperatorPresentEventHandler(bool _operator_present)
+void dvrk::console_Qt_widget::slot_operator_present_event_handler(bool _operator_present)
 {
     QRBOperatorPresent->setChecked(_operator_present);
 }
 
 
-void dvrk::console_Qt_widget::OperatorPresentEventHandler(const prmEventButton & _button)
+void dvrk::console_Qt_widget::operator_present_event_handler(const prmEventButton & _button)
 {
     if (_button.Type() == prmEventButton::PRESSED) {
-        emit SignalOperatorPresent(true);
+        emit signal_operator_present(true);
     } else {
-        emit SignalOperatorPresent(false);
+        emit signal_operator_present(false);
     }
 }
 
@@ -376,13 +369,13 @@ void dvrk::console_Qt_widget::clutch_event_handler(const prmEventButton & _butto
 }
 
 
-void dvrk::console_Qt_widget::SlotCameraEventHandler(bool _camera)
+void dvrk::console_Qt_widget::slot_camera_event_handler(bool _camera)
 {
     QRBCamera->setChecked(_camera);
 }
 
 
-void dvrk::console_Qt_widget::SlotEnableDirectControl(bool _toggle)
+void dvrk::console_Qt_widget::slot_enable_direct_control(bool _toggle)
 {
     if (_toggle) {
         int answer = QMessageBox::warning(this, tr("dvrk::console_Qt_widget"),
@@ -400,7 +393,7 @@ void dvrk::console_Qt_widget::SlotEnableDirectControl(bool _toggle)
 }
 
 
-void dvrk::console_Qt_widget::SlotEmulateOperatorPresent(bool _toggle)
+void dvrk::console_Qt_widget::slot_emulate_operator_present(bool _toggle)
 {
     prmEventButton event;
     if (_toggle) {
@@ -412,10 +405,10 @@ void dvrk::console_Qt_widget::SlotEmulateOperatorPresent(bool _toggle)
 }
 
 
-void dvrk::console_Qt_widget::SlotEmulateClutch(bool toggle)
+void dvrk::console_Qt_widget::slot_emulate_clutch(bool _toggle)
 {
     prmEventButton event;
-    if (toggle) {
+    if (_toggle) {
         event.SetType(prmEventButton::PRESSED);
     } else {
         event.SetType(prmEventButton::RELEASED);
@@ -424,10 +417,10 @@ void dvrk::console_Qt_widget::SlotEmulateClutch(bool toggle)
 }
 
 
-void dvrk::console_Qt_widget::SlotEmulateCamera(bool toggle)
+void dvrk::console_Qt_widget::slot_emulate_camera(bool _toggle)
 {
     prmEventButton event;
-    if (toggle) {
+    if (_toggle) {
         event.SetType(prmEventButton::PRESSED);
     } else {
         event.SetType(prmEventButton::RELEASED);
@@ -436,23 +429,23 @@ void dvrk::console_Qt_widget::SlotEmulateCamera(bool toggle)
 }
 
 
-void dvrk::console_Qt_widget::select_teleop_check(const QString & teleop)
+void dvrk::console_Qt_widget::select_teleop_check(const QString & _teleop)
 {
-    console.select_teleop(teleop.toStdString());
+    console.select_teleop(_teleop.toStdString());
 }
 
 
-void dvrk::console_Qt_widget::unselect_teleop_check(const QString & teleop)
+void dvrk::console_Qt_widget::unselect_teleop_check(const QString & _teleop)
 {
-    console.unselect_teleop(teleop.toStdString());
+    console.unselect_teleop(_teleop.toStdString());
 }
 
 
-void dvrk::console_Qt_widget::camera_event_handler(const prmEventButton & button)
+void dvrk::console_Qt_widget::camera_event_handler(const prmEventButton & _button)
 {
-    if (button.Type() == prmEventButton::PRESSED) {
-        emit SignalCamera(true);
+    if (_button.Type() == prmEventButton::PRESSED) {
+        emit signal_camera(true);
     } else {
-        emit SignalCamera(false);
+        emit signal_camera(false);
     }
 }

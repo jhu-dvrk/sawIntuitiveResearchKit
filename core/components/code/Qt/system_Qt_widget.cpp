@@ -215,15 +215,15 @@ void dvrk::system_Qt_widget::setupUi(void)
     armsBox->setLayout(armsLayout);
     QPBPowerOff = new QPushButton("Power Off");
     QPBPowerOff->setToolTip("ctrl + O");
-    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_O), this, SLOT(SlotPowerOff()));
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_O), this, SLOT(slot_power_off()));
     armsLayout->addWidget(QPBPowerOff);
     QPBPowerOn = new QPushButton("Power On");
     QPBPowerOn->setToolTip("ctrl + P");
-    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_P), this, SLOT(SlotPowerOn()));
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_P), this, SLOT(slot_power_on()));
     armsLayout->addWidget(QPBPowerOn);
     QPBHome = new QPushButton("Home");
     QPBHome->setToolTip("ctrl + H");
-    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_H), this, SLOT(SlotHome()));
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_H), this, SLOT(slot_home()));
     armsLayout->addWidget(QPBHome);
     // arm buttons
     QVBArms = new QVBoxLayout();

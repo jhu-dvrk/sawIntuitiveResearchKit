@@ -52,16 +52,15 @@ namespace dvrk {
         void Configure(const std::string & filename = "");
         void Startup(void);
         void Cleanup(void);
-        void HasTeleOp(const bool & hasTeleOp);
 
     signals:
         void signal_teleop_selected(const QString & selected);
         void signal_teleop_unselected(const QString & unselected);
-        void SignalTeleopEnabled(bool toggle);
-        void SignalScale(double scale);
-        void SignalOperatorPresent(bool operatorPresent);
+        void signal_teleop_enabled(bool toggle);
+        void signal_scale(double scale);
+        void signal_operator_present(bool operatorPresent);
         void signal_clutch(bool clutch);
-        void SignalCamera(bool camera);
+        void signal_camera(bool camera);
 
     protected:
         void get_teleop_button_check(const QString & pair, QPushButton * & button, QCheckBox * & check);
@@ -69,22 +68,22 @@ namespace dvrk {
         void unselect_teleop_check(const QString & pair);
 
     private slots:
-        void SlotTeleopEnable(bool toggle);
-        void SlotTeleopToggle(void);
-        void SlotTeleopStart(void);
-        void SlotTeleopStop(void);
-        void SlotTeleopEnabledEventHandler(bool enabled);
+        void slot_teleop_enable(bool toggle);
+        void slot_teleop_toggle(void);
+        void slot_teleop_start(void);
+        void slot_teleop_stop(void);
+        void slot_teleop_enabled_event_handler(bool enabled);
         void slot_teleop_selected_event_handler(const QString & selected);
         void slot_teleop_unselected_event_handler(const QString & unselected);
-        void SlotSetScale(double scale);
-        void SlotScaleEventHandler(double scale);
-        void SlotOperatorPresentEventHandler(bool operatorPresent);
+        void slot_set_scale(double scale);
+        void slot_scale_event_handler(double scale);
+        void slot_operator_present_event_handler(bool operatorPresent);
         void slot_clutched(bool clutch);
-        void SlotCameraEventHandler(bool camera);
-        void SlotEnableDirectControl(bool toggle);
-        void SlotEmulateOperatorPresent(bool toggle);
-        void SlotEmulateClutch(bool toggle);
-        void SlotEmulateCamera(bool toggle);
+        void slot_camera_event_handler(bool camera);
+        void slot_enable_direct_control(bool toggle);
+        void slot_emulate_operator_present(bool toggle);
+        void slot_emulate_clutch(bool toggle);
+        void slot_emulate_camera(bool toggle);
 
     protected:
 
@@ -100,11 +99,11 @@ namespace dvrk {
             mtsFunctionWrite emulate_camera;
         } console;
 
-        void TeleopEnabledEventHandler(const bool & enabled);
+        void teleop_enabled_event_handler(const bool & enabled);
         void teleop_selected_event_handler(const std::string & selected);
         void teleop_unselected_event_handler(const std::string & unselected);
-        void ScaleEventHandler(const double & scale);
-        void OperatorPresentEventHandler(const prmEventButton & button);
+        void scale_event_handler(const double & scale);
+        void operator_present_event_handler(const prmEventButton & button);
         void clutch_event_handler(const prmEventButton & button);
         void camera_event_handler(const prmEventButton & button);
 
