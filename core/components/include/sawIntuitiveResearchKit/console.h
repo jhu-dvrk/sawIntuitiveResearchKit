@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <iostream>
 #include <map>
 #include <memory>
+#include <set>
 
 #include <cisstMultiTask/mtsFunctionWrite.h>
 #include <cisstParameterTypes/prmEventButton.h>
@@ -51,9 +52,9 @@ namespace dvrk {
         typedef std::map<std::string, std::shared_ptr<teleop_proxy>> teleop_proxies;
         teleop_proxies m_teleop_proxies;
 
-        console(const std::string & name,
-                dvrk::system * system,
-                dvrk::console_configuration * config);
+        console(const std::string & _name,
+                dvrk::system * _system,
+                dvrk::console_configuration * _config);
 
         // NOT_COPYABLE(IO_proxy_t);
         // NOT_MOVEABLE(IO_proxy_t);
@@ -81,13 +82,14 @@ namespace dvrk {
 
         // commands
         void teleop_enable(const bool &);
-        void set_scale(const double & scale);
-        void select_teleop(const std::string & selected);
-        void unselect_teleop(const std::string & unselected);
+        void set_scale(const double & _scale);
+        void select_teleop(const std::string & _selected);
+        void unselect_teleop(const std::string & _unselected);
+        bool find_conflicting_teleops(const std::shared_ptr<dvrk::teleop_proxy> _teleop, const bool _unselect);
 
-        void clutch_event_handler(const prmEventButton & button);
-        void camera_event_handler(const prmEventButton & button);
-        void operator_present_event_handler(const prmEventButton & button);
+        void clutch_event_handler(const prmEventButton & _button);
+        void camera_event_handler(const prmEventButton & _button);
+        void operator_present_event_handler(const prmEventButton & _button);
 
         // events
         struct {

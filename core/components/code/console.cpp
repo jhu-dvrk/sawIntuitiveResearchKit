@@ -51,9 +51,14 @@ void dvrk::console::post_configure(void)
             auto teleop_proxy = std::make_shared<teleop_ECM_proxy>(name, this->m_system,
                                                                    this, &proxy_config);
             teleop_proxy->post_configure();
+            if (m_system->find_conflicting_teleops(teleop_proxy)) {
+                teleop_proxy->m_selected = false;
+            } else {
+                teleop_proxy->m_selected = true;
+            }
             m_teleop_proxies[name] = teleop_proxy;
         } else {
-            CMN_LOG_INIT_ERROR << "post: failed to configure teleop_ECMs, "
+            CMN_LOG_INIT_ERROR << "post_configure: failed to configure teleop_ECMs, "
                                << name << " already exists" << std::endl;
             exit(EXIT_FAILURE);
         }
@@ -68,9 +73,14 @@ void dvrk::console::post_configure(void)
             auto teleop_proxy = std::make_shared<teleop_PSM_proxy>(name, this->m_system,
                                                                    this, &proxy_config);
             teleop_proxy->post_configure();
+            if (m_system->find_conflicting_teleops(teleop_proxy)) {
+                teleop_proxy->m_selected = false;
+            } else {
+                teleop_proxy->m_selected = true;
+            }
             m_teleop_proxies[name] = teleop_proxy;
         } else {
-            CMN_LOG_INIT_ERROR << "post: failed to configure teleop_PSMs, "
+            CMN_LOG_INIT_ERROR << "post_configure: failed to configure teleop_PSMs, "
                                << name << " already exists" << std::endl;
             exit(EXIT_FAILURE);
         }
@@ -82,7 +92,7 @@ void dvrk::console::post_configure(void)
             m_system->m_teleops_using_arm[arm].push_back(teleop.first);
         }
     }
-    
+
     // operator present, clutch, camera pedals
     switch (m_config->input_type) {
     case console_input_type::PEDALS_ONLY:
@@ -107,7 +117,7 @@ void dvrk::console::post_configure(void)
             m_operator_present_interface_name = "coag";
             break;
         }
-    default:    
+    default:
         break;
     }
 }
@@ -395,13 +405,13 @@ void dvrk::console::select_teleop(const std::string & _teleop)
 {
     auto iter = m_teleop_proxies.find(_teleop);
     if (iter != m_teleop_proxies.end()) {
-        m_system->unselect_conflicting_teleops(_teleop);
+        m_system->find_conflicting_teleops(iter->second, true /* to unselect */);
         iter->second->m_selected = true;
         events.teleop_selected(_teleop);
         update_teleop_state();
         return;
     }
-    m_interface_provided->SendStatus("console " + m_name + "::select_teleop can't find " + _teleop);
+    m_interface_provided->SendStatus(m_name + ": select_teleop can't find " + _teleop);
 }
 
 
@@ -414,7 +424,31 @@ void dvrk::console::unselect_teleop(const std::string & _teleop)
         update_teleop_state();
         return;
     }
-    m_interface_provided->SendStatus("console " + m_name + "::unselect_teleop can't find " + _teleop);
+    m_interface_provided->SendStatus(m_name + ": unselect_teleop can't find " + _teleop);
+}
+
+
+bool dvrk::console::find_conflicting_teleops(std::shared_ptr<teleop_proxy> _teleop, const bool _unselect)
+{
+    bool result = false;
+    for (auto & teleop : m_teleop_proxies) {
+        if ((teleop.first != _teleop->m_name)
+            && (teleop.second->type() == _teleop->type())
+            && (teleop.second->m_selected)) {
+            std::list<std::string> conflicting_arms;
+            std::set_intersection(_teleop->m_arms_used.begin(), _teleop->m_arms_used.end(),
+                                  teleop.second->m_arms_used.begin(), teleop.second->m_arms_used.end(),
+                                  std::back_inserter(conflicting_arms));
+            for (auto & arm : conflicting_arms) {
+                result |= true;
+                if (_unselect) {
+                    unselect_teleop(teleop.first);
+                    m_interface_provided->SendStatus(m_name + ": " + teleop.first + " unselected to free " + arm);
+                }
+            }
+        }
+    }
+    return result;
 }
 
 

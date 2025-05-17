@@ -44,6 +44,8 @@ namespace dvrk {
         Q_OBJECT;
         CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
+        friend class console_Qt_widget;
+
         typedef QPair<QString, QString> PairStringType;
     public:
         system_Qt_widget(const std::string & componentName);
@@ -66,7 +68,7 @@ namespace dvrk {
         void signal_volume(double volume);
 
     protected:
-        void focus_arm_button(const QString & _arm_name);
+        void focus_widget(const QString & _tab_name, const QString & _widget_name);
 
     private slots:
         void slot_power_off(void);

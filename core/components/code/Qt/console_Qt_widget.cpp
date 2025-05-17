@@ -28,7 +28,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsManagerLocal.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitRevision.h>
+
 #include <sawIntuitiveResearchKit/console_Qt_widget.h>
+#include <sawIntuitiveResearchKit/system_Qt_widget.h>
 
 #include <QMessageBox>
 #include <QCloseEvent>
@@ -52,8 +54,10 @@ http://www.cisst.org/cisst/license.txt.
 typedef dvrk::console_Qt_widget dvrk_console_Qt_widget;
 CMN_IMPLEMENT_SERVICES(dvrk_console_Qt_widget);
 
-dvrk::console_Qt_widget::console_Qt_widget(const std::string & _component_name):
-    mtsComponent(_component_name)
+dvrk::console_Qt_widget::console_Qt_widget(const std::string & _component_name,
+                                           dvrk::system_Qt_widget * _system_widget):
+    mtsComponent(_component_name),
+    m_system_widget(_system_widget)
 {
     mtsInterfaceRequired * interface_required = AddInterfaceRequired("Main");
     if (interface_required) {
@@ -168,6 +172,9 @@ void dvrk::console_Qt_widget::get_teleop_button_check(const QString & teleop,
         buttonsLayout->addWidget(check);
         QVBTeleops->addLayout(buttonsLayout);
         m_teleop_buttons[teleop] = std::pair<QPushButton *, QCheckBox *>(button, check);
+        QString tabName = this->GetName().c_str();
+        connect(button, &QPushButton::clicked,
+                [ = ] { m_system_widget->focus_widget(tabName, teleop); });
         connect(check, &QCheckBox::toggled,
                 [ = ](bool checked) {
                     if (checked) {

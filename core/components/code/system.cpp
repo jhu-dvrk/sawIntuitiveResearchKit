@@ -179,8 +179,8 @@ void dvrk::system::Configure(const std::string & filename)
         if (iter == m_IO_proxies.end()) {
             // create a new IO proxy if needed
             auto IO_proxy = std::make_shared<dvrk::IO_proxy>(IO_config.name, this, &IO_config);
-            IO_proxy->post_configure();
             m_IO_proxies[IO_config.name] = IO_proxy;
+            IO_proxy->post_configure();
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure IO "
                                      << IO_config.name << ", IO already exists" << std::endl;
@@ -194,8 +194,8 @@ void dvrk::system::Configure(const std::string & filename)
         if (iter == m_arm_proxies.end()) {
             // create a new arm proxy if needed
             auto arm_proxy = std::make_shared<dvrk::arm_proxy>(arm_config.name, this, &arm_config);
-            arm_proxy->post_configure();
             m_arm_proxies[arm_config.name] = arm_proxy;
+            arm_proxy->post_configure();
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure arm "
                                      << arm_config.name << ", arm already exists" << std::endl;
@@ -209,8 +209,8 @@ void dvrk::system::Configure(const std::string & filename)
         if (iter == m_consoles.end()) {
             // create a new console if needed
             auto console = std::make_shared<dvrk::console>(console_config.name, this, &console_config);
-            console->post_configure();
             m_consoles[console_config.name] = console;
+            console->post_configure();
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure console "
                                      << console_config.name << ", console already exists" << std::endl;
@@ -804,9 +804,11 @@ void dvrk::system::set_arm_current_state(const std::string & _arm_name,
 }
 
 
-void dvrk::system::unselect_conflicting_teleops(const std::string & _teleop_name)
+bool dvrk::system::find_conflicting_teleops(const std::shared_ptr<dvrk::teleop_proxy> _teleop, const bool _unselect)
 {
+    bool result = false;
     for (auto iter : m_consoles) {
-        iter.second->unselect_conflicting_teleops(_teleop_name);
+        result |= iter.second->find_conflicting_teleops(_teleop, _unselect);
     }
+    return result;
 }

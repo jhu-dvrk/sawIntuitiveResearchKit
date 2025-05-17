@@ -20,6 +20,8 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _dvrk_system_h
 #define _dvrk_system_h
 
+#include <set>
+
 #include <cisstCommon/cmnPath.h>
 #include <cisstMultiTask/mtsTaskFromSignal.h>
 #include <cisstMultiTask/mtsDelayedConnections.h>
@@ -166,7 +168,7 @@ namespace dvrk {
         void set_arm_current_state(const std::string & armName,
                                    const prmOperatingState & currentState);
 
-        void unselect_conflicting_teleops(const std::string & _teleop_name);
+        bool find_conflicting_teleops(const std::shared_ptr<dvrk::teleop_proxy> _teleop, const bool _unselect = false);
     };
 }
 

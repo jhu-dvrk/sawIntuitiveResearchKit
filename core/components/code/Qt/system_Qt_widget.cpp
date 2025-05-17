@@ -176,7 +176,7 @@ void dvrk::system_Qt_widget::slot_arm_current_state_event_handler(PairStringType
         QVBArms->addWidget(button);
         m_arm_buttons[arm] = button;
         connect(button, &QPushButton::clicked,
-                [ = ] { focus_arm_button(_arm_state.first); });
+                [ = ] { focus_widget(QString("Arms"), _arm_state.first); });
     } else {
         button = iter->second;
     }
@@ -332,10 +332,10 @@ void dvrk::system_Qt_widget::slot_component_viewer(void)
 }
 
 
-void dvrk::system_Qt_widget::focus_arm_button(const QString & _arm_name)
+void dvrk::system_Qt_widget::focus_widget(const QString & _tab_name, const QString & _widget_name)
 {
     // determine which tab to search
-    QTabWidget * subTab = QTComponents->findChild<QTabWidget *>(QString("Arms"));
+    QTabWidget * subTab = QTComponents->findChild<QTabWidget *>(_tab_name);
     if (subTab) {
         QTComponents->setCurrentWidget(subTab);
     } else {
@@ -343,11 +343,12 @@ void dvrk::system_Qt_widget::focus_arm_button(const QString & _arm_name)
     }
 
     // now find the arm widget
-    QWidget * child = subTab->findChild<QWidget *>(_arm_name);
+    QWidget * child = subTab->findChild<QWidget *>(_widget_name);
     if (child) {
         subTab->setCurrentWidget(child);
     } else {
-        std::cerr << CMN_LOG_DETAILS << " can't find arm nor Arms tab widget for \""
-                  << _arm_name.toStdString() << "\", did you set the widget name with setObjectName?" << std::endl;
+        std::cerr << CMN_LOG_DETAILS << " can't find widget nor \"" << _tab_name.toStdString()
+                  << "\" tab widget for \""
+                  << _widget_name.toStdString() << "\", did you set the widget name with setObjectName?" << std::endl;
     }
 }

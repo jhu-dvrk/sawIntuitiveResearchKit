@@ -40,13 +40,15 @@ class QCheckBox;
 
 namespace dvrk {
 
+    class system_Qt_widget;
+
     class CISST_EXPORT console_Qt_widget: public QWidget, public mtsComponent
     {
         Q_OBJECT;
         CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
     public:
-        console_Qt_widget(const std::string & componentName);
+        console_Qt_widget(const std::string & _component_name, system_Qt_widget * _system_widget);
         inline virtual ~console_Qt_widget() {}
 
         void Configure(const std::string & filename = "");
@@ -106,6 +108,8 @@ namespace dvrk {
         void operator_present_event_handler(const prmEventButton & button);
         void clutch_event_handler(const prmEventButton & button);
         void camera_event_handler(const prmEventButton & button);
+
+        system_Qt_widget * m_system_widget;
 
         QVBoxLayout * QVBTeleops;
         std::map<QString, std::pair<QPushButton *, QCheckBox *>> m_teleop_buttons;

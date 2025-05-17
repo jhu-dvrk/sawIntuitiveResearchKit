@@ -19,6 +19,8 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _dvrk_teleop_proxy_h
 #define _dvrk_teleop_proxy_h
 
+#include <set>
+
 #include <cisstMultiTask/mtsForwardDeclarations.h>
 #include <cisstMultiTask/mtsFunctionWrite.h>
 
@@ -64,7 +66,7 @@ namespace dvrk {
         bool m_enabled = false; // actually selected and in use
         bool m_selected = false; // user wants this
 
-        std::list<std::string> m_arms_used;
+        std::set<std::string> m_arms_used;
     };
 }
 

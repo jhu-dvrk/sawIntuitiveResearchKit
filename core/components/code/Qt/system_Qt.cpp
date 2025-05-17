@@ -225,7 +225,7 @@ void dvrk::system_Qt::configure(dvrk::system * system)
     for (const auto & console : system->m_consoles) {
         const std::string name = console.first;
         // first create console widgets
-        auto * console_widget = new console_Qt_widget(name + "_widget");
+        auto * console_widget = new console_Qt_widget(name + "_widget", system_widget);
         component_manager->AddComponent(console_widget);
         m_connections.Add(system->GetName(), name,
                           console_widget->GetName(), "Main");
@@ -240,7 +240,7 @@ void dvrk::system_Qt::configure(dvrk::system * system)
         // second create the teleop widgets for the console
         if (system->m_consoles.size() > 1) {
             teleopTabWidget = new QTabWidget();
-            teleopTabWidget->setObjectName(name.c_str());
+            teleopTabWidget->setObjectName((name + "_widget").c_str());
             m_tab_widget->addTab(teleopTabWidget, name.c_str());
         }
 

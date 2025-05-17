@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-03-06
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -90,6 +90,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 
     void StateChanged(void);
     void RunAllStates(void); // this should happen for all states
+    void EnterDisabled(void);
     void TransitionDisabled(void); // checks for desired state
     void EnterSettingArmsState(void);
     void TransitionSettingArmsState(void);
@@ -104,6 +105,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         mtsFunctionRead  measured_cp;
         mtsFunctionRead  measured_cv;
         mtsFunctionRead  setpoint_cp;
+        mtsFunctionVoid  hold;
         mtsFunctionWrite move_cp;
         mtsFunctionRead  gripper_measured_js;
         mtsFunctionWrite lock_orientation;
