@@ -408,14 +408,14 @@ bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> _arm)
 {
     // IO
     if (_arm->m_config->expects_IO()) {
-        const std::string interfaceNameIO = "IO-" + _arm->m_name;
-        _arm->m_IO_interface_required = AddInterfaceRequired(interfaceNameIO);
+        const std::string interface_IO_name = "IO-" + _arm->m_name;
+        _arm->m_IO_interface_required = AddInterfaceRequired(interface_IO_name);
         if (_arm->m_IO_interface_required) {
             auto itf = _arm->m_IO_interface_required;
             itf->AddEventHandlerWrite(&system::error_event_handler, this, "error");
             itf->AddEventHandlerWrite(&system::warning_event_handler, this, "warning");
             itf->AddEventHandlerWrite(&system::status_event_handler, this, "status");
-            m_connections.Add(this->GetName(), interfaceNameIO,
+            m_connections.Add(this->GetName(), interface_IO_name,
                               _arm->m_IO_component_name, _arm->m_name);
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "add_arm_interfaces: failed to add IO interface for arm \""
@@ -425,14 +425,14 @@ bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> _arm)
         // is the arm is a PSM, since it has an IO, it also has a
         // Dallas chip interface and we want to see the messages
         if (_arm->m_config->native_or_derived_PSM()) {
-            const std::string interfaceNameIODallas = "IO_dallas-" + _arm->m_name;
-            _arm->m_IO_dallas_interface_required = AddInterfaceRequired(interfaceNameIODallas);
+            const std::string interface_IO_Dallas_name = "IO_dallas-" + _arm->m_name;
+            _arm->m_IO_dallas_interface_required = AddInterfaceRequired(interface_IO_Dallas_name);
             if (_arm->m_IO_dallas_interface_required) {
                 auto itf = _arm->m_IO_dallas_interface_required;
                 itf->AddEventHandlerWrite(&system::error_event_handler, this, "error");
                 itf->AddEventHandlerWrite(&system::warning_event_handler, this, "warning");
                 itf->AddEventHandlerWrite(&system::status_event_handler, this, "status");
-                m_connections.Add(this->GetName(), interfaceNameIODallas,
+                m_connections.Add(this->GetName(), interface_IO_Dallas_name,
                                   _arm->m_IO_component_name, _arm->m_name + "_dallas");
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO Dallas interface for arm \""
@@ -444,14 +444,14 @@ bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> _arm)
 
     // PID
     if (_arm->m_config->expects_PID()) {
-        const std::string interfaceNamePID = "PID_" + _arm->m_name;
-        _arm->m_PID_interface_required = AddInterfaceRequired(interfaceNamePID);
+        const std::string interface_PID_name = "PID_" + _arm->m_name;
+        _arm->m_PID_interface_required = AddInterfaceRequired(interface_PID_name);
         if (_arm->m_PID_interface_required) {
             auto itf = _arm->m_PID_interface_required;
             itf->AddEventHandlerWrite(&system::error_event_handler, this, "error");
             itf->AddEventHandlerWrite(&system::warning_event_handler, this, "warning");
             itf->AddEventHandlerWrite(&system::status_event_handler, this, "status");
-            m_connections.Add(this->GetName(), interfaceNamePID,
+            m_connections.Add(this->GetName(), interface_PID_name,
                               _arm->m_name + "_PID", "Controller");
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "add_arm_interfaces: failed to add PID interface for arm \""
@@ -461,8 +461,8 @@ bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> _arm)
     }
 
     // arm interface
-    const std::string interfaceNameArm = _arm->m_name;
-    _arm->m_arm_interface_required = AddInterfaceRequired(interfaceNameArm);
+    const std::string interface_arm_name = _arm->m_name;
+    _arm->m_arm_interface_required = AddInterfaceRequired(interface_arm_name);
     if (_arm->m_arm_interface_required) {
         auto itf = _arm->m_arm_interface_required;
         itf->AddFunction("state_command", _arm->state_command);
@@ -474,7 +474,7 @@ bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> _arm)
         itf->AddEventHandlerWrite(&system::status_event_handler, this, "status");
         itf->AddEventHandlerWrite(&arm_proxy::current_state_event_handler,
                                   _arm.get(), "operating_state");
-        m_connections.Add(this->GetName(), interfaceNameArm,
+        m_connections.Add(this->GetName(), interface_arm_name,
                           _arm->m_arm_component_name, _arm->m_arm_interface_name);
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "add_arm_interfaces: failed to add Main interface for arm \""
@@ -485,102 +485,118 @@ bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> _arm)
 }
 
 
-bool dvrk::system::add_console_interfaces(std::shared_ptr<dvrk::console> console)
+bool dvrk::system::add_console_interfaces(std::shared_ptr<dvrk::console> _console)
 {
     // main interface
-    console->m_interface_provided = this->AddInterfaceProvided(console->m_name);
-    if (console->m_interface_provided) {
-        auto itf = console->m_interface_provided;
-        itf->AddCommandWrite(&console::teleop_enable, console.get(),
+    _console->m_interface_provided = this->AddInterfaceProvided(_console->m_name);
+    if (_console->m_interface_provided) {
+        auto itf = _console->m_interface_provided;
+        itf->AddMessageEvents();
+        itf->AddCommandWrite(&console::teleop_enable, _console.get(),
                              "teleop_enable", false);
-        itf->AddCommandWrite(&console::set_scale, console.get(),
+        itf->AddCommandWrite(&console::set_scale, _console.get(),
                              "set_scale",
                              mtsIntuitiveResearchKit::TeleOperationPSM::Scale);
-        itf->AddCommandWrite(&console::select_teleop, console.get(),
+        itf->AddCommandWrite(&console::select_teleop, _console.get(),
                              "select_teleop", std::string());
-        itf->AddCommandWrite(&console::unselect_teleop, console.get(),
+        itf->AddCommandWrite(&console::unselect_teleop, _console.get(),
                              "unselect_teleop", std::string());
-        itf->AddCommandWrite(&console::operator_present_event_handler, console.get(),
+        itf->AddCommandWrite(&console::operator_present_event_handler, _console.get(),
                              "emulate_operator_present", prmEventButton());
-        itf->AddCommandWrite(&console::clutch_event_handler, console.get(),
+        itf->AddCommandWrite(&console::clutch_event_handler, _console.get(),
                              "emulate_clutch", prmEventButton());
-        itf->AddCommandWrite(&console::camera_event_handler, console.get(),
+        itf->AddCommandWrite(&console::camera_event_handler, _console.get(),
                              "emulate_camera", prmEventButton());
-        itf->AddEventWrite(console->events.teleop_enabled,
+        itf->AddEventWrite(_console->events.teleop_enabled,
                            "teleop_enabled", false);
-        itf->AddEventWrite(console->events.scale,
+        itf->AddEventWrite(_console->events.scale,
                            "scale", 0.5);
-        itf->AddEventWrite(console->events.teleop_selected,
+        itf->AddEventWrite(_console->events.teleop_selected,
                            "teleop_selected", std::string());
-        itf->AddEventWrite(console->events.teleop_unselected,
+        itf->AddEventWrite(_console->events.teleop_unselected,
                            "teleop_unselected", std::string());
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add interface for console \""
-                                 << console->m_name << "\"" << std::endl;
+                                 << _console->m_name << "\"" << std::endl;
+        return false;
+    }
+
+    // add a required interface to the system object to get console messages
+    mtsInterfaceRequired * itf = AddInterfaceRequired(_console->m_name + "_required");
+    if (itf) {
+        itf->AddEventHandlerWrite(&system::error_event_handler, this, "error");
+        itf->AddEventHandlerWrite(&system::warning_event_handler, this, "warning");
+        itf->AddEventHandlerWrite(&system::status_event_handler, this, "status");
+        // that's funny
+        m_connections.Add(this->GetName(), _console->m_name,
+                          this->GetName(), _console->m_name + "_required");
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add required interface for \""
+                                 << _console->m_name << "\"" << std::endl;
         return false;
     }
 
     // inputs
-    if (console->m_config->input_type != console_input_type::SIMULATED) {
+    if (_console->m_config->input_type != console_input_type::SIMULATED) {
         mtsInterfaceRequired * interface_required;
         // clutch
-        interface_required = AddInterfaceRequired(console->m_name + "/required_clutch");
+        interface_required = AddInterfaceRequired(_console->m_name + "/required_clutch");
         if (interface_required) {
-            interface_required->AddEventHandlerWrite(&console::clutch_event_handler, console.get(), "Button");
+            interface_required->AddEventHandlerWrite(&console::clutch_event_handler, _console.get(), "Button");
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add clutch required interface for console \""
-                                     << console->m_name << "\"" << std::endl;
+                                     << _console->m_name << "\"" << std::endl;
             return false;
         }
-        m_connections.Add(this->GetName(), console->m_name + "/required_clutch",
-                          console->m_clutch_component_name, console->m_clutch_interface_name);
+        m_connections.Add(this->GetName(), _console->m_name + "/required_clutch",
+                          _console->m_clutch_component_name, _console->m_clutch_interface_name);
         // camera
-        interface_required = AddInterfaceRequired(console->m_name + "/required_camera");
+        interface_required = AddInterfaceRequired(_console->m_name + "/required_camera");
         if (interface_required) {
-            interface_required->AddEventHandlerWrite(&console::camera_event_handler, console.get(), "Button");
+            interface_required->AddEventHandlerWrite(&console::camera_event_handler, _console.get(), "Button");
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add camera required interface for console \""
-                                     << console->m_name << "\"" << std::endl;
+                                     << _console->m_name << "\"" << std::endl;
             return false;
         }
-        m_connections.Add(this->GetName(), console->m_name + "/required_camera",
-                          console->m_camera_component_name, console->m_camera_interface_name);
+        m_connections.Add(this->GetName(), _console->m_name + "/required_camera",
+                          _console->m_camera_component_name, _console->m_camera_interface_name);
         // operator_present
-        interface_required = AddInterfaceRequired(console->m_name + "/required_operator_present");
+        interface_required = AddInterfaceRequired(_console->m_name + "/required_operator_present");
         if (interface_required) {
-            interface_required->AddEventHandlerWrite(&console::operator_present_event_handler, console.get(), "Button");
+            interface_required->AddEventHandlerWrite(&console::operator_present_event_handler, _console.get(), "Button");
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add operator_present required interface for console \""
-                                     << console->m_name << "\"" << std::endl;
+                                     << _console->m_name << "\"" << std::endl;
             return false;
         }
-        m_connections.Add(this->GetName(), console->m_name + "/required_operator_present",
-                          console->m_operator_present_component_name, console->m_operator_present_interface_name);
+        m_connections.Add(this->GetName(), _console->m_name + "/required_operator_present",
+                          _console->m_operator_present_component_name, _console->m_operator_present_interface_name);
     }
 
     // propagate inputs
-    mtsInterfaceProvided * interface_provided = this->AddInterfaceProvided(console->m_name + "/clutch");
+    mtsInterfaceProvided * interface_provided = this->AddInterfaceProvided(_console->m_name + "/clutch");
     if (interface_provided) {
-        interface_provided->AddEventWrite(console->events.clutch, "Button", prmEventButton());
+        interface_provided->AddEventWrite(_console->events.clutch, "Button", prmEventButton());
     } else {
-        CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add clutch provided interface for console \""
-                                 << console->m_name << "\"" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add clutch provided interface for _console \""
+                                 << _console->m_name << "\"" << std::endl;
         return false;
     }
-    interface_provided = this->AddInterfaceProvided(console->m_name + "/camera");
+    interface_provided = this->AddInterfaceProvided(_console->m_name + "/camera");
     if (interface_provided) {
-        interface_provided->AddEventWrite(console->events.camera, "Button", prmEventButton());
+        interface_provided->AddEventWrite(_console->events.camera, "Button", prmEventButton());
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add camera provided interface for console \""
-                                 << console->m_name << "\"" << std::endl;
+                                 << _console->m_name << "\"" << std::endl;
         return false;
     }
-    interface_provided = this->AddInterfaceProvided(console->m_name + "/operator_present");
+    interface_provided = this->AddInterfaceProvided(_console->m_name + "/operator_present");
     if (interface_provided) {
-        interface_provided->AddEventWrite(console->events.operator_present, "Button", prmEventButton());
+        interface_provided->AddEventWrite(_console->events.operator_present, "Button", prmEventButton());
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "add_console_interfaces: failed to add operator_present provided interface for console \""
-                                 << console->m_name << "\"" << std::endl;
+                                 << _console->m_name << "\"" << std::endl;
         return false;
     }
     return true;

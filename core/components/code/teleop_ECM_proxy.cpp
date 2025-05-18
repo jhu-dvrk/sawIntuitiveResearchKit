@@ -89,7 +89,13 @@ void dvrk::teleop_ECM_proxy::post_configure(void)
         m_ECM_component_name = arm_proxy->m_arm_component_name;
         m_ECM_interface_name = arm_proxy->m_arm_interface_name;
     }
-    std::cerr << CMN_LOG_DETAILS << "add checks re. scale is valid, different MTMs" << std::endl;
+
+    // make sure both MTMs are different
+    if ((m_MTML_component_name == m_MTMR_component_name)
+        && (m_MTML_interface_name == m_MTMR_interface_name)) {
+        CMN_LOG_INIT_ERROR << "teleop_ECM_proxy::post_configure: MTMs must be different" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
     m_arms_used.insert(m_config->MTML);
     m_arms_used.insert(m_config->MTMR);

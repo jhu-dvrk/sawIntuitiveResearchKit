@@ -127,8 +127,8 @@ void dvrk::console::create_components(void)
 {
     // teleops
     for (auto & proxy : m_teleop_proxies) {
-        proxy.second->create_teleop();
         m_system->add_teleop_interfaces(proxy.second);
+        proxy.second->create_teleop();
     }
 }
 
@@ -161,13 +161,6 @@ void dvrk::console::emit_teleop_state_events(void)
 //         // // manage tele-op
 //         // mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::cycle_teleop_PSM_by_MTM, this,
 //         //                             "cycle_teleop_PSM_by_MTM", std::string(""));
-//         // mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::select_teleop_PSM, this,
-//         //                             "select_teleop_PSM", prmKeyValue("MTM", "PSM"));
-//         // mInterface->AddEventWrite(ConfigurationEvents.teleop_PSM_selected,
-//         //                           "teleop_PSM_selected", prmKeyValue("MTM", "PSM"));
-//         // mInterface->AddEventWrite(ConfigurationEvents.teleop_PSM_unselected,
-//         //                           "teleop_PSM_unselected", prmKeyValue("MTM", "PSM"));
-
 //         // misc.
 //         mInterface->AddCommandRead(&mtsIntuitiveResearchKitConsole::calibration_mode, this,
 //                                    "calibration_mode", false);
@@ -272,14 +265,6 @@ void dvrk::console::emit_teleop_state_events(void)
 // {
 //     return m_configured;
 // }
-
-
-// //     mtsInterfaceProvided * operatorProvided = AddInterfaceProvided("OperatorPresent");
-// //     if (operatorProvided) {
-// //         operatorProvided->AddEventWrite(console_events.operator_present, "Button", prmEventButton());
-// //     }
-// // }
-
 
 // // bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & jsonTeleop)
 // // {
@@ -680,38 +665,6 @@ void dvrk::console::operator_present_event_handler(const prmEventButton & _butto
 // //     EventSelectedTeleopPSMs();
 // // }
 
-// // bool mtsIntuitiveResearchKitConsole::GetPSMSelectedForMTM(const std::string & mtmName, std::string & psmName) const
-// // {
-// //     bool mtmFound = false;
-// //     psmName = "";
-// //     // find range of teleops
-// //     auto range = m_teleop_PSM_proxies_by_MTM.equal_range(mtmName);
-// //     for (auto iter = range.first;
-// //          iter != range.second;
-// //          ++iter) {
-// //         mtmFound = true;
-// //         if (iter->second->selected()) {
-// //             psmName = iter->second->m_config->PSM;
-// //         }
-// //     }
-// //     return mtmFound;
-// // }
-
-// // bool mtsIntuitiveResearchKitConsole::GetMTMSelectedForPSM(const std::string & psmName, std::string & mtmName) const
-// // {
-// //     bool psmFound = false;
-// //     mtmName = "";
-// //     for (auto & iter : m_teleop_PSM_proxies) {
-// //         if (iter.second->m_config->PSM == psmName) {
-// //             psmFound = true;
-// //             if (iter.second->selected()) {
-// //                 mtmName = iter.second->m_config->MTM;
-// //             }
-// //         }
-// //     }
-// //     return psmFound;
-// // }
-
 
 void dvrk::console::update_teleop_state(void)
 {
@@ -738,6 +691,7 @@ void dvrk::console::update_teleop_state(void)
         }
     }
 }
+
 
 // //     // Check if teleop is enabled
 // //     if (!m_teleop_enabled) {

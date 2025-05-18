@@ -59,38 +59,38 @@ dvrk::console_Qt_widget::console_Qt_widget(const std::string & _component_name,
     mtsComponent(_component_name),
     m_system_widget(_system_widget)
 {
-    mtsInterfaceRequired * interface_required = AddInterfaceRequired("Main");
-    if (interface_required) {
-        interface_required->AddFunction("teleop_enable", console.teleop_enable);
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::teleop_enabled_event_handler,
-                                                this, "teleop_enabled");
-        interface_required->AddFunction("select_teleop", console.select_teleop);
-        interface_required->AddFunction("unselect_teleop", console.unselect_teleop);
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::teleop_selected_event_handler,
-                                                this, "teleop_selected");
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::teleop_unselected_event_handler,
-                                                this, "teleop_unselected");
-        interface_required->AddFunction("set_scale", console.set_scale);
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::scale_event_handler,
-                                                this, "scale");
-        interface_required->AddFunction("emulate_operator_present", console.emulate_operator_present);
-        interface_required->AddFunction("emulate_clutch", console.emulate_clutch);
-        interface_required->AddFunction("emulate_camera", console.emulate_camera);
+    mtsInterfaceRequired * itf = AddInterfaceRequired("Main");
+    if (itf) {
+        itf->AddFunction("teleop_enable", console.teleop_enable);
+        itf->AddEventHandlerWrite(&dvrk::console_Qt_widget::teleop_enabled_event_handler,
+                                  this, "teleop_enabled");
+        itf->AddFunction("select_teleop", console.select_teleop);
+        itf->AddFunction("unselect_teleop", console.unselect_teleop);
+        itf->AddEventHandlerWrite(&dvrk::console_Qt_widget::teleop_selected_event_handler,
+                                  this, "teleop_selected");
+        itf->AddEventHandlerWrite(&dvrk::console_Qt_widget::teleop_unselected_event_handler,
+                                  this, "teleop_unselected");
+        itf->AddFunction("set_scale", console.set_scale);
+        itf->AddEventHandlerWrite(&dvrk::console_Qt_widget::scale_event_handler,
+                                  this, "scale");
+        itf->AddFunction("emulate_operator_present", console.emulate_operator_present);
+        itf->AddFunction("emulate_clutch", console.emulate_clutch);
+        itf->AddFunction("emulate_camera", console.emulate_camera);
     }
-    interface_required = AddInterfaceRequired("operator_present");
-    if (interface_required) {
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::operator_present_event_handler,
-                                                this, "Button");
+    itf = AddInterfaceRequired("operator_present");
+    if (itf) {
+        itf->AddEventHandlerWrite(&dvrk::console_Qt_widget::operator_present_event_handler,
+                                  this, "Button");
     }
-    interface_required = AddInterfaceRequired("clutch");
-    if (interface_required) {
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::clutch_event_handler,
-                                                 this, "Button");
+    itf = AddInterfaceRequired("clutch");
+    if (itf) {
+        itf->AddEventHandlerWrite(&dvrk::console_Qt_widget::clutch_event_handler,
+                                  this, "Button");
     }
-    interface_required = AddInterfaceRequired("camera");
-    if (interface_required) {
-        interface_required->AddEventHandlerWrite(&dvrk::console_Qt_widget::camera_event_handler,
-                                                this, "Button");
+    itf = AddInterfaceRequired("camera");
+    if (itf) {
+        itf->AddEventHandlerWrite(&dvrk::console_Qt_widget::camera_event_handler,
+                                  this, "Button");
     }
     setupUi();
 }

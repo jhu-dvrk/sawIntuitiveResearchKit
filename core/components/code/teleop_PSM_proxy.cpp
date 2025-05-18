@@ -69,8 +69,6 @@ void dvrk::teleop_PSM_proxy::post_configure(void)
         m_PSM_component_name = arm_proxy->m_arm_component_name;
         m_PSM_interface_name = arm_proxy->m_arm_interface_name;
     }
-    std::cerr << CMN_LOG_DETAILS << "add checks re. scale is valid" << std::endl;
-
     m_arms_used.insert(m_config->MTM);
     m_arms_used.insert(m_config->PSM);
 }
