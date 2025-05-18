@@ -65,12 +65,12 @@ if (cisst_FOUND)
     if (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)
       # there must be a more standard way to find a unix lib...
       find_file (hidapi_HEADER_FILE
-	hidapi/hidapi.h
-	HINTS /usr/include)
+        hidapi/hidapi.h
+        HINTS /usr/include)
       if (hidapi_HEADER_FILE)
-	string (REPLACE "/hidapi/hidapi.h" "" hidapi_INCLUDE_DIR ${hidapi_HEADER_FILE})
-	include_directories (${hidapi_INCLUDE_DIR})
-	set (hidapi_LIBRARIES "hidapi-hidraw")
+        string (REPLACE "/hidapi/hidapi.h" "" hidapi_INCLUDE_DIR ${hidapi_HEADER_FILE})
+        include_directories (${hidapi_INCLUDE_DIR})
+        set (hidapi_LIBRARIES "hidapi-hidraw")
       endif ()
     endif ()
 
@@ -82,7 +82,7 @@ if (cisst_FOUND)
       ExternalProject_Add (gattlibExternal
                            PREFIX gattlib
                            GIT_REPOSITORY    ${SAW_GATTLIB_GIT_REPOSITORY}
-			   GIT_TAG          "dvrk-2.2"
+                           GIT_TAG          "dvrk-2.2"
                            CMAKE_CACHE_ARGS -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
                                             -DGATTLIB_BUILD_EXAMPLES:BOOL=OFF
                                             -DGATTLIB_BUILD_DOCS:BOOL=OFF
@@ -142,96 +142,117 @@ if (cisst_FOUND)
     configure_file ("${sawIntuitiveResearchKit_SOURCE_DIR}/code/sawIntuitiveResearchKitConfig.h.in"
                     "${sawIntuitiveResearchKit_BINARY_DIR}/include/sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h")
 
-    set (HEADER_FILES
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsStateMachine.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKit.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitArm.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitMTM.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitPSM.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitECM.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJ.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJSi.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitSUJFixed.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSM.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECM.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsole.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciHeadSensor.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciEndoscopeFocus.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBasePSM.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketClientPSM.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketServerPSM.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsToolList.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/robManipulatorECM.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/robManipulatorMTM.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/robManipulatorPSMSnake.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/mtsPSMCompensation.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/prmActuatorJointCouplingCheck.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/prmConfigurationJointFromManipulator.h
-         ${sawIntuitiveResearchKit_HEADER_DIR}/robGravityCompensation.h
-        )
+    set (_HEADER_FILES
+      mtsStateMachine.h
+      mtsIntuitiveResearchKit.h
+      mtsIntuitiveResearchKitArm.h
+      mtsIntuitiveResearchKitMTM.h
+      mtsIntuitiveResearchKitPSM.h
+      mtsIntuitiveResearchKitECM.h
+      mtsIntuitiveResearchKitSUJ.h
+      mtsIntuitiveResearchKitSUJSi.h
+      mtsIntuitiveResearchKitSUJFixed.h
+      mtsTeleOperationPSM.h
+      mtsTeleOperationECM.h
+      mtsDaVinciHeadSensor.h
+      mtsDaVinciEndoscopeFocus.h
+      mtsSocketBasePSM.h
+      mtsSocketClientPSM.h
+      mtsSocketServerPSM.h
+      mtsToolList.h
+      robManipulatorECM.h
+      robManipulatorMTM.h
+      robManipulatorPSMSnake.h
+      mtsPSMCompensation.h
+      prmActuatorJointCouplingCheck.h
+      prmConfigurationJointFromManipulator.h
+      robGravityCompensation.h
 
-    set (SOURCE_FILES
-         code/mtsStateMachine.cpp
-         code/mtsIntuitiveResearchKit.cpp
-         code/mtsIntuitiveResearchKitArm.cpp
-         code/mtsIntuitiveResearchKitMTM.cpp
-         code/mtsIntuitiveResearchKitPSM.cpp
-         code/mtsIntuitiveResearchKitECM.cpp
-         code/mtsIntuitiveResearchKitSUJ.cpp
-         code/mtsIntuitiveResearchKitSUJSi.cpp
-         code/mtsIntuitiveResearchKitSUJFixed.cpp
-         code/mtsTeleOperationPSM.cpp
-         code/mtsTeleOperationECM.cpp
-         code/mtsIntuitiveResearchKitConsole.cpp
-         code/mtsDaVinciHeadSensor.cpp
-         code/mtsDaVinciEndoscopeFocus.cpp
-         code/mtsSocketBasePSM.cpp
-         code/mtsSocketClientPSM.cpp
-         code/mtsSocketServerPSM.cpp
-         code/mtsToolList.cpp
-         code/robManipulatorECM.cpp
-         code/robManipulatorMTM.cpp
-         code/robManipulatorPSMSnake.cpp
-         code/mtsPSMCompensation.cpp
-         code/prmActuatorJointCouplingCheck.cpp
-         code/prmConfigurationJointFromManipulator.cpp
-         code/robGravityCompensationMTM.cpp
-         code/robGravityCompensationMTM.h
-         )
+      arm_proxy.h
+      console.h
+      IO_proxy.h
+      system.h
+      teleop_proxy.h
+      teleop_ECM_proxy.h
+      teleop_PSM_proxy.h
+    )
 
-    set (CDG_FILES
-      code/arm_configuration_t.cdg
-      code/arm_proxy_configuration_t.cdg
-      code/arm_type_t.cdg
-      code/base_frame_t.cdg
-      code/console_configuration_t.cdg
-      code/generation_t.cdg
-      code/IO_proxy_configuration_t.cdg
-      code/simulation_t.cdg
-      code/teleop_proxy_configuration_t.cdg
-      code/teleop_type_t.cdg
-      code/mtsIntuitiveResearchKitControlTypes.cdg
-      code/mtsIntuitiveResearchKitToolTypes.cdg
-      code/mtsIntuitiveResearchKitEndoscopeTypes.cdg
-      code/socketMessages.cdg)
+    set (_SOURCE_FILES
+      mtsStateMachine.cpp
+      mtsIntuitiveResearchKit.cpp
+      mtsIntuitiveResearchKitArm.cpp
+      mtsIntuitiveResearchKitMTM.cpp
+      mtsIntuitiveResearchKitPSM.cpp
+      mtsIntuitiveResearchKitECM.cpp
+      mtsIntuitiveResearchKitSUJ.cpp
+      mtsIntuitiveResearchKitSUJSi.cpp
+      mtsIntuitiveResearchKitSUJFixed.cpp
+      mtsTeleOperationPSM.cpp
+      mtsTeleOperationECM.cpp
+      mtsDaVinciHeadSensor.cpp
+      mtsDaVinciEndoscopeFocus.cpp
+      mtsSocketBasePSM.cpp
+      mtsSocketClientPSM.cpp
+      mtsSocketServerPSM.cpp
+      mtsToolList.cpp
+      robManipulatorECM.cpp
+      robManipulatorMTM.cpp
+      robManipulatorPSMSnake.cpp
+      mtsPSMCompensation.cpp
+      prmActuatorJointCouplingCheck.cpp
+      prmConfigurationJointFromManipulator.cpp
+      robGravityCompensationMTM.cpp
+      robGravityCompensationMTM.h
+
+      arm_proxy.cpp
+      console.cpp
+      IO_proxy.cpp
+      system.cpp
+      teleop_proxy.cpp
+      teleop_ECM_proxy.cpp
+      teleop_PSM_proxy.cpp
+    )
+
+    set (_CDG_FILES
+      arm_configuration.cdg
+      arm_proxy_configuration.cdg
+      arm_type.cdg
+      base_frame.cdg
+      console_configuration.cdg
+      generation.cdg
+      IO_proxy_configuration.cdg
+      simulation.cdg
+      system_configuration.cdg
+      teleop_proxy_configuration.cdg
+      teleop_type.cdg
+      mtsIntuitiveResearchKitControlTypes.cdg
+      mtsIntuitiveResearchKitToolTypes.cdg
+      mtsIntuitiveResearchKitEndoscopeTypes.cdg
+      socketMessages.cdg)
 
     if (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)
-      set (HEADER_FILES
-	${HEADER_FILES}
-	${sawIntuitiveResearchKit_HEADER_DIR}/mtsHIDHeadSensor.h)
-      set (SOURCE_FILES
-	${SOURCE_FILES}
-	code/mtsHIDHeadSensor.cpp)
-      set (CDG_FILES
-	${CDG_FILES}
-	code/mtsHIDHeadSensorConfiguration.cdg)
+      list (APPEND _HEADER_FILES mtsHIDHeadSensor.h)
+      list (APPEND _SOURCE_FILES mtsHIDHeadSensor.cpp)
+      list (APPEND _CDG_FILES    mtsHIDHeadSensorConfiguration.cdg)
     endif (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)
+
+    foreach (f ${_HEADER_FILES})
+      list (APPEND HEADER_FILES "${sawIntuitiveResearchKit_HEADER_DIR}/${f}")
+    endforeach ()
+
+    foreach (f ${_SOURCE_FILES})
+      list (APPEND SOURCE_FILES "code/${f}")
+    endforeach ()
+
+    foreach (f ${_CDG_FILES})
+      list (APPEND CDG_FILES "code/${f}")
+    endforeach ()
 
     # create data type using the data generator
     cisst_data_generator (sawIntuitiveResearchKit
                           "${sawIntuitiveResearchKit_BINARY_DIR}/include" # where to save the file
                           "sawIntuitiveResearchKit/"    # sub directory for include
-			  ${CDG_FILES})
+                          ${CDG_FILES})
 
     add_library (sawIntuitiveResearchKit
                  ${HEADER_FILES} ${SOURCE_FILES}

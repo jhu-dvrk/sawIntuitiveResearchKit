@@ -6,7 +6,7 @@ inline-header {
 }
 
 enum {
-    name generation_t;
+    name generation;
     namespace dvrk;
     enum-value {
         name GENERATION_UNDEFINED;

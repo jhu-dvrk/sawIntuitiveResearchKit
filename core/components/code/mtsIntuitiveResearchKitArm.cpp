@@ -598,7 +598,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
                     << "   file.  The arm file should contain the field" << std::endl
                     << "   \"kinematic\" and options specific to each arm type." << std::endl
                     << "----------------------------------------------------";
-            std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
+            std::cerr << "mtsIntuitiveResearchKitArm::" << message.str() << std::endl;
             CMN_LOG_CLASS_INIT_ERROR << message.str() << std::endl;
             exit(EXIT_FAILURE);
         }
@@ -633,9 +633,9 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         if (!jsonGeneration.isNull()) {
             const auto generation = jsonGeneration.asString();
             if (generation == "Classic") {
-                set_generation(dvrk::generation_t::Classic);
+                set_generation(dvrk::generation::Classic);
             } else if (generation == "Si") {
-                set_generation(dvrk::generation_t::Si);
+                set_generation(dvrk::generation::Si);
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                          << ": \"generation\" must be either \"Classic\" or \"Si\", found: "
@@ -1263,7 +1263,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
     // for Si, always calibrate from pot
     if (m_encoders_biased_from_pots
         && !m_calibration_mode
-        && (m_generation == dvrk::generation_t::Classic)) {
+        && (m_generation == dvrk::generation::Classic)) {
         m_arm_interface->SendStatus(this->GetName() + ": encoders have already been calibrated, skipping");
         return;
     }
@@ -1273,7 +1273,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
     const int nb_samples = 1970; // birth year, state table contains 1999 elements so anything under that would work
     if (m_re_home
         || m_calibration_mode
-        || (m_generation == dvrk::generation_t::Si)) {
+        || (m_generation == dvrk::generation::Si)) {
         // positive number to ignore encoder preloads
         IO.BiasEncoder(nb_samples);
     } else {
@@ -1308,7 +1308,7 @@ void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
     // use pots for redundancy when not in calibration mode and always
     // for the Si
     if (m_calibration_mode
-        && (m_generation == dvrk::generation_t::Classic)) {
+        && (m_generation == dvrk::generation::Classic)) {
         IO.UsePotsForSafetyCheck(false);
     } else {
         IO.UsePotsForSafetyCheck(true);

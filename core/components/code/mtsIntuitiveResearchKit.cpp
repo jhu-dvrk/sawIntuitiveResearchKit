@@ -35,6 +35,7 @@ mtsIntuitiveResearchKit::Logger::Logger(void)
     cmnLogger::SetMaskClassMatching("mtsDaVinci", CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskClassMatching("mtsIntuitiveResearchKit", CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskClassMatching("mtsTeleOperation", CMN_LOG_ALLOW_ALL);
+    cmnLogger::SetMaskClassMatching("dvrk_", CMN_LOG_ALLOW_ALL);
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
     // add log file with date so logs don't get overwritten
     std::string currentDateTime;

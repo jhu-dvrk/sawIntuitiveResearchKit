@@ -106,8 +106,8 @@ if (cisst_FOUND_AS_REQUIRED)
 
 
   add_library (dvrk_utilities
-    include/dvrk_utilities/dvrk_console.h
-    src/dvrk_console.cpp)
+    include/dvrk_utilities/system_ROS.h
+    src/system_ROS.cpp)
 
   target_link_libraries (
     dvrk_utilities

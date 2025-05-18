@@ -1,0 +1,123 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+inline-header {
+#include <json/json.h>
+#include <sawIntuitiveResearchKit/teleop_proxy_configuration.h>
+}
+
+enum {
+    name console_input_type;
+    namespace dvrk;
+    enum-value {
+        name UNDEFINED;
+        description Undefined;
+        value 0;
+    }
+    enum-value {
+        name PEDALS_ONLY;
+        description Only use foot pedals, coag is used for operator_present;
+    }
+    enum-value {
+        name PEDALS_GOOVIS_HEAD_SENSOR;
+        description Use pedals for clutch and camera, Goovis HID for operator_present;
+    }
+    enum-value {
+        name PEDALS_ISI_HEAD_SENSOR;
+        description Use pedals for clutch and camera, ISI head sensor for operator_present;
+    }
+    enum-value {
+        name PEDALS_DVRK_HEAD_SENSOR;
+        description Use pedals for clutch and camera, dVRK head sensor for operator_present;
+    }
+    enum-value {
+        name SIMULATED;
+        description No inputs required;
+    }
+    enum-value {
+        name COMPONENTS;
+        description Specify the component and interface for each input: clutch, camera, operator_present;
+    }
+}
+
+class {
+    name console_configuration;
+    namespace dvrk;
+    attribute CISST_EXPORT;
+
+    member {
+        name name;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name input_type;
+        type dvrk::console_input_type;
+        visibility public;
+    }
+
+    member {
+        name IO;
+        type std::string;
+        visibility public;
+        default "";
+        description Optional IO component providing the pedal events (Button) for clutch, camera and operator_present;
+    }
+
+    member {
+        name clutch_component;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name clutch_interface;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name camera_component;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name camera_interface;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name operator_present_component;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name operator_present_interface;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name teleop_PSMs;
+        type std::vector<dvrk::teleop_PSM_proxy_configuration>;
+        visibility public;
+        default std::vector<dvrk::teleop_PSM_proxy_configuration>();
+    }
+
+    member {
+        name teleop_ECMs;
+        type std::vector<dvrk::teleop_ECM_proxy_configuration>;
+        visibility public;
+        default std::vector<dvrk::teleop_ECM_proxy_configuration>();
+    }
+}

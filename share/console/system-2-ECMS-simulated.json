@@ -60,10 +60,10 @@
         }
         ,
         {
-            "name": "PSM3",
-            "type": "PSM",
+            "name": "ECM2",
+            "type": "ECM",
             "simulation": "KINEMATIC",
-            "arm_file": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
+            "arm_file": "arm/ECM_KIN_SIMULATED_STRAIGHT.json",
             "base_frame": {
                 "component": "SUJ",
                 "interface": "PSM3"
@@ -71,7 +71,7 @@
         }
         ,
         {
-            "name": "ECM",
+            "name": "ECM1",
             "type": "ECM",
             "simulation": "KINEMATIC",
             "arm_file": "arm/ECM_KIN_SIMULATED_STRAIGHT.json",
@@ -85,7 +85,7 @@
     "consoles":
     [
         {
-            "name": "XXXX",
+            "name": "console1",
             "input_type": "SIMULATED",
             "teleop_PSMs":
             [
@@ -104,14 +104,6 @@
                         "start_gripper_threshold": 0.0 // to start automatically when operator is present
                     }
                 }
-                ,
-                {
-                    "MTM": "MTML",
-                    "PSM": "PSM3",
-                    "configure_parameter": {
-                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
-                    }
-                }
             ]
             ,
             "teleop_ECMs":
@@ -119,7 +111,13 @@
                 {
                     "MTML": "MTML",
                     "MTMR": "MTMR",
-                    "ECM": "ECM"
+                    "ECM": "ECM1"
+                }
+                ,
+                {
+                    "MTML": "MTML",
+                    "MTMR": "MTMR",
+                    "ECM": "ECM2"
                 }
             ]
         }

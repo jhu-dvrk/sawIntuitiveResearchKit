@@ -37,10 +37,12 @@ if (cisst_FOUND_AS_REQUIRED)
     ${CMAKE_CURRENT_SOURCE_DIR}/logo.qrc)
 
   add_library (sawIntuitiveResearchKitQt
-               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQt.h
-               mtsIntuitiveResearchKitConsoleQt.cpp
-               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsIntuitiveResearchKitConsoleQtWidget.h
-               mtsIntuitiveResearchKitConsoleQtWidget.cpp
+               ${sawIntuitiveResearchKit_HEADER_DIR}/system_Qt.h
+               system_Qt.cpp
+               ${sawIntuitiveResearchKit_HEADER_DIR}/system_Qt_widget.h
+               system_Qt_widget.cpp
+               ${sawIntuitiveResearchKit_HEADER_DIR}/console_Qt_widget.h
+               console_Qt_widget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationPSMQtWidget.h
                mtsTeleOperationPSMQtWidget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsTeleOperationECMQtWidget.h

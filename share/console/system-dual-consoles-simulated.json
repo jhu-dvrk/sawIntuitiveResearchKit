@@ -3,7 +3,7 @@
     "arms":
     [
         {
-            "name": "MTML",
+            "name": "MTML1",
             "type": "MTM",
             "simulation": "KINEMATIC",
             "arm_file": "arm/MTML_KIN_SIMULATED.json",
@@ -17,7 +17,35 @@
         }
         ,
         {
-            "name": "MTMR",
+            "name": "MTMR1",
+            "type": "MTM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/MTMR_KIN_SIMULATED.json",
+            "base_frame": {
+                "reference_frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,         -0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
+            }
+        }
+        ,
+        {
+            "name": "MTML2",
+            "type": "MTM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/MTML_KIN_SIMULATED.json",
+            "base_frame": {
+                "reference_frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,          0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
+            }
+        }
+        ,
+        {
+            "name": "MTMR2",
             "type": "MTM",
             "simulation": "KINEMATIC",
             "arm_file": "arm/MTMR_KIN_SIMULATED.json",
@@ -85,12 +113,12 @@
     "consoles":
     [
         {
-            "name": "XXXX",
+            "name": "console1",
             "input_type": "SIMULATED",
             "teleop_PSMs":
             [
                 {
-                    "MTM": "MTMR",
+                    "MTM": "MTMR1",
                     "PSM": "PSM1",
                     "configure_parameter": {
                         "start_gripper_threshold": 0.0 // to start automatically when operator is present
@@ -98,7 +126,7 @@
                 }
                 ,
                 {
-                    "MTM": "MTML",
+                    "MTM": "MTML1",
                     "PSM": "PSM2",
                     "configure_parameter": {
                         "start_gripper_threshold": 0.0 // to start automatically when operator is present
@@ -106,7 +134,7 @@
                 }
                 ,
                 {
-                    "MTM": "MTML",
+                    "MTM": "MTML1",
                     "PSM": "PSM3",
                     "configure_parameter": {
                         "start_gripper_threshold": 0.0 // to start automatically when operator is present
@@ -117,8 +145,48 @@
             "teleop_ECMs":
             [
                 {
-                    "MTML": "MTML",
-                    "MTMR": "MTMR",
+                    "MTML": "MTML1",
+                    "MTMR": "MTMR1",
+                    "ECM": "ECM"
+                }
+            ]
+        }
+        ,
+        {
+            "name": "console2",
+            "input_type": "SIMULATED",
+            "teleop_PSMs":
+            [
+                {
+                    "MTM": "MTMR2",
+                    "PSM": "PSM1",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                    }
+                }
+                ,
+                {
+                    "MTM": "MTML2",
+                    "PSM": "PSM2",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                    }
+                }
+                ,
+                {
+                    "MTM": "MTML2",
+                    "PSM": "PSM3",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                    }
+                }
+            ]
+            ,
+            "teleop_ECMs":
+            [
+                {
+                    "MTML": "MTML2",
+                    "MTMR": "MTMR2",
                     "ECM": "ECM"
                 }
             ]

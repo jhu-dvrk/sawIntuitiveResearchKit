@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-20
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
   --- begin cisst license - do not edit ---
 
@@ -65,6 +65,9 @@ void mtsTeleOperationPSM::Init(void)
                                 this);
 
     // disabled
+    mTeleopState.SetEnterCallback("DISABLED",
+                                  &mtsTeleOperationPSM::EnterDisabled,
+                                  this);
     mTeleopState.SetTransitionCallback("DISABLED",
                                        &mtsTeleOperationPSM::TransitionDisabled,
                                        this);
@@ -121,6 +124,7 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("measured_cp", mMTM.measured_cp);
         interfaceRequired->AddFunction("measured_cv", mMTM.measured_cv, MTS_OPTIONAL);
         interfaceRequired->AddFunction("setpoint_cp", mMTM.setpoint_cp);
+        interfaceRequired->AddFunction("hold", mMTM.hold);
         interfaceRequired->AddFunction("move_cp", mMTM.move_cp);
         interfaceRequired->AddFunction("gripper/measured_js", mMTM.gripper_measured_js, MTS_OPTIONAL);
         interfaceRequired->AddFunction("lock_orientation", mMTM.lock_orientation, MTS_OPTIONAL);
@@ -148,7 +152,7 @@ void mtsTeleOperationPSM::Init(void)
     }
 
     // footpedal events
-    interfaceRequired = AddInterfaceRequired("Clutch");
+    interfaceRequired = AddInterfaceRequired("clutch");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::ClutchEventHandler, this, "Button");
     }
@@ -353,13 +357,13 @@ void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
     }
 
     // Gripper threshold to start teleop
-    jsonValue = jsonConfig["start-gripper-threshold"];
+    jsonValue = jsonConfig["start_gripper_threshold"];
     if (!jsonValue.empty()) {
         m_operator.gripper_threshold = jsonValue.asDouble();
     }
     if (m_operator.gripper_threshold < 0.0) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": \"start-gripper-threshold\" must be a positive number.  Found "
+                                 << ": \"start_gripper_threshold\" must be a positive number.  Found "
                                  << m_operator.gripper_threshold << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -709,6 +713,11 @@ void mtsTeleOperationPSM::RunAllStates(void)
             mInterface->SendError(this->GetName() + ": MTM is not in state \"READY\" anymore");
         }
     }
+}
+
+void mtsTeleOperationPSM::EnterDisabled(void)
+{
+    mMTM.hold();
 }
 
 void mtsTeleOperationPSM::TransitionDisabled(void)

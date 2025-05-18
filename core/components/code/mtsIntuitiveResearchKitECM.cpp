@@ -122,18 +122,18 @@ void mtsIntuitiveResearchKitECM::set_simulated(void)
     // in simulation mode, we don't need clutch IO
     RemoveInterfaceRequired("ManipClutch");
     // for Si systems, remove a few more interfaces
-    if (m_generation == dvrk::generation_t::Si) {
-        RemoveInterfaceRequired("SUJClutch");
-        RemoveInterfaceRequired("SUJClutch2");
-        RemoveInterfaceRequired("SUJBrake");
+    if (m_generation == dvrk::generation::Si) {
+        RemoveInterfaceRequired("SUJ_clutch");
+        RemoveInterfaceRequired("SUJ_clutch2");
+        RemoveInterfaceRequired("SUJ_brake");
     }
 }
 
-void mtsIntuitiveResearchKitECM::set_generation(const dvrk::generation_t generation)
+void mtsIntuitiveResearchKitECM::set_generation(const dvrk::generation generation)
 {
     mtsIntuitiveResearchKitArm::set_generation(generation);
     // for S/si, add SUJClutch interface
-    if ((generation == dvrk::generation_t::Si)
+    if ((generation == dvrk::generation::Si)
         && !m_simulated) {
         auto interfaceRequired = AddInterfaceRequired("SUJClutch");
         if (interfaceRequired) {
@@ -177,7 +177,7 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
 
     // ask to set pitch if not already defined
     if (m_mounting_pitch > std::numeric_limits<double>::max()) {
-        if (generation() == dvrk::generation_t::Classic) {
+        if (generation() == dvrk::generation::Classic) {
             m_mounting_pitch = -45.0 * cmnPI_180;
         } else {
             m_mounting_pitch = -70.0 * cmnPI_180;
@@ -199,10 +199,10 @@ void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
     const auto jsonPhysicalDH = jsonConfig["kinematic-gc"];
     if (!jsonPhysicalDH.isNull()) {
         physical_dh_name = jsonPhysicalDH.asString();
-    } else if (m_generation == dvrk::generation_t::Si) {
+    } else if (m_generation == dvrk::generation::Si) {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Si" << std::endl;
         physical_dh_name = "kinematic/ecm-si-physical.json";
-    } else if (m_generation == dvrk::generation_t::Classic) {
+    } else if (m_generation == dvrk::generation::Classic) {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Classic" << std::endl;
         physical_dh_name = "kinematic/ecm.json";
     } else {
