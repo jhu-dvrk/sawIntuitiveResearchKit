@@ -122,18 +122,18 @@ void mtsIntuitiveResearchKitECM::set_simulated(void)
     // in simulation mode, we don't need clutch IO
     RemoveInterfaceRequired("ManipClutch");
     // for Si systems, remove a few more interfaces
-    if (m_generation == GENERATION_Si) {
+    if (m_generation == dvrk::generation_t::Si) {
         RemoveInterfaceRequired("SUJClutch");
         RemoveInterfaceRequired("SUJClutch2");
         RemoveInterfaceRequired("SUJBrake");
     }
 }
 
-void mtsIntuitiveResearchKitECM::set_generation(const GenerationType generation)
+void mtsIntuitiveResearchKitECM::set_generation(const dvrk::generation_t generation)
 {
     mtsIntuitiveResearchKitArm::set_generation(generation);
     // for S/si, add SUJClutch interface
-    if ((generation == GENERATION_Si)
+    if ((generation == dvrk::generation_t::Si)
         && !m_simulated) {
         auto interfaceRequired = AddInterfaceRequired("SUJClutch");
         if (interfaceRequired) {
@@ -177,15 +177,15 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
 
     // ask to set pitch if not already defined
     if (m_mounting_pitch > std::numeric_limits<double>::max()) {
-        if (generation() == GENERATION_Classic) {
+        if (generation() == dvrk::generation_t::Classic) {
             m_mounting_pitch = -45.0 * cmnPI_180;
         } else {
             m_mounting_pitch = -70.0 * cmnPI_180;
         }
         CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName() << std::endl
-                                 << "\"mounting-pitch\" was not defined in \"" << filename << "\"" << std::endl
+                                 << "\"mounting_pitch\" was not defined in \"" << filename << "\"" << std::endl
                                  << "If your ECM is mounted on the SUJ you should add it using: " << std::endl
-                                 << " \"mounting-pitch\": " << std::to_string(m_mounting_pitch)
+                                 << " \"mounting_pitch\": " << std::to_string(m_mounting_pitch)
                                  << " // " << std::to_string(m_mounting_pitch * cmn180_PI) << " degrees" << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -199,10 +199,10 @@ void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
     const auto jsonPhysicalDH = jsonConfig["kinematic-gc"];
     if (!jsonPhysicalDH.isNull()) {
         physical_dh_name = jsonPhysicalDH.asString();
-    } else if (m_generation == GENERATION_Si) {
+    } else if (m_generation == dvrk::generation_t::Si) {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Si" << std::endl;
         physical_dh_name = "kinematic/ecm-si-physical.json";
-    } else if (m_generation == GENERATION_Classic) {
+    } else if (m_generation == dvrk::generation_t::Classic) {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Classic" << std::endl;
         physical_dh_name = "kinematic/ecm.json";
     } else {
@@ -405,7 +405,7 @@ void mtsIntuitiveResearchKitECM::EventHandlerManipClutch(const prmEventButton & 
     // Start manual mode but save the previous state
     switch (button.Type()) {
     case prmEventButton::PRESSED:
-        if (ArmIsReady("Clutch", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+        if (ArmIsReady("Clutch", mtsIntuitiveResearchKitControlTypes::JOINT_SPACE)) {
             ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
             mArmState.SetCurrentState("MANUAL");
             set_LED_pattern(mtsIntuitiveResearchKit::Blue200,

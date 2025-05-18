@@ -31,6 +31,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
+#include <sawIntuitiveResearchKit/console_configuration_t.h>
 
 // Always include last!
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -40,106 +41,112 @@ namespace dvrk {
     class console;
 }
 
+class mtsRobotIO1394;
 class mtsTextToSpeech;
 class mtsDaVinciEndoscopeFocus;
 class mtsIntuitiveResearchKitArm;
 
 class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 {
-    CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
+    CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
  public:
     friend class mtsIntuitiveResearchKitConsoleQt;
     friend class dvrk::console;
 
-    class CISST_EXPORT Arm {
-    public:
-        typedef enum {ARM_UNDEFINED,
-                      ARM_MTM, ARM_PSM, ARM_ECM,
-                      ARM_SUJ_Classic, ARM_SUJ_Si, ARM_SUJ_Fixed,
-                      ARM_MTM_GENERIC, ARM_PSM_GENERIC, ARM_ECM_GENERIC,
-                      ARM_MTM_DERIVED, ARM_PSM_DERIVED, ARM_ECM_DERIVED,
-                      FOCUS_CONTROLLER} ArmType;
 
-        typedef enum {SIMULATION_NONE,
-                      SIMULATION_KINEMATIC,
-                      SIMULATION_DYNAMIC} SimulationType;
+    class CISST_EXPORT IO_proxy_t {
+    public:
 
         friend class mtsIntuitiveResearchKitConsole;
-        friend class mtsIntuitiveResearchKitConsoleQt;
-        friend class dvrk::console;
 
-        bool generic(void) const;
-        bool psm(void) const;
-        bool mtm(void) const;
-        bool ecm(void) const;
-        bool suj(void) const;
-        bool native_or_derived(void) const;
-        bool native_or_derived_mtm(void) const;
-        bool native_or_derived_psm(void) const;
-        bool native_or_derived_ecm(void) const;
-        void set_generation(const mtsIntuitiveResearchKitArm::GenerationType generation);
-        mtsIntuitiveResearchKitArm::GenerationType generation(void) const;
-        bool expects_PID(void) const;
-        bool expects_IO(void) const;
+        std::string m_name;
+        mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        dvrk::IO_proxy_configuration_t * m_config = nullptr;
 
-        Arm(mtsIntuitiveResearchKitConsole * console,
-            const std::string & name,
-            const std::string & ioComponentName);
+        IO_proxy_t(const std::string & name,
+                   mtsIntuitiveResearchKitConsole * console,
+                   dvrk::IO_proxy_configuration_t * config);
 
-        NOT_COPYABLE(Arm);
-        NOT_MOVEABLE(Arm);
+        NOT_COPYABLE(IO_proxy_t);
+        NOT_MOVEABLE(IO_proxy_t);
+
+        /*! Configure, i.e. load json and validate. */
+        void post_configure(void);
+
+        /*! Create and configure IO component. */
+        void create_IO(void);
+
+    protected:
+        std::shared_ptr<mtsRobotIO1394> m_IO = nullptr;
+        mtsFunctionVoid close_all_relays;
+        mtsInterfaceRequired * m_interface_required;
+    };
+
+
+    class CISST_EXPORT arm_proxy_t {
+     public:
+
+        friend class mtsIntuitiveResearchKitConsole;
+
+        arm_proxy_t(const std::string & name,
+                    mtsIntuitiveResearchKitConsole * console,
+                    dvrk::arm_proxy_configuration_t * config);
+
+        NOT_COPYABLE(arm_proxy_t);
+        NOT_MOVEABLE(arm_proxy_t);
+
+        /*! Load and validate configuration from json */
+        void post_configure(void);
+
+        /*! Create and configure the robot arm. */
+        void create_arm(void);
 
         /*! Create a new PID component and connect it to the proper RobotIO
           interface.  If the period in seconds is zero, the PID will be tied to
           IO using the ExecIn/ExecOut interfaces. */
-        void ConfigurePID(const std::string & configFile,
-                          const double & periodInSeconds = 0.0 * cmn_ms);
-
-        /*! Create and configure the robot arm. */
-        void ConfigureArm(const ArmType armType,
-                          const std::string & kinematicsConfigFile,
-                          const double & periodInSeconds = mtsIntuitiveResearchKit::ArmPeriod);
+        void create_PID(void);
+        void configure_IO(void);
 
         /*! Check if mBaseFrame has a valid name and if it does
           set_base_frame on the arm. */
-        void SetBaseFrameIfNeeded(mtsIntuitiveResearchKitArm * armPointer);
+        void set_base_frame_if_needed(void);
 
         /*! Connect all interfaces specific to this arm. */
-        bool Connect(void);
+        bool connect(void);
 
         /*! Accessors */
-        const std::string & Name(void) const;
-        const std::string & ComponentName(void) const;
-        const std::string & InterfaceName(void) const;
-        const std::string & IOComponentName(void) const;
-        const std::string & PIDComponentName(void) const;
+        dvrk::generation_t generation(void) const;
 
-    protected:
-        mtsIntuitiveResearchKitConsole * m_console = nullptr;
         std::string m_name;
-        ArmType m_type;
-        mtsIntuitiveResearchKitArm::GenerationType m_generation = mtsIntuitiveResearchKitArm::GENERATION_UNDEFINED;
+        mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        dvrk::arm_proxy_configuration_t * m_config = nullptr;
+
+        std::shared_ptr<mtsIntuitiveResearchKitArm> m_arm = nullptr;
+
         std::string m_serial;
-        SimulationType m_simulation;
         bool m_calibration_mode = false;
-        cmnPath m_config_path;
 
         // low level
         std::string m_IO_component_name;
+        std::string m_IO_interface_name;
         std::string m_IO_configuration_file;
-        std::string m_IO_gripper_configuration_file; // for MTMs only
+        // for MTMs only
+        std::string m_IO_gripper_interface_name;
+        std::string m_IO_gripper_configuration_file;
         // PID
         std::string m_PID_component_name;
-        std::string m_PID_configuration_file;
+        std::string m_PID_configuration_file; // actual file
         // arm
-        std::string m_arm_component_name;
-        std::string m_arm_interface_name;
         std::string m_arm_configuration_file;
-        double m_arm_period;
+        std::string m_arm_component_name; // for generic or derived
+        std::string m_arm_interface_name; // for generic or derived
+
+        double m_arm_period = mtsIntuitiveResearchKit::ArmPeriod;
         // add ROS bridge
         bool m_skip_ROS_bridge;
 
+    protected:
         // base frame
         // (name and frame) OR (component and interface)
         prmPositionCartesianSet m_base_frame;
@@ -148,24 +155,26 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
 
         mtsFunctionWrite state_command;
         mtsFunctionVoid hold;
-        mtsInterfaceRequired * IOInterfaceRequired = nullptr;
-        mtsInterfaceRequired * IODallasInterfaceRequired = nullptr;
-        mtsInterfaceRequired * PIDInterfaceRequired = nullptr;
-        mtsInterfaceRequired * ArmInterfaceRequired = nullptr;
+
+        // interfaces used to communicate with components created for a given arm
+        mtsInterfaceRequired * m_IO_interface_required = nullptr;
+        mtsInterfaceRequired * m_IO_dallas_interface_required = nullptr;
+        mtsInterfaceRequired * m_PID_interface_required = nullptr;
+        mtsInterfaceRequired * m_arm_interface_required = nullptr;
 
         // this is used only by PSMs and ECM
         mtsInterfaceRequired * SUJInterfaceRequiredFromIO = nullptr;
         mtsInterfaceRequired * SUJInterfaceRequiredFromIO2 = nullptr; // for Si second clutch button
         mtsInterfaceRequired * SUJInterfaceRequiredToSUJ = nullptr;
         mtsFunctionWrite SUJClutch;
-        bool mSUJClutched;
+        bool m_SUJ_clutched = false;
 
         void SUJClutchEventHandlerFromIO(const prmEventButton & button) {
             if (button.Type() == prmEventButton::PRESSED) {
-                mSUJClutched = true;
+                m_SUJ_clutched = true;
                 SUJClutch(true);
             } else {
-                mSUJClutched = false;
+                m_SUJ_clutched = false;
                 SUJClutch(false);
             }
         }
@@ -173,73 +182,72 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         void CurrentStateEventHandler(const prmOperatingState & currentState);
     };
 
-    class CISST_EXPORT TeleopECM {
+
+    class CISST_EXPORT teleop_PSM_proxy_t {
     public:
-        typedef enum {TELEOP_ECM, TELEOP_ECM_DERIVED, TELEOP_ECM_GENERIC} TeleopECMType;
+
         friend class mtsIntuitiveResearchKitConsole;
-        friend class mtsIntuitiveResearchKitConsoleQt;
-        friend class dvrk::console;
 
-        TeleopECM(const std::string & name);
-
-        NOT_COPYABLE(TeleopECM);
-        NOT_MOVEABLE(TeleopECM);
-
-        /*! Create and configure the robot arm. */
-        void ConfigureTeleop(const TeleopECMType type,
-                             const double & periodInSeconds,
-                             const Json::Value & jsonConfig);
-
-        /*! Accessors */
-        const std::string & Name(void) const;
-
-    protected:
         std::string m_name;
-        TeleopECMType m_type;
-        mtsFunctionWrite state_command;
-        mtsInterfaceRequired * InterfaceRequired;
-    };
+        mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        dvrk::teleop_PSM_proxy_configuration_t * m_config = nullptr;
 
-    class TeleopPSM {
-    public:
-        typedef enum {TELEOP_PSM, TELEOP_PSM_DERIVED, TELEOP_PSM_GENERIC} TeleopPSMType;
-        friend class mtsIntuitiveResearchKitConsole;
-        friend class mtsIntuitiveResearchKitConsoleQt;
-        friend class dvrk::console;
+        teleop_PSM_proxy_t(const std::string & name,
+                           mtsIntuitiveResearchKitConsole * console,
+                           dvrk::teleop_PSM_proxy_configuration_t * config);
 
-        TeleopPSM(const std::string & name,
-                  const std::string & nameMTM,
-                  const std::string & namePSM);
+        NOT_COPYABLE(teleop_PSM_proxy_t);
+        NOT_MOVEABLE(teleop_PSM_proxy_t);
 
-        NOT_COPYABLE(TeleopPSM);
-        NOT_MOVEABLE(TeleopPSM);
+        /*! Configure, i.e. load json and validate. */
+        void post_configure(void);
 
-        /*! Create and configure the robot arm. */
-        void ConfigureTeleop(const TeleopPSMType type,
-                             const double & periodInSeconds,
-                             const Json::Value & jsonConfig);
-
-        /*! Accessors */
-        const std::string & Name(void) const;
+        /*! Create and configure the teleoperation component. */
+        void create_teleop(void);
 
         /*! Turn on/off selected */
-        inline const bool & Selected(void) const {
-            return mSelected;
+        inline const bool & selected(void) const {
+            return m_selected;
         }
-        inline void SetSelected(const bool selected) {
-            mSelected = selected;
+        inline void set_selected(const bool select) {
+            m_selected = select;
         }
 
     protected:
-        bool mSelected;
-        std::string m_name;
-        TeleopPSMType m_type;
-        std::string mMTMName;
-        std::string mPSMName;
+        bool m_selected;
         mtsFunctionWrite state_command;
         mtsFunctionWrite set_scale;
-        mtsInterfaceRequired * InterfaceRequired;
+        mtsInterfaceRequired * m_interface_required;
     };
+
+
+    class CISST_EXPORT teleop_ECM_proxy_t {
+    public:
+        friend class mtsIntuitiveResearchKitConsole;
+
+        std::string m_name;
+        mtsIntuitiveResearchKitConsole * m_console = nullptr;
+        dvrk::teleop_ECM_proxy_configuration_t * m_config = nullptr;
+
+        teleop_ECM_proxy_t(const std::string & name,
+                           mtsIntuitiveResearchKitConsole * console,
+                           dvrk::teleop_ECM_proxy_configuration_t * config);
+
+        NOT_COPYABLE(teleop_ECM_proxy_t);
+        NOT_MOVEABLE(teleop_ECM_proxy_t);
+
+        void post_configure(void);
+
+        /*! Create and configure the teleoperation component. */
+        void create_teleop(void);
+
+    protected:
+        mtsFunctionWrite state_command;
+        mtsFunctionWrite set_scale;
+        mtsInterfaceRequired * m_interface_required;
+    };
+
+
 
     mtsIntuitiveResearchKitConsole(const std::string & componentName);
     inline virtual ~mtsIntuitiveResearchKitConsole() {}
@@ -266,20 +274,19 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     void Run(void);
     void Cleanup(void);
 
-    bool AddArm(Arm * newArm);
-
-    std::string GetArmIOComponentName(const std::string & armName);
+    std::string GetArmIOComponentName(const std::string & arm_name);
 
     void AddFootpedalInterfaces(void);
 
     bool Connect(void);
 
-    std::string locate_file(const std::string & filename);
+    std::string find_file(const std::string & filename) const;
 
  protected:
+    dvrk::console_configuration_t m_config;
     bool m_configured;
     cmnPath m_config_path;
-    mtsDelayedConnections mConnections;
+    mtsDelayedConnections m_connections;
 
     double mTimeOfLastErrorBeep;
     bool mTeleopEnabled = false;
@@ -288,29 +295,31 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     bool mTeleopECMRunning = false;
     bool mTeleopEnabledBeforeCamera;
 
-    typedef std::map<std::string, Arm *> ArmList;
-    ArmList mArms;
 
     /*! Pointer to mtsTextToSpeech component */
-    mtsTextToSpeech * mTextToSpeech;
+    std::shared_ptr<mtsTextToSpeech> m_text_to_speech;
 
-    /*! List to manage multiple PSM teleoperations */
-    typedef std::map<std::string, TeleopPSM *> TeleopPSMList;
-    TeleopPSMList mTeleopsPSM;
+    typedef std::map<std::string, std::shared_ptr<IO_proxy_t>> IO_proxies_t;
+    IO_proxies_t m_IO_proxies;
 
-    /*! List to manage the teleopPSM components for each PSM */
-    typedef std::multimap<std::string, TeleopPSM *> TeleopPSMByPSMList;
-    TeleopPSMByPSMList mTeleopsPSMByPSM;
+    typedef std::map<std::string, std::shared_ptr<arm_proxy_t>> arm_proxies_t;
+    arm_proxies_t m_arm_proxies;
 
-    /*! List to manage the teleopPSM components for each MTM */
-    typedef std::multimap<std::string, TeleopPSM *> TeleopPSMByMTMList;
-    TeleopPSMByMTMList mTeleopsPSMByMTM;
+    typedef std::map<std::string, std::shared_ptr<teleop_PSM_proxy_t>> teleop_PSM_proxies_t;
+    teleop_PSM_proxies_t m_teleop_PSM_proxies;
+
+    typedef std::map<std::string, std::shared_ptr<teleop_ECM_proxy_t>> teleop_ECM_proxies_t;
+    teleop_ECM_proxies_t m_teleop_ECM_proxies;
+
+
+    typedef std::multimap<std::string, std::shared_ptr<teleop_PSM_proxy_t>> teleop_PSM_proxies_by_arm_t;
+    teleop_PSM_proxies_by_arm_t m_teleop_PSM_proxies_by_psm;
+    teleop_PSM_proxies_by_arm_t m_teleop_PSM_proxies_by_MTM;
 
     /*! Name of default MTM to cycle teleops if no name is provided */
     std::string mTeleopMTMToCycle;
 
-    /*! Single ECM bimanual teleoperation */
-    TeleopECM * mTeleopECM = nullptr;
+    /*! List to manage multiple ECM teleoperations */
 
     /*! Head sensor */
     mtsComponent * mHeadSensor = nullptr;
@@ -318,26 +327,21 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     /*! daVinci Endoscope Focus */
     mtsDaVinciEndoscopeFocus * mDaVinciEndoscopeFocus = nullptr;
 
-    /*! Find all arm data from JSON configuration. */
-    bool ConfigureArmJSON(const Json::Value & jsonArm,
-                          const std::string & ioComponentName);
-    bool AddArmInterfaces(Arm * arm);
+    bool add_IO_interfaces(std::shared_ptr<IO_proxy_t> IO_proxy);
+    bool add_arm_interfaces(std::shared_ptr<arm_proxy_t> arm_proxy);
 
     // these two methods have exact same implementation.it would be
     // nice to have a base class, or template this
-    bool AddTeleopECMInterfaces(TeleopECM * teleop);
-    bool AddTeleopPSMInterfaces(TeleopPSM * teleop);
-
-    bool ConfigureECMTeleopJSON(const Json::Value & jsonTeleop);
-    bool ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop);
+    bool add_teleop_PSM_interfaces(std::shared_ptr<teleop_PSM_proxy_t> teleop_proxy);
+    bool add_teleop_ECM_interfaces(std::shared_ptr<teleop_ECM_proxy_t> teleop_proxy);
 
     void power_off(void);
     void power_on(void);
     void home(void);
     void DisableFaultyArms(void);
     void teleop_enable(const bool & enable);
-    void cycle_teleop_psm_by_mtm(const std::string & mtmName);
-    void select_teleop_psm(const prmKeyValue & mtmPsm);
+    void cycle_teleop_PSM_by_MTM(const std::string & mtmName);
+    void select_teleop_PSM(const prmKeyValue & mtmPsm);
     bool GetPSMSelectedForMTM(const std::string & mtmName, std::string & psmName) const;
     bool GetMTMSelectedForPSM(const std::string & psmName, std::string & mtmName) const;
     void EventSelectedTeleopPSMs(void) const;
@@ -346,11 +350,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     void set_volume(const double & volume);
     void beep(const vctDoubleVec & values); // duration, frequency, volume
     void string_to_speech(const std::string & text);
-    bool mHasIO = false;
-    Arm * m_SUJ = nullptr;
+    std::unique_ptr<arm_proxy_t> m_SUJ = nullptr;
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
     void OperatorPresentEventHandler(const prmEventButton & button);
+
+    void ConnectInternal(bool &ret) const;
 
     bool m_calibration_mode = false;
 
@@ -360,7 +365,6 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
         mtsFunctionWrite volume; // event
     } audio;
     double m_audio_volume;
-    bool mChatty;
 
     struct {
         mtsFunctionWrite clutch;
@@ -371,25 +375,17 @@ class CISST_EXPORT mtsIntuitiveResearchKitConsole: public mtsTaskFromSignal
     bool mOperatorPresent;
     bool mCameraPressed;
 
-    std::string m_IO_component_name; // for actuator IOs
-
     // components used for events (digital inputs)
     typedef std::pair<std::string, std::string> InterfaceComponentType;
     typedef std::map<std::string, InterfaceComponentType> DInputSourceType;
     DInputSourceType mDInputSources;
 
-    mtsInterfaceRequired * m_IO_interface = nullptr;
-    struct {
-        mtsFunctionVoid close_all_relays;
-    } IO;
-    bool m_close_all_relays_from_config = true;
-
     mtsInterfaceProvided * mInterface = nullptr;
     struct {
         mtsFunctionWrite ArmCurrentState;
         mtsFunctionWrite scale;
-        mtsFunctionWrite teleop_psm_selected;
-        mtsFunctionWrite teleop_psm_unselected;
+        mtsFunctionWrite teleop_PSM_selected;
+        mtsFunctionWrite teleop_PSM_unselected;
     } ConfigurationEvents;
 
     void ErrorEventHandler(const mtsMessage & message);

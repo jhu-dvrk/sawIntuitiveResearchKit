@@ -42,17 +42,17 @@ namespace dvrk {
                                            const double _publish_period_in_seconds,
                                            const double _tf_period_in_seconds);
 
-        void bridge_interface_provided_ecm(const std::string & _component_name,
+        void bridge_interface_provided_ECM(const std::string & _component_name,
                                            const std::string & _interface_name,
                                            const double _publish_period_in_seconds,
                                            const double _tf_period_in_seconds);
 
-        void bridge_interface_provided_mtm(const std::string & _component_name,
+        void bridge_interface_provided_MTM(const std::string & _component_name,
                                            const std::string & _interface_name,
                                            const double _publish_period_in_seconds,
                                            const double _tf_period_in_seconds);
 
-        void bridge_interface_provided_psm(const std::string & _component_name,
+        void bridge_interface_provided_PSM(const std::string & _component_name,
                                            const std::string & _interface_name,
                                            const double _publish_period_in_seconds,
                                            const double _tf_period_in_seconds);
@@ -69,14 +69,14 @@ namespace dvrk {
         void add_topics_pid(const double _publish_period_in_seconds,
                             const bool _read_write);
         // buttons on ECM
-        void add_topics_ecm_io(const std::string & _arm_name,
+        void add_topics_ECM_io(const std::string & _arm_name,
                                const std::string & _io_component_name);
         // buttons on PSM
-        void add_topics_psm_io(const std::string & _arm_name,
+        void add_topics_PSM_io(const std::string & _arm_name,
                                const std::string & _io_component_name);
-        void add_topics_suj_voltages(void);
-        void add_topics_teleop_ecm(const std::string & _name);
-        void add_topics_teleop_psm(const std::string & _name);
+        void add_topics_SUJ_voltages(void);
+        void add_topics_teleop_ECM(const std::string & _name);
+        void add_topics_teleop_PSM(const std::string & _name);
 
     protected:
         mtsROSBridge * m_pub_bridge;

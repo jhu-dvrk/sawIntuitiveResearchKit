@@ -45,7 +45,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstRobot/robReflexxes.h>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitControlTypes.h>
+#include <sawIntuitiveResearchKit/arm_configuration_t.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
 #include <sawIntuitiveResearchKit/robGravityCompensation.h>
 
@@ -79,8 +80,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
         m_calibration_mode = mode;
     }
 
-    typedef enum {GENERATION_UNDEFINED, GENERATION_Classic, GENERATION_Si} GenerationType;
-    virtual inline GenerationType generation(void) const {
+    virtual inline dvrk::generation_t generation(void) const {
         return m_generation;
     }
 
@@ -104,7 +104,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     inline virtual void PostConfigure(const Json::Value & CMN_UNUSED(jsonConfig),
                                       const cmnPath & CMN_UNUSED(configPath),
                                       const std::string & CMN_UNUSED(filename)) {};
-    inline virtual void set_generation(const GenerationType generation) {
+    inline virtual void set_generation(const dvrk::generation_t generation) {
         m_generation = generation;
     }
 
@@ -395,12 +395,12 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
 
     bool m_powered = false;
 
-    mtsIntuitiveResearchKitArmTypes::ControlSpace m_control_space;
-    mtsIntuitiveResearchKitArmTypes::ControlMode m_control_mode;
+    mtsIntuitiveResearchKitControlTypes::ControlSpace m_control_space;
+    mtsIntuitiveResearchKitControlTypes::ControlMode m_control_mode;
 
     /*! Method used to check if the arm is ready and throttle messages sent. */
     bool ArmIsReady(const std::string & methodName,
-                    const mtsIntuitiveResearchKitArmTypes::ControlSpace space);
+                    const mtsIntuitiveResearchKitControlTypes::ControlSpace space);
     size_t mArmNotReadyCounter;
     double mArmNotReadyTimeLastMessage;
 
@@ -433,16 +433,16 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
       callbacks will be using the methods provided in this class.
       If either the space or mode is "USER", a callback must be
       provided. */
-    void SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
-                                const mtsIntuitiveResearchKitArmTypes::ControlMode mode,
+    void SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
+                                const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
                                 mtsCallableVoidBase * callback = 0);
 
     /*! Set the control space and mode along with a callback for
       control.  The callback method will be use only if either the
       space or the mode is "USER". */
     template <class __classType>
-        inline void SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
-                                           const mtsIntuitiveResearchKitArmTypes::ControlMode mode,
+        inline void SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
+                                           const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
                                            void (__classType::*method)(void),
                                            __classType * classInstantiation) {
         this->SetControlSpaceAndMode(space, mode,
@@ -529,7 +529,8 @@ class CISST_EXPORT mtsIntuitiveResearchKitArm: public mtsTaskPeriodic
     double m_homing_timer;
 
     // generation
-    GenerationType m_generation = GENERATION_UNDEFINED;
+    dvrk::generation_t m_generation
+        = dvrk::generation_t::GENERATION_UNDEFINED;
 
     // flag to determine if this is connected to actual IO/hardware or simulated
     bool m_simulated = false;

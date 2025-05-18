@@ -53,7 +53,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void set_scale(const double & scale);
     void lock_rotation(const bool & lock);
     void lock_translation(const bool & lock);
-    void set_align_mtm(const bool & alignMTM);
+    void set_align_MTM(const bool & alignMTM);
     void following_mtm_body_servo_cf(const prmForceCartesianSet & wrench);
 
  protected:
@@ -79,7 +79,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         mtsFunctionWrite scale;
         mtsFunctionWrite rotation_locked;
         mtsFunctionWrite translation_locked;
-        mtsFunctionWrite align_mtm;
+        mtsFunctionWrite align_MTM;
     } ConfigurationEvents;
 
     void SetDesiredState(const std::string & state);
@@ -197,7 +197,7 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     bool m_jaw_caught_up_after_clutch = false;
     bool m_rotation_locked = false;
     bool m_translation_locked = false;
-    bool m_align_mtm = true; // default on da Vinci
+    bool m_align_MTM = true; // default on da Vinci
     prmForceCartesianSet m_following_mtm_body_servo_cf;
 
     vctMatRot3 mMTMClutchedOrientation;

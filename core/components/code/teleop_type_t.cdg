@@ -1,0 +1,46 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+enum {
+    name teleop_PSM_type_t;
+    namespace dvrk;
+    enum-value {
+        name TELEOP_PSM_UNDEFINED;
+        description Undefined;
+        value 0;
+    }
+    enum-value {
+        name TELEOP_PSM;
+        description Native PSM teleoperation component;
+    }
+    enum-value {
+        name TELEOP_PSM_DERIVED;
+        description Component derived from native PSM teleoperation;
+    }
+    enum-value {
+        name TELEOP_PSM_GENERIC;
+        description Generic component with interfaces compatible with native teleoperation;
+    }
+}
+
+enum {
+    name teleop_ECM_type_t;
+    namespace dvrk;
+    enum-value {
+        name TELEOP_ECM_UNDEFINED;
+        description Undefined;
+        value 0;
+    }
+    enum-value {
+        name TELEOP_ECM;
+        description Native ECM teleoperation component;
+    }
+    enum-value {
+        name TELEOP_ECM_DERIVED;
+        description Component derived from native ECM teleoperation;
+    }
+    enum-value {
+        name TELEOP_ECM_GENERIC;
+        description Generic component with interfaces compatible with native teleoperation;
+    }
+}

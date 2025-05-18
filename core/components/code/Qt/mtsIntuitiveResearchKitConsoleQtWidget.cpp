@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Zihan Chen
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 
 // cisst
 #include <cisstBuildType.h>
+#include <cisstRevision.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 #include <cisstMultiTask/mtsComponentViewer.h>
@@ -66,11 +67,11 @@ mtsIntuitiveResearchKitConsoleQtWidget::mtsIntuitiveResearchKitConsoleQtWidget(c
         interfaceRequired->AddFunction("teleop_enable", Console.teleop_enable);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopEnabledEventHandler,
                                                 this, "teleop_enabled");
-        interfaceRequired->AddFunction("select_teleop_psm", Console.select_teleop_psm);
+        interfaceRequired->AddFunction("select_teleop_PSM", Console.select_teleop_PSM);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMSelectedEventHandler,
-                                                this, "teleop_psm_selected");
+                                                this, "teleop_PSM_selected");
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::TeleopPSMUnselectedEventHandler,
-                                                this, "teleop_psm_unselected");
+                                                this, "teleop_PSM_unselected");
         interfaceRequired->AddFunction("set_scale", Console.set_scale);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitConsoleQtWidget::ScaleEventHandler,
                                                 this, "scale");
@@ -260,7 +261,7 @@ void mtsIntuitiveResearchKitConsoleQtWidget::GetTeleopButtonCheck(const PairStri
                                                                   QPushButton * & button,
                                                                   QCheckBox * & check)
 {
-    const QString teleop = pair.first + "-" + pair.second;
+    const QString teleop = pair.first + "_" + pair.second;
     auto iter = TeleopButtons.find(teleop);
     // insert new teleop if needed
     if (iter == TeleopButtons.end()) {
@@ -441,8 +442,8 @@ void mtsIntuitiveResearchKitConsoleQtWidget::setupUi(void)
 
     std::string title = "dVRK ";
     title.append(sawIntuitiveResearchKit_VERSION);
-    title.append(" / cisst ");
-    title.append(cisst_VERSION);
+    title.append(" / ");
+    title.append(CISST_FULL_REVISION);
     setWindowTitle(title.c_str());
     resize(sizeHint());
 
@@ -684,14 +685,14 @@ void mtsIntuitiveResearchKitConsoleQtWidget::FocusTeleopButton(const QString & t
 
 void mtsIntuitiveResearchKitConsoleQtWidget::SelectTeleopCheck(const PairStringType & pair)
 {
-    Console.select_teleop_psm(prmKeyValue(pair.first.toStdString(),
-                                        pair.second.toStdString()));
+    Console.select_teleop_PSM(prmKeyValue(pair.first.toStdString(),
+                                          pair.second.toStdString()));
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::UnselectTeleopCheck(const PairStringType & pair)
 {
-    Console.select_teleop_psm(prmKeyValue(pair.first.toStdString(),
-                                        std::string()));
+    Console.select_teleop_PSM(prmKeyValue(pair.first.toStdString(),
+                                          std::string()));
 }
 
 void mtsIntuitiveResearchKitConsoleQtWidget::CameraEventHandler(const prmEventButton & button)

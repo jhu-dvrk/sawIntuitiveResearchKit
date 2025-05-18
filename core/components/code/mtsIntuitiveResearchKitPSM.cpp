@@ -104,39 +104,39 @@ void mtsIntuitiveResearchKitPSM::set_simulated(void)
 {
     mtsIntuitiveResearchKitArm::set_simulated();
     // in simulation mode, we don't need clutch, adapter, tool IO nor Dallas
-    RemoveInterfaceRequired("ManipClutch");
-    RemoveInterfaceRequired("Adapter");
-    RemoveInterfaceRequired("Tool");
-    RemoveInterfaceRequired("Dallas");
+    RemoveInterfaceRequired("arm_clutch");
+    RemoveInterfaceRequired("adapter");
+    RemoveInterfaceRequired("tool");
+    RemoveInterfaceRequired("dallas");
     // for Si systems, remove a few more interfaces
-    if (m_generation == GENERATION_Si) {
-        RemoveInterfaceRequired("SUJClutch");
-        RemoveInterfaceRequired("SUJClutch2");
-        RemoveInterfaceRequired("SUJBrake");
+    if (m_generation == dvrk::generation_t::Si) {
+        RemoveInterfaceRequired("SUJ_clutch");
+        RemoveInterfaceRequired("SUJ_clutch2");
+        RemoveInterfaceRequired("SUJ_brake");
     }
 }
 
-void mtsIntuitiveResearchKitPSM::set_generation(const GenerationType generation)
+void mtsIntuitiveResearchKitPSM::set_generation(const dvrk::generation_t generation)
 {
     mtsIntuitiveResearchKitArm::set_generation(generation);
     // for S/si, add SUJClutch interface
-    if ((generation == GENERATION_Si)
+    if ((generation == dvrk::generation_t::Si)
         && !m_simulated) {
-        auto interfaceRequired = AddInterfaceRequired("SUJClutch");
+        auto interfaceRequired = AddInterfaceRequired("SUJ_clutch");
         if (interfaceRequired) {
             interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch, this, "Button");
         }
-        interfaceRequired = AddInterfaceRequired("SUJClutch2");
+        interfaceRequired = AddInterfaceRequired("SUJ_clutch2");
         if (interfaceRequired) {
             interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerSUJClutch, this, "Button");
         }
-        interfaceRequired = AddInterfaceRequired("SUJBrake");
+        interfaceRequired = AddInterfaceRequired("SUJ_brake");
         if (interfaceRequired) {
             interfaceRequired->AddFunction("SetValue", SUJClutch.Brake);
         }
     } else {
-        if (GetInterfaceProvided("SUJClutch")) {
-            RemoveInterfaceRequired("SUJClutch");
+        if (GetInterfaceProvided("SUJ_clutch")) {
+            RemoveInterfaceRequired("SUJ_clutch");
         }
     }
 }
@@ -219,16 +219,16 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
     }
 
     // ask to set pitch if not already defined
-    if ((generation() == GENERATION_Si)
+    if ((generation() == dvrk::generation_t::Si)
         && (m_mounting_pitch > std::numeric_limits<double>::max())
         ) {
         CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName() << std::endl
-                                 << "\"mounting-pitch\" was not defined in \"" << filename << "\"" << std::endl
+                                 << "\"mounting_pitch\" was not defined in \"" << filename << "\"" << std::endl
                                  << "If your PSM is mounted on the SUJ you should add it using: " << std::endl
-                                 << " \"mounting-pitch\": " << std::to_string(-45.0)
+                                 << " \"mounting_pitch\": " << std::to_string(-45.0)
                                  << " // " << std::to_string(-45.0 * cmn180_PI) << " degrees for PSM1 and PSM2"
                                  << "Or:"
-                                 << " \"mounting-pitch\": " << std::to_string(-15.0)
+                                 << " \"mounting_pitch\": " << std::to_string(-15.0)
                                  << " // " << std::to_string(-15.0 * cmn180_PI) << " degrees for PSM3"
                                  << std::endl;
         exit(EXIT_FAILURE);
@@ -243,7 +243,7 @@ void mtsIntuitiveResearchKitPSM::ConfigureGC(const Json::Value & jsonConfig,
     const auto jsonPhysicalDH = jsonConfig["kinematic-gc"];
     if (!jsonPhysicalDH.isNull()) {
         physical_dh_name = jsonPhysicalDH.asString();
-    } else if (m_generation == GENERATION_Si) {
+    } else if (m_generation == dvrk::generation_t::Si) {
         CMN_LOG_CLASS_INIT_VERBOSE << "ConfigureGC: " << GetName() << ": no GC kinematics specified, using default for PSM Si" << std::endl;
         physical_dh_name = "kinematic/psm-si-physical.json";
     } else {
@@ -461,7 +461,7 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
             m_jaw_configuration_js.EffortMin().at(0) = -jsonJawFTMax.asDouble();
         }
 
-        m_jaw_configuration_js.Name().SetSize(1);
+        m_jaw_configuration_js.Name().resize(1);
         m_jaw_configuration_js.Name().at(0) = "jaw";
         m_jaw_configuration_js.Type().SetSize(1);
         m_jaw_configuration_js.Type().at(0) = CMN_JOINT_REVOLUTE;
@@ -764,27 +764,27 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     m_arm_interface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
 
     // Event Adapter engage: digital input button event from PSM
-    interfaceRequired = AddInterfaceRequired("Adapter");
+    interfaceRequired = AddInterfaceRequired("adapter");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetButton", Adapter.GetButton);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerAdapter, this, "Button");
     }
 
     // Event Tool engage: digital input button event from PSM
-    interfaceRequired = AddInterfaceRequired("Tool");
+    interfaceRequired = AddInterfaceRequired("tool");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("GetButton", Tool.GetButton);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerTool, this, "Button");
     }
 
     // ManipClutch: digital input button event from PSM
-    interfaceRequired = AddInterfaceRequired("ManipClutch");
+    interfaceRequired = AddInterfaceRequired("arm_clutch");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerManipClutch, this, "Button");
     }
 
     // Dallas: read tool type from Dallas Chip
-    interfaceRequired = AddInterfaceRequired("Dallas");
+    interfaceRequired = AddInterfaceRequired("dallas");
     if (interfaceRequired) {
         interfaceRequired->AddFunction("TriggerRead", Dallas.TriggerRead);
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitPSM::EventHandlerToolType, this, "ToolType");
@@ -869,9 +869,19 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
     }
     if (Adapter.IsEngaged && !Tool.IsEngaged) {
         if (!m_simulated) {
-            if ((Tool.IsPresent || Tool.IsEmulated) && m_tool_configured) {
-                set_tool_present_and_configured(true, m_tool_configured);
-                mArmState.SetCurrentState("ENGAGING_TOOL");
+            if ((Tool.IsPresent || Tool.IsEmulated)) {
+                // tool should be configured if automatic or fixed
+                if (m_tool_configured) {
+                    set_tool_present_and_configured(true, m_tool_configured);
+                    mArmState.SetCurrentState("ENGAGING_TOOL");
+                } else if ((mToolDetection == mtsIntuitiveResearchKitToolTypes::MANUAL)
+                           && !m_tool_type_requested) {
+                    // manual is not sent until robot is ready
+                    set_tool_present_and_configured(true, false);
+                    m_tool_type_requested = true;
+                    ToolEvents.tool_type_request();
+                    m_arm_interface->SendWarning(this->GetName() + ": tool type requested from user");
+                }
             }
         } else {
             // simulated case
@@ -899,7 +909,7 @@ void mtsIntuitiveResearchKitPSM::update_configuration_js_no_tool(void)
 
     // names
     const size_t manipulator_size = Manipulator->links.size();
-    m_configuration_js.Name().SetSize(number_of_joints());
+    m_configuration_js.Name().resize(number_of_joints());
     std::vector<std::string> name_tmp(manipulator_size);
     Manipulator->GetJointNames(name_tmp);
     // copy first 3 names to config vector
@@ -1014,8 +1024,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingAdapter(void)
         // set last 4 to -170.0
         m_trajectory_j.goal.Ref(4, 3).SetAll(-mtsIntuitiveResearchKit::PSM::AdapterEngageRange);
         m_trajectory_j.goal_v.SetAll(0.0);
-        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                               mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                               mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
         control_move_jp_on_start();
         EngagingStage = 2;
         return;
@@ -1146,8 +1156,8 @@ void mtsIntuitiveResearchKitPSM::RunEngagingTool(void)
         // set last 4 to user preferences
         m_trajectory_j.goal.Ref(4, 3).Assign(m_tool_engage_lower_position);
         m_trajectory_j.goal_v.SetAll(0.0);
-        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                               mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                               mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
         control_move_jp_on_start();
         EngagingStage = 2;
         return;
@@ -1216,20 +1226,20 @@ void mtsIntuitiveResearchKitPSM::EnterToolEngaged(void)
     // restore default PID tracking error
     PID.set_measured_setpoint_tolerance(PID.measured_setpoint_tolerance);
     // resize kinematics vectors
-    m_kin_measured_js.Name().ForceAssign(m_configuration_js.Name());
+    cmnDataCopy(m_kin_measured_js.Name(), m_configuration_js.Name());
     m_kin_measured_js.Position().SetSize(number_of_joints_kinematics());
     m_kin_measured_js.Velocity().SetSize(number_of_joints_kinematics());
     m_kin_measured_js.Effort().SetSize(number_of_joints_kinematics());
-    m_kin_setpoint_js.Name().ForceAssign(m_configuration_js.Name());
+    cmnDataCopy(m_kin_setpoint_js.Name(), m_configuration_js.Name());
     m_kin_setpoint_js.Position().SetSize(number_of_joints_kinematics());
     m_kin_setpoint_js.Velocity().SetSize(number_of_joints_kinematics());
     m_kin_setpoint_js.Effort().SetSize(number_of_joints_kinematics());
     // jaw
-    m_jaw_measured_js.Name().ForceAssign(m_jaw_configuration_js.Name());
+    cmnDataCopy(m_jaw_measured_js.Name(), m_jaw_configuration_js.Name());
     m_jaw_measured_js.Position().SetSize(1);
     m_jaw_measured_js.Velocity().SetSize(1);
     m_jaw_measured_js.Effort().SetSize(1);
-    m_jaw_setpoint_js.Name().ForceAssign(m_jaw_configuration_js.Name());
+    cmnDataCopy(m_jaw_setpoint_js.Name(), m_jaw_configuration_js.Name());
     m_jaw_setpoint_js.Position().SetSize(1);
     m_jaw_setpoint_js.Velocity().SetSize(0);
     m_jaw_setpoint_js.Effort().SetSize(1);
@@ -1277,26 +1287,26 @@ double mtsIntuitiveResearchKitPSM::clip_jaw_jp(double jp)
 void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPosition)
 {
     // we need to need to at least ready to control in cartesian space
-    if (!ArmIsReady("jaw_servo_jp", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+    if (!ArmIsReady("jaw_servo_jp", mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE)) {
         return;
     }
 
     // keep cartesian space is already there, otherwise use joint_space
     switch (m_control_space) {
-    case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-        if (! (m_control_mode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)) {
-            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                                   mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    case mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE:
+        if (! (m_control_mode == mtsIntuitiveResearchKitControlTypes::POSITION_MODE)) {
+            SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
+                                   mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
             // make sure all other joints have a reasonable cartesian
             // goal for all other joints
             m_servo_cp.Goal().Assign(m_setpoint_cp.Position());
         }
         break;
     default:
-        if (! (m_control_mode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE)) {
+        if (! (m_control_mode == mtsIntuitiveResearchKitControlTypes::POSITION_MODE)) {
             // we are initiating the control mode switch
-            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                                   mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+            SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                                   mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
             // make sure all other joints have a reasonable goal
             m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
         }
@@ -1311,26 +1321,26 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
 void mtsIntuitiveResearchKitPSM::jaw_move_jp(const prmPositionJointSet & jawPosition)
 {
     // we need to need to at least ready to control in cartesian space
-    if (!ArmIsReady("jaw_move_jp", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+    if (!ArmIsReady("jaw_move_jp", mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE)) {
         return;
     }
 
     // keep cartesian space is already there, otherwise use joint_space
     switch (m_control_space) {
-    case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-        if (m_control_mode != mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE) {
+    case mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE:
+        if (m_control_mode != mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE) {
             // we are initiating the control mode switch
-            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                                   mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+            SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
+                                   mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
             // make sure all other joints have a reasonable goal
             m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position(), number_of_joints_kinematics());
         }
         break;
     default:
-        if (m_control_mode != mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE) {
+        if (m_control_mode != mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE) {
             // we are initiating the control mode switch
-            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                                   mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+            SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                                   mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
             // make sure all other joints have a reasonable goal
             m_trajectory_j.goal.Assign(m_pid_setpoint_js.Position());
         }
@@ -1384,16 +1394,16 @@ void mtsIntuitiveResearchKitPSM::servo_jp_internal(const vctDoubleVec & jp,
 
 void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & effort)
 {
-    if (!ArmIsReady("servo_jf", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+    if (!ArmIsReady("servo_jf", mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE)) {
         return;
     }
 
     // keep cartesian space is already there, otherwise use joint_space
     switch (m_control_space) {
-    case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
-        if (m_control_mode != mtsIntuitiveResearchKitArmTypes::EFFORT_MODE) {
-            SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                                   mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+    case mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE:
+        if (m_control_mode != mtsIntuitiveResearchKitControlTypes::EFFORT_MODE) {
+            SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
+                                   mtsIntuitiveResearchKitControlTypes::EFFORT_MODE);
             // make sure all other joints have a reasonable cartesian
             // goal
             m_servo_cf.Force().SetAll(0.0);
@@ -1401,8 +1411,8 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jf(const prmForceTorqueJointSet & eff
         break;
     default:
         // we are initiating the control mode switch
-        SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                               mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+        SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
+                               mtsIntuitiveResearchKitControlTypes::EFFORT_MODE);
         // make sure all other joints have a reasonable goal
         m_servo_jf.ForceTorque().SetAll(0.0);
     }
@@ -1566,9 +1576,11 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
             break;
         case mtsIntuitiveResearchKitToolTypes::MANUAL:
             set_tool_present_and_configured(true, false);
-            m_tool_type_requested = true;
-            ToolEvents.tool_type_request();
-            m_arm_interface->SendWarning(this->GetName() + ": tool type requested from user");
+            if (is_joint_ready()) {
+                m_tool_type_requested = true;
+                ToolEvents.tool_type_request();
+                m_arm_interface->SendWarning(this->GetName() + ": tool type requested from user");
+            }
             break;
         case mtsIntuitiveResearchKitToolTypes::FIXED:
             {
@@ -1616,7 +1628,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerManipClutch(const prmEventButton & 
     // Start manual mode but save the previous state
     switch (button.Type()) {
     case prmEventButton::PRESSED:
-        if (ArmIsReady("Clutch", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+        if (ArmIsReady("Clutch", mtsIntuitiveResearchKitControlTypes::JOINT_SPACE)) {
             ClutchEvents.ManipClutchPreviousState = mArmState.CurrentState();
             PID.enabled(ClutchEvents.PIDEnabledPreviousState);
             mArmState.SetCurrentState("MANUAL");

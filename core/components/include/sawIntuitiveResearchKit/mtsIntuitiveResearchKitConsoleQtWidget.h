@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-17
 
-  (C) Copyright 2013-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -108,7 +108,7 @@ protected:
         mtsFunctionVoid power_on;
         mtsFunctionVoid home;
         mtsFunctionWrite teleop_enable;
-        mtsFunctionWrite select_teleop_psm;
+        mtsFunctionWrite select_teleop_PSM;
         mtsFunctionWrite set_scale;
         mtsFunctionWrite set_volume;
         mtsFunctionWrite emulate_operator_present;
@@ -126,7 +126,7 @@ protected:
     void ClutchEventHandler(const prmEventButton & button);
     void CameraEventHandler(const prmEventButton & button);
     void VolumeEventHandler(const double & volume);
-    
+
     QVBoxLayout * QVBArms;
     std::map<QString, QPushButton *> ArmButtons;
 

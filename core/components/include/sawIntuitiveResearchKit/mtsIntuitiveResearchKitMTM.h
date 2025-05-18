@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -19,6 +19,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #ifndef _mtsIntuitiveResearchKitMTM_h
 #define _mtsIntuitiveResearchKitMTM_h
+
+#include <memory>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 

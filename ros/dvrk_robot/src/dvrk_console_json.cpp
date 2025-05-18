@@ -47,7 +47,7 @@ void fileExists(const std::string & description, std::string & filename,
                 mtsIntuitiveResearchKitConsole * console)
 {
     if (!cmnPath::Exists(filename)) {
-        const std::string fileInPath = console->locate_file(filename);
+        const std::string fileInPath = console->find_file(filename);
         if (fileInPath == "") {
             std::cerr << "File not found: " << description
                       << ": " << filename << std::endl;
@@ -208,7 +208,7 @@ int main(int argc, char ** argv)
     componentManager->AddComponent(consoleROS);
 
     if (options.IsSet("suj-voltages")) {
-        consoleROS->add_topics_suj_voltages();
+        consoleROS->add_topics_SUJ_voltages();
     }
 
     if (options.IsSet("io-topics-read-write")) {

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2024 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -19,6 +19,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #ifndef _mtsIntuitiveResearchKitPSM_h
 #define _mtsIntuitiveResearchKitPSM_h
+
+#include <memory>
 
 #include <cisstParameterTypes/prmActuatorJointCoupling.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
@@ -42,7 +44,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void set_simulated(void) override;
 
  protected:
-    void set_generation(const GenerationType generation) override;
+    void set_generation(const dvrk::generation_t generation) override;
     void load_tool_list(const cmnPath & path,
                         const std::string & indexFile = "tool/index.json");
 
@@ -69,10 +71,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     inline size_t number_of_brakes(void) const override {
         switch (m_generation) {
-        case mtsIntuitiveResearchKitArm::GENERATION_Classic:
+        case dvrk::generation_t::Classic:
             return 0;
             break;
-        case mtsIntuitiveResearchKitArm::GENERATION_Si:
+        case dvrk::generation_t::Si:
             return 3;
             break;
         default:

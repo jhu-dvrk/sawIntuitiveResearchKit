@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-05-15
 
-  (C) Copyright 2013-2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -19,6 +19,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #ifndef _mtsIntuitiveResearchKitECM_h
 #define _mtsIntuitiveResearchKitECM_h
+
+#include <memory>
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArm.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitEndoscopeTypes.h>
@@ -41,7 +43,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitECM: public mtsIntuitiveResearchKitArm
     void set_simulated(void) override;
 
  protected:
-    void set_generation(const GenerationType generation) override;
+    void set_generation(const dvrk::generation_t generation) override;
     void PostConfigure(const Json::Value & jsonConfig,
                        const cmnPath & configPath,
                        const std::string & filename) override;

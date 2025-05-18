@@ -9,7 +9,7 @@
 #
 # --- end cisst license ---
 
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.16)
 project (sawIntuitiveResearchKit VERSION 2.3.1)
 
 set (REQUIRED_CISST_LIBRARIES
@@ -200,7 +200,17 @@ if (cisst_FOUND)
          )
 
     set (CDG_FILES
-      code/mtsIntuitiveResearchKitArmTypes.cdg
+      code/arm_configuration_t.cdg
+      code/arm_proxy_configuration_t.cdg
+      code/arm_type_t.cdg
+      code/base_frame_t.cdg
+      code/console_configuration_t.cdg
+      code/generation_t.cdg
+      code/IO_proxy_configuration_t.cdg
+      code/simulation_t.cdg
+      code/teleop_proxy_configuration_t.cdg
+      code/teleop_type_t.cdg
+      code/mtsIntuitiveResearchKitControlTypes.cdg
       code/mtsIntuitiveResearchKitToolTypes.cdg
       code/mtsIntuitiveResearchKitEndoscopeTypes.cdg
       code/socketMessages.cdg)
