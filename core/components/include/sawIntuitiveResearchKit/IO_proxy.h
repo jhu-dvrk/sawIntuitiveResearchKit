@@ -19,6 +19,8 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _dvrk_IO_proxy_h
 #define _dvrk_IO_proxy_h
 
+#include <memory>
+
 #include <cisstMultiTask/mtsForwardDeclarations.h>
 #include <cisstMultiTask/mtsFunctionVoid.h>
 

@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _dvrk_system_h
 #define _dvrk_system_h
 
+#include <memory>
 #include <set>
 
 #include <cisstCommon/cmnPath.h>

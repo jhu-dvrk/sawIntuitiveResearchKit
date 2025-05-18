@@ -408,7 +408,7 @@ bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> _arm)
 {
     // IO
     if (_arm->m_config->expects_IO()) {
-        const std::string interface_IO_name = "IO-" + _arm->m_name;
+        const std::string interface_IO_name = "IO_" + _arm->m_name;
         _arm->m_IO_interface_required = AddInterfaceRequired(interface_IO_name);
         if (_arm->m_IO_interface_required) {
             auto itf = _arm->m_IO_interface_required;
@@ -425,7 +425,7 @@ bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> _arm)
         // is the arm is a PSM, since it has an IO, it also has a
         // Dallas chip interface and we want to see the messages
         if (_arm->m_config->native_or_derived_PSM()) {
-            const std::string interface_IO_Dallas_name = "IO_dallas-" + _arm->m_name;
+            const std::string interface_IO_Dallas_name = "IO_dallas_" + _arm->m_name;
             _arm->m_IO_dallas_interface_required = AddInterfaceRequired(interface_IO_Dallas_name);
             if (_arm->m_IO_dallas_interface_required) {
                 auto itf = _arm->m_IO_dallas_interface_required;

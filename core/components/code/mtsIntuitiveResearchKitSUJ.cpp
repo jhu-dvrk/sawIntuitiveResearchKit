@@ -650,7 +650,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         }
 
         brakeCurrent = 0.0;
-        if (!jsonArm["brake-engaged-current"].isNull()) {
+        if (!jsonArm["brake_engaged_current"].isNull()) {
             brakeCurrent = jsonArm["brake_engaged_current"].asFloat();
         }
         sarm->m_brake_engaged_current = brakeCurrent;

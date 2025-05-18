@@ -1,0 +1,45 @@
+SUJ-Clutch-1 = SUJ_clutch_1
+SUJ-Clutch-2 = SUJ_clutch_2
+SUJ-Clutch-3 = SUJ_clutch_3
+SUJ-Clutch-4 = SUJ_clutch_4
+
+MTML-Gripper = MTML_gripper
+MTMR-Gripper = MTMR_gripper
+
+PSM1-Adapter = PSM1_adapter
+PSM1-Tool = PSM1_tool
+PSM1-ManipClutch = PSM1_arm_clutch
+PSM1-SUJClutch = PSM1_SUJ_clutch
+PSM1-Dallas = PSM1_dallas
+
+PSM2-Adapter = PSM2_adapter
+PSM2-Tool = PSM2_tool
+PSM2-ManipClutch = PSM2_arm_clutch
+PSM2-SUJClutch = PSM2_SUJ_clutch
+PSM2-Dallas = PSM2_dallas
+
+PSM3-Adapter = PSM3_adapter
+PSM3-Tool = PSM3_tool
+PSM3-ManipClutch = PSM3_arm_clutch
+PSM3-SUJClutch = PSM3_SUJ_clutch
+PSM3-Dallas = PSM3_dallas
+
+PSM-teleops = teleop_PSMs
+serial-number = serial_number
+base-frame = base_frame
+reference-frame = reference_frame
+
+plug-number = plug_number
+brake-release-current = brake_release_current
+world-origin-to-suj = world_origin_to_SUJ
+suj-tip-to-tool-origin = SUJ_tip_to_tool_origin
+primary-offsets = primary_offsets
+secondary-offsets = secondary_offsets
+primary-scales = primary_scales
+secondary-scales = secondary_scales
+
+mtm = MTM
+psm = PSM
+mtm-left = MTML
+mtm-right = MTMR
+ecm = ECM

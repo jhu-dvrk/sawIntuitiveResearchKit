@@ -467,7 +467,7 @@ void dvrk::system_ROS::add_topics_IO(const double _publish_period_in_seconds,
             // IO bridge uses an object factory based on list of interfaces provided by the IO component
             mts_ros_crtk_robot_io_bridge * IO_bridge
                 = new mts_ros_crtk_robot_io_bridge(bridge_name, m_node_handle_ptr,
-                                                   "IO_" + name + "/", _publish_period_in_seconds,
+                                                   "IO/" + name + "/", _publish_period_in_seconds,
                                                    /*tf*/ 0.0, _read_write, /* spin */ false);
             component_manager->AddComponent(IO_bridge);
             component_manager->Connect(bridge_name, "RobotConfiguration",

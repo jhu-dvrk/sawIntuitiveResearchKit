@@ -115,7 +115,7 @@ int main(int argc, char ** argv)
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
     // system
-    auto * system = new dvrk::system("dVRK_system");
+    auto * system = new dvrk::system("system");
     system->set_calibration_mode(options.IsSet("calibration-mode"));
     file_exists("dVRK system JSON configuration file", jsonMainConfigFile, system);
     system->Configure(jsonMainConfigFile);

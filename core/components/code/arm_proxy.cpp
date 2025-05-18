@@ -168,14 +168,14 @@ void dvrk::arm_proxy::create_arm(void)
                                             m_IO_component_name, "MotorUp");
                 m_system->m_connections.Add(m_name, "MotorDown",
                                             m_IO_component_name, "MotorDown");
-                m_system->m_connections.Add(m_name, "SUJ-Clutch-1",
-                                            m_IO_component_name, "SUJ-Clutch-1");
-                m_system->m_connections.Add(m_name, "SUJ-Clutch-2",
-                                            m_IO_component_name, "SUJ-Clutch-2");
-                m_system->m_connections.Add(m_name, "SUJ-Clutch-3",
-                                            m_IO_component_name, "SUJ-Clutch-3");
-                m_system->m_connections.Add(m_name, "SUJ-Clutch-4",
-                                            m_IO_component_name, "SUJ-Clutch-4");
+                m_system->m_connections.Add(m_name, "SUJ_clutch_1",
+                                            m_IO_component_name, "SUJ_clutch_1");
+                m_system->m_connections.Add(m_name, "SUJ_clutch_2",
+                                            m_IO_component_name, "SUJ_clutch_2");
+                m_system->m_connections.Add(m_name, "SUJ_clutch_3",
+                                            m_IO_component_name, "SUJ_clutch_3");
+                m_system->m_connections.Add(m_name, "SUJ_clutch_4",
+                                            m_IO_component_name, "SUJ_clutch_4");
             }
             suj->Configure(m_arm_configuration_file);
             component_manager->AddComponent(suj);
