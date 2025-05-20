@@ -235,7 +235,7 @@ void dvrk::system_ROS::bridge_interface_provided_ECM(const std::string & _arm_na
          _arm_name + "/endoscope_type");
     events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
         (_required_interface_name, "arm_clutch",
-         _arm_name + "/manip_clutch");
+         _arm_name + "/arm_clutch");
 }
 
 void dvrk::system_ROS::bridge_interface_provided_MTM(const std::string & _arm_name,
@@ -300,7 +300,7 @@ void dvrk::system_ROS::bridge_interface_provided_PSM(const std::string & _arm_na
 
     events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
         (required_interface_name, "arm_clutch",
-         _arm_name + "/manip_clutch");
+         _arm_name + "/arm_clutch");
     events_bridge().AddPublisherFromEventVoid
         (required_interface_name, "tool_type_request",
          _arm_name + "/tool_type_request");
@@ -508,7 +508,7 @@ void dvrk::system_ROS::add_topics_ECM_IO(const std::string & _arm_name,
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "add_topics_ECM_IO called for " << _arm_name << std::endl;
     // known events and corresponding ros topic
-    const auto events = std::list<std::string>({"manip_clutch", "SUJ_clutch"});
+    const auto events = std::list<std::string>({"arm_clutch", "SUJ_clutch"});
     for (const auto & event : events) {
         std::string _interface_name = _arm_name + "_" + event;
         events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>

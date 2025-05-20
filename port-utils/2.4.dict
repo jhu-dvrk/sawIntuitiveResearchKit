@@ -24,6 +24,9 @@ PSM3-ManipClutch = PSM3_arm_clutch
 PSM3-SUJClutch = PSM3_SUJ_clutch
 PSM3-Dallas = PSM3_dallas
 
+ECM-ManipClutch = ECM_arm_clutch
+ECM-SUJClutch = ECM_SUJ_clutch
+
 PSM-teleops = teleop_PSMs
 serial-number = serial_number
 base-frame = base_frame
@@ -37,6 +40,8 @@ primary-offsets = primary_offsets
 secondary-offsets = secondary_offsets
 primary-scales = primary_scales
 secondary-scales = secondary_scales
+
+mounting-pitch = mounting_pitch
 
 mtm = MTM
 psm = PSM
