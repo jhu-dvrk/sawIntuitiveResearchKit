@@ -59,8 +59,6 @@ if (cisst_FOUND_AS_REQUIRED)
                mtsIntuitiveResearchKitSUJQtWidget.cpp
                ${sawIntuitiveResearchKit_HEADER_DIR}/mtsDaVinciEndoscopeFocusQtWidget.h
                mtsDaVinciEndoscopeFocusQtWidget.cpp
-               ${sawIntuitiveResearchKit_HEADER_DIR}/mtsSocketBaseQtWidget.h
-               mtsSocketBaseQtWidget.cpp
                ${sawIntuitiveResearchKit_QT_WRAP_CPP}
                ${sawIntuitiveResearchKit_QT_RESOURCES}
                )

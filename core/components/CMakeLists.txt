@@ -156,9 +156,6 @@ if (cisst_FOUND)
       mtsTeleOperationECM.h
       mtsDaVinciHeadSensor.h
       mtsDaVinciEndoscopeFocus.h
-      mtsSocketBasePSM.h
-      mtsSocketClientPSM.h
-      mtsSocketServerPSM.h
       mtsToolList.h
       robManipulatorECM.h
       robManipulatorMTM.h
@@ -191,9 +188,6 @@ if (cisst_FOUND)
       mtsTeleOperationECM.cpp
       mtsDaVinciHeadSensor.cpp
       mtsDaVinciEndoscopeFocus.cpp
-      mtsSocketBasePSM.cpp
-      mtsSocketClientPSM.cpp
-      mtsSocketServerPSM.cpp
       mtsToolList.cpp
       robManipulatorECM.cpp
       robManipulatorMTM.cpp
@@ -227,8 +221,7 @@ if (cisst_FOUND)
       teleop_type.cdg
       mtsIntuitiveResearchKitControlTypes.cdg
       mtsIntuitiveResearchKitToolTypes.cdg
-      mtsIntuitiveResearchKitEndoscopeTypes.cdg
-      socketMessages.cdg)
+      mtsIntuitiveResearchKitEndoscopeTypes.cdg)
 
     if (sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR)
       list (APPEND _HEADER_FILES mtsHIDHeadSensor.h)
