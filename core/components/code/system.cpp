@@ -152,7 +152,7 @@ void dvrk::system::Configure(const std::string & filename)
     // Json parse and load values, will complain if a field with no
     // default is not provided (e.g. "name")
     cmnDataDeSerializeTextJSON(m_config, json_config);
-    CMN_LOG_CLASS_INIT_VERBOSE << "system::Configure, loaded:" << std::endl
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configure, loaded:" << std::endl
                                << "------>" << std::endl
                                << cmnDataSerializeTextJSON(m_config) << std::endl
                                << "<------" << std::endl;

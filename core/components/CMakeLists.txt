@@ -217,6 +217,7 @@ if (cisst_FOUND)
       IO_proxy_configuration.cdg
       simulation.cdg
       system_configuration.cdg
+      teleop_PSM_configuration.cdg
       teleop_proxy_configuration.cdg
       teleop_type.cdg
       mtsIntuitiveResearchKitControlTypes.cdg

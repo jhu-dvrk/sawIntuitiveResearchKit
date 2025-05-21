@@ -31,6 +31,7 @@
 
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
+#include <sawIntuitiveResearchKit/teleop_PSM_configuration.h>
 
 // always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
@@ -66,6 +67,8 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
 
     void ClutchEventHandler(const prmEventButton & button);
     void Clutch(const bool & clutch);
+
+    dvrk::teleop_PSM_configuration m_config;
 
     // Functions for events
     struct {
@@ -121,7 +124,6 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         prmVelocityCartesianGet m_measured_cv;
         prmPositionCartesianGet m_setpoint_cp;
         prmPositionCartesianSet m_move_cp;
-        bool use_measured_cv = false;
         vctFrm4x4 CartesianInitial;
     } mMTM;
 
@@ -150,7 +152,6 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
         vctFrm4x4 CartesianInitial;
     } mBaseFrame;
 
-    double m_scale = mtsIntuitiveResearchKit::TeleOperationPSM::Scale;
     vctMatRot3 m_alignment_offset,
         m_alignment_offset_initial; // rotation offset between MTM and PSM when tele-operation goes in follow mode
 
@@ -170,12 +171,6 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void virtual UpdateGripperToJawConfiguration(void);
 
     struct {
-        bool ignore = false; // flag to tele-op in cartesian position only, don't need or drive the PSM jaws
-        double rate = mtsIntuitiveResearchKit::TeleOperationPSM::JawRate;
-        double rate_back_from_clutch = mtsIntuitiveResearchKit::TeleOperationPSM::JawRateBackFromClutch;
-    } m_jaw;
-
-    struct {
         double max = 60.0 * cmnPI_180; // from 2012, we assumed MTM gripper is 0 to 60 degrees
         double zero = 0.0; // value corresponding to closed SPM jaws,
                            // MTM gripper might go lower to force negative
@@ -183,13 +178,10 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     } m_gripper;
 
     struct {
-        double orientation_tolerance = mtsIntuitiveResearchKit::TeleOperationPSM::OrientationTolerance;
         double roll_min;
         double roll_max;
-        double roll_threshold = mtsIntuitiveResearchKit::TeleOperationPSM::RollThreshold;
         double gripper_min;
         double gripper_max;
-        double gripper_threshold = mtsIntuitiveResearchKit::TeleOperationPSM::GripperThreshold;
         bool is_active = false;
         bool was_active_before_clutch = false;
     } m_operator;
@@ -197,9 +189,6 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     bool m_clutched = false;
     bool m_back_from_clutch = false;
     bool m_jaw_caught_up_after_clutch = false;
-    bool m_rotation_locked = false;
-    bool m_translation_locked = false;
-    bool m_align_MTM = true; // default on da Vinci
     prmForceCartesianSet m_following_mtm_body_servo_cf;
 
     vctMatRot3 mMTMClutchedOrientation;

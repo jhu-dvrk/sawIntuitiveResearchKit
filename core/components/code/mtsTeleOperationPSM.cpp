@@ -113,10 +113,10 @@ void mtsTeleOperationPSM::Init(void)
     mConfigurationStateTable = new mtsStateTable(100, "Configuration");
     mConfigurationStateTable->SetAutomaticAdvance(false);
     this->AddStateTable(mConfigurationStateTable);
-    mConfigurationStateTable->AddData(m_scale, "scale");
-    mConfigurationStateTable->AddData(m_rotation_locked, "rotation_locked");
-    mConfigurationStateTable->AddData(m_translation_locked, "translation_locked");
-    mConfigurationStateTable->AddData(m_align_MTM, "align_MTM");
+    mConfigurationStateTable->AddData(m_config.scale, "scale");
+    mConfigurationStateTable->AddData(m_config.rotation_locked, "rotation_locked");
+    mConfigurationStateTable->AddData(m_config.translation_locked, "translation_locked");
+    mConfigurationStateTable->AddData(m_config.align_MTM, "align_MTM");
 
     // setup cisst interfaces
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MTM");
@@ -172,24 +172,24 @@ void mtsTeleOperationPSM::Init(void)
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::state_command, this,
                                     "state_command", std::string());
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::set_scale, this,
-                                    "set_scale", m_scale);
+                                    "set_scale", m_config.scale);
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::lock_rotation, this,
-                                    "lock_rotation", m_rotation_locked);
+                                    "lock_rotation", m_config.rotation_locked);
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::lock_translation, this,
-                                    "lock_translation", m_translation_locked);
+                                    "lock_translation", m_config.translation_locked);
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::set_align_MTM, this,
-                                    "set_align_MTM", m_align_MTM);
+                                    "set_align_MTM", m_config.align_MTM);
         mInterface->AddCommandWrite(&mtsTeleOperationPSM::following_mtm_body_servo_cf, this,
                                     "following/mtm/body/servo_cf");
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
-                                        m_scale,
+                                        m_config.scale,
                                         "scale");
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
-                                        m_rotation_locked, "rotation_locked");
+                                        m_config.rotation_locked, "rotation_locked");
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
-                                        m_translation_locked, "translation_locked");
+                                        m_config.translation_locked, "translation_locked");
         mInterface->AddCommandReadState(*(mConfigurationStateTable),
-                                        m_align_MTM, "align_MTM");
+                                        m_config.align_MTM, "align_MTM");
         mInterface->AddCommandReadState(this->StateTable,
                                         mMTM.m_measured_cp,
                                         "MTM/measured_cp");
@@ -211,13 +211,13 @@ void mtsTeleOperationPSM::Init(void)
                                   "following", false);
         // configuration
         mInterface->AddEventWrite(ConfigurationEvents.scale,
-                                  "scale", m_scale);
+                                  "scale", m_config.scale);
         mInterface->AddEventWrite(ConfigurationEvents.rotation_locked,
-                                  "rotation_locked", m_rotation_locked);
+                                  "rotation_locked", m_config.rotation_locked);
         mInterface->AddEventWrite(ConfigurationEvents.translation_locked,
-                                  "translation_locked", m_translation_locked);
+                                  "translation_locked", m_config.translation_locked);
         mInterface->AddEventWrite(ConfigurationEvents.align_MTM,
-                                  "align_MTM", m_align_MTM);
+                                  "align_MTM", m_config.align_MTM);
     }
 
     // so sent commands can be used with ros-bridge
@@ -257,74 +257,22 @@ void mtsTeleOperationPSM::Configure(const std::string & filename)
     mtsTeleOperationPSM::Configure(jsonConfig);
 }
 
-void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
+
+void mtsTeleOperationPSM::Configure(const Json::Value & _json_config)
 {
     Json::Value jsonValue;
 
     // base component configuration
-    mtsComponent::ConfigureJSON(jsonConfig);
+    mtsComponent::ConfigureJSON(_json_config);
 
-    // read scale if present
-    jsonValue = jsonConfig["scale"];
-    if (!jsonValue.empty()) {
-        m_scale = jsonValue.asDouble();
-    }
-    if (m_scale <= 0.0) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": \"scale\" must be a positive number.  Found " << m_scale << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // read orientation if present
-    jsonValue = jsonConfig["rotation"];
-    if (!jsonValue.empty()) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": \"rotation\" is deprecated"<< std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // rotation locked
-    jsonValue = jsonConfig["rotation-locked"];
-    if (!jsonValue.empty()) {
-        m_rotation_locked = jsonValue.asBool();
-    }
-
-    // rotation locked
-    jsonValue = jsonConfig["translation-locked"];
-    if (!jsonValue.empty()) {
-        m_translation_locked = jsonValue.asBool();
-    }
-
-    // ignore jaw if needed
-    jsonValue = jsonConfig["ignore-jaw"];
-    if (!jsonValue.empty()) {
-        m_jaw.ignore = jsonValue.asBool();
-    }
-
-    // jaw rate of opening-closing
-    jsonValue = jsonConfig["jaw-rate"];
-    if (!jsonValue.empty()) {
-        m_jaw.rate = jsonValue.asDouble();
-    }
-    if (m_jaw.rate <= 0.0) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": \"jaw-rate\" must be a positive number.  Found " << m_jaw.rate << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // jaw rate of opening-closing after clutch
-    jsonValue = jsonConfig["jaw-rate-back-from-clutch"];
-    if (!jsonValue.empty()) {
-        m_jaw.rate_back_from_clutch = jsonValue.asDouble();
-    }
-    if (m_jaw.rate_back_from_clutch <= 0.0) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": \"jaw-rate-back-from-clutch\" must be a positive number.  Found " << m_jaw.rate << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    cmnDataDeSerializeTextJSON(m_config, _json_config);
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configure, loaded:" << std::endl
+                               << "------>" << std::endl
+                               << cmnDataSerializeTextJSON(m_config) << std::endl
+                               << "<------" << std::endl;
 
     // gripper scaling
-    Json::Value jsonGripper = jsonConfig["gripper-scaling"];
+    Json::Value jsonGripper = _json_config["gripper-scaling"];
     if (!jsonGripper.empty()) {
         jsonValue = jsonGripper["max"];
         if (!jsonValue.empty()) {
@@ -344,79 +292,63 @@ void mtsTeleOperationPSM::Configure(const Json::Value & jsonConfig)
         }
     }
 
-    // orientation tolerance to start teleop
-    jsonValue = jsonConfig["start-orientation-tolerance"];
-    if (!jsonValue.empty()) {
-        m_operator.orientation_tolerance = jsonValue.asDouble();
+    // post config checks
+    if (m_config.start_orientation_tolerance < 0.0) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"start_orientation_tolerance\" must be a positive number" << std::endl;
+            exit(EXIT_FAILURE);
     }
-    if (m_operator.orientation_tolerance < 0.0) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": \"start-orientation-tolerance\" must be a positive number.  Found "
-                                 << m_operator.orientation_tolerance << std::endl;
-        exit(EXIT_FAILURE);
+    if (m_config.start_gripper_threshold < 0.0) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"start_gripper_threshold\" must be a positive number" << std::endl;
+            exit(EXIT_FAILURE);
     }
-
-    // Gripper threshold to start teleop
-    jsonValue = jsonConfig["start_gripper_threshold"];
-    if (!jsonValue.empty()) {
-        m_operator.gripper_threshold = jsonValue.asDouble();
+    if (m_config.start_roll_threshold < 0.0) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"start_roll_threshold\" must be a positive number" << std::endl;
+            exit(EXIT_FAILURE);
     }
-    if (m_operator.gripper_threshold < 0.0) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": \"start_gripper_threshold\" must be a positive number.  Found "
-                                 << m_operator.gripper_threshold << std::endl;
-        exit(EXIT_FAILURE);
+    if (m_config.scale <= 0.0) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"scale\" must be a strictly positive number" << std::endl;
+            exit(EXIT_FAILURE);
     }
-
-    // roll threshold to start teleop
-    jsonValue = jsonConfig["start-roll-threshold"];
-    if (!jsonValue.empty()) {
-        m_operator.roll_threshold = jsonValue.asDouble();
+    if (m_config.jaw_rate <= 0.0) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"jaw_rate\" must be a strictly positive number" << std::endl;
+            exit(EXIT_FAILURE);
     }
-    if (m_operator.roll_threshold < 0.0) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
-                                 << ": \"start-roll-threshold\" must be a positive number.  Found "
-                                 << m_operator.roll_threshold << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // align MTM if needed
-    jsonValue = jsonConfig["align_MTM"];
-    if (!jsonValue.empty()) {
-        m_align_MTM = jsonValue.asBool();
-    }
-
-    // use MTM cv and send to PSM
-    mMTM.use_measured_cv = true; // better by default
-    jsonValue = jsonConfig["use-mtm-velocity"];
-    if (!jsonValue.empty()) {
-        mMTM.use_measured_cv = jsonValue.asBool();
+    if (m_config.jaw_rate_after_clutch <= 0.0) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                     << ": \"jaw_rate_after_clutch\" must be a strictly positive number" << std::endl;
+            exit(EXIT_FAILURE);
     }
 }
+
 
 void mtsTeleOperationPSM::Startup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
-    set_scale(m_scale);
+    set_scale(m_config.scale);
     set_following(false);
-    lock_rotation(m_rotation_locked);
-    lock_translation(m_translation_locked);
-    set_align_MTM(m_align_MTM);
+    lock_rotation(m_config.rotation_locked);
+    lock_translation(m_config.translation_locked);
+    set_align_MTM(m_config.align_MTM);
 
     // check if functions for jaw are connected
-    if (!m_jaw.ignore) {
+    if (!m_config.ignore_jaw) {
         if (!mPSM.jaw_setpoint_js.IsValid()
             || !mPSM.jaw_servo_jp.IsValid()) {
-            mInterface->SendError(this->GetName() + ": optional functions \"jaw/servo_jp\" and \"jaw/setpoint_js\" are not connected, setting \"ignore-jaw\" to true");
-            m_jaw.ignore = true;
+            mInterface->SendError(this->GetName() + ": optional functions \"jaw/servo_jp\" and \"jaw/setpoint_js\" are not connected, setting \"ignore_jaw\" to true");
+            m_config.ignore_jaw = true;
         }
     }
 
     // check if MTM has measured_cv as needed
-    if (mMTM.use_measured_cv &&
+    if (m_config.use_MTM_velocity &&
         !mMTM.measured_cv.IsValid()) {
-        mMTM.use_measured_cv = false;
-        mInterface->SendWarning(this->GetName() + ": MTM doesn't provide measured_cv, you can avoid this warning by setting \"use-mtm-velocity\" to false");
+        m_config.use_MTM_velocity = false;
+        mInterface->SendWarning(this->GetName() + ": MTM doesn't provide measured_cv, you can avoid this warning by setting \"use_MTM_velocity\" to false");
     }
 }
 
@@ -480,7 +412,7 @@ void mtsTeleOperationPSM::Clutch(const bool & clutch)
         prmForceCartesianSet wrench;
         mMTM.body_servo_cf(wrench);
         mMTM.use_gravity_compensation(true);
-        if ((m_align_MTM || m_rotation_locked)
+        if ((m_config.align_MTM || m_config.rotation_locked)
             && mMTM.lock_orientation.IsValid()) {
             // lock in current position
             mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
@@ -567,9 +499,9 @@ void mtsTeleOperationPSM::set_scale(const double & scale)
 {
     // set scale
     mConfigurationStateTable->Start();
-    m_scale = scale;
+    m_config.scale = scale;
     mConfigurationStateTable->Advance();
-    ConfigurationEvents.scale(m_scale);
+    ConfigurationEvents.scale(m_config.scale);
 
     // update MTM/PSM previous position to prevent jumps
     UpdateInitialState();
@@ -578,9 +510,9 @@ void mtsTeleOperationPSM::set_scale(const double & scale)
 void mtsTeleOperationPSM::lock_rotation(const bool & lock)
 {
     mConfigurationStateTable->Start();
-    m_rotation_locked = lock;
+    m_config.rotation_locked = lock;
     mConfigurationStateTable->Advance();
-    ConfigurationEvents.rotation_locked(m_rotation_locked);
+    ConfigurationEvents.rotation_locked(m_config.rotation_locked);
     // when releasing the orientation, MTM orientation is likely off
     // so force re-align
     if (lock == false) {
@@ -600,9 +532,9 @@ void mtsTeleOperationPSM::lock_rotation(const bool & lock)
 void mtsTeleOperationPSM::lock_translation(const bool & lock)
 {
     mConfigurationStateTable->Start();
-    m_translation_locked = lock;
+    m_config.translation_locked = lock;
     mConfigurationStateTable->Advance();
-    ConfigurationEvents.translation_locked(m_translation_locked);
+    ConfigurationEvents.translation_locked(m_config.translation_locked);
     // update MTM/PSM previous position
     UpdateInitialState();
 }
@@ -613,15 +545,15 @@ void mtsTeleOperationPSM::set_align_MTM(const bool & alignMTM)
     // make sure we have access to lock/unlock
     if ((mMTM.lock_orientation.IsValid()
          && mMTM.unlock_orientation.IsValid())) {
-        m_align_MTM = alignMTM;
+        m_config.align_MTM = alignMTM;
     } else {
         if (alignMTM) {
             mInterface->SendWarning(this->GetName() + ": unable to force MTM alignment, the device doesn't provide commands to lock/unlock orientation");
         }
-        m_align_MTM = false;
+        m_config.align_MTM = false;
     }
     mConfigurationStateTable->Advance();
-    ConfigurationEvents.align_MTM(m_align_MTM);
+    ConfigurationEvents.align_MTM(m_config.align_MTM);
     // force re-align if the teleop is already enabled
     if (mTeleopState.CurrentState() == "ENABLED") {
         mTeleopState.SetCurrentState("DISABLED");
@@ -652,7 +584,7 @@ void mtsTeleOperationPSM::RunAllStates(void)
         mInterface->SendError(this->GetName() + ": unable to get cartesian position from MTM");
         mTeleopState.SetDesiredState("DISABLED");
     }
-    if (mMTM.use_measured_cv) {
+    if (m_config.use_MTM_velocity) {
         executionResult = mMTM.measured_cv(mMTM.m_measured_cv);
         if (!executionResult.IsOK()) {
             CMN_LOG_CLASS_RUN_ERROR << "Run: call to MTM.measured_cv failed \""
@@ -777,14 +709,14 @@ void mtsTeleOperationPSM::TransitionSettingArmsState(void)
 void mtsTeleOperationPSM::EnterAligningMTM(void)
 {
     // update user GUI re. scale
-    ConfigurationEvents.scale(m_scale);
+    ConfigurationEvents.scale(m_config.scale);
 
     // reset timer
     mInStateTimer = StateTable.GetTic();
     mTimeSinceLastAlign = 0.0;
 
     // if we don't align MTM, just stay in same position
-    if (!m_align_MTM) {
+    if (!m_config.align_MTM) {
         // convert to prm type
         mMTM.m_move_cp.Goal().Assign(mMTM.m_setpoint_cp.Position());
         mMTM.move_cp(mMTM.m_move_cp);
@@ -795,7 +727,7 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
         m_back_from_clutch = false;
     }
 
-    if (!m_jaw.ignore) {
+    if (!m_config.ignore_jaw) {
         // figure out the mapping between the MTM gripper angle and the PSM jaw angle
         UpdateGripperToJawConfiguration();
     }
@@ -810,7 +742,7 @@ void mtsTeleOperationPSM::EnterAligningMTM(void)
 void mtsTeleOperationPSM::RunAligningMTM(void)
 {
     // if clutched or align not needed, do nothing
-    if (m_clutched || !m_align_MTM) {
+    if (m_clutched || !m_config.align_MTM) {
         return;
     }
 
@@ -840,7 +772,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
     vctAxAnRot3 axisAngle(m_alignment_offset, VCT_NORMALIZE);
     double orientationError = 0.0;
     // set error only if we need to align MTM to PSM
-    if (m_align_MTM) {
+    if (m_config.align_MTM) {
         orientationError = axisAngle.Angle();
     }
 
@@ -870,19 +802,19 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
         const double rollRange = m_operator.roll_max - m_operator.roll_min;
 
         // different conditions to set operator active
-        if (gripperRange >= m_operator.gripper_threshold) {
+        if (gripperRange >= m_config.start_gripper_threshold) {
             m_operator.is_active = true;
-        } else if (rollRange >= m_operator.roll_threshold) {
+        } else if (rollRange >= m_config.start_roll_threshold) {
             m_operator.is_active = true;
         } else if ((gripperRange + rollRange)
-                   > 0.8 * (m_operator.gripper_threshold
-                            + m_operator.roll_threshold)) {
+                   > 0.8 * (m_config.start_gripper_threshold
+                            + m_config.start_roll_threshold)) {
             m_operator.is_active = true;
         }
     }
 
     // finally check for transition
-    if ((orientationError <= m_operator.orientation_tolerance)
+    if ((orientationError <= m_config.start_orientation_tolerance)
         && m_operator.is_active) {
         if (mTeleopState.DesiredState() == "ENABLED") {
             mTeleopState.SetCurrentState("ENABLED");
@@ -891,7 +823,7 @@ void mtsTeleOperationPSM::TransitionAligningMTM(void)
         // check timer and issue a message
         if ((StateTable.GetTic() - mInStateTimer) > 2.0 * cmn_s) {
             std::stringstream message;
-            if (orientationError >= m_operator.orientation_tolerance) {
+            if (orientationError >= m_config.start_orientation_tolerance) {
                 message << this->GetName() + ": unable to align MTM, angle error is "
                         << orientationError * cmn180_PI << " (deg)";
             } else if (!m_operator.is_active) {
@@ -909,7 +841,7 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     UpdateInitialState();
 
     // set gripper ghost if needed
-    if (!m_jaw.ignore) {
+    if (!m_config.ignore_jaw) {
         m_jaw_caught_up_after_clutch = false;
         // gripper ghost
         mPSM.jaw_setpoint_js(mPSM.m_jaw_setpoint_js);
@@ -930,7 +862,7 @@ void mtsTeleOperationPSM::EnterEnabled(void)
     m_following_mtm_body_servo_cf = wrench;
 
     // orientation locked or not
-    if (m_rotation_locked
+    if (m_config.rotation_locked
         && mMTM.lock_orientation.IsValid()) {
         mMTM.lock_orientation(mMTM.m_measured_cp.Position().Rotation());
     } else {
@@ -964,16 +896,16 @@ void mtsTeleOperationPSM::RunEnabled(void)
             // translation
             vct3 mtmTranslation;
             vct3 psmTranslation;
-            if (m_translation_locked) {
+            if (m_config.translation_locked) {
                 psmTranslation = mPSM.CartesianInitial.Translation();
             } else {
                 mtmTranslation = (mtmPosition.Translation() - mMTM.CartesianInitial.Translation());
-                psmTranslation = mtmTranslation * m_scale;
+                psmTranslation = mtmTranslation * m_config.scale;
                 psmTranslation = psmTranslation + mPSM.CartesianInitial.Translation();
             }
             // rotation
             vctMatRot3 psmRotation;
-            if (m_rotation_locked) {
+            if (m_config.rotation_locked) {
                 psmRotation.From(mPSM.CartesianInitial.Rotation());
             } else {
                 psmRotation = mtmPosition.Rotation() * m_alignment_offset_initial;
@@ -998,9 +930,9 @@ void mtsTeleOperationPSM::RunEnabled(void)
             mPSM.m_servo_cp.Goal().FromNormalized(psmCartesianGoal);
 
             // Add desired velocity if needed
-            if (mMTM.use_measured_cv) {
+            if (m_config.use_MTM_velocity) {
                 // linear is scaled and re-oriented
-                mPSM.m_servo_cp.Velocity() = m_scale * mMTM.m_measured_cv.VelocityLinear();
+                mPSM.m_servo_cp.Velocity() = m_config.scale * mMTM.m_measured_cv.VelocityLinear();
                 // angular is not scaled
                 mPSM.m_servo_cp.VelocityAngular() = mMTM.m_measured_cv.VelocityAngular();
             } else {
@@ -1010,7 +942,7 @@ void mtsTeleOperationPSM::RunEnabled(void)
 
             mPSM.servo_cp(mPSM.m_servo_cp);
 
-            if (!m_jaw.ignore) {
+            if (!m_config.ignore_jaw) {
                 // gripper
                 if (mMTM.gripper_measured_js.IsValid()) {
                     mMTM.gripper_measured_js(mMTM.m_gripper_measured_js);
@@ -1018,14 +950,14 @@ void mtsTeleOperationPSM::RunEnabled(void)
                     // see if we caught up
                     if (!m_jaw_caught_up_after_clutch) {
                         const double error = std::abs(currentGripper - m_gripper_ghost);
-                        if (error < mtsIntuitiveResearchKit::TeleOperationPSM::ToleranceBackFromClutch) {
+                        if (error < m_config.jaw_rate_after_clutch) {
                             m_jaw_caught_up_after_clutch = true;
                         }
                     }
                     // pick the rate based on back from clutch or not
                     const double delta = m_jaw_caught_up_after_clutch ?
-                        m_jaw.rate * StateTable.PeriodStats.PeriodAvg()
-                        : m_jaw.rate_back_from_clutch * StateTable.PeriodStats.PeriodAvg();
+                        m_config.jaw_rate * StateTable.PeriodStats.PeriodAvg()
+                        : m_config.jaw_rate_after_clutch * StateTable.PeriodStats.PeriodAvg();
                     // gripper ghost below, add to catch up
                     if (m_gripper_ghost <= (currentGripper - delta)) {
                         m_gripper_ghost += delta;
