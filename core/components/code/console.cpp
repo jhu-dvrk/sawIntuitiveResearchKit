@@ -668,24 +668,35 @@ void dvrk::console::operator_present_event_handler(const prmEventButton & _butto
 
 void dvrk::console::update_teleop_state(void)
 {
+    // overall teleop
     if (m_teleop_wanted != m_teleop_enabled) {
         m_teleop_enabled = m_teleop_wanted;
     }
+
+    // per teleop pair
     for (auto & iter : m_teleop_proxies) {
         auto & teleop_proxy = iter.second;
         if (m_teleop_enabled
             && !teleop_proxy->m_enabled
-            && teleop_proxy->m_selected) {
-            if (m_operator_present) {
+            && teleop_proxy->m_selected
+            && (((teleop_proxy->type() == teleop_proxy::ECM)
+                 && m_camera)
+                || ((teleop_proxy->type() == teleop_proxy::PSM)
+                    && !m_camera)
+                )
+            ) {
+            if (m_operator_present
+                || (teleop_proxy->type() == dvrk::teleop_proxy::ECM)
+                ) {
                 teleop_proxy->m_enabled = true;
                 teleop_proxy->state_command(std::string("enable"));
             } else {
                 teleop_proxy->state_command(std::string("align_MTM"));
             }
-        } else if (!m_operator_present
-                   || !m_teleop_enabled
-                   || (teleop_proxy->m_enabled &&
-                       !teleop_proxy->m_selected)) {
+        } else if (!m_teleop_enabled
+                   || !m_operator_present
+                   || teleop_proxy->m_enabled
+                   ) {
             teleop_proxy->m_enabled = false;
             teleop_proxy->state_command(std::string("disable"));
         }

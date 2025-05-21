@@ -1,6 +1,6 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "kinematic": "kinematic/ecm-si.json",
+    "kinematic": "kinematic/ECM_Si.json",
     "generation": "Si",
     "mounting_pitch": -1.221730, // -70.0 degrees
     "endoscope": "Classic_SD_STRAIGHT"

@@ -53,14 +53,14 @@
         }
     ]
     ,
-    "psm-teleops":
+    "PSM-teleops":
     [
         {
-            "mtm": "MTMR",
-            "psm": "PSM1",
+            "MTM": "MTMR",
+            "PSM": "PSM1",
             "configure-parameter": {
-                "start-gripper-threshold": 0.0,
-                "ignore-jaw": true,
+                "start_gripper_threshold": 0.0,
+                "ignore_jaw": true,
                 "scale": 0.4,
                 "rotation" : [[ 0.0000, -1.0000,  0.0000],
                               [ 1.0000,  0.0000,  0.0000],

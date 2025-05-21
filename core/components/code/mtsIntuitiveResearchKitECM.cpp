@@ -201,7 +201,7 @@ void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
         physical_dh_name = jsonPhysicalDH.asString();
     } else if (m_generation == dvrk::generation::Si) {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Si" << std::endl;
-        physical_dh_name = "kinematic/ecm-si-physical.json";
+        physical_dh_name = "kinematic/ECM_Si_physical.json";
     } else if (m_generation == dvrk::generation::Classic) {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Classic" << std::endl;
         physical_dh_name = "kinematic/ECM.json";
