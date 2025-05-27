@@ -27,7 +27,7 @@ public:
     Accordion(QWidget* parent = nullptr);
     Accordion(const QString& title, const QString& background_color, QWidget* parent = nullptr);
 
-    void setContents(QWidget* contents);
+    void setWidget(QWidget* contents);
 
 public slots:
 

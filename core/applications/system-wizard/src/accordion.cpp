@@ -42,12 +42,12 @@ Accordion::Accordion(const QString& title, const QString& background_color, QWid
     animation->setPropertyName("maximumHeight");
     animation->setStartValue(0);
     animation->setDuration(200); // miiliseconcds
-    animation->setEasingCurve(QEasingCurve::Type::InOutCubic);
+    animation->setEasingCurve(QEasingCurve::Type::Linear);
 
-    setContents(new QWidget());
+    setWidget(new QWidget());
 }
 
-void Accordion::setContents(QWidget* contents) {
+void Accordion::setWidget(QWidget* contents) {
     layout()->removeWidget(this->contents);
 
     this->contents = contents;
