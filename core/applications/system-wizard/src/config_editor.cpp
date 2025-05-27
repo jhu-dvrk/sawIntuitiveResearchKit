@@ -31,7 +31,7 @@ ConfigEditor::ConfigEditor(QWidget* parent) : QWidget(parent) {
 
     Accordion* ios = new Accordion("I/Os", "SteelBlue", this);
     IOEditor* io_editor = new IOEditor();
-    ios->setContents(io_editor);
+    ios->setWidget(io_editor);
 
     Accordion* arms = new Accordion("Arms", "LightSeaGreen", this);
     QWidget* arm_list = new QWidget();
@@ -39,15 +39,15 @@ ConfigEditor::ConfigEditor(QWidget* parent) : QWidget(parent) {
     arm_list_layout->addWidget(new ArmEditor(ArmType::Value::PSM));
     arm_list_layout->addWidget(new ArmEditor(ArmType::Value::MTM));
     arm_list_layout->addWidget(new ArmEditor(ArmType::Value::ECM));
-    arms->setContents(arm_list);
+    arms->setWidget(arm_list);
 
     Accordion* teleops = new Accordion("Teleops", "DodgerBlue", this);
     QLabel* teleop_contents = new QLabel(lorem);
-    teleops->setContents(teleop_contents);
+    teleops->setWidget(teleop_contents);
 
     Accordion* consoles = new Accordion("Consoles", "Salmon", this);
     QLabel* console_contents = new QLabel(lorem);
-    consoles->setContents(console_contents);
+    consoles->setWidget(console_contents);
 
     QVBoxLayout* scroller_layout = new QVBoxLayout(scroller_contents);
     scroller_layout->addWidget(ios);
