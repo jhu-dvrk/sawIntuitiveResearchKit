@@ -29,13 +29,12 @@ public:
 
     void setWidget(QWidget* contents);
 
-public slots:
-
 signals:
     void toggled(bool is_open);
 
 private:
     void toggle(bool button_checked);
+    void animation_finished();
 
     bool is_open;
 
