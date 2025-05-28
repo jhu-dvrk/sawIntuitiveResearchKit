@@ -39,19 +39,24 @@ if (cisst_FOUND_AS_REQUIRED)
     set (HEADER_FILES
          include/accordion.hpp
          include/arm_editor.hpp
+         include/arm_view.hpp
          include/config_editor.hpp
+         include/config_model.hpp
          include/config_sources.hpp
          include/enum_list_model.hpp
-         include/io_editor.hpp
+         include/io_view.hpp
+         include/list_view.hpp
          include/mainwindow.hpp
     )
 
     set (SOURCE_FILES
          src/accordion.cpp
          src/arm_editor.cpp
+         src/arm_view.cpp
          src/config_editor.cpp
          src/config_sources.cpp
-         src/io_editor.cpp
+         src/io_view.cpp
+         src/list_view.cpp
          src/mainwindow.cpp
     )
 

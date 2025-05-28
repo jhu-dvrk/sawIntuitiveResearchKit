@@ -16,38 +16,59 @@ http://www.cisst.org/cisst/license.txt.
 #include "config_editor.hpp"
 
 #include "accordion.hpp"
-#include "arm_editor.hpp"
-#include "io_editor.hpp"
+#include "arm_view.hpp"
 
 #include <QTreeWidget>
 
 namespace system_wizard {
 
-ConfigEditor::ConfigEditor(QWidget* parent) : QWidget(parent) {
+ConfigEditor::ConfigEditor(SystemConfigModel* model, QWidget* parent) : QWidget(parent), model(model), arm_editor(model, this) {
+    QVBoxLayout* layout = new QVBoxLayout(this);
+
     QScrollArea* scroller = new QScrollArea();
     QWidget* scroller_contents = new QWidget();
 
     const QString lorem = "Lorem ipsum dolor sit amet consectetur adipiscing elit, sed duo eiusmod...";
 
     Accordion* ios = new Accordion("I/Os", "SteelBlue", this);
-    IOEditor* io_editor = new IOEditor();
-    ios->setWidget(io_editor);
+    io_factory = std::make_unique<IOViewFactory>(model);
+    ListView* io_list = new ListView(arm_factory.get());
+    ios->setWidget(io_list);
+
+    auto test_io_config = IOConfig();
+    test_io_config.period_ms = 1500.0;
+    test_io_config.watchdog_timeout_ms = 10.0;
+    model->addIO(test_io_config);
+
+    QObject::connect(io_list, &ListView::try_delete, model, &SystemConfigModel::deleteIO);
+
+    QObject::connect(model, &SystemConfigModel::ioAdded, io_list, &ListView::itemAdded);
+    QObject::connect(model, &SystemConfigModel::ioUpdated, io_list, &ListView::itemUpdated);
+    QObject::connect(model, &SystemConfigModel::ioDeleted, io_list, &ListView::itemRemoved);
 
     Accordion* arms = new Accordion("Arms", "LightSeaGreen", this);
-    QWidget* arm_list = new QWidget();
-    QVBoxLayout* arm_list_layout = new QVBoxLayout(arm_list);
-    arm_list_layout->addWidget(new ArmEditor(ArmType::Value::PSM));
-    arm_list_layout->addWidget(new ArmEditor(ArmType::Value::MTM));
-    arm_list_layout->addWidget(new ArmEditor(ArmType::Value::ECM));
+    arm_factory = std::make_unique<ArmViewFactory>(model);
+    ListView* arm_list = new ListView(arm_factory.get());
     arms->setWidget(arm_list);
 
+    QObject::connect(arm_list, &ListView::add, &arm_editor, &ArmEditor::open);
+    QObject::connect(arm_list, &ListView::try_delete, model, &SystemConfigModel::deleteArm);
+
+    QObject::connect(model, &SystemConfigModel::armAdded, arm_list, &ListView::itemAdded);
+    QObject::connect(model, &SystemConfigModel::armUpdated, arm_list, &ListView::itemUpdated);
+    QObject::connect(model, &SystemConfigModel::armDeleted, arm_list, &ListView::itemRemoved);
+
     Accordion* teleops = new Accordion("Teleops", "DodgerBlue", this);
-    QLabel* teleop_contents = new QLabel(lorem);
-    teleops->setWidget(teleop_contents);
+    ListView* teleop_list = new ListView(arm_factory.get());
+    teleops->setWidget(teleop_list);
+
+    // QObject::connect(teleop_list, &ListView::add, &arm_editor, &ArmEditor::open);
 
     Accordion* consoles = new Accordion("Consoles", "Salmon", this);
-    QLabel* console_contents = new QLabel(lorem);
-    consoles->setWidget(console_contents);
+    ListView* console_list = new ListView(arm_factory.get());
+    consoles->setWidget(console_list);
+
+    // QObject::connect(console_list, &ListView::add, &arm_editor, &ArmEditor::open);
 
     QVBoxLayout* scroller_layout = new QVBoxLayout(scroller_contents);
     scroller_layout->addWidget(ios);
@@ -58,7 +79,6 @@ ConfigEditor::ConfigEditor(QWidget* parent) : QWidget(parent) {
     scroller->setWidget(scroller_contents);
     scroller->setWidgetResizable(true);
 
-    QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(scroller);
 }
 

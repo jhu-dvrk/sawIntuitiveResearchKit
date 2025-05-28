@@ -17,49 +17,26 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-ArmEditor::ArmEditor(ArmType type, QWidget* parent) : QFrame(parent) {
-    setFrameStyle(QFrame::StyledPanel);
-    setStyleSheet("system_wizard--ArmEditor { background-color: palette(base); border-radius: 10px; }");
+IntroPage::IntroPage(QWidget *parent) : QWizardPage(parent) {
+    setTitle("Arm type");
+    setSubTitle("Choose what type of arm to create");
 
-    QFormLayout* form = new QFormLayout(this);
+    QLabel* test = new QLabel("aksjdlkajsdkjas", this);
+}
 
-    QLineEdit* name_editor = new QLineEdit();
-    name_editor->insert(QString::fromStdString(type.name()));
+ArmEditor::ArmEditor(SystemConfigModel* model, QWidget* parent) : QWizard(parent), model(model) {
+    setPage(PAGE_INTRO, new IntroPage);
 
-    type_selector = new QComboBox();
-    type_selector->setModel(&type_model);
-    type_selector->setCurrentIndex(static_cast<int>(type.idx()));
+    setWindowTitle("Arm Editor");
 
-    QSpinBox* serial_selector = new QSpinBox();
-    serial_selector->setRange(0, 999999);
+    QObject::connect(button(QWizard::FinishButton), &QAbstractButton::clicked, this, &ArmEditor::done);
 
-    QCheckBox* skip_ros_bridge = new QCheckBox();
-    QCheckBox* add_socket_server = new QCheckBox();
+    setStartId(PAGE_INTRO);
+}
 
-    QLineEdit* component_name = new QLineEdit();
-    component_name->insert(QString::fromStdString(type.name()));
-
-    QLineEdit* interface_name = new QLineEdit();
-    interface_name->insert("Arm");
-
-    QLineEdit* io_file_path = new QLineEdit();
-    QLineEdit* pid_file_path = new QLineEdit();
-    QLineEdit* arm_file_path = new QLineEdit();
-    QLineEdit* kin_file_path = new QLineEdit();
-    QLineEdit* base_frame = new QLineEdit();
-
-    form->addRow("&Name: ", name_editor);
-    form->addRow("&Type: ", type_selector);
-    form->addRow("&Serial number: ", serial_selector);
-    form->addRow("&Skip ROS bridge: ", skip_ros_bridge);
-    form->addRow("&Add socket server: ", add_socket_server);
-    form->addRow("&Component name: ", component_name);
-    form->addRow("&Interface name: ", interface_name);
-    form->addRow("&IO config file: ", io_file_path);
-    form->addRow("&PID config file: ", pid_file_path);
-    form->addRow("&Arm config file: ", arm_file_path);
-    form->addRow("&Kinematic config file: ", kin_file_path);
-    form->addRow("&Base frame transform: ", base_frame);
+void ArmEditor::done() {
+    ArmConfig config = ArmConfig("Test", ArmType::Value::PSM_SOCKET);
+    model->addArm(config);
 }
 
 }
