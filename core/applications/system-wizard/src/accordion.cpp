@@ -44,11 +44,15 @@ Accordion::Accordion(const QString& title, const QString& background_color, QWid
     animation->setDuration(200); // miiliseconcds
     animation->setEasingCurve(QEasingCurve::Type::Linear);
 
+    QObject::connect(animation, &QPropertyAnimation::finished, this, &Accordion::animation_finished);
+
     setWidget(new QWidget());
 }
 
 void Accordion::setWidget(QWidget* contents) {
-    layout()->removeWidget(this->contents);
+    if (this->contents != nullptr) {
+        layout()->removeWidget(this->contents);
+    }
 
     this->contents = contents;
 
@@ -74,8 +78,15 @@ void Accordion::toggle(bool button_checked) {
 
     // start accordion animation
     int content_height = contents->sizeHint().height() + 10;
+    animation->setStartValue(0);
     animation->setEndValue(content_height);
     animation->start();
+}
+
+void Accordion::animation_finished() {
+    if (is_open) {
+        contents->setMaximumHeight(QWIDGETSIZE_MAX);
+    }
 }
 
 }
