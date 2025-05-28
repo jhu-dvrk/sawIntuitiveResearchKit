@@ -14,7 +14,9 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include "mainwindow.hpp"
+
 #include "config_editor.hpp"
+#include "config_model.hpp"
 
 #include <QtWidgets>
 #include <QFileDialog>
@@ -23,8 +25,12 @@ http://www.cisst.org/cisst/license.txt.
 namespace system_wizard {
 
 MainWindow::MainWindow() {
-    ConfigEditor* editor1 = new ConfigEditor();
-    ConfigEditor* editor2 = new ConfigEditor();
+    SystemConfigModel* model1 = new SystemConfigModel();
+
+    ConfigEditor* editor1 = new ConfigEditor(model1);
+
+    SystemConfigModel* model2 = new SystemConfigModel();
+    ConfigEditor* editor2 = new ConfigEditor(model2);
 
     QTabWidget* editor = new QTabWidget();
     editor->addTab(editor1, "Editor 1");
@@ -45,6 +51,12 @@ MainWindow::MainWindow() {
     createMenus();
 
     setWindowTitle("dVRK System Wizard");
+
+    model1->addArm(ArmConfig("PSM1", ArmType(ArmType::Value::PSM_GENERIC)));
+    model1->addArm(ArmConfig("ECM", ArmType(ArmType::Value::ECM)));
+
+    model2->addArm(ArmConfig("PSM1", ArmType(ArmType::Value::PSM)));
+    model2->addArm(ArmConfig("MTMR", ArmType(ArmType::Value::MTM_DERIVED)));
 }
 
 void MainWindow::createActions() {

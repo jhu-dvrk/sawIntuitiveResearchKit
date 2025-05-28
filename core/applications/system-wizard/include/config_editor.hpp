@@ -18,8 +18,12 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QtWidgets>
 
-#include "io_editor.hpp"
+#include "arm_editor.hpp"
+#include "arm_view.hpp"
+#include "config_model.hpp"
 #include "config_sources.hpp"
+#include "io_view.hpp"
+#include "list_view.hpp"
 
 namespace system_wizard {
 
@@ -27,12 +31,22 @@ class ConfigEditor : public QWidget {
     Q_OBJECT
 
 public:
-    ConfigEditor(QWidget* parent = nullptr);
+    ConfigEditor(SystemConfigModel* model, QWidget* parent = nullptr);
 
 public slots:
     void armsChanged();
 
 private:
+    SystemConfigModel* model;
+
+    ArmEditor arm_editor;
+    std::unique_ptr<ArmViewFactory> arm_factory;
+    std::unique_ptr<IOViewFactory> io_factory;
+
+    ListView* io_list;
+    ListView* arm_list;
+    ListView* teleop_list;
+    ListView* console_list;
 };
 
 }

@@ -68,7 +68,7 @@ void ConfigSources::loaded(const QString &path) {
             continue;
         }
 
-        const std::string name = entry.path().stem();
+        const std::string name = entry.path().stem().string();
 
         // Match one of e.g. PSM2, ECM, MTMR2, followed by -, followed by five or six digit serial
         const std::regex arm_regex("(PSM|MTM(L|R)|ECM)(\\d*)\\-(\\d{5,6})");
