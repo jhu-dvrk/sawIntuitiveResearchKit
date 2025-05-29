@@ -20,7 +20,7 @@ namespace system_wizard {
 ItemView::ItemView(ListView& list_view, int id, QWidget* parent)
     : QFrame(parent), list_view(list_view), id(id) {
     setFrameStyle(QFrame::StyledPanel);
-    setStyleSheet("background-color: palette(base); border-radius: 10px;");
+    setStyleSheet("system_wizard--ItemView { background-color: palette(base); border-radius: 10px; }");
 }
 
 ListView::ListView(ListModel* model, ItemViewFactory* view_factory)

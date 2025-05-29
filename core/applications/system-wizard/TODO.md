@@ -3,7 +3,7 @@
 ### General
 
 - [x] Non-templated list model
-- [ ] Make edit/delete buttons styled as buttons
+- [x] Make edit/delete buttons styled as buttons
 - [ ] Move edit/delete buttons to base ItemView
 - [ ] Disable delete button if not deletable
 - [ ] Status/tool tips
