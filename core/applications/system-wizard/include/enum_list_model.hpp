@@ -46,9 +46,10 @@ public:
 
         switch (role) {
         case Qt::DisplayRole:
+            return QString::fromStdString(t.name());
         case Qt::ToolTipRole:
         case Qt::WhatsThisRole:
-            return QString::fromStdString(t.name());
+            return QString::fromStdString(t.explain());
         default:
             return QVariant();
         }
