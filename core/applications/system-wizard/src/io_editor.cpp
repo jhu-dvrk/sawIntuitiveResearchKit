@@ -17,8 +17,15 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-IOEditor::IOEditor(QWidget* parent) : QWidget(parent) {
-    QFormLayout* form = new QFormLayout(this);
+IOEditor::IOEditor(SystemConfigModel* model, QWidget* parent) : QWizard(parent), model(model) {
+    QWizardPage* page = new QWizardPage;
+    page->setTitle("I/O Config Editor");
+
+    setOption(QWizard::NoBackButtonOnStartPage);
+
+    QFormLayout* form = new QFormLayout(page);
+
+    name_input = new QLineEdit();
 
     port_selector = new QComboBox();
     port_selector->setModel(&port_model);
@@ -26,18 +33,62 @@ IOEditor::IOEditor(QWidget* parent) : QWidget(parent) {
     protocol_selector = new QComboBox();
     protocol_selector->setModel(&protocol_model);
 
-    QSpinBox* period_selector = new QSpinBox();
-    period_selector->setRange(1.0, 10000.0);
-    period_selector->setSingleStep(100.0);
-    period_selector->setValue(1500.0);
+    frequency_input = new QSpinBox();
+    frequency_input->setRange(1, 10000);
+    frequency_input->setSingleStep(100);
+    frequency_input->setValue(1500);
 
-    QDoubleSpinBox* watchdog_timeout = new QDoubleSpinBox();
-    watchdog_timeout->setValue(50);
+    watchdog_timeout_input = new QDoubleSpinBox();
+    watchdog_timeout_input->setRange(0.0, 5000.0);
+    watchdog_timeout_input->setSingleStep(1.0);
+    watchdog_timeout_input->setValue(10.0);
 
-    form->addRow("&Port: ", port_selector);
-    form->addRow("&Protocol: ", protocol_selector);
-    form->addRow("&Period (hz): ", period_selector);
-    form->addRow("&Watchdog timeout (ms): ", watchdog_timeout);
+    form->addRow("Name:", name_input);
+    form->addRow("Port:", port_selector);
+    form->addRow("Protocol:", protocol_selector);
+    form->addRow("Frequency (hz):", frequency_input);
+    form->addRow("Watchdog timeout (ms):", watchdog_timeout_input);
+
+    addPage(page);
+    setWindowTitle("I/O Config Editor");
+
+    QObject::connect(this, &QDialog::finished, this, &IOEditor::done);
+}
+
+void IOEditor::setId(int id) {
+    this->id = id;
+
+    if (id < 0) {
+        name_input->setText("io");
+        port_selector->setCurrentIndex(-1);
+        protocol_selector->setCurrentIndex(-1);
+        frequency_input->setValue(1500);
+        watchdog_timeout_input->setValue(10.0);
+    } else {
+        IOConfig io = model->ios.at(id);
+
+        name_input->setText(QString::fromStdString(io.name));
+        port_selector->setCurrentIndex(io.port.id());
+        protocol_selector->setCurrentIndex(io.protocol.id());
+        frequency_input->setValue(int(1.0/io.period_ms));
+        watchdog_timeout_input->setValue(io.watchdog_timeout_ms);
+    }
+}
+
+void IOEditor::done() {
+    IOConfig config = IOConfig(name_input->text().toStdString());
+    config.port = IOPort(static_cast<IOPort::Value>(port_selector->currentIndex()));
+    config.protocol = IOProtocol(static_cast<IOProtocol::Value>(protocol_selector->currentIndex()));
+    config.period_ms = 1.0 / frequency_input->value();
+    config.watchdog_timeout_ms = watchdog_timeout_input->value();
+
+    if (id < 0) {
+        model->addIO(config);
+    } else {
+        model->ios[id] = config;
+        emit model->ioUpdated(id);
+    }
+
 }
 
 }

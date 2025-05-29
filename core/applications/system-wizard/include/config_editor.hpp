@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "arm_view.hpp"
 #include "config_model.hpp"
 #include "config_sources.hpp"
+#include "io_editor.hpp"
 #include "io_view.hpp"
 #include "list_view.hpp"
 
@@ -41,6 +42,8 @@ private:
 
     ArmEditor arm_editor;
     std::unique_ptr<ArmViewFactory> arm_factory;
+
+    IOEditor io_editor;
     std::unique_ptr<IOViewFactory> io_factory;
 
     ListView* io_list;

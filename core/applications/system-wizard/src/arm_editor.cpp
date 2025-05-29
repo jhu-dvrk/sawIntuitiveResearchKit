@@ -28,10 +28,9 @@ ArmEditor::ArmEditor(SystemConfigModel* model, QWidget* parent) : QWizard(parent
     setPage(PAGE_INTRO, new IntroPage);
 
     setWindowTitle("Arm Editor");
-
-    QObject::connect(button(QWizard::FinishButton), &QAbstractButton::clicked, this, &ArmEditor::done);
-
     setStartId(PAGE_INTRO);
+
+    QObject::connect(this, &QDialog::finished, this, &ArmEditor::done);
 }
 
 void ArmEditor::done() {

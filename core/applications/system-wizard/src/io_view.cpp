@@ -15,6 +15,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "io_view.hpp"
 
+#include <cmath>
+
 namespace system_wizard {
 
 IOView::IOView(SystemConfigModel* model, ListView& list_view, int id, QWidget* parent)
@@ -40,7 +42,8 @@ void IOView::updateData(int id) {
     this->id = id;
 
     const IOConfig& io = model->ios.at(id);
-    QString text = "Period: " + QString::number(io.period_ms, 'f') + " ms";
+    int frequency = int(std::round(1.0 / io.period_ms));
+    QString text = QString::fromStdString(io.port.name()) + " @ " + QString::number(frequency);
     display->setText(text);
 }
 
