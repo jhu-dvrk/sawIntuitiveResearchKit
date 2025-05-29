@@ -2,7 +2,7 @@
 
 ### General
 
-- [ ] Non-templated list model
+- [x] Non-templated list model
 - [ ] Make edit/delete buttons styled as buttons
 - [ ] Move edit/delete buttons to base ItemView
 - [ ] Disable delete button if not deletable
@@ -13,7 +13,7 @@
 
 ### Config models
 
-- [ ] Initial I/O config model
+- [x] Initial I/O config model
 - [x] Initial arm config model
 - [ ] Initial teleop config model
 - [ ] Initial console config model
@@ -31,7 +31,7 @@
 ### Config item views
 
 - [ ] Arm config item view
-- [ ] I/O config item view
+- [x] I/O config item view
 - [ ] Teleop config item view
 - [ ] Console config item view
 
@@ -46,9 +46,9 @@
 
 ### Config item editors
 
-- [ ] I/O editor
+- [x] I/O editor
 - [ ] Simple arm editor
 - [ ] Available native arm list in editor
 - [ ] Extended arm editor (derived/generic/socket types)
 - [ ] Teleop editor
-- [ ] Teleop editor
+- [ ] Console editor
