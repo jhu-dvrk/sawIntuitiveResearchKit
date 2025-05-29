@@ -46,6 +46,7 @@ if (cisst_FOUND_AS_REQUIRED)
          include/enum_list_model.hpp
          include/io_editor.hpp
          include/io_view.hpp
+         include/list_model.hpp
          include/list_view.hpp
          include/mainwindow.hpp
     )

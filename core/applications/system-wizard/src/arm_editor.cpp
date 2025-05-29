@@ -30,12 +30,12 @@ ArmEditor::ArmEditor(SystemConfigModel* model, QWidget* parent) : QWizard(parent
     setWindowTitle("Arm Editor");
     setStartId(PAGE_INTRO);
 
-    QObject::connect(this, &QDialog::finished, this, &ArmEditor::done);
+    QObject::connect(this, &QDialog::accepted, this, &ArmEditor::done);
 }
 
 void ArmEditor::done() {
     ArmConfig config = ArmConfig("Test", ArmType::Value::PSM_SOCKET);
-    model->addArm(config);
+    model->arm_configs.addItem(config);
 }
 
 }

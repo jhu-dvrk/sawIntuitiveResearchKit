@@ -35,6 +35,8 @@ public slots:
 private:
     void done();
 
+    QWizardPage* page;
+
     SystemConfigModel* model;
     int id = -1;
 

@@ -18,7 +18,7 @@ http://www.cisst.org/cisst/license.txt.
 namespace system_wizard {
 
 IOEditor::IOEditor(SystemConfigModel* model, QWidget* parent) : QWizard(parent), model(model) {
-    QWizardPage* page = new QWizardPage;
+    page = new QWizardPage;
     page->setTitle("I/O Config Editor");
 
     setOption(QWizard::NoBackButtonOnStartPage);
@@ -52,20 +52,24 @@ IOEditor::IOEditor(SystemConfigModel* model, QWidget* parent) : QWizard(parent),
     addPage(page);
     setWindowTitle("I/O Config Editor");
 
-    QObject::connect(this, &QDialog::finished, this, &IOEditor::done);
+    QObject::connect(this, &QDialog::accepted, this, &IOEditor::done);
 }
 
 void IOEditor::setId(int id) {
     this->id = id;
 
     if (id < 0) {
+        page->setTitle("Add new I/O");
+
         name_input->setText("io");
         port_selector->setCurrentIndex(-1);
         protocol_selector->setCurrentIndex(-1);
         frequency_input->setValue(1500);
         watchdog_timeout_input->setValue(10.0);
     } else {
-        IOConfig io = model->ios.at(id);
+        page->setTitle("Editing I/O config");
+
+        IOConfig io = model->io_configs.get(id);
 
         name_input->setText(QString::fromStdString(io.name));
         port_selector->setCurrentIndex(io.port.id());
@@ -83,12 +87,10 @@ void IOEditor::done() {
     config.watchdog_timeout_ms = watchdog_timeout_input->value();
 
     if (id < 0) {
-        model->addIO(config);
+        model->io_configs.addItem(config);
     } else {
-        model->ios[id] = config;
-        emit model->ioUpdated(id);
+        model->io_configs.updateItem(id, config);
     }
-
 }
 
 }

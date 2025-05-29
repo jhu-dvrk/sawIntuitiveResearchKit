@@ -23,11 +23,12 @@ ItemView::ItemView(ListView& list_view, int id, QWidget* parent)
     setStyleSheet("background-color: palette(base); border-radius: 10px;");
 }
 
-ListView::ListView(ItemViewFactory* view_factory) : view_factory(view_factory) {
+ListView::ListView(ListModel* model, ItemViewFactory* view_factory)
+    : model(model), view_factory(view_factory) {
     QVBoxLayout* layout = new QVBoxLayout(this);
 
     QHBoxLayout* add_item_layout = new QHBoxLayout();
-    QPushButton* add_item_button = new QPushButton("Add");
+    add_item_button = new QPushButton("Add");
     add_item_layout->addWidget(add_item_button);
     add_item_layout->addStretch();
     layout->addLayout(add_item_layout);
@@ -36,6 +37,10 @@ ListView::ListView(ItemViewFactory* view_factory) : view_factory(view_factory) {
     layout->addLayout(list_layout);
 
     QObject::connect(add_item_button, &QPushButton::clicked, this, &ListView::add);
+
+    QObject::connect(model, &ListModel::itemAdded,   this, &ListView::itemAdded);
+    QObject::connect(model, &ListModel::itemUpdated, this, &ListView::itemUpdated);
+    QObject::connect(model, &ListModel::itemDeleted, this, &ListView::itemRemoved);
 }
 
 void ListView::itemAdded(int id) {
