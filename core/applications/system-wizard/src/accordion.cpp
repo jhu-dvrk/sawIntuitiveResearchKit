@@ -19,11 +19,11 @@ namespace system_wizard {
 
 Accordion::Accordion(QWidget* parent) : Accordion("", "", parent) { }
 
-Accordion::Accordion(const QString& title, const QString& background_color, QWidget* parent) : QFrame(parent) {
+Accordion::Accordion(const QString& title, const QString& background_color, QWidget* parent)
+    : QFrame(parent), is_open(false), contents(nullptr) {
     this->setFrameStyle(QFrame::StyledPanel);
     this->setStyleSheet("system_wizard--Accordion { background-color: " + background_color + "; border-radius: 10px; }");
     this->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Maximum);
-
     button = new QToolButton(this);
     button->setCheckable(true); // turn into a "checkbox" button
     button->setStyleSheet("background-color: " + background_color + "; font-size: 5em; text-align: left; border: none; outline: none;");
@@ -31,7 +31,7 @@ Accordion::Accordion(const QString& title, const QString& background_color, QWid
     button->setArrowType(Qt::ArrowType::RightArrow);
     button->setText(title);
 
-    QObject::connect(button, &QPushButton::toggled, this, &Accordion::toggle);
+    QObject::connect(button, &QToolButton::toggled, this, &Accordion::toggle);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->setAlignment(Qt::AlignmentFlag::AlignTop);
