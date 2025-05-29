@@ -22,7 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-ConfigEditor::ConfigEditor(SystemConfigModel* model, QWidget* parent) : QWidget(parent), model(model), arm_editor(model, this) {
+ConfigEditor::ConfigEditor(SystemConfigModel* model, QWidget* parent) : QWidget(parent), model(model), arm_editor(model, this), io_editor(model, this) {
     QVBoxLayout* layout = new QVBoxLayout(this);
 
     QScrollArea* scroller = new QScrollArea();
@@ -32,26 +32,26 @@ ConfigEditor::ConfigEditor(SystemConfigModel* model, QWidget* parent) : QWidget(
 
     Accordion* ios = new Accordion("I/Os", "SteelBlue", this);
     io_factory = std::make_unique<IOViewFactory>(model);
-    ListView* io_list = new ListView(arm_factory.get());
+    ListView* io_list = new ListView(io_factory.get());
     ios->setWidget(io_list);
 
-    auto test_io_config = IOConfig();
-    test_io_config.period_ms = 1500.0;
-    test_io_config.watchdog_timeout_ms = 10.0;
-    model->addIO(test_io_config);
-
+    QObject::connect(io_list, &ListView::add, this, [this]() { io_editor.setId(-1); io_editor.open(); });
+    QObject::connect(io_list, &ListView::edit, this, [this](int id) { io_editor.setId(id); io_editor.open(); });
     QObject::connect(io_list, &ListView::try_delete, model, &SystemConfigModel::deleteIO);
 
     QObject::connect(model, &SystemConfigModel::ioAdded, io_list, &ListView::itemAdded);
     QObject::connect(model, &SystemConfigModel::ioUpdated, io_list, &ListView::itemUpdated);
     QObject::connect(model, &SystemConfigModel::ioDeleted, io_list, &ListView::itemRemoved);
 
+    auto default_io = IOConfig("io");
+    model->addIO(default_io);
+
     Accordion* arms = new Accordion("Arms", "LightSeaGreen", this);
     arm_factory = std::make_unique<ArmViewFactory>(model);
     ListView* arm_list = new ListView(arm_factory.get());
     arms->setWidget(arm_list);
 
-    QObject::connect(arm_list, &ListView::add, &arm_editor, &ArmEditor::open);
+    QObject::connect(arm_list, &ListView::add, this, [this]() { arm_editor.open(); });
     QObject::connect(arm_list, &ListView::try_delete, model, &SystemConfigModel::deleteArm);
 
     QObject::connect(model, &SystemConfigModel::armAdded, arm_list, &ListView::itemAdded);

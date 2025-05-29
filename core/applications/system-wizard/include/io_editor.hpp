@@ -18,113 +18,36 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QtWidgets>
 
+#include "config_model.hpp"
 #include "enum_list_model.hpp"
 
 namespace system_wizard {
 
-class Port {
-public:
-    enum class Value {
-        UDP = 0,
-        FIREWIRE = 1,
-        UDPFW = 2,
-    };
-
-    Port(Value value) : value(value) {}
-
-    static int count() { return 3; }
-
-    std::string name() const {
-        switch (value) {
-        case Value::UDP:
-            return "UDP";
-        case Value::FIREWIRE:
-            return "Firewire";
-        case Value::UDPFW:
-            return "UDP/Firewire";
-        default:
-            return "UNKNOWN";
-        }
-    };
-
-    std::string id() const {
-        switch (value) {
-        case Value::UDP:
-            return "udp";
-        case Value::FIREWIRE:
-            return "fw";
-        case Value::UDPFW:
-            return "udpfw";
-        default:
-            return "UNKNOWN";
-        }
-    };
-
-private:
-    Value value;
-};
-
-class Protocol {
-public:
-    enum class Value {
-        SEQUENTIAL_READ_SEQUENTIAL_WRITE = 0,
-        SEQUENTIAL_READ_BROADCAST_WRITE = 1,
-        BROADCAST_READ_BROADCAST_WRITE = 2,
-    };
-
-    Protocol(Value value) : value(value) {}
-
-    static int count() { return 3; }
-
-    std::string name() const {
-        switch (value) {
-        case Value::SEQUENTIAL_READ_SEQUENTIAL_WRITE:
-            return "Sequential read/sequential write";
-        case Value::SEQUENTIAL_READ_BROADCAST_WRITE:
-            return "Sequential read/broadcast write";
-        case Value::BROADCAST_READ_BROADCAST_WRITE:
-            return "Broadcast read/broadcast write";
-        default:
-            return "UNKNOWN";
-        }
-    };
-
-    std::string id() const {
-        switch (value) {
-        case Value::SEQUENTIAL_READ_SEQUENTIAL_WRITE:
-            return "sequential-read-write";
-        case Value::SEQUENTIAL_READ_BROADCAST_WRITE:
-            return "sequential-read-broadcast-write";
-        case Value::BROADCAST_READ_BROADCAST_WRITE:
-            return "broadcast-read-write";
-        default:
-            return "UNKNOWN";
-        }
-    };
-
-private:
-    Value value;
-};
-
-class IOEditor : public QWidget {
+class IOEditor : public QWizard {
     Q_OBJECT
 
 public:
-    IOEditor(QWidget* parent = nullptr);
+    IOEditor(SystemConfigModel* model, QWidget* parent = nullptr);
 
 public slots:
-
-signals:
+    void setId(int id);
 
 private:
-    double period_ms;
-    double watchdog_timeout_ms;
+    void done();
+
+    SystemConfigModel* model;
+    int id = -1;
+
+    QLineEdit* name_input;
+
+    QSpinBox* frequency_input;
+    QDoubleSpinBox* watchdog_timeout_input;
 
     QComboBox* port_selector;
-    EnumListModel<Port> port_model;
+    EnumListModel<IOPort> port_model;
 
     QComboBox* protocol_selector;
-    EnumListModel<Protocol> protocol_model;
+    EnumListModel<IOProtocol> protocol_model;
 };
 
 }
