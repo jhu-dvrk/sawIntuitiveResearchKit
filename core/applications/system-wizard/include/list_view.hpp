@@ -16,6 +16,8 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef SYSTEM_WIZARD_LIST_VIEW
 #define SYSTEM_WIZARD_LIST_VIEW
 
+#include "list_model.hpp"
+
 #include <functional>
 
 #include <QtWidgets>
@@ -50,7 +52,7 @@ class ListView : public QWidget {
     Q_OBJECT
 
 public:
-    ListView(ItemViewFactory* view_factory);
+    ListView(ListModel* model, ItemViewFactory* view_factory);
 
 public slots:
     void itemAdded(int index);
@@ -63,9 +65,11 @@ signals:
     void try_delete(int id);
 
 private:
+    ListModel* model;
     ItemViewFactory* view_factory;
 
     QVBoxLayout* list_layout;
+    QPushButton* add_item_button;
 };
 
 }

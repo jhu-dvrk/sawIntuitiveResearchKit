@@ -41,7 +41,7 @@ IOView::IOView(SystemConfigModel* model, ListView& list_view, int id, QWidget* p
 void IOView::updateData(int id) {
     this->id = id;
 
-    const IOConfig& io = model->ios.at(id);
+    const IOConfig& io = model->io_configs.get(id);
     int frequency = int(std::round(1.0 / io.period_ms));
     QString text = QString::fromStdString(io.port.name()) + " @ " + QString::number(frequency);
     display->setText(text);

@@ -52,11 +52,11 @@ MainWindow::MainWindow() {
 
     setWindowTitle("dVRK System Wizard");
 
-    model1->addArm(ArmConfig("PSM1", ArmType(ArmType::Value::PSM_GENERIC)));
-    model1->addArm(ArmConfig("ECM", ArmType(ArmType::Value::ECM)));
+    model1->arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM_GENERIC)));
+    model1->arm_configs.addItem(ArmConfig("ECM", ArmType(ArmType::Value::ECM)));
 
-    model2->addArm(ArmConfig("PSM1", ArmType(ArmType::Value::PSM)));
-    model2->addArm(ArmConfig("MTMR", ArmType(ArmType::Value::MTM_DERIVED)));
+    model2->arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM)));
+    model2->arm_configs.addItem(ArmConfig("MTMR", ArmType(ArmType::Value::MTM_DERIVED)));
 }
 
 void MainWindow::createActions() {

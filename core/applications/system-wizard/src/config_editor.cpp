@@ -32,40 +32,32 @@ ConfigEditor::ConfigEditor(SystemConfigModel* model, QWidget* parent) : QWidget(
 
     Accordion* ios = new Accordion("I/Os", "SteelBlue", this);
     io_factory = std::make_unique<IOViewFactory>(model);
-    ListView* io_list = new ListView(io_factory.get());
+    ListView* io_list = new ListView(&model->io_configs, io_factory.get());
     ios->setWidget(io_list);
 
     QObject::connect(io_list, &ListView::add, this, [this]() { io_editor.setId(-1); io_editor.open(); });
     QObject::connect(io_list, &ListView::edit, this, [this](int id) { io_editor.setId(id); io_editor.open(); });
-    QObject::connect(io_list, &ListView::try_delete, model, &SystemConfigModel::deleteIO);
-
-    QObject::connect(model, &SystemConfigModel::ioAdded, io_list, &ListView::itemAdded);
-    QObject::connect(model, &SystemConfigModel::ioUpdated, io_list, &ListView::itemUpdated);
-    QObject::connect(model, &SystemConfigModel::ioDeleted, io_list, &ListView::itemRemoved);
+    QObject::connect(io_list, &ListView::try_delete, &model->io_configs, &ListModelT<IOConfig>::deleteItem);
 
     auto default_io = IOConfig("io");
-    model->addIO(default_io);
+    model->io_configs.addItem(default_io);
 
     Accordion* arms = new Accordion("Arms", "LightSeaGreen", this);
     arm_factory = std::make_unique<ArmViewFactory>(model);
-    ListView* arm_list = new ListView(arm_factory.get());
+    ListView* arm_list = new ListView(&model->arm_configs, arm_factory.get());
     arms->setWidget(arm_list);
 
     QObject::connect(arm_list, &ListView::add, this, [this]() { arm_editor.open(); });
-    QObject::connect(arm_list, &ListView::try_delete, model, &SystemConfigModel::deleteArm);
-
-    QObject::connect(model, &SystemConfigModel::armAdded, arm_list, &ListView::itemAdded);
-    QObject::connect(model, &SystemConfigModel::armUpdated, arm_list, &ListView::itemUpdated);
-    QObject::connect(model, &SystemConfigModel::armDeleted, arm_list, &ListView::itemRemoved);
+    QObject::connect(arm_list, &ListView::try_delete, &model->arm_configs, &ListModelT<ArmConfig>::deleteItem);
 
     Accordion* teleops = new Accordion("Teleops", "DodgerBlue", this);
-    ListView* teleop_list = new ListView(arm_factory.get());
+    ListView* teleop_list = new ListView(&model->teleop_configs, arm_factory.get());
     teleops->setWidget(teleop_list);
 
     // QObject::connect(teleop_list, &ListView::add, &arm_editor, &ArmEditor::open);
 
     Accordion* consoles = new Accordion("Consoles", "Salmon", this);
-    ListView* console_list = new ListView(arm_factory.get());
+    ListView* console_list = new ListView(&model->console_configs, arm_factory.get());
     consoles->setWidget(console_list);
 
     // QObject::connect(console_list, &ListView::add, &arm_editor, &ArmEditor::open);

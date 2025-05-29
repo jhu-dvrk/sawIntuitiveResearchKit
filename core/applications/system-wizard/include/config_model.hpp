@@ -16,6 +16,8 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef SYSTEM_WIZARD_CONFIG_MODEL
 #define SYSTEM_WIZARD_CONFIG_MODEL
 
+#include "list_model.hpp"
+
 #include <map>
 #include <optional>
 #include <string>
@@ -336,64 +338,11 @@ class SystemConfigModel : public QObject {
 signals:
     void updated();
 
-    void ioAdded(int index);
-    void ioUpdated(int index);
-    void ioDeleted(int index);
-
-    void armAdded(int index);
-    void armUpdated(int index);
-    void armDeleted(int index);
-
-    void teleopAdded(int index);
-    void teleopUpdated(int index);
-    void teleopDeleted(int index);
-
-    void consoleAdded(int index);
-    void consoleUpdated(int index);
-    void consoleDeleted(int index);
-
-public slots:
-    void deleteArm(int index) {
-        arms.erase(arms.begin() + index);
-        emit armDeleted(index);
-        emit updated();
-    }
-
-    void deleteIO(int index) {
-        ios.erase(ios.begin() + index);
-        emit ioDeleted(index);
-        emit updated();
-    }
-
 public:
-    void addArm(ArmConfig arm) {
-        arms.push_back(arm);
-        emit armAdded(arms.size() - 1);
-        emit updated();
-    }
-
-    void updateArm(int id, ArmConfig arm) {
-        arms.at(id) = arm;
-        emit armUpdated(id);
-        emit updated();
-    }
-
-    void addIO(IOConfig io) {
-        ios.push_back(io);
-        emit ioAdded(ios.size() - 1);
-        emit updated();
-    }
-
-    void updateIO(int id, IOConfig io) {
-        ios.at(id) = io;
-        emit ioUpdated(id);
-        emit updated();
-    }
-
-    std::vector<IOConfig> ios;
-    std::vector<ArmConfig> arms;
-    std::vector<TeleopConfig> teleops;
-    std::vector<ConsoleConfig> consoles;
+    ListModelT<IOConfig> io_configs;
+    ListModelT<ArmConfig> arm_configs;
+    ListModelT<TeleopConfig> teleop_configs;
+    ListModelT<ConsoleConfig> console_configs;
 };
 
 }
