@@ -58,8 +58,6 @@ public slots:
     void itemRemoved(int index);
 
 signals:
-    void updated();
-
     void add();
     void edit(int id);
     void try_delete(int id);

@@ -21,10 +21,9 @@ ArmView::ArmView(SystemConfigModel* model, ListView& list_view, int id, QWidget*
     : ItemView(list_view, id, parent), model(model) {
     QHBoxLayout* layout = new QHBoxLayout(this);
 
-    const ArmConfig& arm = model->arms.at(id);
-    QString text = QString::fromStdString(arm.description());
+    display = new QLabel();
+    updateData(id);
 
-    display = new QLabel(text);
     QPushButton* edit_button = new QPushButton("Edit");
     QPushButton* delete_button = new QPushButton("Delete");
 
@@ -41,8 +40,9 @@ void ArmView::updateData(int id) {
     this->id = id;
 
     const ArmConfig& arm = model->arms.at(id);
-    QString text = QString::fromStdString(arm.description());
+    QString text = QString::fromStdString(arm.name + " (" + arm.type.name() + ")");
     display->setText(text);
+    display->setToolTip(QString::fromStdString(arm.type.acronym_expansion()));
 }
 
 ArmViewFactory::ArmViewFactory(SystemConfigModel* model) : model(model) { }

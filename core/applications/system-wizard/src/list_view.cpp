@@ -41,10 +41,6 @@ ListView::ListView(ItemViewFactory* view_factory) : view_factory(view_factory) {
 void ListView::itemAdded(int id) {
     ItemView* item_view = view_factory->create(id, *this);
     list_layout->addWidget(item_view);
-    // item_view->show();
-    // updateGeometry();
-
-    // emit updated();
 }
 
 void ListView::itemUpdated(int id) {
@@ -54,7 +50,6 @@ void ListView::itemUpdated(int id) {
 
         if (item_view->getId() == id) {
             item_view->updateData(id);
-            emit updated();
             return;
         }
     }
@@ -72,8 +67,6 @@ void ListView::itemRemoved(int id) {
         ItemView* item_view = qobject_cast<ItemView*>(widget);
         item_view->updateData(id);
     }
-
-    emit updated();
 }
 
 }
