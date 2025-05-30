@@ -16,6 +16,8 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef SYSTEM_WIZARD_CONFIG_SOURCES
 #define SYSTEM_WIZARD_CONFIG_SOURCES
 
+#include "list_model.hpp"
+
 #include <QtWidgets>
 #include <QFileSystemModel>
 #include <QLabel>
@@ -32,15 +34,17 @@ class ConfigSources : public QWidget {
 public:
     class Arm {
     public:
-        Arm(std::string type, std::string serial) : type(type), serial_number(serial) {}
+        Arm(std::string type, std::string serial, std::filesystem::path config_file)
+            : type(type), serial_number(serial), config_file(config_file) {}
 
         std::string type;
         std::string serial_number;
+        std::filesystem::path config_file;
     };
 
     ConfigSources(QWidget* parent = nullptr);
 
-    std::shared_ptr<std::vector<Arm>> availableArms() const;
+    ListModelT<Arm>& getModel();
 
 signals:
     void armsChanged();
@@ -56,7 +60,8 @@ private:
     QLabel* source_dir_display;
 
     std::vector<std::filesystem::path> sources;
-    std::shared_ptr<std::vector<Arm>> arms;
+
+    ListModelT<Arm> arm_list_model;
 };
 
 }

@@ -32,7 +32,7 @@ class ConfigEditor : public QWidget {
     Q_OBJECT
 
 public:
-    ConfigEditor(SystemConfigModel* model, QWidget* parent = nullptr);
+    ConfigEditor(SystemConfigModel* model, ConfigSources* config_sources, QWidget* parent = nullptr);
 
 public slots:
     void armsChanged();

@@ -26,17 +26,16 @@ namespace system_wizard {
 
 MainWindow::MainWindow() {
     SystemConfigModel* model1 = new SystemConfigModel();
+    config_sources = new ConfigSources();
 
-    ConfigEditor* editor1 = new ConfigEditor(model1);
+    ConfigEditor* editor1 = new ConfigEditor(model1, config_sources);
 
     SystemConfigModel* model2 = new SystemConfigModel();
-    ConfigEditor* editor2 = new ConfigEditor(model2);
+    ConfigEditor* editor2 = new ConfigEditor(model2, config_sources);
 
     QTabWidget* editor = new QTabWidget();
     editor->addTab(editor1, "Editor 1");
     editor->addTab(editor2, "Editor 2");
-
-    config_sources = new ConfigSources();
 
     QSplitter *splitter = new QSplitter();
     splitter->addWidget(config_sources);

@@ -22,7 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-ConfigSources::ConfigSources(QWidget* parent) : QWidget(parent), arms(std::make_shared<std::vector<Arm>>()) {
+ConfigSources::ConfigSources(QWidget* parent) : QWidget(parent) {
     model = new QFileSystemModel();
     view = new QTreeView(this);
     view->setModel(model);
@@ -48,8 +48,8 @@ ConfigSources::ConfigSources(QWidget* parent) : QWidget(parent), arms(std::make_
     QObject::connect(model, &QFileSystemModel::directoryLoaded, this, &ConfigSources::loaded);
 }
 
-std::shared_ptr<std::vector<ConfigSources::Arm>> ConfigSources::availableArms() const {
-    return arms;
+ListModelT<ConfigSources::Arm>& ConfigSources::getModel() {
+    return arm_list_model;
 }
 
 void ConfigSources::add_source(QDir directory) {
@@ -61,7 +61,7 @@ void ConfigSources::add_source(QDir directory) {
 void ConfigSources::loaded(const QString &path) {
     std::filesystem::path root(path.toStdString());
 
-    std::shared_ptr<std::vector<Arm>> new_arms = std::make_shared<std::vector<Arm>>();
+    std::vector<Arm> new_arms;
 
     for (auto const& entry : std::filesystem::directory_iterator{root}) {
         if (!entry.is_regular_file()) {
@@ -78,13 +78,20 @@ void ConfigSources::loaded(const QString &path) {
             continue;
         }
 
-        std::ssub_match type_sub_match = base_match[1];
-        std::ssub_match serial_sub_match = base_match[4];
+        // capture groups are:
+        // 0: entire match
+        // 1: PSM/MTM/ECM
+        // 2: L/R if MTM
+        // 3: arm number, e.g. 2 for PSM2
+        // 4: arm serial, e.g. 12345 for MTML-12345
 
-        new_arms->push_back(Arm(type_sub_match.str(), serial_sub_match.str()));
+        std::string type = base_match[1].str();
+        std::string serial = base_match[4].str();
+
+        new_arms.push_back(Arm(type, serial, entry.path()));
     }
 
-    arms = new_arms;
+    arm_list_model.update(new_arms);
     emit armsChanged();
 }
 

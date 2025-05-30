@@ -49,6 +49,8 @@ signals:
     void itemAdded(int index);
     void itemUpdated(int index);
     void itemDeleted(int index);
+
+    void reset();
 };
 
 template<typename T>
@@ -73,6 +75,11 @@ public:
 
     virtual const T& get(int index) const {
         return items.at(index);
+    }
+
+    virtual void update(std::vector<T>& new_items) {
+        items = new_items;
+        emit reset();
     }
 
 private:
