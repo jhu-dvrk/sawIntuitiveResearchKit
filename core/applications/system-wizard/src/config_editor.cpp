@@ -22,7 +22,8 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-ConfigEditor::ConfigEditor(SystemConfigModel* model, QWidget* parent) : QWidget(parent), model(model), arm_editor(model, this), io_editor(model, this) {
+ConfigEditor::ConfigEditor(SystemConfigModel* model, ConfigSources* config_sources, QWidget* parent)
+    : QWidget(parent), model(model), arm_editor(model, config_sources, this), io_editor(model, this) {
     QVBoxLayout* layout = new QVBoxLayout(this);
 
     QScrollArea* scroller = new QScrollArea();
