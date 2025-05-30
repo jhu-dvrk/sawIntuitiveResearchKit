@@ -21,6 +21,7 @@ IOEditor::IOEditor(SystemConfigModel* model, QWidget* parent) : QWizard(parent),
     page = new QWizardPage;
     page->setTitle("I/O Config Editor");
 
+    setWizardStyle(QWizard::ModernStyle);
     setOption(QWizard::NoBackButtonOnStartPage);
 
     QFormLayout* form = new QFormLayout(page);
@@ -63,7 +64,7 @@ void IOEditor::setId(int id) {
 
         name_input->setText("io");
         port_selector->setCurrentIndex(-1);
-        protocol_selector->setCurrentIndex(-1);
+        protocol_selector->setCurrentIndex(IOProtocol(IOProtocol::Value::SEQUENTIAL_READ_SEQUENTIAL_WRITE).id());
         frequency_input->setValue(1500);
         watchdog_timeout_input->setValue(10.0);
     } else {
