@@ -18,11 +18,17 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "list_model.hpp"
 
-#include <functional>
-
 #include <QtWidgets>
 
+#include <cisstCommon/cmnPortability.h>
+
 namespace system_wizard {
+
+enum class SelectionMode {
+    NONE,
+    SINGLE,
+    MULTIPLE,
+};
 
 // forward declaration so ItemView can keep reference to its "parent"
 class ListView;
@@ -37,10 +43,17 @@ public:
 
 public slots:
     virtual void updateData(int id) = 0;
+    virtual void setSelected(bool selected);
 
 protected:
+    void mousePressEvent(QMouseEvent* CMN_UNUSED(event)) override;
+
+    QString base_style;
     ListView& list_view;
     int id;
+
+    QColor base;
+    QColor highlight;
 };
 
 class ItemViewFactory {
@@ -52,24 +65,47 @@ class ListView : public QWidget {
     Q_OBJECT
 
 public:
-    ListView(ListModel* model, ItemViewFactory* view_factory);
+    ListView(
+        ListModel* model,
+        ItemViewFactory* view_factory,
+        SelectionMode selection_mode=SelectionMode::NONE,
+        bool editable=false
+    );
+
+    bool itemsAreInteractive() const;
+
+    void setEmptyMessage(std::string empty_message);
+
+    void toggleSelection(int index);
+    void selectItem(int index, bool is_selected);
+    void clearSelections();
 
 public slots:
     void itemAdded(int index);
     void itemUpdated(int index);
     void itemRemoved(int index);
 
+    void reset();
+
 signals:
     void add();
+    void selected(int id, bool is_selected);
     void edit(int id);
     void try_delete(int id);
 
 private:
+    bool editable;
+
+    SelectionMode selection_mode;
+    std::vector<bool> selections;
+
     ListModel* model;
     ItemViewFactory* view_factory;
 
     QVBoxLayout* list_layout;
     QPushButton* add_item_button;
+
+    QLabel* list_empty_display;
 };
 
 }
