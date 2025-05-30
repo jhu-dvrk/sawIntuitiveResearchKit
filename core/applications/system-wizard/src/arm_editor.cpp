@@ -66,7 +66,7 @@ QuickArmPage::QuickArmPage(ConfigSources* config_sources, QWidget *parent)
     setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 
     factory = std::make_unique<ArmSourceViewFactory>(&config_sources->getModel());
-    arm_list_view = new ListView(&config_sources->getModel(), factory.get());
+    arm_list_view = new ListView(&config_sources->getModel(), factory.get(), SelectionMode::SINGLE);
     layout->addWidget(arm_list_view);
     layout->addStretch();
 
@@ -77,6 +77,7 @@ QuickArmPage::QuickArmPage(ConfigSources* config_sources, QWidget *parent)
 void QuickArmPage::initializePage() {
     // make sure dialog size is updated if arm source list has changed while hidden
     arm_list_view->updateGeometry();
+    arm_list_view->clearSelections();
 }
 
 BasicArmPage::BasicArmPage(QWidget *parent) : QWizardPage(parent) {

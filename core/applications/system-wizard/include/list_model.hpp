@@ -16,7 +16,11 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef SYSTEM_WIZARD_LIST_MODEL
 #define SYSTEM_WIZARD_LIST_MODEL
 
+#include <algorithm>
+
 #include <QtCore>
+
+#include <cisstCommon/cmnPortability.h>
 
 namespace system_wizard {
 
@@ -41,9 +45,11 @@ class ListModel : public QObject {
     Q_OBJECT
 
 public:
-    virtual bool canDeleteItem(int index) const {
+    virtual bool canDeleteItem(int CMN_UNUSED(index)) const {
         return true;
     }
+
+    virtual int count() const = 0;
 
 signals:
     void itemAdded(int index);
@@ -77,9 +83,18 @@ public:
         return items.at(index);
     }
 
+    virtual void clear() {
+        items.clear();
+        emit reset();
+    }
+
     virtual void update(std::vector<T>& new_items) {
         items = new_items;
         emit reset();
+    }
+
+    int count() const override {
+        return static_cast<int>(items.size());
     }
 
 private:
