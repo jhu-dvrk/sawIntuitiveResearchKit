@@ -34,9 +34,10 @@ class ConfigSources : public QWidget {
 public:
     class Arm {
     public:
-        Arm(std::string type, std::string serial, std::filesystem::path config_file)
-            : type(type), serial_number(serial), config_file(config_file) {}
+        Arm(std::string name, std::string type, std::string serial, std::filesystem::path config_file)
+            : name(name), type(type), serial_number(serial), config_file(config_file) {}
 
+        std::string name;
         std::string type;
         std::string serial_number;
         std::filesystem::path config_file;

@@ -29,7 +29,7 @@ ArmSourceView::ArmSourceView(ListModelT<ConfigSources::Arm>& model, ListView& li
 
 void ArmSourceView::updateData(int id) {
     ConfigSources::Arm arm = model->get(id);
-    QString description = QString::fromStdString(arm.type + "-" + arm.serial_number);
+    QString description = QString::fromStdString(arm.name + "-" + arm.serial_number);
     display->setText(description);
 }
 

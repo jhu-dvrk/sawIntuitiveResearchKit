@@ -68,12 +68,12 @@ void ConfigSources::loaded(const QString &path) {
             continue;
         }
 
-        const std::string name = entry.path().stem().string();
+        const std::string file_name = entry.path().stem().string();
 
         // Match one of e.g. PSM2, ECM, MTMR2, followed by -, followed by five or six digit serial
         const std::regex arm_regex("(PSM|MTM(L|R)|ECM)(\\d*)\\-(\\d{5,6})");
         std::smatch base_match;
-        bool matched = std::regex_match(name, base_match, arm_regex);
+        bool matched = std::regex_match(file_name, base_match, arm_regex);
         if (!matched) {
             continue;
         }
@@ -87,8 +87,9 @@ void ConfigSources::loaded(const QString &path) {
 
         std::string type = base_match[1].str();
         std::string serial = base_match[4].str();
+        std::string name = base_match[1].str() + base_match[3].str();
 
-        new_arms.push_back(Arm(type, serial, entry.path()));
+        new_arms.push_back(Arm(name, type, serial, entry.path()));
     }
 
     arm_list_model.update(new_arms);
