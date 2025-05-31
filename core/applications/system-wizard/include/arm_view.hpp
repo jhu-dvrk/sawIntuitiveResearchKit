@@ -22,12 +22,9 @@ http://www.cisst.org/cisst/license.txt.
 namespace system_wizard {
 
 class ArmView : public ItemView {
-    Q_OBJECT
-
 public:
-    ArmView(SystemConfigModel* model, ListView& list_view, int id, QWidget* parent = nullptr);
+    ArmView(SystemConfigModel& model, ListView& list_view, int id, QWidget* parent = nullptr);
 
-public slots:
     void updateData(int id) override;
 
 private:
@@ -37,7 +34,7 @@ private:
 
 class ArmViewFactory : public ItemViewFactory {
 public:
-    ArmViewFactory(SystemConfigModel* model);
+    ArmViewFactory(SystemConfigModel& model);
 
     ArmView* create(int id, ListView& list_view);
 

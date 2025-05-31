@@ -19,6 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <QMainWindow>
 #include <QMenu>
 
+#include "config_model.hpp"
 #include "config_sources.hpp"
 
 namespace system_wizard {
@@ -37,6 +38,9 @@ private:
     void createMenus();
 
     QFileDialog directory_chooser;
+
+    SystemConfigModel model1;
+    SystemConfigModel model2;
     ConfigSources* config_sources;
 
     QMenu* file_menu;

@@ -41,12 +41,12 @@ public:
 
     int getId() const { return id; }
 
-public slots:
     virtual void updateData(int id) = 0;
     virtual void setSelected(bool selected);
 
 protected:
     void mousePressEvent(QMouseEvent* CMN_UNUSED(event)) override;
+    void mouseDoubleClickEvent(QMouseEvent* CMN_UNUSED(event)) override;
 
     QString base_style;
     ListView& list_view;
@@ -66,19 +66,21 @@ class ListView : public QWidget {
 
 public:
     ListView(
-        ListModel* model,
-        ItemViewFactory* view_factory,
+        ListModel& model,
+        ItemViewFactory& view_factory,
         SelectionMode selection_mode=SelectionMode::NONE,
         bool editable=false
     );
 
-    bool itemsAreInteractive() const;
-
     void setEmptyMessage(std::string empty_message);
+
+    bool itemsAreInteractive() const;
 
     void toggleSelection(int index);
     void selectItem(int index, bool is_selected);
     void clearSelections();
+
+    void editItem(int index);
 
 public slots:
     void itemAdded(int index);
@@ -94,14 +96,15 @@ signals:
     void try_delete(int id);
 
 private:
-    bool editable;
+    ListModel& model;
+    ItemViewFactory& view_factory;
 
     SelectionMode selection_mode;
     std::vector<bool> selections;
 
-    ListModel* model;
-    ItemViewFactory* view_factory;
+    bool editable;
 
+    std::vector<ItemView*> item_views;
     QVBoxLayout* list_layout;
     QPushButton* add_item_button;
 

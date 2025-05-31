@@ -29,13 +29,10 @@ MainWindow::MainWindow() : directory_chooser(this, "Open config source folder") 
     directory_chooser.setViewMode(QFileDialog::List);
     directory_chooser.setOptions(QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
 
-    SystemConfigModel* model1 = new SystemConfigModel();
     config_sources = new ConfigSources();
 
-    ConfigEditor* editor1 = new ConfigEditor(model1, config_sources);
-
-    SystemConfigModel* model2 = new SystemConfigModel();
-    ConfigEditor* editor2 = new ConfigEditor(model2, config_sources);
+    ConfigEditor* editor1 = new ConfigEditor(model1, *config_sources);
+    ConfigEditor* editor2 = new ConfigEditor(model2, *config_sources);
 
     QTabWidget* editor = new QTabWidget();
     editor->addTab(editor1, "Editor 1");
@@ -55,11 +52,11 @@ MainWindow::MainWindow() : directory_chooser(this, "Open config source folder") 
 
     setWindowTitle("dVRK System Wizard");
 
-    model1->arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM_GENERIC)));
-    model1->arm_configs.addItem(ArmConfig("ECM", ArmType(ArmType::Value::ECM)));
+    model1.arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM_GENERIC)));
+    model1.arm_configs.addItem(ArmConfig("ECM", ArmType(ArmType::Value::ECM)));
 
-    model2->arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM)));
-    model2->arm_configs.addItem(ArmConfig("MTMR", ArmType(ArmType::Value::MTM_DERIVED)));
+    model2.arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM)));
+    model2.arm_configs.addItem(ArmConfig("MTMR", ArmType(ArmType::Value::MTM_DERIVED)));
 }
 
 void MainWindow::createActions() {

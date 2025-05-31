@@ -54,8 +54,12 @@ void ItemView::mousePressEvent(QMouseEvent* CMN_UNUSED(event)) {
     list_view.toggleSelection(id);
 }
 
-ListView::ListView(ListModel* model, ItemViewFactory* view_factory, SelectionMode selection_mode, bool editable)
-    : editable(editable), selection_mode(selection_mode), model(model), view_factory(view_factory) {
+void ItemView::mouseDoubleClickEvent(QMouseEvent* CMN_UNUSED(event)) {
+    list_view.editItem(id);
+}
+
+ListView::ListView(ListModel& model, ItemViewFactory& view_factory, SelectionMode selection_mode, bool editable)
+    : model(model), view_factory(view_factory), selection_mode(selection_mode), editable(editable) {
     QVBoxLayout* layout = new QVBoxLayout(this);
 
     if (editable) {
@@ -74,17 +78,17 @@ ListView::ListView(ListModel* model, ItemViewFactory* view_factory, SelectionMod
     list_layout = new QVBoxLayout();
     layout->addLayout(list_layout);
 
-    QObject::connect(model, &ListModel::itemAdded,    this, &ListView::itemAdded);
-    QObject::connect(model, &ListModel::itemUpdated,  this, &ListView::itemUpdated);
-    QObject::connect(model, &ListModel::itemDeleted,  this, &ListView::itemRemoved);
-    QObject::connect(model, &ListModel::reset,        this, &ListView::reset);
+    QObject::connect(&model, &ListModel::itemAdded,    this, &ListView::itemAdded);
+    QObject::connect(&model, &ListModel::itemUpdated,  this, &ListView::itemUpdated);
+    QObject::connect(&model, &ListModel::itemDeleted,  this, &ListView::itemRemoved);
+    QObject::connect(&model, &ListModel::reset,        this, &ListView::reset);
 
     // populate list view if model already has data
     reset();
 }
 
 bool ListView::itemsAreInteractive() const {
-    return selection_mode != SelectionMode::NONE;
+    return editable || selection_mode != SelectionMode::NONE;
 }
 
 void ListView::setEmptyMessage(std::string empty_message) {
@@ -109,9 +113,7 @@ void ListView::selectItem(int index, bool is_selected) {
     }
 
     selections.at(index) = is_selected;
-    QLayoutItem* item = list_layout->itemAt(index);
-    ItemView* item_view = qobject_cast<ItemView*>(item->widget());
-    item_view->setSelected(is_selected);
+    item_views.at(index)->setSelected(is_selected);
     emit selected(index, is_selected);
 }
 
@@ -120,92 +122,99 @@ void ListView::clearSelections() {
     for (int i = 0; i < count; i++) {
         if (selections[i]) {
             selections[i] = false;
-            QLayoutItem* item = list_layout->itemAt(i);
-            ItemView* item_view = qobject_cast<ItemView*>(item->widget());
-            item_view->setSelected(false);
+            item_views.at(i)->setSelected(false);
             emit selected(i, false);
         }
     }
 }
 
+void ListView::editItem(int index) {
+    if (editable) {
+        emit edit(index);
+    }
+}
+
 void ListView::itemAdded(int id) {
-    ItemView* item_view = view_factory->create(id, *this);
+    ItemView* item_view = view_factory.create(id, *this);
     list_layout->addWidget(item_view);
+    item_views.push_back(item_view);
     selections.push_back(false);
 
     list_empty_display->setHidden(list_layout->count() != 0);
 
-    Q_ASSERT(list_layout->count() == model->count());
-    Q_ASSERT(selections.size() == model->count());
+    Q_ASSERT(list_layout->count() == model.count());
+    Q_ASSERT(selections.size() == model.count());
+    Q_ASSERT(item_views.size() == model.count());
 }
 
 void ListView::itemUpdated(int id) {
     for (int idx = 0; idx < list_layout->count(); idx++) {
-        QLayoutItem* item = list_layout->itemAt(idx);
-        ItemView* item_view = qobject_cast<ItemView*>(item->widget());
-
+        ItemView* item_view = item_views.at(idx);
         if (item_view->getId() == id) {
             item_view->updateData(id);
-            Q_ASSERT(list_layout->count() == model->count());
-            Q_ASSERT(selections.size() == model->count());
+            Q_ASSERT(list_layout->count() == model.count());
+            Q_ASSERT(selections.size() == model.count());
+            Q_ASSERT(item_views.size() == model.count());
             return;
         }
     }
 
-    Q_ASSERT(list_layout->count() == model->count());
-    Q_ASSERT(selections.size() == model->count());
+    Q_ASSERT(list_layout->count() == model.count());
+    Q_ASSERT(selections.size() == model.count());
+    Q_ASSERT(item_views.size() == model.count());
 }
 
 void ListView::itemRemoved(int id) {
+    selections.erase(selections.begin() + id);
+    item_views.erase(item_views.begin() + id);
+
     QLayoutItem* removed = list_layout->takeAt(id);
     Q_ASSERT(removed != nullptr);
     delete removed->widget();
     delete removed;
 
-    selections.erase(selections.begin() + id);
-
     // shift indices of succeeding list item views
     for (int i = id; i < list_layout->count(); i++) {
-        QWidget* widget = list_layout->itemAt(i)->widget();
-        ItemView* item_view = qobject_cast<ItemView*>(widget);
-        item_view->updateData(i);
+        item_views.at(i)->updateData(i);
     }
 
     list_empty_display->setHidden(list_layout->count() != 0);
 
-    Q_ASSERT(list_layout->count() == model->count());
-    Q_ASSERT(selections.size() == model->count());
+    Q_ASSERT(list_layout->count() == model.count());
+    Q_ASSERT(selections.size() == model.count());
+    Q_ASSERT(item_views.size() == model.count());
 }
 
 void ListView::reset() {
     // added new item views if we don't have enough
-    while (list_layout->count() < model->count()) {
-        ItemView* item_view = view_factory->create(list_layout->count(), *this);
+    while (list_layout->count() < model.count()) {
+        ItemView* item_view = view_factory.create(list_layout->count(), *this);
         list_layout->addWidget(item_view);
+        item_views.push_back(item_view);
     }
 
     // remove item views if we have too many
-    while (list_layout->count() > model->count()) {
+    while (list_layout->count() > model.count()) {
+        item_views.erase(item_views.end() - 1);
         QLayoutItem* removed = list_layout->takeAt(list_layout->count() - 1);
         Q_ASSERT(removed != nullptr);
         delete removed->widget();
         delete removed;
     }
 
-    selections = std::vector<bool>(model->count(), false);
+    selections = std::vector<bool>(model.count(), false);
 
     // update data/indices of all items to match new model data
     for (int i = 0; i < list_layout->count(); i++) {
-        QWidget* widget = list_layout->itemAt(i)->widget();
-        ItemView* item_view = qobject_cast<ItemView*>(widget);
-        item_view->updateData(i);
-        item_view->setSelected(selections[i]);
+        item_views.at(i)->updateData(i);
+        item_views.at(i)->setSelected(selections[i]);
     }
 
     list_empty_display->setHidden(list_layout->count() != 0);
 
-    Q_ASSERT(list_layout->count() == model->count());
-    Q_ASSERT(selections.size() == model->count());
+    Q_ASSERT(list_layout->count() == model.count());
+    Q_ASSERT(selections.size() == model.count());
+    Q_ASSERT(item_views.size() == model.count());
 }
 
 }

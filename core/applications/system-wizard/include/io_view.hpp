@@ -22,12 +22,9 @@ http://www.cisst.org/cisst/license.txt.
 namespace system_wizard {
 
 class IOView : public ItemView {
-    Q_OBJECT
-
 public:
-    IOView(SystemConfigModel* model, ListView& list_view, int id, QWidget* parent = nullptr);
+    IOView(SystemConfigModel& model, ListView& list_view, int id, QWidget* parent = nullptr);
 
-public slots:
     void updateData(int id) override;
 
 private:
@@ -37,7 +34,7 @@ private:
 
 class IOViewFactory : public ItemViewFactory {
 public:
-    IOViewFactory(SystemConfigModel* model);
+    IOViewFactory(SystemConfigModel& model);
 
     IOView* create(int id, ListView& list_view);
 

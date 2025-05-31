@@ -25,7 +25,26 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-class ArmSourceViewFactory;
+class ArmSourceView : public ItemView {
+public:
+    ArmSourceView(ListModelT<ConfigSources::Arm>& model, ListView& list_view, int id, QWidget* parent = nullptr);
+
+    void updateData(int id) override;
+
+private:
+    ListModelT<ConfigSources::Arm>* model;
+    QLabel* display;
+};
+
+class ArmSourceViewFactory : public ItemViewFactory {
+public:
+    ArmSourceViewFactory(ListModelT<ConfigSources::Arm>& model);
+
+    ArmSourceView* create(int id, ListView& list_view);
+
+private:
+    ListModelT<ConfigSources::Arm>* model;
+};
 
 class ArmEditor : public QWizard {
     Q_OBJECT
@@ -33,20 +52,19 @@ class ArmEditor : public QWizard {
 public:
     enum { PAGE_QUICK_ARM, PAGE_BASIC };
 
-    ArmEditor(SystemConfigModel* model, ConfigSources* config_sources, QWidget* parent = nullptr);
+    ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent = nullptr);
 
 private:
     void done();
 
     SystemConfigModel* model;
-    ConfigSources* config_sources;
 };
 
 class QuickArmPage : public QWizardPage {
     Q_OBJECT
 
 public:
-    QuickArmPage(ConfigSources* config_sources, QWidget *parent = nullptr);
+    QuickArmPage(ConfigSources& config_sources, QWidget *parent = nullptr);
 
     int nextId() const override {
         return ArmEditor::PAGE_BASIC;
@@ -55,10 +73,8 @@ public:
     void initializePage() override;
 
 private:
-    ConfigSources* config_sources;
     ListView* arm_list_view;
-
-    std::unique_ptr<ItemViewFactory> factory;
+    ArmSourceViewFactory arm_list_factory;
 };
 
 class BasicArmPage : public QWizardPage {
