@@ -27,7 +27,7 @@ class IOEditor : public QWizard {
     Q_OBJECT
 
 public:
-    IOEditor(SystemConfigModel* model, QWidget* parent = nullptr);
+    IOEditor(SystemConfigModel& model, QWidget* parent = nullptr);
 
 public slots:
     void setId(int id);

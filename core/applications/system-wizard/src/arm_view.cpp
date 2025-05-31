@@ -17,8 +17,8 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-ArmView::ArmView(SystemConfigModel* model, ListView& list_view, int id, QWidget* parent)
-    : ItemView(list_view, id, parent), model(model) {
+ArmView::ArmView(SystemConfigModel& model, ListView& list_view, int id, QWidget* parent)
+    : ItemView(list_view, id, parent), model(&model) {
     QHBoxLayout* layout = new QHBoxLayout(this);
 
     display = new QLabel();
@@ -45,10 +45,10 @@ void ArmView::updateData(int id) {
     display->setToolTip(QString::fromStdString(arm.type.acronym_expansion()));
 }
 
-ArmViewFactory::ArmViewFactory(SystemConfigModel* model) : model(model) { }
+ArmViewFactory::ArmViewFactory(SystemConfigModel& model) : model(&model) { }
 
 ArmView* ArmViewFactory::create(int id, ListView& list_view) {
-    return new ArmView(model, list_view, id);
+    return new ArmView(*model, list_view, id);
 }
 
 }

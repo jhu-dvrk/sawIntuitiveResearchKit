@@ -32,16 +32,16 @@ class ConfigEditor : public QWidget {
     Q_OBJECT
 
 public:
-    ConfigEditor(SystemConfigModel* model, ConfigSources* config_sources, QWidget* parent = nullptr);
+    ConfigEditor(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent = nullptr);
 
 private:
     SystemConfigModel* model;
 
     ArmEditor arm_editor;
-    std::unique_ptr<ArmViewFactory> arm_factory;
+    ArmViewFactory arm_factory;
 
     IOEditor io_editor;
-    std::unique_ptr<IOViewFactory> io_factory;
+    IOViewFactory io_factory;
 
     ListView* io_list;
     ListView* arm_list;

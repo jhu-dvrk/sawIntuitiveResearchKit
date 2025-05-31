@@ -19,8 +19,8 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-IOView::IOView(SystemConfigModel* model, ListView& list_view, int id, QWidget* parent)
-    : ItemView(list_view, id, parent), model(model) {
+IOView::IOView(SystemConfigModel& model, ListView& list_view, int id, QWidget* parent)
+    : ItemView(list_view, id, parent), model(&model) {
     QHBoxLayout* layout = new QHBoxLayout(this);
 
     display = new QLabel();
@@ -47,10 +47,10 @@ void IOView::updateData(int id) {
     display->setText(text);
 }
 
-IOViewFactory::IOViewFactory(SystemConfigModel* model) : model(model) { }
+IOViewFactory::IOViewFactory(SystemConfigModel& model) : model(&model) { }
 
 IOView* IOViewFactory::create(int id, ListView& list_view) {
-    return new IOView(model, list_view, id);
+    return new IOView(*model, list_view, id);
 }
 
 }

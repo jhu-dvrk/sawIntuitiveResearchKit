@@ -17,44 +17,30 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-class ArmSourceView : public ItemView {
-public:
-    ArmSourceView(ListModelT<ConfigSources::Arm>* model, ListView& list_view, int id, QWidget* parent = nullptr)
-    : ItemView(list_view, id, parent), model(model) {
-        QHBoxLayout* layout = new QHBoxLayout(this);
+ArmSourceView::ArmSourceView(ListModelT<ConfigSources::Arm>& model, ListView& list_view, int id, QWidget* parent)
+: ItemView(list_view, id, parent), model(&model) {
+    QHBoxLayout* layout = new QHBoxLayout(this);
 
-        display = new QLabel();
-        updateData(id);
+    display = new QLabel();
+    updateData(id);
 
-        layout->addWidget(display);
-    }
+    layout->addWidget(display);
+}
 
-public slots:
-    void updateData(int id) override {
-        ConfigSources::Arm arm = model->get(id);
-        QString description = QString::fromStdString(arm.type + "-" + arm.serial_number);
-        display->setText(description);
-    }
+void ArmSourceView::updateData(int id) {
+    ConfigSources::Arm arm = model->get(id);
+    QString description = QString::fromStdString(arm.type + "-" + arm.serial_number);
+    display->setText(description);
+}
 
-private:
-    ListModelT<ConfigSources::Arm>* model;
-    QLabel* display;
-};
+ArmSourceViewFactory::ArmSourceViewFactory(ListModelT<ConfigSources::Arm>& model) : model(&model) {}
 
-class ArmSourceViewFactory : public ItemViewFactory {
-public:
-    ArmSourceViewFactory(ListModelT<ConfigSources::Arm>* model) : model(model) {}
+ArmSourceView* ArmSourceViewFactory::create(int id, ListView& list_view) {
+    return new ArmSourceView(*model, list_view, id);
+}
 
-    ArmSourceView* create(int id, ListView& list_view) {
-        return new ArmSourceView(model, list_view, id);
-    }
-
-private:
-    ListModelT<ConfigSources::Arm>* model;
-};
-
-QuickArmPage::QuickArmPage(ConfigSources* config_sources, QWidget *parent)
-    : QWizardPage(parent), config_sources(config_sources) {
+QuickArmPage::QuickArmPage(ConfigSources& config_sources, QWidget *parent)
+    : QWizardPage(parent), arm_list_factory(config_sources.getModel()) {
     setTitle("Quick arm");
     setSubTitle("Choose from default arms");
 
@@ -65,8 +51,7 @@ QuickArmPage::QuickArmPage(ConfigSources* config_sources, QWidget *parent)
 
     setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 
-    factory = std::make_unique<ArmSourceViewFactory>(&config_sources->getModel());
-    arm_list_view = new ListView(&config_sources->getModel(), factory.get(), SelectionMode::SINGLE);
+    arm_list_view = new ListView(config_sources.getModel(), arm_list_factory, SelectionMode::SINGLE);
     layout->addWidget(arm_list_view);
     layout->addStretch();
 
@@ -96,8 +81,8 @@ BasicArmPage::BasicArmPage(QWidget *parent) : QWizardPage(parent) {
     form->addRow("Type:", type_selector);
 }
 
-ArmEditor::ArmEditor(SystemConfigModel* model, ConfigSources* config_sources, QWidget* parent)
-    : QWizard(parent), model(model), config_sources(config_sources) {
+ArmEditor::ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent)
+    : QWizard(parent), model(&model) {
     setPage(PAGE_QUICK_ARM, new QuickArmPage(config_sources));
     setPage(PAGE_BASIC, new BasicArmPage());
 

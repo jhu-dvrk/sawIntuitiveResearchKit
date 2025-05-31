@@ -17,7 +17,7 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-IOEditor::IOEditor(SystemConfigModel* model, QWidget* parent) : QWizard(parent), model(model) {
+IOEditor::IOEditor(SystemConfigModel& model, QWidget* parent) : QWizard(parent), model(&model) {
     page = new QWizardPage;
     page->setTitle("I/O Config Editor");
 
