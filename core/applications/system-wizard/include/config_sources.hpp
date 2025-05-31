@@ -46,9 +46,6 @@ public:
 
     ListModelT<Arm>& getModel();
 
-signals:
-    void armsChanged();
-
 public slots:
     void add_source(QDir directory);
     void loaded(const QString &path);

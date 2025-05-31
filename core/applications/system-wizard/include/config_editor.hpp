@@ -34,9 +34,6 @@ class ConfigEditor : public QWidget {
 public:
     ConfigEditor(SystemConfigModel* model, ConfigSources* config_sources, QWidget* parent = nullptr);
 
-public slots:
-    void armsChanged();
-
 private:
     SystemConfigModel* model;
 
