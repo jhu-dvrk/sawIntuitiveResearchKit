@@ -36,6 +36,7 @@ private:
     void createActions();
     void createMenus();
 
+    QFileDialog directory_chooser;
     ConfigSources* config_sources;
 
     QMenu* file_menu;

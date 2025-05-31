@@ -92,7 +92,6 @@ void ConfigSources::loaded(const QString &path) {
     }
 
     arm_list_model.update(new_arms);
-    emit armsChanged();
 }
 
 }

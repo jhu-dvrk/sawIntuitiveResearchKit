@@ -24,7 +24,11 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-MainWindow::MainWindow() {
+MainWindow::MainWindow() : directory_chooser(this, "Open config source folder") {
+    directory_chooser.setFileMode(QFileDialog::Directory);
+    directory_chooser.setViewMode(QFileDialog::List);
+    directory_chooser.setOptions(QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+
     SystemConfigModel* model1 = new SystemConfigModel();
     config_sources = new ConfigSources();
 
@@ -72,18 +76,23 @@ void MainWindow::createMenus() {
 }
 
 void MainWindow::open_folder() {
-    QString dir = QFileDialog::getExistingDirectory(
-        this,
-        "Open config source",
-        QDir::currentPath(),
-        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
-    );
-
-    if (dir.isEmpty()) {
+    QStringList file_names;
+    bool selected = directory_chooser.exec();
+    if (!selected) {
         return;
     }
 
-    config_sources->add_source(dir);
+    file_names = directory_chooser.selectedFiles();
+    if (file_names.count() != 1) {
+        return;
+    }
+
+    QString selected_directory = file_names.at(0);
+    if (selected_directory.isEmpty()) {
+        return;
+    }
+
+    config_sources->add_source(selected_directory);
 }
 
 }

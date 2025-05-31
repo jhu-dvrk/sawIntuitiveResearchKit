@@ -75,8 +75,4 @@ ConfigEditor::ConfigEditor(SystemConfigModel* model, ConfigSources* config_sourc
     layout->addWidget(scroller);
 }
 
-void ConfigEditor::armsChanged() { 
-    // TODO
-}
-
 }
