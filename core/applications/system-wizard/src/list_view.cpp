@@ -55,7 +55,7 @@ void ItemView::mousePressEvent(QMouseEvent* CMN_UNUSED(event)) {
 }
 
 void ItemView::mouseDoubleClickEvent(QMouseEvent* CMN_UNUSED(event)) {
-    list_view.editItem(id);
+    list_view.chooseItem(id);
 }
 
 ListView::ListView(ListModel& model, ItemViewFactory& view_factory, SelectionMode selection_mode, bool editable)
@@ -128,10 +128,16 @@ void ListView::clearSelections() {
     }
 }
 
+void ListView::chooseItem(int index) {
+    emit choose(index);
+}
+
 void ListView::editItem(int index) {
-    if (editable) {
-        emit edit(index);
-    }
+    emit edit(index);
+}
+
+const std::vector<bool>& ListView::selectedItems() const {
+    return selections;
 }
 
 void ListView::itemAdded(int id) {

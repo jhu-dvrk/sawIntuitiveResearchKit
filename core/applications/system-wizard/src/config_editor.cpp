@@ -41,6 +41,7 @@ ConfigEditor::ConfigEditor(SystemConfigModel& model, ConfigSources& config_sourc
     ios->setWidget(io_list);
 
     QObject::connect(io_list, &ListView::add, this, [this]() { io_editor.setId(-1); io_editor.open(); });
+    QObject::connect(io_list, &ListView::choose, this, [this](int id) { io_editor.setId(id); io_editor.open(); });
     QObject::connect(io_list, &ListView::edit, this, [this](int id) { io_editor.setId(id); io_editor.open(); });
     QObject::connect(io_list, &ListView::try_delete, &model.io_configs, &ListModelT<IOConfig>::deleteItem);
 
