@@ -80,16 +80,28 @@ void ConfigSources::loaded(const QString &path) {
 
         // capture groups are:
         // 0: entire match
-        // 1: PSM/MTM/ECM
-        // 2: L/R if MTM
-        // 3: arm number, e.g. 2 for PSM2
+        // 1: PSM/MTML/MTMR/ECM
+        // 2: L/R if MTM (already included in capture group 1)
+        // 3: arm number, e.g. 2 for PSM2 or empty for ECM
         // 4: arm serial, e.g. 12345 for MTML-12345
 
-        std::string type = base_match[1].str();
+        ArmType::Value arm_type;
+        std::string type_str = base_match[1].str();
+        if (type_str == "PSM") {
+            arm_type = ArmType::Value::PSM;
+        } else if (type_str == "MTML" || type_str == "MTMR") {
+            arm_type = ArmType::Value::MTM;
+        } else if (type_str == "ECM") {
+            arm_type = ArmType::Value::ECM;
+        } else {
+            Q_ASSERT(false);
+            return;
+        }
+
         std::string serial = base_match[4].str();
         std::string name = base_match[1].str() + base_match[3].str();
 
-        new_arms.push_back(Arm(name, type, serial, entry.path()));
+        new_arms.push_back(Arm(name, arm_type, serial, entry.path()));
     }
 
     arm_list_model.update(new_arms);

@@ -54,6 +54,8 @@ public:
 
     ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent = nullptr);
 
+    void selectArmSource(ConfigSources::Arm arm_source);
+
 private:
     void done();
 
@@ -64,15 +66,17 @@ class QuickArmPage : public QWizardPage {
     Q_OBJECT
 
 public:
-    QuickArmPage(ConfigSources& config_sources, QWidget *parent = nullptr);
+    QuickArmPage(ArmEditor& editor, ConfigSources& config_sources, QWidget *parent = nullptr);
 
     int nextId() const override {
         return ArmEditor::PAGE_BASIC;
     }
 
     void initializePage() override;
+    bool isComplete() const override;
 
 private:
+    ArmEditor* editor;
     ListView* arm_list_view;
     ArmSourceViewFactory arm_list_factory;
 };

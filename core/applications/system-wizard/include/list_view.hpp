@@ -80,7 +80,10 @@ public:
     void selectItem(int index, bool is_selected);
     void clearSelections();
 
+    void chooseItem(int index);
     void editItem(int index);
+
+    const std::vector<bool>& selectedItems() const;
 
 public slots:
     void itemAdded(int index);
@@ -92,6 +95,7 @@ public slots:
 signals:
     void add();
     void selected(int id, bool is_selected);
+    void choose(int id);
     void edit(int id);
     void try_delete(int id);
 
