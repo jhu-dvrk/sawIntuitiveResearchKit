@@ -133,7 +133,7 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("use_gravity_compensation", mMTM.use_gravity_compensation);
         interfaceRequired->AddFunction("operating_state", mMTM.operating_state);
         interfaceRequired->AddFunction("state_command", mMTM.state_command);
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::MTMErrorEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::arm_error_event_handler,
                                                 this, "error");
     }
 
@@ -147,14 +147,14 @@ void mtsTeleOperationPSM::Init(void)
         interfaceRequired->AddFunction("jaw/servo_jp", mPSM.jaw_servo_jp, MTS_OPTIONAL);
         interfaceRequired->AddFunction("operating_state", mPSM.operating_state);
         interfaceRequired->AddFunction("state_command", mPSM.state_command);
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::PSMErrorEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::arm_error_event_handler,
                                                 this, "error");
     }
 
     // footpedal events
     interfaceRequired = AddInterfaceRequired("clutch");
     if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::ClutchEventHandler, this, "Button");
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSM::clutch_event_handler, this, "Button");
     }
 
     interfaceRequired = AddInterfaceRequired("PSM_base_frame", MTS_OPTIONAL);
@@ -366,19 +366,13 @@ void mtsTeleOperationPSM::Cleanup(void)
     CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
 }
 
-void mtsTeleOperationPSM::MTMErrorEventHandler(const mtsMessage & message)
+void mtsTeleOperationPSM::arm_error_event_handler(const mtsMessage & message)
 {
     mTeleopState.SetDesiredState("DISABLED");
-    mInterface->SendError(this->GetName() + ": received from MTM [" + message.Message + "]");
+    mInterface->SendError(this->GetName() + ": received from arm [" + message.Message + "]");
 }
 
-void mtsTeleOperationPSM::PSMErrorEventHandler(const mtsMessage & message)
-{
-    mTeleopState.SetDesiredState("DISABLED");
-    mInterface->SendError(this->GetName() + ": received from PSM [" + message.Message + "]");
-}
-
-void mtsTeleOperationPSM::ClutchEventHandler(const prmEventButton & button)
+void mtsTeleOperationPSM::clutch_event_handler(const prmEventButton & button)
 {
     switch (button.Type()) {
     case prmEventButton::PRESSED:

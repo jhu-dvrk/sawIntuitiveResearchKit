@@ -107,6 +107,10 @@ namespace mtsIntuitiveResearchKit {
         const double JawRateAfterClutch =  0.2 * cmnPI * cmn_s; // 36.0 d/s
     }
 
+    namespace TeleOperationECM {
+        const double Scale = 0.2;
+    }
+
     // colors for Si LEDs
     // 200 -> C8
     const uint32_t Red200 = 0xC80000;

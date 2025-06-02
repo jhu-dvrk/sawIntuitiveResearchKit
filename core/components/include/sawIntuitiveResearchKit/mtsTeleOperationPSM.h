@@ -62,10 +62,8 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     virtual void Init(void);
 
     // Event Handler
-    void MTMErrorEventHandler(const mtsMessage & message);
-    void PSMErrorEventHandler(const mtsMessage & message);
-
-    void ClutchEventHandler(const prmEventButton & button);
+    void arm_error_event_handler(const mtsMessage & message);
+    void clutch_event_handler(const prmEventButton & button);
     void Clutch(const bool & clutch);
 
     dvrk::teleop_PSM_configuration m_config;
