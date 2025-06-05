@@ -32,6 +32,7 @@ public:
 
 private slots:
     void open_folder();
+    void folder_chosen();
 
 private:
     void createActions();

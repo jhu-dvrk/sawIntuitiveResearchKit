@@ -27,6 +27,13 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
+enum class ArmConfigType {
+    NATIVE,
+    ROS_ARM,
+    HAPTIC_MTM,
+    SOCKET_PSM
+};
+
 class ArmType {
 public:
     enum class Value {
@@ -270,7 +277,7 @@ public:
         case Value::SEQUENTIAL_READ_SEQUENTIAL_WRITE:
         case Value::SEQUENTIAL_READ_BROADCAST_WRITE:
         case Value::BROADCAST_READ_BROADCAST_WRITE:
-            return "Controls whether read/writes being host and controllers are sequential or broadcast. Broadcast is usually faster, but is not supported by all hardware.";
+            return "Broadcast is usually faster, but is not supported by all hardware";
         default:
             return "UNKNOWN";
         }
@@ -312,10 +319,12 @@ public:
 
 class ArmConfig {
 public:
-    ArmConfig(std::string name, ArmType type) : name(name), type(type) { }
+    ArmConfig(std::string name, ArmType type, ArmConfigType config_type) : name(name), type(type), config_type(config_type) { }
 
     std::string name;
     ArmType type;
+
+    ArmConfigType config_type;
 
     std::optional<std::string> serial_number;
     std::optional<bool> skip_ros_bridge;

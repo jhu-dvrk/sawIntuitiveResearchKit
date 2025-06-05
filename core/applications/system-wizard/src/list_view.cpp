@@ -37,8 +37,9 @@ void ItemView::setSelected(bool selected) {
     );
 
     QString background = selected ? "palette(highlight)" : "palette(base)";
+    QString text = selected ? "palette(highlighted-text)" : "palette(text)";
 
-    QString style = "system_wizard--ItemView { background-color: " + background + "; border-radius: 10px; }";
+    QString style = "QLabel { color: " + text + ";  } system_wizard--ItemView { background-color: " + background + "; border-radius: 10px; }";
     QString hover_style_template = QString("system_wizard--ItemView:hover { background-color: #%1; }");
     // convert color to base-16 string with 0-width padding
     QString hover_style = hover_style_template.arg(hover_color.rgba(), 0, 16);

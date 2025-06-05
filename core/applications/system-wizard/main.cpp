@@ -15,11 +15,16 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QApplication>
 
+#include <cisstCommon/cmnQt.h>
+
 #include "include/mainwindow.hpp"
 
 int main(int argc, char** argv)
 {
     QApplication application(argc, argv);
+
+    // cmnQt::SetDarkMode();
+
     system_wizard::MainWindow window;
     window.showMaximized();
 

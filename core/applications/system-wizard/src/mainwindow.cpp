@@ -52,11 +52,11 @@ MainWindow::MainWindow() : directory_chooser(this, "Open config source folder") 
 
     setWindowTitle("dVRK System Wizard");
 
-    model1.arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM_GENERIC)));
-    model1.arm_configs.addItem(ArmConfig("ECM", ArmType(ArmType::Value::ECM)));
+    model1.arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM), ArmConfigType::NATIVE));
+    model1.arm_configs.addItem(ArmConfig("ECM", ArmType(ArmType::Value::ECM), ArmConfigType::NATIVE));
 
-    model2.arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM)));
-    model2.arm_configs.addItem(ArmConfig("MTMR", ArmType(ArmType::Value::MTM_DERIVED)));
+    model2.arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM), ArmConfigType::NATIVE));
+    model2.arm_configs.addItem(ArmConfig("MTMR", ArmType(ArmType::Value::MTM), ArmConfigType::NATIVE));
 }
 
 void MainWindow::createActions() {
@@ -65,6 +65,7 @@ void MainWindow::createActions() {
     open_act->setShortcuts(QKeySequence::Open);
     open_act->setStatusTip("Open config source directory");
     connect(open_act, &QAction::triggered, this, &MainWindow::open_folder);
+    connect(&directory_chooser, &QDialog::accepted, this, &MainWindow::folder_chosen);
 }
 
 void MainWindow::createMenus() {
@@ -73,13 +74,11 @@ void MainWindow::createMenus() {
 }
 
 void MainWindow::open_folder() {
-    QStringList file_names;
-    bool selected = directory_chooser.exec();
-    if (!selected) {
-        return;
-    }
+    directory_chooser.open();
+}
 
-    file_names = directory_chooser.selectedFiles();
+void MainWindow::folder_chosen() {
+    QStringList file_names = directory_chooser.selectedFiles();
     if (file_names.count() != 1) {
         return;
     }
