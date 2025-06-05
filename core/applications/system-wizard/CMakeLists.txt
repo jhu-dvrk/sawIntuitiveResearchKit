@@ -14,6 +14,7 @@ cmake_minimum_required (VERSION 3.16)
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES
      cisstCommon
+     cisstCommonQt
      cisstVector
      cisstParameterTypes
      cisstQt

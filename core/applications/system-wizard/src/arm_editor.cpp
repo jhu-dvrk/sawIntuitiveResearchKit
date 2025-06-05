@@ -43,7 +43,6 @@ QuickArmPage::QuickArmPage(ArmEditor& editor, ConfigSources& config_sources, QWi
     : QWizardPage(parent), editor(&editor), arm_list_factory(config_sources.getModel()) {
     setTitle("Quick arm");
     setSubTitle("Choose from default arms");
-    setFinalPage(true);
 
     QVBoxLayout *layout = new QVBoxLayout(this);
     QLabel* source_label = new QLabel("Choose from available arms:");
@@ -52,9 +51,18 @@ QuickArmPage::QuickArmPage(ArmEditor& editor, ConfigSources& config_sources, QWi
 
     arm_list_view = new ListView(config_sources.getModel(), arm_list_factory, SelectionMode::SINGLE);
     arm_list_view->setEmptyMessage("No arms available - open a config folder");
-    QObject::connect(arm_list_view, &ListView::choose, this, [&editor, &model=config_sources.getModel()](int index){
+    QObject::connect(arm_list_view, &ListView::choose, this, [this, &editor, &model=config_sources.getModel()](int index){
         ConfigSources::Arm source = model.get(index);
         editor.selectArmSource(source);
+        next_page_id = ArmEditor::PAGE_ARM_DETAILS;
+        editor.next();
+    });
+    QObject::connect(arm_list_view, &ListView::selected, this, [&editor, &model=config_sources.getModel()](int index, bool selected){
+        if (selected) {
+            ConfigSources::Arm source = model.get(index);
+            next_page_id = ArmEditor::PAGE_ARM_TYPE;
+            editor.selectArmSource(source);
+        }
     });
     QObject::connect(arm_list_view, &ListView::selected, this, &QWizardPage::completeChanged);
 
@@ -69,10 +77,18 @@ QuickArmPage::QuickArmPage(ArmEditor& editor, ConfigSources& config_sources, QWi
     custom_label->setWordWrap(true);
     layout->addWidget(custom_label);
     QHBoxLayout* custom_arm_layout = new QHBoxLayout();
-    QPushButton* custom_arm_button = new QPushButton("Custom arm");
+    QPushButton* custom_arm_button = new QPushButton("Configure arm");
     custom_arm_layout->addStretch();
     custom_arm_layout->addWidget(custom_arm_button);
     layout->addLayout(custom_arm_layout);
+
+    QObject::connect(custom_arm_button, &QPushButton::clicked, this, [this]() {
+        QWizard* wizard = this->wizard();
+        if (wizard != nullptr) {
+            next_page_id = ArmEditor::PAGE_ARM_TYPE;
+            wizard->next();
+        }
+    });
 
     layout->addStretch();
 
@@ -82,6 +98,10 @@ QuickArmPage::QuickArmPage(ArmEditor& editor, ConfigSources& config_sources, QWi
 
 void QuickArmPage::initializePage() {
     arm_list_view->clearSelections();
+
+    QList<QWizard::WizardButton> button_layout;
+    button_layout << QWizard::Stretch << QWizard::BackButton << QWizard::NextButton << QWizard::FinishButton << QWizard::CancelButton;
+    wizard()->setButtonLayout(button_layout);
 
     // make sure dialog size is updated if arm source list has changed while hidden
     arm_list_view->updateGeometry();
@@ -98,30 +118,221 @@ bool QuickArmPage::isComplete() const {
     return false;
 }
 
-BasicArmPage::BasicArmPage(QWidget *parent) : QWizardPage(parent) {
-    setTitle("Basic arm info");
+ArmTypePage::ArmTypePage(QWidget *parent) : QWizardPage(parent) {
+    setTitle("Choose type of arm");
+
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    layout->addWidget(new QLabel("What type of arm do you want to add?"));
+    layout->addSpacing(10);
+    QLabel* haptic_label = new QLabel("If you want to use a haptic input device such as a ForceDimension, Falcon, or Omni in place of an MTM arm:");
+    haptic_label->setWordWrap(true);
+    layout->addWidget(haptic_label);
+    QPushButton* haptic_input = new QPushButton("Configure haptic input device");
+    QObject::connect(haptic_input, &QPushButton::clicked, this, [this]() {
+        this->next_page_id = ArmEditor::PAGE_HAPTIC_MTM;
+        this->wizard()->next();
+    });
+
+    haptic_input->setFlat(true);
+    haptic_input->setAutoFillBackground(true);
+    layout->addWidget(haptic_input);
+    layout->addSpacing(10);
+    layout->addWidget(new QLabel("If you want to use a remote or simulated arm, such as:"));
+    QPushButton* via_ros = new QPushButton("Client arm for remote/simulated PSM/MTM via ROS topics");
+    QObject::connect(via_ros, &QPushButton::clicked, this, [this]() {
+        this->next_page_id = ArmEditor::PAGE_ROS_ARM;
+        this->wizard()->next();
+    });
+
+    via_ros->setFlat(true);
+    via_ros->setAutoFillBackground(true);
+    QPushButton* via_socket = new QPushButton("Client arm for remote/simulated PSM via UDP socket");
+    QObject::connect(via_socket, &QPushButton::clicked, this, [this]() {
+        this->next_page_id = ArmEditor::PAGE_SOCKET_PSM;
+        this->wizard()->next();
+    });
+
+    via_socket->setFlat(true);
+    via_socket->setAutoFillBackground(true);
+    layout->addWidget(via_ros);
+    layout->addWidget(via_socket);
+}
+
+HapticMTMPage::HapticMTMPage(QWidget *parent) : QWizardPage(parent) {
+    setTitle("Configure haptic device as MTM");
+
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    QFormLayout* device_type_form = new QFormLayout();
+
+    // Haptic device selector determines which config options we display below,
+    // as well as what shared library component we need to load
+    haptic_device_selector = new QComboBox();
+    haptic_device_selector->setPlaceholderText("select haptic device type");
+    haptic_device_selector->addItem("Novint Falcon",               0);
+    haptic_device_selector->addItem("ForceDimension omega/delta",  1);
+    haptic_device_selector->addItem("ForceDimension sigma/lambda", 2);
+    haptic_device_selector->addItem("Phantom Omni/Geomagic Touch", 3);
+    haptic_device_selector->addItem("Other",                       4);
+    device_type_form->addRow("Type of haptic input device:", haptic_device_selector);
+    layout->addLayout(device_type_form);
+
+    details = new QStackedWidget();
+
+    QWidget* blank = new QWidget();
+    details->addWidget(blank);
+
+    // for sawForceDimensionSDK arms - Falcon and ForceDimension arms
+    QWidget* force_dimension = new QWidget();
+    QVBoxLayout* force_dimension_layout = new QVBoxLayout(force_dimension);
+    QLabel* left_right_label = new QLabel("Do you want to use the haptic device as left or right input?");
+    left_right_label->setWordWrap(true);
+    left_right_selector = new QComboBox();
+    left_right_selector->setPlaceholderText("select left/right input");
+    left_right_selector->addItem("MTML (left input arm)",  0);
+    left_right_selector->addItem("MTMR (right input arm)", 1);
+
+    force_dimension_layout->addWidget(left_right_label);
+    force_dimension_layout->addWidget(left_right_selector);
+
+    QHBoxLayout* config_file_selector = new QHBoxLayout();
+    QFileDialog* file_dialog = new QFileDialog(this);
+    file_dialog->setFileMode(QFileDialog::ExistingFile);
+    file_dialog->setViewMode(QFileDialog::List);
+    file_dialog->setOptions(QFileDialog::DontResolveSymlinks);
+    QLineEdit* config_file_name = new QLineEdit();
+    QPushButton* config_file_browse_button = new QPushButton("Browse");
+    QObject::connect(config_file_browse_button, &QPushButton::clicked, file_dialog, &QDialog::open);
+    QObject::connect(file_dialog, &QFileDialog::fileSelected, this, [config_file_name](const QString& file_name) {
+        if (file_name.isEmpty()) { return; }
+        config_file_name->setText(file_name);
+    });
+    config_file_name->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+    config_file_selector->addWidget(config_file_name);
+    config_file_selector->addWidget(config_file_browse_button);
+    force_dimension_layout->addLayout(config_file_selector);
+
+    QObject::connect(left_right_selector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [config_file_name](int index) {
+        if (index == 0) {
+            config_file_name->setText("sawForceDimensionSDK-MTML.json");
+        } else if (index == 1) {
+            config_file_name->setText("sawForceDimensionSDK-MTMR.json");
+        }
+    });
+
+    details->addWidget(force_dimension);
+
+    layout->addWidget(details);
+    layout->addStretch();
+
+    details->setCurrentIndex(0);
+    QObject::connect(haptic_device_selector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        switch (index) {
+        case 0:
+        case 1:
+        case 2:
+            details->setCurrentIndex(1);
+            break;
+        default:
+            details->setCurrentIndex(0);
+            break;
+        }
+    });
+
+    registerField("haptic.device*", haptic_device_selector);
+}
+
+void HapticMTMPage::initializePage() {
+    haptic_device_selector->setCurrentIndex(-1);
+    details->setCurrentIndex(0);
+    left_right_selector->setCurrentIndex(-1);
+}
+
+ROSArmPage::ROSArmPage(QWidget *parent) : QWizardPage(parent) {
+    setTitle("Remote arm via ROS");
+
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    QLabel* description1 = new QLabel("Client arm for a remote dVRK arm available via ROS, either an actual arm or a simulated provided by e.g. the AMBF simulator.");
+    description1->setWordWrap(true);
+    layout->addWidget(description1);
+    QLabel* description2 = new QLabel("Client arm name (e.g. \"PSM1\") must match ROS namespace used for remote arm");
+    description2->setWordWrap(true);
+    layout->addWidget(description2);
+
+    QFormLayout* form = new QFormLayout();
+
+    QComboBox* arm_type = new QComboBox();
+    arm_type->setPlaceholderText("select arm type");
+    arm_type->addItem("PSM", 0);
+    arm_type->addItem("MTM", 1);
+    form->addRow("Arm type:", arm_type);
+
+    layout->addLayout(form);
+
+    registerField("ros.type*", arm_type);
+}
+
+void ROSArmPage::initializePage() { }
+
+SocketPSMPage::SocketPSMPage(QWidget *parent) : QWizardPage(parent) {
+    setTitle("Remote PSM via UDP socket");
+
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    QLabel* description1 = new QLabel("Client arm for a remote arm. You will need to configure and run a second dVRK system to provide the corresponding remote server arm.");
+    description1->setWordWrap(true);
+    layout->addWidget(description1);
+    QLabel* description2 = new QLabel("On the remote side, using a real hardware PSM as a remote server arm is done by enabling the \"Add socket server\" option for that arm.");
+    description2->setWordWrap(true);
+    layout->addWidget(description2);
+
+    QFormLayout* form = new QFormLayout();
+
+    QLineEdit* remote_ip = new QLineEdit();
+    form->addRow("Remote system IP:", remote_ip);
+    QLineEdit* socket_port = new QLineEdit();
+    form->addRow("UDP socket Port:", socket_port);
+
+    layout->addLayout(form);
+
+    registerField("socket.ip*", remote_ip);
+    registerField("socket.port*", socket_port);
+}
+
+void SocketPSMPage::initializePage() { }
+
+NativeArmPage::NativeArmPage(QWidget* parent) : QWizardPage(parent) { }
+
+void NativeArmPage::initializePage() { }
+
+ArmDetailsPage::ArmDetailsPage(QWidget* parent) : QWizardPage(parent) {
+    setTitle("Configure arm details");
 
     QFormLayout* form = new QFormLayout(this);
 
-    name_input = new QLineEdit();
-    registerField("basic.name*", name_input);
+    QLineEdit* name = new QLineEdit();
+    QComboBox* base_frame = new QComboBox();
+    base_frame->setPlaceholderText("select base frame");
+    base_frame->addItem("None", 0);
+    base_frame->addItem("Set Up Joints", 1);
+    base_frame->addItem("Fixed Endoscope", 2);
+    base_frame->addItem("Fixed Stereo Display", 3);
 
-    type_selector = new QComboBox();
-    type_selector->setModel(&type_model);
-    registerField("basic.type*", type_selector);
+    form->addRow("Arm name:", name);
+    form->addRow("Base frame:", base_frame);
 
-    form->addRow("Name:", name_input);
-    form->addRow("Type:", type_selector);
+    registerField("arm.name*", name);
+    registerField("arm.base_frame*", base_frame);
 }
 
-ArmEditor::ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent)
-    : QWizard(parent), model(&model) {
-    setPage(PAGE_QUICK_ARM, new QuickArmPage(*this, config_sources));
-    setPage(PAGE_BASIC, new BasicArmPage());
+void ArmDetailsPage::initializePage() { }
 
-    QList<QWizard::WizardButton> button_layout;
-    button_layout << QWizard::Stretch << QWizard::FinishButton << QWizard::CancelButton;
-    setButtonLayout(button_layout);
+ArmEditor::ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent)
+    : QWizard(parent), model(&model), config("PSM", ArmType::Value::PSM, ArmConfigType::NATIVE) {
+    setPage(PAGE_QUICK_ARM, new QuickArmPage(*this, config_sources));
+    setPage(PAGE_ARM_TYPE, new ArmTypePage());
+    setPage(PAGE_HAPTIC_MTM, new HapticMTMPage());
+    setPage(PAGE_ROS_ARM, new ROSArmPage());
+    setPage(PAGE_SOCKET_PSM, new SocketPSMPage());
+    setPage(PAGE_ARM_DETAILS, new ArmDetailsPage());
 
     setWizardStyle(QWizard::ModernStyle);
     setOption(QWizard::NoBackButtonOnStartPage);
@@ -135,17 +346,15 @@ ArmEditor::ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QW
 }
 
 void ArmEditor::done() {
-    ArmConfig config = ArmConfig("Test", ArmType::Value::PSM_SOCKET);
     model->arm_configs.addItem(config);
 }
 
 void ArmEditor::selectArmSource(ConfigSources::Arm arm_source) {
-    ArmConfig config = ArmConfig(arm_source.name, arm_source.type);
+    config = ArmConfig(arm_source.name, arm_source.type, ArmConfigType::NATIVE);
     config.serial_number = arm_source.serial_number;
     config.interface_name = "Arm";
-
-    model->arm_configs.addItem(config);
-    close();
 }
+
+void ArmEditor::setId(int id) { }
 
 }
