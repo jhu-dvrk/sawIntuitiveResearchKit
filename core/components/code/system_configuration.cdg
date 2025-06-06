@@ -4,9 +4,11 @@
 inline-header {
 #include <json/json.h>
 #include <sawIntuitiveResearchKit/IO_proxy_configuration.h>
+#include <sawIntuitiveResearchKit/IO_configuration.h>
 #include <sawIntuitiveResearchKit/arm_proxy_configuration.h>
 #include <sawIntuitiveResearchKit/console_configuration.h>
 }
+
 
 class {
     name system_configuration;
@@ -25,6 +27,13 @@ class {
         type std::vector<dvrk::IO_proxy_configuration>;
         visibility public;
         default std::vector<dvrk::IO_proxy_configuration>();
+    }
+
+    member {
+        name ISI_focus_controller;
+        type dvrk::IO_configuration;
+        visibility public;
+        default dvrk::IO_configuration("ISI_focus_controller");
     }
 
     member {

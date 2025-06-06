@@ -35,10 +35,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/console.h>
 #include <sawIntuitiveResearchKit/teleop_PSM_proxy.h>
 #include <sawIntuitiveResearchKit/teleop_ECM_proxy.h>
-
-#if sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR
-#include <sawIntuitiveResearchKit/mtsHIDHeadSensor.h>
-#endif
+#include <sawIntuitiveResearchKit/mtsDaVinciEndoscopeFocus.h>
 
 #include <json/json.h>
 
@@ -188,6 +185,19 @@ void dvrk::system::Configure(const std::string & filename)
         }
     }
 
+    // create ISI focus controller if needed
+    if (m_config.ISI_focus_controller.IO_file != "") {
+        const auto focus_IO_file = this->find_file(m_config.ISI_focus_controller.IO_file);
+        if (focus_IO_file == "") {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to find focus controller IO file "
+                                     << m_config.ISI_focus_controller.IO_file << " for focus controller: "
+                                     << m_config.ISI_focus_controller.name << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        m_ISI_focus_controller = std::make_unique<mtsDaVinciEndoscopeFocus>(m_config.ISI_focus_controller.name);
+        manager->AddComponent(m_ISI_focus_controller.get());
+    }
+    
     // find all arms
     for (auto & arm_config : m_config.arms) {
         const auto iter = m_arm_proxies.find(arm_config.name);
@@ -225,6 +235,22 @@ void dvrk::system::Configure(const std::string & filename)
         add_IO_interfaces(IO_proxy);
     }
 
+    // configure IO for focus controller
+    if (m_config.ISI_focus_controller.IO != "") {
+        configure_IO(m_config.ISI_focus_controller);
+        const std::string controller = m_config.ISI_focus_controller.name;
+        const std::string IO = m_config.ISI_focus_controller.IO;
+        m_connections.Add(controller, "EndoscopeFocusIn",
+                          IO, "EndoscopeFocusIn");
+        m_connections.Add(controller, "EndoscopeFocusOut",
+                          IO, "EndoscopeFocusOut");
+        std::cerr << CMN_LOG_DETAILS << " --------------- the following two connections should likely happen in the console class.  To test with two consoles!" << std::endl;
+        m_connections.Add(controller, "focus_in",
+                          IO, "focus_minus");
+        m_connections.Add(controller, "focus_out",
+                          IO, "focus_plus");
+    }
+    
     // now we can configure PID and Arms
     for (auto iter : m_arm_proxies) {
         auto & arm_proxy = iter.second;
@@ -363,25 +389,6 @@ void dvrk::system::Run(void)
 void dvrk::system::Cleanup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
-}
-
-
-bool dvrk::system::add_teleop_interfaces(std::shared_ptr<dvrk::teleop_proxy> _teleop_proxy)
-{
-    _teleop_proxy->m_interface_required = this->AddInterfaceRequired(_teleop_proxy->m_name);
-    if (_teleop_proxy->m_interface_required) {
-        auto itf = _teleop_proxy->m_interface_required;
-        itf->AddFunction("state_command", _teleop_proxy->state_command);
-        itf->AddFunction("set_scale", _teleop_proxy->set_scale);
-        itf->AddEventHandlerWrite(&system::error_event_handler, this, "error");
-        itf->AddEventHandlerWrite(&system::warning_event_handler, this, "warning");
-        itf->AddEventHandlerWrite(&system::status_event_handler, this, "status");
-    } else {
-        CMN_LOG_CLASS_INIT_ERROR << "add_teleop_interfaces: failed to add main interface for teleop \""
-                                 << _teleop_proxy->m_name << "\"" << std::endl;
-        return false;
-    }
-    return true;
 }
 
 
@@ -600,6 +607,55 @@ bool dvrk::system::add_console_interfaces(std::shared_ptr<dvrk::console> _consol
         return false;
     }
     return true;
+}
+
+
+bool dvrk::system::add_teleop_interfaces(std::shared_ptr<dvrk::teleop_proxy> _teleop_proxy)
+{
+    _teleop_proxy->m_interface_required = this->AddInterfaceRequired(_teleop_proxy->m_name);
+    if (_teleop_proxy->m_interface_required) {
+        auto itf = _teleop_proxy->m_interface_required;
+        itf->AddFunction("state_command", _teleop_proxy->state_command);
+        itf->AddFunction("set_scale", _teleop_proxy->set_scale);
+        itf->AddEventHandlerWrite(&system::error_event_handler, this, "error");
+        itf->AddEventHandlerWrite(&system::warning_event_handler, this, "warning");
+        itf->AddEventHandlerWrite(&system::status_event_handler, this, "status");
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "add_teleop_interfaces: failed to add main interface for teleop \""
+                                 << _teleop_proxy->m_name << "\"" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+
+void dvrk::system::configure_IO(const dvrk::IO_configuration & _IO_config)
+{
+    // registered?
+    auto iter = m_IO_proxies.find(_IO_config.IO);
+    if (iter == m_IO_proxies.end()) {
+        CMN_LOG_INIT_ERROR << "system::configure_IO for \""
+                           << _IO_config.name << "\", \""
+                           << _IO_config.IO << "\" is not defined in \"IOs\"" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    // locate file
+    if (_IO_config.IO_file == "") {
+        CMN_LOG_INIT_ERROR << "system::configure_IO for \""
+                           << _IO_config.name << "\", IO_file is not defined" << std::endl;
+
+        exit(EXIT_FAILURE);
+    }
+    const std::string full_file = find_file( _IO_config.IO_file);
+    if (full_file == "") {
+        CMN_LOG_INIT_ERROR << "system::configure_IO for \""
+                           << _IO_config.name << "\", \""
+                           << _IO_config.IO_file << "\" not found" << std::endl;
+
+        exit(EXIT_FAILURE);
+    }
+    // and finally configure
+    iter->second->configure(full_file);
 }
 
 

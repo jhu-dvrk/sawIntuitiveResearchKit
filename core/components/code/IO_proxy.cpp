@@ -86,3 +86,13 @@ void dvrk::IO_proxy::create_IO(void)
     mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
     component_manager->AddComponent(m_IO.get());
 }
+
+
+void dvrk::IO_proxy::configure(const std::string & _file)
+{
+    if (m_IO == nullptr) {
+        CMN_LOG_INIT_ERROR << "IO_proxy::configure: create_IO must be called first" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    m_IO->Configure(_file);
+}

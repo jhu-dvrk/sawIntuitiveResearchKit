@@ -59,6 +59,8 @@ namespace dvrk {
         /*! Create and configure IO component. */
         void create_IO(void);
 
+        void configure(const std::string & _file);
+
      protected:
         std::shared_ptr<mtsRobotIO1394> m_IO = nullptr;
         mtsFunctionVoid close_all_relays;

@@ -28,6 +28,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsFunctionWrite.h>
 #include <cisstParameterTypes/prmEventButton.h>
 
+#include <sawIntuitiveResearchKit/IO_configuration.h>
+
 // Always include last
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 

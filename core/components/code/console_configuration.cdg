@@ -3,6 +3,7 @@
 
 inline-header {
 #include <json/json.h>
+#include <sawIntuitiveResearchKit/IO_configuration.h>
 #include <sawIntuitiveResearchKit/teleop_proxy_configuration.h>
 }
 
@@ -58,11 +59,17 @@ class {
     }
 
     member {
-        name IO;
-        type std::string;
+        name IO_pedals;
+        type dvrk::IO_configuration;
         visibility public;
-        default "";
-        description Optional IO component providing the pedal events (Button) for clutch, camera and operator_present;
+        default dvrk::IO_configuration("IO_pedals");
+    }
+
+    member {
+        name IO_head_sensor;
+        type dvrk::IO_configuration;
+        visibility public;
+        default dvrk::IO_configuration("IO_head_sensor");
     }
 
     member {

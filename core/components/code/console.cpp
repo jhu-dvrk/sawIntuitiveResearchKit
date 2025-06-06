@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawIntuitiveResearchKit/console_configuration.h>
 #include <sawIntuitiveResearchKit/system.h>
+#include <sawIntuitiveResearchKit/IO_proxy.h>
 #include <sawIntuitiveResearchKit/teleop_ECM_proxy.h>
 #include <sawIntuitiveResearchKit/teleop_PSM_proxy.h>
 
@@ -94,72 +95,35 @@ void dvrk::console::post_configure(void)
         }
     }
 
-    // operator present, clutch, camera pedals
-    switch (m_config->input_type) {
-    case console_input_type::PEDALS_ONLY:
-        {
-            if (m_config->IO == "") {
-                CMN_LOG_INIT_ERROR << "console::post_configure: \"IO\" must be provided for inputs PEDALS_ONLY: "
-                                   << m_name << std::endl;
-                exit(EXIT_FAILURE);
-            }
-            // registered in component manager?
-            auto iter = m_system->m_IO_proxies.find(m_config->IO);
-            if (iter == m_system->m_IO_proxies.end()) {
-                CMN_LOG_INIT_ERROR << "console::post_configure: IO \""
-                                   << m_config->IO << "\" is not defined in \"IOs\"" << std::endl;
-                exit(EXIT_FAILURE);
-            }
-            m_clutch_component_name = m_config->IO;
-            m_clutch_interface_name = "clutch";
-            m_camera_component_name = m_config->IO;
-            m_camera_interface_name = "camera";
-            m_operator_present_component_name = m_config->IO;
+    // clutch, camera pedals
+    if ((m_config->input_type == console_input_type::PEDALS_ONLY)
+        || (m_config->input_type == console_input_type::PEDALS_ISI_HEAD_SENSOR)
+        || (m_config->input_type == console_input_type::PEDALS_DVRK_HEAD_SENSOR)
+        || (m_config->input_type == console_input_type::PEDALS_GOOVIS_HEAD_SENSOR)) {
+        if (m_config->IO_pedals.IO == "") {
+            CMN_LOG_INIT_ERROR << "console::post_configure: \"IO_pedals\" must be provided for inputs PEDALS_{}: "
+                               << m_name << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        m_clutch_component_name = m_config->IO_pedals.IO;
+        m_clutch_interface_name = "clutch";
+        m_camera_component_name = m_config->IO_pedals.IO;
+        m_camera_interface_name = "camera";
+        // if only pedals, use coag for operator present
+        if (m_config->input_type == console_input_type::PEDALS_ONLY) {
+            m_operator_present_component_name = m_config->IO_pedals.IO;
             m_operator_present_interface_name = "coag";
-            break;
         }
-    case console_input_type::PEDALS_ISI_HEAD_SENSOR:
-        {
-            if (m_config->IO == "") {
-                CMN_LOG_INIT_ERROR << "console::post_configure: \"IO\" must be provided for inputs PEDALS_ISI_HEAD_SENSOR: "
-                                   << m_name << std::endl;
-                exit(EXIT_FAILURE);
-            }
-            // registered in component manager?
-            auto iter = m_system->m_IO_proxies.find(m_config->IO);
-            if (iter == m_system->m_IO_proxies.end()) {
-                CMN_LOG_INIT_ERROR << "console::post_configure: IO \""
-                                   << m_config->IO << "\" is not defined in \"IOs\"" << std::endl;
-                exit(EXIT_FAILURE);
-            }
-            m_clutch_component_name = m_config->IO;
-            m_clutch_interface_name = "clutch";
-            m_camera_component_name = m_config->IO;
-            m_camera_interface_name = "camera";
+    }
 
-            // create and connect the head sensor
-            const std::string head_sensor_name = m_name + "_daVinci_head_sensor";
-            m_head_sensor = new mtsDaVinciHeadSensor(head_sensor_name);
-            mtsComponentManager * manager = mtsComponentManager::GetInstance();
-            manager->AddComponent(m_head_sensor);
-            // schedule connections between IO and head sensor component
-            m_system->m_connections.Add(head_sensor_name, "HeadSensorTurnOff",
-                                        m_config->IO, "HeadSensorTurnOff");
-            m_system->m_connections.Add(head_sensor_name, "HeadSensor1",
-                                        m_config->IO, "HeadSensor1");
-            m_system->m_connections.Add(head_sensor_name, "HeadSensor2",
-                                        m_config->IO, "HeadSensor2");
-            m_system->m_connections.Add(head_sensor_name, "HeadSensor3",
-                                        m_config->IO, "HeadSensor3");
-            m_system->m_connections.Add(head_sensor_name, "HeadSensor4",
-                                        m_config->IO, "HeadSensor4");
-
-            m_operator_present_component_name = m_head_sensor->GetName();
-            m_operator_present_interface_name = "operator_present";
-            break;
+    if (m_config->input_type == console_input_type::PEDALS_ISI_HEAD_SENSOR) {
+        if (m_config->IO_head_sensor.IO == "") {
+            CMN_LOG_INIT_ERROR << "console::post_configure: \"IO_head_sensor\" must be provided for inputs PEDALS_ISI_HEAD_SENSOR: "
+                               << m_name << std::endl;
+            exit(EXIT_FAILURE);
         }
-    default:
-        break;
+        m_operator_present_component_name = m_name + "_daVinci_head_sensor";
+        m_operator_present_interface_name = "operator_present";
     }
 }
 
@@ -170,6 +134,30 @@ void dvrk::console::create_components(void)
     for (auto & proxy : m_teleop_proxies) {
         m_system->add_teleop_interfaces(proxy.second);
         proxy.second->create_teleop();
+    }
+
+    // inputs
+    if (m_config->IO_pedals.IO != "") {
+        m_system->configure_IO(m_config->IO_pedals);
+    }
+
+    if (m_config->IO_head_sensor.IO != "") {
+        m_system->configure_IO(m_config->IO_head_sensor);
+        m_head_sensor = new mtsDaVinciHeadSensor(m_operator_present_component_name);
+        mtsComponentManager * manager = mtsComponentManager::GetInstance();
+        manager->AddComponent(m_head_sensor);
+        // schedule connections between IO and head sensor component
+        const std::string IO =  m_config->IO_head_sensor.IO;
+        m_system->m_connections.Add(m_operator_present_component_name, "HeadSensorTurnOff",
+                                    IO, "HeadSensorTurnOff");
+        m_system->m_connections.Add(m_operator_present_component_name, "HeadSensor1",
+                                    IO, "HeadSensor1");
+        m_system->m_connections.Add(m_operator_present_component_name, "HeadSensor2",
+                                    IO, "HeadSensor2");
+        m_system->m_connections.Add(m_operator_present_component_name, "HeadSensor3",
+                                    IO, "HeadSensor3");
+        m_system->m_connections.Add(m_operator_present_component_name, "HeadSensor4",
+                                    IO, "HeadSensor4");
     }
 }
 
@@ -246,36 +234,6 @@ void dvrk::console::emit_teleop_state_events(void)
 //     //         }
 //     //     }
 
-//     // load endoscope-focus settings
-//     // const Json::Value endoscopeFocus = jsonConfig["endoscope-focus"];
-//     // if (!endoscopeFocus.empty()) {
-//     //     const std::string endoscopeFocusName = "daVinciEndoscopeFocus";
-//     //     mDaVinciEndoscopeFocus = new mtsDaVinciEndoscopeFocus(endoscopeFocusName);
-//     //     mtsComponentManager::GetInstance()->AddComponent(mDaVinciEndoscopeFocus);
-//     //     // make sure we have cam+ and cam- in digital inputs
-//     //     const DInputSourceType::const_iterator endDInputs = mDInputSources.end();
-//     //     const bool foundCamMinus = (mDInputSources.find("Cam-") != endDInputs);
-//     //     if (!foundCamMinus) {
-//     //         CMN_LOG_CLASS_INIT_ERROR << "Configure: input for footpedal \"Cam-\" is required for \"endoscope-focus\".  "
-//     //                                  << footpedalMessage << std::endl;
-//     //         exit(EXIT_FAILURE);
-//     //     }
-//     //     const bool foundCamPlus = (mDInputSources.find("Cam+") != endDInputs);
-//     //     if (!foundCamPlus) {
-//     //         CMN_LOG_CLASS_INIT_ERROR << "Configure: input for footpedal \"Cam+\" is required for \"endoscope-focus\".  "
-//     //                                  << footpedalMessage << std::endl;
-//     //         exit(EXIT_FAILURE);
-//     //     }
-//     //     // schedule connections
-//     //     // m_connections.Add(endoscopeFocusName, "EndoscopeFocusIn",
-//     //     //                  m_IO_component_name, "EndoscopeFocusIn");
-//     //     // m_connections.Add(endoscopeFocusName, "EndoscopeFocusOut",
-//     //     //                  m_IO_component_name, "EndoscopeFocusOut");
-//     //     // m_connections.Add(endoscopeFocusName, "focus_in",
-//     //     //                  m_IO_component_name, "Cam+");
-//     //     // m_connections.Add(endoscopeFocusName, "focus_out",
-//     //     //                  m_IO_component_name, "Cam-");
-//     // }
 
 // }
 

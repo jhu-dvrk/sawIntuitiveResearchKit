@@ -51,7 +51,7 @@ namespace dvrk {
     class CISST_EXPORT system: public mtsTaskFromSignal
     {
         CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
-        
+
     public:
         friend class dvrk::console;
         friend class dvrk::arm_proxy;
@@ -70,41 +70,41 @@ namespace dvrk {
         void set_calibration_mode(const bool mode);
         const bool & calibration_mode(void) const;
         void calibration_mode(bool & result) const;
-        
+
         /*! Configure console using JSON file. To test is the configuration
           succeeded, used method Configured().
         */
         void Configure(const std::string & filename);
-        
+
         /*! Method to check if the configuration was successful, ideally called
           after a call to Configure.
         */
         const bool & Configured(void) const;
-        
+
         void Startup(void);
         void Run(void);
         void Cleanup(void);
-        
+
         void AddFootpedalInterfaces(void);
-        
+
         bool Connect(void);
-        
+
         std::string find_file(const std::string & filename) const;
-        
+
     protected:
         dvrk::system_configuration m_config;
         bool m_configured;
         cmnPath m_config_path;
         mtsDelayedConnections m_connections;
-        
+
         double mTimeOfLastErrorBeep;
-        
+
         /*! Pointer to mtsTextToSpeech component */
         std::shared_ptr<mtsTextToSpeech> m_text_to_speech;
 
         typedef std::map<std::string, std::shared_ptr<dvrk::IO_proxy>> IO_proxies;
         IO_proxies m_IO_proxies;
-        
+
         typedef std::map<std::string, std::shared_ptr<dvrk::arm_proxy>> arm_proxies;
         arm_proxies m_arm_proxies;
 
@@ -113,19 +113,18 @@ namespace dvrk {
 
         typedef std::map<std::string, std::list<std::string>> teleop_using_arm;
         teleop_using_arm m_teleops_using_arm;
-        
-        // /*! Head sensor */
-        // mtsComponent * mHeadSensor = nullptr;
-        
-        // /*! daVinci Endoscope Focus */
-        // mtsDaVinciEndoscopeFocus * mDaVinciEndoscopeFocus = nullptr;
-        
+
+        /*! ISI endoscope focus controller through dVRK controller */
+        std::shared_ptr<mtsDaVinciEndoscopeFocus> m_ISI_focus_controller;
+
         bool add_IO_interfaces(std::shared_ptr<dvrk::IO_proxy> IO_proxy);
         bool add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> arm_proxy);
         bool add_console_interfaces(std::shared_ptr<dvrk::console> console);
-        
+
         bool add_teleop_interfaces(std::shared_ptr<dvrk::teleop_proxy> teleop_proxy);
-        
+
+        void configure_IO(const dvrk::IO_configuration & _IO_config);
+
         void power_off(void);
         void power_on(void);
         void home(void);
@@ -141,16 +140,16 @@ namespace dvrk {
         void emit_events_console(void);
 
         void ConnectInternal(bool &ret) const;
-        
+
         bool m_calibration_mode = false;
-        
+
         struct {
             mtsFunctionWrite beep;
             mtsFunctionWrite string_to_speech;
             mtsFunctionWrite volume; // event
         } audio;
         double m_audio_volume;
-        
+
         // components used for events (digital inputs)
         // typedef std::pair<std::string, std::string> InterfaceComponentType;
         // typedef std::map<std::string, InterfaceComponentType> DInputSourceType;

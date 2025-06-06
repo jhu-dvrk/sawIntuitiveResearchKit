@@ -214,6 +214,7 @@ if (cisst_FOUND)
       base_frame.cdg
       console_configuration.cdg
       generation.cdg
+      IO_configuration.cdg
       IO_proxy_configuration.cdg
       simulation.cdg
       system_configuration.cdg
