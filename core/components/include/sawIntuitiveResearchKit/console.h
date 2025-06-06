@@ -91,6 +91,9 @@ namespace dvrk {
         void camera_event_handler(const prmEventButton & _button);
         void operator_present_event_handler(const prmEventButton & _button);
 
+        // optional component used for the head sensor (based on input type)
+        mtsComponent * m_head_sensor = nullptr;
+
         // events
         struct {
             mtsFunctionWrite clutch;
@@ -136,8 +139,6 @@ namespace dvrk {
 
 //     };
 
-//     /*! Head sensor */
-//     mtsComponent * mHeadSensor = nullptr;
 
 //     // components used for events (digital inputs)
 //     typedef std::pair<std::string, std::string> InterfaceComponentType;

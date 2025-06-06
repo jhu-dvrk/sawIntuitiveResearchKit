@@ -15,7 +15,7 @@ class {
         name align_MTM;
         type bool;
         visibility public;
-        default false;
+        default true;
     }
 
     member {
@@ -73,7 +73,7 @@ class {
         visibility public;
         default mtsIntuitiveResearchKit::TeleOperationPSM::Scale;
     }
-    
+
     member {
         name jaw_rate;
         type double;

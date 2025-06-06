@@ -211,7 +211,7 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const Json::Value & armConfig,
                                              const cmnPath & configPath,
                                              const std::string & filename)
 {
-    const auto jsonGC = armConfig["gravity-compensation"];
+    const auto jsonGC = armConfig["gravity_compensation"];
     if (jsonGC.isNull()) {
         return;
     }
@@ -219,7 +219,7 @@ void mtsIntuitiveResearchKitMTM::ConfigureGC(const Json::Value & armConfig,
     const auto fileGC = configPath.Find(jsonGC.asString());
     if (fileGC == "") {
         CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                    << " can't find gravity-compensation file \""
+                                    << " can't find gravity_compensation file \""
                                     << jsonGC.asString() << "\" defined in \""
                                     << filename << "\"" << std::endl;
         exit(EXIT_FAILURE);

@@ -19,6 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/console.h>
 
 #include <cisstMultiTask/mtsInterfaceProvided.h>
+#include <cisstMultiTask/mtsManagerLocal.h>
 
 #include <sawIntuitiveResearchKit/console_configuration.h>
 #include <sawIntuitiveResearchKit/system.h>
@@ -98,7 +99,7 @@ void dvrk::console::post_configure(void)
     case console_input_type::PEDALS_ONLY:
         {
             if (m_config->IO == "") {
-                CMN_LOG_INIT_ERROR << "console::post_configure: \"IO\" must be provided for native or derived arm: "
+                CMN_LOG_INIT_ERROR << "console::post_configure: \"IO\" must be provided for inputs PEDALS_ONLY: "
                                    << m_name << std::endl;
                 exit(EXIT_FAILURE);
             }
@@ -115,6 +116,46 @@ void dvrk::console::post_configure(void)
             m_camera_interface_name = "camera";
             m_operator_present_component_name = m_config->IO;
             m_operator_present_interface_name = "coag";
+            break;
+        }
+    case console_input_type::PEDALS_ISI_HEAD_SENSOR:
+        {
+            if (m_config->IO == "") {
+                CMN_LOG_INIT_ERROR << "console::post_configure: \"IO\" must be provided for inputs PEDALS_ISI_HEAD_SENSOR: "
+                                   << m_name << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            // registered in component manager?
+            auto iter = m_system->m_IO_proxies.find(m_config->IO);
+            if (iter == m_system->m_IO_proxies.end()) {
+                CMN_LOG_INIT_ERROR << "console::post_configure: IO \""
+                                   << m_config->IO << "\" is not defined in \"IOs\"" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            m_clutch_component_name = m_config->IO;
+            m_clutch_interface_name = "clutch";
+            m_camera_component_name = m_config->IO;
+            m_camera_interface_name = "camera";
+
+            // create and connect the head sensor
+            const std::string head_sensor_name = m_name + "_daVinci_head_sensor";
+            m_head_sensor = new mtsDaVinciHeadSensor(head_sensor_name);
+            mtsComponentManager * manager = mtsComponentManager::GetInstance();
+            manager->AddComponent(m_head_sensor);
+            // schedule connections between IO and head sensor component
+            m_system->m_connections.Add(head_sensor_name, "HeadSensorTurnOff",
+                                        m_config->IO, "HeadSensorTurnOff");
+            m_system->m_connections.Add(head_sensor_name, "HeadSensor1",
+                                        m_config->IO, "HeadSensor1");
+            m_system->m_connections.Add(head_sensor_name, "HeadSensor2",
+                                        m_config->IO, "HeadSensor2");
+            m_system->m_connections.Add(head_sensor_name, "HeadSensor3",
+                                        m_config->IO, "HeadSensor3");
+            m_system->m_connections.Add(head_sensor_name, "HeadSensor4",
+                                        m_config->IO, "HeadSensor4");
+
+            m_operator_present_component_name = m_head_sensor->GetName();
+            m_operator_present_interface_name = "operator_present";
             break;
         }
     default:
@@ -174,30 +215,7 @@ void dvrk::console::emit_teleop_state_events(void)
 
 //     //     const Json::Value operatorPresent = jsonConfig["operator-present"];
 //     //     if (!operatorPresent.empty()) {
-//     //         // first case, using io to communicate with daVinci original head sensore
-//     //         Json::Value operatorPresentConfiguration = operatorPresent["io"];
-//     //         if (!operatorPresentConfiguration.empty()) {
-//     //             const std::string headSensorName = "daVinciHeadSensor";
-//     //             mHeadSensor = new mtsDaVinciHeadSensor(headSensorName);
-//     //             mtsComponentManager::GetInstance()->AddComponent(mHeadSensor);
-//     //             // main DInput is OperatorPresent comming from the newly added component
-//     //             mDInputSources["OperatorPresent"] = InterfaceComponentType(headSensorName, "OperatorPresent");
-//     //             // also expose the digital inputs from RobotIO (e.g. ROS topics)
-//     //             mDInputSources["HeadSensor1"] = InterfaceComponentType(m_IO_component_name, "HeadSensor1");
-//     //             mDInputSources["HeadSensor2"] = InterfaceComponentType(m_IO_component_name, "HeadSensor2");
-//     //             mDInputSources["HeadSensor3"] = InterfaceComponentType(m_IO_component_name, "HeadSensor3");
-//     //             mDInputSources["HeadSensor4"] = InterfaceComponentType(m_IO_component_name, "HeadSensor4");
-//     //             // schedule connections
-//     //             m_connections.Add(headSensorName, "HeadSensorTurnOff",
-//     //                              m_IO_component_name, "HeadSensorTurnOff");
-//     //             m_connections.Add(headSensorName, "HeadSensor1",
-//     //                              m_IO_component_name, "HeadSensor1");
-//     //             m_connections.Add(headSensorName, "HeadSensor2",
-//     //                              m_IO_component_name, "HeadSensor2");
-//     //             m_connections.Add(headSensorName, "HeadSensor3",
-//     //                              m_IO_component_name, "HeadSensor3");
-//     //             m_connections.Add(headSensorName, "HeadSensor4",
-//     //                              m_IO_component_name, "HeadSensor4");
+
 //     //         } else {
 //     //             // second case, using hid config for goovis head sensor
 //     //             operatorPresentConfiguration = operatorPresent["hid"];
