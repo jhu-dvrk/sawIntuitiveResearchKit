@@ -16,6 +16,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "config_sources.hpp"
 
 #include <filesystem>
+#include <optional>
 #include <regex>
 
 #include <QTreeView>
@@ -58,6 +59,60 @@ void ConfigSources::add_source(QDir directory) {
     view->setRootIndex(index);
 }
 
+std::optional<ConfigSources::Arm> parse_arm(std::filesystem::path file_path) {
+    std::string file_name = file_path.stem().string();
+
+    // Match one of e.g. PSM2, ECM, MTMR2, followed by -, followed by five or six digit serial
+    const std::regex arm_regex("(PSM|MTM(L|R)|ECM)(\\d*)\\-(\\d{5,6})");
+    std::smatch base_match;
+    bool matched = std::regex_match(file_name, base_match, arm_regex);
+    if (!matched) {
+        return {};
+    }
+
+    // capture groups are:
+    // 0: entire match
+    // 1: PSM/MTML/MTMR/ECM
+    // 2: L/R if MTM (already included in capture group 1)
+    // 3: arm number, e.g. 2 for PSM2 or empty for ECM
+    // 4: arm serial, e.g. 12345 for MTML-12345
+
+    ArmType::Value arm_type;
+    std::string type_str = base_match[1].str();
+    if (type_str == "PSM") {
+        arm_type = ArmType::Value::PSM;
+    } else if (type_str == "MTML" || type_str == "MTMR") {
+        arm_type = ArmType::Value::MTM;
+    } else if (type_str == "ECM") {
+        arm_type = ArmType::Value::ECM;
+    } else {
+        Q_ASSERT(false);
+        return {};
+    }
+
+    std::string serial = base_match[4].str();
+    std::string name = base_match[1].str() + base_match[3].str();
+
+    return ConfigSources::Arm(name, arm_type, serial, file_path);
+}
+
+std::optional<ConfigSources::Arm> parse_suj(std::filesystem::path file_path) {
+    std::string file_name = file_path.stem().string();
+    if (file_name == "suj-fixed") {
+        return ConfigSources::Arm("Fixed SUJ", ArmType::Value::SUJ_FIXED, "", file_path);
+    } else if (file_name == "suj-si") {
+        return ConfigSources::Arm("SUJ Si", ArmType::Value::SUJ_SI, "", file_path);
+    } else if (file_name.size() >= 3 && file_name.substr(0, 3) == "suj") {
+        std::string name = file_name.substr(3);
+        if (name.size() > 0 && (name.at(0) == '-' || name.at(0) == '_')) {
+            name = name.substr(1);
+        } 
+        return ConfigSources::Arm(name, ArmType::Value::SUJ_CLASSIC, "", file_path);
+    } else {
+        return {};
+    }
+}
+
 void ConfigSources::loaded(const QString &path) {
     std::filesystem::path root(path.toStdString());
 
@@ -68,40 +123,17 @@ void ConfigSources::loaded(const QString &path) {
             continue;
         }
 
-        const std::string file_name = entry.path().stem().string();
-
-        // Match one of e.g. PSM2, ECM, MTMR2, followed by -, followed by five or six digit serial
-        const std::regex arm_regex("(PSM|MTM(L|R)|ECM)(\\d*)\\-(\\d{5,6})");
-        std::smatch base_match;
-        bool matched = std::regex_match(file_name, base_match, arm_regex);
-        if (!matched) {
+        std::optional<Arm> arm = parse_arm(entry.path());
+        if (arm.has_value()) {
+            new_arms.push_back(arm.value());
             continue;
         }
 
-        // capture groups are:
-        // 0: entire match
-        // 1: PSM/MTML/MTMR/ECM
-        // 2: L/R if MTM (already included in capture group 1)
-        // 3: arm number, e.g. 2 for PSM2 or empty for ECM
-        // 4: arm serial, e.g. 12345 for MTML-12345
-
-        ArmType::Value arm_type;
-        std::string type_str = base_match[1].str();
-        if (type_str == "PSM") {
-            arm_type = ArmType::Value::PSM;
-        } else if (type_str == "MTML" || type_str == "MTMR") {
-            arm_type = ArmType::Value::MTM;
-        } else if (type_str == "ECM") {
-            arm_type = ArmType::Value::ECM;
-        } else {
-            Q_ASSERT(false);
-            return;
+        std::optional<Arm> suj = parse_suj(entry.path());
+        if (suj.has_value()) {
+            new_arms.push_back(suj.value());
+            continue;
         }
-
-        std::string serial = base_match[4].str();
-        std::string name = base_match[1].str() + base_match[3].str();
-
-        new_arms.push_back(Arm(name, arm_type, serial, entry.path()));
     }
 
     arm_list_model.update(new_arms);
