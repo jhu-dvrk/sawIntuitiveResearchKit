@@ -52,8 +52,10 @@ ConfigEditor::ConfigEditor(SystemConfigModel& model, ConfigSources& config_sourc
     ListView* arm_list = new ListView(model.arm_configs, arm_factory, SelectionMode::NONE, true);
     arms->setWidget(arm_list);
 
-    QObject::connect(arm_list, &ListView::add, this, [this]() { arm_editor.open(); });
+    QObject::connect(arm_list, &ListView::add, this, [this]() { arm_editor.setId(-1); arm_editor.open(); });
     QObject::connect(arm_list, &ListView::try_delete, &model.arm_configs, &ListModelT<ArmConfig>::deleteItem);
+    QObject::connect(arm_list, &ListView::choose, this, [this](int id) { arm_editor.setId(id); arm_editor.open(); });
+    QObject::connect(arm_list, &ListView::edit, this, [this](int id) { arm_editor.setId(id); arm_editor.open(); });
 
     Accordion* teleops = new Accordion("Teleops", "DodgerBlue", this);
     ListView* teleop_list = new ListView(model.teleop_configs, arm_factory, SelectionMode::NONE, false);

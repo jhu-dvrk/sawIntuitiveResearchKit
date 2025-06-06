@@ -24,15 +24,14 @@ http://www.cisst.org/cisst/license.txt.
  *                  as haptic input device, arm-from-ROS, etc.
  * 2: HapticMTMPage - for using Falcon/Omni/etc as an MTM
  * 3: ROSArmPage - for using MTM/PSM via ROS
- * 4: SocketPSMPage - client socket arm for remote arm
- * 5: NativeArmPage - for editing/creating a native arm
+ * 4: NativeArmPage - for editing/creating a native arm
  *
- *        start -> 0
- *            0 -> [end, 1]
- *            1 -> [2, 3, 4, 5]
- * {2, 3, 4, 5} -> end
+ *     start -> 0
+ *         0 -> [end, 1]
+ *         1 -> [2, 3, 5]
+ * {2, 3, 4} -> end
  *
- * When editing an arm later, user goes directly to pages 2-5
+ * When editing an arm later, user goes directly to pages 2-4
  * depending on what type of arm they are editing.
  */
 
@@ -77,9 +76,7 @@ public:
         PAGE_QUICK_ARM,
         PAGE_ARM_TYPE,
         PAGE_HAPTIC_MTM,
-        PAGE_ROS_ARM,
-        PAGE_SOCKET_PSM,
-        PAGE_ARM_DETAILS
+        PAGE_ROS_ARM
     };
 
     ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent = nullptr);
@@ -94,13 +91,14 @@ private:
 
     SystemConfigModel* model;
     ArmConfig config;
+    int id = -1;
 };
 
 class QuickArmPage : public QWizardPage {
     Q_OBJECT
 
 public:
-    QuickArmPage(ArmEditor& editor, ConfigSources& config_sources, QWidget *parent = nullptr);
+    QuickArmPage(ArmConfig& config, ConfigSources& config_sources, QWidget *parent = nullptr);
 
     int nextId() const override { return next_page_id; }
 
@@ -110,7 +108,7 @@ public:
 private:
     int next_page_id = ArmEditor::PAGE_ARM_TYPE;
 
-    ArmEditor* editor;
+    ArmConfig* config;
     ListView* arm_list_view;
     ArmSourceViewFactory arm_list_factory;
 };
@@ -119,27 +117,31 @@ class ArmTypePage : public QWizardPage {
     Q_OBJECT
 
 public:
-    ArmTypePage(QWidget *parent = nullptr);
+    ArmTypePage(ArmConfig& config, QWidget *parent = nullptr);
 
     int nextId() const override { return next_page_id; }
+    bool isComplete() const override { return false; }
 
 private:
-    int next_page_id = -1;
+    ArmConfig* config;
+
+    int next_page_id = ArmEditor::PAGE_ARM_TYPE;
 };
 
 class HapticMTMPage : public QWizardPage {
     Q_OBJECT
 
 public:
-    HapticMTMPage(QWidget *parent = nullptr);
+    HapticMTMPage(ArmConfig& config, QWidget *parent = nullptr);
 
-    int nextId() const override {
-        return ArmEditor::PAGE_ARM_DETAILS;
-    }
+    int nextId() const override { return -1; }
 
     void initializePage() override;
+    void showEvent(QShowEvent *event) override;
 
 private:
+    ArmConfig* config;
+
     QComboBox* haptic_device_selector;
     QStackedWidget* details;
     QComboBox* left_right_selector;
@@ -149,57 +151,59 @@ class ROSArmPage : public QWizardPage {
     Q_OBJECT
 
 public:
-    ROSArmPage(QWidget *parent = nullptr);
-
-    int nextId() const override {
-        return ArmEditor::PAGE_ARM_DETAILS;
-    }
+    ROSArmPage(ArmConfig& config, QWidget *parent = nullptr);
+    
+    int nextId() const override { return -1; }
 
     void initializePage() override;
+    void showEvent(QShowEvent *event) override;
+
+private:
+    ArmConfig* config;
+
+    QComboBox* arm_type;
+    QLineEdit* arm_name;
 };
 
-class SocketPSMPage : public QWizardPage {
-    Q_OBJECT
+// class NativeArmPage : public QWizardPage {
+//     Q_OBJECT
 
-public:
-    SocketPSMPage(QWidget *parent = nullptr);
+// public:
+//     NativeArmPage(ArmConfig& config, QWidget *parent = nullptr);
 
-    int nextId() const override {
-        return ArmEditor::PAGE_ARM_DETAILS;
-    }
+//     int nextId() const override {
+//         return ArmEditor::PAGE_ARM_DETAILS;
+//     }
 
-    void initializePage() override;
-};
+//     void initializePage() override;
 
-class NativeArmPage : public QWizardPage {
-    Q_OBJECT
+// private:
+//     ArmConfig* config;
 
-public:
-    NativeArmPage(QWidget *parent = nullptr);
+//     QCheckBox* add_socket_server;
+//     QCheckBox* skip_ros_bridge;
+// };
 
-    int nextId() const override {
-        return ArmEditor::PAGE_ARM_DETAILS;
-    }
+// class ArmDetailsPage : public QWizardPage {
+//     Q_OBJECT
 
-    void initializePage() override;
+// public:
+//     ArmDetailsPage(ArmConfig& config, QWidget *parent = nullptr);
 
-public:
-    QCheckBox* add_socket_server;
-    QCheckBox* skip_ros_bridge;
-};
+//     int nextId() const override {
+//         return -1;
+//     }
 
-class ArmDetailsPage : public QWizardPage {
-    Q_OBJECT
+//     void showEvent(QShowEvent *event) override;
 
-public:
-    ArmDetailsPage(QWidget *parent = nullptr);
+//     void initializePage() override;
 
-    int nextId() const override {
-        return -1;
-    }
+// private:
+//     ArmConfig* config;
 
-    void initializePage() override;
-};
+//     QLineEdit* name;
+//     QComboBox* base_frame;
+// };
 
 }
 

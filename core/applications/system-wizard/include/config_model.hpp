@@ -184,6 +184,25 @@ public:
         }
     };
 
+    bool is_suj() const {
+        switch (value) {
+        case Value::SUJ_CLASSIC:
+        case Value::SUJ_SI:
+        case Value::SUJ_FIXED:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    
+    friend constexpr bool operator==(const ArmType& lhs, const ArmType& rhs) {
+        return lhs.value == rhs.value;
+    }
+    friend constexpr bool operator!=(const ArmType& lhs, const ArmType& rhs) {
+        return !(lhs == rhs);
+    }
+
 private:
     Value value;
 };
@@ -325,6 +344,7 @@ public:
     ArmType type;
 
     ArmConfigType config_type;
+    std::optional<int> haptic_device;
 
     std::optional<std::string> serial_number;
     std::optional<bool> skip_ros_bridge;

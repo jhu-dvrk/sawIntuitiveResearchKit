@@ -15,6 +15,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "arm_editor.hpp"
 
+#include <cisstCommon/cmnPortability.h>
+
 namespace system_wizard {
 
 ArmSourceView::ArmSourceView(ListModelT<ConfigSources::Arm>& model, ListView& list_view, int id, QWidget* parent)
@@ -29,7 +31,13 @@ ArmSourceView::ArmSourceView(ListModelT<ConfigSources::Arm>& model, ListView& li
 
 void ArmSourceView::updateData(int id) {
     ConfigSources::Arm arm = model->get(id);
-    QString description = QString::fromStdString(arm.name + "-" + arm.serial_number);
+    QString description;
+    if (arm.type.is_suj()) {
+        description = QString::fromStdString(arm.name + " (" + arm.type.name() + ")");
+    } else {
+        description = QString::fromStdString(arm.name + "-" + arm.serial_number);
+    }
+
     display->setText(description);
 }
 
@@ -39,8 +47,8 @@ ArmSourceView* ArmSourceViewFactory::create(int id, ListView& list_view) {
     return new ArmSourceView(*model, list_view, id);
 }
 
-QuickArmPage::QuickArmPage(ArmEditor& editor, ConfigSources& config_sources, QWidget *parent)
-    : QWizardPage(parent), editor(&editor), arm_list_factory(config_sources.getModel()) {
+QuickArmPage::QuickArmPage(ArmConfig& config, ConfigSources& config_sources, QWidget *parent)
+    : QWizardPage(parent), config(&config), arm_list_factory(config_sources.getModel()) {
     setTitle("Quick arm");
     setSubTitle("Choose from default arms");
 
@@ -51,17 +59,23 @@ QuickArmPage::QuickArmPage(ArmEditor& editor, ConfigSources& config_sources, QWi
 
     arm_list_view = new ListView(config_sources.getModel(), arm_list_factory, SelectionMode::SINGLE);
     arm_list_view->setEmptyMessage("No arms available - open a config folder");
-    QObject::connect(arm_list_view, &ListView::choose, this, [this, &editor, &model=config_sources.getModel()](int index){
+    QObject::connect(arm_list_view, &ListView::choose, this, [this, &model=config_sources.getModel()](int index){
         ConfigSources::Arm source = model.get(index);
-        editor.selectArmSource(source);
-        next_page_id = ArmEditor::PAGE_ARM_DETAILS;
-        editor.next();
+        *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
+        this->config->serial_number = source.serial_number;
+        this->config->interface_name = "Arm";
+        
+        next_page_id = -1;
+        this->wizard()->accept();
     });
-    QObject::connect(arm_list_view, &ListView::selected, this, [&editor, &model=config_sources.getModel()](int index, bool selected){
+    QObject::connect(arm_list_view, &ListView::selected, this, [this, &model=config_sources.getModel()](int index, bool selected){
         if (selected) {
+            next_page_id = -1;
+            
             ConfigSources::Arm source = model.get(index);
-            next_page_id = ArmEditor::PAGE_ARM_TYPE;
-            editor.selectArmSource(source);
+            *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
+            this->config->serial_number = source.serial_number;
+            this->config->interface_name = "Arm";
         }
     });
     QObject::connect(arm_list_view, &ListView::selected, this, &QWizardPage::completeChanged);
@@ -118,7 +132,7 @@ bool QuickArmPage::isComplete() const {
     return false;
 }
 
-ArmTypePage::ArmTypePage(QWidget *parent) : QWizardPage(parent) {
+ArmTypePage::ArmTypePage(ArmConfig& config, QWidget *parent) : QWizardPage(parent), config(&config) {
     setTitle("Choose type of arm");
 
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -129,6 +143,7 @@ ArmTypePage::ArmTypePage(QWidget *parent) : QWizardPage(parent) {
     layout->addWidget(haptic_label);
     QPushButton* haptic_input = new QPushButton("Configure haptic input device");
     QObject::connect(haptic_input, &QPushButton::clicked, this, [this]() {
+        this->config->config_type = ArmConfigType::HAPTIC_MTM;
         this->next_page_id = ArmEditor::PAGE_HAPTIC_MTM;
         this->wizard()->next();
     });
@@ -140,25 +155,17 @@ ArmTypePage::ArmTypePage(QWidget *parent) : QWizardPage(parent) {
     layout->addWidget(new QLabel("If you want to use a remote or simulated arm, such as:"));
     QPushButton* via_ros = new QPushButton("Client arm for remote/simulated PSM/MTM via ROS topics");
     QObject::connect(via_ros, &QPushButton::clicked, this, [this]() {
+        this->config->config_type = ArmConfigType::ROS_ARM;
         this->next_page_id = ArmEditor::PAGE_ROS_ARM;
         this->wizard()->next();
     });
 
     via_ros->setFlat(true);
     via_ros->setAutoFillBackground(true);
-    QPushButton* via_socket = new QPushButton("Client arm for remote/simulated PSM via UDP socket");
-    QObject::connect(via_socket, &QPushButton::clicked, this, [this]() {
-        this->next_page_id = ArmEditor::PAGE_SOCKET_PSM;
-        this->wizard()->next();
-    });
-
-    via_socket->setFlat(true);
-    via_socket->setAutoFillBackground(true);
     layout->addWidget(via_ros);
-    layout->addWidget(via_socket);
 }
 
-HapticMTMPage::HapticMTMPage(QWidget *parent) : QWizardPage(parent) {
+HapticMTMPage::HapticMTMPage(ArmConfig& config, QWidget *parent) : QWizardPage(parent), config(&config) {
     setTitle("Configure haptic device as MTM");
 
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -211,10 +218,14 @@ HapticMTMPage::HapticMTMPage(QWidget *parent) : QWizardPage(parent) {
     config_file_selector->addWidget(config_file_browse_button);
     force_dimension_layout->addLayout(config_file_selector);
 
-    QObject::connect(left_right_selector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [config_file_name](int index) {
+    QObject::connect(left_right_selector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, config_file_name](int index) {
         if (index == 0) {
+            this->config->name = "MTML";
+            this->config->interface_name = "MTML";
             config_file_name->setText("sawForceDimensionSDK-MTML.json");
         } else if (index == 1) {
+            this->config->name = "MTMR";
+            this->config->interface_name = "MTMR";
             config_file_name->setText("sawForceDimensionSDK-MTMR.json");
         }
     });
@@ -231,6 +242,7 @@ HapticMTMPage::HapticMTMPage(QWidget *parent) : QWizardPage(parent) {
         case 1:
         case 2:
             details->setCurrentIndex(1);
+            this->config->haptic_device = index;
             break;
         default:
             details->setCurrentIndex(0);
@@ -247,7 +259,23 @@ void HapticMTMPage::initializePage() {
     left_right_selector->setCurrentIndex(-1);
 }
 
-ROSArmPage::ROSArmPage(QWidget *parent) : QWizardPage(parent) {
+void HapticMTMPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
+    if (config->config_type != ArmConfigType::HAPTIC_MTM) {
+        *config = ArmConfig("MTM", ArmType::Value::MTM_GENERIC, ArmConfigType::HAPTIC_MTM);
+    } else {
+        if (config->haptic_device) {
+            haptic_device_selector->setCurrentIndex(config->haptic_device.value());
+        }
+
+        if (config->interface_name == "MTML") {
+            left_right_selector->setCurrentIndex(0);
+        } else if (config->interface_name == "MTMR") {
+            left_right_selector->setCurrentIndex(1);
+        }
+    }
+}
+
+ROSArmPage::ROSArmPage(ArmConfig& config, QWidget *parent) : QWizardPage(parent), config(&config) {
     setTitle("Remote arm via ROS");
 
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -260,79 +288,86 @@ ROSArmPage::ROSArmPage(QWidget *parent) : QWizardPage(parent) {
 
     QFormLayout* form = new QFormLayout();
 
-    QComboBox* arm_type = new QComboBox();
+    arm_name = new QLineEdit();
+    form->addRow("Arm name:", arm_name);
+    QObject::connect(arm_name, &QLineEdit::textChanged, this, [this](const QString& text){
+        this->config->name = text.toStdString();
+    });
+
+    arm_type = new QComboBox();
     arm_type->setPlaceholderText("select arm type");
     arm_type->addItem("PSM", 0);
     arm_type->addItem("MTM", 1);
+    QObject::connect(arm_type, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        if (index == 0) {
+            this->config->type = ArmType::Value::PSM_GENERIC;
+            this->config->config_type = ArmConfigType::ROS_ARM;
+        } else if (index == 1) {
+            this->config->type = ArmType::Value::MTM_GENERIC;
+            this->config->config_type = ArmConfigType::ROS_ARM;
+        }
+    });
+
     form->addRow("Arm type:", arm_type);
 
     layout->addLayout(form);
-
-    registerField("ros.type*", arm_type);
 }
 
 void ROSArmPage::initializePage() { }
 
-SocketPSMPage::SocketPSMPage(QWidget *parent) : QWizardPage(parent) {
-    setTitle("Remote PSM via UDP socket");
-
-    QVBoxLayout* layout = new QVBoxLayout(this);
-    QLabel* description1 = new QLabel("Client arm for a remote arm. You will need to configure and run a second dVRK system to provide the corresponding remote server arm.");
-    description1->setWordWrap(true);
-    layout->addWidget(description1);
-    QLabel* description2 = new QLabel("On the remote side, using a real hardware PSM as a remote server arm is done by enabling the \"Add socket server\" option for that arm.");
-    description2->setWordWrap(true);
-    layout->addWidget(description2);
-
-    QFormLayout* form = new QFormLayout();
-
-    QLineEdit* remote_ip = new QLineEdit();
-    form->addRow("Remote system IP:", remote_ip);
-    QLineEdit* socket_port = new QLineEdit();
-    form->addRow("UDP socket Port:", socket_port);
-
-    layout->addLayout(form);
-
-    registerField("socket.ip*", remote_ip);
-    registerField("socket.port*", socket_port);
+void ROSArmPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
+    if (config->config_type != ArmConfigType::ROS_ARM) {
+        *config = ArmConfig("Arm", ArmType::Value::PSM_GENERIC, ArmConfigType::ROS_ARM);
+        arm_type->setCurrentIndex(-1);
+        arm_name->setText("");
+    } else {
+        if (config->type == ArmType(ArmType::Value::PSM_GENERIC)) {
+            arm_type->setCurrentIndex(0);
+        } else if (config->type == ArmType(ArmType::Value::MTM_GENERIC)) {
+            arm_type->setCurrentIndex(1);
+        } else {
+            arm_type->setCurrentIndex(-1);
+        }
+        arm_name->setText(QString::fromStdString(config->name));
+    }
 }
 
-void SocketPSMPage::initializePage() { }
+// NativeArmPage::NativeArmPage(ArmConfig& config, QWidget* parent) : QWizardPage(parent), config(&config) { }
 
-NativeArmPage::NativeArmPage(QWidget* parent) : QWizardPage(parent) { }
+// void NativeArmPage::initializePage() { }
 
-void NativeArmPage::initializePage() { }
+// ArmDetailsPage::ArmDetailsPage(ArmConfig& config, QWidget* parent) : QWizardPage(parent), config(&config) {
+//     setTitle("Configure arm details");
 
-ArmDetailsPage::ArmDetailsPage(QWidget* parent) : QWizardPage(parent) {
-    setTitle("Configure arm details");
+//     QFormLayout* form = new QFormLayout(this);
 
-    QFormLayout* form = new QFormLayout(this);
+//     name = new QLineEdit();
+//     base_frame = new QComboBox();
+//     base_frame->setPlaceholderText("select base frame");
+//     base_frame->addItem("None", 0);
+//     base_frame->addItem("Set Up Joints", 1);
+//     base_frame->addItem("Fixed Endoscope", 2);
+//     base_frame->addItem("Fixed Stereo Display", 3);
 
-    QLineEdit* name = new QLineEdit();
-    QComboBox* base_frame = new QComboBox();
-    base_frame->setPlaceholderText("select base frame");
-    base_frame->addItem("None", 0);
-    base_frame->addItem("Set Up Joints", 1);
-    base_frame->addItem("Fixed Endoscope", 2);
-    base_frame->addItem("Fixed Stereo Display", 3);
+//     form->addRow("Arm name:", name);
+//     form->addRow("Base frame:", base_frame);
 
-    form->addRow("Arm name:", name);
-    form->addRow("Base frame:", base_frame);
+//     registerField("arm.name", name);
+//     registerField("arm.base_frame*", base_frame);
+// }
 
-    registerField("arm.name*", name);
-    registerField("arm.base_frame*", base_frame);
-}
+// void ArmDetailsPage::initializePage() { }
 
-void ArmDetailsPage::initializePage() { }
+// void ArmDetailsPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
+//     name->setText(QString::fromStdString(config->name));
+// }
 
 ArmEditor::ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent)
-    : QWizard(parent), model(&model), config("PSM", ArmType::Value::PSM, ArmConfigType::NATIVE) {
-    setPage(PAGE_QUICK_ARM, new QuickArmPage(*this, config_sources));
-    setPage(PAGE_ARM_TYPE, new ArmTypePage());
-    setPage(PAGE_HAPTIC_MTM, new HapticMTMPage());
-    setPage(PAGE_ROS_ARM, new ROSArmPage());
-    setPage(PAGE_SOCKET_PSM, new SocketPSMPage());
-    setPage(PAGE_ARM_DETAILS, new ArmDetailsPage());
+    : QWizard(parent), model(&model), config("Arm", ArmType::Value::PSM, ArmConfigType::NATIVE) {
+    setPage(PAGE_QUICK_ARM, new QuickArmPage(config, config_sources));
+    setPage(PAGE_ARM_TYPE, new ArmTypePage(config));
+    setPage(PAGE_HAPTIC_MTM, new HapticMTMPage(config));
+    setPage(PAGE_ROS_ARM, new ROSArmPage(config));
 
     setWizardStyle(QWizard::ModernStyle);
     setOption(QWizard::NoBackButtonOnStartPage);
@@ -346,15 +381,36 @@ ArmEditor::ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QW
 }
 
 void ArmEditor::done() {
-    model->arm_configs.addItem(config);
+    if (id < 0) {
+        model->arm_configs.addItem(config);
+    } else {
+        model->arm_configs.updateItem(id, config);
+    }
 }
 
-void ArmEditor::selectArmSource(ConfigSources::Arm arm_source) {
-    config = ArmConfig(arm_source.name, arm_source.type, ArmConfigType::NATIVE);
-    config.serial_number = arm_source.serial_number;
-    config.interface_name = "Arm";
-}
+void ArmEditor::setId(int id) {
+    this->id = id;
 
-void ArmEditor::setId(int id) { }
+    if (id >= 0) {
+        config = model->arm_configs.get(id);
+
+        switch (config.config_type) {
+        case ArmConfigType::NATIVE:
+            setStartId(PAGE_QUICK_ARM);
+            break;
+        case ArmConfigType::HAPTIC_MTM:
+            setStartId(PAGE_HAPTIC_MTM);
+            break;
+        case ArmConfigType::ROS_ARM:
+            setStartId(PAGE_ROS_ARM);
+            break;
+        default:
+            Q_ASSERT(false);
+            break;
+        }
+    } else {
+        setStartId(PAGE_QUICK_ARM);
+    }
+}
 
 }

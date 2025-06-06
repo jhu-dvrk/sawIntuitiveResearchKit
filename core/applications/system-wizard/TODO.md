@@ -4,10 +4,10 @@
 
 - [x] Non-templated list model
 - [x] Make edit/delete buttons styled as buttons
-- [ ] Hover/select list items
+- [x] Hover/select list items
 - [ ] Disable delete button if not deletable
 - [ ] Status/tool tips
-- [ ] Move edit/delete buttons to base ItemView
+- [ ] Move edit/delete buttons to base ItemView?
 - [ ] Replace temporary in-line style sheets with custom QStyle
 - [ ] Help buttons e.g. on dialogs
 - [ ] Icons? e.g. delete, edit, add item
@@ -29,11 +29,15 @@
 - [ ] Config values bounds
 - [ ] Config validation
 
-- [ ] Don't allow deleting child items, e.g. `PSM1` if used in a `PSM1-MTMR` teleop
+- [ ] Don't allow deleting parent items, e.g. `PSM1` if used in a `PSM1-MTMR` teleop
+- [ ] Propagate renamings to children
+- [ ] Don't allow duplicate ios/arms, multiple SUJ per i/o, etc.
+- [ ] Warnings - missing SUJ
+- [ ] Hide already chosen items from e.g. arm source list
 
 ### Config item views
 
-- [ ] Arm config item view
+- [x] Arm config item view
 - [x] I/O config item view
 - [ ] Teleop config item view
 - [ ] Console config item view
@@ -52,8 +56,8 @@
 ### Config item editors
 
 - [x] I/O editor
-- [ ] Simple arm editor
-- [ ] Available native arm list in editor
+- [x] Simple arm editor
+- [x] Available native arm list in editor
 - [ ] Extended arm editor (derived/generic/socket types)
 - [ ] Teleop editor
 - [ ] Console editor
