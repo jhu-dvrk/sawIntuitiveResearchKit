@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/teleop_ECM_proxy.h>
 #include <sawIntuitiveResearchKit/teleop_PSM_proxy.h>
 
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsDaVinciHeadSensor.h>
 #if sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR
 #include <sawIntuitiveResearchKit/mtsHIDHeadSensor.h>
@@ -114,6 +115,8 @@ void dvrk::console::post_configure(void)
             m_operator_present_component_name = m_config->IO_pedals.IO;
             m_operator_present_interface_name = "coag";
         }
+    } else {
+        m_config->IO_pedals.IO == "";
     }
 
     if (m_config->input_type == console_input_type::PEDALS_ISI_HEAD_SENSOR) {
@@ -125,11 +128,33 @@ void dvrk::console::post_configure(void)
         m_operator_present_component_name = m_name + "_daVinci_head_sensor";
         m_operator_present_interface_name = "operator_present";
     }
+
+    if (m_config->input_type == console_input_type::PEDALS_GOOVIS_HEAD_SENSOR) {
+#if sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR
+        if (m_config->HID_file == "") {
+            CMN_LOG_INIT_ERROR << "console::post_configure: \"HID_file\" must be provided for inputs PEDALS_GOOVIS_HEAD_SENSOR: "
+                               << m_name << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        m_operator_present_component_name = m_name + "_goovis_head_sensor";
+        m_operator_present_interface_name = "operator_present";
+#else
+        CMN_LOG_INIT_ERROR << "console::post_configure: can't use HID head sensor." << std::endl
+                           << "The code has been compiled with sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR OFF." << std::endl
+                           << "Re-run CMake, re-compile and try again." << std::endl;
+        exit(EXIT_FAILURE);
+#endif
+    } else {
+        m_config->HID_file = "";
+    }
+
 }
 
 
 void dvrk::console::create_components(void)
 {
+    mtsComponentManager * manager = mtsComponentManager::GetInstance();
+
     // teleops
     for (auto & proxy : m_teleop_proxies) {
         m_system->add_teleop_interfaces(proxy.second);
@@ -144,7 +169,6 @@ void dvrk::console::create_components(void)
     if (m_config->IO_head_sensor.IO != "") {
         m_system->configure_IO(m_config->IO_head_sensor);
         m_head_sensor = new mtsDaVinciHeadSensor(m_operator_present_component_name);
-        mtsComponentManager * manager = mtsComponentManager::GetInstance();
         manager->AddComponent(m_head_sensor);
         // schedule connections between IO and head sensor component
         const std::string IO =  m_config->IO_head_sensor.IO;
@@ -158,6 +182,20 @@ void dvrk::console::create_components(void)
                                     IO, "HeadSensor3");
         m_system->m_connections.Add(m_operator_present_component_name, "HeadSensor4",
                                     IO, "HeadSensor4");
+    }
+
+    if (m_config->HID_file != "") {
+        CMN_LOG_INIT_VERBOSE << "console::create_component: configuring hid head sensor with \""
+                             << m_config->HID_file << "\"" << std::endl;
+        const std::string config_file = m_system->find_file(m_config->HID_file);
+        if (config_file == "") {
+            CMN_LOG_INIT_ERROR << "console::create_component: can't find configuration file "
+                               << m_config->HID_file << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        m_head_sensor = new mtsHIDHeadSensor(m_operator_present_component_name);
+        m_head_sensor->Configure(config_file);
+        manager->AddComponent(m_head_sensor);
     }
 }
 
@@ -205,31 +243,6 @@ void dvrk::console::emit_teleop_state_events(void)
 //     //     if (!operatorPresent.empty()) {
 
 //     //         } else {
-//     //             // second case, using hid config for goovis head sensor
-//     //             operatorPresentConfiguration = operatorPresent["hid"];
-//     //             if (!operatorPresentConfiguration.empty()) {
-//     // #if sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR
-//     //                 std::string relativeConfigFile = operatorPresentConfiguration.asString();
-//     //                 CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring hid head sensor with \""
-//     //                                            << relativeConfigFile << "\"" << std::endl;
-//     //                 const std::string configFile = find_file(relativeConfigFile);
-//     //                 if (configFile == "") {
-//     //                     CMN_LOG_CLASS_INIT_ERROR << "Configure: can't find configuration file "
-//     //                                              << relativeConfigFile << std::endl;
-//     //                     exit(EXIT_FAILURE);
-//     //                 }
-//     //                 const std::string headSensorName = "HIDHeadSensor";
-//     //                 mHeadSensor = new mtsHIDHeadSensor(headSensorName);
-//     //                 mHeadSensor->Configure(configFile);
-//     //                 mtsComponentManager::GetInstance()->AddComponent(mHeadSensor);
-//     //                 // main DInput is OperatorPresent comming from the newly added component
-//     //                 mDInputSources["OperatorPresent"] = InterfaceComponentType(headSensorName, "OperatorPresent");
-//     // #else
-//     //                 CMN_LOG_CLASS_INIT_ERROR << "Configure: can't use HID head sensor." << std::endl
-//     //                                          << "The code has been compiled with sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR OFF." << std::endl
-//     //                                          << "Re-run CMake, re-compile and try again." << std::endl;
-//     //                 exit(EXIT_FAILURE);
-//     // #endif
 //     //             }
 //     //         }
 //     //     }

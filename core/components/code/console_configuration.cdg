@@ -80,6 +80,13 @@ class {
     }
 
     member {
+        name HID_file;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
         name clutch_interface;
         type std::string;
         visibility public;
