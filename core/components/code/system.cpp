@@ -197,7 +197,7 @@ void dvrk::system::Configure(const std::string & filename)
         m_ISI_focus_controller = std::make_unique<mtsDaVinciEndoscopeFocus>(m_config.ISI_focus_controller.name);
         manager->AddComponent(m_ISI_focus_controller.get());
     }
-    
+
     // find all arms
     for (auto & arm_config : m_config.arms) {
         const auto iter = m_arm_proxies.find(arm_config.name);
@@ -229,7 +229,7 @@ void dvrk::system::Configure(const std::string & filename)
     }
 
     // first, create the IO components
-    for (auto iter : m_IO_proxies) {
+    for (auto & iter : m_IO_proxies) {
         auto & IO_proxy = iter.second;
         IO_proxy->create_IO();
         add_IO_interfaces(IO_proxy);
@@ -246,13 +246,13 @@ void dvrk::system::Configure(const std::string & filename)
                           IO, "EndoscopeFocusOut");
         std::cerr << CMN_LOG_DETAILS << " --------------- the following two connections should likely happen in the console class.  To test with two consoles!" << std::endl;
         m_connections.Add(controller, "focus_in",
-                          IO, "focus_minus");
-        m_connections.Add(controller, "focus_out",
                           IO, "focus_plus");
+        m_connections.Add(controller, "focus_out",
+                          IO, "focus_minus");
     }
-    
+
     // now we can configure PID and Arms
-    for (auto iter : m_arm_proxies) {
+    for (auto & iter : m_arm_proxies) {
         auto & arm_proxy = iter.second;
         // create arm first to initialize generation
         arm_proxy->create_arm();
@@ -262,45 +262,44 @@ void dvrk::system::Configure(const std::string & filename)
     }
 
     // load consoles if any
-    for (auto iter : m_consoles) {
+    for (auto & iter : m_consoles) {
         auto & console = iter.second;
         console->create_components();
         add_console_interfaces(console);
     }
 
-
-    // }
-    // this->AddFootpedalInterfaces();
-
     // search for SUJs, real, not Fixed
-    // for (auto iter = m_arm_proxies.begin(); iter != end; ++iter) {
-    //     if ((iter->second->m_type == Arm::ARM_SUJ_Classic)
-    //         || (iter->second->m_type == Arm::ARM_SUJ_Si)) {
-    //         m_SUJ = iter->second;
-    //     }
-    // }
+    for (auto & iter : m_arm_proxies) {
+        auto & arm_proxy = iter.second;
+        if ((arm_proxy->m_config->type == dvrk::arm_type::SUJ_Classic)
+            || (arm_proxy->m_config->type == dvrk::arm_type::SUJ_Si)) {
+            m_SUJ = arm_proxy;
+        }
+    }
 
-    // if (m_SUJ) {
-    //     for (auto iter = m_arm_proxies.begin(); iter != end; ++iter) {
-    //         Arm * arm = iter->second;
-    //         // only for PSM and ECM when not simulated
-    //         if (((arm->m_type == Arm::ARM_ECM)
-    //              || (arm->m_type == Arm::ARM_ECM_DERIVED)
-    //              || (arm->m_type == Arm::ARM_PSM)
-    //              || (arm->m_type == Arm::ARM_PSM_DERIVED)
-    //              )
-    //             && (arm->m_simulation == Arm::SIMULATION_NONE)) {
-    //             arm->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJClutch-" + arm->m_name + "_IO");
-    //             arm->SUJInterfaceRequiredFromIO->AddEventHandlerWrite(&Arm::SUJClutchEventHandlerFromIO, arm, "Button");
-    //             if (arm->m_generation == mtsIntuitiveResearchKitArm::GENERATION_Si) {
-    //                 arm->SUJInterfaceRequiredFromIO2 = this->AddInterfaceRequired("SUJClutchBack-" + arm->m_name + "_IO");
-    //                 arm->SUJInterfaceRequiredFromIO2->AddEventHandlerWrite(&Arm::SUJClutchEventHandlerFromIO, arm, "Button");
-    //             }
-    //             arm->SUJInterfaceRequiredToSUJ = this->AddInterfaceRequired("SUJClutch-" + arm->m_name);
-    //             arm->SUJInterfaceRequiredToSUJ->AddFunction("Clutch", arm->SUJClutch);
-    //         }
-    //     }
-    // }
+    if (m_SUJ) {
+        for (auto & iter :  m_arm_proxies) {
+            const std::string & name = iter.first;
+            auto & arm_proxy = iter.second;
+            // only for PSM and ECM when not simulated
+            if ((arm_proxy->m_config->native_or_derived_PSM()
+                 || arm_proxy->m_config->native_or_derived_ECM()
+                 )
+                && (arm_proxy->m_config->simulation == dvrk::simulation::SIMULATION_NONE)
+                ) {
+                arm_proxy->SUJInterfaceRequiredFromIO = this->AddInterfaceRequired("SUJ_clutch_" + name + "_IO");
+                arm_proxy->SUJInterfaceRequiredFromIO->AddEventHandlerWrite(&dvrk::arm_proxy::SUJ_clutch_event_handler_from_IO,
+                                                                            arm_proxy.get(), "Button");
+                if (arm_proxy->generation() == dvrk::generation::Si) {
+                    arm_proxy->SUJInterfaceRequiredFromIO2 = this->AddInterfaceRequired("SUJ_clutch_2_" + name + "_IO");
+                    arm_proxy->SUJInterfaceRequiredFromIO2->AddEventHandlerWrite(&dvrk::arm_proxy::SUJ_clutch_event_handler_from_IO,
+                                                                                 arm_proxy.get(), "Button");
+                }
+                arm_proxy->SUJInterfaceRequiredToSUJ = this->AddInterfaceRequired("SUJ_clutch_" + name);
+                arm_proxy->SUJInterfaceRequiredToSUJ->AddFunction("clutch", arm_proxy->SUJ_clutch);
+            }
+        }
+    }
 
     m_configured = true;
 }
@@ -679,7 +678,7 @@ bool dvrk::system::Connect(void)
         }
         if (arm->SUJInterfaceRequiredFromIO2) {
             component_manager->Connect(this->GetName(), arm->SUJInterfaceRequiredFromIO2->GetName(),
-                                       arm->m_IO_component_name, arm->m_name + "_SUJ_clutch2");
+                                       arm->m_IO_component_name, arm->m_name + "_SUJ_clutch_2");
         }
         if (arm->SUJInterfaceRequiredToSUJ) {
             component_manager->Connect(this->GetName(), arm->SUJInterfaceRequiredToSUJ->GetName(),

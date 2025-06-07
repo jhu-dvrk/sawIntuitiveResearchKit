@@ -158,7 +158,7 @@ public:
 
         // write commands
         m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::clutch_command, this,
-                                              "Clutch", false);
+                                              "clutch", false);
         m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::calibrate_potentiometers, this,
                                               "SetRecalibrationMatrix", m_recalibration_matrix);
 

@@ -124,7 +124,7 @@ void mtsIntuitiveResearchKitECM::set_simulated(void)
     // for Si systems, remove a few more interfaces
     if (m_generation == dvrk::generation::Si) {
         RemoveInterfaceRequired("SUJ_clutch");
-        RemoveInterfaceRequired("SUJ_clutch2");
+        RemoveInterfaceRequired("SUJ_clutch_2");
         RemoveInterfaceRequired("SUJ_brake");
     }
 }

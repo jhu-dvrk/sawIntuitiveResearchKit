@@ -24,13 +24,16 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitConfig.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitPSM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitECM.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJ.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJFixed.h>
+#if sawIntuitiveResearchKit_HAS_SUJ_Si
+  #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitSUJSi.h>
+#endif
 #include <sawIntuitiveResearchKit/system.h>
-
 #include <sawIntuitiveResearchKit/IO_proxy.h>
 
 dvrk::arm_proxy::arm_proxy(const std::string & name,
@@ -309,7 +312,7 @@ void dvrk::arm_proxy::create_arm(void)
             // for Si patient side, connect the SUJ brakes to buttons on arm
             if ((m_config->PSM() || m_config->ECM())
                 && (m_arm->generation() == dvrk::generation::Si)) {
-                std::vector<std::string> itfs = {"SUJ_clutch", "SUJ_clutch2", "SUJ_brake"};
+                std::vector<std::string> itfs = {"SUJ_clutch", "SUJ_clutch_2", "SUJ_brake"};
                 for (const auto & itf : itfs) {
                     m_system->m_connections.Add(m_name, itf,
                                                 m_IO_component_name, m_name + "_" + itf);

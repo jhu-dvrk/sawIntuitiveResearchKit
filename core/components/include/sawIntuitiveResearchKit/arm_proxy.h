@@ -122,16 +122,16 @@ namespace dvrk {
         mtsInterfaceRequired * SUJInterfaceRequiredFromIO = nullptr;
         mtsInterfaceRequired * SUJInterfaceRequiredFromIO2 = nullptr; // for Si second clutch button
         mtsInterfaceRequired * SUJInterfaceRequiredToSUJ = nullptr;
-        mtsFunctionWrite SUJClutch;
+        mtsFunctionWrite SUJ_clutch;
         bool m_SUJ_clutched = false;
 
-        void SUJClutchEventHandlerFromIO(const prmEventButton & button) {
+        void SUJ_clutch_event_handler_from_IO(const prmEventButton & button) {
             if (button.Type() == prmEventButton::PRESSED) {
                 m_SUJ_clutched = true;
-                SUJClutch(true);
+                SUJ_clutch(true);
             } else {
                 m_SUJ_clutched = false;
-                SUJClutch(false);
+                SUJ_clutch(false);
             }
         }
 
