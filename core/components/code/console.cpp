@@ -68,6 +68,7 @@ void dvrk::console::post_configure(void)
     }
 
     // PSM teleops
+    std::map <std::string, std::vector<std::shared_ptr<teleop_PSM_proxy>>> teleops_per_MTM;
     for (auto & proxy_config : m_config->teleop_PSMs) {
         const std::string name = proxy_config.MTM + "_" + proxy_config.PSM;
         auto iter = m_teleop_proxies.find(name);
@@ -76,11 +77,14 @@ void dvrk::console::post_configure(void)
             auto teleop_proxy = std::make_shared<teleop_PSM_proxy>(name, this->m_system,
                                                                    this, &proxy_config);
             teleop_proxy->post_configure();
+            // make sure no conflicting teleops are selected
             if (m_system->find_conflicting_teleops(teleop_proxy)) {
                 teleop_proxy->m_selected = false;
             } else {
                 teleop_proxy->m_selected = true;
             }
+            // add to list of teleops using each MTM
+            teleops_per_MTM[proxy_config.MTM].push_back(teleop_proxy);
             m_teleop_proxies[name] = teleop_proxy;
         } else {
             CMN_LOG_INIT_ERROR << "post_configure: failed to configure teleop_PSMs, "
@@ -89,10 +93,15 @@ void dvrk::console::post_configure(void)
         }
     }
 
-    // update map of arms used by teleop
-    for (auto & teleop : m_teleop_proxies) {
-        for (auto & arm : teleop.second->m_arms_used) {
-            m_system->m_teleops_using_arm[arm].push_back(teleop.first);
+    // find with PSM teleops can be cycled using quick-tap
+    bool found_cycle = false;
+    for (auto & iter : teleops_per_MTM) {
+        if (iter.second.size() == 2) {
+            if (!found_cycle) {
+                found_cycle = true;
+                m_teleop_PSM_cycle_1 = iter.second.at(0);
+                m_teleop_PSM_cycle_2 = iter.second.at(1);
+            }
         }
     }
 
@@ -219,130 +228,6 @@ void dvrk::console::emit_teleop_state_events(void)
     }
 }
 
-// dvrk::console
-//     // mTeleopMTMToCycle(""),
-//     // mOperatorPresent(false),
-//     // mCameraPressed(false)
-
-//     if (mInterface) {
-//         // // manage tele-op
-//         // mInterface->AddCommandWrite(&mtsIntuitiveResearchKitConsole::cycle_teleop_PSM_by_MTM, this,
-//         //                             "cycle_teleop_PSM_by_MTM", std::string(""));
-//         // misc.
-//         mInterface->AddCommandRead(&mtsIntuitiveResearchKitConsole::calibration_mode, this,
-//                                    "calibration_mode", false);
-//         // Following is Read instead of VoidReturn because it is called before the component
-//         // is created (i.e., thread not yet running)
-//         mInterface->AddCommandRead(&mtsIntuitiveResearchKitConsole::ConnectInternal, this,
-//                                    "connect", false);
-//     }
-// }
-
-
-//     //     const Json::Value operatorPresent = jsonConfig["operator-present"];
-//     //     if (!operatorPresent.empty()) {
-
-//     //         } else {
-//     //             }
-//     //         }
-//     //     }
-
-
-// }
-
-// const bool & mtsIntuitiveResearchKitConsole::Configured(void) const
-// {
-//     return m_configured;
-// }
-
-// // bool mtsIntuitiveResearchKitConsole::ConfigureECMTeleopJSON(const Json::Value & jsonTeleop)
-// // {
-// // if (mtmLeftName == mtmRightName) {
-// //     CMN_LOG_CLASS_INIT_ERROR << "ConfigureECMTeleopJSON: \"mtm-left\" and \"mtm-right\" must be different" << std::endl;
-// //     return false;
-// // }
-// // }
-// //     // default value
-// //     mTeleopECM->m_type = TeleopECM::TELEOP_ECM;
-// // }
-// //     return true;
-// // }
-
-// // bool mtsIntuitiveResearchKitConsole::ConfigurePSMTeleopJSON(const Json::Value & jsonTeleop)
-// // {
-
-// // Json::Value jsonValue = jsonTeleop["PSM_base_frame"];
-// // std::string baseFrameComponent, baseFrameInterface;
-// // if (!jsonValue.empty()) {
-// //     baseFrameComponent = jsonValue.get("component", "").asString();
-// //     baseFrameInterface = jsonValue.get("interface", "").asString();
-// //     if ((baseFrameComponent == "") || (baseFrameInterface == "")) {
-// //         CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: both \"component\" and \"interface\" must be provided with \"PSM_base_frame\" for teleop \""
-// //                                  << mtmName << "_" << psmName << "\"" << std::endl;
-// //         return false;
-// //     }
-// // }
-
-// // // check if pair already exist and then add
-// // const auto teleopIterator = m_teleop_PSM_proxies.find(name);
-// // TeleopPSM * teleopPointer = 0;
-// // if (teleopIterator == m_teleop_PSM_proxies.end()) {
-
-// //     // insert
-// //     m_teleop_PSM_proxiesByMTM.insert(std::make_pair(mtmName, teleopPointer));
-// //     m_teleop_PSM_proxiesByPSM.insert(std::make_pair(psmName, teleopPointer));
-
-// //     // first MTM with multiple PSMs is selected for single tap
-// //     if ((m_teleop_PSM_proxiesByMTM.count(mtmName) > 1)
-// //         && (mTeleopMTMToCycle == "")) {
-// //         mTeleopMTMToCycle = mtmName;
-// //     }
-// //     // check if we already have a teleop for the same PSM
-// //     std::string mtmUsingThatPSM;
-// //     GetMTMSelectedForPSM(psmName, mtmUsingThatPSM);
-// //     if (mtmUsingThatPSM != "") {
-// //         teleopPointer->SetSelected(false);
-// //         CMN_LOG_CLASS_INIT_WARNING << "ConfigurePSMTeleopJSON: psm \""
-// //                                    << psmName << "\" is already selected to be controlled by mtm \""
-// //                                    << mtmUsingThatPSM << "\", component \""
-// //                                    << name << "\" is added but not selected"
-// //                                    << std::endl;
-// //     } else {
-// //         // check if we already have a teleop for the same PSM
-// //         std::string psmUsingThatMTM;
-// //         GetPSMSelectedForMTM(mtmName, psmUsingThatMTM);
-// //         if (psmUsingThatMTM != "") {
-// //             teleopPointer->SetSelected(false);
-// //             CMN_LOG_CLASS_INIT_WARNING << "ConfigurePSMTeleopJSON: mtm \""
-// //                                        << mtmName << "\" is already selected to control psm \""
-// //                                        << psmUsingThatMTM << "\", component \""
-// //                                        << name << "\" is added but not selected"
-// //                                        << std::endl;
-// //         } else {
-// //             // neither the MTM nor PSM are used, let's activate that pair
-// //             teleopPointer->SetSelected(true);
-// //         }
-// //     }
-// //     // finally add the new teleop
-// //     m_teleop_PSM_proxies[name] = teleopPointer;
-// // } else {
-// //     CMN_LOG_CLASS_INIT_ERROR << "ConfigurePSMTeleopJSON: there is already a teleop for the pair \""
-// //                              << name << "\"" << std::endl;
-// //     return false;
-// // }
-
-// // const Json::Value jsonTeleopConfig = jsonTeleop["configure-parameter"];
-// // teleopPointer->ConfigureTeleop(teleopPointer->m_type, period, jsonTeleopConfig);
-// //     return true;
-// // }
-
-// bool mtsIntuitiveResearchKitConsole::Connect(void)
-// {
-//     mtsManagerLocal * component_manager = mtsManagerLocal::GetInstance();
-
-//     return true;
-// }
-
 
 void dvrk::console::teleop_enable(const bool & _enable)
 {
@@ -441,9 +326,13 @@ void dvrk::console::clutch_event_handler(const prmEventButton & _button)
         m_interface_provided->SendStatus(m_name + ": clutch quick tap");
         m_system->audio.beep(vct3(0.05, 2000.0, m_system->m_audio_volume));
         m_system->audio.beep(vct3(0.05, 2000.0, m_system->m_audio_volume));
-        // if (mTeleopMTMToCycle != "") {
-        //     cycle_teleop_PSM_by_MTM(mTeleopMTMToCycle);
-        // }
+        if (m_teleop_PSM_cycle_1 != nullptr) {
+            if (m_teleop_PSM_cycle_1->m_selected) {
+                select_teleop(m_teleop_PSM_cycle_2->m_name);
+            } else {
+                select_teleop(m_teleop_PSM_cycle_1->m_name);
+            }
+        }
         break;
     default:
         break;
@@ -499,162 +388,6 @@ void dvrk::console::operator_present_event_handler(const prmEventButton & _butto
 }
 
 
-// // void mtsIntuitiveResearchKitConsole::cycle_teleop_PSM_by_MTM(const std::string & mtmName)
-// // {
-// //     // try to cycle through all the teleopPSMs associated to the MTM
-// //     if (m_teleop_PSM_proxies_by_MTM.count(mtmName) == 0) {
-// //         // we use empty string to query, no need to send warning about bad mtm name
-// //         if (mtmName != "") {
-// //             mInterface->SendWarning(this->GetName()
-// //                                     + ": no PSM teleoperation found for MTM \""
-// //                                     + mtmName
-// //                                     + "\"");
-// //         }
-// //     } else if (m_teleop_PSM_proxies_by_MTM.count(mtmName) == 1) {
-// //         mInterface->SendStatus(this->GetName()
-// //                                + ": only one PSM teleoperation found for MTM \""
-// //                                + mtmName
-// //                                + "\", cycling has no effect");
-// //     } else {
-// //         // find range of teleops
-// //         auto range = m_teleop_PSM_proxies_by_MTM.equal_range(mtmName);
-// //         for (auto iter = range.first;
-// //              iter != range.second;
-// //              ++iter) {
-// //             // find first teleop currently selected
-// //             if (iter->second->selected()) {
-// //                 // toggle to next one
-// //                 auto nextTeleop = iter;
-// //                 nextTeleop++;
-// //                 // if next one is last one, go back to first
-// //                 if (nextTeleop == range.second) {
-// //                     nextTeleop = range.first;
-// //                 }
-// //                 // now make sure the PSM in next teleop is not used
-// //                 std::string mtmUsingThatPSM;
-// //                 GetMTMSelectedForPSM(nextTeleop->second->m_config->PSM, mtmUsingThatPSM);
-// //                 if (mtmUsingThatPSM != "") {
-// //                     // message
-// //                     mInterface->SendWarning(this->GetName()
-// //                                             + ": cycling from \""
-// //                                             + iter->second->m_name
-// //                                             + "\" to \""
-// //                                             + nextTeleop->second->m_name
-// //                                             + "\" failed, PSM is already controlled by \""
-// //                                             + mtmUsingThatPSM
-// //                                             + "\"");
-// //                 } else {
-// //                     // mark which one should be active
-// //                     iter->second->set_selected(false);
-// //                     nextTeleop->second->set_selected(true);
-// //                     // if teleop PSM is active, enable/disable components now
-// //                     if (m_teleop_enabled) {
-// //                         iter->second->state_command(std::string("disable"));
-// //                         if (mTeleopPSMRunning) {
-// //                             nextTeleop->second->state_command(std::string("enable"));
-// //                         } else {
-// //                             nextTeleop->second->state_command(std::string("align_MTM"));
-// //                         }
-// //                     }
-// //                     // message
-// //                     mInterface->SendStatus(this->GetName()
-// //                                            + ": cycling from \""
-// //                                            + iter->second->m_name
-// //                                            + "\" to \""
-// //                                            + nextTeleop->second->m_name
-// //                                            + "\"");
-// //                 }
-// //                 // stop for loop
-// //                 break;
-// //             }
-// //         }
-// //     }
-// //     // in all cases, emit events so users can figure out which components are selected
-// //     EventSelectedTeleopPSMs();
-// // }
-
-// // void mtsIntuitiveResearchKitConsole::select_teleop_PSM(const prmKeyValue & mtmPsm)
-// // {
-// //     // for readability
-// //     const std::string mtmName = mtmPsm.Key;
-// //     const std::string psmName = mtmPsm.Value;
-
-// //     // if the psm value is empty, disable any teleop for the mtm -- this can be used to free the mtm
-// //     if (psmName == "") {
-// //         auto range = m_teleop_PSM_proxies_by_MTM.equal_range(mtmName);
-// //         for (auto iter = range.first;
-// //              iter != range.second;
-// //              ++iter) {
-// //             // look for the teleop that was selected if any
-// //             if (iter->second->selected()) {
-// //                 iter->second->set_selected(false);
-// //                 // if teleop PSM is active, enable/disable components now
-// //                 if (m_teleop_enabled) {
-// //                     iter->second->state_command(std::string("disable"));
-// //                 }
-// //                 // message
-// //                 mInterface->SendWarning(this->GetName()
-// //                                         + ": teleop \""
-// //                                         + iter->second->m_name
-// //                                         + "\" has been unselected ");
-// //             }
-// //         }
-// //         EventSelectedTeleopPSMs();
-// //         return;
-// //     }
-
-// //     // actual teleop to select
-// //     std::string name = mtmName + "_" + psmName;
-// //     const auto teleopIterator = m_teleop_PSM_proxies.find(name);
-// //     if (teleopIterator == m_teleop_PSM_proxies.end()) {
-// //         mInterface->SendWarning(this->GetName()
-// //                                 + ": unable to select \""
-// //                                 + name
-// //                                 + "\", this component doesn't exist");
-// //         EventSelectedTeleopPSMs();
-// //         return;
-// //     }
-// //     // there seems to be some redundant information here, let's use it for a safety check
-// //     CMN_ASSERT(mtmName == teleopIterator->second->m_config->MTM);
-// //     CMN_ASSERT(psmName == teleopIterator->second->m_config->PSM);
-// //     // check that the PSM is available to be used
-// //     std::string mtmUsingThatPSM;
-// //     GetMTMSelectedForPSM(psmName, mtmUsingThatPSM);
-// //     if (mtmUsingThatPSM != "") {
-// //         mInterface->SendWarning(this->GetName()
-// //                                 + ": unable to select \""
-// //                                 + name
-// //                                 + "\", PSM is already controlled by \""
-// //                                 + mtmUsingThatPSM
-// //                                 + "\"");
-// //         EventSelectedTeleopPSMs();
-// //         return;
-// //     }
-
-// //     // make sure the teleop using that MTM is unselected
-// //     select_teleop_PSM(prmKeyValue(mtmName, ""));
-
-// //     // now turn on the teleop
-// //     teleopIterator->second->set_selected(true);
-// //     // if teleop PSM is active, enable/disable components now
-// //     if (m_teleop_enabled) {
-// //         if (mTeleopPSMRunning) {
-// //             teleopIterator->second->state_command(std::string("enable"));
-// //         } else {
-// //             teleopIterator->second->state_command(std::string("align_MTM"));
-// //         }
-// //     }
-// //     // message
-// //     mInterface->SendStatus(this->GetName()
-// //                            + ": \""
-// //                            + teleopIterator->second->m_name
-// //                            + "\" has been selected");
-
-// //     // always send a message to let user know the current status
-// //     EventSelectedTeleopPSMs();
-// // }
-
-
 void dvrk::console::update_teleop_state(void)
 {
     // overall teleop
@@ -691,118 +424,3 @@ void dvrk::console::update_teleop_state(void)
         }
     }
 }
-
-
-// //     // Check if teleop is enabled
-// //     if (!m_teleop_enabled) {
-// //         bool holdNeeded = false;
-// //         for (auto & iterTeleopPSM : m_teleop_PSM_proxies) {
-// //             iterTeleopPSM.second->state_command(std::string("disable"));
-// //             if (mTeleopPSMRunning) {
-// //                 holdNeeded = true;
-// //             }
-// //             mTeleopPSMRunning = false;
-// //         }
-
-// //         // if (mTeleopECM) {
-// //         //     mTeleopECM->state_command(std::string("disable"));
-// //         //     if (mTeleopECMRunning) {
-// //         //         holdNeeded = true;
-// //         //     }
-// //         //     mTeleopECMRunning = false;
-// //         // }
-
-// //         // hold arms if we stopped any teleop
-// //         if (holdNeeded) {
-// //             for (auto & arm_proxy : m_arm_proxies) {
-// //                 if (arm_proxy.second->m_config->MTM()
-// //                     && arm_proxy.second->hold.IsValid()) {
-// //                     arm_proxy.second->hold();
-// //                 }
-// //             }
-// //         }
-// //         return;
-// //     }
-
-// //     // if none are running, hold
-// //     if (!mTeleopECMRunning && !mTeleopPSMRunning) {
-// //         for (auto & arm_proxy : m_arm_proxies) {
-// //             if (arm_proxy.second->m_config->MTM()
-// //                 && arm_proxy.second->hold.IsValid()) {
-// //                 arm_proxy.second->hold();
-// //             }
-// //         }
-// //     }
-
-// //     // all fine
-// //     bool readyForTeleop = mOperatorPresent;
-
-// //     for (auto & arm_proxy : m_arm_proxies) {
-// //         if (arm_proxy.second->m_SUJ_clutched) {
-// //             readyForTeleop = false;
-// //         }
-// //     }
-
-// //     // Check if operator is present
-// //     if (!readyForTeleop) {
-// //         // keep MTMs aligned
-// //         for (auto & iterTeleopPSM : m_teleop_PSM_proxies) {
-// //             if (iterTeleopPSM.second->selected()) {
-// //                 iterTeleopPSM.second->state_command(std::string("align_MTM"));
-// //             } else {
-// //                 iterTeleopPSM.second->state_command(std::string("disable"));
-// //             }
-// //         }
-// //         mTeleopPSMRunning = false;
-
-// //         // // stop ECM if needed
-// //         // if (mTeleopECMRunning) {
-// //         //     mTeleopECM->state_command(std::string("disable"));
-// //         //     mTeleopECMRunning = false;
-// //         // }
-// //         return;
-// //     }
-
-// //     // If camera is pressed for ECM Teleop or not
-// //     if (mCameraPressed) {
-// //         if (!mTeleopECMRunning) {
-// //             // if PSM was running so we need to stop it
-// //             if (mTeleopPSMRunning) {
-// //                 for (auto & iterTeleopPSM : m_teleop_PSM_proxies) {
-// //                     iterTeleopPSM.second->state_command(std::string("disable"));
-// //                 }
-// //                 mTeleopPSMRunning = false;
-// //             }
-// //             // ECM wasn't running, let's start it
-// //             // if (mTeleopECM) {
-// //             //     mTeleopECM->state_command(std::string("enable"));
-// //             //     mTeleopECMRunning = true;
-// //             // }
-// //         }
-// //     } else {
-// //         // we must teleop PSM
-// //         if (!mTeleopPSMRunning) {
-// //             // if ECM was running so we need to stop it
-// //             // if (mTeleopECMRunning) {
-// //             //     mTeleopECM->state_command(std::string("disable"));
-// //             //     mTeleopECMRunning = false;
-// //             // }
-// //             // PSM wasn't running, let's start it
-// //             for (auto & iterTeleopPSM : m_teleop_PSM_proxies) {
-// //                 if (iterTeleopPSM.second->selected()) {
-// //                     iterTeleopPSM.second->state_command(std::string("enable"));
-// //                 } else {
-// //                     iterTeleopPSM.second->state_command(std::string("disable"));
-// //                 }
-// //                 mTeleopPSMRunning = true;
-// //             }
-// //         }
-// //     }
-
-// void mtsIntuitiveResearchKitConsole::ErrorEventHandler(const mtsMessage & message)
-// {
-//     // similar to teleop_enable(false) except we don't change mTeleopDesired
-//     m_teleop_enabled = false;
-//     console_events.teleop_enabled(m_teleop_enabled);
-//     UpdateTeleopState();
-// }

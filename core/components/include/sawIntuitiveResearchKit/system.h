@@ -111,9 +111,6 @@ namespace dvrk {
         typedef std::map<std::string, std::shared_ptr<dvrk::console>> consoles;
         consoles m_consoles;
 
-        typedef std::map<std::string, std::list<std::string>> teleop_using_arm;
-        teleop_using_arm m_teleops_using_arm;
-
         /*! ISI endoscope focus controller through dVRK controller */
         std::shared_ptr<mtsDaVinciEndoscopeFocus> m_ISI_focus_controller;
 
