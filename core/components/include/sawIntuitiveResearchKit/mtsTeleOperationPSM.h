@@ -102,6 +102,9 @@ class CISST_EXPORT mtsTeleOperationPSM: public mtsTaskPeriodic
     void RunEnabled(void); // performs actual teleoperation
     void TransitionEnabled(void); // performs actual teleoperation
 
+    virtual void RunCartesianTeleop(); // runs actual teleoperation for Cartesian pose
+    virtual void RunJawGripperTeleop(); // runs actual teleoperation for jaw/gripper
+
     struct {
         mtsFunctionRead  measured_cp;
         mtsFunctionRead  measured_cv;

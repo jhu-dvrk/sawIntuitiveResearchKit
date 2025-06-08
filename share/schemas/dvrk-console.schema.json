@@ -15,7 +15,7 @@
                 "port": {
                     "type":"string",
                     "description": "Port used communicate between the computer and the dVRK controllers.  Accepted values are \"fw\", \"fw:X\" (X is FireWire port), \"udpfw\", \"udp\" or \"udp:xx.xx.xx.xx\" (xx.xx.xx.xx is the IP address of the dVRK controller.  Default controller address is 169.254.0.100.  Values are parsed by `BasePort::ParseOptions` in library Amp1394.",
-                    "pattern": "^fw$|^fw:[0-9]$|^udp$|^udp:[0-9]{2,3}.[0-9]{2,3}.[0-9]{2,3}.[0-9]{2,3}|^udpfw$",
+                    "pattern": "^fw$|^fw:[0-9]$|^udp$|^udp:[0-9]{2,3}.[0-9]{2,3}.[0-9]{2,3}.[0-9]{2,3}|^udpfw|^udpfw:[0-9]{2,3}.[0-9]{2,3}.[0-9]{2,3}.[0-9]{2,3}$",
                     "examples": [
                         {
                             "port": "udp"

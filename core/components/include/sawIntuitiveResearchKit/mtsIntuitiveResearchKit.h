@@ -105,6 +105,7 @@ namespace mtsIntuitiveResearchKit {
         const double StartRollThreshold = 3.0 * cmnPI_180; // in radians
         const double JawRate =  4.0 * cmnPI * cmn_s; // 720 d/s
         const double JawRateAfterClutch =  0.2 * cmnPI * cmn_s; // 36.0 d/s
+        const double JawDifferenceForCaughtUp =  2.0 * cmnPI_180; // in radians
     }
 
     namespace TeleOperationECM {

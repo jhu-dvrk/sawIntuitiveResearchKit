@@ -878,101 +878,8 @@ void mtsTeleOperationPSM::RunEnabled(void)
         && mPSM.m_setpoint_cp.Valid()) {
         // follow mode
         if (!m_clutched) {
-
-            // on MTM, just apply user provided effort
-            if (m_following_mtm_body_servo_cf.Valid()) {
-                mMTM.body_servo_cf(m_following_mtm_body_servo_cf);
-            }
-
-            // compute mtm Cartesian motion
-            vctFrm4x4 mtmPosition(mMTM.m_measured_cp.Position());
-
-            // translation
-            vct3 mtmTranslation;
-            vct3 psmTranslation;
-            if (m_config.translation_locked) {
-                psmTranslation = mPSM.CartesianInitial.Translation();
-            } else {
-                mtmTranslation = (mtmPosition.Translation() - mMTM.CartesianInitial.Translation());
-                psmTranslation = mtmTranslation * m_config.scale;
-                psmTranslation = psmTranslation + mPSM.CartesianInitial.Translation();
-            }
-            // rotation
-            vctMatRot3 psmRotation;
-            if (m_config.rotation_locked) {
-                psmRotation.From(mPSM.CartesianInitial.Rotation());
-            } else {
-                psmRotation = mtmPosition.Rotation() * m_alignment_offset_initial;
-            }
-
-            // compute desired psm position
-            vctFrm4x4 psmCartesianGoal;
-            psmCartesianGoal.Translation().Assign(psmTranslation);
-            psmCartesianGoal.Rotation().FromNormalized(psmRotation);
-
-            // take into account changes in PSM base frame if any
-            if (mBaseFrame.measured_cp.IsValid()) {
-                vctFrm4x4 baseFrame(mBaseFrame.m_measured_cp.Position());
-                vctFrm4x4 baseFrameChange = baseFrame.Inverse() * mBaseFrame.CartesianInitial;
-                // update PSM position goal
-                psmCartesianGoal = baseFrameChange * psmCartesianGoal;
-                // update alignment offset
-                mtmPosition.Rotation().ApplyInverseTo(psmCartesianGoal.Rotation(), m_alignment_offset);
-            }
-
-            // PSM go this cartesian position -> m_servo_cp
-            mPSM.m_servo_cp.Goal().FromNormalized(psmCartesianGoal);
-
-            // Add desired velocity if needed
-            if (m_config.use_MTM_velocity) {
-                // linear is scaled and re-oriented
-                mPSM.m_servo_cp.Velocity() = m_config.scale * mMTM.m_measured_cv.VelocityLinear();
-                // angular is not scaled
-                mPSM.m_servo_cp.VelocityAngular() = mMTM.m_measured_cv.VelocityAngular();
-            } else {
-                mPSM.m_servo_cp.Velocity().Assign(vct3(0));
-                mPSM.m_servo_cp.VelocityAngular().Assign(vct3(0));
-            }
-
-            mPSM.servo_cp(mPSM.m_servo_cp);
-
-            if (!m_config.ignore_jaw) {
-                // gripper
-                if (mMTM.gripper_measured_js.IsValid()) {
-                    mMTM.gripper_measured_js(mMTM.m_gripper_measured_js);
-                    const double currentGripper = mMTM.m_gripper_measured_js.Position()[0];
-                    // see if we caught up
-                    if (!m_jaw_caught_up_after_clutch) {
-                        const double error = std::abs(currentGripper - m_gripper_ghost);
-                        if (error < m_config.jaw_rate_after_clutch) {
-                            m_jaw_caught_up_after_clutch = true;
-                        }
-                    }
-                    // pick the rate based on back from clutch or not
-                    const double delta = m_jaw_caught_up_after_clutch ?
-                        m_config.jaw_rate * StateTable.PeriodStats.PeriodAvg()
-                        : m_config.jaw_rate_after_clutch * StateTable.PeriodStats.PeriodAvg();
-                    // gripper ghost below, add to catch up
-                    if (m_gripper_ghost <= (currentGripper - delta)) {
-                        m_gripper_ghost += delta;
-                    } else {
-                        // gripper ghost above, subtract to catch up
-                        if (m_gripper_ghost >= (currentGripper + delta)) {
-                            m_gripper_ghost -= delta;
-                        }
-                    }
-                    mPSM.m_jaw_servo_jp.Goal()[0] = GripperToJaw(m_gripper_ghost);
-                    // make sure we don't send goal past joint limits
-                    if (mPSM.m_jaw_servo_jp.Goal()[0] < m_gripper_to_jaw.position_min) {
-                        mPSM.m_jaw_servo_jp.Goal()[0] = m_gripper_to_jaw.position_min;
-                        m_gripper_ghost = JawToGripper(m_gripper_to_jaw.position_min);
-                    }
-                    mPSM.jaw_servo_jp(mPSM.m_jaw_servo_jp);
-                } else {
-                    mPSM.m_jaw_servo_jp.Goal()[0] = 45.0 * cmnPI_180;
-                    mPSM.jaw_servo_jp(mPSM.m_jaw_servo_jp);
-                }
-            }
+            RunCartesianTeleop();
+            RunJawGripperTeleop();
         }
     }
 }
@@ -983,6 +890,107 @@ void mtsTeleOperationPSM::TransitionEnabled(void)
         set_following(false);
         mTeleopState.SetCurrentState(mTeleopState.DesiredState());
     }
+}
+
+void mtsTeleOperationPSM::RunCartesianTeleop() {
+    // on MTM, just apply user provided effort
+    if (m_following_mtm_body_servo_cf.Valid()) {
+        mMTM.body_servo_cf(m_following_mtm_body_servo_cf);
+    }
+
+    // compute mtm Cartesian motion
+    vctFrm4x4 mtmPosition(mMTM.m_measured_cp.Position());
+
+    // translation
+    vct3 mtmTranslation;
+    vct3 psmTranslation;
+    if (m_config.translation_locked) {
+        psmTranslation = mPSM.CartesianInitial.Translation();
+    } else {
+        mtmTranslation = (mtmPosition.Translation() - mMTM.CartesianInitial.Translation());
+        psmTranslation = mtmTranslation * m_config.scale;
+        psmTranslation = psmTranslation + mPSM.CartesianInitial.Translation();
+    }
+    // rotation
+    vctMatRot3 psmRotation;
+    if (m_config.rotation_locked) {
+        psmRotation.From(mPSM.CartesianInitial.Rotation());
+    } else {
+        psmRotation = mtmPosition.Rotation() * m_alignment_offset_initial;
+    }
+
+    // compute desired psm position
+    vctFrm4x4 psmCartesianGoal;
+    psmCartesianGoal.Translation().Assign(psmTranslation);
+    psmCartesianGoal.Rotation().FromNormalized(psmRotation);
+
+    // take into account changes in PSM base frame if any
+    if (mBaseFrame.measured_cp.IsValid()) {
+        vctFrm4x4 baseFrame(mBaseFrame.m_measured_cp.Position());
+        vctFrm4x4 baseFrameChange = baseFrame.Inverse() * mBaseFrame.CartesianInitial;
+        // update PSM position goal
+        psmCartesianGoal = baseFrameChange * psmCartesianGoal;
+        // update alignment offset
+        mtmPosition.Rotation().ApplyInverseTo(psmCartesianGoal.Rotation(), m_alignment_offset);
+    }
+
+    // PSM go this cartesian position -> m_servo_cp
+    mPSM.m_servo_cp.Goal().FromNormalized(psmCartesianGoal);
+
+    // Add desired velocity if needed
+    if (m_config.use_MTM_velocity) {
+        // linear is scaled and re-oriented
+        mPSM.m_servo_cp.Velocity() = m_config.scale * mMTM.m_measured_cv.VelocityLinear();
+        // angular is not scaled
+        mPSM.m_servo_cp.VelocityAngular() = mMTM.m_measured_cv.VelocityAngular();
+    } else {
+        mPSM.m_servo_cp.Velocity().Assign(vct3(0));
+        mPSM.m_servo_cp.VelocityAngular().Assign(vct3(0));
+    }
+
+    mPSM.servo_cp(mPSM.m_servo_cp);
+}
+
+void mtsTeleOperationPSM::RunJawGripperTeleop() {
+    if (m_config.ignore_jaw) {
+        return;
+    }
+
+    // If MTM does not have a gripper, just set PSM jaw to a default position
+    // Note: should probably make the PSM default jaw position configurable
+    if (!mMTM.gripper_measured_js.IsValid()) {
+        mPSM.m_jaw_servo_jp.Goal()[0] = 45.0 * cmnPI_180;
+        mPSM.jaw_servo_jp(mPSM.m_jaw_servo_jp);
+        return;
+    }
+
+    mMTM.gripper_measured_js(mMTM.m_gripper_measured_js);
+    const double currentGripper = mMTM.m_gripper_measured_js.Position()[0];
+    const double gripper_error = std::abs(currentGripper - m_gripper_ghost);
+
+    // see if we caught up
+    if (!m_jaw_caught_up_after_clutch) {
+        if (gripper_error < mtsIntuitiveResearchKit::TeleOperationPSM::JawDifferenceForCaughtUp) {
+            m_jaw_caught_up_after_clutch = true;
+        }
+    }
+
+    // pick the jaw speed based on back from clutch or not
+    const double jaw_rate = m_jaw_caught_up_after_clutch ? m_config.jaw_rate : m_config.jaw_rate_after_clutch;
+    const double max_delta = jaw_rate * StateTable.PeriodStats.PeriodAvg();
+
+    // move gripper ghost at most max_delta (jaw speed * dt) towards real gripper
+    const double delta = std::min(gripper_error, max_delta);
+    m_gripper_ghost += std::copysign(delta, currentGripper - m_gripper_ghost);
+
+    mPSM.m_jaw_servo_jp.Goal()[0] = GripperToJaw(m_gripper_ghost);
+    // make sure we don't send goal past joint limits
+    if (mPSM.m_jaw_servo_jp.Goal()[0] < m_gripper_to_jaw.position_min) {
+        mPSM.m_jaw_servo_jp.Goal()[0] = m_gripper_to_jaw.position_min;
+        m_gripper_ghost = JawToGripper(m_gripper_to_jaw.position_min);
+    }
+
+    mPSM.jaw_servo_jp(mPSM.m_jaw_servo_jp);
 }
 
 double mtsTeleOperationPSM::GripperToJaw(const double & gripperAngle) const

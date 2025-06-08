@@ -1,11 +1,60 @@
 # dVRK Console Python example
 
-## Usage
+This example can be used either with a standalone Python interpreter or with an embedded Python
+interpreter (e.g., embedded in a C++ application). Python 2.7 and Python 3 are both supported.
 
-From Python prompt, type: `from dvrk_console import *`
+## Standalone Python interpreter
 
-Note: If Python fails to find the cisst Python libraries, make sure the `PYTHONPATH` environment
+Start your favorite Python shell (e.g., `python` or `ipython`).
+From the Python prompt, type: `from dvrk_console import *`
+
+## Embedded Python interpreter
+
+You can use the embedded Python interpreter provided by `ipython` or `wxPython`.
+In the latter case, wxPython 4+ must be installed in your Python distribution (for Python 2.7,
+use wxPython 4.1.0).
+
+In either case, the embedded Python interpreter can be dynamically loaded by the component
+manager in the `sawIntuitiveResearchKitQtConsoleJSON` executable. The recommended approach
+is to create a separate JSON file with the following contents (for `ipython`):
+
+```
+{
+    "components":
+    [
+        {
+            "shared-library": "cisstInteractive",
+            "class-name": "ireTask",
+            "constructor-arg": {
+                "Name": "IRE",
+                "Shell": "IRE_IPYTHON",
+                "Startup": "from dvrk_console import *"
+            }
+        }
+    ]
+}
+```
+
+To use `wxPython`, change `Shell` to `IRE_WXPYTHON`. Assuming the above file is called
+`ire-ipython.json`, it can be invoked using the `-m` flag:
+
+```
+sawIntuitiveResearchKitQtConsoleJSON  -j  <your_config>.json  -m  ire-ipython.json
+```
+
+where `<your_config>.json` is the JSON file that specifies your system configuration (e.g.,
+which MTMs, PSMs, ECM are used).
+
+## Troubleshooting
+
+  - If Python fails to find the cisst Python libraries, make sure the `PYTHONPATH` environment
 variable is set up correctly, e.g., using `cisstvars.sh` (Linux) or `cisstvars.bat` (Windows).
+
+  - If `dvrk_console.py` is not found, either specify the full path when importing the file,
+or copy it to one of the directories in `PYTHONPATH`.
+
+  - Currently, `dvrk_console.py` determines that it running in an embedded Python interpreter
+if it finds a component named `IRE`. Make sure to use that name in your JSON file, as in the example above.
 
 ## Finding Commands
 

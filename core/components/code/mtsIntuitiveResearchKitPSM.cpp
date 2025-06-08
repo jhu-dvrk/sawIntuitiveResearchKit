@@ -1299,7 +1299,10 @@ void mtsIntuitiveResearchKitPSM::jaw_servo_jp(const prmPositionJointSet & jawPos
                                    mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
             // make sure all other joints have a reasonable cartesian
             // goal for all other joints
-            m_servo_cp.Goal().Assign(m_setpoint_cp.Position());
+            m_servo_cs.Position().Assign(m_setpoint_cp.Position());
+            m_servo_cs.PositionIsValid() = true;
+            m_servo_cs.VelocityIsValid() = false;
+            m_servo_cs.ForceIsValid() = false;
         }
         break;
     default:
@@ -1448,6 +1451,38 @@ void mtsIntuitiveResearchKitPSM::servo_jf_internal(const vctDoubleVec & newEffor
     PID.servo_jf(m_servo_jf_param);
 
     apply_feed_forward();
+}
+
+void mtsIntuitiveResearchKitPSM::feed_forward_jf_internal(const vctDoubleVec & jf)
+{
+    if (!is_cartesian_ready()) {
+        mtsIntuitiveResearchKitArm::feed_forward_jf_internal(jf);
+        return;
+    }
+
+    // pad array for PID
+    vctDoubleVec joint_efforts(number_of_joints(), 0.0); // for PID
+    joint_efforts.at(6) = m_jaw_servo_jf;
+
+    if (m_snake_like) {
+        std::cerr << CMN_LOG_DETAILS << " need to convert 8 joints from snake to 6 for force control" << std::endl;
+    } else if (jf.size() > 0) {
+        joint_efforts.Ref(number_of_joints_kinematics()).Assign(jf);
+    }
+
+    m_feed_forward_jf_param.ForceTorque().Zeros();
+
+    if (m_has_coupling) {
+        m_feed_forward_jf_param.ForceTorque().Add(m_coupling.JointToActuatorEffort() * joint_efforts);
+    } else {
+        m_feed_forward_jf_param.ForceTorque().Add(joint_efforts);
+    }
+
+    // convert to cisstParameterTypes
+    m_servo_jf_param.SetForceTorque(m_feed_forward_jf_param.ForceTorque());
+    m_servo_jf_param.SetTimestamp(StateTable.GetTic());
+    m_feed_forward_jf_param.SetTimestamp(StateTable.GetTic());
+    PID.feed_forward_servo_jf(m_feed_forward_jf_param);
 }
 
 void mtsIntuitiveResearchKitPSM::control_move_jp_on_stop(const bool goal_reached)
