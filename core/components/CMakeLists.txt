@@ -220,7 +220,8 @@ if (cisst_FOUND)
       system_configuration.cdg
       teleop_ECM_configuration.cdg
       teleop_PSM_configuration.cdg
-      teleop_proxy_configuration.cdg
+      teleop_ECM_proxy_configuration.cdg
+      teleop_PSM_proxy_configuration.cdg
       teleop_type.cdg
       mtsIntuitiveResearchKitControlTypes.cdg
       mtsIntuitiveResearchKitToolTypes.cdg

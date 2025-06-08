@@ -277,14 +277,14 @@ void dvrk::system_Qt::configure(dvrk::system * system)
     }
 
     // add endoscope focus widget
-    // if (system->mDaVinciEndoscopeFocus) {
-    //     const std::string name = system->mDaVinciEndoscopeFocus->GetName();
-    //     mtsDaVinciEndoscopeFocusQtWidget * endoscopeGUI = new mtsDaVinciEndoscopeFocusQtWidget(name + "_GUI");
-    //     endoscopeGUI->Configure();
-    //     component_manager->AddComponent(endoscopeGUI);
-    //     m_connections.Add(endoscopeGUI->GetName(), "Endoscope", name, "Control");
-    //     m_tab_widget->addTab(endoscopeGUI, "Focus");
-    // }
+    if (system->m_ISI_focus_controller) {
+        const std::string name = system->m_ISI_focus_controller->GetName();
+        mtsDaVinciEndoscopeFocusQtWidget * endoscopeGUI = new mtsDaVinciEndoscopeFocusQtWidget(name + "_GUI");
+        endoscopeGUI->Configure();
+        component_manager->AddComponent(endoscopeGUI);
+        m_connections.Add(endoscopeGUI->GetName(), "Endoscope", name, "Control");
+        m_tab_widget->addTab(endoscopeGUI, "Focus");
+    }
 
     // system_widget->HasTeleOp(hasTeleOp);
 

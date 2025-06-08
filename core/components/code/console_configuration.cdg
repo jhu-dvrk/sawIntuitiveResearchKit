@@ -4,7 +4,8 @@
 inline-header {
 #include <json/json.h>
 #include <sawIntuitiveResearchKit/IO_configuration.h>
-#include <sawIntuitiveResearchKit/teleop_proxy_configuration.h>
+#include <sawIntuitiveResearchKit/teleop_ECM_proxy_configuration.h>
+#include <sawIntuitiveResearchKit/teleop_PSM_proxy_configuration.h>
 }
 
 enum {

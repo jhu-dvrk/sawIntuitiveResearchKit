@@ -23,7 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/system.h>
 #include <sawIntuitiveResearchKit/arm_proxy.h>
 #include <sawIntuitiveResearchKit/console.h>
-#include <sawIntuitiveResearchKit/teleop_proxy_configuration.h>
+#include <sawIntuitiveResearchKit/teleop_PSM_proxy_configuration.h>
 
 #include <sawIntuitiveResearchKit/mtsTeleOperationPSM.h>
 
@@ -120,9 +120,10 @@ void dvrk::teleop_PSM_proxy::create_teleop(void)
                                 m_system->GetName(), m_console->m_name + "/clutch"); // clutch from console
     m_system->m_connections.Add(m_system->GetName(), m_name,
                                 m_name, "Setting");
-    // if ((baseFrameComponent != "")
-    //     && (baseFrameInterface != "")) {
-    //     m_connections.Add(name, "PSM_base_frame",
-    //                       baseFrameComponent, baseFrameInterface);
-    // }
+    if ((m_config->PSM_base_frame.component != "")
+        && (m_config->PSM_base_frame.interface != "")) {
+        m_system->m_connections.Add(m_name, "PSM_base_frame",
+                                    m_config->PSM_base_frame.component,
+                                    m_config->PSM_base_frame.interface);
+    }
 }

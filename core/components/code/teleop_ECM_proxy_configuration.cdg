@@ -8,45 +8,6 @@ inline-header {
 }
 
 class {
-    name teleop_PSM_proxy_configuration;
-    namespace dvrk;
-    attribute CISST_EXPORT;
-
-    member {
-        name type;
-        type dvrk::teleop_PSM_type;
-        visibility public;
-        default dvrk::teleop_PSM_type::TELEOP_PSM;
-    }
-
-    member {
-        name MTM;
-        type std::string;
-        visibility public;
-    }
-
-    member {
-        name PSM;
-        type std::string;
-        visibility public;
-    }
-
-    member {
-        name configure_parameter;
-        type Json::Value;
-        visibility public;
-        default Json::Value();
-    }
-
-    member {
-        name period;
-        type double;
-        visibility public;
-        default mtsIntuitiveResearchKit::TeleopPeriod;
-    }
-}
-
-class {
     name teleop_ECM_proxy_configuration;
     namespace dvrk;
     attribute CISST_EXPORT;

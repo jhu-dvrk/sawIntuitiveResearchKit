@@ -134,28 +134,9 @@ dvrk::system_ROS::system_ROS(const std::string & name,
         }
     }
     // Endoscope focus
-    // if (m_system->mDaVinciEndoscopeFocus) {
-    //     add_topics_endoscope_focus();
-    // }
-
-    // digital inputs
-    // const std::string footPedalsNameSpace = "footpedals/";
-    // for (auto input : m_system->mDInputSources) {
-    //     std::string upperName = input.second.second;
-    //     std::string lowerName = input.first;
-    //     std::string requiredInterfaceName = upperName + "_" + lowerName;
-    //     // put everything lower case
-    //     std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), tolower);
-    //     // replace +/- by strings
-    //     cmnStringReplaceAll(lowerName, "-", "_minus");
-    //     cmnStringReplaceAll(lowerName, "+", "_plus");
-    //     events_bridge().AddPublisherFromEventWrite<prmEventButton, CISST_RAL_MSG(sensor_msgs, Joy)>
-    //         (requiredInterfaceName, "Button",
-    //          footPedalsNameSpace + lowerName);
-    //     m_connections.Add(events_bridge().GetName(), requiredInterfaceName,
-    //                       input.second.first, input.second.second);
-
-    // }
+    if (m_system->m_ISI_focus_controller) {
+        add_topics_endoscope_focus();
+    }
 }
 
 void dvrk::system_ROS::bridge_interface_provided_arm(const std::string & _arm_name,
@@ -401,35 +382,36 @@ void dvrk::system_ROS::add_topics_console(const std::string & _name)
 void dvrk::system_ROS::add_topics_endoscope_focus(void)
 {
     const std::string _ros_namespace = "endoscope_focus/";
-    // const std::string _focus_component_name = m_system->mDaVinciEndoscopeFocus->GetName();
+    const std::string _focus_component_name = m_system->m_ISI_focus_controller->GetName();
 
-    // // events
-    // events_bridge().AddPublisherFromEventWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
-    //     (_focus_component_name, "locked",
-    //      _ros_namespace + "locked");
-    // events_bridge().AddPublisherFromEventWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
-    //     (_focus_component_name, "focusing_in",
-    //      _ros_namespace + "focusing_in");
-    // events_bridge().AddPublisherFromEventWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
-    //     (_focus_component_name, "focusing_out",
-    //      _ros_namespace + "focusing_out");
+    // events
+    events_bridge().AddPublisherFromEventWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
+        (_focus_component_name, "locked",
+         _ros_namespace + "locked");
+    events_bridge().AddPublisherFromEventWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
+        (_focus_component_name, "focusing_in",
+         _ros_namespace + "focusing_in");
+    events_bridge().AddPublisherFromEventWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
+        (_focus_component_name, "focusing_out",
+         _ros_namespace + "focusing_out");
 
-    // // commands
-    // subscribers_bridge().AddSubscriberToCommandWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
-    //     (_focus_component_name, "lock",
-    //      _ros_namespace + "lock");
-    // subscribers_bridge().AddSubscriberToCommandWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
-    //     (_focus_component_name, "focus_in",
-    //      _ros_namespace + "focus_in");
-    // subscribers_bridge().AddSubscriberToCommandWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
-    //     (_focus_component_name, "focus_out",
-    //      _ros_namespace + "focus_out");
+    // commands
+    subscribers_bridge().AddSubscriberToCommandWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
+        (_focus_component_name, "lock",
+         _ros_namespace + "lock");
+    subscribers_bridge().AddSubscriberToCommandWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
+        (_focus_component_name, "focus_in",
+         _ros_namespace + "focus_in");
+    subscribers_bridge().AddSubscriberToCommandWrite<bool, CISST_RAL_MSG(std_msgs, Bool)>
+        (_focus_component_name, "focus_out",
+         _ros_namespace + "focus_out");
 
-    // m_connections.Add(subscribers_bridge().GetName(), _focus_component_name,
-    //                   _focus_component_name, "Control");
-    // m_connections.Add(events_bridge().GetName(), _focus_component_name,
-    //                   _focus_component_name, "Control");
+    m_connections.Add(subscribers_bridge().GetName(), _focus_component_name,
+                      _focus_component_name, "Control");
+    m_connections.Add(events_bridge().GetName(), _focus_component_name,
+                      _focus_component_name, "Control");
 }
+
 
 void dvrk::system_ROS::add_topics_IO_stats(void)
 {

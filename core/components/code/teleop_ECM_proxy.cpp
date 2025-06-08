@@ -23,7 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawIntuitiveResearchKit/system.h>
 #include <sawIntuitiveResearchKit/arm_proxy.h>
 #include <sawIntuitiveResearchKit/console.h>
-#include <sawIntuitiveResearchKit/teleop_proxy_configuration.h>
+#include <sawIntuitiveResearchKit/teleop_ECM_proxy_configuration.h>
 
 #include <sawIntuitiveResearchKit/mtsTeleOperationECM.h>
 

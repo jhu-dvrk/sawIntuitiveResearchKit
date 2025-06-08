@@ -95,14 +95,14 @@ if (cisst_FOUND_AS_REQUIRED)
     ${sawIntuitiveResearchKit_LIBRARY_DIR}
     )
 
-  add_executable (dvrk_pid_console src/dvrk_pid_console.cpp)
+  add_executable (dvrk_pid src/dvrk_pid.cpp)
   target_link_libraries (
-    dvrk_pid_console
+    dvrk_pid
     ${sawRobotIO1394_LIBRARIES}
     ${sawControllers_LIBRARIES}
     ${catkin_LIBRARIES}
     )
-  cisst_target_link_libraries (dvrk_pid_console ${REQUIRED_CISST_LIBRARIES})
+  cisst_target_link_libraries (dvrk_pid ${REQUIRED_CISST_LIBRARIES})
 
 
   add_library (dvrk_utilities
@@ -118,18 +118,18 @@ if (cisst_FOUND_AS_REQUIRED)
     )
   cisst_target_link_libraries (dvrk_utilities ${REQUIRED_CISST_LIBRARIES})
 
-  add_executable (dvrk_console_json src/dvrk_console_json.cpp)
+  add_executable (dvrk_system src/dvrk_system.cpp)
   target_link_libraries (
-    dvrk_console_json
+    dvrk_system
     ${sawRobotIO1394_LIBRARIES}
     ${sawControllers_LIBRARIES}
     ${sawIntuitiveResearchKit_LIBRARIES}
     ${catkin_LIBRARIES}
     )
-  cisst_target_link_libraries (dvrk_console_json ${REQUIRED_CISST_LIBRARIES})
-  target_link_libraries (dvrk_console_json dvrk_utilities)
+  cisst_target_link_libraries (dvrk_system ${REQUIRED_CISST_LIBRARIES})
+  target_link_libraries (dvrk_system dvrk_utilities)
 
-  install (TARGETS dvrk_utilities dvrk_pid_console dvrk_console_json
+  install (TARGETS dvrk_utilities dvrk_pid dvrk_system
     LIBRARY DESTINATION lib/${PROJECT_NAME}
     RUNTIME DESTINATION lib/${PROJECT_NAME}
     LIBRARY DESTINATION lib
@@ -141,7 +141,7 @@ if (cisst_FOUND_AS_REQUIRED)
       ${ROS2_depends}
       )
     ament_target_dependencies (
-      dvrk_pid_console
+      dvrk_pid
       ${ROS2_depends}
       )
     ament_package ()
