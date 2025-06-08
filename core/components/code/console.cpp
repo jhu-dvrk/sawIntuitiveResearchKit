@@ -175,7 +175,7 @@ void dvrk::console::create_components(void)
         m_system->configure_IO(m_config->IO_pedals);
     }
 
-    if (m_config->IO_head_sensor.IO != "") {
+    if (m_config->input_type == console_input_type::PEDALS_ISI_HEAD_SENSOR) {
         m_system->configure_IO(m_config->IO_head_sensor);
         m_head_sensor = new mtsDaVinciHeadSensor(m_operator_present_component_name);
         manager->AddComponent(m_head_sensor);
@@ -193,7 +193,13 @@ void dvrk::console::create_components(void)
                                     IO, "HeadSensor4");
     }
 
-    if (m_config->HID_file != "") {
+    if (m_config->input_type == console_input_type::PEDALS_DVRK_HEAD_SENSOR) {
+        m_system->configure_IO(m_config->IO_head_sensor);
+        m_operator_present_component_name = m_config->IO_head_sensor.IO;
+        m_operator_present_interface_name = "operator_present";
+    }
+
+    if (m_config->input_type == console_input_type::PEDALS_GOOVIS_HEAD_SENSOR) {
         CMN_LOG_INIT_VERBOSE << "console::create_component: configuring hid head sensor with \""
                              << m_config->HID_file << "\"" << std::endl;
         const std::string config_file = m_system->find_file(m_config->HID_file);

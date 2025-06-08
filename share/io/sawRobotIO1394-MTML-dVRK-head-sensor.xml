@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Config Version="5">
+  <!-- Digital Output Configuration -->
+  <DigitalIn BitID="3" BoardID="0" Debounce="0.05" Name="operator_present" Pressed="1" Trigger="all"/>
+</Config>
