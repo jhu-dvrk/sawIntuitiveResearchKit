@@ -74,14 +74,14 @@ class {
     }
 
     member {
-        name clutch_component;
+        name HID_file;
         type std::string;
         visibility public;
         default "";
     }
 
     member {
-        name HID_file;
+        name clutch_component;
         type std::string;
         visibility public;
         default "";

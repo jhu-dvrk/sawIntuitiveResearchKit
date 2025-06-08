@@ -23,6 +23,13 @@ class {
     }
 
     member {
+        name protocol;
+        type std::string;
+        visibility public;
+        default "broadcast-query-read-write";
+    }
+
+    member {
         name period;
         type double;
         visibility public;
@@ -37,10 +44,10 @@ class {
     }
 
     member {
-        name protocol;
-        type std::string;
+        name configuration_files;
+        type std::vector<std::string>;
         visibility public;
-        default "broadcast-query-read-write";
+        default std::vector<std::string>();
     }
 
     member {
@@ -48,12 +55,5 @@ class {
         type bool;
         visibility public;
         default true;
-    }
-
-    member {
-        name configuration_files;
-        type std::vector<std::string>;
-        visibility public;
-        default std::vector<std::string>();
     }
 }
