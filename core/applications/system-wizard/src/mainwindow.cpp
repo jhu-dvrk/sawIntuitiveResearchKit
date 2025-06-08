@@ -54,6 +54,11 @@ MainWindow::MainWindow() : directory_chooser(this, "Open config source folder") 
 
     model1.arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM), ArmConfigType::NATIVE));
     model1.arm_configs.addItem(ArmConfig("ECM", ArmType(ArmType::Value::ECM), ArmConfigType::NATIVE));
+    model1.arm_configs.addItem(ArmConfig("MTML", ArmType(ArmType::Value::MTM), ArmConfigType::NATIVE));
+
+    TeleopConfig teleop = TeleopConfig("PSM1-MTML", TeleopType(TeleopType::Value::PSM_TELEOP));
+    teleop.arms = { 0, 2 };
+    model1.teleop_configs.addItem(teleop);
 
     model2.arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM), ArmConfigType::NATIVE));
     model2.arm_configs.addItem(ArmConfig("MTMR", ArmType(ArmType::Value::MTM), ArmConfigType::NATIVE));

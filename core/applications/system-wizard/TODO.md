@@ -18,7 +18,7 @@
 
 - [x] Initial I/O config model
 - [x] Initial arm config model
-- [ ] Initial teleop config model
+- [x] Initial teleop config model
 - [ ] Initial console config model
 
 - [ ] Full I/O config model (port address, etc.)
@@ -31,7 +31,7 @@
 
 - [ ] Don't allow deleting parent items, e.g. `PSM1` if used in a `PSM1-MTMR` teleop
 - [ ] Propagate renamings to children
-- [ ] Don't allow duplicate ios/arms, multiple SUJ per i/o, etc.
+- [ ] Don't allow duplicate ios/arms, multiple SUJ per i/o, MTM used twice in ECM teleop, etc.
 - [ ] Warnings - missing SUJ
 - [ ] Hide already chosen items from e.g. arm source list
 
@@ -39,7 +39,7 @@
 
 - [x] Arm config item view
 - [x] I/O config item view
-- [ ] Teleop config item view
+- [x] Teleop config item view
 - [ ] Console config item view
 
 - [ ] Confirm delete
@@ -56,8 +56,10 @@
 ### Config item editors
 
 - [x] I/O editor
+- [ ] Footpedal/head sensor I/O
 - [x] Simple arm editor
 - [x] Available native arm list in editor
 - [ ] Extended arm editor (derived/generic/socket types)
-- [ ] Teleop editor
+- [x] Teleop editor
+- [ ] Derived teleop editor
 - [ ] Console editor

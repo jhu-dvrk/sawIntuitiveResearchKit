@@ -32,7 +32,7 @@ ArmSourceView::ArmSourceView(ListModelT<ConfigSources::Arm>& model, ListView& li
 void ArmSourceView::updateData(int id) {
     ConfigSources::Arm arm = model->get(id);
     QString description;
-    if (arm.type.is_suj()) {
+    if (arm.type.isSUJ()) {
         description = QString::fromStdString(arm.name + " (" + arm.type.name() + ")");
     } else {
         description = QString::fromStdString(arm.name + "-" + arm.serial_number);

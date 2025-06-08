@@ -25,6 +25,8 @@ http://www.cisst.org/cisst/license.txt.
 #include "io_editor.hpp"
 #include "io_view.hpp"
 #include "list_view.hpp"
+#include "teleop_editor.hpp"
+#include "teleop_view.hpp"
 
 namespace system_wizard {
 
@@ -37,11 +39,14 @@ public:
 private:
     SystemConfigModel* model;
 
+    IOEditor io_editor;
+    IOViewFactory io_factory;
+
     ArmEditor arm_editor;
     ArmViewFactory arm_factory;
 
-    IOEditor io_editor;
-    IOViewFactory io_factory;
+    TeleopEditor teleop_editor;
+    TeleopViewFactory teleop_factory;
 
     ListView* io_list;
     ListView* arm_list;
