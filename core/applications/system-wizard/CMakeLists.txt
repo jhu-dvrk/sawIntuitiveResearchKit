@@ -50,6 +50,8 @@ if (cisst_FOUND_AS_REQUIRED)
          include/list_model.hpp
          include/list_view.hpp
          include/mainwindow.hpp
+         include/teleop_editor.hpp
+         include/teleop_view.hpp
     )
 
     set (SOURCE_FILES
@@ -62,6 +64,8 @@ if (cisst_FOUND_AS_REQUIRED)
          src/io_view.cpp
          src/list_view.cpp
          src/mainwindow.cpp
+         src/teleop_editor.cpp
+         src/teleop_view.cpp
     )
 
     add_executable(sawIntuitiveResearchKitSystemWizard main.cpp ${HEADER_FILES} ${SOURCE_FILES})

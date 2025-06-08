@@ -184,7 +184,41 @@ public:
         }
     };
 
-    bool is_suj() const {
+    bool isPSM() const {
+        switch (value) {
+        case Value::PSM:
+        case Value::PSM_DERIVED:
+        case Value::PSM_GENERIC:
+        case Value::PSM_SOCKET:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    bool isECM() const {
+        switch (value) {
+        case Value::ECM:
+        case Value::ECM_DERIVED:
+        case Value::ECM_GENERIC:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    bool isMTM() const {
+        switch (value) {
+        case Value::MTM:
+        case Value::MTM_DERIVED:
+        case Value::MTM_GENERIC:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    bool isSUJ() const {
         switch (value) {
         case Value::SUJ_CLASSIC:
         case Value::SUJ_SI:
@@ -195,7 +229,6 @@ public:
         }
     }
 
-    
     friend constexpr bool operator==(const ArmType& lhs, const ArmType& rhs) {
         return lhs.value == rhs.value;
     }
@@ -319,6 +352,86 @@ private:
     Value value;
 };
 
+class TeleopType {
+public:
+    enum class Value {
+        PSM_TELEOP,
+        PSM_TELEOP_DERIVED,
+        ECM_TELEOP,
+        ECM_TELEOP_DERIVED
+    };
+
+    TeleopType(Value value) : value(value) {}
+
+    static int count() { return 4; }
+
+    int id() const { return static_cast<int>(value); }
+
+    std::string name() const {
+        switch (value) {
+        case Value::PSM_TELEOP:
+        case Value::PSM_TELEOP_DERIVED:
+            return "PSM Teleop";
+        case Value::ECM_TELEOP:
+        case Value::ECM_TELEOP_DERIVED:
+            return "Camera Teleop";
+        default:
+            return "UNKNOWN";
+        }
+    }
+
+    std::string acronym_expansion() const {
+        switch (value) {
+        case Value::PSM_TELEOP:
+        case Value::PSM_TELEOP_DERIVED:
+            return "Teleoperation for Patient Side Manipulator";
+        case Value::ECM_TELEOP:
+        case Value::ECM_TELEOP_DERIVED:
+            return "Teleoperation for Endoscopic Camera Manipulator";
+        default:
+            return "UNKNOWN";
+        }
+    }
+
+    std::string explain() const {
+        switch (value) {
+        case Value::PSM_TELEOP:
+        case Value::PSM_TELEOP_DERIVED:
+            return "Control a PSM via an MTM input device";
+        case Value::ECM_TELEOP:
+        case Value::ECM_TELEOP_DERIVED:
+            return "Control the endoscope camera using two MTM input devices";
+        default:
+            return "UNKNOWN";
+        }
+    };
+
+    std::string serialize() const {
+        switch (value) {
+        case Value::PSM_TELEOP:
+            return "PSM_TELEOP";
+        case Value::PSM_TELEOP_DERIVED:
+            return "PSM_TELEOP_DERIVED";
+        case Value::ECM_TELEOP:
+            return "ECM_TELEOP";
+        case Value::ECM_TELEOP_DERIVED:
+            return "ECM_TELEOP_DERIVED";
+        default:
+            return "UNKNOWN";
+        }
+    };
+
+    friend constexpr bool operator==(const TeleopType& lhs, const TeleopType& rhs) {
+        return lhs.value == rhs.value;
+    }
+    friend constexpr bool operator!=(const TeleopType& lhs, const TeleopType& rhs) {
+        return !(lhs == rhs);
+    }
+
+private:
+    Value value;
+};
+
 class IOConfig {
 public:
     IOConfig(std::string name)
@@ -354,7 +467,13 @@ public:
 };
 
 class TeleopConfig {
+public:
+    TeleopConfig(std::string name, TeleopType type) : name(name), type(type) { }
 
+    std::string name;
+    TeleopType type;
+
+    std::vector<int> arms;
 };
 
 class ConsoleConfig {

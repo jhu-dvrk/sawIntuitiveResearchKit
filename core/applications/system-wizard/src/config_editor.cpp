@@ -25,10 +25,12 @@ namespace system_wizard {
 ConfigEditor::ConfigEditor(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent)
     : QWidget(parent),
       model(&model),
+      io_editor(model, this),
+      io_factory(model),
       arm_editor(model, config_sources, this),
       arm_factory(model),
-      io_editor(model, this),
-      io_factory(model) {
+      teleop_editor(model, this),
+      teleop_factory(model) {
     QVBoxLayout* layout = new QVBoxLayout(this);
 
     QScrollArea* scroller = new QScrollArea();
@@ -50,6 +52,7 @@ ConfigEditor::ConfigEditor(SystemConfigModel& model, ConfigSources& config_sourc
 
     Accordion* arms = new Accordion("Arms", "LightSeaGreen", this);
     ListView* arm_list = new ListView(model.arm_configs, arm_factory, SelectionMode::NONE, true);
+    arm_list->setEmptyMessage("No arms configured yet");
     arms->setWidget(arm_list);
 
     QObject::connect(arm_list, &ListView::add, this, [this]() { arm_editor.setId(-1); arm_editor.open(); });
@@ -58,8 +61,14 @@ ConfigEditor::ConfigEditor(SystemConfigModel& model, ConfigSources& config_sourc
     QObject::connect(arm_list, &ListView::edit, this, [this](int id) { arm_editor.setId(id); arm_editor.open(); });
 
     Accordion* teleops = new Accordion("Teleops", "DodgerBlue", this);
-    ListView* teleop_list = new ListView(model.teleop_configs, arm_factory, SelectionMode::NONE, false);
+    ListView* teleop_list = new ListView(model.teleop_configs, teleop_factory, SelectionMode::NONE, true);
+    teleop_list->setEmptyMessage("No teleops added - teleoperation mode will not be available");
     teleops->setWidget(teleop_list);
+
+    QObject::connect(teleop_list, &ListView::add, this, [this]() { teleop_editor.setId(-1); teleop_editor.open(); });
+    QObject::connect(teleop_list, &ListView::try_delete, &model.teleop_configs, &ListModelT<TeleopConfig>::deleteItem);
+    QObject::connect(teleop_list, &ListView::choose, this, [this](int id) { teleop_editor.setId(id); teleop_editor.open(); });
+    QObject::connect(teleop_list, &ListView::edit, this, [this](int id) { teleop_editor.setId(id); teleop_editor.open(); });
 
     // QObject::connect(teleop_list, &ListView::add, &arm_editor, &ArmEditor::open);
 
