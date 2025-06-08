@@ -1,0 +1,81 @@
+SUJ-Clutch-1 = SUJ_clutch_1
+SUJ-Clutch-2 = SUJ_clutch_2
+SUJ-Clutch-3 = SUJ_clutch_3
+SUJ-Clutch-4 = SUJ_clutch_4
+
+MTML-Gripper = MTML_gripper
+MTMR-Gripper = MTMR_gripper
+
+PSM1-Adapter = PSM1_adapter
+PSM1-Tool = PSM1_tool
+PSM1-ManipClutch = PSM1_arm_clutch
+PSM1-SUJClutch = PSM1_SUJ_clutch
+PSM1-SUJClutch2 = PSM1_SUJ_clutch_2
+PSM1-SUJBrake = PSM1_SUJ_brake
+PSM1-Dallas = PSM1_dallas
+
+PSM2-Adapter = PSM2_adapter
+PSM2-Tool = PSM2_tool
+PSM2-ManipClutch = PSM2_arm_clutch
+PSM2-SUJClutch = PSM2_SUJ_clutch
+PSM2-SUJClutch2 = PSM2_SUJ_clutch_2
+PSM2-SUJBrake = PSM2_SUJ_brake
+PSM2-Dallas = PSM2_dallas
+
+PSM3-Adapter = PSM3_adapter
+PSM3-Tool = PSM3_tool
+PSM3-ManipClutch = PSM3_arm_clutch
+PSM3-SUJClutch = PSM3_SUJ_clutch
+PSM3-SUJClutch2 = PSM3_SUJ_clutch_2
+PSM3-SUJBrake = PSM3_SUJ_brake
+PSM3-Dallas = PSM3_dallas
+
+ECM-ManipClutch = ECM_arm_clutch
+ECM-SUJClutch = ECM_SUJ_clutch
+ECM-SUJClutch2 = ECM_SUJ_clutch_2
+ECM-SUJBrake = ECM_SUJ_brake
+
+PSM-teleops = teleop_PSMs
+serial-number = serial_number
+base-frame = base_frame
+reference-frame = reference_frame
+
+plug-number = plug_number
+brake-release-current = brake_release_current
+world-origin-to-suj = world_origin_to_SUJ
+suj-tip-to-tool-origin = SUJ_tip_to_tool_origin
+primary-offsets = primary_offsets
+secondary-offsets = secondary_offsets
+primary-scales = primary_scales
+secondary-scales = secondary_scales
+
+mounting-pitch = mounting_pitch
+custom-tool-index = custom_tool_index
+tool-detection = tool_detection
+gravity-compensation = gravity_compensation
+kinematic-gc = kinematic_gc
+re-home = re_home
+homing-zero-position = homing_zero_position
+platform-gain = platform_gain
+gripper-events-debounce = gripper_events_debounce
+gripper-events-zero = gripper_events_zero
+kinematic-type = kinematic_type
+ignore-jaw = ignore_jaw
+rotation-locked = rotation_locked
+translation-locked = translation_locked
+start-orientation-tolerance = start_orientation_tolerance
+start-gripper-threshold = start_gripper_threshold
+start-roll-threshold = start_roll_threshold
+align-mtm = align_mtm
+jaw-rate = jaw_rate
+jaw-rate-back-from-clutch = jaw_rate_back_from_clutch
+gripper-scaling = gripper_scaling
+use-mtm-velocity = use_mtm_velocity
+
+mtm = MTM
+mtml = MTML
+mtmr = MTMR
+psm = PSM
+mtm-left = MTML
+mtm-right = MTMR
+ecm = ECM

@@ -1,0 +1,267 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+inline-header {
+#include <sawIntuitiveResearchKit/arm_type.h>
+#include <sawIntuitiveResearchKit/simulation.h>
+#include <sawIntuitiveResearchKit/base_frame.h>}
+
+inline-code {
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
+}
+
+class {
+    name arm_proxy_configuration;
+    namespace dvrk;
+    attribute CISST_EXPORT;
+
+    member {
+        name name;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name type;
+        type dvrk::arm_type;
+        visibility public;
+    }
+
+    member {
+        name IO;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name serial;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name simulation;
+        type dvrk::simulation;
+        visibility public;
+        default dvrk::SIMULATION_NONE;
+    }
+
+    member {
+        name arm_file;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name PID_file;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name IO_file;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name IO_gripper_file;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name period;
+        type double;
+        visibility public;
+        default mtsIntuitiveResearchKit::ArmPeriod;
+    }
+
+    member {
+        name PID_period;
+        type double;
+        visibility public;
+        default 0.0;
+        description Period to use for the PID component, 0.0 is used to run the PID using the IO thread;
+    }
+
+    member {
+        name skip_ROS_bridge;
+        type bool;
+        visibility public;
+        default false;
+    }
+
+    member {
+        name component;
+        type std::string;
+        visibility public;
+        default "";
+        description Name of component to use for generic or derived classes;
+    }
+
+    member {
+        name interface;
+        type std::string;
+        visibility public;
+        default "";
+        description Name of interface to use for generic or derived classes;
+    }
+
+    member {
+        name base_frame;
+        type dvrk::base_frame;
+        visibility public;
+        default dvrk::base_frame();
+        description Base frame, defined as a reference frame name and fixed transformation or a component/interface;
+    }
+
+    inline-header {
+
+    public:
+
+        inline bool simulated(void) const {
+            return this->simulation != SIMULATION_NONE;
+        }
+
+        inline bool native(void) const {
+            switch (this->type) {
+	        case dvrk::arm_type::MTM:
+            case dvrk::arm_type::PSM:
+            case dvrk::arm_type::ECM:
+            case dvrk::arm_type::SUJ_Classic:
+            case dvrk::arm_type::SUJ_Si:
+            case dvrk::arm_type::SUJ_Fixed:
+            case dvrk::arm_type::FOCUS_CONTROLLER:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool derived(void) const {
+            switch (this->type) {
+            case dvrk::arm_type::MTM_DERIVED:
+            case dvrk::arm_type::PSM_DERIVED:
+            case dvrk::arm_type::ECM_DERIVED:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool generic(void) const {
+            switch (this->type) {
+            case dvrk::arm_type::MTM_GENERIC:
+            case dvrk::arm_type::PSM_GENERIC:
+            case dvrk::arm_type::ECM_GENERIC:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool native_or_derived(void) const {
+            return native() || derived();
+        }
+
+        inline bool generic_or_derived(void) const {
+            return generic() || derived();
+        }
+
+        inline bool PSM(void) const {
+            switch (this->type) {
+            case dvrk::arm_type::PSM:
+            case dvrk::arm_type::PSM_DERIVED:
+            case dvrk::arm_type::PSM_GENERIC:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool MTM(void) const {
+            switch (this->type) {
+            case dvrk::arm_type::MTM:
+            case dvrk::arm_type::MTM_DERIVED:
+            case dvrk::arm_type::MTM_GENERIC:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool ECM(void) const {
+            switch (this->type) {
+            case dvrk::arm_type::ECM:
+            case dvrk::arm_type::ECM_DERIVED:
+            case dvrk::arm_type::ECM_GENERIC:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool SUJ(void) const {
+            switch (this->type) {
+            case dvrk::arm_type::SUJ_Classic:
+            case dvrk::arm_type::SUJ_Si:
+            case dvrk::arm_type::SUJ_Fixed:
+                return true;
+                break;
+            default:
+                return false;
+                break;
+            }
+            return false;
+        }
+
+        inline bool native_or_derived_MTM(void) const {
+            return native_or_derived() && MTM();
+        }
+
+        inline bool native_or_derived_PSM(void) const {
+            return native_or_derived() && PSM();
+        }
+
+        inline bool native_or_derived_ECM(void) const {
+            return native_or_derived() && ECM();
+        }
+
+        inline bool expects_PID(void) const {
+            return (native_or_derived()
+                    && !SUJ());
+        }
+
+        inline bool expects_IO(void) const {
+            return (native_or_derived()
+                    && (this->type != dvrk::arm_type::SUJ_Si)
+                    && (this->type != dvrk::arm_type::SUJ_Fixed)
+                    && (this->simulation == SIMULATION_NONE));
+        }
+    }
+}

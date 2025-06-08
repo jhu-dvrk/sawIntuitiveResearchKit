@@ -82,39 +82,46 @@
         }
     ]
     ,
-    "teleop_PSMs":
+    "consoles":
     [
         {
-            "MTM": "MTMR",
-            "PSM": "PSM1",
-            "configure_parameter": {
-                "start_gripper_threshold": 0.0 // to start automatically when operator is present
-            }
-        }
-        ,
-        {
-            "MTM": "MTML",
-            "PSM": "PSM2",
-            "configure_parameter": {
-                "start_gripper_threshold": 0.0 // to start automatically when operator is present
-            }
-        }
-        ,
-        {
-            "MTM": "MTML",
-            "PSM": "PSM3",
-            "configure_parameter": {
-                "start_gripper_threshold": 0.0 // to start automatically when operator is present
-            }
-        }
-    ]
-    ,
-    "teleop_ECMs":
-    [
-        {
-            "MTML": "MTML",
-            "MTMR": "MTMR",
-            "ECM": "ECM"
+            "name": "console",
+            "input_type": "SIMULATED",
+            "teleop_PSMs":
+            [
+                {
+                    "MTM": "MTMR",
+                    "PSM": "PSM1",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                    }
+                }
+                ,
+                {
+                    "MTM": "MTML",
+                    "PSM": "PSM2",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                    }
+                }
+                ,
+                {
+                    "MTM": "MTML",
+                    "PSM": "PSM3",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                    }
+                }
+            ]
+            ,
+            "teleop_ECMs":
+            [
+                {
+                    "MTML": "MTML",
+                    "MTMR": "MTMR",
+                    "ECM": "ECM"
+                }
+            ]
         }
     ]
 }

@@ -120,36 +120,36 @@ void mtsIntuitiveResearchKitECM::set_simulated(void)
 {
     mtsIntuitiveResearchKitArm::set_simulated();
     // in simulation mode, we don't need clutch IO
-    RemoveInterfaceRequired("ManipClutch");
+    RemoveInterfaceRequired("arm_clutch");
     // for Si systems, remove a few more interfaces
-    if (m_generation == dvrk::generation_t::Si) {
-        RemoveInterfaceRequired("SUJClutch");
-        RemoveInterfaceRequired("SUJClutch2");
-        RemoveInterfaceRequired("SUJBrake");
+    if (m_generation == dvrk::generation::Si) {
+        RemoveInterfaceRequired("SUJ_clutch");
+        RemoveInterfaceRequired("SUJ_clutch_2");
+        RemoveInterfaceRequired("SUJ_brake");
     }
 }
 
-void mtsIntuitiveResearchKitECM::set_generation(const dvrk::generation_t generation)
+void mtsIntuitiveResearchKitECM::set_generation(const dvrk::generation generation)
 {
     mtsIntuitiveResearchKitArm::set_generation(generation);
     // for S/si, add SUJClutch interface
-    if ((generation == dvrk::generation_t::Si)
+    if ((generation == dvrk::generation::Si)
         && !m_simulated) {
-        auto interfaceRequired = AddInterfaceRequired("SUJClutch");
+        auto interfaceRequired = AddInterfaceRequired("SUJ_clutch");
         if (interfaceRequired) {
             interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitECM::EventHandlerSUJClutch, this, "Button");
         }
-        interfaceRequired = AddInterfaceRequired("SUJClutch2");
+        interfaceRequired = AddInterfaceRequired("SUJ_clutch_2");
         if (interfaceRequired) {
             interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitECM::EventHandlerSUJClutch, this, "Button");
         }
-        interfaceRequired = AddInterfaceRequired("SUJBrake");
+        interfaceRequired = AddInterfaceRequired("SUJ_brake");
         if (interfaceRequired) {
             interfaceRequired->AddFunction("SetValue", SUJClutch.Brake);
         }
     } else {
-        if (GetInterfaceProvided("SUJClutch")) {
-            RemoveInterfaceRequired("SUJClutch");
+        if (GetInterfaceProvided("SUJ_clutch")) {
+            RemoveInterfaceRequired("SUJ_clutch");
         }
     }
 }
@@ -177,7 +177,7 @@ void mtsIntuitiveResearchKitECM::PostConfigure(const Json::Value & jsonConfig,
 
     // ask to set pitch if not already defined
     if (m_mounting_pitch > std::numeric_limits<double>::max()) {
-        if (generation() == dvrk::generation_t::Classic) {
+        if (generation() == dvrk::generation::Classic) {
             m_mounting_pitch = -45.0 * cmnPI_180;
         } else {
             m_mounting_pitch = -70.0 * cmnPI_180;
@@ -199,12 +199,12 @@ void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
     const auto jsonPhysicalDH = jsonConfig["kinematic-gc"];
     if (!jsonPhysicalDH.isNull()) {
         physical_dh_name = jsonPhysicalDH.asString();
-    } else if (m_generation == dvrk::generation_t::Si) {
+    } else if (m_generation == dvrk::generation::Si) {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Si" << std::endl;
-        physical_dh_name = "kinematic/ecm-si-physical.json";
-    } else if (m_generation == dvrk::generation_t::Classic) {
+        physical_dh_name = "kinematic/ECM_Si_physical.json";
+    } else if (m_generation == dvrk::generation::Classic) {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, using default for ECM Classic" << std::endl;
-        physical_dh_name = "kinematic/ecm.json";
+        physical_dh_name = "kinematic/ECM.json";
     } else {
         CMN_LOG_CLASS_INIT_VERBOSE << "Configure" << GetName() << ": no GC kinematics specified, so gravity compensation is not available" << std::endl;
         return;
@@ -307,14 +307,14 @@ void mtsIntuitiveResearchKitECM::Init(void)
 
     // Main interface should have been created by base class init
     CMN_ASSERT(m_arm_interface);
-    m_arm_interface->AddEventWrite(ClutchEvents.ManipClutch, "ManipClutch", prmEventButton());
+    m_arm_interface->AddEventWrite(ClutchEvents.ManipClutch, "arm_clutch", prmEventButton());
 
     // endoscope commands and events
     m_arm_interface->AddCommandWrite(&mtsIntuitiveResearchKitECM::set_endoscope_type, this, "set_endoscope_type");
     m_arm_interface->AddEventWrite(EndoscopeEvents.endoscope_type, "endoscope_type", std::string());
 
     // ManipClutch: digital input button event from ECM
-    interfaceRequired = AddInterfaceRequired("ManipClutch");
+    interfaceRequired = AddInterfaceRequired("arm_clutch");
     if (interfaceRequired) {
         interfaceRequired->AddEventHandlerWrite(&mtsIntuitiveResearchKitECM::EventHandlerManipClutch, this, "Button");
     }

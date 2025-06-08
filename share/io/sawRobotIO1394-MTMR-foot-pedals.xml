@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Config Version="5">
-   <DigitalIn BitID="3" BoardID="2" Debounce="0.05" Name="Head" Pressed="1" Trigger="all" />
-   <DigitalIn BitID="0" BoardID="3" Debounce="0.20" Name="Clutch" Pressed="1" Trigger="all" />
-   <DigitalIn BitID="1" BoardID="3" Debounce="0.05" Name="Cam-" Pressed="1" Trigger="all" />
-   <DigitalIn BitID="2" BoardID="3" Debounce="0.05" Name="Cam+" Pressed="1" Trigger="all" />
-   <DigitalIn BitID="3" BoardID="3" Debounce="0.20" Name="Coag" Pressed="1" Trigger="all" />
-   <DigitalIn BitID="4" BoardID="3" Debounce="0.20" Name="Camera" Pressed="1" Trigger="all" />
-   <DigitalIn BitID="5" BoardID="3" Debounce="0.20" Name="BiCoag" Pressed="1" Trigger="all"/>
+   <DigitalIn BitID="3" BoardID="2" Debounce="0.05" Name="dvrk_head_sensor" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="0" BoardID="3" Debounce="0.20" Name="clutch" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="1" BoardID="3" Debounce="0.05" Name="focus_minus" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="2" BoardID="3" Debounce="0.05" Name="focus_plus" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="3" BoardID="3" Debounce="0.20" Name="coag" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="4" BoardID="3" Debounce="0.20" Name="camera" Pressed="1" Trigger="all" />
+   <DigitalIn BitID="5" BoardID="3" Debounce="0.20" Name="bicoag" Pressed="1" Trigger="all"/>
 </Config>

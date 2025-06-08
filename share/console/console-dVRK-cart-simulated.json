@@ -7,8 +7,8 @@
             "type": "PSM",
             "simulation": "KINEMATIC",
             "arm": "arm/PSM_KIN_SIMULATED_MANUAL.json",
-            "base-frame": {
-                "reference-frame": "ECM",
+            "base_frame": {
+                "reference_frame": "ECM",
                 "transform": [[  1.0,  0.0,          0.0,         -0.20],
                               [  0.0, -0.866025404,  0.5,          0.0 ],
                               [  0.0, -0.5,         -0.866025404,  0.0 ],
@@ -22,8 +22,8 @@
             "type": "PSM",
             "simulation": "KINEMATIC",
             "arm": "arm/PSM_KIN_SIMULATED_MANUAL.json",
-            "base-frame": {
-                "reference-frame": "ECM",
+            "base_frame": {
+                "reference_frame": "ECM",
                 "transform": [[  1.0,  0.0,          0.0,          0.20],
                               [  0.0, -0.866025404,  0.5,          0.0 ],
                               [  0.0, -0.5,         -0.866025404,  0.0 ],

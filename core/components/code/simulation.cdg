@@ -1,0 +1,21 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+enum {
+    name simulation;
+    namespace dvrk;
+    prefix SIMULATION_;
+    enum-value {
+        name NONE;
+        description Not simulated;
+        value 0;
+    }
+    enum-value {
+        name KINEMATIC;
+        description Kinematic simulation (RViz);
+    }
+    enum-value {
+        name DYNAMIC;
+        description Dynamic simulation (AMBF, Gazebo...);
+    }
+}

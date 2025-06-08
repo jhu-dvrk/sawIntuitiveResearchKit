@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet, Nicole Ortega
   Created on: 2016-01-21
 
-  (C) Copyright 2016-2021 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -89,7 +89,6 @@ void mtsTeleOperationECM::Init(void)
                                        &mtsTeleOperationECM::TransitionEnabled,
                                        this);
 
-    m_scale = 0.2;
     m_clutched = false;
 
     StateTable.AddData(mMTML.m_measured_cp, "MTML/measured_cp");
@@ -99,7 +98,7 @@ void mtsTeleOperationECM::Init(void)
     mConfigurationStateTable = new mtsStateTable(100, "Configuration");
     mConfigurationStateTable->SetAutomaticAdvance(false);
     AddStateTable(mConfigurationStateTable);
-    mConfigurationStateTable->AddData(m_scale, "scale");
+    mConfigurationStateTable->AddData(m_config.scale, "scale");
 
     mtsInterfaceRequired * interfaceRequired = AddInterfaceRequired("MTML");
     if (interfaceRequired) {
@@ -119,7 +118,7 @@ void mtsTeleOperationECM::Init(void)
                                        mMTML.operating_state);
         interfaceRequired->AddFunction("state_command",
                                        mMTML.state_command);
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::MTMLErrorEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::arm_error_event_handler,
                                                 this, "error");
     }
 
@@ -137,7 +136,7 @@ void mtsTeleOperationECM::Init(void)
                                        mMTMR.body_set_cf_orientation_absolute);
         interfaceRequired->AddFunction("use_gravity_compensation",
                                        mMTMR.use_gravity_compensation);
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::MTMRErrorEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::arm_error_event_handler,
                                                 this, "error");
         interfaceRequired->AddFunction("operating_state",
                                        mMTMR.operating_state);
@@ -158,14 +157,14 @@ void mtsTeleOperationECM::Init(void)
                                        mECM.operating_state);
         interfaceRequired->AddFunction("state_command",
                                        mECM.state_command);
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::ECMErrorEventHandler,
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::arm_error_event_handler,
                                                 this, "error");
     }
 
     // footpedal events
-    interfaceRequired = AddInterfaceRequired("Clutch");
+    interfaceRequired = AddInterfaceRequired("clutch");
     if (interfaceRequired) {
-        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::ClutchEventHandler, this, "Button");
+        interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationECM::clutch_event_handler, this, "Button");
     }
 
     mInterface = AddInterfaceProvided("Setting");
@@ -180,7 +179,7 @@ void mtsTeleOperationECM::Init(void)
         mInterface->AddCommandWrite(&mtsTeleOperationECM::set_scale, this,
                                     "set_scale", 0.5);
         mInterface->AddCommandReadState(*mConfigurationStateTable,
-                                        m_scale,
+                                        m_config.scale,
                                         "scale");
         mInterface->AddCommandReadState(StateTable,
                                         mMTML.m_measured_cp,
@@ -236,26 +235,29 @@ void mtsTeleOperationECM::Configure(const std::string & filename)
     mtsTeleOperationECM::Configure(jsonConfig);
 }
 
-void mtsTeleOperationECM::Configure(const Json::Value & jsonConfig)
+
+void mtsTeleOperationECM::Configure(const Json::Value & _json_config)
 {
-    Json::Value jsonValue;
-
-    // base component configuration
-    mtsComponent::ConfigureJSON(jsonConfig);
-
-    // read scale if present
-    jsonValue = jsonConfig["scale"];
-    if (!jsonValue.empty()) {
-        m_scale = jsonValue.asDouble();
+    cmnDataDeSerializeTextJSON(m_config, _json_config);
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configure, loaded:" << std::endl
+                               << "------>" << std::endl
+                               << cmnDataSerializeTextJSON(m_config) << std::endl
+                               << "<------" << std::endl;
+    if (m_config.scale <= 0.0) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
+                                 << ": \"scale\" must be a strictly positive number" << std::endl;
+        exit(EXIT_FAILURE);
     }
 }
+
 
 void mtsTeleOperationECM::Startup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
-    set_scale(m_scale);
+    set_scale(m_config.scale);
     set_following(false);
 }
+
 
 void mtsTeleOperationECM::Run(void)
 {
@@ -266,10 +268,12 @@ void mtsTeleOperationECM::Run(void)
     mTeleopState.Run();
 }
 
+
 void mtsTeleOperationECM::Cleanup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Cleanup" << std::endl;
 }
+
 
 void mtsTeleOperationECM::StateChanged(void)
 {
@@ -277,6 +281,7 @@ void mtsTeleOperationECM::StateChanged(void)
     MessageEvents.current_state(newState);
     mInterface->SendStatus(this->GetName() + ": current state is " + newState);
 }
+
 
 void mtsTeleOperationECM::RunAllStates(void)
 {
@@ -364,12 +369,14 @@ void mtsTeleOperationECM::RunAllStates(void)
     }
 }
 
+
 void mtsTeleOperationECM::TransitionDisabled(void)
 {
     if (mTeleopState.DesiredState() == "ENABLED") {
         mTeleopState.SetCurrentState("SETTING_ARMS_STATE");
     }
 }
+
 
 void mtsTeleOperationECM::EnterSettingArmsState(void)
 {
@@ -402,6 +409,7 @@ void mtsTeleOperationECM::EnterSettingArmsState(void)
         mMTMR.state_command(std::string("home"));
     }
 }
+
 
 void mtsTeleOperationECM::TransitionSettingArmsState(void)
 {
@@ -615,7 +623,7 @@ void mtsTeleOperationECM::RunEnabled(void)
     }
 
     // - Direction 2 - in/out
-    changeDir[2] = m_scale * (mInitial.C.Norm() - c.Norm());
+    changeDir[2] = m_config.scale * (mInitial.C.Norm() - c.Norm());
 
     // - Direction 3 - cc/ccw, movement in the XY plane
     vct3 cw(up[0], up[1], 0);
@@ -680,25 +688,13 @@ void mtsTeleOperationECM::set_following(const bool following)
     m_following = following;
 }
 
-void mtsTeleOperationECM::MTMLErrorEventHandler(const mtsMessage & message)
+void mtsTeleOperationECM::arm_error_event_handler(const mtsMessage & message)
 {
     mTeleopState.SetDesiredState("DISABLED");
-    mInterface->SendError(this->GetName() + ": received from MTML [" + message.Message + "]");
+    mInterface->SendError(this->GetName() + ": received from arm [" + message.Message + "]");
 }
 
-void mtsTeleOperationECM::MTMRErrorEventHandler(const mtsMessage & message)
-{
-    mTeleopState.SetDesiredState("DISABLED");
-    mInterface->SendError(this->GetName() + ": received from MTMR [" + message.Message + "]");
-}
-
-void mtsTeleOperationECM::ECMErrorEventHandler(const mtsMessage & message)
-{
-    mTeleopState.SetDesiredState("DISABLED");
-    mInterface->SendError(this->GetName() + ": received from ECM [" + message.Message + "]");
-}
-
-void mtsTeleOperationECM::ClutchEventHandler(const prmEventButton & button)
+void mtsTeleOperationECM::clutch_event_handler(const prmEventButton & button)
 {
     switch (button.Type()) {
     case prmEventButton::PRESSED:
@@ -779,7 +775,7 @@ void mtsTeleOperationECM::SetDesiredState(const std::string & state)
 void mtsTeleOperationECM::set_scale(const double & scale)
 {
     mConfigurationStateTable->Start();
-    m_scale = scale;
+    m_config.scale = scale;
     mConfigurationStateTable->Advance();
-    ConfigurationEvents.scale(m_scale);
+    ConfigurationEvents.scale(m_config.scale);
 }

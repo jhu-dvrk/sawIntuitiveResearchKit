@@ -51,13 +51,13 @@
                     }
                 ]
             },
-            "world-origin-to-suj": {
+            "world_origin_to_SUJ": {
                 "Translation": [0.0 , 0.1262, 0.0],
                 "Rotation" : [[ 0.0, -1.0,  0.0],
                               [ 1.0,  0.0,  0.0],
                               [ 0.0,  0.0,  1.0]]
             },
-            "suj-tip-to-tool-origin": {
+            "SUJ_tip_to_tool_origin": {
                 "Translation": [0.8343, 0.0, 0.0],
                 "Rotation" : [[ 0.0,  1.0,  0.0],
                               [-1.0,  0.0,  0.0],
@@ -114,13 +114,13 @@
                     }
                 ]
             },
-            "world-origin-to-suj": {
+            "world_origin_to_SUJ": {
                 "Translation": [-0.2019 , -0.0757, 0.0],
                 "Rotation" : [[-1.0,  0.0,  0.0],
                               [ 0.0, -1.0,  0.0],
                               [ 0.0,  0.0,  1.0]]
             },
-            "suj-tip-to-tool-origin": {
+            "SUJ_tip_to_tool_origin": {
                 "Translation": [0.8343, 0.0, 0.0],
                 "Rotation" : [[ 0.0,  1.0,  0.0],
                               [-1.0,  0.0,  0.0],
@@ -177,13 +177,13 @@
                     }
                 ]
             },
-            "world-origin-to-suj": {
+            "world_origin_to_SUJ": {
                 "Translation": [0.2019 , -0.0757, 0.0],
                 "Rotation" : [[ 1.0,  0.0,  0.0],
                               [ 0.0,  1.0,  0.0],
                               [ 0.0,  0.0,  1.0]]
             },
-            "suj-tip-to-tool-origin": {
+            "SUJ_tip_to_tool_origin": {
                 "Translation": [0.8343, 0.0, 0.0],
                 "Rotation" : [[ 0.0,  1.0,  0.0],
                               [-1.0,  0.0,  0.0],
@@ -247,13 +247,13 @@
                     }
                 ]
             },
-            "world-origin-to-suj": {
+            "world_origin_to_SUJ": {
                 "Translation": [0.0 , -0.2776, 0.0],
                 "Rotation" : [[ 0.0,  1.0,  0.0],
                               [-1.0,  0.0,  0.0],
                               [ 0.0,  0.0,  1.0]]
             },
-            "suj-tip-to-tool-origin": {
+            "SUJ_tip_to_tool_origin": {
                 "Translation": [0.8343, 0.0, 0.0],
                 "Rotation" : [[ 0.0,  1.0,  0.0],
                               [-1.0,  0.0,  0.0],
