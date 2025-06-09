@@ -15,9 +15,6 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "mainwindow.hpp"
 
-#include "config_editor.hpp"
-#include "config_model.hpp"
-
 #include <QtWidgets>
 #include <QFileDialog>
 #include <QLabel>
@@ -31,12 +28,7 @@ MainWindow::MainWindow() : directory_chooser(this, "Open config source folder") 
 
     config_sources = new ConfigSources();
 
-    ConfigEditor* editor1 = new ConfigEditor(model1, *config_sources);
-    ConfigEditor* editor2 = new ConfigEditor(model2, *config_sources);
-
-    QTabWidget* editor = new QTabWidget();
-    editor->addTab(editor1, "Editor 1");
-    editor->addTab(editor2, "Editor 2");
+    editor = new Editor(*config_sources);
 
     QSplitter *splitter = new QSplitter();
     splitter->addWidget(config_sources);
@@ -51,31 +43,48 @@ MainWindow::MainWindow() : directory_chooser(this, "Open config source folder") 
     createMenus();
 
     setWindowTitle("dVRK System Wizard");
-
-    model1.arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM), ArmConfigType::NATIVE));
-    model1.arm_configs.addItem(ArmConfig("ECM", ArmType(ArmType::Value::ECM), ArmConfigType::NATIVE));
-    model1.arm_configs.addItem(ArmConfig("MTML", ArmType(ArmType::Value::MTM), ArmConfigType::NATIVE));
-
-    TeleopConfig teleop = TeleopConfig("PSM1-MTML", TeleopType(TeleopType::Value::PSM_TELEOP));
-    teleop.arms = { 0, 2 };
-    model1.teleop_configs.addItem(teleop);
-
-    model2.arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM), ArmConfigType::NATIVE));
-    model2.arm_configs.addItem(ArmConfig("MTMR", ArmType(ArmType::Value::MTM), ArmConfigType::NATIVE));
 }
 
 void MainWindow::createActions() {
-    open_act = new QAction(style()->standardIcon(QStyle::SP_DirOpenIcon),
-                         "&Open source", this);
-    open_act->setShortcuts(QKeySequence::Open);
-    open_act->setStatusTip("Open config source directory");
-    connect(open_act, &QAction::triggered, this, &MainWindow::open_folder);
+    open_source = new QAction(style()->standardIcon(QStyle::SP_DirOpenIcon),
+                         "Open source folder", this);
+    open_source->setShortcuts({QKeySequence(Qt::CTRL | Qt::Key_K, Qt::CTRL | Qt::Key_O)});
+    open_source->setStatusTip("Open config source directory");
+    connect(open_source, &QAction::triggered, this, &MainWindow::open_folder);
     connect(&directory_chooser, &QDialog::accepted, this, &MainWindow::folder_chosen);
+    
+    new_config = new QAction(style()->standardIcon(QStyle::SP_FileIcon),
+                         "Open config file", this);
+    new_config->setShortcuts(QKeySequence::New);
+    new_config->setStatusTip("New config file");
+    connect(new_config, &QAction::triggered, editor, &Editor::newConfig);
+
+    open_config = new QAction(style()->standardIcon(QStyle::SP_FileIcon),
+                         "Open config file", this);
+    open_config->setShortcuts(QKeySequence::Open);
+    open_config->setStatusTip("Open config file");
+    connect(open_config, &QAction::triggered, editor, &Editor::openConfig);
+
+    save_config = new QAction(style()->standardIcon(QStyle::SP_DriveFDIcon),
+                         "Save config file", this);
+    save_config->setShortcuts(QKeySequence::Save);
+    save_config->setStatusTip("Save config file");
+    connect(save_config, &QAction::triggered, editor, &Editor::save);
+
+    save_config_as = new QAction(style()->standardIcon(QStyle::SP_DriveFDIcon),
+                         "Save as", this);
+    save_config_as->setShortcuts(QKeySequence::SaveAs);
+    save_config_as->setStatusTip("Save as");
+    connect(save_config_as, &QAction::triggered, editor, &Editor::saveAs);
 }
 
 void MainWindow::createMenus() {
     file_menu = menuBar()->addMenu("&File");
-    file_menu->addAction(open_act);
+    file_menu->addAction(open_source);
+    file_menu->addAction(new_config);
+    file_menu->addAction(open_config);
+    file_menu->addAction(save_config);
+    file_menu->addAction(save_config_as);
 }
 
 void MainWindow::open_folder() {

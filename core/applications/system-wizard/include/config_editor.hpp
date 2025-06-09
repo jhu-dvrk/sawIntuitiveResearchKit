@@ -18,6 +18,11 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QtWidgets>
 
+// weird Qt bug, apparently <filesystem> must be included *after* Qt headers
+// see https://bugreports.qt.io/browse/QTBUG-73263
+#include <filesystem>
+#include <optional>
+
 #include "arm_editor.hpp"
 #include "arm_view.hpp"
 #include "config_model.hpp"
@@ -34,10 +39,29 @@ class ConfigEditor : public QWidget {
     Q_OBJECT
 
 public:
-    ConfigEditor(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent = nullptr);
+    ConfigEditor(std::unique_ptr<SystemConfigModel> config_model, ConfigSources& config_sources, QWidget* parent = nullptr);
+    static std::unique_ptr<ConfigEditor> open(std::filesystem::path config_file, ConfigSources& sources);
+
+    std::optional<std::filesystem::path> savePath() const { return save_path; }
+    bool changesSaved() const { return changes_saved; }
+
+public slots:
+    void save();
+    void saveAs();
+    bool close();
+
+signals:
+    void savePathChanged(QString path);
+    void saveStateChanged(bool changes_saved);
 
 private:
-    SystemConfigModel* model;
+    void setSavePath(std::filesystem::path path);
+
+    std::unique_ptr<SystemConfigModel> model;
+    bool changes_saved;
+    std::optional<std::filesystem::path> save_path;
+
+    QLabel* path_display;
 
     IOEditor io_editor;
     IOViewFactory io_factory;

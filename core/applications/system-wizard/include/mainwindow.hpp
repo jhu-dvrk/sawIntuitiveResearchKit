@@ -19,8 +19,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <QMainWindow>
 #include <QMenu>
 
-#include "config_model.hpp"
 #include "config_sources.hpp"
+#include "editor.hpp"
 
 namespace system_wizard {
 
@@ -40,12 +40,15 @@ private:
 
     QFileDialog directory_chooser;
 
-    SystemConfigModel model1;
-    SystemConfigModel model2;
+    Editor* editor;
     ConfigSources* config_sources;
 
     QMenu* file_menu;
-    QAction* open_act;
+    QAction* open_source;
+    QAction* new_config;
+    QAction* open_config;
+    QAction* save_config;
+    QAction* save_config_as;
 };
 
 }

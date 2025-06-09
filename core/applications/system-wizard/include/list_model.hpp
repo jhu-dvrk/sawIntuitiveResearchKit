@@ -45,6 +45,13 @@ class ListModel : public QObject {
     Q_OBJECT
 
 public:
+    ListModel() : QObject() {
+        QObject::connect(this, &ListModel::itemAdded,   this, &ListModel::updated);
+        QObject::connect(this, &ListModel::itemUpdated, this, &ListModel::updated);
+        QObject::connect(this, &ListModel::itemDeleted, this, &ListModel::updated);
+        QObject::connect(this, &ListModel::reset,       this, &ListModel::updated);
+    }
+
     virtual bool canDeleteItem(int CMN_UNUSED(index)) const {
         return true;
     }
@@ -55,8 +62,9 @@ signals:
     void itemAdded(int index);
     void itemUpdated(int index);
     void itemDeleted(int index);
-
     void reset();
+
+    void updated();
 };
 
 template<typename T>

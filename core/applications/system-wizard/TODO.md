@@ -21,6 +21,8 @@
 - [x] Initial teleop config model
 - [ ] Initial console config model
 
+- [ ] (De)Serialization
+
 - [ ] Full I/O config model (port address, etc.)
 - [ ] Full arm config model
 - [ ] Full teleop config model
@@ -46,11 +48,11 @@
 
 ### General editor
 
-- [ ] File name display
-- [ ] New config button
-- [ ] Open config
-- [ ] Save config
-- [ ] Dirty/clean save state marker
+- [x] File name display
+- [x] New config button
+- [x] Open config
+- [x] Save config
+- [x] Dirty/clean save state marker
 - [ ] Intro view when no config is open
 
 ### Config item editors
