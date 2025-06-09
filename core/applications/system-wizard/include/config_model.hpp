@@ -18,12 +18,14 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "list_model.hpp"
 
+#include <QtCore>
+
+#include <filesystem>
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
-
-#include <QtCore>
 
 namespace system_wizard {
 
@@ -482,6 +484,34 @@ class ConsoleConfig {
 
 class SystemConfigModel : public QObject {
     Q_OBJECT
+
+public:
+    SystemConfigModel() : QObject() {
+        QObject::connect(&io_configs,      &ListModelT<IOConfig>::updated,      this, &SystemConfigModel::updated);
+        QObject::connect(&arm_configs,     &ListModelT<ArmConfig>::updated,     this, &SystemConfigModel::updated);
+        QObject::connect(&teleop_configs,  &ListModelT<TeleopConfig>::updated,  this, &SystemConfigModel::updated);
+        QObject::connect(&console_configs, &ListModelT<ConsoleConfig>::updated, this, &SystemConfigModel::updated);
+    }
+
+    // TODO: (de)serialization
+    static std::unique_ptr<SystemConfigModel> load(std::filesystem::path config_file) {
+        auto model = std::make_unique<SystemConfigModel>();
+
+        // dummy data
+        model->arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM), ArmConfigType::NATIVE));
+        model->arm_configs.addItem(ArmConfig("ECM", ArmType(ArmType::Value::ECM), ArmConfigType::NATIVE));
+        model->arm_configs.addItem(ArmConfig("MTML", ArmType(ArmType::Value::MTM), ArmConfigType::NATIVE));
+
+        TeleopConfig teleop = TeleopConfig("PSM1-MTML", TeleopType(TeleopType::Value::PSM_TELEOP));
+        teleop.arms = { 0, 2 };
+        model->teleop_configs.addItem(teleop);
+
+        return model;
+    }
+
+    bool save(std::filesystem::path config_file) const {
+        return true;
+    }
 
 signals:
     void updated();

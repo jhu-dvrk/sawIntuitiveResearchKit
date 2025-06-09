@@ -44,6 +44,7 @@ if (cisst_FOUND_AS_REQUIRED)
          include/config_editor.hpp
          include/config_model.hpp
          include/config_sources.hpp
+         include/editor.hpp
          include/enum_list_model.hpp
          include/io_editor.hpp
          include/io_view.hpp
@@ -60,6 +61,7 @@ if (cisst_FOUND_AS_REQUIRED)
          src/arm_view.cpp
          src/config_editor.cpp
          src/config_sources.cpp
+         src/editor.cpp
          src/io_editor.cpp
          src/io_view.cpp
          src/list_view.cpp

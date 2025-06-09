@@ -1,0 +1,122 @@
+/*
+  Author(s):  Brendan Burkhart
+  Created on: 2025-06-08
+
+  (C) Copyright 2025 Johns Hopkins University (JHU), All Rights Reserved.
+
+--- begin cisst license - do not edit ---
+
+This software is provided "as is" under an open source license, with
+no warranty.  The complete license can be found in license.txt and
+http://www.cisst.org/cisst/license.txt.
+
+--- end cisst license ---
+*/
+
+#include "editor.hpp"
+
+#include "config_editor.hpp"
+
+namespace system_wizard {
+
+Editor::Editor(ConfigSources& config_sources, QWidget* parent)
+    : QStackedWidget(parent),
+      file_dialog(this, "Open config file"),
+      config_sources(&config_sources) {
+    file_dialog.setViewMode(QFileDialog::List);
+    file_dialog.setOptions(QFileDialog::DontResolveSymlinks);
+
+    tabs = new QTabWidget();
+    tabs->setMovable(true);
+    tabs->setTabsClosable(true);
+
+    this->addWidget(tabs);
+
+    QToolButton *add_config_button = new QToolButton();
+    add_config_button->setText("+");
+    // Add empty, not enabled dummy tab
+    tabs->addTab(new QLabel("Add tabs by pressing \"+\""), QString());
+    tabs->setTabEnabled(0, false);
+    // Add tab button to dummy tab
+    tabs->tabBar()->setTabButton(0, QTabBar::RightSide, add_config_button);
+
+    QObject::connect(add_config_button, &QToolButton::clicked, this, &Editor::newConfig);
+
+    close_config_shortcut = new QShortcut(QKeySequence(QKeySequence::Close), this);
+    QObject::connect(close_config_shortcut, &QShortcut::activated, this, [this](){ closeConfig(tabs->currentIndex()); });
+    QObject::connect(tabs->tabBar(), &QTabBar::tabCloseRequested, this, [this](int index){ closeConfig(index); });
+
+    newConfig();
+}
+
+void Editor::newConfig() {
+    std::unique_ptr<SystemConfigModel> model = std::make_unique<SystemConfigModel>();
+    std::unique_ptr<ConfigEditor> editor = std::make_unique<ConfigEditor>(std::move(model), *config_sources);
+    createTab(std::move(editor));
+}
+
+void Editor::openConfig() {
+    QString file_name = QFileDialog::getOpenFileName();
+    if (file_name.isEmpty()) {
+        return;
+    }
+
+    std::filesystem::path file_path(file_name.toStdString());
+    std::unique_ptr<ConfigEditor> editor = ConfigEditor::open(file_path, *config_sources);
+    createTab(std::move(editor));
+}
+
+void Editor::save() {
+    if (tabs->currentIndex() <= 0) {
+        return;
+    }
+
+    ConfigEditor* editor = qobject_cast<ConfigEditor*>(tabs->currentWidget());
+    editor->save();
+}
+
+void Editor::saveAs() {
+    if (tabs->currentIndex() <= 0) {
+        return;
+    }
+
+    ConfigEditor* editor = qobject_cast<ConfigEditor*>(tabs->currentWidget());
+    editor->saveAs();
+}
+
+void Editor::closeConfig(int index) {
+    if (index <= 0) {
+        return;
+    }
+
+    ConfigEditor* editor = qobject_cast<ConfigEditor*>(tabs->widget(index));
+    bool ok_to_close = editor->close();
+    if (ok_to_close) {
+        tabs->removeTab(index);
+        delete editor;
+    }
+}
+
+void Editor::createTab(std::unique_ptr<ConfigEditor> config_editor) {
+    ConfigEditor* ptr = config_editor.get(); // save non-owning pointer
+    tabs->addTab(config_editor.release(), ""); // transfer ownership to Qt GUI tree
+
+    auto update_tab_title = [this, ptr]() {
+        std::optional<std::filesystem::path> path = ptr->savePath();
+        std::string filename = path ? path->filename().string() : "Untitled config";
+        bool unsaved_changes = !ptr->changesSaved();
+        std::string label = unsaved_changes ? filename + "*" : filename;
+
+        // get tab index in case it has changed (earlier tab closed or tabs re-arranged)
+        int index = tabs->indexOf(ptr);
+        tabs->setTabText(index, QString::fromStdString(label));
+    };
+
+    QObject::connect(ptr, &ConfigEditor::savePathChanged, this, update_tab_title);
+    QObject::connect(ptr, &ConfigEditor::saveStateChanged, this, update_tab_title);
+
+    update_tab_title();
+    tabs->setCurrentIndex(tabs->count() - 1);
+}
+
+}

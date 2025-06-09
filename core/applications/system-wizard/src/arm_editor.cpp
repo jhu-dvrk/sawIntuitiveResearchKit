@@ -64,14 +64,14 @@ QuickArmPage::QuickArmPage(ArmConfig& config, ConfigSources& config_sources, QWi
         *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
         this->config->serial_number = source.serial_number;
         this->config->interface_name = "Arm";
-        
+
         next_page_id = -1;
         this->wizard()->accept();
     });
     QObject::connect(arm_list_view, &ListView::selected, this, [this, &model=config_sources.getModel()](int index, bool selected){
         if (selected) {
             next_page_id = -1;
-            
+
             ConfigSources::Arm source = model.get(index);
             *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
             this->config->serial_number = source.serial_number;
@@ -152,8 +152,8 @@ ArmTypePage::ArmTypePage(ArmConfig& config, QWidget *parent) : QWizardPage(paren
     haptic_input->setAutoFillBackground(true);
     layout->addWidget(haptic_input);
     layout->addSpacing(10);
-    layout->addWidget(new QLabel("If you want to use a remote or simulated arm, such as:"));
-    QPushButton* via_ros = new QPushButton("Client arm for remote/simulated PSM/MTM via ROS topics");
+    layout->addWidget(new QLabel("If you want to add a remote or simulated PSM/MTM arm available via ROS:"));
+    QPushButton* via_ros = new QPushButton("Client arm for remote/simulated ROS arm");
     QObject::connect(via_ros, &QPushButton::clicked, this, [this]() {
         this->config->config_type = ArmConfigType::ROS_ARM;
         this->next_page_id = ArmEditor::PAGE_ROS_ARM;
@@ -263,6 +263,7 @@ void HapticMTMPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
     if (config->config_type != ArmConfigType::HAPTIC_MTM) {
         *config = ArmConfig("MTM", ArmType::Value::MTM_GENERIC, ArmConfigType::HAPTIC_MTM);
     } else {
+        config->type = ArmType::Value::MTM_GENERIC;
         if (config->haptic_device) {
             haptic_device_selector->setCurrentIndex(config->haptic_device.value());
         }
