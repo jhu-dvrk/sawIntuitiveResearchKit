@@ -75,14 +75,6 @@ namespace dvrk {
         // main interface for ROS and Qt
         mtsInterfaceProvided * m_interface_provided;
 
-        // interfaces to use to receive events
-        std::string m_clutch_component_name;
-        std::string m_clutch_interface_name;
-        std::string m_camera_component_name;
-        std::string m_camera_interface_name;
-        std::string m_operator_present_component_name;
-        std::string m_operator_present_interface_name;
-
         // commands
         void teleop_enable(const bool &);
         void set_scale(const double & _scale);

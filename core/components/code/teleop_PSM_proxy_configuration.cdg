@@ -4,29 +4,9 @@
 inline-header {
 #include <json/json.h>
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
+#include <sawIntuitiveResearchKit/terminal.h>
 #include <sawIntuitiveResearchKit/teleop_type.h>
 }
-
-class {
-    name teleop_PSM_base_frame;
-    namespace dvrk;
-    attribute CISST_EXPORT;
-
-    member {
-        name component;
-        type std::string;
-        visibility public;
-        default "";
-    }
-
-    member {
-        name interface;
-        type std::string;
-        visibility public;
-        default "";
-    }
-}
-
 
 class {
     name teleop_PSM_proxy_configuration;
@@ -68,8 +48,8 @@ class {
 
     member {
         name PSM_base_frame;
-        type dvrk::teleop_PSM_base_frame;
+        type dvrk::terminal;
         visibility public;
-        default dvrk::teleop_PSM_base_frame();
+        default dvrk::terminal();
     }
 }

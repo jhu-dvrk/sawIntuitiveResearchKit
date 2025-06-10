@@ -555,7 +555,8 @@ bool dvrk::system::add_console_interfaces(std::shared_ptr<dvrk::console> _consol
             return false;
         }
         m_connections.Add(this->GetName(), _console->m_name + "/required_clutch",
-                          _console->m_clutch_component_name, _console->m_clutch_interface_name);
+                          _console->m_config->clutch.component,
+                          _console->m_config->clutch.interface);
         // camera
         interface_required = AddInterfaceRequired(_console->m_name + "/required_camera");
         if (interface_required) {
@@ -566,7 +567,8 @@ bool dvrk::system::add_console_interfaces(std::shared_ptr<dvrk::console> _consol
             return false;
         }
         m_connections.Add(this->GetName(), _console->m_name + "/required_camera",
-                          _console->m_camera_component_name, _console->m_camera_interface_name);
+                          _console->m_config->camera.component,
+                          _console->m_config->camera.interface);
         // operator_present
         interface_required = AddInterfaceRequired(_console->m_name + "/required_operator_present");
         if (interface_required) {
@@ -577,7 +579,8 @@ bool dvrk::system::add_console_interfaces(std::shared_ptr<dvrk::console> _consol
             return false;
         }
         m_connections.Add(this->GetName(), _console->m_name + "/required_operator_present",
-                          _console->m_operator_present_component_name, _console->m_operator_present_interface_name);
+                          _console->m_config->operator_present.component,
+                          _console->m_config->operator_present.interface);
     }
 
     // propagate inputs

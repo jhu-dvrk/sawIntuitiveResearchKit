@@ -8,128 +8,113 @@
     "required": ["name", "input_type"],
     "properties": {
 
-	"name": {
+        "name": {
             "type": "string",
             "description": "Arbitrary name given to the console. Usually `console`, `console_1`..."
-	},
+        },
 
         "input_type": {
             "type": "string",
             "description": "General configuration for the console's input. All surgeon's console are expected to provided at least 3 signals: clutch pedal, camera pedal and  operator present. The different options are:\n\n - `PEDALS_ONLY`: this can be used by all dVRK sites as long as you have the original (or compatible) foot pedals connected to the dVRK controller. If you're using the foot pedals, you must specify which IO configuration file to use based on the type of controller with `IO_pedals`.\n - `PEDALS_GOOVIS_HEAD_SENSOR`: if you're using the Goovis HMD, you can use the USB connection to detect if the operator is present. When using this option, you must also provide the `HID_file`.\n - `PEDALS_ISI_HEAD_SENSOR`: assuming you built the custom cable to connect the original ISI head sensor (Classic and S) to the dVRK controllers (QLA1 and DQLA), you can use this option. In this case, you also need to specify which controller is used by setting the `IO_head_sensor`.\n - `PEDALS_DVRK_HEAD_SENSOR`: cheap head sensor designed in the early days of the dVRK, see `PEDALS_ISI_HEAD_SENSOR` for configuration.\n - `SIMULATED`: used when no physical sensor are available. The events can be emulated using either the GUI in \"direct mode\" or ROS topics.\n - `COMPONENTS`: this is the most flexible option. Any cisst/SAW component can be used but the user has to make sure the components are properly created and provide the names of components and interface for the clutch, camera pedal and operator present: `clutch_component`, `clutch_interface`, `camera_component`, `camera_interface`, `operator_present_component`, `operator_present_interface`.",
             "enum": ["PEDALS_ONLY",
-		     "PEDALS_GOOVIS_HEAD_SENSOR",
-		     "PEDALS_ISI_HEAD_SENSOR",
-		     "PEDALS_DVRK_HEAD_SENSOR",
-		     "SIMULATED",
-		     "COMPONENTS"]
-	},
+                     "PEDALS_GOOVIS_HEAD_SENSOR",
+                     "PEDALS_ISI_HEAD_SENSOR",
+                     "PEDALS_DVRK_HEAD_SENSOR",
+                     "SIMULATED",
+                     "COMPONENTS"]
+        },
 
-	"IO_pedals": {
-	    "type": "object",
-	    "description": "IO file used to specify the IOs for the foot pedals. Use one of the existing file in the `share/io` directory\nThis is required if the `input_type` starts with `PEDALS`.",
-	    "$ref": "dvrk-IO-configuration.schema.json",
-	    "examples": [
-		{
-		    "input_type": "PEDALS",
-		    "IO_pedals" :
-		    {
-			"IO": "IO_1",
-			"IO_file": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
-		    }
-		}
-	    ]
-	},
-
-
-	"IO_head_sensor": {
-	    "type": "object",
-	    "description": "IO file used to specify the IOs for the head sensor. Use one of the existing file in the `share/io` directory\nThis is required if the `input_type` is `PEDALS_ISI_HEAD_SENSOR` or `PEDALS_DVRK_HEAD_SENSOR`.",
-	    "$ref": "dvrk-IO-configuration.schema.json",
-	    "examples": [
-		{
-		    "input_type": "PEDALS_ISI_HEAD_SENSOR",
-		    "IO_pedals" :
-		    {
-			"IO": "IO_1",
-			"IO_file": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
-		    }
-		    ,
-		    "IO_head_sensor":
-		    {
-			"IO": "IO_1",
-			"IO_file": "io/sawRobotIO1394-MTMR-dv-head-sensor.xml"
-		    }
-		}
-	    ]
-	},
-
-	"HID_file": {
-	    "type": "string",
-	    "description": "File used to specify HID (Human Interface Device) parameters for the Goovis head sensor. Use one of the existing file in the `share/hid` directory\nThis is required if the `input_type` is `PEDALS_GOOVIS_HEAD_SENSOR`.",
-	    "examples": [
-		{
-		    "input_type": "PEDALS_GOOVIS_HEAD_SENSOR",
-		    "IO_pedals" :
-		    {
-			"IO": "IO_1",
-			"IO_file": "io/sawRobotIO1394-MTML-foot-pedals.xml"
-		    }
-		    ,
-		    "HID_file": "hid/goovis-hd.json"
-		}
-	    ]
-	},
-
-	"clutch_component": {
-	    "type": "string",
-	    "description": "Name of the CISST component used to provide the clutch pedal signal.\nThis should be specified if and only if the `input_type` is set to `COMPONENTS`."
-	},
+        "IO_pedals": {
+            "type": "object",
+            "description": "IO file used to specify the IOs for the foot pedals. Use one of the existing file in the `share/io` directory\nThis is required if the `input_type` starts with `PEDALS`.",
+            "$ref": "dvrk-IO-configuration.schema.json",
+            "examples": [
+                {
+                    "input_type": "PEDALS",
+                    "IO_pedals" :
+                    {
+                        "IO": "IO_1",
+                        "IO_file": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
+                    }
+                }
+            ]
+        },
 
 
-	"clutch_interface": {
-	    "type": "string",
-	    "description": "Name of the CISST interface used to provide the clutch pedal signal.\nThis should be specified if and only if the `input_type` is set to `COMPONENTS`."
-	},
+        "IO_head_sensor": {
+            "type": "object",
+            "description": "IO file used to specify the IOs for the head sensor. Use one of the existing file in the `share/io` directory\nThis is required if the `input_type` is `PEDALS_ISI_HEAD_SENSOR` or `PEDALS_DVRK_HEAD_SENSOR`.",
+            "$ref": "dvrk-IO-configuration.schema.json",
+            "examples": [
+                {
+                    "input_type": "PEDALS_ISI_HEAD_SENSOR",
+                    "IO_pedals" :
+                    {
+                        "IO": "IO_1",
+                        "IO_file": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
+                    }
+                    ,
+                    "IO_head_sensor":
+                    {
+                        "IO": "IO_1",
+                        "IO_file": "io/sawRobotIO1394-MTMR-dv-head-sensor.xml"
+                    }
+                }
+            ]
+        },
 
-	"camera_component": {
-	    "type": "string",
-	    "description": "Name of the CISST component used to provide the camera pedal signal.\nThis should be specified if and only if the `input_type` is set to `COMPONENTS`."
-	},
+        "HID_file": {
+            "type": "string",
+            "description": "File used to specify HID (Human Interface Device) parameters for the Goovis head sensor. Use one of the existing file in the `share/hid` directory\nThis is required if the `input_type` is `PEDALS_GOOVIS_HEAD_SENSOR`.",
+            "examples": [
+                {
+                    "input_type": "PEDALS_GOOVIS_HEAD_SENSOR",
+                    "IO_pedals" :
+                    {
+                        "IO": "IO_1",
+                        "IO_file": "io/sawRobotIO1394-MTML-foot-pedals.xml"
+                    }
+                    ,
+                    "HID_file": "hid/goovis-hd.json"
+                }
+            ]
+        },
 
+        "clutch": {
+            "type": "object",
+            "description": "Name of the CISST component used to provide the clutch pedal signal.\nThis should be specified if and only if the `input_type` is set to `COMPONENTS`.",
+            "$ref": "cisst-terminal.schema.json"
+        },
 
-	"camera_interface": {
-	    "type": "string",
-	    "description": "Name of the CISST interface used to provide the camera pedal signal.\nThis should be specified if and only if the `input_type` is set to `COMPONENTS`."
-	},
+        "camera": {
+            "type": "object",
+            "description": "Name of the CISST component used to provide the camera pedal signal.\nThis should be specified if and only if the `input_type` is set to `COMPONENTS`.",
+            "$ref": "cisst-terminal.schema.json"
+        },
 
-	"operator_present_component": {
-	    "type": "string",
-	    "description": "Name of the CISST component used to provide the operator_present signal.\nThis should be specified if and only if the `input_type` is set to `COMPONENTS`."
-	},
+        "operator_present": {
+            "type": "object",
+            "description": "Name of the CISST component used to provide the operator_present signal.\nThis should be specified if and only if the `input_type` is set to `COMPONENTS`.",
+            "$ref": "cisst-terminal.schema.json"
+        },
 
-
-	"operator_present_interface": {
-	    "type": "string",
-	    "description": "Name of the CISST interface used to provide the operator_present signal.\nThis should be specified if and only if the `input_type` is set to `COMPONENTS`."
-	},
-
-	"teleops_PSM": {
+        "teleops_PSM": {
             "type": "array",
             "description": "List of PSM tele-operation components.  Each PSM tele-operation component requires a MTM and a PSM",
             "items": {
                 "type": "object",
                 "description": "Configuration for a single PSM tele-operation component",
-		"$ref": "dvrk-teleop-PSM.schema.json"
+                "$ref": "dvrk-teleop-PSM.schema.json"
             }
         },
 
-	"teleops_ECM": {
+        "teleops_ECM": {
             "type": "array",
             "description": "List of ECM tele-operation components.  Each PSM tele-operation component requires a MTML, MTMR and a PSM",
             "items": {
                 "type": "object",
                 "description": "Configuration for a single ECM tele-operation component",
-		"$ref": "dvrk-teleop-ECM.schema.json"
+                "$ref": "dvrk-teleop-ECM.schema.json"
             }
         }
     }

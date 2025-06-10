@@ -212,6 +212,7 @@ if (cisst_FOUND)
       arm_proxy_configuration.cdg
       arm_type.cdg
       base_frame.cdg
+      terminal.cdg
       console_configuration.cdg
       generation.cdg
       IO_configuration.cdg

@@ -115,17 +115,17 @@ void dvrk::console::post_configure(void)
                                << m_name << std::endl;
             exit(EXIT_FAILURE);
         }
-        m_clutch_component_name = m_config->IO_pedals.IO;
-        m_clutch_interface_name = "clutch";
-        m_camera_component_name = m_config->IO_pedals.IO;
-        m_camera_interface_name = "camera";
+        m_config->clutch.component = m_config->IO_pedals.IO;
+        m_config->clutch.interface = "clutch";
+        m_config->camera.component = m_config->IO_pedals.IO;
+        m_config->camera.interface = "camera";
         // if only pedals, use coag for operator present
         if (m_config->input_type == console_input_type::PEDALS_ONLY) {
-            m_operator_present_component_name = m_config->IO_pedals.IO;
-            m_operator_present_interface_name = "coag";
+            m_config->operator_present.component = m_config->IO_pedals.IO;
+            m_config->operator_present.interface = "coag";
         }
     } else {
-        m_config->IO_pedals.IO == "";
+        m_config->IO_pedals.IO = "";
     }
 
     if (m_config->input_type == console_input_type::PEDALS_ISI_HEAD_SENSOR) {
@@ -134,8 +134,8 @@ void dvrk::console::post_configure(void)
                                << m_name << std::endl;
             exit(EXIT_FAILURE);
         }
-        m_operator_present_component_name = m_name + "_daVinci_head_sensor";
-        m_operator_present_interface_name = "operator_present";
+        m_config->operator_present.component = m_name + "_daVinci_head_sensor";
+        m_config->operator_present.interface = "operator_present";
     }
 
     if (m_config->input_type == console_input_type::PEDALS_GOOVIS_HEAD_SENSOR) {
@@ -145,8 +145,8 @@ void dvrk::console::post_configure(void)
                                << m_name << std::endl;
             exit(EXIT_FAILURE);
         }
-        m_operator_present_component_name = m_name + "_goovis_head_sensor";
-        m_operator_present_interface_name = "operator_present";
+        m_config->operator_present.component = m_name + "_goovis_head_sensor";
+        m_config->operator_present.interface = "operator_present";
 #else
         CMN_LOG_INIT_ERROR << "console::post_configure: can't use HID head sensor." << std::endl
                            << "The code has been compiled with sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR OFF." << std::endl
@@ -177,26 +177,26 @@ void dvrk::console::create_components(void)
 
     if (m_config->input_type == console_input_type::PEDALS_ISI_HEAD_SENSOR) {
         m_system->configure_IO(m_config->IO_head_sensor);
-        m_head_sensor = new mtsDaVinciHeadSensor(m_operator_present_component_name);
+        m_head_sensor = new mtsDaVinciHeadSensor(m_config->operator_present.component);
         manager->AddComponent(m_head_sensor);
         // schedule connections between IO and head sensor component
         const std::string IO =  m_config->IO_head_sensor.IO;
-        m_system->m_connections.Add(m_operator_present_component_name, "HeadSensorTurnOff",
+        m_system->m_connections.Add(m_config->operator_present.component, "HeadSensorTurnOff",
                                     IO, "HeadSensorTurnOff");
-        m_system->m_connections.Add(m_operator_present_component_name, "HeadSensor1",
+        m_system->m_connections.Add(m_config->operator_present.component, "HeadSensor1",
                                     IO, "HeadSensor1");
-        m_system->m_connections.Add(m_operator_present_component_name, "HeadSensor2",
+        m_system->m_connections.Add(m_config->operator_present.component, "HeadSensor2",
                                     IO, "HeadSensor2");
-        m_system->m_connections.Add(m_operator_present_component_name, "HeadSensor3",
+        m_system->m_connections.Add(m_config->operator_present.component, "HeadSensor3",
                                     IO, "HeadSensor3");
-        m_system->m_connections.Add(m_operator_present_component_name, "HeadSensor4",
+        m_system->m_connections.Add(m_config->operator_present.component, "HeadSensor4",
                                     IO, "HeadSensor4");
     }
 
     if (m_config->input_type == console_input_type::PEDALS_DVRK_HEAD_SENSOR) {
         m_system->configure_IO(m_config->IO_head_sensor);
-        m_operator_present_component_name = m_config->IO_head_sensor.IO;
-        m_operator_present_interface_name = "operator_present";
+        m_config->operator_present.component = m_config->IO_head_sensor.IO;
+        m_config->operator_present.interface = "operator_present";
     }
 
     if (m_config->input_type == console_input_type::PEDALS_GOOVIS_HEAD_SENSOR) {
@@ -208,7 +208,7 @@ void dvrk::console::create_components(void)
                                << m_config->HID_file << std::endl;
             exit(EXIT_FAILURE);
         }
-        m_head_sensor = new mtsHIDHeadSensor(m_operator_present_component_name);
+        m_head_sensor = new mtsHIDHeadSensor(m_config->operator_present.component);
         m_head_sensor->Configure(config_file);
         manager->AddComponent(m_head_sensor);
     }
