@@ -61,45 +61,42 @@ ConfigEditor::ConfigEditor(std::unique_ptr<SystemConfigModel> config_model, Conf
     // I/O config panel
 
     Accordion* ios = new Accordion("I/Os", "SteelBlue", this);
-    ListView* io_list = new ListView(model->io_configs, io_factory, SelectionMode::NONE, true);
+    ListView* io_list = new ListView(*model->io_configs, io_factory, SelectionMode::NONE, true);
     ios->setWidget(io_list);
 
     QObject::connect(io_list, &ListView::add, this, [this]() { io_editor.setId(-1); io_editor.open(); });
     QObject::connect(io_list, &ListView::choose, this, [this](int id) { io_editor.setId(id); io_editor.open(); });
     QObject::connect(io_list, &ListView::edit, this, [this](int id) { io_editor.setId(id); io_editor.open(); });
-    QObject::connect(io_list, &ListView::try_delete, &model->io_configs, &ListModelT<IOConfig>::deleteItem);
-
-    auto default_io = IOConfig("io");
-    model->io_configs.addItem(default_io);
+    QObject::connect(io_list, &ListView::try_delete, model->io_configs.get(), &ListModelT<IOConfig>::deleteItem);
 
     // Arm config panel
 
     Accordion* arms = new Accordion("Arms", "LightSeaGreen", this);
-    ListView* arm_list = new ListView(model->arm_configs, arm_factory, SelectionMode::NONE, true);
+    ListView* arm_list = new ListView(*model->arm_configs, arm_factory, SelectionMode::NONE, true);
     arm_list->setEmptyMessage("No arms configured yet");
     arms->setWidget(arm_list);
 
     QObject::connect(arm_list, &ListView::add, this, [this]() { arm_editor.setId(-1); arm_editor.open(); });
-    QObject::connect(arm_list, &ListView::try_delete, &model->arm_configs, &ListModelT<ArmConfig>::deleteItem);
+    QObject::connect(arm_list, &ListView::try_delete, model->arm_configs.get(), &ListModelT<ArmConfig>::deleteItem);
     QObject::connect(arm_list, &ListView::choose, this, [this](int id) { arm_editor.setId(id); arm_editor.open(); });
     QObject::connect(arm_list, &ListView::edit, this, [this](int id) { arm_editor.setId(id); arm_editor.open(); });
 
     // Teleop config panel
 
     Accordion* teleops = new Accordion("Teleops", "DodgerBlue", this);
-    ListView* teleop_list = new ListView(model->teleop_configs, teleop_factory, SelectionMode::NONE, true);
+    ListView* teleop_list = new ListView(*model->teleop_configs, teleop_factory, SelectionMode::NONE, true);
     teleop_list->setEmptyMessage("No teleops added - teleoperation mode will not be available");
     teleops->setWidget(teleop_list);
 
     QObject::connect(teleop_list, &ListView::add, this, [this]() { teleop_editor.setId(-1); teleop_editor.open(); });
-    QObject::connect(teleop_list, &ListView::try_delete, &model->teleop_configs, &ListModelT<TeleopConfig>::deleteItem);
+    QObject::connect(teleop_list, &ListView::try_delete, model->teleop_configs.get(), &ListModelT<TeleopConfig>::deleteItem);
     QObject::connect(teleop_list, &ListView::choose, this, [this](int id) { teleop_editor.setId(id); teleop_editor.open(); });
     QObject::connect(teleop_list, &ListView::edit, this, [this](int id) { teleop_editor.setId(id); teleop_editor.open(); });
 
     // Console config panel
 
     Accordion* consoles = new Accordion("Consoles", "Salmon", this);
-    ListView* console_list = new ListView(model->console_configs, arm_factory, SelectionMode::NONE, false);
+    ListView* console_list = new ListView(*model->console_configs, arm_factory, SelectionMode::NONE, false);
     consoles->setWidget(console_list);
 
     scroller_layout->addWidget(ios);
@@ -111,6 +108,9 @@ ConfigEditor::ConfigEditor(std::unique_ptr<SystemConfigModel> config_model, Conf
 
 std::unique_ptr<ConfigEditor> ConfigEditor::open(std::filesystem::path config_file, ConfigSources& sources) {
     auto model = SystemConfigModel::load(config_file);
+    if (model == nullptr) {
+        return nullptr;
+    }
     auto editor = std::make_unique<ConfigEditor>(std::move(model), sources);
     editor->changes_saved = true;
     editor->setSavePath(config_file);

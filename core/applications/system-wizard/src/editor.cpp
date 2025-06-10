@@ -55,6 +55,7 @@ Editor::Editor(ConfigSources& config_sources, QWidget* parent)
 
 void Editor::newConfig() {
     std::unique_ptr<SystemConfigModel> model = std::make_unique<SystemConfigModel>();
+    model->io_configs->addItem(IOConfig("io")); // default I/O
     std::unique_ptr<ConfigEditor> editor = std::make_unique<ConfigEditor>(std::move(model), *config_sources);
     createTab(std::move(editor));
 }
@@ -67,6 +68,10 @@ void Editor::openConfig() {
 
     std::filesystem::path file_path(file_name.toStdString());
     std::unique_ptr<ConfigEditor> editor = ConfigEditor::open(file_path, *config_sources);
+    if (editor == nullptr) {
+        return;
+    }
+
     createTab(std::move(editor));
 }
 

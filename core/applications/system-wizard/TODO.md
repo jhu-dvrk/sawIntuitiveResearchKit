@@ -53,6 +53,8 @@
 - [x] Open config
 - [x] Save config
 - [x] Dirty/clean save state marker
+- [ ] File dialogs install *.json filter
+- [ ] Clean up file dialog state
 - [ ] Intro view when no config is open
 
 ### Config item editors

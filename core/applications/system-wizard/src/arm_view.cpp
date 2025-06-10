@@ -39,7 +39,7 @@ ArmView::ArmView(SystemConfigModel& model, ListView& list_view, int id, QWidget*
 void ArmView::updateData(int id) {
     this->id = id;
 
-    const ArmConfig& arm = model->arm_configs.get(id);
+    const ArmConfig& arm = model->arm_configs->get(id);
     QString text = QString::fromStdString(arm.name + " (" + arm.type.name() + ")");
     display->setText(text);
     display->setToolTip(QString::fromStdString(arm.type.acronym_expansion()));

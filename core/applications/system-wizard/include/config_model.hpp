@@ -21,11 +21,14 @@ http://www.cisst.org/cisst/license.txt.
 #include <QtCore>
 
 #include <filesystem>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
+
+#include <json/json.h>
 
 namespace system_wizard {
 
@@ -150,6 +153,40 @@ public:
             return "UNKNOWN";
         }
     };
+
+    static std::optional<ArmType> deserialize(std::string name) {
+        if (name == "MTM") {
+            return Value::MTM;
+        } else if (name == "PSM") {
+            return Value::PSM;
+        } else if (name == "ECM") {
+            return Value::ECM;
+        } else if (name == "SUJ_Classic") {
+            return Value::SUJ_CLASSIC;
+        } else if (name == "SUJ_Si") {
+            return Value::SUJ_SI;
+        } else if (name == "SUJ_FIXED") {
+            return Value::SUJ_FIXED;
+        } else if (name == "MTM_DERIVED") {
+            return Value::MTM_DERIVED;
+        } else if (name == "MTM_GENERIC") {
+            return Value::MTM_GENERIC;
+        } else if (name == "PSM_DERIVED") {
+            return Value::PSM_DERIVED;
+        } else if (name == "PSM_GENERIC") {
+            return Value::PSM_GENERIC;
+        } else if (name == "PSM_SOCKET") {
+            return Value::PSM_SOCKET;
+        } else if (name == "ECM_DERIVED") {
+            return Value::ECM_DERIVED;
+        } else if (name == "ECM_GENERIC") {
+            return Value::ECM_GENERIC;
+        } else if (name == "FOCUS_CONTROLLER") {
+            return Value::FOCUS_CONTROLLER;
+        } else {
+            return {};
+        }
+    }
 
     std::string serialize() const {
         switch (value) {
@@ -282,6 +319,24 @@ public:
         }
     };
 
+    static std::optional<IOPort> deserialize(std::string name) {
+        auto starts_with = [&name](std::string prefix) {
+            return name.size() >= prefix.size() && name.substr(0, prefix.size()) == prefix;
+        };
+
+        if (starts_with("udp")) {
+            if (starts_with("udpfw")) {
+                return Value::UDPFW;
+            } else {
+                return Value::UDP;
+            }
+        } else if (starts_with("fw")) {
+            return Value::FIREWIRE;
+        } else {
+            return {};
+        }
+    };
+
     std::string serialize() const {
         switch (value) {
         case Value::UDP:
@@ -334,6 +389,23 @@ public:
             return "Broadcast is usually faster, but is not supported by all hardware";
         default:
             return "UNKNOWN";
+        }
+    };
+
+    static std::optional<IOProtocol> deserialize(std::string name) {
+        if ((name == "sequential-read-write") ||
+            (name == "srw")) {
+            return Value::SEQUENTIAL_READ_SEQUENTIAL_WRITE;
+        } else if ((name == "sequential-read-broadcast-write") ||
+                   (name == "srbw")) {
+            return Value::SEQUENTIAL_READ_BROADCAST_WRITE;
+        } else if ((name == "broadcast-read-write") ||
+                   (name == "brw") ||
+                   (name == "broadcast-query-read-write") ||
+                   (name == "bqrw")) {
+            return Value::BROADCAST_READ_BROADCAST_WRITE;
+        } else {
+            return {};
         }
     };
 
@@ -441,10 +513,42 @@ public:
           port(IOPort::Value::FIREWIRE),
           protocol(IOProtocol::Value::SEQUENTIAL_READ_SEQUENTIAL_WRITE),
           period_ms(1.0 / 1500.0),
-          watchdog_timeout_ms(10.0)
+          watchdog_timeout_ms(30.0)
         { }
 
+    static IOConfig fromJSON(Json::Value value) {
+        IOConfig config("io");
+        if (value.isMember("footpedals")) {
+            config.foot_pedals = value["footpedals"].asString();
+        }
+        auto port = IOPort::deserialize(value["port"].asString());
+        if (port.has_value()) { config.port = port.value(); }
+        auto protocol = IOProtocol::deserialize(value["firewire-protocol"].asString());
+        if (protocol.has_value()) { config.protocol = protocol.value(); }
+
+        config.period_ms = value.get("period", Json::Value(1.0/1500)).asDouble();
+        config.watchdog_timeout_ms = value.get("watchdog-timeout", Json::Value(30.0)).asDouble();
+
+        return config;
+    }
+
+    Json::Value toJSON() const {
+        Json::Value value;
+
+        if (foot_pedals) {
+            value["footpedals"] = foot_pedals.value().string();
+        }
+
+        value["port"] = port.serialize();
+        value["firewire-protocol"] = protocol.serialize();
+        value["period"] = period_ms;
+        value["watchdog-timeout"] = watchdog_timeout_ms;
+
+        return value;
+    }
+
     std::string name;
+    std::optional<std::filesystem::path> foot_pedals;
     IOPort port;
     IOProtocol protocol;
     double period_ms;
@@ -453,7 +557,31 @@ public:
 
 class ArmConfig {
 public:
-    ArmConfig(std::string name, ArmType type, ArmConfigType config_type) : name(name), type(type), config_type(config_type) { }
+    ArmConfig(std::string name, ArmType type, ArmConfigType config_type)
+    : name(name), type(type), config_type(config_type) { }
+
+    static ArmConfig fromJSON(Json::Value value) {
+        std::string name = value["name"].asString();
+        ArmType type = ArmType::deserialize(value["type"].asString()).value();
+        ArmConfigType config_type = ArmConfigType::NATIVE;
+
+        ArmConfig config(name, type, config_type);
+        config.serial_number = value["serial"].asString();
+
+        return config;
+    }
+
+    Json::Value toJSON() const {
+        Json::Value value;
+        value["name"] = name;
+        value["type"] = type.serialize();
+
+        if (serial_number) {
+            value["serial"] = serial_number.value();
+        }
+
+        return value;
+    }
 
     std::string name;
     ArmType type;
@@ -472,14 +600,57 @@ class TeleopConfig {
 public:
     TeleopConfig(std::string name, TeleopType type) : name(name), type(type) { }
 
+    static TeleopConfig fromJSON(Json::Value value) {
+        if (value.isMember("ecm")) {
+            TeleopConfig config("ECM Teleop", TeleopType::Value::ECM_TELEOP);
+            config.arm_names = {
+                value["ecm"].asString(),
+                value["mtm-left"].asString(),
+                value["mtm-right"].asString()
+            };
+            return config;
+        } else {
+            std::vector<std::string> arm_names = {
+                value["mtm"].asString(),
+                value["psm"].asString()
+            };
+            std::string name = arm_names[0] + "-" + arm_names[1] + " Teleop";
+            TeleopConfig config(name, TeleopType::Value::PSM_TELEOP);
+            config.arm_names = arm_names;
+            return config;
+        }
+    }
+
+    Json::Value toJSON() const {
+        Json::Value value;
+
+        if (type == TeleopType::Value::PSM_TELEOP) {
+            value["mtm"] = arm_names.at(0);
+            value["psm"] = arm_names.at(1);
+        } else if (type == TeleopType::Value::ECM_TELEOP) {
+            value["ecm"] = arm_names.at(0);
+            value["mtm-left"] = arm_names.at(1);
+            value["mtm-right"] = arm_names.at(2);
+        }
+
+        return value;
+    }
+
     std::string name;
     TeleopType type;
 
-    std::vector<int> arms;
+    std::vector<std::string> arm_names;
 };
 
 class ConsoleConfig {
+public:
+    static ConsoleConfig fromJSON(Json::Value value) {
+        return ConsoleConfig();
+    }
 
+    Json::Value toJSON() const {
+        return Json::Value();
+    }
 };
 
 class SystemConfigModel : public QObject {
@@ -487,29 +658,91 @@ class SystemConfigModel : public QObject {
 
 public:
     SystemConfigModel() : QObject() {
-        QObject::connect(&io_configs,      &ListModelT<IOConfig>::updated,      this, &SystemConfigModel::updated);
-        QObject::connect(&arm_configs,     &ListModelT<ArmConfig>::updated,     this, &SystemConfigModel::updated);
-        QObject::connect(&teleop_configs,  &ListModelT<TeleopConfig>::updated,  this, &SystemConfigModel::updated);
-        QObject::connect(&console_configs, &ListModelT<ConsoleConfig>::updated, this, &SystemConfigModel::updated);
+        io_configs = std::make_unique<ListModelT<IOConfig>>();
+        arm_configs = std::make_unique<ListModelT<ArmConfig>>();
+        teleop_configs = std::make_unique<ListModelT<TeleopConfig>>();
+        console_configs = std::make_unique<ListModelT<ConsoleConfig>>();
+
+        QObject::connect(io_configs.get(),      &ListModelT<IOConfig>::updated,      this, &SystemConfigModel::updated);
+        QObject::connect(arm_configs.get(),     &ListModelT<ArmConfig>::updated,     this, &SystemConfigModel::updated);
+        QObject::connect(teleop_configs.get(),  &ListModelT<TeleopConfig>::updated,  this, &SystemConfigModel::updated);
+        QObject::connect(console_configs.get(), &ListModelT<ConsoleConfig>::updated, this, &SystemConfigModel::updated);
     }
 
-    // TODO: (de)serialization
     static std::unique_ptr<SystemConfigModel> load(std::filesystem::path config_file) {
         auto model = std::make_unique<SystemConfigModel>();
 
-        // dummy data
-        model->arm_configs.addItem(ArmConfig("PSM1", ArmType(ArmType::Value::PSM), ArmConfigType::NATIVE));
-        model->arm_configs.addItem(ArmConfig("ECM", ArmType(ArmType::Value::ECM), ArmConfigType::NATIVE));
-        model->arm_configs.addItem(ArmConfig("MTML", ArmType(ArmType::Value::MTM), ArmConfigType::NATIVE));
+        std::ifstream json_stream(config_file, std::ios::in);
 
-        TeleopConfig teleop = TeleopConfig("PSM1-MTML", TeleopType(TeleopType::Value::PSM_TELEOP));
-        teleop.arms = { 0, 2 };
-        model->teleop_configs.addItem(teleop);
+        Json::Value json_config, json_value;
+        Json::Reader json_reader;
+        if (!json_reader.parse(json_stream, json_config)) {
+            qDebug() << QString::fromStdString(std::string(json_reader.getFormattedErrorMessages())) << "\n";
+            return nullptr;
+        }
+
+        json_value = json_config["io"];
+        if (!json_value.empty()) {
+            IOConfig io_config = IOConfig::fromJSON(json_value);
+            model->io_configs->addItem(io_config);
+        }
+
+        json_value = json_config["arms"];
+        if (!json_value.empty() && json_value.isArray()) {
+            model->arm_configs = ListModelT<ArmConfig>::fromJSON(json_value);
+            if (model->arm_configs == nullptr) {
+                return nullptr;
+            }
+        }
+
+        json_value = json_config["psm-teleops"];
+        if (!json_value.empty() && json_value.isArray()) {
+            model->teleop_configs = ListModelT<TeleopConfig>::fromJSON(json_value);
+            if (model->teleop_configs == nullptr) {
+                return nullptr;
+            }
+        }
+
+        json_value = json_config["ecm-teleop"];
+        if (!json_value.empty() && json_value.isObject()) {
+            TeleopConfig ecm_teleop = TeleopConfig::fromJSON(json_value);
+            model->teleop_configs->addItem(ecm_teleop);
+        }
 
         return model;
     }
 
     bool save(std::filesystem::path config_file) const {
+        Json::Value config;
+
+        if (io_configs->count() > 0) {
+            config["io"] = io_configs->get(0).toJSON();
+        }
+
+        config["arms"] = arm_configs->toJSON();
+
+        Json::Value psm_teleops(Json::arrayValue);
+        for (int i = 0; i < teleop_configs->count(); i++) {
+            TeleopConfig teleop_config = teleop_configs->get(i);
+            if (teleop_config.type == TeleopType::Value::PSM_TELEOP) {
+                psm_teleops.append(teleop_config.toJSON());
+            }
+        }
+        config["psm-teleops"] = psm_teleops;
+
+        for (int i = 0; i < teleop_configs->count(); i++) {
+            qDebug() << i << ", " << teleop_configs->count() << "\n";
+            TeleopConfig teleop_config = teleop_configs->get(i);
+            if (teleop_config.type == TeleopType::Value::ECM_TELEOP) {
+                config["ecm-teleop"] = teleop_config.toJSON();
+                break;
+            }
+        }
+
+        std::ofstream json_stream;
+        json_stream.open(config_file.c_str());
+        json_stream << config << std::endl;
+
         return true;
     }
 
@@ -517,10 +750,10 @@ signals:
     void updated();
 
 public:
-    ListModelT<IOConfig> io_configs;
-    ListModelT<ArmConfig> arm_configs;
-    ListModelT<TeleopConfig> teleop_configs;
-    ListModelT<ConsoleConfig> console_configs;
+    std::unique_ptr<ListModelT<IOConfig>> io_configs;
+    std::unique_ptr<ListModelT<ArmConfig>> arm_configs;
+    std::unique_ptr<ListModelT<TeleopConfig>> teleop_configs;
+    std::unique_ptr<ListModelT<ConsoleConfig>> console_configs;
 };
 
 }

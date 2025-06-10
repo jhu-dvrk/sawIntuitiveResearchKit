@@ -20,7 +20,7 @@ namespace system_wizard {
 Accordion::Accordion(QWidget* parent) : Accordion("", "", parent) { }
 
 Accordion::Accordion(const QString& title, const QString& background_color, QWidget* parent)
-    : QFrame(parent), is_open(false), contents(nullptr) {
+    : QFrame(parent), is_open(true), contents(nullptr) {
     this->setFrameStyle(QFrame::StyledPanel);
     this->setStyleSheet("system_wizard--Accordion { background-color: " + background_color + "; border-radius: 10px; }");
     this->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Maximum);

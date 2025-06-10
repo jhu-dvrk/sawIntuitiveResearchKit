@@ -41,9 +41,8 @@ TeleopView::TeleopView(SystemConfigModel& model, ListView& list_view, int id, QW
 void TeleopView::updateData(int id) {
     this->id = id;
 
-    const TeleopConfig& teleop = model->teleop_configs.get(id);
-    std::string arms = std::accumulate(teleop.arms.begin(), teleop.arms.end(), std::string(""), [this](std::string acc, int arm_id) -> std::string {
-        std::string arm_name = model->arm_configs.get(arm_id).name;
+    const TeleopConfig& teleop = model->teleop_configs->get(id);
+    std::string arms = std::accumulate(teleop.arm_names.begin(), teleop.arm_names.end(), std::string(""), [this](std::string acc, std::string arm_name) -> std::string {
         return acc.empty() ? arm_name : acc + ", " + arm_name;
     });
 
