@@ -21,11 +21,7 @@ namespace system_wizard {
 
 Editor::Editor(ConfigSources& config_sources, QWidget* parent)
     : QStackedWidget(parent),
-      file_dialog(this, "Open config file"),
       config_sources(&config_sources) {
-    file_dialog.setViewMode(QFileDialog::List);
-    file_dialog.setOptions(QFileDialog::DontResolveSymlinks);
-
     tabs = new QTabWidget();
     tabs->setMovable(true);
     tabs->setTabsClosable(true);
@@ -42,7 +38,15 @@ Editor::Editor(ConfigSources& config_sources, QWidget* parent)
 
     QObject::connect(add_config_button, &QToolButton::clicked, this, &Editor::newConfig);
 
-    close_config_shortcut = new QShortcut(QKeySequence(QKeySequence::Close), this);
+    // In Qt < 6, default Close key sequence is Ctrl+F4 on Windows but Ctrl+W is listed as alternative
+    // In Qt 6, default is Ctrl+W which I like more so if available default to only using that
+    const QKeySequence standard_close(Qt::CTRL | Qt::Key_W);
+    if (QKeySequence::keyBindings(QKeySequence::Close).contains(standard_close)) {
+        close_config_shortcut = new QShortcut(standard_close, this);
+    } else {
+        close_config_shortcut = new QShortcut(QKeySequence::Close, this);
+    }
+
     QObject::connect(close_config_shortcut, &QShortcut::activated, this, [this](){ closeConfig(tabs->currentIndex()); });
     QObject::connect(tabs->tabBar(), &QTabBar::tabCloseRequested, this, [this](int index){ closeConfig(index); });
 
