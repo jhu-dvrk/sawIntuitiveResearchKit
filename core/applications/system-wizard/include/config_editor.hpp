@@ -46,8 +46,8 @@ public:
     bool changesSaved() const { return changes_saved; }
 
 public slots:
-    void save();
-    void saveAs();
+    bool save();
+    bool saveAs();
     bool close();
 
 signals:

@@ -42,8 +42,6 @@ public slots:
 private:
     void createTab(std::unique_ptr<ConfigEditor>);
 
-    QFileDialog file_dialog;
-
     QTabWidget* tabs;
     ConfigSources* config_sources;
 

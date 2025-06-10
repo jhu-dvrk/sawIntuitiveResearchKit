@@ -112,6 +112,7 @@ ConfigEditor::ConfigEditor(std::unique_ptr<SystemConfigModel> config_model, Conf
 std::unique_ptr<ConfigEditor> ConfigEditor::open(std::filesystem::path config_file, ConfigSources& sources) {
     auto model = SystemConfigModel::load(config_file);
     auto editor = std::make_unique<ConfigEditor>(std::move(model), sources);
+    editor->changes_saved = true;
     editor->setSavePath(config_file);
     return editor;
 }
@@ -123,11 +124,11 @@ void ConfigEditor::setSavePath(std::filesystem::path path) {
     emit savePathChanged(qpath);
 }
 
-void ConfigEditor::save() {
+bool ConfigEditor::save() {
     if (!save_path.has_value()) {
         QString file_name = QFileDialog::getSaveFileName();
         if (file_name.isEmpty()) {
-            return;
+            return false;
         }
 
         std::filesystem::path file_path(file_name.toStdString());
@@ -136,18 +137,20 @@ void ConfigEditor::save() {
 
     changes_saved = model->save(save_path.value());
     emit saveStateChanged(changes_saved);
+    return true;
 }
 
-void ConfigEditor::saveAs() {
+bool ConfigEditor::saveAs() {
     QString file_name = QFileDialog::getSaveFileName();
     if (file_name.isEmpty()) {
-        return;
+        return false;
     }
 
     std::filesystem::path file_path(file_name.toStdString());
     setSavePath(file_path);
     changes_saved = model->save(save_path.value());
     emit saveStateChanged(changes_saved);
+    return true;
 }
 
 bool ConfigEditor::close() {
@@ -164,8 +167,7 @@ bool ConfigEditor::close() {
 
     switch (ret) {
     case QMessageBox::Save:
-        save();
-        return true;
+        return save();
     case QMessageBox::Discard:
         return true;
     case QMessageBox::Cancel:
