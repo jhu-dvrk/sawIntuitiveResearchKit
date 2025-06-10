@@ -29,8 +29,7 @@ TeleopOptionView::TeleopOptionView(const ListModelT<ArmConfig>& arms, ListModelT
 
 void TeleopOptionView::updateData(int id) {
     const TeleopConfig& teleop = model->get(id);
-    std::string arm_names = std::accumulate(teleop.arms.begin(), teleop.arms.end(), std::string(""), [this](std::string acc, int arm_id) -> std::string {
-        std::string arm_name = this->arms->get(arm_id).name;
+    std::string arm_names = std::accumulate(teleop.arm_names.begin(), teleop.arm_names.end(), std::string(""), [this](std::string acc, std::string arm_name) -> std::string {
         return acc.empty() ? arm_name : acc + ", " + arm_name;
     });
 
@@ -47,9 +46,9 @@ TeleopOptionView* TeleopOptionViewFactory::create(int id, ListView& list_view) {
 
 TeleopEditor::TeleopEditor(SystemConfigModel& model, QWidget* parent)
     : QWizard(parent), model(&model), config("Teleop", TeleopType::Value::PSM_TELEOP) {
-    setPage(PAGE_SUGGESTED_TELEOPS, new SuggestedTeleopsPage(model.arm_configs, config));
-    setPage(PAGE_PSM_TELEOP, new PSMTeleopPage(model.arm_configs, config));
-    setPage(PAGE_ECM_TELEOP, new ECMTeleopPage(model.arm_configs, config));
+    setPage(PAGE_SUGGESTED_TELEOPS, new SuggestedTeleopsPage(*model.arm_configs, config));
+    setPage(PAGE_PSM_TELEOP, new PSMTeleopPage(*model.arm_configs, config));
+    setPage(PAGE_ECM_TELEOP, new ECMTeleopPage(*model.arm_configs, config));
 
     setWizardStyle(QWizard::ModernStyle);
     setOption(QWizard::NoBackButtonOnStartPage);
@@ -66,7 +65,7 @@ void TeleopEditor::setId(int id) {
     this->id = id;
 
     if (id >= 0) {
-        config = model->teleop_configs.get(id);
+        config = model->teleop_configs->get(id);
 
         if (config.type == TeleopType::Value::PSM_TELEOP) {
             setStartId(PAGE_PSM_TELEOP);
@@ -83,9 +82,9 @@ void TeleopEditor::setId(int id) {
 
 void TeleopEditor::done() {
     if (id < 0) {
-        model->teleop_configs.addItem(config);
+        model->teleop_configs->addItem(config);
     } else {
-        model->teleop_configs.updateItem(id, config);
+        model->teleop_configs->updateItem(id, config);
     }
 }
 
@@ -170,7 +169,7 @@ void SuggestedTeleopsPage::initializePage() {
             if (!psm.type.isPSM()) { continue; }
             
             TeleopConfig teleop = TeleopConfig("Test", TeleopType::Value::PSM_TELEOP);
-            teleop.arms = { i, j };
+            teleop.arm_names = { mtm.name, psm.name };
             suggested_teleops.addItem(teleop);
         }
     }
@@ -189,7 +188,7 @@ void SuggestedTeleopsPage::initializePage() {
                 if (!mtmr.type.isMTM()) { continue; }
 
                 TeleopConfig teleop = TeleopConfig("Test", TeleopType::Value::ECM_TELEOP);
-                teleop.arms = { i, j, k };
+                teleop.arm_names = { ecm.name, mtml.name, mtmr.name };
                 suggested_teleops.addItem(teleop);
             }
         }

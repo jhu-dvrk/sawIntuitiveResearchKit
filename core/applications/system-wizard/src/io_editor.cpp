@@ -70,7 +70,7 @@ void IOEditor::setId(int id) {
     } else {
         page->setTitle("Editing I/O config");
 
-        IOConfig io = model->io_configs.get(id);
+        IOConfig io = model->io_configs->get(id);
 
         name_input->setText(QString::fromStdString(io.name));
         port_selector->setCurrentIndex(io.port.id());
@@ -88,9 +88,9 @@ void IOEditor::done() {
     config.watchdog_timeout_ms = watchdog_timeout_input->value();
 
     if (id < 0) {
-        model->io_configs.addItem(config);
+        model->io_configs->addItem(config);
     } else {
-        model->io_configs.updateItem(id, config);
+        model->io_configs->updateItem(id, config);
     }
 }
 

@@ -17,8 +17,10 @@ http://www.cisst.org/cisst/license.txt.
 #define SYSTEM_WIZARD_LIST_MODEL
 
 #include <algorithm>
+#include <optional>
 
 #include <QtCore>
+#include <json/json.h>
 
 #include <cisstCommon/cmnPortability.h>
 
@@ -103,6 +105,28 @@ public:
 
     int count() const override {
         return static_cast<int>(items.size());
+    }
+
+    static std::unique_ptr<ListModelT<T>> fromJSON(Json::Value value) {
+        if (!value.isArray()) {
+            return nullptr;
+        }
+
+        auto list = std::make_unique<ListModelT<T>>();
+        for (unsigned int i = 0; i < value.size(); i++) {
+            list->items.push_back(T::fromJSON(value[i]));
+        }
+
+        return list;
+    }
+
+    Json::Value toJSON() const {
+        Json::Value list(Json::arrayValue);
+        for (const T& item : items) {
+            list.append(item.toJSON());
+        }
+
+        return list;
     }
 
 private:

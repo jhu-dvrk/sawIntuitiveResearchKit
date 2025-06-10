@@ -383,9 +383,9 @@ ArmEditor::ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QW
 
 void ArmEditor::done() {
     if (id < 0) {
-        model->arm_configs.addItem(config);
+        model->arm_configs->addItem(config);
     } else {
-        model->arm_configs.updateItem(id, config);
+        model->arm_configs->updateItem(id, config);
     }
 }
 
@@ -393,7 +393,7 @@ void ArmEditor::setId(int id) {
     this->id = id;
 
     if (id >= 0) {
-        config = model->arm_configs.get(id);
+        config = model->arm_configs->get(id);
 
         switch (config.config_type) {
         case ArmConfigType::NATIVE:
