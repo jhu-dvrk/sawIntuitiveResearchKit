@@ -93,7 +93,7 @@ private:
     TeleopConfig* config;
     ListView* suggested_teleops_view;
     const ListModelT<ArmConfig>* arms;
-    ListModelT<TeleopConfig> suggested_teleops;
+    VectorList<TeleopConfig> suggested_teleops;
     TeleopOptionViewFactory suggested_teleop_factory;
 };
 
