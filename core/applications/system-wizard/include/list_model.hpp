@@ -72,58 +72,73 @@ signals:
 template<typename T>
 class ListModelT : public ListModel {
 public:
-    virtual void addItem(T value) {
+    virtual void addItem(T value) = 0;
+    virtual void updateItem(int index, T value) = 0;
+    virtual void deleteItem(int index) = 0;
+
+    virtual const T& get(int index) const = 0;
+
+    virtual void clear() = 0;
+    virtual void update(std::vector<T>& new_items) = 0;
+
+    template<typename U=T>
+    Json::Value toJSON() const {
+        Json::Value list(Json::arrayValue);
+        for (int i = 0; i < this->count(); i++) {
+            list.append(this->get(i).toJSON());
+        }
+
+        return list;
+    }
+};
+
+template<typename T>
+class VectorList : public ListModelT<T> {
+public:
+    void addItem(T value) override {
         items.push_back(value);
-        emit itemAdded(items.size() - 1);
+        emit ListModel::itemAdded(items.size() - 1);
     }
 
-    virtual void updateItem(int index, T value) {
+    void updateItem(int index, T value) override {
         items.at(index) = value;
-        emit itemUpdated(index);
+        emit ListModel::itemUpdated(index);
     }
 
-    virtual void deleteItem(int index) {
-        if (canDeleteItem(index)) {
+    void deleteItem(int index) override {
+        if (ListModel::canDeleteItem(index)) {
             items.erase(items.begin() + index);
-            emit itemDeleted(index);
+            emit ListModel::itemDeleted(index);
         }
     }
 
-    virtual const T& get(int index) const {
+    const T& get(int index) const override {
         return items.at(index);
     }
 
-    virtual void clear() {
+    void clear() override {
         items.clear();
-        emit reset();
+        emit ListModel::reset();
     }
 
-    virtual void update(std::vector<T>& new_items) {
+    void update(std::vector<T>& new_items) override {
         items = new_items;
-        emit reset();
+        emit ListModel::reset();
     }
 
     int count() const override {
         return static_cast<int>(items.size());
     }
 
-    static std::unique_ptr<ListModelT<T>> fromJSON(Json::Value value) {
+    template<typename U=T>
+    static std::unique_ptr<VectorList<U>> fromJSON(Json::Value value) {
         if (!value.isArray()) {
             return nullptr;
         }
 
-        auto list = std::make_unique<ListModelT<T>>();
+        auto list = std::make_unique<VectorList<U>>();
         for (unsigned int i = 0; i < value.size(); i++) {
-            list->items.push_back(T::fromJSON(value[i]));
-        }
-
-        return list;
-    }
-
-    Json::Value toJSON() const {
-        Json::Value list(Json::arrayValue);
-        for (const T& item : items) {
-            list.append(item.toJSON());
+            list->items.push_back(U::fromJSON(value[i]));
         }
 
         return list;

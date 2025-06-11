@@ -658,10 +658,10 @@ class SystemConfigModel : public QObject {
 
 public:
     SystemConfigModel() : QObject() {
-        io_configs = std::make_unique<ListModelT<IOConfig>>();
-        arm_configs = std::make_unique<ListModelT<ArmConfig>>();
-        teleop_configs = std::make_unique<ListModelT<TeleopConfig>>();
-        console_configs = std::make_unique<ListModelT<ConsoleConfig>>();
+        io_configs = std::make_unique<VectorList<IOConfig>>();
+        arm_configs = std::make_unique<VectorList<ArmConfig>>();
+        teleop_configs = std::make_unique<VectorList<TeleopConfig>>();
+        console_configs = std::make_unique<VectorList<ConsoleConfig>>();
 
         QObject::connect(io_configs.get(),      &ListModelT<IOConfig>::updated,      this, &SystemConfigModel::updated);
         QObject::connect(arm_configs.get(),     &ListModelT<ArmConfig>::updated,     this, &SystemConfigModel::updated);
@@ -689,7 +689,7 @@ public:
 
         json_value = json_config["arms"];
         if (!json_value.empty() && json_value.isArray()) {
-            model->arm_configs = ListModelT<ArmConfig>::fromJSON(json_value);
+            model->arm_configs = VectorList<ArmConfig>::fromJSON(json_value);
             if (model->arm_configs == nullptr) {
                 return nullptr;
             }
@@ -697,7 +697,7 @@ public:
 
         json_value = json_config["psm-teleops"];
         if (!json_value.empty() && json_value.isArray()) {
-            model->teleop_configs = ListModelT<TeleopConfig>::fromJSON(json_value);
+            model->teleop_configs = VectorList<TeleopConfig>::fromJSON(json_value);
             if (model->teleop_configs == nullptr) {
                 return nullptr;
             }

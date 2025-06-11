@@ -60,7 +60,7 @@ private:
 
     std::vector<std::filesystem::path> sources;
 
-    ListModelT<Arm> arm_list_model;
+    VectorList<Arm> arm_list_model;
 };
 
 }

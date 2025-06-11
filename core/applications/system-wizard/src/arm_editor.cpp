@@ -47,8 +47,13 @@ ArmSourceView* ArmSourceViewFactory::create(int id, ListView& list_view) {
     return new ArmSourceView(*model, list_view, id);
 }
 
-QuickArmPage::QuickArmPage(ArmConfig& config, ConfigSources& config_sources, QWidget *parent)
-    : QWizardPage(parent), config(&config), arm_list_factory(config_sources.getModel()) {
+QuickArmPage::QuickArmPage(ArmConfig& config, SystemConfigModel& model, ConfigSources& config_sources, QWidget *parent)
+    : QWizardPage(parent),
+      config(&config),
+      model(&model),
+      config_sources(&config_sources),
+      available_arms(std::make_unique<VectorList<ConfigSources::Arm>>()),
+      arm_list_factory(*available_arms) {
     setTitle("Quick arm");
     setSubTitle("Choose from default arms");
 
@@ -57,10 +62,10 @@ QuickArmPage::QuickArmPage(ArmConfig& config, ConfigSources& config_sources, QWi
     source_label->setWordWrap(true);
     layout->addWidget(source_label);
 
-    arm_list_view = new ListView(config_sources.getModel(), arm_list_factory, SelectionMode::SINGLE);
+    arm_list_view = new ListView(*available_arms, arm_list_factory, SelectionMode::SINGLE);
     arm_list_view->setEmptyMessage("No arms available - open a config folder");
-    QObject::connect(arm_list_view, &ListView::choose, this, [this, &model=config_sources.getModel()](int index){
-        ConfigSources::Arm source = model.get(index);
+    QObject::connect(arm_list_view, &ListView::choose, this, [this](int index){
+        ConfigSources::Arm source = available_arms->get(index);
         *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
         this->config->serial_number = source.serial_number;
         this->config->interface_name = "Arm";
@@ -68,11 +73,11 @@ QuickArmPage::QuickArmPage(ArmConfig& config, ConfigSources& config_sources, QWi
         next_page_id = -1;
         this->wizard()->accept();
     });
-    QObject::connect(arm_list_view, &ListView::selected, this, [this, &model=config_sources.getModel()](int index, bool selected){
+    QObject::connect(arm_list_view, &ListView::selected, this, [this](int index, bool selected){
         if (selected) {
             next_page_id = -1;
 
-            ConfigSources::Arm source = model.get(index);
+            ConfigSources::Arm source = available_arms->get(index);
             *this->config = ArmConfig(source.name, source.type, ArmConfigType::NATIVE);
             this->config->serial_number = source.serial_number;
             this->config->interface_name = "Arm";
@@ -111,6 +116,24 @@ QuickArmPage::QuickArmPage(ArmConfig& config, ConfigSources& config_sources, QWi
 }
 
 void QuickArmPage::initializePage() {
+    std::vector<ConfigSources::Arm> available;
+    for (int i = 0; i < config_sources->getModel().count(); i++) {
+        auto arm = config_sources->getModel().get(i);
+        bool already_used = false;
+        for (int j = 0; j < model->arm_configs->count(); j++) {
+            if (model->arm_configs->get(j).name == arm.name) {
+                already_used = true;
+                break;
+            }
+        }
+
+        if (!already_used) {
+            available.push_back(arm);
+        }
+    }
+
+    available_arms->update(available);
+
     arm_list_view->clearSelections();
 
     QList<QWizard::WizardButton> button_layout;
@@ -333,39 +356,9 @@ void ROSArmPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
     }
 }
 
-// NativeArmPage::NativeArmPage(ArmConfig& config, QWidget* parent) : QWizardPage(parent), config(&config) { }
-
-// void NativeArmPage::initializePage() { }
-
-// ArmDetailsPage::ArmDetailsPage(ArmConfig& config, QWidget* parent) : QWizardPage(parent), config(&config) {
-//     setTitle("Configure arm details");
-
-//     QFormLayout* form = new QFormLayout(this);
-
-//     name = new QLineEdit();
-//     base_frame = new QComboBox();
-//     base_frame->setPlaceholderText("select base frame");
-//     base_frame->addItem("None", 0);
-//     base_frame->addItem("Set Up Joints", 1);
-//     base_frame->addItem("Fixed Endoscope", 2);
-//     base_frame->addItem("Fixed Stereo Display", 3);
-
-//     form->addRow("Arm name:", name);
-//     form->addRow("Base frame:", base_frame);
-
-//     registerField("arm.name", name);
-//     registerField("arm.base_frame*", base_frame);
-// }
-
-// void ArmDetailsPage::initializePage() { }
-
-// void ArmDetailsPage::showEvent(QShowEvent *CMN_UNUSED(event)) {
-//     name->setText(QString::fromStdString(config->name));
-// }
-
 ArmEditor::ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QWidget* parent)
     : QWizard(parent), model(&model), config("Arm", ArmType::Value::PSM, ArmConfigType::NATIVE) {
-    setPage(PAGE_QUICK_ARM, new QuickArmPage(config, config_sources));
+    setPage(PAGE_QUICK_ARM, new QuickArmPage(config, model, config_sources));
     setPage(PAGE_ARM_TYPE, new ArmTypePage(config));
     setPage(PAGE_HAPTIC_MTM, new HapticMTMPage(config));
     setPage(PAGE_ROS_ARM, new ROSArmPage(config));
