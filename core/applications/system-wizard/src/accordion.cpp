@@ -26,9 +26,10 @@ Accordion::Accordion(const QString& title, const QString& background_color, QWid
     this->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Maximum);
     button = new QToolButton(this);
     button->setCheckable(true); // turn into a "checkbox" button
+    button->setChecked(is_open);
     button->setStyleSheet("background-color: " + background_color + "; font-size: 5em; text-align: left; border: none; outline: none;");
     button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    button->setArrowType(Qt::ArrowType::RightArrow);
+    button->setArrowType(is_open ? Qt::ArrowType::DownArrow : Qt::ArrowType::RightArrow);
     button->setText(title);
 
     QObject::connect(button, &QToolButton::toggled, this, &Accordion::toggle);
@@ -55,13 +56,13 @@ void Accordion::setWidget(QWidget* contents) {
     }
 
     this->contents = contents;
-
-    if (!is_open) {
-        contents->setMaximumHeight(0);
-    }
-
     layout()->addWidget(contents);
+
+    // set maximum height before setting animation target so animation behaves properly,
+    // but then set maximum height to unrestricted (if open) so widget can resize
+    contents->setMaximumHeight(is_open ? contents->sizeHint().height() + 10 : 0);
     animation->setTargetObject(this->contents);
+    contents->setMaximumHeight(is_open ? QWIDGETSIZE_MAX : 0);
 }
 
 void Accordion::toggle(bool button_checked) {
@@ -84,6 +85,7 @@ void Accordion::toggle(bool button_checked) {
 }
 
 void Accordion::animation_finished() {
+    // ensure open widget isn't constrained in case it changes size
     if (is_open) {
         contents->setMaximumHeight(QWIDGETSIZE_MAX);
     }
