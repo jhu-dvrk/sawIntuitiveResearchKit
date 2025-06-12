@@ -112,7 +112,8 @@ void dvrk::arm_proxy::create_arm(void)
         }
     } else {
         // -2- using serial number
-        if (m_config->type != dvrk::arm_type::FOCUS_CONTROLLER) {
+        if ((m_config->type != dvrk::arm_type::FOCUS_CONTROLLER)
+            && (m_config->simulation != dvrk::simulation::SIMULATION_KINEMATIC)) {
             if (m_config->serial == "") {
                 CMN_LOG_INIT_ERROR << "arm_proxy::create_arm: serial number required for arm "
                                    << m_name << std::endl;

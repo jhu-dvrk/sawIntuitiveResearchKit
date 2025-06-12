@@ -657,7 +657,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         }
 
         // should arm go to zero position when homing, default set in Init method
-        const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
+        const Json::Value jsonHomingGoesToZero = jsonConfig["homing_zero_position"];
         if (!jsonHomingGoesToZero.isNull()) {
             m_homing_goes_to_zero = jsonHomingGoesToZero.asBool();
         }
@@ -669,7 +669,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         }
 
         // should ignore preloaded encoders and force homing
-        const Json::Value jsonAlwaysHome = jsonConfig["re-home"];
+        const Json::Value jsonAlwaysHome = jsonConfig["re_home"];
         if (!jsonAlwaysHome.isNull()) {
             m_re_home = jsonAlwaysHome.asBool();
         }

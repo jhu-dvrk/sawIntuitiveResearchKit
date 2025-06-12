@@ -102,6 +102,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     // state related methods
     void SetGoalHomingArm(void) override;
+    void EnterHomed(void);
     void TransitionHomed(void); // for adapter/tool detection
 
     // methods used in change coupling/engaging
@@ -196,9 +197,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     /*! Configuration for tool detection, either using Dallas Chip,
       manual or fixed based on configuration file. */
-    mtsToolList mToolList;
-    size_t mToolIndex;
-    mtsIntuitiveResearchKitToolTypes::Detection mToolDetection;
+    mtsToolList m_tool_list;
+    size_t m_tool_index;
+    mtsIntuitiveResearchKitToolTypes::Detection m_tool_detection;
     bool m_tool_present = false;
     bool m_tool_configured = false;
     bool m_tool_type_requested = false;

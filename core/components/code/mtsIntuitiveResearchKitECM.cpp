@@ -196,7 +196,7 @@ void mtsIntuitiveResearchKitECM::ConfigureGC(const Json::Value & jsonConfig,
                                                const std::string & filename)
 {
     std::string physical_dh_name;
-    const auto jsonPhysicalDH = jsonConfig["kinematic-gc"];
+    const auto jsonPhysicalDH = jsonConfig["kinematic_gc"];
     if (!jsonPhysicalDH.isNull()) {
         physical_dh_name = jsonPhysicalDH.asString();
     } else if (m_generation == dvrk::generation::Si) {

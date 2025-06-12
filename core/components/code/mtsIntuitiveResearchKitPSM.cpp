@@ -85,14 +85,14 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsIntuitiveResearchKitPSM, mtsTaskPeriodi
 
 mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const std::string & componentName, const double periodInSeconds):
     mtsIntuitiveResearchKitArm(componentName, periodInSeconds),
-    mToolList(*this)
+    m_tool_list(*this)
 {
     Init();
 }
 
 mtsIntuitiveResearchKitPSM::mtsIntuitiveResearchKitPSM(const mtsTaskPeriodicConstructorArg & arg):
     mtsIntuitiveResearchKitArm(arg),
-    mToolList(*this)
+    m_tool_list(*this)
 {
     Init();
 }
@@ -144,22 +144,22 @@ void mtsIntuitiveResearchKitPSM::set_generation(const dvrk::generation generatio
 void mtsIntuitiveResearchKitPSM::load_tool_list(const cmnPath & path,
                                                 const std::string & indexFile)
 {
-    mToolList.Load(path, indexFile);
+    m_tool_list.Load(path, indexFile);
 }
 
 void mtsIntuitiveResearchKitPSM::tool_list_size(size_t & size) const
 {
-    size = mToolList.size();
+    size = m_tool_list.size();
 }
 
 void mtsIntuitiveResearchKitPSM::tool_name(const size_t & index, std::string & name) const
 {
-    name = mToolList.Name(index);
+    name = m_tool_list.Name(index);
 }
 
 void mtsIntuitiveResearchKitPSM::tool_full_description(const size_t & index, std::string & description) const
 {
-    description = mToolList.FullDescription(index);
+    description = m_tool_list.FullDescription(index);
 }
 
 void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
@@ -175,7 +175,7 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
     load_tool_list(configPath);
 
     // extra tool definitions
-    const auto jsonToolIndexFile = jsonConfig["custom-tool-index"];
+    const auto jsonToolIndexFile = jsonConfig["custom_tool_index"];
     if (!jsonToolIndexFile.isNull()) {
         const auto toolIndexFile = jsonToolIndexFile.asString();
         auto fullname = configPath.Find(toolIndexFile);
@@ -190,21 +190,21 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
     }
 
     // tool detection
-    const auto jsonToolDetection = jsonConfig["tool-detection"];
+    const auto jsonToolDetection = jsonConfig["tool_detection"];
     if (!jsonToolDetection.isNull()) {
         std::string toolDetection = jsonToolDetection.asString();
-        mToolDetection = mtsIntuitiveResearchKitToolTypes::DetectionFromString(toolDetection);
-        if (mToolDetection == mtsIntuitiveResearchKitToolTypes::FIXED) {
+        m_tool_detection = mtsIntuitiveResearchKitToolTypes::DetectionFromString(toolDetection);
+        if (m_tool_detection == mtsIntuitiveResearchKitToolTypes::FIXED) {
             const auto jsonFixedTool = jsonConfig["tool"];
             if (!jsonFixedTool.isNull()) {
-                std::string fixedTool = jsonFixedTool.asString();
+                const std::string fixedTool = jsonFixedTool.asString();
                 // check if the tool is in the supported list (string name)
-                const bool found = mToolList.Find(fixedTool, mToolIndex);
+                const bool found = m_tool_list.Find(fixedTool, m_tool_index);
                 if (!found) {
                     CMN_LOG_CLASS_INIT_ERROR << "PostConfigure: " << this->GetName()
                                              << ", \"" << fixedTool << "\" found in file \""
                                              << filename << "\" is not a supported type." << std::endl
-                                             << "Supported tool types are:\n" << mToolList.PossibleNames("\n") << std::endl;
+                                             << "Supported tool types are:\n" << m_tool_list.PossibleNames("\n") << std::endl;
                     exit(EXIT_FAILURE);
                 }
             } else {
@@ -215,7 +215,7 @@ void mtsIntuitiveResearchKitPSM::PostConfigure(const Json::Value & jsonConfig,
             }
         }
     } else {
-        mToolDetection = mtsIntuitiveResearchKitToolTypes::AUTOMATIC;
+        m_tool_detection = mtsIntuitiveResearchKitToolTypes::AUTOMATIC;
     }
 
     // ask to set pitch if not already defined
@@ -382,10 +382,10 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         }
 
         // load tool tip transform if any (with warning)
-        const Json::Value jsonToolTip = jsonConfig["tooltip-offset"];
+        const Json::Value jsonToolTip = jsonConfig["tooltip_offset"];
         if (jsonToolTip.isNull()) {
             CMN_LOG_CLASS_INIT_WARNING << "ConfigureTool " << this->GetName()
-                                       << ": can find \"tooltip-offset\" data in \"" << fullFilename << "\"" << std::endl;
+                                       << ": can find \"tooltip_offset\" data in \"" << fullFilename << "\"" << std::endl;
         } else {
             cmnDataJSON<vctFrm4x4>::DeSerializeText(ToolOffsetTransformation, jsonToolTip);
             ToolOffset = new robManipulator(ToolOffsetTransformation);
@@ -467,10 +467,10 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
         m_jaw_configuration_js.Type().at(0) = CMN_JOINT_REVOLUTE;
 
         // load lower/upper position used to engage the tool(required)
-        const Json::Value jsonEngagePosition = jsonConfig["tool-engage-position"];
+        const Json::Value jsonEngagePosition = jsonConfig["tool_engage_position"];
         if (jsonEngagePosition.isNull()) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
-                                     << ": can find \"tool-engage-position\" data in \"" << fullFilename << "\"" << std::endl;
+                                     << ": can find \"tool_engage_position\" data in \"" << fullFilename << "\"" << std::endl;
             return false;
         }
         // lower
@@ -478,7 +478,7 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
                                                    jsonEngagePosition["lower"]);
         if (m_tool_engage_lower_position.size() != 4) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
-                                     << ": \"tool-engage-position\" : \"lower\" must contain 4 elements in \""
+                                     << ": \"tool_engage_position\" : \"lower\" must contain 4 elements in \""
                                      << fullFilename << "\"" << std::endl;
             return false;
         }
@@ -487,7 +487,7 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
                                                    jsonEngagePosition["upper"]);
         if (m_tool_engage_upper_position.size() != 4) {
             CMN_LOG_CLASS_INIT_ERROR << "ConfigureTool " << this->GetName()
-                                     << ": \"tool-engage-position\" : \"upper\" must contain 4 elements in \""
+                                     << ": \"tool_engage_position\" : \"upper\" must contain 4 elements in \""
                                      << fullFilename << "\"" << std::endl;
             return false;
         }
@@ -500,6 +500,7 @@ bool mtsIntuitiveResearchKitPSM::ConfigureTool(const std::string & filename)
 
     return true;
 }
+
 
 void mtsIntuitiveResearchKitPSM::UpdateStateJointKinematics(void)
 {
@@ -676,6 +677,9 @@ void mtsIntuitiveResearchKitPSM::Init(void)
     mArmState.AddState("MANUAL");
 
     // after arm homed
+    mArmState.SetEnterCallback("HOMED",
+                               &mtsIntuitiveResearchKitPSM::EnterHomed,
+                               this);
     mArmState.SetTransitionCallback("HOMED",
                                     &mtsIntuitiveResearchKitPSM::TransitionHomed,
                                     this);
@@ -848,6 +852,21 @@ void mtsIntuitiveResearchKitPSM::SetGoalHomingArm(void)
     }
 }
 
+
+void mtsIntuitiveResearchKitPSM::EnterHomed(void)
+{
+    mtsIntuitiveResearchKitArm::EnterHomed();
+
+    // event to propagate tool type based on configuration file
+    if (m_simulated
+        && (m_tool_detection == mtsIntuitiveResearchKitToolTypes::FIXED)) {
+        prmEventButton fake_event;
+        fake_event.SetType(prmEventButton::PRESSED);
+        EventHandlerTool(fake_event);
+    }
+}
+
+
 void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
 {
     if (!m_simulated) {
@@ -874,7 +893,7 @@ void mtsIntuitiveResearchKitPSM::TransitionHomed(void)
                 if (m_tool_configured) {
                     set_tool_present_and_configured(true, m_tool_configured);
                     mArmState.SetCurrentState("ENGAGING_TOOL");
-                } else if ((mToolDetection == mtsIntuitiveResearchKitToolTypes::MANUAL)
+                } else if ((m_tool_detection == mtsIntuitiveResearchKitToolTypes::MANUAL)
                            && !m_tool_type_requested) {
                     // manual is not sent until robot is ready
                     set_tool_present_and_configured(true, false);
@@ -1567,7 +1586,7 @@ void mtsIntuitiveResearchKitPSM::set_tool_present_and_configured(const bool & pr
     if (m_tool_present && m_tool_configured) {
         // we will need to engage this tool
         Tool.NeedEngage = true;
-        ToolEvents.tool_type(mToolList.Name(mToolIndex));
+        ToolEvents.tool_type(m_tool_list.Name(m_tool_index));
     }
 }
 
@@ -1604,7 +1623,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
             mArmState.SetCurrentState("HOMED");
         }
         // then figure out which tool we're using
-        switch (mToolDetection) {
+        switch (m_tool_detection) {
         case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
             set_tool_present_and_configured(true, false);
             Dallas.TriggerRead();
@@ -1619,9 +1638,9 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
             break;
         case mtsIntuitiveResearchKitToolTypes::FIXED:
             {
-                const std::string toolFile = mToolList.File(mToolIndex);
+                const std::string toolFile = m_tool_list.File(m_tool_index);
                 m_arm_interface->SendStatus(this->GetName() + ": using tool file \"" + toolFile
-                                            + "\" for fixed tool: " + mToolList.FullDescription(mToolIndex));
+                                            + "\" for fixed tool: " + m_tool_list.FullDescription(m_tool_index));
                 bool tool_configured = ConfigureTool(toolFile);
                 if (!tool_configured) {
                     m_arm_interface->SendError(this->GetName() + ": failed to configure fixed tool, check terminal output and cisstLog file");
@@ -1635,7 +1654,7 @@ void mtsIntuitiveResearchKitPSM::EventHandlerTool(const prmEventButton & button)
         }
         break;
     case prmEventButton::RELEASED:
-        switch (mToolDetection) {
+        switch (m_tool_detection) {
         case mtsIntuitiveResearchKitToolTypes::AUTOMATIC:
         case mtsIntuitiveResearchKitToolTypes::MANUAL:
         case mtsIntuitiveResearchKitToolTypes::FIXED:
@@ -1701,17 +1720,17 @@ void mtsIntuitiveResearchKitPSM::EventHandlerToolType(const std::string & toolTy
 {
     m_arm_interface->SendStatus(this->GetName() + ": setting up for tool type \"" + toolType + "\"");
     // check if the tool is in the supported list
-    if (!mToolList.Find(toolType, mToolIndex)) {
-        CMN_LOG_CLASS_RUN_ERROR << "Supported tool types are:\n" << mToolList.PossibleNames("\n") << std::endl;
+    if (!m_tool_list.Find(toolType, m_tool_index)) {
+        CMN_LOG_CLASS_RUN_ERROR << "Supported tool types are:\n" << m_tool_list.PossibleNames("\n") << std::endl;
         m_arm_interface->SendError(this->GetName() + ": tool type \""
                                    + toolType + "\" is not supported, see cisstLog for details");
         ToolEvents.tool_type(std::string("ERROR"));
         return;
     }
     // supported tools
-    const std::string toolFile = mToolList.File(mToolIndex);
+    const std::string toolFile = m_tool_list.File(m_tool_index);
     m_arm_interface->SendStatus(this->GetName() + ": using tool file \"" + toolFile
-                                + "\" for: " + mToolList.FullDescription(mToolIndex));
+                                + "\" for: " + m_tool_list.FullDescription(m_tool_index));
     bool tool_configured = ConfigureTool(toolFile);
     if (!tool_configured) {
         m_arm_interface->SendError(this->GetName() + ": failed to configure tool \"" + toolType + "\", check terminal output and cisstLog file");

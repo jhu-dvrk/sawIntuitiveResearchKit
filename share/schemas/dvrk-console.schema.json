@@ -98,7 +98,7 @@
             "$ref": "cisst-terminal.schema.json"
         },
 
-        "teleops_PSM": {
+        "teleop_PSMs": {
             "type": "array",
             "description": "List of PSM tele-operation components.  Each PSM tele-operation component requires a MTM and a PSM",
             "items": {
@@ -108,7 +108,7 @@
             }
         },
 
-        "teleops_ECM": {
+        "teleop_ECMs": {
             "type": "array",
             "description": "List of ECM tele-operation components.  Each PSM tele-operation component requires a MTML, MTMR and a PSM",
             "items": {

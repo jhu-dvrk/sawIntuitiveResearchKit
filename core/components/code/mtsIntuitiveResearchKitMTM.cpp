@@ -149,12 +149,12 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
                                               const std::string & CMN_UNUSED(filename))
 {
     // platform gain
-    const auto jsonPlatformGain = jsonConfig["platform-gain"];
+    const auto jsonPlatformGain = jsonConfig["platform_gain"];
     if (!jsonPlatformGain.isNull()) {
         const auto gain = jsonPlatformGain.asDouble();
         if ((gain < 0.0) || (gain > 1.0)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                     << " platform-gain must be between 0 and 1, found: "
+                                     << " platform_gain must be between 0 and 1, found: "
                                      << gain << std::endl;
             exit(EXIT_FAILURE);
         } else {
@@ -163,12 +163,12 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
     }
 
     // gripper events
-    const auto jsonGripperEventDebounce = jsonConfig["gripper-events-debounce"];
+    const auto jsonGripperEventDebounce = jsonConfig["gripper_events_debounce"];
     if (!jsonGripperEventDebounce.isNull()) {
         const auto debounce = jsonGripperEventDebounce.asDouble();
         if (debounce < 0.0) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                     << " gripper-events-debounce must be greater or equal to 0, found: "
+                                     << " gripper_events_debounce must be greater or equal to 0, found: "
                                      << debounce << std::endl;
             exit(EXIT_FAILURE);
         } else {
@@ -176,13 +176,13 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
         }
     }
 
-    const auto jsonGripperEventZero = jsonConfig["gripper-events-zero"];
+    const auto jsonGripperEventZero = jsonConfig["gripper_events_zero"];
     if (!jsonGripperEventZero.isNull()) {
         gripper_events.zero_angle = jsonGripperEventZero.asDouble();
     }
 
     // which IK to use
-    const auto jsonKinematic = jsonConfig["kinematic-type"];
+    const auto jsonKinematic = jsonConfig["kinematic_type"];
     if (!jsonKinematic.isNull()) {
         const auto kinematicType = jsonKinematic.asString();
         const std::list<std::string> options {"ITERATIVE", "CLOSED"};
@@ -200,7 +200,7 @@ void mtsIntuitiveResearchKitMTM::PreConfigure(const Json::Value & jsonConfig,
                                                            [](const std::string & a, const std::string & b) {
                                                                return a.empty() ? b : a + ", " + b; });
             CMN_LOG_CLASS_INIT_ERROR << "Configure: " << this->GetName()
-                                     << " kinematic-type \"" << kinematicType << "\" is not valid.  Valid options are: "
+                                     << " kinematic_type \"" << kinematicType << "\" is not valid.  Valid options are: "
                                      << allOptions << std::endl;
             exit(EXIT_FAILURE);
         }

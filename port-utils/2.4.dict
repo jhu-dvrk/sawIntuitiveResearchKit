@@ -79,3 +79,6 @@ psm = PSM
 mtm-left = MTML
 mtm-right = MTMR
 ecm = ECM
+
+tooltip-offset = tooltip_offset
+tool-engage-position = tool_engage_position

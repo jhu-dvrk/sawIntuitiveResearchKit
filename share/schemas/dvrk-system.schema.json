@@ -8,21 +8,21 @@
 
     "properties": {
 
-	"IOs": {
+        "IOs": {
             "type": "array",
             "description": "List of IO components.  Each IO (input/output) component corresponds to a physical connection to the dVRK controllers, usually over FireWire or Ethernet (UDP).",
             "items": {
                 "type": "object",
                 "description": "Configuration for a single IO component",
-		"$ref": "dvrk-IO.schema.json"
+                "$ref": "dvrk-IO.schema.json"
             },
-	    "examples":
-	    [
-		{
-		    "name": "IO_1",
-		    "port": "fw"
-		}
-	    ]
+            "examples":
+            [
+                {
+                    "name": "IO_1",
+                    "port": "fw"
+                }
+            ]
         },
 
         "arms": {
@@ -59,7 +59,8 @@
                                     {
                                         "name": "MTML",
                                         "type": "MTM",
-                                        "serial": "22723"
+                                        "serial": "22723",
+                                        "IO": "IO_1"
                                     }
                                     ,
                                     {
@@ -81,6 +82,11 @@
                                 "serial": "22723"
                             }
                         ]
+                    },
+
+                    "IO": {
+                        "type": "string",
+                        "description": "Name of the IO port to use to connect to this arm. This is required for arms of type `PSM`, `ECM`, `MTM` (and derived) as well as `SUJ_Classic`. The IO must have been declared in the \"IOs\" section of the \"system\"."
                     },
 
                     "arm_file": {
@@ -186,7 +192,7 @@
             "items": {
                 "type": "object",
                 "description": "Configuration for a single PSM tele-operation component",
-		"$ref": "dvrk-console.schema.json"
+                "$ref": "dvrk-console.schema.json"
             }
         },
 
@@ -195,12 +201,12 @@
             "type": "object",
             "additionalProperties": false,
             "type": "object",
-	    "$ref": "dvrk-IO-configuration.schema.json",
+            "$ref": "dvrk-IO-configuration.schema.json",
             "examples": [
                 {
                     "ISI_focus_controller": {
                         "IO": "IO_1",
-			"IO_file": "io/sawRobotIO1394-MTML-dv-endoscope-focus.xml"
+                        "IO_file": "io/sawRobotIO1394-MTML-dv-endoscope-focus.xml"
                     }
                 }
             ]

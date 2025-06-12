@@ -15,7 +15,7 @@
 
         "PSM": {
             "type": "string",
-            "description": "Name of patient's side PSM arm to be used (`MTML`, `MTMR`, `MTML1`...). The arm must have been declared in the main system configuration file under \"arms\"."
+            "description": "Name of patient's side PSM arm to be used (`PSM1`, `PSM2`...). The arm must have been declared in the main system configuration file under \"arms\"."
         },
 
         "type": {
