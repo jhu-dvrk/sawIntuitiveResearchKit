@@ -24,8 +24,8 @@ class Accordion : public QFrame {
     Q_OBJECT
 
 public:
-    Accordion(QWidget* parent = nullptr);
-    Accordion(const QString& title, const QString& background_color, QWidget* parent = nullptr);
+    Accordion(bool start_open = true, QWidget* parent = nullptr);
+    Accordion(const QString& title, const QString& background_color, bool start_open = true, QWidget* parent = nullptr);
 
     void setWidget(QWidget* contents);
 

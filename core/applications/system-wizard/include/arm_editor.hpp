@@ -98,7 +98,7 @@ class QuickArmPage : public QWizardPage {
     Q_OBJECT
 
 public:
-    QuickArmPage(ArmConfig& config, SystemConfigModel& model, ConfigSources& config_sources, QWidget *parent = nullptr);
+    QuickArmPage(ArmConfig& config, const SystemConfigModel& model, ConfigSources& config_sources, QWidget *parent = nullptr);
 
     int nextId() const override { return next_page_id; }
 
@@ -110,7 +110,7 @@ private:
 
     ArmConfig* config;
 
-    SystemConfigModel* model;
+    const SystemConfigModel* model;
     ConfigSources* config_sources;
 
     std::unique_ptr<ListModelT<ConfigSources::Arm>> available_arms;

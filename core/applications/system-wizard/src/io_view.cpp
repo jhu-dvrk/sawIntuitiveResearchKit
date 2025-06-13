@@ -43,7 +43,7 @@ void IOView::updateData(int id) {
 
     const IOConfig& io = model->io_configs->get(id);
     int frequency = int(std::round(1.0 / io.period_ms));
-    QString text = QString::fromStdString(io.name + ": " + io.port.name()) + " @ " + QString::number(frequency);
+    QString text = QString::fromStdString(io.name + ": " + io.port.name()) + " @ " + QString::number(frequency) + " Hz";
     display->setText(text);
 }
 
