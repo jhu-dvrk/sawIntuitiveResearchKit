@@ -152,7 +152,7 @@ public:
         default:
             return "UNKNOWN";
         }
-    };
+    }
 
     static std::optional<ArmType> deserialize(std::string name) {
         if (name == "MTM") {
@@ -221,7 +221,7 @@ public:
         default:
             return "UNKNOWN";
         }
-    };
+    }
 
     bool isPSM() const {
         switch (value) {
@@ -287,7 +287,8 @@ public:
         UDPFW = 2,
     };
 
-    IOPort(Value value) : value(value) {}
+    IOPort(Value value, std::optional<std::string> ip_address = {}, std::optional<int> firewire_port = {})
+        : value(value), ip_address(ip_address), firewire_port(firewire_port) {}
 
     static int count() { return 3; }
 
@@ -304,7 +305,7 @@ public:
         default:
             return "UNKNOWN";
         }
-    };
+    }
 
     std::string explain() const {
         switch (value) {
@@ -317,41 +318,96 @@ public:
         default:
             return "UNKNOWN";
         }
-    };
+    }
 
     static std::optional<IOPort> deserialize(std::string name) {
         auto starts_with = [&name](std::string prefix) {
             return name.size() >= prefix.size() && name.substr(0, prefix.size()) == prefix;
         };
 
+        Value type;
+
         if (starts_with("udp")) {
             if (starts_with("udpfw")) {
-                return Value::UDPFW;
+                type = Value::UDPFW;
             } else {
-                return Value::UDP;
+                type = Value::UDP;
             }
         } else if (starts_with("fw")) {
-            return Value::FIREWIRE;
+            type = Value::FIREWIRE;
         } else {
-            return {};
+            return {}; // unknown/invalid
         }
-    };
+
+        IOPort port = IOPort(type);
+
+        std::string::size_type separator = name.find(":");
+        if (separator == name.npos) {
+            return port;
+        }
+
+        std::string remainder = name.substr(separator + 1, name.npos);
+        if (type == Value::UDPFW || type == Value::UDP) {
+            port.ip_address = remainder;
+        } else {
+            try {
+                port.firewire_port = std::stoi(remainder);
+            }
+            catch (std::invalid_argument const& ex) { }
+            catch (std::out_of_range const& ex) { }
+        }
+
+        return port;
+    }
 
     std::string serialize() const {
         switch (value) {
         case Value::UDP:
-            return "udp";
+            if (ip_address) {
+                return "udp:" + ip_address.value();
+            } else {
+                return "udp";
+            }
         case Value::FIREWIRE:
-            return "fw";
+            if (firewire_port) {
+                return "fw:" + firewire_port.value();
+            } else {
+                return "fw";
+            }
         case Value::UDPFW:
-            return "udpfw";
+            if (ip_address) {
+                return "udpfw:" + ip_address.value();
+            } else {
+                return "udpfw";
+            }
         default:
             return "UNKNOWN";
         }
-    };
+    }
+
+    bool conflicts(const IOPort& other) const {
+        if (value == Value::UDP || value == Value::UDPFW) {
+            bool also_udp = other.value == Value::UDP || other.value == Value::UDPFW;
+            return also_udp && resolve_default_ip() == other.resolve_default_ip();
+        } else {
+            bool also_firewire = other.value == Value::FIREWIRE;
+            bool same_port = firewire_port.value_or(0) == other.firewire_port.value_or(0);
+            return also_firewire && same_port;
+        }
+    }
 
 private:
+    std::string resolve_default_ip() const {
+        if (!ip_address.has_value() || ip_address.value().size() == 0) {
+            return "169.254.0.100";
+        } else {
+            return ip_address.value();
+        }
+    }
+
     Value value;
+    std::optional<std::string> ip_address;
+    std::optional<int> firewire_port;
 };
 
 class IOProtocol {
@@ -379,7 +435,7 @@ public:
         default:
             return "UNKNOWN";
         }
-    };
+    }
 
     std::string explain() const {
         switch (value) {
@@ -390,7 +446,7 @@ public:
         default:
             return "UNKNOWN";
         }
-    };
+    }
 
     static std::optional<IOProtocol> deserialize(std::string name) {
         if ((name == "sequential-read-write") ||
@@ -407,7 +463,7 @@ public:
         } else {
             return {};
         }
-    };
+    }
 
     std::string serialize() const {
         switch (value) {
@@ -420,7 +476,7 @@ public:
         default:
             return "UNKNOWN";
         }
-    };
+    }
 
 private:
     Value value;
@@ -478,7 +534,7 @@ public:
         default:
             return "UNKNOWN";
         }
-    };
+    }
 
     std::string serialize() const {
         switch (value) {
@@ -493,7 +549,7 @@ public:
         default:
             return "UNKNOWN";
         }
-    };
+    }
 
     friend constexpr bool operator==(const TeleopType& lhs, const TeleopType& rhs) {
         return lhs.value == rhs.value;
@@ -644,7 +700,7 @@ public:
 
 class ConsoleConfig {
 public:
-    static ConsoleConfig fromJSON(Json::Value value) {
+    static ConsoleConfig fromJSON(Json::Value CMN_UNUSED(value)) {
         return ConsoleConfig();
     }
 
@@ -731,7 +787,6 @@ public:
         config["psm-teleops"] = psm_teleops;
 
         for (int i = 0; i < teleop_configs->count(); i++) {
-            qDebug() << i << ", " << teleop_configs->count() << "\n";
             TeleopConfig teleop_config = teleop_configs->get(i);
             if (teleop_config.type == TeleopType::Value::ECM_TELEOP) {
                 config["ecm-teleop"] = teleop_config.toJSON();

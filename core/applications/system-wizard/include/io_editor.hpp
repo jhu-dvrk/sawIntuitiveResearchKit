@@ -23,6 +23,43 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
+class IOEditPage : public QWizardPage {
+    Q_OBJECT
+
+public:
+    IOEditPage(IOConfig& config, const SystemConfigModel& model, QWidget* parent = nullptr);
+
+    int nextId() const override { return -1; }
+
+    void initializePage() override;
+
+    bool nameAlreadyUsed() const;
+    bool portAlreadyUsed() const;
+    bool isComplete() const override;
+
+    void setId(int id) {  config_id = id; }
+
+private:
+    IOConfig* config;
+    int config_id = -1;
+
+    const SystemConfigModel* model;
+
+    QLineEdit* name_input;
+    QLabel* name_invalid_msg;
+
+    QSpinBox* frequency_input;
+    QDoubleSpinBox* watchdog_timeout_input;
+
+    QLineEdit* foot_pedals_file;
+
+    QComboBox* port_selector;
+    EnumListModel<IOPort> port_model;
+
+    QComboBox* protocol_selector;
+    EnumListModel<IOProtocol> protocol_model;
+};
+
 class IOEditor : public QWizard {
     Q_OBJECT
 
@@ -35,21 +72,11 @@ public slots:
 private:
     void done();
 
-    QWizardPage* page;
+    IOEditPage* edit_page;
 
     SystemConfigModel* model;
-    int id = -1;
-
-    QLineEdit* name_input;
-
-    QSpinBox* frequency_input;
-    QDoubleSpinBox* watchdog_timeout_input;
-
-    QComboBox* port_selector;
-    EnumListModel<IOPort> port_model;
-
-    QComboBox* protocol_selector;
-    EnumListModel<IOProtocol> protocol_model;
+    IOConfig config;
+    int config_id = -1;
 };
 
 }

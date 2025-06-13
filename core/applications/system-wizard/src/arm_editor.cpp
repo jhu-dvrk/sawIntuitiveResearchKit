@@ -47,7 +47,7 @@ ArmSourceView* ArmSourceViewFactory::create(int id, ListView& list_view) {
     return new ArmSourceView(*model, list_view, id);
 }
 
-QuickArmPage::QuickArmPage(ArmConfig& config, SystemConfigModel& model, ConfigSources& config_sources, QWidget *parent)
+QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, ConfigSources& config_sources, QWidget *parent)
     : QWizardPage(parent),
       config(&config),
       model(&model),

@@ -17,10 +17,10 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-Accordion::Accordion(QWidget* parent) : Accordion("", "", parent) { }
+Accordion::Accordion(bool start_open, QWidget* parent) : Accordion("", "", start_open, parent) { }
 
-Accordion::Accordion(const QString& title, const QString& background_color, QWidget* parent)
-    : QFrame(parent), is_open(true), contents(nullptr) {
+Accordion::Accordion(const QString& title, const QString& background_color, bool start_open, QWidget* parent)
+    : QFrame(parent), is_open(start_open), contents(nullptr) {
     this->setFrameStyle(QFrame::StyledPanel);
     this->setStyleSheet("system_wizard--Accordion { background-color: " + background_color + "; border-radius: 10px; }");
     this->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Maximum);
