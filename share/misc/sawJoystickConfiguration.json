@@ -3,14 +3,20 @@
     [
         {
             "type": "interface-provided-button",
-	    "index-input": 1,
-            "interface-name": "OperatorPresent"
+	    "index-input": 5,
+            "interface-name": "operator_present"
         }
 	,
         {
             "type": "interface-provided-button",
-	    "index-input": 0,
-            "interface-name": "Clutch"
+	    "index-input": 3,
+            "interface-name": "clutch"
+        }
+	,
+        {
+            "type": "interface-provided-button",
+	    "index-input": 2,
+            "interface-name": "camera"
         }
     ]
     ,
