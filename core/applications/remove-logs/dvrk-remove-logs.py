@@ -33,7 +33,7 @@ def remove_files(files, what, skip_prompt = False):
    while True:
       answer = 'd'
       if not skip_prompt:
-         print(f'Total size of {what} file found {readable_size(total_size)}')
+         print(f'Total size of {what} file(s) found {readable_size(total_size)}')
          answer = input('[s] to show the files, [d] to delete them, [q] to quit\n')
       if answer == 's':
          for file in files:
