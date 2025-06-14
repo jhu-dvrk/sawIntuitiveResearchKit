@@ -1,0 +1,77 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "component_manager": {
+        "components":
+        [
+            {
+                "shared-library": "sawForceDimensionSDK",
+                "class-name": "mtsForceDimension",
+                "constructor-arg": {
+                    "Name": "ForceDimensionSDK"
+                },
+                "configure-parameter": "sawForceDimensionSDK-MTMR.json"
+            }
+        ]
+    }
+    ,
+    "arms":
+    [
+        {
+            "name": "MTMR",  // created previously using custom components
+            "type": "MTM_GENERIC",
+            "component": "ForceDimensionSDK",
+            "interface": "MTMR"
+        }
+        ,
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
+            "base_frame": {
+                "reference_frame": "user",
+                "transform": [[  0.0,  1.0,  0.0,  0.0],
+                              [ -1.0,  0.0,  0.0,  0.0],
+                              [  0.0,  0.0,  1.0,  0.0],
+                              [  0.0,  0.0,  0.0,  1.0]]
+            }
+        }
+    ]
+    ,
+    "consoles": [
+        {
+            "name": "console",
+            "input_type": "COMPONENTS",
+            "operator_present" :
+            {
+                "component": "ForceDimensionSDK",
+                "interface": "MTMR/center"
+            }
+            ,
+            "clutch" :
+            {
+                "component": "ForceDimensionSDK",
+                "interface": "MTMR/top"
+            }
+            ,
+            "camera" :
+            {
+                "component": "ForceDimensionSDK",
+                "interface": "MTMR/left"
+            }
+            ,
+            "teleop_PSMs":
+            [
+                {
+                    "MTM": "MTMR",
+                    "PSM": "PSM1",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0,
+                        "ignore_jaw": true,
+                        "scale": 0.4
+                    }
+                }
+            ]
+        }
+    ]
+}

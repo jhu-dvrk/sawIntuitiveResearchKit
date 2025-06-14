@@ -6,7 +6,7 @@
             "name": "PSM1",
             "type": "PSM",
             "simulation": "KINEMATIC",
-            "arm": "arm/PSM_KIN_SIMULATED_MANUAL.json",
+            "arm_file": "arm/PSM_KIN_SIMULATED_MANUAL.json",
             "base_frame": {
                 "reference_frame": "ECM",
                 "transform": [[  1.0,  0.0,          0.0,         -0.20],
@@ -21,7 +21,7 @@
             "name": "PSM2",
             "type": "PSM",
             "simulation": "KINEMATIC",
-            "arm": "arm/PSM_KIN_SIMULATED_MANUAL.json",
+            "arm_file": "arm/PSM_KIN_SIMULATED_MANUAL.json",
             "base_frame": {
                 "reference_frame": "ECM",
                 "transform": [[  1.0,  0.0,          0.0,          0.20],

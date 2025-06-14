@@ -6,7 +6,7 @@
             "name": "PSM3",
             "type": "PSM",
             "simulation": "KINEMATIC",
-            "arm": "arm/PSM_Si_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_420006.json"
+            "arm_file": "arm/PSM_Si_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_420006.json"
         }
     ]
 }
