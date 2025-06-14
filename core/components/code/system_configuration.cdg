@@ -9,6 +9,33 @@ inline-header {
 #include <sawIntuitiveResearchKit/console_configuration.h>
 }
 
+class {
+    name system_configuration_settings;
+    namespace dvrk;
+    attribute CISST_EXPORT;
+
+    member {
+        name chatty;
+        type bool;
+        visibility public;
+        default false;
+    }
+
+    member {
+        name path;
+        type std::vector<std::string>;
+        visibility public;
+        default std::vector<std::string>();
+    }
+
+    member {
+        name audio_volume;
+        type double;
+        visibility public;
+        default 0.5;
+    }
+}
+
 
 class {
     name system_configuration;
@@ -51,9 +78,9 @@ class {
     }
 
     member {
-        name chatty;
-        type bool;
+        name settings;
+        type dvrk::system_configuration_settings;
         visibility public;
-        default false;
+        default dvrk::system_configuration_settings();
     }
 }

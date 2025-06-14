@@ -50,6 +50,11 @@ dvrk::arm_proxy::arm_proxy(const std::string & name,
 
 void dvrk::arm_proxy::post_configure(void)
 {
+    // check if user has multiple IOs
+    if (m_config->name_on_IO == "") {
+        m_config->name_on_IO = m_config->name;
+    }
+
     // make sure IO component is provided
     if (m_config->expects_IO()) {
         // valid string
@@ -66,7 +71,7 @@ void dvrk::arm_proxy::post_configure(void)
             exit(EXIT_FAILURE);
         }
         m_IO_component_name = m_config->IO;
-        m_IO_interface_name = m_config->name;
+        m_IO_interface_name = m_config->name_on_IO;
     }
 
     // for generic and derived arms, component name must be provided
@@ -119,7 +124,7 @@ void dvrk::arm_proxy::create_arm(void)
                                    << m_name << std::endl;
                 exit(EXIT_FAILURE);
             }
-            const auto default_file = m_name + "-" + m_config->serial + ".json";
+            const auto default_file = m_config->name_on_IO + "-" + m_config->serial + ".json";
             m_arm_configuration_file = m_system->find_file(default_file);
             if (m_arm_configuration_file == "") {
                 CMN_LOG_INIT_ERROR << "arm_proxy::create_arm: can't find \"arm\" setting for arm "
@@ -301,13 +306,13 @@ void dvrk::arm_proxy::create_arm(void)
                 std::vector<std::string> itfs = {"adapter", "tool", "arm_clutch", "dallas"};
                 for (const auto & itf : itfs) {
                     m_system->m_connections.Add(m_name, itf,
-                                                m_IO_component_name, m_name + "_" + itf);
+                                                m_IO_component_name, m_config->name_on_IO + "_" + itf);
                 }
             }
 
             if (m_config->ECM()) {
                 m_system->m_connections.Add(m_name, "arm_clutch",
-                                            m_IO_component_name, m_name + "_arm_clutch");
+                                            m_IO_component_name, m_config->name_on_IO + "_arm_clutch");
             }
 
             // for Si patient side, connect the SUJ brakes to buttons on arm
@@ -316,7 +321,7 @@ void dvrk::arm_proxy::create_arm(void)
                 std::vector<std::string> itfs = {"SUJ_clutch", "SUJ_clutch_2", "SUJ_brake"};
                 for (const auto & itf : itfs) {
                     m_system->m_connections.Add(m_name, itf,
-                                                m_IO_component_name, m_name + "_" + itf);
+                                                m_IO_component_name, m_config->name_on_IO + "_" + itf);
                 }
             }
         }
@@ -336,7 +341,7 @@ void dvrk::arm_proxy::configure_IO(void)
         config_file = m_config->IO_file;
     } else {
         if (m_config->serial != "") {
-            config_file = "sawRobotIO1394-" + m_name + "-" + m_config->serial + ".xml";
+            config_file = "sawRobotIO1394-" + m_config->name_on_IO + "-" + m_config->serial + ".xml";
         } else {
             CMN_LOG_INIT_ERROR << "arm_proxy::configure_IO: can't find \"serial\" nor \"IO_file\" setting for arm \""
                                << m_name << std::endl;
@@ -366,7 +371,7 @@ void dvrk::arm_proxy::configure_IO(void)
             config_file = m_config->IO_gripper_file;
         } else {
             if (m_config->serial != "") {
-                config_file = "sawRobotIO1394-" + m_name + "-gripper-" + m_config->serial + ".xml";
+                config_file = "sawRobotIO1394-" + m_config->name_on_IO + "-gripper-" + m_config->serial + ".xml";
             } else {
                 CMN_LOG_INIT_ERROR << "arm_proxy::configure_IO: can't find \"serial\" nor \"IO_gripper_file\" setting for arm \""
                                    << m_name << std::endl;
@@ -479,13 +484,13 @@ bool dvrk::arm_proxy::connect(void)
         // Connect arm to IO if not simulated
         if (m_config->expects_IO()) {
             component_manager->Connect(m_name, "RobotIO",
-                                       m_IO_component_name, m_name);
+                                       m_IO_component_name, m_config->name_on_IO);
         }
         // connect MTM gripper to IO
         if (m_config->native_or_derived_MTM()
             && !m_config->simulated()) {
             component_manager->Connect(m_name, "GripperIO",
-                                       m_IO_component_name, m_name + "_gripper");
+                                       m_IO_component_name, m_config->name_on_IO + "_gripper");
         }
         // connect PID
         if (m_config->expects_PID()) {

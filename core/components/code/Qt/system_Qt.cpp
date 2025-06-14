@@ -63,31 +63,23 @@ void dvrk::system_Qt::configure(dvrk::system * system)
     m_tab_widget = system_widget->get_components_tab();
 
     // IOs
-    QTabWidget * ioTabWidget;
-    if (system->m_arm_proxies.size() > 1) {
-        ioTabWidget = new QTabWidget();
-        ioTabWidget->setObjectName(QString("IOs"));
-        m_tab_widget->addTab(ioTabWidget, "IOs");
-    } else {
-        ioTabWidget = m_tab_widget;
-    }
-
     for (const auto & iter : system->m_IO_proxies) {
+        QTabWidget * ioTabWidget = new QTabWidget();
         const std::string & name = iter.first;
-        const std::string factory_name = "io_widget_factory_for_" + name;
 
-        auto * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory(factory_name);
+        ioTabWidget->setObjectName(QString(name.c_str()));
+        m_tab_widget->addTab(ioTabWidget, name.c_str());
+        
+        auto * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory(name);
         component_manager->AddComponent(robotWidgetFactory);
         // this connect needs to happen now so the factory can figure out the io interfaces
-        component_manager->Connect(factory_name, "RobotConfiguration", name, "Configuration");
+        component_manager->Connect(robotWidgetFactory->GetName(),
+                                   "RobotConfiguration", name, "Configuration");
         robotWidgetFactory->Configure();
 
         // create all
-        mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
-        for (iterator = robotWidgetFactory->Widgets().begin();
-             iterator != robotWidgetFactory->Widgets().end();
-             ++iterator) {
-            ioTabWidget->addTab(*iterator, ((*iterator)->GetName()).c_str());
+        for (const auto & w : robotWidgetFactory->Widgets()) {
+            ioTabWidget->addTab(w.second, w.first.c_str());
         }
         if (robotWidgetFactory->ButtonsWidget()) {
             ioTabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");

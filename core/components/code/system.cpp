@@ -154,7 +154,12 @@ void dvrk::system::Configure(const std::string & filename)
                                << cmnDataSerializeTextJSON(m_config) << std::endl
                                << "<------" << std::endl;
 
-    // first, create all custom components and connections, i.e. dynamic loading and creation
+    // add user defined path
+    for (const auto & d : m_config.settings.path) {
+        m_config_path.Add(d);
+    }
+
+    // create all custom components and connections, i.e. dynamic loading and creation
     if (!m_config.component_manager.empty()) {
         if (!manager->ConfigureJSON(m_config.component_manager, m_config_path)) {
             CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to configure component-manager" << std::endl;
@@ -168,7 +173,7 @@ void dvrk::system::Configure(const std::string & filename)
     mtsInterfaceRequired * textToSpeechInterface = this->AddInterfaceRequired("TextToSpeech");
     textToSpeechInterface->AddFunction("Beep", audio.beep);
     textToSpeechInterface->AddFunction("StringToSpeech", audio.string_to_speech);
-    m_audio_volume = 0.5;
+    m_audio_volume = m_config.settings.audio_volume;
 
     // find all IOs
     for (auto & IO_config : m_config.IOs) {
@@ -336,7 +341,7 @@ void dvrk::system::Startup(void)
     // emit volume event
     audio.volume(m_audio_volume);
 
-    if (m_config.chatty) {
+    if (m_config.settings.chatty) {
         // someone is going to hate me for this :-)
         std::vector<std::string> prompts;
         prompts.push_back("Hello");
@@ -422,7 +427,7 @@ bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> _arm)
             itf->AddEventHandlerWrite(&system::warning_event_handler, this, "warning");
             itf->AddEventHandlerWrite(&system::status_event_handler, this, "status");
             m_connections.Add(this->GetName(), interface_IO_name,
-                              _arm->m_IO_component_name, _arm->m_name);
+                              _arm->m_IO_component_name, _arm->m_config->name_on_IO);
         } else {
             CMN_LOG_CLASS_INIT_ERROR << "add_arm_interfaces: failed to add IO interface for arm \""
                                      << _arm->m_name << "\"" << std::endl;
@@ -439,7 +444,7 @@ bool dvrk::system::add_arm_interfaces(std::shared_ptr<dvrk::arm_proxy> _arm)
                 itf->AddEventHandlerWrite(&system::warning_event_handler, this, "warning");
                 itf->AddEventHandlerWrite(&system::status_event_handler, this, "status");
                 m_connections.Add(this->GetName(), interface_IO_Dallas_name,
-                                  _arm->m_IO_component_name, _arm->m_name + "_dallas");
+                                  _arm->m_IO_component_name, _arm->m_config->name_on_IO + "_dallas");
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "AddArmInterfaces: failed to add IO Dallas interface for arm \""
                                          << _arm->m_name << "\"" << std::endl;

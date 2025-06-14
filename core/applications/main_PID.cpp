@@ -116,11 +116,8 @@ int main(int argc, char ** argv)
     componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "io", "Configuration");
     robotWidgetFactory->Configure();
 
-    mtsRobotIO1394QtWidgetFactory::WidgetListType::const_iterator iterator;
-    for (iterator = robotWidgetFactory->Widgets().begin();
-         iterator != robotWidgetFactory->Widgets().end();
-         ++iterator) {
-        tabWidget->addTab(*iterator, (*iterator)->GetName().c_str());
+    for (const auto & w : robotWidgetFactory->Widgets()) {
+        tabWidget->addTab(w.second, w.first.c_str());
     }
     if (robotWidgetFactory->ButtonsWidget()) {
         tabWidget->addTab(robotWidgetFactory->ButtonsWidget(), "Buttons");
