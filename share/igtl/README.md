@@ -1,8 +1,8 @@
 # sawIntuitiveResearchKit with sawOpenIGTLink
 
 These configuration files show how to use sawOpenIGTLink with the dVRK.  This code
-doesn't require ROS (use `sawIntuitiveResearchKitQtConsoleJSON`
-instead of the ROS node `dvrk_robot dvrk_console_json`) so it should
+doesn't require ROS (use `sawIntuitiveResearchKitSystem`
+instead of the ROS node `dvrk_robot dvrk_system`) so it should
 run fine on all OSs supported by both the dVRK and IGTL.
 
 # Links
@@ -24,9 +24,9 @@ you will need two extra configuration files (examples can be found in `share/igt
 
 ## Running the code and testing
 
-Go in the directory with the igtl configuration files (i.e. the directory containing this README).  Then launch a dVRK console with a simulated PSM:
+Go in the directory with the igtl configuration files (i.e. the directory containing this README).  Then launch a dVRK system with a simulated PSM:
 ```sh
-rosrun dvrk_robot dvrk_console_json -j  ../console/console-PSM1_KIN_SIMULATED.json -m manager-igtl-PSM1.json
+rosrun dvrk_robot dvrk_system -j  ../system/system-PSM1_Classic_KIN_SIMULATED.json -m manager-igtl-PSM1.json
 ```
 
 At that point the dVRK can send/receive messages over IGTL.  To test this, home the arm (using the dVRK GUI) and use the utility provided along sawOpenIGTLink:

@@ -15,7 +15,7 @@ In the latter case, wxPython 4+ must be installed in your Python distribution (f
 use wxPython 4.1.0).
 
 In either case, the embedded Python interpreter can be dynamically loaded by the component
-manager in the `sawIntuitiveResearchKitQtConsoleJSON` executable. The recommended approach
+manager in the `sawIntuitiveResearchKitSystem` executable. The recommended approach
 is to create a separate JSON file with the following contents (for `ipython`):
 
 ```
@@ -39,7 +39,7 @@ To use `wxPython`, change `Shell` to `IRE_WXPYTHON`. Assuming the above file is 
 `ire-ipython.json`, it can be invoked using the `-m` flag:
 
 ```
-sawIntuitiveResearchKitQtConsoleJSON  -j  <your_config>.json  -m  ire-ipython.json
+sawIntuitiveResearchKitSystem  -j  <your_config>.json  -m  ire-ipython.json
 ```
 
 where `<your_config>.json` is the JSON file that specifies your system configuration (e.g.,

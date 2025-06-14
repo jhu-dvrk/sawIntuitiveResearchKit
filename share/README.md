@@ -1,10 +1,10 @@
 dVRK configuration files
 ========================
 
-The console class which loads a `console-XYZ.json` file has a search
-path that include this `share` directory.  You should always use a
-relative path when using the configuration files from this directory
-and subdirectories.
+The dVRK system class which loads a `system-XYZ.json` file has a
+search path that include this `share` directory.  You should always
+use a relative path when using the configuration files from this
+directory and subdirectories.
 
 # Directories per system
 
@@ -19,7 +19,7 @@ There are some IO files shared accross systems/sites.  These are used
 to define inputs/outputs used to communicate with the daVinci foot
 pedals, head sensor, camera focus controllers, ...
 
-These files are stored in the subdirectory `io`.  The console class
+These files are stored in the subdirectory `io`.  The system class
 will search for files relative to the "share" directory, there's no
 need to specify the full path to the standard IO files but you will
 need the `io/` prefix.  For example,
@@ -44,7 +44,7 @@ The kinematic parameters (DH and dynamic model) are store in two different types
  * MTM:
    * `dvmtm.rob`: not used anymore
    * `mtm.json`: DH and dynamic parameters for MTMs.
-   * `mtml.json` and `mtmr.json`: these files are **deprecated**, they include a base transformation to match the ISI API convention, i.e. use the stereo display as base frame.  As of **version 1.6** it is recommended to use the `base-frame` option in the console.json file to specify the base frame.
+   * `mtml.json` and `mtmr.json`: these files are **deprecated**, they include a base transformation to match the ISI API convention, i.e. use the stereo display as base frame.  As of **version 1.6** it is recommended to use the `base_frame` option in the system.json file to specify the base frame.
  * ECM:
    * `ecm.json`: includes all DH parameters except last transformation for up, down or straight endoscope.  You can specify the endoscope type in the ECM arm configuration file
 
@@ -62,14 +62,14 @@ independent applications (e.g. kinematic simulation).  You can find
 the arm configuration files used for simulation in the directory
 `arm`.
 
-## Console
+## System
 
 Most configuration files are system specific but if you need to
 simulate a single arm (kinematic simulation only so far), you can use
-one of the `console-XXX_KIN_SIMULATED.json` file.  This should likely
-be used with the `dvrk-ros`/`dvrk_robot` ROS package to start RViz
-with the proper CAD models.  All shared console configuration files
-are in `console`.
+one of the `system-XXX_KIN_SIMULATED.json` file.  This should likely
+be used with the `dvrk_robot` ROS package to start RViz
+with the proper CAD models.  All shared system configuration files
+are in `system`.
 
 ## sawSocketStreamer and sawOpenIGTLink
 
@@ -77,9 +77,9 @@ Some examples of configuration files and instructions for
 *sawSocketStreamer* (streaming out dVRK data over UDP in JSON format)
 and *sawOpenIGTLink* (*cisst/SAW* bridge for OpenIGTLink/igtl) can be
 find in the directory `socket-streamer` and `igtl`.  These can be used
-as middleware between the dVRK console and user applications.
+as middleware between the dVRK system and user applications.
 
 ## Obsolete files
 
 * `dvmtm.rob` and `dvpsm.rob`.  Use the JSON files instead.  The `.rob` files can still be used with `robManipulator` in C++/Python if needed.
-* `two-arms.json`.  These files were used with the old application teleop JSON.  This application has been replaced by the Qt console JSON and for ROS `dvrk_console_json`.  The "console" applications are far more convenient and configurable.  Search for existing `console-xyz.json` in this directory and subdirectory to find different examples of use.
+* `two-arms.json`.  These files were used with the old application teleop JSON.  This application has been replaced by the Qt system JSON and for ROS `dvrk_system`.  The "system" applications are far more convenient and configurable.  Search for existing `system-xyz.json` in this directory and subdirectory to find different examples of use.

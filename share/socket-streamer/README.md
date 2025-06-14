@@ -1,8 +1,8 @@
 # sawIntuitiveResearchKit with sawSocketStreamer
 
 These configuration files show how to use sawSocketStreamer with the dVRK.  This code
-doesn't require ROS (use `sawIntuitiveResearchKitQtConsoleJSON`
-instead of the ROS node `dvrk_robot dvrk_console_json`) so it should
+doesn't require ROS (use `sawIntuitiveResearchKitSystem`
+instead of the ROS node `dvrk_robot dvrk_system`) so it should
 run fine on all OSs supported by both the dVRK and *cisst* `osaSocket`.
 
 # Links
@@ -24,9 +24,9 @@ You will need two extra configuration files (examples can be found in the `share
 
 ## Running the code and testing
 
-Go in the directory with the socket streamer configuration files (i.e., the directory containing this README).  Then launch a dVRK console with a simulated PSM:
+Go in the directory with the socket streamer configuration files (i.e., the directory containing this README).  Then launch a dVRK system with a simulated PSM:
 ```sh
-rosrun dvrk_robot dvrk_console_json -j  ../console/console-PSM1_KIN_SIMULATED.json -m manager-socket-streamer-PSM1.json
+rosrun dvrk_robot dvrk_system -j  ../system/system-PSM1_Classic_KIN_SIMULATED.json -m manager-socket-streamer-PSM1.json
 ```
 
 At that point the dVRK can send messages over UDP in JSON format.  To test this on Linux, home the simulated PSM using the dVRK GUI and use the `nc` command line tool:

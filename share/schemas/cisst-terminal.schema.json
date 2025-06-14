@@ -3,7 +3,7 @@
     "$id": "cisst-terminal.schema.json",
     "title": "cisstMultiTask terminal",
     "type": "object",
-    "description": "`Name of a cisstMultiTask component and interface (required or provided) used to connect a component.\n[Schema file](dvrk-console.schema.json)",
+    "description": "`Name of a cisstMultiTask component and interface (required or provided) used to connect a component.\n[Schema file](cisst-terminal.schema.json)",
     "additionalProperties": false,
     "required": ["component", "interface"],
     "properties": {
