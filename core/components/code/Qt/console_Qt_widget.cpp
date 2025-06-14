@@ -309,8 +309,6 @@ void dvrk::console_Qt_widget::setupUi(void)
             this, SLOT(slot_emulate_clutch(bool)));
     connect(QRBCamera, SIGNAL(clicked(bool)),
             this, SLOT(slot_emulate_camera(bool)));
-
-    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q), this, SLOT(close()));
 }
 
 
