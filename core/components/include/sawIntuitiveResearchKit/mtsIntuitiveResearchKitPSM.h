@@ -44,7 +44,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
     void set_simulated(void) override;
 
  protected:
-    void set_generation(const GenerationType generation) override;
+    void set_generation(const dvrk::generation generation) override;
     void load_tool_list(const cmnPath & path,
                         const std::string & indexFile = "tool/index.json");
 
@@ -71,10 +71,10 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     inline size_t number_of_brakes(void) const override {
         switch (m_generation) {
-        case mtsIntuitiveResearchKitArm::GENERATION_Classic:
+        case dvrk::generation::Classic:
             return 0;
             break;
-        case mtsIntuitiveResearchKitArm::GENERATION_Si:
+        case dvrk::generation::Si:
             return 3;
             break;
         default:
@@ -102,6 +102,7 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     // state related methods
     void SetGoalHomingArm(void) override;
+    void EnterHomed(void);
     void TransitionHomed(void); // for adapter/tool detection
 
     // methods used in change coupling/engaging
@@ -196,9 +197,9 @@ class CISST_EXPORT mtsIntuitiveResearchKitPSM: public mtsIntuitiveResearchKitArm
 
     /*! Configuration for tool detection, either using Dallas Chip,
       manual or fixed based on configuration file. */
-    mtsToolList mToolList;
-    size_t mToolIndex;
-    mtsIntuitiveResearchKitToolTypes::Detection mToolDetection;
+    mtsToolList m_tool_list;
+    size_t m_tool_index;
+    mtsIntuitiveResearchKitToolTypes::Detection m_tool_detection;
     bool m_tool_present = false;
     bool m_tool_configured = false;
     bool m_tool_type_requested = false;

@@ -45,7 +45,7 @@
     }
     ,
     // rotation to match ISI convention (for read-only research API on commercial da Vinci)
-    "tooltip-offset" : [[ 0.0, -1.0,  0.0,  0.0],
+    "tooltip_offset" : [[ 0.0, -1.0,  0.0,  0.0],
                         [ 0.0,  0.0,  1.0,  0.0],
                         [-1.0,  0.0,  0.0,  0.0],
                         [ 0.0,  0.0,  0.0,  1.0]]
@@ -69,7 +69,7 @@
     // angles used to engage the tool, in radians
     // make sure these are within the range of motion IN the cannula
     // max range on roll, 15, 15, 0 degrees
-    "tool-engage-position" : {
+    "tool_engage_position" : {
         "lower" : [-4.5378, -0.261799, -0.261799, 0.0],
         "upper" : [ 4.5378,  0.261799,  0.261799, 0.0]
     }

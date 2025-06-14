@@ -1,0 +1,56 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "dvrk-teleop-ecm.schema.json",
+    "title": "dVRK teleop ecm",
+    "type": "object",
+    "description": "Configuration file format for the dVRK ECM tele-operation component.  See the [dVRK wiki](https://dvrk.readthedocs.io).  This schema is used for the [dVRK console configuration](dvrk-console.html).\n\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/mtsTeleOperationECM.cpp`\n - [Schema file](dvrk-teleop-ecm.schema.json)",
+    "additionalProperties": false,
+    
+    "required": ["MTML", "MTMR", "ECM"],
+    "properties": {
+        
+        "MTML": {
+            "type": "string",
+            "description": "Name of surgeon's left side MTM arm to be used (`MTML`, `MTML1`...). The arm must have been declared in the main system configuration file under \"arms\"."
+        },
+        
+        "MTMR": {
+            "type": "string",
+            "description": "Name of surgeon's right side MTM arm to be used (`MTMR`, `MTMR1`...). The arm must have been declared in the main system configuration file under \"arms\"."
+        },
+
+        "ECM": {
+            "type": "string",
+            "description": "Name of patient's side ECM arm to be used (`ECM`, `ECM1`...). The arm must have been declared in the main system configuration file under \"arms\"."
+        },
+
+        "type": {
+            "type": "string",
+            "enum": ["TELEOP_ECM", "TELEOP_ECM_DERIVED", "TELEOP_ECM_GENERIC"],
+            "description": "Type of teleoperation.  This determines which class should be used to instantiate the ECM teleoperation.\n\n - `TELEOP_ECM` corresponds to the default class provided for the dVRK. This is the most commonly used.\n - `TELEOP_ECM_DERIVED` corresponds to classes derived from the base class provided in the dVRK stack.  Users can derive the base ECM teleoperation class to alter its behavior.  In this case, the system knows that the derived class has all the features from the base class so the connections to the Qt widget and ROS bridge are the same as those for the base class.\n - `TELEOP_ECM_GENERIC` corresponds to classes not derived from the dVRK base.",
+            "default": "TELEOP_ECM"
+        },
+
+        "period": {
+            "description": "Override the default periodicity of the teleoperation class. Most user should steer away from changing the default periodicity.",
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "default": 0.001
+        },
+
+        "configure_parameter": {
+            "type": "object",
+            "description": "Configuration passed to the teleoperation component after its creation. It is used by the component's `Configure` method.",
+            "additionalProperties": false,
+            "properties": {
+
+                "scale": {
+                    "description": "Scale factor applied to insertion motion",
+                    "type": "number",
+                    "exclusiveMinimum": 0.0,
+                    "maximum": 1.0
+                }
+            }
+        }
+    }
+}

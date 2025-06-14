@@ -1,0 +1,38 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+inline-header {
+}
+
+
+class {
+    name IO_configuration;
+    namespace dvrk;
+    attribute CISST_EXPORT;
+
+    member {
+        name name;
+        type std::string;
+        visibility public;
+        default "";
+    }
+    
+    member {
+        name IO;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name IO_file;
+        type std::string;
+        visibility public;
+    }
+
+    inline-header {
+    public:
+        inline IO_configuration(const std::string & _name) {
+            name = _name;
+        }
+    }
+}

@@ -1,8 +1,7 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "kinematic": "kinematic/ecm.json",
+    "kinematic": "kinematic/ECM.json",
     "generation": "Classic",
-    "mounting-pitch": -0.785398, // -45.0 degrees
-    "endoscope": "Classic_SD_STRAIGHT",
-    "mounting-pitch": 0.0
+    "mounting_pitch": -0.785398, // -45.0 degrees
+    "endoscope": "Classic_SD_STRAIGHT"
 }

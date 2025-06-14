@@ -22,7 +22,7 @@
                 "enum": ["Classic", "Si"]
         },
 
-        "re-home": {
+        "re_home": {
             "description": "Force re-homing, i.e. computer encoder preloads based on potentiometer readings and for MTMs, search for mechanical limit for the last joint (roll)",
             "type": "boolean",
             "default": false

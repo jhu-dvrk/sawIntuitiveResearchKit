@@ -192,8 +192,8 @@ void mtsIntuitiveResearchKitArm::Init(void)
     AddStateTable(&mStateTableConfiguration);
     mStateTableConfiguration.SetAutomaticAdvance(false);
 
-    m_control_space = mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE;
-    m_control_mode = mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE;
+    m_control_space = mtsIntuitiveResearchKitControlTypes::UNDEFINED_SPACE;
+    m_control_mode = mtsIntuitiveResearchKitControlTypes::UNDEFINED_MODE;
 
     m_safe_for_cartesian_control_counter = 0;
     mArmNotReadyCounter = 0;
@@ -606,7 +606,7 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
                     << "   file.  The arm file should contain the field" << std::endl
                     << "   \"kinematic\" and options specific to each arm type." << std::endl
                     << "----------------------------------------------------";
-            std::cerr << "mtsIntuitiveResearchKitConsole::" << message.str() << std::endl;
+            std::cerr << "mtsIntuitiveResearchKitArm::" << message.str() << std::endl;
             CMN_LOG_CLASS_INIT_ERROR << message.str() << std::endl;
             exit(EXIT_FAILURE);
         }
@@ -641,9 +641,9 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         if (!jsonGeneration.isNull()) {
             const auto generation = jsonGeneration.asString();
             if (generation == "Classic") {
-                set_generation(GENERATION_Classic);
+                set_generation(dvrk::generation::Classic);
             } else if (generation == "Si") {
-                set_generation(GENERATION_Si);
+                set_generation(dvrk::generation::Si);
             } else {
                 CMN_LOG_CLASS_INIT_ERROR << "Configure " << this->GetName()
                                          << ": \"generation\" must be either \"Classic\" or \"Si\", found: "
@@ -657,19 +657,19 @@ void mtsIntuitiveResearchKitArm::Configure(const std::string & filename)
         }
 
         // should arm go to zero position when homing, default set in Init method
-        const Json::Value jsonHomingGoesToZero = jsonConfig["homing-zero-position"];
+        const Json::Value jsonHomingGoesToZero = jsonConfig["homing_zero_position"];
         if (!jsonHomingGoesToZero.isNull()) {
             m_homing_goes_to_zero = jsonHomingGoesToZero.asBool();
         }
 
         // mount pitch in radians!, default assumes angles match SUJ (e.g. ECM Classic is -45, ECM Si is -70).
-        const Json::Value jsonMountingPitch = jsonConfig["mounting-pitch"];
+        const Json::Value jsonMountingPitch = jsonConfig["mounting_pitch"];
         if (!jsonMountingPitch.isNull()) {
             m_mounting_pitch = jsonMountingPitch.asDouble();
         }
 
         // should ignore preloaded encoders and force homing
-        const Json::Value jsonAlwaysHome = jsonConfig["re-home"];
+        const Json::Value jsonAlwaysHome = jsonConfig["re_home"];
         if (!jsonAlwaysHome.isNull()) {
             m_re_home = jsonAlwaysHome.asBool();
         }
@@ -1170,8 +1170,8 @@ void mtsIntuitiveResearchKitArm::EnterDisabled(void)
     set_LED_pattern(mtsIntuitiveResearchKit::Red200,
                     mtsIntuitiveResearchKit::Red200,
                     false, false);
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::UNDEFINED_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::UNDEFINED_MODE);
 }
 
 void mtsIntuitiveResearchKitArm::TransitionDisabled(void)
@@ -1258,8 +1258,8 @@ void mtsIntuitiveResearchKitArm::EnterEnabled(void)
     // disable PID for fallback
     IO.SetActuatorCurrent(vctDoubleVec(number_of_joints(), 0.0));
     PID.enable(false);
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::UNDEFINED_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::UNDEFINED_MODE);
 
     // engage brakes for fallback
     if (has_brakes()) {
@@ -1288,7 +1288,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
     // for Si, always calibrate from pot
     if (m_encoders_biased_from_pots
         && !m_calibration_mode
-        && (m_generation == GENERATION_Classic)) {
+        && (m_generation == dvrk::generation::Classic)) {
         m_arm_interface->SendStatus(this->GetName() + ": encoders have already been calibrated, skipping");
         return;
     }
@@ -1298,7 +1298,7 @@ void mtsIntuitiveResearchKitArm::EnterCalibratingEncodersFromPots(void)
     const int nb_samples = 1970; // birth year, state table contains 1999 elements so anything under that would work
     if (m_re_home
         || m_calibration_mode
-        || (m_generation == GENERATION_Si)) {
+        || (m_generation == dvrk::generation::Si)) {
         // positive number to ignore encoder preloads
         IO.BiasEncoder(nb_samples);
     } else {
@@ -1333,7 +1333,7 @@ void mtsIntuitiveResearchKitArm::EnterEncodersBiased(void)
     // use pots for redundancy when not in calibration mode and always
     // for the Si
     if (m_calibration_mode
-        && (m_generation == GENERATION_Classic)) {
+        && (m_generation == dvrk::generation::Classic)) {
         IO.UsePotsForSafetyCheck(false);
     } else {
         IO.UsePotsForSafetyCheck(true);
@@ -1374,8 +1374,8 @@ void mtsIntuitiveResearchKitArm::EnterHoming(void)
     m_servo_jv.Assign(m_pid_measured_js.Velocity());
     m_trajectory_j.goal_v.Zeros();
     m_trajectory_j.end_time = 0.0;
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
 
     // enable PID on all joints
     mtsIntuitiveResearchKitArm::servo_jp_internal(m_servo_jp, vctDoubleVec());
@@ -1442,8 +1442,8 @@ void mtsIntuitiveResearchKitArm::EnterHomed(void)
                     false, false);
 
     // no control mode defined
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::UNDEFINED_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::UNDEFINED_MODE);
 
     if (m_simulated) {
         return;
@@ -1460,8 +1460,8 @@ void mtsIntuitiveResearchKitArm::EnterHomed(void)
 void mtsIntuitiveResearchKitArm::LeaveHomed(void)
 {
     // no control mode defined
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::UNDEFINED_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::UNDEFINED_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::UNDEFINED_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::UNDEFINED_MODE);
 }
 
 void mtsIntuitiveResearchKitArm::RunHomed(void)
@@ -1642,13 +1642,13 @@ void mtsIntuitiveResearchKitArm::control_move_cp(void)
 }
 
 bool mtsIntuitiveResearchKitArm::ArmIsReady(const std::string & methodName,
-                                            const mtsIntuitiveResearchKitArmTypes::ControlSpace space)
+                                            const mtsIntuitiveResearchKitControlTypes::ControlSpace space)
 {
     // reset counter if ready
     if (m_operating_state.State() == prmOperatingState::ENABLED) {
-        if (((space == mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)
+        if (((space == mtsIntuitiveResearchKitControlTypes::JOINT_SPACE)
              && is_joint_ready())
-            || ((space == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)
+            || ((space == mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE)
                 && is_cartesian_ready())) {
             mArmNotReadyCounter = 0;
             mArmNotReadyTimeLastMessage = 0.0;
@@ -1737,8 +1737,8 @@ void mtsIntuitiveResearchKitArm::trajectory_j_update_reflexxes(void)
                                  robReflexxes::Reflexxes_TIME);
 }
 
-void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResearchKitArmTypes::ControlSpace space,
-                                                        const mtsIntuitiveResearchKitArmTypes::ControlMode mode,
+void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResearchKitControlTypes::ControlSpace space,
+                                                        const mtsIntuitiveResearchKitControlTypes::ControlMode mode,
                                                         mtsCallableVoidBase * callback)
 {
     // ignore if already in the same space
@@ -1752,7 +1752,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
     // transitions
     if (space != m_control_space) {
         // check if the arm is ready to use in cartesian space
-        if (space == mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE) {
+        if (space == mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE) {
             if (this->is_safe_for_cartesian_control()) {
                 // set flag
                 m_control_space = space;
@@ -1774,13 +1774,13 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
 
     if (mode != m_control_mode) {
 
-        if ((m_control_mode == mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE)
+        if ((m_control_mode == mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE)
             &&  m_trajectory_j.is_active) {
             control_move_jp_on_stop(false); // move was active and interrupted so assume goal not reached
         }
 
         switch (mode) {
-        case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
+        case mtsIntuitiveResearchKitControlTypes::POSITION_MODE:
             // configure PID
             PID.enable_measured_setpoint_check(should_use_measured_setpoint_check());
             PID.EnableTorqueMode(vctBoolVec(number_of_joints(), false));
@@ -1790,14 +1790,14 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
             m_servo_jv.Zeros();
             m_effort_orientation_locked = false;
             break;
-        case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
+        case mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE:
             // configure PID
             PID.enable_measured_setpoint_check(should_use_measured_setpoint_check());
             PID.EnableTorqueMode(vctBoolVec(number_of_joints(), false));
             m_effort_orientation_locked = false;
             // initialize trajectory
             m_servo_jp.Assign(m_pid_setpoint_js.Position(), number_of_joints());
-            if (m_control_mode == mtsIntuitiveResearchKitArmTypes::POSITION_MODE) {
+            if (m_control_mode == mtsIntuitiveResearchKitControlTypes::POSITION_MODE) {
                 m_servo_jv.Assign(m_pid_measured_js.Velocity(), number_of_joints());
             } else {
                 // we're switching from effort or no mode
@@ -1809,7 +1809,7 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
                                          StateTable.PeriodStats.PeriodAvg(),
                                          robReflexxes::Reflexxes_TIME);
             break;
-        case mtsIntuitiveResearchKitArmTypes::EFFORT_MODE:
+        case mtsIntuitiveResearchKitControlTypes::EFFORT_MODE:
             // configure PID
             PID.enable_measured_setpoint_check(false);
             m_servo_jf_vector.Assign(vctDoubleVec(number_of_joints_kinematics(), 0.0));
@@ -1825,36 +1825,36 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
 
     // set control callback for RunHomed
     switch (m_control_mode) {
-    case mtsIntuitiveResearchKitArmTypes::POSITION_MODE:
+    case mtsIntuitiveResearchKitControlTypes::POSITION_MODE:
         switch (m_control_space) {
-        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+        case mtsIntuitiveResearchKitControlTypes::JOINT_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::control_servo_jp, this);
             break;
-        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
+        case mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::control_servo_cs, this);
             break;
         default:
             break;
         }
         break;
-    case mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE:
+    case mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE:
         switch (m_control_space) {
-        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+        case mtsIntuitiveResearchKitControlTypes::JOINT_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::control_move_jp, this);
             break;
-        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
+        case mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::control_move_cp, this);
             break;
         default:
             break;
         }
         break;
-    case mtsIntuitiveResearchKitArmTypes::EFFORT_MODE:
+    case mtsIntuitiveResearchKitControlTypes::EFFORT_MODE:
         switch (m_control_space) {
-        case mtsIntuitiveResearchKitArmTypes::JOINT_SPACE:
+        case mtsIntuitiveResearchKitControlTypes::JOINT_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::control_servo_jf, this);
             break;
-        case mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE:
+        case mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE:
             SetControlCallback(&mtsIntuitiveResearchKitArm::control_servo_cf, this);
             break;
         default:
@@ -1867,16 +1867,16 @@ void mtsIntuitiveResearchKitArm::SetControlSpaceAndMode(const mtsIntuitiveResear
     }
 
     // use provided callback if the space or mode is user defined
-    if ((m_control_mode == mtsIntuitiveResearchKitArmTypes::USER_MODE)
-        || (m_control_space == mtsIntuitiveResearchKitArmTypes::USER_SPACE)) {
+    if ((m_control_mode == mtsIntuitiveResearchKitControlTypes::USER_MODE)
+        || (m_control_space == mtsIntuitiveResearchKitControlTypes::USER_SPACE)) {
         mControlCallback = callback;
     }
 
     // messages
     m_arm_interface->SendStatus(this->GetName() + ": control "
-                                + cmnData<mtsIntuitiveResearchKitArmTypes::ControlSpace>::HumanReadable(m_control_space)
+                                + cmnData<mtsIntuitiveResearchKitControlTypes::ControlSpace>::HumanReadable(m_control_space)
                                 + '/'
-                                + cmnData<mtsIntuitiveResearchKitArmTypes::ControlMode>::HumanReadable(m_control_mode));
+                                + cmnData<mtsIntuitiveResearchKitControlTypes::ControlMode>::HumanReadable(m_control_mode));
 }
 
 void mtsIntuitiveResearchKitArm::control_move_jp_on_start(void)
@@ -2054,13 +2054,13 @@ void mtsIntuitiveResearchKitArm::feed_forward_jf_internal(const vctDoubleVec & j
 
 void mtsIntuitiveResearchKitArm::hold(void)
 {
-    if (!ArmIsReady("hold", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    if (!ArmIsReady("hold", mtsIntuitiveResearchKitControlTypes::JOINT_SPACE)) {
         return;
     }
 
     // set control mode
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
     // set goal
     m_servo_jp.Assign(m_pid_setpoint_js.Position());
     m_pid_new_goal = true;
@@ -2071,7 +2071,7 @@ void mtsIntuitiveResearchKitArm::hold(void)
 
 void mtsIntuitiveResearchKitArm::free(void)
 {
-    if (!ArmIsReady("free", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    if (!ArmIsReady("free", mtsIntuitiveResearchKitControlTypes::JOINT_SPACE)) {
         return;
     }
 
@@ -2086,13 +2086,13 @@ void mtsIntuitiveResearchKitArm::free(void)
 
 void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & jp)
 {
-    if (!ArmIsReady("servo_jp", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    if (!ArmIsReady("servo_jp", mtsIntuitiveResearchKitControlTypes::JOINT_SPACE)) {
         return;
     }
 
     // set control mode
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
     // set goal
     m_servo_jp.Assign(jp.Goal(), number_of_joints_kinematics());
     m_servo_jv.Assign(jp.Velocity(), jp.Velocity().size());
@@ -2101,13 +2101,13 @@ void mtsIntuitiveResearchKitArm::servo_jp(const prmPositionJointSet & jp)
 
 void mtsIntuitiveResearchKitArm::servo_jr(const prmPositionJointSet & difference)
 {
-    if (!ArmIsReady("servo_jr", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    if (!ArmIsReady("servo_jr", mtsIntuitiveResearchKitControlTypes::JOINT_SPACE)) {
         return;
     }
 
     // set control mode
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
     // if there's no current goal, reset it
     if (!m_pid_new_goal) {
         m_servo_jp.Assign(m_pid_setpoint_js.Position());
@@ -2118,13 +2118,13 @@ void mtsIntuitiveResearchKitArm::servo_jr(const prmPositionJointSet & difference
 
 void mtsIntuitiveResearchKitArm::move_jp(const prmPositionJointSet & jp)
 {
-    if (!ArmIsReady("move_jp", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    if (!ArmIsReady("move_jp", mtsIntuitiveResearchKitControlTypes::JOINT_SPACE)) {
         return;
     }
 
     // set control mode
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
     // make sure trajectory is reset
     control_move_jp_on_start();
     // new goal
@@ -2136,13 +2136,13 @@ void mtsIntuitiveResearchKitArm::move_jp(const prmPositionJointSet & jp)
 
 void mtsIntuitiveResearchKitArm::move_jr(const prmPositionJointSet & jp)
 {
-    if (!ArmIsReady("move_jr", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    if (!ArmIsReady("move_jr", mtsIntuitiveResearchKitControlTypes::JOINT_SPACE)) {
         return;
     }
 
     // set control mode
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
     // make sure trajectory is reset
     UpdateIsBusy(true);
     // if trajectory is active, add to existing goal
@@ -2162,13 +2162,13 @@ void mtsIntuitiveResearchKitArm::move_jr(const prmPositionJointSet & jp)
 
 void mtsIntuitiveResearchKitArm::servo_cp(const prmPositionCartesianSet & cp)
 {
-    if (!ArmIsReady("servo_cp", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+    if (!ArmIsReady("servo_cp", mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE)) {
         return;
     }
 
     // set control mode
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
     // set goal
     m_servo_cs.Position() = cp.Goal();
     m_servo_cs.PositionIsValid() = true;
@@ -2182,13 +2182,13 @@ void mtsIntuitiveResearchKitArm::servo_cp(const prmPositionCartesianSet & cp)
 
 void mtsIntuitiveResearchKitArm::servo_cr(const prmPositionCartesianSet & difference)
 {
-    if (!ArmIsReady("servo_cr", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+    if (!ArmIsReady("servo_cr", mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE)) {
         return;
     }
 
     // set control mode
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
     // set goal --- not sure of this math, move relative to base or tool?
     mCartesianRelative = mCartesianRelative * difference.Goal();
     m_pid_new_goal = true;
@@ -2196,7 +2196,7 @@ void mtsIntuitiveResearchKitArm::servo_cr(const prmPositionCartesianSet & differ
 
 void mtsIntuitiveResearchKitArm::servo_cs(const prmStateCartesian & cs)
 {
-    if (!ArmIsReady("servo_cs", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+    if (!ArmIsReady("servo_cs", mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE)) {
         return;
     }
 
@@ -2207,8 +2207,8 @@ void mtsIntuitiveResearchKitArm::servo_cs(const prmStateCartesian & cs)
     }
 
     // set control mode
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::POSITION_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::POSITION_MODE);
 
     // set goal --- not sure of this math, move relative to base or tool?
     m_servo_cs = cs;
@@ -2217,13 +2217,13 @@ void mtsIntuitiveResearchKitArm::servo_cs(const prmStateCartesian & cs)
 
 void mtsIntuitiveResearchKitArm::move_cp(const prmPositionCartesianSet & cp)
 {
-    if (!ArmIsReady("move_cp", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+    if (!ArmIsReady("move_cp", mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE)) {
         return;
     }
 
     // set control mode
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::TRAJECTORY_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::TRAJECTORY_MODE);
 
     // copy current position
     vctDoubleVec jp(m_kin_measured_js.Position());
@@ -2349,13 +2349,13 @@ void mtsIntuitiveResearchKitArm::local_forward_kinematics(const prmForwardKinema
 
 void mtsIntuitiveResearchKitArm::servo_jf(const prmForceTorqueJointSet & effort)
 {
-    if (!ArmIsReady("servo_jf", mtsIntuitiveResearchKitArmTypes::JOINT_SPACE)) {
+    if (!ArmIsReady("servo_jf", mtsIntuitiveResearchKitControlTypes::JOINT_SPACE)) {
         return;
     }
 
     // set control mode
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::JOINT_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::JOINT_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::EFFORT_MODE);
 
     // set new effort
     m_servo_jf.ForceTorque().Assign(effort.ForceTorque());
@@ -2363,13 +2363,13 @@ void mtsIntuitiveResearchKitArm::servo_jf(const prmForceTorqueJointSet & effort)
 
 void mtsIntuitiveResearchKitArm::body_servo_cf(const prmForceCartesianSet & cf)
 {
-    if (!ArmIsReady("body_servo_cf", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+    if (!ArmIsReady("body_servo_cf", mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE)) {
         return;
     }
 
     // set control mode
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::EFFORT_MODE);
 
     // set new wrench
     m_cartesian_impedance = false;
@@ -2382,13 +2382,13 @@ void mtsIntuitiveResearchKitArm::body_servo_cf(const prmForceCartesianSet & cf)
 
 void mtsIntuitiveResearchKitArm::spatial_servo_cf(const prmForceCartesianSet & cf)
 {
-    if (!ArmIsReady("spatial_servo_cf", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+    if (!ArmIsReady("spatial_servo_cf", mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE)) {
         return;
     }
 
     // set control mode
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::EFFORT_MODE);
 
     // set new wrench
     m_cartesian_impedance = false;
@@ -2411,13 +2411,13 @@ void mtsIntuitiveResearchKitArm::use_gravity_compensation(const bool & gravityCo
 
 void mtsIntuitiveResearchKitArm::servo_ci(const prmCartesianImpedance & goal)
 {
-    if (!ArmIsReady("servo_cf_body", mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE)) {
+    if (!ArmIsReady("servo_cf_body", mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE)) {
         return;
     }
 
     // set control mode
-    SetControlSpaceAndMode(mtsIntuitiveResearchKitArmTypes::CARTESIAN_SPACE,
-                           mtsIntuitiveResearchKitArmTypes::EFFORT_MODE);
+    SetControlSpaceAndMode(mtsIntuitiveResearchKitControlTypes::CARTESIAN_SPACE,
+                           mtsIntuitiveResearchKitControlTypes::EFFORT_MODE);
 
     // set new wrench
     m_cartesian_impedance = true;

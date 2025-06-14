@@ -6,7 +6,7 @@
             "name": "ECM",
             "type": "ECM",
             "simulation": "KINEMATIC",
-            "arm": "arm/ECM_Si_KIN_SIMULATED_STRAIGHT.json"
+            "arm_file": "arm/ECM_Si_KIN_SIMULATED_STRAIGHT.json"
         }
     ]
 }

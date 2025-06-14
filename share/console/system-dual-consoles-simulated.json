@@ -1,0 +1,195 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "arms":
+    [
+        {
+            "name": "MTML1",
+            "type": "MTM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/MTML_KIN_SIMULATED.json",
+            "base_frame": {
+                "reference_frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,          0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
+            }
+        }
+        ,
+        {
+            "name": "MTMR1",
+            "type": "MTM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/MTMR_KIN_SIMULATED.json",
+            "base_frame": {
+                "reference_frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,         -0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
+            }
+        }
+        ,
+        {
+            "name": "MTML2",
+            "type": "MTM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/MTML_KIN_SIMULATED.json",
+            "base_frame": {
+                "reference_frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,          0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
+            }
+        }
+        ,
+        {
+            "name": "MTMR2",
+            "type": "MTM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/MTMR_KIN_SIMULATED.json",
+            "base_frame": {
+                "reference_frame": "HRSV",
+                "transform": [[ -1.0,  0.0,          0.0,         -0.180],
+                              [  0.0,  0.866025404,  0.5,          0.400],
+                              [  0.0,  0.5,         -0.866025404,  0.475],
+                              [  0.0,  0.0,          0.0,          1.0]]
+            }
+        }
+        ,
+        {
+            "name": "SUJ",
+            "type": "SUJ_Classic",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/suj-simulated.json"
+        }
+        ,
+        {
+            "name": "PSM1",
+            "type": "PSM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
+            "base_frame": {
+                "component": "SUJ",
+                "interface": "PSM1"
+            }
+        }
+        ,
+        {
+            "name": "PSM2",
+            "type": "PSM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
+            "base_frame": {
+                "component": "SUJ",
+                "interface": "PSM2"
+            }
+        }
+        ,
+        {
+            "name": "PSM3",
+            "type": "PSM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/PSM_KIN_SIMULATED_LARGE_NEEDLE_DRIVER_400006.json",
+            "base_frame": {
+                "component": "SUJ",
+                "interface": "PSM3"
+            }
+        }
+        ,
+        {
+            "name": "ECM",
+            "type": "ECM",
+            "simulation": "KINEMATIC",
+            "arm_file": "arm/ECM_KIN_SIMULATED_STRAIGHT.json",
+            "base_frame": {
+                "component": "SUJ",
+                "interface": "ECM"
+            }
+        }
+    ]
+    ,
+    "consoles":
+    [
+        {
+            "name": "console1",
+            "input_type": "SIMULATED",
+            "teleop_PSMs":
+            [
+                {
+                    "MTM": "MTMR1",
+                    "PSM": "PSM1",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                    }
+                }
+                ,
+                {
+                    "MTM": "MTML1",
+                    "PSM": "PSM2",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                    }
+                }
+                ,
+                {
+                    "MTM": "MTML1",
+                    "PSM": "PSM3",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                    }
+                }
+            ]
+            ,
+            "teleop_ECMs":
+            [
+                {
+                    "MTML": "MTML1",
+                    "MTMR": "MTMR1",
+                    "ECM": "ECM"
+                }
+            ]
+        }
+        ,
+        {
+            "name": "console2",
+            "input_type": "SIMULATED",
+            "teleop_PSMs":
+            [
+                {
+                    "MTM": "MTMR2",
+                    "PSM": "PSM1",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                    }
+                }
+                ,
+                {
+                    "MTM": "MTML2",
+                    "PSM": "PSM2",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                    }
+                }
+                ,
+                {
+                    "MTM": "MTML2",
+                    "PSM": "PSM3",
+                    "configure_parameter": {
+                        "start_gripper_threshold": 0.0 // to start automatically when operator is present
+                    }
+                }
+            ]
+            ,
+            "teleop_ECMs":
+            [
+                {
+                    "MTML": "MTML2",
+                    "MTMR": "MTMR2",
+                    "ECM": "ECM"
+                }
+            ]
+        }
+    ]
+}

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2023-06-16
 
-  (C) Copyright 2023 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2023-2025 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -23,7 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <cisstParameterTypes/prmOperatingState.h>
 #include <sawIntuitiveResearchKit/mtsStateMachine.h>
-#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitArmTypes.h>
+#include <sawIntuitiveResearchKit/mtsIntuitiveResearchKitControlTypes.h>
 
 #include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 

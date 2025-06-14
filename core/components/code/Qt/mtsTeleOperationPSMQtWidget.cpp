@@ -58,10 +58,10 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
         interfaceRequired->AddFunction("set_scale", TeleOperation.set_scale);
         interfaceRequired->AddFunction("lock_rotation", TeleOperation.lock_rotation);
         interfaceRequired->AddFunction("lock_translation", TeleOperation.lock_translation);
-        interfaceRequired->AddFunction("set_align_mtm", TeleOperation.set_align_mtm);
+        interfaceRequired->AddFunction("set_align_MTM", TeleOperation.set_align_MTM);
         interfaceRequired->AddFunction("MTM/measured_cp", TeleOperation.MTM_measured_cp);
         interfaceRequired->AddFunction("PSM/setpoint_cp", TeleOperation.PSM_setpoint_cp);
-        interfaceRequired->AddFunction("align_mtm", TeleOperation.align_mtm);
+        interfaceRequired->AddFunction("align_MTM", TeleOperation.align_MTM);
         interfaceRequired->AddFunction("alignment_offset", TeleOperation.alignment_offset);
         interfaceRequired->AddFunction("period_statistics", TeleOperation.period_statistics);
         // events
@@ -78,7 +78,7 @@ mtsTeleOperationPSMQtWidget::mtsTeleOperationPSMQtWidget(const std::string & com
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::TranslationLockedEventHandler,
                                                 this, "translation_locked");
         interfaceRequired->AddEventHandlerWrite(&mtsTeleOperationPSMQtWidget::AlignMTMEventHandler,
-                                                this, "align_mtm");
+                                                this, "align_MTM");
     }
 }
 
@@ -99,7 +99,7 @@ void mtsTeleOperationPSMQtWidget::Startup(void)
     }
 
     bool align;
-    if (TeleOperation.align_mtm(align)) {
+    if (TeleOperation.align_MTM(align)) {
         emit SignalAlignMTM(align);
     }
 }
@@ -163,7 +163,7 @@ void mtsTeleOperationPSMQtWidget::SlotLockTranslation(bool lock)
 
 void mtsTeleOperationPSMQtWidget::SlotSetAlignMTM(bool align)
 {
-    TeleOperation.set_align_mtm(align);
+    TeleOperation.set_align_MTM(align);
 }
 
 void mtsTeleOperationPSMQtWidget::SlotDesiredStateEventHandler(QString state)

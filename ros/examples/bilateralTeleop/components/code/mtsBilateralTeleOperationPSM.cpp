@@ -128,7 +128,7 @@ prmStateCartesian mtsBilateralTeleOperationPSM::ArmMTM::state()
     state.Position() = teleop->mMTM.m_measured_cp.Position();
     state.PositionIsValid() = teleop->mMTM.m_measured_cp.Valid();
 
-    if (teleop->mMTM.use_measured_cv) {
+    if (teleop->m_config.use_MTM_velocity) {
         auto mtm_velocity = teleop->mMTM.m_measured_cv;
         state.Velocity().Ref<3>(0) = mtm_velocity.VelocityLinear();
         state.Velocity().Ref<3>(3) = mtm_velocity.VelocityAngular();
@@ -292,10 +292,10 @@ void mtsBilateralTeleOperationPSM::RunCartesianTeleop()
         return;
     }
 
-    auto psm_goal = mArmPSM.computeGoal(&mArmMTM, m_scale);
+    auto psm_goal = mArmPSM.computeGoal(&mArmMTM, m_config.scale);
     mArmPSM.servo(psm_goal);
 
-    auto mtm_goal = mArmMTM.computeGoal(&mArmPSM, 1.0 / m_scale);
+    auto mtm_goal = mArmMTM.computeGoal(&mArmPSM, 1.0 / m_config.scale);
     // scale MTM torque goal to reduce oscillations
     mtm_goal.Force().Ref<3>(3) = m_mtm_torque_gain * mtm_goal.Force().Ref<3>(3);
     mArmMTM.servo(mtm_goal);

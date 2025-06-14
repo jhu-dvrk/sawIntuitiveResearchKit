@@ -158,7 +158,7 @@ public:
 
         // write commands
         m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::clutch_command, this,
-                                              "Clutch", false);
+                                              "clutch", false);
         m_interface_provided->AddCommandWrite(&mtsIntuitiveResearchKitSUJArmData::calibrate_potentiometers, this,
                                               "SetRecalibrationMatrix", m_recalibration_matrix);
 
@@ -250,28 +250,28 @@ public:
 
         std::cerr << "SUJ scales and offsets for arm: " << m_name << std::endl
                   << "Please update your suj.json file using these values" << std::endl
-                  << "\"primary-offsets\": [ "
+                  << "\"primary_offsets\": [ "
                   << m_new_joint_offsets[0][0] << ", "
                   << m_new_joint_offsets[0][1] << ", "
                   << m_new_joint_offsets[0][2] << ", "
                   << m_new_joint_offsets[0][3] << ", "
                   << m_new_joint_offsets[0][4] << ", "
                   << m_new_joint_offsets[0][5] << "],"  << std::endl
-                  << "\"primary-scales\": [ "
+                  << "\"primary_scales\": [ "
                   << m_new_joint_scales[0][0] << ", "
                   << m_new_joint_scales[0][1] << ", "
                   << m_new_joint_scales[0][2] << ", "
                   << m_new_joint_scales[0][3] << ", "
                   << m_new_joint_scales[0][4] << ", "
                   << m_new_joint_scales[0][5] << "],"  << std::endl
-                  << "\"secondary-offsets\": [ "
+                  << "\"secondary_offsets\": [ "
                   << m_new_joint_offsets[1][0] << ", "
                   << m_new_joint_offsets[1][1] << ", "
                   << m_new_joint_offsets[1][2] << ", "
                   << m_new_joint_offsets[1][3] << ", "
                   << m_new_joint_offsets[1][4] << ", "
                   << m_new_joint_offsets[1][5] << "]," << std::endl
-                  << "\"secondary-scales\": [ "
+                  << "\"secondary_scales\": [ "
                   << m_new_joint_scales[1][0] << ", "
                   << m_new_joint_scales[1][1] << ", "
                   << m_new_joint_scales[1][2] << ", "
@@ -522,10 +522,10 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
     // get the reference arm if defined.  By default ECM and should be
     // used only and only if user want to use a PSM to hold a camera
     std::string reference_sarm_name = "ECM";
-    const Json::Value jsonReferenceArm = jsonConfig["reference-arm"];
+    const Json::Value jsonReferenceArm = jsonConfig["reference_arm"];
     if (!jsonReferenceArm.isNull()) {
         reference_sarm_name = jsonReferenceArm.asString();
-        CMN_LOG_CLASS_INIT_WARNING << "Configure: \"reference-arm\" is user defined.  This should only happen if you are using a PSM to hold a camera.  Most users shouldn't define \"reference-arm\".  If undefined, all arm cartesian positions will be defined with respect to the ECM" << std::endl;
+        CMN_LOG_CLASS_INIT_WARNING << "Configure: \"reference_arm\" is user defined.  This should only happen if you are using a PSM to hold a camera.  Most users shouldn't define \"reference_arm\".  If undefined, all arm cartesian positions will be defined with respect to the ECM" << std::endl;
     }
 
     // find all arms, there should be 4 of them
@@ -563,13 +563,13 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
             exit(EXIT_FAILURE);
         }
 
-        if (!jsonArm["plug-number"]) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: plug number is missing for SUJ \""
+        if (!jsonArm["plug_number"]) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: plug_number is missing for SUJ \""
                                      << name << "\", must be an integer between 1 and 4"
                                      << std::endl;
             exit(EXIT_FAILURE);
         }
-        unsigned int plugNumber = jsonArm["plug-number"].asInt();
+        unsigned int plugNumber = jsonArm["plug_number"].asInt();
         unsigned int armIndex = plugNumber - 1;
 
         // add interfaces, one is provided so users can find the SUJ
@@ -601,7 +601,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         // create a required interface for each arm to handle clutch button
         if (!m_simulated) {
             std::stringstream interfaceName;
-            interfaceName << "SUJ-Clutch-" << plugNumber;
+            interfaceName << "SUJ_clutch_" << plugNumber;
             mtsInterfaceRequired * requiredInterface = this->AddInterfaceRequired(interfaceName.str());
             if (requiredInterface) {
                 requiredInterface->AddEventHandlerWrite(&mtsIntuitiveResearchKitSUJArmData::clutch_callback, sarm,
@@ -615,7 +615,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
             }
         } else {
             // look for hard coded position if available - users can always push new joint values using ROS
-            Json::Value jsonPosition = jsonArm["simulated-position"];
+            Json::Value jsonPosition = jsonArm["simulated_position"];
             if (!jsonPosition.empty()) {
                 vctDoubleVec position;
                 cmnDataJSON<vctDoubleVec>::DeSerializeText(position, jsonPosition);
@@ -624,7 +624,7 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
                     sarm->m_measured_js.SetValid(true);
                     sarm->m_need_update_forward_kinemactics = true;
                 } else {
-                    CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to load \"position-simulated\" for \""
+                    CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to load \"position_simulated\" for \""
                                              << name << "\", expected vector size is "
                                              << sarm->m_measured_js.Position().size() << " but vector in configuration file has "
                                              << position.size() << " element(s)"
@@ -635,12 +635,12 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         }
 
         // find serial number
-        sarm->m_serial_number = jsonArm["serial-number"].asString();
+        sarm->m_serial_number = jsonArm["serial_number"].asString();
 
         // read brake current configuration
         // all math for ramping up/down current is done on positive values
         // negate only when applying
-        double brakeCurrent = jsonArm["brake-release-current"].asFloat();
+        double brakeCurrent = jsonArm["brake_release_current"].asFloat();
         if (brakeCurrent > 0.0) {
             sarm->m_brake_release_current = brakeCurrent;
             sarm->m_brake_direction_current = 1.0;
@@ -650,17 +650,17 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
         }
 
         brakeCurrent = 0.0;
-        if (!jsonArm["brake-engaged-current"].isNull()) {
-            brakeCurrent = jsonArm["brake-engaged-current"].asFloat();
+        if (!jsonArm["brake_engaged_current"].isNull()) {
+            brakeCurrent = jsonArm["brake_engaged_current"].asFloat();
         }
         sarm->m_brake_engaged_current = brakeCurrent;
 
         // read pot settings
         sarm->m_state_table_configuration.Start();
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[0], jsonArm["primary-offsets"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[1], jsonArm["secondary-offsets"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[0], jsonArm["primary-scales"]);
-        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[1], jsonArm["secondary-scales"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[0], jsonArm["primary_offsets"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_offsets[1], jsonArm["secondary_offsets"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[0], jsonArm["primary_scales"]);
+        cmnDataJSON<vctDoubleVec>::DeSerializeText(sarm->m_voltage_to_position_scales[1], jsonArm["secondary_scales"]);
         sarm->m_state_table_configuration.Advance();
 
         // look for DH
@@ -668,9 +668,9 @@ void mtsIntuitiveResearchKitSUJ::Configure(const std::string & filename)
 
         // Read setup transforms
         vctFrm3 transform;
-        cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["world-origin-to-suj"]);
+        cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["world_origin_to_SUJ"]);
         sarm->m_world_to_SUJ.From(transform);
-        cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["suj-tip-to-tool-origin"]);
+        cmnDataJSON<vctFrm3>::DeSerializeText(transform, jsonArm["SUJ_tip_to_tool_origin"]);
         sarm->m_SUJ_to_arm_base.From(transform);
     }
 }
@@ -1265,7 +1265,7 @@ void mtsIntuitiveResearchKitSUJ::set_lift_velocity(const double & velocity)
         const double dutyCyle = 0.5 + velocity * 0.1;  // 0.1 determines max velocity
         PWM.SetPWMDutyCycle(dutyCyle);
     } else {
-        CMN_LOG_CLASS_RUN_ERROR << "MotorVelocity: value must be between -1.0 and 1.0" << std::endl;
+        CMN_LOG_CLASS_RUN_ERROR << "set_lift_velocity: value must be between -1.0 and 1.0" << std::endl;
     }
 }
 
