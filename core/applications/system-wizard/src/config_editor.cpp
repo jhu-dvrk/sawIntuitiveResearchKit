@@ -60,7 +60,7 @@ ConfigEditor::ConfigEditor(std::unique_ptr<SystemConfigModel> config_model, Conf
 
     // I/O config panel
 
-    Accordion* ios = new Accordion("I/Os", "SteelBlue", this);
+    Accordion* ios = new Accordion("I/Os", "SteelBlue", true, this);
     ListView* io_list = new ListView(*model->io_configs, io_factory, SelectionMode::NONE, true);
     ios->setWidget(io_list);
 
@@ -71,7 +71,7 @@ ConfigEditor::ConfigEditor(std::unique_ptr<SystemConfigModel> config_model, Conf
 
     // Arm config panel
 
-    Accordion* arms = new Accordion("Arms", "LightSeaGreen", this);
+    Accordion* arms = new Accordion("Arms", "LightSeaGreen", true, this);
     ListView* arm_list = new ListView(*model->arm_configs, arm_factory, SelectionMode::NONE, true);
     arm_list->setEmptyMessage("No arms configured yet");
     arms->setWidget(arm_list);
@@ -83,7 +83,7 @@ ConfigEditor::ConfigEditor(std::unique_ptr<SystemConfigModel> config_model, Conf
 
     // Teleop config panel
 
-    Accordion* teleops = new Accordion("Teleops", "DodgerBlue", this);
+    Accordion* teleops = new Accordion("Teleops", "DodgerBlue", true, this);
     ListView* teleop_list = new ListView(*model->teleop_configs, teleop_factory, SelectionMode::NONE, true);
     teleop_list->setEmptyMessage("No teleops added - teleoperation mode will not be available");
     teleops->setWidget(teleop_list);
@@ -95,7 +95,7 @@ ConfigEditor::ConfigEditor(std::unique_ptr<SystemConfigModel> config_model, Conf
 
     // Console config panel
 
-    Accordion* consoles = new Accordion("Consoles", "Salmon", this);
+    Accordion* consoles = new Accordion("Consoles", "Salmon", true, this);
     ListView* console_list = new ListView(*model->console_configs, arm_factory, SelectionMode::NONE, false);
     consoles->setWidget(console_list);
 
