@@ -8,12 +8,12 @@
 
         {
             "properties": {
-                "gravity-compensation": {
+                "gravity_compensation": {
                     "description": "Gravity compensation configuration file.  See [dvrk-gravity-compensation](https://github.com/jhu-dvrk/dvrk-gravity-compensation) GitHub page (courtesy of CUHK).",
                     "type": "string"
                 },
 
-                "platform-gain": {
+                "platform_gain": {
                     "description": "Gain applied to the torque computed to move the MTM platform (4th joint) away from the operator's hand.  You can set it to zero to cancel this feature.  Default is defined in `sawIntuitiveResearchKit/components/include/sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h`.",
                     "type": "number",
                     "minimum": 0.0,
@@ -21,20 +21,20 @@
                     "default": 0.5
                 },
 
-                "gripper-events-debounce": {
+                "gripper_events_debounce": {
                     "description": "Amount of time is seconds to filter (debounce) gripper angle values before events are emitted (MTM/gripper/pinch and MTM/gripper/closed).  Default is defined in `sawIntuitiveResearchKit/components/include/sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h`.",
                     "type": "number",
                     "minimum": 0.0,
                     "default": 0.2
                 },
 
-                "gripper-events-zero": {
+                "gripper_events_zero": {
                     "description": "Angle in radians used to determine transitions (closed vs open) for gripper events (MTM/gripper/pinch and MTM/gripper/closed).  Default is defined in `sawIntuitiveResearchKit/components/include/sawIntuitiveResearchKit/mtsIntuitiveResearchKitMTM.h`.",
                     "type": "number",
                     "default": 0.0
                 },
 
-                "kinematic-type": {
+                "kinematic_type": {
                     "description": "Method use to compute inverse kinematics.  **CLOSED** is experimental and untested.  Avoid it for now!",
                     "type": "string",
                     "enum": ["CLOSED", "ITERATIVE"],

@@ -8,12 +8,12 @@
 
         {
             "properties": {
-                "custom-tool-index": {
+                "custom_tool_index": {
                     "description": "Extra instrument list loaded for this arm.  By default, the supported instruments are defined in the file `share/tool/index.html` but one might need some new instruments.  This can be to support custom instruments or standard ISI instruments not yet supported by the dVRK (See the [dVRK wiki](https://dvrk.readthedocs.io)).  The filename can be absolute or relative to `sawIntuitiveResearchKit/share`.  For example \"jhu-dVRK/custom-tool/custom-tool-index.json\"",
                     "type": "string"
                 }
                 ,
-                "tool-detection": {
+                "tool_detection": {
                     "description": "Set the tool detection method.  Possible values are defined in `sawIntuitiveResearchKit/core/components/code/mtsIntuitiveResearchKitToolTypes.cdg`.  For more details regarding tool detection see the [dVRK wiki](https://dvrk.readthedocs.io).",
                     "type": "string",
                     "enum": ["AUTOMATIC", "MANUAL", "FIXED"],
@@ -21,7 +21,7 @@
                 }
                 ,
                 "tool": {
-                    "description": "Tool type (e.g. \"LARGE\\_NEEDLE\\_DRIVER:400006\" or \"LARGE\\_NEEDLE\\_DRIVER:420006[12]\" if the version is needed).   This is required if the \"tool-detection\" is set to \"FIXED\" and ignored otherwise.  This emulates the behavior of the dVRK 1.x and should only be used if the tool is never changed.",
+                    "description": "Tool type (e.g. \"LARGE\\_NEEDLE\\_DRIVER:400006\" or \"LARGE\\_NEEDLE\\_DRIVER:420006[12]\" if the version is needed).   This is required if the \"tool_detection\" is set to \"FIXED\" and ignored otherwise.  This emulates the behavior of the dVRK 1.x and should only be used if the tool is never changed.",
                     "type": "string"
                 }
             }
