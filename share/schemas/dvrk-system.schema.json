@@ -31,158 +31,7 @@
             "items": {
                 "type": "object",
                 "description": "Configuration for a single arm",
-                "required": ["name", "type"],
-                "additionalProperties": false,
-                "properties": {
-
-                    "name": {
-                        "type": "string",
-                        "description": "Name of the arm.  For dVRK arms, use one of MTML, MTML, PSM1, PSM2, PSM3 or ECM",
-                        "examples": [
-                            {
-                                "name": "MTMR"
-                            }
-                        ]
-                    },
-
-                    "type": {
-                        "type": "string",
-                        "enum": ["MTM", "PSM", "ECM",
-                                 "MTM_DERIVED", "PSM_DERIVED", "ECM_DERIVED",
-                                 "MTM_GENERIC", "PSM_GENERIC", "ECM_GENERIC",
-                                 "SUJ_Classic", "SUJ_Si", "SUJ_Fixed", "FOCUS_CONTROLLER"],
-                        "description": "Type of arm.  This determines which class should be used to instantiate the arm.\n\n - `MTM`, `PSM` and `ECM` correspond to the default classes provided for the dVRK arms.  These are the most common ones.\n - `xxx_DERIVED` corresponds to classes derived from the base classes provided in the dVRK stack.  Users can derive the base arm classes to alter their behavior.  In this case, the system knows that the derived class has all the features from the base class so the connections to the PID, IO, Qt widget and ROS bridge are the same as those for the base class.\n - `xxx_GENERIC` corresponds to classes not derived from the dVRK base classes.  The system will not create any IO, PID components for this arm.  The system will use a generic Qt Widget and add ROS topics if and only if the provided interface has CRTK compatible commands and events.  Examples include Force Dimension devices ([sawForceDimensionSDK](https://github.com/jhu-saw/sawForceDimensionSDK)) and the Sensable Omni ([sawSensablePhantom](https://github.com/jhu-saw/sawSensablePhantom)).\n - `SUJ_Classic` and `SUJ_Si` are for the clinical systems [Setup Joints](https://dvrk.readthedocs.io)\n - `SUJ_Fixed` is for arms on a custom mountFor `xxx_DERIVED` and `xxx_GENERIC`, the system has no way to automatically create the component, so the user has to provide the proper `component-manager` configuration to first create the component for the arm.",
-                        "examples": [
-                            {
-                                "arms":
-                                [
-                                    {
-                                        "name": "MTML",
-                                        "type": "MTM",
-                                        "serial": "22723",
-                                        "IO": "IO_1"
-                                    }
-                                    ,
-                                    {
-                                        "name": "MTMR",
-                                        "type": "MTM_GENERIC",
-                                        "component": "ForceDimensionSDK",
-                                        "interface": "MTMR"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-
-                    "serial": {
-                        "type": "string",
-                        "description": "Arm's serial number.  To verify the serial number, locate the label on the arm itself (See the [dVRK wiki](https://dvrk.readthedocs.io)).  The serial number and the arm's name are used to locate the arm configuration file assuming the arm configuration file name is `<arm_name>-<arm_serial>.json` (e.g. `MTML-22723.json`).",
-                        "examples": [
-                            {
-                                "serial": "22723"
-                            }
-                        ]
-                    },
-
-                    "IO": {
-                        "type": "string",
-                        "description": "Name of the IO port to use to connect to this arm. This is required for arms of type `PSM`, `ECM`, `MTM` (and derived) as well as `SUJ_Classic`. The IO must have been declared in the \"IOs\" section of the \"system\"."
-                    },
-
-                    "arm_file": {
-                        "type": "string",
-                        "description": "Arm configuration file.  Note that this is optional if the `serial` number has been provided.  If the `serial` number has been provided, the application will assume the arm file is `<name>-<serial>.json`.  For example `PSM1-22723.json`.  This attribute is useful mostly if the arm is simulated (`\"simulation\": \"KINEMATIC\"`)."
-                    },
-
-                    "simulation": {
-                        "type": "string",
-                        "enum": ["KINEMATIC"],
-                        "description": "Use the arm in simulation mode. In this case, the system doesn't need to create an IO component and can run without the physical arms and dVRK controllers (see examples in directory `share/arm`). The only simulation currently supported is `KINEMATIC`, i.e. the PID will set the measured positions (`measured_js` and `setpoint_js`) based on the commanded positions (`servo_jp`). This allows to test the kinematic but doesn't include any dynamic nor simulation of interactions with the world like Gazebo or VREP would."
-                    },
-
-                    "base_frame": {
-                        "type": "object",
-                        "description": "Base frame prepended to the forward kinematics.  The base frame is also taken into account when setting cartesian position goals",
-                        "examples": [
-                            {
-                                "base_frame": {
-                                    "reference_frame": "HRSV",
-                                    "transform": [[ -1.0,  0.0,          0.0,          0.180],
-                                                  [  0.0,  0.866025404,  0.5,          0.400],
-                                                  [  0.0,  0.5,         -0.866025404,  0.475],
-                                                  [  0.0,  0.0,          0.0,          1.0]]
-                                }
-                            }
-                            ,
-                            {
-                                "base_frame": {
-                                    "component": "ECM",
-                                    "interface": "Arm"
-                                }
-                            }
-                        ],
-                        "oneOf": [
-                            { "required": ["transform", "reference_frame"] },
-                            { "required": ["component", "interface"] }
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-
-                            "transform": {
-                                "$ref": "cisst-matrices.schema.json#/definitions/matrix4x4"
-                            },
-
-                            "reference_frame": {
-                                "description": "Name of the reference frame.  This is used for Qt Widget and ROS tf",
-                                "type": "string"
-                            },
-
-                            "component": {
-                                "description": "Name of the component that can provide the base frame at runtime.  This is used for the full patient cart where the SUJ component can compute the base frame.",
-                                "type": "string"
-                            },
-
-                            "interface": {
-                                "description": "Name of the required interface used to set the base frame on the arm (using function `set_base_frame`)",
-                                "type": "string"
-                            }
-
-                        }
-                    },
-
-                    "period": {
-                        "description": "Override the default periodicity of the arm class.  Most user should steer away from changing the default arm periodicity.  This works only for the dVRK base types ('MTM, PSM, ECM).",
-                        "type": "number",
-                        "exclusiveMinimum": 0.0
-                    },
-
-                    "IO_file": {
-                        "type": "string",
-                        "description": "[Deprecated] Name of the XML configuration file for the low level arm's IO (from *sawRobotIO1394*).  The name of the IO configuration file is now inferred from the `serial` number attribute.  Use `serial` instead."
-                    },
-
-                    "PID_file": {
-                        "type": "string",
-                        "description": "[Deprecated] Name of the XML configuration file for the arm's PID (from *sawControllers*, `mtsPID`).  The name of the PID configuration file is now inferred from the arm's `name` attribute."
-                    },
-
-
-                    "component": {
-                        "description": "For arm of type xxx_GENERIC only.  Name of the component for the generic arm.  For the dVRK arms, the component is named after the arm (e.g. \"MTML\").  For other devices (e.g. `sawSensablePhantom`) the component might be able to provide multiple arms so the arm name is used for the \"interface\".",
-                        "type": "string"
-                    },
-
-                    "interface": {
-                        "description": "For arm of type xxx_GENERIC only.  Name of the provided interface for the generic arm.  For the dVRK arms, the component is named after the arm (e.g. \"MTML\") and the interface is always \"Arm\".  For other devices (e.g. `sawSensablePhantom`) the component might be able to provide multiple arms so the arm name is used for the \"interface\".",
-                        "type": "string"
-                    },
-
-                    "skip_ROS_bridge": {
-                        "description": "Tell the component manager to not expose the arm commands to ROS.  By default, the component manager will expose the arm to ROS using the cisst ROS CRTK bridge",
-                        "type": "boolean",
-                        "default": false
-                    }
-                }
+		"$ref": "dvrk-system-arm.schema.json"
             }
         },
 
@@ -194,6 +43,22 @@
                 "description": "Configuration for a single PSM tele-operation component",
                 "$ref": "dvrk-console.schema.json"
             }
+        },
+
+        "consoles": {
+            "type": "array",
+            "description": "List of PSM tele-operation components.  Each PSM tele-operation component requires a MTM and a PSM",
+            "items": {
+                "type": "object",
+                "description": "Configuration for a single PSM tele-operation component",
+                "$ref": "dvrk-console.schema.json"
+            }
+        },
+
+	"settings": {
+            "description": "General settings for the dVRK system configuration. See the [dVRK wiki](https://dvrk.readthedocs.io).",
+            "type": "object",
+            "$ref": "dvrk-system-settings.schema.json"
         },
 
         "ISI_focus_controller": {
