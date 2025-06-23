@@ -3,19 +3,19 @@
     "$id": "dvrk-console.schema.json",
     "title": "dVRK console",
     "type": "object",
-    "description": "Configuration file format for the dVRK console.  See the [dVRK wiki](https://dvrk.readthedocs.io).\n\n - This format is used by the dVRK system configuration file.\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/console_configuration.cdg`\n - [Schema file](dvrk-console.schema.json)",
+    "description": "Configuration file format for a dVRK console.\n\n - This format is used by the dVRK system configuration file.\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/console_configuration.cdg`\n - [Schema file](dvrk-console.schema.json)",
     "additionalProperties": false,
     "required": ["name", "input_type"],
     "properties": {
 
         "name": {
             "type": "string",
-            "description": "Arbitrary name given to the console. Usually `console`, `console_1`..."
+            "description": "Arbitrary name given to the console. Usually `console`, `console1`..."
         },
 
         "input_type": {
             "type": "string",
-            "description": "General configuration for the console's input. All surgeon's console are expected to provided at least 3 signals: clutch pedal, camera pedal and  operator present. The different options are:\n\n - `PEDALS_ONLY`: this can be used by all dVRK sites as long as you have the original (or compatible) foot pedals connected to the dVRK controller. If you're using the foot pedals, you must specify which IO configuration file to use based on the type of controller with `IO_pedals`.\n - `PEDALS_GOOVIS_HEAD_SENSOR`: if you're using the Goovis HMD, you can use the USB connection to detect if the operator is present. When using this option, you must also provide the `HID_file`.\n - `PEDALS_ISI_HEAD_SENSOR`: assuming you built the custom cable to connect the original ISI head sensor (Classic and S) to the dVRK controllers (QLA1 and DQLA), you can use this option. In this case, you also need to specify which controller is used by setting the `IO_head_sensor`.\n - `PEDALS_DVRK_HEAD_SENSOR`: cheap head sensor designed in the early days of the dVRK, see `PEDALS_ISI_HEAD_SENSOR` for configuration.\n - `SIMULATED`: used when no physical sensor are available. The events can be emulated using either the GUI in \"direct mode\" or ROS topics.\n - `COMPONENTS`: this is the most flexible option. Any cisst/SAW component can be used but the user has to make sure the components are properly created and provide the names of components and interface for the clutch, camera pedal and operator present: `clutch_component`, `clutch_interface`, `camera_component`, `camera_interface`, `operator_present_component`, `operator_present_interface`.",
+            "description": "General configuration for the console's input. All surgeon's consoles are expected to provide at least 3 signals: clutch pedal, camera pedal and operator present.\n\n - To allow users to reposition their hands while teleoperating, original da Vinci systems provide a \"clutch\" pedal. Later systems (Xi) also provide a slider button on each MTM so one can clutch each MTM individually.\n\n - The \"Camera\" pedal is used to determine if the MTMs should be used to teleoperate the PSMs or the ECM.\n\n - To enable any teleoperation, the dVRK needs to know if the operator is present and holding the MTMs. On the clinical systems, there is a sensor at the level of the stereo display to detect if the operator's head is facing the display. On the first versions of dVRKs, we didn't have a head sensor so we used one of the foot pedals as a deadman switch. The operator was considered present if and only if the \"COAG\" pedal was pressed.  Having to press the pedal continuously is quite inconvenient, so we came up with a few alternatives.\n\nThe different options are:\n\n - `PEDALS_ONLY`: this can be used by all dVRK sites as long as you have the original (or compatible) foot pedals connected to the dVRK controller. If you're using the foot pedals, you must specify which IO configuration file to use based on the type of controller with `IO_pedals`.\n - `PEDALS_GOOVIS_HEAD_SENSOR`: if you're using the Goovis HMD, you can use the USB connection to detect if the operator is present. When using this option, you must also provide the `HID_file`.\n - `PEDALS_ISI_HEAD_SENSOR`: assuming you built the custom cable to connect the original ISI head sensor (Classic and S) to the dVRK controllers (QLA1 and DQLA), you can use this option. In this case, you also need to specify which controller is used by setting the `IO_head_sensor` (this assumes the head sensor is connected to ``DOF 1`` on the dVRK controller)\n - `PEDALS_DVRK_HEAD_SENSOR`: cheap head sensor designed in the early days of the dVRK, see `PEDALS_ISI_HEAD_SENSOR` for configuration.\n - `SIMULATED`: used when no physical sensor is available. The events can be emulated using either the GUI in \"direct mode\" or ROS topics.\n - `COMPONENTS`: this is the most flexible option. Any cisst/SAW component can be used but the user has to make sure the components are properly created and provide the names of components and interfaces for the clutch, camera pedal and operator present: `clutch_component`, `clutch_interface`, `camera_component`, `camera_interface`, `operator_present_component`, `operator_present_interface`.\n\n**WARNING**: dVRK Si controllers can't be used to connect pedals and head sensors, you need a Classic controller (QLA1 or DQLA) since these controllers are the only one with some extra IOs.",
             "enum": ["PEDALS_ONLY",
                      "PEDALS_GOOVIS_HEAD_SENSOR",
                      "PEDALS_ISI_HEAD_SENSOR",
@@ -26,40 +26,64 @@
 
         "IO_pedals": {
             "type": "object",
-            "description": "IO file used to specify the IOs for the foot pedals. Use one of the existing file in the `share/io` directory\nThis is required if the `input_type` starts with `PEDALS`.",
+            "description": "IO file used to specify the IOs for the foot pedals. Use one of the existing file in the `share/io` directory.\nMake sure you use the correct IO configuration file based on the name of the controller (e.g. MTML vs MTMR). The controller's name is used to identify the Id of the FPGA board connected to the pedals. You must also make sure you use specific files for DQLA based controllers.\nThis is required if the `input_type` starts with `PEDALS_`.",
             "$ref": "dvrk-IO-configuration.schema.json",
             "examples": [
                 {
-                    "input_type": "PEDALS",
+                    "input_type": "PEDALS_ONLY",
                     "IO_pedals" :
                     {
-                        "IO": "IO_1",
+                        "IO": "IO1",
                         "IO_file": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
                     }
                 }
+				,
+				{
+					"input_type": "PEDALS_ONLY",
+					"IO_pedals": {
+						"IO": "IO1",
+						"IO_file": "io/sawRobotIO1394-MTML-foot-pedals-DQLA.xml"
+					}
+				}
             ]
         },
 
 
         "IO_head_sensor": {
             "type": "object",
-            "description": "IO file used to specify the IOs for the head sensor. Use one of the existing file in the `share/io` directory\nThis is required if the `input_type` is `PEDALS_ISI_HEAD_SENSOR` or `PEDALS_DVRK_HEAD_SENSOR`.",
+            "description": "IO file used to specify the IOs for the head sensor.  Use one of the existing file in the `share/io` directory\nThis is required if the `input_type` is `PEDALS_ISI_HEAD_SENSOR` or `PEDALS_DVRK_HEAD_SENSOR`.",
             "$ref": "dvrk-IO-configuration.schema.json",
             "examples": [
                 {
                     "input_type": "PEDALS_ISI_HEAD_SENSOR",
                     "IO_pedals" :
                     {
-                        "IO": "IO_1",
+                        "IO": "IO1",
                         "IO_file": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
                     }
                     ,
                     "IO_head_sensor":
                     {
-                        "IO": "IO_1",
+                        "IO": "IO1",
                         "IO_file": "io/sawRobotIO1394-MTMR-dv-head-sensor.xml"
                     }
                 }
+				,
+				{
+					"name": "console",
+					"input_type": "PEDALS_DVRK_HEAD_SENSOR",
+					"IO_pedals" :
+					{
+						"IO": "IO1",
+						"IO_file": "io/sawRobotIO1394-MTMR-foot-pedals.xml"
+					}
+					,
+					"IO_head_sensor":
+					{
+						"IO": "IO1",
+						"IO_file": "io/sawRobotIO1394-MTMR-dVRK-head-sensor.xml"
+					}
+				}	
             ]
         },
 
@@ -71,7 +95,7 @@
                     "input_type": "PEDALS_GOOVIS_HEAD_SENSOR",
                     "IO_pedals" :
                     {
-                        "IO": "IO_1",
+                        "IO": "IO1",
                         "IO_file": "io/sawRobotIO1394-MTML-foot-pedals.xml"
                     }
                     ,

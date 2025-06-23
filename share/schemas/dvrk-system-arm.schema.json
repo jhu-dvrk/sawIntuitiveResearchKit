@@ -3,7 +3,7 @@
     "$id": "dvrk-system-arm.schema.json",
     "title": "dVRK system arm proxy configuration",
     "type": "object",
-    "description": "Configuration file format for a dVRK arm within the system configuration file.  See the [dVRK wiki](https://dvrk.readthedocs.io).\n\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/arm_proxy.cpp`\n - [Schema file](dvrk-system-arm.schema.json)",
+    "description": "Configuration file format for a dVRK arm within the system configuration file.\n\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/arm_proxy.cpp`\n - [Schema file](dvrk-system-arm.schema.json)",
     "additionalProperties": false,
     "required": ["name", "type"],
     "properties": {
