@@ -10,27 +10,26 @@
 
 	"name": {
 	    "type": "string",
-	    "description": "Arbitrary name picked to name a single connection to dVRK controllers. Traditionally, dVRK systems used a single IO with a FireWire port. Default convention is to name the IO `IO_1`, `IO_2`..."
+	    "description": "Arbitrary name picked to name a single connection to dVRK controllers. Traditionally, dVRK systems used a single IO with a FireWire port. Default convention is to name the IO something line `IO`, `IO1`, `IO2`...  The name is later on used the arms, inputs and any other component that need to know which IO port should be used."
 	},
 
 	"port": {
             "type":"string",
-            "description": "Port used communicate between the computer and the dVRK controllers.  Accepted values are \"fw\", \"fw:X\" (X is FireWire port), \"udpfw\", \"udp\" or \"udp:xx.xx.xx.xx\" (xx.xx.xx.xx is the IP address of the dVRK controller.  Default controller address is 169.254.0.100.  Values are parsed by `BasePort::ParseOptions` in library Amp1394.",
+            "description": "The port defines the type of connection between the PC and the dVRK controllers. For anyone using FireWire for all the connections, the setting should be `fw`. If your system uses FireWire between the dVRK controller and Ethernet to bridge between the controllers and the PC, use `udpfw`. Finally, if your system is recent (post 2024) and only uses FPGA V3, you can connect everything using Ethernet cables and use `udp`.\nIf you have multiple FireWire or Ethernet adapters on your PC, you will need to add the FireWire port number or Ethernet IP address after the port's type (e.g. `fw:1`).\nHaving multiple IOs is very convenient to handle systems with multiple surgeon's consoles. For example, one might want a system with 2 MTMLs and 2 MTMRs. The issue is that each arm assumes a default board Id based on the arm's type. Therefore, both MTMLs would use the same board Id(s) and create a conflict if used on the same IO port.\nAccepted values are `fw`, `fw:X` (`X` is FireWire port), `udpfw`, `udp` or `udp:xx.xx.xx.xx` (`xx.xx.xx.xx` is the IP address of the dVRK controller.  Default controller address is 169.254.0.100.  Values are parsed by `BasePort::ParseOptions` in library Amp1394.",
             "pattern": "^fw$|^fw:[0-9]$|^udp$|^udp:[0-9]{2,3}.[0-9]{2,3}.[0-9]{2,3}.[0-9]{2,3}|^udpfw|^udpfw:[0-9]{2,3}.[0-9]{2,3}.[0-9]{2,3}.[0-9]{2,3}$",
             "examples": [
                 {
-		    "name": "IO_1",
+					"name": "IO1",
                     "port": "fw"
                 },
                 {
-		    "name": "IO_1",
+					"name": "IO1",
                     "port": "udpfw"
                 },
-		{
-		    "name": "IO_1",
+				{
+					"name": "IO1",
                     "port": "udp"
-                }
-
+                }	
             ]
         },
 
@@ -57,7 +56,7 @@
 
         "watchdog_timeout": {
             "type": "number",
-            "description": "Maximum laps of time allowed between to read/write access to the controller.  It is used to detect abnormally slow IOs or disconnected cables.  The value is sent to the controllers and the controllers will turn off power if the communication loop time exceeds the watchdog timeout.  Defined in seconds.  The default is defined in `mtsIntuitiveResearchKit.h` and is set to 30ms.  This is an advanced setting and most users should avoid defining it.  Setting it to zero disables the watchdog and should only be used by experts.  The maximum value is 300ms, i.e. 0.3s",
+            "description": "Maximum laps of time allowed between read/write access to the dVRK controllers.  It is used to detect abnormally slow IOs or disconnected cables.  The value is sent to the controllers and the controllers will turn off power if the communication loop time exceeds the watchdog timeout.  Defined in seconds.  The default is defined in `mtsIntuitiveResearchKit.h` and is set to 30ms.  This is an advanced setting and most users should avoid defining it.  Setting it to zero disables the watchdog and should only be used by experts.  The maximum value is 300ms, i.e. 0.3s",
             "minimum": 0.0,
             "maximum": 0.3,
             "examples": [
@@ -69,7 +68,7 @@
 
         "configuration_files": {
             "type": "array",
-            "description": "Extra configuration files to configure the IO component.  See examples in directory `share/io`.",
+            "description": "Extra configuration files to configure the IO component. The IO component can also be configured to support custom hardware using the controllers spare digital and analog IOs. This setting shouldn't be used for the hardware supported by the dVRK software stack such as foot pedals, head sensor, focus controller... See examples in directory `share/io`.",
             "items": {
                 "type": "string"
             }
