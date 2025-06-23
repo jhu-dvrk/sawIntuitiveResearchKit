@@ -3,23 +3,23 @@
     "$id": "dvrk-system.schema.json",
     "title": "dVRK system",
     "type": "object",
-    "description": "Configuration file format for the dVRK system.  See the [dVRK wiki](https://dvrk.readthedocs.io).\n\n - This format is used by the application `sawIntuitiveResearchKitSystem` and the ROS application `dvrk_robot dvrk_system`\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/system.cpp`\n - [Schema file](dvrk-system.schema.json)",
+    "description": "Configuration file format for the dVRK system.\n\n - This format is used by the application `sawIntuitiveResearchKitSystem` and the ROS application `dvrk_robot dvrk_system`\n - For details of implementation, see code under `sawIntuitiveResearchKit/core/components/code/system.cpp`\n - [Schema file](dvrk-system.schema.json)",
     "additionalProperties": false,
 
     "properties": {
 
         "IOs": {
             "type": "array",
-            "description": "List of IO components.  Each IO (input/output) component corresponds to a physical connection to the dVRK controllers, usually over FireWire or Ethernet (UDP).",
+            "description": "List of IO components. Each IO (input/output) component corresponds to a physical connection to a set of dVRK controllers, usually over FireWire or Ethernet (UDP). IO components/ports are identified by their name once declared.",
             "items": {
                 "type": "object",
-                "description": "Configuration for a single IO component",
+                "description": "Configuration for a single IO component/port",
                 "$ref": "dvrk-IO.schema.json"
             },
             "examples":
             [
                 {
-                    "name": "IO_1",
+                    "name": "IO1",
                     "port": "fw"
                 }
             ]
@@ -27,42 +27,32 @@
 
         "arms": {
             "type": "array",
-            "description": "List of arms for the system",
+            "description": "List of arms for the system. Arms can be native, i.e. dVRK supported retired da Vinci arms, or compatible arms (with CRTK interface) created using the *cisst* `component-manager` section of the system configuration",
             "items": {
                 "type": "object",
                 "description": "Configuration for a single arm",
-		"$ref": "dvrk-system-arm.schema.json"
+                "$ref": "dvrk-system-arm.schema.json"
             }
         },
 
         "consoles": {
             "type": "array",
-            "description": "List of PSM tele-operation components.  Each PSM tele-operation component requires a MTM and a PSM",
+            "description": "List of consoles (as in surgeon's console).  A dVRK system can have multiple consoles to control (teleoperate) a single patient's cart. Each console is defined by the IOs used for the clutch and camera pedals as well as the sensor used to detect operator presence. Within the console, two lists are used to declare the teleoperation components to be created (PSM and ECM teleoperation). All the arms and IOs used in the console must be declared at the top level of the system configuration file.", 
             "items": {
                 "type": "object",
-                "description": "Configuration for a single PSM tele-operation component",
+                "description": "Configuration for a single console",
                 "$ref": "dvrk-console.schema.json"
             }
         },
 
-        "consoles": {
-            "type": "array",
-            "description": "List of PSM tele-operation components.  Each PSM tele-operation component requires a MTM and a PSM",
-            "items": {
-                "type": "object",
-                "description": "Configuration for a single PSM tele-operation component",
-                "$ref": "dvrk-console.schema.json"
-            }
-        },
-
-	"settings": {
-            "description": "General settings for the dVRK system configuration. See the [dVRK wiki](https://dvrk.readthedocs.io).",
+        "settings": {
+            "description": "General settings for the dVRK system configuration.",
             "type": "object",
             "$ref": "dvrk-system-settings.schema.json"
         },
 
         "ISI_focus_controller": {
-            "description": "Configuration required to use the da Vinci endoscope focus controller. This requires a custom cable and will only work with da Vinci focus controller.  The endoscope focus component was introduced in version 1.6.  See the [dVRK wiki](https://dvrk.readthedocs.io).",
+            "description": "Configuration required to use the da Vinci endoscope focus controller. This requires a custom cable and will only work with da Vinci focus controller.",
             "type": "object",
             "additionalProperties": false,
             "type": "object",
@@ -70,7 +60,7 @@
             "examples": [
                 {
                     "ISI_focus_controller": {
-                        "IO": "IO_1",
+                        "IO": "IO1",
                         "IO_file": "io/sawRobotIO1394-MTML-dv-endoscope-focus.xml"
                     }
                 }
@@ -78,16 +68,9 @@
         },
 
         "component_manager": {
-            "description": "See *cisstMultiTask* [component manager](cisst-component-manager.html)",
+            "description": "Section used to dynamically create and connect cisst/SAW components to be used along the dVRK system. See *cisstMultiTask* [component manager](cisst-component-manager.html)",
             "$ref": "cisst-component-manager.schema.json"
-        },
-
-
-        "chatty": {
-            "type": "boolean",
-            "description": "Make the console say something useless when it starts.  It's mostly a way to test the text-to-speech feature.",
-            "default": false
         }
-
+		
     }
 }
