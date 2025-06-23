@@ -208,9 +208,11 @@ void dvrk::console::create_components(void)
                                << m_config->HID_file << std::endl;
             exit(EXIT_FAILURE);
         }
+#if sawIntuitiveResearchKit_HAS_HID_HEAD_SENSOR
         m_head_sensor = new mtsHIDHeadSensor(m_config->operator_present.component);
         m_head_sensor->Configure(config_file);
         manager->AddComponent(m_head_sensor);
+#endif
     }
 }
 
