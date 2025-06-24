@@ -4,7 +4,10 @@
 inline-header {
 #include <sawIntuitiveResearchKit/arm_type.h>
 #include <sawIntuitiveResearchKit/simulation.h>
-#include <sawIntuitiveResearchKit/base_frame.h>}
+#include <sawIntuitiveResearchKit/base_frame.h>
+// Always include last
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
+}
 
 inline-code {
 #include <sawIntuitiveResearchKit/mtsIntuitiveResearchKit.h>
