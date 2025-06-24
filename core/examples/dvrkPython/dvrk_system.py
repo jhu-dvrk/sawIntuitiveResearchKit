@@ -1,4 +1,4 @@
-# Start dVRK console
+# Start dVRK system
 
 import os, sys, ctypes
 
@@ -42,18 +42,18 @@ def dvrk_list(req_key = ''):
                     print(indent+key)
     dvrk_list_inner(dvrk, '', req_key)
 
-# Set up the console interface and add commands to the dvrk dictionary
-def SetupConsole(serverName):
-    console = cisstMultiTask.mtsCreateClientInterface('dvrkClient', serverName, 'Main')
+# Set up the system interface and add commands to the dvrk dictionary
+def SetupSystem(serverName):
+    system = cisstMultiTask.mtsCreateClientInterface('dvrkClient', serverName, 'Main')
     print('Connecting internal required interfaces')
-    console.connect()
-    console_dict = dict()
-    for command in dir(console):
+    system.connect()
+    system_dict = dict()
+    for command in dir(system):
        # Ignore commands that start with '_' or 'this'
        if not command.startswith('_') and not command.startswith('this'):
-          console_dict[command] = getattr(console, command)
-    dvrk['console'] = console_dict
-    return console
+          system_dict[command] = getattr(system, command)
+    dvrk['system'] = system_dict
+    return system
 
 # Find arm components, add interfaces, and add commands to dvrk dictionary
 def SetupArms(components):
@@ -84,13 +84,13 @@ if LCM.GetComponent('IRE'):
    isEmbedded = True
 
 if isEmbedded:
-   dvrkServer = LCM.GetComponent('console')
+   dvrkServer = LCM.GetComponent('system')
 else:
     LCM.CreateAll()
     LCM.StartAll()
 
     dvrkServer = cisstMultiTask.mtsLoadAndCreateServer('sawIntuitiveResearchKit',
-                                                       'mtsIntuitiveResearchKitConsole',
+                                                       'dvrk_system',
                                                        'dvrkServer', '')
 
     if dvrkServer:
@@ -103,9 +103,9 @@ else:
         dvrkServer.Configure(configFile)
 
 if dvrkServer:
-    # Setup up console component, which will create other components,
+    # Setup up system component, which will create other components,
     # including the arms (MTM, PSM, ECM)
-    console = SetupConsole(dvrkServer.GetName())
+    system = SetupSystem(dvrkServer.GetName())
     # Now, look for the arm components (MTM, PSM, ECM)
     SetupArms(LCM.GetNamesOfComponents())
 
