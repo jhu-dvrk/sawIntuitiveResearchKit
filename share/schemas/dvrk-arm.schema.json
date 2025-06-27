@@ -7,7 +7,7 @@
     "required": ["kinematic", "generation"],
     "properties": {
         "kinematic": {
-            "description": "Kinematic configuration file, i.e. DH parameters for class `robManipulator`.",
+            "description": "Kinematic configuration file, i.e. DH parameters for class `robManipulator`. Kinematic files are provided under `share/io`. The kinematic configuration files should not be changed for most users.",
             "type": "string"
         },
 

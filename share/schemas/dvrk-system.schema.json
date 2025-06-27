@@ -37,7 +37,7 @@
 
         "consoles": {
             "type": "array",
-            "description": "List of consoles (as in surgeon's console).  A dVRK system can have multiple consoles to control (teleoperate) a single patient's cart. Each console is defined by the IOs used for the clutch and camera pedals as well as the sensor used to detect operator presence. Within the console, two lists are used to declare the teleoperation components to be created (PSM and ECM teleoperation). All the arms and IOs used in the console must be declared at the top level of the system configuration file.", 
+            "description": "List of consoles (as in surgeon's console).  A dVRK system can have multiple consoles to control (teleoperate) a single patient's cart. Each console is defined by the IOs used for the clutch and camera pedals as well as the sensor used to detect operator presence. Within the console, two lists are used to declare the teleoperation components to be created (PSM and ECM teleoperation). All the arms and IOs used in the console must be declared at the top level of the system configuration file.",
             "items": {
                 "type": "object",
                 "description": "Configuration for a single console",
@@ -52,7 +52,7 @@
         },
 
         "ISI_focus_controller": {
-            "description": "Configuration required to use the da Vinci endoscope focus controller. This requires a custom cable and will only work with da Vinci focus controller.",
+            "description": "Configuration required to use the da Vinci endoscope focus controller. This requires a custom cable and will only work with the original da Vinci focus controller (Classic and S, not Si). The configuration depends on which dVRK controller you connected the focus controller, different files are provided in `share/io` for your convenience. This setting will:\n - add a component to send focus in/out commands to the focus controller\n - connect (in software) the foot pedals cam+/- to change focus\n - add a Qt widget and ROS topics\nUsers can still change to focus using the +/- buttons on the controller itself.",
             "type": "object",
             "additionalProperties": false,
             "type": "object",
@@ -71,6 +71,5 @@
             "description": "Section used to dynamically create and connect cisst/SAW components to be used along the dVRK system. See *cisstMultiTask* [component manager](cisst-component-manager.html)",
             "$ref": "cisst-component-manager.schema.json"
         }
-		
     }
 }
