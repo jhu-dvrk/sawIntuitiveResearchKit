@@ -1,4 +1,4 @@
-# dVRK Console Python example
+# dVRK Python example
 
 This example can be used either with a standalone Python interpreter or with an embedded Python
 interpreter (e.g., embedded in a C++ application). Python 2.7 and Python 3 are both supported.
@@ -6,7 +6,7 @@ interpreter (e.g., embedded in a C++ application). Python 2.7 and Python 3 are b
 ## Standalone Python interpreter
 
 Start your favorite Python shell (e.g., `python` or `ipython`).
-From the Python prompt, type: `from dvrk_console import *`
+From the Python prompt, type: `from dvrk_system import *`
 
 ## Embedded Python interpreter
 
@@ -28,7 +28,7 @@ is to create a separate JSON file with the following contents (for `ipython`):
             "constructor-arg": {
                 "Name": "IRE",
                 "Shell": "IRE_IPYTHON",
-                "Startup": "from dvrk_console import *"
+                "Startup": "from dvrk_system import *"
             }
         }
     ]
@@ -50,16 +50,16 @@ which MTMs, PSMs, ECM are used).
   - If Python fails to find the cisst Python libraries, make sure the `PYTHONPATH` environment
 variable is set up correctly, e.g., using `cisstvars.sh` (Linux) or `cisstvars.bat` (Windows).
 
-  - If `dvrk_console.py` is not found, either specify the full path when importing the file,
+  - If `dvrk_system.py` is not found, either specify the full path when importing the file,
 or copy it to one of the directories in `PYTHONPATH`.
 
-  - Currently, `dvrk_console.py` determines that it running in an embedded Python interpreter
+  - Currently, `dvrk_system.py` determines that it running in an embedded Python interpreter
 if it finds a component named `IRE`. Make sure to use that name in your JSON file, as in the example above.
 
 ## Finding Commands
 
 All commands are available via (required) interfaces that are automatically created for
-the console and any configured arms (MTM, PSM or ECM). These can be found by typing `dir()`.
+the system and any configured arms (MTM, PSM or ECM). These can be found by typing `dir()`.
 For example, `dir(PSM1)` will list all available commands for the PSM1 interface.
 Note that the system automatically replaces dashes ('-') with underscores ('_') in the interface name.
 

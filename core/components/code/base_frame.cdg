@@ -3,6 +3,8 @@
 
 inline-header {
 #include <cisstVector/vctTransformationTypes.h>
+// Always include last
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 }
 
 class {

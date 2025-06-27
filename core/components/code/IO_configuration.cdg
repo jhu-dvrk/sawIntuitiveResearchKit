@@ -2,8 +2,9 @@
 // ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
 
 inline-header {
+// Always include last
+#include <sawIntuitiveResearchKit/sawIntuitiveResearchKitExport.h>
 }
-
 
 class {
     name IO_configuration;
