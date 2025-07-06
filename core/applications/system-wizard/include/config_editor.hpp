@@ -25,11 +25,11 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "arm_editor.hpp"
 #include "arm_view.hpp"
-#include "config_model.hpp"
 #include "config_sources.hpp"
 #include "io_editor.hpp"
 #include "io_view.hpp"
 #include "list_view.hpp"
+#include "models/config_model.hpp"
 #include "teleop_editor.hpp"
 #include "teleop_view.hpp"
 

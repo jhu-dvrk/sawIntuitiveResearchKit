@@ -16,11 +16,11 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef SYSTEM_WIZARD_LIST_VIEW
 #define SYSTEM_WIZARD_LIST_VIEW
 
-#include "list_model.hpp"
-
 #include <QtWidgets>
 
 #include <cisstCommon/cmnPortability.h>
+
+#include "models/list_model.hpp"
 
 namespace system_wizard {
 

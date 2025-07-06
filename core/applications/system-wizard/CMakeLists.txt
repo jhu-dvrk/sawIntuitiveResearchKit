@@ -42,17 +42,18 @@ if (cisst_FOUND_AS_REQUIRED)
          include/arm_editor.hpp
          include/arm_view.hpp
          include/config_editor.hpp
-         include/config_model.hpp
          include/config_sources.hpp
          include/editor.hpp
-         include/enum_list_model.hpp
          include/io_editor.hpp
          include/io_view.hpp
-         include/list_model.hpp
          include/list_view.hpp
          include/mainwindow.hpp
          include/teleop_editor.hpp
          include/teleop_view.hpp
+
+         include/models/enum_list_model.hpp
+         include/models/config_model.hpp
+         include/models/list_model.hpp
     )
 
     set (SOURCE_FILES

@@ -16,8 +16,8 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef SYSTEM_WIZARD_TELEOP_VIEW
 #define SYSTEM_WIZARD_TELEOP_VIEW
 
-#include "config_model.hpp"
 #include "list_view.hpp"
+#include "models/config_model.hpp"
 
 namespace system_wizard {
 

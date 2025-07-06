@@ -19,8 +19,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <QtWidgets>
 
 #include "config_editor.hpp"
-#include "config_model.hpp"
 #include "config_sources.hpp"
+#include "models/config_model.hpp"
 
 namespace system_wizard {
 

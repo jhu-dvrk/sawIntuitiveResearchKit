@@ -16,8 +16,8 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef SYSTEM_WIZARD_CONFIG_SOURCES
 #define SYSTEM_WIZARD_CONFIG_SOURCES
 
-#include "config_model.hpp"
-#include "list_model.hpp"
+#include "models/config_model.hpp"
+#include "models/list_model.hpp"
 
 #include <QtWidgets>
 #include <QFileSystemModel>

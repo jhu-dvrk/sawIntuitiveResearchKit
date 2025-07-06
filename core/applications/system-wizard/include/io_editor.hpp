@@ -18,8 +18,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <QtWidgets>
 
-#include "config_model.hpp"
-#include "enum_list_model.hpp"
+#include "models/config_model.hpp"
+#include "models/enum_list_model.hpp"
 
 namespace system_wizard {
 
