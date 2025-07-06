@@ -16,8 +16,6 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef SYSTEM_WIZARD_CONFIG_MODEL
 #define SYSTEM_WIZARD_CONFIG_MODEL
 
-#include "list_model.hpp"
-
 #include <QtCore>
 
 #include <filesystem>
@@ -29,6 +27,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <vector>
 
 #include <json/json.h>
+
+#include "models/list_model.hpp"
 
 namespace system_wizard {
 
