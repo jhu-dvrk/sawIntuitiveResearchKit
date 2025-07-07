@@ -56,18 +56,15 @@ protected:
     QColor highlight;
 };
 
-class ItemViewFactory {
-public:
-    virtual ItemView* create(int id, ListView& list_view) = 0;
-};
-
 class ListView : public QWidget {
     Q_OBJECT
 
 public:
+    using Factory = std::function<std::unique_ptr<ItemView>(int index, ListView& list_view)>;
+
     ListView(
         ListModel& model,
-        ItemViewFactory& view_factory,
+        Factory view_factory,
         SelectionMode selection_mode=SelectionMode::NONE,
         bool editable=false
     );
@@ -101,7 +98,7 @@ signals:
 
 private:
     ListModel& model;
-    ItemViewFactory& view_factory;
+    Factory view_factory;
 
     SelectionMode selection_mode;
     std::vector<bool> selections;

@@ -41,19 +41,12 @@ void ArmSourceView::updateData(int id) {
     display->setText(description);
 }
 
-ArmSourceViewFactory::ArmSourceViewFactory(ListModelT<ConfigSources::Arm>& model) : model(&model) {}
-
-ArmSourceView* ArmSourceViewFactory::create(int id, ListView& list_view) {
-    return new ArmSourceView(*model, list_view, id);
-}
-
 QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, ConfigSources& config_sources, QWidget *parent)
     : QWizardPage(parent),
       config(&config),
       model(&model),
       config_sources(&config_sources),
-      available_arms(std::make_unique<VectorList<ConfigSources::Arm>>()),
-      arm_list_factory(*available_arms) {
+      available_arms(std::make_unique<ListModelT<ConfigSources::Arm>>()) {
     setTitle("Quick arm");
     setSubTitle("Choose from default arms");
 
@@ -62,7 +55,10 @@ QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, Co
     source_label->setWordWrap(true);
     layout->addWidget(source_label);
 
-    arm_list_view = new ListView(*available_arms, arm_list_factory, SelectionMode::SINGLE);
+    auto arm_view_factory = [this](int index, ListView& list_view) {
+        return std::make_unique<ArmSourceView>(*this->available_arms, list_view, index);
+    };
+    arm_list_view = new ListView(*available_arms, arm_view_factory, SelectionMode::SINGLE);
     arm_list_view->setEmptyMessage("No arms available - open a config folder");
     QObject::connect(arm_list_view, &ListView::choose, this, [this](int index){
         ConfigSources::Arm source = available_arms->get(index);
@@ -116,23 +112,25 @@ QuickArmPage::QuickArmPage(ArmConfig& config, const SystemConfigModel& model, Co
 }
 
 void QuickArmPage::initializePage() {
-    std::vector<ConfigSources::Arm> available;
-    for (int i = 0; i < config_sources->getModel().count(); i++) {
-        auto arm = config_sources->getModel().get(i);
-        bool already_used = false;
-        for (int j = 0; j < model->arm_configs->count(); j++) {
-            if (model->arm_configs->get(j).name == arm.name) {
-                already_used = true;
-                break;
+    {
+        std::vector<ConfigSources::Arm> available;
+        for (int i = 0; i < config_sources->getModel().count(); i++) {
+            auto arm = config_sources->getModel().get(i);
+            bool already_used = false;
+            for (int j = 0; j < model->arm_configs->count(); j++) {
+                if (model->arm_configs->get(j).name == arm.name) {
+                    already_used = true;
+                    break;
+                }
+            }
+
+            if (!already_used) {
+                available.push_back(arm);
             }
         }
 
-        if (!already_used) {
-            available.push_back(arm);
-        }
+        available_arms->replace(std::move(available));
     }
-
-    available_arms->update(available);
 
     arm_list_view->clearSelections();
 
@@ -376,9 +374,9 @@ ArmEditor::ArmEditor(SystemConfigModel& model, ConfigSources& config_sources, QW
 
 void ArmEditor::done() {
     if (id < 0) {
-        model->arm_configs->addItem(config);
+        model->arm_configs->appendItem(config);
     } else {
-        model->arm_configs->updateItem(id, config);
+        model->arm_configs->updateItem(id);
     }
 }
 

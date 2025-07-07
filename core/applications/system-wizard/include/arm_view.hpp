@@ -32,16 +32,6 @@ private:
     QLabel* display;
 };
 
-class ArmViewFactory : public ItemViewFactory {
-public:
-    ArmViewFactory(SystemConfigModel& model);
-
-    ArmView* create(int id, ListView& list_view);
-
-private:
-    SystemConfigModel* model;
-};
-
 }
 
 #endif // SYSTEM_WIZARD_ARM_VIEW

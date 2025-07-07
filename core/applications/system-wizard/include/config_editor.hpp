@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "arm_editor.hpp"
 #include "arm_view.hpp"
 #include "config_sources.hpp"
+#include "console_editor.hpp"
 #include "io_editor.hpp"
 #include "io_view.hpp"
 #include "list_view.hpp"
@@ -64,18 +65,11 @@ private:
     QLabel* path_display;
 
     IOEditor io_editor;
-    IOViewFactory io_factory;
-
     ArmEditor arm_editor;
-    ArmViewFactory arm_factory;
-
-    TeleopEditor teleop_editor;
-    TeleopViewFactory teleop_factory;
 
     ListView* io_list;
     ListView* arm_list;
-    ListView* teleop_list;
-    ListView* console_list;
+    ConsolesContainer* console;
 };
 
 }

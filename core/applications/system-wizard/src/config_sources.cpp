@@ -136,7 +136,7 @@ void ConfigSources::loaded(const QString &path) {
         }
     }
 
-    arm_list_model.update(new_arms);
+    arm_list_model.replace(std::move(new_arms));
 }
 
 }

@@ -47,10 +47,4 @@ void IOView::updateData(int id) {
     display->setText(text);
 }
 
-IOViewFactory::IOViewFactory(SystemConfigModel& model) : model(&model) { }
-
-IOView* IOViewFactory::create(int id, ListView& list_view) {
-    return new IOView(*model, list_view, id);
-}
-
 }

@@ -58,16 +58,6 @@ private:
     QLabel* display;
 };
 
-class ArmSourceViewFactory : public ItemViewFactory {
-public:
-    ArmSourceViewFactory(ListModelT<ConfigSources::Arm>& model);
-
-    ArmSourceView* create(int id, ListView& list_view);
-
-private:
-    ListModelT<ConfigSources::Arm>* model;
-};
-
 class ArmEditor : public QWizard {
     Q_OBJECT
 
@@ -115,7 +105,6 @@ private:
 
     std::unique_ptr<ListModelT<ConfigSources::Arm>> available_arms;
     ListView* arm_list_view;
-    ArmSourceViewFactory arm_list_factory;
 };
 
 class ArmTypePage : public QWizardPage {
