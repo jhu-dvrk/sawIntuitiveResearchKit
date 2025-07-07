@@ -52,7 +52,7 @@ void MainWindow::createActions() {
     open_source->setStatusTip("Open config source directory");
     connect(open_source, &QAction::triggered, this, &MainWindow::open_folder);
     connect(&directory_chooser, &QDialog::accepted, this, &MainWindow::folder_chosen);
-    
+
     new_config = new QAction(style()->standardIcon(QStyle::SP_FileIcon),
                          "Open config file", this);
     new_config->setShortcuts(QKeySequence::New);

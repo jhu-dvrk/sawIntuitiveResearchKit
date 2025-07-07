@@ -21,25 +21,26 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-class TeleopView : public ItemView {
+class PSMTeleopView : public ItemView {
 public:
-    TeleopView(SystemConfigModel& model, ListView& list_view, int id, QWidget* parent = nullptr);
+    PSMTeleopView(ConsoleConfig& config, ListView& list_view, int id, QWidget* parent = nullptr);
 
-    void updateData(int id) override;
+    void updateData(int idx) override;
 
 private:
-    SystemConfigModel* model;
+    ConsoleConfig* config;
     QLabel* display;
 };
 
-class TeleopViewFactory : public ItemViewFactory {
+class ECMTeleopView : public ItemView {
 public:
-    TeleopViewFactory(SystemConfigModel& model);
+    ECMTeleopView(ConsoleConfig& config, ListView& list_view, int id, QWidget* parent = nullptr);
 
-    TeleopView* create(int id, ListView& list_view);
+    void updateData(int idx) override;
 
 private:
-    SystemConfigModel* model;
+    ConsoleConfig* config;
+    QLabel* display;
 };
 
 }

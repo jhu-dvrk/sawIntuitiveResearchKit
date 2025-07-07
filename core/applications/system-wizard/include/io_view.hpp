@@ -32,16 +32,6 @@ private:
     QLabel* display;
 };
 
-class IOViewFactory : public ItemViewFactory {
-public:
-    IOViewFactory(SystemConfigModel& model);
-
-    IOView* create(int id, ListView& list_view);
-
-private:
-    SystemConfigModel* model;
-};
-
 }
 
 #endif // SYSTEM_WIZARD_IO_VIEW

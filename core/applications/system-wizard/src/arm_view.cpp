@@ -45,10 +45,4 @@ void ArmView::updateData(int id) {
     display->setToolTip(QString::fromStdString(arm.type.acronym_expansion()));
 }
 
-ArmViewFactory::ArmViewFactory(SystemConfigModel& model) : model(&model) { }
-
-ArmView* ArmViewFactory::create(int id, ListView& list_view) {
-    return new ArmView(*model, list_view, id);
-}
-
 }

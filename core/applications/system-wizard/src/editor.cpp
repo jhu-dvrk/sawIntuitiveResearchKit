@@ -30,8 +30,11 @@ Editor::Editor(ConfigSources& config_sources, QWidget* parent)
 
     QToolButton *add_config_button = new QToolButton();
     add_config_button->setText("+");
+    QLabel* no_tabs_view = new QLabel("Add config by pressing \"+\"");
+    no_tabs_view->setAlignment(Qt::AlignCenter);
+    no_tabs_view->setMargin(10);
     // Add empty, not enabled dummy tab
-    tabs->addTab(new QLabel("Add tabs by pressing \"+\""), QString());
+    tabs->addTab(no_tabs_view, QString());
     tabs->setTabEnabled(0, false);
     // Add tab button to dummy tab
     tabs->tabBar()->setTabButton(0, QTabBar::RightSide, add_config_button);
@@ -55,7 +58,7 @@ Editor::Editor(ConfigSources& config_sources, QWidget* parent)
 
 void Editor::newConfig() {
     std::unique_ptr<SystemConfigModel> model = std::make_unique<SystemConfigModel>();
-    model->io_configs->addItem(IOConfig("io")); // default I/O
+    model->io_configs->appendItem(IOConfig("io")); // default I/O
     std::unique_ptr<ConfigEditor> editor = std::make_unique<ConfigEditor>(std::move(model), *config_sources);
     createTab(std::move(editor));
 }

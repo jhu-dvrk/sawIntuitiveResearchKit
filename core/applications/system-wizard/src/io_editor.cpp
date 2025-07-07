@@ -137,7 +137,7 @@ void IOEditPage::initializePage() {
     QString foot_pedals_name = config->foot_pedals.has_value() ? QString::fromStdString(config->foot_pedals->string()) : "";
     foot_pedals_file->setText(foot_pedals_name);
     frequency_input->setValue(int(1.0/config->period_ms));
-    watchdog_timeout_input->setValue(config->watchdog_timeout_ms);
+    watchdog_timeout_input->setValue(config->watchdog_timeout_ms.value_or(10.0));
     emit completeChanged();
 }
 
@@ -188,9 +188,9 @@ void IOEditor::setId(int id) {
 
 void IOEditor::done() {
     if (config_id < 0) {
-        model->io_configs->addItem(config);
+        model->io_configs->appendItem(config);
     } else {
-        model->io_configs->updateItem(config_id, config);
+        model->io_configs->updateItem(config_id);
     }
 }
 

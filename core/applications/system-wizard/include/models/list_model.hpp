@@ -17,7 +17,6 @@ http://www.cisst.org/cisst/license.txt.
 #define SYSTEM_WIZARD_LIST_MODEL
 
 #include <algorithm>
-#include <optional>
 
 #include <QtCore>
 #include <json/json.h>
@@ -48,10 +47,15 @@ class ListModel : public QObject {
 
 public:
     ListModel() : QObject() {
+        // make all specific change events also emit "updated" event
         QObject::connect(this, &ListModel::itemAdded,   this, &ListModel::updated);
         QObject::connect(this, &ListModel::itemUpdated, this, &ListModel::updated);
         QObject::connect(this, &ListModel::itemDeleted, this, &ListModel::updated);
         QObject::connect(this, &ListModel::reset,       this, &ListModel::updated);
+    }
+
+    virtual void updateItem(int index) {
+        emit itemUpdated(index);
     }
 
     virtual bool canDeleteItem(int CMN_UNUSED(index)) const {
@@ -72,73 +76,60 @@ signals:
 template<typename T>
 class ListModelT : public ListModel {
 public:
-    virtual void addItem(T value) = 0;
-    virtual void updateItem(int index, T value) = 0;
-    virtual void deleteItem(int index) = 0;
-
-    virtual const T& get(int index) const = 0;
-
-    virtual void clear() = 0;
-    virtual void update(std::vector<T>& new_items) = 0;
-
-    template<typename U=T>
-    Json::Value toJSON() const {
-        Json::Value list(Json::arrayValue);
-        for (int i = 0; i < this->count(); i++) {
-            list.append(this->get(i).toJSON());
-        }
-
-        return list;
-    }
-};
-
-template<typename T>
-class VectorList : public ListModelT<T> {
-public:
-    void addItem(T value) override {
+    void appendItem(T value) {
         items.push_back(value);
         emit ListModel::itemAdded(items.size() - 1);
     }
 
-    void updateItem(int index, T value) override {
-        items.at(index) = value;
-        emit ListModel::itemUpdated(index);
-    }
-
-    void deleteItem(int index) override {
+    void deleteItem(int index) {
         if (ListModel::canDeleteItem(index)) {
             items.erase(items.begin() + index);
             emit ListModel::itemDeleted(index);
         }
     }
 
-    const T& get(int index) const override {
+    const T& get(int index) const {
         return items.at(index);
     }
 
-    void clear() override {
+    T& ref(int index) {
+        return items.at(index);
+    }
+
+    void clear() {
         items.clear();
         emit ListModel::reset();
     }
 
-    void update(std::vector<T>& new_items) override {
-        items = new_items;
+    void replace(std::vector<T>&& new_items) {
+        items = std::move(new_items);
         emit ListModel::reset();
     }
 
-    int count() const override {
+    int count() const {
         return static_cast<int>(items.size());
     }
 
-    template<typename U=T>
-    static std::unique_ptr<VectorList<U>> fromJSON(Json::Value value) {
+    Json::Value toJSON() const {
+        Json::Value list(Json::arrayValue);
+        for (int i = 0; i < this->count(); i++) {
+            list.append(items.at(i).toJSON());
+        }
+
+        return list;
+    }
+
+    static std::unique_ptr<ListModelT<T>> fromJSON(Json::Value value) {
         if (!value.isArray()) {
             return nullptr;
         }
 
-        auto list = std::make_unique<VectorList<U>>();
+        auto list = std::make_unique<ListModelT<T>>();
         for (unsigned int i = 0; i < value.size(); i++) {
-            list->items.push_back(U::fromJSON(value[i]));
+            std::unique_ptr<T> item_value = T::fromJSON(value[i]);
+            if (item_value != nullptr) {
+                list->items.push_back(*item_value);
+            }
         }
 
         return list;
@@ -146,6 +137,68 @@ public:
 
 private:
     std::vector<T> items;
+};
+
+// partial specialization for convienence
+template<typename T>
+class ListModelT<std::unique_ptr<T>> : public ListModel {
+public:
+    void appendItem(std::unique_ptr<T> value) {
+        items.push_back(std::move(value));
+        emit ListModel::itemAdded(items.size() - 1);
+    }
+
+    void deleteItem(int index) {
+        if (ListModel::canDeleteItem(index)) {
+            items.erase(items.begin() + index);
+            emit ListModel::itemDeleted(index);
+        }
+    }
+
+    const T& get(int index) const {
+        return *items.at(index);
+    }
+
+    T& ref(int index) {
+        return *items.at(index);
+    }
+
+    void clear() {
+        items.clear();
+        emit ListModel::reset();
+    }
+
+    int count() const {
+        return static_cast<int>(items.size());
+    }
+
+    Json::Value toJSON() const {
+        Json::Value list(Json::arrayValue);
+        for (int i = 0; i < this->count(); i++) {
+            list.append(items.at(i)->toJSON());
+        }
+
+        return list;
+    }
+
+    static std::unique_ptr<ListModelT<std::unique_ptr<T>>> fromJSON(Json::Value value) {
+        if (!value.isArray()) {
+            return nullptr;
+        }
+
+        auto list = std::make_unique<ListModelT<std::unique_ptr<T>>>();
+        for (unsigned int i = 0; i < value.size(); i++) {
+            std::unique_ptr<T> item_value = T::fromJSON(value[i]);
+            if (item_value != nullptr) {
+                list->items.push_back(std::move(item_value));
+            }
+        }
+
+        return list;
+    }
+
+private:
+    std::vector<std::unique_ptr<T>> items;
 };
 
 }

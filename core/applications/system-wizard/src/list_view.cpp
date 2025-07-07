@@ -59,7 +59,7 @@ void ItemView::mouseDoubleClickEvent(QMouseEvent* CMN_UNUSED(event)) {
     list_view.chooseItem(id);
 }
 
-ListView::ListView(ListModel& model, ItemViewFactory& view_factory, SelectionMode selection_mode, bool editable)
+ListView::ListView(ListModel& model, Factory view_factory, SelectionMode selection_mode, bool editable)
     : model(model), view_factory(view_factory), selection_mode(selection_mode), editable(editable) {
     QVBoxLayout* layout = new QVBoxLayout(this);
 
@@ -142,9 +142,9 @@ const std::vector<bool>& ListView::selectedItems() const {
 }
 
 void ListView::itemAdded(int id) {
-    ItemView* item_view = view_factory.create(id, *this);
-    list_layout->addWidget(item_view);
-    item_views.push_back(item_view);
+    std::unique_ptr<ItemView> item_view = view_factory(id, *this);
+    item_views.push_back(item_view.get());
+    list_layout->addWidget(item_view.release());
     selections.push_back(false);
 
     list_empty_display->setHidden(list_layout->count() != 0);
@@ -195,9 +195,9 @@ void ListView::itemRemoved(int id) {
 void ListView::reset() {
     // added new item views if we don't have enough
     while (list_layout->count() < model.count()) {
-        ItemView* item_view = view_factory.create(list_layout->count(), *this);
-        list_layout->addWidget(item_view);
-        item_views.push_back(item_view);
+        std::unique_ptr<ItemView> item_view = view_factory(list_layout->count(), *this);
+        item_views.push_back(item_view.get());
+        list_layout->addWidget(item_view.release());
     }
 
     // remove item views if we have too many

@@ -43,6 +43,8 @@ if (cisst_FOUND_AS_REQUIRED)
          include/arm_view.hpp
          include/config_editor.hpp
          include/config_sources.hpp
+         include/console_editor.hpp
+         include/console_inputs_editor.hpp
          include/editor.hpp
          include/io_editor.hpp
          include/io_view.hpp
@@ -62,6 +64,8 @@ if (cisst_FOUND_AS_REQUIRED)
          src/arm_view.cpp
          src/config_editor.cpp
          src/config_sources.cpp
+         src/console_editor.cpp
+         src/console_inputs_editor.cpp
          src/editor.cpp
          src/io_editor.cpp
          src/io_view.cpp

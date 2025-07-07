@@ -16,9 +16,6 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef SYSTEM_WIZARD_CONFIG_SOURCES
 #define SYSTEM_WIZARD_CONFIG_SOURCES
 
-#include "models/config_model.hpp"
-#include "models/list_model.hpp"
-
 #include <QtWidgets>
 #include <QFileSystemModel>
 #include <QLabel>
@@ -26,6 +23,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <filesystem>
 #include <memory>
 #include <vector>
+
+#include "models/config_model.hpp"
+#include "models/list_model.hpp"
 
 namespace system_wizard {
 
@@ -60,7 +60,7 @@ private:
 
     std::vector<std::filesystem::path> sources;
 
-    VectorList<Arm> arm_list_model;
+    ListModelT<Arm> arm_list_model;
 };
 
 }

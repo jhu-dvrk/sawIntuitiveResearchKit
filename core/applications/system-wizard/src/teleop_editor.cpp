@@ -17,38 +17,45 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-TeleopOptionView::TeleopOptionView(const ListModelT<ArmConfig>& arms, ListModelT<TeleopConfig>& model, ListView& list_view, int id, QWidget* parent)
-    : ItemView(list_view, id, parent), arms(&arms), model(&model) {
+PSMTeleopOptionView::PSMTeleopOptionView(ListModelT<TeleopConfig>& model, ListView& list_view, int index, QWidget* parent)
+    : ItemView(list_view, index, parent), model(&model) {
     QHBoxLayout* layout = new QHBoxLayout(this);
 
     display = new QLabel();
-    updateData(id);
+    updateData(index);
 
     layout->addWidget(display);
 }
 
-void TeleopOptionView::updateData(int id) {
-    const TeleopConfig& teleop = model->get(id);
-    std::string arm_names = std::accumulate(teleop.arm_names.begin(), teleop.arm_names.end(), std::string(""), [this](std::string acc, std::string arm_name) -> std::string {
-        return acc.empty() ? arm_name : acc + ", " + arm_name;
-    });
-
-    QString text = QString::fromStdString(teleop.type.name() + ": " + arm_names);
+void PSMTeleopOptionView::updateData(int index) {
+    const auto& teleop = model->get(index);
+    std::string arms = teleop.arm_names[0] + ", " + teleop.arm_names[1];
+    QString text = QString::fromStdString(teleop.type.name() + ": " + arms);
     display->setText(text);
 }
 
-TeleopOptionViewFactory::TeleopOptionViewFactory(const ListModelT<ArmConfig>& arms, ListModelT<TeleopConfig>& model)
-    : arms(&arms), model(&model) {}
+ECMTeleopOptionView::ECMTeleopOptionView(ListModelT<TeleopConfig>& model, ListView& list_view, int index, QWidget* parent)
+    : ItemView(list_view, index, parent), model(&model) {
+    QHBoxLayout* layout = new QHBoxLayout(this);
 
-TeleopOptionView* TeleopOptionViewFactory::create(int id, ListView& list_view) {
-    return new TeleopOptionView(*arms, *model, list_view, id);
+    display = new QLabel();
+    updateData(index);
+
+    layout->addWidget(display);
 }
 
-TeleopEditor::TeleopEditor(SystemConfigModel& model, QWidget* parent)
-    : QWizard(parent), model(&model), config("Teleop", TeleopType::Value::PSM_TELEOP) {
-    setPage(PAGE_SUGGESTED_TELEOPS, new SuggestedTeleopsPage(*model.arm_configs, config));
-    setPage(PAGE_PSM_TELEOP, new PSMTeleopPage(*model.arm_configs, config));
-    setPage(PAGE_ECM_TELEOP, new ECMTeleopPage(*model.arm_configs, config));
+void ECMTeleopOptionView::updateData(int index) {
+    const auto& teleop = model->get(index);
+    std::string arms = teleop.arm_names[0] + ", " + teleop.arm_names[1] + ", " + teleop.arm_names[2];
+    QString text = QString::fromStdString(teleop.type.name() + ": " + arms);
+    display->setText(text);
+}
+
+TeleopEditor::TeleopEditor(ConsoleConfig& console, const ListModelT<ArmConfig>& arms, QWidget* parent)
+    : QWizard(parent), console(&console), config("Teleop", TeleopType::Value::PSM_TELEOP) {
+    suggested_teleops_page = new SuggestedTeleopsPage(arms, config);
+    
+    setPage(PAGE_SUGGESTED_TELEOPS, suggested_teleops_page);
 
     setWizardStyle(QWizard::ModernStyle);
     setOption(QWizard::NoBackButtonOnStartPage);
@@ -61,35 +68,50 @@ TeleopEditor::TeleopEditor(SystemConfigModel& model, QWidget* parent)
     QObject::connect(this, &QDialog::accepted, this, &TeleopEditor::done);
 }
 
-void TeleopEditor::setId(int id) {
-    this->id = id;
+void TeleopEditor::setId(bool psm, int index) {
+    this->psm = psm;
+    this->index = index;
 
-    if (id >= 0) {
-        config = model->teleop_configs->get(id);
+    suggested_teleops_page->setMode(psm);
 
-        if (config.type == TeleopType::Value::PSM_TELEOP) {
-            setStartId(PAGE_PSM_TELEOP);
-        } else if (config.type == TeleopType::Value::ECM_TELEOP) {
-            setStartId(PAGE_ECM_TELEOP);
+    if (index >= 0) {
+        if (psm) {
+            config = console->psm_teleops->get(index);
         } else {
-            Q_ASSERT(false);
-            return;
+            config = console->ecm_teleops->get(index);
         }
+
+        // if (config.type == TeleopType::Value::PSM_TELEOP) {
+        //     setStartId(PAGE_PSM_TELEOP);
+        // } else if (config.type == TeleopType::Value::ECM_TELEOP) {
+        //     setStartId(PAGE_ECM_TELEOP);
+        // } else {
+        //     Q_ASSERT(false);
+        //     return;
+        // }
     } else {
         setStartId(PAGE_SUGGESTED_TELEOPS);
     }
 }
 
 void TeleopEditor::done() {
-    if (id < 0) {
-        model->teleop_configs->addItem(config);
+    if (index < 0) {
+        if (psm) {
+            console->psm_teleops->appendItem(config);
+        } else {
+            console->ecm_teleops->appendItem(config);
+        }
     } else {
-        model->teleop_configs->updateItem(id, config);
+        if (psm) {
+            console->psm_teleops->updateItem(index);
+        } else {
+            console->ecm_teleops->updateItem(index);
+        }
     }
 }
 
 SuggestedTeleopsPage::SuggestedTeleopsPage(const ListModelT<ArmConfig>& arms, TeleopConfig& config, QWidget *parent)
-    : QWizardPage(parent), config(&config), arms(&arms), suggested_teleop_factory(arms, suggested_teleops) {
+    : QWizardPage(parent), config(&config), arms(&arms) {
     setTitle("Suggested teleops");
     setSubTitle("Suggested teleops are based on available arms");
 
@@ -98,6 +120,13 @@ SuggestedTeleopsPage::SuggestedTeleopsPage(const ListModelT<ArmConfig>& arms, Te
     source_label->setWordWrap(true);
     layout->addWidget(source_label);
 
+    auto suggested_teleop_factory = [this](int index, ListView& view) -> std::unique_ptr<ItemView> {
+        if (this->psm_mode) {
+            return std::make_unique<PSMTeleopOptionView>(suggested_teleops, view, index);
+        } else {
+            return std::make_unique<ECMTeleopOptionView>(suggested_teleops, view, index);
+        }
+    };
     suggested_teleops_view = new ListView(suggested_teleops, suggested_teleop_factory, SelectionMode::SINGLE);
     suggested_teleops_view->setEmptyMessage("No suggestions available");
     QObject::connect(suggested_teleops_view, &ListView::choose, this, [this, &model=suggested_teleops](int index){
@@ -114,39 +143,6 @@ SuggestedTeleopsPage::SuggestedTeleopsPage(const ListModelT<ArmConfig>& arms, Te
 
     layout->addWidget(suggested_teleops_view);
 
-    QFrame *line = new QFrame();
-    line->setFrameShape(QFrame::HLine);
-    line->setFrameShadow(QFrame::Sunken);
-    layout->addWidget(line);
-
-    QLabel* custom_label = new QLabel("or configure a different one:");
-    custom_label->setWordWrap(true);
-    layout->addWidget(custom_label);
-    QHBoxLayout* custom_teleop_layout = new QHBoxLayout();
-    QPushButton* psm_teleop_button = new QPushButton("Configure PSM teleop");
-    QPushButton* ecm_teleop_button = new QPushButton("Configure ECM teleop");
-    custom_teleop_layout->addStretch();
-    custom_teleop_layout->addWidget(psm_teleop_button);
-    custom_teleop_layout->addStretch();
-    custom_teleop_layout->addWidget(ecm_teleop_button);
-    custom_teleop_layout->addStretch();
-    layout->addLayout(custom_teleop_layout);
-
-    QObject::connect(psm_teleop_button, &QPushButton::clicked, this, [this]() {
-        if (wizard() != nullptr) {
-            next_page_id = TeleopEditor::PAGE_PSM_TELEOP;
-            wizard()->next();
-            next_page_id = -1;
-        }
-    });
-    QObject::connect(ecm_teleop_button, &QPushButton::clicked, this, [this]() {
-        if (wizard() != nullptr) {
-            next_page_id = TeleopEditor::PAGE_ECM_TELEOP;
-            wizard()->next();
-            next_page_id = -1;
-        }
-    });
-
     layout->addStretch();
 
     // prevent arm list from being stretched out after items are removed
@@ -158,38 +154,41 @@ void SuggestedTeleopsPage::initializePage() {
     next_page_id = -1;
     suggested_teleops.clear();
 
-    // PSM teleops
     int n = arms->count();
-    for (int i = 0; i < n; i++) {
-        const ArmConfig& mtm = arms->get(i);
-        if (!mtm.type.isMTM()) { continue; }
 
-        for (int j = 0; j < n; j++) {
-            const ArmConfig& psm = arms->get(j);
-            if (!psm.type.isPSM()) { continue; }
-            
-            TeleopConfig teleop = TeleopConfig("Test", TeleopType::Value::PSM_TELEOP);
-            teleop.arm_names = { mtm.name, psm.name };
-            suggested_teleops.addItem(teleop);
+    if (psm_mode) {
+        // PSM teleops
+        for (int i = 0; i < n; i++) {
+            const ArmConfig& mtm = arms->get(i);
+            if (!mtm.type.isMTM()) { continue; }
+
+            for (int j = 0; j < n; j++) {
+                const ArmConfig& psm = arms->get(j);
+                if (!psm.type.isPSM()) { continue; }
+                
+                TeleopConfig teleop = TeleopConfig("Test", TeleopType::Value::PSM_TELEOP);
+                teleop.arm_names = { mtm.name, psm.name };
+                suggested_teleops.appendItem(teleop);
+            }
         }
-    }
+    } else {
+        // ECM teleops
+        for (int i = 0; i < n; i++) {
+            const ArmConfig& ecm = arms->get(i);
+            if (!ecm.type.isECM()) { continue; }
 
-    // ECM teleops
-    for (int i = 0; i < n; i++) {
-        const ArmConfig& ecm = arms->get(i);
-        if (!ecm.type.isECM()) { continue; }
+            for (int j = 0; j < n; j++) {
+                const ArmConfig& mtml = arms->get(j);
+                if (!mtml.type.isMTM()) { continue; }
 
-        for (int j = 0; j < n; j++) {
-            const ArmConfig& mtml = arms->get(j);
-            if (!mtml.type.isMTM()) { continue; }
+                for (int k = j + 1; k < n; k++) {
+                    const ArmConfig& mtmr = arms->get(k);
+                    if (!mtmr.type.isMTM()) { continue; }
 
-            for (int k = j + 1; k < n; k++) {
-                const ArmConfig& mtmr = arms->get(k);
-                if (!mtmr.type.isMTM()) { continue; }
-
-                TeleopConfig teleop = TeleopConfig("Test", TeleopType::Value::ECM_TELEOP);
-                teleop.arm_names = { ecm.name, mtml.name, mtmr.name };
-                suggested_teleops.addItem(teleop);
+                    TeleopConfig teleop = TeleopConfig("Test", TeleopType::Value::ECM_TELEOP);
+                    teleop.arm_names = { ecm.name, mtml.name, mtmr.name };
+                    suggested_teleops.appendItem(teleop);
+                }
             }
         }
     }
@@ -208,77 +207,77 @@ bool SuggestedTeleopsPage::isComplete() const {
     return false;
 }
 
-PSMTeleopPage::PSMTeleopPage(const ListModelT<ArmConfig>& arms, TeleopConfig& config, QWidget *parent)
-    : QWizardPage(parent), arms(&arms), config(&config) {
-    setTitle("PSM Teleop");
+// PSMTeleopPage::PSMTeleopPage(const ListModelT<ArmConfig>& arms, TeleopConfig& config, QWidget *parent)
+//     : QWizardPage(parent), arms(&arms), config(&config) {
+//     setTitle("PSM Teleop");
 
-    QFormLayout* form = new QFormLayout(this);
+//     QFormLayout* form = new QFormLayout(this);
 
-    mtms = new QComboBox();
-    mtms->setPlaceholderText("select MTM");
+//     mtms = new QComboBox();
+//     mtms->setPlaceholderText("select MTM");
 
-    psms = new QComboBox();
-    psms->setPlaceholderText("select PSM");
+//     psms = new QComboBox();
+//     psms->setPlaceholderText("select PSM");
 
-    form->addRow("MTM:", mtms);
-    form->addRow("PSM:", psms);
-}
+//     form->addRow("MTM:", mtms);
+//     form->addRow("PSM:", psms);
+// }
 
-void PSMTeleopPage::initializePage() {
-    mtms->clear();
-    for (int i = 0; i < arms->count(); i++) {
-        const ArmConfig& mtm = arms->get(i);
-        if (!mtm.type.isMTM()) { continue; }
+// void PSMTeleopPage::initializePage() {
+//     mtms->clear();
+//     for (int i = 0; i < arms->count(); i++) {
+//         const ArmConfig& mtm = arms->get(i);
+//         if (!mtm.type.isMTM()) { continue; }
 
-        mtms->addItem(QString::fromStdString(mtm.name), i);
-    }
+//         mtms->addItem(QString::fromStdString(mtm.name), i);
+//     }
 
-    psms->clear();
-    for (int i = 0; i < arms->count(); i++) {
-        const ArmConfig& psm = arms->get(i);
-        if (!psm.type.isPSM()) { continue; }
+//     psms->clear();
+//     for (int i = 0; i < arms->count(); i++) {
+//         const ArmConfig& psm = arms->get(i);
+//         if (!psm.type.isPSM()) { continue; }
 
-        psms->addItem(QString::fromStdString(psm.name), i);
-    }
-}
+//         psms->addItem(QString::fromStdString(psm.name), i);
+//     }
+// }
 
-ECMTeleopPage::ECMTeleopPage(const ListModelT<ArmConfig>& arms, TeleopConfig& config, QWidget *parent)
-    : QWizardPage(parent), arms(&arms), config(&config) {
-    setTitle("ECM Teleop");
+// ECMTeleopPage::ECMTeleopPage(const ListModelT<ArmConfig>& arms, TeleopConfig& config, QWidget *parent)
+//     : QWizardPage(parent), arms(&arms), config(&config) {
+//     setTitle("ECM Teleop");
 
-    QFormLayout* form = new QFormLayout(this);
+//     QFormLayout* form = new QFormLayout(this);
 
-    ecms = new QComboBox();
-    ecms->setPlaceholderText("select ECM");
+//     ecms = new QComboBox();
+//     ecms->setPlaceholderText("select ECM");
 
-    left_mtms = new QComboBox();
-    right_mtms = new QComboBox();
-    left_mtms->setPlaceholderText("select left MTM");
-    right_mtms->setPlaceholderText("select right MTM");
+//     left_mtms = new QComboBox();
+//     right_mtms = new QComboBox();
+//     left_mtms->setPlaceholderText("select left MTM");
+//     right_mtms->setPlaceholderText("select right MTM");
 
-    form->addRow("ECM:", ecms);
-    form->addRow("Left MTM:", left_mtms);
-    form->addRow("Right MTM:", right_mtms);
-}
+//     form->addRow("ECM:", ecms);
+//     form->addRow("Left MTM:", left_mtms);
+//     form->addRow("Right MTM:", right_mtms);
+// }
 
-void ECMTeleopPage::initializePage() {
-    ecms->clear();
-    for (int i = 0; i < arms->count(); i++) {
-        const ArmConfig& ecm = arms->get(i);
-        if (!ecm.type.isECM()) { continue; }
+// void ECMTeleopPage::initializePage() {
+//     ecms->clear();
+//     for (int i = 0; i < arms->count(); i++) {
+//         const ArmConfig& ecm = arms->get(i);
+//         if (!ecm.type.isECM()) { continue; }
 
-        ecms->addItem(QString::fromStdString(ecm.name), i);
-    }
+//         ecms->addItem(QString::fromStdString(ecm.name), i);
+//     }
 
-    left_mtms->clear();
-    right_mtms->clear();
-    for (int i = 0; i < arms->count(); i++) {
-        const ArmConfig& mtm = arms->get(i);
-        if (!mtm.type.isMTM()) { continue; }
+//     left_mtms->clear();
+//     right_mtms->clear();
+//     for (int i = 0; i < arms->count(); i++) {
+//         const ArmConfig& mtm = arms->get(i);
+//         if (!mtm.type.isMTM()) { continue; }
 
-        left_mtms->addItem(QString::fromStdString(mtm.name), i);
-        right_mtms->addItem(QString::fromStdString(mtm.name), i);
-    }
-}
+//         left_mtms->addItem(QString::fromStdString(mtm.name), i);
+//         right_mtms->addItem(QString::fromStdString(mtm.name), i);
+//     }
+// }
 
 }

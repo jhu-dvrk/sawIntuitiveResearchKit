@@ -27,54 +27,26 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace system_wizard {
 
-class TeleopOptionView : public ItemView {
+class PSMTeleopOptionView : public ItemView {
 public:
-    TeleopOptionView(const ListModelT<ArmConfig>& arms, ListModelT<TeleopConfig>& model, ListView& list_view, int id, QWidget* parent = nullptr);
+    PSMTeleopOptionView(ListModelT<TeleopConfig>& model, ListView& list_view, int index, QWidget* parent = nullptr);
 
-    void updateData(int id) override;
+    void updateData(int index) override;
 
 private:
-    const ListModelT<ArmConfig>* arms;
     ListModelT<TeleopConfig>* model;
     QLabel* display;
 };
 
-class TeleopOptionViewFactory : public ItemViewFactory {
+class ECMTeleopOptionView : public ItemView {
 public:
-    TeleopOptionViewFactory(const ListModelT<ArmConfig>& arms, ListModelT<TeleopConfig>& model);
+    ECMTeleopOptionView(ListModelT<TeleopConfig>& model, ListView& list_view, int index, QWidget* parent = nullptr);
 
-    TeleopOptionView* create(int id, ListView& list_view);
+    void updateData(int index) override;
 
 private:
-    const ListModelT<ArmConfig>* arms;
     ListModelT<TeleopConfig>* model;
-};
-
-class TeleopEditor : public QWizard {
-    Q_OBJECT
-
-public:
-    enum { 
-        PAGE_SUGGESTED_TELEOPS,
-        PAGE_PSM_TELEOP,
-        PAGE_ECM_TELEOP
-    };
-
-    TeleopEditor(SystemConfigModel& model, QWidget* parent = nullptr);
-
-public slots:
-    void setId(int id);
-
-private:
-    void done();
-
-    QWizardPage* page;
-
-    SystemConfigModel* model;
-    TeleopConfig config;
-    int id = -1;
-
-    QLineEdit* name_input;
+    QLabel* display;
 };
 
 class SuggestedTeleopsPage : public QWizardPage {
@@ -85,54 +57,47 @@ public:
 
     int nextId() const override { return next_page_id; }
 
+    void setMode(bool psm) {
+        psm_mode = psm;
+    }
+
     void initializePage() override;
     bool isComplete() const override;
 
 private:
-    int next_page_id = TeleopEditor::PAGE_SUGGESTED_TELEOPS;
+    int next_page_id = -1;
+    bool psm_mode = true;
 
     TeleopConfig* config;
     ListView* suggested_teleops_view;
     const ListModelT<ArmConfig>* arms;
-    VectorList<TeleopConfig> suggested_teleops;
-    TeleopOptionViewFactory suggested_teleop_factory;
+    ListModelT<TeleopConfig> suggested_teleops;
 };
 
-class PSMTeleopPage : public QWizardPage {
+class TeleopEditor : public QWizard {
     Q_OBJECT
 
 public:
-    PSMTeleopPage(const ListModelT<ArmConfig>& arms, TeleopConfig& config, QWidget *parent = nullptr);
+    enum {
+        PAGE_SUGGESTED_TELEOPS
+    };
 
-    int nextId() const override { return -1; }
+    TeleopEditor(ConsoleConfig& console, const ListModelT<ArmConfig>& arms, QWidget* parent = nullptr);
 
-    void initializePage() override;
-
-private:
-    const ListModelT<ArmConfig>* arms;
-    TeleopConfig* config;
-
-    QComboBox* mtms;
-    QComboBox* psms;
-};
-
-class ECMTeleopPage : public QWizardPage {
-    Q_OBJECT
-
-public:
-    ECMTeleopPage(const ListModelT<ArmConfig>& arms, TeleopConfig& config, QWidget *parent = nullptr);
-
-    int nextId() const override { return -1; }
-
-    void initializePage() override;
+public slots:
+    void setId(bool psm, int id);
 
 private:
-    const ListModelT<ArmConfig>* arms;
-    TeleopConfig* config;
+    void done();
 
-    QComboBox* ecms;
-    QComboBox* left_mtms;
-    QComboBox* right_mtms;
+    SuggestedTeleopsPage* suggested_teleops_page;
+
+    ConsoleConfig* console;
+    TeleopConfig config;
+    int index = -1;
+    bool psm;
+
+    QLineEdit* name_input;
 };
 
 }
